@@ -159,10 +159,11 @@ Reducibility ::= reducible | opaque
 ```text
 Module ::= Header Imports Declarations
 
-Import ::= module_name + export_hash
+Import ::= module_name + export_hash + optional certificate_hash
 ```
 
 declarations は依存関係順に並べます。同じ依存深度の宣言順は module 内の canonical order に従います。
+`export_hash` は常に必須です。`certificate_hash` は通常検査では省略可能ですが、高信頼モードでは必須にします。
 
 ## 4. Universe System
 
@@ -545,14 +546,19 @@ certificate は source ではなく canonical module です。
 ```text
 Certificate:
   format: "NPA-CERT-0.1"
+  core_spec: "NPA-Core-0.1"
   module: module name
   imports: [Import]
   names: canonical name table
   levels: canonical level table
   terms: canonical term DAG
   declarations: [Decl]
-  axiom_report: [Name]
-  export_hash: sha256(canonical_payload_without_export_hash)
+  export_block: ExportBlock
+  axiom_report: AxiomReport
+  hashes:
+    export_hash: sha256("NPA-MODULE-EXPORT-0.1" || canonical_export_block)
+    axiom_report_hash: sha256("NPA-AXIOM-REPORT-0.1" || canonical_axiom_report)
+    certificate_hash: sha256("NPA-MODULE-CERT-0.1" || trusted_payload_without_certificate_hash)
 ```
 
 ### 9.2 Canonicalization
@@ -565,7 +571,7 @@ hash に影響する payload は次を満たします。
 - names are sorted by UTF-8 byte lexicographic order
 - level and term DAGs are topologically ordered; ties use structural tag order
 - declarations are dependency ordered
-- import order is lexicographic by module name, then hash
+- import order is lexicographic by module name, then export_hash, then certificate_hash option/value
 - term binders use de Bruijn indices
 - no whitespace or comments
 - no notation
@@ -602,7 +608,16 @@ axioms_used(decl) =
   union axioms_used(transitive dependencies)
 ```
 
-module の `axiom_report` は declarations の axiom set の和集合を canonical order で保存します。
+module の `module_axioms` は declarations の axiom set の和集合を canonical order で保存します。
+
+```text
+AxiomReport:
+  per_declaration: [(decl_index, [Name])]
+  module_axioms: [Name]
+```
+
+`per_declaration` は declaration order、各 axiom list と `module_axioms` は canonical name order で保存します。
+`safe_for_high_trust`、`contains_sorry`、allowlist 判定などは audit/policy view であり、trusted payload 内の真偽値としては信用しません。
 
 ### 9.5 Import Hash
 
@@ -612,27 +627,54 @@ import は module name だけではなく export hash を含めます。
 Import:
   module = "Std.Nat.Basic"
   export_hash = "sha256:..."
+  certificate_hash = optional "sha256:..."
 ```
 
-kernel は import name と hash が実際に読み込まれた module と一致することを確認します。
+kernel は import name と hash が、呼び出し側から渡された `verified_imports` の module と一致することを確認します。
+高信頼モードでは `certificate_hash` も一致し、同じ checker が import certificate を検査済みであることを要求します。
+
+### 9.6 Hash Roles
+
+`export_hash` と `certificate_hash` は同じ対象を hash しません。
+
+```text
+export_hash:
+  downstream module が型検査・conversionに必要とする公開インターフェースのhash
+
+certificate_hash:
+  opaque theorem proof body などを含む trusted certificate payload から certificate_hash 自身を除いたhash
+```
+
+opaque theorem の proof だけが変わり、type・opacity・axiom dependency が変わらない場合、
+`certificate_hash` は変わりますが `export_hash` は維持されます。
+proof 変更によって axiom dependency が変わる場合は公開される信頼情報が変わるため、`export_hash` も変わります。
 
 ## 10. Kernel Checking Algorithm
 
 ### 10.1 Module Checking
 
 ```text
-check_module(cert):
-  verify format
-  load imports by name and hash
+check_module(cert, verified_imports):
+  verify format and core_spec
+  resolve imports by name and hash from verified_imports
   initialize Sigma from imports
   for decl in declarations:
     check_decl(Sigma, decl)
+    recompute and compare declaration hashes
     extend Sigma with decl
   compute axiom_report
   compare with certificate axiom_report
-  compute export_hash over canonical payload excluding export_hash itself
+  compute axiom_report_hash
+  compare with certificate axiom_report_hash
+  compute export_hash over canonical export block
   compare with certificate export_hash
+  compute certificate_hash over trusted payload excluding certificate_hash itself
+  compare with certificate certificate_hash
 ```
+
+ここでの import resolution は、呼び出し側がすでに用意した import store / verified import set から
+canonical module を参照するという意味です。kernel 自身はファイル I/O、network fetch、
+package resolution を行いません。
 
 ### 10.2 Type Inference
 

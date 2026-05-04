@@ -146,6 +146,10 @@ POST /sessions
 
 文字列だけの goal 表示では、AIやIDEが扱いにくいです。
 
+この Phase 5 文書内の `pretty` / `statement` / goal 表示では、読みやすさのため `0` を
+使うことがあります。これは表示用省略であり、機械向け構造は `Nat.zero` への canonical
+`Const` 参照と `core_hash` を使います。
+
 悪い例：
 
 ```text
@@ -1252,8 +1256,11 @@ resolved_decl_hash
   ↓
 core_decl_hash
   ↓
-certificate_decl_hash
+decl_interface_hash / decl_certificate_hash
 ```
+
+`source_decl_hash` から `core_decl_hash` までは proof server の cache key です。
+trusted certificate 側の宣言 hash は Phase 2 の `decl_interface_hash` / `decl_certificate_hash` です。
 
 同じ declaration は再利用できます。
 
@@ -1416,7 +1423,7 @@ IDE/API は外部入力を受けるので、制限が必要です。
 ```text
 - unchecked theorem を verified と返す
 - unresolved goal を certificate 化する
-- import hash を無視する
+- import の export_hash / high-trust 時の certificate_hash を無視する
 - axiom report を省略する
 - tactic 失敗後に state を破壊する
 - AI出力を自動で trusted にする
@@ -1727,4 +1734,3 @@ goal display:
 ```
 
 この Phase 5 が完成すると、次の Phase 6 以降で **AI証明探索、RAG、proof search、IDE補完、教育UI** を本格的に載せられるようになります。
-

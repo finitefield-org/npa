@@ -126,6 +126,9 @@ Phase 7 の入力は、Phase 5 の structured proof state です。
 }
 ```
 
+`pretty` や `statement` は人間・AI向け表示なので、Phase 6 の表示用省略として `0` を使うことがあります。
+探索や certificate 検査で使う構造情報は `constants` / `core_hash` 側であり、`0` は `Nat.zero` への参照として扱います。
+
 加えて、Phase 6 の theorem index を使います。
 
 ```json
@@ -151,7 +154,7 @@ Phase 7 の入力は、Phase 5 の structured proof state です。
   "status": "verified",
   "proof_script": "by\n  simp-lite",
   "certificate_hash": "sha256:...",
-  "checked_by": ["kernel", "certificate_checker"],
+  "checked_by": ["npa-kernel-fast", "npa-checker-ref"],
   "axioms_used": [],
   "search_stats": {
     "expanded_nodes": 12,
@@ -401,6 +404,8 @@ preferred:
 ### graph-aware retrieval
 
 theorem dependency graph を使います。
+Phase 7 MVP で使う graph は、Phase 6 の certificate 由来 dependency graph / theorem index で十分です。
+Phase 9 の theorem graph は、これを大規模ライブラリ向けの schema / API / ranking 情報へ拡張します。
 
 ```text
 現在使った定理:
@@ -1793,7 +1798,7 @@ MVP:
 Phase 7.5:
   LLM-assisted prover
 
-Phase 8:
+Phase 7 later:
   learning prover
 ```
 
@@ -1961,4 +1966,3 @@ minimize verified proof
 [1]: https://leandojo.readthedocs.io/?utm_source=chatgpt.com "LeanDojo: Machine Learning for Theorem Proving in Lean ..."
 [2]: https://arxiv.org/abs/2306.15626?utm_source=chatgpt.com "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models"
 [3]: https://www.nature.com/articles/s41586-025-09833-y?utm_source=chatgpt.com "Olympiad-level formal mathematical reasoning with ..."
-

@@ -17,7 +17,12 @@ Rust 製 kernel と独立 checker が proof certificate だけを検査する。
 - AI、tactic、elaborator、parser、theorem search は trusted base に入れない。
 - 最終的な正しさは source script ではなく canonical proof certificate で保証する。
 - kernel は小さく、監査しやすく、決定的に動くものにする。
-- certificate は再検査可能で、import hash、declaration hash、axiom report を含む。
+- certificate は再検査可能で、import の `export_hash` と高信頼モード用の `certificate_hash`、declaration hash、`axiom_report_hash` を含む。
+
+文書内の数学例では、読みやすさのため `0`, `1`, `2` を使うことがあります。
+これは自然数の表示用省略で、Phase 3 MVP の実入力では数値リテラルを入れるまで
+`Nat.zero` / `Nat.succ ...` か、開いた namespace 内の `zero` / `succ ...` と書ければ十分です。
+certificate に残るのは canonical `Const` 参照です。
 
 ## アーキテクチャ
 
@@ -51,7 +56,7 @@ canonical certificate を検査します。
 | 6 | 小さく堅い標準ライブラリ: `Std.Logic`, `Std.Nat`, `Std.List`, `Std.Algebra.Basic` |
 | 7 | AI 証明探索: premise retrieval、tactic generation、search、repair |
 | 8 | 独立 checker、external checker、CI audit |
-| 9 | advanced inductive、quotient、typeclass、SMT certificates、theorem graph |
+| 9 | advanced inductive、universe polymorphism強化、quotient、typeclass、SMT certificates、theorem graph、natural language formalization |
 
 ## リポジトリ構成
 
@@ -62,8 +67,18 @@ canonical certificate を検査します。
 ├── AGENTS.md
 ├── crates/
 │   └── npa-kernel/
-│       └── src/lib.rs
+│       └── src/
+│           ├── lib.rs
+│           ├── builtins.rs
+│           ├── context.rs
+│           ├── decl.rs
+│           ├── env.rs
+│           ├── error.rs
+│           ├── expr.rs
+│           ├── level.rs
+│           └── subst.rs
 └── doc/
+    ├── core-spec-v0.1.md
     ├── overall-design.md
     ├── phase0.md
     ├── phase1.md
@@ -90,3 +105,10 @@ cargo test --workspace
 - [Phase 0: Core Spec](doc/phase0.md)
 - [Phase 1: Kernel](doc/phase1.md)
 - [Phase 2: Certificate](doc/phase2.md)
+- [Phase 3: Surface Language](doc/phase3.md)
+- [Phase 4: Tactic](doc/phase4.md)
+- [Phase 5: IDE/API](doc/phase5.md)
+- [Phase 6: Library](doc/phase6.md)
+- [Phase 7: AI Search](doc/phase7.md)
+- [Phase 8: Independent Checker](doc/phase8.md)
+- [Phase 9: Advanced Features](doc/phase9.md)

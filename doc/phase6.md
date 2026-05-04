@@ -48,16 +48,20 @@ IDE / tactic / AI search から利用
 Std/Logic.npa
 Std/Logic.npcert
 Std/Logic.index.json
-Std/Logic.axioms.json
-Std/Logic.graph.json
+Std/Logic.axioms.json   -- derived axiom report view
+Std/Logic.graph.json    -- minimal derived dependency graph
 ```
+
+ここでの `graph.json` は certificate から導出した最小の依存関係 artifact です。
+Phase 9 の theorem graph は、この情報を拡張して schema / API / ranking 機能を持たせる段階です。
 
 Phase 6 の完了条件は：
 
 ```text
 - Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic が kernel で検査済み
 - 各モジュールが certificate 化されている
-- import hash が固定されている
+- import entries が export_hash を持ち、高信頼モード用の certificate_hash も生成されている
+- module の export_hash / certificate_hash / axiom_report_hash が生成されている
 - axiom report が空、または allowlist 内
 - theorem search index が生成されている
 - simp-lite が基本定理を使える
@@ -166,6 +170,9 @@ Nat.zero_mul     : 0 * n = 0
 List.append_nil  : xs ++ [] = xs
 List.nil_append  : [] ++ xs = xs
 ```
+
+この Phase 6 文書内の `0`, `1`, `2` は、`Nat.zero` / `Nat.succ ...` の表示用省略です。
+Phase 3 MVP の入力では `Nat.zero` か開いた namespace 内の `zero` と書ければ十分です。
 
 ## 3.3 補助定理の命名
 
@@ -483,7 +490,7 @@ notation：
 ```
 
 Phase 6 MVP では overloaded numerals はまだ不要です。
-`Nat` 専用 numeral として扱えば十分です。
+Nat 専用 numeral syntax を入れる場合も overloaded numerals ではなく Phase 6 の表層利便機能として扱います。
 
 ## 6.2 add
 
@@ -1163,11 +1170,14 @@ Std.Algebra.Basic
 
 ```json
 {
+  "format": "NPA-CERT-0.1",
+  "core_spec": "NPA-Core-0.1",
   "module": "Std.Nat",
   "imports": [
     {
       "module": "Std.Logic",
-      "export_hash": "sha256:..."
+      "export_hash": "sha256:...",
+      "certificate_hash": "sha256:..."
     }
   ],
   "declarations": [
@@ -1178,13 +1188,25 @@ Std.Algebra.Basic
     "Nat.add_zero",
     "Nat.zero_add"
   ],
+  "export_block": [
+    {
+      "name": "Std.Nat.add_zero",
+      "decl_interface_hash": "sha256:..."
+    },
+    {
+      "name": "Std.Nat.zero_add",
+      "decl_interface_hash": "sha256:..."
+    }
+  ],
   "axiom_report": {
     "module_axioms": [],
-    "contains_sorry": false,
-    "safe_for_high_trust": true
+    "per_declaration": []
   },
-  "export_hash": "sha256:...",
-  "certificate_hash": "sha256:..."
+  "hashes": {
+    "export_hash": "sha256:...",
+    "certificate_hash": "sha256:...",
+    "axiom_report_hash": "sha256:..."
+  }
 }
 ```
 
@@ -1194,7 +1216,7 @@ Std.Algebra.Basic
 - def の body は export_hash に含める
 - opaque theorem の proof body は export_hash に含めなくてよい
 - theorem の axiom dependencies は export_hash に含める
-- import hash が一致しない場合は build fail
+- import の export_hash が一致しない場合は build fail、高信頼モードでは certificate_hash も一致させる
 ```
 
 ---
@@ -1353,7 +1375,7 @@ inductive declaration ok
 ```text
 - .npcert だけで再検査できる
 - sourceなしで検査できる
-- import hash が一致する
+- import の export_hash が一致し、高信頼モードでは certificate_hash も一致する
 - declaration hash が一致する
 - axiom report が再計算結果と一致する
 ```
@@ -1546,7 +1568,8 @@ Phase 6 が完了したと言える条件はこれです。
 - Std.Algebra.Basic が Associative / Commutative / Monoid 系定義を提供する
 - 全モジュールが no sorry / no custom axiom
 - 全モジュールが .npcert として再検査可能
-- import hash / export hash / certificate hash が生成される
+- import entries が export_hash を持ち、高信頼モード用の certificate_hash も生成される
+- module の export_hash / certificate_hash / axiom_report_hash が生成される
 - theorem index が生成される
 - simp-lite が Nat/List の基本ゴールを閉じられる
 - theorem search が exact/apply/rw/simp 候補を返せる
@@ -1576,4 +1599,3 @@ Std.Algebra.Basic:
 ```
 
 この Phase 6 が完成すると、以降の Phase 7 で **AI証明探索、RAG、premise selection、proof search** を本格的に載せられるようになります。
-

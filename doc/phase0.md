@@ -342,23 +342,23 @@ Const c ↦ value(c)
 ```
 
 ただし、すべての定義を常に展開すると遅くなるので、透明度を持たせます。
+core-spec v0.1 ではまず `reducible` と `opaque` だけに絞ります。
 
 ```text
 reducible
-semireducible
-irreducible
 opaque
 ```
 
 推奨：
 
 ```text
-def      : transparent または semireducible
+def      : reducible または opaque
 theorem  : opaque
 abbrev   : reducible
 ```
 
 theorem の証明本体を conversion で展開しない方がよいです。巨大証明が勝手に展開されると非常に遅くなるからです。
+`semireducible` / `irreducible` のような細かい透明度は Phase 9 以降の拡張候補です。
 
 ## 3.3 ι-reduction
 
@@ -739,7 +739,7 @@ kernel は inductive declaration に対して以下を検査します。
 
 # 6. Certificate format
 
-最後に、kernel が受け取る証明証明書の形式を決めます。
+最後に、kernel / checker が受け取る証明証明書の形式を決めます。
 
 これはかなり重要です。
 
@@ -748,7 +748,9 @@ tactic も信用しません。
 AI も信用しません。
 elaborator も完全には信用しません。
 
-kernel が読むのは certificate です。
+checker が読むのは source ではなく canonical certificate artifact です。
+kernel が読むのは checker / loader が decode した canonical core AST / declaration です。
+ファイル I/O や import store からの読み込みは kernel の責務ではありません。
 
 ## 6.1 Certificate の目的
 
@@ -765,20 +767,29 @@ certificate は次を保証するためのものです。
 
 ## 6.2 Certificate の大枠
 
-人間向けには JSON で表せますが、実際の保存形式は canonical binary が望ましいです。
+人間向けには JSON で表せますが、実際の保存形式は canonical binary にします。
+JSON は説明用・デバッグ用であり、hash-stable artifact ではありません。
 
 概念的には：
 
 ```json
 {
-  "format": "NPA-CERT-1",
-  "kernel_version": "0.1.0",
+  "format": "NPA-CERT-0.1",
+  "core_spec": "NPA-Core-0.1",
   "module": "Std.Nat.Basic",
   "imports": [],
   "universe_params": [],
   "declarations": [],
-  "axiom_report": [],
-  "export_hash": "sha256:..."
+  "export_block": [],
+  "axiom_report": {
+    "module_axioms": [],
+    "per_declaration": []
+  },
+  "hashes": {
+    "export_hash": "sha256:...",
+    "certificate_hash": "sha256:...",
+    "axiom_report_hash": "sha256:..."
+  }
 }
 ```
 
@@ -815,7 +826,7 @@ axiom は原則禁止または allowlist 制にします。
   "universe_params": [],
   "type": "...",
   "value": "...",
-  "reducibility": "semireducible"
+  "reducibility": "reducible"
 }
 ```
 
@@ -919,7 +930,8 @@ Pi n : Nat,
 
 ## 6.5 Canonicalization
 
-同じ certificate は同じ hash になってほしいです。
+同じ canonical payload は同じ hash にならなければいけません。
+source map などの非信頼 metadata は hash 対象に含めません。
 
 そのために：
 
@@ -942,11 +954,13 @@ import は名前だけでは不十分です。
 ```json
 {
   "module": "Std.Nat.Basic",
-  "export_hash": "sha256:abc..."
+  "export_hash": "sha256:abc...",
+  "certificate_hash": "sha256:def..."
 }
 ```
 
 のように、依存先のhashを固定します。
+`export_hash` は必須、`certificate_hash` は高信頼モードで必須にします。
 
 これにより：
 
@@ -1193,4 +1207,4 @@ v0.1 は小さくします。
   general recursion, macros, tactic language
 ```
 
-まず小さいkernelを作り、certificateだけで `id`, `Nat`, `Eq`, `Nat.rec`, `add_zero` が検査できる状態を目指すのがよいです。
+まず小さいkernelを作り、source/tactic なしの core declaration として `id`, `Nat`, `Eq`, `Nat.rec`, `add_zero` が検査できる状態を目指すのがよいです。

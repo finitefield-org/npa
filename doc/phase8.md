@@ -46,7 +46,7 @@ external checker
   ↓
 CI / release audit
   ↓
-verified artifact
+verified_high_trust artifact
 ```
 
 つまり、最終成果物は単なる `.npa` ソースでも、tactic script でも、AI探索ログでもなく、**複数 checker で再検査済みの `.npcert`** です。
@@ -113,10 +113,10 @@ Phase 8 で checker が読むもの：
 ```text
 - canonical core AST
 - module certificate
-- import hash
+- import の export_hash / high-trust 時の certificate_hash
 - declaration hash
 - axiom report
-- dependency graph
+- certificate 内の declaration dependency entries
 ```
 
 checker が読まないもの：
@@ -128,9 +128,14 @@ checker が読まないもの：
 - pretty printed goal
 - theorem search index
 - source map
+- 外部に出力された dependency graph artifact
 ```
 
 つまり、checker の入力は原則として `.npcert` だけです。
+
+この Phase 8 文書内の challenge / source / 表示例では、読みやすさのため `0` を使うことがあります。
+checker が比較する対象は表示文字列ではなく、`statement_core_hash` と canonical core AST です。
+受理される certificate 側では `0` は `Nat.zero` への canonical `Const` 参照まで elaboration 済みでなければいけません。
 
 ---
 
@@ -173,7 +178,7 @@ reference checker は逆に、なるべく単純にします。
 
 ```text
 1. certificate header
-2. import hash
+2. import の export_hash / high-trust 時の certificate_hash
 3. canonical encoding
 4. term hash
 5. declaration hash
@@ -183,8 +188,9 @@ reference checker は逆に、なるべく単純にします。
 9. universe consistency
 10. inductive declaration validity
 11. axiom report correctness
-12. export hash
-13. certificate hash
+12. axiom report hash
+13. export hash
+14. certificate hash
 ```
 
 成功時：
@@ -196,6 +202,7 @@ reference checker は逆に、なるべく単純にします。
   "module": "Std.Nat",
   "export_hash": "sha256:...",
   "certificate_hash": "sha256:...",
+  "axiom_report_hash": "sha256:...",
   "axioms_used": [],
   "declarations_checked": 128
 }
@@ -643,12 +650,12 @@ compare with stored hashes
 Domain separation を必須にします。
 
 ```text
-H("NPA_TERM_V1" || term_encoding)
-H("NPA_DECL_IFACE_V1" || decl_interface)
-H("NPA_DECL_CERT_V1" || decl_certificate)
-H("NPA_MODULE_EXPORT_V1" || export_block)
-H("NPA_MODULE_CERT_V1" || full_certificate)
-H("NPA_AXIOM_REPORT_V1" || axiom_report)
+H("NPA-TERM-0.1" || term_encoding)
+H("NPA-DECL-IFACE-0.1" || decl_interface)
+H("NPA-DECL-CERT-0.1" || decl_certificate)
+H("NPA-MODULE-EXPORT-0.1" || export_block)
+H("NPA-MODULE-CERT-0.1" || trusted_payload_without_certificate_hash)
+H("NPA-AXIOM-REPORT-0.1" || axiom_report)
 ```
 
 こうすることで、異なる種類のデータを同じ hash として誤用する事故を減らします。
@@ -773,10 +780,11 @@ npa-checker-ext \
   "checker": "npa-checker-ext",
   "checker_version": "0.1.0",
   "core_spec": "NPA-Core-0.1",
-  "certificate_format": "NPA-CERT-1",
+  "certificate_format": "NPA-CERT-0.1",
   "module": "Std.Nat",
   "export_hash": "sha256:...",
   "certificate_hash": "sha256:...",
+  "axiom_report_hash": "sha256:...",
   "axioms_used": [],
   "checked_declarations": 84,
   "time_ms": 913
@@ -820,7 +828,8 @@ external checker の入力は限定します。
   "imports": [
     {
       "module": "Std.Nat",
-      "export_hash": "sha256:..."
+      "export_hash": "sha256:...",
+      "certificate_hash": "sha256:..."
     }
   ]
 }
@@ -943,7 +952,7 @@ CI は、次を自動で保証します。
 - fast kernel で検査される
 - reference checker で再検査される
 - external checker で再検査される
-- import hash が固定されている
+- import の export_hash / high-trust 時の certificate_hash が一致する
 - declaration hash が一致する
 - axiom report が正しい
 - forbidden axiom / sorry がない
@@ -1033,7 +1042,7 @@ npa check build/Std/Nat.npcert
 - conversion
 - inductive rules
 - declaration hash
-- module hash
+- export_hash / certificate_hash / axiom_report_hash
 ```
 
 ---
@@ -1497,6 +1506,7 @@ POST /check/certificate
   "module": "Std.Nat",
   "certificate_hash": "sha256:...",
   "export_hash": "sha256:...",
+  "axiom_report_hash": "sha256:...",
   "axioms_used": [],
   "time_ms": 950
 }
@@ -1559,7 +1569,7 @@ npa audit axioms build/Std/Nat.npcert --policy policies/std.json
    .npcert を source なしで読めるようにする
 
 2. Hash verifier
-   term / decl / module hash を再計算する
+   term / decl / export / certificate / axiom_report hash を再計算する
 
 3. Environment builder
    import certificate から environment を作る
@@ -1723,9 +1733,9 @@ Phase 8 が完了したと言える条件はこれです。
 - .npcert を source なしで検査できる
 - reference checker が fast kernel と独立している
 - external checker が別プロセスで動く
-- import hash を検査できる
+- import の export_hash / high-trust 時の certificate_hash を検査できる
 - declaration hash を再計算できる
-- certificate hash を再計算できる
+- export_hash / certificate_hash / axiom_report_hash を再計算できる
 - axiom report を再計算できる
 - forbidden axiom / sorry を拒否できる
 - Nat / Eq / List / Std.Algebra.Basic の証明を再検査できる
@@ -1754,7 +1764,7 @@ axiom/hash/import policy check
   ↓
 CIで強制
   ↓
-verified artifact
+verified_high_trust artifact
 ```
 
 これにより、AI探索・tactic・elaborator・fast kernel のどこかにバグがあっても、最終的な certificate を独立 checker が拒否できます。
@@ -1764,7 +1774,6 @@ verified artifact
 ```text
 「証明が見つかった」ではなく、
 「複数の独立 checker が同じ certificate を検査し、
- import hash と axiom policy も満たした」
-ことを verified と呼ぶ。
+ import の export_hash / high-trust 時の certificate_hash と axiom policy も満たした」
+ことを高信頼の verified と呼ぶ。
 ```
-
