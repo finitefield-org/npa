@@ -49,8 +49,11 @@ Std/Logic.npa
 Std/Logic.npcert
 Std/Logic.index.json
 Std/Logic.axioms.json   -- derived axiom report view
-Std/Logic.graph.json    -- derived dependency graph
+Std/Logic.graph.json    -- minimal derived dependency graph
 ```
+
+ここでの `graph.json` は certificate から導出した最小の依存関係 artifact です。
+Phase 9 の theorem graph は、この情報を拡張して schema / API / ranking 機能を持たせる段階です。
 
 Phase 6 の完了条件は：
 

@@ -169,7 +169,7 @@ kernelがやること：
 - universe constraint の検査
 - inductive type の正当性検査
 - recursor / eliminator の生成または検査
-- proof certificate の検査
+- decode 済み canonical module certificate の論理検査
 ```
 
 kernelがやらないこと：
@@ -489,12 +489,16 @@ proof irrelevance を conversion rule として仮定する圧縮は v0.1 では
 kernelの外部APIは非常に小さくします。
 
 ```rust
-check_module(cert: Certificate) -> CheckResult
+check_module(module: CanonicalModuleCert) -> CheckResult
 check_decl(env: Environment, decl: Declaration) -> CheckResult
 infer_type(env: Environment, term: Term) -> Type
 is_defeq(env: Environment, t: Term, u: Term) -> Bool
 check_inductive(env: Environment, ind: InductiveDecl) -> CheckResult
 ```
+
+ここでの `CanonicalModuleCert` は、I/O や network fetch の結果ではなく、すでに decode され
+canonicality を検査対象として渡された構造化データです。ファイル読み込み、import store 参照、
+canonical binary decode は checker / loader 側の責務であり、kernel API は副作用を持ちません。
 
 ## 6.2 kernel内部構造
 
@@ -1119,6 +1123,8 @@ type-aware filter で `Nat.add_zero` が最上位に来ます。
 ## 11.3 theorem graph
 
 全定理の依存関係グラフを保存します。
+Phase 6/7 では certificate から導出した最小 dependency graph / theorem index を使い、
+Phase 9 で schema、API、ranking 情報を持つ本格 theorem graph に拡張します。
 
 ```text
 Nat.add_comm
@@ -1285,7 +1291,7 @@ sourceだけでなく、certificateを成果物にします。
 _build/
   module.npo        compiled object
   module.npcert     proof certificate
-  module.graph.json theorem dependency graph derived from certificate
+  module.graph.json minimal theorem dependency graph derived from certificate
   module.axioms.json derived axiom report view
   module.trace.json proof state trace
 ```
@@ -1965,7 +1971,7 @@ theorem add_zero (n : Nat) : n + Nat.zero = n := by
 | AI連携              | proof state / tactic / error をJSON構造化 |
 | 検証                | 独立checkerを最初から標準搭載                    |
 | セキュリティ            | sandbox検証を標準モード化                      |
-| ライブラリ             | theorem graphとRAG metadataを最初から持つ     |
+| ライブラリ             | 最小dependency graphとRAG metadataを早期に持ち、Phase 9でtheorem graphへ拡張 |
 | 自然言語              | 逆翻訳・確認・intent記録を標準化                   |
 | package           | sourceだけでなくcertificate hashをlock      |
 | tactic            | capability制で権限管理                      |

@@ -154,7 +154,7 @@ Phase 7 の入力は、Phase 5 の structured proof state です。
   "status": "verified",
   "proof_script": "by\n  simp-lite",
   "certificate_hash": "sha256:...",
-  "checked_by": ["kernel", "certificate_checker"],
+  "checked_by": ["npa-kernel-fast", "npa-checker-ref"],
   "axioms_used": [],
   "search_stats": {
     "expanded_nodes": 12,
@@ -404,6 +404,8 @@ preferred:
 ### graph-aware retrieval
 
 theorem dependency graph を使います。
+Phase 7 MVP で使う graph は、Phase 6 の certificate 由来 dependency graph / theorem index で十分です。
+Phase 9 の theorem graph は、これを大規模ライブラリ向けの schema / API / ranking 情報へ拡張します。
 
 ```text
 現在使った定理:

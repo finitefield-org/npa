@@ -739,7 +739,7 @@ kernel は inductive declaration に対して以下を検査します。
 
 # 6. Certificate format
 
-最後に、kernel が受け取る証明証明書の形式を決めます。
+最後に、kernel / checker が受け取る証明証明書の形式を決めます。
 
 これはかなり重要です。
 
@@ -748,7 +748,8 @@ tactic も信用しません。
 AI も信用しません。
 elaborator も完全には信用しません。
 
-kernel が読むのは certificate です。
+kernel / checker が読むのは source ではなく、decode 済みの canonical certificate / core AST です。
+ファイル I/O や import store からの読み込みは kernel の責務ではありません。
 
 ## 6.1 Certificate の目的
 

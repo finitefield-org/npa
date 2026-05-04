@@ -1108,6 +1108,8 @@ smt [Nat.add_comm, Nat.add_assoc]
 ## 7.1 目的
 
 theorem graph は、大規模ライブラリ・AI探索・証明最小化・依存関係監査の中核です。
+Phase 6/7 の minimal dependency graph / theorem index を土台にし、Phase 9 では
+schema、API、ranking、監査用途まで含む本格的な theorem graph に拡張します。
 
 ノード：
 
