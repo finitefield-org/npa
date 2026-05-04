@@ -219,6 +219,274 @@ mod tests {
         )
     }
 
+    fn bad_unary() -> Expr {
+        Expr::konst("BadUnary", vec![])
+    }
+
+    fn bad_unary_zero() -> Expr {
+        Expr::konst("BadUnary.zero", vec![])
+    }
+
+    fn bad_unary_succ(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("BadUnary.succ", vec![]), arg)
+    }
+
+    fn bad_unary_rec_type_missing_ih(level: Level) -> Expr {
+        let motive_ty = Expr::pi("_", bad_unary(), Expr::sort(level));
+        let z_ty = Expr::app(Expr::bvar(0), bad_unary_zero());
+        let s_ty = Expr::pi(
+            "n",
+            bad_unary(),
+            Expr::app(Expr::bvar(2), bad_unary_succ(Expr::bvar(0))),
+        );
+
+        Expr::pi(
+            "motive",
+            motive_ty,
+            Expr::pi(
+                "z",
+                z_ty,
+                Expr::pi(
+                    "s",
+                    s_ty,
+                    Expr::pi("n", bad_unary(), Expr::app(Expr::bvar(3), Expr::bvar(0))),
+                ),
+            ),
+        )
+    }
+
+    fn bad_unary_missing_ih_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "BadUnary",
+            vec![],
+            vec![],
+            vec![],
+            type0(),
+            vec![
+                ConstructorDecl::new("BadUnary.zero", bad_unary()),
+                ConstructorDecl::new("BadUnary.succ", Expr::pi("_", bad_unary(), bad_unary())),
+            ],
+            Some(RecursorDecl::new(
+                "BadUnary.rec",
+                vec!["u".to_owned()],
+                bad_unary_rec_type_missing_ih(Level::param("u")),
+            )),
+        )
+    }
+
+    fn bad_minor() -> Expr {
+        Expr::konst("BadMinor", vec![])
+    }
+
+    fn bad_minor_zero() -> Expr {
+        Expr::konst("BadMinor.zero", vec![])
+    }
+
+    fn bad_minor_succ(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("BadMinor.succ", vec![]), arg)
+    }
+
+    fn bad_minor_rec_type_wrong_zero(level: Level) -> Expr {
+        let motive_ty = Expr::pi("_", bad_minor(), Expr::sort(level));
+        let z_ty = Expr::app(Expr::bvar(0), bad_minor_succ(bad_minor_zero()));
+        let s_ty = Expr::pi(
+            "n",
+            bad_minor(),
+            Expr::pi(
+                "ih",
+                Expr::app(Expr::bvar(2), Expr::bvar(0)),
+                Expr::app(Expr::bvar(3), bad_minor_succ(Expr::bvar(1))),
+            ),
+        );
+
+        Expr::pi(
+            "motive",
+            motive_ty,
+            Expr::pi(
+                "z",
+                z_ty,
+                Expr::pi(
+                    "s",
+                    s_ty,
+                    Expr::pi("n", bad_minor(), Expr::app(Expr::bvar(3), Expr::bvar(0))),
+                ),
+            ),
+        )
+    }
+
+    fn bad_minor_wrong_zero_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "BadMinor",
+            vec![],
+            vec![],
+            vec![],
+            type0(),
+            vec![
+                ConstructorDecl::new("BadMinor.zero", bad_minor()),
+                ConstructorDecl::new("BadMinor.succ", Expr::pi("_", bad_minor(), bad_minor())),
+            ],
+            Some(RecursorDecl::new(
+                "BadMinor.rec",
+                vec!["u".to_owned()],
+                bad_minor_rec_type_wrong_zero(Level::param("u")),
+            )),
+        )
+    }
+
+    fn bad_list_constructor_param_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "BadList",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u,
+            vec![ConstructorDecl::new(
+                "BadList.bad",
+                Expr::app(Expr::konst("BadList", vec![type0()]), nat()),
+            )],
+            None,
+        )
+    }
+
+    fn nested_bad(level: Level, arg: Expr) -> Expr {
+        Expr::app(Expr::konst("NestedBad", vec![level]), arg)
+    }
+
+    fn nested_bad_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "NestedBad",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "NestedBad.mk",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "bad",
+                        nested_bad(u.clone(), nested_bad(u.clone(), Expr::bvar(0))),
+                        nested_bad(u, Expr::bvar(1)),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn extra_binder() -> Expr {
+        Expr::konst("ExtraBinder", vec![])
+    }
+
+    fn extra_binder_zero() -> Expr {
+        Expr::konst("ExtraBinder.zero", vec![])
+    }
+
+    fn extra_binder_succ(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("ExtraBinder.succ", vec![]), arg)
+    }
+
+    fn extra_binder_rec_type(level: Level) -> Expr {
+        let motive_ty = Expr::pi("_", extra_binder(), Expr::sort(level.clone()));
+        let z_ty = Expr::app(Expr::bvar(0), extra_binder_zero());
+        let s_ty = Expr::pi(
+            "n",
+            extra_binder(),
+            Expr::pi(
+                "ih",
+                Expr::app(Expr::bvar(2), Expr::bvar(0)),
+                Expr::app(Expr::bvar(3), extra_binder_succ(Expr::bvar(1))),
+            ),
+        );
+        let extra_motive_ty = Expr::pi("_", extra_binder(), Expr::sort(level));
+
+        Expr::pi(
+            "motive",
+            motive_ty,
+            Expr::pi(
+                "z",
+                z_ty,
+                Expr::pi(
+                    "s",
+                    s_ty,
+                    Expr::pi(
+                        "n",
+                        extra_binder(),
+                        Expr::pi(
+                            "extra",
+                            extra_motive_ty,
+                            Expr::app(Expr::bvar(0), Expr::bvar(1)),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn extra_binder_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "ExtraBinder",
+            vec![],
+            vec![],
+            vec![],
+            type0(),
+            vec![
+                ConstructorDecl::new("ExtraBinder.zero", extra_binder()),
+                ConstructorDecl::new(
+                    "ExtraBinder.succ",
+                    Expr::pi("_", extra_binder(), extra_binder()),
+                ),
+            ],
+            Some(RecursorDecl::new(
+                "ExtraBinder.rec",
+                vec!["u".to_owned()],
+                extra_binder_rec_type(Level::param("u")),
+            )),
+        )
+    }
+
+    fn bad_prop() -> Expr {
+        Expr::konst("BadProp", vec![])
+    }
+
+    fn bad_prop_intro() -> Expr {
+        Expr::konst("BadProp.intro", vec![])
+    }
+
+    fn bad_prop_rec_type(level: Level) -> Expr {
+        let motive_ty = Expr::pi("_", bad_prop(), Expr::sort(level));
+        let intro_ty = Expr::app(Expr::bvar(0), bad_prop_intro());
+
+        Expr::pi(
+            "motive",
+            motive_ty,
+            Expr::pi(
+                "intro",
+                intro_ty,
+                Expr::pi("p", bad_prop(), Expr::app(Expr::bvar(2), Expr::bvar(0))),
+            ),
+        )
+    }
+
+    fn bad_prop_large_elim_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "BadProp",
+            vec![],
+            vec![],
+            vec![],
+            prop(),
+            vec![ConstructorDecl::new("BadProp.intro", bad_prop())],
+            Some(RecursorDecl::new(
+                "BadProp.rec",
+                vec!["u".to_owned()],
+                bad_prop_rec_type(Level::param("u")),
+            )),
+        )
+    }
+
     #[test]
     fn checks_polymorphic_id() {
         let mut env = Env::new();
@@ -284,6 +552,68 @@ mod tests {
 
         assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
         assert!(env.decl("Bad").is_none());
+    }
+
+    #[test]
+    fn rejects_recursor_minor_missing_recursive_ih() {
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(bad_unary_missing_ih_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::InvalidInductive(_)));
+        assert!(env.decl("BadUnary").is_none());
+    }
+
+    #[test]
+    fn rejects_recursor_minor_with_wrong_constructor_target() {
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(bad_minor_wrong_zero_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::InvalidInductive(_)));
+        assert!(env.decl("BadMinor").is_none());
+    }
+
+    #[test]
+    fn rejects_constructor_result_with_wrong_params() {
+        let mut env = Env::with_builtins().unwrap();
+        let err = env
+            .add_inductive(bad_list_constructor_param_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::BadConstructorResult { .. }));
+        assert!(env.decl("BadList").is_none());
+    }
+
+    #[test]
+    fn rejects_nested_recursive_occurrence_in_direct_field() {
+        let mut env = Env::new();
+        let err = env.add_inductive(nested_bad_inductive()).unwrap_err();
+
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+        assert!(env.decl("NestedBad").is_none());
+    }
+
+    #[test]
+    fn rejects_recursor_with_binder_after_major_premise() {
+        let mut env = Env::new();
+        let err = env.add_inductive(extra_binder_inductive()).unwrap_err();
+
+        assert!(matches!(err, Error::InvalidInductive(_)));
+        assert!(env.decl("ExtraBinder").is_none());
+    }
+
+    #[test]
+    fn rejects_prop_recursor_large_elimination() {
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(bad_prop_large_elim_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::InvalidInductive(_)));
+        assert!(env.decl("BadProp").is_none());
     }
 
     #[test]

@@ -287,20 +287,12 @@ impl Env {
     ) -> Result<()> {
         self.expect_sort(&Ctx::new(), delta, &constructor.ty)?;
         let (domains, result) = peel_pi_domains(&constructor.ty);
-        for domain in domains {
-            check_constructor_domain_positive(&data.name, &constructor.name, &domain)?;
+        for (domain_index, domain) in domains.iter().enumerate() {
+            check_constructor_domain_positive(data, &constructor.name, domain_index, domain)?;
         }
 
         let result = self.whnf(&Ctx::new(), delta, &result)?;
-        let (head, _) = collect_apps(&result);
-        match head {
-            Expr::Const { name, .. } if name == data.name => Ok(()),
-            _ => Err(Error::BadConstructorResult {
-                inductive: data.name.clone(),
-                constructor: constructor.name.clone(),
-                result,
-            }),
-        }
+        self.check_constructor_result(data, constructor, domains.len(), result)
     }
 
     fn check_recursor_decl(
@@ -330,16 +322,14 @@ impl Env {
                 recursor.name
             )));
         }
-
-        for param in &data.params {
-            if domains.is_empty() {
-                return Err(Error::InvalidInductive(format!(
-                    "{} recursor is missing parameter binders",
-                    recursor.name
-                )));
-            }
-            self.expect_sort(&Ctx::new(), delta, &param.ty)?;
+        if domains.len() != rules.major_index + 1 {
+            return Err(Error::InvalidInductive(format!(
+                "{} recursor major premise must be the final binder in Phase 1",
+                recursor.name
+            )));
         }
+
+        self.check_recursor_params(data, recursor, &domains, delta)?;
 
         let motive_domain = domains.get(data.params.len()).ok_or_else(|| {
             Error::InvalidInductive(format!("{} recursor is missing motive", recursor.name))
@@ -351,16 +341,94 @@ impl Env {
         self.check_recursor_result(data, recursor, &result)?;
 
         for (constructor_index, constructor) in data.constructors.iter().enumerate() {
+            let minor_index = rules.minor_start + constructor_index;
             let minor_domain = &domains[rules.minor_start + constructor_index];
-            let (minor_fields, minor_result) = peel_pi_domains(minor_domain);
-            let (constructor_fields, _) = peel_pi_domains(&constructor.ty);
-            if minor_fields.len() < constructor_fields.len().saturating_sub(data.params.len()) {
+            let expected_minor = expected_minor_type(data, constructor, constructor_index)?;
+            let prefix_ctx = recursor_prefix_ctx(&domains[..minor_index]);
+            if !self.is_defeq(&prefix_ctx, delta, minor_domain, &expected_minor)? {
                 return Err(Error::InvalidInductive(format!(
-                    "{} minor premise for {} has too few fields",
+                    "{} minor premise for {} does not match constructor",
                     recursor.name, constructor.name
                 )));
             }
-            self.check_motive_application_result(data, recursor, &minor_result)?;
+        }
+
+        Ok(())
+    }
+
+    fn check_constructor_result(
+        &self,
+        data: &InductiveDecl,
+        constructor: &ConstructorDecl,
+        domain_count: usize,
+        result: Expr,
+    ) -> Result<()> {
+        let (head, args) = collect_apps(&result);
+        let levels = match head {
+            Expr::Const { name, levels } if name == data.name => levels,
+            _ => {
+                return Err(Error::BadConstructorResult {
+                    inductive: data.name.clone(),
+                    constructor: constructor.name.clone(),
+                    result,
+                })
+            }
+        };
+
+        let expected_levels: Vec<_> = data
+            .universe_params
+            .iter()
+            .map(|param| Level::param(param.clone()))
+            .collect();
+        if !levels_eq(&levels, &expected_levels)
+            || args.len() != data.params.len() + data.indices.len()
+            || domain_count < data.params.len()
+        {
+            return Err(Error::BadConstructorResult {
+                inductive: data.name.clone(),
+                constructor: constructor.name.clone(),
+                result,
+            });
+        }
+
+        for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+            let expected = Expr::bvar((domain_count - 1 - param_index) as u32);
+            if arg != &expected {
+                return Err(Error::BadConstructorResult {
+                    inductive: data.name.clone(),
+                    constructor: constructor.name.clone(),
+                    result,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    fn check_recursor_params(
+        &self,
+        data: &InductiveDecl,
+        recursor: &RecursorDecl,
+        domains: &[Expr],
+        delta: &[String],
+    ) -> Result<()> {
+        if domains.len() < data.params.len() {
+            return Err(Error::InvalidInductive(format!(
+                "{} recursor is missing parameter binders",
+                recursor.name
+            )));
+        }
+
+        let mut ctx = Ctx::new();
+        for (param_index, param) in data.params.iter().enumerate() {
+            self.expect_sort(&ctx, delta, &param.ty)?;
+            if !self.is_defeq(&ctx, delta, &domains[param_index], &param.ty)? {
+                return Err(Error::InvalidInductive(format!(
+                    "{} recursor parameter {} does not match inductive",
+                    recursor.name, param.name
+                )));
+            }
+            ctx.push_assumption(param.name.clone(), param.ty.clone());
         }
 
         Ok(())
@@ -380,11 +448,21 @@ impl Env {
             )));
         }
         self.check_recursor_target(data, recursor, &motive_domains[0], "motive domain")?;
-        if !matches!(motive_result, Expr::Sort(_)) {
-            return Err(Error::InvalidInductive(format!(
-                "{} motive must return a Sort",
-                recursor.name
-            )));
+        match motive_result {
+            Expr::Sort(level) => {
+                if level_eq(&data.sort, &Level::zero()) && !level_eq(&level, &Level::zero()) {
+                    return Err(Error::InvalidInductive(format!(
+                        "{} Prop recursor motive must return Prop",
+                        recursor.name
+                    )));
+                }
+            }
+            _ => {
+                return Err(Error::InvalidInductive(format!(
+                    "{} motive must return a Sort",
+                    recursor.name
+                )))
+            }
         }
         Ok(())
     }
@@ -578,9 +656,11 @@ impl Env {
         }
 
         let mut reduced = minor;
-        for (field_arg, field_domain) in field_args.iter().zip(field_domains) {
+        for (field_index, (field_arg, field_domain)) in
+            field_args.iter().zip(field_domains).enumerate()
+        {
             reduced = Expr::app(reduced, field_arg.clone());
-            if is_direct_recursive_domain(inductive, field_domain) {
+            if is_direct_recursive_domain(data, field_domain, param_count + field_index) {
                 let mut recursive_args = args[..rules.major_index].to_vec();
                 recursive_args.push(field_arg.clone());
                 reduced = Expr::app(
@@ -702,6 +782,160 @@ fn generated_recursor_rules(data: &InductiveDecl) -> RecursorRules {
     RecursorRules::new(minor_start, minor_start + data.constructors.len())
 }
 
+fn recursor_prefix_ctx(domains: &[Expr]) -> Ctx {
+    let mut ctx = Ctx::new();
+    for (index, domain) in domains.iter().enumerate() {
+        ctx.push_assumption(format!("_rec_arg_{index}"), domain.clone());
+    }
+    ctx
+}
+
+fn expected_minor_type(
+    data: &InductiveDecl,
+    constructor: &ConstructorDecl,
+    constructor_index: usize,
+) -> Result<Expr> {
+    let (domains, _) = peel_pi_domains(&constructor.ty);
+    let param_count = data.params.len();
+    if domains.len() < param_count {
+        return Err(Error::InvalidInductive(format!(
+            "{} constructor is missing parameter binders",
+            constructor.name
+        )));
+    }
+
+    let prefix_len = param_count + 1 + constructor_index;
+    let motive_abs = param_count;
+    let mut source_to_target: Vec<usize> = (0..param_count).collect();
+    let mut target_ctx_len = prefix_len;
+    let mut expected_domains = Vec::new();
+    let mut field_abs = Vec::new();
+
+    for (field_index, field_domain) in domains[param_count..].iter().enumerate() {
+        let source_ctx_len = param_count + field_index;
+        expected_domains.push(remap_bvars(
+            field_domain,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+        )?);
+
+        source_to_target.push(target_ctx_len);
+        field_abs.push(target_ctx_len);
+        target_ctx_len += 1;
+
+        if is_direct_recursive_domain(data, field_domain, source_ctx_len) {
+            expected_domains.push(motive_app(target_ctx_len, motive_abs, Expr::bvar(0))?);
+            target_ctx_len += 1;
+        }
+    }
+
+    let mut constructor_args = Vec::with_capacity(param_count + field_abs.len());
+    for param_abs in 0..param_count {
+        constructor_args.push(bvar_for_abs(target_ctx_len, param_abs)?);
+    }
+    for field_abs in field_abs {
+        constructor_args.push(bvar_for_abs(target_ctx_len, field_abs)?);
+    }
+
+    let levels = data
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    let constructor_value = Expr::apps(
+        Expr::konst(constructor.name.clone(), levels),
+        constructor_args,
+    );
+    let result = motive_app(target_ctx_len, motive_abs, constructor_value)?;
+
+    Ok(mk_pi_from_domains(expected_domains, result))
+}
+
+fn motive_app(ctx_len: usize, motive_abs: usize, target: Expr) -> Result<Expr> {
+    Ok(Expr::app(bvar_for_abs(ctx_len, motive_abs)?, target))
+}
+
+fn bvar_for_abs(ctx_len: usize, abs: usize) -> Result<Expr> {
+    if abs >= ctx_len {
+        return Err(Error::InvalidInductive(format!(
+            "binder index {abs} escapes context of length {ctx_len}"
+        )));
+    }
+    Ok(Expr::bvar((ctx_len - 1 - abs) as u32))
+}
+
+fn mk_pi_from_domains(domains: Vec<Expr>, body: Expr) -> Expr {
+    domains
+        .into_iter()
+        .rev()
+        .fold(body, |body, domain| Expr::pi("_", domain, body))
+}
+
+fn remap_bvars(
+    expr: &Expr,
+    source_ctx_len: usize,
+    target_ctx_len: usize,
+    source_to_target: &[usize],
+) -> Result<Expr> {
+    match expr {
+        Expr::Sort(level) => Ok(Expr::sort(level.clone())),
+        Expr::BVar(index) => {
+            let index = *index as usize;
+            if index >= source_ctx_len {
+                return Err(Error::InvalidInductive(format!(
+                    "binder index {index} escapes context of length {source_ctx_len}"
+                )));
+            }
+            let source_abs = source_ctx_len - 1 - index;
+            let Some(target_abs) = source_to_target.get(source_abs).copied() else {
+                return Err(Error::InvalidInductive(format!(
+                    "binder index {index} has no target in recursor minor"
+                )));
+            };
+            bvar_for_abs(target_ctx_len, target_abs)
+        }
+        Expr::Const { name, levels } => Ok(Expr::konst(name.clone(), levels.clone())),
+        Expr::App(fun, arg) => Ok(Expr::app(
+            remap_bvars(fun, source_ctx_len, target_ctx_len, source_to_target)?,
+            remap_bvars(arg, source_ctx_len, target_ctx_len, source_to_target)?,
+        )),
+        Expr::Lam { binder, ty, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(Expr::lam(
+                binder.clone(),
+                remap_bvars(ty, source_ctx_len, target_ctx_len, source_to_target)?,
+                remap_bvars(body, source_ctx_len + 1, target_ctx_len + 1, &body_map)?,
+            ))
+        }
+        Expr::Pi { binder, ty, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(Expr::pi(
+                binder.clone(),
+                remap_bvars(ty, source_ctx_len, target_ctx_len, source_to_target)?,
+                remap_bvars(body, source_ctx_len + 1, target_ctx_len + 1, &body_map)?,
+            ))
+        }
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(Expr::let_in(
+                binder.clone(),
+                remap_bvars(ty, source_ctx_len, target_ctx_len, source_to_target)?,
+                remap_bvars(value, source_ctx_len, target_ctx_len, source_to_target)?,
+                remap_bvars(body, source_ctx_len + 1, target_ctx_len + 1, &body_map)?,
+            ))
+        }
+    }
+}
+
 fn inductive_type(data: &InductiveDecl) -> Expr {
     let binders = data.params.iter().chain(&data.indices);
     mk_pi_telescope(binders, Expr::sort(data.sort.clone()))
@@ -727,16 +961,17 @@ fn peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
 }
 
 fn check_constructor_domain_positive(
-    inductive: &str,
+    data: &InductiveDecl,
     constructor: &str,
+    domain_index: usize,
     domain: &Expr,
 ) -> Result<()> {
-    if is_direct_recursive_domain(inductive, domain) {
+    if domain_index >= data.params.len() && is_direct_recursive_domain(data, domain, domain_index) {
         return Ok(());
     }
-    if contains_const(domain, inductive) {
+    if contains_const(domain, &data.name) {
         return Err(Error::NonPositiveOccurrence {
-            inductive: inductive.to_owned(),
+            inductive: data.name.clone(),
             constructor: constructor.to_owned(),
             ty: domain.clone(),
         });
@@ -744,9 +979,33 @@ fn check_constructor_domain_positive(
     Ok(())
 }
 
-fn is_direct_recursive_domain(inductive: &str, domain: &Expr) -> bool {
-    let (head, _) = collect_apps(domain);
-    matches!(head, Expr::Const { name, .. } if name == inductive)
+fn is_direct_recursive_domain(data: &InductiveDecl, domain: &Expr, ctx_len: usize) -> bool {
+    let (head, args) = collect_apps(domain);
+    let levels = match head {
+        Expr::Const { name, levels } if name == data.name => levels,
+        _ => return false,
+    };
+
+    let expected_levels: Vec<_> = data
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    if !levels_eq(&levels, &expected_levels) || args.len() != data.params.len() + data.indices.len()
+    {
+        return false;
+    }
+
+    for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+        let Ok(expected) = bvar_for_abs(ctx_len, param_index) else {
+            return false;
+        };
+        if arg != &expected {
+            return false;
+        }
+    }
+
+    args.iter().all(|arg| !contains_const(arg, &data.name))
 }
 
 fn contains_const(expr: &Expr, needle: &str) -> bool {
