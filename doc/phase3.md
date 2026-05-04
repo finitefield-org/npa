@@ -2367,71 +2367,91 @@ Phase 2 certificate verifier が検査済みの export interface を指します
 
 ---
 
-# 11. Phase 3 の実装順序
+# 11. Phase 3 の実装マイルストーン
 
-おすすめ順はこれです。
+Phase 3 は一度に実装せず、次の小さな milestone に分けます。各 milestone は
+「構造化 diagnostic を返す」「テストを追加する」「未解決 hole / meta を certificate に入れない」
+ところまでを完了条件にします。
 
-```text
-1. Lexer
-   identifiers, keywords, symbols, string literals, longest-match notation symbols, spans
+## 11.1 M1: Parser / Surface AST
 
-2. Basic parser
-   import/open/namespace/end/notation
-   def/theorem/axiom/simple inductive
-   identifiers, application, lambda, Pi, arrow, let, annotation, holes
-   fixed precedence table + Pratt parser
+- [ ] Lexer を実装する
+- [ ] `Span` を全 token / AST node に保存する
+- [ ] `import` / `open` / `namespace` / `end` を parse する
+- [ ] `def` / `theorem` / `axiom` / simple `inductive` を parse する
+- [ ] `fun` / `forall` / `let` / annotation / application / parenthesized term を parse する
+- [ ] `->` / `→` を右結合の anonymous Pi に desugar する
+- [ ] grouped binder `(x y : A)` / `{x y : A}` を `SurfaceBinder` list に展開する
+- [ ] `_` / `?m` を surface hole として保持する
+- [ ] `@f` を `ImplicitMode::Explicit` として保持する
+- [ ] `Prop` / `Type` / `Type u` を `SurfaceExpr::Sort` に正規化する
+- [ ] `import` が module 先頭以外に出た場合は `ImportAfterItem` を返す
 
-3. FrontendState
-   current module
-   imported source interfaces
-   namespace/open/notation state
+## 11.2 M2: FrontendState / Name Resolution
 
-4. Name system
-   hierarchical names
-   namespace stack
-   imports
-   local context
+- [ ] `FrontendState` に current module / namespace stack / open scopes を持たせる
+- [ ] `verified_imports` から import interface を読み、source 内 import と照合する
+- [ ] duplicate import を決定的に扱う
+- [ ] namespace / open の lexical scope を実装する
+- [ ] local context と global declaration table を分離する
+- [ ] current module declaration と imported declaration の優先順位を固定する
+- [ ] qualified / unqualified name resolution を実装する
+- [ ] ambiguous name を `AmbiguousName` として保持または拒否する
+- [ ] forward reference を `ForwardReference` として拒否する
 
-5. Name resolution
-   local/global/namespace/open
-   ambiguity detection
+## 11.3 M3: Minimal Elaboration / Kernel Handoff
 
-6. Notation table
-   infix/prefix/postfix
-   top-to-bottom scope
-   precedence climbing or Pratt parser
-   conflict detection
+- [ ] `infer` / `check` の bidirectional elaboration skeleton を実装する
+- [ ] local / global / app / lambda / Pi / let / annotation を core term に落とす
+- [ ] explicit binder だけで書かれた `def` / `theorem` を elaboration する
+- [ ] declaration elaboration 中は自分自身を global env に入れない
+- [ ] elaborated core declaration を Phase 1 kernel に渡す
+- [ ] kernel が拒否した場合は `KernelRejected` を返す
+- [ ] well-typed / ill-typed の最小テストを追加する
 
-7. BinderInfo
-   explicit / implicit binders
+## 11.4 M4: Metavariables / Implicit Args / Universe Meta
 
-8. Simple elaborator
-   infer/check
-   const/local/app/lambda/pi/let/annotation
+- [ ] term metavariable と universe metavariable の store を分けて管理する
+- [ ] implicit binder に対して `SyntheticImplicit` meta を挿入する
+- [ ] `@` mode では implicit term args を自動挿入しない
+- [ ] `_` と `?m` を `UserHole` meta に変換する
+- [ ] named hole の context snapshot を比較し、違う場合は `NamedHoleContextMismatch` を返す
+- [ ] constraint store に `TypeEq` / `TermEq` / `LevelEq` / `LevelLe` を入れる
+- [ ] simple unification と occurs check を実装する
+- [ ] 未解決 implicit / universe meta / hole が残る declaration は certificate 化を拒否する
 
-9. Metavariables
-   holes
-   implicit args
-   universe metas
-   named-hole context check
+## 11.5 M5: Notation / Overload Resolution
 
-10. Constraint store + simple unification
-   assignment
-   occurs check
-   definitional equality
-   transaction/rollback for overload candidates
-   universe meta solving without automatic generalization
+- [ ] notation declaration を namespace / open scope と連動させる
+- [ ] notation target を declaration 処理時に `ElabGlobalRef` へ解決する
+- [ ] prefix / postfix / infix / infixl / infixr を parser binding power に反映する
+- [ ] notation conflict を `NotationConflict` として拒否する
+- [ ] non-associative infix chain を `ParserError` として拒否する
+- [ ] overloaded notation candidates を決定的順序で保持する
+- [ ] elaboration 中に transaction / rollback で候補を試す
+- [ ] 解決不能な notation は `AmbiguousNotation` として返す
 
-11. Declaration elaboration
-   def/theorem/axiom/simple inductive
-   temporary env for inductive heads
+## 11.6 M6: Declaration Coverage / Simple Inductive
 
-12. Kernel handoff
-   core declaration を Phase 1 kernel に渡す
+- [ ] `def` / `theorem` / `axiom` の certificate handoff を実装する
+- [ ] axiom の使用が axiom report に反映されることを確認する
+- [ ] simple inductive の temporary global を作る
+- [ ] constructor type を temporary global 付き context で elaboration する
+- [ ] core-spec v0.1 の `InductiveDecl` に変換する
+- [ ] constructor / recursor などの generated declaration を `LocalGenerated` で参照する
+- [ ] inductive 全体を kernel に渡し、成功後だけ通常の global env に登録する
 
-13. Certificate handoff
-   fully solved core declaration を Phase 2 certificate に渡す
-```
+## 11.7 M7: Phase 2 Certificate / API / Regression Tests
+
+- [ ] fully solved core declaration を Phase 2 certificate builder に渡す
+- [ ] imported declaration を `decl_interface_hash` 付き参照として certificate に入れる
+- [ ] certificate hash / import hash が決定的であることをテストする
+- [ ] axiom report が意図せず増えないことをテストする
+- [ ] `parse` / `resolve` / `elaborate` API を安定させる
+- [ ] diagnostic の severity と `DiagnosticKind` を API から返す
+- [ ] `cargo fmt --all` を通す
+- [ ] `cargo clippy --workspace --all-targets -- -D warnings` を通す
+- [ ] `cargo test --workspace` を通す
 
 ---
 
