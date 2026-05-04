@@ -173,8 +173,8 @@ notation_decl ::=
     ":" precedence string "=>" qual_name
 
 decl_binder ::=
-    "(" ident ":" term ")"
-  | "{" ident ":" term "}"
+    "(" ident+ ":" term ")"
+  | "{" ident+ ":" term "}"
 
 lambda_binder ::=
     decl_binder
@@ -343,6 +343,12 @@ enum SurfaceExpr {
 x        -> kind = Named(x), ty = None,    binder_info = Explicit
 _        -> kind = Anonymous, ty = None,   binder_info = Explicit
 ```
+
+`(x y : A)` と `{x y : A}` は parser が左から順に複数の `SurfaceBinder` へ展開します。
+このグループ内の型注釈 `A` は、グループで導入される `x` / `y` を scope に入れる前の
+context で elaboration します。つまり `(x y : A)` は `(x : A) (y : A)` と同じ意味ですが、
+`A` の中で `x` や `y` を参照することはできません。依存したい場合は
+`(x : A) (y : B x)` のように binder を分けて書きます。
 
 ただし declaration binder と `forall` / Pi binder では `ty = None` を禁止します。`fun x => ...`
 と `fun _ => ...` だけが annotation なし binder を持てます。`A -> B` / `A → B` は parser が
@@ -2632,6 +2638,20 @@ theorem bad (a : Nat) (b : Nat) (c : Nat) : Prop :=
 ParserError
 ```
 
+## 12.15 grouped binder
+
+```npa
+def first (A : Type) (x y : A) : A :=
+  x
+```
+
+確認すること：
+
+```text
+`(x y : A)` が `(x : A) (y : A)` 相当の SurfaceBinder list に展開される
+型注釈 `A` は grouped binder 内で導入される `x` / `y` より外側の context で elaboration される
+```
+
 ---
 
 # 13. Phase 3 でまだ入れないもの
@@ -2673,6 +2693,7 @@ Phase 3 が完了したと言える条件はこれです。
 - import は module 先頭に限定し、途中 import を拒否できる
 - def/theorem/axiom/simple inductive を parse できる
 - `->` / `→` を右結合 Pi に desugar できる
+- grouped binder `(x y : A)` / `{x y : A}` を scope 規則付きで展開できる
 - namespace 付き名前を扱える
 - local/global name resolution ができる
 - namespace/open の lexical scope を実装できる
