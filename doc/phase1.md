@@ -1,3 +1,7 @@
+> 実装は [`crates/npa-kernel`](../crates/npa-kernel) から開始しています。
+> Phase 1 は完了しています。core term を直接組み立てたテストで `id`, `const`, `Nat.add`, `add_zero` を検査します。
+> `Nat` と `Eq` は `InductiveDecl` 経由で環境に追加され、recursor iota は inductive から導出した `RecursorRules` に基づく generic path で処理します。
+
 このリストは、**Phase 1 の小さい kernel が最低限扱えるべきもの**です。
 分類するとこうです。
 
@@ -986,4 +990,3 @@ Phase 1 が完了したと言える条件はこれです。
 
 この時点では、まだ tactic も AI も parser も不要です。
 まずは **certificate を直接食わせて kernel が検査できる** ところまで作るのが最短です。
-

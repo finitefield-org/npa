@@ -33,6 +33,7 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 
 大きな実装変更の前に、該当する phase の資料を確認してください。
 
+- 実装基準: `doc/core-spec-v0.1.md`
 - 全体像: `doc/overall-design.md`
 - kernel / core calculus: `doc/phase0.md`, `doc/phase1.md`
 - certificate: `doc/phase2.md`
@@ -55,7 +56,7 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 
 ## テスト方針
 
-Rust workspace が追加された後は、変更に応じて以下を使います。
+変更に応じて以下を使います。
 
 ```sh
 cargo fmt --all

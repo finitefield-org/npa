@@ -57,8 +57,12 @@ canonical certificate を検査します。
 
 ```text
 .
+├── Cargo.toml
 ├── README.md
 ├── AGENTS.md
+├── crates/
+│   └── npa-kernel/
+│       └── src/lib.rs
 └── doc/
     ├── overall-design.md
     ├── phase0.md
@@ -66,12 +70,12 @@ canonical certificate を検査します。
     └── ...
 ```
 
-現時点では設計資料が中心です。Rust kernel、certificate checker、surface language などの
-コードは今後この設計に沿って追加します。
+現時点では Rust kernel の最小実装と設計資料が中心です。certificate checker、surface language などは
+今後この設計に沿って追加します。
 
 ## 開発メモ
 
-Rust workspace が追加された後は、少なくとも次を通す方針です。
+少なくとも次を通す方針です。
 
 ```sh
 cargo fmt --all
@@ -79,10 +83,9 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-ただし、まだ Cargo workspace が無い段階では上記コマンドは利用できません。
-
 ## 参考資料
 
+- [NPA Core Specification v0.1](doc/core-spec-v0.1.md)
 - [全体設計](doc/overall-design.md)
 - [Phase 0: Core Spec](doc/phase0.md)
 - [Phase 1: Kernel](doc/phase1.md)

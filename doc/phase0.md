@@ -1,3 +1,6 @@
+> Phase 0 の実装基準となる仕様書は [`core-spec-v0.1.md`](core-spec-v0.1.md) です。
+> このファイルは、仕様を作るための設計メモとして残します。
+
 この5項目は、実装前に作るべき **NPA Core Spec v0.1** の中身です。
 ここでいう「紙に書く」とは、実装メモではなく、kernel・certificate checker・elaborator が共有する**数学的仕様**として固定する、という意味です。
 
@@ -1191,4 +1194,3 @@ v0.1 は小さくします。
 ```
 
 まず小さいkernelを作り、certificateだけで `id`, `Nat`, `Eq`, `Nat.rec`, `add_zero` が検査できる状態を目指すのがよいです。
-
