@@ -448,7 +448,7 @@ import Std.Nat.Basic
 
 ここは重要です。
 
-moduleには少なくとも2種類のhashを持たせるのが望ましいです。
+module certificate には、最低限次の hash を持たせます。
 
 ```text
 export_hash:
@@ -456,6 +456,9 @@ export_hash:
 
 certificate_hash:
   proof本体も含むcertificate全体のhash
+
+axiom_report_hash:
+  canonical axiom report のhash
 ```
 
 なぜ分けるかというと、opaque theorem の証明本体は下流の型検査には不要だからです。
@@ -1054,8 +1057,8 @@ Phase 2のcheckerは、次の場合にfailします。
 - def value : def_type が成り立たない
 - inductive declaration がpositivityを満たさない
 - axiom report が再計算結果と違う
-- banned axiom が含まれる
-- sorry が含まれる
+- policy で禁止された axiom が含まれる
+- policy で `deny_sorry` のとき sorry が含まれる
 - export_hash が再計算結果と違う
 - certificate_hash が再計算結果と違う
 ```
@@ -1103,6 +1106,9 @@ export_hash:
 
 certificate_hash:
   module certificate全体のhash
+
+axiom_report_hash:
+  canonical axiom report のhash
 ```
 
 そして axiom report は、単なるログではなく、hashと同じくらい重要な検証対象にします。

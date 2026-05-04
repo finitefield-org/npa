@@ -1551,7 +1551,7 @@ Phase 6 が完了したと言える条件はこれです。
 - Std.Algebra.Basic が Associative / Commutative / Monoid 系定義を提供する
 - 全モジュールが no sorry / no custom axiom
 - 全モジュールが .npcert として再検査可能
-- import hash / export hash / certificate hash が生成される
+- import hash / export_hash / certificate_hash / axiom_report_hash が生成される
 - theorem index が生成される
 - simp-lite が Nat/List の基本ゴールを閉じられる
 - theorem search が exact/apply/rw/simp 候補を返せる

@@ -100,11 +100,13 @@ tactic / elaborator
   ↓
 core proof term
   ↓
-kernel check
+kernel / certificate check
   ↓
-independent checker
+verified (normal mode)
   ↓
-verified artifact
+independent checker(s)
+  ↓
+verified_high_trust
 ```
 
 ## 3.2 proof script ではなく proof certificate を中心にする
@@ -370,16 +372,24 @@ Leanのproof validation文書も、形式定理文が意図に対応している
 ## 5.2 Certificateの構造
 
 ```text
-Certificate =
+TrustedCertificatePayload =
   Header
   Imports
-  UniverseDeclarations
+  NameTable
+  LevelTable
+  TermDAG
   Declarations
-  DependencyGraph
+  ExportBlock
   AxiomReport
+  Hashes(export_hash, certificate_hash, axiom_report_hash)
+
+CertificateFile =
+  TrustedCertificatePayload
   SourceMap (non-trusted metadata)
-  Hashes
 ```
+
+`SourceMap` や表示用 metadata は certificate file に付けてもよいですが、canonical payload や hash
+対象には含めません。
 
 宣言は次の形にします。
 
@@ -392,19 +402,21 @@ Certificate =
     "core": "Pi n : Nat, Eq Nat (add n zero) n",
     "hash": "sha256:..."
   },
-  "value": {
+  "proof": {
     "core": "Nat.rec ...",
     "hash": "sha256:..."
   },
   "opaque": true,
   "dependencies": ["Nat.rec", "Eq.refl"],
-  "axioms_used": []
+  "axioms_used": [],
+  "decl_interface_hash": "sha256:...",
+  "decl_certificate_hash": "sha256:..."
 }
 ```
 
 ## 5.3 Certificateはcanonicalであるべき
 
-同じ証明は同じhashになるのが望ましいです。
+同じ canonical payload は同じ hash にならなければいけません。
 
 そのため：
 
@@ -429,21 +441,23 @@ Certificate =
 - subterm sharing
 - hash-consing
 - local abbreviation
-- proof irrelevance によるProp証明の圧縮
+- Prop証明の共有・省略表現
 - repeated tactic pattern のmacro化
 ```
 
-ただし macro を certificate に入れる場合、2通りのどちらかにします。
+ただし圧縮表現を certificate file に入れる場合、trusted payload としては次のどちらかにします。
 
 ```text
 安全な方式A:
-  macroを展開済みtermとして保存する
+  canonical payload には展開済みtermだけを保存する
 
 安全な方式B:
-  macro expansion checkerを別途検証する
+  圧縮展開 checker を trusted boundary 内で別途検証する
 ```
 
 MVPではAを選びます。
+proof irrelevance を conversion rule として仮定する圧縮は v0.1 では使いません。
+使う場合は、標準ライブラリの theorem または明示的 axiom として axiom report に出します。
 
 ---
 

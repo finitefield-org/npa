@@ -46,7 +46,7 @@ external checker
   ↓
 CI / release audit
   ↓
-verified artifact
+verified_high_trust artifact
 ```
 
 つまり、最終成果物は単なる `.npa` ソースでも、tactic script でも、AI探索ログでもなく、**複数 checker で再検査済みの `.npcert`** です。
@@ -1726,7 +1726,7 @@ Phase 8 が完了したと言える条件はこれです。
 - external checker が別プロセスで動く
 - import hash を検査できる
 - declaration hash を再計算できる
-- certificate hash を再計算できる
+- export_hash / certificate_hash / axiom_report_hash を再計算できる
 - axiom report を再計算できる
 - forbidden axiom / sorry を拒否できる
 - Nat / Eq / List / Std.Algebra.Basic の証明を再検査できる
@@ -1755,7 +1755,7 @@ axiom/hash/import policy check
   ↓
 CIで強制
   ↓
-verified artifact
+verified_high_trust artifact
 ```
 
 これにより、AI探索・tactic・elaborator・fast kernel のどこかにバグがあっても、最終的な certificate を独立 checker が拒否できます。
@@ -1766,5 +1766,5 @@ verified artifact
 「証明が見つかった」ではなく、
 「複数の独立 checker が同じ certificate を検査し、
  import hash と axiom policy も満たした」
-ことを verified と呼ぶ。
+ことを高信頼の verified と呼ぶ。
 ```
