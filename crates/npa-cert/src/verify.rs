@@ -1244,7 +1244,9 @@ fn enforce_axiom_policy_for_report(
                 axiom: name.clone(),
             });
         }
-        if policy.mode == TrustMode::HighTrust && !policy.allowlisted_axioms.contains(name) {
+        let require_allowlist =
+            policy.mode == TrustMode::HighTrust || !policy.allowlisted_axioms.is_empty();
+        if require_allowlist && !policy.allowlisted_axioms.contains(name) {
             return Err(CertError::ForbiddenAxiom {
                 axiom: name.clone(),
             });

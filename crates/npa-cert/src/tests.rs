@@ -524,6 +524,11 @@ fn hash_hex(hash: Hash) -> String {
     hash.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+fn append_test_string(bytes: &mut Vec<u8>, value: &str) {
+    encode_uvar_to(bytes, value.len() as u64);
+    bytes.extend(value.as_bytes());
+}
+
 fn read_test_uvar(bytes: &[u8], offset: &mut usize) -> u64 {
     let mut result = 0;
     let mut shift = 0;
@@ -1134,6 +1139,24 @@ fn axiom_policy_rejects_forbidden_and_sorry_axioms() {
 }
 
 #[test]
+fn normal_mode_enforces_non_empty_axiom_allowlist() {
+    let cert = build_module_cert(axiom_module(), &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+
+    let mut policy = AxiomPolicy::normal();
+    policy.allowlisted_axioms.insert(Name::from_dotted("Q"));
+    let err = verify_module_cert(&bytes, &mut VerifierSession::new(), &policy).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::ForbiddenAxiom { ref axiom } if axiom == &Name::from_dotted("P")
+    ));
+
+    let mut policy = AxiomPolicy::normal();
+    policy.allowlisted_axioms.insert(Name::from_dotted("P"));
+    verify_module_cert(&bytes, &mut VerifierSession::new(), &policy).unwrap();
+}
+
+#[test]
 fn axiom_type_dependencies_are_reported_and_verified() {
     let cert = build_module_cert(theorem_using_axiom_module("p1"), &[]).unwrap();
     assert!(cert.declarations[1]
@@ -1475,6 +1498,32 @@ fn rejects_invalid_utf8_in_canonical_binary_string() {
     assert!(matches!(
         err,
         CertError::NonCanonicalEncoding { object: "string" }
+    ));
+}
+
+#[test]
+fn rejects_name_component_count_larger_than_remaining_input() {
+    let mut bytes = Vec::new();
+    append_test_string(&mut bytes, FORMAT);
+    append_test_string(&mut bytes, CORE_SPEC);
+    encode_uvar_to(&mut bytes, u64::MAX);
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(err, CertError::DecodeError));
+}
+
+#[test]
+fn rejects_empty_name_component_in_canonical_binary() {
+    let mut bytes = Vec::new();
+    append_test_string(&mut bytes, FORMAT);
+    append_test_string(&mut bytes, CORE_SPEC);
+    encode_uvar_to(&mut bytes, 1);
+    encode_uvar_to(&mut bytes, 0);
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "Name" }
     ));
 }
 

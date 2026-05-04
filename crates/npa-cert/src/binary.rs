@@ -439,7 +439,7 @@ impl<'a> Decoder<'a> {
     }
 
     fn imports(&mut self) -> Result<Vec<ImportEntry>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
                 Ok(ImportEntry {
@@ -452,20 +452,20 @@ impl<'a> Decoder<'a> {
     }
 
     fn name_table(&mut self) -> Result<Vec<Name>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len).map(|_| self.name()).collect()
     }
 
     fn level_table(&mut self) -> Result<Vec<LevelNode>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
                 Ok(match self.byte()? {
                     0x00 => LevelNode::Zero,
-                    0x01 => LevelNode::Succ(self.uvar()? as usize),
-                    0x02 => LevelNode::Max(self.uvar()? as usize, self.uvar()? as usize),
-                    0x03 => LevelNode::IMax(self.uvar()? as usize, self.uvar()? as usize),
-                    0x04 => LevelNode::Param(self.uvar()? as usize),
+                    0x01 => LevelNode::Succ(self.usize()?),
+                    0x02 => LevelNode::Max(self.usize()?, self.usize()?),
+                    0x03 => LevelNode::IMax(self.usize()?, self.usize()?),
+                    0x04 => LevelNode::Param(self.usize()?),
                     tag => return Err(CertError::UnsupportedEncoding { tag }),
                 })
             })
@@ -473,29 +473,29 @@ impl<'a> Decoder<'a> {
     }
 
     fn term_table(&mut self) -> Result<Vec<TermNode>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
                 Ok(match self.byte()? {
-                    0x00 => TermNode::Sort(self.uvar()? as usize),
-                    0x01 => TermNode::BVar(self.uvar()? as u32),
+                    0x00 => TermNode::Sort(self.usize()?),
+                    0x01 => TermNode::BVar(self.u32()?),
                     0x02 => TermNode::Const {
                         global_ref: self.global_ref()?,
                         levels: self.usize_vec()?,
                     },
-                    0x03 => TermNode::App(self.uvar()? as usize, self.uvar()? as usize),
+                    0x03 => TermNode::App(self.usize()?, self.usize()?),
                     0x04 => TermNode::Lam {
-                        ty: self.uvar()? as usize,
-                        body: self.uvar()? as usize,
+                        ty: self.usize()?,
+                        body: self.usize()?,
                     },
                     0x05 => TermNode::Pi {
-                        ty: self.uvar()? as usize,
-                        body: self.uvar()? as usize,
+                        ty: self.usize()?,
+                        body: self.usize()?,
                     },
                     0x06 => TermNode::Let {
-                        ty: self.uvar()? as usize,
-                        value: self.uvar()? as usize,
-                        body: self.uvar()? as usize,
+                        ty: self.usize()?,
+                        value: self.usize()?,
+                        body: self.usize()?,
                     },
                     tag => return Err(CertError::UnsupportedEncoding { tag }),
                 })
@@ -504,7 +504,7 @@ impl<'a> Decoder<'a> {
     }
 
     fn declarations(&mut self) -> Result<Vec<DeclCert>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
                 Ok(DeclCert {
@@ -523,47 +523,47 @@ impl<'a> Decoder<'a> {
     fn decl_payload(&mut self) -> Result<DeclPayload> {
         Ok(match self.byte()? {
             0x00 => DeclPayload::Axiom {
-                name: self.uvar()? as usize,
+                name: self.usize()?,
                 universe_params: self.usize_vec()?,
-                ty: self.uvar()? as usize,
+                ty: self.usize()?,
             },
             0x01 => DeclPayload::Def {
-                name: self.uvar()? as usize,
+                name: self.usize()?,
                 universe_params: self.usize_vec()?,
-                ty: self.uvar()? as usize,
-                value: self.uvar()? as usize,
+                ty: self.usize()?,
+                value: self.usize()?,
                 reducibility: self.reducibility()?,
             },
             0x02 => DeclPayload::Theorem {
-                name: self.uvar()? as usize,
+                name: self.usize()?,
                 universe_params: self.usize_vec()?,
-                ty: self.uvar()? as usize,
-                proof: self.uvar()? as usize,
+                ty: self.usize()?,
+                proof: self.usize()?,
                 opacity: self.opacity()?,
             },
             0x03 => {
-                let name = self.uvar()? as usize;
+                let name = self.usize()?;
                 let universe_params = self.usize_vec()?;
                 let params = self.binder_types()?;
                 let indices = self.binder_types()?;
-                let sort = self.uvar()? as usize;
-                let constructors_len = self.uvar()? as usize;
+                let sort = self.usize()?;
+                let constructors_len = self.bounded_len()?;
                 let mut constructors = Vec::with_capacity(constructors_len);
                 for _ in 0..constructors_len {
                     constructors.push(ConstructorSpec {
-                        name: self.uvar()? as usize,
-                        ty: self.uvar()? as usize,
+                        name: self.usize()?,
+                        ty: self.usize()?,
                     });
                 }
                 let recursor = match self.byte()? {
                     0x00 => None,
                     0x01 => Some(RecursorSpec {
-                        name: self.uvar()? as usize,
+                        name: self.usize()?,
                         universe_params: self.usize_vec()?,
-                        ty: self.uvar()? as usize,
+                        ty: self.usize()?,
                         rules: RecursorRulesSpec {
-                            minor_start: self.uvar()? as usize,
-                            major_index: self.uvar()? as usize,
+                            minor_start: self.usize()?,
+                            major_index: self.usize()?,
                         },
                     }),
                     tag => return Err(CertError::UnsupportedEncoding { tag }),
@@ -583,21 +583,17 @@ impl<'a> Decoder<'a> {
     }
 
     fn binder_types(&mut self) -> Result<Vec<BinderType>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
-            .map(|_| {
-                Ok(BinderType {
-                    ty: self.uvar()? as usize,
-                })
-            })
+            .map(|_| Ok(BinderType { ty: self.usize()? }))
             .collect()
     }
 
     fn export_block(&mut self) -> Result<ExportBlock> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
-                let name = self.uvar()? as usize;
+                let name = self.usize()?;
                 let kind = match self.byte()? {
                     0x00 => ExportKind::Axiom,
                     0x01 => ExportKind::Def,
@@ -611,7 +607,7 @@ impl<'a> Decoder<'a> {
                     name,
                     kind,
                     universe_params: self.usize_vec()?,
-                    ty: self.uvar()? as usize,
+                    ty: self.usize()?,
                     body: self.option_usize()?,
                     type_hash: self.hash()?,
                     body_hash: self.option_hash()?,
@@ -625,11 +621,11 @@ impl<'a> Decoder<'a> {
     }
 
     fn axiom_report(&mut self) -> Result<AxiomReport> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         let per_declaration = (0..len)
             .map(|_| {
                 Ok(DeclAxiomReport {
-                    decl_index: self.uvar()? as usize,
+                    decl_index: self.usize()?,
                     direct_axioms: self.axiom_refs()?,
                     transitive_axioms: self.axiom_refs()?,
                 })
@@ -643,7 +639,7 @@ impl<'a> Decoder<'a> {
     }
 
     fn dependency_entries(&mut self) -> Result<Vec<DependencyEntry>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
                 Ok(DependencyEntry {
@@ -655,12 +651,12 @@ impl<'a> Decoder<'a> {
     }
 
     fn axiom_refs(&mut self) -> Result<Vec<AxiomRef>> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         (0..len)
             .map(|_| {
                 Ok(AxiomRef {
                     global_ref: self.global_ref()?,
-                    name: self.uvar()? as usize,
+                    name: self.usize()?,
                     decl_interface_hash: self.hash()?,
                 })
             })
@@ -670,16 +666,16 @@ impl<'a> Decoder<'a> {
     fn global_ref(&mut self) -> Result<GlobalRef> {
         Ok(match self.byte()? {
             0x00 => GlobalRef::Imported {
-                import_index: self.uvar()? as usize,
-                name: self.uvar()? as usize,
+                import_index: self.usize()?,
+                name: self.usize()?,
                 decl_interface_hash: self.hash()?,
             },
             0x01 => GlobalRef::Local {
-                decl_index: self.uvar()? as usize,
+                decl_index: self.usize()?,
             },
             0x02 => GlobalRef::LocalGenerated {
-                decl_index: self.uvar()? as usize,
-                name: self.uvar()? as usize,
+                decl_index: self.usize()?,
+                name: self.usize()?,
             },
             tag => return Err(CertError::UnsupportedEncoding { tag }),
         })
@@ -717,30 +713,34 @@ impl<'a> Decoder<'a> {
     }
 
     fn name(&mut self) -> Result<Name> {
-        let len = self.uvar()? as usize;
+        let len = self.bounded_len()?;
         let mut components = Vec::with_capacity(len);
         for _ in 0..len {
-            components.push(self.string()?);
+            let component = self.string()?;
+            if component.is_empty() {
+                return Err(CertError::NonCanonicalEncoding { object: "Name" });
+            }
+            components.push(component);
         }
         Ok(Name(components))
     }
 
     fn string(&mut self) -> Result<String> {
-        let len = self.uvar()? as usize;
+        let len = self.usize()?;
         let bytes = self.take(len)?;
         String::from_utf8(bytes.to_vec())
             .map_err(|_| CertError::NonCanonicalEncoding { object: "string" })
     }
 
     fn usize_vec(&mut self) -> Result<Vec<usize>> {
-        let len = self.uvar()? as usize;
-        (0..len).map(|_| Ok(self.uvar()? as usize)).collect()
+        let len = self.bounded_len()?;
+        (0..len).map(|_| self.usize()).collect()
     }
 
     fn option_usize(&mut self) -> Result<Option<usize>> {
         match self.byte()? {
             0x00 => Ok(None),
-            0x01 => Ok(Some(self.uvar()? as usize)),
+            0x01 => Ok(Some(self.usize()?)),
             tag => Err(CertError::UnsupportedEncoding { tag }),
         }
     }
@@ -779,6 +779,23 @@ impl<'a> Decoder<'a> {
                 return Err(CertError::DecodeError);
             }
         }
+    }
+
+    fn usize(&mut self) -> Result<usize> {
+        usize::try_from(self.uvar()?).map_err(|_| CertError::DecodeError)
+    }
+
+    fn u32(&mut self) -> Result<u32> {
+        u32::try_from(self.uvar()?).map_err(|_| CertError::DecodeError)
+    }
+
+    fn bounded_len(&mut self) -> Result<usize> {
+        let len = self.usize()?;
+        let remaining = self.bytes.len().saturating_sub(self.offset);
+        if len > remaining {
+            return Err(CertError::DecodeError);
+        }
+        Ok(len)
     }
 
     fn byte(&mut self) -> Result<u8> {

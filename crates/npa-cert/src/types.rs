@@ -68,7 +68,8 @@ pub enum TrustMode {
 pub struct AxiomPolicy {
     /// Import trust mode for the verification run.
     pub mode: TrustMode,
-    /// Exact set of allowed axioms. An empty set permits every non-sorry axiom.
+    /// Exact set of allowed axioms. In normal mode an empty set permits every non-sorry axiom.
+    /// In high-trust mode every axiom must be allowlisted.
     pub allowlisted_axioms: BTreeSet<AxiomName>,
     /// Reject declarations that depend on `sorry`.
     pub deny_sorry: bool,
