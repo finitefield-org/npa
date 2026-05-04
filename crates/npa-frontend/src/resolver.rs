@@ -1013,12 +1013,6 @@ impl<'a> Resolver<'a> {
             }
         }
 
-        let suffix_candidates: Vec<_> = self
-            .all_visible_global_names()
-            .into_iter()
-            .flat_map(|name| namespace_prefixes_with_suffix(&name, &suffix))
-            .collect();
-        candidates.extend(suffix_candidates);
         candidates.sort();
         candidates.dedup();
 
@@ -1228,13 +1222,6 @@ fn global_ref_kind_rank(global_ref: &ElabGlobalRef) -> u8 {
     }
 }
 
-fn namespace_prefixes_with_suffix(name: &Name, suffix: &Name) -> Vec<Name> {
-    (1..name.parts.len())
-        .map(|len| Name::new(name.parts[..len].to_vec()))
-        .filter(|namespace| namespace.ends_with(suffix))
-        .collect()
-}
-
 fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMap<Name, Span>> {
     let mut namespace_stack = Vec::new();
     let mut declarations = BTreeMap::new();
@@ -1352,6 +1339,17 @@ mod tests {
         }
     }
 
+    fn nested_namespace_import() -> VerifiedImport {
+        VerifiedImport {
+            module: Name::from_dotted("Nested"),
+            export_hash: "sha256:nested".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("A.B.x"),
+                decl_interface_hash: "sha256:A.B.x".to_owned(),
+            }],
+        }
+    }
+
     fn mixed_zero_import() -> VerifiedImport {
         VerifiedImport {
             module: Name::from_dotted("Mixed"),
@@ -1435,6 +1433,13 @@ axiom x : Nat
     fn rejects_opening_leaf_declaration_name() {
         let err = resolve("import Std.Nat\nopen zero", &[std_nat_import()])
             .expect_err("leaf declaration names are not namespaces");
+        assert_eq!(err.kind, DiagnosticKind::UnknownNamespace);
+    }
+
+    #[test]
+    fn rejects_opening_unopened_namespace_suffix() {
+        let err = resolve("import Nested\nopen B", &[nested_namespace_import()])
+            .expect_err("namespace suffix without visible prefix must not open");
         assert_eq!(err.kind, DiagnosticKind::UnknownNamespace);
     }
 
