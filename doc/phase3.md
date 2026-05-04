@@ -132,6 +132,7 @@ term
   annotation
   hole
   parenthesized term
+  non-dependent arrow
   simple notation
 ```
 
@@ -175,6 +176,7 @@ decl_binder ::=
 lambda_binder ::=
     decl_binder
   | ident
+  | "_"
 
 pi_binder ::=
     decl_binder
@@ -191,6 +193,8 @@ term ::=
   | "let" ident ":" term ":=" term "in" term
   | "let" ident ":=" term "in" term
   | term ":" term
+  | term "->" term
+  | term "→" term
   | "_"
   | "?" ident
   | "(" term ")"
@@ -210,6 +214,35 @@ MVP では、declaration binder と `forall` binder は型注釈必須です。`
 未注釈 lambda binder だけは、期待型がある check mode で補います。数値リテラルや
 typeclass-driven overload は Phase 3 では扱わず、自然数のゼロは `Nat.zero` か開いた namespace
 内の `zero` として書きます。
+
+lambda binder 位置の `_` は anonymous binder であり、term hole ではありません。
+`fun _ => body` は、期待型から domain を得て local context に display name `_` の binder を
+追加しますが、その binder は名前では参照できません。body 内で値を使う場合は `fun x => ...`
+のように名前を付けます。
+
+`A -> B` と `A → B` は組み込み構文として右結合に parse し、anonymous binder の
+`Pi _ : A, B` に desugar します。これは notation table で解決するユーザー notation では
+ありません。関数型は core では常に `Pi` です。`->` と `→` は予約済みで、ユーザー notation
+として再定義できません。
+
+term parser の優先順位は MVP では固定します。
+
+```text
+highest
+  atom / parenthesized term / identifier universe args
+  explicit application, left associative
+  prefix notation
+  postfix notation
+  infix notation, notation table の precedence と associativity
+  type annotation `:`, non-associative
+  arrow `->` / `→`, right associative
+  forall / lambda / let body
+lowest
+```
+
+同じ active scope にある同一 symbol の notation は、kind / precedence / associativity が
+一致している場合だけ overload 候補として共存できます。どれかが違う場合は parser の意味が
+scope に依存して不安定になるため、`NotationConflict` として拒否します。
 
 `inductive` は Phase 1/2 の `simple inductive` に落とせる形だけです。mutual / nested /
 coinductive、pattern matching syntax、ユーザー定義 macro は Phase 3 MVP に含めません。
@@ -291,6 +324,48 @@ struct Span {
 
 source map は trusted な certificate payload には入れません。デバッグ用 section として
 同梱する場合でも、kernel の検査、canonical hash、axiom report には使いません。
+
+## 2.4 Front-end state と処理順
+
+Phase 3 の parser / resolver / elaborator は、module を上から順に処理します。
+これは notation と namespace が後続の source にだけ影響するようにするためです。
+
+実装では、少なくとも次の非信頼 state を持ちます。
+
+```rust
+struct FrontendState {
+    current_module: ModuleName,
+    namespace_stack: Vec<Name>,
+    open_scopes: Vec<OpenScope>,
+    globals: GlobalScope,
+    locals: LocalScopeStack,
+    notation_table: NotationTable,
+    source_interfaces: SourceInterfaceStore,
+}
+```
+
+`current_module` は source file の中で推論せず、compile request または package manifest が
+与えます。`import` は module name を source interface / verified export に解決する
+非信頼な処理です。kernel は import 解決を行いません。
+
+1つの module は次の順に読むことを MVP の仕様にします。
+
+```text
+1. import を処理し、imported declarations / source interface metadata を FrontendState に追加する
+2. import 由来の notation metadata を active notation table に追加する
+3. item を上から順に parse / resolve / elaborate する
+4. namespace / open / notation item は、その item より後の item にだけ効かせる
+5. def/theorem/axiom/inductive は kernel check に成功した後、後続 item から参照可能にする
+6. module 終了時、complete declarations だけを Phase 2 certificate producer に渡す
+```
+
+`source interface metadata` には、表示名、BinderInfo、notation、source span、doc comment などを
+入れてよいですが、trusted certificate payload ではありません。metadata が間違っていても、
+生成された fully explicit core declaration は Phase 1/2 で再検査されます。
+
+途中で unresolved hole を含む declaration は、interactive mode では goal として返してよいです。
+ただしその declaration は complete になるまで後続 declaration の trusted dependency として
+登録しません。MVP では、未完成 declaration への後続参照は `IncompleteDependency` として拒否します。
 
 ---
 
@@ -438,6 +513,47 @@ struct GlobalRef {
 これは source/elaboration 層の参照です。Phase 2 certificate へ渡す時点では、
 `import_index` または current module の declaration index と `decl_interface_hash` を使う
 canonical `Const` 参照に変換します。module 名や表示名だけを trusted payload の根拠にしません。
+
+## 3.6 Scope の細則
+
+MVP では scope の動きを次のように固定します。
+
+```text
+namespace N:
+  namespace_stack に N を push する
+
+end N:
+  namespace_stack の末尾が N なら pop する
+  N が省略された場合は末尾を pop する
+  末尾と一致しない場合は NamespaceMismatch
+
+open N:
+  現在の lexical scope に N を追加する
+```
+
+`open` は namespace block の外へ漏れません。実装上は `namespace` に入るたびに
+open scope frame を push し、対応する `end` で pop します。top-level の `open` は
+module 末尾まで有効です。
+
+declaration name は次で決まります。
+
+```text
+module_name = current_module
+declaration_name = namespace_stack + declaration_name
+```
+
+source 上ですでに修飾名を書いた場合も、MVP では current namespace からの相対名として扱います。
+たとえば module `Std.Nat.Basic` の `namespace Nat` 内で `def Extra.double` と書くと、module は
+`Std.Nat.Basic`、declaration name は `Nat.Extra.double` です。absolute name 構文は
+Phase 3 MVP には入れません。
+
+同一 module 内で同じ global declaration name を2回定義することは禁止です。simple inductive が
+生成する constructor / recursor 名も同じ global scope に登録されるため、source declaration と
+衝突した場合は `DuplicateDeclaration` として拒否します。
+
+local binder の shadowing は de Bruijn 表現では安全なので許可します。解決は nearest binder wins です。
+ただし global declaration または外側の local binder を shadow した場合、IDE/API には warning を
+返すのが望ましいです。warning は trusted payload に入りません。
 
 ---
 
@@ -610,6 +726,42 @@ certificate:
 certificate には `+` や `=` という notation は残しません。
 notation は完全に非信頼層です。
 
+## 4.7 Notation parsing の決定事項
+
+notation symbol の字句解析は longest match にします。たとえば active symbols に `<` と `<=`
+がある場合、入力 `<=` は必ず1つの token として読みます。symbol は UTF-8 文字列として扱い、
+hash や core name には使いません。
+
+notation declaration の string は、MVP では trim 後に1つの operator token になるものだけを
+許します。つまり `" + "` と `"+"` は同じ symbol `+` です。空白を含む multi-token notation
+や mixfix notation は Phase 3 MVP には入れません。
+
+notation expansion は独立した trusted pass ではありません。実装上は次の2段階に分けます。
+
+```text
+parser:
+  precedence / associativity だけを使って SurfaceExpr::Notation を作る
+
+resolver / elaborator:
+  notation table と名前解決結果から GlobalRef 候補を作り、型に基づいて1つへ絞る
+```
+
+このため、`desugared AST` は「notation が全部 core constant に置換済み」という意味ではなく、
+「parser precedence が確定し、elaborator が選べる候補集合になっている」という中間表現として
+扱ってよいです。型情報なしで候補が1つに決まる場合だけ、早い段階で `GlobalRef` application に
+してもよいです。
+
+候補の試行順は deterministic にします。
+
+```text
+1. fully qualified name の UTF-8 byte lexicographic order
+2. decl_interface_hash の byte order
+```
+
+overload resolution では候補ごとに metavariable store / constraint store を transaction として
+分けます。失敗した候補が作った metavariable や制約は、他の候補や最終エラーに漏らしません。
+複数候補が成功した場合は、最初の候補を勝手に採用せず ambiguity error にします。
+
 ---
 
 # 5. Implicit args
@@ -702,7 +854,7 @@ Eq.refl ?A n
 最終core：
 
 ```text
-Const Eq.refl [0] Nat n
+Const Eq.refl [1] Nat n
 ```
 
 ## 5.4 アルゴリズム
@@ -790,6 +942,46 @@ Eq.refl {A := Nat} n
 ```
 
 Phase 3 MVPでは `@` だけでも十分です。
+
+## 5.6 Implicit insertion の境界
+
+MVP では implicit insertion を決定的にするため、次の規則にします。
+
+```text
+- bare identifier を infer mode で読むだけでは implicit args を挿入しない
+- application head として使われ、次のユーザー引数を消費する必要がある場合に implicit args を挿入する
+- check mode で expected type がある場合は、expected type に合うところまで implicit args を挿入してよい
+- `@` 付き head では、その head の implicit args は一切自動挿入しない
+- source で明示された引数の後ろに残る implicit binder は、expected type が要求しない限り挿入しない
+```
+
+例：
+
+```npa
+Eq.refl
+```
+
+を infer mode で読むだけなら、型はまだ：
+
+```text
+Π {A : Sort ?u}, Π x : A, Eq A x x
+```
+
+として扱います。
+
+```npa
+Eq.refl n
+```
+
+のように明示引数 `n` が来た時点で、先行する implicit `A` を `?A` として挿入します。
+
+import された declaration に BinderInfo metadata がない場合、MVP ではすべて explicit として扱います。
+これは不便ですが保守的です。metadata がある場合でも、最終的な explicit core term が kernel check
+されるため、metadata は信頼境界に入りません。
+
+`SyntheticImplicit` metavariable は通常 goal としてユーザーに出しません。declaration を complete
+にする時点で残っていれば `UnsolvedImplicit` です。`UserHole` metavariable は interactive mode で
+goal として表示してよいですが、certificate 生成時には同じく拒否します。
 
 ---
 
@@ -943,6 +1135,35 @@ IDE/API には structured goal として返します。
 ```
 
 これが Phase 4 の tactic 実行APIにつながります。
+
+## 6.6 Named hole の reuse と context
+
+`?m` を同じ metavariable として再利用する単位は、1 declaration の lexical scope 内です。
+別 declaration の `?m` は別 metavariable です。
+
+同じ declaration 内でも、同名 hole を違う local context snapshot で使う場合は MVP では拒否します。
+
+```npa
+def bad : Nat :=
+  let x : Nat := ?m in ?m
+```
+
+理由は、metavariable を context abstraction として扱う higher-order な実装を Phase 3 MVP に
+入れないためです。
+
+```text
+same named hole + same context snapshot:
+  同じ MetaVarId を返す
+
+same named hole + different context snapshot:
+  NamedHoleContextMismatch
+```
+
+context snapshot の比較は、local declarations の長さ、型、local definition の値を core/ElabExpr
+構造で比較します。display name や source span の違いは比較に使いません。
+
+metavariable assignment は、その metavariable の context snapshot で型検査できる term だけを
+受け付けます。代入時には occurs check を必ず行い、`?m := ... ?m ...` は拒否します。
 
 ---
 
@@ -1298,6 +1519,118 @@ hint:
   add type annotation
 ```
 
+## 7.7 Local context と de Bruijn 変換
+
+surface/elaboration 中は local name で文脈を持ってよいですが、core lowering では必ず
+de Bruijn index に変換します。
+
+```rust
+struct LocalEntry {
+    name: NameId,
+    ty: ElabExpr,
+    value: Option<ElabExpr>,
+    binder_info: BinderInfo,
+    span: Span,
+}
+```
+
+lookup は末尾から検索します。最も内側の binder が `BVar 0` です。
+
+```text
+context:
+  A : Type
+  x : A
+
+surface `x` -> BVar 0
+surface `A` -> BVar 1
+```
+
+declaration binder を閉じる時は、source order と同じ順で `Pi` / `Lam` を作ります。
+
+```npa
+def id (A : Type) (x : A) : A := x
+```
+
+は：
+
+```text
+type  = Pi A : Sort 1, Pi x : BVar 0, BVar 1
+value = Lam A : Sort 1, Lam x : BVar 0, BVar 0
+```
+
+になります。BinderInfo は source interface metadata にだけ残り、core `Pi` / `Lam` には入りません。
+
+## 7.8 Constraint store
+
+elaboration は即座にすべてを解こうとせず、制約を store に積んでよいです。
+
+```rust
+enum Constraint {
+    IsType(ElabExpr),
+    TypeEq { lhs: ElabExpr, rhs: ElabExpr },
+    TermEq { ty: ElabExpr, lhs: ElabExpr, rhs: ElabExpr },
+    LevelEq { lhs: ElabLevel, rhs: ElabLevel },
+    LevelLe { lhs: ElabLevel, rhs: ElabLevel },
+}
+```
+
+constraint solving は deterministic な worklist として実装します。順序は source span、生成順の
+stable id、constraint kind の順に固定します。resource limit に達した場合は、complete declaration
+としては reject します。
+
+overload candidate の試行、notation candidate の試行、expected type による分岐は transaction を
+使います。commit されなかった transaction の metavariable assignment / constraint / warning は
+捨てます。
+
+## 7.9 Universe parameter policy
+
+Phase 3 MVP では、declaration-level universe polymorphism は明示的な `.{u, v}` を基本にします。
+
+```npa
+def id.{u} {A : Sort u} (x : A) : A := x
+```
+
+明示された universe parameter だけが、その declaration の `universe_params` に入ります。
+source に現れる `Sort u` の `u` が declaration の universe params に入っていなければ
+`UnknownUniverseParam` です。
+
+`Type` は `Sort 1`、`Type 0` も `Sort 1` です。したがって：
+
+```npa
+def id {A : Type} (x : A) : A := x
+```
+
+は universe polymorphic ではなく、`A : Sort 1` の monomorphic declaration です。
+
+polymorphic constant を使うときには、elaborator 内部で universe metavariable を作ってよいです。
+
+```npa
+Eq.refl n
+```
+
+では `Eq.refl.{?u} ?A n` から始め、`n : Nat` と `Nat : Sort 1` により `?u := 1`,
+`?A := Nat` を解きます。
+
+declaration close 時点で未解決の universe metavariable が残る場合、MVP では自動 generalization
+しません。`UnsolvedUniverseMeta` とし、ユーザーに `.{u}` と `Sort u` の明示を要求します。
+将来、Phase 9 で universe minimization / generalization を強化します。
+
+## 7.10 Core lowering の条件
+
+`ElabExpr` を `CoreExpr` に lower できる条件は次です。
+
+```text
+- UserHole / SyntheticImplicit / UniverseMeta が残っていない
+- OverloadedRef / OverloadedApp が残っていない
+- local reference はすべて de Bruijn index に変換済み
+- global reference は GlobalRef と universe args が確定済み
+- source-only BinderInfo / Span / notation head は除去済み
+- generated core declaration を Phase 1 kernel が受理する
+```
+
+これに失敗した declaration は `.npcert` に出しません。interactive API は incomplete/error と
+structured diagnostics を返します。
+
 ---
 
 # 8. Declaration elaboration
@@ -1317,7 +1650,7 @@ name:
   id
 
 universe params:
-  inferred or explicit
+  明示 .{...} がなければ []; MVP では未解決 universe meta を自動 generalize しない
 
 type:
   Π {A : Sort 1}, Π x : A, A
@@ -1395,7 +1728,7 @@ name:
   Nat
 
 universe params:
-  inferred or explicit
+  明示 .{...} がなければ []; MVP では未解決 universe meta を自動 generalize しない
 
 params / indices:
   declaration binders を params にする
@@ -1442,6 +1775,102 @@ Nat.double
 として登録します。
 
 namespace は core term には現れません。
+
+## 8.6 def/theorem/axiom の elaboration 手順
+
+`def` と `theorem` は、declaration binder を local context に入れて body を check し、
+最後に binder を閉じて closed core declaration を作ります。
+
+```text
+1. declaration name を current namespace で qualify する
+2. universe params `.{...}` を declaration universe context に登録する
+3. declaration binders を左から右に elaboration し、local context に追加する
+4. `:` の後の result type を local context で elaboration し、Sort に住むことを確認する
+5. declaration type を binders の source order で Pi に閉じる
+6. body/proof を result type に対して check mode で elaboration する
+7. body/proof を binders の source order で Lam に閉じる
+8. metavariable / overload / universe meta が残っていないことを確認する
+9. Phase 1 kernel に closed declaration を渡して検査する
+10. 成功した declaration だけを後続 item の global scope に登録する
+```
+
+`axiom` は 1〜5 と 8〜10 だけを行い、value/proof は持ちません。
+
+Phase 3 MVP では self reference と forward reference を禁止します。つまり、`def f := f` のように
+自分自身を source elaboration 中に参照することはできません。再帰は source-level recursive
+definition ではなく、Phase 1 の recursor constant を明示的に使う形へ elaboration します。
+
+`def` の reducibility は default で `reducible`、`theorem` は opaque として扱います。
+source syntax で reducibility annotation を付ける機能は MVP には入れません。
+
+## 8.7 simple inductive の elaboration 手順
+
+simple inductive は、constructor type から inductive 自身を参照できる必要があります。
+そのため Phase 3 では、kernel check 前の temporary global を使います。
+
+```text
+1. inductive name を current namespace で qualify する
+2. universe params を登録する
+3. declaration binders を params telescope として elaboration する
+4. `:` の後を elaboration し、leading forall telescope を indices、末尾 Sort を sort として読む
+5. temporary global `I` を env に追加する
+6. 各 constructor type を params context の下で elaboration する
+7. constructor type を params で閉じた closed constructor type にする
+8. InductiveDecl を作り、Phase 1 kernel に渡す
+9. kernel check 成功後、I / constructors / recursor を後続 item の global scope に登録する
+```
+
+手順 4 の読み方は次です。
+
+```text
+inductive Nat : Type
+  params  = []
+  indices = []
+  sort    = Sort 1
+
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop
+  params  = [{A : Sort u}, (a : A)]
+  indices = [(b : A)]
+  sort    = Sort 0
+```
+
+constructor source は params を local name として参照できますが、indices は constructor type の
+return type 側で具体的に与えます。
+
+```npa
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq.{u} a a
+```
+
+`refl` の source type は params context `{A}, a` の下で elaboration し、closed constructor type は：
+
+```text
+Pi A : Sort u, Pi a : A, Eq.{u} A a a
+```
+
+になります。
+
+constructor name は、未修飾なら inductive name の namespace に入れます。
+
+```text
+inductive Nat ... where
+| zero : Nat
+| succ : Nat -> Nat
+
+generated global names:
+  Nat
+  Nat.zero
+  Nat.succ
+  Nat.rec
+```
+
+MVP では constructor type elaboration 中に同じ inductive block の他 constructor や recursor を
+参照することは禁止します。参照できるのは、既存の imported/local globals、params、constructor
+type 内で導入した binders、temporary global の inductive head だけです。
+
+recursor は source syntax から elaboration しません。kernel が生成または検査した recursor を、
+Phase 3 の global scope / source interface に generated declaration として追加します。Phase 2
+certificate では `GlobalRef::LocalGenerated` 相当の参照になります。
 
 ---
 
@@ -1511,6 +1940,35 @@ target:
 ```
 
 この structured goal が Phase 4 の tactic に渡されます。
+
+## 9.7 実装で固定する ErrorKind
+
+API とテストでは、少なくとも次の構造化 error kind を区別します。
+
+```text
+ParserError
+NamespaceMismatch
+DuplicateDeclaration
+NotationConflict
+UnknownIdentifier
+AmbiguousName
+AmbiguousNotation
+TypeMismatch
+ExpectedFunctionType
+ExpectedSort
+TooManyArguments
+UnsolvedImplicit
+UnsolvedUniverseMeta
+UnsolvedHole
+NamedHoleContextMismatch
+OccursCheckFailed
+IncompleteDependency
+ForwardReference
+KernelRejected
+```
+
+message は人間向けに変えてよいですが、`ErrorKind`、primary span、関連候補、expected/actual type は
+テスト可能な structured data として返します。
 
 ---
 
@@ -1593,6 +2051,8 @@ response:
 ```json
 {
   "source": "theorem t (n : Nat) : n = n := Eq.refl n",
+  "module": "Scratch",
+  "verified_imports": [],
   "require_complete": true
 }
 ```
@@ -1611,6 +2071,10 @@ response:
 }
 ```
 
+`module` と `verified_imports` は trusted kernel へ直接渡すものではなく、Phase 3 が
+`GlobalRef` と import hash を確定するための入力です。`verified_imports` の各 entry は、
+Phase 2 certificate verifier が検査済みの export interface を指します。
+
 ---
 
 # 11. Phase 3 の実装順序
@@ -1619,52 +2083,63 @@ response:
 
 ```text
 1. Lexer
-   identifiers, keywords, symbols, string literals, spans
+   identifiers, keywords, symbols, string literals, longest-match notation symbols, spans
 
 2. Basic parser
    import/open/namespace/end/notation
    def/theorem/axiom/simple inductive
-   identifiers, application, lambda, Pi, let, annotation, holes
+   identifiers, application, lambda, Pi, arrow, let, annotation, holes
+   fixed precedence table + Pratt parser
 
-3. Name system
+3. FrontendState
+   current module
+   imported source interfaces
+   namespace/open/notation state
+
+4. Name system
    hierarchical names
    namespace stack
    imports
    local context
 
-4. Name resolution
+5. Name resolution
    local/global/namespace/open
    ambiguity detection
 
-5. Notation table
+6. Notation table
    infix/prefix/postfix
    top-to-bottom scope
    precedence climbing or Pratt parser
+   conflict detection
 
-6. BinderInfo
+7. BinderInfo
    explicit / implicit binders
 
-7. Simple elaborator
+8. Simple elaborator
    infer/check
    const/local/app/lambda/pi/let/annotation
 
-8. Metavariables
+9. Metavariables
    holes
    implicit args
    universe metas
+   named-hole context check
 
-9. Simple unification
+10. Constraint store + simple unification
    assignment
    occurs check
    definitional equality
+   transaction/rollback for overload candidates
+   universe meta solving without automatic generalization
 
-10. Declaration elaboration
+11. Declaration elaboration
    def/theorem/axiom/simple inductive
+   temporary env for inductive heads
 
-11. Kernel handoff
+12. Kernel handoff
    core declaration を Phase 1 kernel に渡す
 
-12. Certificate handoff
+13. Certificate handoff
    fully solved core declaration を Phase 2 certificate に渡す
 ```
 
@@ -1791,6 +2266,61 @@ InductiveDecl 生成
 kernel handoff
 ```
 
+## 12.9 arrow
+
+```npa
+def const_nat : Nat -> Nat -> Nat :=
+  fun x => fun y => x
+```
+
+確認すること：
+
+```text
+`->` が右結合の Pi に desugar される
+anonymous binder が core で通常の binder として扱われる
+```
+
+## 12.10 universe parameter は明示
+
+```npa
+def poly_id.{u} {A : Sort u} (x : A) : A :=
+  x
+```
+
+確認すること：
+
+```text
+universe_params = [u]
+未宣言の `Sort v` は UnknownUniverseParam
+未解決 universe meta は declaration close で UnsolvedUniverseMeta
+```
+
+## 12.11 named hole context mismatch
+
+```npa
+def bad_named_hole : Nat :=
+  let x : Nat := ?m in ?m
+```
+
+期待結果：
+
+```text
+NamedHoleContextMismatch
+```
+
+## 12.12 notation conflict
+
+```npa
+infixl:65 " + " => Nat.add
+infixr:70 " + " => Other.add
+```
+
+期待結果：
+
+```text
+NotationConflict
+```
+
 ---
 
 # 13. Phase 3 でまだ入れないもの
@@ -1802,14 +2332,19 @@ MVPを小さく保つため、次は後回しにします。
 - coercion search
 - macro system
 - syntax extensions by users
+- multi-token / mixfix notation
 - tactic blocks
 - pattern matching elaboration
 - do notation
 - structure projection notation
 - term-level numeric literals / overloaded numerals
 - aliases
+- absolute global name syntax
+- source-level recursive definition syntax
+- reducibility annotations
 - termination checking
 - mutual declarations
+- automatic universe generalization
 - sophisticated universe minimization
 ```
 
@@ -1825,15 +2360,20 @@ Phase 3 が完了したと言える条件はこれです。
 ```text
 - import/open/namespace/end を parse できる
 - def/theorem/axiom/simple inductive を parse できる
+- `->` / `→` を右結合 Pi に desugar できる
 - namespace 付き名前を扱える
 - local/global name resolution ができる
+- namespace/open の lexical scope を実装できる
 - notation declaration を上から順に反映できる
+- notation conflict を拒否できる
 - simple infix notation を扱える
 - explicit/implicit binder を扱える
 - implicit args を metavariable として挿入できる
 - `_` と `?m` を hole goal に変換できる
+- named hole の context mismatch を検出できる
 - bidirectional elaboration が動く
 - simple unification で Eq.refl n の型を補える
+- universe metavariable を解決し、未解決なら certificate 化を拒否できる
 - unresolved hole がある場合は certificate 化を拒否できる
 - solved term は canonical core AST に変換できる
 - simple inductive は core-spec v0.1 の `InductiveDecl` に変換できる
@@ -1857,7 +2397,7 @@ names:
   識別子 → local/global reference
 
 notation:
-  +, =, -> など → core constant application
+  +, = など → core constant application
 
 implicit args:
   省略された引数 → metavariable → unificationで解決
