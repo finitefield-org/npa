@@ -113,7 +113,7 @@ Phase 8 で checker が読むもの：
 ```text
 - canonical core AST
 - module certificate
-- import hash
+- import の export_hash / high-trust 時の certificate_hash
 - declaration hash
 - axiom report
 - certificate 内の declaration dependency entries
@@ -174,7 +174,7 @@ reference checker は逆に、なるべく単純にします。
 
 ```text
 1. certificate header
-2. import hash
+2. import の export_hash / high-trust 時の certificate_hash
 3. canonical encoding
 4. term hash
 5. declaration hash
@@ -948,7 +948,7 @@ CI は、次を自動で保証します。
 - fast kernel で検査される
 - reference checker で再検査される
 - external checker で再検査される
-- import hash が固定されている
+- import の export_hash / high-trust 時の certificate_hash が一致する
 - declaration hash が一致する
 - axiom report が正しい
 - forbidden axiom / sorry がない
@@ -1729,7 +1729,7 @@ Phase 8 が完了したと言える条件はこれです。
 - .npcert を source なしで検査できる
 - reference checker が fast kernel と独立している
 - external checker が別プロセスで動く
-- import hash を検査できる
+- import の export_hash / high-trust 時の certificate_hash を検査できる
 - declaration hash を再計算できる
 - export_hash / certificate_hash / axiom_report_hash を再計算できる
 - axiom report を再計算できる
@@ -1770,6 +1770,6 @@ verified_high_trust artifact
 ```text
 「証明が見つかった」ではなく、
 「複数の独立 checker が同じ certificate を検査し、
- import hash と axiom policy も満たした」
+ import の export_hash / high-trust 時の certificate_hash と axiom policy も満たした」
 ことを高信頼の verified と呼ぶ。
 ```

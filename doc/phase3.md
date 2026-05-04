@@ -207,9 +207,9 @@ level ::=
 ```
 
 MVP では、declaration binder と `forall` binder は型注釈必須です。`fun x => ...` のような
-未注釈 lambda binder だけは、期待型がある check mode で補います。数値リテラルの
-overload は Phase 3 では扱わず、自然数のゼロは `Nat.zero` か開いた namespace 内の `zero`
-として書きます。
+未注釈 lambda binder だけは、期待型がある check mode で補います。数値リテラルや
+typeclass-driven overload は Phase 3 では扱わず、自然数のゼロは `Nat.zero` か開いた namespace
+内の `zero` として書きます。
 
 `inductive` は Phase 1/2 の `simple inductive` に落とせる形だけです。mutual / nested /
 coinductive、pattern matching syntax、ユーザー定義 macro は Phase 3 MVP に含めません。
@@ -566,7 +566,8 @@ Rat.add
 Group.add
 ```
 
-Phase 3 では、notation 展開後に overload 候補を保持します。
+Phase 3 では、typeclass ではなく notation table / name resolution が作る有限の overload 候補だけを保持します。
+各候補は明示的な `GlobalRef` であり、instance search や代数階層の探索は Phase 9 に回します。
 
 ```rust
 SurfaceExpr::Notation {
@@ -1250,7 +1251,8 @@ Eq.refl ?A n
 
 ## 7.6 Overload resolution
 
-notation や overloaded name は、期待型と引数型から解決します。
+notation や overloaded name は、期待型と引数型から単純に解決します。
+typeclass search や backtracking-heavy な探索は Phase 3 では使いません。
 
 例：
 

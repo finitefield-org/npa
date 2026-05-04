@@ -778,6 +778,7 @@ JSON は説明用・デバッグ用であり、hash-stable artifact ではあり
   "imports": [],
   "universe_params": [],
   "declarations": [],
+  "export_block": [],
   "axiom_report": {
     "module_axioms": [],
     "per_declaration": []

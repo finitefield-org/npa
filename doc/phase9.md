@@ -1197,7 +1197,7 @@ source からではなく certificate から抽出する
 - source notation に依存しない
 - tactic script に依存しない
 - proof minimization 後の正しい依存関係を取れる
-- import hash と一致する
+- import の export_hash / high-trust 時の certificate_hash と一致する
 ```
 
 抽出対象：
@@ -1686,4 +1686,3 @@ kernel/checker に入れる:
 [3]: https://lean-lang.org/doc/reference/latest/Type-Classes/?utm_source=chatgpt.com "10. Type Classes"
 [4]: https://lean-lang.org/doc/reference/latest/The-Type-System/Quotients/?utm_source=chatgpt.com "Quotients"
 [5]: https://verit.gitlabpages.uliege.be/alethe/specification.pdf?utm_source=chatgpt.com "The Alethe Proof Format"
-

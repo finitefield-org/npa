@@ -152,13 +152,13 @@ Type 0 : Type 1
 Type 1 : Type 2
 ```
 
-Phase 1 では universe level を単純化して、最初はこうしてもよいです。
+Phase 1 では universe level を core-spec v0.1 に合わせて次に固定します。
 
 ```text
-Level ::= 0 | succ Level | max Level Level | param Name
+Level ::= 0 | succ Level | max Level Level | imax Level Level | param Name
 ```
 
-Lean風に `imax` まで入れるなら、`Π x : A, B` の sort 計算で便利です。最初は `max` だけでも動きますが、`∀ x : A, P : Prop` を自然に `Prop` にしたいなら `imax` がある方がよいです。
+`Π x : A, B` の sort 計算は `imax` を使います。これにより `∀ x : A, P : Prop` を `Prop` に保てます。
 
 ---
 

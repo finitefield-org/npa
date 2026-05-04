@@ -164,7 +164,7 @@ Const "Nat.add"
 
 同じ名前で違う中身のimportが存在する可能性があります。
 
-望ましい形式は：
+canonical 形式は：
 
 ```text
 Const {
@@ -239,7 +239,7 @@ Std.Nat.Basic.npcert
   "module": "Std.Nat.Basic",
   "imports": [],
   "declarations": [],
-  "exports": [],
+  "export_block": [],
   "axiom_report": {
     "module_axioms": [],
     "per_declaration": []
@@ -255,7 +255,7 @@ Std.Nat.Basic.npcert
 実際の保存形式は JSON ではなく canonical binary にします。
 JSONは説明用・デバッグ用で、検査用の本体はbinaryにします。
 上の JSON も logical/debug view であり、hash 対象の canonical payload では map を使いません。
-`exports`、`axiom_report`、`hashes` は固定順の record または長さ付き配列として encode します。
+`export_block`、`axiom_report`、`hashes` は固定順の record または長さ付き配列として encode します。
 
 理由は：
 
@@ -527,7 +527,7 @@ transparent def の body は export_hash に含める必要がある
 opaque theorem の proof body は export_hash に含めなくてもよい
 ```
 
-ただし、その theorem がどのaxiomに依存しているかは export_hash に含めるべきです。
+ただし、その theorem がどのaxiomに依存しているかは export_hash に含めます。
 
 ## 4.4 ImportEntry
 
@@ -560,14 +560,14 @@ struct ImportEntry {
 
 ## 5.1 宣言hashは1種類では足りない
 
-宣言には、少なくとも次の2種類のhashを持たせるとよいです。
+宣言には、少なくとも次の2種類のhashを持たせます。
 
 ```text
 decl_interface_hash:
   下流から見える意味のhash
 
 decl_certificate_hash:
-  proof/value本体を含む完全なhash
+  proof/value本体まで含む宣言全体のhash
 ```
 
 さらに実装上は、補助的に：
@@ -644,7 +644,7 @@ decl_certificate_hash(theorem)
 
 ただし、proof変更によって使用axiomが変わる場合は `axiom_dependencies` が変わるので、interface hash も変わります。
 
-これは望ましいです。
+この挙動を採用します。
 
 たとえば：
 
@@ -658,7 +658,7 @@ theorem T : P := constructive_proof
 theorem T : P := proof_using_Classical_choice
 ```
 
-に変わった場合、下流の論理的信頼性が変わるため、interface hash も変わるべきです。
+に変わった場合、下流の論理的信頼性が変わるため、interface hash も変わります。
 
 ## 5.4 AxiomDecl のhash
 
@@ -934,7 +934,7 @@ checker側は、sourceを見ません。
   ↓
 parse canonical binary
   ↓
-import hash確認
+import の export_hash / high-trust 時の certificate_hash 確認
   ↓
 declaration hash再計算
   ↓
@@ -1021,6 +1021,12 @@ def id.{u} : Π A : Sort u, A → A :=
       "axioms_used": []
     }
   ],
+  "export_block": [
+    {
+      "name": "id",
+      "decl_interface_hash": "decl-iface:..."
+    }
+  ],
   "axiom_report": {
     "module_axioms": [],
     "per_declaration": [
@@ -1047,7 +1053,7 @@ def id.{u} : Π A : Sort u, A → A :=
 Phase 2のcheckerは、次の場合にfailします。
 
 ```text
-- import hash が一致しない
+- import の export_hash、または high-trust 時の certificate_hash が一致しない
 - certificate format version が非対応
 - core AST がcanonicalでない
 - unresolved metavariable が残っている

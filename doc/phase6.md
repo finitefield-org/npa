@@ -57,7 +57,8 @@ Phase 6 の完了条件は：
 ```text
 - Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic が kernel で検査済み
 - 各モジュールが certificate 化されている
-- import hash が固定されている
+- import entries が export_hash を持ち、高信頼モード用の certificate_hash も生成されている
+- module の export_hash / certificate_hash / axiom_report_hash が生成されている
 - axiom report が空、または allowlist 内
 - theorem search index が生成されている
 - simp-lite が基本定理を使える
@@ -1181,6 +1182,16 @@ Std.Algebra.Basic
     "Nat.add_zero",
     "Nat.zero_add"
   ],
+  "export_block": [
+    {
+      "name": "Std.Nat.add_zero",
+      "decl_interface_hash": "sha256:..."
+    },
+    {
+      "name": "Std.Nat.zero_add",
+      "decl_interface_hash": "sha256:..."
+    }
+  ],
   "axiom_report": {
     "module_axioms": [],
     "per_declaration": []
@@ -1199,7 +1210,7 @@ Std.Algebra.Basic
 - def の body は export_hash に含める
 - opaque theorem の proof body は export_hash に含めなくてよい
 - theorem の axiom dependencies は export_hash に含める
-- import hash が一致しない場合は build fail
+- import の export_hash が一致しない場合は build fail、高信頼モードでは certificate_hash も一致させる
 ```
 
 ---
@@ -1358,7 +1369,7 @@ inductive declaration ok
 ```text
 - .npcert だけで再検査できる
 - sourceなしで検査できる
-- import hash が一致する
+- import の export_hash が一致し、高信頼モードでは certificate_hash も一致する
 - declaration hash が一致する
 - axiom report が再計算結果と一致する
 ```
@@ -1551,7 +1562,8 @@ Phase 6 が完了したと言える条件はこれです。
 - Std.Algebra.Basic が Associative / Commutative / Monoid 系定義を提供する
 - 全モジュールが no sorry / no custom axiom
 - 全モジュールが .npcert として再検査可能
-- import hash / export_hash / certificate_hash / axiom_report_hash が生成される
+- import entries が export_hash を持ち、高信頼モード用の certificate_hash も生成される
+- module の export_hash / certificate_hash / axiom_report_hash が生成される
 - theorem index が生成される
 - simp-lite が Nat/List の基本ゴールを閉じられる
 - theorem search が exact/apply/rw/simp 候補を返せる
