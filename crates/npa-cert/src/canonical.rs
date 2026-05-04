@@ -89,32 +89,14 @@ pub(crate) fn build_module_cert_impl(
             Some(module.certificate_hash),
         )
     });
+    imports.dedup_by(|lhs, rhs| {
+        lhs.module == rhs.module
+            && lhs.export_hash == rhs.export_hash
+            && lhs.certificate_hash == rhs.certificate_hash
+    });
 
     let mut env = Env::new();
     add_imports_to_env(&mut env, &imports)?;
-
-    let mut names = BTreeSet::new();
-    collect_name(&mut names, &module.name);
-    for import in &imports {
-        collect_name(&mut names, &import.module);
-    }
-    for decl in &module.declarations {
-        collect_names_from_decl(&mut names, decl);
-    }
-    let directly_referenced_names = names.clone();
-    collect_imported_axiom_names_for_referenced_exports(
-        &mut names,
-        &imports,
-        &directly_referenced_names,
-    )?;
-    let name_table: Vec<_> = names.into_iter().collect();
-    ensure_canonical_names(&name_table)?;
-    let name_index: BTreeMap<_, _> = name_table
-        .iter()
-        .cloned()
-        .enumerate()
-        .map(|(index, name)| (name, index))
-        .collect();
 
     let local_names: Vec<Name> = module
         .declarations
@@ -145,6 +127,30 @@ pub(crate) fn build_module_cert_impl(
         .map(|(index, name)| (name, index))
         .collect();
 
+    let mut names = BTreeSet::new();
+    collect_name(&mut names, &module.name);
+    for import in &imports {
+        collect_name(&mut names, &import.module);
+    }
+    for decl in &module.declarations {
+        collect_names_from_decl(&mut names, decl);
+    }
+    let directly_referenced_names =
+        referenced_imported_export_names(&module.declarations, &imports, &local_public_names)?;
+    collect_imported_axiom_names_for_referenced_exports(
+        &mut names,
+        &imports,
+        &directly_referenced_names,
+    )?;
+    let name_table: Vec<_> = names.into_iter().collect();
+    ensure_canonical_names(&name_table)?;
+    let name_index: BTreeMap<_, _> = name_table
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, name)| (name, index))
+        .collect();
+
     let imports_entries: Vec<_> = imports
         .iter()
         .map(|module| ImportEntry {
@@ -153,7 +159,7 @@ pub(crate) fn build_module_cert_impl(
             certificate_hash: Some(module.certificate_hash),
         })
         .collect();
-    let imported_decls = imported_decl_map(&imports, &name_index)?;
+    let imported_decls = imported_decl_map(&imports, &name_index, &directly_referenced_names)?;
 
     let mut canon_decls = Vec::new();
     for (decl_index, decl) in module.declarations.iter().cloned().enumerate() {
@@ -1276,6 +1282,7 @@ fn ensure_canonical_names(names: &[Name]) -> Result<()> {
 fn imported_decl_map(
     imports: &[&VerifiedModule],
     name_index: &BTreeMap<Name, usize>,
+    referenced_names: &BTreeSet<Name>,
 ) -> Result<BTreeMap<Name, ImportedDeclInfo>> {
     let mut map = BTreeMap::new();
     for (import_index, import) in imports.iter().enumerate() {
@@ -1284,7 +1291,7 @@ fn imported_decl_map(
                 .name_table
                 .get(entry.name)
                 .ok_or(CertError::DecodeError)?;
-            if !name_index.contains_key(name) {
+            if !referenced_names.contains(name) || !name_index.contains_key(name) {
                 continue;
             }
             let axiom_dependencies = entry
@@ -1331,6 +1338,36 @@ fn remap_imported_axiom_ref(
         name,
         decl_interface_hash: axiom.decl_interface_hash,
     })
+}
+
+fn referenced_imported_export_names(
+    declarations: &[Decl],
+    imports: &[&VerifiedModule],
+    local_public_names: &[Name],
+) -> Result<BTreeSet<Name>> {
+    let mut referenced_names = BTreeSet::new();
+    for decl in declarations {
+        collect_const_names_from_decl(&mut referenced_names, decl);
+    }
+
+    let local_public_names = local_public_names.iter().cloned().collect::<BTreeSet<_>>();
+    referenced_names.retain(|name| !local_public_names.contains(name));
+
+    let mut imported_exports = BTreeSet::new();
+    for import in imports {
+        for entry in &import.export_block {
+            imported_exports.insert(
+                import
+                    .name_table
+                    .get(entry.name)
+                    .cloned()
+                    .ok_or(CertError::DecodeError)?,
+            );
+        }
+    }
+    referenced_names.retain(|name| imported_exports.contains(name));
+
+    Ok(referenced_names)
 }
 
 fn collect_imported_axiom_names_for_referenced_exports(

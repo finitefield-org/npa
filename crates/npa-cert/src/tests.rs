@@ -1094,6 +1094,28 @@ fn verified_module_can_be_imported_by_export_hash() {
 }
 
 #[test]
+fn duplicate_unused_imports_are_deduplicated_before_encoding() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let cert = build_module_cert(
+        unary_inductive_module(),
+        &[verified_id.clone(), verified_id],
+    )
+    .unwrap();
+    assert_eq!(cert.imports.len(), 1);
+
+    verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
 fn import_order_is_canonical_and_stable() {
     let mut session = VerifierSession::new();
     let alpha_cert = build_module_cert(named_axiom_module("Test.Alpha", "Alpha"), &[]).unwrap();
@@ -1346,6 +1368,39 @@ fn transitive_imported_axiom_provenance_points_to_original_import() {
     ));
     verify_module_cert(
         &encode_module_cert(&use_use_p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn import_export_name_matching_module_name_does_not_pull_unused_axioms() {
+    let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_p = verify_module_cert(
+        &encode_module_cert(&p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_p_cert =
+        build_module_cert(use_axiom_module(), std::slice::from_ref(&verified_p)).unwrap();
+    let verified_use_p = verify_module_cert(
+        &encode_module_cert(&use_p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let mut module = unary_inductive_module();
+    module.name = Name::from_dotted("use_p");
+    let cert = build_module_cert(module, &[verified_use_p, verified_p]).unwrap();
+    assert!(!cert.name_table.contains(&Name::from_dotted("P")));
+
+    verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
         &mut session,
         &AxiomPolicy::normal(),
     )
