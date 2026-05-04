@@ -630,7 +630,7 @@ Import:
   certificate_hash = optional "sha256:..."
 ```
 
-kernel は import name と hash が実際に読み込まれた module と一致することを確認します。
+kernel は import name と hash が、呼び出し側から渡された `verified_imports` の module と一致することを確認します。
 高信頼モードでは `certificate_hash` も一致し、同じ checker が import certificate を検査済みであることを要求します。
 
 ### 9.6 Hash Roles

@@ -489,7 +489,7 @@ proof irrelevance を conversion rule として仮定する圧縮は v0.1 では
 kernelの外部APIは非常に小さくします。
 
 ```rust
-check_module(module: CanonicalModuleCert) -> CheckResult
+check_module(module: CanonicalModuleCert, imports: VerifiedImports) -> CheckResult
 check_decl(env: Environment, decl: Declaration) -> CheckResult
 infer_type(env: Environment, term: Term) -> Type
 is_defeq(env: Environment, t: Term, u: Term) -> Bool
@@ -499,6 +499,7 @@ check_inductive(env: Environment, ind: InductiveDecl) -> CheckResult
 ここでの `CanonicalModuleCert` は、I/O や network fetch の結果ではなく、すでに decode され
 canonicality を検査対象として渡された構造化データです。ファイル読み込み、import store 参照、
 canonical binary decode は checker / loader 側の責務であり、kernel API は副作用を持ちません。
+`VerifiedImports` も checker / loader が用意した decode 済み import environment です。
 
 ## 6.2 kernel内部構造
 

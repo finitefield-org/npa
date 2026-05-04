@@ -748,7 +748,8 @@ tactic も信用しません。
 AI も信用しません。
 elaborator も完全には信用しません。
 
-kernel / checker が読むのは source ではなく、decode 済みの canonical certificate / core AST です。
+checker が読むのは source ではなく canonical certificate artifact です。
+kernel が読むのは checker / loader が decode した canonical core AST / declaration です。
 ファイル I/O や import store からの読み込みは kernel の責務ではありません。
 
 ## 6.1 Certificate の目的
