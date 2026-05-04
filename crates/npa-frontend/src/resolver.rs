@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
+use npa_kernel::Decl;
+
 use crate::{
     parse_module, BinderInfo, Diagnostic, DiagnosticKind, DiagnosticSeverity, FileId, ImplicitMode,
     NotationDecl, Result, Span, SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl,
@@ -74,6 +76,7 @@ pub struct VerifiedImport {
     pub module: Name,
     pub export_hash: String,
     pub declarations: Vec<ImportedDeclaration>,
+    pub kernel_declarations: Vec<Decl>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -153,6 +156,7 @@ pub enum GlobalOrigin {
 pub struct ResolvedImport {
     pub module: Name,
     pub export_hash: String,
+    pub kernel_declarations: Vec<Decl>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -517,6 +521,7 @@ impl<'a> Resolver<'a> {
         self.state.imports.push(ResolvedImport {
             module: module_name.clone(),
             export_hash: import.export_hash.clone(),
+            kernel_declarations: import.kernel_declarations.clone(),
         });
 
         let mut imported = import.declarations.clone();
@@ -1325,6 +1330,7 @@ mod tests {
                     decl_interface_hash: "sha256:Nat.add".to_owned(),
                 },
             ],
+            kernel_declarations: Vec::new(),
         }
     }
 
@@ -1336,6 +1342,7 @@ mod tests {
                 name: Name::from_dotted("Int.add"),
                 decl_interface_hash: "sha256:Int.add".to_owned(),
             }],
+            kernel_declarations: Vec::new(),
         }
     }
 
@@ -1347,6 +1354,7 @@ mod tests {
                 name: Name::from_dotted("A.B.x"),
                 decl_interface_hash: "sha256:A.B.x".to_owned(),
             }],
+            kernel_declarations: Vec::new(),
         }
     }
 
@@ -1376,6 +1384,7 @@ mod tests {
                     decl_interface_hash: "sha256:Mixed.Int.zero".to_owned(),
                 },
             ],
+            kernel_declarations: Vec::new(),
         }
     }
 
