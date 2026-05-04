@@ -956,12 +956,12 @@ pub(crate) fn build_level_table(
         .into_iter()
         .map(|level| {
             Ok((
-                (level_height(&level), canon_level_hash(&level, names)?),
+                (level_height(&level), canon_level_key(&level, names)?),
                 level,
             ))
         })
         .collect::<Result<_>>()?;
-    keyed_levels.sort_by_key(|(key, _)| *key);
+    keyed_levels.sort_by(|(lhs_key, _), (rhs_key, _)| lhs_key.cmp(rhs_key));
     let levels: Vec<_> = keyed_levels.into_iter().map(|(_, level)| level).collect();
     let ids: BTreeMap<_, _> = levels
         .iter()
@@ -983,9 +983,9 @@ pub(crate) fn build_term_table(
 ) -> Result<(Vec<TermNode>, BTreeMap<CanonTerm, TermId>)> {
     let mut keyed_terms: Vec<_> = terms
         .into_iter()
-        .map(|term| Ok(((term_height(&term), canon_term_hash(&term, names)?), term)))
+        .map(|term| Ok(((term_height(&term), canon_term_key(&term, names)?), term)))
         .collect::<Result<_>>()?;
-    keyed_terms.sort_by_key(|(key, _)| *key);
+    keyed_terms.sort_by(|(lhs_key, _), (rhs_key, _)| lhs_key.cmp(rhs_key));
     let terms: Vec<_> = keyed_terms.into_iter().map(|(_, term)| term).collect();
     let ids: BTreeMap<_, _> = terms
         .iter()

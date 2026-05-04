@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use npa_kernel::Env;
+use npa_kernel::{Env, Level};
 
 use crate::*;
 
@@ -92,16 +92,21 @@ fn verify_tables(cert: &ModuleCert) -> Result<()> {
                 object: "LevelTable",
             });
         }
+        if !level_node_is_normalized(cert, index)? {
+            return Err(CertError::NonCanonicalEncoding {
+                object: "LevelTable",
+            });
+        }
     }
     let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table)?;
     let level_keys = cert
         .level_table
         .iter()
         .enumerate()
-        .map(|(index, _)| {
+        .map(|(index, level)| {
             Ok((
                 level_node_height(&cert.level_table, index)?,
-                level_hashes[index],
+                level_node_key(level, &level_hashes, &cert.name_table)?,
             ))
         })
         .collect::<Result<Vec<_>>>()?;
@@ -137,10 +142,10 @@ fn verify_tables(cert: &ModuleCert) -> Result<()> {
         .term_table
         .iter()
         .enumerate()
-        .map(|(index, _)| {
+        .map(|(index, term)| {
             Ok((
                 term_node_height(&cert.term_table, index)?,
-                term_hashes[index],
+                term_node_key(term, &term_hashes, &level_hashes)?,
             ))
         })
         .collect::<Result<Vec<_>>>()?;
@@ -619,6 +624,34 @@ fn global_ref_is_in_range(cert: &ModuleCert, global_ref: &GlobalRef) -> bool {
             *decl_index < cert.declarations.len() && *name < cert.name_table.len()
         }
     }
+}
+
+fn level_node_is_normalized(cert: &ModuleCert, index: usize) -> Result<bool> {
+    let raw = raw_level_from_node(cert, index)?;
+    Ok(npa_kernel::level::normalize_level(raw.clone()) == raw)
+}
+
+fn raw_level_from_node(cert: &ModuleCert, index: usize) -> Result<Level> {
+    Ok(
+        match cert.level_table.get(index).ok_or(CertError::DecodeError)? {
+            LevelNode::Zero => Level::Zero,
+            LevelNode::Succ(inner) => Level::Succ(Box::new(raw_level_from_node(cert, *inner)?)),
+            LevelNode::Max(lhs, rhs) => Level::Max(
+                Box::new(raw_level_from_node(cert, *lhs)?),
+                Box::new(raw_level_from_node(cert, *rhs)?),
+            ),
+            LevelNode::IMax(lhs, rhs) => Level::IMax(
+                Box::new(raw_level_from_node(cert, *lhs)?),
+                Box::new(raw_level_from_node(cert, *rhs)?),
+            ),
+            LevelNode::Param(name) => Level::Param(
+                cert.name_table
+                    .get(*name)
+                    .ok_or(CertError::DecodeError)?
+                    .as_dotted(),
+            ),
+        },
+    )
 }
 
 fn level_node_height(levels: &[LevelNode], index: usize) -> Result<usize> {

@@ -616,6 +616,150 @@ fn verify_cert(cert: &ModuleCert, session: &mut VerifierSession) -> VerifiedModu
     .unwrap()
 }
 
+fn remap_swapped_term_id(term: &mut TermId, lhs: TermId, rhs: TermId) {
+    if *term == lhs {
+        *term = rhs;
+    } else if *term == rhs {
+        *term = lhs;
+    }
+}
+
+fn remap_swapped_term_ids_in_term(term: &mut TermNode, lhs: TermId, rhs: TermId) {
+    match term {
+        TermNode::Sort(_) | TermNode::BVar(_) | TermNode::Const { .. } => {}
+        TermNode::App(fun, arg) => {
+            remap_swapped_term_id(fun, lhs, rhs);
+            remap_swapped_term_id(arg, lhs, rhs);
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            remap_swapped_term_id(ty, lhs, rhs);
+            remap_swapped_term_id(body, lhs, rhs);
+        }
+        TermNode::Let { ty, value, body } => {
+            remap_swapped_term_id(ty, lhs, rhs);
+            remap_swapped_term_id(value, lhs, rhs);
+            remap_swapped_term_id(body, lhs, rhs);
+        }
+    }
+}
+
+fn remap_swapped_term_ids_in_decl(decl: &mut DeclPayload, lhs: TermId, rhs: TermId) {
+    match decl {
+        DeclPayload::Axiom { ty, .. } => remap_swapped_term_id(ty, lhs, rhs),
+        DeclPayload::Def { ty, value, .. } => {
+            remap_swapped_term_id(ty, lhs, rhs);
+            remap_swapped_term_id(value, lhs, rhs);
+        }
+        DeclPayload::Theorem { ty, proof, .. } => {
+            remap_swapped_term_id(ty, lhs, rhs);
+            remap_swapped_term_id(proof, lhs, rhs);
+        }
+        DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        } => {
+            for binder in params.iter_mut().chain(indices) {
+                remap_swapped_term_id(&mut binder.ty, lhs, rhs);
+            }
+            for constructor in constructors {
+                remap_swapped_term_id(&mut constructor.ty, lhs, rhs);
+            }
+            if let Some(recursor) = recursor {
+                remap_swapped_term_id(&mut recursor.ty, lhs, rhs);
+            }
+        }
+    }
+}
+
+fn swap_term_table_entries(cert: &mut ModuleCert, lhs: TermId, rhs: TermId) {
+    cert.term_table.swap(lhs, rhs);
+    for term in &mut cert.term_table {
+        remap_swapped_term_ids_in_term(term, lhs, rhs);
+    }
+    for decl in &mut cert.declarations {
+        remap_swapped_term_ids_in_decl(&mut decl.decl, lhs, rhs);
+    }
+}
+
+fn remap_swapped_level_id(level: &mut LevelId, lhs: LevelId, rhs: LevelId) {
+    if *level == lhs {
+        *level = rhs;
+    } else if *level == rhs {
+        *level = lhs;
+    }
+}
+
+fn remap_swapped_level_ids_in_level(level: &mut LevelNode, lhs: LevelId, rhs: LevelId) {
+    match level {
+        LevelNode::Zero | LevelNode::Param(_) => {}
+        LevelNode::Succ(inner) => remap_swapped_level_id(inner, lhs, rhs),
+        LevelNode::Max(left, right) | LevelNode::IMax(left, right) => {
+            remap_swapped_level_id(left, lhs, rhs);
+            remap_swapped_level_id(right, lhs, rhs);
+        }
+    }
+}
+
+fn remap_swapped_level_ids_in_term(term: &mut TermNode, lhs: LevelId, rhs: LevelId) {
+    match term {
+        TermNode::Sort(level) => remap_swapped_level_id(level, lhs, rhs),
+        TermNode::Const { levels, .. } => {
+            for level in levels {
+                remap_swapped_level_id(level, lhs, rhs);
+            }
+        }
+        TermNode::BVar(_)
+        | TermNode::App(_, _)
+        | TermNode::Lam { .. }
+        | TermNode::Pi { .. }
+        | TermNode::Let { .. } => {}
+    }
+}
+
+fn remap_swapped_level_ids_in_decl(decl: &mut DeclPayload, lhs: LevelId, rhs: LevelId) {
+    if let DeclPayload::Inductive { sort, .. } = decl {
+        remap_swapped_level_id(sort, lhs, rhs);
+    }
+}
+
+fn swap_level_table_entries(cert: &mut ModuleCert, lhs: LevelId, rhs: LevelId) {
+    cert.level_table.swap(lhs, rhs);
+    for level in &mut cert.level_table {
+        remap_swapped_level_ids_in_level(level, lhs, rhs);
+    }
+    for term in &mut cert.term_table {
+        remap_swapped_level_ids_in_term(term, lhs, rhs);
+    }
+    for decl in &mut cert.declarations {
+        remap_swapped_level_ids_in_decl(&mut decl.decl, lhs, rhs);
+    }
+}
+
+fn replace_level_refs(term: &mut TermNode, old: LevelId, new: LevelId) {
+    match term {
+        TermNode::Sort(level) => {
+            if *level == old {
+                *level = new;
+            }
+        }
+        TermNode::Const { levels, .. } => {
+            for level in levels {
+                if *level == old {
+                    *level = new;
+                }
+            }
+        }
+        TermNode::BVar(_)
+        | TermNode::App(_, _)
+        | TermNode::Lam { .. }
+        | TermNode::Pi { .. }
+        | TermNode::Let { .. } => {}
+    }
+}
+
 fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
     let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table).unwrap();
     let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes).unwrap();
@@ -1607,6 +1751,69 @@ fn rejects_noncanonical_term_table_even_if_bytes_round_trip() {
 }
 
 #[test]
+fn rejects_term_table_ordered_by_hash_instead_of_structural_key() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let sort = cert
+        .term_table
+        .iter()
+        .position(|term| matches!(term, TermNode::Sort(_)))
+        .unwrap();
+    let bvar = cert
+        .term_table
+        .iter()
+        .position(|term| matches!(term, TermNode::BVar(0)))
+        .unwrap();
+    assert!(sort < bvar);
+
+    swap_term_table_entries(&mut cert, sort, bvar);
+    rehash_cert_after_decl_change(&mut cert);
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "TermTable"
+        }
+    ));
+}
+
+#[test]
+fn rejects_level_table_ordered_by_hash_instead_of_structural_key() {
+    let mut cert = build_module_cert(eq_module(), &[]).unwrap();
+    let u = cert
+        .name_table
+        .iter()
+        .position(|name| *name == Name::from_dotted("u"))
+        .unwrap();
+    let zero = cert
+        .level_table
+        .iter()
+        .position(|level| matches!(level, LevelNode::Zero))
+        .unwrap();
+    let param = cert
+        .level_table
+        .iter()
+        .position(|level| matches!(level, LevelNode::Param(name) if *name == u))
+        .unwrap();
+    assert!(zero < param);
+
+    swap_level_table_entries(&mut cert, zero, param);
+    rehash_cert_after_decl_change(&mut cert);
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "LevelTable"
+        }
+    ));
+}
+
+#[test]
 fn rejects_unreachable_term_table_entry_even_if_rehashed() {
     let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
     let last = cert.term_table.len() - 1;
@@ -1623,6 +1830,33 @@ fn rejects_unreachable_term_table_entry_even_if_rehashed() {
         err,
         CertError::NonCanonicalEncoding {
             object: "TermTable"
+        }
+    ));
+}
+
+#[test]
+fn rejects_non_normalized_level_table_entry_even_if_rehashed() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let u = cert
+        .name_table
+        .iter()
+        .position(|name| *name == Name::from_dotted("u"))
+        .unwrap();
+    assert_eq!(cert.level_table, vec![LevelNode::Param(u)]);
+
+    cert.level_table = vec![LevelNode::Zero, LevelNode::Param(u), LevelNode::Max(0, 1)];
+    for term in &mut cert.term_table {
+        replace_level_refs(term, 0, 2);
+    }
+    rehash_cert_after_decl_change(&mut cert);
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "LevelTable"
         }
     ));
 }

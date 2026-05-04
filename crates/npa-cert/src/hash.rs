@@ -311,31 +311,7 @@ fn encode_name_ids_to(out: &mut Vec<u8>, names: &[Name], values: &[NameId]) -> R
 pub(crate) fn compute_level_hashes(levels: &[LevelNode], names: &[Name]) -> Result<Vec<Hash>> {
     let mut hashes = Vec::with_capacity(levels.len());
     for level in levels {
-        let mut payload = Vec::new();
-        match level {
-            LevelNode::Zero => payload.push(0x00),
-            LevelNode::Succ(inner) => {
-                payload.push(0x01);
-                payload.extend(hashes.get(*inner).ok_or(CertError::DecodeError)?);
-            }
-            LevelNode::Max(lhs, rhs) => {
-                payload.push(0x02);
-                payload.extend(hashes.get(*lhs).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*rhs).ok_or(CertError::DecodeError)?);
-            }
-            LevelNode::IMax(lhs, rhs) => {
-                payload.push(0x03);
-                payload.extend(hashes.get(*lhs).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*rhs).ok_or(CertError::DecodeError)?);
-            }
-            LevelNode::Param(name) => {
-                payload.push(0x04);
-                encode_name_to(
-                    &mut payload,
-                    names.get(*name).ok_or(CertError::DecodeError)?,
-                );
-            }
-        }
+        let payload = level_node_key(level, &hashes, names)?;
         hashes.push(hash_with_domain(b"NPA-LEVEL-0.1", &payload));
     }
     Ok(hashes)
@@ -344,52 +320,94 @@ pub(crate) fn compute_level_hashes(levels: &[LevelNode], names: &[Name]) -> Resu
 pub(crate) fn compute_term_hashes(terms: &[TermNode], level_hashes: &[Hash]) -> Result<Vec<Hash>> {
     let mut hashes = Vec::with_capacity(terms.len());
     for term in terms {
-        let mut payload = Vec::new();
-        match term {
-            TermNode::Sort(level) => {
-                payload.push(0x00);
-                payload.extend(level_hashes.get(*level).ok_or(CertError::DecodeError)?);
-            }
-            TermNode::BVar(index) => {
-                payload.push(0x01);
-                encode_uvar_to(&mut payload, *index as u64);
-            }
-            TermNode::Const { global_ref, levels } => {
-                payload.push(0x02);
-                encode_global_ref_to(&mut payload, global_ref);
-                encode_uvar_to(&mut payload, levels.len() as u64);
-                for level in levels {
-                    payload.extend(level_hashes.get(*level).ok_or(CertError::DecodeError)?);
-                }
-            }
-            TermNode::App(fun, arg) => {
-                payload.push(0x03);
-                payload.extend(hashes.get(*fun).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*arg).ok_or(CertError::DecodeError)?);
-            }
-            TermNode::Lam { ty, body } => {
-                payload.push(0x04);
-                payload.extend(hashes.get(*ty).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*body).ok_or(CertError::DecodeError)?);
-            }
-            TermNode::Pi { ty, body } => {
-                payload.push(0x05);
-                payload.extend(hashes.get(*ty).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*body).ok_or(CertError::DecodeError)?);
-            }
-            TermNode::Let { ty, value, body } => {
-                payload.push(0x06);
-                payload.extend(hashes.get(*ty).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*value).ok_or(CertError::DecodeError)?);
-                payload.extend(hashes.get(*body).ok_or(CertError::DecodeError)?);
-            }
-        }
+        let payload = term_node_key(term, &hashes, level_hashes)?;
         hashes.push(hash_with_domain(b"NPA-TERM-0.1", &payload));
     }
     Ok(hashes)
 }
 
-pub(crate) fn canon_level_hash(level: &CanonLevel, names: &[Name]) -> Result<Hash> {
+pub(crate) fn level_node_key(
+    level: &LevelNode,
+    child_hashes: &[Hash],
+    names: &[Name],
+) -> Result<Vec<u8>> {
+    let mut payload = Vec::new();
+    match level {
+        LevelNode::Zero => payload.push(0x00),
+        LevelNode::Succ(inner) => {
+            payload.push(0x01);
+            payload.extend(child_hashes.get(*inner).ok_or(CertError::DecodeError)?);
+        }
+        LevelNode::Max(lhs, rhs) => {
+            payload.push(0x02);
+            payload.extend(child_hashes.get(*lhs).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*rhs).ok_or(CertError::DecodeError)?);
+        }
+        LevelNode::IMax(lhs, rhs) => {
+            payload.push(0x03);
+            payload.extend(child_hashes.get(*lhs).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*rhs).ok_or(CertError::DecodeError)?);
+        }
+        LevelNode::Param(name) => {
+            payload.push(0x04);
+            encode_name_to(
+                &mut payload,
+                names.get(*name).ok_or(CertError::DecodeError)?,
+            );
+        }
+    }
+    Ok(payload)
+}
+
+pub(crate) fn term_node_key(
+    term: &TermNode,
+    child_hashes: &[Hash],
+    level_hashes: &[Hash],
+) -> Result<Vec<u8>> {
+    let mut payload = Vec::new();
+    match term {
+        TermNode::Sort(level) => {
+            payload.push(0x00);
+            payload.extend(level_hashes.get(*level).ok_or(CertError::DecodeError)?);
+        }
+        TermNode::BVar(index) => {
+            payload.push(0x01);
+            encode_uvar_to(&mut payload, *index as u64);
+        }
+        TermNode::Const { global_ref, levels } => {
+            payload.push(0x02);
+            encode_global_ref_to(&mut payload, global_ref);
+            encode_uvar_to(&mut payload, levels.len() as u64);
+            for level in levels {
+                payload.extend(level_hashes.get(*level).ok_or(CertError::DecodeError)?);
+            }
+        }
+        TermNode::App(fun, arg) => {
+            payload.push(0x03);
+            payload.extend(child_hashes.get(*fun).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*arg).ok_or(CertError::DecodeError)?);
+        }
+        TermNode::Lam { ty, body } => {
+            payload.push(0x04);
+            payload.extend(child_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*body).ok_or(CertError::DecodeError)?);
+        }
+        TermNode::Pi { ty, body } => {
+            payload.push(0x05);
+            payload.extend(child_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*body).ok_or(CertError::DecodeError)?);
+        }
+        TermNode::Let { ty, value, body } => {
+            payload.push(0x06);
+            payload.extend(child_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*value).ok_or(CertError::DecodeError)?);
+            payload.extend(child_hashes.get(*body).ok_or(CertError::DecodeError)?);
+        }
+    }
+    Ok(payload)
+}
+
+pub(crate) fn canon_level_key(level: &CanonLevel, names: &[Name]) -> Result<Vec<u8>> {
     let mut payload = Vec::new();
     match level {
         CanonLevel::Zero => payload.push(0x00),
@@ -415,10 +433,17 @@ pub(crate) fn canon_level_hash(level: &CanonLevel, names: &[Name]) -> Result<Has
             );
         }
     }
-    Ok(hash_with_domain(b"NPA-LEVEL-0.1", &payload))
+    Ok(payload)
 }
 
-pub(crate) fn canon_term_hash(term: &CanonTerm, names: &[Name]) -> Result<Hash> {
+pub(crate) fn canon_level_hash(level: &CanonLevel, names: &[Name]) -> Result<Hash> {
+    Ok(hash_with_domain(
+        b"NPA-LEVEL-0.1",
+        &canon_level_key(level, names)?,
+    ))
+}
+
+pub(crate) fn canon_term_key(term: &CanonTerm, names: &[Name]) -> Result<Vec<u8>> {
     let mut payload = Vec::new();
     match term {
         CanonTerm::Sort(level) => {
@@ -459,6 +484,11 @@ pub(crate) fn canon_term_hash(term: &CanonTerm, names: &[Name]) -> Result<Hash> 
             payload.extend(canon_term_hash(body, names)?);
         }
     }
+    Ok(payload)
+}
+
+pub(crate) fn canon_term_hash(term: &CanonTerm, names: &[Name]) -> Result<Hash> {
+    let payload = canon_term_key(term, names)?;
     Ok(hash_with_domain(b"NPA-TERM-0.1", &payload))
 }
 
