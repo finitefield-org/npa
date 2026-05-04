@@ -211,6 +211,10 @@ impl Parser {
     }
 
     fn parse_term(&mut self) -> Result<SurfaceExpr> {
+        self.parse_term_with_annotations(true)
+    }
+
+    fn parse_term_with_annotations(&mut self, allow_annotations: bool) -> Result<SurfaceExpr> {
         if self.at(TokenTag::Fun) {
             return self.parse_lambda();
         }
@@ -220,7 +224,7 @@ impl Parser {
         if self.at(TokenTag::Let) {
             return self.parse_let();
         }
-        self.parse_arrow()
+        self.parse_arrow(allow_annotations)
     }
 
     fn parse_lambda(&mut self) -> Result<SurfaceExpr> {
@@ -294,11 +298,11 @@ impl Parser {
         })
     }
 
-    fn parse_arrow(&mut self) -> Result<SurfaceExpr> {
-        let lhs = self.parse_annotation()?;
+    fn parse_arrow(&mut self, allow_annotations: bool) -> Result<SurfaceExpr> {
+        let lhs = self.parse_annotation(allow_annotations)?;
         if self.at(TokenTag::Arrow) {
             self.bump();
-            let rhs = self.parse_term()?;
+            let rhs = self.parse_term_with_annotations(allow_annotations)?;
             let span = lhs.span().join(rhs.span());
             let binder = SurfaceBinder {
                 kind: SurfaceBinderKind::Anonymous,
@@ -316,14 +320,17 @@ impl Parser {
         }
     }
 
-    fn parse_annotation(&mut self) -> Result<SurfaceExpr> {
+    fn parse_annotation(&mut self, allow_annotations: bool) -> Result<SurfaceExpr> {
         let expr = self.parse_application()?;
         if !self.at(TokenTag::Colon) {
             return Ok(expr);
         }
+        if !allow_annotations {
+            return Err(self.error_here("type annotation is non-associative"));
+        }
 
         self.bump();
-        let ty = self.parse_arrow()?;
+        let ty = self.parse_arrow(false)?;
         let span = expr.span().join(ty.span());
         if self.at(TokenTag::Colon) {
             return Err(self.error_here("type annotation is non-associative"));
@@ -911,6 +918,13 @@ mod tests {
         let err = parse_module(FileId(0), "def x : Nat := Nat.zero\nimport Std.Nat.Basic")
             .expect_err("import must be rejected");
         assert_eq!(err.kind, DiagnosticKind::ImportAfterItem);
+    }
+
+    #[test]
+    fn rejects_chained_type_annotations() {
+        let err = parse_module(FileId(0), "def bad : T := x : A : B")
+            .expect_err("chained type annotations must be rejected");
+        assert_eq!(err.kind, DiagnosticKind::ParserError);
     }
 
     #[test]
