@@ -213,6 +213,11 @@ level ::=
   | "imax" level level
 ```
 
+`import` は module の先頭にだけ書けます。最初の非 import item が出た後の `import` は
+`ImportAfterItem` として拒否します。理由は、import が notation table と global scope を変えるため、
+source の途中で import を許すと parser state と certificate import table の対応が複雑になるからです。
+`namespace`、`open`、`notation` は通常 item として上から順に処理し、それ以降の item にだけ効きます。
+
 MVP では、declaration binder と `forall` binder は型注釈必須です。`fun x => ...` のような
 未注釈 lambda binder だけは、期待型がある check mode で補います。数値リテラルや
 typeclass-driven overload は Phase 3 では扱わず、自然数のゼロは `Nat.zero` か開いた namespace
@@ -400,6 +405,9 @@ source の `import M` は module name だけを書きます。Phase 3 は compil
 `verified_imports` から `M` の export interface と `export_hash` を見つけます。見つからない、
 または同じ module name に複数の hash が与えられている場合は `ImportResolutionError` です。
 `.npa` source 内に hash literal を書く構文は MVP には入れません。
+
+同じ module を同じ hash で複数回 import した場合は warning を出し、1つに正規化してよいです。
+同じ module name を違う hash で import しようとした場合は `ImportResolutionError` です。
 
 1つの module は次の順に読むことを MVP の仕様にします。
 
@@ -760,6 +768,7 @@ Phase 3 MVP に含めません。
 notation declaration の target `qual_name` は、その declaration を処理する時点で解決します。
 未定義 target や overloaded target は拒否します。つまり notation は forward declaration できません。
 current module の既存 declaration または import 済み declaration だけを target にできます。
+local binder や temporary global は notation target にできません。
 
 `prefix` と `postfix` の associativity は常に `NonAssoc` とします。`infix` は `NonAssoc`、
 `infixl` は `Left`、`infixr` は `Right` です。
@@ -789,6 +798,15 @@ Phase 3 での推奨：
 - notation table は parser に渡す
 - ただし型によるnotation解決は elaborator に任せる
 ```
+
+prefix / postfix / infix は、すべて notation entry の `precedence` を binding power として使います。
+同じ precedence の non-associative infix を連鎖させる場合は parse error にします。
+
+```npa
+a = b = c
+```
+
+は、`=` が `infix:50` なら `ParserError` です。必要なら括弧を書きます。
 
 notation declaration は固定構文なので、notation table がなくても parser が読めます。
 module は上から順に処理し、ある notation declaration はそれ以降の term parsing にだけ効きます。
@@ -2013,7 +2031,7 @@ namespace は core term には現れません。
 11. 成功した declaration だけを後続 item の global scope に登録する
 ```
 
-`axiom` は 1〜5 と 8〜10 だけを行い、value/proof は持ちません。
+`axiom` は 1〜6 と 9〜11 だけを行い、value/proof は持ちません。
 
 Phase 3 MVP では self reference と forward reference を禁止します。つまり、`def f := f` のように
 自分自身を source elaboration 中に参照することはできません。再帰は source-level recursive
@@ -2186,16 +2204,20 @@ target:
 
 この structured goal が Phase 4 の tactic に渡されます。
 
-## 9.7 実装で固定する ErrorKind
+## 9.7 実装で固定する DiagnosticKind
 
-API とテストでは、少なくとも次の構造化 error kind を区別します。
+API とテストでは、少なくとも次の構造化 diagnostic kind を区別します。
+hard error と warning は `severity` で分けます。certificate generation では hard error が1つでも
+あれば失敗し、warning は trusted payload に影響しません。
 
 ```text
 ParserError
 ImportResolutionError
+ImportAfterItem
 NamespaceMismatch
 UnknownNamespace
 DuplicateDeclaration
+DuplicateUniverseParam
 InvalidNotation
 NotationConflict
 UnknownIdentifier
@@ -2215,9 +2237,11 @@ OccursCheckFailed
 IncompleteDependency
 ForwardReference
 KernelRejected
+ShadowingWarning
+DuplicateImportWarning
 ```
 
-message は人間向けに変えてよいですが、`ErrorKind`、primary span、関連候補、expected/actual type は
+message は人間向けに変えてよいですが、`DiagnosticKind`、severity、primary span、関連候補、expected/actual type は
 テスト可能な structured data として返します。
 
 ---
@@ -2581,6 +2605,33 @@ infixr:70 " + " => Other.add
 NotationConflict
 ```
 
+## 12.13 import の位置
+
+```npa
+def x : Nat := Nat.zero
+import Std.Nat.Basic
+```
+
+期待結果：
+
+```text
+ImportAfterItem
+```
+
+## 12.14 non-associative notation chain
+
+```npa
+infix:50 " = " => Eq
+theorem bad (a : Nat) (b : Nat) (c : Nat) : Prop :=
+  a = b = c
+```
+
+期待結果：
+
+```text
+ParserError
+```
+
 ---
 
 # 13. Phase 3 でまだ入れないもの
@@ -2619,6 +2670,7 @@ Phase 3 が完了したと言える条件はこれです。
 
 ```text
 - import/open/namespace/end を parse できる
+- import は module 先頭に限定し、途中 import を拒否できる
 - def/theorem/axiom/simple inductive を parse できる
 - `->` / `→` を右結合 Pi に desugar できる
 - namespace 付き名前を扱える
@@ -2626,6 +2678,7 @@ Phase 3 が完了したと言える条件はこれです。
 - namespace/open の lexical scope を実装できる
 - notation declaration を上から順に反映できる
 - notation conflict を拒否できる
+- non-associative infix chain を parse error にできる
 - simple infix notation を扱える
 - explicit/implicit binder を扱える
 - implicit args を metavariable として挿入できる
