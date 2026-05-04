@@ -342,23 +342,23 @@ Const c ↦ value(c)
 ```
 
 ただし、すべての定義を常に展開すると遅くなるので、透明度を持たせます。
+core-spec v0.1 ではまず `reducible` と `opaque` だけに絞ります。
 
 ```text
 reducible
-semireducible
-irreducible
 opaque
 ```
 
 推奨：
 
 ```text
-def      : transparent または semireducible
+def      : reducible または opaque
 theorem  : opaque
 abbrev   : reducible
 ```
 
 theorem の証明本体を conversion で展開しない方がよいです。巨大証明が勝手に展開されると非常に遅くなるからです。
+`semireducible` / `irreducible` のような細かい透明度は Phase 9 以降の拡張候補です。
 
 ## 3.3 ι-reduction
 
@@ -826,7 +826,7 @@ axiom は原則禁止または allowlist 制にします。
   "universe_params": [],
   "type": "...",
   "value": "...",
-  "reducibility": "semireducible"
+  "reducibility": "reducible"
 }
 ```
 
