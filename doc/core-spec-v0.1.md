@@ -650,6 +650,12 @@ opaque theorem の proof だけが変わり、type・opacity・axiom dependency 
 `certificate_hash` は変わりますが `export_hash` は維持されます。
 proof 変更によって axiom dependency が変わる場合は公開される信頼情報が変わるため、`export_hash` も変わります。
 
+公開 interface に含まれる type / reducible body の `Const` 参照は、参照先の
+`decl_interface_hash` も declaration interface hash に含めます。`Local(decl_index)` の
+index だけを hash すると、同じ module 内の transparent dependency 変更が downstream の
+`export_hash` に伝播しないためです。opaque theorem proof と opaque def body の
+non-axiom dependency は certificate hash 側にだけ含めます。
+
 ## 10. Kernel Checking Algorithm
 
 ### 10.1 Module Checking

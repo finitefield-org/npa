@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+};
 
 use npa_kernel::{Decl, Reducibility};
 
@@ -330,7 +333,7 @@ pub enum TermNode {
 }
 
 /// Canonical declaration reference used by terms, dependencies, and axiom reports.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GlobalRef {
     /// Declaration exported by an imported module.
     Imported {
@@ -353,6 +356,18 @@ pub enum GlobalRef {
         /// Name table index for the generated declaration.
         name: NameId,
     },
+}
+
+impl Ord for GlobalRef {
+    fn cmp(&self, other: &Self) -> Ordering {
+        global_ref_order_key(self).cmp(&global_ref_order_key(other))
+    }
+}
+
+impl PartialOrd for GlobalRef {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 /// Certificate data for one source declaration.
@@ -498,7 +513,7 @@ pub enum Opacity {
 }
 
 /// Direct dependency on another declaration interface.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DependencyEntry {
     /// Referenced declaration.
     pub global_ref: GlobalRef,
@@ -506,8 +521,20 @@ pub struct DependencyEntry {
     pub decl_interface_hash: Hash,
 }
 
+impl Ord for DependencyEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        dependency_entry_order_key(self).cmp(&dependency_entry_order_key(other))
+    }
+}
+
+impl PartialOrd for DependencyEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 /// Canonical reference to an axiom dependency.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AxiomRef {
     /// Referenced axiom declaration.
     pub global_ref: GlobalRef,
@@ -515,6 +542,71 @@ pub struct AxiomRef {
     pub name: NameId,
     /// Expected interface hash for the axiom declaration.
     pub decl_interface_hash: Hash,
+}
+
+impl Ord for AxiomRef {
+    fn cmp(&self, other: &Self) -> Ordering {
+        axiom_ref_order_key(self).cmp(&axiom_ref_order_key(other))
+    }
+}
+
+impl PartialOrd for AxiomRef {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+fn dependency_entry_order_key(entry: &DependencyEntry) -> Vec<u8> {
+    let mut out = global_ref_order_key(&entry.global_ref);
+    out.extend(entry.decl_interface_hash);
+    out
+}
+
+fn axiom_ref_order_key(axiom: &AxiomRef) -> Vec<u8> {
+    let mut out = global_ref_order_key(&axiom.global_ref);
+    encode_order_uvar_to(&mut out, axiom.name as u64);
+    out.extend(axiom.decl_interface_hash);
+    out
+}
+
+fn global_ref_order_key(global_ref: &GlobalRef) -> Vec<u8> {
+    let mut out = Vec::new();
+    match global_ref {
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x00);
+            encode_order_uvar_to(&mut out, *import_index as u64);
+            encode_order_uvar_to(&mut out, *name as u64);
+            out.extend(decl_interface_hash);
+        }
+        GlobalRef::Local { decl_index } => {
+            out.push(0x01);
+            encode_order_uvar_to(&mut out, *decl_index as u64);
+        }
+        GlobalRef::LocalGenerated { decl_index, name } => {
+            out.push(0x02);
+            encode_order_uvar_to(&mut out, *decl_index as u64);
+            encode_order_uvar_to(&mut out, *name as u64);
+        }
+    }
+    out
+}
+
+fn encode_order_uvar_to(out: &mut Vec<u8>, mut value: u64) {
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
 }
 
 /// Hash pair associated with a declaration certificate.

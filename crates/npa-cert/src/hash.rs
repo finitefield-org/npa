@@ -159,13 +159,22 @@ pub(crate) fn compute_decl_hashes(
     decl: &DeclPayload,
     dependencies: &[DependencyEntry],
     axiom_dependencies: &[AxiomRef],
+    term_table: &[TermNode],
     level_hashes: &[Hash],
     term_hashes: &[Hash],
     names: &[Name],
 ) -> Result<DeclHashes> {
+    let interface_dependencies = interface_dependencies_for_decl(decl, dependencies, term_table)?;
     let iface = hash_with_domain(
         b"NPA-DECL-IFACE-0.1",
-        &decl_interface_payload(decl, axiom_dependencies, level_hashes, term_hashes, names)?,
+        &decl_interface_payload(
+            decl,
+            &interface_dependencies,
+            axiom_dependencies,
+            level_hashes,
+            term_hashes,
+            names,
+        )?,
     );
     let cert = hash_with_domain(
         b"NPA-DECL-CERT-0.1",
@@ -179,6 +188,7 @@ pub(crate) fn compute_decl_hashes(
 
 fn decl_interface_payload(
     decl: &DeclPayload,
+    interface_dependencies: &[DependencyEntry],
     axiom_dependencies: &[AxiomRef],
     level_hashes: &[Hash],
     term_hashes: &[Hash],
@@ -195,6 +205,7 @@ fn decl_interface_payload(
             encode_name_id_to(&mut out, names, *name)?;
             encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
         }
         DeclPayload::Def {
             name,
@@ -211,6 +222,7 @@ fn decl_interface_payload(
                 out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
             }
             encode_reducibility_to(&mut out, *reducibility);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
         DeclPayload::Theorem {
@@ -225,6 +237,7 @@ fn decl_interface_payload(
             encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
             encode_opacity_to(&mut out, *opacity);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
         DeclPayload::Inductive {
@@ -268,10 +281,86 @@ fn decl_interface_payload(
                 }
                 None => out.push(0x00),
             }
+            encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
     }
     Ok(out)
+}
+
+fn interface_dependencies_for_decl(
+    decl: &DeclPayload,
+    dependencies: &[DependencyEntry],
+    term_table: &[TermNode],
+) -> Result<Vec<DependencyEntry>> {
+    let mut refs = std::collections::BTreeSet::new();
+    for term in interface_term_ids(decl) {
+        collect_global_refs_from_term(term_table, term, &mut refs)?;
+    }
+    Ok(dependencies
+        .iter()
+        .filter(|dependency| refs.contains(&dependency.global_ref))
+        .cloned()
+        .collect())
+}
+
+fn interface_term_ids(decl: &DeclPayload) -> Vec<TermId> {
+    match decl {
+        DeclPayload::Axiom { ty, .. } => vec![*ty],
+        DeclPayload::Def {
+            ty,
+            value,
+            reducibility,
+            ..
+        } => {
+            let mut terms = vec![*ty];
+            if *reducibility == CertReducibility::Reducible {
+                terms.push(*value);
+            }
+            terms
+        }
+        DeclPayload::Theorem { ty, .. } => vec![*ty],
+        DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        } => params
+            .iter()
+            .map(|param| param.ty)
+            .chain(indices.iter().map(|index| index.ty))
+            .chain(constructors.iter().map(|constructor| constructor.ty))
+            .chain(recursor.iter().map(|recursor| recursor.ty))
+            .collect(),
+    }
+}
+
+fn collect_global_refs_from_term(
+    terms: &[TermNode],
+    term: TermId,
+    refs: &mut std::collections::BTreeSet<GlobalRef>,
+) -> Result<()> {
+    match terms.get(term).ok_or(CertError::DecodeError)? {
+        TermNode::Sort(_) | TermNode::BVar(_) => {}
+        TermNode::Const { global_ref, .. } => {
+            refs.insert(global_ref.clone());
+        }
+        TermNode::App(fun, arg) => {
+            collect_global_refs_from_term(terms, *fun, refs)?;
+            collect_global_refs_from_term(terms, *arg, refs)?;
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            collect_global_refs_from_term(terms, *ty, refs)?;
+            collect_global_refs_from_term(terms, *body, refs)?;
+        }
+        TermNode::Let { ty, value, body } => {
+            collect_global_refs_from_term(terms, *ty, refs)?;
+            collect_global_refs_from_term(terms, *value, refs)?;
+            collect_global_refs_from_term(terms, *body, refs)?;
+        }
+    }
+    Ok(())
 }
 
 fn decl_certificate_payload(

@@ -470,6 +470,7 @@ fn verify_hashes(cert: &ModuleCert) -> Result<()> {
             &decl.decl,
             &decl.dependencies,
             &decl.axiom_dependencies,
+            &cert.term_table,
             &level_hashes,
             &term_hashes,
             &cert.name_table,

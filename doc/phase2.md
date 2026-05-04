@@ -643,7 +643,9 @@ decl_interface_hash(def)
       universe_params,
       type_hash,
       value_hash,
-      reducibility
+      reducibility,
+      public_dependency_entries,
+      axiom_dependencies
     )
 ```
 
@@ -658,6 +660,10 @@ decl_certificate_hash(def)
 ```
 
 `DefDecl` では `value_hash` が interface に入ります。
+さらに、公開される type / reducible body に現れる `Const` の `DependencyEntry` も
+interface に入れます。これにより local declaration index だけではなく、参照先の
+`decl_interface_hash` 変更も downstream の `export_hash` に伝播します。
+opaque def では body 自体の non-axiom dependency は公開 interface に入れません。
 
 ## 5.3 TheoremDecl のhash
 
@@ -674,6 +680,7 @@ decl_interface_hash(theorem)
       universe_params,
       type_hash,
       opacity = opaque,
+      public_dependency_entries,
       axiom_dependencies
     )
 ```
@@ -1667,20 +1674,27 @@ TermHashPayload =
 
 ```text
 Axiom:
-  kind, name, universe_params, type_hash
+  kind, name, universe_params, type_hash, public_dependency_entries
 
 Def:
-  kind, name, universe_params, type_hash, reducibility, axiom_dependencies
+  kind, name, universe_params, type_hash, reducibility,
+  public_dependency_entries, axiom_dependencies
   value_hash only when reducibility = reducible
 
 Theorem:
-  kind, name, universe_params, type_hash, opacity, axiom_dependencies
+  kind, name, universe_params, type_hash, opacity,
+  public_dependency_entries, axiom_dependencies
 
 Inductive:
   kind, name, universe_params, params, indices, sort,
   constructors, generated recursor signature hash, generated computation rule hash,
-  axiom_dependencies
+  public_dependency_entries, axiom_dependencies
 ```
+
+`public_dependency_entries` は公開 interface に含まれる term から直接導出します。
+axiom と theorem では type、reducible def では type と body、opaque def では type、
+inductive では params / indices / constructor type / recursor type が対象です。
+proof や opaque body の non-axiom dependency は certificate hash 側にだけ入れます。
 
 `DeclCertificatePayload` は次を入れます。
 

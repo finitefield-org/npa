@@ -233,6 +233,28 @@ fn use_id_module() -> CoreModule {
     }
 }
 
+fn local_transparent_alias_module(base_value: Expr) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.LocalTransparentAlias"),
+        declarations: vec![
+            Decl::Def {
+                name: "base".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: id_type("A", "x"),
+                value: base_value,
+                reducibility: Reducibility::Reducible,
+            },
+            Decl::Def {
+                name: "alias".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: id_type("A", "x"),
+                value: Expr::konst("base", vec![Level::param("u")]),
+                reducibility: Reducibility::Reducible,
+            },
+        ],
+    }
+}
+
 fn use_imported_use_id_module() -> CoreModule {
     CoreModule {
         name: Name::from_dotted("Test.UseImportedUseId"),
@@ -889,6 +911,7 @@ fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
             &decl.decl,
             &decl.dependencies,
             &decl.axiom_dependencies,
+            &cert.term_table,
             &level_hashes,
             &term_hashes,
             &cert.name_table,
@@ -933,6 +956,7 @@ fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
             &decl.decl,
             &decl.dependencies,
             &decl.axiom_dependencies,
+            &cert.term_table,
             &level_hashes,
             &term_hashes,
             &cert.name_table,
@@ -1071,6 +1095,43 @@ fn binder_names_do_not_affect_term_hashes() {
 
     assert_eq!(term_hash(&cert_a, value_a), term_hash(&cert_b, value_b));
     assert_eq!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
+}
+
+#[test]
+fn dependency_and_axiom_refs_sort_by_canonical_bytes() {
+    let dep_255 = DependencyEntry {
+        global_ref: GlobalRef::Local { decl_index: 255 },
+        decl_interface_hash: [0x01; 32],
+    };
+    let dep_16384 = DependencyEntry {
+        global_ref: GlobalRef::Local { decl_index: 16_384 },
+        decl_interface_hash: [0x02; 32],
+    };
+    let deps = [dep_255, dep_16384]
+        .into_iter()
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    assert!(matches!(
+        deps[0].global_ref,
+        GlobalRef::Local { decl_index: 16_384 }
+    ));
+
+    let axiom_255 = AxiomRef {
+        global_ref: GlobalRef::Local { decl_index: 255 },
+        name: 255,
+        decl_interface_hash: [0x03; 32],
+    };
+    let axiom_16384 = AxiomRef {
+        global_ref: GlobalRef::Local { decl_index: 16_384 },
+        name: 16_384,
+        decl_interface_hash: [0x04; 32],
+    };
+    let axioms = union_axioms([axiom_255, axiom_16384]);
+    assert!(matches!(
+        axioms[0].global_ref,
+        GlobalRef::Local { decl_index: 16_384 }
+    ));
 }
 
 #[test]
@@ -1516,6 +1577,45 @@ fn transparent_def_body_change_changes_interface_and_export_hashes() {
         cert_a.hashes.certificate_hash,
         cert_b.hashes.certificate_hash
     );
+}
+
+#[test]
+fn local_transparent_dependency_change_propagates_to_dependents() {
+    let cert_a =
+        build_module_cert(local_transparent_alias_module(id_value("A", "x")), &[]).unwrap();
+    let cert_b = build_module_cert(
+        local_transparent_alias_module(id_value_with_beta_redex()),
+        &[],
+    )
+    .unwrap();
+    let alias_a = cert_a
+        .declarations
+        .iter()
+        .find(|decl| {
+            matches!(
+                &decl.decl,
+                DeclPayload::Def { name, .. }
+                    if cert_a.name_table[*name] == Name::from_dotted("alias")
+            )
+        })
+        .unwrap();
+    let alias_b = cert_b
+        .declarations
+        .iter()
+        .find(|decl| {
+            matches!(
+                &decl.decl,
+                DeclPayload::Def { name, .. }
+                    if cert_b.name_table[*name] == Name::from_dotted("alias")
+            )
+        })
+        .unwrap();
+
+    assert_ne!(
+        alias_a.hashes.decl_interface_hash,
+        alias_b.hashes.decl_interface_hash
+    );
+    assert_ne!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
 }
 
 #[test]
