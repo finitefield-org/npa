@@ -1,120 +1,69 @@
 use npa_kernel::{
     Binder, ConstructorDecl, Decl, Env, Error, Expr, InductiveDecl, Level, RecursorDecl,
-    RecursorRules,
+    RecursorRules, Reducibility,
 };
 
 use crate::types::{
-    CertError, CertHeader, DeclPayload, GlobalRef, LevelId, LevelNode, ModuleCert, ModuleHashes,
-    Name, NameId, Result, TermId, TermNode, VerifiedModule,
+    CertError, CertHeader, CertReducibility, DeclPayload, ExportEntry, ExportKind, GlobalRef,
+    LevelId, LevelNode, ModuleCert, ModuleHashes, Name, NameId, Result, TermId, TermNode,
+    VerifiedModule,
 };
 use crate::{CORE_SPEC, FORMAT};
 
 pub(crate) fn cert_to_kernel_decls(cert: &ModuleCert) -> Result<Vec<Decl>> {
+    cert.declarations
+        .iter()
+        .map(|decl| decl_payload_to_kernel_decl(cert, &decl.decl))
+        .collect()
+}
+
+pub(crate) fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result<Vec<Decl>> {
+    let cert = module_cert_from_verified_module(module);
     let mut decls = Vec::new();
     for decl in &cert.declarations {
         decls.push(match &decl.decl {
-            DeclPayload::Axiom {
-                name,
-                universe_params,
-                ty,
-            } => Decl::Axiom {
-                name: name_to_string(cert, *name)?,
-                universe_params: universe_names(cert, universe_params)?,
-                ty: expr_from_term(cert, *ty)?,
-            },
-            DeclPayload::Def {
-                name,
-                universe_params,
-                ty,
-                value,
-                reducibility,
-            } => Decl::Def {
-                name: name_to_string(cert, *name)?,
-                universe_params: universe_names(cert, universe_params)?,
-                ty: expr_from_term(cert, *ty)?,
-                value: expr_from_term(cert, *value)?,
-                reducibility: (*reducibility).into(),
-            },
-            DeclPayload::Theorem {
-                name,
-                universe_params,
-                ty,
-                proof,
-                ..
-            } => Decl::Theorem {
-                name: name_to_string(cert, *name)?,
-                universe_params: universe_names(cert, universe_params)?,
-                ty: expr_from_term(cert, *ty)?,
-                proof: expr_from_term(cert, *proof)?,
-            },
-            DeclPayload::Inductive {
-                name,
-                universe_params,
-                params,
-                indices,
-                sort,
-                constructors,
-                recursor,
-            } => Decl::Inductive {
-                name: name_to_string(cert, *name)?,
-                universe_params: universe_names(cert, universe_params)?,
-                ty: Expr::sort(level_from_node(cert, *sort)?),
-                data: Box::new(InductiveDecl::new(
-                    name_to_string(cert, *name)?,
-                    universe_names(cert, universe_params)?,
-                    params
-                        .iter()
-                        .enumerate()
-                        .map(|(index, binder)| {
-                            Ok(Binder::new(
-                                format!("p{index}"),
-                                expr_from_term(cert, binder.ty)?,
-                            ))
-                        })
-                        .collect::<Result<Vec<_>>>()?,
-                    indices
-                        .iter()
-                        .enumerate()
-                        .map(|(index, binder)| {
-                            Ok(Binder::new(
-                                format!("i{index}"),
-                                expr_from_term(cert, binder.ty)?,
-                            ))
-                        })
-                        .collect::<Result<Vec<_>>>()?,
-                    level_from_node(cert, *sort)?,
-                    constructors
-                        .iter()
-                        .map(|constructor| {
-                            Ok(ConstructorDecl::new(
-                                name_to_string(cert, constructor.name)?,
-                                expr_from_term(cert, constructor.ty)?,
-                            ))
-                        })
-                        .collect::<Result<Vec<_>>>()?,
-                    recursor
-                        .as_ref()
-                        .map(|recursor| {
-                            Ok::<_, CertError>(RecursorDecl::with_rules(
-                                name_to_string(cert, recursor.name)?,
-                                universe_names(cert, &recursor.universe_params)?,
-                                expr_from_term(cert, recursor.ty)?,
-                                RecursorRules::new(
-                                    recursor.rules.minor_start,
-                                    recursor.rules.major_index,
-                                ),
-                            ))
-                        })
-                        .transpose()?,
-                )),
-            },
+            DeclPayload::Axiom { name, .. } => {
+                let entry = export_entry_for_decl(&cert, *name, ExportKind::Axiom)?;
+                Decl::Axiom {
+                    name: name_to_string(&cert, entry.name)?,
+                    universe_params: universe_names(&cert, &entry.universe_params)?,
+                    ty: expr_from_term(&cert, entry.ty)?,
+                }
+            }
+            DeclPayload::Def { name, .. } => {
+                let entry = export_entry_for_decl(&cert, *name, ExportKind::Def)?;
+                let ty = expr_from_term(&cert, entry.ty)?;
+                match entry.reducibility.ok_or(CertError::DecodeError)? {
+                    CertReducibility::Reducible => Decl::Def {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        ty,
+                        value: expr_from_term(&cert, entry.body.ok_or(CertError::DecodeError)?)?,
+                        reducibility: Reducibility::Reducible,
+                    },
+                    CertReducibility::Opaque => Decl::Axiom {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        ty,
+                    },
+                }
+            }
+            DeclPayload::Theorem { name, .. } => {
+                let entry = export_entry_for_decl(&cert, *name, ExportKind::Theorem)?;
+                Decl::Axiom {
+                    name: name_to_string(&cert, entry.name)?,
+                    universe_params: universe_names(&cert, &entry.universe_params)?,
+                    ty: expr_from_term(&cert, entry.ty)?,
+                }
+            }
+            DeclPayload::Inductive { .. } => decl_payload_to_kernel_decl(&cert, &decl.decl)?,
         });
     }
     Ok(decls)
 }
 
-pub(crate) fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result<Vec<Decl>> {
-    let cert = ModuleCert {
+fn module_cert_from_verified_module(module: &VerifiedModule) -> ModuleCert {
+    ModuleCert {
         header: CertHeader {
             format: FORMAT.to_owned(),
             core_spec: CORE_SPEC.to_owned(),
@@ -132,8 +81,118 @@ pub(crate) fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result
             axiom_report_hash: [0; 32],
             certificate_hash: module.certificate_hash,
         },
-    };
-    cert_to_kernel_decls(&cert)
+    }
+}
+
+fn export_entry_for_decl(
+    cert: &ModuleCert,
+    name: NameId,
+    kind: ExportKind,
+) -> Result<&ExportEntry> {
+    cert.export_block
+        .iter()
+        .find(|entry| entry.name == name && entry.kind == kind)
+        .ok_or(CertError::DecodeError)
+}
+
+fn decl_payload_to_kernel_decl(cert: &ModuleCert, decl: &DeclPayload) -> Result<Decl> {
+    Ok(match decl {
+        DeclPayload::Axiom {
+            name,
+            universe_params,
+            ty,
+        } => Decl::Axiom {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            ty: expr_from_term(cert, *ty)?,
+        },
+        DeclPayload::Def {
+            name,
+            universe_params,
+            ty,
+            value,
+            reducibility,
+        } => Decl::Def {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            ty: expr_from_term(cert, *ty)?,
+            value: expr_from_term(cert, *value)?,
+            reducibility: (*reducibility).into(),
+        },
+        DeclPayload::Theorem {
+            name,
+            universe_params,
+            ty,
+            proof,
+            ..
+        } => Decl::Theorem {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            ty: expr_from_term(cert, *ty)?,
+            proof: expr_from_term(cert, *proof)?,
+        },
+        DeclPayload::Inductive {
+            name,
+            universe_params,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+        } => Decl::Inductive {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            ty: Expr::sort(level_from_node(cert, *sort)?),
+            data: Box::new(InductiveDecl::new(
+                name_to_string(cert, *name)?,
+                universe_names(cert, universe_params)?,
+                params
+                    .iter()
+                    .enumerate()
+                    .map(|(index, binder)| {
+                        Ok(Binder::new(
+                            format!("p{index}"),
+                            expr_from_term(cert, binder.ty)?,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>>>()?,
+                indices
+                    .iter()
+                    .enumerate()
+                    .map(|(index, binder)| {
+                        Ok(Binder::new(
+                            format!("i{index}"),
+                            expr_from_term(cert, binder.ty)?,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>>>()?,
+                level_from_node(cert, *sort)?,
+                constructors
+                    .iter()
+                    .map(|constructor| {
+                        Ok(ConstructorDecl::new(
+                            name_to_string(cert, constructor.name)?,
+                            expr_from_term(cert, constructor.ty)?,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>>>()?,
+                recursor
+                    .as_ref()
+                    .map(|recursor| {
+                        Ok::<_, CertError>(RecursorDecl::with_rules(
+                            name_to_string(cert, recursor.name)?,
+                            universe_names(cert, &recursor.universe_params)?,
+                            expr_from_term(cert, recursor.ty)?,
+                            RecursorRules::new(
+                                recursor.rules.minor_start,
+                                recursor.rules.major_index,
+                            ),
+                        ))
+                    })
+                    .transpose()?,
+            )),
+        },
+    })
 }
 
 pub(crate) fn expr_from_term(cert: &ModuleCert, term: TermId) -> Result<Expr> {

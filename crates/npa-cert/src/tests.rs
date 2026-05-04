@@ -306,6 +306,51 @@ fn use_imported_use_p_module() -> CoreModule {
     }
 }
 
+fn hidden_proof_helper_module() -> CoreModule {
+    named_axiom_module("Test.HiddenProofHelper", "hidden_witness")
+}
+
+fn public_id_with_hidden_import_proof_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.PublicIdWithHiddenProof"),
+        declarations: vec![
+            Decl::Theorem {
+                name: "hidden_thm".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+                proof: Expr::konst("hidden_witness", vec![]),
+            },
+            Decl::Def {
+                name: "hidden_opaque_def".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+                value: Expr::konst("hidden_witness", vec![]),
+                reducibility: Reducibility::Opaque,
+            },
+            Decl::Def {
+                name: "public_id".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: id_type("A", "x"),
+                value: id_value("A", "x"),
+                reducibility: Reducibility::Reducible,
+            },
+        ],
+    }
+}
+
+fn use_public_id_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UsePublicId"),
+        declarations: vec![Decl::Def {
+            name: "use_public_id".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: id_type("A", "x"),
+            value: Expr::konst("public_id", vec![Level::param("u")]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
 fn use_two_axioms_module() -> CoreModule {
     CoreModule {
         name: Name::from_dotted("Test.UseTwoAxioms"),
@@ -1296,6 +1341,44 @@ fn transitive_imported_axiom_provenance_points_to_original_import() {
         &AxiomPolicy::normal(),
     )
     .unwrap();
+}
+
+#[test]
+fn downstream_import_uses_export_block_not_hidden_certificate_body_deps() {
+    let helper_cert = build_module_cert(hidden_proof_helper_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_helper = verify_module_cert(
+        &encode_module_cert(&helper_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let public_id_cert = build_module_cert(
+        public_id_with_hidden_import_proof_module(),
+        &[verified_helper],
+    )
+    .unwrap();
+    let verified_public_id = verify_module_cert(
+        &encode_module_cert(&public_id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_public_id_cert = build_module_cert(use_public_id_module(), &[verified_public_id])
+        .expect("hidden theorem and opaque def imports must not be required downstream");
+    assert_eq!(use_public_id_cert.imports.len(), 1);
+    assert_eq!(
+        use_public_id_cert.imports[0].module,
+        Name::from_dotted("Test.PublicIdWithHiddenProof")
+    );
+    verify_module_cert(
+        &encode_module_cert(&use_public_id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .expect("verifier must rebuild import env from public export entries");
 }
 
 #[test]

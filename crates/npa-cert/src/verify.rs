@@ -762,13 +762,28 @@ fn import_dependencies_satisfied(
 
 fn imported_dependency_targets(module: &VerifiedModule) -> Result<BTreeSet<(Name, Hash)>> {
     let mut deps = BTreeSet::new();
-    for decl in &module.declarations {
-        for dependency in &decl.dependencies {
+    for entry in &module.export_block {
+        collect_imported_dependency_targets_from_term(module, entry.ty, &mut deps)?;
+        if let Some(body) = entry.body {
+            collect_imported_dependency_targets_from_term(module, body, &mut deps)?;
+        }
+    }
+    Ok(deps)
+}
+
+fn collect_imported_dependency_targets_from_term(
+    module: &VerifiedModule,
+    term: TermId,
+    deps: &mut BTreeSet<(Name, Hash)>,
+) -> Result<()> {
+    match module.term_table.get(term).ok_or(CertError::DecodeError)? {
+        TermNode::Sort(_) | TermNode::BVar(_) => {}
+        TermNode::Const { global_ref, .. } => {
             if let GlobalRef::Imported {
                 name,
                 decl_interface_hash,
                 ..
-            } = &dependency.global_ref
+            } = global_ref
             {
                 let name = module
                     .name_table
@@ -778,8 +793,21 @@ fn imported_dependency_targets(module: &VerifiedModule) -> Result<BTreeSet<(Name
                 deps.insert((name, *decl_interface_hash));
             }
         }
+        TermNode::App(fun, arg) => {
+            collect_imported_dependency_targets_from_term(module, *fun, deps)?;
+            collect_imported_dependency_targets_from_term(module, *arg, deps)?;
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            collect_imported_dependency_targets_from_term(module, *ty, deps)?;
+            collect_imported_dependency_targets_from_term(module, *body, deps)?;
+        }
+        TermNode::Let { ty, value, body } => {
+            collect_imported_dependency_targets_from_term(module, *ty, deps)?;
+            collect_imported_dependency_targets_from_term(module, *value, deps)?;
+            collect_imported_dependency_targets_from_term(module, *body, deps)?;
+        }
     }
-    Ok(deps)
+    Ok(())
 }
 
 fn module_exports_dependency(
