@@ -285,10 +285,17 @@ canonical binary は `core-spec-v0.1.md` の canonicalization / binary encoding
 - sha256 は canonical byte sequence そのものに対して計算する
 ```
 
-非最短 ULEB128、未知 enum tag、未使用 term table entry、順序違反、
-invalid UTF-8、hash 対象内 map は `NonCanonicalEncoding` として拒否します。
+非最短 ULEB128、未使用 term table entry、順序違反、invalid UTF-8、
+hash 対象内 map は `NonCanonicalEncoding` として拒否します。
+未知 enum tag は `UnsupportedEncoding` として拒否します。
 source map、diagnostics、AI trace、表示名などの metadata は trusted payload と
 hash 対象に含めません。
+
+v0.1 の trusted `TermNode` schema には metavariable / hole / placeholder の variant を
+持たせません。未解決 metavariable は certificate producer が `.npcert` 生成前に拒否する
+対象であり、on-disk certificate では表現不能です。将来 pre-certificate API を追加する場合は
+`UnresolvedMetavariable` を返しますが、v0.1 `.npcert` 内で metavariable 相当を unknown tag として
+入れた場合は `UnsupportedEncoding` です。
 
 理由は：
 
@@ -1323,6 +1330,13 @@ ModuleHashesForCertificateHash =
 
 つまり `certificate_hash` は、自分自身の field tag や placeholder bytes を含めません。
 
+`ModuleCertBytes` は trusted payload だけです。
+source map、diagnostics、AI trace、elaborator trace、tactic trace、display name などの
+metadata field はこの schema に存在しません。したがって v0.1 実装では、metadata を
+追加・削除して trusted hash が変わらないことは「metadata を trusted payload に encode
+できない」ことによって満たします。将来 debug / audit 用 sidecar を追加する場合も、
+sidecar bytes は `export_hash`、`axiom_report_hash`、`certificate_hash` の入力に入れてはいけません。
+
 ## 11.5 level schema
 
 `LevelTable` は topological order です。
@@ -1384,14 +1398,21 @@ TermNode =
 GlobalRef =
   0x00 Imported(import_index: uvar, name: NameId, decl_interface_hash: hash)
   0x01 Local(decl_index: uvar)
+  0x02 LocalGenerated(decl_index: uvar, name: NameId)
 ```
 
 `Imported.import_index` は `imports` の index です。
 `Imported.name` と `decl_interface_hash` は、その import の `export_block` に存在する
 entry と一致しなければいけません。
 `Local.decl_index` は現在 module の declaration index です。
+`LocalGenerated.decl_index` は現在 module の `InductiveDecl` の declaration index で、
+`LocalGenerated.name` はその `InductiveDecl` から生成された constructor または recursor の
+`NameId` です。checker は `decl_index` の `InductiveDecl` 内に同じ name の
+`ConstructorSpec` / `RecursorSpec` が存在することを確認します。
 Phase 2 では mutual declaration を扱わないため、local dependency は現在の declaration より
 小さい index だけを許します。
+ただし同じ `InductiveDecl` bundle 内の inductive self reference と generated artifact reference は、
+declaration graph の cycle とはみなしません。
 
 `Lam` / `Pi` / `Let` には binder name を保存しません。
 de Bruijn index が範囲外なら `InvalidBVar` として拒否します。
@@ -1566,6 +1587,7 @@ opaque theorem、axiom、inductive、constructor、recursor では `body = none`
 
 `body_hash` は transparent / reducible def の value hash だけに使います。
 opaque theorem の proof hash は `ExportBlock` に入れません。
+inductive の `type` は `Pi params indices, Sort sort` の full telescope です。
 inductive の constructor / recursor は、`InductiveDecl` から生成された interface として
 `ExportBlock` に含めます。
 import 側 verifier は、検査済み import certificate の `ExportBlock` 内の `type` と
@@ -1686,12 +1708,21 @@ ImportKey =
 
 VerifiedModule =
   module: Name
+  name_table: vec<Name>
+  level_table: vec<LevelNode>
+  term_table: vec<TermNode>
+  declarations: vec<DeclCert>
   export_hash: hash
   certificate_hash: hash
   export_block: ExportBlock
   axiom_report: AxiomReport
-  derived_export_env: kernel environment fragment
 ```
+
+`VerifiedModule` は verifier が検査済み canonical payload から作る値です。
+Rust の元 `Decl` ベクタを trusted import state として持ち回ってはいけません。
+import 側 kernel environment は、`VerifiedModule` 内の canonical tables / declarations から
+decode して作ります。将来的に kernel API が interface fragment を直接受け取れるようになったら、
+`ExportBlock` だけからの再構成へ縮めます。
 
 通常モードでは、`ImportEntry.module` と `ImportEntry.export_hash` に一致する
 `VerifiedModule` が `VerifierSession` にあればよいです。
@@ -1804,7 +1835,8 @@ byte列または各 hash を固定します。
 - proof body を1 byte変える
 - term_hash / decl hash / export_hash / certificate_hash / axiom_report_hash を改ざんする
 - axiom report から実際に使っている axiom を削除する
-- unresolved metavariable を入れる
+- unresolved metavariable は trusted schema で表現不能であることを確認する
+- unknown term tag を入れる
 - 非最短 ULEB128 を使う
 - term table に未使用 entry を入れる
 - table order / import order / declaration order を崩す
@@ -1817,6 +1849,7 @@ byte列または各 hash を固定します。
 HashMismatch
 AxiomReportMismatch
 UnresolvedMetavariable
+UnsupportedEncoding
 NonCanonicalEncoding
 Kernel(npa_kernel::Error)
 ```
@@ -1838,7 +1871,7 @@ Kernel(npa_kernel::Error)
 ```text
 - forbidden axiom を policy で拒否できる
 - deny_sorry policy で synthetic sorry axiom を拒否できる
-- source map / diagnostics / AI trace を追加・削除しても trusted hash は変わらない
+- source map / diagnostics / AI trace は trusted schema に存在せず、hash 対象に encode 不能である
 - source file を消した状態でも .npcert と import store だけで検査できる
 ```
 
@@ -1868,6 +1901,42 @@ Phase 2が完了したと言える条件はこれです。
 - 11章の実装契約に沿った API / byte schema / hash payload / error enum を実装している
 - 12章の golden / stability / mutation / high-trust / source-independence テストが自動テストで通る
 ```
+
+## 13.1 現在の実装ステータス
+
+`crates/npa-cert` は、Phase 2 の trusted certificate verifier として次を実装済みです。
+
+```text
+- CoreModule から ModuleCert を生成する
+- canonical binary encode/decode を行う
+- decode 後の再encode一致で canonical bytes を確認する
+- name / level / term table の canonical order と reachability を確認する
+- import / declaration / export block / axiom report の canonical order を確認する
+- level / term / declaration / export / axiom report / module certificate hash を再計算する
+- normal / high-trust import policy を検査する
+- verified import store だけから kernel environment を再構成する
+- axiom report と axiom policy を保存値ではなく再計算結果から検査する
+- inductive constructor / recursor export と generated artifact mismatch を検査する
+- Phase 1 Rust kernel に decode 済み declaration を渡して再検査する
+```
+
+v0.1 で意図的に Phase 2 の trusted payload に入れていないもの:
+
+```text
+- source map
+- diagnostics
+- display name
+- elaborator trace
+- tactic trace
+- AI trace
+- unresolved metavariable / hole / placeholder
+```
+
+これらは trusted hash の対象ではありません。metadata が必要な場合は、`.npcert` の外側の
+debug sidecar として扱います。
+
+Phase 8 の independent checker はこの `.npcert` schema を別実装または別プロセスで
+再検査する後続成果物であり、Phase 2 には含めません。
 
 ---
 

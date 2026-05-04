@@ -1,0 +1,1662 @@
+use super::*;
+use npa_kernel::{
+    eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
+    ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
+};
+
+fn id_type(a: &str, x: &str) -> Expr {
+    Expr::pi(
+        a,
+        Expr::sort(Level::param("u")),
+        Expr::pi(x, Expr::bvar(0), Expr::bvar(1)),
+    )
+}
+
+fn id_value(a: &str, x: &str) -> Expr {
+    Expr::lam(
+        a,
+        Expr::sort(Level::param("u")),
+        Expr::lam(x, Expr::bvar(0), Expr::bvar(0)),
+    )
+}
+
+fn const_type() -> Expr {
+    let u = Level::param("u");
+    let v = Level::param("v");
+    Expr::pi(
+        "A",
+        Expr::sort(u),
+        Expr::pi(
+            "B",
+            Expr::sort(v),
+            Expr::pi(
+                "x",
+                Expr::bvar(1),
+                Expr::pi("y", Expr::bvar(1), Expr::bvar(3)),
+            ),
+        ),
+    )
+}
+
+fn const_value() -> Expr {
+    let u = Level::param("u");
+    let v = Level::param("v");
+    Expr::lam(
+        "A",
+        Expr::sort(u),
+        Expr::lam(
+            "B",
+            Expr::sort(v),
+            Expr::lam(
+                "x",
+                Expr::bvar(1),
+                Expr::lam("y", Expr::bvar(1), Expr::bvar(1)),
+            ),
+        ),
+    )
+}
+
+fn id_value_with_beta_redex() -> Expr {
+    Expr::lam(
+        "A",
+        Expr::sort(Level::param("u")),
+        Expr::lam(
+            "x",
+            Expr::bvar(0),
+            Expr::app(Expr::lam("y", Expr::bvar(1), Expr::bvar(0)), Expr::bvar(0)),
+        ),
+    )
+}
+
+fn id_module(a: &str, x: &str) -> CoreModule {
+    id_def_module_with_value(id_value(a, x))
+}
+
+fn id_def_module_with_value(value: Expr) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.Id"),
+        declarations: vec![Decl::Def {
+            name: "id".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: id_type("A", "x"),
+            value,
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn const_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.Const"),
+        declarations: vec![Decl::Def {
+            name: "const".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: const_type(),
+            value: const_value(),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn nat_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Std.Nat.Basic"),
+        declarations: vec![Decl::Inductive {
+            name: "Nat".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(type0()),
+            data: Box::new(nat_inductive()),
+        }],
+    }
+}
+
+fn eq_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Std.Logic.Eq"),
+        declarations: vec![Decl::Inductive {
+            name: "Eq".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(Level::param("u")),
+                Expr::pi(
+                    "lhs",
+                    Expr::bvar(0),
+                    Expr::pi("rhs", Expr::bvar(1), Expr::sort(Level::zero())),
+                ),
+            ),
+            data: Box::new(eq_inductive()),
+        }],
+    }
+}
+
+fn nat_add_type() -> Expr {
+    Expr::pi("n", nat(), Expr::pi("m", nat(), nat()))
+}
+
+fn nat_add_value() -> Expr {
+    let motive = Expr::lam("_", nat(), nat());
+    let step = Expr::lam("_", nat(), Expr::lam("ih", nat(), nat_succ(Expr::bvar(0))));
+    let rec = Expr::apps(
+        Expr::konst("Nat.rec", vec![type0()]),
+        vec![motive, Expr::bvar(1), step, Expr::bvar(0)],
+    );
+    Expr::lam("n", nat(), Expr::lam("m", nat(), rec))
+}
+
+fn nat_add_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Std.Nat.Add"),
+        declarations: vec![Decl::Def {
+            name: "Nat.add".to_owned(),
+            universe_params: vec![],
+            ty: nat_add_type(),
+            value: nat_add_value(),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn add_zero_type() -> Expr {
+    let add_n_zero = Expr::apps(
+        Expr::konst("Nat.add", vec![]),
+        vec![Expr::bvar(0), nat_zero()],
+    );
+    Expr::pi("n", nat(), eq(type0(), nat(), add_n_zero, Expr::bvar(0)))
+}
+
+fn add_zero_value() -> Expr {
+    Expr::lam("n", nat(), eq_refl(type0(), nat(), Expr::bvar(0)))
+}
+
+fn add_zero_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Std.Nat.AddZero"),
+        declarations: vec![Decl::Theorem {
+            name: "Nat.add_zero".to_owned(),
+            universe_params: vec![],
+            ty: add_zero_type(),
+            proof: add_zero_value(),
+        }],
+    }
+}
+
+fn id_theorem_module(proof: Expr) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.IdTheorem"),
+        declarations: vec![Decl::Theorem {
+            name: "id_thm".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: id_type("A", "x"),
+            proof,
+        }],
+    }
+}
+
+fn two_id_theorems_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.TwoIdTheorems"),
+        declarations: vec![
+            Decl::Theorem {
+                name: "id_thm_a".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: id_type("A", "x"),
+                proof: id_value("A", "x"),
+            },
+            Decl::Theorem {
+                name: "id_thm_b".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: id_type("A", "x"),
+                proof: id_value("A", "x"),
+            },
+        ],
+    }
+}
+
+fn use_id_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseId"),
+        declarations: vec![Decl::Def {
+            name: "use_id".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: id_type("A", "x"),
+            value: Expr::konst("id", vec![Level::param("u")]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn axiom_module() -> CoreModule {
+    named_axiom_module("Test.Axiom", "P")
+}
+
+fn named_axiom_module(module: &str, axiom: &str) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted(module),
+        declarations: vec![Decl::Axiom {
+            name: axiom.to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::zero()),
+        }],
+    }
+}
+
+fn ordered_axioms_module(order: &[&str]) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.OrderedAxioms"),
+        declarations: order
+            .iter()
+            .map(|name| Decl::Axiom {
+                name: (*name).to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+            })
+            .collect(),
+    }
+}
+
+fn forward_axiom_dependency_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.ForwardAxiom"),
+        declarations: vec![
+            Decl::Axiom {
+                name: "p".to_owned(),
+                universe_params: vec![],
+                ty: Expr::konst("P", vec![]),
+            },
+            Decl::Axiom {
+                name: "P".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+            },
+        ],
+    }
+}
+
+fn use_axiom_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseAxiom"),
+        declarations: vec![Decl::Def {
+            name: "use_p".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::zero()),
+            value: Expr::konst("P", vec![]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn use_two_axioms_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseTwoAxioms"),
+        declarations: vec![
+            Decl::Def {
+                name: "use_alpha".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+                value: Expr::konst("Alpha", vec![]),
+                reducibility: Reducibility::Reducible,
+            },
+            Decl::Def {
+                name: "use_beta".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+                value: Expr::konst("Beta", vec![]),
+                reducibility: Reducibility::Reducible,
+            },
+        ],
+    }
+}
+
+fn theorem_using_axiom_module(proof_axiom: &str) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.AxiomProof"),
+        declarations: vec![
+            Decl::Axiom {
+                name: "P".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+            },
+            Decl::Axiom {
+                name: "p1".to_owned(),
+                universe_params: vec![],
+                ty: Expr::konst("P", vec![]),
+            },
+            Decl::Axiom {
+                name: "p2".to_owned(),
+                universe_params: vec![],
+                ty: Expr::konst("P", vec![]),
+            },
+            Decl::Theorem {
+                name: "t".to_owned(),
+                universe_params: vec![],
+                ty: Expr::konst("P", vec![]),
+                proof: Expr::konst(proof_axiom, vec![]),
+            },
+        ],
+    }
+}
+
+fn unary_inductive_module() -> CoreModule {
+    let data = InductiveDecl::new(
+        "Unary",
+        vec![],
+        vec![],
+        vec![],
+        Level::succ(Level::zero()),
+        vec![
+            ConstructorDecl::new("Unary.zero", unary()),
+            ConstructorDecl::new("Unary.succ", Expr::pi("_", unary(), unary())),
+        ],
+        None,
+    );
+    CoreModule {
+        name: Name::from_dotted("Test.Unary"),
+        declarations: vec![Decl::Inductive {
+            name: "Unary".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::succ(Level::zero())),
+            data: Box::new(data),
+        }],
+    }
+}
+
+fn unary() -> Expr {
+    Expr::konst("Unary", vec![])
+}
+
+fn unary_zero() -> Expr {
+    Expr::konst("Unary.zero", vec![])
+}
+
+fn unary_succ(arg: Expr) -> Expr {
+    Expr::app(Expr::konst("Unary.succ", vec![]), arg)
+}
+
+fn unary_rec_type(level: Level) -> Expr {
+    let motive_ty = Expr::pi("_", unary(), Expr::sort(level));
+    let z_ty = Expr::app(Expr::bvar(0), unary_zero());
+    let s_ty = Expr::pi(
+        "n",
+        unary(),
+        Expr::pi(
+            "ih",
+            Expr::app(Expr::bvar(2), Expr::bvar(0)),
+            Expr::app(Expr::bvar(3), unary_succ(Expr::bvar(1))),
+        ),
+    );
+
+    Expr::pi(
+        "motive",
+        motive_ty,
+        Expr::pi(
+            "z",
+            z_ty,
+            Expr::pi(
+                "s",
+                s_ty,
+                Expr::pi("n", unary(), Expr::app(Expr::bvar(3), Expr::bvar(0))),
+            ),
+        ),
+    )
+}
+
+fn unary_inductive_with_recursor_module() -> CoreModule {
+    let data = InductiveDecl::new(
+        "Unary",
+        vec![],
+        vec![],
+        vec![],
+        Level::succ(Level::zero()),
+        vec![
+            ConstructorDecl::new("Unary.zero", unary()),
+            ConstructorDecl::new("Unary.succ", Expr::pi("_", unary(), unary())),
+        ],
+        Some(RecursorDecl::new(
+            "Unary.rec",
+            vec!["u".to_owned()],
+            unary_rec_type(Level::param("u")),
+        )),
+    );
+    CoreModule {
+        name: Name::from_dotted("Test.UnaryRec"),
+        declarations: vec![Decl::Inductive {
+            name: "Unary".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::succ(Level::zero())),
+            data: Box::new(data),
+        }],
+    }
+}
+
+fn unary_inductive_with_recursor_type_anchor_module() -> CoreModule {
+    let mut module = unary_inductive_with_recursor_module();
+    module.declarations.push(Decl::Axiom {
+        name: "Unary.rec_anchor".to_owned(),
+        universe_params: vec!["u".to_owned()],
+        ty: unary_rec_type(Level::param("u")),
+    });
+    module
+}
+
+fn box_inductive_module() -> CoreModule {
+    let u = Level::param("u");
+    let box_a = |a: Expr| Expr::app(Expr::konst("Box", vec![u.clone()]), a);
+    let data = InductiveDecl::new(
+        "Box",
+        vec!["u".to_owned()],
+        vec![Binder::new("A", Expr::sort(u.clone()))],
+        vec![],
+        u.clone(),
+        vec![ConstructorDecl::new(
+            "Box.mk",
+            Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi("x", Expr::bvar(0), box_a(Expr::bvar(1))),
+            ),
+        )],
+        None,
+    );
+    CoreModule {
+        name: Name::from_dotted("Test.Box"),
+        declarations: vec![Decl::Inductive {
+            name: "Box".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u)),
+            data: Box::new(data),
+        }],
+    }
+}
+
+fn unary_with_local_constructor_use_module() -> CoreModule {
+    let mut module = unary_inductive_module();
+    module.declarations.push(Decl::Def {
+        name: "z".to_owned(),
+        universe_params: vec![],
+        ty: Expr::konst("Unary", vec![]),
+        value: Expr::konst("Unary.zero", vec![]),
+        reducibility: Reducibility::Reducible,
+    });
+    module
+}
+
+fn use_imported_unary_constructor_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseUnary"),
+        declarations: vec![Decl::Def {
+            name: "z".to_owned(),
+            universe_params: vec![],
+            ty: Expr::konst("Unary", vec![]),
+            value: Expr::konst("Unary.zero", vec![]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn use_imported_unary_recursor_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseUnaryRec"),
+        declarations: vec![Decl::Def {
+            name: "rec_alias".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: unary_rec_type(Level::param("u")),
+            value: Expr::konst("Unary.rec", vec![Level::param("u")]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn hash_hex(hash: Hash) -> String {
+    hash.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn read_test_uvar(bytes: &[u8], offset: &mut usize) -> u64 {
+    let mut result = 0;
+    let mut shift = 0;
+    loop {
+        let byte = bytes[*offset];
+        *offset += 1;
+        result |= ((byte & 0x7f) as u64) << shift;
+        if byte & 0x80 == 0 {
+            return result;
+        }
+        shift += 7;
+    }
+}
+
+fn skip_test_string(bytes: &[u8], offset: &mut usize) {
+    let len = read_test_uvar(bytes, offset) as usize;
+    *offset += len;
+}
+
+fn skip_test_name(bytes: &[u8], offset: &mut usize) {
+    let len = read_test_uvar(bytes, offset);
+    for _ in 0..len {
+        skip_test_string(bytes, offset);
+    }
+}
+
+fn skip_test_imports(bytes: &[u8], offset: &mut usize) {
+    let len = read_test_uvar(bytes, offset);
+    for _ in 0..len {
+        skip_test_name(bytes, offset);
+        *offset += 32;
+        match bytes[*offset] {
+            0x00 => *offset += 1,
+            0x01 => *offset += 33,
+            tag => panic!("unexpected option tag {tag}"),
+        }
+    }
+}
+
+fn skip_test_name_table(bytes: &[u8], offset: &mut usize) {
+    let len = read_test_uvar(bytes, offset);
+    for _ in 0..len {
+        skip_test_name(bytes, offset);
+    }
+}
+
+fn skip_test_level_table(bytes: &[u8], offset: &mut usize) {
+    let len = read_test_uvar(bytes, offset);
+    for _ in 0..len {
+        let tag = bytes[*offset];
+        *offset += 1;
+        match tag {
+            0x00 => {}
+            0x01 | 0x04 => {
+                read_test_uvar(bytes, offset);
+            }
+            0x02 | 0x03 => {
+                read_test_uvar(bytes, offset);
+                read_test_uvar(bytes, offset);
+            }
+            tag => panic!("unexpected level tag {tag}"),
+        }
+    }
+}
+
+fn first_term_tag_offset(bytes: &[u8]) -> usize {
+    let mut offset = 0;
+    skip_test_string(bytes, &mut offset);
+    skip_test_string(bytes, &mut offset);
+    skip_test_name(bytes, &mut offset);
+    skip_test_imports(bytes, &mut offset);
+    skip_test_name_table(bytes, &mut offset);
+    skip_test_level_table(bytes, &mut offset);
+    let term_len = read_test_uvar(bytes, &mut offset);
+    assert!(term_len > 0);
+    offset
+}
+
+fn verify_cert(cert: &ModuleCert, session: &mut VerifierSession) -> VerifiedModule {
+    verify_module_cert(
+        &encode_module_cert(cert).unwrap(),
+        session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap()
+}
+
+fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
+    let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table).unwrap();
+    let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes).unwrap();
+    for decl in &mut cert.declarations {
+        decl.hashes = compute_decl_hashes(
+            &decl.decl,
+            &decl.dependencies,
+            &decl.axiom_dependencies,
+            &term_hashes,
+        )
+        .unwrap();
+    }
+
+    let mut previous_axioms: Vec<Vec<AxiomRef>> = Vec::new();
+    let mut reports = Vec::new();
+    for decl_index in 0..cert.declarations.len() {
+        let decl = cert.declarations[decl_index].decl.clone();
+        let dependencies = expected_dependencies_for_decl(cert, &[], decl_index, &decl).unwrap();
+        let (direct_axioms, transitive_axioms) = expected_axioms_for_decl(
+            cert,
+            &[],
+            decl_index,
+            &decl,
+            &dependencies,
+            &previous_axioms,
+        )
+        .unwrap();
+        cert.declarations[decl_index].dependencies = dependencies;
+        cert.declarations[decl_index].axiom_dependencies = transitive_axioms.clone();
+        previous_axioms.push(transitive_axioms.clone());
+        reports.push(DeclAxiomReport {
+            decl_index,
+            direct_axioms,
+            transitive_axioms,
+        });
+    }
+    cert.axiom_report = AxiomReport {
+        module_axioms: union_axioms(
+            reports
+                .iter()
+                .flat_map(|report| report.transitive_axioms.iter().cloned()),
+        ),
+        per_declaration: reports,
+    };
+
+    for decl in &mut cert.declarations {
+        decl.hashes = compute_decl_hashes(
+            &decl.decl,
+            &decl.dependencies,
+            &decl.axiom_dependencies,
+            &term_hashes,
+        )
+        .unwrap();
+    }
+    cert.export_block =
+        build_export_block(&cert.declarations, &cert.term_table, &term_hashes).unwrap();
+    cert.hashes.export_hash = hash_with_domain(
+        b"NPA-MODULE-EXPORT-0.1",
+        &encode_export_block(&cert.export_block),
+    );
+    cert.hashes.axiom_report_hash = hash_with_domain(
+        b"NPA-AXIOM-REPORT-0.1",
+        &encode_axiom_report(&cert.axiom_report),
+    );
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(cert),
+    );
+}
+
+#[derive(Clone, Copy)]
+struct GoldenHashFixture<'a> {
+    byte_len: usize,
+    export_hash: &'a str,
+    axiom_report_hash: &'a str,
+    certificate_hash: &'a str,
+}
+
+fn golden_hash_fixture(label: &str) -> GoldenHashFixture<'static> {
+    let fixture = include_str!("../tests/fixtures/golden_hashes.tsv");
+    for (line_index, line) in fixture.lines().enumerate() {
+        if line_index == 0 || line.trim().is_empty() {
+            continue;
+        }
+        let fields: Vec<_> = line.split('\t').collect();
+        assert_eq!(fields.len(), 5, "bad golden fixture line {line_index}");
+        if fields[0] == label {
+            return GoldenHashFixture {
+                byte_len: fields[1].parse().unwrap(),
+                export_hash: fields[2],
+                axiom_report_hash: fields[3],
+                certificate_hash: fields[4],
+            };
+        }
+    }
+    panic!("missing golden fixture for {label}");
+}
+
+fn assert_golden_cert(label: &str, cert: &ModuleCert) {
+    let expected = golden_hash_fixture(label);
+    assert_eq!(
+        encode_module_cert(cert).unwrap().len(),
+        expected.byte_len,
+        "{label}"
+    );
+    assert_eq!(
+        hash_hex(cert.hashes.export_hash),
+        expected.export_hash,
+        "{label}"
+    );
+    assert_eq!(
+        hash_hex(cert.hashes.axiom_report_hash),
+        expected.axiom_report_hash,
+        "{label}"
+    );
+    assert_eq!(
+        hash_hex(cert.hashes.certificate_hash),
+        expected.certificate_hash,
+        "{label}"
+    );
+}
+
+#[test]
+fn builds_encodes_decodes_and_verifies_id_certificate() {
+    let cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    let decoded = decode_module_cert(&bytes).unwrap();
+    assert_eq!(decoded, cert);
+
+    let mut session = VerifierSession::new();
+    let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    assert_eq!(verified.module, Name::from_dotted("Test.Id"));
+    assert_eq!(verified.declarations.len(), 1);
+}
+
+#[test]
+fn golden_certificate_hashes_cover_core_shapes() {
+    let mut session = VerifierSession::new();
+
+    let id = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    assert_golden_cert("id", &id);
+    verify_cert(&id, &mut session);
+
+    let const_cert = build_module_cert(const_module(), &[]).unwrap();
+    assert_golden_cert("const", &const_cert);
+    verify_cert(&const_cert, &mut session);
+
+    let nat_cert = build_module_cert(nat_module(), &[]).unwrap();
+    assert_golden_cert("nat", &nat_cert);
+    let nat_verified = verify_cert(&nat_cert, &mut session);
+
+    let eq_cert = build_module_cert(eq_module(), &[]).unwrap();
+    assert_golden_cert("eq", &eq_cert);
+    let eq_verified = verify_cert(&eq_cert, &mut session);
+
+    let add_cert =
+        build_module_cert(nat_add_module(), std::slice::from_ref(&nat_verified)).unwrap();
+    assert_golden_cert("nat_add", &add_cert);
+    let add_verified = verify_cert(&add_cert, &mut session);
+
+    let add_zero_cert = build_module_cert(
+        add_zero_module(),
+        &[nat_verified, eq_verified, add_verified],
+    )
+    .unwrap();
+    assert_golden_cert("add_zero", &add_zero_cert);
+    verify_cert(&add_zero_cert, &mut session);
+}
+
+#[test]
+fn binder_names_do_not_affect_term_hashes() {
+    let cert_a = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let cert_b = build_module_cert(id_module("B", "y"), &[]).unwrap();
+
+    let value_a = match cert_a.declarations[0].decl {
+        DeclPayload::Def { value, .. } => value,
+        _ => panic!("expected def"),
+    };
+    let value_b = match cert_b.declarations[0].decl {
+        DeclPayload::Def { value, .. } => value,
+        _ => panic!("expected def"),
+    };
+
+    assert_eq!(term_hash(&cert_a, value_a), term_hash(&cert_b, value_b));
+    assert_eq!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
+}
+
+#[test]
+fn verified_module_can_be_imported_by_export_hash() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+    assert_eq!(use_id_cert.imports.len(), 1);
+    assert_eq!(
+        use_id_cert.imports[0].export_hash,
+        id_cert.hashes.export_hash
+    );
+
+    let use_id_bytes = encode_module_cert(&use_id_cert).unwrap();
+    let verified_use_id =
+        verify_module_cert(&use_id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+    assert_eq!(verified_use_id.module, Name::from_dotted("Test.UseId"));
+}
+
+#[test]
+fn import_order_is_canonical_and_stable() {
+    let mut session = VerifierSession::new();
+    let alpha_cert = build_module_cert(named_axiom_module("Test.Alpha", "Alpha"), &[]).unwrap();
+    let alpha = verify_module_cert(
+        &encode_module_cert(&alpha_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+    let beta_cert = build_module_cert(named_axiom_module("Test.Beta", "Beta"), &[]).unwrap();
+    let beta = verify_module_cert(
+        &encode_module_cert(&beta_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let cert_ab =
+        build_module_cert(use_two_axioms_module(), &[alpha.clone(), beta.clone()]).unwrap();
+    let cert_ba = build_module_cert(use_two_axioms_module(), &[beta, alpha]).unwrap();
+
+    assert_eq!(cert_ab.imports, cert_ba.imports);
+    assert_eq!(
+        encode_module_cert(&cert_ab).unwrap(),
+        encode_module_cert(&cert_ba).unwrap()
+    );
+
+    let mut noncanonical = cert_ab;
+    noncanonical.imports.swap(0, 1);
+    noncanonical.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&noncanonical),
+    );
+    let err = verify_module_cert(
+        &encode_module_cert(&noncanonical).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "Imports" }
+    ));
+}
+
+#[test]
+fn declaration_order_is_canonical_and_stable() {
+    let cert_ab = build_module_cert(ordered_axioms_module(&["A", "B"]), &[]).unwrap();
+    let cert_ba = build_module_cert(ordered_axioms_module(&["B", "A"]), &[]).unwrap();
+
+    assert_eq!(
+        encode_module_cert(&cert_ab).unwrap(),
+        encode_module_cert(&cert_ba).unwrap()
+    );
+    assert!(matches!(
+        cert_ba.declarations[0].decl,
+        DeclPayload::Axiom { name, .. } if cert_ba.name_table[name] == Name::from_dotted("A")
+    ));
+}
+
+#[test]
+fn verifier_rejects_noncanonical_declaration_order_even_if_rehashed() {
+    let mut cert = build_module_cert(ordered_axioms_module(&["A", "B"]), &[]).unwrap();
+    cert.declarations.swap(0, 1);
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "Declarations"
+        }
+    ));
+}
+
+#[test]
+fn forward_source_dependency_is_canonicalized_before_verification() {
+    let cert = build_module_cert(forward_axiom_dependency_module(), &[]).unwrap();
+    assert!(matches!(
+        cert.declarations[0].decl,
+        DeclPayload::Axiom { name, .. } if cert.name_table[name] == Name::from_dotted("P")
+    ));
+    assert!(cert.declarations[1]
+        .dependencies
+        .iter()
+        .any(|dependency| matches!(dependency.global_ref, GlobalRef::Local { decl_index: 0 })));
+
+    let mut session = VerifierSession::new();
+    verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn imported_axioms_are_reported_in_caller_certificate() {
+    let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_p = verify_module_cert(
+        &encode_module_cert(&p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_p_cert = build_module_cert(use_axiom_module(), &[verified_p]).unwrap();
+    assert_eq!(use_p_cert.axiom_report.module_axioms.len(), 1);
+    let axiom = &use_p_cert.axiom_report.module_axioms[0];
+    assert_eq!(use_p_cert.name_table[axiom.name], Name::from_dotted("P"));
+    assert!(matches!(
+        axiom.global_ref,
+        GlobalRef::Imported {
+            import_index: 0,
+            ..
+        }
+    ));
+
+    let mut policy = AxiomPolicy::high_trust();
+    policy.allowlisted_axioms.insert(Name::from_dotted("P"));
+    verify_module_cert(
+        &encode_module_cert(&use_p_cert).unwrap(),
+        &mut session,
+        &policy,
+    )
+    .unwrap();
+}
+
+#[test]
+fn opaque_theorem_proof_change_keeps_export_hash_when_axioms_do_not_change() {
+    let cert_a = build_module_cert(id_theorem_module(id_value("A", "x")), &[]).unwrap();
+    let cert_b = build_module_cert(id_theorem_module(id_value_with_beta_redex()), &[]).unwrap();
+
+    assert_eq!(
+        cert_a.declarations[0].hashes.decl_interface_hash,
+        cert_b.declarations[0].hashes.decl_interface_hash
+    );
+    assert_ne!(
+        cert_a.declarations[0].hashes.decl_certificate_hash,
+        cert_b.declarations[0].hashes.decl_certificate_hash
+    );
+    assert_eq!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
+    assert_eq!(
+        cert_a.hashes.axiom_report_hash,
+        cert_b.hashes.axiom_report_hash
+    );
+    assert_ne!(
+        cert_a.hashes.certificate_hash,
+        cert_b.hashes.certificate_hash
+    );
+}
+
+#[test]
+fn transparent_def_body_change_changes_interface_and_export_hashes() {
+    let cert_a = build_module_cert(id_def_module_with_value(id_value("A", "x")), &[]).unwrap();
+    let cert_b =
+        build_module_cert(id_def_module_with_value(id_value_with_beta_redex()), &[]).unwrap();
+
+    assert_ne!(
+        cert_a.declarations[0].hashes.decl_interface_hash,
+        cert_b.declarations[0].hashes.decl_interface_hash
+    );
+    assert_ne!(
+        cert_a.declarations[0].hashes.decl_certificate_hash,
+        cert_b.declarations[0].hashes.decl_certificate_hash
+    );
+    assert_ne!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
+    assert_ne!(
+        cert_a.hashes.certificate_hash,
+        cert_b.hashes.certificate_hash
+    );
+}
+
+#[test]
+fn opaque_theorem_axiom_change_changes_export_hash() {
+    let cert_p1 = build_module_cert(theorem_using_axiom_module("p1"), &[]).unwrap();
+    let cert_p2 = build_module_cert(theorem_using_axiom_module("p2"), &[]).unwrap();
+
+    assert_ne!(cert_p1.hashes.export_hash, cert_p2.hashes.export_hash);
+    assert_ne!(
+        cert_p1.axiom_report.per_declaration[3].transitive_axioms,
+        cert_p2.axiom_report.per_declaration[3].transitive_axioms
+    );
+}
+
+#[test]
+fn axiom_policy_rejects_forbidden_and_sorry_axioms() {
+    let cert = build_module_cert(axiom_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::ForbiddenAxiom { .. }));
+
+    let sorry_cert =
+        build_module_cert(named_axiom_module("Test.Sorry", "sorry.synthetic"), &[]).unwrap();
+    let err = verify_module_cert(
+        &encode_module_cert(&sorry_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::SorryDenied { .. }));
+}
+
+#[test]
+fn axiom_type_dependencies_are_reported_and_verified() {
+    let cert = build_module_cert(theorem_using_axiom_module("p1"), &[]).unwrap();
+    assert!(cert.declarations[1]
+        .dependencies
+        .iter()
+        .any(|dependency| matches!(dependency.global_ref, GlobalRef::Local { decl_index: 0 })));
+    assert!(cert.axiom_report.per_declaration[1]
+        .transitive_axioms
+        .iter()
+        .any(|axiom| matches!(axiom.global_ref, GlobalRef::Local { decl_index: 0 })));
+
+    let mut session = VerifierSession::new();
+    verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn inductive_certificate_round_trips_and_verifies() {
+    let cert = build_module_cert(unary_inductive_module(), &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    assert_eq!(verified.module, Name::from_dotted("Test.Unary"));
+    assert!(matches!(
+        verified.declarations.first().map(|decl| &decl.decl),
+        Some(DeclPayload::Inductive { name, .. })
+            if verified.name_table[*name] == Name::from_dotted("Unary")
+    ));
+    assert!(cert.export_block.iter().any(|entry| {
+        entry.kind == ExportKind::Constructor
+            && cert.name_table[entry.name] == Name::from_dotted("Unary.zero")
+    }));
+    assert!(cert.export_block.iter().any(|entry| {
+        entry.kind == ExportKind::Constructor
+            && cert.name_table[entry.name] == Name::from_dotted("Unary.succ")
+    }));
+}
+
+#[test]
+fn local_generated_constructor_can_be_referenced_after_inductive() {
+    let cert = build_module_cert(unary_with_local_constructor_use_module(), &[]).unwrap();
+    let def = &cert.declarations[1];
+    assert!(def
+        .dependencies
+        .iter()
+        .any(|dependency| matches!(dependency.global_ref, GlobalRef::LocalGenerated { .. })));
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+}
+
+#[test]
+fn imported_constructor_can_be_referenced_from_downstream_certificate() {
+    let unary_cert = build_module_cert(unary_inductive_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_unary = verify_module_cert(
+        &encode_module_cert(&unary_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_unary_cert =
+        build_module_cert(use_imported_unary_constructor_module(), &[verified_unary]).unwrap();
+    let def = &use_unary_cert.declarations[0];
+    assert!(def.dependencies.iter().any(|dependency| {
+        matches!(
+            dependency.global_ref,
+            GlobalRef::Imported { name, .. }
+                if use_unary_cert.name_table[name] == Name::from_dotted("Unary.zero")
+        )
+    }));
+
+    verify_module_cert(
+        &encode_module_cert(&use_unary_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn imported_recursor_can_be_referenced_from_downstream_certificate() {
+    let unary_cert = build_module_cert(unary_inductive_with_recursor_module(), &[]).unwrap();
+    assert!(unary_cert.export_block.iter().any(|entry| {
+        entry.kind == ExportKind::Recursor
+            && unary_cert.name_table[entry.name] == Name::from_dotted("Unary.rec")
+    }));
+
+    let mut session = VerifierSession::new();
+    let verified_unary = verify_module_cert(
+        &encode_module_cert(&unary_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+    let use_rec_cert =
+        build_module_cert(use_imported_unary_recursor_module(), &[verified_unary]).unwrap();
+    assert!(use_rec_cert.declarations[0]
+        .dependencies
+        .iter()
+        .any(|dependency| {
+            matches!(
+                dependency.global_ref,
+                GlobalRef::Imported { name, .. }
+                    if use_rec_cert.name_table[name] == Name::from_dotted("Unary.rec")
+            )
+        }));
+
+    verify_module_cert(
+        &encode_module_cert(&use_rec_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn rejects_tampered_inductive_generated_recursor_rules_even_if_rehashed() {
+    let mut cert = build_module_cert(unary_inductive_with_recursor_module(), &[]).unwrap();
+    match &mut cert.declarations[0].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.rules.major_index += 1,
+        _ => panic!("expected inductive with recursor"),
+    }
+    rehash_cert_after_decl_change(&mut cert);
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(
+            err,
+            CertError::InductiveGeneratedArtifactMismatch { ref name }
+                if name == &Name::from_dotted("Unary")
+        ),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn rejects_tampered_inductive_generated_recursor_type_even_if_rehashed() {
+    let mut cert =
+        build_module_cert(unary_inductive_with_recursor_type_anchor_module(), &[]).unwrap();
+    let inductive_index = cert
+        .declarations
+        .iter()
+        .position(|decl| matches!(decl.decl, DeclPayload::Inductive { .. }))
+        .unwrap();
+    let unary_term = cert
+        .term_table
+        .iter()
+        .position(|term| {
+            matches!(
+                term,
+                TermNode::Const {
+                    global_ref: GlobalRef::Local { decl_index },
+                    levels
+                } if *decl_index == inductive_index && levels.is_empty()
+            )
+        })
+        .unwrap();
+    match &mut cert.declarations[inductive_index].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.ty = unary_term,
+        _ => panic!("expected inductive with recursor"),
+    }
+    rehash_cert_after_decl_change(&mut cert);
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(
+            err,
+            CertError::InductiveGeneratedArtifactMismatch { ref name }
+                if name == &Name::from_dotted("Unary")
+        ),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn parameterized_inductive_exports_full_type_telescope() {
+    let cert = build_module_cert(box_inductive_module(), &[]).unwrap();
+    let box_entry = cert
+        .export_block
+        .iter()
+        .find(|entry| {
+            entry.kind == ExportKind::Inductive
+                && cert.name_table[entry.name] == Name::from_dotted("Box")
+        })
+        .unwrap();
+    assert!(matches!(cert.term_table[box_entry.ty], TermNode::Pi { .. }));
+
+    let mut session = VerifierSession::new();
+    verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn rejects_tampered_certificate_hash() {
+    let cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let mut bytes = encode_module_cert(&cert).unwrap();
+    let last = bytes.len() - 1;
+    bytes[last] ^= 0x01;
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::HashMismatch {
+            object: HashObject::ModuleCertificate,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn rejects_tampered_decl_interface_hash() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    cert.declarations[0].hashes.decl_interface_hash[0] ^= 0x01;
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::HashMismatch {
+            object: HashObject::DeclInterface,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn rejects_tampered_decl_certificate_hash() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    cert.declarations[0].hashes.decl_certificate_hash[0] ^= 0x01;
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::HashMismatch {
+            object: HashObject::DeclCertificate,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn rejects_tampered_theorem_proof_body_even_if_certificate_rehashed() {
+    let mut cert = build_module_cert(two_id_theorems_module(), &[]).unwrap();
+    match &mut cert.declarations[1].decl {
+        DeclPayload::Theorem { proof, ty, .. } => *proof = *ty,
+        _ => panic!("expected theorem"),
+    }
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::HashMismatch {
+            object: HashObject::DeclCertificate,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn rejects_non_minimal_uleb128_in_canonical_binary() {
+    let cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let mut bytes = encode_module_cert(&cert).unwrap();
+    bytes[0] |= 0x80;
+    bytes.insert(1, 0x00);
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "uvar" }
+    ));
+}
+
+#[test]
+fn rejects_invalid_utf8_in_canonical_binary_string() {
+    let cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let mut bytes = encode_module_cert(&cert).unwrap();
+    bytes[1] = 0xff;
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "string" }
+    ));
+}
+
+#[test]
+fn rejects_unknown_term_tag_as_unsupported_encoding() {
+    let cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let mut bytes = encode_module_cert(&cert).unwrap();
+    let offset = first_term_tag_offset(&bytes);
+    bytes[offset] = 0x7f;
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(err, CertError::UnsupportedEncoding { tag: 0x7f }));
+}
+
+#[test]
+fn rejects_export_block_that_was_rehashed_but_not_derived_from_declarations() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    cert.export_block.clear();
+    cert.hashes.export_hash = hash_with_domain(
+        b"NPA-MODULE-EXPORT-0.1",
+        &encode_export_block(&cert.export_block),
+    );
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::HashMismatch {
+            object: HashObject::ExportBlock,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn rejects_axiom_report_that_was_rehashed_but_is_incomplete() {
+    let mut cert = build_module_cert(axiom_module(), &[]).unwrap();
+    cert.axiom_report.module_axioms.clear();
+    cert.hashes.axiom_report_hash = hash_with_domain(
+        b"NPA-AXIOM-REPORT-0.1",
+        &encode_axiom_report(&cert.axiom_report),
+    );
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(err, CertError::AxiomReportMismatch { .. }));
+}
+
+#[test]
+fn rejects_noncanonical_term_table_even_if_bytes_round_trip() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    cert.term_table.push(cert.term_table[0].clone());
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "TermTable"
+        }
+    ));
+}
+
+#[test]
+fn rejects_unreachable_term_table_entry_even_if_rehashed() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let last = cert.term_table.len() - 1;
+    cert.term_table.push(TermNode::App(last, last));
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "TermTable"
+        }
+    ));
+}
+
+#[test]
+fn rejects_unreachable_level_table_entry_even_if_rehashed() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let last = cert.level_table.len() - 1;
+    cert.level_table.push(LevelNode::Succ(last));
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "LevelTable"
+        }
+    ));
+}
+
+#[test]
+fn rejects_root_term_with_out_of_scope_bvar() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let bvar_zero = cert
+        .term_table
+        .iter()
+        .position(|term| matches!(term, TermNode::BVar(0)))
+        .unwrap();
+    match &mut cert.declarations[0].decl {
+        DeclPayload::Def { value, .. } => *value = bvar_zero,
+        _ => panic!("expected def"),
+    }
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(err, CertError::InvalidBVar { index: 0 }));
+}
+
+#[test]
+fn normal_mode_allows_missing_import_certificate_hash_but_high_trust_rejects_it() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let mut use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+    use_id_cert.imports[0].certificate_hash = None;
+    use_id_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&use_id_cert),
+    );
+    let use_id_bytes = encode_module_cert(&use_id_cert).unwrap();
+
+    verify_module_cert(&use_id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let err =
+        verify_module_cert(&use_id_bytes, &mut session, &AxiomPolicy::high_trust()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::MissingImportCertificateHash { .. }
+    ));
+}
+
+#[test]
+fn rejects_import_certificate_hash_mismatch() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let mut use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+    use_id_cert.imports[0].certificate_hash.as_mut().unwrap()[0] ^= 0x01;
+    use_id_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&use_id_cert),
+    );
+
+    let err = verify_module_cert(
+        &encode_module_cert(&use_id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::ImportCertificateHashMismatch { .. }
+    ));
+}
+
+#[test]
+fn normal_mode_rejects_present_import_certificate_hash_mismatch() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let mut use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+    use_id_cert.imports[0].certificate_hash.as_mut().unwrap()[0] ^= 0x01;
+    use_id_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&use_id_cert),
+    );
+
+    let err = verify_module_cert(
+        &encode_module_cert(&use_id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::ImportCertificateHashMismatch { .. }
+    ));
+}
+
+#[test]
+fn rejects_import_export_hash_mismatch() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    let mut use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+    use_id_cert.imports[0].export_hash[0] ^= 0x01;
+    use_id_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&use_id_cert),
+    );
+
+    let err = verify_module_cert(
+        &encode_module_cert(&use_id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::ImportHashMismatch { .. }));
+}
+
+#[test]
+fn high_trust_rechecks_import_axiom_policy_even_when_unused() {
+    let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_p = verify_module_cert(
+        &encode_module_cert(&p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let id_cert = build_module_cert(id_module("A", "x"), &[verified_p]).unwrap();
+    assert!(id_cert.axiom_report.module_axioms.is_empty());
+
+    let err = verify_module_cert(
+        &encode_module_cert(&id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::ForbiddenAxiom { .. }));
+
+    let mut policy = AxiomPolicy::high_trust();
+    policy.allowlisted_axioms.insert(Name::from_dotted("P"));
+    verify_module_cert(
+        &encode_module_cert(&id_cert).unwrap(),
+        &mut session,
+        &policy,
+    )
+    .unwrap();
+}
+
+#[test]
+fn high_trust_rejects_import_not_verified_in_current_session() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let mut build_session = VerifierSession::new();
+    let verified_id = verify_module_cert(
+        &encode_module_cert(&id_cert).unwrap(),
+        &mut build_session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+    let use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+
+    let mut fresh_session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&use_id_cert).unwrap(),
+        &mut fresh_session,
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::ImportNotVerifiedInSession { .. }));
+}
