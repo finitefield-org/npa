@@ -657,13 +657,15 @@ impl<'a> Resolver<'a> {
         for constructor in constructors {
             let ctor_name = full_name.push(constructor.name.clone());
             let ctor_ty = self.resolve_expr(&constructor.ty)?;
-            self.register_generated_decl(&ctor_name, constructor.span, decl_index)?;
             resolved_constructors.push(ResolvedCtorDecl {
                 name: ctor_name,
                 source_name: constructor.name.clone(),
                 ty: ctor_ty,
                 span: constructor.span,
             });
+        }
+        for constructor in &resolved_constructors {
+            self.register_generated_decl(&constructor.name, constructor.span, decl_index)?;
         }
         self.state.locals.truncate(local_len);
 
@@ -1014,7 +1016,7 @@ impl<'a> Resolver<'a> {
         let suffix_candidates: Vec<_> = self
             .all_visible_global_names()
             .into_iter()
-            .filter_map(|name| namespace_prefix_with_suffix(&name, &suffix))
+            .flat_map(|name| namespace_prefixes_with_suffix(&name, &suffix))
             .collect();
         candidates.extend(suffix_candidates);
         candidates.sort();
@@ -1226,13 +1228,11 @@ fn global_ref_kind_rank(global_ref: &ElabGlobalRef) -> u8 {
     }
 }
 
-fn namespace_prefix_with_suffix(name: &Name, suffix: &Name) -> Option<Name> {
-    if name.parts.len() <= suffix.parts.len() || !name.ends_with(suffix) {
-        return None;
-    }
-    Some(Name::new(
-        name.parts[..name.parts.len() - suffix.parts.len()].to_vec(),
-    ))
+fn namespace_prefixes_with_suffix(name: &Name, suffix: &Name) -> Vec<Name> {
+    (1..name.parts.len())
+        .map(|len| Name::new(name.parts[..len].to_vec()))
+        .filter(|namespace| namespace.ends_with(suffix))
+        .collect()
 }
 
 fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMap<Name, Span>> {
@@ -1432,6 +1432,13 @@ axiom x : Nat
     }
 
     #[test]
+    fn rejects_opening_leaf_declaration_name() {
+        let err = resolve("import Std.Nat\nopen zero", &[std_nat_import()])
+            .expect_err("leaf declaration names are not namespaces");
+        assert_eq!(err.kind, DiagnosticKind::UnknownNamespace);
+    }
+
+    #[test]
     fn namespace_open_scope_is_lexical() {
         let resolved = resolve(
             r#"
@@ -1599,6 +1606,20 @@ def x : Nat := Nat.zero
         )
         .expect_err("duplicate declaration must fail");
         assert_eq!(err.kind, DiagnosticKind::DuplicateDeclaration);
+    }
+
+    #[test]
+    fn rejects_same_block_constructor_reference() {
+        let err = resolve(
+            r#"
+inductive T : Type where
+| c1 : T
+| c2 : T.c1
+"#,
+            &[],
+        )
+        .expect_err("constructors in the same block must not be visible");
+        assert_eq!(err.kind, DiagnosticKind::ForwardReference);
     }
 
     #[test]
