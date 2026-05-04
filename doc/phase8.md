@@ -183,8 +183,9 @@ reference checker は逆に、なるべく単純にします。
 9. universe consistency
 10. inductive declaration validity
 11. axiom report correctness
-12. export hash
-13. certificate hash
+12. axiom report hash
+13. export hash
+14. certificate hash
 ```
 
 成功時：
@@ -196,6 +197,7 @@ reference checker は逆に、なるべく単純にします。
   "module": "Std.Nat",
   "export_hash": "sha256:...",
   "certificate_hash": "sha256:...",
+  "axiom_report_hash": "sha256:...",
   "axioms_used": [],
   "declarations_checked": 128
 }
@@ -643,12 +645,12 @@ compare with stored hashes
 Domain separation を必須にします。
 
 ```text
-H("NPA_TERM_V1" || term_encoding)
-H("NPA_DECL_IFACE_V1" || decl_interface)
-H("NPA_DECL_CERT_V1" || decl_certificate)
-H("NPA_MODULE_EXPORT_V1" || export_block)
-H("NPA_MODULE_CERT_V1" || full_certificate)
-H("NPA_AXIOM_REPORT_V1" || axiom_report)
+H("NPA-TERM-0.1" || term_encoding)
+H("NPA-DECL-IFACE-0.1" || decl_interface)
+H("NPA-DECL-CERT-0.1" || decl_certificate)
+H("NPA-MODULE-EXPORT-0.1" || export_block)
+H("NPA-MODULE-CERT-0.1" || trusted_payload_without_certificate_hash)
+H("NPA-AXIOM-REPORT-0.1" || axiom_report)
 ```
 
 こうすることで、異なる種類のデータを同じ hash として誤用する事故を減らします。
@@ -777,6 +779,7 @@ npa-checker-ext \
   "module": "Std.Nat",
   "export_hash": "sha256:...",
   "certificate_hash": "sha256:...",
+  "axiom_report_hash": "sha256:...",
   "axioms_used": [],
   "checked_declarations": 84,
   "time_ms": 913
@@ -1498,6 +1501,7 @@ POST /check/certificate
   "module": "Std.Nat",
   "certificate_hash": "sha256:...",
   "export_hash": "sha256:...",
+  "axiom_report_hash": "sha256:...",
   "axioms_used": [],
   "time_ms": 950
 }

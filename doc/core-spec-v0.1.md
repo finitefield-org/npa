@@ -555,9 +555,9 @@ Certificate:
   export_block: ExportBlock
   axiom_report: AxiomReport
   hashes:
-    export_hash: sha256(canonical_export_block)
-    axiom_report_hash: sha256(canonical_axiom_report)
-    certificate_hash: sha256(trusted_payload_without_certificate_hash)
+    export_hash: sha256("NPA-MODULE-EXPORT-0.1" || canonical_export_block)
+    axiom_report_hash: sha256("NPA-AXIOM-REPORT-0.1" || canonical_axiom_report)
+    certificate_hash: sha256("NPA-MODULE-CERT-0.1" || trusted_payload_without_certificate_hash)
 ```
 
 ### 9.2 Canonicalization
@@ -641,7 +641,7 @@ export_hash:
   downstream module が型検査・conversionに必要とする公開インターフェースのhash
 
 certificate_hash:
-  opaque theorem proof body などを含む trusted certificate payload 全体のhash
+  opaque theorem proof body などを含む trusted certificate payload から certificate_hash 自身を除いたhash
 ```
 
 opaque theorem の proof だけが変わり、type・opacity・axiom dependency が変わらない場合、
