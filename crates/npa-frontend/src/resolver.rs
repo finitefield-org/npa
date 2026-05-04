@@ -900,15 +900,17 @@ impl<'a> Resolver<'a> {
         let mut current = Vec::new();
         let mut imported = Vec::new();
 
-        for decl in &self.state.globals.current {
-            if priority.matches(&decl.name) {
-                current.push(decl.to_ref());
+        if !priority.is_suffix() {
+            for decl in &self.state.globals.current {
+                if priority.matches(&decl.name) {
+                    current.push(decl.to_ref());
+                }
             }
-        }
-        if !current.is_empty() {
-            current.sort_by(global_ref_cmp);
-            current.dedup();
-            return current;
+            if !current.is_empty() {
+                current.sort_by(global_ref_cmp);
+                current.dedup();
+                return current;
+            }
         }
 
         for decl in &self.state.globals.imported {
@@ -925,6 +927,7 @@ impl<'a> Resolver<'a> {
         let suffix = Name::from_surface(source);
         self.global_lookup_priorities(&suffix, source.parts.len() == 1)
             .into_iter()
+            .filter(|priority| !priority.is_suffix())
             .any(|priority| {
                 self.future_globals
                     .keys()
@@ -943,6 +946,7 @@ impl<'a> Resolver<'a> {
                     .into_iter()
                     .map(|namespace| LookupPriority::Exact(namespace.append(suffix))),
             );
+            priorities.push(LookupPriority::Exact(suffix.clone()));
             priorities.push(LookupPriority::Suffix(suffix.clone()));
         } else {
             priorities.push(LookupPriority::Exact(suffix.clone()));
@@ -1128,6 +1132,10 @@ enum LookupPriority {
 }
 
 impl LookupPriority {
+    fn is_suffix(&self) -> bool {
+        matches!(self, Self::Suffix(_))
+    }
+
     fn matches(&self, name: &Name) -> bool {
         match self {
             Self::Exact(expected) => name == expected,
@@ -1391,6 +1399,40 @@ end Demo
         .expect("module should resolve");
         assert_eq!(resolved.state.open_scopes.len(), 1);
         assert!(resolved.state.open_scopes[0].namespaces.is_empty());
+    }
+
+    #[test]
+    fn closed_current_namespace_does_not_leak_short_names() {
+        let err = resolve(
+            r#"
+axiom Nat : Type
+namespace Nat
+axiom zero : Nat
+end Nat
+def bad : Nat := zero
+"#,
+            &[],
+        )
+        .expect_err("closed namespace member must not resolve by short name");
+        assert_eq!(err.kind, DiagnosticKind::UnknownIdentifier);
+        assert!(err.message.contains("zero"));
+    }
+
+    #[test]
+    fn future_closed_namespace_member_is_not_a_forward_reference() {
+        let err = resolve(
+            r#"
+axiom Nat : Type
+def bad : Nat := zero
+namespace Nat
+axiom zero : Nat
+end Nat
+"#,
+            &[],
+        )
+        .expect_err("future closed namespace member must not be visible by short name");
+        assert_eq!(err.kind, DiagnosticKind::UnknownIdentifier);
+        assert!(err.message.contains("zero"));
     }
 
     #[test]
