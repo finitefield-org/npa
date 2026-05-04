@@ -1163,11 +1163,14 @@ Std.Algebra.Basic
 
 ```json
 {
+  "format": "NPA-CERT-0.1",
+  "core_spec": "NPA-Core-0.1",
   "module": "Std.Nat",
   "imports": [
     {
       "module": "Std.Logic",
-      "export_hash": "sha256:..."
+      "export_hash": "sha256:...",
+      "certificate_hash": "sha256:..."
     }
   ],
   "declarations": [
@@ -1180,11 +1183,13 @@ Std.Algebra.Basic
   ],
   "axiom_report": {
     "module_axioms": [],
-    "contains_sorry": false,
-    "safe_for_high_trust": true
+    "per_declaration": []
   },
-  "export_hash": "sha256:...",
-  "certificate_hash": "sha256:..."
+  "hashes": {
+    "export_hash": "sha256:...",
+    "certificate_hash": "sha256:...",
+    "axiom_report_hash": "sha256:..."
+  }
 }
 ```
 
@@ -1576,4 +1581,3 @@ Std.Algebra.Basic:
 ```
 
 この Phase 6 が完成すると、以降の Phase 7 で **AI証明探索、RAG、premise selection、proof search** を本格的に載せられるようになります。
-

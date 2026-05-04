@@ -252,7 +252,7 @@ Std.Nat.Basic.npcert
 }
 ```
 
-実際の保存形式は JSON ではなく canonical binary が望ましいです。
+実際の保存形式は JSON ではなく canonical binary にします。
 JSONは説明用・デバッグ用で、検査用の本体はbinaryにします。
 上の JSON も logical/debug view であり、hash 対象の canonical payload では map を使いません。
 `exports`、`axiom_report`、`hashes` は固定順の record または長さ付き配列として encode します。

@@ -820,7 +820,8 @@ external checker の入力は限定します。
   "imports": [
     {
       "module": "Std.Nat",
-      "export_hash": "sha256:..."
+      "export_hash": "sha256:...",
+      "certificate_hash": "sha256:..."
     }
   ]
 }

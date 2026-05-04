@@ -765,19 +765,23 @@ certificate は次を保証するためのものです。
 
 ## 6.2 Certificate の大枠
 
-人間向けには JSON で表せますが、実際の保存形式は canonical binary が望ましいです。
+人間向けには JSON で表せますが、実際の保存形式は canonical binary にします。
+JSON は説明用・デバッグ用であり、hash-stable artifact ではありません。
 
 概念的には：
 
 ```json
 {
   "format": "NPA-CERT-0.1",
-  "kernel_version": "0.1.0",
+  "core_spec": "NPA-Core-0.1",
   "module": "Std.Nat.Basic",
   "imports": [],
   "universe_params": [],
   "declarations": [],
-  "axiom_report": [],
+  "axiom_report": {
+    "module_axioms": [],
+    "per_declaration": []
+  },
   "hashes": {
     "export_hash": "sha256:...",
     "certificate_hash": "sha256:...",
