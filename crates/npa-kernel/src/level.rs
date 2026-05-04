@@ -59,6 +59,12 @@ pub fn normalize_level(level: Level) -> Level {
             if lhs == rhs {
                 return lhs;
             }
+            if lhs == Level::Zero {
+                return rhs;
+            }
+            if rhs == Level::Zero {
+                return lhs;
+            }
             match (level_as_nat(&lhs), level_as_nat(&rhs)) {
                 (Some(lhs_nat), Some(rhs_nat)) => level_from_nat(lhs_nat.max(rhs_nat)),
                 _ if rhs < lhs => Level::Max(Box::new(rhs), Box::new(lhs)),
@@ -97,4 +103,18 @@ fn level_as_nat(level: &Level) -> Option<u32> {
 
 fn level_from_nat(n: u32) -> Level {
     (0..n).fold(Level::Zero, |level, _| Level::succ(level))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn max_zero_normalizes_to_other_level() {
+        let u = Level::succ(Level::param("u"));
+
+        assert!(level_eq(&Level::max(Level::zero(), u.clone()), &u));
+        assert!(level_eq(&Level::max(u.clone(), Level::zero()), &u));
+        assert!(level_eq(&Level::imax(Level::zero(), u.clone()), &u));
+    }
 }
