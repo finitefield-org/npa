@@ -606,7 +606,9 @@ fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
             &decl.decl,
             &decl.dependencies,
             &decl.axiom_dependencies,
+            &level_hashes,
             &term_hashes,
+            &cert.name_table,
         )
         .unwrap();
     }
@@ -648,7 +650,9 @@ fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
             &decl.decl,
             &decl.dependencies,
             &decl.axiom_dependencies,
+            &level_hashes,
             &term_hashes,
+            &cert.name_table,
         )
         .unwrap();
     }
@@ -868,6 +872,18 @@ fn declaration_order_is_canonical_and_stable() {
 }
 
 #[test]
+fn declaration_names_are_committed_to_interface_and_export_hashes() {
+    let p_cert = build_module_cert(named_axiom_module("Test.NamedAxiom", "P"), &[]).unwrap();
+    let q_cert = build_module_cert(named_axiom_module("Test.NamedAxiom", "Q"), &[]).unwrap();
+
+    assert_ne!(
+        p_cert.declarations[0].hashes.decl_interface_hash,
+        q_cert.declarations[0].hashes.decl_interface_hash
+    );
+    assert_ne!(p_cert.hashes.export_hash, q_cert.hashes.export_hash);
+}
+
+#[test]
 fn verifier_rejects_noncanonical_declaration_order_even_if_rehashed() {
     let mut cert = build_module_cert(ordered_axioms_module(&["A", "B"]), &[]).unwrap();
     cert.declarations.swap(0, 1);
@@ -1036,6 +1052,13 @@ fn axiom_type_dependencies_are_reported_and_verified() {
         .transitive_axioms
         .iter()
         .any(|axiom| matches!(axiom.global_ref, GlobalRef::Local { decl_index: 0 })));
+    let theorem_direct_axioms = cert.axiom_report.per_declaration[3]
+        .direct_axioms
+        .iter()
+        .map(|axiom| cert.name_table[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    assert!(theorem_direct_axioms.iter().any(|name| name == "P"));
+    assert!(theorem_direct_axioms.iter().any(|name| name == "p1"));
 
     let mut session = VerifierSession::new();
     verify_module_cert(

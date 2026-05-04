@@ -159,11 +159,13 @@ pub(crate) fn compute_decl_hashes(
     decl: &DeclPayload,
     dependencies: &[DependencyEntry],
     axiom_dependencies: &[AxiomRef],
+    level_hashes: &[Hash],
     term_hashes: &[Hash],
+    names: &[Name],
 ) -> Result<DeclHashes> {
     let iface = hash_with_domain(
         b"NPA-DECL-IFACE-0.1",
-        &decl_interface_payload(decl, axiom_dependencies, term_hashes)?,
+        &decl_interface_payload(decl, axiom_dependencies, level_hashes, term_hashes, names)?,
     );
     let cert = hash_with_domain(
         b"NPA-DECL-CERT-0.1",
@@ -178,7 +180,9 @@ pub(crate) fn compute_decl_hashes(
 fn decl_interface_payload(
     decl: &DeclPayload,
     axiom_dependencies: &[AxiomRef],
+    level_hashes: &[Hash],
     term_hashes: &[Hash],
+    names: &[Name],
 ) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     match decl {
@@ -188,8 +192,8 @@ fn decl_interface_payload(
             ty,
         } => {
             out.push(0x00);
-            encode_uvar_to(&mut out, *name as u64);
-            encode_usize_vec(&mut out, universe_params);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
         }
         DeclPayload::Def {
@@ -200,8 +204,8 @@ fn decl_interface_payload(
             reducibility,
         } => {
             out.push(0x01);
-            encode_uvar_to(&mut out, *name as u64);
-            encode_usize_vec(&mut out, universe_params);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
             out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
             encode_reducibility_to(&mut out, *reducibility);
@@ -215,8 +219,8 @@ fn decl_interface_payload(
             ..
         } => {
             out.push(0x02);
-            encode_uvar_to(&mut out, *name as u64);
-            encode_usize_vec(&mut out, universe_params);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
             encode_opacity_to(&mut out, *opacity);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
@@ -231,8 +235,8 @@ fn decl_interface_payload(
             recursor,
         } => {
             out.push(0x03);
-            encode_uvar_to(&mut out, *name as u64);
-            encode_usize_vec(&mut out, universe_params);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
             encode_uvar_to(&mut out, params.len() as u64);
             for param in params {
                 out.extend(term_hashes.get(param.ty).ok_or(CertError::DecodeError)?);
@@ -241,10 +245,10 @@ fn decl_interface_payload(
             for index in indices {
                 out.extend(term_hashes.get(index.ty).ok_or(CertError::DecodeError)?);
             }
-            encode_uvar_to(&mut out, *sort as u64);
+            out.extend(level_hashes.get(*sort).ok_or(CertError::DecodeError)?);
             encode_uvar_to(&mut out, constructors.len() as u64);
             for constructor in constructors {
-                encode_uvar_to(&mut out, constructor.name as u64);
+                encode_name_id_to(&mut out, names, constructor.name)?;
                 out.extend(
                     term_hashes
                         .get(constructor.ty)
@@ -254,8 +258,8 @@ fn decl_interface_payload(
             match recursor {
                 Some(recursor) => {
                     out.push(0x01);
-                    encode_uvar_to(&mut out, recursor.name as u64);
-                    encode_usize_vec(&mut out, &recursor.universe_params);
+                    encode_name_id_to(&mut out, names, recursor.name)?;
+                    encode_name_ids_to(&mut out, names, &recursor.universe_params)?;
                     out.extend(term_hashes.get(recursor.ty).ok_or(CertError::DecodeError)?);
                     encode_uvar_to(&mut out, recursor.rules.minor_start as u64);
                     encode_uvar_to(&mut out, recursor.rules.major_index as u64);
@@ -289,6 +293,19 @@ fn decl_certificate_payload(
         }
     }
     Ok(out)
+}
+
+fn encode_name_id_to(out: &mut Vec<u8>, names: &[Name], name: NameId) -> Result<()> {
+    encode_name_to(out, names.get(name).ok_or(CertError::DecodeError)?);
+    Ok(())
+}
+
+fn encode_name_ids_to(out: &mut Vec<u8>, names: &[Name], values: &[NameId]) -> Result<()> {
+    encode_uvar_to(out, values.len() as u64);
+    for value in values {
+        encode_name_id_to(out, names, *value)?;
+    }
+    Ok(())
 }
 
 pub(crate) fn compute_level_hashes(levels: &[LevelNode], names: &[Name]) -> Result<Vec<Hash>> {

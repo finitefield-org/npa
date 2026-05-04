@@ -305,7 +305,9 @@ fn verify_hashes(cert: &ModuleCert) -> Result<()> {
             &decl.decl,
             &decl.dependencies,
             &decl.axiom_dependencies,
+            &level_hashes,
             &term_hashes,
+            &cert.name_table,
         )?;
         if expected.decl_interface_hash != decl.hashes.decl_interface_hash {
             return Err(CertError::HashMismatch {
@@ -741,8 +743,8 @@ pub(crate) fn expected_axioms_for_decl(
         match &dependency.global_ref {
             GlobalRef::Local { decl_index } => {
                 if let Some(dep_axioms) = previous_axioms.get(*decl_index) {
-                    if is_local_axiom_dependency(*decl_index, dep_axioms) {
-                        direct.extend(dep_axioms.iter().cloned());
+                    if let Some(axiom) = local_axiom_ref_for_decl(*decl_index, dep_axioms) {
+                        direct.insert(axiom);
                     }
                     transitive.extend(dep_axioms.iter().cloned());
                 }
@@ -824,14 +826,16 @@ fn remap_axiom_ref_from_cert_import(
     })
 }
 
-fn is_local_axiom_dependency(decl_index: usize, dep_axioms: &[AxiomRef]) -> bool {
-    matches!(
-        dep_axioms,
-        [AxiomRef {
-            global_ref: GlobalRef::Local { decl_index: axiom_index },
-            ..
-        }] if *axiom_index == decl_index
-    )
+fn local_axiom_ref_for_decl(decl_index: usize, dep_axioms: &[AxiomRef]) -> Option<AxiomRef> {
+    dep_axioms
+        .iter()
+        .find(|axiom| {
+            matches!(
+                axiom.global_ref,
+                GlobalRef::Local { decl_index: axiom_index } if axiom_index == decl_index
+            )
+        })
+        .cloned()
 }
 
 fn decl_term_ids(decl: &DeclPayload) -> Vec<TermId> {

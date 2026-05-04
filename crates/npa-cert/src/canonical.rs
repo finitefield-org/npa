@@ -201,7 +201,14 @@ pub(crate) fn build_module_cert_impl(
         )?;
 
         if let DeclPayload::Axiom { name, .. } = payload {
-            let preliminary = compute_decl_hashes(payload, &dependencies, &[], &term_hashes)?;
+            let preliminary = compute_decl_hashes(
+                payload,
+                &dependencies,
+                &[],
+                &level_hashes,
+                &term_hashes,
+                &name_table,
+            )?;
             let self_ref = AxiomRef {
                 global_ref: GlobalRef::Local { decl_index },
                 name: *name,
@@ -212,8 +219,14 @@ pub(crate) fn build_module_cert_impl(
             direct_axioms = union_axioms(direct_axioms.into_iter().chain([self_ref]));
         }
 
-        let hashes =
-            compute_decl_hashes(payload, &dependencies, &axiom_dependencies, &term_hashes)?;
+        let hashes = compute_decl_hashes(
+            payload,
+            &dependencies,
+            &axiom_dependencies,
+            &level_hashes,
+            &term_hashes,
+            &name_table,
+        )?;
         interface_hashes.push(hashes.decl_interface_hash);
         previous_axioms.push(axiom_dependencies.clone());
         declarations.push(DeclCert {
@@ -773,6 +786,18 @@ fn axiom_dependencies_from_final_deps(
     Ok(axioms.into_iter().collect())
 }
 
+fn local_axiom_ref_for_decl(decl_index: usize, dep_axioms: &[AxiomRef]) -> Option<AxiomRef> {
+    dep_axioms
+        .iter()
+        .find(|axiom| {
+            matches!(
+                axiom.global_ref,
+                GlobalRef::Local { decl_index: axiom_index } if axiom_index == decl_index
+            )
+        })
+        .cloned()
+}
+
 fn direct_axioms_from_final_deps(
     dependencies: &[DependencyEntry],
     previous_axioms: &[Vec<AxiomRef>],
@@ -783,11 +808,11 @@ fn direct_axioms_from_final_deps(
     for dependency in dependencies {
         match &dependency.global_ref {
             GlobalRef::Local { decl_index } => {
-                if let Some([axiom]) = previous_axioms.get(*decl_index).map(Vec::as_slice) {
-                    if matches!(axiom.global_ref, GlobalRef::Local { decl_index: axiom_index } if axiom_index == *decl_index)
-                    {
-                        axioms.insert(axiom.clone());
-                    }
+                if let Some(axiom) = previous_axioms
+                    .get(*decl_index)
+                    .and_then(|dep_axioms| local_axiom_ref_for_decl(*decl_index, dep_axioms))
+                {
+                    axioms.insert(axiom);
                 }
             }
             GlobalRef::LocalGenerated { .. } => {}
