@@ -849,10 +849,13 @@ impl ExprElaborator {
         self.locals = saved_locals;
 
         let core = close_pi(body_ty.core, &core_binders);
-        let ty = self
-            .env
-            .infer(&self.ctx, &self.delta, &core)
-            .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+        let ty = if self.expr_contains_term_meta(&core) {
+            Expr::sort(self.fresh_universe_meta(span))
+        } else {
+            self.env
+                .infer(&self.ctx, &self.delta, &core)
+                .map_err(|error| diagnostic_from_kernel_error(span, error))?
+        };
         Ok(InferResult {
             core,
             ty,
@@ -2083,6 +2086,13 @@ theorem zero_refl : Eq.{1} Nat Nat.zero Nat.zero := refl _
     #[test]
     fn rejects_unsolved_user_holes_before_kernel_handoff() {
         let err = elaborate("def missing : Type := _").expect_err("unsolved hole must fail");
+        assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
+    }
+
+    #[test]
+    fn rejects_unsolved_pi_type_holes_before_kernel_handoff() {
+        let err = elaborate("axiom f : forall (x : _), Type")
+            .expect_err("Pi type hole must fail through frontend metavariable diagnostics");
         assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
     }
 
