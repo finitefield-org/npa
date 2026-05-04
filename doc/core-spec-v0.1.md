@@ -569,6 +569,7 @@ hash に影響する payload は次を満たします。
 - field order is fixed
 - arrays have explicit length
 - names are sorted by UTF-8 byte lexicographic order
+- names are non-empty component lists, and components are non-empty strings without `.`
 - level and term DAGs are topologically ordered; ties use structural tag order
 - declarations are dependency ordered
 - import order is lexicographic by module name, then export_hash, then certificate_hash option/value
@@ -648,6 +649,12 @@ certificate_hash:
 opaque theorem の proof だけが変わり、type・opacity・axiom dependency が変わらない場合、
 `certificate_hash` は変わりますが `export_hash` は維持されます。
 proof 変更によって axiom dependency が変わる場合は公開される信頼情報が変わるため、`export_hash` も変わります。
+
+公開 interface に含まれる type / reducible body の `Const` 参照は、参照先の
+`decl_interface_hash` も declaration interface hash に含めます。`Local(decl_index)` の
+index だけを hash すると、同じ module 内の transparent dependency 変更が downstream の
+`export_hash` に伝播しないためです。opaque theorem proof と opaque def body の
+non-axiom dependency は certificate hash 側にだけ含めます。
 
 ## 10. Kernel Checking Algorithm
 

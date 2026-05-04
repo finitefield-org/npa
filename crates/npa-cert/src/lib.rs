@@ -1,0 +1,78 @@
+//! Phase 2 canonical certificate construction, hashing, encoding, and verification.
+//!
+//! This crate treats parser, elaborator, tactics, and automation output as untrusted. Its public
+//! API accepts already elaborated kernel declarations, emits deterministic canonical certificates,
+//! and verifies only canonical certificate bytes against the small Rust kernel.
+
+#![deny(missing_docs)]
+
+mod binary;
+mod canonical;
+mod hash;
+mod kernel;
+mod types;
+mod verify;
+
+pub use types::*;
+
+pub(crate) use binary::*;
+pub(crate) use canonical::*;
+pub(crate) use hash::*;
+pub(crate) use kernel::*;
+pub(crate) use verify::*;
+
+pub(crate) const FORMAT: &str = "NPA-CERT-0.1";
+pub(crate) const CORE_SPEC: &str = "NPA-Core-0.1";
+
+/// Build a canonical Phase 2 module certificate from already elaborated core declarations.
+///
+/// `imports` must be `VerifiedModule` values returned by this crate's verifier. The resulting
+/// certificate contains only trusted canonical payload: source maps, diagnostics, tactic traces,
+/// and AI traces are not encoded or hashed.
+pub fn build_module_cert(module: CoreModule, imports: &[VerifiedModule]) -> Result<ModuleCert> {
+    canonical::build_module_cert_impl(module, imports)
+}
+
+/// Encode a module certificate as the canonical `.npcert` binary representation.
+///
+/// The returned bytes are the exact bytes used by certificate verification and module hashing.
+pub fn encode_module_cert(cert: &ModuleCert) -> Result<Vec<u8>> {
+    Ok(binary::encode_module_cert_full(cert))
+}
+
+/// Decode a `.npcert` byte sequence into a syntactic certificate value.
+///
+/// This function does not trust or register the result. Use `verify_module_cert` to check
+/// canonical encoding, hashes, imports, axiom policy, and kernel validity.
+pub fn decode_module_cert(bytes: &[u8]) -> Result<ModuleCert> {
+    let mut decoder = binary::Decoder::new(bytes);
+    let cert = decoder.module_cert()?;
+    if !decoder.is_done() {
+        return Err(CertError::DecodeError);
+    }
+    Ok(cert)
+}
+
+/// Verify a canonical module certificate and register the verified module in `session`.
+///
+/// Verification performs decode, canonical byte round-trip, hash recomputation, import resolution,
+/// high-trust policy checks, axiom report recomputation, and Rust kernel checking over decoded
+/// core declarations.
+pub fn verify_module_cert(
+    bytes: &[u8],
+    session: &mut VerifierSession,
+    policy: &AxiomPolicy,
+) -> Result<VerifiedModule> {
+    verify::verify_module_cert_impl(bytes, session, policy)
+}
+
+/// Return the canonical structural hash for a term table entry in a module certificate.
+///
+/// The hash is computed from the term structure and referenced level hashes, not from the table
+/// index itself.
+pub fn term_hash(cert: &ModuleCert, term: TermId) -> Result<Hash> {
+    hash::term_hash_impl(cert, term)
+}
+
+#[cfg(test)]
+mod tests;
