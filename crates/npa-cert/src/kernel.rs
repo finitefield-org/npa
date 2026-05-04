@@ -136,7 +136,7 @@ pub(crate) fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result
     cert_to_kernel_decls(&cert)
 }
 
-fn expr_from_term(cert: &ModuleCert, term: TermId) -> Result<Expr> {
+pub(crate) fn expr_from_term(cert: &ModuleCert, term: TermId) -> Result<Expr> {
     Ok(
         match cert.term_table.get(term).ok_or(CertError::DecodeError)? {
             TermNode::Sort(level) => Expr::sort(level_from_node(cert, *level)?),
@@ -171,7 +171,7 @@ fn expr_from_term(cert: &ModuleCert, term: TermId) -> Result<Expr> {
     )
 }
 
-fn level_from_node(cert: &ModuleCert, level: LevelId) -> Result<Level> {
+pub(crate) fn level_from_node(cert: &ModuleCert, level: LevelId) -> Result<Level> {
     Ok(
         match cert.level_table.get(level).ok_or(CertError::DecodeError)? {
             LevelNode::Zero => Level::zero(),
@@ -209,7 +209,7 @@ fn decl_name(cert: &ModuleCert, decl_index: usize) -> Result<String> {
     name_to_string(cert, name)
 }
 
-fn name_to_string(cert: &ModuleCert, name: NameId) -> Result<String> {
+pub(crate) fn name_to_string(cert: &ModuleCert, name: NameId) -> Result<String> {
     Ok(cert
         .name_table
         .get(name)
@@ -217,7 +217,7 @@ fn name_to_string(cert: &ModuleCert, name: NameId) -> Result<String> {
         .as_dotted())
 }
 
-fn universe_names(cert: &ModuleCert, names: &[NameId]) -> Result<Vec<String>> {
+pub(crate) fn universe_names(cert: &ModuleCert, names: &[NameId]) -> Result<Vec<String>> {
     names
         .iter()
         .map(|name| name_to_string(cert, *name))

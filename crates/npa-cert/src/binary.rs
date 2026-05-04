@@ -717,7 +717,7 @@ impl<'a> Decoder<'a> {
         let mut components = Vec::with_capacity(len);
         for _ in 0..len {
             let component = self.string()?;
-            if component.is_empty() {
+            if component.is_empty() || component.contains('.') {
                 return Err(CertError::NonCanonicalEncoding { object: "Name" });
             }
             components.push(component);

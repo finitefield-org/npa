@@ -414,6 +414,34 @@ fn unary_rec_type(level: Level) -> Expr {
     )
 }
 
+fn unary_rec_type_with_beta_result(level: Level) -> Expr {
+    let motive_ty = Expr::pi("_", unary(), Expr::sort(level));
+    let z_ty = Expr::app(Expr::bvar(0), unary_zero());
+    let s_ty = Expr::pi(
+        "n",
+        unary(),
+        Expr::pi(
+            "ih",
+            Expr::app(Expr::bvar(2), Expr::bvar(0)),
+            Expr::app(Expr::bvar(3), unary_succ(Expr::bvar(1))),
+        ),
+    );
+    let beta_result = Expr::app(
+        Expr::lam("y", unary(), Expr::app(Expr::bvar(4), Expr::bvar(0))),
+        Expr::bvar(0),
+    );
+
+    Expr::pi(
+        "motive",
+        motive_ty,
+        Expr::pi(
+            "z",
+            z_ty,
+            Expr::pi("s", s_ty, Expr::pi("n", unary(), beta_result)),
+        ),
+    )
+}
+
 fn unary_inductive_with_recursor_module() -> CoreModule {
     let data = InductiveDecl::new(
         "Unary",
@@ -433,6 +461,34 @@ fn unary_inductive_with_recursor_module() -> CoreModule {
     );
     CoreModule {
         name: Name::from_dotted("Test.UnaryRec"),
+        declarations: vec![Decl::Inductive {
+            name: "Unary".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::succ(Level::zero())),
+            data: Box::new(data),
+        }],
+    }
+}
+
+fn unary_inductive_with_beta_recursor_module() -> CoreModule {
+    let data = InductiveDecl::new(
+        "Unary",
+        vec![],
+        vec![],
+        vec![],
+        Level::succ(Level::zero()),
+        vec![
+            ConstructorDecl::new("Unary.zero", unary()),
+            ConstructorDecl::new("Unary.succ", Expr::pi("_", unary(), unary())),
+        ],
+        Some(RecursorDecl::new(
+            "Unary.rec",
+            vec!["u".to_owned()],
+            unary_rec_type_with_beta_result(Level::param("u")),
+        )),
+    );
+    CoreModule {
+        name: Name::from_dotted("Test.UnaryBetaRec"),
         declarations: vec![Decl::Inductive {
             name: "Unary".to_owned(),
             universe_params: vec![],
@@ -1509,6 +1565,27 @@ fn rejects_tampered_inductive_generated_recursor_type_even_if_rehashed() {
 }
 
 #[test]
+fn rejects_kernel_defeq_but_non_generated_recursor_type() {
+    let cert = build_module_cert(unary_inductive_with_beta_recursor_module(), &[]).unwrap();
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(
+            err,
+            CertError::InductiveGeneratedArtifactMismatch { ref name }
+                if name == &Name::from_dotted("Unary")
+        ),
+        "{err:?}"
+    );
+}
+
+#[test]
 fn parameterized_inductive_exports_full_type_telescope() {
     let cert = build_module_cert(box_inductive_module(), &[]).unwrap();
     let box_entry = cert
@@ -1719,6 +1796,21 @@ fn rejects_empty_name_component_in_canonical_binary() {
     append_test_string(&mut bytes, CORE_SPEC);
     encode_uvar_to(&mut bytes, 1);
     encode_uvar_to(&mut bytes, 0);
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "Name" }
+    ));
+}
+
+#[test]
+fn rejects_dotted_name_component_in_canonical_binary() {
+    let mut bytes = Vec::new();
+    append_test_string(&mut bytes, FORMAT);
+    append_test_string(&mut bytes, CORE_SPEC);
+    encode_uvar_to(&mut bytes, 1);
+    append_test_string(&mut bytes, "Test.Id");
 
     let err = decode_module_cert(&bytes).unwrap_err();
     assert!(matches!(
