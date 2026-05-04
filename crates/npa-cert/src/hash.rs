@@ -207,7 +207,9 @@ fn decl_interface_payload(
             encode_name_id_to(&mut out, names, *name)?;
             encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
-            out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
+            if *reducibility == CertReducibility::Reducible {
+                out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
+            }
             encode_reducibility_to(&mut out, *reducibility);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
@@ -283,6 +285,15 @@ fn decl_certificate_payload(
     out.extend(interface_hash);
     match decl {
         DeclPayload::Axiom { .. } => encode_axiom_refs_to(&mut out, axiom_dependencies),
+        DeclPayload::Def {
+            value,
+            reducibility: CertReducibility::Opaque,
+            ..
+        } => {
+            out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
+            encode_dependency_entries_to(&mut out, dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
         DeclPayload::Def { .. } | DeclPayload::Inductive { .. } => {
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);

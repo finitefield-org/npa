@@ -17,25 +17,28 @@ pub type TermId = usize;
 /// Dotted module, declaration, or axiom name represented as canonical path components.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Name(
-    /// Canonical name components without empty segments.
+    /// Canonical name components.
     pub Vec<String>,
 );
 
 impl Name {
-    /// Build a canonical name from a dotted string, dropping empty path components.
+    /// Build a name from a dotted string, preserving empty path components for validation.
     pub fn from_dotted(name: impl AsRef<str>) -> Self {
-        Self(
-            name.as_ref()
-                .split('.')
-                .filter(|part| !part.is_empty())
-                .map(ToOwned::to_owned)
-                .collect(),
-        )
+        Self(name.as_ref().split('.').map(ToOwned::to_owned).collect())
     }
 
     /// Render the name as a dot-separated string.
     pub fn as_dotted(&self) -> String {
         self.0.join(".")
+    }
+
+    /// Return whether this name is canonical for trusted certificate payloads.
+    pub fn is_canonical(&self) -> bool {
+        !self.0.is_empty()
+            && self
+                .0
+                .iter()
+                .all(|component| !component.is_empty() && !component.contains('.'))
     }
 }
 

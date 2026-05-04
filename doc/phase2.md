@@ -1270,6 +1270,7 @@ NameId:
 name の順序は、components を左から順に UTF-8 byte lexicographic order で比較します。
 片方がもう片方の prefix の場合、短い方を先にします。
 
+Name は non-empty component list で、各 component は空文字列または `.` を含む文字列であってはいけません。
 `name_table` は重複なし、上記順序で sort 済みです。
 display name や source binder name は trusted payload に入りません。
 
@@ -1669,7 +1670,8 @@ Axiom:
   kind, name, universe_params, type_hash
 
 Def:
-  kind, name, universe_params, type_hash, value_hash, reducibility, axiom_dependencies
+  kind, name, universe_params, type_hash, reducibility, axiom_dependencies
+  value_hash only when reducibility = reducible
 
 Theorem:
   kind, name, universe_params, type_hash, opacity, axiom_dependencies

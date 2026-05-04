@@ -108,6 +108,7 @@ pub(crate) fn build_module_cert_impl(
         &directly_referenced_names,
     )?;
     let name_table: Vec<_> = names.into_iter().collect();
+    ensure_canonical_names(&name_table)?;
     let name_index: BTreeMap<_, _> = name_table
         .iter()
         .cloned()
@@ -1262,6 +1263,14 @@ pub(crate) fn ensure_unique_names(names: &[Name]) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn ensure_canonical_names(names: &[Name]) -> Result<()> {
+    if names.iter().all(Name::is_canonical) {
+        Ok(())
+    } else {
+        Err(CertError::NonCanonicalEncoding { object: "Name" })
+    }
 }
 
 fn imported_decl_map(

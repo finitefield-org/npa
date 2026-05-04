@@ -569,6 +569,7 @@ hash に影響する payload は次を満たします。
 - field order is fixed
 - arrays have explicit length
 - names are sorted by UTF-8 byte lexicographic order
+- names are non-empty component lists, and components are non-empty strings without `.`
 - level and term DAGs are topologically ordered; ties use structural tag order
 - declarations are dependency ordered
 - import order is lexicographic by module name, then export_hash, then certificate_hash option/value

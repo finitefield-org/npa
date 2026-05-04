@@ -73,6 +73,13 @@ fn id_module(a: &str, x: &str) -> CoreModule {
 }
 
 fn id_def_module_with_value(value: Expr) -> CoreModule {
+    id_def_module_with_value_and_reducibility(value, Reducibility::Reducible)
+}
+
+fn id_def_module_with_value_and_reducibility(
+    value: Expr,
+    reducibility: Reducibility,
+) -> CoreModule {
     CoreModule {
         name: Name::from_dotted("Test.Id"),
         declarations: vec![Decl::Def {
@@ -80,7 +87,7 @@ fn id_def_module_with_value(value: Expr) -> CoreModule {
             universe_params: vec!["u".to_owned()],
             ty: id_type("A", "x"),
             value,
-            reducibility: Reducibility::Reducible,
+            reducibility,
         }],
     }
 }
@@ -1171,6 +1178,39 @@ fn forward_source_dependency_is_canonicalized_before_verification() {
 }
 
 #[test]
+fn build_rejects_source_names_with_empty_components() {
+    let module_name_err = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test..Bad"),
+            declarations: vec![],
+        },
+        &[],
+    )
+    .unwrap_err();
+    assert!(matches!(
+        module_name_err,
+        CertError::NonCanonicalEncoding { object: "Name" }
+    ));
+
+    let decl_name_err = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test.Bad"),
+            declarations: vec![Decl::Axiom {
+                name: "A..B".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+            }],
+        },
+        &[],
+    )
+    .unwrap_err();
+    assert!(matches!(
+        decl_name_err,
+        CertError::NonCanonicalEncoding { object: "Name" }
+    ));
+}
+
+#[test]
 fn imported_axioms_are_reported_in_caller_certificate() {
     let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
     let mut session = VerifierSession::new();
@@ -1276,6 +1316,34 @@ fn opaque_theorem_proof_change_keeps_export_hash_when_axioms_do_not_change() {
         cert_a.hashes.axiom_report_hash,
         cert_b.hashes.axiom_report_hash
     );
+    assert_ne!(
+        cert_a.hashes.certificate_hash,
+        cert_b.hashes.certificate_hash
+    );
+}
+
+#[test]
+fn opaque_def_body_change_keeps_interface_and_export_hashes() {
+    let cert_a = build_module_cert(
+        id_def_module_with_value_and_reducibility(id_value("A", "x"), Reducibility::Opaque),
+        &[],
+    )
+    .unwrap();
+    let cert_b = build_module_cert(
+        id_def_module_with_value_and_reducibility(id_value_with_beta_redex(), Reducibility::Opaque),
+        &[],
+    )
+    .unwrap();
+
+    assert_eq!(
+        cert_a.declarations[0].hashes.decl_interface_hash,
+        cert_b.declarations[0].hashes.decl_interface_hash
+    );
+    assert_ne!(
+        cert_a.declarations[0].hashes.decl_certificate_hash,
+        cert_b.declarations[0].hashes.decl_certificate_hash
+    );
+    assert_eq!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
     assert_ne!(
         cert_a.hashes.certificate_hash,
         cert_b.hashes.certificate_hash
@@ -1787,6 +1855,20 @@ fn rejects_name_component_count_larger_than_remaining_input() {
 
     let err = decode_module_cert(&bytes).unwrap_err();
     assert!(matches!(err, CertError::DecodeError));
+}
+
+#[test]
+fn rejects_empty_name_in_canonical_binary() {
+    let mut bytes = Vec::new();
+    append_test_string(&mut bytes, FORMAT);
+    append_test_string(&mut bytes, CORE_SPEC);
+    encode_uvar_to(&mut bytes, 0);
+
+    let err = decode_module_cert(&bytes).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding { object: "Name" }
+    ));
 }
 
 #[test]

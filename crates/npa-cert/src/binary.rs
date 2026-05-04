@@ -714,6 +714,9 @@ impl<'a> Decoder<'a> {
 
     fn name(&mut self) -> Result<Name> {
         let len = self.bounded_len()?;
+        if len == 0 {
+            return Err(CertError::NonCanonicalEncoding { object: "Name" });
+        }
         let mut components = Vec::with_capacity(len);
         for _ in 0..len {
             let component = self.string()?;
