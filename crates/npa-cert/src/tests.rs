@@ -233,6 +233,19 @@ fn use_id_module() -> CoreModule {
     }
 }
 
+fn use_imported_use_id_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseImportedUseId"),
+        declarations: vec![Decl::Def {
+            name: "use_imported_use_id".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: id_type("A", "x"),
+            value: Expr::konst("use_id", vec![Level::param("u")]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
 fn axiom_module() -> CoreModule {
     named_axiom_module("Test.Axiom", "P")
 }
@@ -1259,12 +1272,10 @@ fn build_rejects_source_names_with_empty_components() {
 fn imported_axioms_are_reported_in_caller_certificate() {
     let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
     let mut session = VerifierSession::new();
-    let verified_p = verify_module_cert(
-        &encode_module_cert(&p_cert).unwrap(),
-        &mut session,
-        &AxiomPolicy::normal(),
-    )
-    .unwrap();
+    let mut policy = AxiomPolicy::high_trust();
+    policy.allowlisted_axioms.insert(Name::from_dotted("P"));
+    let verified_p =
+        verify_module_cert(&encode_module_cert(&p_cert).unwrap(), &mut session, &policy).unwrap();
 
     let use_p_cert = build_module_cert(use_axiom_module(), &[verified_p]).unwrap();
     assert_eq!(use_p_cert.axiom_report.module_axioms.len(), 1);
@@ -1278,8 +1289,6 @@ fn imported_axioms_are_reported_in_caller_certificate() {
         }
     ));
 
-    let mut policy = AxiomPolicy::high_trust();
-    policy.allowlisted_axioms.insert(Name::from_dotted("P"));
     verify_module_cert(
         &encode_module_cert(&use_p_cert).unwrap(),
         &mut session,
@@ -2244,11 +2253,52 @@ fn normal_mode_allows_missing_import_certificate_hash_but_high_trust_rejects_it(
 }
 
 #[test]
+fn high_trust_rejects_import_verified_only_in_normal_mode() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id =
+        verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::high_trust()).unwrap();
+
+    let mut use_id_cert =
+        build_module_cert(use_id_module(), std::slice::from_ref(&verified_id)).unwrap();
+    use_id_cert.imports[0].certificate_hash = None;
+    use_id_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&use_id_cert),
+    );
+    let verified_use_id = verify_module_cert(
+        &encode_module_cert(&use_id_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let downstream_cert = build_module_cert(
+        use_imported_use_id_module(),
+        &[verified_use_id, verified_id],
+    )
+    .unwrap();
+    let err = verify_module_cert(
+        &encode_module_cert(&downstream_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::ImportNotVerifiedInSession { module }
+            if module == Name::from_dotted("Test.UseId")
+    ));
+}
+
+#[test]
 fn rejects_import_certificate_hash_mismatch() {
     let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
     let id_bytes = encode_module_cert(&id_cert).unwrap();
     let mut session = VerifierSession::new();
-    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+    let verified_id =
+        verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::high_trust()).unwrap();
 
     let mut use_id_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
     use_id_cert.imports[0].certificate_hash.as_mut().unwrap()[0] ^= 0x01;
@@ -2322,10 +2372,12 @@ fn rejects_import_export_hash_mismatch() {
 fn high_trust_rechecks_import_axiom_policy_even_when_unused() {
     let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
     let mut session = VerifierSession::new();
+    let mut allow_p = AxiomPolicy::high_trust();
+    allow_p.allowlisted_axioms.insert(Name::from_dotted("P"));
     let verified_p = verify_module_cert(
         &encode_module_cert(&p_cert).unwrap(),
         &mut session,
-        &AxiomPolicy::normal(),
+        &allow_p,
     )
     .unwrap();
 
@@ -2340,12 +2392,10 @@ fn high_trust_rechecks_import_axiom_policy_even_when_unused() {
     .unwrap_err();
     assert!(matches!(err, CertError::ForbiddenAxiom { .. }));
 
-    let mut policy = AxiomPolicy::high_trust();
-    policy.allowlisted_axioms.insert(Name::from_dotted("P"));
     verify_module_cert(
         &encode_module_cert(&id_cert).unwrap(),
         &mut session,
-        &policy,
+        &allow_p,
     )
     .unwrap();
 }

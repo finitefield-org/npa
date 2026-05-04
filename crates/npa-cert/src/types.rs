@@ -112,7 +112,13 @@ pub struct ImportKey {
 /// In-memory registry of modules already verified during this trust session.
 #[derive(Clone, Debug, Default)]
 pub struct VerifierSession {
-    checked: BTreeMap<ImportKey, VerifiedModule>,
+    checked: BTreeMap<ImportKey, SessionEntry>,
+}
+
+#[derive(Clone, Debug)]
+struct SessionEntry {
+    module: VerifiedModule,
+    mode: TrustMode,
 }
 
 impl VerifierSession {
@@ -121,15 +127,24 @@ impl VerifierSession {
         Self::default()
     }
 
-    pub(crate) fn insert_verified(&mut self, module: VerifiedModule) {
-        self.checked.insert(
-            ImportKey {
-                module: module.module.clone(),
-                export_hash: module.export_hash,
-                certificate_hash: Some(module.certificate_hash),
-            },
-            module,
-        );
+    pub(crate) fn insert_verified(&mut self, module: VerifiedModule, mode: TrustMode) {
+        let key = ImportKey {
+            module: module.module.clone(),
+            export_hash: module.export_hash,
+            certificate_hash: Some(module.certificate_hash),
+        };
+        let entry = SessionEntry { module, mode };
+        match self.checked.get_mut(&key) {
+            Some(existing) if existing.mode == TrustMode::HighTrust => {
+                if mode == TrustMode::HighTrust {
+                    *existing = entry;
+                }
+            }
+            Some(existing) => *existing = entry,
+            None => {
+                self.checked.insert(key, entry);
+            }
+        }
     }
 
     pub(crate) fn find_import(
@@ -137,26 +152,31 @@ impl VerifierSession {
         entry: &ImportEntry,
         mode: TrustMode,
     ) -> Result<&VerifiedModule> {
-        let module_export_matches = self
-            .checked
-            .values()
-            .any(|module| module.module == entry.module && module.export_hash == entry.export_hash);
+        let module_export_matches = self.checked.values().any(|checked| {
+            checked.module.module == entry.module && checked.module.export_hash == entry.export_hash
+        });
+        let high_trust_module_export_matches = self.checked.values().any(|checked| {
+            checked.mode == TrustMode::HighTrust
+                && checked.module.module == entry.module
+                && checked.module.export_hash == entry.export_hash
+        });
 
-        let found = self.checked.values().find(|module| {
-            module.module == entry.module
-                && module.export_hash == entry.export_hash
+        let found = self.checked.values().find(|checked| {
+            (mode == TrustMode::Normal || checked.mode == TrustMode::HighTrust)
+                && checked.module.module == entry.module
+                && checked.module.export_hash == entry.export_hash
                 && match (mode, entry.certificate_hash) {
                     (TrustMode::Normal, None) => true,
-                    (_, Some(hash)) => module.certificate_hash == hash,
+                    (_, Some(hash)) => checked.module.certificate_hash == hash,
                     (TrustMode::HighTrust, None) => false,
                 }
         });
 
-        if let Some(module) = found {
-            return Ok(module);
+        if let Some(checked) = found {
+            return Ok(&checked.module);
         }
 
-        if mode == TrustMode::HighTrust && !module_export_matches {
+        if mode == TrustMode::HighTrust && !high_trust_module_export_matches {
             return Err(CertError::ImportNotVerifiedInSession {
                 module: entry.module.clone(),
             });

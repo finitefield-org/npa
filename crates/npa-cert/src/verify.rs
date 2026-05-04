@@ -45,7 +45,7 @@ pub(crate) fn verify_module_cert_impl(
         export_block: cert.export_block.clone(),
         axiom_report: cert.axiom_report.clone(),
     };
-    session.insert_verified(verified.clone());
+    session.insert_verified(verified.clone(), policy.mode);
     Ok(verified)
 }
 fn verify_header(header: &CertHeader) -> Result<()> {
