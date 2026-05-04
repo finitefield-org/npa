@@ -88,8 +88,35 @@ impl ModuleElaborator {
                         "inductive elaboration is implemented in a later milestone",
                     ));
                 }
-                ResolvedItem::Import { .. }
-                | ResolvedItem::Open { .. }
+                ResolvedItem::Import {
+                    module,
+                    export_hash,
+                    duplicate,
+                    span,
+                } => {
+                    if !duplicate {
+                        let import = resolved
+                            .state
+                            .imports
+                            .iter()
+                            .find(|import| {
+                                &import.module == module && &import.export_hash == export_hash
+                            })
+                            .ok_or_else(|| {
+                                Diagnostic::error(
+                                    DiagnosticKind::KernelRejected,
+                                    *span,
+                                    format!(
+                                        "resolved import `{module}` was not available for kernel handoff"
+                                    ),
+                                )
+                            })?;
+                        for decl in &import.kernel_declarations {
+                            add_decl_to_env(&mut self.env, decl, *span)?;
+                        }
+                    }
+                }
+                ResolvedItem::Open { .. }
                 | ResolvedItem::Namespace { .. }
                 | ResolvedItem::End { .. }
                 | ResolvedItem::Notation(_) => {}
@@ -709,6 +736,53 @@ fn global_name(global: &crate::ElabGlobalRef) -> String {
     }
 }
 
+fn add_decl_to_env(env: &mut Env, decl: &Decl, span: Span) -> Result<()> {
+    if let Some(existing) = env.decl(decl.name()) {
+        if existing == decl {
+            return Ok(());
+        }
+    }
+
+    match decl.clone() {
+        Decl::Axiom {
+            name,
+            universe_params,
+            ty,
+        } => env
+            .add_axiom(name, universe_params, ty)
+            .map_err(|error| kernel_rejected(span, error))?,
+        Decl::Def {
+            name,
+            universe_params,
+            ty,
+            value,
+            reducibility,
+        } => env
+            .add_def(name, universe_params, ty, value, reducibility)
+            .map_err(|error| kernel_rejected(span, error))?,
+        Decl::Theorem {
+            name,
+            universe_params,
+            ty,
+            proof,
+        } => env
+            .add_theorem(name, universe_params, ty, proof)
+            .map_err(|error| kernel_rejected(span, error))?,
+        Decl::Inductive { data, .. } => env
+            .add_inductive(*data)
+            .map_err(|error| kernel_rejected(span, error))?,
+        Decl::Constructor { name, .. } | Decl::Recursor { name, .. } => {
+            return Err(Diagnostic::error(
+                DiagnosticKind::KernelRejected,
+                span,
+                format!("imported generated declaration `{name}` is missing its inductive"),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 fn diagnostic_from_kernel_error(span: Span, error: KernelError) -> Diagnostic {
     match error {
         KernelError::ExpectedSort { .. } => Diagnostic::error(
@@ -778,7 +852,7 @@ fn resolved_item_span(item: &ResolvedItem) -> Span {
 
 #[cfg(test)]
 mod tests {
-    use npa_kernel::Decl;
+    use npa_kernel::{Decl, Expr, Level};
 
     use super::*;
     use crate::{ImportedDeclaration, Name};
@@ -809,6 +883,23 @@ mod tests {
                     decl_interface_hash: "sha256:Eq.refl".to_owned(),
                 },
             ],
+            kernel_declarations: Vec::new(),
+        }
+    }
+
+    fn custom_type_import() -> VerifiedImport {
+        VerifiedImport {
+            module: Name::from_dotted("Custom"),
+            export_hash: "sha256:custom".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("Foo"),
+                decl_interface_hash: "sha256:Foo".to_owned(),
+            }],
+            kernel_declarations: vec![Decl::Axiom {
+                name: "Foo".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::zero())),
+            }],
         }
     }
 
@@ -931,5 +1022,25 @@ def bad : Nat := Nat
     fn returns_kernel_rejected_when_kernel_rejects_declaration() {
         let err = elaborate("axiom Nat : Type").expect_err("kernel duplicate must fail");
         assert_eq!(err.kind, DiagnosticKind::KernelRejected);
+    }
+
+    #[test]
+    fn loads_verified_imports_into_kernel_env() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Custom
+axiom x : Foo
+"#,
+            &[custom_type_import()],
+        )
+        .expect("imported declarations should be available to kernel elaboration");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Axiom { name, .. } if name == "x"
+        ));
     }
 }

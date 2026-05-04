@@ -2361,9 +2361,11 @@ response:
 }
 ```
 
-`module` と `verified_imports` は trusted kernel へ直接渡すものではなく、Phase 3 が
-`ElabGlobalRef` と import hash を確定するための入力です。`verified_imports` の各 entry は、
-Phase 2 certificate verifier が検査済みの export interface を指します。
+`module` と `verified_imports` は Phase 3 が `ElabGlobalRef` と import hash を確定するための
+入力です。`verified_imports` の各 entry は、Phase 2 certificate verifier が検査済みの
+export interface と、elaboration 中の kernel env に入れる decode 済み core declaration を指します。
+最終的な trusted payload では、import は certificate verifier が改めて export hash と
+decl_interface_hash に照合します。
 
 ---
 
