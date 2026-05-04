@@ -1,5 +1,6 @@
 use npa_kernel::{
-    subst::instantiate, Ctx, Decl, Env, Error as KernelError, Expr, Level, Reducibility,
+    subst::{instantiate, shift},
+    Ctx, Decl, Env, Error as KernelError, Expr, Level, Reducibility,
 };
 
 use crate::{
@@ -7,6 +8,8 @@ use crate::{
     ResolvedBinder, ResolvedDecl, ResolvedExpr, ResolvedItem, ResolvedModule, ResolvedName, Result,
     Span, SurfaceBinderKind, SurfaceLevel, SurfaceModule, SurfaceUniverseParam, VerifiedImport,
 };
+
+const MAX_NUMERIC_UNIVERSE_LEVEL: u64 = 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElaboratedModule {
@@ -200,25 +203,11 @@ impl ExprElaborator {
     }
 
     fn elaborate_decl_binders(&mut self, binders: &[ResolvedBinder]) -> Result<Vec<CoreBinder>> {
-        let mut core_binders = Vec::new();
-        for binder in binders {
-            ensure_explicit_binder(binder)?;
-            let Some(ty) = &binder.ty else {
-                return Err(Diagnostic::error(
-                    DiagnosticKind::ExpectedSort,
-                    binder.span,
-                    "declaration binder must have a type annotation",
-                ));
-            };
-            let binder_ty = self.elab_type(ty)?;
-            let name = binder_name(binder);
-            self.ctx.push_assumption(name.clone(), binder_ty.clone());
-            core_binders.push(CoreBinder {
-                name,
-                ty: binder_ty,
-            });
-        }
-        Ok(core_binders)
+        self.elaborate_typed_binder_groups(
+            binders,
+            DiagnosticKind::ExpectedSort,
+            "declaration binder must have a type annotation",
+        )
     }
 
     fn elab_type(&mut self, expr: &ResolvedExpr) -> Result<Expr> {
@@ -367,25 +356,17 @@ impl ExprElaborator {
         span: Span,
     ) -> Result<(Expr, Expr)> {
         let saved_ctx = self.ctx.clone();
-        let mut core_binders = Vec::new();
-        for binder in binders {
-            ensure_explicit_binder(binder)?;
-            let Some(ty) = &binder.ty else {
+        let core_binders = match self.elaborate_typed_binder_groups(
+            binders,
+            DiagnosticKind::ExpectedFunctionType,
+            "lambda binder needs a type annotation in infer mode",
+        ) {
+            Ok(core_binders) => core_binders,
+            Err(err) => {
                 self.ctx = saved_ctx;
-                return Err(Diagnostic::error(
-                    DiagnosticKind::ExpectedFunctionType,
-                    binder.span,
-                    "lambda binder needs a type annotation in infer mode",
-                ));
-            };
-            let binder_ty = self.elab_type(ty)?;
-            let name = binder_name(binder);
-            self.ctx.push_assumption(name.clone(), binder_ty.clone());
-            core_binders.push(CoreBinder {
-                name,
-                ty: binder_ty,
-            });
-        }
+                return Err(err);
+            }
+        };
         let (body_core, body_ty) = self.elab_infer(body)?;
         self.ctx = saved_ctx;
 
@@ -407,54 +388,123 @@ impl ExprElaborator {
         let saved_ctx = self.ctx.clone();
         let mut expected_ty = expected.clone();
         let mut core_binders = Vec::new();
+        let mut index = 0;
 
-        for binder in binders {
-            ensure_explicit_binder(binder)?;
-            let whnf = self
-                .env
-                .whnf(&self.ctx, &self.delta, &expected_ty)
-                .map_err(|error| diagnostic_from_kernel_error(span, error))?;
-            let Expr::Pi { ty, body, .. } = whnf else {
-                self.ctx = saved_ctx;
-                return Err(Diagnostic::error(
-                    DiagnosticKind::ExpectedFunctionType,
-                    binder.span,
-                    "lambda expects a function type",
-                ));
+        while index < binders.len() {
+            let group_start = index;
+            let group_end = binder_group_end(binders, group_start);
+            let group_source_tys = match self
+                .elaborate_optional_group_source_types(&binders[group_start..group_end])
+            {
+                Ok(source_tys) => source_tys,
+                Err(err) => {
+                    self.ctx = saved_ctx;
+                    return Err(err);
+                }
             };
 
-            let binder_ty = if let Some(source_ty) = &binder.ty {
-                let source_ty = self.elab_type(source_ty)?;
-                if !self
+            for (offset, binder) in binders[group_start..group_end].iter().enumerate() {
+                let whnf = self
                     .env
-                    .is_defeq(&self.ctx, &self.delta, &source_ty, &ty)
-                    .map_err(|error| diagnostic_from_kernel_error(binder.span, error))?
-                {
+                    .whnf(&self.ctx, &self.delta, &expected_ty)
+                    .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+                let Expr::Pi { ty, body, .. } = whnf else {
                     self.ctx = saved_ctx;
                     return Err(Diagnostic::error(
-                        DiagnosticKind::TypeMismatch,
+                        DiagnosticKind::ExpectedFunctionType,
                         binder.span,
-                        format!("lambda binder type `{source_ty:?}` does not match `{ty:?}`"),
+                        "lambda expects a function type",
                     ));
-                }
-                source_ty
-            } else {
-                (*ty).clone()
-            };
+                };
 
-            let name = binder_name(binder);
-            self.ctx.push_assumption(name.clone(), binder_ty.clone());
-            core_binders.push(CoreBinder {
-                name,
-                ty: binder_ty,
-            });
-            expected_ty = (*body).clone();
+                let binder_ty = if let Some(source_ty) = &group_source_tys[offset] {
+                    let source_ty = weaken_group_type(source_ty, offset, binder.span)?;
+                    if !self
+                        .env
+                        .is_defeq(&self.ctx, &self.delta, &source_ty, &ty)
+                        .map_err(|error| diagnostic_from_kernel_error(binder.span, error))?
+                    {
+                        self.ctx = saved_ctx;
+                        return Err(Diagnostic::error(
+                            DiagnosticKind::TypeMismatch,
+                            binder.span,
+                            format!("lambda binder type `{source_ty:?}` does not match `{ty:?}`"),
+                        ));
+                    }
+                    source_ty
+                } else {
+                    (*ty).clone()
+                };
+
+                let name = binder_name(binder);
+                self.ctx.push_assumption(name.clone(), binder_ty.clone());
+                core_binders.push(CoreBinder {
+                    name,
+                    ty: binder_ty,
+                });
+                expected_ty = (*body).clone();
+            }
+
+            index = group_end;
         }
 
         let body_core = self.elab_check(body, &expected_ty)?;
         self.ctx = saved_ctx;
         let core = close_lam(body_core, &core_binders);
         Ok(core)
+    }
+
+    fn elaborate_typed_binder_groups(
+        &mut self,
+        binders: &[ResolvedBinder],
+        missing_kind: DiagnosticKind,
+        missing_message: &'static str,
+    ) -> Result<Vec<CoreBinder>> {
+        let mut core_binders = Vec::new();
+        let mut index = 0;
+        while index < binders.len() {
+            let group_start = index;
+            let group_end = binder_group_end(binders, group_start);
+            let mut group = Vec::new();
+            for binder in &binders[group_start..group_end] {
+                ensure_explicit_binder(binder)?;
+                let Some(ty) = &binder.ty else {
+                    return Err(Diagnostic::error(
+                        missing_kind.clone(),
+                        binder.span,
+                        missing_message,
+                    ));
+                };
+                group.push((binder_name(binder), self.elab_type(ty)?, binder.span));
+            }
+
+            for (offset, (name, binder_ty, span)) in group.into_iter().enumerate() {
+                let binder_ty = weaken_group_type(&binder_ty, offset, span)?;
+                self.ctx.push_assumption(name.clone(), binder_ty.clone());
+                core_binders.push(CoreBinder {
+                    name,
+                    ty: binder_ty,
+                });
+            }
+
+            index = group_end;
+        }
+        Ok(core_binders)
+    }
+
+    fn elaborate_optional_group_source_types(
+        &mut self,
+        binders: &[ResolvedBinder],
+    ) -> Result<Vec<Option<Expr>>> {
+        let mut source_tys = Vec::new();
+        for binder in binders {
+            ensure_explicit_binder(binder)?;
+            source_tys.push(match &binder.ty {
+                Some(source_ty) => Some(self.elab_type(source_ty)?),
+                None => None,
+            });
+        }
+        Ok(source_tys)
     }
 
     fn elab_infer_pi(
@@ -464,25 +514,17 @@ impl ExprElaborator {
         span: Span,
     ) -> Result<(Expr, Expr)> {
         let saved_ctx = self.ctx.clone();
-        let mut core_binders = Vec::new();
-        for binder in binders {
-            ensure_explicit_binder(binder)?;
-            let Some(ty) = &binder.ty else {
+        let core_binders = match self.elaborate_typed_binder_groups(
+            binders,
+            DiagnosticKind::ExpectedSort,
+            "Pi binder must have a type annotation",
+        ) {
+            Ok(core_binders) => core_binders,
+            Err(err) => {
                 self.ctx = saved_ctx;
-                return Err(Diagnostic::error(
-                    DiagnosticKind::ExpectedSort,
-                    binder.span,
-                    "Pi binder must have a type annotation",
-                ));
-            };
-            let binder_ty = self.elab_type(ty)?;
-            let name = binder_name(binder);
-            self.ctx.push_assumption(name.clone(), binder_ty.clone());
-            core_binders.push(CoreBinder {
-                name,
-                ty: binder_ty,
-            });
-        }
+                return Err(err);
+            }
+        };
         let body_ty = self.elab_type(body)?;
         self.ctx = saved_ctx;
 
@@ -550,7 +592,16 @@ impl ExprElaborator {
 
     fn elab_level(&self, level: &SurfaceLevel) -> Result<Level> {
         match level {
-            SurfaceLevel::Nat { value, .. } => {
+            SurfaceLevel::Nat { value, span } => {
+                if *value > MAX_NUMERIC_UNIVERSE_LEVEL {
+                    return Err(Diagnostic::error(
+                        DiagnosticKind::UnsolvedUniverseMeta,
+                        *span,
+                        format!(
+                            "numeric universe level `{value}` exceeds maximum `{MAX_NUMERIC_UNIVERSE_LEVEL}`"
+                        ),
+                    ));
+                }
                 Ok((0..*value).fold(Level::zero(), |level, _| Level::succ(level)))
             }
             SurfaceLevel::Param { name, span } => {
@@ -579,6 +630,29 @@ impl ExprElaborator {
 struct CoreBinder {
     name: String,
     ty: Expr,
+}
+
+fn binder_group_end(binders: &[ResolvedBinder], start: usize) -> usize {
+    let group_span = binders[start].span;
+    let mut end = start + 1;
+    while end < binders.len() && binders[end].span == group_span {
+        end += 1;
+    }
+    end
+}
+
+fn weaken_group_type(ty: &Expr, offset: usize, span: Span) -> Result<Expr> {
+    if offset == 0 {
+        return Ok(ty.clone());
+    }
+    let amount = i32::try_from(offset).map_err(|_| {
+        Diagnostic::error(
+            DiagnosticKind::KernelRejected,
+            span,
+            "binder group is too large to elaborate",
+        )
+    })?;
+    shift(ty, amount, 0).map_err(|error| diagnostic_from_kernel_error(span, error))
 }
 
 fn close_pi(body: Expr, binders: &[CoreBinder]) -> Expr {
@@ -814,6 +888,20 @@ theorem zero_refl : Eq.{1} Nat Nat.zero Nat.zero := Eq.refl.{1} Nat Nat.zero
     }
 
     #[test]
+    fn elaborates_grouped_binder_annotations_before_extending_context() {
+        let module = elaborate(
+            r#"
+def first (A : Type) (x y : A) : A := x
+def checked (A : Type) : forall (x y : A), A := fun (x y : A) => x
+def inferred (A : Type) : forall (x y : A), A := let g := fun (x y : A) => x in g
+"#,
+        )
+        .expect("grouped binders should elaborate");
+
+        assert_eq!(module.declarations.len(), 3);
+    }
+
+    #[test]
     fn rejects_ill_typed_definition() {
         let err = elaborate(
             r#"
@@ -823,6 +911,13 @@ def bad : Nat := Nat
         )
         .expect_err("ill-typed definition must fail");
         assert_eq!(err.kind, DiagnosticKind::TypeMismatch);
+    }
+
+    #[test]
+    fn rejects_huge_numeric_universe_level_before_expansion() {
+        let err = elaborate("axiom Huge : Sort 18446744073709551615")
+            .expect_err("huge universe literals must fail before allocation");
+        assert_eq!(err.kind, DiagnosticKind::UnsolvedUniverseMeta);
     }
 
     #[test]
