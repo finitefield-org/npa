@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/npa-kernel", "crates/npa-cert"]
+members = ["crates/npa-kernel", "crates/npa-cert", "crates/npa-frontend"]
 resolver = "2"
 
 [workspace.package]
