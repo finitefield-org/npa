@@ -771,14 +771,18 @@ certificate は次を保証するためのものです。
 
 ```json
 {
-  "format": "NPA-CERT-1",
+  "format": "NPA-CERT-0.1",
   "kernel_version": "0.1.0",
   "module": "Std.Nat.Basic",
   "imports": [],
   "universe_params": [],
   "declarations": [],
   "axiom_report": [],
-  "export_hash": "sha256:..."
+  "hashes": {
+    "export_hash": "sha256:...",
+    "certificate_hash": "sha256:...",
+    "axiom_report_hash": "sha256:..."
+  }
 }
 ```
 
@@ -942,11 +946,13 @@ import は名前だけでは不十分です。
 ```json
 {
   "module": "Std.Nat.Basic",
-  "export_hash": "sha256:abc..."
+  "export_hash": "sha256:abc...",
+  "certificate_hash": "sha256:def..."
 }
 ```
 
 のように、依存先のhashを固定します。
+`export_hash` は必須、`certificate_hash` は高信頼モードで必須にします。
 
 これにより：
 

@@ -234,20 +234,28 @@ Std.Nat.Basic.npcert
 
 ```json
 {
-  "magic": "NPA-CERT",
-  "certificate_format": "1.0",
+  "format": "NPA-CERT-0.1",
   "core_spec": "NPA-Core-0.1",
   "module": "Std.Nat.Basic",
   "imports": [],
   "declarations": [],
-  "exports": {},
-  "axiom_report": {},
-  "module_hashes": {}
+  "exports": [],
+  "axiom_report": {
+    "module_axioms": [],
+    "per_declaration": []
+  },
+  "hashes": {
+    "export_hash": "sha256:...",
+    "certificate_hash": "sha256:...",
+    "axiom_report_hash": "sha256:..."
+  }
 }
 ```
 
 実際の保存形式は JSON ではなく canonical binary が望ましいです。
 JSONは説明用・デバッグ用で、検査用の本体はbinaryにします。
+上の JSON も logical/debug view であり、hash 対象の canonical payload では map を使いません。
+`exports`、`axiom_report`、`hashes` は固定順の record または長さ付き配列として encode します。
 
 理由は：
 
@@ -304,7 +312,7 @@ axiom_report:
   使用されたaxiom一覧
 
 hashes:
-  module全体のhash、export hash、full certificate hash
+  export hash、full certificate hash、axiom report hash
 ```
 
 ## 3.4 Declaration の種類
@@ -433,6 +441,9 @@ import Std.Nat.Basic
 }
 ```
 
+`export_hash` は常に必須です。
+`certificate_hash` は通常モードでは省略可能ですが、高信頼モードでは必須にします。
+
 ## 4.2 export_hash と certificate_hash を分ける
 
 ここは重要です。
@@ -476,6 +487,12 @@ certificate_hash:
 ```
 
 を分けます。
+
+定義としては、`export_hash` は canonical export block だけに対する
+`H("NPA_MODULE_EXPORT_V1" || export_block)` です。
+`certificate_hash` は `certificate_hash` フィールド自身を除いた trusted certificate payload 全体に対する
+`H("NPA_MODULE_CERT_V1" || full_certificate_payload_without_certificate_hash)` です。
+debug metadata、source map、diagnostics、AI trace はどちらの hash にも含めません。
 
 ## 4.3 何を export_hash に含めるか
 
@@ -693,6 +710,9 @@ InductiveDecl は downstream の型検査・ι-reductionに影響するため、
 
 axiom report は、各定理やモジュールがどのaxiomに依存しているかを明示するものです。
 
+canonical payload では、axiom は canonical name order、per-declaration report は declaration order で保存します。
+説明用 JSON では宣言名を key にした map のように書くことがありますが、hash 対象では map を使いません。
+
 たとえば：
 
 ```json
@@ -813,12 +833,16 @@ axioms(InductiveDecl I)
 {
   "module": "Std.Nat.Basic",
   "module_axioms": [],
+  "per_declaration": [],
   "custom_axioms": [],
   "standard_axioms": [],
   "contains_sorry": false,
   "safe_for_high_trust": true
 }
 ```
+
+`custom_axioms`、`standard_axioms`、`contains_sorry`、`safe_for_high_trust` は audit/policy view です。
+checker は保存された boolean を信用せず、canonical `module_axioms` と policy から毎回再計算します。
 
 高信頼モードの判定：
 
@@ -839,14 +863,15 @@ Phase 2では、次のパイプラインを実装します。
 1. core declarations を受け取る
 2. kernelで各宣言を検査する
 3. canonical core AST に変換する
-4. term hash を計算する
-5. declaration hash を計算する
-6. dependency graph を作る
-7. axiom report を作る
-8. export block を作る
-9. module hash を計算する
-10. .npcert を書き出す
-11. checkerで .npcert だけを再検査する
+4. name/level/term table を canonical order で作る
+5. term hash を計算する
+6. declaration hash を計算する
+7. dependency graph を作る
+8. axiom report を作る
+9. export block を作る
+10. export_hash / certificate_hash / axiom_report_hash を計算する
+11. .npcert を書き出す
+12. checkerで .npcert と import store 内の .npcert だけを再検査する
 ```
 
 疑似コード：
@@ -878,15 +903,19 @@ fn build_certificate(module: CoreModule, imports: Vec<VerifiedImport>) -> Result
 
     let export_block = build_export_block(&decl_certs);
     let axiom_report = build_axiom_report(&decl_certs);
-    let module_hashes = compute_module_hashes(&imports, &export_block, &decl_certs, &axiom_report);
+    let tables = build_canonical_tables(&decl_certs)?;
+    let hashes = compute_certificate_hashes(&imports, &tables, &export_block, &decl_certs, &axiom_report);
 
     Ok(ModuleCert {
         header: make_header(),
         imports,
+        name_table: tables.names,
+        level_table: tables.levels,
+        term_table: tables.terms,
         declarations: decl_certs,
         export_block,
         axiom_report,
-        hashes: module_hashes,
+        hashes,
     })
 }
 ```
@@ -910,7 +939,7 @@ kernel check
   ↓
 axiom report再計算
   ↓
-module hash再計算
+export_hash / certificate_hash / axiom_report_hash 再計算
   ↓
 合格
 ```
@@ -923,6 +952,8 @@ fn check_certificate(cert: ModuleCert, import_store: ImportStore) -> Result<Veri
 
     let imports = load_and_check_imports(&cert.imports, import_store)?;
     let mut env = Env::from_imports(&imports);
+
+    verify_canonical_tables(&cert.name_table, &cert.level_table, &cert.term_table)?;
 
     for decl in &cert.declarations {
         verify_canonical_encoding(decl)?;
@@ -940,6 +971,8 @@ fn check_certificate(cert: ModuleCert, import_store: ImportStore) -> Result<Veri
         env.add_decl_interface(decl)?;
     }
 
+    verify_module_axiom_report(&cert)?;
+    verify_axiom_report_hash(&cert)?;
     verify_export_hash(&cert)?;
     verify_module_certificate_hash(&cert)?;
 
@@ -962,6 +995,8 @@ def id.{u} : Π A : Sort u, A → A :=
 
 ```json
 {
+  "format": "NPA-CERT-0.1",
+  "core_spec": "NPA-Core-0.1",
   "module": "Std.Logic.Id",
   "imports": [],
   "declarations": [
@@ -983,12 +1018,19 @@ def id.{u} : Π A : Sort u, A → A :=
       "axioms_used": []
     }
   ],
-  "export_hash": "module-export:...",
-  "certificate_hash": "module-cert:...",
   "axiom_report": {
     "module_axioms": [],
-    "contains_sorry": false,
-    "safe_for_high_trust": true
+    "per_declaration": [
+      {
+        "decl": "id",
+        "axioms": []
+      }
+    ]
+  },
+  "hashes": {
+    "export_hash": "sha256:...",
+    "certificate_hash": "sha256:...",
+    "axiom_report_hash": "sha256:..."
   }
 }
 ```
@@ -1015,6 +1057,7 @@ Phase 2のcheckerは、次の場合にfailします。
 - banned axiom が含まれる
 - sorry が含まれる
 - export_hash が再計算結果と違う
+- certificate_hash が再計算結果と違う
 ```
 
 ---
@@ -1026,15 +1069,17 @@ Phase 2が完了したと言える条件はこれです。
 ```text
 - core term をcanonical binaryにできる
 - binder名を変えても同じterm hashになる
-- importにexport_hash/certificate_hashを持たせられる
+- importに必須のexport_hashと、高信頼モード必須のcertificate_hashを持たせられる
 - def/theorem/axiom/inductiveにdeclaration hashを持たせられる
 - transparent def のbody変更でinterface hashが変わる
-- opaque theorem のproof変更でcertificate hashが変わる
-- opaque theorem のproof変更だけなら、必要に応じてexport hashは維持できる
+- opaque theorem のproof変更でdecl_certificate_hashとmodule certificate_hashが変わる
+- opaque theorem のproof変更だけで type・opacity・axiom依存が変わらない場合、export_hashは維持される
+- opaque theorem のproof変更でaxiom依存が変わる場合、export_hashも変わる
 - axiom依存をdeclarationごとに計算できる
-- module全体のaxiom reportを出せる
-- .npcertだけを使ってkernel/checkerが再検査できる
-- source codeなしで検査が完結する
+- module全体のaxiom reportをcanonical orderで出せる
+- audit用のsafe_for_high_trust等を保存値として信用せず再計算できる
+- .npcertとimport store内の.npcertだけを使ってkernel/checkerが再検査できる
+- source code、source map、AI traceなしで検査が完結する
 ```
 
 ---
@@ -1070,4 +1115,3 @@ import・declaration・moduleにhashを与え、
 各宣言のaxiom依存を再計算可能にし、
 sourceなしでkernelが再検査できる形式にする。
 ```
-

@@ -773,7 +773,7 @@ npa-checker-ext \
   "checker": "npa-checker-ext",
   "checker_version": "0.1.0",
   "core_spec": "NPA-Core-0.1",
-  "certificate_format": "NPA-CERT-1",
+  "certificate_format": "NPA-CERT-0.1",
   "module": "Std.Nat",
   "export_hash": "sha256:...",
   "certificate_hash": "sha256:...",
@@ -1033,7 +1033,7 @@ npa check build/Std/Nat.npcert
 - conversion
 - inductive rules
 - declaration hash
-- module hash
+- export_hash / certificate_hash / axiom_report_hash
 ```
 
 ---
@@ -1559,7 +1559,7 @@ npa audit axioms build/Std/Nat.npcert --policy policies/std.json
    .npcert を source なしで読めるようにする
 
 2. Hash verifier
-   term / decl / module hash を再計算する
+   term / decl / export / certificate / axiom_report hash を再計算する
 
 3. Environment builder
    import certificate から environment を作る
@@ -1767,4 +1767,3 @@ verified artifact
  import hash と axiom policy も満たした」
 ことを verified と呼ぶ。
 ```
-
