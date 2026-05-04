@@ -45,7 +45,7 @@ canonical certificate を検査します。
 | 0 | core calculus、typing、conversion、universe、inductive、certificate の仕様固定 |
 | 1 | Rust kernel による core term / simple inductive / reduction の検査 |
 | 2 | `.npcert` 形式、canonical core AST、hash、axiom report |
-| 3 | 表層言語、parser、name resolution、notation、elaboration |
+| 3 | 表層言語、parser、name resolution、notation、simple inductive declaration、elaboration |
 | 4 | tactic 層: `intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` |
 | 5 | IDE / API: proof state、tactic execution、theorem search、goal display |
 | 6 | 小さく堅い標準ライブラリ: `Std.Logic`, `Std.Nat`, `Std.List`, `Std.Algebra.Basic` |

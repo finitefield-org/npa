@@ -531,6 +531,7 @@ theorem add_zero (n : Nat) : n + 0 = n := by
 - holes
 - tactic block
 - namespace
+- inductive declaration
 - sections
 - attributes
 ```
@@ -1779,6 +1780,7 @@ NPA Core Spec v0.1
 - notation
 - implicit args
 - holes
+- simple inductive declaration
 - simple elaboration
 ```
 
@@ -1977,4 +1979,3 @@ Leanを参考にするなら、依存型理論・tactic・強力なelaborator・
 [5]: https://rocq-prover.org/doc/master/refman/using/libraries/index.html "Libraries and plugins — The Rocq Prover 9.3+alpha documentation"
 [6]: https://leandojo.org/leandojo.html "LeanDojo: AI-Assisted Theorem Proving in Lean"
 [7]: https://lean-lang.org/doc/reference/latest/Build-Tools-and-Distribution/Lake/ "Lake"
-
