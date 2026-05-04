@@ -1,7 +1,7 @@
 use crate::{
-    lex, BinderInfo, Diagnostic, FileId, ImplicitMode, NotationDecl, NotationKind, Result, Span,
-    SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl, SurfaceExpr, SurfaceItem,
-    SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam, Token, TokenKind,
+    lex, BinderInfo, Diagnostic, DiagnosticKind, FileId, ImplicitMode, NotationDecl, NotationKind,
+    Result, Span, SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl, SurfaceExpr,
+    SurfaceItem, SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam, Token, TokenKind,
 };
 
 pub fn parse_module(file_id: FileId, source: &str) -> Result<SurfaceModule> {
@@ -116,7 +116,8 @@ impl Parser {
 
         self.expect(TokenTag::Colon, "`:`")?;
         let precedence = self.parse_number()?;
-        let (symbol, _) = self.parse_string()?;
+        let (raw_symbol, symbol_span) = self.parse_string()?;
+        let symbol = normalize_notation_symbol(&raw_symbol, symbol_span)?;
         self.expect(TokenTag::FatArrow, "`=>`")?;
         let target = self.parse_qual_name()?;
         Ok(SurfaceItem::Notation(NotationDecl {
@@ -700,6 +701,53 @@ impl Parser {
     }
 }
 
+fn normalize_notation_symbol(raw: &str, span: Span) -> Result<String> {
+    let symbol = raw.trim();
+    if symbol.is_empty() {
+        return Err(invalid_notation(span, "notation symbol must not be empty"));
+    }
+    if symbol.chars().any(char::is_whitespace) {
+        return Err(invalid_notation(
+            span,
+            "notation symbol must be a single operator token",
+        ));
+    }
+    if is_reserved_notation_symbol(symbol) || contains_reserved_structural_char(symbol) {
+        return Err(invalid_notation(
+            span,
+            format!("reserved token `{symbol}` cannot be used as notation"),
+        ));
+    }
+    if symbol.chars().any(is_identifier_char) {
+        return Err(invalid_notation(
+            span,
+            "notation symbol must not contain identifier characters",
+        ));
+    }
+    Ok(symbol.to_owned())
+}
+
+fn invalid_notation(span: Span, message: impl Into<String>) -> Diagnostic {
+    Diagnostic::error(DiagnosticKind::InvalidNotation, span, message)
+}
+
+fn is_reserved_notation_symbol(symbol: &str) -> bool {
+    matches!(symbol, "->" | "→" | "=>" | ":=" | ".{")
+}
+
+fn contains_reserved_structural_char(symbol: &str) -> bool {
+    symbol.chars().any(|ch| {
+        matches!(
+            ch,
+            ':' | ',' | '.' | '(' | ')' | '{' | '}' | '|' | '@' | '_' | '?'
+        )
+    })
+}
+
+fn is_identifier_char(ch: char) -> bool {
+    ch == '\'' || ch.is_ascii_alphanumeric()
+}
+
 #[derive(Clone, Copy)]
 enum TokenTag {
     Import,
@@ -908,11 +956,27 @@ end Demo
         );
         assert_eq!(module.items.len(), 6);
         assert!(matches!(module.items[0], SurfaceItem::Import { .. }));
-        assert!(matches!(module.items[3], SurfaceItem::Notation(_)));
+        let SurfaceItem::Notation(notation) = &module.items[3] else {
+            panic!("expected notation");
+        };
+        assert_eq!(notation.symbol, "+");
         let SurfaceItem::Inductive { constructors, .. } = &module.items[4] else {
             panic!("expected inductive");
         };
         assert_eq!(constructors.len(), 2);
+    }
+
+    #[test]
+    fn rejects_invalid_notation_symbols() {
+        for source in [
+            r#"infix:50 "" => Eq"#,
+            r#"infix:50 "+ +" => Eq"#,
+            r#"infix:50 "->" => Arrow"#,
+            r#"infix:50 "foo" => Foo"#,
+        ] {
+            let err = parse_module(FileId(0), source).expect_err("notation must be rejected");
+            assert_eq!(err.kind, DiagnosticKind::InvalidNotation);
+        }
     }
 
     #[test]
