@@ -254,8 +254,8 @@ Std.Nat.Basic.npcert
   },
   "hashes": {
     "export_hash": "sha256:...",
-    "certificate_hash": "sha256:...",
-    "axiom_report_hash": "sha256:..."
+    "axiom_report_hash": "sha256:...",
+    "certificate_hash": "sha256:..."
   }
 }
 ```
@@ -345,7 +345,7 @@ axiom_report:
   使用されたaxiom一覧
 
 hashes:
-  export_hash、certificate_hash、axiom_report_hash
+  export_hash、axiom_report_hash、certificate_hash
 ```
 
 ## 3.4 Declaration の種類
@@ -754,7 +754,8 @@ InductiveDecl は downstream の型検査・ι-reductionに影響するため、
 
 axiom report は、各定理やモジュールがどのaxiomに依存しているかを明示するものです。
 
-canonical payload では、axiom は canonical name order、per-declaration report は declaration order で保存します。
+canonical payload では、axiom は後述する `AxiomRef` の canonical order、
+per-declaration report は declaration order で保存します。
 説明用 JSON では宣言名を key にした map のように書くことがありますが、hash 対象では map を使いません。
 
 たとえば：
@@ -1086,8 +1087,8 @@ def id.{u} : Π A : Sort u, A → A :=
   },
   "hashes": {
     "export_hash": "sha256:...",
-    "certificate_hash": "sha256:...",
-    "axiom_report_hash": "sha256:..."
+    "axiom_report_hash": "sha256:...",
+    "certificate_hash": "sha256:..."
   }
 }
 ```
@@ -1119,11 +1120,585 @@ Phase 2のcheckerは、次の場合にfailします。
 
 ---
 
-# 11. Phase 2 のテストケース
+# 11. Phase 2 実装契約
+
+この章は Phase 2 実装時の contract です。
+前の章で説明した設計意図を、実装が迷わない粒度まで落とします。
+ここにない型検査・conversion・inductive の論理規則は `core-spec-v0.1.md` と
+Phase 1 kernel の仕様に従います。
+
+## 11.1 crate / API 境界
+
+Phase 2 では certificate 処理を kernel から分離します。
+
+```text
+crates/npa-kernel:
+  core Expr / Level / Decl
+  type checking
+  definitional equality
+  reduction
+  inductive checking
+  no file I/O
+  no serialization
+  no hashing
+  no policy decision
+
+crates/npa-cert:
+  canonicalization
+  canonical binary encode/decode
+  hash calculation
+  axiom dependency calculation
+  import store / high-trust policy
+  certificate build / verify
+  calls npa-kernel with decoded declarations
+```
+
+Phase 2 で公開する最小 API はこれです。
+
+```rust
+pub type Hash = [u8; 32];
+
+pub struct Name(pub Vec<String>);
+
+pub type ModuleName = Name;
+pub type AxiomName = Name;
+
+pub struct CoreModule {
+    pub name: ModuleName,
+    pub declarations: Vec<npa_kernel::Decl>,
+}
+
+pub enum TrustMode {
+    Normal,
+    HighTrust,
+}
+
+pub struct AxiomPolicy {
+    pub mode: TrustMode,
+    pub allowlisted_axioms: BTreeSet<AxiomName>,
+    pub deny_sorry: bool,
+}
+
+pub struct VerifierSession {
+    checked: BTreeMap<ImportKey, VerifiedModule>,
+}
+
+pub fn build_module_cert(
+    module: CoreModule,
+    imports: &[VerifiedModule],
+) -> Result<ModuleCert, CertError>;
+
+pub fn encode_module_cert(cert: &ModuleCert) -> Result<Vec<u8>, CertError>;
+
+pub fn decode_module_cert(bytes: &[u8]) -> Result<ModuleCert, CertError>;
+
+pub fn verify_module_cert(
+    bytes: &[u8],
+    session: &mut VerifierSession,
+    policy: &AxiomPolicy,
+) -> Result<VerifiedModule, CertError>;
+```
+
+`verify_module_cert` は decode、canonical encoding 検査、hash 再計算、
+import 解決、axiom policy、kernel check をまとめて行います。
+`decode_module_cert` は構文的 decode だけで、trusted module としては扱いません。
+
+`npa-kernel` は path、filesystem、network、時計、乱数、環境変数を見ません。
+canonical bytes の生成では `HashMap` / `HashSet` の iteration order に依存してはいけません。
+順序が必要な場合は `BTreeMap` / `BTreeSet` または明示 sort 済み `Vec` を使います。
+
+## 11.2 canonical binary primitive
+
+すべての payload は次の primitive だけで encode します。
+
+```text
+uvar:
+  minimal unsigned LEB128
+  non-minimal form は NonCanonicalEncoding
+
+tag:
+  exactly one byte
+  unknown tag は UnsupportedEncoding
+
+bytes:
+  uvar byte_length + raw bytes
+
+string:
+  bytes と同じ形
+  content は valid UTF-8
+  invalid UTF-8 は NonCanonicalEncoding
+
+vec<T>:
+  uvar length + element bytes in order
+
+option<T>:
+  tag 0x00 for none
+  tag 0x01 + T for some
+
+hash:
+  raw 32-byte sha256 digest
+  "sha256:..." hex string は debug view のみ
+
+record:
+  fields concatenated in the order specified below
+  field name は encode しない
+```
+
+同じ値は常に同じ bytes に encode されます。
+decode 後に再encodeした bytes が入力と一致しない場合、checker は
+`NonCanonicalEncoding` として拒否します。
+
+## 11.3 canonical name / id
+
+canonical payload 内の名前は dotted string ではなく component list です。
+
+```text
+Name:
+  vec<string component>
+
+NameId:
+  uvar index into name_table
+```
+
+name の順序は、components を左から順に UTF-8 byte lexicographic order で比較します。
+片方がもう片方の prefix の場合、短い方を先にします。
+
+`name_table` は重複なし、上記順序で sort 済みです。
+display name や source binder name は trusted payload に入りません。
+
+## 11.4 module certificate byte schema
+
+on-disk `.npcert` の trusted payload は次の順序で encode します。
+
+```text
+ModuleCertBytes =
+  Header
+  Imports
+  NameTable
+  LevelTable
+  TermTable
+  Declarations
+  ExportBlock
+  AxiomReport
+  ModuleHashes
+
+Header =
+  format: string              -- "NPA-CERT-0.1"
+  core_spec: string           -- "NPA-Core-0.1"
+  module: Name
+
+Imports =
+  vec<ImportEntry>
+
+ImportEntry =
+  module: Name
+  export_hash: hash
+  certificate_hash: option<hash>
+
+NameTable =
+  vec<Name>
+
+LevelTable =
+  vec<LevelNode>
+
+TermTable =
+  vec<TermNode>
+
+Declarations =
+  vec<DeclCert>
+
+ModuleHashes =
+  export_hash: hash
+  axiom_report_hash: hash
+  certificate_hash: hash
+```
+
+`certificate_hash` の計算時だけは、最後の `ModuleHashes` を次に置き換えます。
+
+```text
+ModuleHashesForCertificateHash =
+  export_hash: hash
+  axiom_report_hash: hash
+```
+
+つまり `certificate_hash` は、自分自身の field tag や placeholder bytes を含めません。
+
+## 11.5 level schema
+
+`LevelTable` は topological order です。
+子 level を持つ node は、自分より小さい `LevelId` だけを参照できます。
+同一構造の level node は重複禁止です。
+
+```text
+LevelId =
+  uvar index into level_table
+
+LevelNode =
+  0x00 Zero
+  0x01 Succ(inner: LevelId)
+  0x02 Max(lhs: LevelId, rhs: LevelId)
+  0x03 IMax(lhs: LevelId, rhs: LevelId)
+  0x04 Param(name: NameId)
+```
+
+`Max` / `IMax` は Phase 1 の `normalize_level` 後の形だけを保存します。
+非正規化 level は `NonCanonicalEncoding` として拒否します。
+
+## 11.6 term schema
+
+`TermTable` も topological order です。
+子 term を持つ node は、自分より小さい `TermId` だけを参照できます。
+同一構造の term node は重複禁止です。
+
+```text
+TermId =
+  uvar index into term_table
+
+TermNode =
+  0x00 Sort(level: LevelId)
+  0x01 BVar(index: uvar)
+  0x02 Const(global_ref: GlobalRef, levels: vec<LevelId>)
+  0x03 App(fun: TermId, arg: TermId)
+  0x04 Lam(type: TermId, body: TermId)
+  0x05 Pi(type: TermId, body: TermId)
+  0x06 Let(type: TermId, value: TermId, body: TermId)
+
+GlobalRef =
+  0x00 Imported(import_index: uvar, name: NameId, decl_interface_hash: hash)
+  0x01 Local(decl_index: uvar)
+```
+
+`Imported.import_index` は `imports` の index です。
+`Imported.name` と `decl_interface_hash` は、その import の `export_block` に存在する
+entry と一致しなければいけません。
+`Local.decl_index` は現在 module の declaration index です。
+Phase 2 では mutual declaration を扱わないため、local dependency は現在の declaration より
+小さい index だけを許します。
+
+`Lam` / `Pi` / `Let` には binder name を保存しません。
+de Bruijn index が範囲外なら `InvalidBVar` として拒否します。
+
+## 11.7 declaration schema
+
+Phase 2 certificate の logical declaration は4種類です。
+constructor / recursor は独立した source declaration としては保存せず、
+`InductiveDecl` から verifier が kernel environment 用の declaration を生成します。
+
+```text
+DeclCert =
+  decl: DeclPayload
+  dependencies: vec<DependencyEntry>
+  axiom_dependencies: vec<AxiomRef>
+  hashes: DeclHashes
+
+DeclPayload =
+  0x00 AxiomDecl
+  0x01 DefDecl
+  0x02 TheoremDecl
+  0x03 InductiveDecl
+
+AxiomDecl =
+  name: NameId
+  universe_params: vec<NameId>
+  type: TermId
+
+DefDecl =
+  name: NameId
+  universe_params: vec<NameId>
+  type: TermId
+  value: TermId
+  reducibility: Reducibility
+
+TheoremDecl =
+  name: NameId
+  universe_params: vec<NameId>
+  type: TermId
+  proof: TermId
+  opacity: Opacity
+
+InductiveDecl =
+  name: NameId
+  universe_params: vec<NameId>
+  params: vec<BinderType>
+  indices: vec<BinderType>
+  sort: LevelId
+  constructors: vec<ConstructorSpec>
+  recursor: option<RecursorSpec>
+
+BinderType =
+  type: TermId
+
+ConstructorSpec =
+  name: NameId
+  type: TermId
+
+RecursorSpec =
+  name: NameId
+  universe_params: vec<NameId>
+  type: TermId
+  rules: RecursorRules
+
+RecursorRules =
+  minor_start: uvar
+  major_index: uvar
+
+Reducibility =
+  0x00 Reducible
+  0x01 Opaque
+
+Opacity =
+  0x00 Opaque
+
+DeclHashes =
+  decl_interface_hash: hash
+  decl_certificate_hash: hash
+```
+
+Phase 2 theorem は常に opaque です。
+transparent proof を downstream conversion に使いたい場合は `DefDecl` として扱います。
+
+`InductiveDecl.recursor` が `some` の場合、verifier は inductive declaration から
+recursor type / rules を再生成し、certificate 内の `RecursorSpec` と一致することを確認します。
+不一致は `InductiveGeneratedArtifactMismatch` です。
+
+## 11.8 dependency / axiom schema
+
+dependency は declaration の type / value / proof / constructor type / recursor type に
+現れる `Const` 参照から作る重複なしの集合です。
+
+```text
+DependencyEntry =
+  global_ref: GlobalRef
+  decl_interface_hash: hash
+
+AxiomRef =
+  global_ref: GlobalRef
+  name: NameId
+  decl_interface_hash: hash
+```
+
+`DependencyEntry` は canonical `GlobalRef` bytes の昇順で保存します。
+`AxiomRef` も canonical `GlobalRef` bytes の昇順で保存します。
+説明用 JSON では axiom name だけを表示してもよいですが、trusted payload では
+`GlobalRef` と `decl_interface_hash` を含めます。
+
+dependency graph に cycle がある場合は `DependencyCycle` です。
+Phase 2 では mutual declaration を受理しません。
+inductive の constructor / recursor は同じ `InductiveDecl` bundle の内部生成物として扱い、
+declaration graph の cycle とはみなしません。
+
+## 11.9 export block schema
+
+`ExportBlock` は downstream module が environment を作るための公開 interface です。
+entry は `name` の canonical order で保存します。
+
+```text
+ExportBlock =
+  vec<ExportEntry>
+
+ExportEntry =
+  name: NameId
+  kind: ExportKind
+  universe_params: vec<NameId>
+  type_hash: hash
+  body_hash: option<hash>
+  reducibility: option<Reducibility>
+  opacity: option<Opacity>
+  decl_interface_hash: hash
+  axiom_dependencies: vec<AxiomRef>
+
+ExportKind =
+  0x00 Axiom
+  0x01 Def
+  0x02 Theorem
+  0x03 Inductive
+  0x04 Constructor
+  0x05 Recursor
+```
+
+`body_hash` は transparent / reducible def の value hash だけに使います。
+opaque theorem の proof hash は `ExportBlock` に入れません。
+inductive の constructor / recursor は、`InductiveDecl` から生成された interface として
+`ExportBlock` に含めます。
+
+## 11.10 axiom report schema
+
+canonical axiom report は audit log ではなく trusted payload です。
+
+```text
+AxiomReport =
+  per_declaration: vec<DeclAxiomReport>
+  module_axioms: vec<AxiomRef>
+
+DeclAxiomReport =
+  decl_index: uvar
+  direct_axioms: vec<AxiomRef>
+  transitive_axioms: vec<AxiomRef>
+```
+
+`per_declaration` は declaration order です。
+各 axiom list と `module_axioms` は `AxiomRef` の canonical order です。
+`safe_for_high_trust`、`contains_sorry`、`custom_axioms`、`standard_axioms` は
+trusted payload に入れません。必要なら decode 後の audit view で再計算します。
+
+## 11.11 hash payload table
+
+hash は raw canonical bytes に domain separator を前置して計算します。
+domain separator は ASCII string bytes で、length prefix は付けません。
+
+```text
+level_hash(level) =
+  sha256("NPA-LEVEL-0.1" || LevelHashPayload(level))
+
+term_hash(term) =
+  sha256("NPA-TERM-0.1" || TermHashPayload(term))
+
+decl_interface_hash(decl) =
+  sha256("NPA-DECL-IFACE-0.1" || DeclInterfacePayload(decl))
+
+decl_certificate_hash(decl_cert) =
+  sha256("NPA-DECL-CERT-0.1" || DeclCertificatePayload(decl_cert))
+
+axiom_report_hash(report) =
+  sha256("NPA-AXIOM-REPORT-0.1" || AxiomReportBytes(report))
+
+export_hash(export_block) =
+  sha256("NPA-MODULE-EXPORT-0.1" || ExportBlockBytes(export_block))
+
+certificate_hash(cert) =
+  sha256("NPA-MODULE-CERT-0.1" || ModuleCertBytesWithoutCertificateHash(cert))
+```
+
+`TermHashPayload` は term table index ではなく、構造で計算します。
+child term は child `term_hash`、level は `level_hash`、global ref は canonical
+`GlobalRef` bytes を入れます。これにより table layout の実装差を hash に混ぜません。
+
+```text
+TermHashPayload =
+  Sort: 0x00 level_hash
+  BVar: 0x01 uvar index
+  Const: 0x02 GlobalRefBytes vec<level_hash>
+  App: 0x03 term_hash(fun) term_hash(arg)
+  Lam: 0x04 term_hash(type) term_hash(body)
+  Pi: 0x05 term_hash(type) term_hash(body)
+  Let: 0x06 term_hash(type) term_hash(value) term_hash(body)
+```
+
+`DeclInterfacePayload` は declaration kind ごとに次を入れます。
+
+```text
+Axiom:
+  kind, name, universe_params, type_hash
+
+Def:
+  kind, name, universe_params, type_hash, value_hash, reducibility, axiom_dependencies
+
+Theorem:
+  kind, name, universe_params, type_hash, opacity, axiom_dependencies
+
+Inductive:
+  kind, name, universe_params, params, indices, sort,
+  constructors, generated recursor signature hash, generated computation rule hash,
+  axiom_dependencies
+```
+
+`DeclCertificatePayload` は次を入れます。
+
+```text
+Axiom:
+  decl_interface_hash, axiom_dependencies
+
+Def:
+  decl_interface_hash, dependency entries, axiom_dependencies
+
+Theorem:
+  decl_interface_hash, proof_hash, dependency entries
+
+Inductive:
+  decl_interface_hash, dependency entries, axiom_dependencies
+```
+
+## 11.12 import store / high-trust semantics
+
+import は filesystem path ではなく、検査済み module から解決します。
+
+```text
+ImportKey =
+  module: Name
+  export_hash: hash
+  certificate_hash: option<hash>
+
+VerifiedModule =
+  module: Name
+  export_hash: hash
+  certificate_hash: hash
+  export_block: ExportBlock
+  axiom_report: AxiomReport
+```
+
+通常モードでは、`ImportEntry.module` と `ImportEntry.export_hash` に一致する
+`VerifiedModule` が `VerifierSession` にあればよいです。
+`ImportEntry.certificate_hash` はあってもなくてもよいですが、ある場合は一致を確認します。
+
+high-trust mode では、次をすべて要求します。
+
+```text
+- ImportEntry.certificate_hash が some
+- module / export_hash / certificate_hash が VerifiedModule と一致
+- その VerifiedModule は現在の VerifierSession が verify_module_cert で検査済み
+- policy で forbidden axiom / synthetic sorry が許可されていない
+```
+
+外部から直接作った `VerifiedModule` を high-trust import として注入してはいけません。
+
+## 11.13 structured error enum
+
+Phase 2 の失敗は文字列ではなく、少なくとも次の enum で返します。
+
+```rust
+pub enum HashObject {
+    Level,
+    Term,
+    DeclInterface,
+    DeclCertificate,
+    ExportBlock,
+    AxiomReport,
+    ModuleCertificate,
+}
+
+pub enum CertError {
+    DecodeError,
+    UnsupportedFormat { format: String, core_spec: String },
+    UnsupportedEncoding { tag: u8 },
+    NonCanonicalEncoding { object: &'static str },
+    HashMismatch { object: HashObject, expected: Hash, actual: Hash },
+    ImportHashMismatch { module: ModuleName },
+    MissingImportCertificateHash { module: ModuleName },
+    ImportCertificateHashMismatch { module: ModuleName },
+    ImportNotVerifiedInSession { module: ModuleName },
+    DuplicateName { name: ModuleName },
+    UnknownDependency { name: ModuleName },
+    DependencyCycle { name: ModuleName },
+    AxiomReportMismatch { decl: Option<ModuleName> },
+    ForbiddenAxiom { axiom: ModuleName },
+    SorryDenied { axiom: ModuleName },
+    UnresolvedMetavariable,
+    InvalidBVar { index: u32 },
+    InductiveGeneratedArtifactMismatch { name: ModuleName },
+    Kernel(npa_kernel::Error),
+}
+```
+
+CLI や diagnostics はこの enum から人間向けメッセージを作ります。
+テストは enum variant と主要 field を直接検査します。
+
+---
+
+# 12. Phase 2 のテストケース
 
 Phase 2 では、完了条件を次のテストで確認します。
 
-## 11.1 golden certificate
+## 12.1 golden certificate
 
 少なくとも次の core declaration から `.npcert` を生成し、golden fixture として
 byte列または各 hash を固定します。
@@ -1145,7 +1720,7 @@ byte列または各 hash を固定します。
 - export_hash / certificate_hash / axiom_report_hash が再計算結果と一致する
 ```
 
-## 11.2 canonicalization / hash stability
+## 12.2 canonicalization / hash stability
 
 ```text
 - binder名だけを変えた同一 term は同じ term_hash になる
@@ -1154,7 +1729,7 @@ byte列または各 hash を固定します。
 - name / level / term table の生成順が実装内部の走査順に依存しない
 ```
 
-## 11.3 hash role の差分テスト
+## 12.3 hash role の差分テスト
 
 ```text
 - transparent def の body を変えると decl_interface_hash と export_hash が変わる
@@ -1164,7 +1739,7 @@ byte列または各 hash を固定します。
 - axiom_report_hash は canonical axiom report の変更でだけ変わる
 ```
 
-## 11.4 mutation / rejection
+## 12.4 mutation / rejection
 
 不正 certificate を作り、構造化エラーで拒否されることを確認します。
 
@@ -1186,12 +1761,12 @@ HashMismatch
 AxiomReportMismatch
 UnresolvedMetavariable
 NonCanonicalEncoding
-TypeError
+Kernel(npa_kernel::Error)
 ```
 
 など、原因に応じた enum error が返ること。
 
-## 11.5 import / high-trust mode
+## 12.5 import / high-trust mode
 
 ```text
 - 通常モードでは import の export_hash 一致を必須にする
@@ -1201,7 +1776,7 @@ TypeError
 - high-trust mode では同じ verifier が検査済みでない import certificate を拒否する
 ```
 
-## 11.6 axiom policy / source independence
+## 12.6 axiom policy / source independence
 
 ```text
 - forbidden axiom を policy で拒否できる
@@ -1212,7 +1787,7 @@ TypeError
 
 ---
 
-# 12. Phase 2 の完了条件
+# 13. Phase 2 の完了条件
 
 Phase 2が完了したと言える条件はこれです。
 
@@ -1233,12 +1808,13 @@ Phase 2が完了したと言える条件はこれです。
 - checker が .npcert と import store 内の .npcert だけを使って再検査でき、kernel は decode 済み宣言だけを検査できる
 - Phase 2 の checker は同一 Rust kernel を使う certificate verifier として定義され、Phase 8 independent checker とは責務が分離されている
 - source code、source map、AI traceなしで検査が完結する
-- 11章の golden / stability / mutation / high-trust / source-independence テストが自動テストで通る
+- 11章の実装契約に沿った API / byte schema / hash payload / error enum を実装している
+- 12章の golden / stability / mutation / high-trust / source-independence テストが自動テストで通る
 ```
 
 ---
 
-# 13. 設計の要点
+# 14. 設計の要点
 
 Phase 2で一番大事なのは、hashの役割を分けることです。
 
