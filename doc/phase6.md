@@ -168,6 +168,9 @@ List.append_nil  : xs ++ [] = xs
 List.nil_append  : [] ++ xs = xs
 ```
 
+この Phase 6 文書内の `0`, `1`, `2` は、`Nat.zero` / `Nat.succ ...` の表示用省略です。
+Phase 3 MVP の入力では `Nat.zero` か開いた namespace 内の `zero` と書ければ十分です。
+
 ## 3.3 補助定理の命名
 
 内部補助定理は `_aux` を使ってもよいですが、公開しない方針にします。
@@ -484,8 +487,6 @@ notation：
 ```
 
 Phase 6 MVP では overloaded numerals はまだ不要です。
-この節の `0`, `1`, `2` は `Nat.zero` / `Nat.succ ...` の表示用省略として使います。
-Phase 3 MVP の入力では `Nat.zero` か開いた namespace 内の `zero` と書ければよく、
 Nat 専用 numeral syntax を入れる場合も overloaded numerals ではなく Phase 6 の表層利便機能として扱います。
 
 ## 6.2 add

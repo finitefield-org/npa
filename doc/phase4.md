@@ -20,6 +20,11 @@ tactic は proof term を組み立てるだけ。
 最後に kernel が proof term を検査する。
 ```
 
+この Phase 4 文書内の tactic script 例では、読みやすさのため `0` を使うことがあります。
+Phase 3 MVP の実入力では、数値リテラルを入れるまでは `Nat.zero` か開いた namespace 内の
+`zero` と書ければ十分です。tactic が組み立てる core proof term には `Nat.zero` への
+canonical `Const` 参照だけが残ります。
+
 ---
 
 # 1. tactic 層の基本モデル
@@ -1391,4 +1396,3 @@ Phase 4 が完了したと言える条件はこれです。
 ```
 
 です。`exact` と `intro` で proof state の基本が固まり、`apply` で subgoal 生成が入り、`rw` と `simp-lite` で等式推論が使えるようになり、最後に `induction` で帰納法に到達します。
-

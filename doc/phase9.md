@@ -1321,6 +1321,9 @@ theorem user_goal : forall n : Nat, n + 0 = n := by
   _
 ```
 
+自然言語形式化の候補は、後続の elaboration / confirmation に渡す表層案です。
+ここでの `0` は表示上の省略であり、受理される候補は最終的に `Nat.zero` への canonical 参照まで elaboration されなければいけません。
+
 しかし、ここは最も危険な層です。
 
 ```text

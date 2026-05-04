@@ -126,6 +126,9 @@ Phase 7 の入力は、Phase 5 の structured proof state です。
 }
 ```
 
+`pretty` や `statement` は人間・AI向け表示なので、Phase 6 の表示用省略として `0` を使うことがあります。
+探索や certificate 検査で使う構造情報は `constants` / `core_hash` 側であり、`0` は `Nat.zero` への参照として扱います。
+
 加えて、Phase 6 の theorem index を使います。
 
 ```json

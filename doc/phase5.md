@@ -146,6 +146,10 @@ POST /sessions
 
 文字列だけの goal 表示では、AIやIDEが扱いにくいです。
 
+この Phase 5 文書内の `pretty` / `statement` / goal 表示では、読みやすさのため `0` を
+使うことがあります。これは表示用省略であり、機械向け構造は `Nat.zero` への canonical
+`Const` 参照と `core_hash` を使います。
+
 悪い例：
 
 ```text

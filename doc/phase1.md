@@ -931,7 +931,7 @@ Eq Nat n n
 
 ```text
 1. Level 実装
-   0, succ, max, param
+   0, succ, max, imax, param
 
 2. Expr arena 実装
    Sort, BVar, Const, App, Lam, Pi, Let

@@ -17,7 +17,12 @@ Rust 製 kernel と独立 checker が proof certificate だけを検査する。
 - AI、tactic、elaborator、parser、theorem search は trusted base に入れない。
 - 最終的な正しさは source script ではなく canonical proof certificate で保証する。
 - kernel は小さく、監査しやすく、決定的に動くものにする。
-- certificate は再検査可能で、import の `export_hash` / `certificate_hash`、declaration hash、`axiom_report_hash` を含む。
+- certificate は再検査可能で、import の `export_hash` と高信頼モード用の `certificate_hash`、declaration hash、`axiom_report_hash` を含む。
+
+文書内の数学例では、読みやすさのため `0`, `1`, `2` を使うことがあります。
+これは自然数の表示用省略で、Phase 3 MVP の実入力では数値リテラルを入れるまで
+`Nat.zero` / `Nat.succ ...` か、開いた namespace 内の `zero` / `succ ...` と書ければ十分です。
+certificate に残るのは canonical `Const` 参照です。
 
 ## アーキテクチャ
 
@@ -51,7 +56,7 @@ canonical certificate を検査します。
 | 6 | 小さく堅い標準ライブラリ: `Std.Logic`, `Std.Nat`, `Std.List`, `Std.Algebra.Basic` |
 | 7 | AI 証明探索: premise retrieval、tactic generation、search、repair |
 | 8 | 独立 checker、external checker、CI audit |
-| 9 | advanced inductive、quotient、typeclass、SMT certificates、theorem graph |
+| 9 | advanced inductive、universe polymorphism強化、quotient、typeclass、SMT certificates、theorem graph、natural language formalization |
 
 ## リポジトリ構成
 

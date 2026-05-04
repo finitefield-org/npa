@@ -133,6 +133,10 @@ checker が読まないもの：
 
 つまり、checker の入力は原則として `.npcert` だけです。
 
+この Phase 8 文書内の challenge / source / 表示例では、読みやすさのため `0` を使うことがあります。
+checker が比較する対象は表示文字列ではなく、`statement_core_hash` と canonical core AST です。
+受理される certificate 側では `0` は `Nat.zero` への canonical `Const` 参照まで elaboration 済みでなければいけません。
+
 ---
 
 # 4. Reference checker

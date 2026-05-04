@@ -170,7 +170,7 @@ canonical 形式は：
 Const {
   import_index,
   declaration_name,
-  declaration_interface_hash
+  decl_interface_hash
 }
 ```
 
