@@ -338,7 +338,7 @@ impl Env {
 
         let major_domain = &domains[rules.major_index];
         self.check_recursor_target(data, recursor, major_domain, "major premise")?;
-        self.check_recursor_result(data, recursor, &result)?;
+        self.check_recursor_result(data, recursor, rules, &domains, &result, delta)?;
 
         for (constructor_index, constructor) in data.constructors.iter().enumerate() {
             let minor_index = rules.minor_start + constructor_index;
@@ -488,47 +488,24 @@ impl Env {
         &self,
         data: &InductiveDecl,
         recursor: &RecursorDecl,
+        rules: &RecursorRules,
+        domains: &[Expr],
         result: &Expr,
+        delta: &[String],
     ) -> Result<()> {
-        self.check_motive_application_result(data, recursor, result)
-    }
-
-    fn check_motive_application_result(
-        &self,
-        data: &InductiveDecl,
-        recursor: &RecursorDecl,
-        result: &Expr,
-    ) -> Result<()> {
-        let (head, args) = collect_apps(result);
-        if args.len() != 1 {
-            return Err(Error::InvalidInductive(format!(
-                "{} result must apply motive to one major premise in Phase 1",
+        let expected = motive_app(
+            domains.len(),
+            data.params.len(),
+            bvar_for_abs(domains.len(), rules.major_index)?,
+        )?;
+        let result_ctx = recursor_prefix_ctx(domains);
+        if self.is_defeq(&result_ctx, delta, result, &expected)? {
+            Ok(())
+        } else {
+            Err(Error::InvalidInductive(format!(
+                "{} result must apply motive to the major premise",
                 recursor.name
-            )));
-        }
-        match head {
-            Expr::BVar(_) => self.check_result_target(data, recursor, &args[0]),
-            _ => Err(Error::InvalidInductive(format!(
-                "{} result must be motive application",
-                recursor.name
-            ))),
-        }
-    }
-
-    fn check_result_target(
-        &self,
-        data: &InductiveDecl,
-        recursor: &RecursorDecl,
-        target: &Expr,
-    ) -> Result<()> {
-        let (head, _) = collect_apps(target);
-        match head {
-            Expr::BVar(_) => Ok(()),
-            Expr::Const { name, .. } if self.constructor_belongs_to(&name, &data.name) => Ok(()),
-            _ => Err(Error::InvalidInductive(format!(
-                "{} result target must be major premise or constructor-headed {} value",
-                recursor.name, data.name
-            ))),
+            )))
         }
     }
 

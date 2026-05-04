@@ -448,6 +448,69 @@ mod tests {
         )
     }
 
+    fn bad_result() -> Expr {
+        Expr::konst("BadResult", vec![])
+    }
+
+    fn bad_result_zero() -> Expr {
+        Expr::konst("BadResult.zero", vec![])
+    }
+
+    fn bad_result_succ(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("BadResult.succ", vec![]), arg)
+    }
+
+    fn bad_result_rec_type(level: Level) -> Expr {
+        let motive_ty = Expr::pi("_", bad_result(), Expr::sort(level));
+        let z_ty = Expr::app(Expr::bvar(0), bad_result_zero());
+        let s_ty = Expr::pi(
+            "n",
+            bad_result(),
+            Expr::pi(
+                "ih",
+                Expr::app(Expr::bvar(2), Expr::bvar(0)),
+                Expr::app(Expr::bvar(3), bad_result_succ(Expr::bvar(1))),
+            ),
+        );
+
+        Expr::pi(
+            "motive",
+            motive_ty,
+            Expr::pi(
+                "z",
+                z_ty,
+                Expr::pi(
+                    "s",
+                    s_ty,
+                    Expr::pi(
+                        "n",
+                        bad_result(),
+                        Expr::app(Expr::bvar(3), bad_result_zero()),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn bad_result_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "BadResult",
+            vec![],
+            vec![],
+            vec![],
+            type0(),
+            vec![
+                ConstructorDecl::new("BadResult.zero", bad_result()),
+                ConstructorDecl::new("BadResult.succ", Expr::pi("_", bad_result(), bad_result())),
+            ],
+            Some(RecursorDecl::new(
+                "BadResult.rec",
+                vec!["u".to_owned()],
+                bad_result_rec_type(Level::param("u")),
+            )),
+        )
+    }
+
     fn bad_prop() -> Expr {
         Expr::konst("BadProp", vec![])
     }
@@ -603,6 +666,15 @@ mod tests {
 
         assert!(matches!(err, Error::InvalidInductive(_)));
         assert!(env.decl("ExtraBinder").is_none());
+    }
+
+    #[test]
+    fn rejects_recursor_result_not_targeting_major_premise() {
+        let mut env = Env::new();
+        let err = env.add_inductive(bad_result_inductive()).unwrap_err();
+
+        assert!(matches!(err, Error::InvalidInductive(_)));
+        assert!(env.decl("BadResult").is_none());
     }
 
     #[test]
