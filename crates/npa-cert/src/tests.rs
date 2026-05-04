@@ -1551,7 +1551,9 @@ fn rejects_tampered_certificate_hash() {
 #[test]
 fn rejects_tampered_decl_interface_hash() {
     let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let actual = cert.declarations[0].hashes.decl_interface_hash;
     cert.declarations[0].hashes.decl_interface_hash[0] ^= 0x01;
+    let expected = cert.declarations[0].hashes.decl_interface_hash;
 
     let mut session = VerifierSession::new();
     let err = verify_module_cert(
@@ -1564,8 +1566,62 @@ fn rejects_tampered_decl_interface_hash() {
         err,
         CertError::HashMismatch {
             object: HashObject::DeclInterface,
-            ..
-        }
+            expected: found_expected,
+            actual: found_actual,
+        } if found_expected == expected && found_actual == actual
+    ));
+}
+
+#[test]
+fn rejects_inductive_wrapper_universe_mismatch() {
+    let mut module = nat_module();
+    match &mut module.declarations[0] {
+        Decl::Inductive {
+            universe_params, ..
+        } => universe_params.push("u".to_owned()),
+        _ => panic!("expected inductive"),
+    }
+
+    let err = build_module_cert(module, &[]).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveWrapperMismatch {
+            name
+        } if name == Name::from_dotted("Nat")
+    ));
+}
+
+#[test]
+fn rejects_inductive_wrapper_type_mismatch() {
+    let mut module = nat_module();
+    match &mut module.declarations[0] {
+        Decl::Inductive { ty, .. } => *ty = Expr::sort(Level::zero()),
+        _ => panic!("expected inductive"),
+    }
+
+    let err = build_module_cert(module, &[]).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveWrapperMismatch {
+            name
+        } if name == Name::from_dotted("Nat")
+    ));
+}
+
+#[test]
+fn rejects_inductive_wrapper_name_mismatch() {
+    let mut module = nat_module();
+    match &mut module.declarations[0] {
+        Decl::Inductive { name, .. } => *name = "BadNat".to_owned(),
+        _ => panic!("expected inductive"),
+    }
+
+    let err = build_module_cert(module, &[]).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveWrapperMismatch {
+            name
+        } if name == Name::from_dotted("BadNat")
     ));
 }
 

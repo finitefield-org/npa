@@ -376,10 +376,16 @@ fn canonicalize_decl(
         Decl::Inductive {
             name,
             universe_params,
+            ty,
             data,
-            ..
         } => {
+            if name != data.name || universe_params != data.universe_params {
+                return Err(CertError::InductiveWrapperMismatch {
+                    name: Name::from_dotted(&name),
+                });
+            }
             let mut terms = Vec::new();
+            let ty = canonicalize_expr(&ty, resolver)?;
             let params = data
                 .params
                 .iter()
@@ -425,6 +431,12 @@ fn canonicalize_decl(
                     ))
                 })
                 .transpose()?;
+            let sort = canonicalize_level(&data.sort, resolver)?;
+            if ty != inductive_type_canon_term(&params, &indices, &sort) {
+                return Err(CertError::InductiveWrapperMismatch {
+                    name: Name::from_dotted(&name),
+                });
+            }
             let mut deps = dependencies_from_terms(terms.iter());
             remove_self_dependency(&mut deps, decl_index);
             let ax = axiom_dependencies_from_deps(&deps, previous_axioms, resolver);
@@ -435,7 +447,7 @@ fn canonicalize_decl(
                         universe_params: universe_param_ids(&universe_params, resolver)?,
                         params,
                         indices,
-                        sort: canonicalize_level(&data.sort, resolver)?,
+                        sort,
                         constructors,
                         recursor,
                     },

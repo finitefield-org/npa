@@ -682,6 +682,11 @@ pub enum CertError {
         /// Generated declaration name.
         name: ModuleName,
     },
+    /// Inductive wrapper fields disagree with the checked inductive payload.
+    InductiveWrapperMismatch {
+        /// Inductive declaration name.
+        name: ModuleName,
+    },
     /// Underlying Rust kernel rejected a declaration.
     Kernel(npa_kernel::Error),
 }

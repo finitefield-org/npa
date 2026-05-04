@@ -477,15 +477,15 @@ fn verify_hashes(cert: &ModuleCert) -> Result<()> {
         if expected.decl_interface_hash != decl.hashes.decl_interface_hash {
             return Err(CertError::HashMismatch {
                 object: HashObject::DeclInterface,
-                expected: expected.decl_interface_hash,
-                actual: decl.hashes.decl_interface_hash,
+                expected: decl.hashes.decl_interface_hash,
+                actual: expected.decl_interface_hash,
             });
         }
         if expected.decl_certificate_hash != decl.hashes.decl_certificate_hash {
             return Err(CertError::HashMismatch {
                 object: HashObject::DeclCertificate,
-                expected: expected.decl_certificate_hash,
-                actual: decl.hashes.decl_certificate_hash,
+                expected: decl.hashes.decl_certificate_hash,
+                actual: expected.decl_certificate_hash,
             });
         }
     }
@@ -499,8 +499,8 @@ fn verify_hashes(cert: &ModuleCert) -> Result<()> {
     if expected_export_block != cert.export_block || expected_export != cert.hashes.export_hash {
         return Err(CertError::HashMismatch {
             object: HashObject::ExportBlock,
-            expected: expected_export,
-            actual: cert.hashes.export_hash,
+            expected: cert.hashes.export_hash,
+            actual: expected_export,
         });
     }
 
@@ -511,8 +511,8 @@ fn verify_hashes(cert: &ModuleCert) -> Result<()> {
     if expected_axioms != cert.hashes.axiom_report_hash {
         return Err(CertError::HashMismatch {
             object: HashObject::AxiomReport,
-            expected: expected_axioms,
-            actual: cert.hashes.axiom_report_hash,
+            expected: cert.hashes.axiom_report_hash,
+            actual: expected_axioms,
         });
     }
 
@@ -523,8 +523,8 @@ fn verify_hashes(cert: &ModuleCert) -> Result<()> {
     if expected_cert != cert.hashes.certificate_hash {
         return Err(CertError::HashMismatch {
             object: HashObject::ModuleCertificate,
-            expected: expected_cert,
-            actual: cert.hashes.certificate_hash,
+            expected: cert.hashes.certificate_hash,
+            actual: expected_cert,
         });
     }
 
