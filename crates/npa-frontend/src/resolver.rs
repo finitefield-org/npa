@@ -887,8 +887,8 @@ impl<'a> Resolver<'a> {
 
     fn global_candidates(&self, source: &SurfaceName) -> Vec<ElabGlobalRef> {
         let suffix = Name::from_surface(source);
-        for priority in self.global_lookup_priorities(&suffix, source.parts.len() == 1) {
-            let candidates = self.find_global_candidates(&priority);
+        for level in self.global_lookup_priority_levels(&suffix, source.parts.len() == 1) {
+            let candidates = self.find_global_candidates(&level);
             if !candidates.is_empty() {
                 return candidates;
             }
@@ -896,25 +896,27 @@ impl<'a> Resolver<'a> {
         Vec::new()
     }
 
-    fn find_global_candidates(&self, priority: &LookupPriority) -> Vec<ElabGlobalRef> {
+    fn find_global_candidates(&self, level: &[LookupPriority]) -> Vec<ElabGlobalRef> {
         let mut current = Vec::new();
         let mut imported = Vec::new();
 
-        if !priority.is_suffix() {
-            for decl in &self.state.globals.current {
-                if priority.matches(&decl.name) {
-                    current.push(decl.to_ref());
-                }
+        for decl in &self.state.globals.current {
+            if level
+                .iter()
+                .filter(|priority| !priority.is_suffix())
+                .any(|priority| priority.matches(&decl.name))
+            {
+                current.push(decl.to_ref());
             }
-            if !current.is_empty() {
-                current.sort_by(global_ref_cmp);
-                current.dedup();
-                return current;
-            }
+        }
+        if !current.is_empty() {
+            current.sort_by(global_ref_cmp);
+            current.dedup();
+            return current;
         }
 
         for decl in &self.state.globals.imported {
-            if priority.matches(&decl.name) {
+            if level.iter().any(|priority| priority.matches(&decl.name)) {
                 imported.push(decl.to_ref());
             }
         }
@@ -925,43 +927,59 @@ impl<'a> Resolver<'a> {
 
     fn has_future_candidate(&self, source: &SurfaceName) -> bool {
         let suffix = Name::from_surface(source);
-        self.global_lookup_priorities(&suffix, source.parts.len() == 1)
+        self.global_lookup_priority_levels(&suffix, source.parts.len() == 1)
             .into_iter()
-            .filter(|priority| !priority.is_suffix())
-            .any(|priority| {
-                self.future_globals
-                    .keys()
-                    .any(|future| priority.matches(future))
+            .any(|level| {
+                level
+                    .iter()
+                    .filter(|priority| !priority.is_suffix())
+                    .any(|priority| {
+                        self.future_globals
+                            .keys()
+                            .any(|future| priority.matches(future))
+                    })
             })
     }
 
-    fn global_lookup_priorities(&self, suffix: &Name, unqualified: bool) -> Vec<LookupPriority> {
-        let mut priorities = Vec::new();
+    fn global_lookup_priority_levels(
+        &self,
+        suffix: &Name,
+        unqualified: bool,
+    ) -> Vec<Vec<LookupPriority>> {
+        let mut levels = Vec::new();
+        let current = self.state.current_namespace();
         if unqualified {
-            priorities.push(LookupPriority::Exact(
-                self.state.current_namespace().append(suffix),
-            ));
-            priorities.extend(
-                self.opened_namespaces()
-                    .into_iter()
-                    .map(|namespace| LookupPriority::Exact(namespace.append(suffix))),
-            );
-            priorities.push(LookupPriority::Exact(suffix.clone()));
-            priorities.push(LookupPriority::Suffix(suffix.clone()));
-        } else {
-            priorities.push(LookupPriority::Exact(suffix.clone()));
-            let current = self.state.current_namespace();
             if !current.is_empty() {
-                priorities.push(LookupPriority::Exact(current.append(suffix)));
+                levels.push(vec![LookupPriority::Exact(current.append(suffix))]);
             }
-            priorities.extend(
-                self.opened_namespaces()
-                    .into_iter()
-                    .map(|namespace| LookupPriority::Exact(namespace.append(suffix))),
-            );
-            priorities.push(LookupPriority::Suffix(suffix.clone()));
+            let opened: Vec<_> = self
+                .opened_namespaces()
+                .into_iter()
+                .map(|namespace| LookupPriority::Exact(namespace.append(suffix)))
+                .collect();
+            if !opened.is_empty() {
+                levels.push(opened);
+            }
+            levels.push(vec![
+                LookupPriority::Exact(suffix.clone()),
+                LookupPriority::Suffix(suffix.clone()),
+            ]);
+        } else {
+            levels.push(vec![LookupPriority::Exact(suffix.clone())]);
+            if !current.is_empty() {
+                levels.push(vec![LookupPriority::Exact(current.append(suffix))]);
+            }
+            let opened: Vec<_> = self
+                .opened_namespaces()
+                .into_iter()
+                .map(|namespace| LookupPriority::Exact(namespace.append(suffix)))
+                .collect();
+            if !opened.is_empty() {
+                levels.push(opened);
+            }
+            levels.push(vec![LookupPriority::Suffix(suffix.clone())]);
         }
-        priorities
+        levels
     }
 
     fn opened_namespaces(&self) -> Vec<Name> {
@@ -1334,6 +1352,35 @@ mod tests {
         }
     }
 
+    fn mixed_zero_import() -> VerifiedImport {
+        VerifiedImport {
+            module: Name::from_dotted("Mixed"),
+            export_hash: "sha256:mixed".to_owned(),
+            declarations: vec![
+                ImportedDeclaration {
+                    name: Name::from_dotted("Nat"),
+                    decl_interface_hash: "sha256:Mixed.Nat".to_owned(),
+                },
+                ImportedDeclaration {
+                    name: Name::from_dotted("Int"),
+                    decl_interface_hash: "sha256:Mixed.Int".to_owned(),
+                },
+                ImportedDeclaration {
+                    name: Name::from_dotted("zero"),
+                    decl_interface_hash: "sha256:Mixed.zero".to_owned(),
+                },
+                ImportedDeclaration {
+                    name: Name::from_dotted("Nat.zero"),
+                    decl_interface_hash: "sha256:Mixed.Nat.zero".to_owned(),
+                },
+                ImportedDeclaration {
+                    name: Name::from_dotted("Int.zero"),
+                    decl_interface_hash: "sha256:Mixed.Int.zero".to_owned(),
+                },
+            ],
+        }
+    }
+
     fn resolve(source: &str, imports: &[VerifiedImport]) -> Result<ResolvedModule> {
         resolve_source(FileId(0), Name::from_dotted("Scratch"), source, imports)
     }
@@ -1479,6 +1526,50 @@ def use : Nat := add
         match ident_resolution(value) {
             ResolvedName::Overloaded(candidates) => assert_eq!(candidates.len(), 2),
             other => panic!("expected overloaded name, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn opened_namespace_short_names_share_one_priority_level() {
+        let resolved = resolve(
+            r#"
+import Mixed
+open Nat
+open Int
+def use : Nat := zero
+"#,
+            &[mixed_zero_import()],
+        )
+        .expect("module should resolve");
+
+        let ResolvedItem::Def(use_decl) = &resolved.items[3] else {
+            panic!("expected def");
+        };
+        let value = use_decl.value.as_ref().expect("def value");
+        match ident_resolution(value) {
+            ResolvedName::Overloaded(candidates) => assert_eq!(candidates.len(), 2),
+            other => panic!("expected overloaded opened name, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn imported_root_and_suffix_short_names_share_one_priority_level() {
+        let resolved = resolve(
+            r#"
+import Mixed
+def use : Nat := zero
+"#,
+            &[mixed_zero_import()],
+        )
+        .expect("module should resolve");
+
+        let ResolvedItem::Def(use_decl) = &resolved.items[1] else {
+            panic!("expected def");
+        };
+        let value = use_decl.value.as_ref().expect("def value");
+        match ident_resolution(value) {
+            ResolvedName::Overloaded(candidates) => assert_eq!(candidates.len(), 3),
+            other => panic!("expected overloaded imported short name, got {other:?}"),
         }
     }
 
