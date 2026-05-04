@@ -1793,7 +1793,7 @@ MVP:
 Phase 7.5:
   LLM-assisted prover
 
-Phase 8:
+Phase 7 later:
   learning prover
 ```
 
@@ -1961,4 +1961,3 @@ minimize verified proof
 [1]: https://leandojo.readthedocs.io/?utm_source=chatgpt.com "LeanDojo: Machine Learning for Theorem Proving in Lean ..."
 [2]: https://arxiv.org/abs/2306.15626?utm_source=chatgpt.com "LeanDojo: Theorem Proving with Retrieval-Augmented Language Models"
 [3]: https://www.nature.com/articles/s41586-025-09833-y?utm_source=chatgpt.com "Olympiad-level formal mathematical reasoning with ..."
-

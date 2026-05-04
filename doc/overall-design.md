@@ -503,13 +503,13 @@ Type Checker
   └── universe solver
 ```
 
-## 6.3 kernelは2実装以上
+## 6.3 checkerは2実装以上
 
 最初から複数checkerを設計に入れます。
 
 ```text
 npa-kernel-fast:
-  RustまたはOCaml実装。普段の開発用。
+  Rust実装。普段の開発用。
 
 npa-checker-ref:
   小さく読みやすい参照実装。遅くてよい。
@@ -1260,8 +1260,8 @@ sourceだけでなく、certificateを成果物にします。
 _build/
   module.npo        compiled object
   module.npcert     proof certificate
-  module.graph.json theorem dependency graph
-  module.axioms.json axiom report
+  module.graph.json theorem dependency graph derived from certificate
+  module.axioms.json derived axiom report view
   module.trace.json proof state trace
 ```
 
@@ -1456,7 +1456,7 @@ response:
 ```json
 {
   "statement": "theorem add_zero (n : Nat) : n + 0 = n",
-  "mode": "kernel_verified",
+  "mode": "normal",
   "timeout_seconds": 60,
   "max_nodes": 10000,
   "allow_ai": true,

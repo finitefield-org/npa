@@ -312,7 +312,7 @@ axiom_report:
   使用されたaxiom一覧
 
 hashes:
-  export hash、full certificate hash、axiom report hash
+  export_hash、certificate_hash、axiom_report_hash
 ```
 
 ## 3.4 Declaration の種類
@@ -455,7 +455,7 @@ export_hash:
   downstream moduleが型検査・conversionに必要とする公開情報のhash
 
 certificate_hash:
-  proof本体も含むcertificate全体のhash
+  proof本体も含む trusted payload から certificate_hash 自身を除いたhash
 
 axiom_report_hash:
   canonical axiom report のhash
@@ -486,7 +486,7 @@ export_hash:
   下流の型検査に影響するもの
 
 certificate_hash:
-  proofを含む完全な成果物
+  proofを含む trusted payload から certificate_hash 自身を除いたもの
 ```
 
 を分けます。
@@ -869,7 +869,7 @@ Phase 2では、次のパイプラインを実装します。
 4. name/level/term table を canonical order で作る
 5. term hash を計算する
 6. declaration hash を計算する
-7. dependency graph を作る
+7. 宣言ごとの dependency entries を作る
 8. axiom report を作る
 9. export block を作る
 10. export_hash / certificate_hash / axiom_report_hash を計算する
@@ -1105,7 +1105,7 @@ export_hash:
   moduleの公開インターフェースのhash
 
 certificate_hash:
-  module certificate全体のhash
+  trusted payload から certificate_hash 自身を除いたhash
 
 axiom_report_hash:
   canonical axiom report のhash

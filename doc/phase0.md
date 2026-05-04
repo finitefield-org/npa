@@ -927,7 +927,8 @@ Pi n : Nat,
 
 ## 6.5 Canonicalization
 
-同じ certificate は同じ hash になってほしいです。
+同じ canonical payload は同じ hash にならなければいけません。
+source map などの非信頼 metadata は hash 対象に含めません。
 
 そのために：
 
@@ -1203,4 +1204,4 @@ v0.1 は小さくします。
   general recursion, macros, tactic language
 ```
 
-まず小さいkernelを作り、certificateだけで `id`, `Nat`, `Eq`, `Nat.rec`, `add_zero` が検査できる状態を目指すのがよいです。
+まず小さいkernelを作り、source/tactic なしの core declaration として `id`, `Nat`, `Eq`, `Nat.rec`, `add_zero` が検査できる状態を目指すのがよいです。

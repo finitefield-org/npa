@@ -116,7 +116,7 @@ Phase 8 で checker が読むもの：
 - import hash
 - declaration hash
 - axiom report
-- dependency graph
+- certificate 内の declaration dependency entries
 ```
 
 checker が読まないもの：
@@ -128,6 +128,7 @@ checker が読まないもの：
 - pretty printed goal
 - theorem search index
 - source map
+- 外部に出力された dependency graph artifact
 ```
 
 つまり、checker の入力は原則として `.npcert` だけです。

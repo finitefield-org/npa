@@ -48,8 +48,8 @@ IDE / tactic / AI search から利用
 Std/Logic.npa
 Std/Logic.npcert
 Std/Logic.index.json
-Std/Logic.axioms.json
-Std/Logic.graph.json
+Std/Logic.axioms.json   -- derived axiom report view
+Std/Logic.graph.json    -- derived dependency graph
 ```
 
 Phase 6 の完了条件は：

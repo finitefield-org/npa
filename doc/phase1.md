@@ -16,7 +16,7 @@ Core term:
   β, δ, ι, ζ reduction
 ```
 
-つまり Phase 1 の目標は、tactic や parser や AI ではなく、**完全に明示化された証明項 certificate を受け取り、それが正しいか検査できる kernel** を作ることです。
+つまり Phase 1 の目標は、tactic や parser や AI ではなく、**完全に明示化された core term / declaration を直接受け取り、それが正しいか検査できる kernel** を作ることです。
 
 ---
 
@@ -985,8 +985,8 @@ Phase 1 が完了したと言える条件はこれです。
 - Eq と Eq.refl が使える
 - simple inductive declaration を検査できる
 - βδιζ conversion により型の一致判定ができる
-- `id`, `const`, `Nat.add`, `add_zero` が certificate だけで検査できる
+- `id`, `const`, `Nat.add`, `add_zero` が source/tactic なしの core declaration として検査できる
 ```
 
 この時点では、まだ tactic も AI も parser も不要です。
-まずは **certificate を直接食わせて kernel が検査できる** ところまで作るのが最短です。
+まずは **core declaration を直接食わせて kernel が検査できる** ところまで作るのが最短です。
