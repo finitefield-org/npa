@@ -150,6 +150,166 @@ fn verify_tables(cert: &ModuleCert) -> Result<()> {
         });
     }
     verify_reachable_tables_and_bvars(cert)?;
+    verify_name_table_reachable(cert)?;
+    Ok(())
+}
+
+fn verify_name_table_reachable(cert: &ModuleCert) -> Result<()> {
+    let mut names = BTreeSet::new();
+    names.insert(cert.header.module.clone());
+    for import in &cert.imports {
+        names.insert(import.module.clone());
+    }
+
+    for level in &cert.level_table {
+        collect_level_node_names(cert, level, &mut names)?;
+    }
+    for term in &cert.term_table {
+        collect_term_node_names(cert, term, &mut names)?;
+    }
+    for decl in &cert.declarations {
+        collect_decl_payload_names(cert, &decl.decl, &mut names)?;
+        collect_dependency_entry_names(cert, &decl.dependencies, &mut names)?;
+        collect_axiom_ref_names(cert, &decl.axiom_dependencies, &mut names)?;
+    }
+    for entry in &cert.export_block {
+        collect_name_id(cert, entry.name, &mut names)?;
+        collect_name_ids(cert, &entry.universe_params, &mut names)?;
+        collect_axiom_ref_names(cert, &entry.axiom_dependencies, &mut names)?;
+    }
+    for report in &cert.axiom_report.per_declaration {
+        collect_axiom_ref_names(cert, &report.direct_axioms, &mut names)?;
+        collect_axiom_ref_names(cert, &report.transitive_axioms, &mut names)?;
+    }
+    collect_axiom_ref_names(cert, &cert.axiom_report.module_axioms, &mut names)?;
+
+    let expected = names.into_iter().collect::<Vec<_>>();
+    if expected != cert.name_table {
+        return Err(CertError::NonCanonicalEncoding {
+            object: "NameTable",
+        });
+    }
+    Ok(())
+}
+
+fn collect_level_node_names(
+    cert: &ModuleCert,
+    level: &LevelNode,
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    if let LevelNode::Param(name) = level {
+        collect_name_id(cert, *name, names)?;
+    }
+    Ok(())
+}
+
+fn collect_term_node_names(
+    cert: &ModuleCert,
+    term: &TermNode,
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    if let TermNode::Const { global_ref, .. } = term {
+        collect_global_ref_names(cert, global_ref, names)?;
+    }
+    Ok(())
+}
+
+fn collect_decl_payload_names(
+    cert: &ModuleCert,
+    decl: &DeclPayload,
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    match decl {
+        DeclPayload::Axiom {
+            name,
+            universe_params,
+            ..
+        }
+        | DeclPayload::Def {
+            name,
+            universe_params,
+            ..
+        }
+        | DeclPayload::Theorem {
+            name,
+            universe_params,
+            ..
+        } => {
+            collect_name_id(cert, *name, names)?;
+            collect_name_ids(cert, universe_params, names)?;
+        }
+        DeclPayload::Inductive {
+            name,
+            universe_params,
+            constructors,
+            recursor,
+            ..
+        } => {
+            collect_name_id(cert, *name, names)?;
+            collect_name_ids(cert, universe_params, names)?;
+            for constructor in constructors {
+                collect_name_id(cert, constructor.name, names)?;
+            }
+            if let Some(recursor) = recursor {
+                collect_name_id(cert, recursor.name, names)?;
+                collect_name_ids(cert, &recursor.universe_params, names)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn collect_dependency_entry_names(
+    cert: &ModuleCert,
+    dependencies: &[DependencyEntry],
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    for dependency in dependencies {
+        collect_global_ref_names(cert, &dependency.global_ref, names)?;
+    }
+    Ok(())
+}
+
+fn collect_axiom_ref_names(
+    cert: &ModuleCert,
+    axioms: &[AxiomRef],
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    for axiom in axioms {
+        collect_global_ref_names(cert, &axiom.global_ref, names)?;
+        collect_name_id(cert, axiom.name, names)?;
+    }
+    Ok(())
+}
+
+fn collect_global_ref_names(
+    cert: &ModuleCert,
+    global_ref: &GlobalRef,
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    match global_ref {
+        GlobalRef::Imported { name, .. } | GlobalRef::LocalGenerated { name, .. } => {
+            collect_name_id(cert, *name, names)?;
+        }
+        GlobalRef::Local { .. } => {}
+    }
+    Ok(())
+}
+
+fn collect_name_ids(cert: &ModuleCert, ids: &[NameId], names: &mut BTreeSet<Name>) -> Result<()> {
+    for id in ids {
+        collect_name_id(cert, *id, names)?;
+    }
+    Ok(())
+}
+
+fn collect_name_id(cert: &ModuleCert, id: NameId, names: &mut BTreeSet<Name>) -> Result<()> {
+    names.insert(
+        cert.name_table
+            .get(id)
+            .cloned()
+            .ok_or(CertError::DecodeError)?,
+    );
     Ok(())
 }
 
@@ -771,10 +931,7 @@ pub(crate) fn expected_axioms_for_decl(
                 let import = imports.get(*import_index).ok_or(CertError::DecodeError)?;
                 for axiom in &entry.axiom_dependencies {
                     transitive.insert(remap_axiom_ref_from_cert_import(
-                        cert,
-                        *import_index,
-                        import,
-                        axiom,
+                        cert, imports, import, axiom,
                     )?);
                 }
             }
@@ -802,7 +959,7 @@ pub(crate) fn expected_axioms_for_decl(
 
 fn remap_axiom_ref_from_cert_import(
     cert: &ModuleCert,
-    import_index: usize,
+    imports: &[&VerifiedModule],
     import: &VerifiedModule,
     axiom: &AxiomRef,
 ) -> Result<AxiomRef> {
@@ -815,6 +972,8 @@ fn remap_axiom_ref_from_cert_import(
         .iter()
         .position(|candidate| candidate == axiom_name)
         .ok_or(CertError::DecodeError)?;
+    let import_index =
+        import_index_exporting_axiom(imports, axiom_name, axiom.decl_interface_hash)?;
     Ok(AxiomRef {
         global_ref: GlobalRef::Imported {
             import_index,
@@ -824,6 +983,33 @@ fn remap_axiom_ref_from_cert_import(
         name,
         decl_interface_hash: axiom.decl_interface_hash,
     })
+}
+
+fn import_index_exporting_axiom(
+    imports: &[&VerifiedModule],
+    axiom_name: &Name,
+    decl_interface_hash: Hash,
+) -> Result<usize> {
+    imports
+        .iter()
+        .enumerate()
+        .find_map(|(import_index, import)| {
+            import
+                .export_block
+                .iter()
+                .any(|entry| {
+                    entry.kind == ExportKind::Axiom
+                        && entry.decl_interface_hash == decl_interface_hash
+                        && import
+                            .name_table
+                            .get(entry.name)
+                            .is_some_and(|name| name == axiom_name)
+                })
+                .then_some(import_index)
+        })
+        .ok_or_else(|| CertError::UnknownDependency {
+            name: axiom_name.clone(),
+        })
 }
 
 fn local_axiom_ref_for_decl(decl_index: usize, dep_axioms: &[AxiomRef]) -> Option<AxiomRef> {

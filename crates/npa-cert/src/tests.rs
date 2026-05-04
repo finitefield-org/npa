@@ -286,6 +286,19 @@ fn use_axiom_module() -> CoreModule {
     }
 }
 
+fn use_imported_use_p_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UseImportedUseP"),
+        declarations: vec![Decl::Def {
+            name: "use_use_p".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::zero()),
+            value: Expr::konst("use_p", vec![]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
 fn use_two_axioms_module() -> CoreModule {
     CoreModule {
         name: Name::from_dotted("Test.UseTwoAxioms"),
@@ -884,6 +897,30 @@ fn declaration_names_are_committed_to_interface_and_export_hashes() {
 }
 
 #[test]
+fn rejects_unused_name_table_entry_even_if_rehashed() {
+    let mut cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    cert.name_table.push(Name::from_dotted("zz.unused"));
+    cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&cert),
+    );
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "NameTable"
+        }
+    ));
+}
+
+#[test]
 fn verifier_rejects_noncanonical_declaration_order_even_if_rehashed() {
     let mut cert = build_module_cert(ordered_axioms_module(&["A", "B"]), &[]).unwrap();
     cert.declarations.swap(0, 1);
@@ -957,6 +994,61 @@ fn imported_axioms_are_reported_in_caller_certificate() {
         &encode_module_cert(&use_p_cert).unwrap(),
         &mut session,
         &policy,
+    )
+    .unwrap();
+}
+
+#[test]
+fn transitive_imported_axiom_provenance_points_to_original_import() {
+    let p_cert = build_module_cert(axiom_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_p = verify_module_cert(
+        &encode_module_cert(&p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_p_cert =
+        build_module_cert(use_axiom_module(), std::slice::from_ref(&verified_p)).unwrap();
+    let verified_use_p = verify_module_cert(
+        &encode_module_cert(&use_p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_use_p_cert =
+        build_module_cert(use_imported_use_p_module(), &[verified_use_p, verified_p]).unwrap();
+    let p_import_index = use_use_p_cert
+        .imports
+        .iter()
+        .position(|import| import.module == Name::from_dotted("Test.Axiom"))
+        .unwrap();
+    let use_p_import_index = use_use_p_cert
+        .imports
+        .iter()
+        .position(|import| import.module == Name::from_dotted("Test.UseAxiom"))
+        .unwrap();
+    let axiom = use_use_p_cert
+        .axiom_report
+        .module_axioms
+        .iter()
+        .find(|axiom| use_use_p_cert.name_table[axiom.name] == Name::from_dotted("P"))
+        .unwrap();
+
+    assert!(matches!(
+        axiom.global_ref,
+        GlobalRef::Imported { import_index, .. } if import_index == p_import_index
+    ));
+    assert!(matches!(
+        axiom.global_ref,
+        GlobalRef::Imported { import_index, .. } if import_index != use_p_import_index
+    ));
+    verify_module_cert(
+        &encode_module_cert(&use_use_p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
     )
     .unwrap();
 }

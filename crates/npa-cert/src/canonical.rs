@@ -97,11 +97,16 @@ pub(crate) fn build_module_cert_impl(
     collect_name(&mut names, &module.name);
     for import in &imports {
         collect_name(&mut names, &import.module);
-        collect_names_from_export_block(&mut names, &import.export_block, &import.name_table);
     }
     for decl in &module.declarations {
         collect_names_from_decl(&mut names, decl);
     }
+    let directly_referenced_names = names.clone();
+    collect_imported_axiom_names_for_referenced_exports(
+        &mut names,
+        &imports,
+        &directly_referenced_names,
+    )?;
     let name_table: Vec<_> = names.into_iter().collect();
     let name_index: BTreeMap<_, _> = name_table
         .iter()
@@ -1237,18 +1242,6 @@ fn collect_names_from_level(names: &mut BTreeSet<Name>, level: &Level) {
     }
 }
 
-pub(crate) fn collect_names_from_export_block(
-    names: &mut BTreeSet<Name>,
-    block: &ExportBlock,
-    table: &[Name],
-) {
-    for entry in block {
-        if let Some(name) = table.get(entry.name) {
-            collect_name(names, name);
-        }
-    }
-}
-
 pub(crate) fn ensure_unique_names(names: &[Name]) -> Result<()> {
     let mut seen = BTreeSet::new();
     for name in names {
@@ -1270,10 +1263,13 @@ fn imported_decl_map(
                 .name_table
                 .get(entry.name)
                 .ok_or(CertError::DecodeError)?;
+            if !name_index.contains_key(name) {
+                continue;
+            }
             let axiom_dependencies = entry
                 .axiom_dependencies
                 .iter()
-                .map(|axiom| remap_imported_axiom_ref(import_index, import, axiom, name_index))
+                .map(|axiom| remap_imported_axiom_ref(imports, import, axiom, name_index))
                 .collect::<Result<Vec<_>>>()?;
             let old = map.insert(
                 name.clone(),
@@ -1293,7 +1289,7 @@ fn imported_decl_map(
 }
 
 fn remap_imported_axiom_ref(
-    import_index: usize,
+    imports: &[&VerifiedModule],
     import: &VerifiedModule,
     axiom: &AxiomRef,
     name_index: &BTreeMap<Name, usize>,
@@ -1303,6 +1299,8 @@ fn remap_imported_axiom_ref(
         .get(axiom.name)
         .ok_or(CertError::DecodeError)?;
     let name = *name_index.get(axiom_name).ok_or(CertError::DecodeError)?;
+    let import_index =
+        import_index_exporting_axiom(imports, axiom_name, axiom.decl_interface_hash)?;
     Ok(AxiomRef {
         global_ref: GlobalRef::Imported {
             import_index,
@@ -1312,6 +1310,59 @@ fn remap_imported_axiom_ref(
         name,
         decl_interface_hash: axiom.decl_interface_hash,
     })
+}
+
+fn collect_imported_axiom_names_for_referenced_exports(
+    names: &mut BTreeSet<Name>,
+    imports: &[&VerifiedModule],
+    referenced_names: &BTreeSet<Name>,
+) -> Result<()> {
+    for import in imports {
+        for entry in &import.export_block {
+            let entry_name = import
+                .name_table
+                .get(entry.name)
+                .ok_or(CertError::DecodeError)?;
+            if !referenced_names.contains(entry_name) {
+                continue;
+            }
+            for axiom in &entry.axiom_dependencies {
+                let axiom_name = import
+                    .name_table
+                    .get(axiom.name)
+                    .ok_or(CertError::DecodeError)?;
+                collect_name(names, axiom_name);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn import_index_exporting_axiom(
+    imports: &[&VerifiedModule],
+    axiom_name: &Name,
+    decl_interface_hash: Hash,
+) -> Result<usize> {
+    imports
+        .iter()
+        .enumerate()
+        .find_map(|(import_index, import)| {
+            import
+                .export_block
+                .iter()
+                .any(|entry| {
+                    entry.kind == ExportKind::Axiom
+                        && entry.decl_interface_hash == decl_interface_hash
+                        && import
+                            .name_table
+                            .get(entry.name)
+                            .is_some_and(|name| name == axiom_name)
+                })
+                .then_some(import_index)
+        })
+        .ok_or_else(|| CertError::UnknownDependency {
+            name: axiom_name.clone(),
+        })
 }
 
 pub(crate) fn union_axioms(axioms: impl IntoIterator<Item = AxiomRef>) -> Vec<AxiomRef> {
