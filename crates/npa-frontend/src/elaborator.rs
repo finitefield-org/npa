@@ -4362,6 +4362,34 @@ def use_alias_app_rec
     }
 
     #[test]
+    fn exposes_recursor_for_notation_wrapped_sort_inductive() {
+        let module = elaborate(
+            r##"
+def AsType (A : Type 1) : Type 1 := A
+prefix:100 "#" => AsType
+inductive NotationWrapped : # Type where
+| mk : NotationWrapped
+def use_notation_wrapped_rec
+    (P : NotationWrapped -> Type)
+    (z : P NotationWrapped.mk)
+    (x : NotationWrapped) : P x :=
+  NotationWrapped.rec P z x
+"##,
+        )
+        .expect("notation-wrapped Sort result should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_notation_wrapped_rec"
+        ));
+    }
+
+    #[test]
     fn exposes_recursor_for_imported_applied_lambda_sort_alias_inductive() {
         let imports = [prelude_import(), custom_identity_sort_alias_import()];
         let module = elaborate_source(

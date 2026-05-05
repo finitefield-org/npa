@@ -1539,8 +1539,43 @@ impl<'a> Resolver<'a> {
             ResolvedExpr::App { func, arg, .. } => {
                 self.resolved_app_result_shape(func, arg, locals, fuel - 1)
             }
+            ResolvedExpr::Notation {
+                candidates,
+                args,
+                span,
+                ..
+            } => self.resolved_notation_result_shape(candidates, args, *span, locals, fuel - 1),
             _ => None,
         }
+    }
+
+    fn resolved_notation_result_shape(
+        &self,
+        candidates: &[ElabGlobalRef],
+        args: &[ResolvedExpr],
+        span: Span,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let mut shape = None;
+        for candidate in candidates {
+            let expr = resolved_notation_candidate_expr(candidate, args, span);
+            let Some(candidate_shape) =
+                self.resolved_inductive_result_shape_with(&expr, locals, fuel - 1)
+            else {
+                continue;
+            };
+            match shape {
+                None => shape = Some(candidate_shape),
+                Some(existing) if existing == candidate_shape => {}
+                Some(_) => return None,
+            }
+        }
+        shape
     }
 
     fn core_inductive_result_shape_with(
@@ -2100,6 +2135,36 @@ fn global_ref_kind_rank(global_ref: &ElabGlobalRef) -> u8 {
         ElabGlobalRef::Local { .. } => 0,
         ElabGlobalRef::LocalGenerated { .. } => 1,
         ElabGlobalRef::Imported { .. } => 2,
+    }
+}
+
+fn resolved_notation_candidate_expr(
+    global: &ElabGlobalRef,
+    args: &[ResolvedExpr],
+    span: Span,
+) -> ResolvedExpr {
+    args.iter()
+        .cloned()
+        .fold(resolved_ident_for_global(global, span), |func, arg| {
+            ResolvedExpr::App {
+                func: Box::new(func),
+                arg: Box::new(arg),
+                span,
+            }
+        })
+}
+
+fn resolved_ident_for_global(global: &ElabGlobalRef, span: Span) -> ResolvedExpr {
+    let name = global_ref_display_name(global);
+    ResolvedExpr::Ident {
+        name: SurfaceName {
+            parts: name.parts.clone(),
+            span,
+        },
+        resolved: ResolvedName::Global(global.clone()),
+        universe_args: None,
+        implicit_mode: ImplicitMode::Insert,
+        span,
     }
 }
 
