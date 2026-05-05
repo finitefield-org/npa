@@ -97,7 +97,7 @@ pub enum BinderInfo {
     Implicit,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ImplicitMode {
     Insert,
     Explicit,
@@ -237,7 +237,7 @@ pub struct NotationDecl {
     pub span: Span,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum NotationKind {
     Prefix,
     Postfix,

@@ -6,7 +6,7 @@ use npa_kernel::{
 };
 
 use crate::{
-    parse_module, resolve_module, BinderInfo, Diagnostic, DiagnosticKind, ElabGlobalRef, FileId,
+    resolve_module, resolve_source, BinderInfo, Diagnostic, DiagnosticKind, ElabGlobalRef, FileId,
     ImplicitMode, ImportedTypeMetadata, Name, ResolvedBinder, ResolvedDecl, ResolvedExpr,
     ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, Result, Span, SurfaceBinderKind,
     SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam, VerifiedImport,
@@ -30,8 +30,8 @@ pub fn elaborate_source(
     source: &str,
     verified_imports: &[VerifiedImport],
 ) -> Result<ElaboratedModule> {
-    let module = parse_module(file_id, source)?;
-    elaborate_module(current_module, &module, verified_imports)
+    let resolved = resolve_source(file_id, current_module, source, verified_imports)?;
+    elaborate_resolved_module(&resolved)
 }
 
 pub fn elaborate_module(
@@ -672,7 +672,7 @@ impl ExprElaborator {
                 resolved,
                 universe_args,
                 span,
-                implicit_mode: _,
+                implicit_mode,
                 ..
             } => {
                 let levels = self.elab_universe_args(resolved, universe_args.as_deref(), *span)?;
@@ -704,6 +704,7 @@ impl ExprElaborator {
                         return self.elab_infer_overloaded_name(
                             candidates,
                             universe_args.as_deref(),
+                            *implicit_mode,
                             *span,
                         );
                     }
@@ -738,6 +739,7 @@ impl ExprElaborator {
                     self.elab_infer_overloaded_app(
                         &spine.candidates,
                         spine.universe_args.as_deref(),
+                        spine.implicit_mode,
                         &spine.args,
                         *span,
                     )
@@ -848,13 +850,14 @@ impl ExprElaborator {
         &mut self,
         candidates: &[ElabGlobalRef],
         universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
         span: Span,
     ) -> Result<InferResult> {
         let mut successes = Vec::new();
         let initial = self.snapshot();
         for candidate in sorted_global_candidates(candidates) {
             let snapshot = self.snapshot();
-            let expr = resolved_ident_for_global(&candidate, universe_args, span);
+            let expr = resolved_ident_for_global(&candidate, universe_args, implicit_mode, span);
             if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
                 self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
@@ -893,6 +896,7 @@ impl ExprElaborator {
         &mut self,
         candidates: &[ElabGlobalRef],
         universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
         expected: &TypeCore,
         span: Span,
     ) -> Result<CheckResult> {
@@ -900,7 +904,7 @@ impl ExprElaborator {
         let initial = self.snapshot();
         for candidate in sorted_global_candidates(candidates) {
             let snapshot = self.snapshot();
-            let expr = resolved_ident_for_global(&candidate, universe_args, span);
+            let expr = resolved_ident_for_global(&candidate, universe_args, implicit_mode, span);
             if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
                 self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
@@ -939,6 +943,7 @@ impl ExprElaborator {
         &mut self,
         candidates: &[ElabGlobalRef],
         universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
         args: &[ResolvedExpr],
         span: Span,
     ) -> Result<InferResult> {
@@ -946,7 +951,8 @@ impl ExprElaborator {
         let initial = self.snapshot();
         for candidate in sorted_global_candidates(candidates) {
             let snapshot = self.snapshot();
-            let expr = overloaded_candidate_app_expr(&candidate, universe_args, args, span);
+            let expr =
+                overloaded_candidate_app_expr(&candidate, universe_args, implicit_mode, args, span);
             if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
                 self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
@@ -1137,6 +1143,7 @@ impl ExprElaborator {
         if let ResolvedExpr::Ident {
             resolved: ResolvedName::Overloaded(candidates),
             universe_args,
+            implicit_mode,
             span,
             ..
         } = expr
@@ -1144,6 +1151,7 @@ impl ExprElaborator {
             return self.elab_check_overloaded_name(
                 candidates,
                 universe_args.as_deref(),
+                *implicit_mode,
                 expected,
                 *span,
             );
@@ -2955,6 +2963,7 @@ fn global_candidate_kind_rank(global: &ElabGlobalRef) -> u8 {
 fn resolved_ident_for_global(
     global: &ElabGlobalRef,
     universe_args: Option<&[SurfaceLevel]>,
+    implicit_mode: ImplicitMode,
     span: Span,
 ) -> ResolvedExpr {
     let name = surface_name_for_global(global, span);
@@ -2962,7 +2971,7 @@ fn resolved_ident_for_global(
         name,
         resolved: ResolvedName::Global(global.clone()),
         universe_args: universe_args.map(|args| args.to_vec()),
-        implicit_mode: ImplicitMode::Insert,
+        implicit_mode,
         span,
     }
 }
@@ -2972,17 +2981,18 @@ fn notation_candidate_expr(
     args: &[ResolvedExpr],
     span: Span,
 ) -> ResolvedExpr {
-    overloaded_candidate_app_expr(global, None, args, span)
+    overloaded_candidate_app_expr(global, None, ImplicitMode::Insert, args, span)
 }
 
 fn overloaded_candidate_app_expr(
     global: &ElabGlobalRef,
     universe_args: Option<&[SurfaceLevel]>,
+    implicit_mode: ImplicitMode,
     args: &[ResolvedExpr],
     span: Span,
 ) -> ResolvedExpr {
     args.iter().cloned().fold(
-        resolved_ident_for_global(global, universe_args, span),
+        resolved_ident_for_global(global, universe_args, implicit_mode, span),
         |func, arg| {
             let app_span = resolved_expr_span(&func).join(resolved_expr_span(&arg));
             ResolvedExpr::App {
@@ -2997,6 +3007,7 @@ fn overloaded_candidate_app_expr(
 struct OverloadedAppSpine {
     candidates: Vec<ElabGlobalRef>,
     universe_args: Option<Vec<SurfaceLevel>>,
+    implicit_mode: ImplicitMode,
     args: Vec<ResolvedExpr>,
 }
 
@@ -3011,6 +3022,7 @@ fn overloaded_app_spine(expr: &ResolvedExpr) -> Option<OverloadedAppSpine> {
     let ResolvedExpr::Ident {
         resolved: ResolvedName::Overloaded(candidates),
         universe_args,
+        implicit_mode,
         ..
     } = cursor
     else {
@@ -3019,6 +3031,7 @@ fn overloaded_app_spine(expr: &ResolvedExpr) -> Option<OverloadedAppSpine> {
     Some(OverloadedAppSpine {
         candidates: candidates.clone(),
         universe_args: universe_args.clone(),
+        implicit_mode: *implicit_mode,
         args,
     })
 }
@@ -3149,7 +3162,7 @@ mod tests {
     use npa_kernel::{Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, Reducibility};
 
     use super::*;
-    use crate::{ImportedDeclaration, ImportedTypeMetadata, Name};
+    use crate::{ImportedDeclaration, ImportedNotation, ImportedTypeMetadata, Name};
 
     fn prelude_import() -> VerifiedImport {
         VerifiedImport {
@@ -3196,6 +3209,7 @@ mod tests {
                     type_value_metadata: None,
                 },
             ],
+            notations: Vec::new(),
             kernel_declarations: Vec::new(),
         }
     }
@@ -3211,6 +3225,7 @@ mod tests {
                 domain_infos: Vec::new(),
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Axiom {
                 name: "Foo".to_owned(),
                 universe_params: Vec::new(),
@@ -3230,6 +3245,7 @@ mod tests {
                 domain_infos: Vec::new(),
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Axiom {
                 name: "poly_id".to_owned(),
                 universe_params: vec!["u".to_owned()],
@@ -3240,6 +3256,19 @@ mod tests {
                 ),
             }],
         }
+    }
+
+    fn custom_poly_notation_import() -> VerifiedImport {
+        let mut import = custom_poly_import();
+        import.notations = vec![ImportedNotation {
+            kind: crate::NotationKind::Prefix,
+            precedence: 70,
+            symbol: "!".to_owned(),
+            target: Name::from_dotted("poly_id"),
+            decl_interface_hash: "sha256:poly_id".to_owned(),
+            namespace: None,
+        }];
+        import
     }
 
     fn custom_higher_order_import() -> VerifiedImport {
@@ -3263,6 +3292,7 @@ mod tests {
                 }],
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Axiom {
                 name: "k".to_owned(),
                 universe_params: Vec::new(),
@@ -3288,6 +3318,7 @@ mod tests {
                     domain_infos: Vec::new(),
                 }),
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Def {
                 name: "IdTy".to_owned(),
                 universe_params: Vec::new(),
@@ -3339,6 +3370,7 @@ mod tests {
                     type_value_metadata: None,
                 },
             ],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Inductive {
                 name: "Box".to_owned(),
                 universe_params: vec!["u".to_owned()],
@@ -3910,6 +3942,27 @@ def use_imported : Nat := poly_id Nat.zero
     }
 
     #[test]
+    fn elaborates_imported_notation() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomPoly
+def use_imported_notation : Nat := ! Nat.zero
+"#,
+            &[prelude_import(), custom_poly_notation_import()],
+        )
+        .expect("imported top-level notation should be active while parsing terms");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use_imported_notation"
+        ));
+    }
+
+    #[test]
     fn preserves_imported_domain_implicit_binder_metadata() {
         let module = elaborate_source(
             FileId(0),
@@ -4135,6 +4188,31 @@ end A
     }
 
     #[test]
+    fn elaborates_notation_after_open_through_opened_namespace() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace A
+namespace N
+axiom id_nat (n : Nat) : Nat
+prefix:70 "!" => id_nat
+end N
+end A
+open A
+open N
+def use_opened_namespace : Nat := ! Nat.zero
+"#,
+        )
+        .expect("open through an opened namespace should activate notation before parsing terms");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_opened_namespace"
+        ));
+    }
+
+    #[test]
     fn resolves_overloaded_notation_by_expected_and_argument_types() {
         let module = elaborate(
             r#"
@@ -4202,6 +4280,33 @@ def use_nat_add : Nat := add Nat.zero Nat.zero
         assert!(matches!(
             &module.declarations[4],
             Decl::Def { name, .. } if name == "use_nat_add"
+        ));
+    }
+
+    #[test]
+    fn preserves_at_mode_for_overloaded_applications() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace Nat
+axiom id {A : Type} (x : A) : A
+end Nat
+axiom Foo : Type
+namespace Foo
+axiom zero : Foo
+axiom id (x : Foo) : Foo
+end Foo
+open Nat
+open Foo
+def use_explicit_overload : Nat := @id Nat Nat.zero
+"#,
+        )
+        .expect("@ mode should be preserved while trying overloaded candidates");
+
+        assert_eq!(module.declarations.len(), 5);
+        assert!(matches!(
+            &module.declarations[4],
+            Decl::Def { name, .. } if name == "use_explicit_overload"
         ));
     }
 

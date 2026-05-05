@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     lex, BinderInfo, Diagnostic, DiagnosticKind, FileId, ImplicitMode, NotationDecl, NotationKind,
@@ -7,8 +7,16 @@ use crate::{
 };
 
 pub fn parse_module(file_id: FileId, source: &str) -> Result<SurfaceModule> {
+    parse_module_with_imports(file_id, source, &[])
+}
+
+pub(crate) fn parse_module_with_imports(
+    file_id: FileId,
+    source: &str,
+    imports: &[ParserImport],
+) -> Result<SurfaceModule> {
     let tokens = lex(file_id, source)?;
-    Parser::new(file_id, tokens).parse_module()
+    Parser::new(file_id, tokens, imports).parse_module()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,6 +38,40 @@ impl NotationSyntaxEntry {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ParserImport {
+    pub module: Vec<String>,
+    pub notations: Vec<ParserImportedNotation>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ParserImportedNotation {
+    pub kind: NotationKind,
+    pub precedence: u32,
+    pub symbol: String,
+    pub namespace: Option<Vec<String>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ScopedNotationSyntaxEntry {
+    namespace: Option<Vec<String>>,
+    entry: NotationSyntaxEntry,
+}
+
+impl ScopedNotationSyntaxEntry {
+    fn from_imported(notation: &ParserImportedNotation) -> Self {
+        Self {
+            namespace: notation.namespace.clone(),
+            entry: NotationSyntaxEntry {
+                kind: notation.kind.clone(),
+                associativity: associativity_for_kind(&notation.kind),
+                precedence: notation.precedence,
+                symbol: notation.symbol.clone(),
+            },
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Associativity {
     Left,
@@ -42,19 +84,25 @@ struct Parser {
     tokens: Vec<Token>,
     pos: usize,
     namespace_stack: Vec<String>,
+    open_scopes: Vec<Vec<Vec<String>>>,
     notation_scopes: Vec<Vec<NotationSyntaxEntry>>,
     namespace_notations: BTreeMap<Vec<String>, Vec<NotationSyntaxEntry>>,
+    available_imports: BTreeMap<Vec<String>, Vec<ScopedNotationSyntaxEntry>>,
+    imported_modules: BTreeSet<Vec<String>>,
 }
 
 impl Parser {
-    fn new(file_id: FileId, tokens: Vec<Token>) -> Self {
+    fn new(file_id: FileId, tokens: Vec<Token>, imports: &[ParserImport]) -> Self {
         Self {
             file_id,
             tokens,
             pos: 0,
             namespace_stack: Vec::new(),
+            open_scopes: vec![Vec::new()],
             notation_scopes: vec![Vec::new()],
             namespace_notations: BTreeMap::new(),
+            available_imports: parser_import_map(imports),
+            imported_modules: BTreeSet::new(),
         }
     }
 
@@ -105,12 +153,16 @@ impl Parser {
         match item {
             SurfaceItem::Namespace { name, span } => {
                 self.namespace_stack.push(name.clone());
+                self.open_scopes.push(Vec::new());
                 self.notation_scopes.push(Vec::new());
                 self.activate_current_namespace_notations(*span)?;
             }
             SurfaceItem::End { .. } => {
                 if self.notation_scopes.len() > 1 {
                     self.notation_scopes.pop();
+                }
+                if self.open_scopes.len() > 1 {
+                    self.open_scopes.pop();
                 }
                 self.namespace_stack.pop();
             }
@@ -127,11 +179,35 @@ impl Parser {
                         .push(entry);
                 }
             }
-            SurfaceItem::Import { .. }
-            | SurfaceItem::Def(_)
+            SurfaceItem::Import { module, span } => {
+                self.activate_import_notations(&module.parts, *span)?;
+            }
+            SurfaceItem::Def(_)
             | SurfaceItem::Theorem(_)
             | SurfaceItem::Axiom(_)
             | SurfaceItem::Inductive { .. } => {}
+        }
+        Ok(())
+    }
+
+    fn activate_import_notations(&mut self, module: &[String], span: Span) -> Result<()> {
+        if !self.imported_modules.insert(module.to_vec()) {
+            return Ok(());
+        }
+        let entries = self
+            .available_imports
+            .get(module)
+            .cloned()
+            .unwrap_or_default();
+        for imported in entries {
+            if let Some(namespace) = imported.namespace {
+                self.namespace_notations
+                    .entry(namespace)
+                    .or_default()
+                    .push(imported.entry);
+            } else {
+                self.add_active_notation(imported.entry, span)?;
+            }
         }
         Ok(())
     }
@@ -170,13 +246,28 @@ impl Parser {
             relative.extend_from_slice(namespace);
             candidates.push(relative);
         }
+        candidates.extend(self.opened_namespaces().into_iter().map(|mut opened| {
+            opened.extend_from_slice(namespace);
+            opened
+        }));
         candidates.sort();
         candidates.dedup();
 
-        for candidate in candidates {
-            self.activate_namespace_notations(&candidate, span)?;
+        for candidate in &candidates {
+            self.activate_namespace_notations(candidate, span)?;
         }
+        self.open_scopes
+            .last_mut()
+            .expect("top-level open scope exists")
+            .extend(candidates);
         Ok(())
+    }
+
+    fn opened_namespaces(&self) -> Vec<Vec<String>> {
+        self.open_scopes
+            .iter()
+            .flat_map(|scope| scope.iter().cloned())
+            .collect()
     }
 
     fn add_active_notation(&mut self, entry: NotationSyntaxEntry, span: Span) -> Result<()> {
@@ -989,6 +1080,21 @@ fn associativity_for_kind(kind: &NotationKind) -> Associativity {
     }
 }
 
+fn parser_import_map(
+    imports: &[ParserImport],
+) -> BTreeMap<Vec<String>, Vec<ScopedNotationSyntaxEntry>> {
+    let mut map: BTreeMap<Vec<String>, Vec<ScopedNotationSyntaxEntry>> = BTreeMap::new();
+    for import in imports {
+        map.entry(import.module.clone()).or_default().extend(
+            import
+                .notations
+                .iter()
+                .map(ScopedNotationSyntaxEntry::from_imported),
+        );
+    }
+    map
+}
+
 fn invalid_notation(span: Span, message: impl Into<String>) -> Diagnostic {
     Diagnostic::error(DiagnosticKind::InvalidNotation, span, message)
 }
@@ -1296,6 +1402,58 @@ namespace A
 open N
 axiom t : a + b
 end A
+"#,
+        );
+        let SurfaceItem::Axiom(decl) = &module.items[7] else {
+            panic!("expected axiom");
+        };
+        assert!(matches!(
+            decl.ty,
+            SurfaceExpr::Notation { ref head, .. } if head.symbol == "+"
+        ));
+    }
+
+    #[test]
+    fn parses_imported_notation_after_open() {
+        let module = parse_module_with_imports(
+            FileId(0),
+            r#"
+import Std.Nat
+open Nat
+axiom t : a + b
+"#,
+            &[ParserImport {
+                module: vec!["Std".to_owned(), "Nat".to_owned()],
+                notations: vec![ParserImportedNotation {
+                    kind: NotationKind::Infixl,
+                    precedence: 65,
+                    symbol: "+".to_owned(),
+                    namespace: Some(vec!["Nat".to_owned()]),
+                }],
+            }],
+        )
+        .expect("imported namespace notation should be active after open");
+        let SurfaceItem::Axiom(decl) = &module.items[2] else {
+            panic!("expected axiom");
+        };
+        assert!(matches!(
+            decl.ty,
+            SurfaceExpr::Notation { ref head, .. } if head.symbol == "+"
+        ));
+    }
+
+    #[test]
+    fn parses_notation_after_open_through_opened_namespace() {
+        let module = parse(
+            r#"
+namespace A
+namespace N
+infixl:65 " + " => add
+end N
+end A
+open A
+open N
+axiom t : a + b
 "#,
         );
         let SurfaceItem::Axiom(decl) = &module.items[7] else {
