@@ -289,7 +289,7 @@ impl TypeMetadata {
     fn normalize_for_ty(mut self, ty: &Expr) -> Self {
         let domains = pi_domains(ty);
         let pi_count = domains.len();
-        if self.binder_infos.is_empty() {
+        if self.is_empty() {
             return Self::explicit_for_ty(ty);
         }
         if self.binder_infos.len() < pi_count {
@@ -799,11 +799,11 @@ impl ExprElaborator {
         } = expr
         {
             if term_meta_id(&self.zonk_current_expr(&expected.core)).is_none() {
-                let core = self.elab_check_lam(binders, body, expected, *span)?;
+                let lambda = self.elab_check_lam(binders, body, expected, *span)?;
                 return Ok(CheckResult {
-                    core,
+                    core: lambda.core,
                     ty_metadata: expected.metadata.clone(),
-                    type_value_metadata: None,
+                    type_value_metadata: lambda.type_value_metadata,
                 });
             }
         }
@@ -875,7 +875,7 @@ impl ExprElaborator {
             core,
             ty,
             ty_metadata: close_metadata(body_result.ty_metadata, &core_binders),
-            type_value_metadata: None,
+            type_value_metadata: body_result.type_value_metadata,
         })
     }
 
@@ -885,7 +885,7 @@ impl ExprElaborator {
         body: &ResolvedExpr,
         expected: &TypeCore,
         span: Span,
-    ) -> Result<Expr> {
+    ) -> Result<CheckResult> {
         let saved_ctx = self.ctx.clone();
         let saved_locals = self.locals.clone();
         let mut expected_ty = expected.core.clone();
@@ -1015,7 +1015,7 @@ impl ExprElaborator {
             index = group_end;
         }
 
-        let body_core = match self.elab_check(
+        let body_result = match self.elab_check_result(
             body,
             &TypeCore {
                 core: expected_ty,
@@ -1023,7 +1023,7 @@ impl ExprElaborator {
                 sort_level: None,
             },
         ) {
-            Ok(body_core) => body_core,
+            Ok(body_result) => body_result,
             Err(err) => {
                 self.ctx = saved_ctx;
                 self.locals = saved_locals;
@@ -1052,8 +1052,12 @@ impl ExprElaborator {
         }
         self.ctx = saved_ctx;
         self.locals = saved_locals;
-        let core = close_lam(body_core, &core_binders);
-        Ok(core)
+        let core = close_lam(body_result.core, &core_binders);
+        Ok(CheckResult {
+            core,
+            ty_metadata: expected.metadata.clone(),
+            type_value_metadata: body_result.type_value_metadata,
+        })
     }
 
     fn elaborate_typed_binder_groups(
@@ -2658,7 +2662,7 @@ mod tests {
             declarations: vec![ImportedDeclaration {
                 name: Name::from_dotted("k"),
                 decl_interface_hash: "sha256:k".to_owned(),
-                binder_infos: vec![BinderInfo::Explicit],
+                binder_infos: Vec::new(),
                 domain_infos: vec![ImportedTypeMetadata {
                     binder_infos: vec![BinderInfo::Explicit],
                     domain_infos: vec![ImportedTypeMetadata {
@@ -3331,6 +3335,25 @@ def use_alias_param : Nat := f Nat.zero
         assert!(matches!(
             &module.declarations[2],
             Decl::Def { name, .. } if name == "use_alias_param"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_binders_through_checked_lambda_type_aliases() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def IdTy : Type -> Type 1 := fun (ignored : Type) => forall {A : Type}, A -> A
+axiom f : IdTy Nat
+def use_alias_lambda : Nat := f Nat.zero
+"#,
+        )
+        .expect("checked lambda type alias metadata should drive implicit insertion");
+
+        assert_eq!(module.declarations.len(), 3);
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_alias_lambda"
         ));
     }
 
