@@ -115,7 +115,7 @@ impl Parser {
                 self.namespace_stack.pop();
             }
             SurfaceItem::Open { namespace, span } => {
-                self.activate_namespace_notations(&namespace.parts, *span)?;
+                self.activate_open_namespace_notations(&namespace.parts, *span)?;
             }
             SurfaceItem::Notation(decl) => {
                 let entry = NotationSyntaxEntry::from_decl(decl);
@@ -155,6 +155,26 @@ impl Parser {
             .unwrap_or_default();
         for entry in entries {
             self.add_active_notation(entry, span)?;
+        }
+        Ok(())
+    }
+
+    fn activate_open_namespace_notations(
+        &mut self,
+        namespace: &[String],
+        span: Span,
+    ) -> Result<()> {
+        let mut candidates = vec![namespace.to_vec()];
+        if !self.namespace_stack.is_empty() {
+            let mut relative = self.namespace_stack.clone();
+            relative.extend_from_slice(namespace);
+            candidates.push(relative);
+        }
+        candidates.sort();
+        candidates.dedup();
+
+        for candidate in candidates {
+            self.activate_namespace_notations(&candidate, span)?;
         }
         Ok(())
     }
@@ -1260,6 +1280,30 @@ axiom t : ! a$
         assert!(matches!(
             &args[0],
             SurfaceExpr::Notation { head, .. } if head.kind == NotationKind::Postfix
+        ));
+    }
+
+    #[test]
+    fn parses_notation_after_relative_open_inside_namespace() {
+        let module = parse(
+            r#"
+namespace A
+namespace N
+infixl:65 " + " => add
+end N
+end A
+namespace A
+open N
+axiom t : a + b
+end A
+"#,
+        );
+        let SurfaceItem::Axiom(decl) = &module.items[7] else {
+            panic!("expected axiom");
+        };
+        assert!(matches!(
+            decl.ty,
+            SurfaceExpr::Notation { ref head, .. } if head.symbol == "+"
         ));
     }
 

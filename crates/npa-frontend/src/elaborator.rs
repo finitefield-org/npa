@@ -856,7 +856,7 @@ impl ExprElaborator {
             let snapshot = self.snapshot();
             let expr = resolved_ident_for_global(&candidate, universe_args, span);
             if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
-                self.solve_constraints(span)?;
+                self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
             }) {
                 successes.push((candidate, self.snapshot(), result));
@@ -902,7 +902,7 @@ impl ExprElaborator {
             let snapshot = self.snapshot();
             let expr = resolved_ident_for_global(&candidate, universe_args, span);
             if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
-                self.solve_constraints(span)?;
+                self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
             }) {
                 successes.push((candidate, self.snapshot(), result));
@@ -948,7 +948,7 @@ impl ExprElaborator {
             let snapshot = self.snapshot();
             let expr = overloaded_candidate_app_expr(&candidate, universe_args, args, span);
             if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
-                self.solve_constraints(span)?;
+                self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
             }) {
                 successes.push((candidate, self.snapshot(), result));
@@ -994,7 +994,7 @@ impl ExprElaborator {
             let snapshot = self.snapshot();
             let expr = notation_candidate_expr(&candidate, args, span);
             if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
-                self.solve_constraints(span)?;
+                self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
             }) {
                 successes.push((candidate, self.snapshot(), result));
@@ -1018,7 +1018,7 @@ impl ExprElaborator {
             let snapshot = self.snapshot();
             let expr = notation_candidate_expr(&candidate, args, span);
             if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
-                self.solve_constraints(span)?;
+                self.complete_candidate_since(&snapshot, span)?;
                 Ok(result)
             }) {
                 successes.push((candidate, self.snapshot(), result));
@@ -1090,6 +1090,13 @@ impl ExprElaborator {
                 ))
             }
         }
+    }
+
+    fn complete_candidate_since(&mut self, baseline: &ElabSnapshot, span: Span) -> Result<()> {
+        self.solve_constraints(span)?;
+        self.assign_default_universe_metas_since(baseline.universe_metas.len());
+        self.solve_constraints(span)?;
+        self.reject_unsolved_metas_since(baseline)
     }
 
     fn elab_check(&mut self, expr: &ResolvedExpr, expected: &TypeCore) -> Result<Expr> {
@@ -2162,6 +2169,44 @@ impl ExprElaborator {
         Ok(())
     }
 
+    fn reject_unsolved_metas_since(&self, baseline: &ElabSnapshot) -> Result<()> {
+        for meta in self.term_metas.iter().skip(baseline.term_metas.len()) {
+            if meta.assignment.is_none() && meta.kind == TermMetaKind::UserHole {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedHole,
+                    meta.span,
+                    match &meta.name {
+                        Some(name) => format!("unsolved hole `?{name}`"),
+                        None => "unsolved hole".to_owned(),
+                    },
+                ));
+            }
+        }
+        for meta in self.term_metas.iter().skip(baseline.term_metas.len()) {
+            if meta.assignment.is_none() && meta.kind == TermMetaKind::SyntheticImplicit {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedImplicit,
+                    meta.span,
+                    "could not infer implicit argument",
+                ));
+            }
+        }
+        for meta in self
+            .universe_metas
+            .iter()
+            .skip(baseline.universe_metas.len())
+        {
+            if meta.assignment.is_none() {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedUniverseMeta,
+                    meta.span,
+                    "could not infer universe argument",
+                ));
+            }
+        }
+        Ok(())
+    }
+
     fn fresh_term_meta(
         &mut self,
         name: Option<String>,
@@ -2237,6 +2282,16 @@ impl ExprElaborator {
 
     fn assign_default_universe_metas(&mut self) {
         for meta in &mut self.universe_metas {
+            if meta.assignment.is_none() {
+                if let Some(default) = meta.default.clone() {
+                    meta.assignment = Some(default);
+                }
+            }
+        }
+    }
+
+    fn assign_default_universe_metas_since(&mut self, start: usize) {
+        for meta in self.universe_metas.iter_mut().skip(start) {
             if meta.assignment.is_none() {
                 if let Some(default) = meta.default.clone() {
                     meta.assignment = Some(default);
@@ -4054,6 +4109,32 @@ def use_prefix_postfix : Nat := ! Nat.zero$
     }
 
     #[test]
+    fn elaborates_notation_after_relative_open_inside_namespace() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace A
+namespace N
+axiom id_nat (n : Nat) : Nat
+prefix:70 "!" => id_nat
+end N
+end A
+namespace A
+open N
+def use_relative_open : Nat := ! Nat.zero
+end A
+"#,
+        )
+        .expect("relative open should activate namespaced notation before parsing terms");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "A.use_relative_open"
+        ));
+    }
+
+    #[test]
     fn resolves_overloaded_notation_by_expected_and_argument_types() {
         let module = elaborate(
             r#"
@@ -4073,6 +4154,27 @@ def use_nat_plus : Nat := Nat.zero + Nat.zero
         assert!(matches!(
             &module.declarations[4],
             Decl::Def { name, .. } if name == "use_nat_plus"
+        ));
+    }
+
+    #[test]
+    fn ignores_overload_candidates_with_unsolved_fresh_implicits() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom needs_unknown {A : Type} (n : Nat) : Nat
+axiom plain (n : Nat) : Nat
+prefix:70 "!" => needs_unknown
+prefix:70 "!" => plain
+def use_complete_candidate : Nat := ! Nat.zero
+"#,
+        )
+        .expect("incomplete overload candidate should not make notation ambiguous");
+
+        assert_eq!(module.declarations.len(), 3);
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_complete_candidate"
         ));
     }
 
