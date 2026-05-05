@@ -7,9 +7,9 @@ use npa_kernel::{
 
 use crate::{
     parse_module, resolve_module, BinderInfo, Diagnostic, DiagnosticKind, FileId, ImplicitMode,
-    Name, ResolvedBinder, ResolvedDecl, ResolvedExpr, ResolvedItem, ResolvedModule, ResolvedName,
-    Result, Span, SurfaceBinderKind, SurfaceLevel, SurfaceModule, SurfaceUniverseParam,
-    VerifiedImport,
+    Name, ResolvedBinder, ResolvedDecl, ResolvedExpr, ResolvedImport, ResolvedItem, ResolvedModule,
+    ResolvedName, Result, Span, SurfaceBinderKind, SurfaceLevel, SurfaceModule,
+    SurfaceUniverseParam, VerifiedImport,
 };
 
 const MAX_NUMERIC_UNIVERSE_LEVEL: u64 = 1024;
@@ -122,10 +122,11 @@ impl ModuleElaborator {
                             })?;
                         for decl in &import.kernel_declarations {
                             add_decl_to_env(&mut self.env, decl, *span)?;
+                            let source_binders = imported_binder_infos(import, decl.name());
                             self.signatures.insert_decl(
                                 decl.name().to_owned(),
                                 decl.ty().clone(),
-                                Vec::new(),
+                                source_binders,
                             );
                         }
                     }
@@ -154,7 +155,7 @@ impl ModuleElaborator {
         let binders = engine.elaborate_decl_binders(&decl.binders)?;
         let result_ty = engine.elab_type(&decl.ty)?;
         let closed_ty = close_pi(result_ty.core.clone(), &binders);
-        let signature_binders = close_binder_infos(result_ty.binder_infos.clone(), &binders);
+        let source_signature_binders = close_binder_infos(result_ty.binder_infos.clone(), &binders);
         let name = decl.name.to_dotted();
 
         match kind {
@@ -166,7 +167,7 @@ impl ModuleElaborator {
                 self.signatures.insert_decl(
                     name.clone(),
                     closed_ty.clone(),
-                    signature_binders.clone(),
+                    source_signature_binders.clone(),
                 );
                 self.declarations.push(Decl::Axiom {
                     name,
@@ -182,8 +183,10 @@ impl ModuleElaborator {
                         "definition is missing a value",
                     )
                 })?;
-                let body = engine.elab_check(value, &result_ty)?;
-                let closed_value = close_lam(body, &binders);
+                let body = engine.elab_check_result(value, &result_ty)?;
+                let signature_binders =
+                    declaration_signature_binders(&decl.ty, &binders, &result_ty, &body);
+                let closed_value = close_lam(body.core, &binders);
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
                 let closed_value = engine.finish_expr(closed_value, decl.span)?;
                 self.env
@@ -195,11 +198,8 @@ impl ModuleElaborator {
                         Reducibility::Reducible,
                     )
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures.insert_decl(
-                    name.clone(),
-                    closed_ty.clone(),
-                    signature_binders.clone(),
-                );
+                self.signatures
+                    .insert_decl(name.clone(), closed_ty.clone(), signature_binders);
                 self.declarations.push(Decl::Def {
                     name,
                     universe_params,
@@ -216,8 +216,10 @@ impl ModuleElaborator {
                         "theorem is missing a proof",
                     )
                 })?;
-                let body = engine.elab_check(proof, &result_ty)?;
-                let closed_proof = close_lam(body, &binders);
+                let body = engine.elab_check_result(proof, &result_ty)?;
+                let signature_binders =
+                    declaration_signature_binders(&decl.ty, &binders, &result_ty, &body);
+                let closed_proof = close_lam(body.core, &binders);
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
                 let closed_proof = engine.finish_expr(closed_proof, decl.span)?;
                 self.env
@@ -228,11 +230,8 @@ impl ModuleElaborator {
                         closed_proof.clone(),
                     )
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures.insert_decl(
-                    name.clone(),
-                    closed_ty.clone(),
-                    signature_binders.clone(),
-                );
+                self.signatures
+                    .insert_decl(name.clone(), closed_ty.clone(), signature_binders);
                 self.declarations.push(Decl::Theorem {
                     name,
                     universe_params,
@@ -300,6 +299,30 @@ impl SignatureEnv {
     }
 }
 
+fn imported_binder_infos(import: &ResolvedImport, decl_name: &str) -> Vec<BinderInfo> {
+    import
+        .declarations
+        .iter()
+        .find(|decl| decl.name.to_dotted() == decl_name)
+        .map(|decl| decl.binder_infos.clone())
+        .unwrap_or_default()
+}
+
+fn declaration_signature_binders(
+    decl_ty: &ResolvedExpr,
+    binders: &[CoreBinder],
+    result_ty: &TypeCore,
+    body: &CheckResult,
+) -> Vec<BinderInfo> {
+    let body_infos =
+        if matches!(decl_ty, ResolvedExpr::Hole { .. }) && result_ty.binder_infos.is_empty() {
+            body.ty_binder_infos.clone()
+        } else {
+            result_ty.binder_infos.clone()
+        };
+    close_binder_infos(body_infos, binders)
+}
+
 struct ExprElaborator {
     env: Env,
     signatures: SignatureEnv,
@@ -322,6 +345,12 @@ struct TypeCore {
 struct InferResult {
     core: Expr,
     ty: Expr,
+    ty_binder_infos: Vec<BinderInfo>,
+}
+
+#[derive(Clone, Debug)]
+struct CheckResult {
+    core: Expr,
     ty_binder_infos: Vec<BinderInfo>,
 }
 
@@ -601,6 +630,14 @@ impl ExprElaborator {
     }
 
     fn elab_check(&mut self, expr: &ResolvedExpr, expected: &TypeCore) -> Result<Expr> {
+        Ok(self.elab_check_result(expr, expected)?.core)
+    }
+
+    fn elab_check_result(
+        &mut self,
+        expr: &ResolvedExpr,
+        expected: &TypeCore,
+    ) -> Result<CheckResult> {
         if let ResolvedExpr::Lam {
             binders,
             body,
@@ -608,19 +645,35 @@ impl ExprElaborator {
         } = expr
         {
             if term_meta_id(&self.zonk_expr(&expected.core)).is_none() {
-                return self.elab_check_lam(binders, body, expected, *span);
+                let core = self.elab_check_lam(binders, body, expected, *span)?;
+                return Ok(CheckResult {
+                    core,
+                    ty_binder_infos: expected.binder_infos.clone(),
+                });
             }
         }
 
         if let ResolvedExpr::Hole { name, span } = expr {
             let meta =
                 self.fresh_or_reuse_user_hole(name.as_ref(), expected.core.clone(), *span)?;
-            return Ok(term_meta_expr(meta));
+            return Ok(CheckResult {
+                core: term_meta_expr(meta),
+                ty_binder_infos: expected.binder_infos.clone(),
+            });
         }
 
-        let inferred = self.elab_infer(expr)?;
+        let mut inferred = self.elab_infer(expr)?;
+        inferred = self.insert_implicit_args_for_expected(
+            inferred,
+            implicit_insertion_enabled_for_head(expr),
+            expected,
+            resolved_expr_span(expr),
+        )?;
         self.ensure_type_eq(&inferred.ty, &expected.core, resolved_expr_span(expr))?;
-        Ok(inferred.core)
+        Ok(CheckResult {
+            core: inferred.core,
+            ty_binder_infos: inferred.ty_binder_infos,
+        })
     }
 
     fn elab_infer_lam(
@@ -1012,6 +1065,38 @@ impl ExprElaborator {
         }
     }
 
+    fn insert_implicit_args_for_expected(
+        &mut self,
+        mut result: InferResult,
+        auto_insert: bool,
+        expected: &TypeCore,
+        span: Span,
+    ) -> Result<InferResult> {
+        loop {
+            let Some(BinderInfo::Implicit) = result.ty_binder_infos.first() else {
+                return Ok(result);
+            };
+            if !auto_insert || !expected_needs_implicit_instantiation(expected) {
+                return Ok(result);
+            }
+
+            let func_ty = self
+                .env
+                .whnf(&self.ctx, &self.delta, &self.zonk_expr(&result.ty))
+                .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+            let Expr::Pi { ty, body, .. } = func_ty else {
+                return Ok(result);
+            };
+            let meta =
+                self.fresh_term_meta(None, (*ty).clone(), TermMetaKind::SyntheticImplicit, span);
+            let meta_expr = term_meta_expr(meta);
+            result.core = Expr::app(result.core, meta_expr.clone());
+            result.ty = instantiate(&body, &meta_expr)
+                .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+            result.ty_binder_infos = result.ty_binder_infos.get(1..).unwrap_or_default().to_vec();
+        }
+    }
+
     fn ensure_type_eq(&mut self, actual: &Expr, expected: &Expr, span: Span) -> Result<()> {
         self.constraints.push(Constraint::TypeEq {
             lhs: actual.clone(),
@@ -1122,8 +1207,15 @@ impl ExprElaborator {
         context: &[LocalCtxEntry],
         span: Span,
     ) -> Result<SolveStatus> {
-        let lhs = self.zonk_expr(lhs);
-        let rhs = self.zonk_expr(rhs);
+        let ctx = self.ctx_for_snapshot(context);
+        let lhs = self
+            .env
+            .whnf(&ctx, &self.delta, &self.zonk_expr(lhs))
+            .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+        let rhs = self
+            .env
+            .whnf(&ctx, &self.delta, &self.zonk_expr(rhs))
+            .map_err(|error| diagnostic_from_kernel_error(span, error))?;
         if lhs == rhs {
             return Ok(SolveStatus::Solved);
         }
@@ -1146,7 +1238,7 @@ impl ExprElaborator {
         if !lhs_has_meta && !rhs_has_meta {
             return if self
                 .env
-                .is_defeq(&self.ctx_for_snapshot(context), &self.delta, &lhs, &rhs)
+                .is_defeq(&ctx, &self.delta, &lhs, &rhs)
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?
             {
                 Ok(SolveStatus::Solved)
@@ -1728,6 +1820,13 @@ fn implicit_insertion_enabled_for_head(expr: &ResolvedExpr) -> bool {
     }
 }
 
+fn expected_needs_implicit_instantiation(expected: &TypeCore) -> bool {
+    if term_meta_id(&expected.core).is_some() {
+        return false;
+    }
+    expected.binder_infos.first() != Some(&BinderInfo::Implicit)
+}
+
 fn local_context_eq(lhs: &[LocalCtxEntry], rhs: &[LocalCtxEntry]) -> bool {
     lhs.len() == rhs.len()
         && lhs
@@ -1940,22 +2039,31 @@ mod tests {
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat"),
                     decl_interface_hash: "sha256:Nat".to_owned(),
+                    binder_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.zero"),
                     decl_interface_hash: "sha256:Nat.zero".to_owned(),
+                    binder_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.succ"),
                     decl_interface_hash: "sha256:Nat.succ".to_owned(),
+                    binder_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Eq"),
                     decl_interface_hash: "sha256:Eq".to_owned(),
+                    binder_infos: vec![
+                        BinderInfo::Implicit,
+                        BinderInfo::Explicit,
+                        BinderInfo::Explicit,
+                    ],
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Eq.refl"),
                     decl_interface_hash: "sha256:Eq.refl".to_owned(),
+                    binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
                 },
             ],
             kernel_declarations: Vec::new(),
@@ -1969,11 +2077,33 @@ mod tests {
             declarations: vec![ImportedDeclaration {
                 name: Name::from_dotted("Foo"),
                 decl_interface_hash: "sha256:Foo".to_owned(),
+                binder_infos: Vec::new(),
             }],
             kernel_declarations: vec![Decl::Axiom {
                 name: "Foo".to_owned(),
                 universe_params: Vec::new(),
                 ty: Expr::sort(Level::succ(Level::zero())),
+            }],
+        }
+    }
+
+    fn custom_poly_import() -> VerifiedImport {
+        VerifiedImport {
+            module: Name::from_dotted("CustomPoly"),
+            export_hash: "sha256:custom-poly".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("poly_id"),
+                decl_interface_hash: "sha256:poly_id".to_owned(),
+                binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+            }],
+            kernel_declarations: vec![Decl::Axiom {
+                name: "poly_id".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(Level::param("u")),
+                    Expr::pi("x", Expr::bvar(0), Expr::bvar(1)),
+                ),
             }],
         }
     }
@@ -2227,6 +2357,81 @@ axiom X : Box
         )
         .expect_err("ambiguous universe argument must fail");
         assert_eq!(err.kind, DiagnosticKind::UnsolvedUniverseMeta);
+    }
+
+    #[test]
+    fn preserves_imported_implicit_binder_metadata() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomPoly
+def use_imported : Nat := poly_id Nat.zero
+"#,
+            &[prelude_import(), custom_poly_import()],
+        )
+        .expect("imported implicit binder metadata should drive insertion");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use_imported"
+        ));
+    }
+
+    #[test]
+    fn preserves_inferred_lambda_implicit_binders_in_signatures() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def inferred_id : _ := fun {A : Type} (x : A) => x
+def use_inferred : Nat := inferred_id Nat.zero
+"#,
+        )
+        .expect("inferred declaration signature should preserve implicit binder metadata");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_inferred"
+        ));
+    }
+
+    #[test]
+    fn inserts_implicit_arguments_from_expected_type() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom witness.{u} {A : Sort u} : A
+def use_expected : Nat := witness
+"#,
+        )
+        .expect("expected type should trigger implicit insertion");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_expected"
+        ));
+    }
+
+    #[test]
+    fn solves_metas_after_unfolding_reducible_type_heads() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def Alias (A : Type) : Type := A
+def alias_expected : Alias _ := Nat.zero
+"#,
+        )
+        .expect("constraint solving should unfold reducible heads containing metas");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "alias_expected"
+        ));
     }
 
     #[test]
