@@ -1430,6 +1430,14 @@ impl ExprElaborator {
             self.assign_universe_meta(id, lhs, span)?;
             return Ok(SolveStatus::Solved);
         }
+        if let (Level::Succ(lhs), Level::Succ(rhs)) = (&lhs, &rhs) {
+            self.constraints.push(Constraint::LevelEq {
+                lhs: (**lhs).clone(),
+                rhs: (**rhs).clone(),
+                span,
+            });
+            return Ok(SolveStatus::Solved);
+        }
         if level_contains_universe_meta(&lhs) || level_contains_universe_meta(&rhs) {
             Ok(SolveStatus::Stuck)
         } else {
@@ -2619,6 +2627,23 @@ axiom X : Box
         )
         .expect_err("ambiguous universe argument must fail");
         assert_eq!(err.kind, DiagnosticKind::UnsolvedUniverseMeta);
+    }
+
+    #[test]
+    fn solves_successor_universe_meta_equalities() {
+        let module = elaborate(
+            r#"
+axiom Box.{u} : Type u
+def T : Type := Box
+"#,
+        )
+        .expect("successor universe equality should solve the inner metavariable");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "T"
+        ));
     }
 
     #[test]
