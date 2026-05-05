@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
-use npa_kernel::Decl;
+use npa_kernel::{Decl, Expr, Reducibility};
 
 use crate::parser::{parse_module_with_imports, ParserImport, ParserImportedNotation};
 use crate::{
@@ -450,11 +450,18 @@ struct Resolver<'a> {
     state: FrontendState,
     verified_imports: &'a [VerifiedImport],
     future_globals: BTreeMap<Name, Span>,
+    type_alias_shapes: BTreeMap<Name, InductiveResultShape>,
     notation_scopes: Vec<Vec<ResolvedNotationDecl>>,
     namespace_notations: BTreeMap<Name, Vec<ResolvedNotationDecl>>,
     diagnostics: Vec<Diagnostic>,
     next_decl_index: usize,
     next_local_id: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InductiveResultShape {
+    Sort,
+    Indexed,
 }
 
 impl<'a> Resolver<'a> {
@@ -463,6 +470,7 @@ impl<'a> Resolver<'a> {
             state: FrontendState::new(current_module),
             verified_imports,
             future_globals: BTreeMap::new(),
+            type_alias_shapes: BTreeMap::new(),
             notation_scopes: vec![Vec::new()],
             namespace_notations: BTreeMap::new(),
             diagnostics: Vec::new(),
@@ -526,6 +534,7 @@ impl<'a> Resolver<'a> {
             SurfaceItem::Def(decl) => {
                 let resolved = self.resolve_value_decl(decl)?;
                 self.register_resolved_decl(&resolved.name, resolved.span, false)?;
+                self.record_local_type_alias_shape(&resolved);
                 Ok(ResolvedItem::Def(resolved))
             }
             SurfaceItem::Theorem(decl) => {
@@ -581,6 +590,7 @@ impl<'a> Resolver<'a> {
             declarations: import.declarations.clone(),
             kernel_declarations: import.kernel_declarations.clone(),
         });
+        self.record_imported_type_alias_shapes(import);
 
         let mut imported = import.declarations.clone();
         imported.sort_by(|lhs, rhs| {
@@ -918,7 +928,7 @@ impl<'a> Resolver<'a> {
     ) -> Result<ResolvedItem> {
         let full_name = self.qualify_decl_name(name);
         let local_len = self.state.locals.len();
-        let generate_recursor = surface_inductive_generates_recursor(ty);
+        let generate_recursor = self.inductive_generates_recursor(ty);
         let binders = self.resolve_binders(binders)?;
         let ty = self.resolve_expr(ty)?;
 
@@ -1420,6 +1430,89 @@ impl<'a> Resolver<'a> {
             span: Some(span),
         });
         Ok(())
+    }
+
+    fn record_local_type_alias_shape(&mut self, decl: &ResolvedDecl) {
+        let Some(value) = &decl.value else {
+            return;
+        };
+        if let Some(shape) = self.resolved_inductive_result_shape(value) {
+            self.type_alias_shapes.insert(decl.name.clone(), shape);
+        }
+    }
+
+    fn record_imported_type_alias_shapes(&mut self, import: &VerifiedImport) {
+        for decl in &import.kernel_declarations {
+            let Decl::Def {
+                name,
+                value,
+                reducibility: Reducibility::Reducible,
+                ..
+            } = decl
+            else {
+                continue;
+            };
+            if let Some(shape) = self.core_inductive_result_shape(value) {
+                self.type_alias_shapes
+                    .insert(Name::from_dotted(name), shape);
+            }
+        }
+    }
+
+    fn inductive_generates_recursor(&self, ty: &SurfaceExpr) -> bool {
+        self.surface_inductive_result_shape(ty) == Some(InductiveResultShape::Sort)
+    }
+
+    fn surface_inductive_result_shape(&self, expr: &SurfaceExpr) -> Option<InductiveResultShape> {
+        match expr {
+            SurfaceExpr::Sort { .. } => Some(InductiveResultShape::Sort),
+            SurfaceExpr::Pi { .. } => Some(InductiveResultShape::Indexed),
+            SurfaceExpr::Annot { expr, .. } => self.surface_inductive_result_shape(expr),
+            SurfaceExpr::Ident { name, .. } => self.surface_name_type_alias_shape(name),
+            SurfaceExpr::App { func, .. } => self.surface_inductive_result_shape(func),
+            _ => None,
+        }
+    }
+
+    fn resolved_inductive_result_shape(&self, expr: &ResolvedExpr) -> Option<InductiveResultShape> {
+        match expr {
+            ResolvedExpr::Sort { .. } => Some(InductiveResultShape::Sort),
+            ResolvedExpr::Pi { .. } => Some(InductiveResultShape::Indexed),
+            ResolvedExpr::Annot { expr, .. } => self.resolved_inductive_result_shape(expr),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Global(global),
+                ..
+            } => self
+                .type_alias_shapes
+                .get(&global_ref_display_name(global))
+                .copied(),
+            ResolvedExpr::App { func, .. } => self.resolved_inductive_result_shape(func),
+            _ => None,
+        }
+    }
+
+    fn core_inductive_result_shape(&self, expr: &Expr) -> Option<InductiveResultShape> {
+        match expr {
+            Expr::Sort(_) => Some(InductiveResultShape::Sort),
+            Expr::Pi { .. } => Some(InductiveResultShape::Indexed),
+            Expr::Lam { body, .. } => self.core_inductive_result_shape(body),
+            Expr::Const { name, .. } => self
+                .type_alias_shapes
+                .get(&Name::from_dotted(name))
+                .copied(),
+            Expr::App(fun, _) => self.core_inductive_result_shape(fun),
+            _ => None,
+        }
+    }
+
+    fn surface_name_type_alias_shape(&self, name: &SurfaceName) -> Option<InductiveResultShape> {
+        let candidates = self.global_candidates(name);
+        let [candidate] = candidates.as_slice() else {
+            return None;
+        };
+        self.type_alias_shapes
+            .get(&global_ref_display_name(candidate))
+            .copied()
     }
 }
 

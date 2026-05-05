@@ -3973,6 +3973,28 @@ mod tests {
         }
     }
 
+    fn custom_sort_alias_import() -> VerifiedImport {
+        VerifiedImport {
+            module: Name::from_dotted("CustomSortAlias"),
+            export_hash: "sha256:custom-sort-alias".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("U"),
+                decl_interface_hash: "sha256:U".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
+            }],
+            notations: Vec::new(),
+            kernel_declarations: vec![Decl::Def {
+                name: "U".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::succ(Level::zero()))),
+                value: Expr::sort(Level::succ(Level::zero())),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
     fn custom_box_import() -> VerifiedImport {
         let u = Level::param("u");
         let box_ty = Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u.clone()));
@@ -4172,6 +4194,61 @@ end Hidden
         assert!(matches!(
             &module.declarations[2],
             Decl::Axiom { name, .. } if name == "Hidden.rec"
+        ));
+    }
+
+    #[test]
+    fn exposes_recursor_for_hidden_sort_inductive() {
+        let module = elaborate(
+            r#"
+def U : Type 1 := Type
+inductive AliasNat : U where
+| mk : AliasNat
+def use_alias_rec (P : AliasNat -> Type) (z : P AliasNat.mk) (x : AliasNat) : P x :=
+  AliasNat.rec P z x
+"#,
+        )
+        .expect("hidden Sort result should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_alias_rec"
+        ));
+    }
+
+    #[test]
+    fn exposes_recursor_for_imported_hidden_sort_inductive() {
+        let imports = [prelude_import(), custom_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import CustomSortAlias
+inductive ImportedAliasNat : U where
+| mk : ImportedAliasNat
+def use_imported_alias_rec
+    (P : ImportedAliasNat -> Type)
+    (z : P ImportedAliasNat.mk)
+    (x : ImportedAliasNat) : P x :=
+  ImportedAliasNat.rec P z x
+"#,
+            &imports,
+        )
+        .expect("imported hidden Sort result should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 2);
+        let Decl::Inductive { data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_imported_alias_rec"
         ));
     }
 
