@@ -334,6 +334,7 @@ struct ExprElaborator {
 struct TypeCore {
     core: Expr,
     binder_infos: Vec<BinderInfo>,
+    sort_level: Option<Level>,
 }
 
 #[derive(Clone, Debug)]
@@ -442,11 +443,13 @@ impl ExprElaborator {
 
     fn elab_type(&mut self, expr: &ResolvedExpr) -> Result<TypeCore> {
         if let ResolvedExpr::Hole { name, span } = expr {
-            let sort = Expr::sort(self.fresh_universe_meta(*span));
+            let level = self.fresh_universe_meta(*span);
+            let sort = Expr::sort(level.clone());
             let meta = self.fresh_or_reuse_user_hole(name.as_ref(), sort, *span)?;
             return Ok(TypeCore {
                 core: term_meta_expr(meta),
                 binder_infos: Vec::new(),
+                sort_level: Some(level),
             });
         }
 
@@ -456,9 +459,10 @@ impl ExprElaborator {
             .whnf(&self.ctx, &self.delta, &inferred.ty)
             .map_err(|error| diagnostic_from_kernel_error(resolved_expr_span(expr), error))?
         {
-            Expr::Sort(_) => Ok(TypeCore {
+            Expr::Sort(level) => Ok(TypeCore {
                 binder_infos: type_binder_infos_from_source(expr, &inferred.core),
                 core: inferred.core,
+                sort_level: Some(level),
             }),
             actual => Err(Diagnostic::error(
                 DiagnosticKind::ExpectedSort,
@@ -596,6 +600,7 @@ impl ExprElaborator {
             &TypeCore {
                 core: (*ty).clone(),
                 binder_infos: explicit_binder_infos_for_ty(&ty),
+                sort_level: None,
             },
         )?;
         let result_ty = instantiate(&body, &arg_core)
@@ -763,6 +768,7 @@ impl ExprElaborator {
                     let source_ty = TypeCore {
                         core: weaken_group_type(&source_ty.core, offset, binder.span)?,
                         binder_infos: source_ty.binder_infos.clone(),
+                        sort_level: source_ty.sort_level.clone(),
                     };
                     if let Err(err) = self.ensure_type_eq(&source_ty.core, &ty, binder.span) {
                         self.ctx = saved_ctx;
@@ -774,6 +780,7 @@ impl ExprElaborator {
                     TypeCore {
                         core: (*ty).clone(),
                         binder_infos: expected_binder_infos.get(1..).unwrap_or_default().to_vec(),
+                        sort_level: None,
                     }
                 };
 
@@ -791,6 +798,7 @@ impl ExprElaborator {
                     name,
                     ty: binder_ty.core,
                     binder_info: expected_binder_info,
+                    sort_level: binder_ty.sort_level,
                 });
                 expected_ty = (*body).clone();
                 expected_binder_infos = expected_binder_infos.get(1..).unwrap_or_default().to_vec();
@@ -804,6 +812,7 @@ impl ExprElaborator {
             &TypeCore {
                 core: expected_ty,
                 binder_infos: expected_binder_infos,
+                sort_level: None,
             },
         ) {
             Ok(body_core) => body_core,
@@ -854,6 +863,7 @@ impl ExprElaborator {
                     name,
                     ty: binder_ty_core,
                     binder_info,
+                    sort_level: binder_ty.sort_level,
                 });
             }
 
@@ -908,13 +918,17 @@ impl ExprElaborator {
         self.locals = saved_locals;
 
         let core = close_pi(body_ty.core, &core_binders);
-        let ty = if self.expr_contains_term_meta(&core) {
-            Expr::sort(self.fresh_universe_meta(span))
-        } else {
-            self.env
-                .infer(&self.ctx, &self.delta, &core)
-                .map_err(|error| diagnostic_from_kernel_error(span, error))?
-        };
+        let ty = Expr::sort(close_pi_sort(
+            body_ty.sort_level.ok_or_else(|| {
+                Diagnostic::error(
+                    DiagnosticKind::ExpectedSort,
+                    span,
+                    "Pi body sort was not available",
+                )
+            })?,
+            &core_binders,
+            span,
+        )?);
         Ok(InferResult {
             core,
             ty,
@@ -1705,6 +1719,7 @@ struct CoreBinder {
     name: String,
     ty: Expr,
     binder_info: BinderInfo,
+    sort_level: Option<Level>,
 }
 
 fn term_meta_expr(id: TermMetaId) -> Expr {
@@ -1926,6 +1941,19 @@ fn weaken_group_type(ty: &Expr, offset: usize, span: Span) -> Result<Expr> {
 fn close_pi(body: Expr, binders: &[CoreBinder]) -> Expr {
     binders.iter().rev().fold(body, |body, binder| {
         Expr::pi(binder.name.clone(), binder.ty.clone(), body)
+    })
+}
+
+fn close_pi_sort(body_sort: Level, binders: &[CoreBinder], span: Span) -> Result<Level> {
+    binders.iter().rev().try_fold(body_sort, |sort, binder| {
+        let domain_sort = binder.sort_level.clone().ok_or_else(|| {
+            Diagnostic::error(
+                DiagnosticKind::ExpectedSort,
+                span,
+                "Pi binder sort was not available",
+            )
+        })?;
+        Ok(Level::imax(domain_sort, sort))
     })
 }
 
@@ -2385,6 +2413,23 @@ theorem zero_refl : @Eq.{1} Nat Nat.zero Nat.zero := refl _
         let err = elaborate("axiom f : forall (x : _), Type")
             .expect_err("Pi type hole must fail through frontend metavariable diagnostics");
         assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
+    }
+
+    #[test]
+    fn solves_pi_type_holes_from_annotated_lambda_binders() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def f : (forall (x : _), Type) := fun (x : Nat) => Nat
+"#,
+        )
+        .expect("Pi binder type hole should be solved without leaking a universe meta");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
     }
 
     #[test]
