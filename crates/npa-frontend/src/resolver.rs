@@ -1565,7 +1565,9 @@ impl<'a> Resolver<'a> {
                     TypeAliasValue::Core(value) => {
                         self.core_inductive_result_shape_with(value, fuel - 1)
                     }
-                    TypeAliasValue::Resolved(_) => None,
+                    TypeAliasValue::Resolved(value) => {
+                        self.resolved_inductive_result_shape_with(value, &BTreeMap::new(), fuel - 1)
+                    }
                 }),
             Expr::App(fun, arg) => self
                 .core_reduce_app(fun, arg, fuel - 1)
@@ -1641,7 +1643,9 @@ impl<'a> Resolver<'a> {
                     .get(&global_ref_display_name(global))?;
                 match value {
                     TypeAliasValue::Core(value) => self.core_reduce_to_lam(value, fuel - 1),
-                    TypeAliasValue::Resolved(_) => None,
+                    TypeAliasValue::Resolved(value) => self
+                        .resolved_core_lam(value, locals, fuel - 1)
+                        .or_else(|| self.resolved_lam_as_core_lam(value, locals, fuel - 1)),
                 }
             }
             ResolvedExpr::App { func, arg, .. } => {
@@ -1794,24 +1798,80 @@ impl<'a> Resolver<'a> {
         arg_locals: &BTreeMap<LocalId, ResolvedExpr>,
         fuel: usize,
     ) -> Option<InductiveResultShape> {
-        if fuel == 0 || !matches!(core_arg, Expr::BVar(0)) {
+        if fuel == 0 {
             return None;
         }
 
-        let Expr::Const { name, .. } = fun else {
-            return None;
-        };
-        let TypeAliasValue::Resolved(value) =
-            self.type_alias_values.get(&Name::from_dotted(name))?
-        else {
-            return None;
+        let (value, resolved_arg) = match (fun, core_arg) {
+            (Expr::Const { name, .. }, Expr::BVar(0)) => {
+                let TypeAliasValue::Resolved(value) =
+                    self.type_alias_values.get(&Name::from_dotted(name))?
+                else {
+                    return None;
+                };
+                (value, arg.clone())
+            }
+            (Expr::BVar(0), core_arg) => {
+                (arg, self.core_expr_as_resolved(core_arg, arg, fuel - 1)?)
+            }
+            _ => return None,
         };
 
-        match self.resolved_apply_one(value, arg, arg_locals, fuel - 1)? {
+        match self.resolved_apply_one(value, &resolved_arg, arg_locals, fuel - 1)? {
             ResolvedApplied::Expr { expr, locals } => {
                 self.resolved_inductive_result_shape_with(&expr, &locals, fuel - 1)
             }
             ResolvedApplied::Lam(_) => None,
+        }
+    }
+
+    fn core_expr_as_resolved(
+        &self,
+        expr: &Expr,
+        source_arg: &ResolvedExpr,
+        fuel: usize,
+    ) -> Option<ResolvedExpr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let span = synthetic_span();
+        match expr {
+            Expr::Sort(level) => Some(ResolvedExpr::Sort {
+                level: core_level_as_surface(level, span)?,
+                span,
+            }),
+            Expr::BVar(0) => Some(source_arg.clone()),
+            Expr::Const { name, levels } => {
+                let name = Name::from_dotted(name);
+                Some(ResolvedExpr::Ident {
+                    name: SurfaceName {
+                        parts: name.parts.clone(),
+                        span,
+                    },
+                    resolved: ResolvedName::Global(ElabGlobalRef::Local {
+                        decl_index: usize::MAX,
+                        name,
+                    }),
+                    universe_args: Some(
+                        levels
+                            .iter()
+                            .map(|level| core_level_as_surface(level, span))
+                            .collect::<Option<_>>()?,
+                    ),
+                    implicit_mode: ImplicitMode::Insert,
+                    span,
+                })
+            }
+            Expr::App(fun, arg) => Some(ResolvedExpr::App {
+                func: Box::new(self.core_expr_as_resolved(fun, source_arg, fuel - 1)?),
+                arg: Box::new(self.core_expr_as_resolved(arg, source_arg, fuel - 1)?),
+                span,
+            }),
+            Expr::Let { value, body, .. } => instantiate(body, value)
+                .ok()
+                .and_then(|body| self.core_expr_as_resolved(&body, source_arg, fuel - 1)),
+            _ => None,
         }
     }
 
@@ -1923,9 +1983,11 @@ impl<'a> Resolver<'a> {
                 let value = self.type_alias_values.get(&Name::from_dotted(name))?;
                 match value {
                     TypeAliasValue::Core(value) => self.core_reduce_to_lam(value, fuel - 1),
-                    TypeAliasValue::Resolved(value) => {
-                        self.resolved_lam_as_core_lam(value, &BTreeMap::new(), fuel - 1)
-                    }
+                    TypeAliasValue::Resolved(value) => self
+                        .resolved_core_lam(value, &BTreeMap::new(), fuel - 1)
+                        .or_else(|| {
+                            self.resolved_lam_as_core_lam(value, &BTreeMap::new(), fuel - 1)
+                        }),
                 }
             }
             Expr::App(fun, arg) => self
@@ -2045,6 +2107,49 @@ fn resolved_binder_name(binder: &ResolvedBinder) -> String {
     match &binder.kind {
         SurfaceBinderKind::Named(name) => name.parts.join("."),
         SurfaceBinderKind::Anonymous => "_".to_owned(),
+    }
+}
+
+fn synthetic_span() -> Span {
+    Span::new(FileId(0), 0, 0)
+}
+
+fn core_level_as_surface(level: &Level, span: Span) -> Option<SurfaceLevel> {
+    if let Some(value) = core_level_as_nat(level) {
+        return Some(SurfaceLevel::Nat { value, span });
+    }
+
+    match level {
+        Level::Zero => Some(SurfaceLevel::Nat { value: 0, span }),
+        Level::Succ(level) => Some(SurfaceLevel::Succ {
+            level: Box::new(core_level_as_surface(level, span)?),
+            span,
+        }),
+        Level::Max(lhs, rhs) => Some(SurfaceLevel::Max {
+            lhs: Box::new(core_level_as_surface(lhs, span)?),
+            rhs: Box::new(core_level_as_surface(rhs, span)?),
+            span,
+        }),
+        Level::IMax(lhs, rhs) => Some(SurfaceLevel::IMax {
+            lhs: Box::new(core_level_as_surface(lhs, span)?),
+            rhs: Box::new(core_level_as_surface(rhs, span)?),
+            span,
+        }),
+        Level::Param(name) => Some(SurfaceLevel::Param {
+            name: name.clone(),
+            span,
+        }),
+    }
+}
+
+fn core_level_as_nat(level: &Level) -> Option<u64> {
+    match level {
+        Level::Zero => Some(0),
+        Level::Succ(level) => {
+            let value = core_level_as_nat(level)?.checked_add(1)?;
+            (value <= TYPE_ALIAS_SHAPE_MAX_NUMERIC_LEVEL).then_some(value)
+        }
+        _ => None,
     }
 }
 

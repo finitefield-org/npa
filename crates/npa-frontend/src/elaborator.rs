@@ -4078,6 +4078,35 @@ mod tests {
         }
     }
 
+    fn custom_apply_nat_sort_alias_import() -> VerifiedImport {
+        let type0 = Expr::sort(Level::succ(Level::zero()));
+        let type1 = Expr::sort(Level::succ(Level::succ(Level::zero())));
+        let function_ty = Expr::pi("_", type0.clone(), type1.clone());
+        VerifiedImport {
+            module: Name::from_dotted("CustomApplyNatSortAlias"),
+            export_hash: "sha256:custom-apply-nat-sort-alias".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("ImportedApplyNat"),
+                decl_interface_hash: "sha256:ImportedApplyNat".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
+            }],
+            notations: Vec::new(),
+            kernel_declarations: vec![Decl::Def {
+                name: "ImportedApplyNat".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi("F", function_ty.clone(), type1),
+                value: Expr::lam(
+                    "F",
+                    function_ty,
+                    Expr::app(Expr::bvar(0), Expr::konst("Nat", vec![])),
+                ),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
     fn custom_box_import() -> VerifiedImport {
         let u = Level::param("u");
         let box_ty = Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u.clone()));
@@ -4364,6 +4393,38 @@ def use_imported_alias_app_rec
     }
 
     #[test]
+    fn exposes_recursor_for_source_alias_wrapping_imported_sort_alias() {
+        let imports = [prelude_import(), custom_identity_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import CustomIdentitySortAlias
+def LocalImportedU : Type 1 -> Type 1 := ImportedU
+inductive SourceWrappedImportedAliasType : LocalImportedU Type where
+| mk : SourceWrappedImportedAliasType
+def use_source_wrapped_imported_alias_rec
+    (P : SourceWrappedImportedAliasType -> Type)
+    (z : P SourceWrappedImportedAliasType.mk)
+    (x : SourceWrappedImportedAliasType) : P x :=
+  SourceWrappedImportedAliasType.rec P z x
+"#,
+            &imports,
+        )
+        .expect("source alias wrapping imported lambda alias should expose the recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_source_wrapped_imported_alias_rec"
+        ));
+    }
+
+    #[test]
     fn exposes_recursor_for_imported_multi_arg_lambda_sort_alias_inductive() {
         let imports = [prelude_import(), custom_two_arg_sort_alias_import()];
         let module = elaborate_source(
@@ -4392,6 +4453,39 @@ def use_imported_alias_multi_app_rec
         assert!(matches!(
             &module.declarations[1],
             Decl::Def { name, .. } if name == "use_imported_alias_multi_app_rec"
+        ));
+    }
+
+    #[test]
+    fn exposes_recursor_for_imported_alias_applying_source_arg_as_function() {
+        let imports = [prelude_import(), custom_apply_nat_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomApplyNatSortAlias
+def LocalFn : Type -> Type 1 := fun _ => Type
+inductive ImportedAliasApplyNatType : ImportedApplyNat LocalFn where
+| mk : ImportedAliasApplyNatType
+def use_imported_alias_apply_nat_rec
+    (P : ImportedAliasApplyNatType -> Type)
+    (z : P ImportedAliasApplyNatType.mk)
+    (x : ImportedAliasApplyNatType) : P x :=
+  ImportedAliasApplyNatType.rec P z x
+"#,
+            &imports,
+        )
+        .expect("imported alias applying the source argument should expose the recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_imported_alias_apply_nat_rec"
         ));
     }
 
