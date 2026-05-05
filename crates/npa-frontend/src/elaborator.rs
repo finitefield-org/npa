@@ -3995,6 +3995,29 @@ mod tests {
         }
     }
 
+    fn custom_identity_sort_alias_import() -> VerifiedImport {
+        let type1 = Expr::sort(Level::succ(Level::succ(Level::zero())));
+        VerifiedImport {
+            module: Name::from_dotted("CustomIdentitySortAlias"),
+            export_hash: "sha256:custom-identity-sort-alias".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("ImportedU"),
+                decl_interface_hash: "sha256:ImportedU".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
+            }],
+            notations: Vec::new(),
+            kernel_declarations: vec![Decl::Def {
+                name: "ImportedU".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi("A", type1.clone(), type1.clone()),
+                value: Expr::lam("A", type1, Expr::bvar(0)),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
     fn custom_box_import() -> VerifiedImport {
         let u = Level::param("u");
         let box_ty = Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u.clone()));
@@ -4226,14 +4249,14 @@ def use_alias_rec (P : AliasNat -> Type) (z : P AliasNat.mk) (x : AliasNat) : P 
         let module = elaborate(
             r#"
 import Std.Prelude
-def U : Type -> Type 1 := fun (ignored : Type) => Type
-inductive AliasAppNat : U Nat where
-| mk : AliasAppNat
+def U : Type 1 -> Type 1 := fun (A : Type 1) => A
+inductive AliasAppType : U Type where
+| mk : AliasAppType
 def use_alias_app_rec
-    (P : AliasAppNat -> Type)
-    (z : P AliasAppNat.mk)
-    (x : AliasAppNat) : P x :=
-  AliasAppNat.rec P z x
+    (P : AliasAppType -> Type)
+    (z : P AliasAppType.mk)
+    (x : AliasAppType) : P x :=
+  AliasAppType.rec P z x
 "#,
         )
         .expect("applied lambda Sort alias should expose the generated recursor");
@@ -4246,6 +4269,37 @@ def use_alias_app_rec
         assert!(matches!(
             &module.declarations[2],
             Decl::Def { name, .. } if name == "use_alias_app_rec"
+        ));
+    }
+
+    #[test]
+    fn exposes_recursor_for_imported_applied_lambda_sort_alias_inductive() {
+        let imports = [prelude_import(), custom_identity_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import CustomIdentitySortAlias
+inductive ImportedAliasAppType : ImportedU Type where
+| mk : ImportedAliasAppType
+def use_imported_alias_app_rec
+    (P : ImportedAliasAppType -> Type)
+    (z : P ImportedAliasAppType.mk)
+    (x : ImportedAliasAppType) : P x :=
+  ImportedAliasAppType.rec P z x
+"#,
+            &imports,
+        )
+        .expect("imported applied lambda Sort alias should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 2);
+        let Decl::Inductive { data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_imported_alias_app_rec"
         ));
     }
 
