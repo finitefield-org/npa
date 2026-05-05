@@ -156,12 +156,13 @@ impl ModuleElaborator {
         match kind {
             ValueDeclKind::Axiom => {
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
+                let metadata_ty = engine.whnf_closed_expr(&closed_ty, decl.span)?;
                 self.env
                     .add_axiom(name.clone(), universe_params.clone(), closed_ty.clone())
                     .map_err(|error| kernel_rejected(decl.span, error))?;
                 self.signatures.insert_decl_metadata(
                     name.clone(),
-                    closed_ty.clone(),
+                    metadata_ty,
                     source_signature_metadata.clone(),
                 );
                 self.declarations.push(Decl::Axiom {
@@ -179,11 +180,13 @@ impl ModuleElaborator {
                     )
                 })?;
                 let body = engine.elab_check_result(value, &result_ty)?;
+                let type_value_metadata = body.type_value_metadata.clone();
                 let signature_metadata =
                     declaration_signature_metadata(&decl.ty, &binders, &result_ty, &body);
                 let closed_value = close_lam(body.core, &binders);
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
                 let closed_value = engine.finish_expr(closed_value, decl.span)?;
+                let metadata_ty = engine.whnf_closed_expr(&closed_ty, decl.span)?;
                 self.env
                     .add_def(
                         name.clone(),
@@ -193,11 +196,14 @@ impl ModuleElaborator {
                         Reducibility::Reducible,
                     )
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures.insert_decl_metadata(
-                    name.clone(),
-                    closed_ty.clone(),
-                    signature_metadata,
-                );
+                self.signatures
+                    .insert_decl_metadata(name.clone(), metadata_ty, signature_metadata);
+                if result_ty.sort_level.is_some() {
+                    if let Some(metadata) = type_value_metadata {
+                        self.signatures
+                            .insert_type_value_metadata(name.clone(), metadata);
+                    }
+                }
                 self.declarations.push(Decl::Def {
                     name,
                     universe_params,
@@ -220,6 +226,7 @@ impl ModuleElaborator {
                 let closed_proof = close_lam(body.core, &binders);
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
                 let closed_proof = engine.finish_expr(closed_proof, decl.span)?;
+                let metadata_ty = engine.whnf_closed_expr(&closed_ty, decl.span)?;
                 self.env
                     .add_theorem(
                         name.clone(),
@@ -228,11 +235,8 @@ impl ModuleElaborator {
                         closed_proof.clone(),
                     )
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures.insert_decl_metadata(
-                    name.clone(),
-                    closed_ty.clone(),
-                    signature_metadata,
-                );
+                self.signatures
+                    .insert_decl_metadata(name.clone(), metadata_ty, signature_metadata);
                 self.declarations.push(Decl::Theorem {
                     name,
                     universe_params,
@@ -260,6 +264,10 @@ struct TypeMetadata {
 }
 
 impl TypeMetadata {
+    fn is_empty(&self) -> bool {
+        self.binder_infos.is_empty() && self.domain_infos.is_empty()
+    }
+
     fn explicit_for_ty(ty: &Expr) -> Self {
         let mut binder_infos = Vec::new();
         let mut domain_infos = Vec::new();
@@ -337,6 +345,7 @@ impl TypeMetadata {
 #[derive(Clone, Debug, Default)]
 struct SignatureEnv {
     metadata: BTreeMap<String, TypeMetadata>,
+    type_value_metadata: BTreeMap<String, TypeMetadata>,
 }
 
 impl SignatureEnv {
@@ -368,8 +377,15 @@ impl SignatureEnv {
         self.metadata.insert(name, metadata);
     }
 
-    fn insert_decl_metadata(&mut self, name: String, ty: Expr, metadata: TypeMetadata) {
-        self.metadata.insert(name, metadata.normalize_for_ty(&ty));
+    fn insert_decl_metadata(&mut self, name: String, metadata_ty: Expr, metadata: TypeMetadata) {
+        self.metadata
+            .insert(name, metadata.normalize_for_ty(&metadata_ty));
+    }
+
+    fn insert_type_value_metadata(&mut self, name: String, metadata: TypeMetadata) {
+        if !metadata.is_empty() {
+            self.type_value_metadata.insert(name, metadata);
+        }
     }
 
     fn metadata_for(&self, name: &str, ty: &Expr) -> TypeMetadata {
@@ -378,15 +394,22 @@ impl SignatureEnv {
             .cloned()
             .unwrap_or_else(|| TypeMetadata::explicit_for_ty(ty))
     }
+
+    fn type_value_metadata_for(&self, name: &str) -> Option<TypeMetadata> {
+        self.type_value_metadata.get(name).cloned()
+    }
 }
 
 fn insert_imported_signatures(signatures: &mut SignatureEnv, env: &Env, import: &ResolvedImport) {
     for imported_decl in &import.declarations {
         let name = imported_decl.name.to_dotted();
         if let Some(decl) = env.decl(&name) {
+            let metadata_ty = env
+                .whnf(&Ctx::new(), decl.universe_params(), decl.ty())
+                .unwrap_or_else(|_| decl.ty().clone());
             signatures.insert_decl_metadata(
                 name,
-                decl.ty().clone(),
+                metadata_ty,
                 TypeMetadata {
                     binder_infos: imported_decl.binder_infos.clone(),
                     domain_infos: imported_decl
@@ -440,18 +463,21 @@ struct InferResult {
     core: Expr,
     ty: Expr,
     ty_metadata: TypeMetadata,
+    type_value_metadata: Option<TypeMetadata>,
 }
 
 #[derive(Clone, Debug)]
 struct CheckResult {
     core: Expr,
     ty_metadata: TypeMetadata,
+    type_value_metadata: Option<TypeMetadata>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct LocalCtxEntry {
     ty: Expr,
     ty_metadata: TypeMetadata,
+    value_type_metadata: Option<TypeMetadata>,
     value: Option<Expr>,
 }
 
@@ -562,7 +588,21 @@ impl ExprElaborator {
             .map_err(|error| diagnostic_from_kernel_error(resolved_expr_span(expr), error))?
         {
             Expr::Sort(level) => {
-                let metadata = type_metadata_from_source(expr, &inferred.core);
+                let type_core = self
+                    .env
+                    .whnf(
+                        &self.ctx,
+                        &self.delta,
+                        &self.zonk_current_expr(&inferred.core),
+                    )
+                    .map_err(|error| {
+                        diagnostic_from_kernel_error(resolved_expr_span(expr), error)
+                    })?;
+                let metadata = inferred
+                    .type_value_metadata
+                    .or_else(|| self.type_value_metadata_for_core(&inferred.core))
+                    .unwrap_or_else(|| source_type_metadata(expr))
+                    .normalize_for_ty(&type_core);
                 Ok(TypeCore {
                     core: inferred.core,
                     metadata,
@@ -623,10 +663,12 @@ impl ExprElaborator {
                     .env
                     .infer(&self.ctx, &self.delta, &core)
                     .map_err(|error| diagnostic_from_kernel_error(*span, error))?;
+                let type_value_metadata = self.type_value_metadata_for_core(&core);
                 Ok(InferResult {
                     core,
                     ty,
                     ty_metadata,
+                    type_value_metadata,
                 })
             }
             ResolvedExpr::Sort { level, span } => {
@@ -639,6 +681,7 @@ impl ExprElaborator {
                     core,
                     ty,
                     ty_metadata: TypeMetadata::default(),
+                    type_value_metadata: None,
                 })
             }
             ResolvedExpr::App { func, arg, span } => self.elab_infer_app(func, arg, *span),
@@ -668,6 +711,7 @@ impl ExprElaborator {
                     core: checked.core,
                     ty: expected.core,
                     ty_metadata,
+                    type_value_metadata: checked.type_value_metadata,
                 })
             }
             ResolvedExpr::Hole { name, span } => self.elab_infer_hole(name.as_ref(), *span),
@@ -709,12 +753,15 @@ impl ExprElaborator {
                 sort_level: None,
             },
         )?;
+        let core = Expr::app(result.core, arg_core.clone());
         let result_ty = instantiate(&body, &arg_core)
             .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+        let type_value_metadata = self.type_value_metadata_for_core(&core);
         Ok(InferResult {
-            core: Expr::app(result.core, arg_core),
+            core,
             ty: result_ty,
             ty_metadata: result.ty_metadata.after_binder(),
+            type_value_metadata,
         })
     }
 
@@ -732,6 +779,7 @@ impl ExprElaborator {
             core: term_meta_expr(term_meta),
             ty,
             ty_metadata: TypeMetadata::default(),
+            type_value_metadata: None,
         })
     }
 
@@ -755,6 +803,7 @@ impl ExprElaborator {
                 return Ok(CheckResult {
                     core,
                     ty_metadata: expected.metadata.clone(),
+                    type_value_metadata: None,
                 });
             }
         }
@@ -765,6 +814,7 @@ impl ExprElaborator {
             return Ok(CheckResult {
                 core: term_meta_expr(meta),
                 ty_metadata: expected.metadata.clone(),
+                type_value_metadata: None,
             });
         }
 
@@ -779,6 +829,7 @@ impl ExprElaborator {
         Ok(CheckResult {
             core: inferred.core,
             ty_metadata: inferred.ty_metadata,
+            type_value_metadata: inferred.type_value_metadata,
         })
     }
 
@@ -824,6 +875,7 @@ impl ExprElaborator {
             core,
             ty,
             ty_metadata: close_metadata(body_result.ty_metadata, &core_binders),
+            type_value_metadata: None,
         })
     }
 
@@ -1094,6 +1146,7 @@ impl ExprElaborator {
         self.ctx = saved_ctx;
         self.locals = saved_locals;
 
+        let type_value_metadata = close_metadata(body_ty.metadata.clone(), &core_binders);
         let core = close_pi(body_ty.core, &core_binders);
         let ty = Expr::sort(close_pi_sort(
             body_ty.sort_level.ok_or_else(|| {
@@ -1110,6 +1163,7 @@ impl ExprElaborator {
             core,
             ty,
             ty_metadata: TypeMetadata::default(),
+            type_value_metadata: Some(type_value_metadata),
         })
     }
 
@@ -1123,14 +1177,24 @@ impl ExprElaborator {
     ) -> Result<InferResult> {
         let saved_ctx = self.ctx.clone();
         let saved_locals = self.locals.clone();
-        let (value_core, value_ty, value_ty_metadata) = if let Some(ty) = ty {
+        let (value_core, value_ty, value_ty_metadata, value_type_metadata) = if let Some(ty) = ty {
             let ty_core = self.elab_type(ty)?;
             let value_result = self.elab_check_result(value, &ty_core)?;
             let value_ty_metadata = annotation_metadata(ty, &ty_core, &value_result);
-            (value_result.core, ty_core.core, value_ty_metadata)
+            (
+                value_result.core,
+                ty_core.core,
+                value_ty_metadata,
+                value_result.type_value_metadata,
+            )
         } else {
             let value_result = self.elab_infer(value)?;
-            (value_result.core, value_result.ty, value_result.ty_metadata)
+            (
+                value_result.core,
+                value_result.ty,
+                value_result.ty_metadata,
+                value_result.type_value_metadata,
+            )
         };
 
         self.push_definition(
@@ -1138,6 +1202,7 @@ impl ExprElaborator {
             value_ty.clone(),
             value_ty_metadata,
             value_core.clone(),
+            value_type_metadata,
         );
         let body_result = match self.elab_infer(body) {
             Ok(body_result) => body_result,
@@ -1157,6 +1222,7 @@ impl ExprElaborator {
             core,
             ty,
             ty_metadata: body_result.ty_metadata,
+            type_value_metadata: body_result.type_value_metadata,
         })
     }
 
@@ -1245,6 +1311,7 @@ impl ExprElaborator {
             result.ty = instantiate(&body, &meta_expr)
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
             result.ty_metadata = result.ty_metadata.after_binder();
+            result.type_value_metadata = self.type_value_metadata_for_core(&result.core);
         }
     }
 
@@ -1283,6 +1350,7 @@ impl ExprElaborator {
             result.ty = instantiate(&body, &meta_expr)
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
             result.ty_metadata = result.ty_metadata.after_binder();
+            result.type_value_metadata = self.type_value_metadata_for_core(&result.core);
         }
     }
 
@@ -1387,6 +1455,12 @@ impl ExprElaborator {
             ));
         }
         Ok(expr)
+    }
+
+    fn whnf_closed_expr(&self, expr: &Expr, span: Span) -> Result<Expr> {
+        self.env
+            .whnf(&Ctx::new(), &self.delta, expr)
+            .map_err(|error| diagnostic_from_kernel_error(span, error))
     }
 
     fn solve_constraints(&mut self, fallback_span: Span) -> Result<()> {
@@ -1795,15 +1869,24 @@ impl ExprElaborator {
         self.locals.push(LocalCtxEntry {
             ty,
             ty_metadata,
+            value_type_metadata: None,
             value: None,
         });
     }
 
-    fn push_definition(&mut self, name: String, ty: Expr, ty_metadata: TypeMetadata, value: Expr) {
+    fn push_definition(
+        &mut self,
+        name: String,
+        ty: Expr,
+        ty_metadata: TypeMetadata,
+        value: Expr,
+        value_type_metadata: Option<TypeMetadata>,
+    ) {
         self.ctx.push_definition(name, ty.clone(), value.clone());
         self.locals.push(LocalCtxEntry {
             ty,
             ty_metadata,
+            value_type_metadata,
             value: Some(value),
         });
     }
@@ -1920,6 +2003,19 @@ impl ExprElaborator {
 
     fn level_contains_universe_meta_in_expr(&self, expr: &Expr) -> bool {
         level_contains_universe_meta_in_expr(expr)
+    }
+
+    fn type_value_metadata_for_core(&self, core: &Expr) -> Option<TypeMetadata> {
+        match app_head(core) {
+            Expr::Const { name, .. } => self.signatures.type_value_metadata_for(name),
+            Expr::BVar(index) => {
+                let index = *index as usize;
+                self.locals
+                    .get(self.locals.len().checked_sub(index + 1)?)
+                    .and_then(|local| local.value_type_metadata.clone())
+            }
+            _ => None,
+        }
     }
 
     fn local_context_eq(&self, lhs: &[LocalCtxEntry], rhs: &[LocalCtxEntry]) -> bool {
@@ -2077,6 +2173,13 @@ fn level_contains_universe_meta_in_expr(expr: &Expr) -> bool {
     }
 }
 
+fn app_head(mut expr: &Expr) -> &Expr {
+    while let Expr::App(fun, _) = expr {
+        expr = fun;
+    }
+    expr
+}
+
 fn pi_domains(mut expr: &Expr) -> Vec<&Expr> {
     let mut domains = Vec::new();
     while let Expr::Pi { ty, body, .. } = expr {
@@ -2084,10 +2187,6 @@ fn pi_domains(mut expr: &Expr) -> Vec<&Expr> {
         expr = body;
     }
     domains
-}
-
-fn type_metadata_from_source(expr: &ResolvedExpr, core: &Expr) -> TypeMetadata {
-    source_type_metadata(expr).normalize_for_ty(core)
 }
 
 fn source_type_metadata(expr: &ResolvedExpr) -> TypeMetadata {
@@ -2170,6 +2269,7 @@ fn extend_snapshot_with_assumption(snapshot: &[LocalCtxEntry], ty: Expr) -> Vec<
     extended.push(LocalCtxEntry {
         ty,
         ty_metadata: TypeMetadata::default(),
+        value_type_metadata: None,
         value: None,
     });
     extended
@@ -3193,6 +3293,44 @@ def use_inferred : Nat := inferred_id Nat.zero
         assert!(matches!(
             &module.declarations[1],
             Decl::Def { name, .. } if name == "use_inferred"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_binders_through_type_aliases() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def IdTy : Type 1 := forall {A : Type}, A -> A
+axiom f : IdTy
+def use_alias : Nat := f Nat.zero
+"#,
+        )
+        .expect("type alias metadata should drive implicit insertion");
+
+        assert_eq!(module.declarations.len(), 3);
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_alias"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_binders_through_parameterized_type_aliases() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def IdTy (ignored : Type) : Type 1 := forall {A : Type}, A -> A
+axiom f : IdTy Nat
+def use_alias_param : Nat := f Nat.zero
+"#,
+        )
+        .expect("parameterized type alias metadata should drive implicit insertion");
+
+        assert_eq!(module.declarations.len(), 3);
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_alias_param"
         ));
     }
 
