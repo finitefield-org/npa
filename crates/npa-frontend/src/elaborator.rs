@@ -456,7 +456,7 @@ impl ExprElaborator {
         let inferred = self.elab_infer(expr)?;
         match self
             .env
-            .whnf(&self.ctx, &self.delta, &inferred.ty)
+            .whnf(&self.ctx, &self.delta, &self.zonk_expr(&inferred.ty))
             .map_err(|error| diagnostic_from_kernel_error(resolved_expr_span(expr), error))?
         {
             Expr::Sort(level) => Ok(TypeCore {
@@ -557,11 +557,12 @@ impl ExprElaborator {
             } => self.elab_infer_let(name.parts.join("."), ty.as_deref(), value, body, *span),
             ResolvedExpr::Annot { expr, ty, .. } => {
                 let expected = self.elab_type(ty)?;
-                let core = self.elab_check(expr, &expected)?;
+                let checked = self.elab_check_result(expr, &expected)?;
+                let ty_binder_infos = annotation_binder_infos(ty, &expected, &checked);
                 Ok(InferResult {
-                    core,
+                    core: checked.core,
                     ty: expected.core,
-                    ty_binder_infos: expected.binder_infos,
+                    ty_binder_infos,
                 })
             }
             ResolvedExpr::Hole { name, span } => self.elab_infer_hole(name.as_ref(), *span),
@@ -948,8 +949,9 @@ impl ExprElaborator {
         let saved_locals = self.locals.clone();
         let (value_core, value_ty, value_ty_binder_infos) = if let Some(ty) = ty {
             let ty_core = self.elab_type(ty)?;
-            let value_core = self.elab_check(value, &ty_core)?;
-            (value_core, ty_core.core, ty_core.binder_infos)
+            let value_result = self.elab_check_result(value, &ty_core)?;
+            let value_ty_binder_infos = annotation_binder_infos(ty, &ty_core, &value_result);
+            (value_result.core, ty_core.core, value_ty_binder_infos)
         } else {
             let value_result = self.elab_infer(value)?;
             (
@@ -1456,7 +1458,9 @@ impl ExprElaborator {
         if meta.assignment.is_some() {
             return Ok(false);
         }
-        if !local_context_eq(&meta.context, context) {
+        let meta_context = meta.context.clone();
+        let meta_ty_raw = meta.ty.clone();
+        if !self.local_context_eq(&meta_context, context) {
             return Ok(false);
         }
         if expr_occurs_term_meta(value, id) {
@@ -1471,7 +1475,7 @@ impl ExprElaborator {
         if self.expr_contains_term_meta(&value) {
             return Ok(false);
         }
-        let meta_ty = self.zonk_expr(&meta.ty);
+        let meta_ty = self.zonk_expr(&meta_ty_raw);
         let value_ty = self
             .env
             .infer(&self.ctx_for_snapshot(context), &self.delta, &value)
@@ -1562,8 +1566,9 @@ impl ExprElaborator {
         };
         let key = name.parts.join(".");
         if let Some(id) = self.named_holes.get(&key).copied() {
-            let meta = &self.term_metas[id.0];
-            if !local_context_eq(&meta.context, &self.locals) {
+            let meta_context = self.term_metas[id.0].context.clone();
+            let meta_ty = self.term_metas[id.0].ty.clone();
+            if !self.local_context_eq(&meta_context, &self.locals) {
                 return Err(Diagnostic::error(
                     DiagnosticKind::NamedHoleContextMismatch,
                     span,
@@ -1571,7 +1576,7 @@ impl ExprElaborator {
                 ));
             }
             self.constraints.push(Constraint::TypeEq {
-                lhs: meta.ty.clone(),
+                lhs: meta_ty,
                 rhs: ty,
                 context: self.locals.clone(),
                 span,
@@ -1635,10 +1640,11 @@ impl ExprElaborator {
         let mut ctx = Ctx::new();
         for (index, local) in snapshot.iter().enumerate() {
             let name = format!("_{}", index);
+            let ty = self.zonk_expr(&local.ty);
             if let Some(value) = &local.value {
-                ctx.push_definition(name, local.ty.clone(), value.clone());
+                ctx.push_definition(name, ty, self.zonk_expr(value));
             } else {
-                ctx.push_assumption(name, local.ty.clone());
+                ctx.push_assumption(name, ty);
             }
         }
         ctx
@@ -1711,6 +1717,18 @@ impl ExprElaborator {
 
     fn level_contains_universe_meta_in_expr(&self, expr: &Expr) -> bool {
         level_contains_universe_meta_in_expr(expr)
+    }
+
+    fn local_context_eq(&self, lhs: &[LocalCtxEntry], rhs: &[LocalCtxEntry]) -> bool {
+        lhs.len() == rhs.len()
+            && lhs.iter().zip(rhs).all(|(lhs, rhs)| {
+                self.zonk_expr(&lhs.ty) == self.zonk_expr(&rhs.ty)
+                    && match (&lhs.value, &rhs.value) {
+                        (Some(lhs), Some(rhs)) => self.zonk_expr(lhs) == self.zonk_expr(rhs),
+                        (None, None) => true,
+                        _ => false,
+                    }
+            })
     }
 }
 
@@ -1881,6 +1899,18 @@ fn close_binder_infos(body_infos: Vec<BinderInfo>, binders: &[CoreBinder]) -> Ve
         .collect()
 }
 
+fn annotation_binder_infos(
+    annotation_ty: &ResolvedExpr,
+    expected: &TypeCore,
+    checked: &CheckResult,
+) -> Vec<BinderInfo> {
+    if matches!(annotation_ty, ResolvedExpr::Hole { .. }) && expected.binder_infos.is_empty() {
+        checked.ty_binder_infos.clone()
+    } else {
+        expected.binder_infos.clone()
+    }
+}
+
 fn implicit_insertion_enabled_for_head(expr: &ResolvedExpr) -> bool {
     match expr {
         ResolvedExpr::Ident { implicit_mode, .. } => *implicit_mode == ImplicitMode::Insert,
@@ -1895,14 +1925,6 @@ fn expected_needs_implicit_instantiation(expected: &TypeCore) -> bool {
         return false;
     }
     expected.binder_infos.first() != Some(&BinderInfo::Implicit)
-}
-
-fn local_context_eq(lhs: &[LocalCtxEntry], rhs: &[LocalCtxEntry]) -> bool {
-    lhs.len() == rhs.len()
-        && lhs
-            .iter()
-            .zip(rhs)
-            .all(|(lhs, rhs)| lhs.ty == rhs.ty && lhs.value == rhs.value)
 }
 
 fn extend_snapshot_with_assumption(snapshot: &[LocalCtxEntry], ty: Expr) -> Vec<LocalCtxEntry> {
@@ -2424,6 +2446,75 @@ def f : (forall (x : _), Type) := fun (x : Nat) => Nat
 "#,
         )
         .expect("Pi binder type hole should be solved without leaking a universe meta");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
+    fn zonks_solved_annotation_type_before_sort_check() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom T : (Nat : _)
+"#,
+        )
+        .expect("solved annotation type hole should be visible to type elaboration");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Axiom { name, .. } if name == "T"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_binders_from_hole_annotation() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def use : Nat := ((fun {A : Type} (x : A) => x) : _) Nat.zero
+"#,
+        )
+        .expect("hole annotation should keep inferred implicit binder metadata");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_binders_from_let_type_hole() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def use : Nat :=
+  let f : _ := fun {A : Type} (x : A) => x in f Nat.zero
+"#,
+        )
+        .expect("let type hole should keep inferred implicit binder metadata");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use"
+        ));
+    }
+
+    #[test]
+    fn solves_dependent_pi_holes_after_zonking_contexts() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def f : (forall (x : _), _) := fun (x : Nat) => x
+"#,
+        )
+        .expect("dependent Pi holes should compare solved context snapshots");
 
         assert_eq!(module.declarations.len(), 1);
         assert!(matches!(
