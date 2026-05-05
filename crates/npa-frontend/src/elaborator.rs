@@ -1122,9 +1122,6 @@ impl ExprElaborator {
     ) -> Result<bool> {
         let actual = self.zonk_expr(actual);
         let expected = self.zonk_expr(expected);
-        if self.expr_contains_term_meta(&actual) || self.expr_contains_term_meta(&expected) {
-            return Ok(false);
-        }
 
         let saved_term_metas = self.term_metas.clone();
         let saved_universe_metas = self.universe_metas.clone();
@@ -2375,6 +2372,24 @@ def use_pi : (forall (A : Type), A -> A) := poly_id
 "#,
         )
         .expect("implicit BinderInfo should not affect core Pi equality");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_pi"
+        ));
+    }
+
+    #[test]
+    fn solves_expected_type_holes_before_inserting_implicit_args() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom poly_id {A : Type} (x : A) : A
+def use_pi : (forall (A : Type), _) := poly_id
+"#,
+        )
+        .expect("expected type holes should be solved before inserting implicit args");
 
         assert_eq!(module.declarations.len(), 2);
         assert!(matches!(
