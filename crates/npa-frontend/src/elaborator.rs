@@ -6,10 +6,10 @@ use npa_kernel::{
 };
 
 use crate::{
-    parse_module, resolve_module, BinderInfo, Diagnostic, DiagnosticKind, FileId, ImplicitMode,
-    ImportedTypeMetadata, Name, ResolvedBinder, ResolvedDecl, ResolvedExpr, ResolvedImport,
-    ResolvedItem, ResolvedModule, ResolvedName, Result, Span, SurfaceBinderKind, SurfaceLevel,
-    SurfaceModule, SurfaceUniverseParam, VerifiedImport,
+    resolve_module, resolve_source, BinderInfo, Diagnostic, DiagnosticKind, ElabGlobalRef, FileId,
+    ImplicitMode, ImportedTypeMetadata, Name, ResolvedBinder, ResolvedDecl, ResolvedExpr,
+    ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, Result, Span, SurfaceBinderKind,
+    SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam, VerifiedImport,
 };
 
 const MAX_NUMERIC_UNIVERSE_LEVEL: u64 = 1024;
@@ -30,8 +30,8 @@ pub fn elaborate_source(
     source: &str,
     verified_imports: &[VerifiedImport],
 ) -> Result<ElaboratedModule> {
-    let module = parse_module(file_id, source)?;
-    elaborate_module(current_module, &module, verified_imports)
+    let resolved = resolve_source(file_id, current_module, source, verified_imports)?;
+    elaborate_resolved_module(&resolved)
 }
 
 pub fn elaborate_module(
@@ -546,6 +546,17 @@ enum SolveStatus {
     Stuck,
 }
 
+#[derive(Clone)]
+struct ElabSnapshot {
+    ctx: Ctx,
+    locals: Vec<LocalCtxEntry>,
+    term_metas: Vec<TermMeta>,
+    universe_metas: Vec<UniverseMeta>,
+    named_holes: BTreeMap<String, TermMetaId>,
+    constraints: Vec<Constraint>,
+    delta: Vec<String>,
+}
+
 impl ExprElaborator {
     fn new(env: Env, signatures: SignatureEnv, delta: Vec<String>) -> Self {
         Self {
@@ -559,6 +570,28 @@ impl ExprElaborator {
             named_holes: BTreeMap::new(),
             constraints: Vec::new(),
         }
+    }
+
+    fn snapshot(&self) -> ElabSnapshot {
+        ElabSnapshot {
+            ctx: self.ctx.clone(),
+            locals: self.locals.clone(),
+            term_metas: self.term_metas.clone(),
+            universe_metas: self.universe_metas.clone(),
+            named_holes: self.named_holes.clone(),
+            constraints: self.constraints.clone(),
+            delta: self.delta.clone(),
+        }
+    }
+
+    fn restore(&mut self, snapshot: ElabSnapshot) {
+        self.ctx = snapshot.ctx;
+        self.locals = snapshot.locals;
+        self.term_metas = snapshot.term_metas;
+        self.universe_metas = snapshot.universe_metas;
+        self.named_holes = snapshot.named_holes;
+        self.constraints = snapshot.constraints;
+        self.delta = snapshot.delta;
     }
 
     fn elaborate_decl_binders(&mut self, binders: &[ResolvedBinder]) -> Result<Vec<CoreBinder>> {
@@ -639,7 +672,7 @@ impl ExprElaborator {
                 resolved,
                 universe_args,
                 span,
-                implicit_mode: _,
+                implicit_mode,
                 ..
             } => {
                 let levels = self.elab_universe_args(resolved, universe_args.as_deref(), *span)?;
@@ -667,12 +700,13 @@ impl ExprElaborator {
                             .unwrap_or_default();
                         (Expr::konst(name, levels), ty_metadata)
                     }
-                    ResolvedName::Overloaded(_) => {
-                        return Err(Diagnostic::error(
-                            DiagnosticKind::AmbiguousName,
+                    ResolvedName::Overloaded(candidates) => {
+                        return self.elab_infer_overloaded_name(
+                            candidates,
+                            universe_args.as_deref(),
+                            *implicit_mode,
                             *span,
-                            "overloaded name was not resolved by type information",
-                        ));
+                        );
                     }
                 };
                 let ty = self
@@ -700,7 +734,19 @@ impl ExprElaborator {
                     type_value_metadata: None,
                 })
             }
-            ResolvedExpr::App { func, arg, span } => self.elab_infer_app(func, arg, *span),
+            ResolvedExpr::App { func, arg, span } => {
+                if let Some(spine) = overloaded_app_spine(expr) {
+                    self.elab_infer_overloaded_app(
+                        &spine.candidates,
+                        spine.universe_args.as_deref(),
+                        spine.implicit_mode,
+                        &spine.args,
+                        *span,
+                    )
+                } else {
+                    self.elab_infer_app(func, arg, *span)
+                }
+            }
             ResolvedExpr::Lam {
                 binders,
                 body,
@@ -731,11 +777,12 @@ impl ExprElaborator {
                 })
             }
             ResolvedExpr::Hole { name, span } => self.elab_infer_hole(name.as_ref(), *span),
-            ResolvedExpr::Notation { span, .. } => Err(Diagnostic::error(
-                DiagnosticKind::AmbiguousNotation,
-                *span,
-                "notation elaboration is implemented in a later milestone",
-            )),
+            ResolvedExpr::Notation {
+                head,
+                candidates,
+                args,
+                span,
+            } => self.elab_infer_notation(head, candidates, args, *span),
         }
     }
 
@@ -799,6 +846,314 @@ impl ExprElaborator {
         })
     }
 
+    fn elab_infer_overloaded_name(
+        &mut self,
+        candidates: &[ElabGlobalRef],
+        universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
+        span: Span,
+    ) -> Result<InferResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr = resolved_ident_for_global(&candidate, universe_args, implicit_mode, span);
+            if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded name could not be resolved",
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded name is ambiguous",
+                ))
+            }
+        }
+    }
+
+    fn elab_check_overloaded_name(
+        &mut self,
+        candidates: &[ElabGlobalRef],
+        universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
+        expected: &TypeCore,
+        span: Span,
+    ) -> Result<CheckResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr = resolved_ident_for_global(&candidate, universe_args, implicit_mode, span);
+            if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded name could not be resolved",
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded name is ambiguous",
+                ))
+            }
+        }
+    }
+
+    fn elab_infer_overloaded_app(
+        &mut self,
+        candidates: &[ElabGlobalRef],
+        universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
+        args: &[ResolvedExpr],
+        span: Span,
+    ) -> Result<InferResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr =
+                overloaded_candidate_app_expr(&candidate, universe_args, implicit_mode, args, span);
+            if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded application could not be resolved",
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded application is ambiguous",
+                ))
+            }
+        }
+    }
+
+    fn elab_check_overloaded_app(
+        &mut self,
+        candidates: &[ElabGlobalRef],
+        universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
+        args: &[ResolvedExpr],
+        expected: &TypeCore,
+        span: Span,
+    ) -> Result<CheckResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr =
+                overloaded_candidate_app_expr(&candidate, universe_args, implicit_mode, args, span);
+            if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded application could not be resolved",
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded application is ambiguous",
+                ))
+            }
+        }
+    }
+
+    fn elab_infer_notation(
+        &mut self,
+        head: &crate::NotationHead,
+        candidates: &[ElabGlobalRef],
+        args: &[ResolvedExpr],
+        span: Span,
+    ) -> Result<InferResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr = notation_candidate_expr(&candidate, args, span);
+            if let Ok(result) = self.elab_infer(&expr).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+        self.finish_notation_infer(head, span, initial, successes)
+    }
+
+    fn elab_check_notation(
+        &mut self,
+        head: &crate::NotationHead,
+        candidates: &[ElabGlobalRef],
+        args: &[ResolvedExpr],
+        expected: &TypeCore,
+        span: Span,
+    ) -> Result<CheckResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr = notation_candidate_expr(&candidate, args, span);
+            if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+        self.finish_notation_check(head, span, initial, successes)
+    }
+
+    fn finish_notation_infer(
+        &mut self,
+        head: &crate::NotationHead,
+        span: Span,
+        initial: ElabSnapshot,
+        mut successes: Vec<(ElabGlobalRef, ElabSnapshot, InferResult)>,
+    ) -> Result<InferResult> {
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousNotation,
+                    span,
+                    format!("notation `{}` could not be resolved", head.symbol),
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousNotation,
+                    span,
+                    format!("notation `{}` is ambiguous", head.symbol),
+                ))
+            }
+        }
+    }
+
+    fn finish_notation_check(
+        &mut self,
+        head: &crate::NotationHead,
+        span: Span,
+        initial: ElabSnapshot,
+        mut successes: Vec<(ElabGlobalRef, ElabSnapshot, CheckResult)>,
+    ) -> Result<CheckResult> {
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousNotation,
+                    span,
+                    format!("notation `{}` could not be resolved", head.symbol),
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousNotation,
+                    span,
+                    format!("notation `{}` is ambiguous", head.symbol),
+                ))
+            }
+        }
+    }
+
+    fn complete_candidate_since(&mut self, baseline: &ElabSnapshot, span: Span) -> Result<()> {
+        self.solve_constraints(span)?;
+        self.assign_default_universe_metas_since(baseline.universe_metas.len());
+        self.solve_constraints(span)?;
+        self.reject_unsolved_candidate_metas_since(baseline)
+    }
+
     fn elab_check(&mut self, expr: &ResolvedExpr, expected: &TypeCore) -> Result<Expr> {
         Ok(self.elab_check_result(expr, expected)?.core)
     }
@@ -832,6 +1187,44 @@ impl ExprElaborator {
                 ty_metadata: expected.metadata.clone(),
                 type_value_metadata: None,
             });
+        }
+
+        if let ResolvedExpr::Ident {
+            resolved: ResolvedName::Overloaded(candidates),
+            universe_args,
+            implicit_mode,
+            span,
+            ..
+        } = expr
+        {
+            return self.elab_check_overloaded_name(
+                candidates,
+                universe_args.as_deref(),
+                *implicit_mode,
+                expected,
+                *span,
+            );
+        }
+
+        if let Some(spine) = overloaded_app_spine(expr) {
+            return self.elab_check_overloaded_app(
+                &spine.candidates,
+                spine.universe_args.as_deref(),
+                spine.implicit_mode,
+                &spine.args,
+                expected,
+                resolved_expr_span(expr),
+            );
+        }
+
+        if let ResolvedExpr::Notation {
+            head,
+            candidates,
+            args,
+            span,
+        } = expr
+        {
+            return self.elab_check_notation(head, candidates, args, expected, *span);
         }
 
         let mut inferred = self.elab_infer(expr)?;
@@ -1844,6 +2237,32 @@ impl ExprElaborator {
         Ok(())
     }
 
+    fn reject_unsolved_candidate_metas_since(&self, baseline: &ElabSnapshot) -> Result<()> {
+        for meta in self.term_metas.iter().skip(baseline.term_metas.len()) {
+            if meta.assignment.is_none() && meta.kind == TermMetaKind::SyntheticImplicit {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedImplicit,
+                    meta.span,
+                    "could not infer implicit argument",
+                ));
+            }
+        }
+        for meta in self
+            .universe_metas
+            .iter()
+            .skip(baseline.universe_metas.len())
+        {
+            if meta.assignment.is_none() {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedUniverseMeta,
+                    meta.span,
+                    "could not infer universe argument",
+                ));
+            }
+        }
+        Ok(())
+    }
+
     fn fresh_term_meta(
         &mut self,
         name: Option<String>,
@@ -1919,6 +2338,16 @@ impl ExprElaborator {
 
     fn assign_default_universe_metas(&mut self) {
         for meta in &mut self.universe_metas {
+            if meta.assignment.is_none() {
+                if let Some(default) = meta.default.clone() {
+                    meta.assignment = Some(default);
+                }
+            }
+        }
+    }
+
+    fn assign_default_universe_metas_since(&mut self, start: usize) {
+        for meta in self.universe_metas.iter_mut().skip(start) {
             if meta.assignment.is_none() {
                 if let Some(default) = meta.default.clone() {
                     meta.assignment = Some(default);
@@ -2523,6 +2952,145 @@ fn global_name(global: &crate::ElabGlobalRef) -> String {
     }
 }
 
+fn sorted_global_candidates(candidates: &[ElabGlobalRef]) -> Vec<ElabGlobalRef> {
+    let mut candidates = candidates.to_vec();
+    candidates.sort_by(global_candidate_cmp);
+    candidates.dedup();
+    candidates
+}
+
+fn global_candidate_cmp(lhs: &ElabGlobalRef, rhs: &ElabGlobalRef) -> std::cmp::Ordering {
+    global_name(lhs)
+        .cmp(&global_name(rhs))
+        .then(global_candidate_kind_rank(lhs).cmp(&global_candidate_kind_rank(rhs)))
+        .then_with(|| match (lhs, rhs) {
+            (
+                ElabGlobalRef::Local {
+                    decl_index: lhs_index,
+                    ..
+                },
+                ElabGlobalRef::Local {
+                    decl_index: rhs_index,
+                    ..
+                },
+            )
+            | (
+                ElabGlobalRef::LocalGenerated {
+                    decl_index: lhs_index,
+                    ..
+                },
+                ElabGlobalRef::LocalGenerated {
+                    decl_index: rhs_index,
+                    ..
+                },
+            ) => lhs_index.cmp(rhs_index),
+            (
+                ElabGlobalRef::Imported {
+                    module: lhs_module,
+                    decl_interface_hash: lhs_hash,
+                    ..
+                },
+                ElabGlobalRef::Imported {
+                    module: rhs_module,
+                    decl_interface_hash: rhs_hash,
+                    ..
+                },
+            ) => lhs_module.cmp(rhs_module).then(lhs_hash.cmp(rhs_hash)),
+            _ => std::cmp::Ordering::Equal,
+        })
+}
+
+fn global_candidate_kind_rank(global: &ElabGlobalRef) -> u8 {
+    match global {
+        ElabGlobalRef::Local { .. } => 0,
+        ElabGlobalRef::LocalGenerated { .. } => 1,
+        ElabGlobalRef::Imported { .. } => 2,
+    }
+}
+
+fn resolved_ident_for_global(
+    global: &ElabGlobalRef,
+    universe_args: Option<&[SurfaceLevel]>,
+    implicit_mode: ImplicitMode,
+    span: Span,
+) -> ResolvedExpr {
+    let name = surface_name_for_global(global, span);
+    ResolvedExpr::Ident {
+        name,
+        resolved: ResolvedName::Global(global.clone()),
+        universe_args: universe_args.map(|args| args.to_vec()),
+        implicit_mode,
+        span,
+    }
+}
+
+fn notation_candidate_expr(
+    global: &ElabGlobalRef,
+    args: &[ResolvedExpr],
+    span: Span,
+) -> ResolvedExpr {
+    overloaded_candidate_app_expr(global, None, ImplicitMode::Insert, args, span)
+}
+
+fn overloaded_candidate_app_expr(
+    global: &ElabGlobalRef,
+    universe_args: Option<&[SurfaceLevel]>,
+    implicit_mode: ImplicitMode,
+    args: &[ResolvedExpr],
+    span: Span,
+) -> ResolvedExpr {
+    args.iter().cloned().fold(
+        resolved_ident_for_global(global, universe_args, implicit_mode, span),
+        |func, arg| {
+            let app_span = resolved_expr_span(&func).join(resolved_expr_span(&arg));
+            ResolvedExpr::App {
+                func: Box::new(func),
+                arg: Box::new(arg),
+                span: app_span,
+            }
+        },
+    )
+}
+
+struct OverloadedAppSpine {
+    candidates: Vec<ElabGlobalRef>,
+    universe_args: Option<Vec<SurfaceLevel>>,
+    implicit_mode: ImplicitMode,
+    args: Vec<ResolvedExpr>,
+}
+
+fn overloaded_app_spine(expr: &ResolvedExpr) -> Option<OverloadedAppSpine> {
+    let mut args = Vec::new();
+    let mut cursor = expr;
+    while let ResolvedExpr::App { func, arg, .. } = cursor {
+        args.push((**arg).clone());
+        cursor = func;
+    }
+    args.reverse();
+    let ResolvedExpr::Ident {
+        resolved: ResolvedName::Overloaded(candidates),
+        universe_args,
+        implicit_mode,
+        ..
+    } = cursor
+    else {
+        return None;
+    };
+    Some(OverloadedAppSpine {
+        candidates: candidates.clone(),
+        universe_args: universe_args.clone(),
+        implicit_mode: *implicit_mode,
+        args,
+    })
+}
+
+fn surface_name_for_global(global: &ElabGlobalRef, span: Span) -> SurfaceName {
+    SurfaceName {
+        parts: global_name(global).split('.').map(str::to_owned).collect(),
+        span,
+    }
+}
+
 fn add_decl_to_env(env: &mut Env, decl: &Decl, span: Span) -> Result<()> {
     if let Some(existing) = env.decl(decl.name()) {
         if existing == decl {
@@ -2642,7 +3210,7 @@ mod tests {
     use npa_kernel::{Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, Reducibility};
 
     use super::*;
-    use crate::{ImportedDeclaration, ImportedTypeMetadata, Name};
+    use crate::{ImportedDeclaration, ImportedNotation, ImportedTypeMetadata, Name};
 
     fn prelude_import() -> VerifiedImport {
         VerifiedImport {
@@ -2689,6 +3257,7 @@ mod tests {
                     type_value_metadata: None,
                 },
             ],
+            notations: Vec::new(),
             kernel_declarations: Vec::new(),
         }
     }
@@ -2704,6 +3273,7 @@ mod tests {
                 domain_infos: Vec::new(),
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Axiom {
                 name: "Foo".to_owned(),
                 universe_params: Vec::new(),
@@ -2723,6 +3293,7 @@ mod tests {
                 domain_infos: Vec::new(),
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Axiom {
                 name: "poly_id".to_owned(),
                 universe_params: vec!["u".to_owned()],
@@ -2733,6 +3304,19 @@ mod tests {
                 ),
             }],
         }
+    }
+
+    fn custom_poly_notation_import() -> VerifiedImport {
+        let mut import = custom_poly_import();
+        import.notations = vec![ImportedNotation {
+            kind: crate::NotationKind::Prefix,
+            precedence: 70,
+            symbol: "!".to_owned(),
+            target: Name::from_dotted("poly_id"),
+            decl_interface_hash: "sha256:poly_id".to_owned(),
+            namespace: None,
+        }];
+        import
     }
 
     fn custom_higher_order_import() -> VerifiedImport {
@@ -2756,6 +3340,7 @@ mod tests {
                 }],
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Axiom {
                 name: "k".to_owned(),
                 universe_params: Vec::new(),
@@ -2781,6 +3366,7 @@ mod tests {
                     domain_infos: Vec::new(),
                 }),
             }],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Def {
                 name: "IdTy".to_owned(),
                 universe_params: Vec::new(),
@@ -2832,6 +3418,7 @@ mod tests {
                     type_value_metadata: None,
                 },
             ],
+            notations: Vec::new(),
             kernel_declarations: vec![Decl::Inductive {
                 name: "Box".to_owned(),
                 universe_params: vec!["u".to_owned()],
@@ -3403,6 +3990,27 @@ def use_imported : Nat := poly_id Nat.zero
     }
 
     #[test]
+    fn elaborates_imported_notation() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomPoly
+def use_imported_notation : Nat := ! Nat.zero
+"#,
+            &[prelude_import(), custom_poly_notation_import()],
+        )
+        .expect("imported top-level notation should be active while parsing terms");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use_imported_notation"
+        ));
+    }
+
+    #[test]
     fn preserves_imported_domain_implicit_binder_metadata() {
         let module = elaborate_source(
             FileId(0),
@@ -3557,6 +4165,253 @@ def use_expected : Nat := witness
             &module.declarations[1],
             Decl::Def { name, .. } if name == "use_expected"
         ));
+    }
+
+    #[test]
+    fn elaborates_infix_notation_and_erases_it_from_core() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom plus (n m : Nat) : Nat
+infixl:65 " + " => plus
+infix:50 " = " => Eq
+theorem plus_refl (n : Nat) : n + Nat.zero = n + Nat.zero :=
+  Eq.refl (n + Nat.zero)
+"#,
+        )
+        .expect("notation should elaborate through global targets");
+
+        assert_eq!(module.declarations.len(), 2);
+        let Decl::Theorem { ty, proof, .. } = &module.declarations[1] else {
+            panic!("expected theorem");
+        };
+        assert!(!format!("{ty:?}").contains("Notation"));
+        assert!(!format!("{proof:?}").contains("Notation"));
+    }
+
+    #[test]
+    fn elaborates_prefix_and_postfix_notation() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom id_nat (n : Nat) : Nat
+prefix:70 "!" => id_nat
+postfix:80 "$" => id_nat
+def use_prefix_postfix : Nat := ! Nat.zero$
+"#,
+        )
+        .expect("prefix and postfix notation should elaborate");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_prefix_postfix"
+        ));
+    }
+
+    #[test]
+    fn elaborates_notation_after_relative_open_inside_namespace() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace A
+namespace N
+axiom id_nat (n : Nat) : Nat
+prefix:70 "!" => id_nat
+end N
+end A
+namespace A
+open N
+def use_relative_open : Nat := ! Nat.zero
+end A
+"#,
+        )
+        .expect("relative open should activate namespaced notation before parsing terms");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "A.use_relative_open"
+        ));
+    }
+
+    #[test]
+    fn elaborates_notation_after_open_through_opened_namespace() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace A
+namespace N
+axiom id_nat (n : Nat) : Nat
+prefix:70 "!" => id_nat
+end N
+end A
+open A
+open N
+def use_opened_namespace : Nat := ! Nat.zero
+"#,
+        )
+        .expect("open through an opened namespace should activate notation before parsing terms");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_opened_namespace"
+        ));
+    }
+
+    #[test]
+    fn resolves_overloaded_notation_by_expected_and_argument_types() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom Foo : Type
+axiom foo_zero : Foo
+axiom plus_nat (n m : Nat) : Nat
+axiom plus_foo (n m : Foo) : Foo
+infixl:65 " + " => plus_nat
+infixl:65 " + " => plus_foo
+def use_nat_plus : Nat := Nat.zero + Nat.zero
+"#,
+        )
+        .expect("argument types should select the Nat notation target");
+
+        assert_eq!(module.declarations.len(), 5);
+        assert!(matches!(
+            &module.declarations[4],
+            Decl::Def { name, .. } if name == "use_nat_plus"
+        ));
+    }
+
+    #[test]
+    fn ignores_overload_candidates_with_unsolved_fresh_implicits() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom needs_unknown {A : Type} (n : Nat) : Nat
+axiom plain (n : Nat) : Nat
+prefix:70 "!" => needs_unknown
+prefix:70 "!" => plain
+def use_complete_candidate : Nat := ! Nat.zero
+"#,
+        )
+        .expect("incomplete overload candidate should not make notation ambiguous");
+
+        assert_eq!(module.declarations.len(), 3);
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_complete_candidate"
+        ));
+    }
+
+    #[test]
+    fn keeps_user_holes_after_selecting_notation_candidate() {
+        let err = elaborate(
+            r#"
+import Std.Prelude
+axiom plus (n m : Nat) : Nat
+infixl:65 " + " => plus
+def bad : Nat := Nat.zero + ?m
+"#,
+        )
+        .expect_err("selected notation target should preserve user holes for final validation");
+        assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
+    }
+
+    #[test]
+    fn resolves_overloaded_applications_by_argument_types() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace Nat
+axiom add (n m : Nat) : Nat
+end Nat
+axiom Foo : Type
+namespace Foo
+axiom zero : Foo
+axiom add (n m : Foo) : Foo
+end Foo
+open Nat
+open Foo
+def use_nat_add : Nat := add Nat.zero Nat.zero
+"#,
+        )
+        .expect("argument types should select the Nat.add overload");
+
+        assert_eq!(module.declarations.len(), 5);
+        assert!(matches!(
+            &module.declarations[4],
+            Decl::Def { name, .. } if name == "use_nat_add"
+        ));
+    }
+
+    #[test]
+    fn resolves_overloaded_applications_by_expected_result_type() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom Foo : Type
+namespace Nat
+axiom of (n : Nat) : Nat
+end Nat
+namespace Foo
+axiom of (n : Nat) : Foo
+end Foo
+open Nat
+open Foo
+def use_expected_result : Nat := of Nat.zero
+"#,
+        )
+        .expect("expected result type should select the Nat overload");
+
+        assert_eq!(module.declarations.len(), 4);
+        assert!(matches!(
+            &module.declarations[3],
+            Decl::Def { name, .. } if name == "use_expected_result"
+        ));
+    }
+
+    #[test]
+    fn preserves_at_mode_for_overloaded_applications() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+namespace Nat
+axiom id {A : Type} (x : A) : A
+end Nat
+axiom Foo : Type
+namespace Foo
+axiom zero : Foo
+axiom id (x : Foo) : Foo
+end Foo
+open Nat
+open Foo
+def use_explicit_overload : Nat := @id Nat Nat.zero
+"#,
+        )
+        .expect("@ mode should be preserved while trying overloaded candidates");
+
+        assert_eq!(module.declarations.len(), 5);
+        assert!(matches!(
+            &module.declarations[4],
+            Decl::Def { name, .. } if name == "use_explicit_overload"
+        ));
+    }
+
+    #[test]
+    fn rejects_ambiguous_overloaded_notation() {
+        let err = elaborate(
+            r#"
+import Std.Prelude
+axiom plus1 (n m : Nat) : Nat
+axiom plus2 (n m : Nat) : Nat
+infixl:65 " + " => plus1
+infixl:65 " + " => plus2
+def bad (n : Nat) : Nat := n + n
+"#,
+        )
+        .expect_err("two successful notation targets must be ambiguous");
+        assert_eq!(err.kind, DiagnosticKind::AmbiguousNotation);
     }
 
     #[test]

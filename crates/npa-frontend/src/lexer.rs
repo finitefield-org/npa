@@ -11,6 +11,7 @@ pub enum TokenKind {
     Ident(String),
     Number(u64),
     String(String),
+    Symbol(String),
     Import,
     Open,
     Namespace,
@@ -57,6 +58,7 @@ impl TokenKind {
             Self::Ident(_) => "identifier",
             Self::Number(_) => "number",
             Self::String(_) => "string",
+            Self::Symbol(_) => "operator",
             Self::Import => "`import`",
             Self::Open => "`open`",
             Self::Namespace => "`namespace`",
@@ -165,7 +167,7 @@ impl<'a> Lexer<'a> {
                     if self.consume_char('>') {
                         self.push(TokenKind::FatArrow, start, start + 2);
                     } else {
-                        return Err(self.error(start, start + 1, "unexpected `=`"));
+                        self.lex_symbol_from(start, '=');
                     }
                 }
                 '-' => {
@@ -173,7 +175,7 @@ impl<'a> Lexer<'a> {
                     if self.consume_char('>') {
                         self.push(TokenKind::Arrow, start, start + 2);
                     } else {
-                        return Err(self.error(start, start + 1, "unexpected `-`"));
+                        self.lex_symbol_from(start, '-');
                     }
                 }
                 '→' => {
@@ -188,6 +190,7 @@ impl<'a> Lexer<'a> {
                         self.push(TokenKind::Dot, start, start + 1);
                     }
                 }
+                _ if is_symbol_char(ch) => self.lex_symbol()?,
                 _ => {
                     return Err(self.error(
                         start,
@@ -308,6 +311,31 @@ impl<'a> Lexer<'a> {
         Err(self.error(start, self.source.len(), "unterminated string"))
     }
 
+    fn lex_symbol(&mut self) -> Result<()> {
+        let (start, first) = self.bump().expect("peeked character must exist");
+        self.lex_symbol_from(start, first);
+        Ok(())
+    }
+
+    fn lex_symbol_from(&mut self, start: usize, first: char) {
+        let mut end = start + first.len_utf8();
+        while let Some((idx, ch)) = self.peek() {
+            if !is_symbol_char(ch) {
+                break;
+            }
+            if ch == '-' && self.next_char_is('-') {
+                break;
+            }
+            self.bump();
+            end = idx + ch.len_utf8();
+        }
+        self.push(
+            TokenKind::Symbol(self.source[start..end].to_owned()),
+            start,
+            end,
+        );
+    }
+
     fn skip_line_comment(&mut self) {
         while let Some((_, ch)) = self.bump() {
             if ch == '\n' {
@@ -362,4 +390,15 @@ fn is_ident_start(ch: char) -> bool {
 
 fn is_ident_continue(ch: char) -> bool {
     ch == '_' || ch == '\'' || ch.is_ascii_alphanumeric()
+}
+
+fn is_symbol_char(ch: char) -> bool {
+    !ch.is_whitespace()
+        && !is_ident_continue(ch)
+        && !ch.is_ascii_digit()
+        && !matches!(
+            ch,
+            '"' | '(' | ')' | '{' | '}' | ',' | ':' | '|' | '@' | '?' | '.'
+        )
+        && ch != '→'
 }

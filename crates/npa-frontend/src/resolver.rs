@@ -3,9 +3,10 @@ use std::fmt;
 
 use npa_kernel::Decl;
 
+use crate::parser::{parse_module_with_imports, ParserImport, ParserImportedNotation};
 use crate::{
-    parse_module, BinderInfo, Diagnostic, DiagnosticKind, DiagnosticSeverity, FileId, ImplicitMode,
-    NotationDecl, Result, Span, SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl,
+    BinderInfo, Diagnostic, DiagnosticKind, DiagnosticSeverity, FileId, ImplicitMode, NotationDecl,
+    NotationKind, Result, Span, SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl,
     SurfaceExpr, SurfaceItem, SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam,
 };
 
@@ -76,6 +77,7 @@ pub struct VerifiedImport {
     pub module: Name,
     pub export_hash: String,
     pub declarations: Vec<ImportedDeclaration>,
+    pub notations: Vec<ImportedNotation>,
     pub kernel_declarations: Vec<Decl>,
 }
 
@@ -86,6 +88,16 @@ pub struct ImportedDeclaration {
     pub binder_infos: Vec<BinderInfo>,
     pub domain_infos: Vec<ImportedTypeMetadata>,
     pub type_value_metadata: Option<ImportedTypeMetadata>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ImportedNotation {
+    pub kind: NotationKind,
+    pub precedence: u32,
+    pub symbol: String,
+    pub target: Name,
+    pub decl_interface_hash: String,
+    pub namespace: Option<Name>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -110,6 +122,7 @@ pub struct FrontendState {
     pub globals: GlobalScope,
     pub locals: LocalScopeStack,
     pub imports: Vec<ResolvedImport>,
+    pub notations: Vec<ResolvedNotationDecl>,
 }
 
 impl FrontendState {
@@ -121,6 +134,7 @@ impl FrontendState {
             globals: GlobalScope::default(),
             locals: LocalScopeStack::default(),
             imports: Vec::new(),
+            notations: Vec::new(),
         }
     }
 
@@ -297,7 +311,7 @@ pub enum ResolvedItem {
         name: Option<String>,
         span: Span,
     },
-    Notation(NotationDecl),
+    Notation(ResolvedNotationDecl),
     Def(ResolvedDecl),
     Theorem(ResolvedDecl),
     Axiom(ResolvedDecl),
@@ -309,6 +323,16 @@ pub enum ResolvedItem {
         constructors: Vec<ResolvedCtorDecl>,
         span: Span,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ResolvedNotationDecl {
+    pub kind: NotationKind,
+    pub precedence: u32,
+    pub symbol: String,
+    pub target: ElabGlobalRef,
+    pub namespace: Option<Name>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -386,6 +410,7 @@ pub enum ResolvedExpr {
     },
     Notation {
         head: crate::NotationHead,
+        candidates: Vec<ElabGlobalRef>,
         args: Vec<ResolvedExpr>,
         span: Span,
     },
@@ -397,8 +422,20 @@ pub fn resolve_source(
     source: &str,
     verified_imports: &[VerifiedImport],
 ) -> Result<ResolvedModule> {
-    let module = parse_module(file_id, source)?;
+    let module = parse_module_with_verified_imports(file_id, source, verified_imports)?;
     resolve_module(current_module, &module, verified_imports)
+}
+
+pub fn parse_module_with_verified_imports(
+    file_id: FileId,
+    source: &str,
+    verified_imports: &[VerifiedImport],
+) -> Result<SurfaceModule> {
+    parse_module_with_imports(
+        file_id,
+        source,
+        &parser_imports_from_verified(verified_imports),
+    )
 }
 
 pub fn resolve_module(
@@ -413,6 +450,8 @@ struct Resolver<'a> {
     state: FrontendState,
     verified_imports: &'a [VerifiedImport],
     future_globals: BTreeMap<Name, Span>,
+    notation_scopes: Vec<Vec<ResolvedNotationDecl>>,
+    namespace_notations: BTreeMap<Name, Vec<ResolvedNotationDecl>>,
     diagnostics: Vec<Diagnostic>,
     next_decl_index: usize,
     next_local_id: u32,
@@ -424,6 +463,8 @@ impl<'a> Resolver<'a> {
             state: FrontendState::new(current_module),
             verified_imports,
             future_globals: BTreeMap::new(),
+            notation_scopes: vec![Vec::new()],
+            namespace_notations: BTreeMap::new(),
             diagnostics: Vec::new(),
             next_decl_index: 0,
             next_local_id: 0,
@@ -463,6 +504,8 @@ impl<'a> Resolver<'a> {
             SurfaceItem::Namespace { name, span } => {
                 self.state.namespace_stack.push(name.clone());
                 self.state.open_scopes.push(OpenScope::default());
+                self.notation_scopes.push(Vec::new());
+                self.activate_current_namespace_notations(*span)?;
                 Ok(ResolvedItem::Namespace {
                     name: name.clone(),
                     span: *span,
@@ -475,7 +518,11 @@ impl<'a> Resolver<'a> {
                     span: *span,
                 })
             }
-            SurfaceItem::Notation(decl) => Ok(ResolvedItem::Notation(decl.clone())),
+            SurfaceItem::Notation(decl) => {
+                let resolved = self.resolve_notation_decl(decl)?;
+                self.register_notation(resolved.clone())?;
+                Ok(ResolvedItem::Notation(resolved))
+            }
             SurfaceItem::Def(decl) => {
                 let resolved = self.resolve_value_decl(decl)?;
                 self.register_resolved_decl(&resolved.name, resolved.span, false)?;
@@ -555,6 +602,7 @@ impl<'a> Resolver<'a> {
                 span: None,
             });
         }
+        self.register_imported_notations(&module_name, &import.notations, span)?;
 
         Ok(ResolvedItem::Import {
             module: module_name,
@@ -590,6 +638,78 @@ impl<'a> Resolver<'a> {
         Ok(matches[0])
     }
 
+    fn register_imported_notations(
+        &mut self,
+        module: &Name,
+        notations: &[ImportedNotation],
+        span: Span,
+    ) -> Result<()> {
+        let mut notations = notations.to_vec();
+        notations.sort_by(|lhs, rhs| {
+            lhs.namespace
+                .cmp(&rhs.namespace)
+                .then(lhs.symbol.cmp(&rhs.symbol))
+                .then(lhs.kind.cmp(&rhs.kind))
+                .then(lhs.precedence.cmp(&rhs.precedence))
+                .then(lhs.target.cmp(&rhs.target))
+                .then(lhs.decl_interface_hash.cmp(&rhs.decl_interface_hash))
+        });
+        notations.dedup();
+
+        for notation in notations {
+            if !self.imported_decl_exists(module, &notation.target, &notation.decl_interface_hash) {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::ImportResolutionError,
+                    span,
+                    format!(
+                        "imported notation `{}` targets missing declaration `{}`",
+                        notation.symbol, notation.target
+                    ),
+                ));
+            }
+            let resolved = ResolvedNotationDecl {
+                kind: notation.kind,
+                precedence: notation.precedence,
+                symbol: notation.symbol,
+                target: ElabGlobalRef::Imported {
+                    module: module.clone(),
+                    name: notation.target,
+                    decl_interface_hash: notation.decl_interface_hash,
+                },
+                namespace: notation.namespace,
+                span,
+            };
+            self.register_imported_notation(resolved)?;
+        }
+        Ok(())
+    }
+
+    fn imported_decl_exists(&self, module: &Name, target: &Name, hash: &str) -> bool {
+        self.state.globals.imported.iter().any(|decl| {
+            &decl.name == target
+                && matches!(
+                    &decl.origin,
+                    GlobalOrigin::Imported {
+                        module: origin_module,
+                        decl_interface_hash,
+                    } if origin_module == module && decl_interface_hash == hash
+                )
+        })
+    }
+
+    fn register_imported_notation(&mut self, notation: ResolvedNotationDecl) -> Result<()> {
+        if let Some(namespace) = &notation.namespace {
+            self.namespace_notations
+                .entry(namespace.clone())
+                .or_default()
+                .push(notation.clone());
+        } else {
+            self.add_active_notation(notation.clone())?;
+        }
+        self.state.notations.push(notation);
+        Ok(())
+    }
+
     fn resolve_open_item(&mut self, namespace: &SurfaceName, span: Span) -> Result<ResolvedItem> {
         let resolved = self.resolve_namespace(namespace)?;
         self.state
@@ -598,10 +718,140 @@ impl<'a> Resolver<'a> {
             .expect("top-level open scope is always present")
             .namespaces
             .push(resolved.clone());
+        self.activate_namespace_notations(&resolved, span)?;
         Ok(ResolvedItem::Open {
             namespace: resolved,
             span,
         })
+    }
+
+    fn resolve_notation_decl(&self, decl: &NotationDecl) -> Result<ResolvedNotationDecl> {
+        let resolved = self.resolve_name(&decl.target)?;
+        let target = match resolved {
+            ResolvedName::Global(global @ ElabGlobalRef::Local { .. })
+            | ResolvedName::Global(global @ ElabGlobalRef::Imported { .. }) => global,
+            ResolvedName::Global(ElabGlobalRef::LocalGenerated { .. }) => {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::InvalidNotation,
+                    decl.target.span,
+                    "notation target must be a source declaration or imported declaration",
+                ));
+            }
+            ResolvedName::Local(_) => {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::InvalidNotation,
+                    decl.target.span,
+                    "notation target must be a global declaration",
+                ));
+            }
+            ResolvedName::Overloaded(_) => {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    decl.target.span,
+                    format!(
+                        "notation target `{}` is ambiguous",
+                        decl.target.parts.join(".")
+                    ),
+                ));
+            }
+        };
+        let namespace = {
+            let current = self.state.current_namespace();
+            (!current.is_empty()).then_some(current)
+        };
+        Ok(ResolvedNotationDecl {
+            kind: decl.kind.clone(),
+            precedence: decl.precedence,
+            symbol: decl.symbol.clone(),
+            target,
+            namespace,
+            span: decl.span,
+        })
+    }
+
+    fn register_notation(&mut self, notation: ResolvedNotationDecl) -> Result<()> {
+        self.add_active_notation(notation.clone())?;
+        if let Some(namespace) = &notation.namespace {
+            self.namespace_notations
+                .entry(namespace.clone())
+                .or_default()
+                .push(notation.clone());
+        }
+        self.state.notations.push(notation);
+        Ok(())
+    }
+
+    fn activate_current_namespace_notations(&mut self, span: Span) -> Result<()> {
+        let namespace = self.state.current_namespace();
+        if namespace.is_empty() {
+            return Ok(());
+        }
+        for end in 1..=namespace.parts.len() {
+            self.activate_namespace_notations(&Name::new(namespace.parts[..end].to_vec()), span)?;
+        }
+        Ok(())
+    }
+
+    fn activate_namespace_notations(&mut self, namespace: &Name, span: Span) -> Result<()> {
+        let entries = self
+            .namespace_notations
+            .get(namespace)
+            .cloned()
+            .unwrap_or_default();
+        for mut entry in entries {
+            entry.span = span;
+            self.add_active_notation(entry)?;
+        }
+        Ok(())
+    }
+
+    fn add_active_notation(&mut self, notation: ResolvedNotationDecl) -> Result<()> {
+        for active in self.active_notations() {
+            if active.symbol == notation.symbol
+                && (active.kind != notation.kind || active.precedence != notation.precedence)
+            {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::NotationConflict,
+                    notation.span,
+                    format!("conflicting notation declaration for `{}`", notation.symbol),
+                ));
+            }
+        }
+        self.notation_scopes
+            .last_mut()
+            .expect("top-level notation scope exists")
+            .push(notation);
+        Ok(())
+    }
+
+    fn notation_candidates(
+        &self,
+        head: &crate::NotationHead,
+        span: Span,
+    ) -> Result<Vec<ElabGlobalRef>> {
+        let mut candidates: Vec<_> = self
+            .active_notations()
+            .into_iter()
+            .filter(|entry| entry.kind == head.kind && entry.symbol == head.symbol)
+            .map(|entry| entry.target)
+            .collect();
+        candidates.sort_by(global_ref_cmp);
+        candidates.dedup();
+        if candidates.is_empty() {
+            return Err(Diagnostic::error(
+                DiagnosticKind::AmbiguousNotation,
+                span,
+                format!("notation `{}` has no active target", head.symbol),
+            ));
+        }
+        Ok(candidates)
+    }
+
+    fn active_notations(&self) -> Vec<ResolvedNotationDecl> {
+        self.notation_scopes
+            .iter()
+            .flat_map(|scope| scope.iter().cloned())
+            .collect()
     }
 
     fn resolve_end_item(&mut self, expected: Option<&str>, span: Span) -> Result<()> {
@@ -627,6 +877,9 @@ impl<'a> Resolver<'a> {
             .open_scopes
             .pop()
             .expect("namespace open scope must exist");
+        self.notation_scopes
+            .pop()
+            .expect("namespace notation scope must exist");
         Ok(())
     }
 
@@ -708,7 +961,7 @@ impl<'a> Resolver<'a> {
                     name: name.clone(),
                     resolved,
                     universe_args: universe_args.clone(),
-                    implicit_mode: implicit_mode.clone(),
+                    implicit_mode: *implicit_mode,
                     span: *span,
                 })
             }
@@ -785,14 +1038,18 @@ impl<'a> Resolver<'a> {
                 name: name.clone(),
                 span: *span,
             }),
-            SurfaceExpr::Notation { head, args, span } => Ok(ResolvedExpr::Notation {
-                head: head.clone(),
-                args: args
-                    .iter()
-                    .map(|arg| self.resolve_expr(arg))
-                    .collect::<Result<_>>()?,
-                span: *span,
-            }),
+            SurfaceExpr::Notation { head, args, span } => {
+                let candidates = self.notation_candidates(head, *span)?;
+                Ok(ResolvedExpr::Notation {
+                    head: head.clone(),
+                    candidates,
+                    args: args
+                        .iter()
+                        .map(|arg| self.resolve_expr(arg))
+                        .collect::<Result<_>>()?,
+                    span: *span,
+                })
+            }
         }
     }
 
@@ -1051,6 +1308,12 @@ impl<'a> Resolver<'a> {
         self.all_visible_global_names()
             .into_iter()
             .any(|name| name.starts_with(namespace) && name.parts.len() > namespace.parts.len())
+            || self
+                .state
+                .notations
+                .iter()
+                .filter_map(|notation| notation.namespace.as_ref())
+                .any(|name| name == namespace || name.starts_with(namespace))
     }
 
     fn all_visible_global_names(&self) -> Vec<Name> {
@@ -1179,6 +1442,28 @@ fn global_candidates_to_resolved(candidates: Vec<ElabGlobalRef>) -> ResolvedName
         [candidate] => ResolvedName::Global(candidate.clone()),
         _ => ResolvedName::Overloaded(candidates),
     }
+}
+
+fn parser_imports_from_verified(imports: &[VerifiedImport]) -> Vec<ParserImport> {
+    imports
+        .iter()
+        .map(|import| ParserImport {
+            module: import.module.parts.clone(),
+            notations: import
+                .notations
+                .iter()
+                .map(|notation| ParserImportedNotation {
+                    kind: notation.kind.clone(),
+                    precedence: notation.precedence,
+                    symbol: notation.symbol.clone(),
+                    namespace: notation
+                        .namespace
+                        .as_ref()
+                        .map(|namespace| namespace.parts.clone()),
+                })
+                .collect(),
+        })
+        .collect()
 }
 
 fn global_ref_cmp(lhs: &ElabGlobalRef, rhs: &ElabGlobalRef) -> std::cmp::Ordering {
@@ -1350,6 +1635,7 @@ mod tests {
                     type_value_metadata: None,
                 },
             ],
+            notations: Vec::new(),
             kernel_declarations: Vec::new(),
         }
     }
@@ -1365,6 +1651,7 @@ mod tests {
                 domain_infos: Vec::new(),
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: Vec::new(),
         }
     }
@@ -1380,6 +1667,7 @@ mod tests {
                 domain_infos: Vec::new(),
                 type_value_metadata: None,
             }],
+            notations: Vec::new(),
             kernel_declarations: Vec::new(),
         }
     }
@@ -1425,8 +1713,22 @@ mod tests {
                     type_value_metadata: None,
                 },
             ],
+            notations: Vec::new(),
             kernel_declarations: Vec::new(),
         }
+    }
+
+    fn std_nat_notation_import() -> VerifiedImport {
+        let mut import = std_nat_import();
+        import.notations = vec![ImportedNotation {
+            kind: NotationKind::Infixl,
+            precedence: 65,
+            symbol: "+".to_owned(),
+            target: Name::from_dotted("Nat.add"),
+            decl_interface_hash: "sha256:Nat.add".to_owned(),
+            namespace: Some(Name::from_dotted("Nat")),
+        }];
+        import
     }
 
     fn resolve(source: &str, imports: &[VerifiedImport]) -> Result<ResolvedModule> {
@@ -1771,6 +2073,97 @@ def z : Nat := zero
             }
             other => panic!("expected imported Nat.zero, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn resolves_namespaced_notation_after_open() {
+        let resolved = resolve(
+            r#"
+import Std.Nat
+namespace Nat
+infixl:65 " + " => add
+end Nat
+open Nat
+def z : Nat := Nat.zero + Nat.zero
+"#,
+            &[std_nat_import()],
+        )
+        .expect("namespaced notation should resolve after open");
+
+        let ResolvedItem::Notation(notation) = &resolved.items[2] else {
+            panic!("expected notation item");
+        };
+        assert_eq!(
+            notation.namespace.as_ref().map(Name::to_dotted).as_deref(),
+            Some("Nat")
+        );
+        match &notation.target {
+            ElabGlobalRef::Imported { name, .. } => assert_eq!(name.to_dotted(), "Nat.add"),
+            other => panic!("expected imported Nat.add target, got {other:?}"),
+        }
+
+        let ResolvedItem::Def(decl) = &resolved.items[5] else {
+            panic!("expected def");
+        };
+        let value = decl.value.as_ref().expect("def value");
+        let ResolvedExpr::Notation {
+            candidates, args, ..
+        } = value
+        else {
+            panic!("expected notation expression");
+        };
+        assert_eq!(args.len(), 2);
+        assert_eq!(candidates.len(), 1);
+    }
+
+    #[test]
+    fn resolves_imported_notation_after_open() {
+        let resolved = resolve(
+            r#"
+import Std.Nat
+open Nat
+def z : Nat := Nat.zero + Nat.zero
+"#,
+            &[std_nat_notation_import()],
+        )
+        .expect("imported notation should resolve after open");
+
+        let ResolvedItem::Def(decl) = &resolved.items[2] else {
+            panic!("expected def");
+        };
+        let value = decl.value.as_ref().expect("def value");
+        let ResolvedExpr::Notation { candidates, .. } = value else {
+            panic!("expected notation expression");
+        };
+        assert_eq!(candidates.len(), 1);
+        match &candidates[0] {
+            ElabGlobalRef::Imported { name, .. } => assert_eq!(name.to_dotted(), "Nat.add"),
+            other => panic!("expected imported Nat.add target, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parses_imported_notation_through_public_staged_api() {
+        let imports = [std_nat_notation_import()];
+        let module = parse_module_with_verified_imports(
+            FileId(0),
+            r#"
+import Std.Nat
+open Nat
+def z : Nat := Nat.zero + Nat.zero
+"#,
+            &imports,
+        )
+        .expect("public parser should use verified import notation metadata");
+
+        let resolved = resolve_module(Name::from_dotted("Scratch"), &module, &imports)
+            .expect("parsed module should resolve through the staged API");
+
+        let ResolvedItem::Def(decl) = &resolved.items[2] else {
+            panic!("expected def");
+        };
+        let value = decl.value.as_ref().expect("def value");
+        assert!(matches!(value, ResolvedExpr::Notation { .. }));
     }
 
     #[test]

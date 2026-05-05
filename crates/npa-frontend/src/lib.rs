@@ -13,10 +13,11 @@ pub use elaborator::{
 pub use lexer::{lex, Token, TokenKind};
 pub use parser::parse_module;
 pub use resolver::{
-    resolve_module, resolve_source, ElabGlobalRef, FrontendState, GlobalDeclaration, GlobalOrigin,
-    GlobalScope, ImportedDeclaration, ImportedTypeMetadata, LocalBinding, LocalId, LocalRef,
-    LocalScopeStack, Name, OpenScope, ResolvedBinder, ResolvedCtorDecl, ResolvedDecl, ResolvedExpr,
-    ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, VerifiedImport,
+    parse_module_with_verified_imports, resolve_module, resolve_source, ElabGlobalRef,
+    FrontendState, GlobalDeclaration, GlobalOrigin, GlobalScope, ImportedDeclaration,
+    ImportedNotation, ImportedTypeMetadata, LocalBinding, LocalId, LocalRef, LocalScopeStack, Name,
+    OpenScope, ResolvedBinder, ResolvedCtorDecl, ResolvedDecl, ResolvedExpr, ResolvedImport,
+    ResolvedItem, ResolvedModule, ResolvedName, ResolvedNotationDecl, VerifiedImport,
 };
 pub use span::{ByteOffset, FileId, Span};
 pub use surface::{
