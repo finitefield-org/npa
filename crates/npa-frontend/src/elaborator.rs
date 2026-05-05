@@ -4150,6 +4150,32 @@ theorem zero_refl2 : Eq2.{1} Nat.zero Nat.zero := Eq2.refl Nat.zero
     }
 
     #[test]
+    fn does_not_reserve_recursor_for_hidden_indexed_inductive() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def Indexed : Type 1 := forall (n : Nat), Type
+inductive Hidden : Indexed where
+| mk : Hidden Nat.zero
+namespace Hidden
+axiom rec : Type
+end Hidden
+"#,
+        )
+        .expect("hidden indexed inductive should not reserve a missing recursor name");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_none());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Axiom { name, .. } if name == "Hidden.rec"
+        ));
+    }
+
+    #[test]
     fn elaborates_qualified_constructor_names_relative_to_inductive() {
         let module = elaborate(
             r#"

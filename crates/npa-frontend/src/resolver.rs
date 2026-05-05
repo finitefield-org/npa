@@ -1613,7 +1613,11 @@ fn insert_decl_name(declarations: &mut BTreeMap<Name, Span>, name: Name, span: S
 }
 
 fn surface_inductive_generates_recursor(ty: &SurfaceExpr) -> bool {
-    !matches!(ty, SurfaceExpr::Pi { .. })
+    match ty {
+        SurfaceExpr::Sort { .. } => true,
+        SurfaceExpr::Annot { expr, .. } => surface_inductive_generates_recursor(expr),
+        _ => false,
+    }
 }
 
 #[cfg(test)]
