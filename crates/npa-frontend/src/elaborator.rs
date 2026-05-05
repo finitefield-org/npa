@@ -150,7 +150,7 @@ impl ModuleElaborator {
         let binders = engine.elaborate_decl_binders(&decl.binders)?;
         let result_ty = engine.elab_type(&decl.ty)?;
         let closed_ty = close_pi(result_ty.core.clone(), &binders);
-        let source_signature_binders = close_binder_infos(result_ty.binder_infos.clone(), &binders);
+        let source_signature_metadata = close_metadata(result_ty.metadata.clone(), &binders);
         let name = decl.name.to_dotted();
 
         match kind {
@@ -159,10 +159,10 @@ impl ModuleElaborator {
                 self.env
                     .add_axiom(name.clone(), universe_params.clone(), closed_ty.clone())
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures.insert_decl(
+                self.signatures.insert_decl_metadata(
                     name.clone(),
                     closed_ty.clone(),
-                    source_signature_binders.clone(),
+                    source_signature_metadata.clone(),
                 );
                 self.declarations.push(Decl::Axiom {
                     name,
@@ -179,8 +179,8 @@ impl ModuleElaborator {
                     )
                 })?;
                 let body = engine.elab_check_result(value, &result_ty)?;
-                let signature_binders =
-                    declaration_signature_binders(&decl.ty, &binders, &result_ty, &body);
+                let signature_metadata =
+                    declaration_signature_metadata(&decl.ty, &binders, &result_ty, &body);
                 let closed_value = close_lam(body.core, &binders);
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
                 let closed_value = engine.finish_expr(closed_value, decl.span)?;
@@ -193,8 +193,11 @@ impl ModuleElaborator {
                         Reducibility::Reducible,
                     )
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures
-                    .insert_decl(name.clone(), closed_ty.clone(), signature_binders);
+                self.signatures.insert_decl_metadata(
+                    name.clone(),
+                    closed_ty.clone(),
+                    signature_metadata,
+                );
                 self.declarations.push(Decl::Def {
                     name,
                     universe_params,
@@ -212,8 +215,8 @@ impl ModuleElaborator {
                     )
                 })?;
                 let body = engine.elab_check_result(proof, &result_ty)?;
-                let signature_binders =
-                    declaration_signature_binders(&decl.ty, &binders, &result_ty, &body);
+                let signature_metadata =
+                    declaration_signature_metadata(&decl.ty, &binders, &result_ty, &body);
                 let closed_proof = close_lam(body.core, &binders);
                 let closed_ty = engine.finish_expr(closed_ty, decl.span)?;
                 let closed_proof = engine.finish_expr(closed_proof, decl.span)?;
@@ -225,8 +228,11 @@ impl ModuleElaborator {
                         closed_proof.clone(),
                     )
                     .map_err(|error| kernel_rejected(decl.span, error))?;
-                self.signatures
-                    .insert_decl(name.clone(), closed_ty.clone(), signature_binders);
+                self.signatures.insert_decl_metadata(
+                    name.clone(),
+                    closed_ty.clone(),
+                    signature_metadata,
+                );
                 self.declarations.push(Decl::Theorem {
                     name,
                     universe_params,
@@ -247,9 +253,76 @@ enum ValueDeclKind {
     Axiom,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+struct TypeMetadata {
+    binder_infos: Vec<BinderInfo>,
+    domain_infos: Vec<TypeMetadata>,
+}
+
+impl TypeMetadata {
+    fn explicit_for_ty(ty: &Expr) -> Self {
+        let mut binder_infos = Vec::new();
+        let mut domain_infos = Vec::new();
+        let mut cursor = ty;
+        while let Expr::Pi {
+            ty: domain, body, ..
+        } = cursor
+        {
+            binder_infos.push(BinderInfo::Explicit);
+            domain_infos.push(Self::explicit_for_ty(domain));
+            cursor = body;
+        }
+        Self {
+            binder_infos,
+            domain_infos,
+        }
+    }
+
+    fn normalize_for_ty(mut self, ty: &Expr) -> Self {
+        let domains = pi_domains(ty);
+        let pi_count = domains.len();
+        if self.binder_infos.is_empty() {
+            return Self::explicit_for_ty(ty);
+        }
+        if self.binder_infos.len() < pi_count {
+            self.binder_infos.extend(std::iter::repeat_n(
+                BinderInfo::Explicit,
+                pi_count - self.binder_infos.len(),
+            ));
+        } else {
+            self.binder_infos.truncate(pi_count);
+        }
+
+        if self.domain_infos.len() < pi_count {
+            self.domain_infos.extend(
+                domains[self.domain_infos.len()..]
+                    .iter()
+                    .map(|domain| Self::explicit_for_ty(domain)),
+            );
+        } else {
+            self.domain_infos.truncate(pi_count);
+        }
+        self
+    }
+
+    fn domain_for(&self, index: usize, ty: &Expr) -> Self {
+        self.domain_infos
+            .get(index)
+            .cloned()
+            .unwrap_or_else(|| Self::explicit_for_ty(ty))
+    }
+
+    fn after_binder(&self) -> Self {
+        Self {
+            binder_infos: self.binder_infos.get(1..).unwrap_or_default().to_vec(),
+            domain_infos: self.domain_infos.get(1..).unwrap_or_default().to_vec(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 struct SignatureEnv {
-    binders: BTreeMap<String, Vec<BinderInfo>>,
+    metadata: BTreeMap<String, TypeMetadata>,
 }
 
 impl SignatureEnv {
@@ -273,24 +346,23 @@ impl SignatureEnv {
     }
 
     fn insert_decl(&mut self, name: String, ty: Expr, source_binders: Vec<BinderInfo>) {
-        let mut binders = source_binders;
-        let pi_count = pi_binder_count(&ty);
-        if binders.len() < pi_count {
-            binders.extend(std::iter::repeat_n(
-                BinderInfo::Explicit,
-                pi_count - binders.len(),
-            ));
-        } else {
-            binders.truncate(pi_count);
+        let metadata = TypeMetadata {
+            binder_infos: source_binders,
+            domain_infos: Vec::new(),
         }
-        self.binders.insert(name, binders);
+        .normalize_for_ty(&ty);
+        self.metadata.insert(name, metadata);
     }
 
-    fn binders_for(&self, name: &str, ty: &Expr) -> Vec<BinderInfo> {
-        self.binders
+    fn insert_decl_metadata(&mut self, name: String, ty: Expr, metadata: TypeMetadata) {
+        self.metadata.insert(name, metadata.normalize_for_ty(&ty));
+    }
+
+    fn metadata_for(&self, name: &str, ty: &Expr) -> TypeMetadata {
+        self.metadata
             .get(name)
             .cloned()
-            .unwrap_or_else(|| explicit_binder_infos_for_ty(ty))
+            .unwrap_or_else(|| TypeMetadata::explicit_for_ty(ty))
     }
 }
 
@@ -303,19 +375,20 @@ fn insert_imported_signatures(signatures: &mut SignatureEnv, env: &Env, import: 
     }
 }
 
-fn declaration_signature_binders(
+fn declaration_signature_metadata(
     decl_ty: &ResolvedExpr,
     binders: &[CoreBinder],
     result_ty: &TypeCore,
     body: &CheckResult,
-) -> Vec<BinderInfo> {
-    let body_infos =
-        if matches!(decl_ty, ResolvedExpr::Hole { .. }) && result_ty.binder_infos.is_empty() {
-            body.ty_binder_infos.clone()
-        } else {
-            result_ty.binder_infos.clone()
-        };
-    close_binder_infos(body_infos, binders)
+) -> TypeMetadata {
+    let body_metadata = if matches!(decl_ty, ResolvedExpr::Hole { .. })
+        && result_ty.metadata.binder_infos.is_empty()
+    {
+        body.ty_metadata.clone()
+    } else {
+        result_ty.metadata.clone()
+    };
+    close_metadata(body_metadata, binders)
 }
 
 struct ExprElaborator {
@@ -333,8 +406,7 @@ struct ExprElaborator {
 #[derive(Clone, Debug)]
 struct TypeCore {
     core: Expr,
-    binder_infos: Vec<BinderInfo>,
-    domain_binder_infos: Vec<Vec<BinderInfo>>,
+    metadata: TypeMetadata,
     sort_level: Option<Level>,
 }
 
@@ -342,19 +414,19 @@ struct TypeCore {
 struct InferResult {
     core: Expr,
     ty: Expr,
-    ty_binder_infos: Vec<BinderInfo>,
+    ty_metadata: TypeMetadata,
 }
 
 #[derive(Clone, Debug)]
 struct CheckResult {
     core: Expr,
-    ty_binder_infos: Vec<BinderInfo>,
+    ty_metadata: TypeMetadata,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct LocalCtxEntry {
     ty: Expr,
-    ty_binder_infos: Vec<BinderInfo>,
+    ty_metadata: TypeMetadata,
     value: Option<Expr>,
 }
 
@@ -449,8 +521,7 @@ impl ExprElaborator {
             let meta = self.fresh_or_reuse_user_hole(name.as_ref(), sort, *span)?;
             return Ok(TypeCore {
                 core: term_meta_expr(meta),
-                binder_infos: Vec::new(),
-                domain_binder_infos: Vec::new(),
+                metadata: TypeMetadata::default(),
                 sort_level: Some(level),
             });
         }
@@ -465,12 +536,14 @@ impl ExprElaborator {
             )
             .map_err(|error| diagnostic_from_kernel_error(resolved_expr_span(expr), error))?
         {
-            Expr::Sort(level) => Ok(TypeCore {
-                binder_infos: type_binder_infos_from_source(expr, &inferred.core),
-                domain_binder_infos: type_domain_binder_infos_from_source(expr, &inferred.core),
-                core: inferred.core,
-                sort_level: Some(level),
-            }),
+            Expr::Sort(level) => {
+                let metadata = type_metadata_from_source(expr, &inferred.core);
+                Ok(TypeCore {
+                    core: inferred.core,
+                    metadata,
+                    sort_level: Some(level),
+                })
+            }
             actual => Err(Diagnostic::error(
                 DiagnosticKind::ExpectedSort,
                 resolved_expr_span(expr),
@@ -489,7 +562,7 @@ impl ExprElaborator {
                 ..
             } => {
                 let levels = self.elab_universe_args(resolved, universe_args.as_deref(), *span)?;
-                let (core, ty_binder_infos) = match resolved {
+                let (core, ty_metadata) = match resolved {
                     ResolvedName::Local(local) => {
                         if universe_args.is_some() {
                             return Err(Diagnostic::error(
@@ -498,20 +571,20 @@ impl ExprElaborator {
                                 "local names do not accept universe arguments",
                             ));
                         }
-                        let ty_binder_infos = self
+                        let ty_metadata = self
                             .local_info(local.de_bruijn_index, *span)?
-                            .ty_binder_infos
+                            .ty_metadata
                             .clone();
-                        (Expr::bvar(local.de_bruijn_index), ty_binder_infos)
+                        (Expr::bvar(local.de_bruijn_index), ty_metadata)
                     }
                     ResolvedName::Global(global) => {
                         let name = global_name(global);
-                        let ty_binder_infos = self
+                        let ty_metadata = self
                             .env
                             .decl(&name)
-                            .map(|decl| self.signatures.binders_for(&name, decl.ty()))
+                            .map(|decl| self.signatures.metadata_for(&name, decl.ty()))
                             .unwrap_or_default();
-                        (Expr::konst(name, levels), ty_binder_infos)
+                        (Expr::konst(name, levels), ty_metadata)
                     }
                     ResolvedName::Overloaded(_) => {
                         return Err(Diagnostic::error(
@@ -528,7 +601,7 @@ impl ExprElaborator {
                 Ok(InferResult {
                     core,
                     ty,
-                    ty_binder_infos,
+                    ty_metadata,
                 })
             }
             ResolvedExpr::Sort { level, span } => {
@@ -540,7 +613,7 @@ impl ExprElaborator {
                 Ok(InferResult {
                     core,
                     ty,
-                    ty_binder_infos: Vec::new(),
+                    ty_metadata: TypeMetadata::default(),
                 })
             }
             ResolvedExpr::App { func, arg, span } => self.elab_infer_app(func, arg, *span),
@@ -565,11 +638,11 @@ impl ExprElaborator {
             ResolvedExpr::Annot { expr, ty, .. } => {
                 let expected = self.elab_type(ty)?;
                 let checked = self.elab_check_result(expr, &expected)?;
-                let ty_binder_infos = annotation_binder_infos(ty, &expected, &checked);
+                let ty_metadata = annotation_metadata(ty, &expected, &checked);
                 Ok(InferResult {
                     core: checked.core,
                     ty: expected.core,
-                    ty_binder_infos,
+                    ty_metadata,
                 })
             }
             ResolvedExpr::Hole { name, span } => self.elab_infer_hole(name.as_ref(), *span),
@@ -607,8 +680,7 @@ impl ExprElaborator {
             arg,
             &TypeCore {
                 core: (*ty).clone(),
-                binder_infos: explicit_binder_infos_for_ty(&ty),
-                domain_binder_infos: Vec::new(),
+                metadata: result.ty_metadata.domain_for(0, &ty),
                 sort_level: None,
             },
         )?;
@@ -617,7 +689,7 @@ impl ExprElaborator {
         Ok(InferResult {
             core: Expr::app(result.core, arg_core),
             ty: result_ty,
-            ty_binder_infos: result.ty_binder_infos.get(1..).unwrap_or_default().to_vec(),
+            ty_metadata: result.ty_metadata.after_binder(),
         })
     }
 
@@ -634,7 +706,7 @@ impl ExprElaborator {
         Ok(InferResult {
             core: term_meta_expr(term_meta),
             ty,
-            ty_binder_infos: Vec::new(),
+            ty_metadata: TypeMetadata::default(),
         })
     }
 
@@ -657,7 +729,7 @@ impl ExprElaborator {
                 let core = self.elab_check_lam(binders, body, expected, *span)?;
                 return Ok(CheckResult {
                     core,
-                    ty_binder_infos: expected.binder_infos.clone(),
+                    ty_metadata: expected.metadata.clone(),
                 });
             }
         }
@@ -667,7 +739,7 @@ impl ExprElaborator {
                 self.fresh_or_reuse_user_hole(name.as_ref(), expected.core.clone(), *span)?;
             return Ok(CheckResult {
                 core: term_meta_expr(meta),
-                ty_binder_infos: expected.binder_infos.clone(),
+                ty_metadata: expected.metadata.clone(),
             });
         }
 
@@ -681,7 +753,7 @@ impl ExprElaborator {
         self.ensure_type_eq(&inferred.ty, &expected.core, resolved_expr_span(expr))?;
         Ok(CheckResult {
             core: inferred.core,
-            ty_binder_infos: inferred.ty_binder_infos,
+            ty_metadata: inferred.ty_metadata,
         })
     }
 
@@ -726,7 +798,7 @@ impl ExprElaborator {
         Ok(InferResult {
             core,
             ty,
-            ty_binder_infos: close_binder_infos(body_result.ty_binder_infos, &core_binders),
+            ty_metadata: close_metadata(body_result.ty_metadata, &core_binders),
         })
     }
 
@@ -740,8 +812,7 @@ impl ExprElaborator {
         let saved_ctx = self.ctx.clone();
         let saved_locals = self.locals.clone();
         let mut expected_ty = expected.core.clone();
-        let mut expected_binder_infos = expected.binder_infos.clone();
-        let mut expected_domain_binder_infos = expected.domain_binder_infos.clone();
+        let mut expected_metadata = expected.metadata.clone();
         let mut core_binders = Vec::new();
         let mut pending_pi_metas = Vec::new();
         let mut index = 0;
@@ -764,8 +835,7 @@ impl ExprElaborator {
                 let source_ty = match &group_source_tys[offset] {
                     Some(source_ty) => Some(TypeCore {
                         core: weaken_group_type(&source_ty.core, offset, binder.span)?,
-                        binder_infos: source_ty.binder_infos.clone(),
-                        domain_binder_infos: source_ty.domain_binder_infos.clone(),
+                        metadata: source_ty.metadata.clone(),
                         sort_level: source_ty.sort_level.clone(),
                     }),
                     None => None,
@@ -792,11 +862,7 @@ impl ExprElaborator {
                         } else {
                             TypeCore {
                                 core: (*ty).clone(),
-                                binder_infos: expected_domain_binder_infos
-                                    .first()
-                                    .cloned()
-                                    .unwrap_or_else(|| explicit_binder_infos_for_ty(&ty)),
-                                domain_binder_infos: Vec::new(),
+                                metadata: expected_metadata.domain_for(0, &ty),
                                 sort_level: None,
                             }
                         }
@@ -825,7 +891,8 @@ impl ExprElaborator {
                     }
                 };
 
-                let expected_binder_info = expected_binder_infos
+                let expected_binder_info = expected_metadata
+                    .binder_infos
                     .first()
                     .cloned()
                     .unwrap_or_else(|| binder.binder_info.clone());
@@ -833,12 +900,13 @@ impl ExprElaborator {
                 self.push_assumption(
                     name.clone(),
                     binder_ty.core.clone(),
-                    binder_ty.binder_infos.clone(),
+                    binder_ty.metadata.clone(),
                 );
                 core_binders.push(CoreBinder {
                     name: name.clone(),
                     ty: binder_ty.core.clone(),
                     binder_info: expected_binder_info,
+                    ty_metadata: binder_ty.metadata.clone(),
                     sort_level: binder_ty.sort_level.clone(),
                 });
 
@@ -860,16 +928,10 @@ impl ExprElaborator {
                         span: binder.span,
                     });
                     expected_ty = body;
-                    expected_binder_infos = Vec::new();
-                    expected_domain_binder_infos = Vec::new();
+                    expected_metadata = TypeMetadata::default();
                 } else {
                     expected_ty = expected_body.expect("Pi branch must set expected body");
-                    expected_binder_infos =
-                        expected_binder_infos.get(1..).unwrap_or_default().to_vec();
-                    expected_domain_binder_infos = expected_domain_binder_infos
-                        .get(1..)
-                        .unwrap_or_default()
-                        .to_vec();
+                    expected_metadata = expected_metadata.after_binder();
                 }
             }
 
@@ -880,8 +942,7 @@ impl ExprElaborator {
             body,
             &TypeCore {
                 core: expected_ty,
-                binder_infos: expected_binder_infos,
-                domain_binder_infos: expected_domain_binder_infos,
+                metadata: expected_metadata,
                 sort_level: None,
             },
         ) {
@@ -947,12 +1008,13 @@ impl ExprElaborator {
                 self.push_assumption(
                     name.clone(),
                     binder_ty_core.clone(),
-                    binder_ty.binder_infos.clone(),
+                    binder_ty.metadata.clone(),
                 );
                 core_binders.push(CoreBinder {
                     name,
                     ty: binder_ty_core,
                     binder_info,
+                    ty_metadata: binder_ty.metadata,
                     sort_level: binder_ty.sort_level,
                 });
             }
@@ -1022,7 +1084,7 @@ impl ExprElaborator {
         Ok(InferResult {
             core,
             ty,
-            ty_binder_infos: Vec::new(),
+            ty_metadata: TypeMetadata::default(),
         })
     }
 
@@ -1036,24 +1098,20 @@ impl ExprElaborator {
     ) -> Result<InferResult> {
         let saved_ctx = self.ctx.clone();
         let saved_locals = self.locals.clone();
-        let (value_core, value_ty, value_ty_binder_infos) = if let Some(ty) = ty {
+        let (value_core, value_ty, value_ty_metadata) = if let Some(ty) = ty {
             let ty_core = self.elab_type(ty)?;
             let value_result = self.elab_check_result(value, &ty_core)?;
-            let value_ty_binder_infos = annotation_binder_infos(ty, &ty_core, &value_result);
-            (value_result.core, ty_core.core, value_ty_binder_infos)
+            let value_ty_metadata = annotation_metadata(ty, &ty_core, &value_result);
+            (value_result.core, ty_core.core, value_ty_metadata)
         } else {
             let value_result = self.elab_infer(value)?;
-            (
-                value_result.core,
-                value_result.ty,
-                value_result.ty_binder_infos,
-            )
+            (value_result.core, value_result.ty, value_result.ty_metadata)
         };
 
         self.push_definition(
             name.clone(),
             value_ty.clone(),
-            value_ty_binder_infos,
+            value_ty_metadata,
             value_core.clone(),
         );
         let body_result = match self.elab_infer(body) {
@@ -1073,7 +1131,7 @@ impl ExprElaborator {
         Ok(InferResult {
             core,
             ty,
-            ty_binder_infos: body_result.ty_binder_infos,
+            ty_metadata: body_result.ty_metadata,
         })
     }
 
@@ -1141,7 +1199,7 @@ impl ExprElaborator {
         span: Span,
     ) -> Result<InferResult> {
         loop {
-            let Some(BinderInfo::Implicit) = result.ty_binder_infos.first() else {
+            let Some(BinderInfo::Implicit) = result.ty_metadata.binder_infos.first() else {
                 return Ok(result);
             };
             if !auto_insert || !must_consume_user_arg {
@@ -1161,7 +1219,7 @@ impl ExprElaborator {
             result.core = Expr::app(result.core, meta_expr.clone());
             result.ty = instantiate(&body, &meta_expr)
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
-            result.ty_binder_infos = result.ty_binder_infos.get(1..).unwrap_or_default().to_vec();
+            result.ty_metadata = result.ty_metadata.after_binder();
         }
     }
 
@@ -1173,7 +1231,7 @@ impl ExprElaborator {
         span: Span,
     ) -> Result<InferResult> {
         loop {
-            let Some(BinderInfo::Implicit) = result.ty_binder_infos.first() else {
+            let Some(BinderInfo::Implicit) = result.ty_metadata.binder_infos.first() else {
                 return Ok(result);
             };
             if !auto_insert {
@@ -1199,7 +1257,7 @@ impl ExprElaborator {
             result.core = Expr::app(result.core, meta_expr.clone());
             result.ty = instantiate(&body, &meta_expr)
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
-            result.ty_binder_infos = result.ty_binder_infos.get(1..).unwrap_or_default().to_vec();
+            result.ty_metadata = result.ty_metadata.after_binder();
         }
     }
 
@@ -1707,26 +1765,20 @@ impl ExprElaborator {
         Level::param(name)
     }
 
-    fn push_assumption(&mut self, name: String, ty: Expr, ty_binder_infos: Vec<BinderInfo>) {
+    fn push_assumption(&mut self, name: String, ty: Expr, ty_metadata: TypeMetadata) {
         self.ctx.push_assumption(name, ty.clone());
         self.locals.push(LocalCtxEntry {
             ty,
-            ty_binder_infos,
+            ty_metadata,
             value: None,
         });
     }
 
-    fn push_definition(
-        &mut self,
-        name: String,
-        ty: Expr,
-        ty_binder_infos: Vec<BinderInfo>,
-        value: Expr,
-    ) {
+    fn push_definition(&mut self, name: String, ty: Expr, ty_metadata: TypeMetadata, value: Expr) {
         self.ctx.push_definition(name, ty.clone(), value.clone());
         self.locals.push(LocalCtxEntry {
             ty,
-            ty_binder_infos,
+            ty_metadata,
             value: Some(value),
         });
     }
@@ -1875,6 +1927,7 @@ struct CoreBinder {
     name: String,
     ty: Expr,
     binder_info: BinderInfo,
+    ty_metadata: TypeMetadata,
     sort_level: Option<Level>,
 }
 
@@ -1999,92 +2052,75 @@ fn level_contains_universe_meta_in_expr(expr: &Expr) -> bool {
     }
 }
 
-fn pi_binder_count(expr: &Expr) -> usize {
+fn pi_domains(mut expr: &Expr) -> Vec<&Expr> {
+    let mut domains = Vec::new();
+    while let Expr::Pi { ty, body, .. } = expr {
+        domains.push(ty.as_ref());
+        expr = body;
+    }
+    domains
+}
+
+fn type_metadata_from_source(expr: &ResolvedExpr, core: &Expr) -> TypeMetadata {
+    source_type_metadata(expr).normalize_for_ty(core)
+}
+
+fn source_type_metadata(expr: &ResolvedExpr) -> TypeMetadata {
     match expr {
-        Expr::Pi { body, .. } => 1 + pi_binder_count(body),
-        _ => 0,
+        ResolvedExpr::Pi { binders, body, .. } => {
+            let body_metadata = source_type_metadata(body);
+            let binder_infos = binders
+                .iter()
+                .map(|binder| binder.binder_info.clone())
+                .chain(body_metadata.binder_infos)
+                .collect();
+            let domain_infos = binders
+                .iter()
+                .map(|binder| {
+                    binder
+                        .ty
+                        .as_deref()
+                        .map(source_type_metadata)
+                        .unwrap_or_default()
+                })
+                .chain(body_metadata.domain_infos)
+                .collect();
+            TypeMetadata {
+                binder_infos,
+                domain_infos,
+            }
+        }
+        ResolvedExpr::Annot { expr, .. } => source_type_metadata(expr),
+        _ => TypeMetadata::default(),
     }
 }
 
-fn explicit_binder_infos_for_ty(expr: &Expr) -> Vec<BinderInfo> {
-    std::iter::repeat_n(BinderInfo::Explicit, pi_binder_count(expr)).collect()
-}
-
-fn type_binder_infos_from_source(expr: &ResolvedExpr, core: &Expr) -> Vec<BinderInfo> {
-    let mut infos = source_pi_binder_infos(expr);
-    let pi_count = pi_binder_count(core);
-    if infos.is_empty() {
-        return explicit_binder_infos_for_ty(core);
-    }
-    if infos.len() < pi_count {
-        infos.extend(std::iter::repeat_n(
-            BinderInfo::Explicit,
-            pi_count - infos.len(),
-        ));
-    } else {
-        infos.truncate(pi_count);
-    }
-    infos
-}
-
-fn type_domain_binder_infos_from_source(expr: &ResolvedExpr, core: &Expr) -> Vec<Vec<BinderInfo>> {
-    let mut infos = source_pi_domain_binder_infos(expr);
-    let pi_count = pi_binder_count(core);
-    if infos.len() < pi_count {
-        infos.extend(std::iter::repeat_with(Vec::new).take(pi_count - infos.len()));
-    } else {
-        infos.truncate(pi_count);
-    }
-    infos
-}
-
-fn source_pi_binder_infos(expr: &ResolvedExpr) -> Vec<BinderInfo> {
-    match expr {
-        ResolvedExpr::Pi { binders, body, .. } => binders
+fn close_metadata(body_metadata: TypeMetadata, binders: &[CoreBinder]) -> TypeMetadata {
+    TypeMetadata {
+        binder_infos: binders
             .iter()
             .map(|binder| binder.binder_info.clone())
-            .chain(source_pi_binder_infos(body))
+            .chain(body_metadata.binder_infos)
             .collect(),
-        ResolvedExpr::Annot { expr, .. } => source_pi_binder_infos(expr),
-        _ => Vec::new(),
-    }
-}
-
-fn source_pi_domain_binder_infos(expr: &ResolvedExpr) -> Vec<Vec<BinderInfo>> {
-    match expr {
-        ResolvedExpr::Pi { binders, body, .. } => binders
+        domain_infos: binders
             .iter()
-            .map(|binder| {
-                binder
-                    .ty
-                    .as_deref()
-                    .map(source_pi_binder_infos)
-                    .unwrap_or_default()
-            })
-            .chain(source_pi_domain_binder_infos(body))
+            .map(|binder| binder.ty_metadata.clone())
+            .chain(body_metadata.domain_infos)
             .collect(),
-        ResolvedExpr::Annot { expr, .. } => source_pi_domain_binder_infos(expr),
-        _ => Vec::new(),
     }
 }
 
-fn close_binder_infos(body_infos: Vec<BinderInfo>, binders: &[CoreBinder]) -> Vec<BinderInfo> {
-    binders
-        .iter()
-        .map(|binder| binder.binder_info.clone())
-        .chain(body_infos)
-        .collect()
-}
-
-fn annotation_binder_infos(
+fn annotation_metadata(
     annotation_ty: &ResolvedExpr,
     expected: &TypeCore,
     checked: &CheckResult,
-) -> Vec<BinderInfo> {
-    if matches!(annotation_ty, ResolvedExpr::Hole { .. }) && expected.binder_infos.is_empty() {
-        checked.ty_binder_infos.clone()
+) -> TypeMetadata {
+    if matches!(annotation_ty, ResolvedExpr::Hole { .. })
+        && expected.metadata.binder_infos.is_empty()
+    {
+        checked.ty_metadata.clone()
     } else {
-        expected.binder_infos.clone()
+        expected.metadata.clone()
     }
 }
 
@@ -2101,14 +2137,14 @@ fn expected_needs_implicit_instantiation(expected: &TypeCore) -> bool {
     if term_meta_id(&expected.core).is_some() {
         return false;
     }
-    expected.binder_infos.first() != Some(&BinderInfo::Implicit)
+    expected.metadata.binder_infos.first() != Some(&BinderInfo::Implicit)
 }
 
 fn extend_snapshot_with_assumption(snapshot: &[LocalCtxEntry], ty: Expr) -> Vec<LocalCtxEntry> {
     let mut extended = snapshot.to_vec();
     extended.push(LocalCtxEntry {
         ty,
-        ty_binder_infos: Vec::new(),
+        ty_metadata: TypeMetadata::default(),
         value: None,
     });
     extended
@@ -2833,6 +2869,24 @@ def use : (forall (f : forall {A : Type}, A -> A), Nat) := fun f => f Nat.zero
 "#,
         )
         .expect("checked lambda locals should keep implicit metadata from their expected domain");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_metadata_for_application_domain_arguments() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def use (k : forall (h : forall (f : forall {A : Type}, A -> A), Nat), Nat) : Nat :=
+  k (fun f => f Nat.zero)
+"#,
+        )
+        .expect("application argument expected types should preserve nested implicit metadata");
 
         assert_eq!(module.declarations.len(), 1);
         assert!(matches!(
