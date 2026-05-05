@@ -658,17 +658,17 @@ impl Parser {
         Ok(expr)
     }
 
-    fn active_prefix_entry(&self) -> Option<NotationSyntaxEntry> {
+    fn active_prefix_entry(&mut self) -> Option<NotationSyntaxEntry> {
         self.active_symbol_entry()
             .and_then(|entry| (entry.kind == NotationKind::Prefix).then_some(entry))
     }
 
-    fn active_postfix_entry(&self) -> Option<NotationSyntaxEntry> {
+    fn active_postfix_entry(&mut self) -> Option<NotationSyntaxEntry> {
         self.active_symbol_entry()
             .and_then(|entry| (entry.kind == NotationKind::Postfix).then_some(entry))
     }
 
-    fn active_infix_entry(&self) -> Option<NotationSyntaxEntry> {
+    fn active_infix_entry(&mut self) -> Option<NotationSyntaxEntry> {
         self.active_symbol_entry()
             .and_then(|entry| match entry.kind {
                 NotationKind::Infix | NotationKind::Infixl | NotationKind::Infixr => Some(entry),
@@ -676,13 +676,43 @@ impl Parser {
             })
     }
 
-    fn active_symbol_entry(&self) -> Option<NotationSyntaxEntry> {
+    fn active_symbol_entry(&mut self) -> Option<NotationSyntaxEntry> {
         let TokenKind::Symbol(symbol) = &self.peek().kind else {
             return None;
         };
-        self.active_notation_entries()
+        let symbol = symbol.clone();
+        let entry = self
+            .active_notation_entries()
             .into_iter()
-            .find(|entry| &entry.symbol == symbol)
+            .filter(|entry| symbol.starts_with(&entry.symbol))
+            .max_by(|lhs, rhs| lhs.symbol.len().cmp(&rhs.symbol.len()))?;
+        if entry.symbol.len() < symbol.len() {
+            self.split_current_symbol_token(entry.symbol.len());
+        }
+        Some(entry)
+    }
+
+    fn split_current_symbol_token(&mut self, prefix_len: usize) {
+        let token = self.peek().clone();
+        let TokenKind::Symbol(symbol) = token.kind else {
+            return;
+        };
+        if prefix_len >= symbol.len() {
+            return;
+        }
+
+        let split = token.span.start + prefix_len;
+        self.tokens[self.pos] = Token {
+            kind: TokenKind::Symbol(symbol[..prefix_len].to_owned()),
+            span: Span::new(token.span.file_id, token.span.start, split),
+        };
+        self.tokens.insert(
+            self.pos + 1,
+            Token {
+                kind: TokenKind::Symbol(symbol[prefix_len..].to_owned()),
+                span: Span::new(token.span.file_id, split, token.span.end),
+            },
+        );
     }
 
     fn active_notation_entries(&self) -> Vec<NotationSyntaxEntry> {
@@ -1386,6 +1416,27 @@ axiom t : ! a$
         assert!(matches!(
             &args[0],
             SurfaceExpr::Notation { head, .. } if head.kind == NotationKind::Postfix
+        ));
+    }
+
+    #[test]
+    fn splits_adjacent_prefix_symbols_by_active_notation() {
+        let module = parse(
+            r#"
+prefix:70 "!" => negate
+axiom t : !!a
+"#,
+        );
+        let SurfaceItem::Axiom(decl) = &module.items[1] else {
+            panic!("expected axiom");
+        };
+        let SurfaceExpr::Notation { head, args, .. } = &decl.ty else {
+            panic!("expected outer prefix notation");
+        };
+        assert_eq!(head.symbol, "!");
+        assert!(matches!(
+            &args[0],
+            SurfaceExpr::Notation { head, .. } if head.symbol == "!"
         ));
     }
 

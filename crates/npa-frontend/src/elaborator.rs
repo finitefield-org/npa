@@ -987,6 +987,55 @@ impl ExprElaborator {
         }
     }
 
+    fn elab_check_overloaded_app(
+        &mut self,
+        candidates: &[ElabGlobalRef],
+        universe_args: Option<&[SurfaceLevel]>,
+        implicit_mode: ImplicitMode,
+        args: &[ResolvedExpr],
+        expected: &TypeCore,
+        span: Span,
+    ) -> Result<CheckResult> {
+        let mut successes = Vec::new();
+        let initial = self.snapshot();
+        for candidate in sorted_global_candidates(candidates) {
+            let snapshot = self.snapshot();
+            let expr =
+                overloaded_candidate_app_expr(&candidate, universe_args, implicit_mode, args, span);
+            if let Ok(result) = self.elab_check_result(&expr, expected).and_then(|result| {
+                self.complete_candidate_since(&snapshot, span)?;
+                Ok(result)
+            }) {
+                successes.push((candidate, self.snapshot(), result));
+            }
+            self.restore(snapshot);
+        }
+
+        match successes.len() {
+            0 => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded application could not be resolved",
+                ))
+            }
+            1 => {
+                let (_, snapshot, result) = successes.remove(0);
+                self.restore(snapshot);
+                Ok(result)
+            }
+            _ => {
+                self.restore(initial);
+                Err(Diagnostic::error(
+                    DiagnosticKind::AmbiguousName,
+                    span,
+                    "overloaded application is ambiguous",
+                ))
+            }
+        }
+    }
+
     fn elab_infer_notation(
         &mut self,
         head: &crate::NotationHead,
@@ -1154,6 +1203,17 @@ impl ExprElaborator {
                 *implicit_mode,
                 expected,
                 *span,
+            );
+        }
+
+        if let Some(spine) = overloaded_app_spine(expr) {
+            return self.elab_check_overloaded_app(
+                &spine.candidates,
+                spine.universe_args.as_deref(),
+                spine.implicit_mode,
+                &spine.args,
+                expected,
+                resolved_expr_span(expr),
             );
         }
 
@@ -4280,6 +4340,32 @@ def use_nat_add : Nat := add Nat.zero Nat.zero
         assert!(matches!(
             &module.declarations[4],
             Decl::Def { name, .. } if name == "use_nat_add"
+        ));
+    }
+
+    #[test]
+    fn resolves_overloaded_applications_by_expected_result_type() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom Foo : Type
+namespace Nat
+axiom of (n : Nat) : Nat
+end Nat
+namespace Foo
+axiom of (n : Nat) : Foo
+end Foo
+open Nat
+open Foo
+def use_expected_result : Nat := of Nat.zero
+"#,
+        )
+        .expect("expected result type should select the Nat overload");
+
+        assert_eq!(module.declarations.len(), 4);
+        assert!(matches!(
+            &module.declarations[3],
+            Decl::Def { name, .. } if name == "use_expected_result"
         ));
     }
 
