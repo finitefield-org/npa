@@ -7,9 +7,9 @@ use npa_kernel::{
 
 use crate::{
     parse_module, resolve_module, BinderInfo, Diagnostic, DiagnosticKind, FileId, ImplicitMode,
-    Name, ResolvedBinder, ResolvedDecl, ResolvedExpr, ResolvedImport, ResolvedItem, ResolvedModule,
-    ResolvedName, Result, Span, SurfaceBinderKind, SurfaceLevel, SurfaceModule,
-    SurfaceUniverseParam, VerifiedImport,
+    ImportedTypeMetadata, Name, ResolvedBinder, ResolvedDecl, ResolvedExpr, ResolvedImport,
+    ResolvedItem, ResolvedModule, ResolvedName, Result, Span, SurfaceBinderKind, SurfaceLevel,
+    SurfaceModule, SurfaceUniverseParam, VerifiedImport,
 };
 
 const MAX_NUMERIC_UNIVERSE_LEVEL: u64 = 1024;
@@ -302,6 +302,9 @@ impl TypeMetadata {
         } else {
             self.domain_infos.truncate(pi_count);
         }
+        for (domain_info, domain) in self.domain_infos.iter_mut().zip(domains) {
+            *domain_info = std::mem::take(domain_info).normalize_for_ty(domain);
+        }
         self
     }
 
@@ -316,6 +319,17 @@ impl TypeMetadata {
         Self {
             binder_infos: self.binder_infos.get(1..).unwrap_or_default().to_vec(),
             domain_infos: self.domain_infos.get(1..).unwrap_or_default().to_vec(),
+        }
+    }
+
+    fn from_imported(metadata: &ImportedTypeMetadata) -> Self {
+        Self {
+            binder_infos: metadata.binder_infos.clone(),
+            domain_infos: metadata
+                .domain_infos
+                .iter()
+                .map(Self::from_imported)
+                .collect(),
         }
     }
 }
@@ -370,7 +384,18 @@ fn insert_imported_signatures(signatures: &mut SignatureEnv, env: &Env, import: 
     for imported_decl in &import.declarations {
         let name = imported_decl.name.to_dotted();
         if let Some(decl) = env.decl(&name) {
-            signatures.insert_decl(name, decl.ty().clone(), imported_decl.binder_infos.clone());
+            signatures.insert_decl_metadata(
+                name,
+                decl.ty().clone(),
+                TypeMetadata {
+                    binder_infos: imported_decl.binder_infos.clone(),
+                    domain_infos: imported_decl
+                        .domain_infos
+                        .iter()
+                        .map(TypeMetadata::from_imported)
+                        .collect(),
+                },
+            );
         }
     }
 }
@@ -2436,7 +2461,7 @@ mod tests {
     use npa_kernel::{Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level};
 
     use super::*;
-    use crate::{ImportedDeclaration, Name};
+    use crate::{ImportedDeclaration, ImportedTypeMetadata, Name};
 
     fn prelude_import() -> VerifiedImport {
         VerifiedImport {
@@ -2447,16 +2472,19 @@ mod tests {
                     name: Name::from_dotted("Nat"),
                     decl_interface_hash: "sha256:Nat".to_owned(),
                     binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.zero"),
                     decl_interface_hash: "sha256:Nat.zero".to_owned(),
                     binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.succ"),
                     decl_interface_hash: "sha256:Nat.succ".to_owned(),
                     binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Eq"),
@@ -2466,11 +2494,13 @@ mod tests {
                         BinderInfo::Explicit,
                         BinderInfo::Explicit,
                     ],
+                    domain_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Eq.refl"),
                     decl_interface_hash: "sha256:Eq.refl".to_owned(),
                     binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                    domain_infos: Vec::new(),
                 },
             ],
             kernel_declarations: Vec::new(),
@@ -2485,6 +2515,7 @@ mod tests {
                 name: Name::from_dotted("Foo"),
                 decl_interface_hash: "sha256:Foo".to_owned(),
                 binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
             }],
             kernel_declarations: vec![Decl::Axiom {
                 name: "Foo".to_owned(),
@@ -2502,6 +2533,7 @@ mod tests {
                 name: Name::from_dotted("poly_id"),
                 decl_interface_hash: "sha256:poly_id".to_owned(),
                 binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                domain_infos: Vec::new(),
             }],
             kernel_declarations: vec![Decl::Axiom {
                 name: "poly_id".to_owned(),
@@ -2511,6 +2543,34 @@ mod tests {
                     Expr::sort(Level::param("u")),
                     Expr::pi("x", Expr::bvar(0), Expr::bvar(1)),
                 ),
+            }],
+        }
+    }
+
+    fn custom_higher_order_import() -> VerifiedImport {
+        let type0 = Expr::sort(Level::succ(Level::zero()));
+        let id_ty = Expr::pi("A", type0, Expr::pi("x", Expr::bvar(0), Expr::bvar(1)));
+        let higher_order_arg_ty = Expr::pi("f", id_ty.clone(), Expr::konst("Nat", Vec::new()));
+
+        VerifiedImport {
+            module: Name::from_dotted("CustomHigherOrder"),
+            export_hash: "sha256:custom-higher-order".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("k"),
+                decl_interface_hash: "sha256:k".to_owned(),
+                binder_infos: vec![BinderInfo::Explicit],
+                domain_infos: vec![ImportedTypeMetadata {
+                    binder_infos: vec![BinderInfo::Explicit],
+                    domain_infos: vec![ImportedTypeMetadata {
+                        binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                        domain_infos: Vec::new(),
+                    }],
+                }],
+            }],
+            kernel_declarations: vec![Decl::Axiom {
+                name: "k".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi("g", higher_order_arg_ty, Expr::konst("Nat", Vec::new())),
             }],
         }
     }
@@ -2545,11 +2605,13 @@ mod tests {
                     name: Name::from_dotted("Box"),
                     decl_interface_hash: "sha256:Box".to_owned(),
                     binder_infos: vec![BinderInfo::Implicit],
+                    domain_infos: Vec::new(),
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Box.mk"),
                     decl_interface_hash: "sha256:Box.mk".to_owned(),
                     binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                    domain_infos: Vec::new(),
                 },
             ],
             kernel_declarations: vec![Decl::Inductive {
@@ -3071,6 +3133,27 @@ def use_imported : Nat := poly_id Nat.zero
         assert!(matches!(
             &module.declarations[0],
             Decl::Def { name, .. } if name == "use_imported"
+        ));
+    }
+
+    #[test]
+    fn preserves_imported_domain_implicit_binder_metadata() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomHigherOrder
+def use_imported_domain : Nat := k (fun f => f Nat.zero)
+"#,
+            &[prelude_import(), custom_higher_order_import()],
+        )
+        .expect("imported nested domain metadata should drive insertion");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use_imported_domain"
         ));
     }
 
