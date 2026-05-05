@@ -1685,6 +1685,18 @@ impl<'a> Resolver<'a> {
                 self.resolved_expr_as_core(func, locals, fuel - 1)?,
                 self.resolved_expr_as_core(arg, locals, fuel - 1)?,
             )),
+            ResolvedExpr::Lam { .. } => self.resolved_lam_as_core_lam(expr, locals, fuel - 1),
+            ResolvedExpr::Pi { binders, body, .. } => {
+                let body = self.resolved_expr_as_core(body, locals, fuel - 1)?;
+                binders.iter().rev().try_fold(body, |body, binder| {
+                    let ty = binder.ty.as_ref()?;
+                    Some(Expr::pi(
+                        resolved_binder_name(binder),
+                        self.resolved_expr_as_core(ty, locals, fuel - 1)?,
+                        body,
+                    ))
+                })
+            }
             ResolvedExpr::Annot { expr, .. } => self.resolved_expr_as_core(expr, locals, fuel - 1),
             ResolvedExpr::Let {
                 local_id,
@@ -1698,6 +1710,36 @@ impl<'a> Resolver<'a> {
             }
             _ => None,
         }
+    }
+
+    fn resolved_lam_as_core_lam(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<Expr> {
+        let closure = self.resolved_as_lam(expr, locals, fuel)?;
+        self.resolved_lam_closure_as_core_lam(closure, fuel.saturating_sub(1))
+    }
+
+    fn resolved_lam_closure_as_core_lam(
+        &self,
+        closure: ResolvedLamClosure,
+        fuel: usize,
+    ) -> Option<Expr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let body = self.resolved_expr_as_core(&closure.body, &closure.locals, fuel - 1)?;
+        closure.binders.iter().rev().try_fold(body, |body, binder| {
+            let ty = binder.ty.as_ref()?;
+            Some(Expr::lam(
+                resolved_binder_name(binder),
+                self.resolved_expr_as_core(ty, &closure.locals, fuel - 1)?,
+                body,
+            ))
+        })
     }
 
     fn core_shape_after_resolved_arg(
@@ -1730,12 +1772,46 @@ impl<'a> Resolver<'a> {
                     }
                 }),
             Expr::App(fun, core_arg) => {
+                if let Some(shape) =
+                    self.core_resolved_app_result_shape(fun, core_arg, arg, arg_locals, fuel - 1)
+                {
+                    return Some(shape);
+                }
                 self.core_reduce_app(fun, core_arg, fuel - 1)
                     .and_then(|reduced| {
                         self.core_shape_after_resolved_arg(&reduced, arg, arg_locals, fuel - 1)
                     })
             }
             _ => None,
+        }
+    }
+
+    fn core_resolved_app_result_shape(
+        &self,
+        fun: &Expr,
+        core_arg: &Expr,
+        arg: &ResolvedExpr,
+        arg_locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 || !matches!(core_arg, Expr::BVar(0)) {
+            return None;
+        }
+
+        let Expr::Const { name, .. } = fun else {
+            return None;
+        };
+        let TypeAliasValue::Resolved(value) =
+            self.type_alias_values.get(&Name::from_dotted(name))?
+        else {
+            return None;
+        };
+
+        match self.resolved_apply_one(value, arg, arg_locals, fuel - 1)? {
+            ResolvedApplied::Expr { expr, locals } => {
+                self.resolved_inductive_result_shape_with(&expr, &locals, fuel - 1)
+            }
+            ResolvedApplied::Lam(_) => None,
         }
     }
 
@@ -1847,7 +1923,9 @@ impl<'a> Resolver<'a> {
                 let value = self.type_alias_values.get(&Name::from_dotted(name))?;
                 match value {
                     TypeAliasValue::Core(value) => self.core_reduce_to_lam(value, fuel - 1),
-                    TypeAliasValue::Resolved(_) => None,
+                    TypeAliasValue::Resolved(value) => {
+                        self.resolved_lam_as_core_lam(value, &BTreeMap::new(), fuel - 1)
+                    }
                 }
             }
             Expr::App(fun, arg) => self
@@ -1960,6 +2038,13 @@ fn global_ref_kind_rank(global_ref: &ElabGlobalRef) -> u8 {
         ElabGlobalRef::Local { .. } => 0,
         ElabGlobalRef::LocalGenerated { .. } => 1,
         ElabGlobalRef::Imported { .. } => 2,
+    }
+}
+
+fn resolved_binder_name(binder: &ResolvedBinder) -> String {
+    match &binder.kind {
+        SurfaceBinderKind::Named(name) => name.parts.join("."),
+        SurfaceBinderKind::Anonymous => "_".to_owned(),
     }
 }
 

@@ -4045,6 +4045,39 @@ mod tests {
         }
     }
 
+    fn custom_apply_sort_alias_import() -> VerifiedImport {
+        let type0 = Expr::sort(Level::succ(Level::zero()));
+        let type1 = Expr::sort(Level::succ(Level::succ(Level::zero())));
+        let function_ty = Expr::pi("_", type0.clone(), type1.clone());
+        VerifiedImport {
+            module: Name::from_dotted("CustomApplySortAlias"),
+            export_hash: "sha256:custom-apply-sort-alias".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("ImportedApply"),
+                decl_interface_hash: "sha256:ImportedApply".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
+            }],
+            notations: Vec::new(),
+            kernel_declarations: vec![Decl::Def {
+                name: "ImportedApply".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi(
+                    "F",
+                    function_ty.clone(),
+                    Expr::pi("A", type0.clone(), type1.clone()),
+                ),
+                value: Expr::lam(
+                    "F",
+                    function_ty,
+                    Expr::lam("A", type0, Expr::app(Expr::bvar(1), Expr::bvar(0))),
+                ),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
     fn custom_box_import() -> VerifiedImport {
         let u = Level::param("u");
         let box_ty = Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u.clone()));
@@ -4392,6 +4425,39 @@ def use_imported_alias_local_app_rec
         assert!(matches!(
             &module.declarations[2],
             Decl::Def { name, .. } if name == "use_imported_alias_local_app_rec"
+        ));
+    }
+
+    #[test]
+    fn exposes_recursor_for_imported_alias_applying_local_function_alias() {
+        let imports = [prelude_import(), custom_apply_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomApplySortAlias
+def LocalFn : Type -> Type 1 := fun _ => Type
+inductive ImportedAliasLocalFnAppType : ImportedApply LocalFn Nat where
+| mk : ImportedAliasLocalFnAppType
+def use_imported_alias_local_fn_app_rec
+    (P : ImportedAliasLocalFnAppType -> Type)
+    (z : P ImportedAliasLocalFnAppType.mk)
+    (x : ImportedAliasLocalFnAppType) : P x :=
+  ImportedAliasLocalFnAppType.rec P z x
+"#,
+            &imports,
+        )
+        .expect("imported alias applying a local function alias should expose the recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_imported_alias_local_fn_app_rec"
         ));
     }
 
