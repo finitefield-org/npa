@@ -1468,6 +1468,7 @@ impl<'a> Resolver<'a> {
             SurfaceExpr::Sort { .. } => Some(InductiveResultShape::Sort),
             SurfaceExpr::Pi { .. } => Some(InductiveResultShape::Indexed),
             SurfaceExpr::Annot { expr, .. } => self.surface_inductive_result_shape(expr),
+            SurfaceExpr::Lam { body, .. } => self.surface_inductive_result_shape(body),
             SurfaceExpr::Ident { name, .. } => self.surface_name_type_alias_shape(name),
             SurfaceExpr::App { func, .. } => self.surface_inductive_result_shape(func),
             _ => None,
@@ -1479,6 +1480,7 @@ impl<'a> Resolver<'a> {
             ResolvedExpr::Sort { .. } => Some(InductiveResultShape::Sort),
             ResolvedExpr::Pi { .. } => Some(InductiveResultShape::Indexed),
             ResolvedExpr::Annot { expr, .. } => self.resolved_inductive_result_shape(expr),
+            ResolvedExpr::Lam { body, .. } => self.resolved_inductive_result_shape(body),
             ResolvedExpr::Ident {
                 resolved: ResolvedName::Global(global),
                 ..

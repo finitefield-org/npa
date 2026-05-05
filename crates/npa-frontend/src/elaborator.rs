@@ -4222,6 +4222,34 @@ def use_alias_rec (P : AliasNat -> Type) (z : P AliasNat.mk) (x : AliasNat) : P 
     }
 
     #[test]
+    fn exposes_recursor_for_applied_lambda_sort_alias_inductive() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def U : Type -> Type 1 := fun (ignored : Type) => Type
+inductive AliasAppNat : U Nat where
+| mk : AliasAppNat
+def use_alias_app_rec
+    (P : AliasAppNat -> Type)
+    (z : P AliasAppNat.mk)
+    (x : AliasAppNat) : P x :=
+  AliasAppNat.rec P z x
+"#,
+        )
+        .expect("applied lambda Sort alias should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_alias_app_rec"
+        ));
+    }
+
+    #[test]
     fn exposes_recursor_for_imported_hidden_sort_inductive() {
         let imports = [prelude_import(), custom_sort_alias_import()];
         let module = elaborate_source(
