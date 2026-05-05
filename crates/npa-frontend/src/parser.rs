@@ -340,7 +340,8 @@ impl Parser {
         };
 
         self.expect(TokenTag::Colon, "`:`")?;
-        let precedence = self.parse_number()?;
+        let (precedence, precedence_span) = self.parse_number()?;
+        validate_notation_precedence(&kind, precedence, precedence_span)?;
         let (raw_symbol, symbol_span) = self.parse_string()?;
         let symbol = normalize_notation_symbol(&raw_symbol, symbol_span)?;
         self.expect(TokenTag::FatArrow, "`=>`")?;
@@ -600,9 +601,9 @@ impl Parser {
             }
             let token = self.bump();
             let right_bp = match entry.associativity {
-                Associativity::Left => entry.precedence.saturating_add(1),
+                Associativity::Left => raise_binding_power(entry.precedence, token.span)?,
                 Associativity::Right => entry.precedence,
-                Associativity::NonAssoc => entry.precedence.saturating_add(1),
+                Associativity::NonAssoc => raise_binding_power(entry.precedence, token.span)?,
             };
             let rhs = self.parse_notation_expr(right_bp)?;
             if entry.associativity == Associativity::NonAssoc {
@@ -993,11 +994,15 @@ impl Parser {
         }
     }
 
-    fn parse_number(&mut self) -> Result<u32> {
+    fn parse_number(&mut self) -> Result<(u32, Span)> {
         let token = self.bump();
         match token.kind {
-            TokenKind::Number(value) => u32::try_from(value)
-                .map_err(|_| Diagnostic::parser(token.span, "number literal does not fit in u32")),
+            TokenKind::Number(value) => {
+                let value = u32::try_from(value).map_err(|_| {
+                    Diagnostic::parser(token.span, "number literal does not fit in u32")
+                })?;
+                Ok((value, token.span))
+            }
             kind => Err(Diagnostic::parser(
                 token.span,
                 format!("expected number, found {}", kind.label()),
@@ -1098,6 +1103,25 @@ fn normalize_notation_symbol(raw: &str, span: Span) -> Result<String> {
         ));
     }
     Ok(symbol.to_owned())
+}
+
+fn validate_notation_precedence(kind: &NotationKind, precedence: u32, span: Span) -> Result<()> {
+    if matches!(kind, NotationKind::Infix | NotationKind::Infixl) && precedence == u32::MAX {
+        return Err(invalid_notation(
+            span,
+            "left and non-associative infix precedence must be less than 4294967295",
+        ));
+    }
+    Ok(())
+}
+
+fn raise_binding_power(precedence: u32, span: Span) -> Result<u32> {
+    precedence.checked_add(1).ok_or_else(|| {
+        Diagnostic::parser(
+            span,
+            "left and non-associative infix precedence must be less than 4294967295",
+        )
+    })
 }
 
 fn associativity_for_kind(kind: &NotationKind) -> Associativity {
@@ -1527,6 +1551,18 @@ axiom bad : a = b = c
         )
         .expect_err("non-associative notation chains must be rejected");
         assert_eq!(err.kind, DiagnosticKind::ParserError);
+    }
+
+    #[test]
+    fn rejects_max_precedence_for_left_and_non_associative_infix() {
+        for source in [
+            r#"infix:4294967295 " = " => Eq"#,
+            r#"infixl:4294967295 " + " => Nat.add"#,
+        ] {
+            let err = parse_module(FileId(0), source)
+                .expect_err("max precedence must be rejected when binding power is raised");
+            assert_eq!(err.kind, DiagnosticKind::InvalidNotation);
+        }
     }
 
     #[test]
