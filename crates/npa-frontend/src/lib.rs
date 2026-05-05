@@ -14,9 +14,9 @@ pub use lexer::{lex, Token, TokenKind};
 pub use parser::parse_module;
 pub use resolver::{
     resolve_module, resolve_source, ElabGlobalRef, FrontendState, GlobalDeclaration, GlobalOrigin,
-    GlobalScope, ImportedDeclaration, LocalBinding, LocalId, LocalRef, LocalScopeStack, Name,
-    OpenScope, ResolvedBinder, ResolvedCtorDecl, ResolvedDecl, ResolvedExpr, ResolvedImport,
-    ResolvedItem, ResolvedModule, ResolvedName, VerifiedImport,
+    GlobalScope, ImportedDeclaration, ImportedTypeMetadata, LocalBinding, LocalId, LocalRef,
+    LocalScopeStack, Name, OpenScope, ResolvedBinder, ResolvedCtorDecl, ResolvedDecl, ResolvedExpr,
+    ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, VerifiedImport,
 };
 pub use span::{ByteOffset, FileId, Span};
 pub use surface::{

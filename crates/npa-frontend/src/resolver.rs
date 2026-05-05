@@ -83,6 +83,15 @@ pub struct VerifiedImport {
 pub struct ImportedDeclaration {
     pub name: Name,
     pub decl_interface_hash: String,
+    pub binder_infos: Vec<BinderInfo>,
+    pub domain_infos: Vec<ImportedTypeMetadata>,
+    pub type_value_metadata: Option<ImportedTypeMetadata>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ImportedTypeMetadata {
+    pub binder_infos: Vec<BinderInfo>,
+    pub domain_infos: Vec<ImportedTypeMetadata>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -156,6 +165,7 @@ pub enum GlobalOrigin {
 pub struct ResolvedImport {
     pub module: Name,
     pub export_hash: String,
+    pub declarations: Vec<ImportedDeclaration>,
     pub kernel_declarations: Vec<Decl>,
 }
 
@@ -521,6 +531,7 @@ impl<'a> Resolver<'a> {
         self.state.imports.push(ResolvedImport {
             module: module_name.clone(),
             export_hash: import.export_hash.clone(),
+            declarations: import.declarations.clone(),
             kernel_declarations: import.kernel_declarations.clone(),
         });
 
@@ -1320,14 +1331,23 @@ mod tests {
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat"),
                     decl_interface_hash: "sha256:Nat".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.zero"),
                     decl_interface_hash: "sha256:Nat.zero".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.add"),
                     decl_interface_hash: "sha256:Nat.add".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
             ],
             kernel_declarations: Vec::new(),
@@ -1341,6 +1361,9 @@ mod tests {
             declarations: vec![ImportedDeclaration {
                 name: Name::from_dotted("Int.add"),
                 decl_interface_hash: "sha256:Int.add".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
             }],
             kernel_declarations: Vec::new(),
         }
@@ -1353,6 +1376,9 @@ mod tests {
             declarations: vec![ImportedDeclaration {
                 name: Name::from_dotted("A.B.x"),
                 decl_interface_hash: "sha256:A.B.x".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
             }],
             kernel_declarations: Vec::new(),
         }
@@ -1366,22 +1392,37 @@ mod tests {
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat"),
                     decl_interface_hash: "sha256:Mixed.Nat".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Int"),
                     decl_interface_hash: "sha256:Mixed.Int".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("zero"),
                     decl_interface_hash: "sha256:Mixed.zero".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.zero"),
                     decl_interface_hash: "sha256:Mixed.Nat.zero".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Int.zero"),
                     decl_interface_hash: "sha256:Mixed.Int.zero".to_owned(),
+                    binder_infos: Vec::new(),
+                    domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
             ],
             kernel_declarations: Vec::new(),
