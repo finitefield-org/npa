@@ -13,8 +13,8 @@ use crate::{
 };
 
 const MAX_NUMERIC_UNIVERSE_LEVEL: u64 = 1024;
-const TERM_META_PREFIX: &str = "__npa_meta.term.";
-const UNIVERSE_META_PREFIX: &str = "__npa_meta.univ.";
+const TERM_META_PREFIX: &str = "__npa_meta..term.";
+const UNIVERSE_META_PREFIX: &str = "__npa_meta..univ.";
 const SOLVER_FUEL: usize = 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -334,6 +334,7 @@ struct ExprElaborator {
 struct TypeCore {
     core: Expr,
     binder_infos: Vec<BinderInfo>,
+    domain_binder_infos: Vec<Vec<BinderInfo>>,
     sort_level: Option<Level>,
 }
 
@@ -449,6 +450,7 @@ impl ExprElaborator {
             return Ok(TypeCore {
                 core: term_meta_expr(meta),
                 binder_infos: Vec::new(),
+                domain_binder_infos: Vec::new(),
                 sort_level: Some(level),
             });
         }
@@ -465,6 +467,7 @@ impl ExprElaborator {
         {
             Expr::Sort(level) => Ok(TypeCore {
                 binder_infos: type_binder_infos_from_source(expr, &inferred.core),
+                domain_binder_infos: type_domain_binder_infos_from_source(expr, &inferred.core),
                 core: inferred.core,
                 sort_level: Some(level),
             }),
@@ -605,6 +608,7 @@ impl ExprElaborator {
             &TypeCore {
                 core: (*ty).clone(),
                 binder_infos: explicit_binder_infos_for_ty(&ty),
+                domain_binder_infos: Vec::new(),
                 sort_level: None,
             },
         )?;
@@ -737,7 +741,9 @@ impl ExprElaborator {
         let saved_locals = self.locals.clone();
         let mut expected_ty = expected.core.clone();
         let mut expected_binder_infos = expected.binder_infos.clone();
+        let mut expected_domain_binder_infos = expected.domain_binder_infos.clone();
         let mut core_binders = Vec::new();
+        let mut pending_pi_metas = Vec::new();
         let mut index = 0;
 
         while index < binders.len() {
@@ -755,44 +761,74 @@ impl ExprElaborator {
             };
 
             for (offset, binder) in binders[group_start..group_end].iter().enumerate() {
-                let whnf = self
-                    .env
-                    .whnf(&self.ctx, &self.delta, &expected_ty)
-                    .map_err(|error| diagnostic_from_kernel_error(span, error))?;
-                let Expr::Pi { ty, body, .. } = whnf else {
-                    self.ctx = saved_ctx;
-                    self.locals = saved_locals;
-                    return Err(Diagnostic::error(
-                        DiagnosticKind::ExpectedFunctionType,
-                        binder.span,
-                        "lambda expects a function type",
-                    ));
-                };
-
-                let binder_ty = if let Some(source_ty) = &group_source_tys[offset] {
-                    let source_ty = TypeCore {
+                let source_ty = match &group_source_tys[offset] {
+                    Some(source_ty) => Some(TypeCore {
                         core: weaken_group_type(&source_ty.core, offset, binder.span)?,
                         binder_infos: source_ty.binder_infos.clone(),
+                        domain_binder_infos: source_ty.domain_binder_infos.clone(),
                         sort_level: source_ty.sort_level.clone(),
-                    };
-                    if let Err(err) = self.ensure_type_eq(&source_ty.core, &ty, binder.span) {
-                        self.ctx = saved_ctx;
-                        self.locals = saved_locals;
-                        return Err(err);
+                    }),
+                    None => None,
+                };
+                let expected_ty_zonked = self.zonk_current_expr(&expected_ty);
+                let whnf = self
+                    .env
+                    .whnf(&self.ctx, &self.delta, &expected_ty_zonked)
+                    .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+
+                let mut expected_body = None;
+                let mut pending_meta = None;
+                let binder_ty = match whnf {
+                    Expr::Pi { ty, body, .. } => {
+                        expected_body = Some((*body).clone());
+                        if let Some(source_ty) = source_ty {
+                            if let Err(err) = self.ensure_type_eq(&source_ty.core, &ty, binder.span)
+                            {
+                                self.ctx = saved_ctx;
+                                self.locals = saved_locals;
+                                return Err(err);
+                            }
+                            source_ty
+                        } else {
+                            TypeCore {
+                                core: (*ty).clone(),
+                                binder_infos: expected_domain_binder_infos
+                                    .first()
+                                    .cloned()
+                                    .unwrap_or_else(|| explicit_binder_infos_for_ty(&ty)),
+                                domain_binder_infos: Vec::new(),
+                                sort_level: None,
+                            }
+                        }
                     }
-                    source_ty
-                } else {
-                    TypeCore {
-                        core: (*ty).clone(),
-                        binder_infos: expected_binder_infos.get(1..).unwrap_or_default().to_vec(),
-                        sort_level: None,
+                    other => {
+                        let Some(id) = term_meta_id(&other) else {
+                            self.ctx = saved_ctx;
+                            self.locals = saved_locals;
+                            return Err(Diagnostic::error(
+                                DiagnosticKind::ExpectedFunctionType,
+                                binder.span,
+                                "lambda expects a function type",
+                            ));
+                        };
+                        let Some(source_ty) = source_ty else {
+                            self.ctx = saved_ctx;
+                            self.locals = saved_locals;
+                            return Err(Diagnostic::error(
+                                DiagnosticKind::ExpectedFunctionType,
+                                binder.span,
+                                "lambda binder needs a type annotation to refine an expected type hole",
+                            ));
+                        };
+                        pending_meta = Some((id, self.locals.clone()));
+                        source_ty
                     }
                 };
 
                 let expected_binder_info = expected_binder_infos
                     .first()
                     .cloned()
-                    .unwrap_or(BinderInfo::Explicit);
+                    .unwrap_or_else(|| binder.binder_info.clone());
                 let name = binder_name(binder);
                 self.push_assumption(
                     name.clone(),
@@ -800,13 +836,41 @@ impl ExprElaborator {
                     binder_ty.binder_infos.clone(),
                 );
                 core_binders.push(CoreBinder {
-                    name,
-                    ty: binder_ty.core,
+                    name: name.clone(),
+                    ty: binder_ty.core.clone(),
                     binder_info: expected_binder_info,
-                    sort_level: binder_ty.sort_level,
+                    sort_level: binder_ty.sort_level.clone(),
                 });
-                expected_ty = (*body).clone();
-                expected_binder_infos = expected_binder_infos.get(1..).unwrap_or_default().to_vec();
+
+                if let Some((id, context)) = pending_meta {
+                    let body_level = self.fresh_universe_meta(binder.span);
+                    let body_meta = self.fresh_term_meta(
+                        None,
+                        Expr::sort(body_level),
+                        TermMetaKind::SyntheticImplicit,
+                        binder.span,
+                    );
+                    let body = term_meta_expr(body_meta);
+                    pending_pi_metas.push(PendingPiMeta {
+                        id,
+                        context,
+                        binder: name,
+                        binder_ty: binder_ty.core,
+                        body: body.clone(),
+                        span: binder.span,
+                    });
+                    expected_ty = body;
+                    expected_binder_infos = Vec::new();
+                    expected_domain_binder_infos = Vec::new();
+                } else {
+                    expected_ty = expected_body.expect("Pi branch must set expected body");
+                    expected_binder_infos =
+                        expected_binder_infos.get(1..).unwrap_or_default().to_vec();
+                    expected_domain_binder_infos = expected_domain_binder_infos
+                        .get(1..)
+                        .unwrap_or_default()
+                        .to_vec();
+                }
             }
 
             index = group_end;
@@ -817,6 +881,7 @@ impl ExprElaborator {
             &TypeCore {
                 core: expected_ty,
                 binder_infos: expected_binder_infos,
+                domain_binder_infos: expected_domain_binder_infos,
                 sort_level: None,
             },
         ) {
@@ -827,6 +892,26 @@ impl ExprElaborator {
                 return Err(err);
             }
         };
+        if let Err(err) = self.solve_constraints(span) {
+            self.ctx = saved_ctx;
+            self.locals = saved_locals;
+            return Err(err);
+        }
+        for pending in pending_pi_metas.iter().rev() {
+            let body = self.zonk_expr_in_context(&pending.body, pending.context.len() + 1);
+            let pi = Expr::pi(pending.binder.clone(), pending.binder_ty.clone(), body);
+            if let Err(err) = self.assign_term_meta(pending.id, &pi, &pending.context, pending.span)
+            {
+                self.ctx = saved_ctx;
+                self.locals = saved_locals;
+                return Err(err);
+            }
+        }
+        if let Err(err) = self.solve_constraints(span) {
+            self.ctx = saved_ctx;
+            self.locals = saved_locals;
+            return Err(err);
+        }
         self.ctx = saved_ctx;
         self.locals = saved_locals;
         let core = close_lam(body_core, &core_binders);
@@ -1793,6 +1878,16 @@ struct CoreBinder {
     sort_level: Option<Level>,
 }
 
+#[derive(Clone, Debug)]
+struct PendingPiMeta {
+    id: TermMetaId,
+    context: Vec<LocalCtxEntry>,
+    binder: String,
+    binder_ty: Expr,
+    body: Expr,
+    span: Span,
+}
+
 fn term_meta_expr(id: TermMetaId) -> Expr {
     Expr::konst(format!("{TERM_META_PREFIX}{}", id.0), Vec::new())
 }
@@ -1932,6 +2027,17 @@ fn type_binder_infos_from_source(expr: &ResolvedExpr, core: &Expr) -> Vec<Binder
     infos
 }
 
+fn type_domain_binder_infos_from_source(expr: &ResolvedExpr, core: &Expr) -> Vec<Vec<BinderInfo>> {
+    let mut infos = source_pi_domain_binder_infos(expr);
+    let pi_count = pi_binder_count(core);
+    if infos.len() < pi_count {
+        infos.extend(std::iter::repeat_with(Vec::new).take(pi_count - infos.len()));
+    } else {
+        infos.truncate(pi_count);
+    }
+    infos
+}
+
 fn source_pi_binder_infos(expr: &ResolvedExpr) -> Vec<BinderInfo> {
     match expr {
         ResolvedExpr::Pi { binders, body, .. } => binders
@@ -1940,6 +2046,24 @@ fn source_pi_binder_infos(expr: &ResolvedExpr) -> Vec<BinderInfo> {
             .chain(source_pi_binder_infos(body))
             .collect(),
         ResolvedExpr::Annot { expr, .. } => source_pi_binder_infos(expr),
+        _ => Vec::new(),
+    }
+}
+
+fn source_pi_domain_binder_infos(expr: &ResolvedExpr) -> Vec<Vec<BinderInfo>> {
+    match expr {
+        ResolvedExpr::Pi { binders, body, .. } => binders
+            .iter()
+            .map(|binder| {
+                binder
+                    .ty
+                    .as_deref()
+                    .map(source_pi_binder_infos)
+                    .unwrap_or_default()
+            })
+            .chain(source_pi_domain_binder_infos(body))
+            .collect(),
+        ResolvedExpr::Annot { expr, .. } => source_pi_domain_binder_infos(expr),
         _ => Vec::new(),
     }
 }
@@ -2684,6 +2808,40 @@ def f : (forall (x : _), _) := fun (x : Nat) => x
     }
 
     #[test]
+    fn synthesizes_pi_for_remaining_checked_lambda_binders() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def f : (forall (A : Type), _) := fun (A : Type) (x : A) => x
+"#,
+        )
+        .expect("annotated lambda binders should refine an expected type hole into a Pi");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
+    fn preserves_implicit_metadata_for_checked_lambda_domain_locals() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def use : (forall (f : forall {A : Type}, A -> A), Nat) := fun f => f Nat.zero
+"#,
+        )
+        .expect("checked lambda locals should keep implicit metadata from their expected domain");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "use"
+        ));
+    }
+
+    #[test]
     fn solves_binder_type_holes_from_extended_context() {
         let module = elaborate(
             r#"
@@ -2800,6 +2958,16 @@ def pi_body_context :
         let err = elaborate("def bad : Type := let x : Type := ?m in ?m")
             .expect_err("same named hole in different contexts must fail");
         assert_eq!(err.kind, DiagnosticKind::NamedHoleContextMismatch);
+    }
+
+    #[test]
+    fn canonical_import_names_do_not_match_internal_meta_names() {
+        assert!(!expr_contains_term_meta(&Expr::konst(
+            "__npa_meta.term.0",
+            Vec::new()
+        )));
+        assert_eq!(universe_meta_id_from_name("__npa_meta.univ.0"), None);
+        assert!(expr_contains_term_meta(&term_meta_expr(TermMetaId(0))));
     }
 
     #[test]
