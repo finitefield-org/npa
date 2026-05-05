@@ -1151,7 +1151,7 @@ impl ExprElaborator {
         self.solve_constraints(span)?;
         self.assign_default_universe_metas_since(baseline.universe_metas.len());
         self.solve_constraints(span)?;
-        self.reject_unsolved_metas_since(baseline)
+        self.reject_unsolved_candidate_metas_since(baseline)
     }
 
     fn elab_check(&mut self, expr: &ResolvedExpr, expected: &TypeCore) -> Result<Expr> {
@@ -2237,19 +2237,7 @@ impl ExprElaborator {
         Ok(())
     }
 
-    fn reject_unsolved_metas_since(&self, baseline: &ElabSnapshot) -> Result<()> {
-        for meta in self.term_metas.iter().skip(baseline.term_metas.len()) {
-            if meta.assignment.is_none() && meta.kind == TermMetaKind::UserHole {
-                return Err(Diagnostic::error(
-                    DiagnosticKind::UnsolvedHole,
-                    meta.span,
-                    match &meta.name {
-                        Some(name) => format!("unsolved hole `?{name}`"),
-                        None => "unsolved hole".to_owned(),
-                    },
-                ));
-            }
-        }
+    fn reject_unsolved_candidate_metas_since(&self, baseline: &ElabSnapshot) -> Result<()> {
         for meta in self.term_metas.iter().skip(baseline.term_metas.len()) {
             if meta.assignment.is_none() && meta.kind == TermMetaKind::SyntheticImplicit {
                 return Err(Diagnostic::error(
@@ -4314,6 +4302,20 @@ def use_complete_candidate : Nat := ! Nat.zero
             &module.declarations[2],
             Decl::Def { name, .. } if name == "use_complete_candidate"
         ));
+    }
+
+    #[test]
+    fn keeps_user_holes_after_selecting_notation_candidate() {
+        let err = elaborate(
+            r#"
+import Std.Prelude
+axiom plus (n m : Nat) : Nat
+infixl:65 " + " => plus
+def bad : Nat := Nat.zero + ?m
+"#,
+        )
+        .expect_err("selected notation target should preserve user holes for final validation");
+        assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
     }
 
     #[test]
