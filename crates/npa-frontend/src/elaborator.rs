@@ -2,14 +2,16 @@ use std::collections::BTreeMap;
 
 use npa_kernel::{
     subst::{instantiate, shift},
-    Ctx, Decl, Env, Error as KernelError, Expr, Level, Reducibility,
+    Binder, ConstructorDecl, Ctx, Decl, Env, Error as KernelError, Expr, InductiveDecl, Level,
+    RecursorDecl, Reducibility,
 };
 
 use crate::{
     resolve_module, resolve_source, BinderInfo, Diagnostic, DiagnosticKind, ElabGlobalRef, FileId,
-    ImplicitMode, ImportedTypeMetadata, Name, ResolvedBinder, ResolvedDecl, ResolvedExpr,
-    ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, Result, Span, SurfaceBinderKind,
-    SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam, VerifiedImport,
+    ImplicitMode, ImportedTypeMetadata, Name, ResolvedBinder, ResolvedCtorDecl, ResolvedDecl,
+    ResolvedExpr, ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, Result, Span,
+    SurfaceBinderKind, SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam,
+    VerifiedImport,
 };
 
 const MAX_NUMERIC_UNIVERSE_LEVEL: u64 = 1024;
@@ -90,13 +92,21 @@ impl ModuleElaborator {
                 ResolvedItem::Axiom(decl) => {
                     self.elaborate_value_decl(decl, ValueDeclKind::Axiom)?
                 }
-                ResolvedItem::Inductive { span, .. } => {
-                    return Err(Diagnostic::error(
-                        DiagnosticKind::KernelRejected,
-                        *span,
-                        "inductive elaboration is implemented in a later milestone",
-                    ));
-                }
+                ResolvedItem::Inductive {
+                    name,
+                    universe_params,
+                    binders,
+                    ty,
+                    constructors,
+                    span,
+                } => self.elaborate_inductive_item(
+                    name,
+                    universe_params,
+                    binders,
+                    ty,
+                    constructors,
+                    *span,
+                )?,
                 ResolvedItem::Import {
                     module,
                     export_hash,
@@ -246,6 +256,110 @@ impl ModuleElaborator {
             }
         }
 
+        Ok(())
+    }
+
+    fn elaborate_inductive_item(
+        &mut self,
+        name: &Name,
+        universe_params: &[SurfaceUniverseParam],
+        binders: &[ResolvedBinder],
+        ty: &ResolvedExpr,
+        constructors: &[ResolvedCtorDecl],
+        span: Span,
+    ) -> Result<()> {
+        let universe_params = universe_param_names(universe_params)?;
+        let name = name.to_dotted();
+        let mut engine = ExprElaborator::new(
+            self.env.clone(),
+            self.signatures.clone(),
+            universe_params.clone(),
+        );
+
+        let params = engine.elaborate_decl_binders(binders)?;
+        let result_ty = engine.elab_type(ty)?;
+        let (indices, sort) =
+            engine.peel_inductive_result(&result_ty.core, &result_ty.metadata, span)?;
+        let source_signature_metadata = close_metadata(result_ty.metadata.clone(), &params);
+
+        let all_binders: Vec<_> = params.iter().chain(indices.iter()).cloned().collect();
+        let closed_inductive_ty =
+            engine.finish_expr(close_pi(Expr::sort(sort), &all_binders), span)?;
+        let metadata_ty = engine.whnf_closed_expr(&closed_inductive_ty, span)?;
+        let params = engine.zonk_core_binders_from(&params, 0);
+        let indices = engine.zonk_core_binders_from(&indices, params.len());
+        let sort = inductive_result_sort(&closed_inductive_ty, span)?;
+
+        let mut temp_env = self.env.clone();
+        temp_env
+            .add_axiom(
+                name.clone(),
+                universe_params.clone(),
+                closed_inductive_ty.clone(),
+            )
+            .map_err(|error| kernel_rejected(span, error))?;
+        engine.env = temp_env;
+        engine.signatures.insert_decl_metadata(
+            name.clone(),
+            metadata_ty,
+            source_signature_metadata.clone(),
+        );
+
+        let mut constructor_decls = Vec::new();
+        let mut constructor_signatures = Vec::new();
+        for constructor in constructors {
+            let ctor_ty = engine.elab_type(&constructor.ty)?;
+            let source_metadata = close_metadata(ctor_ty.metadata.clone(), &params);
+            let closed_ctor_ty =
+                engine.finish_expr(close_pi(ctor_ty.core, &params), constructor.span)?;
+            let metadata_ty = engine.whnf_closed_expr(&closed_ctor_ty, constructor.span)?;
+            let ctor_name = constructor.name.to_dotted();
+            constructor_signatures.push((ctor_name.clone(), metadata_ty, source_metadata));
+            constructor_decls.push(ConstructorDecl::new(ctor_name, closed_ctor_ty));
+        }
+
+        let mut data = InductiveDecl::new(
+            name.clone(),
+            universe_params.clone(),
+            params.iter().map(core_binder_to_kernel).collect(),
+            indices.iter().map(core_binder_to_kernel).collect(),
+            sort,
+            constructor_decls,
+            None,
+        );
+        data.recursor = generated_recursor_decl(&data, span)?;
+        let recursor_signature = data.recursor.as_ref().map(|recursor| {
+            (
+                recursor.name.clone(),
+                recursor.ty.clone(),
+                generated_recursor_metadata(&data, &params),
+            )
+        });
+        let inductive_ty = inductive_core_type(&data);
+
+        self.env
+            .add_inductive(data.clone())
+            .map_err(|error| kernel_rejected(span, error))?;
+        self.signatures.insert_decl_metadata(
+            name.clone(),
+            inductive_ty.clone(),
+            source_signature_metadata,
+        );
+        for (name, metadata_ty, metadata) in constructor_signatures {
+            self.signatures
+                .insert_decl_metadata(name, metadata_ty, metadata);
+        }
+        if let Some((name, metadata_ty, metadata)) = recursor_signature {
+            self.signatures
+                .insert_decl_metadata(name, metadata_ty, metadata);
+        }
+
+        self.declarations.push(Decl::Inductive {
+            name,
+            universe_params,
+            ty: inductive_ty,
+            data: Box::new(data),
+        });
         Ok(())
     }
 }
@@ -663,6 +777,72 @@ impl ExprElaborator {
                 span,
                 format!("expected a type, found `{actual:?}`"),
             )),
+        }
+    }
+
+    fn peel_inductive_result(
+        &self,
+        core: &Expr,
+        metadata: &TypeMetadata,
+        span: Span,
+    ) -> Result<(Vec<CoreBinder>, Level)> {
+        let mut ctx = self.ctx.clone();
+        let mut context_len = self.locals.len();
+        let mut cursor = core.clone();
+        let mut metadata = metadata.clone();
+        let mut indices = Vec::new();
+
+        loop {
+            let cursor_zonked = self.zonk_expr_in_context(&cursor, context_len);
+            if self.expr_contains_term_meta(&cursor_zonked) {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedHole,
+                    span,
+                    "inductive result type contains an unsolved hole",
+                ));
+            }
+            if self.level_contains_universe_meta_in_expr(&cursor_zonked) {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::UnsolvedUniverseMeta,
+                    span,
+                    "inductive result type contains an unsolved universe metavariable",
+                ));
+            }
+
+            match self
+                .env
+                .whnf(&ctx, &self.delta, &cursor_zonked)
+                .map_err(|error| diagnostic_from_kernel_error(span, error))?
+            {
+                Expr::Pi { binder, ty, body } => {
+                    let binder_info = metadata
+                        .binder_infos
+                        .first()
+                        .cloned()
+                        .unwrap_or(BinderInfo::Explicit);
+                    let ty_metadata = metadata.domain_for(0, &ty);
+                    let ty = (*ty).clone();
+                    ctx.push_assumption(binder.clone(), ty.clone());
+                    indices.push(CoreBinder {
+                        name: binder,
+                        ty,
+                        binder_info,
+                        ty_metadata,
+                        sort_level: None,
+                    });
+                    metadata = metadata.after_binder();
+                    context_len += 1;
+                    cursor = *body;
+                }
+                Expr::Sort(level) => return Ok((indices, level)),
+                actual => {
+                    return Err(Diagnostic::error(
+                        DiagnosticKind::ExpectedSort,
+                        span,
+                        format!("expected inductive result to end in a Sort, found `{actual:?}`"),
+                    ));
+                }
+            }
         }
     }
 
@@ -2417,6 +2597,27 @@ impl ExprElaborator {
         self.zonk_expr_in_context(expr, 0)
     }
 
+    fn zonk_core_binders_from(
+        &self,
+        binders: &[CoreBinder],
+        start_context_len: usize,
+    ) -> Vec<CoreBinder> {
+        binders
+            .iter()
+            .enumerate()
+            .map(|(offset, binder)| CoreBinder {
+                name: binder.name.clone(),
+                ty: self.zonk_expr_in_context(&binder.ty, start_context_len + offset),
+                binder_info: binder.binder_info.clone(),
+                ty_metadata: binder.ty_metadata.clone(),
+                sort_level: binder
+                    .sort_level
+                    .as_ref()
+                    .map(|level| self.zonk_level(level)),
+            })
+            .collect()
+    }
+
     fn zonk_expr_in_context(&self, expr: &Expr, context_len: usize) -> Expr {
         match expr {
             Expr::Sort(level) => Expr::sort(self.zonk_level(level)),
@@ -2901,6 +3102,401 @@ fn close_pi(body: Expr, binders: &[CoreBinder]) -> Expr {
     binders.iter().rev().fold(body, |body, binder| {
         Expr::pi(binder.name.clone(), binder.ty.clone(), body)
     })
+}
+
+fn core_binder_to_kernel(binder: &CoreBinder) -> Binder {
+    Binder::new(binder.name.clone(), binder.ty.clone())
+}
+
+fn inductive_core_type(data: &InductiveDecl) -> Expr {
+    let binders: Vec<_> = data
+        .params
+        .iter()
+        .chain(data.indices.iter())
+        .map(|binder| CoreBinder {
+            name: binder.name.clone(),
+            ty: binder.ty.clone(),
+            binder_info: BinderInfo::Explicit,
+            ty_metadata: TypeMetadata::default(),
+            sort_level: None,
+        })
+        .collect();
+    close_pi(Expr::sort(data.sort.clone()), &binders)
+}
+
+fn inductive_result_sort(ty: &Expr, span: Span) -> Result<Level> {
+    let mut cursor = ty;
+    while let Expr::Pi { body, .. } = cursor {
+        cursor = body;
+    }
+    match cursor {
+        Expr::Sort(level) => Ok(level.clone()),
+        actual => Err(Diagnostic::error(
+            DiagnosticKind::ExpectedSort,
+            span,
+            format!("expected inductive type to end in a Sort, found `{actual:?}`"),
+        )),
+    }
+}
+
+fn generated_recursor_decl(data: &InductiveDecl, span: Span) -> Result<Option<RecursorDecl>> {
+    if !data.indices.is_empty() {
+        return Ok(None);
+    }
+
+    let (universe_params, motive_sort) = recursor_universe_params_and_sort(data);
+    let ty = generated_recursor_type(data, motive_sort, span)?;
+    Ok(Some(RecursorDecl::new(
+        format!("{}.rec", data.name),
+        universe_params,
+        ty,
+    )))
+}
+
+fn recursor_universe_params_and_sort(data: &InductiveDecl) -> (Vec<String>, Level) {
+    if data.sort == Level::zero() {
+        return (data.universe_params.clone(), Level::zero());
+    }
+
+    let mut universe_params = data.universe_params.clone();
+    let mut candidate = "u".to_owned();
+    let mut index = 0usize;
+    while universe_params.iter().any(|param| param == &candidate) {
+        index += 1;
+        candidate = format!("u{index}");
+    }
+    let motive_sort = Level::param(candidate.clone());
+    universe_params.push(candidate);
+    (universe_params, motive_sort)
+}
+
+fn generated_recursor_type(data: &InductiveDecl, motive_sort: Level, span: Span) -> Result<Expr> {
+    let param_count = data.params.len();
+    let motive_abs = param_count;
+    let mut domains: Vec<(String, Expr)> = data
+        .params
+        .iter()
+        .map(|param| (param.name.clone(), param.ty.clone()))
+        .collect();
+
+    let motive_target = inductive_target_in_ctx(data, param_count, span)?;
+    domains.push((
+        "motive".to_owned(),
+        Expr::pi("_", motive_target, Expr::sort(motive_sort)),
+    ));
+
+    for (constructor_index, constructor) in data.constructors.iter().enumerate() {
+        domains.push((
+            minor_name(constructor),
+            expected_minor_type(data, constructor, constructor_index, span)?,
+        ));
+    }
+
+    let major_abs = motive_abs + 1 + data.constructors.len();
+    let major_ctx_len = major_abs;
+    domains.push((
+        "major".to_owned(),
+        inductive_target_in_ctx(data, major_ctx_len, span)?,
+    ));
+    let result = motive_app(
+        major_ctx_len + 1,
+        motive_abs,
+        bvar_for_abs(major_ctx_len + 1, major_abs, span)?,
+        span,
+    )?;
+
+    Ok(mk_pi_from_named_domains(domains, result))
+}
+
+fn minor_name(constructor: &ConstructorDecl) -> String {
+    constructor
+        .name
+        .rsplit('.')
+        .next()
+        .map(|name| format!("{name}_case"))
+        .unwrap_or_else(|| "minor".to_owned())
+}
+
+fn generated_recursor_metadata(data: &InductiveDecl, params: &[CoreBinder]) -> TypeMetadata {
+    let mut binder_infos: Vec<_> = params
+        .iter()
+        .map(|binder| binder.binder_info.clone())
+        .collect();
+    binder_infos.push(BinderInfo::Explicit);
+    binder_infos.extend(std::iter::repeat_n(
+        BinderInfo::Explicit,
+        data.constructors.len() + 1,
+    ));
+    TypeMetadata {
+        binder_infos,
+        domain_infos: Vec::new(),
+    }
+}
+
+fn inductive_target_in_ctx(data: &InductiveDecl, ctx_len: usize, span: Span) -> Result<Expr> {
+    let args = (0..data.params.len())
+        .map(|param_abs| bvar_for_abs(ctx_len, param_abs, span))
+        .collect::<Result<Vec<_>>>()?;
+    Ok(Expr::apps(
+        Expr::konst(
+            data.name.clone(),
+            data.universe_params
+                .iter()
+                .map(|param| Level::param(param.clone()))
+                .collect(),
+        ),
+        args,
+    ))
+}
+
+fn expected_minor_type(
+    data: &InductiveDecl,
+    constructor: &ConstructorDecl,
+    constructor_index: usize,
+    span: Span,
+) -> Result<Expr> {
+    let (domains, _) = peel_pi_domains_owned(&constructor.ty);
+    let param_count = data.params.len();
+    if domains.len() < param_count {
+        return Err(Diagnostic::error(
+            DiagnosticKind::KernelRejected,
+            span,
+            format!(
+                "constructor `{}` is missing parameter binders",
+                constructor.name
+            ),
+        ));
+    }
+
+    let prefix_len = param_count + 1 + constructor_index;
+    let motive_abs = param_count;
+    let mut source_to_target: Vec<usize> = (0..param_count).collect();
+    let mut target_ctx_len = prefix_len;
+    let mut expected_domains = Vec::new();
+    let mut field_abs = Vec::new();
+
+    for (field_index, field_domain) in domains[param_count..].iter().enumerate() {
+        let source_ctx_len = param_count + field_index;
+        expected_domains.push(remap_bvars(
+            field_domain,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+            span,
+        )?);
+
+        source_to_target.push(target_ctx_len);
+        field_abs.push(target_ctx_len);
+        target_ctx_len += 1;
+
+        if is_direct_recursive_domain(data, field_domain, source_ctx_len, span)? {
+            expected_domains.push(motive_app(target_ctx_len, motive_abs, Expr::bvar(0), span)?);
+            target_ctx_len += 1;
+        }
+    }
+
+    let mut constructor_args = Vec::with_capacity(param_count + field_abs.len());
+    for param_abs in 0..param_count {
+        constructor_args.push(bvar_for_abs(target_ctx_len, param_abs, span)?);
+    }
+    for field_abs in field_abs {
+        constructor_args.push(bvar_for_abs(target_ctx_len, field_abs, span)?);
+    }
+
+    let levels = data
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    let constructor_value = Expr::apps(
+        Expr::konst(constructor.name.clone(), levels),
+        constructor_args,
+    );
+    let result = motive_app(target_ctx_len, motive_abs, constructor_value, span)?;
+
+    Ok(mk_pi_from_domains(expected_domains, result))
+}
+
+fn motive_app(ctx_len: usize, motive_abs: usize, target: Expr, span: Span) -> Result<Expr> {
+    Ok(Expr::app(bvar_for_abs(ctx_len, motive_abs, span)?, target))
+}
+
+fn bvar_for_abs(ctx_len: usize, abs: usize, span: Span) -> Result<Expr> {
+    if abs >= ctx_len {
+        return Err(Diagnostic::error(
+            DiagnosticKind::KernelRejected,
+            span,
+            format!("binder index {abs} escapes context of length {ctx_len}"),
+        ));
+    }
+    Ok(Expr::bvar((ctx_len - 1 - abs) as u32))
+}
+
+fn mk_pi_from_named_domains(domains: Vec<(String, Expr)>, body: Expr) -> Expr {
+    domains
+        .into_iter()
+        .rev()
+        .fold(body, |body, (name, domain)| Expr::pi(name, domain, body))
+}
+
+fn mk_pi_from_domains(domains: Vec<Expr>, body: Expr) -> Expr {
+    domains
+        .into_iter()
+        .rev()
+        .fold(body, |body, domain| Expr::pi("_", domain, body))
+}
+
+fn peel_pi_domains_owned(ty: &Expr) -> (Vec<Expr>, Expr) {
+    let mut domains = Vec::new();
+    let mut current = ty.clone();
+    while let Expr::Pi { ty, body, .. } = current {
+        domains.push(*ty);
+        current = *body;
+    }
+    (domains, current)
+}
+
+fn remap_bvars(
+    expr: &Expr,
+    source_ctx_len: usize,
+    target_ctx_len: usize,
+    source_to_target: &[usize],
+    span: Span,
+) -> Result<Expr> {
+    match expr {
+        Expr::Sort(level) => Ok(Expr::sort(level.clone())),
+        Expr::BVar(index) => {
+            let index = *index as usize;
+            if index >= source_ctx_len {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::KernelRejected,
+                    span,
+                    format!("binder index {index} escapes context of length {source_ctx_len}"),
+                ));
+            }
+            let source_abs = source_ctx_len - 1 - index;
+            let Some(target_abs) = source_to_target.get(source_abs).copied() else {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::KernelRejected,
+                    span,
+                    format!("binder index {index} has no target in recursor minor"),
+                ));
+            };
+            bvar_for_abs(target_ctx_len, target_abs, span)
+        }
+        Expr::Const { name, levels } => Ok(Expr::konst(name.clone(), levels.clone())),
+        Expr::App(fun, arg) => Ok(Expr::app(
+            remap_bvars(fun, source_ctx_len, target_ctx_len, source_to_target, span)?,
+            remap_bvars(arg, source_ctx_len, target_ctx_len, source_to_target, span)?,
+        )),
+        Expr::Lam { binder, ty, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(Expr::lam(
+                binder.clone(),
+                remap_bvars(ty, source_ctx_len, target_ctx_len, source_to_target, span)?,
+                remap_bvars(
+                    body,
+                    source_ctx_len + 1,
+                    target_ctx_len + 1,
+                    &body_map,
+                    span,
+                )?,
+            ))
+        }
+        Expr::Pi { binder, ty, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(Expr::pi(
+                binder.clone(),
+                remap_bvars(ty, source_ctx_len, target_ctx_len, source_to_target, span)?,
+                remap_bvars(
+                    body,
+                    source_ctx_len + 1,
+                    target_ctx_len + 1,
+                    &body_map,
+                    span,
+                )?,
+            ))
+        }
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(Expr::let_in(
+                binder.clone(),
+                remap_bvars(ty, source_ctx_len, target_ctx_len, source_to_target, span)?,
+                remap_bvars(
+                    value,
+                    source_ctx_len,
+                    target_ctx_len,
+                    source_to_target,
+                    span,
+                )?,
+                remap_bvars(
+                    body,
+                    source_ctx_len + 1,
+                    target_ctx_len + 1,
+                    &body_map,
+                    span,
+                )?,
+            ))
+        }
+    }
+}
+
+fn is_direct_recursive_domain(
+    data: &InductiveDecl,
+    domain: &Expr,
+    ctx_len: usize,
+    span: Span,
+) -> Result<bool> {
+    let (head, args) = npa_kernel::expr::collect_apps(domain);
+    let levels = match head {
+        Expr::Const { name, levels } if name == data.name => levels,
+        _ => return Ok(false),
+    };
+
+    let expected_levels: Vec<_> = data
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    if !npa_kernel::level::levels_eq(&levels, &expected_levels)
+        || args.len() != data.params.len() + data.indices.len()
+    {
+        return Ok(false);
+    }
+
+    for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+        if arg != &bvar_for_abs(ctx_len, param_index, span)? {
+            return Ok(false);
+        }
+    }
+
+    Ok(args.iter().all(|arg| !contains_const(arg, &data.name)))
+}
+
+fn contains_const(expr: &Expr, needle: &str) -> bool {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => false,
+        Expr::Const { name, .. } => name == needle,
+        Expr::App(fun, arg) => contains_const(fun, needle) || contains_const(arg, needle),
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            contains_const(ty, needle) || contains_const(body, needle)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            contains_const(ty, needle)
+                || contains_const(value, needle)
+                || contains_const(body, needle)
+        }
+    }
 }
 
 fn close_pi_sort(body_sort: Level, binders: &[CoreBinder], span: Span) -> Result<Level> {
@@ -3501,6 +4097,90 @@ theorem zero_refl : @Eq.{1} Nat Nat.zero Nat.zero := @Eq.refl.{1} Nat Nat.zero
             &module.declarations[1],
             Decl::Theorem { name, .. } if name == "zero_refl"
         ));
+    }
+
+    #[test]
+    fn elaborates_simple_inductive_and_generated_recursor() {
+        let module = elaborate(
+            r#"
+inductive MyNat : Type where
+| zero : MyNat
+| succ : MyNat -> MyNat
+axiom P : MyNat -> Type
+axiom z : P MyNat.zero
+axiom s : forall (n : MyNat), P n -> P (MyNat.succ n)
+def rec_use (n : MyNat) : P n := MyNat.rec P z s n
+"#,
+        )
+        .expect("simple inductive and generated recursor should elaborate");
+
+        assert_eq!(module.declarations.len(), 5);
+        let Decl::Inductive { name, data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert_eq!(name, "MyNat");
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[4],
+            Decl::Def { name, .. } if name == "rec_use"
+        ));
+    }
+
+    #[test]
+    fn elaborates_indexed_constructor_with_temporary_inductive_global() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+inductive Eq2.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq2.{u} a a
+theorem zero_refl2 : Eq2.{1} Nat.zero Nat.zero := Eq2.refl Nat.zero
+"#,
+        )
+        .expect("indexed constructor should see the temporary inductive head");
+
+        assert_eq!(module.declarations.len(), 2);
+        let Decl::Inductive { data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_none());
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Theorem { name, .. } if name == "zero_refl2"
+        ));
+    }
+
+    #[test]
+    fn elaborates_qualified_constructor_names_relative_to_inductive() {
+        let module = elaborate(
+            r#"
+inductive Qual : Type where
+| Extra.mk : Qual
+def use_qualified_ctor : Qual := Qual.Extra.mk
+"#,
+        )
+        .expect("qualified constructor names should be relative to the inductive name");
+
+        assert_eq!(module.declarations.len(), 2);
+        let Decl::Inductive { data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert_eq!(data.constructors[0].name, "Qual.Extra.mk");
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_qualified_ctor"
+        ));
+    }
+
+    #[test]
+    fn rejects_bad_inductive_constructor_result_at_kernel_handoff() {
+        let err = elaborate(
+            r#"
+inductive Bad : Type where
+| mk : Type
+"#,
+        )
+        .expect_err("kernel must reject constructor results outside the inductive family");
+        assert_eq!(err.kind, DiagnosticKind::KernelRejected);
     }
 
     #[test]

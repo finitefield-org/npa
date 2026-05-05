@@ -918,23 +918,28 @@ impl<'a> Resolver<'a> {
     ) -> Result<ResolvedItem> {
         let full_name = self.qualify_decl_name(name);
         let local_len = self.state.locals.len();
+        let generate_recursor = surface_inductive_generates_recursor(ty);
         let binders = self.resolve_binders(binders)?;
         let ty = self.resolve_expr(ty)?;
 
         let decl_index = self.register_resolved_decl_with_index(&full_name, span, false)?;
         let mut resolved_constructors = Vec::new();
         for constructor in constructors {
-            let ctor_name = full_name.push(constructor.name.clone());
+            let ctor_suffix = Name::from_surface(&constructor.name);
+            let ctor_name = full_name.append(&ctor_suffix);
             let ctor_ty = self.resolve_expr(&constructor.ty)?;
             resolved_constructors.push(ResolvedCtorDecl {
                 name: ctor_name,
-                source_name: constructor.name.clone(),
+                source_name: constructor.name.parts.join("."),
                 ty: ctor_ty,
                 span: constructor.span,
             });
         }
         for constructor in &resolved_constructors {
             self.register_generated_decl(&constructor.name, constructor.span, decl_index)?;
+        }
+        if generate_recursor {
+            self.register_generated_decl(&full_name.push("rec"), span, decl_index)?;
         }
         self.state.locals.truncate(local_len);
 
@@ -1557,6 +1562,7 @@ fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMa
             }
             SurfaceItem::Inductive {
                 name,
+                ty,
                 constructors,
                 span,
                 ..
@@ -1566,9 +1572,12 @@ fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMa
                 for constructor in constructors {
                     insert_decl_name(
                         &mut declarations,
-                        inductive_name.push(constructor.name.clone()),
+                        inductive_name.append(&Name::from_surface(&constructor.name)),
                         constructor.span,
                     )?;
+                }
+                if surface_inductive_generates_recursor(ty) {
+                    insert_decl_name(&mut declarations, inductive_name.push("rec"), *span)?;
                 }
             }
             SurfaceItem::Import { .. } | SurfaceItem::Open { .. } | SurfaceItem::Notation(_) => {}
@@ -1601,6 +1610,10 @@ fn insert_decl_name(declarations: &mut BTreeMap<Name, Span>, name: Name, span: S
         ));
     }
     Ok(())
+}
+
+fn surface_inductive_generates_recursor(ty: &SurfaceExpr) -> bool {
+    !matches!(ty, SurfaceExpr::Pi { .. })
 }
 
 #[cfg(test)]
