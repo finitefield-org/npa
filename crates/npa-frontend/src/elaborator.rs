@@ -4363,6 +4363,39 @@ def use_imported_alias_multi_app_rec
     }
 
     #[test]
+    fn exposes_recursor_for_imported_alias_application_returning_local_alias() {
+        let imports = [prelude_import(), custom_two_arg_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomTwoArgSortAlias
+def LocalU : Type 1 := Type
+inductive ImportedAliasLocalAppType : ImportedU2 LocalU Nat where
+| mk : ImportedAliasLocalAppType
+def use_imported_alias_local_app_rec
+    (P : ImportedAliasLocalAppType -> Type)
+    (z : P ImportedAliasLocalAppType.mk)
+    (x : ImportedAliasLocalAppType) : P x :=
+  ImportedAliasLocalAppType.rec P z x
+"#,
+            &imports,
+        )
+        .expect("imported alias returning a local Sort alias should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Inductive { data, .. } = &module.declarations[1] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[2],
+            Decl::Def { name, .. } if name == "use_imported_alias_local_app_rec"
+        ));
+    }
+
+    #[test]
     fn exposes_recursor_for_imported_hidden_sort_inductive() {
         let imports = [prelude_import(), custom_sort_alias_import()];
         let module = elaborate_source(

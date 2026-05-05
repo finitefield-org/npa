@@ -1725,7 +1725,9 @@ impl<'a> Resolver<'a> {
                     TypeAliasValue::Core(value) => {
                         self.core_shape_after_resolved_arg(value, arg, arg_locals, fuel - 1)
                     }
-                    TypeAliasValue::Resolved(_) => None,
+                    TypeAliasValue::Resolved(value) => {
+                        self.resolved_inductive_result_shape_with(value, arg_locals, fuel - 1)
+                    }
                 }),
             Expr::App(fun, core_arg) => {
                 self.core_reduce_app(fun, core_arg, fuel - 1)
