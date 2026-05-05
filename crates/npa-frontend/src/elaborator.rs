@@ -1071,16 +1071,26 @@ impl ExprElaborator {
         while index < binders.len() {
             let group_start = index;
             let group_end = binder_group_end(binders, group_start);
+            let group_ty = match &binders[group_start].ty {
+                Some(ty) => self.elab_type(ty)?,
+                None => {
+                    return Err(Diagnostic::error(
+                        missing_kind.clone(),
+                        binders[group_start].span,
+                        missing_message,
+                    ));
+                }
+            };
             let mut group = Vec::new();
             for binder in &binders[group_start..group_end] {
-                let Some(ty) = &binder.ty else {
+                if binder.ty.is_none() {
                     return Err(Diagnostic::error(
                         missing_kind.clone(),
                         binder.span,
                         missing_message,
                     ));
-                };
-                group.push((binder_name(binder), self.elab_type(ty)?, binder.span));
+                }
+                group.push((binder_name(binder), group_ty.clone(), binder.span));
             }
 
             for (offset, (name, binder_ty, span)) in group.into_iter().enumerate() {
@@ -1109,10 +1119,14 @@ impl ExprElaborator {
         &mut self,
         binders: &[ResolvedBinder],
     ) -> Result<Vec<Option<TypeCore>>> {
+        let group_ty = match binders.first().and_then(|binder| binder.ty.as_deref()) {
+            Some(source_ty) => Some(self.elab_type(source_ty)?),
+            None => None,
+        };
         let mut source_tys = Vec::new();
         for binder in binders {
             source_tys.push(match &binder.ty {
-                Some(source_ty) => Some(self.elab_type(source_ty)?),
+                Some(_) => group_ty.clone(),
                 None => None,
             });
         }
@@ -3397,14 +3411,17 @@ def alias_expected : Alias _ := Nat.zero
     fn elaborates_grouped_binder_annotations_before_extending_context() {
         let module = elaborate(
             r#"
+import Std.Prelude
 def first (A : Type) (x y : A) : A := x
 def checked (A : Type) : forall (x y : A), A := fun (x y : A) => x
 def inferred (A : Type) : forall (x y : A), A := let g := fun (x y : A) => x in g
+def grouped_hole_decl (x y : _) : Nat := x
+def grouped_hole_pi : (forall (x y : _), Nat) := fun x y => x
 "#,
         )
         .expect("grouped binders should elaborate");
 
-        assert_eq!(module.declarations.len(), 3);
+        assert_eq!(module.declarations.len(), 5);
     }
 
     #[test]
