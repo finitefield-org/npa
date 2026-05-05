@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
-use npa_kernel::{subst::instantiate, Decl, Expr, Reducibility};
+use npa_kernel::{subst::instantiate, Decl, Expr, Level, Reducibility};
 
 use crate::parser::{parse_module_with_imports, ParserImport, ParserImportedNotation};
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
 };
 
 const TYPE_ALIAS_SHAPE_FUEL: usize = 128;
+const TYPE_ALIAS_SHAPE_MAX_NUMERIC_LEVEL: u64 = 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name {
@@ -1612,20 +1613,25 @@ impl<'a> Resolver<'a> {
         locals: &BTreeMap<LocalId, ResolvedExpr>,
         fuel: usize,
     ) -> Option<InductiveResultShape> {
-        let fun = self.resolved_core_lam(func, fuel)?;
+        let fun = self.resolved_core_lam(func, locals, fuel)?;
         let Expr::Lam { body, .. } = fun else {
             return None;
         };
         self.core_shape_after_resolved_arg(&body, arg, locals, fuel.saturating_sub(1))
     }
 
-    fn resolved_core_lam(&self, expr: &ResolvedExpr, fuel: usize) -> Option<Expr> {
+    fn resolved_core_lam(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<Expr> {
         if fuel == 0 {
             return None;
         }
 
         match expr {
-            ResolvedExpr::Annot { expr, .. } => self.resolved_core_lam(expr, fuel - 1),
+            ResolvedExpr::Annot { expr, .. } => self.resolved_core_lam(expr, locals, fuel - 1),
             ResolvedExpr::Ident {
                 resolved: ResolvedName::Global(global),
                 ..
@@ -1637,6 +1643,58 @@ impl<'a> Resolver<'a> {
                     TypeAliasValue::Core(value) => self.core_reduce_to_lam(value, fuel - 1),
                     TypeAliasValue::Resolved(_) => None,
                 }
+            }
+            ResolvedExpr::App { func, arg, .. } => {
+                let fun = self.resolved_core_lam(func, locals, fuel - 1)?;
+                let arg = self.resolved_expr_as_core(arg, locals, fuel - 1)?;
+                self.core_reduce_app(&fun, &arg, fuel - 1)
+                    .and_then(|reduced| self.core_reduce_to_lam(&reduced, fuel - 1))
+            }
+            _ => None,
+        }
+    }
+
+    fn resolved_expr_as_core(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<Expr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            ResolvedExpr::Sort { level, .. } => Some(Expr::sort(surface_level_as_core(level)?)),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Local(local),
+                ..
+            } => locals
+                .get(&local.id)
+                .and_then(|value| self.resolved_expr_as_core(value, locals, fuel - 1))
+                .or_else(|| Some(Expr::bvar(local.de_bruijn_index))),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Global(global),
+                universe_args,
+                ..
+            } => Some(Expr::konst(
+                global_ref_display_name(global).to_dotted(),
+                surface_levels_as_core(universe_args.as_deref())?,
+            )),
+            ResolvedExpr::App { func, arg, .. } => Some(Expr::app(
+                self.resolved_expr_as_core(func, locals, fuel - 1)?,
+                self.resolved_expr_as_core(arg, locals, fuel - 1)?,
+            )),
+            ResolvedExpr::Annot { expr, .. } => self.resolved_expr_as_core(expr, locals, fuel - 1),
+            ResolvedExpr::Let {
+                local_id,
+                value,
+                body,
+                ..
+            } => {
+                let mut body_locals = locals.clone();
+                body_locals.insert(*local_id, (**value).clone());
+                self.resolved_expr_as_core(body, &body_locals, fuel - 1)
             }
             _ => None,
         }
@@ -1900,6 +1958,35 @@ fn global_ref_kind_rank(global_ref: &ElabGlobalRef) -> u8 {
         ElabGlobalRef::Local { .. } => 0,
         ElabGlobalRef::LocalGenerated { .. } => 1,
         ElabGlobalRef::Imported { .. } => 2,
+    }
+}
+
+fn surface_levels_as_core(levels: Option<&[SurfaceLevel]>) -> Option<Vec<Level>> {
+    levels
+        .unwrap_or_default()
+        .iter()
+        .map(surface_level_as_core)
+        .collect()
+}
+
+fn surface_level_as_core(level: &SurfaceLevel) -> Option<Level> {
+    match level {
+        SurfaceLevel::Nat { value, .. } => {
+            if *value > TYPE_ALIAS_SHAPE_MAX_NUMERIC_LEVEL {
+                return None;
+            }
+            Some((0..*value).fold(Level::zero(), |level, _| Level::succ(level)))
+        }
+        SurfaceLevel::Param { name, .. } => Some(Level::param(name.clone())),
+        SurfaceLevel::Succ { level, .. } => Some(Level::succ(surface_level_as_core(level)?)),
+        SurfaceLevel::Max { lhs, rhs, .. } => Some(Level::max(
+            surface_level_as_core(lhs)?,
+            surface_level_as_core(rhs)?,
+        )),
+        SurfaceLevel::IMax { lhs, rhs, .. } => Some(Level::imax(
+            surface_level_as_core(lhs)?,
+            surface_level_as_core(rhs)?,
+        )),
     }
 }
 

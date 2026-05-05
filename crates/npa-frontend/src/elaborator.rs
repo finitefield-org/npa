@@ -4018,6 +4018,33 @@ mod tests {
         }
     }
 
+    fn custom_two_arg_sort_alias_import() -> VerifiedImport {
+        let type1 = Expr::sort(Level::succ(Level::succ(Level::zero())));
+        VerifiedImport {
+            module: Name::from_dotted("CustomTwoArgSortAlias"),
+            export_hash: "sha256:custom-two-arg-sort-alias".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("ImportedU2"),
+                decl_interface_hash: "sha256:ImportedU2".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: None,
+            }],
+            notations: Vec::new(),
+            kernel_declarations: vec![Decl::Def {
+                name: "ImportedU2".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi(
+                    "A",
+                    type1.clone(),
+                    Expr::pi("_", Expr::bvar(0), type1.clone()),
+                ),
+                value: Expr::lam("A", type1, Expr::lam("_", Expr::bvar(0), Expr::bvar(1))),
+                reducibility: Reducibility::Reducible,
+            }],
+        }
+    }
+
     fn custom_box_import() -> VerifiedImport {
         let u = Level::param("u");
         let box_ty = Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u.clone()));
@@ -4300,6 +4327,38 @@ def use_imported_alias_app_rec
         assert!(matches!(
             &module.declarations[1],
             Decl::Def { name, .. } if name == "use_imported_alias_app_rec"
+        ));
+    }
+
+    #[test]
+    fn exposes_recursor_for_imported_multi_arg_lambda_sort_alias_inductive() {
+        let imports = [prelude_import(), custom_two_arg_sort_alias_import()];
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomTwoArgSortAlias
+inductive ImportedAliasMultiAppType : ImportedU2 (Type) Nat where
+| mk : ImportedAliasMultiAppType
+def use_imported_alias_multi_app_rec
+    (P : ImportedAliasMultiAppType -> Type)
+    (z : P ImportedAliasMultiAppType.mk)
+    (x : ImportedAliasMultiAppType) : P x :=
+  ImportedAliasMultiAppType.rec P z x
+"#,
+            &imports,
+        )
+        .expect("imported multi-argument Sort alias should expose the generated recursor");
+
+        assert_eq!(module.declarations.len(), 2);
+        let Decl::Inductive { data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert!(data.recursor.is_some());
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_imported_alias_multi_app_rec"
         ));
     }
 
