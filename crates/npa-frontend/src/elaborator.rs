@@ -122,13 +122,8 @@ impl ModuleElaborator {
                             })?;
                         for decl in &import.kernel_declarations {
                             add_decl_to_env(&mut self.env, decl, *span)?;
-                            let source_binders = imported_binder_infos(import, decl.name());
-                            self.signatures.insert_decl(
-                                decl.name().to_owned(),
-                                decl.ty().clone(),
-                                source_binders,
-                            );
                         }
+                        insert_imported_signatures(&mut self.signatures, &self.env, import);
                     }
                 }
                 ResolvedItem::Open { .. }
@@ -299,13 +294,13 @@ impl SignatureEnv {
     }
 }
 
-fn imported_binder_infos(import: &ResolvedImport, decl_name: &str) -> Vec<BinderInfo> {
-    import
-        .declarations
-        .iter()
-        .find(|decl| decl.name.to_dotted() == decl_name)
-        .map(|decl| decl.binder_infos.clone())
-        .unwrap_or_default()
+fn insert_imported_signatures(signatures: &mut SignatureEnv, env: &Env, import: &ResolvedImport) {
+    for imported_decl in &import.declarations {
+        let name = imported_decl.name.to_dotted();
+        if let Some(decl) = env.decl(&name) {
+            signatures.insert_decl(name, decl.ty().clone(), imported_decl.binder_infos.clone());
+        }
+    }
 }
 
 fn declaration_signature_binders(
@@ -1076,7 +1071,13 @@ impl ExprElaborator {
             let Some(BinderInfo::Implicit) = result.ty_binder_infos.first() else {
                 return Ok(result);
             };
-            if !auto_insert || !expected_needs_implicit_instantiation(expected) {
+            if !auto_insert {
+                return Ok(result);
+            }
+            if self.type_eq_without_implicit_insertion(&result.ty, &expected.core, span)? {
+                return Ok(result);
+            }
+            if !expected_needs_implicit_instantiation(expected) {
                 return Ok(result);
             }
 
@@ -1094,6 +1095,57 @@ impl ExprElaborator {
             result.ty = instantiate(&body, &meta_expr)
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
             result.ty_binder_infos = result.ty_binder_infos.get(1..).unwrap_or_default().to_vec();
+        }
+    }
+
+    fn type_eq_without_implicit_insertion(
+        &mut self,
+        actual: &Expr,
+        expected: &Expr,
+        span: Span,
+    ) -> Result<bool> {
+        let actual = self.zonk_expr(actual);
+        let expected = self.zonk_expr(expected);
+        if self.expr_contains_term_meta(&actual) || self.expr_contains_term_meta(&expected) {
+            return Ok(false);
+        }
+
+        let saved_term_metas = self.term_metas.clone();
+        let saved_universe_metas = self.universe_metas.clone();
+        let saved_constraints = self.constraints.clone();
+        let saved_delta = self.delta.clone();
+
+        self.constraints.push(Constraint::TypeEq {
+            lhs: actual.clone(),
+            rhs: expected.clone(),
+            context: self.locals.clone(),
+            span,
+        });
+
+        let solved = match self.solve_constraints(span) {
+            Ok(()) => {
+                let actual = self.zonk_expr(&actual);
+                let expected = self.zonk_expr(&expected);
+                !self.expr_contains_term_meta(&actual)
+                    && !self.expr_contains_term_meta(&expected)
+                    && !self.level_contains_universe_meta_in_expr(&actual)
+                    && !self.level_contains_universe_meta_in_expr(&expected)
+                    && self
+                        .env
+                        .is_defeq(&self.ctx, &self.delta, &actual, &expected)
+                        .map_err(|error| diagnostic_from_kernel_error(span, error))?
+            }
+            Err(_) => false,
+        };
+
+        if solved {
+            Ok(true)
+        } else {
+            self.term_metas = saved_term_metas;
+            self.universe_metas = saved_universe_metas;
+            self.constraints = saved_constraints;
+            self.delta = saved_delta;
+            Ok(false)
         }
     }
 
@@ -1402,6 +1454,9 @@ impl ExprElaborator {
         }
 
         let value = self.zonk_expr(value);
+        if self.expr_contains_term_meta(&value) {
+            return Ok(false);
+        }
         let meta_ty = self.zonk_expr(&meta.ty);
         let value_ty = self
             .env
@@ -2026,7 +2081,7 @@ fn resolved_item_span(item: &ResolvedItem) -> Span {
 
 #[cfg(test)]
 mod tests {
-    use npa_kernel::{Decl, Expr, Level};
+    use npa_kernel::{Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level};
 
     use super::*;
     use crate::{ImportedDeclaration, Name};
@@ -2104,6 +2159,52 @@ mod tests {
                     Expr::sort(Level::param("u")),
                     Expr::pi("x", Expr::bvar(0), Expr::bvar(1)),
                 ),
+            }],
+        }
+    }
+
+    fn custom_box_import() -> VerifiedImport {
+        let u = Level::param("u");
+        let box_ty = Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u.clone()));
+        let box_ctor_ty = Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "x",
+                Expr::bvar(0),
+                Expr::app(Expr::konst("Box", vec![u.clone()]), Expr::bvar(1)),
+            ),
+        );
+        let data = InductiveDecl::new(
+            "Box",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            Vec::new(),
+            u,
+            vec![ConstructorDecl::new("Box.mk", box_ctor_ty)],
+            None,
+        );
+
+        VerifiedImport {
+            module: Name::from_dotted("CustomBox"),
+            export_hash: "sha256:custom-box".to_owned(),
+            declarations: vec![
+                ImportedDeclaration {
+                    name: Name::from_dotted("Box"),
+                    decl_interface_hash: "sha256:Box".to_owned(),
+                    binder_infos: vec![BinderInfo::Implicit],
+                },
+                ImportedDeclaration {
+                    name: Name::from_dotted("Box.mk"),
+                    decl_interface_hash: "sha256:Box.mk".to_owned(),
+                    binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                },
+            ],
+            kernel_declarations: vec![Decl::Inductive {
+                name: "Box".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: box_ty,
+                data: Box::new(data),
             }],
         }
     }
@@ -2207,6 +2308,24 @@ def use_explicit : Nat := @poly_id Nat Nat.zero
     }
 
     #[test]
+    fn accepts_implicit_function_against_explicit_pi_expected_type() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+axiom poly_id {A : Type} (x : A) : A
+def use_pi : (forall (A : Type), A -> A) := poly_id
+"#,
+        )
+        .expect("implicit BinderInfo should not affect core Pi equality");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_pi"
+        ));
+    }
+
+    #[test]
     fn elaborates_builtin_eq_refl_with_implicit_type_argument() {
         let module = elaborate(
             r#"
@@ -2265,6 +2384,13 @@ theorem zero_refl : @Eq.{1} Nat Nat.zero Nat.zero := refl _
     fn rejects_unsolved_pi_type_holes_before_kernel_handoff() {
         let err = elaborate("axiom f : forall (x : _), Type")
             .expect_err("Pi type hole must fail through frontend metavariable diagnostics");
+        assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
+    }
+
+    #[test]
+    fn rejects_meta_to_meta_holes_before_kernel_handoff() {
+        let err = elaborate("def f : _ := (_ : _)")
+            .expect_err("unsolved meta chain must fail in frontend");
         assert_eq!(err.kind, DiagnosticKind::UnsolvedHole);
     }
 
@@ -2377,6 +2503,27 @@ def use_imported : Nat := poly_id Nat.zero
         assert!(matches!(
             &module.declarations[0],
             Decl::Def { name, .. } if name == "use_imported"
+        ));
+    }
+
+    #[test]
+    fn preserves_generated_import_implicit_binder_metadata() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomBox
+def boxed_zero : @Box.{1} Nat := Box.mk Nat.zero
+"#,
+            &[prelude_import(), custom_box_import()],
+        )
+        .expect("generated imported constructor metadata should drive insertion");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "boxed_zero"
         ));
     }
 
