@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
-use npa_kernel::Decl;
+use npa_kernel::{subst::instantiate, Decl, Expr, Level, Reducibility};
 
 use crate::parser::{parse_module_with_imports, ParserImport, ParserImportedNotation};
 use crate::{
@@ -9,6 +9,9 @@ use crate::{
     NotationKind, Result, Span, SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl,
     SurfaceExpr, SurfaceItem, SurfaceLevel, SurfaceModule, SurfaceName, SurfaceUniverseParam,
 };
+
+const TYPE_ALIAS_SHAPE_FUEL: usize = 128;
+const TYPE_ALIAS_SHAPE_MAX_NUMERIC_LEVEL: u64 = 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Name {
@@ -450,11 +453,39 @@ struct Resolver<'a> {
     state: FrontendState,
     verified_imports: &'a [VerifiedImport],
     future_globals: BTreeMap<Name, Span>,
+    type_alias_values: BTreeMap<Name, TypeAliasValue>,
     notation_scopes: Vec<Vec<ResolvedNotationDecl>>,
     namespace_notations: BTreeMap<Name, Vec<ResolvedNotationDecl>>,
     diagnostics: Vec<Diagnostic>,
     next_decl_index: usize,
     next_local_id: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InductiveResultShape {
+    Sort,
+    Indexed,
+}
+
+#[derive(Clone, Debug)]
+enum TypeAliasValue {
+    Resolved(ResolvedExpr),
+    Core(Expr),
+}
+
+#[derive(Clone)]
+struct ResolvedLamClosure {
+    binders: Vec<ResolvedBinder>,
+    body: ResolvedExpr,
+    locals: BTreeMap<LocalId, ResolvedExpr>,
+}
+
+enum ResolvedApplied {
+    Expr {
+        expr: ResolvedExpr,
+        locals: BTreeMap<LocalId, ResolvedExpr>,
+    },
+    Lam(ResolvedLamClosure),
 }
 
 impl<'a> Resolver<'a> {
@@ -463,6 +494,7 @@ impl<'a> Resolver<'a> {
             state: FrontendState::new(current_module),
             verified_imports,
             future_globals: BTreeMap::new(),
+            type_alias_values: BTreeMap::new(),
             notation_scopes: vec![Vec::new()],
             namespace_notations: BTreeMap::new(),
             diagnostics: Vec::new(),
@@ -526,6 +558,7 @@ impl<'a> Resolver<'a> {
             SurfaceItem::Def(decl) => {
                 let resolved = self.resolve_value_decl(decl)?;
                 self.register_resolved_decl(&resolved.name, resolved.span, false)?;
+                self.record_local_type_alias_value(&resolved);
                 Ok(ResolvedItem::Def(resolved))
             }
             SurfaceItem::Theorem(decl) => {
@@ -581,6 +614,7 @@ impl<'a> Resolver<'a> {
             declarations: import.declarations.clone(),
             kernel_declarations: import.kernel_declarations.clone(),
         });
+        self.record_imported_type_alias_values(import);
 
         let mut imported = import.declarations.clone();
         imported.sort_by(|lhs, rhs| {
@@ -920,21 +954,26 @@ impl<'a> Resolver<'a> {
         let local_len = self.state.locals.len();
         let binders = self.resolve_binders(binders)?;
         let ty = self.resolve_expr(ty)?;
+        let generate_recursor = self.inductive_generates_recursor(&ty);
 
         let decl_index = self.register_resolved_decl_with_index(&full_name, span, false)?;
         let mut resolved_constructors = Vec::new();
         for constructor in constructors {
-            let ctor_name = full_name.push(constructor.name.clone());
+            let ctor_suffix = Name::from_surface(&constructor.name);
+            let ctor_name = full_name.append(&ctor_suffix);
             let ctor_ty = self.resolve_expr(&constructor.ty)?;
             resolved_constructors.push(ResolvedCtorDecl {
                 name: ctor_name,
-                source_name: constructor.name.clone(),
+                source_name: constructor.name.parts.join("."),
                 ty: ctor_ty,
                 span: constructor.span,
             });
         }
         for constructor in &resolved_constructors {
             self.register_generated_decl(&constructor.name, constructor.span, decl_index)?;
+        }
+        if generate_recursor {
+            self.register_generated_decl(&full_name.push("rec"), span, decl_index)?;
         }
         self.state.locals.truncate(local_len);
 
@@ -1416,6 +1455,582 @@ impl<'a> Resolver<'a> {
         });
         Ok(())
     }
+
+    fn record_local_type_alias_value(&mut self, decl: &ResolvedDecl) {
+        let Some(value) = &decl.value else {
+            return;
+        };
+        let value = if decl.binders.is_empty() {
+            value.clone()
+        } else {
+            ResolvedExpr::Lam {
+                binders: decl.binders.clone(),
+                body: Box::new(value.clone()),
+                span: decl.span,
+            }
+        };
+        self.type_alias_values
+            .insert(decl.name.clone(), TypeAliasValue::Resolved(value));
+    }
+
+    fn record_imported_type_alias_values(&mut self, import: &VerifiedImport) {
+        for decl in &import.kernel_declarations {
+            let Decl::Def {
+                name,
+                value,
+                reducibility: Reducibility::Reducible,
+                ..
+            } = decl
+            else {
+                continue;
+            };
+            self.type_alias_values
+                .insert(Name::from_dotted(name), TypeAliasValue::Core(value.clone()));
+        }
+    }
+
+    fn inductive_generates_recursor(&self, ty: &ResolvedExpr) -> bool {
+        self.resolved_inductive_result_shape(ty) == Some(InductiveResultShape::Sort)
+    }
+
+    fn resolved_inductive_result_shape(&self, expr: &ResolvedExpr) -> Option<InductiveResultShape> {
+        self.resolved_inductive_result_shape_with(expr, &BTreeMap::new(), TYPE_ALIAS_SHAPE_FUEL)
+    }
+
+    fn resolved_inductive_result_shape_with(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            ResolvedExpr::Sort { .. } => Some(InductiveResultShape::Sort),
+            ResolvedExpr::Pi { .. } => Some(InductiveResultShape::Indexed),
+            ResolvedExpr::Annot { expr, .. } => {
+                self.resolved_inductive_result_shape_with(expr, locals, fuel - 1)
+            }
+            ResolvedExpr::Let {
+                local_id,
+                value,
+                body,
+                ..
+            } => {
+                let mut body_locals = locals.clone();
+                body_locals.insert(*local_id, (**value).clone());
+                self.resolved_inductive_result_shape_with(body, &body_locals, fuel - 1)
+            }
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Local(local),
+                ..
+            } => locals.get(&local.id).and_then(|value| {
+                self.resolved_inductive_result_shape_with(value, locals, fuel - 1)
+            }),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Global(global),
+                ..
+            } => self
+                .type_alias_values
+                .get(&global_ref_display_name(global))
+                .and_then(|value| self.type_alias_value_shape(value, locals, fuel - 1)),
+            ResolvedExpr::App { func, arg, .. } => {
+                self.resolved_app_result_shape(func, arg, locals, fuel - 1)
+            }
+            ResolvedExpr::Notation {
+                candidates,
+                args,
+                span,
+                ..
+            } => self.resolved_notation_result_shape(candidates, args, *span, locals, fuel - 1),
+            _ => None,
+        }
+    }
+
+    fn resolved_notation_result_shape(
+        &self,
+        candidates: &[ElabGlobalRef],
+        args: &[ResolvedExpr],
+        span: Span,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let mut shape = None;
+        for candidate in candidates {
+            let expr = resolved_notation_candidate_expr(candidate, args, span);
+            let Some(candidate_shape) =
+                self.resolved_inductive_result_shape_with(&expr, locals, fuel - 1)
+            else {
+                continue;
+            };
+            match shape {
+                None => shape = Some(candidate_shape),
+                Some(existing) if existing == candidate_shape => {}
+                Some(_) => return None,
+            }
+        }
+        shape
+    }
+
+    fn core_inductive_result_shape_with(
+        &self,
+        expr: &Expr,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            Expr::Sort(_) => Some(InductiveResultShape::Sort),
+            Expr::Pi { .. } => Some(InductiveResultShape::Indexed),
+            Expr::Let { value, body, .. } => instantiate(body, value)
+                .ok()
+                .and_then(|body| self.core_inductive_result_shape_with(&body, fuel - 1)),
+            Expr::Const { name, .. } => self
+                .type_alias_values
+                .get(&Name::from_dotted(name))
+                .and_then(|value| match value {
+                    TypeAliasValue::Core(value) => {
+                        self.core_inductive_result_shape_with(value, fuel - 1)
+                    }
+                    TypeAliasValue::Resolved(value) => {
+                        self.resolved_inductive_result_shape_with(value, &BTreeMap::new(), fuel - 1)
+                    }
+                }),
+            Expr::App(fun, arg) => self
+                .core_reduce_app(fun, arg, fuel - 1)
+                .and_then(|reduced| self.core_inductive_result_shape_with(&reduced, fuel - 1)),
+            _ => None,
+        }
+    }
+
+    fn type_alias_value_shape(
+        &self,
+        value: &TypeAliasValue,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        match value {
+            TypeAliasValue::Resolved(value) => {
+                self.resolved_inductive_result_shape_with(value, locals, fuel)
+            }
+            TypeAliasValue::Core(value) => self.core_inductive_result_shape_with(value, fuel),
+        }
+    }
+
+    fn resolved_app_result_shape(
+        &self,
+        func: &ResolvedExpr,
+        arg: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if let Some(result) = self.resolved_apply_one(func, arg, locals, fuel) {
+            return match result {
+                ResolvedApplied::Expr { expr, locals } => self
+                    .resolved_inductive_result_shape_with(&expr, &locals, fuel.saturating_sub(1)),
+                ResolvedApplied::Lam(_) => None,
+            };
+        }
+
+        self.resolved_core_app_result_shape(func, arg, locals, fuel)
+    }
+
+    fn resolved_core_app_result_shape(
+        &self,
+        func: &ResolvedExpr,
+        arg: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        let fun = self.resolved_core_lam(func, locals, fuel)?;
+        let Expr::Lam { body, .. } = fun else {
+            return None;
+        };
+        self.core_shape_after_resolved_arg(&body, arg, locals, fuel.saturating_sub(1))
+    }
+
+    fn resolved_core_lam(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<Expr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            ResolvedExpr::Annot { expr, .. } => self.resolved_core_lam(expr, locals, fuel - 1),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Global(global),
+                ..
+            } => {
+                let value = self
+                    .type_alias_values
+                    .get(&global_ref_display_name(global))?;
+                match value {
+                    TypeAliasValue::Core(value) => self.core_reduce_to_lam(value, fuel - 1),
+                    TypeAliasValue::Resolved(value) => self
+                        .resolved_core_lam(value, locals, fuel - 1)
+                        .or_else(|| self.resolved_lam_as_core_lam(value, locals, fuel - 1)),
+                }
+            }
+            ResolvedExpr::App { func, arg, .. } => {
+                let fun = self.resolved_core_lam(func, locals, fuel - 1)?;
+                let arg = self.resolved_expr_as_core(arg, locals, fuel - 1)?;
+                self.core_reduce_app(&fun, &arg, fuel - 1)
+                    .and_then(|reduced| self.core_reduce_to_lam(&reduced, fuel - 1))
+            }
+            _ => None,
+        }
+    }
+
+    fn resolved_expr_as_core(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<Expr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            ResolvedExpr::Sort { level, .. } => Some(Expr::sort(surface_level_as_core(level)?)),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Local(local),
+                ..
+            } => locals
+                .get(&local.id)
+                .and_then(|value| self.resolved_expr_as_core(value, locals, fuel - 1))
+                .or_else(|| Some(Expr::bvar(local.de_bruijn_index))),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Global(global),
+                universe_args,
+                ..
+            } => Some(Expr::konst(
+                global_ref_display_name(global).to_dotted(),
+                surface_levels_as_core(universe_args.as_deref())?,
+            )),
+            ResolvedExpr::App { func, arg, .. } => Some(Expr::app(
+                self.resolved_expr_as_core(func, locals, fuel - 1)?,
+                self.resolved_expr_as_core(arg, locals, fuel - 1)?,
+            )),
+            ResolvedExpr::Lam { .. } => self.resolved_lam_as_core_lam(expr, locals, fuel - 1),
+            ResolvedExpr::Pi { binders, body, .. } => {
+                let body = self.resolved_expr_as_core(body, locals, fuel - 1)?;
+                binders.iter().rev().try_fold(body, |body, binder| {
+                    let ty = binder.ty.as_ref()?;
+                    Some(Expr::pi(
+                        resolved_binder_name(binder),
+                        self.resolved_expr_as_core(ty, locals, fuel - 1)?,
+                        body,
+                    ))
+                })
+            }
+            ResolvedExpr::Annot { expr, .. } => self.resolved_expr_as_core(expr, locals, fuel - 1),
+            ResolvedExpr::Let {
+                local_id,
+                value,
+                body,
+                ..
+            } => {
+                let mut body_locals = locals.clone();
+                body_locals.insert(*local_id, (**value).clone());
+                self.resolved_expr_as_core(body, &body_locals, fuel - 1)
+            }
+            _ => None,
+        }
+    }
+
+    fn resolved_lam_as_core_lam(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<Expr> {
+        let closure = self.resolved_as_lam(expr, locals, fuel)?;
+        self.resolved_lam_closure_as_core_lam(closure, fuel.saturating_sub(1))
+    }
+
+    fn resolved_lam_closure_as_core_lam(
+        &self,
+        closure: ResolvedLamClosure,
+        fuel: usize,
+    ) -> Option<Expr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let body = self.resolved_expr_as_core(&closure.body, &closure.locals, fuel - 1)?;
+        closure.binders.iter().rev().try_fold(body, |body, binder| {
+            let ty = binder.ty.as_ref()?;
+            Some(Expr::lam(
+                resolved_binder_name(binder),
+                self.resolved_expr_as_core(ty, &closure.locals, fuel - 1)?,
+                body,
+            ))
+        })
+    }
+
+    fn core_shape_after_resolved_arg(
+        &self,
+        expr: &Expr,
+        arg: &ResolvedExpr,
+        arg_locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            Expr::Sort(_) => Some(InductiveResultShape::Sort),
+            Expr::Pi { .. } => Some(InductiveResultShape::Indexed),
+            Expr::BVar(0) => self.resolved_inductive_result_shape_with(arg, arg_locals, fuel - 1),
+            Expr::Let { value, body, .. } => instantiate(body, value).ok().and_then(|body| {
+                self.core_shape_after_resolved_arg(&body, arg, arg_locals, fuel - 1)
+            }),
+            Expr::Const { name, .. } => self
+                .type_alias_values
+                .get(&Name::from_dotted(name))
+                .and_then(|value| match value {
+                    TypeAliasValue::Core(value) => {
+                        self.core_shape_after_resolved_arg(value, arg, arg_locals, fuel - 1)
+                    }
+                    TypeAliasValue::Resolved(value) => {
+                        self.resolved_inductive_result_shape_with(value, arg_locals, fuel - 1)
+                    }
+                }),
+            Expr::App(fun, core_arg) => {
+                if let Some(shape) =
+                    self.core_resolved_app_result_shape(fun, core_arg, arg, arg_locals, fuel - 1)
+                {
+                    return Some(shape);
+                }
+                self.core_reduce_app(fun, core_arg, fuel - 1)
+                    .and_then(|reduced| {
+                        self.core_shape_after_resolved_arg(&reduced, arg, arg_locals, fuel - 1)
+                    })
+            }
+            _ => None,
+        }
+    }
+
+    fn core_resolved_app_result_shape(
+        &self,
+        fun: &Expr,
+        core_arg: &Expr,
+        arg: &ResolvedExpr,
+        arg_locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<InductiveResultShape> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let (value, resolved_arg) = match (fun, core_arg) {
+            (Expr::Const { name, .. }, Expr::BVar(0)) => {
+                let TypeAliasValue::Resolved(value) =
+                    self.type_alias_values.get(&Name::from_dotted(name))?
+                else {
+                    return None;
+                };
+                (value, arg.clone())
+            }
+            (Expr::BVar(0), core_arg) => {
+                (arg, self.core_expr_as_resolved(core_arg, arg, fuel - 1)?)
+            }
+            _ => return None,
+        };
+
+        match self.resolved_apply_one(value, &resolved_arg, arg_locals, fuel - 1)? {
+            ResolvedApplied::Expr { expr, locals } => {
+                self.resolved_inductive_result_shape_with(&expr, &locals, fuel - 1)
+            }
+            ResolvedApplied::Lam(_) => None,
+        }
+    }
+
+    fn core_expr_as_resolved(
+        &self,
+        expr: &Expr,
+        source_arg: &ResolvedExpr,
+        fuel: usize,
+    ) -> Option<ResolvedExpr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        let span = synthetic_span();
+        match expr {
+            Expr::Sort(level) => Some(ResolvedExpr::Sort {
+                level: core_level_as_surface(level, span)?,
+                span,
+            }),
+            Expr::BVar(0) => Some(source_arg.clone()),
+            Expr::Const { name, levels } => {
+                let name = Name::from_dotted(name);
+                Some(ResolvedExpr::Ident {
+                    name: SurfaceName {
+                        parts: name.parts.clone(),
+                        span,
+                    },
+                    resolved: ResolvedName::Global(ElabGlobalRef::Local {
+                        decl_index: usize::MAX,
+                        name,
+                    }),
+                    universe_args: Some(
+                        levels
+                            .iter()
+                            .map(|level| core_level_as_surface(level, span))
+                            .collect::<Option<_>>()?,
+                    ),
+                    implicit_mode: ImplicitMode::Insert,
+                    span,
+                })
+            }
+            Expr::App(fun, arg) => Some(ResolvedExpr::App {
+                func: Box::new(self.core_expr_as_resolved(fun, source_arg, fuel - 1)?),
+                arg: Box::new(self.core_expr_as_resolved(arg, source_arg, fuel - 1)?),
+                span,
+            }),
+            Expr::Let { value, body, .. } => instantiate(body, value)
+                .ok()
+                .and_then(|body| self.core_expr_as_resolved(&body, source_arg, fuel - 1)),
+            _ => None,
+        }
+    }
+
+    fn resolved_apply_one(
+        &self,
+        func: &ResolvedExpr,
+        arg: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<ResolvedApplied> {
+        let mut closure = self.resolved_as_lam(func, locals, fuel)?;
+        let (binder, rest) = closure.binders.split_first()?;
+        for (id, value) in locals {
+            closure.locals.entry(*id).or_insert_with(|| value.clone());
+        }
+        closure.locals.insert(binder.local_id, arg.clone());
+        if rest.is_empty() {
+            Some(ResolvedApplied::Expr {
+                expr: closure.body,
+                locals: closure.locals,
+            })
+        } else {
+            Some(ResolvedApplied::Lam(ResolvedLamClosure {
+                binders: rest.to_vec(),
+                body: closure.body,
+                locals: closure.locals,
+            }))
+        }
+    }
+
+    fn resolved_as_lam(
+        &self,
+        expr: &ResolvedExpr,
+        locals: &BTreeMap<LocalId, ResolvedExpr>,
+        fuel: usize,
+    ) -> Option<ResolvedLamClosure> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            ResolvedExpr::Annot { expr, .. } => self.resolved_as_lam(expr, locals, fuel - 1),
+            ResolvedExpr::Let {
+                local_id,
+                value,
+                body,
+                ..
+            } => {
+                let mut body_locals = locals.clone();
+                body_locals.insert(*local_id, (**value).clone());
+                self.resolved_as_lam(body, &body_locals, fuel - 1)
+            }
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Local(local),
+                ..
+            } => locals
+                .get(&local.id)
+                .and_then(|value| self.resolved_as_lam(value, locals, fuel - 1)),
+            ResolvedExpr::Ident {
+                resolved: ResolvedName::Global(global),
+                ..
+            } => {
+                let value = self
+                    .type_alias_values
+                    .get(&global_ref_display_name(global))?;
+                match value {
+                    TypeAliasValue::Resolved(value) => {
+                        self.resolved_as_lam(value, locals, fuel - 1)
+                    }
+                    TypeAliasValue::Core(_) => None,
+                }
+            }
+            ResolvedExpr::App { func, arg, .. } => {
+                match self.resolved_apply_one(func, arg, locals, fuel - 1)? {
+                    ResolvedApplied::Expr { expr, locals } => {
+                        self.resolved_as_lam(&expr, &locals, fuel - 1)
+                    }
+                    ResolvedApplied::Lam(closure) => Some(closure),
+                }
+            }
+            ResolvedExpr::Lam { binders, body, .. } => Some(ResolvedLamClosure {
+                binders: binders.clone(),
+                body: (**body).clone(),
+                locals: locals.clone(),
+            }),
+            _ => None,
+        }
+    }
+
+    fn core_reduce_app(&self, fun: &Expr, arg: &Expr, fuel: usize) -> Option<Expr> {
+        let fun = self.core_reduce_to_lam(fun, fuel)?;
+        let Expr::Lam { body, .. } = fun else {
+            return None;
+        };
+        instantiate(&body, arg).ok()
+    }
+
+    fn core_reduce_to_lam(&self, expr: &Expr, fuel: usize) -> Option<Expr> {
+        if fuel == 0 {
+            return None;
+        }
+
+        match expr {
+            Expr::Lam { .. } => Some(expr.clone()),
+            Expr::Let { value, body, .. } => instantiate(body, value)
+                .ok()
+                .and_then(|body| self.core_reduce_to_lam(&body, fuel - 1)),
+            Expr::Const { name, .. } => {
+                let value = self.type_alias_values.get(&Name::from_dotted(name))?;
+                match value {
+                    TypeAliasValue::Core(value) => self.core_reduce_to_lam(value, fuel - 1),
+                    TypeAliasValue::Resolved(value) => self
+                        .resolved_core_lam(value, &BTreeMap::new(), fuel - 1)
+                        .or_else(|| {
+                            self.resolved_lam_as_core_lam(value, &BTreeMap::new(), fuel - 1)
+                        }),
+                }
+            }
+            Expr::App(fun, arg) => self
+                .core_reduce_app(fun, arg, fuel - 1)
+                .and_then(|reduced| self.core_reduce_to_lam(&reduced, fuel - 1)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1523,6 +2138,115 @@ fn global_ref_kind_rank(global_ref: &ElabGlobalRef) -> u8 {
     }
 }
 
+fn resolved_notation_candidate_expr(
+    global: &ElabGlobalRef,
+    args: &[ResolvedExpr],
+    span: Span,
+) -> ResolvedExpr {
+    args.iter()
+        .cloned()
+        .fold(resolved_ident_for_global(global, span), |func, arg| {
+            ResolvedExpr::App {
+                func: Box::new(func),
+                arg: Box::new(arg),
+                span,
+            }
+        })
+}
+
+fn resolved_ident_for_global(global: &ElabGlobalRef, span: Span) -> ResolvedExpr {
+    let name = global_ref_display_name(global);
+    ResolvedExpr::Ident {
+        name: SurfaceName {
+            parts: name.parts.clone(),
+            span,
+        },
+        resolved: ResolvedName::Global(global.clone()),
+        universe_args: None,
+        implicit_mode: ImplicitMode::Insert,
+        span,
+    }
+}
+
+fn resolved_binder_name(binder: &ResolvedBinder) -> String {
+    match &binder.kind {
+        SurfaceBinderKind::Named(name) => name.parts.join("."),
+        SurfaceBinderKind::Anonymous => "_".to_owned(),
+    }
+}
+
+fn synthetic_span() -> Span {
+    Span::new(FileId(0), 0, 0)
+}
+
+fn core_level_as_surface(level: &Level, span: Span) -> Option<SurfaceLevel> {
+    if let Some(value) = core_level_as_nat(level) {
+        return Some(SurfaceLevel::Nat { value, span });
+    }
+
+    match level {
+        Level::Zero => Some(SurfaceLevel::Nat { value: 0, span }),
+        Level::Succ(level) => Some(SurfaceLevel::Succ {
+            level: Box::new(core_level_as_surface(level, span)?),
+            span,
+        }),
+        Level::Max(lhs, rhs) => Some(SurfaceLevel::Max {
+            lhs: Box::new(core_level_as_surface(lhs, span)?),
+            rhs: Box::new(core_level_as_surface(rhs, span)?),
+            span,
+        }),
+        Level::IMax(lhs, rhs) => Some(SurfaceLevel::IMax {
+            lhs: Box::new(core_level_as_surface(lhs, span)?),
+            rhs: Box::new(core_level_as_surface(rhs, span)?),
+            span,
+        }),
+        Level::Param(name) => Some(SurfaceLevel::Param {
+            name: name.clone(),
+            span,
+        }),
+    }
+}
+
+fn core_level_as_nat(level: &Level) -> Option<u64> {
+    match level {
+        Level::Zero => Some(0),
+        Level::Succ(level) => {
+            let value = core_level_as_nat(level)?.checked_add(1)?;
+            (value <= TYPE_ALIAS_SHAPE_MAX_NUMERIC_LEVEL).then_some(value)
+        }
+        _ => None,
+    }
+}
+
+fn surface_levels_as_core(levels: Option<&[SurfaceLevel]>) -> Option<Vec<Level>> {
+    levels
+        .unwrap_or_default()
+        .iter()
+        .map(surface_level_as_core)
+        .collect()
+}
+
+fn surface_level_as_core(level: &SurfaceLevel) -> Option<Level> {
+    match level {
+        SurfaceLevel::Nat { value, .. } => {
+            if *value > TYPE_ALIAS_SHAPE_MAX_NUMERIC_LEVEL {
+                return None;
+            }
+            Some((0..*value).fold(Level::zero(), |level, _| Level::succ(level)))
+        }
+        SurfaceLevel::Param { name, .. } => Some(Level::param(name.clone())),
+        SurfaceLevel::Succ { level, .. } => Some(Level::succ(surface_level_as_core(level)?)),
+        SurfaceLevel::Max { lhs, rhs, .. } => Some(Level::max(
+            surface_level_as_core(lhs)?,
+            surface_level_as_core(rhs)?,
+        )),
+        SurfaceLevel::IMax { lhs, rhs, .. } => Some(Level::imax(
+            surface_level_as_core(lhs)?,
+            surface_level_as_core(rhs)?,
+        )),
+    }
+}
+
 fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMap<Name, Span>> {
     let mut namespace_stack = Vec::new();
     let mut declarations = BTreeMap::new();
@@ -1557,6 +2281,7 @@ fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMa
             }
             SurfaceItem::Inductive {
                 name,
+                ty,
                 constructors,
                 span,
                 ..
@@ -1566,9 +2291,12 @@ fn collect_current_module_declarations(module: &SurfaceModule) -> Result<BTreeMa
                 for constructor in constructors {
                     insert_decl_name(
                         &mut declarations,
-                        inductive_name.push(constructor.name.clone()),
+                        inductive_name.append(&Name::from_surface(&constructor.name)),
                         constructor.span,
                     )?;
+                }
+                if surface_inductive_generates_recursor(ty) {
+                    insert_decl_name(&mut declarations, inductive_name.push("rec"), *span)?;
                 }
             }
             SurfaceItem::Import { .. } | SurfaceItem::Open { .. } | SurfaceItem::Notation(_) => {}
@@ -1601,6 +2329,14 @@ fn insert_decl_name(declarations: &mut BTreeMap<Name, Span>, name: Name, span: S
         ));
     }
     Ok(())
+}
+
+fn surface_inductive_generates_recursor(ty: &SurfaceExpr) -> bool {
+    match ty {
+        SurfaceExpr::Sort { .. } => true,
+        SurfaceExpr::Annot { expr, .. } => surface_inductive_generates_recursor(expr),
+        _ => false,
+    }
 }
 
 #[cfg(test)]

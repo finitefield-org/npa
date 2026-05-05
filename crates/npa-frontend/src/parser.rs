@@ -426,7 +426,7 @@ impl Parser {
 
     fn parse_ctor(&mut self) -> Result<SurfaceCtorDecl> {
         let start = self.expect(TokenTag::Pipe, "`|`")?.span;
-        let (name, _) = self.parse_ident()?;
+        let name = self.parse_qual_name()?;
         self.expect(TokenTag::Colon, "`:`")?;
         let ty = self.parse_term()?;
         Ok(SurfaceCtorDecl {

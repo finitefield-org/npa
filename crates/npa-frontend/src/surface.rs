@@ -65,7 +65,7 @@ pub struct SurfaceDecl {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SurfaceCtorDecl {
-    pub name: String,
+    pub name: SurfaceName,
     pub ty: SurfaceExpr,
     pub span: Span,
 }
