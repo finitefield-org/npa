@@ -408,7 +408,7 @@ fn insert_imported_signatures(signatures: &mut SignatureEnv, env: &Env, import: 
                 .whnf(&Ctx::new(), decl.universe_params(), decl.ty())
                 .unwrap_or_else(|_| decl.ty().clone());
             signatures.insert_decl_metadata(
-                name,
+                name.clone(),
                 metadata_ty,
                 TypeMetadata {
                     binder_infos: imported_decl.binder_infos.clone(),
@@ -419,6 +419,9 @@ fn insert_imported_signatures(signatures: &mut SignatureEnv, env: &Env, import: 
                         .collect(),
                 },
             );
+            if let Some(metadata) = &imported_decl.type_value_metadata {
+                signatures.insert_type_value_metadata(name, TypeMetadata::from_imported(metadata));
+            }
         }
     }
 }
@@ -506,6 +509,7 @@ struct TermMeta {
 #[derive(Clone, Debug)]
 struct UniverseMeta {
     span: Span,
+    default: Option<Level>,
     assignment: Option<Level>,
 }
 
@@ -577,16 +581,30 @@ impl ExprElaborator {
             });
         }
 
+        let span = resolved_expr_span(expr);
         let inferred = self.elab_infer(expr)?;
-        match self
+        let mut inferred_ty = self
             .env
             .whnf(
                 &self.ctx,
                 &self.delta,
                 &self.zonk_current_expr(&inferred.ty),
             )
-            .map_err(|error| diagnostic_from_kernel_error(resolved_expr_span(expr), error))?
-        {
+            .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+        if !matches!(inferred_ty, Expr::Sort(_)) && self.expr_contains_term_meta(&inferred_ty) {
+            let level = self.fresh_type_hole_sort_level(span);
+            self.ensure_type_eq(&inferred.ty, &Expr::sort(level), span)?;
+            inferred_ty = self
+                .env
+                .whnf(
+                    &self.ctx,
+                    &self.delta,
+                    &self.zonk_current_expr(&inferred.ty),
+                )
+                .map_err(|error| diagnostic_from_kernel_error(span, error))?;
+        }
+
+        match inferred_ty {
             Expr::Sort(level) => {
                 let type_core = self
                     .env
@@ -595,9 +613,7 @@ impl ExprElaborator {
                         &self.delta,
                         &self.zonk_current_expr(&inferred.core),
                     )
-                    .map_err(|error| {
-                        diagnostic_from_kernel_error(resolved_expr_span(expr), error)
-                    })?;
+                    .map_err(|error| diagnostic_from_kernel_error(span, error))?;
                 let metadata = inferred
                     .type_value_metadata
                     .or_else(|| self.type_value_metadata_for_core(&inferred.core))
@@ -611,7 +627,7 @@ impl ExprElaborator {
             }
             actual => Err(Diagnostic::error(
                 DiagnosticKind::ExpectedSort,
-                resolved_expr_span(expr),
+                span,
                 format!("expected a type, found `{actual:?}`"),
             )),
         }
@@ -1456,6 +1472,8 @@ impl ExprElaborator {
 
     fn finish_expr(&mut self, expr: Expr, span: Span) -> Result<Expr> {
         self.solve_constraints(span)?;
+        self.assign_default_universe_metas();
+        self.solve_constraints(span)?;
         self.reject_unsolved_metas()?;
         let expr = self.zonk_closed_expr(&expr);
         if self.expr_contains_term_meta(&expr) {
@@ -1707,6 +1725,14 @@ impl ExprElaborator {
             });
             return Ok(SolveStatus::Solved);
         }
+        if let Some((id, value)) = imax_succ_self_solution(&lhs, &rhs) {
+            self.assign_universe_meta(id, value, span)?;
+            return Ok(SolveStatus::Solved);
+        }
+        if let Some((id, value)) = imax_succ_self_solution(&rhs, &lhs) {
+            self.assign_universe_meta(id, value, span)?;
+            return Ok(SolveStatus::Solved);
+        }
         if level_contains_universe_meta(&lhs) || level_contains_universe_meta(&rhs) {
             Ok(SolveStatus::Stuck)
         } else {
@@ -1872,14 +1898,33 @@ impl ExprElaborator {
     }
 
     fn fresh_universe_meta(&mut self, span: Span) -> Level {
+        self.fresh_universe_meta_with_default(span, None)
+    }
+
+    fn fresh_type_hole_sort_level(&mut self, span: Span) -> Level {
+        self.fresh_universe_meta_with_default(span, Some(Level::succ(Level::zero())))
+    }
+
+    fn fresh_universe_meta_with_default(&mut self, span: Span, default: Option<Level>) -> Level {
         let id = UniverseMetaId(self.universe_metas.len());
         let name = format!("{UNIVERSE_META_PREFIX}{}", id.0);
         self.delta.push(name.clone());
         self.universe_metas.push(UniverseMeta {
             span,
+            default,
             assignment: None,
         });
         Level::param(name)
+    }
+
+    fn assign_default_universe_metas(&mut self) {
+        for meta in &mut self.universe_metas {
+            if meta.assignment.is_none() {
+                if let Some(default) = meta.default.clone() {
+                    meta.assignment = Some(default);
+                }
+            }
+        }
     }
 
     fn push_assumption(&mut self, name: String, ty: Expr, ty_metadata: TypeMetadata) {
@@ -2110,6 +2155,24 @@ fn universe_meta_id_from_name(name: &str) -> Option<UniverseMetaId> {
         .parse()
         .ok()
         .map(UniverseMetaId)
+}
+
+fn imax_succ_self_solution(imax: &Level, target: &Level) -> Option<(UniverseMetaId, Level)> {
+    let Level::IMax(lhs, rhs) = imax else {
+        return None;
+    };
+    let id = universe_meta_id(rhs)?;
+    let Level::Succ(inner) = lhs.as_ref() else {
+        return None;
+    };
+    if universe_meta_id(inner) != Some(id) {
+        return None;
+    }
+    match target {
+        Level::Zero => Some((id, Level::zero())),
+        Level::Succ(inner) => Some((id, (**inner).clone())),
+        _ => None,
+    }
 }
 
 fn expr_contains_term_meta(expr: &Expr) -> bool {
@@ -2576,7 +2639,7 @@ fn resolved_item_span(item: &ResolvedItem) -> Span {
 
 #[cfg(test)]
 mod tests {
-    use npa_kernel::{Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level};
+    use npa_kernel::{Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, Reducibility};
 
     use super::*;
     use crate::{ImportedDeclaration, ImportedTypeMetadata, Name};
@@ -2591,18 +2654,21 @@ mod tests {
                     decl_interface_hash: "sha256:Nat".to_owned(),
                     binder_infos: Vec::new(),
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.zero"),
                     decl_interface_hash: "sha256:Nat.zero".to_owned(),
                     binder_infos: Vec::new(),
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Nat.succ"),
                     decl_interface_hash: "sha256:Nat.succ".to_owned(),
                     binder_infos: Vec::new(),
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Eq"),
@@ -2613,12 +2679,14 @@ mod tests {
                         BinderInfo::Explicit,
                     ],
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Eq.refl"),
                     decl_interface_hash: "sha256:Eq.refl".to_owned(),
                     binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
             ],
             kernel_declarations: Vec::new(),
@@ -2634,6 +2702,7 @@ mod tests {
                 decl_interface_hash: "sha256:Foo".to_owned(),
                 binder_infos: Vec::new(),
                 domain_infos: Vec::new(),
+                type_value_metadata: None,
             }],
             kernel_declarations: vec![Decl::Axiom {
                 name: "Foo".to_owned(),
@@ -2652,6 +2721,7 @@ mod tests {
                 decl_interface_hash: "sha256:poly_id".to_owned(),
                 binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
                 domain_infos: Vec::new(),
+                type_value_metadata: None,
             }],
             kernel_declarations: vec![Decl::Axiom {
                 name: "poly_id".to_owned(),
@@ -2684,11 +2754,39 @@ mod tests {
                         domain_infos: Vec::new(),
                     }],
                 }],
+                type_value_metadata: None,
             }],
             kernel_declarations: vec![Decl::Axiom {
                 name: "k".to_owned(),
                 universe_params: Vec::new(),
                 ty: Expr::pi("g", higher_order_arg_ty, Expr::konst("Nat", Vec::new())),
+            }],
+        }
+    }
+
+    fn custom_type_alias_import() -> VerifiedImport {
+        let type0 = Expr::sort(Level::succ(Level::zero()));
+        let id_ty = Expr::pi("A", type0, Expr::pi("x", Expr::bvar(0), Expr::bvar(1)));
+
+        VerifiedImport {
+            module: Name::from_dotted("CustomTypeAlias"),
+            export_hash: "sha256:custom-type-alias".to_owned(),
+            declarations: vec![ImportedDeclaration {
+                name: Name::from_dotted("IdTy"),
+                decl_interface_hash: "sha256:IdTy".to_owned(),
+                binder_infos: Vec::new(),
+                domain_infos: Vec::new(),
+                type_value_metadata: Some(ImportedTypeMetadata {
+                    binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                    domain_infos: Vec::new(),
+                }),
+            }],
+            kernel_declarations: vec![Decl::Def {
+                name: "IdTy".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::succ(Level::zero()))),
+                value: id_ty,
+                reducibility: Reducibility::Reducible,
             }],
         }
     }
@@ -2724,12 +2822,14 @@ mod tests {
                     decl_interface_hash: "sha256:Box".to_owned(),
                     binder_infos: vec![BinderInfo::Implicit],
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
                 ImportedDeclaration {
                     name: Name::from_dotted("Box.mk"),
                     decl_interface_hash: "sha256:Box.mk".to_owned(),
                     binder_infos: vec![BinderInfo::Implicit, BinderInfo::Explicit],
                     domain_infos: Vec::new(),
+                    type_value_metadata: None,
                 },
             ],
             kernel_declarations: vec![Decl::Inductive {
@@ -3109,6 +3209,54 @@ def f (A : Type) (x : _) : A := x
     }
 
     #[test]
+    fn constrains_inferred_type_holes_before_sort_check() {
+        let module = elaborate(
+            r#"
+def f : Type 1 := forall (A : _), A
+"#,
+        )
+        .expect("type-position locals with inferred hole types should refine to sorts");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
+    fn solves_prop_type_holes_before_defaulting_to_type() {
+        let module = elaborate(
+            r#"
+def f : Prop := forall (A : _), A
+"#,
+        )
+        .expect("expected Prop should solve the type hole universe before defaulting");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
+    fn constrains_dependent_binder_type_holes_before_sort_check() {
+        let module = elaborate(
+            r#"
+def f (A : _) (x : A) : A := x
+"#,
+        )
+        .expect("dependent binder type holes should refine through later type positions");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
     fn rejects_meta_to_meta_holes_before_kernel_handoff() {
         let err = elaborate("def f : _ := (_ : _)")
             .expect_err("unsolved meta chain must fail in frontend");
@@ -3272,6 +3420,28 @@ def use_imported_domain : Nat := k (fun f => f Nat.zero)
         assert!(matches!(
             &module.declarations[0],
             Decl::Def { name, .. } if name == "use_imported_domain"
+        ));
+    }
+
+    #[test]
+    fn preserves_imported_type_alias_value_metadata() {
+        let module = elaborate_source(
+            FileId(0),
+            Name::from_dotted("Scratch"),
+            r#"
+import Std.Prelude
+import CustomTypeAlias
+axiom f : IdTy
+def use_imported_alias : Nat := f Nat.zero
+"#,
+            &[prelude_import(), custom_type_alias_import()],
+        )
+        .expect("imported type alias value metadata should drive implicit insertion");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "use_imported_alias"
         ));
     }
 
