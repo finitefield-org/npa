@@ -263,7 +263,16 @@ impl SignatureEnv {
         let mut signatures = Self::default();
         for name in ["Nat", "Nat.zero", "Nat.succ", "Nat.rec", "Eq", "Eq.refl"] {
             if let Some(decl) = env.decl(name) {
-                signatures.insert_decl(name.to_owned(), decl.ty().clone(), Vec::new());
+                let source_binders = match name {
+                    "Eq" => vec![
+                        BinderInfo::Implicit,
+                        BinderInfo::Explicit,
+                        BinderInfo::Explicit,
+                    ],
+                    "Eq.refl" => vec![BinderInfo::Implicit, BinderInfo::Explicit],
+                    _ => Vec::new(),
+                };
+                signatures.insert_decl(name.to_owned(), decl.ty().clone(), source_binders);
             }
         }
         signatures
@@ -598,7 +607,9 @@ impl ExprElaborator {
             span,
         } = expr
         {
-            return self.elab_check_lam(binders, body, expected, *span);
+            if term_meta_id(&self.zonk_expr(&expected.core)).is_none() {
+                return self.elab_check_lam(binders, body, expected, *span);
+            }
         }
 
         if let ResolvedExpr::Hole { name, span } = expr {
@@ -1128,6 +1139,26 @@ impl ExprElaborator {
             }
         }
 
+        let lhs_has_meta =
+            self.expr_contains_term_meta(&lhs) || self.level_contains_universe_meta_in_expr(&lhs);
+        let rhs_has_meta =
+            self.expr_contains_term_meta(&rhs) || self.level_contains_universe_meta_in_expr(&rhs);
+        if !lhs_has_meta && !rhs_has_meta {
+            return if self
+                .env
+                .is_defeq(&self.ctx_for_snapshot(context), &self.delta, &lhs, &rhs)
+                .map_err(|error| diagnostic_from_kernel_error(span, error))?
+            {
+                Ok(SolveStatus::Solved)
+            } else {
+                Err(Diagnostic::error(
+                    DiagnosticKind::TypeMismatch,
+                    span,
+                    format!("expected `{rhs:?}`, found `{lhs:?}`"),
+                ))
+            };
+        }
+
         match (&lhs, &rhs) {
             (Expr::Sort(lhs), Expr::Sort(rhs)) => {
                 self.constraints.push(Constraint::LevelLe {
@@ -1202,6 +1233,7 @@ impl ExprElaborator {
                     ..
                 },
             ) => {
+                let body_context = extend_snapshot_with_assumption(context, (**lhs_ty).clone());
                 self.constraints.push(Constraint::TypeEq {
                     lhs: (**lhs_ty).clone(),
                     rhs: (**rhs_ty).clone(),
@@ -1212,31 +1244,14 @@ impl ExprElaborator {
                     ty: (**lhs_ty).clone(),
                     lhs: (**lhs_body).clone(),
                     rhs: (**rhs_body).clone(),
-                    context: context.to_vec(),
+                    context: body_context,
                     span,
                 });
                 Ok(SolveStatus::Solved)
             }
             _ => {
-                if self.expr_contains_term_meta(&lhs)
-                    || self.expr_contains_term_meta(&rhs)
-                    || self.level_contains_universe_meta_in_expr(&lhs)
-                    || self.level_contains_universe_meta_in_expr(&rhs)
-                {
-                    Ok(SolveStatus::Stuck)
-                } else if self
-                    .env
-                    .is_defeq(&self.ctx_for_snapshot(context), &self.delta, &lhs, &rhs)
-                    .map_err(|error| diagnostic_from_kernel_error(span, error))?
-                {
-                    Ok(SolveStatus::Solved)
-                } else {
-                    Err(Diagnostic::error(
-                        DiagnosticKind::TypeMismatch,
-                        span,
-                        format!("expected `{rhs:?}`, found `{lhs:?}`"),
-                    ))
-                }
+                debug_assert!(lhs_has_meta || rhs_has_meta);
+                Ok(SolveStatus::Stuck)
             }
         }
     }
@@ -1721,6 +1736,16 @@ fn local_context_eq(lhs: &[LocalCtxEntry], rhs: &[LocalCtxEntry]) -> bool {
             .all(|(lhs, rhs)| lhs.ty == rhs.ty && lhs.value == rhs.value)
 }
 
+fn extend_snapshot_with_assumption(snapshot: &[LocalCtxEntry], ty: Expr) -> Vec<LocalCtxEntry> {
+    let mut extended = snapshot.to_vec();
+    extended.push(LocalCtxEntry {
+        ty,
+        ty_binder_infos: Vec::new(),
+        value: None,
+    });
+    extended
+}
+
 fn binder_group_end(binders: &[ResolvedBinder], start: usize) -> usize {
     let group_span = binders[start].span;
     let mut end = start + 1;
@@ -2012,7 +2037,7 @@ def use : Nat := let x : Nat := Nat.zero in (id_nat x : Nat)
             r#"
 import Std.Prelude
 axiom Trusted : Type
-theorem zero_refl : Eq.{1} Nat Nat.zero Nat.zero := Eq.refl.{1} Nat Nat.zero
+theorem zero_refl : @Eq.{1} Nat Nat.zero Nat.zero := @Eq.refl.{1} Nat Nat.zero
 "#,
         )
         .expect("axiom and theorem should elaborate");
@@ -2052,6 +2077,23 @@ def use_explicit : Nat := @poly_id Nat Nat.zero
     }
 
     #[test]
+    fn elaborates_builtin_eq_refl_with_implicit_type_argument() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+theorem zero_refl_builtin : Eq.{1} Nat.zero Nat.zero := Eq.refl Nat.zero
+"#,
+        )
+        .expect("Eq.refl should use built-in implicit binder metadata");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Theorem { name, .. } if name == "zero_refl_builtin"
+        ));
+    }
+
+    #[test]
     fn at_mode_does_not_auto_insert_implicit_term_arguments() {
         let err = elaborate(
             r#"
@@ -2070,8 +2112,8 @@ def bad : Nat := @poly_id Nat.zero
         let module = elaborate(
             r#"
 import Std.Prelude
-axiom refl.{u} {A : Sort u} (x : A) : Eq.{u} A x x
-theorem zero_refl : Eq.{1} Nat Nat.zero Nat.zero := refl _
+axiom refl.{u} {A : Sort u} (x : A) : @Eq.{u} A x x
+theorem zero_refl : @Eq.{1} Nat Nat.zero Nat.zero := refl _
 "#,
         )
         .expect("hole should be solved by the expected equality target");
@@ -2110,6 +2152,61 @@ def inferred_type : _ := Nat.zero
         assert!(matches!(
             &module.declarations[0],
             Decl::Def { name, .. } if name == "inferred_type"
+        ));
+    }
+
+    #[test]
+    fn solves_type_holes_from_typed_lambda_values() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def inferred_lambda_type : _ := fun (A : Type) (x : A) => x
+"#,
+        )
+        .expect("typed lambda should infer a declaration type hole");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "inferred_lambda_type"
+        ));
+    }
+
+    #[test]
+    fn accepts_defeq_type_applications_before_structural_decomposition() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def non_injective_app_defeq : ((fun (ignored : Nat) => Type) Nat.zero) :=
+  (Nat : ((fun (ignored : Nat) => Type) (Nat.succ Nat.zero)))
+"#,
+        )
+        .expect("whole application defeq should run before argument decomposition");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "non_injective_app_defeq"
+        ));
+    }
+
+    #[test]
+    fn compares_pi_bodies_under_extended_constraint_context() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def Alias (A : Type) : Type := A
+def pi_body_context :
+  (forall (A : Type), A -> Alias A) :=
+  ((fun A x => x) : (forall (A : Type), A -> A))
+"#,
+        )
+        .expect("Pi body defeq should use a context extended by the binder");
+
+        assert_eq!(module.declarations.len(), 2);
+        assert!(matches!(
+            &module.declarations[1],
+            Decl::Def { name, .. } if name == "pi_body_context"
         ));
     }
 
