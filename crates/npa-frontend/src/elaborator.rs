@@ -456,7 +456,11 @@ impl ExprElaborator {
         let inferred = self.elab_infer(expr)?;
         match self
             .env
-            .whnf(&self.ctx, &self.delta, &self.zonk_expr(&inferred.ty))
+            .whnf(
+                &self.ctx,
+                &self.delta,
+                &self.zonk_current_expr(&inferred.ty),
+            )
             .map_err(|error| diagnostic_from_kernel_error(resolved_expr_span(expr), error))?
         {
             Expr::Sort(level) => Ok(TypeCore {
@@ -586,7 +590,7 @@ impl ExprElaborator {
 
         let func_ty = self
             .env
-            .whnf(&self.ctx, &self.delta, &self.zonk_expr(&result.ty))
+            .whnf(&self.ctx, &self.delta, &self.zonk_current_expr(&result.ty))
             .map_err(|error| diagnostic_from_kernel_error(span, error))?;
         let Expr::Pi { ty, body, .. } = func_ty else {
             return Err(Diagnostic::error(
@@ -645,7 +649,7 @@ impl ExprElaborator {
             span,
         } = expr
         {
-            if term_meta_id(&self.zonk_expr(&expected.core)).is_none() {
+            if term_meta_id(&self.zonk_current_expr(&expected.core)).is_none() {
                 let core = self.elab_check_lam(binders, body, expected, *span)?;
                 return Ok(CheckResult {
                     core,
@@ -1061,7 +1065,7 @@ impl ExprElaborator {
 
             let func_ty = self
                 .env
-                .whnf(&self.ctx, &self.delta, &self.zonk_expr(&result.ty))
+                .whnf(&self.ctx, &self.delta, &self.zonk_current_expr(&result.ty))
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
             let Expr::Pi { ty, body, .. } = func_ty else {
                 return Ok(result);
@@ -1099,7 +1103,7 @@ impl ExprElaborator {
 
             let func_ty = self
                 .env
-                .whnf(&self.ctx, &self.delta, &self.zonk_expr(&result.ty))
+                .whnf(&self.ctx, &self.delta, &self.zonk_current_expr(&result.ty))
                 .map_err(|error| diagnostic_from_kernel_error(span, error))?;
             let Expr::Pi { ty, body, .. } = func_ty else {
                 return Ok(result);
@@ -1120,8 +1124,8 @@ impl ExprElaborator {
         expected: &Expr,
         span: Span,
     ) -> Result<bool> {
-        let actual = self.zonk_expr(actual);
-        let expected = self.zonk_expr(expected);
+        let actual = self.zonk_current_expr(actual);
+        let expected = self.zonk_current_expr(expected);
 
         let saved_term_metas = self.term_metas.clone();
         let saved_universe_metas = self.universe_metas.clone();
@@ -1137,8 +1141,8 @@ impl ExprElaborator {
 
         let solved = match self.solve_constraints(span) {
             Ok(()) => {
-                let actual = self.zonk_expr(&actual);
-                let expected = self.zonk_expr(&expected);
+                let actual = self.zonk_current_expr(&actual);
+                let expected = self.zonk_current_expr(&expected);
                 !self.expr_contains_term_meta(&actual)
                     && !self.expr_contains_term_meta(&expected)
                     && !self.level_contains_universe_meta_in_expr(&actual)
@@ -1171,8 +1175,8 @@ impl ExprElaborator {
         });
         self.solve_constraints(span)?;
 
-        let actual = self.zonk_expr(actual);
-        let expected = self.zonk_expr(expected);
+        let actual = self.zonk_current_expr(actual);
+        let expected = self.zonk_current_expr(expected);
         if self.expr_contains_term_meta(&actual)
             || self.expr_contains_term_meta(&expected)
             || self.level_contains_universe_meta_in_expr(&actual)
@@ -1199,7 +1203,7 @@ impl ExprElaborator {
     fn finish_expr(&mut self, expr: Expr, span: Span) -> Result<Expr> {
         self.solve_constraints(span)?;
         self.reject_unsolved_metas()?;
-        let expr = self.zonk_expr(&expr);
+        let expr = self.zonk_closed_expr(&expr);
         if self.expr_contains_term_meta(&expr) {
             return Err(Diagnostic::error(
                 DiagnosticKind::UnsolvedHole,
@@ -1275,11 +1279,19 @@ impl ExprElaborator {
         let ctx = self.ctx_for_snapshot(context);
         let lhs = self
             .env
-            .whnf(&ctx, &self.delta, &self.zonk_expr(lhs))
+            .whnf(
+                &ctx,
+                &self.delta,
+                &self.zonk_expr_in_context(lhs, context.len()),
+            )
             .map_err(|error| diagnostic_from_kernel_error(span, error))?;
         let rhs = self
             .env
-            .whnf(&ctx, &self.delta, &self.zonk_expr(rhs))
+            .whnf(
+                &ctx,
+                &self.delta,
+                &self.zonk_expr_in_context(rhs, context.len()),
+            )
             .map_err(|error| diagnostic_from_kernel_error(span, error))?;
         if lhs == rhs {
             return Ok(SolveStatus::Solved);
@@ -1465,7 +1477,7 @@ impl ExprElaborator {
         }
         let meta_context = meta.context.clone();
         let meta_ty_raw = meta.ty.clone();
-        if !self.local_context_eq(&meta_context, context) {
+        if !self.local_context_prefix_eq(&meta_context, context) {
             return Ok(false);
         }
         if expr_occurs_term_meta(value, id) {
@@ -1476,19 +1488,24 @@ impl ExprElaborator {
             ));
         }
 
-        let value = self.zonk_expr(value);
+        let value = self.zonk_expr_in_context(value, context.len());
         if self.expr_contains_term_meta(&value) {
             return Ok(false);
         }
-        let meta_ty = self.zonk_expr(&meta_ty_raw);
+        let Some(value) =
+            rebase_expr_to_prefix_context(&value, context.len(), meta_context.len(), span)?
+        else {
+            return Ok(false);
+        };
+        let meta_ty = self.zonk_expr_in_context(&meta_ty_raw, meta_context.len());
         let value_ty = self
             .env
-            .infer(&self.ctx_for_snapshot(context), &self.delta, &value)
+            .infer(&self.ctx_for_snapshot(&meta_context), &self.delta, &value)
             .map_err(|error| diagnostic_from_kernel_error(span, error))?;
         self.constraints.push(Constraint::TypeEq {
             lhs: value_ty,
             rhs: meta_ty,
-            context: context.to_vec(),
+            context: meta_context,
             span,
         });
         self.term_metas[id.0].assignment = Some(value);
@@ -1645,9 +1662,9 @@ impl ExprElaborator {
         let mut ctx = Ctx::new();
         for (index, local) in snapshot.iter().enumerate() {
             let name = format!("_{}", index);
-            let ty = self.zonk_expr(&local.ty);
+            let ty = self.zonk_expr_in_context(&local.ty, index);
             if let Some(value) = &local.value {
-                ctx.push_definition(name, ty, self.zonk_expr(value));
+                ctx.push_definition(name, ty, self.zonk_expr_in_context(value, index));
             } else {
                 ctx.push_assumption(name, ty);
             }
@@ -1655,18 +1672,30 @@ impl ExprElaborator {
         ctx
     }
 
-    fn zonk_expr(&self, expr: &Expr) -> Expr {
+    fn zonk_current_expr(&self, expr: &Expr) -> Expr {
+        self.zonk_expr_in_context(expr, self.locals.len())
+    }
+
+    fn zonk_closed_expr(&self, expr: &Expr) -> Expr {
+        self.zonk_expr_in_context(expr, 0)
+    }
+
+    fn zonk_expr_in_context(&self, expr: &Expr, context_len: usize) -> Expr {
         match expr {
             Expr::Sort(level) => Expr::sort(self.zonk_level(level)),
             Expr::BVar(index) => Expr::bvar(*index),
             Expr::Const { name, levels } => {
                 if let Some(id) = term_meta_id_from_name(name) {
-                    if let Some(assignment) = self
-                        .term_metas
-                        .get(id.0)
-                        .and_then(|meta| meta.assignment.as_ref())
-                    {
-                        return self.zonk_expr(assignment);
+                    if let Some(meta) = self.term_metas.get(id.0) {
+                        if let Some(assignment) = meta.assignment.as_ref() {
+                            let assignment =
+                                self.zonk_expr_in_context(assignment, meta.context.len());
+                            if let Some(extra_depth) = context_len.checked_sub(meta.context.len()) {
+                                return shift(&assignment, extra_depth as i32, 0)
+                                    .expect("positive metavariable assignment shift must succeed");
+                            }
+                            return assignment;
+                        }
                     }
                 }
                 Expr::konst(
@@ -1674,13 +1703,20 @@ impl ExprElaborator {
                     levels.iter().map(|level| self.zonk_level(level)).collect(),
                 )
             }
-            Expr::App(fun, arg) => Expr::app(self.zonk_expr(fun), self.zonk_expr(arg)),
-            Expr::Lam { binder, ty, body } => {
-                Expr::lam(binder.clone(), self.zonk_expr(ty), self.zonk_expr(body))
-            }
-            Expr::Pi { binder, ty, body } => {
-                Expr::pi(binder.clone(), self.zonk_expr(ty), self.zonk_expr(body))
-            }
+            Expr::App(fun, arg) => Expr::app(
+                self.zonk_expr_in_context(fun, context_len),
+                self.zonk_expr_in_context(arg, context_len),
+            ),
+            Expr::Lam { binder, ty, body } => Expr::lam(
+                binder.clone(),
+                self.zonk_expr_in_context(ty, context_len),
+                self.zonk_expr_in_context(body, context_len + 1),
+            ),
+            Expr::Pi { binder, ty, body } => Expr::pi(
+                binder.clone(),
+                self.zonk_expr_in_context(ty, context_len),
+                self.zonk_expr_in_context(body, context_len + 1),
+            ),
             Expr::Let {
                 binder,
                 ty,
@@ -1688,9 +1724,9 @@ impl ExprElaborator {
                 body,
             } => Expr::let_in(
                 binder.clone(),
-                self.zonk_expr(ty),
-                self.zonk_expr(value),
-                self.zonk_expr(body),
+                self.zonk_expr_in_context(ty, context_len),
+                self.zonk_expr_in_context(value, context_len),
+                self.zonk_expr_in_context(body, context_len + 1),
             ),
         }
     }
@@ -1725,15 +1761,27 @@ impl ExprElaborator {
     }
 
     fn local_context_eq(&self, lhs: &[LocalCtxEntry], rhs: &[LocalCtxEntry]) -> bool {
-        lhs.len() == rhs.len()
-            && lhs.iter().zip(rhs).all(|(lhs, rhs)| {
-                self.zonk_expr(&lhs.ty) == self.zonk_expr(&rhs.ty)
-                    && match (&lhs.value, &rhs.value) {
-                        (Some(lhs), Some(rhs)) => self.zonk_expr(lhs) == self.zonk_expr(rhs),
-                        (None, None) => true,
-                        _ => false,
-                    }
-            })
+        lhs.len() == rhs.len() && self.local_context_prefix_eq(lhs, rhs)
+    }
+
+    fn local_context_prefix_eq(&self, prefix: &[LocalCtxEntry], full: &[LocalCtxEntry]) -> bool {
+        prefix.len() <= full.len()
+            && prefix
+                .iter()
+                .zip(full)
+                .enumerate()
+                .all(|(index, (prefix, full))| {
+                    self.zonk_expr_in_context(&prefix.ty, index)
+                        == self.zonk_expr_in_context(&full.ty, index)
+                        && match (&prefix.value, &full.value) {
+                            (Some(prefix), Some(full)) => {
+                                self.zonk_expr_in_context(prefix, index)
+                                    == self.zonk_expr_in_context(full, index)
+                            }
+                            (None, None) => true,
+                            _ => false,
+                        }
+                })
     }
 }
 
@@ -1940,6 +1988,95 @@ fn extend_snapshot_with_assumption(snapshot: &[LocalCtxEntry], ty: Expr) -> Vec<
         value: None,
     });
     extended
+}
+
+fn rebase_expr_to_prefix_context(
+    expr: &Expr,
+    source_len: usize,
+    target_len: usize,
+    span: Span,
+) -> Result<Option<Expr>> {
+    if target_len > source_len {
+        return Ok(None);
+    }
+    let dropped = u32::try_from(source_len - target_len).map_err(|_| {
+        Diagnostic::error(
+            DiagnosticKind::KernelRejected,
+            span,
+            "local context is too large to rebase metavariable assignment",
+        )
+    })?;
+    rebase_expr_dropping_locals(expr, dropped, 0, span)
+}
+
+fn rebase_expr_dropping_locals(
+    expr: &Expr,
+    dropped: u32,
+    cutoff: u32,
+    span: Span,
+) -> Result<Option<Expr>> {
+    match expr {
+        Expr::Sort(level) => Ok(Some(Expr::sort(level.clone()))),
+        Expr::BVar(index) if *index < cutoff => Ok(Some(Expr::bvar(*index))),
+        Expr::BVar(index) => {
+            let dropped_end = cutoff.checked_add(dropped).ok_or_else(|| {
+                Diagnostic::error(
+                    DiagnosticKind::KernelRejected,
+                    span,
+                    "local context is too large to rebase metavariable assignment",
+                )
+            })?;
+            if *index < dropped_end {
+                return Ok(None);
+            }
+            Ok(Some(Expr::bvar(index - dropped)))
+        }
+        Expr::Const { name, levels } => Ok(Some(Expr::konst(name.clone(), levels.clone()))),
+        Expr::App(fun, arg) => {
+            let Some(fun) = rebase_expr_dropping_locals(fun, dropped, cutoff, span)? else {
+                return Ok(None);
+            };
+            let Some(arg) = rebase_expr_dropping_locals(arg, dropped, cutoff, span)? else {
+                return Ok(None);
+            };
+            Ok(Some(Expr::app(fun, arg)))
+        }
+        Expr::Lam { binder, ty, body } => {
+            let Some(ty) = rebase_expr_dropping_locals(ty, dropped, cutoff, span)? else {
+                return Ok(None);
+            };
+            let Some(body) = rebase_expr_dropping_locals(body, dropped, cutoff + 1, span)? else {
+                return Ok(None);
+            };
+            Ok(Some(Expr::lam(binder.clone(), ty, body)))
+        }
+        Expr::Pi { binder, ty, body } => {
+            let Some(ty) = rebase_expr_dropping_locals(ty, dropped, cutoff, span)? else {
+                return Ok(None);
+            };
+            let Some(body) = rebase_expr_dropping_locals(body, dropped, cutoff + 1, span)? else {
+                return Ok(None);
+            };
+            Ok(Some(Expr::pi(binder.clone(), ty, body)))
+        }
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => {
+            let Some(ty) = rebase_expr_dropping_locals(ty, dropped, cutoff, span)? else {
+                return Ok(None);
+            };
+            let Some(value) = rebase_expr_dropping_locals(value, dropped, cutoff, span)? else {
+                return Ok(None);
+            };
+            let Some(body) = rebase_expr_dropping_locals(body, dropped, cutoff + 1, span)? else {
+                return Ok(None);
+            };
+            Ok(Some(Expr::let_in(binder.clone(), ty, value, body)))
+        }
+    }
 }
 
 fn binder_group_end(binders: &[ResolvedBinder], start: usize) -> usize {
@@ -2538,6 +2675,39 @@ def f : (forall (x : _), _) := fun (x : Nat) => x
 "#,
         )
         .expect("dependent Pi holes should compare solved context snapshots");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
+    fn solves_binder_type_holes_from_extended_context() {
+        let module = elaborate(
+            r#"
+import Std.Prelude
+def f (x : _) : Nat := x
+"#,
+        )
+        .expect("binder type hole should solve from body constraints");
+
+        assert_eq!(module.declarations.len(), 1);
+        assert!(matches!(
+            &module.declarations[0],
+            Decl::Def { name, .. } if name == "f"
+        ));
+    }
+
+    #[test]
+    fn rebases_binder_type_holes_to_outer_context() {
+        let module = elaborate(
+            r#"
+def f (A : Type) (x : _) : A := x
+"#,
+        )
+        .expect("binder type hole assignment should rebase to the creation context");
 
         assert_eq!(module.declarations.len(), 1);
         assert!(matches!(
