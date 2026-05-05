@@ -2275,8 +2275,9 @@ response:
 ```
 
 `parse` は imported notation metadata と preceding notation declarations を使うため、
-`module` と `verified_imports` を受け取ります。notation を全く使わない小さな snippet parser を
-別に作ってもよいですが、module parse API では state を明示します。
+公開 API では `parse_module_with_verified_imports` が `module` と `verified_imports` を受け取ります。
+notation を全く使わない小さな snippet parser として `parse_module` を残してもよいですが、
+module parse API では state を明示します。
 
 ## 10.2 resolve
 

@@ -422,12 +422,20 @@ pub fn resolve_source(
     source: &str,
     verified_imports: &[VerifiedImport],
 ) -> Result<ResolvedModule> {
-    let module = parse_module_with_imports(
+    let module = parse_module_with_verified_imports(file_id, source, verified_imports)?;
+    resolve_module(current_module, &module, verified_imports)
+}
+
+pub fn parse_module_with_verified_imports(
+    file_id: FileId,
+    source: &str,
+    verified_imports: &[VerifiedImport],
+) -> Result<SurfaceModule> {
+    parse_module_with_imports(
         file_id,
         source,
         &parser_imports_from_verified(verified_imports),
-    )?;
-    resolve_module(current_module, &module, verified_imports)
+    )
 }
 
 pub fn resolve_module(
@@ -2132,6 +2140,30 @@ def z : Nat := Nat.zero + Nat.zero
             ElabGlobalRef::Imported { name, .. } => assert_eq!(name.to_dotted(), "Nat.add"),
             other => panic!("expected imported Nat.add target, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn parses_imported_notation_through_public_staged_api() {
+        let imports = [std_nat_notation_import()];
+        let module = parse_module_with_verified_imports(
+            FileId(0),
+            r#"
+import Std.Nat
+open Nat
+def z : Nat := Nat.zero + Nat.zero
+"#,
+            &imports,
+        )
+        .expect("public parser should use verified import notation metadata");
+
+        let resolved = resolve_module(Name::from_dotted("Scratch"), &module, &imports)
+            .expect("parsed module should resolve through the staged API");
+
+        let ResolvedItem::Def(decl) = &resolved.items[2] else {
+            panic!("expected def");
+        };
+        let value = decl.value.as_ref().expect("def value");
+        assert!(matches!(value, ResolvedExpr::Notation { .. }));
     }
 
     #[test]
