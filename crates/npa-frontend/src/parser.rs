@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
     lex, BinderInfo, Diagnostic, DiagnosticKind, FileId, ImplicitMode, NotationDecl, NotationKind,
     Result, Span, SurfaceBinder, SurfaceBinderKind, SurfaceCtorDecl, SurfaceDecl, SurfaceExpr,
@@ -9,10 +11,39 @@ pub fn parse_module(file_id: FileId, source: &str) -> Result<SurfaceModule> {
     Parser::new(file_id, tokens).parse_module()
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct NotationSyntaxEntry {
+    kind: NotationKind,
+    associativity: Associativity,
+    precedence: u32,
+    symbol: String,
+}
+
+impl NotationSyntaxEntry {
+    fn from_decl(decl: &NotationDecl) -> Self {
+        Self {
+            kind: decl.kind.clone(),
+            associativity: associativity_for_kind(&decl.kind),
+            precedence: decl.precedence,
+            symbol: decl.symbol.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Associativity {
+    Left,
+    Right,
+    NonAssoc,
+}
+
 struct Parser {
     file_id: FileId,
     tokens: Vec<Token>,
     pos: usize,
+    namespace_stack: Vec<String>,
+    notation_scopes: Vec<Vec<NotationSyntaxEntry>>,
+    namespace_notations: BTreeMap<Vec<String>, Vec<NotationSyntaxEntry>>,
 }
 
 impl Parser {
@@ -21,6 +52,9 @@ impl Parser {
             file_id,
             tokens,
             pos: 0,
+            namespace_stack: Vec::new(),
+            notation_scopes: vec![Vec::new()],
+            namespace_notations: BTreeMap::new(),
         }
     }
 
@@ -36,6 +70,7 @@ impl Parser {
 
             let item = self.parse_item()?;
             seen_non_import |= !matches!(item, SurfaceItem::Import { .. });
+            self.update_notation_scope_after_item(&item)?;
             items.push(item);
         }
 
@@ -64,6 +99,85 @@ impl Parser {
             TokenKind::Inductive => self.parse_inductive(),
             _ => Err(self.error_here(format!("expected item, found {}", self.peek().kind.label()))),
         }
+    }
+
+    fn update_notation_scope_after_item(&mut self, item: &SurfaceItem) -> Result<()> {
+        match item {
+            SurfaceItem::Namespace { name, span } => {
+                self.namespace_stack.push(name.clone());
+                self.notation_scopes.push(Vec::new());
+                self.activate_current_namespace_notations(*span)?;
+            }
+            SurfaceItem::End { .. } => {
+                if self.notation_scopes.len() > 1 {
+                    self.notation_scopes.pop();
+                }
+                self.namespace_stack.pop();
+            }
+            SurfaceItem::Open { namespace, span } => {
+                self.activate_namespace_notations(&namespace.parts, *span)?;
+            }
+            SurfaceItem::Notation(decl) => {
+                let entry = NotationSyntaxEntry::from_decl(decl);
+                self.add_active_notation(entry.clone(), decl.span)?;
+                if !self.namespace_stack.is_empty() {
+                    self.namespace_notations
+                        .entry(self.namespace_stack.clone())
+                        .or_default()
+                        .push(entry);
+                }
+            }
+            SurfaceItem::Import { .. }
+            | SurfaceItem::Def(_)
+            | SurfaceItem::Theorem(_)
+            | SurfaceItem::Axiom(_)
+            | SurfaceItem::Inductive { .. } => {}
+        }
+        Ok(())
+    }
+
+    fn activate_current_namespace_notations(&mut self, span: Span) -> Result<()> {
+        let namespace = self.namespace_stack.clone();
+        if namespace.is_empty() {
+            return Ok(());
+        }
+        for end in 1..=namespace.len() {
+            self.activate_namespace_notations(&namespace[..end], span)?;
+        }
+        Ok(())
+    }
+
+    fn activate_namespace_notations(&mut self, namespace: &[String], span: Span) -> Result<()> {
+        let entries = self
+            .namespace_notations
+            .get(namespace)
+            .cloned()
+            .unwrap_or_default();
+        for entry in entries {
+            self.add_active_notation(entry, span)?;
+        }
+        Ok(())
+    }
+
+    fn add_active_notation(&mut self, entry: NotationSyntaxEntry, span: Span) -> Result<()> {
+        for active in self.active_notation_entries() {
+            if active.symbol == entry.symbol
+                && (active.kind != entry.kind
+                    || active.precedence != entry.precedence
+                    || active.associativity != entry.associativity)
+            {
+                return Err(Diagnostic::error(
+                    DiagnosticKind::NotationConflict,
+                    span,
+                    format!("conflicting notation declaration for `{}`", entry.symbol),
+                ));
+            }
+        }
+        self.notation_scopes
+            .last_mut()
+            .expect("top-level notation scope exists")
+            .push(entry);
+        Ok(())
     }
 
     fn parse_import(&mut self) -> Result<SurfaceItem> {
@@ -343,7 +457,84 @@ impl Parser {
     }
 
     fn parse_application(&mut self) -> Result<SurfaceExpr> {
-        let mut expr = self.parse_atom()?;
+        self.parse_notation_expr(0)
+    }
+
+    fn parse_notation_expr(&mut self, min_bp: u32) -> Result<SurfaceExpr> {
+        let mut expr = self.parse_notation_prefix_or_application()?;
+        loop {
+            if let Some(entry) = self.active_postfix_entry() {
+                if entry.precedence < min_bp {
+                    break;
+                }
+                let token = self.bump();
+                let span = expr.span().join(token.span);
+                expr = SurfaceExpr::Notation {
+                    head: crate::NotationHead {
+                        kind: NotationKind::Postfix,
+                        symbol: entry.symbol,
+                        span: token.span,
+                    },
+                    args: vec![expr],
+                    span,
+                };
+                continue;
+            }
+
+            let Some(entry) = self.active_infix_entry() else {
+                break;
+            };
+            if entry.precedence < min_bp {
+                break;
+            }
+            let token = self.bump();
+            let right_bp = match entry.associativity {
+                Associativity::Left => entry.precedence.saturating_add(1),
+                Associativity::Right => entry.precedence,
+                Associativity::NonAssoc => entry.precedence.saturating_add(1),
+            };
+            let rhs = self.parse_notation_expr(right_bp)?;
+            if entry.associativity == Associativity::NonAssoc {
+                if let Some(next) = self.active_infix_entry() {
+                    if next.precedence == entry.precedence {
+                        return Err(Diagnostic::parser(
+                            self.peek().span,
+                            "non-associative infix notation must be parenthesized",
+                        ));
+                    }
+                }
+            }
+            let span = expr.span().join(rhs.span());
+            expr = SurfaceExpr::Notation {
+                head: crate::NotationHead {
+                    kind: entry.kind,
+                    symbol: entry.symbol,
+                    span: token.span,
+                },
+                args: vec![expr, rhs],
+                span,
+            };
+        }
+        Ok(expr)
+    }
+
+    fn parse_notation_prefix_or_application(&mut self) -> Result<SurfaceExpr> {
+        let mut expr = if let Some(entry) = self.active_prefix_entry() {
+            let token = self.bump();
+            let rhs = self.parse_notation_expr(entry.precedence)?;
+            SurfaceExpr::Notation {
+                head: crate::NotationHead {
+                    kind: NotationKind::Prefix,
+                    symbol: entry.symbol,
+                    span: token.span,
+                },
+                span: token.span.join(rhs.span()),
+                args: vec![rhs],
+            }
+        } else {
+            self.parse_atom()?
+        };
+
         while self.starts_atom() {
             let arg = self.parse_atom()?;
             let span = expr.span().join(arg.span());
@@ -354,6 +545,40 @@ impl Parser {
             };
         }
         Ok(expr)
+    }
+
+    fn active_prefix_entry(&self) -> Option<NotationSyntaxEntry> {
+        self.active_symbol_entry()
+            .and_then(|entry| (entry.kind == NotationKind::Prefix).then_some(entry))
+    }
+
+    fn active_postfix_entry(&self) -> Option<NotationSyntaxEntry> {
+        self.active_symbol_entry()
+            .and_then(|entry| (entry.kind == NotationKind::Postfix).then_some(entry))
+    }
+
+    fn active_infix_entry(&self) -> Option<NotationSyntaxEntry> {
+        self.active_symbol_entry()
+            .and_then(|entry| match entry.kind {
+                NotationKind::Infix | NotationKind::Infixl | NotationKind::Infixr => Some(entry),
+                NotationKind::Prefix | NotationKind::Postfix => None,
+            })
+    }
+
+    fn active_symbol_entry(&self) -> Option<NotationSyntaxEntry> {
+        let TokenKind::Symbol(symbol) = &self.peek().kind else {
+            return None;
+        };
+        self.active_notation_entries()
+            .into_iter()
+            .find(|entry| &entry.symbol == symbol)
+    }
+
+    fn active_notation_entries(&self) -> Vec<NotationSyntaxEntry> {
+        self.notation_scopes
+            .iter()
+            .flat_map(|scope| scope.iter().cloned())
+            .collect()
     }
 
     fn parse_atom(&mut self) -> Result<SurfaceExpr> {
@@ -734,6 +959,16 @@ fn normalize_notation_symbol(raw: &str, span: Span) -> Result<String> {
     Ok(symbol.to_owned())
 }
 
+fn associativity_for_kind(kind: &NotationKind) -> Associativity {
+    match kind {
+        NotationKind::Infixl => Associativity::Left,
+        NotationKind::Infixr => Associativity::Right,
+        NotationKind::Prefix | NotationKind::Postfix | NotationKind::Infix => {
+            Associativity::NonAssoc
+        }
+    }
+}
+
 fn invalid_notation(span: Span, message: impl Into<String>) -> Diagnostic {
     Diagnostic::error(DiagnosticKind::InvalidNotation, span, message)
 }
@@ -978,6 +1213,80 @@ end Demo
             panic!("expected inductive");
         };
         assert_eq!(constructors.len(), 2);
+    }
+
+    #[test]
+    fn parses_active_infix_notation_with_precedence() {
+        let module = parse(
+            r#"
+infixl:65 " + " => Nat.add
+infix:50 " = " => Eq
+axiom t : a + b = c + d
+"#,
+        );
+        let SurfaceItem::Axiom(decl) = &module.items[2] else {
+            panic!("expected axiom");
+        };
+        let SurfaceExpr::Notation { head, args, .. } = &decl.ty else {
+            panic!("expected equality notation");
+        };
+        assert_eq!(head.symbol, "=");
+        assert!(matches!(
+            &args[0],
+            SurfaceExpr::Notation { head, .. } if head.symbol == "+"
+        ));
+        assert!(matches!(
+            &args[1],
+            SurfaceExpr::Notation { head, .. } if head.symbol == "+"
+        ));
+    }
+
+    #[test]
+    fn parses_prefix_and_postfix_notation() {
+        let module = parse(
+            r#"
+prefix:70 "!" => negate
+postfix:80 "$" => inspect
+axiom t : ! a$
+"#,
+        );
+        let SurfaceItem::Axiom(decl) = &module.items[2] else {
+            panic!("expected axiom");
+        };
+        let SurfaceExpr::Notation { head, args, .. } = &decl.ty else {
+            panic!("expected prefix notation");
+        };
+        assert_eq!(head.kind, NotationKind::Prefix);
+        assert!(matches!(
+            &args[0],
+            SurfaceExpr::Notation { head, .. } if head.kind == NotationKind::Postfix
+        ));
+    }
+
+    #[test]
+    fn rejects_non_associative_infix_chains() {
+        let err = parse_module(
+            FileId(0),
+            r#"
+infix:50 " = " => Eq
+axiom bad : a = b = c
+"#,
+        )
+        .expect_err("non-associative notation chains must be rejected");
+        assert_eq!(err.kind, DiagnosticKind::ParserError);
+    }
+
+    #[test]
+    fn rejects_active_notation_conflicts() {
+        let err = parse_module(
+            FileId(0),
+            r#"
+infixl:65 " + " => Nat.add
+infixr:65 " + " => Int.add
+"#,
+        )
+        .expect_err("conflicting active notation must be rejected");
+        assert_eq!(err.kind, DiagnosticKind::NotationConflict);
     }
 
     #[test]

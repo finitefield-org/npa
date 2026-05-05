@@ -16,7 +16,8 @@ pub use resolver::{
     resolve_module, resolve_source, ElabGlobalRef, FrontendState, GlobalDeclaration, GlobalOrigin,
     GlobalScope, ImportedDeclaration, ImportedTypeMetadata, LocalBinding, LocalId, LocalRef,
     LocalScopeStack, Name, OpenScope, ResolvedBinder, ResolvedCtorDecl, ResolvedDecl, ResolvedExpr,
-    ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, VerifiedImport,
+    ResolvedImport, ResolvedItem, ResolvedModule, ResolvedName, ResolvedNotationDecl,
+    VerifiedImport,
 };
 pub use span::{ByteOffset, FileId, Span};
 pub use surface::{
