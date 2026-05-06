@@ -51,6 +51,7 @@ canonical certificate を検査します。
 | 1 | Rust kernel による core term / simple inductive / reduction の検査 |
 | 2 | `.npcert` 形式、canonical core AST、hash、axiom report |
 | 3 | 表層言語、parser、name resolution、notation、simple inductive declaration、elaboration |
+| 3 AI | AI 向け Machine Surface: 高速で明示的な Phase 3 実装計画 |
 | 4 | tactic 層: `intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` |
 | 5 | IDE / API: proof state、tactic execution、theorem search、goal display |
 | 6 | 小さく堅い標準ライブラリ: `Std.Logic`, `Std.Nat`, `Std.List`, `Std.Algebra.Basic` |
@@ -106,6 +107,7 @@ cargo test --workspace
 - [Phase 1: Kernel](doc/phase1.md)
 - [Phase 2: Certificate](doc/phase2.md)
 - [Phase 3: Surface Language](doc/phase3.md)
+- [Phase 3 AI Profile: Machine Surface](doc/phase3-ai.md)
 - [Phase 4: Tactic](doc/phase4.md)
 - [Phase 5: IDE/API](doc/phase5.md)
 - [Phase 6: Library](doc/phase6.md)
