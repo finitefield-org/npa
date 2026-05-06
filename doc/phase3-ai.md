@@ -520,6 +520,7 @@ pub enum MachineErrorKind {
     UnsupportedItem,
     UnsupportedSyntax,
     ImportAfterItem,
+    ImportResolutionError,
     MissingVerifiedImport,
     UnknownGlobalName,
     ShortGlobalName,

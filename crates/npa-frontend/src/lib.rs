@@ -17,5 +17,5 @@ pub use machine::{
     MachineModule, MachineName, MachineSurfaceMode, MachineTerm, MachineUniverseParam,
 };
 pub use parser::parse_machine_module;
-pub use resolver::{resolve_machine_module, ResolvedMachineModule, VerifiedImport};
+pub use resolver::{resolve_machine_module, ResolvedMachineModule, VerifiedExport, VerifiedImport};
 pub use span::{ByteOffset, FileId, Span};

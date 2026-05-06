@@ -14,6 +14,7 @@ pub enum MachineDiagnosticKind {
     UnsupportedItem,
     UnsupportedSyntax,
     ImportAfterItem,
+    ImportResolutionError,
     MissingVerifiedImport,
     UnknownGlobalName,
     ShortGlobalName,
