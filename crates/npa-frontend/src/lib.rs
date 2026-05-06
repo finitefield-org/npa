@@ -13,8 +13,8 @@ pub use elaborator::{
 };
 pub use lexer::{lex, Token, TokenKind};
 pub use machine::{
-    MachineBinder, MachineCompileOptions, MachineItem, MachineLevel, MachineLocalDecl,
-    MachineModule, MachineName, MachineSurfaceMode, MachineTerm,
+    MachineBinder, MachineCompileOptions, MachineDecl, MachineItem, MachineLevel, MachineLocalDecl,
+    MachineModule, MachineName, MachineSurfaceMode, MachineTerm, MachineUniverseParam,
 };
 pub use parser::parse_machine_module;
 pub use resolver::{resolve_machine_module, ResolvedMachineModule, VerifiedImport};
