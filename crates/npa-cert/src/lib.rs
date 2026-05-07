@@ -13,12 +13,16 @@ mod kernel;
 mod types;
 mod verify;
 
+pub use kernel::verified_module_to_kernel_decls;
 pub use types::*;
 
 pub(crate) use binary::*;
 pub(crate) use canonical::*;
 pub(crate) use hash::*;
-pub(crate) use kernel::*;
+pub(crate) use kernel::{
+    add_decl_to_env, cert_to_kernel_decls, expr_from_term, level_from_node, name_to_string,
+    universe_names,
+};
 pub(crate) use verify::*;
 
 pub(crate) const FORMAT: &str = "NPA-CERT-0.1";

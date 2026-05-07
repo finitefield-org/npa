@@ -8,6 +8,8 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerifiedExport {
     pub name: npa_cert::Name,
+    pub universe_params: Vec<String>,
+    pub ty: npa_kernel::Expr,
     pub decl_interface_hash: npa_cert::Hash,
 }
 
@@ -17,6 +19,7 @@ pub struct VerifiedImport {
     pub export_hash: npa_cert::Hash,
     pub certificate_hash: Option<npa_cert::Hash>,
     pub exports: Vec<VerifiedExport>,
+    pub kernel_decls: Vec<npa_kernel::Decl>,
 }
 
 impl From<&npa_cert::VerifiedModule> for VerifiedImport {
@@ -26,6 +29,12 @@ impl From<&npa_cert::VerifiedModule> for VerifiedImport {
             .iter()
             .map(|entry| VerifiedExport {
                 name: module.name_table[entry.name].clone(),
+                universe_params: entry
+                    .universe_params
+                    .iter()
+                    .map(|name| module.name_table[*name].as_dotted())
+                    .collect(),
+                ty: expr_from_verified_term(module, entry.ty),
                 decl_interface_hash: entry.decl_interface_hash,
             })
             .collect();
@@ -35,6 +44,8 @@ impl From<&npa_cert::VerifiedModule> for VerifiedImport {
             export_hash: module.export_hash,
             certificate_hash: Some(module.certificate_hash),
             exports,
+            kernel_decls: npa_cert::verified_module_to_kernel_decls(module)
+                .expect("verified module must reconstruct kernel declarations"),
         }
     }
 }
@@ -545,6 +556,87 @@ fn name_from_machine(name: &MachineName) -> npa_cert::Name {
     npa_cert::Name(name.parts.clone())
 }
 
+fn expr_from_verified_term(
+    module: &npa_cert::VerifiedModule,
+    term: npa_cert::TermId,
+) -> npa_kernel::Expr {
+    match &module.term_table[term] {
+        npa_cert::TermNode::Sort(level) => {
+            npa_kernel::Expr::sort(level_from_verified_node(module, *level))
+        }
+        npa_cert::TermNode::BVar(index) => npa_kernel::Expr::bvar(*index),
+        npa_cert::TermNode::Const { global_ref, levels } => npa_kernel::Expr::konst(
+            global_ref_name(module, global_ref),
+            levels
+                .iter()
+                .map(|level| level_from_verified_node(module, *level))
+                .collect(),
+        ),
+        npa_cert::TermNode::App(func, arg) => npa_kernel::Expr::app(
+            expr_from_verified_term(module, *func),
+            expr_from_verified_term(module, *arg),
+        ),
+        npa_cert::TermNode::Lam { ty, body } => npa_kernel::Expr::lam(
+            "_",
+            expr_from_verified_term(module, *ty),
+            expr_from_verified_term(module, *body),
+        ),
+        npa_cert::TermNode::Pi { ty, body } => npa_kernel::Expr::pi(
+            "_",
+            expr_from_verified_term(module, *ty),
+            expr_from_verified_term(module, *body),
+        ),
+        npa_cert::TermNode::Let { ty, value, body } => npa_kernel::Expr::let_in(
+            "_",
+            expr_from_verified_term(module, *ty),
+            expr_from_verified_term(module, *value),
+            expr_from_verified_term(module, *body),
+        ),
+    }
+}
+
+fn level_from_verified_node(
+    module: &npa_cert::VerifiedModule,
+    level: npa_cert::LevelId,
+) -> npa_kernel::Level {
+    match &module.level_table[level] {
+        npa_cert::LevelNode::Zero => npa_kernel::Level::zero(),
+        npa_cert::LevelNode::Succ(inner) => {
+            npa_kernel::Level::succ(level_from_verified_node(module, *inner))
+        }
+        npa_cert::LevelNode::Max(lhs, rhs) => npa_kernel::Level::max(
+            level_from_verified_node(module, *lhs),
+            level_from_verified_node(module, *rhs),
+        ),
+        npa_cert::LevelNode::IMax(lhs, rhs) => npa_kernel::Level::imax(
+            level_from_verified_node(module, *lhs),
+            level_from_verified_node(module, *rhs),
+        ),
+        npa_cert::LevelNode::Param(name) => {
+            npa_kernel::Level::param(module.name_table[*name].as_dotted())
+        }
+    }
+}
+
+fn global_ref_name(module: &npa_cert::VerifiedModule, global_ref: &npa_cert::GlobalRef) -> String {
+    match global_ref {
+        npa_cert::GlobalRef::Imported { name, .. }
+        | npa_cert::GlobalRef::LocalGenerated { name, .. } => module.name_table[*name].as_dotted(),
+        npa_cert::GlobalRef::Local { decl_index } => decl_name(module, *decl_index),
+    }
+}
+
+fn decl_name(module: &npa_cert::VerifiedModule, decl_index: usize) -> String {
+    let decl = &module.declarations[decl_index];
+    let name = match &decl.decl {
+        npa_cert::DeclPayload::Axiom { name, .. }
+        | npa_cert::DeclPayload::Def { name, .. }
+        | npa_cert::DeclPayload::Theorem { name, .. }
+        | npa_cert::DeclPayload::Inductive { name, .. } => *name,
+    };
+    module.name_table[name].as_dotted()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -555,18 +647,31 @@ mod tests {
     }
 
     fn verified_import(module: &str, exports: &[&str]) -> VerifiedImport {
+        let exports: Vec<_> = exports
+            .iter()
+            .enumerate()
+            .map(|(index, name)| VerifiedExport {
+                name: npa_cert::Name::from_dotted(name),
+                universe_params: Vec::new(),
+                ty: npa_kernel::Expr::sort(npa_kernel::Level::zero()),
+                decl_interface_hash: hash(index as u8 + 2),
+            })
+            .collect();
+        let kernel_decls = exports
+            .iter()
+            .map(|export| npa_kernel::Decl::Axiom {
+                name: export.name.as_dotted(),
+                universe_params: export.universe_params.clone(),
+                ty: export.ty.clone(),
+            })
+            .collect();
+
         VerifiedImport {
             module: npa_cert::Name::from_dotted(module),
             export_hash: hash(1),
             certificate_hash: None,
-            exports: exports
-                .iter()
-                .enumerate()
-                .map(|(index, name)| VerifiedExport {
-                    name: npa_cert::Name::from_dotted(name),
-                    decl_interface_hash: hash(index as u8 + 2),
-                })
-                .collect(),
+            exports,
+            kernel_decls,
         }
     }
 

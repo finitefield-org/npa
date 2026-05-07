@@ -20,11 +20,11 @@ impl Ctx {
         Self::default()
     }
 
-    pub(crate) fn push_assumption(&mut self, _name: impl Into<String>, ty: Expr) {
+    pub fn push_assumption(&mut self, _name: impl Into<String>, ty: Expr) {
         self.locals.push(LocalDecl { ty, value: None });
     }
 
-    pub(crate) fn push_definition(&mut self, _name: impl Into<String>, ty: Expr, value: Expr) {
+    pub fn push_definition(&mut self, _name: impl Into<String>, ty: Expr, value: Expr) {
         self.locals.push(LocalDecl {
             ty,
             value: Some(value),

@@ -17,7 +17,12 @@ pub(crate) fn cert_to_kernel_decls(cert: &ModuleCert) -> Result<Vec<Decl>> {
         .collect()
 }
 
-pub(crate) fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result<Vec<Decl>> {
+/// Reconstruct kernel declarations exported by a verified module for downstream checking.
+///
+/// Transparent definitions keep their bodies and reducibility metadata; opaque definitions and
+/// theorem exports are reconstructed as axioms because their bodies are not part of the public
+/// downstream interface.
+pub fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result<Vec<Decl>> {
     let cert = module_cert_from_verified_module(module);
     let mut decls = Vec::new();
     for decl in &cert.declarations {

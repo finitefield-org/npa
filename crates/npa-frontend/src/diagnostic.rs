@@ -24,6 +24,7 @@ pub enum MachineDiagnosticKind {
     DuplicateDeclaration,
     DuplicateUniverseParam,
     UnknownUniverseParam,
+    UniverseLevelTooLarge,
     ImplicitArgumentRequired,
     MissingExplicitUniverse,
     UnannotatedBinder,
