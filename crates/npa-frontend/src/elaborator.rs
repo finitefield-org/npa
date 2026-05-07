@@ -1469,6 +1469,33 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
     }
 
     #[test]
+    fn core_module_erases_machine_surface_import_items() {
+        let imports = [nat_import()];
+        let module = compile_machine_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+def Test.id_nat (n : Nat) : Nat := n",
+            &imports,
+            &MachineCompileOptions::default(),
+        )
+        .expect("imported Nat declaration should elaborate and kernel-check");
+
+        assert_eq!(module.name, npa_cert::Name::from_dotted("Test"));
+        assert_eq!(
+            module.declarations,
+            vec![Decl::Def {
+                name: "Test.id_nat".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi("n", nat(), nat()),
+                value: Expr::lam("n", nat(), Expr::bvar(0)),
+                reducibility: Reducibility::Reducible,
+            }]
+        );
+    }
+
+    #[test]
     fn rejects_eq_refl_without_explicit_arguments() {
         let imports = [nat_import(), eq_import()];
         let err = compile_machine_source_to_core(
@@ -1484,6 +1511,21 @@ theorem Test.bad (n : Nat) : Eq.{1} Nat n n := Eq.refl n",
         .expect_err("implicit Eq.refl should be rejected");
 
         assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+    }
+
+    #[test]
+    fn rejects_ill_typed_theorem_during_kernel_handoff() {
+        let err = compile_machine_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+theorem Test.bad (A : Type) (x : A) : A := fun (y : A) => y",
+            &[],
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("kernel handoff should reject an ill-typed theorem proof");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::KernelRejected);
     }
 
     #[test]
