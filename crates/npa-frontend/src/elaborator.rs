@@ -75,13 +75,34 @@ pub fn compile_machine_source_to_certificate(
     let module = elaborate_machine_module(module_name, resolved, &verified_imports, options)?;
     let certificate_imports =
         certificate_imports_for_module(&module, &active_import_indices, verified_modules, file_id)?;
-    npa_cert::build_module_cert(module, &certificate_imports).map_err(|err| {
+    let cert = npa_cert::build_module_cert(module, &certificate_imports).map_err(|err| {
         MachineDiagnostic::error(
             MachineDiagnosticKind::CertificateRejected,
             crate::Span::empty(file_id),
             format!("certificate construction failed: {err:?}"),
         )
-    })
+    })?;
+    let bytes = npa_cert::encode_module_cert(&cert).map_err(|err| {
+        MachineDiagnostic::error(
+            MachineDiagnosticKind::CertificateRejected,
+            crate::Span::empty(file_id),
+            format!("certificate encoding failed: {err:?}"),
+        )
+    })?;
+    let mut session = npa_cert::VerifierSession::new();
+    for import in certificate_imports {
+        session.register_verified_module(import);
+    }
+    npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal()).map_err(
+        |err| {
+            MachineDiagnostic::error(
+                MachineDiagnosticKind::CertificateRejected,
+                crate::Span::empty(file_id),
+                format!("certificate verification failed: {err:?}"),
+            )
+        },
+    )?;
+    Ok(cert)
 }
 
 pub fn elaborate_machine_term_check(
@@ -571,7 +592,7 @@ fn import_interface_dependency_targets(
     span: crate::Span,
 ) -> Result<BTreeSet<ImportDependencyTarget>> {
     let mut dependencies = BTreeSet::new();
-    for entry in &module.export_block {
+    for entry in module.export_block() {
         collect_imported_dependency_targets_from_term(module, entry.ty, &mut dependencies, span)?;
         if let Some(body) = entry.body {
             collect_imported_dependency_targets_from_term(module, body, &mut dependencies, span)?;
@@ -587,7 +608,7 @@ fn collect_imported_dependency_targets_from_term(
     span: crate::Span,
 ) -> Result<()> {
     match module
-        .term_table
+        .term_table()
         .get(term)
         .ok_or_else(|| import_resolution_diagnostic(span, "verified import term is missing"))?
     {
@@ -601,7 +622,7 @@ fn collect_imported_dependency_targets_from_term(
             {
                 dependencies.insert(ImportDependencyTarget {
                     name: module
-                        .name_table
+                        .name_table()
                         .get(*name)
                         .ok_or_else(|| {
                             import_resolution_diagnostic(span, "verified import name is missing")
@@ -634,8 +655,8 @@ fn referenced_axiom_dependency_targets(
     span: crate::Span,
 ) -> Result<BTreeSet<ImportDependencyTarget>> {
     let mut dependencies = BTreeSet::new();
-    for entry in &module.export_block {
-        let Some(entry_name) = module.name_table.get(entry.name) else {
+    for entry in module.export_block() {
+        let Some(entry_name) = module.name_table().get(entry.name) else {
             return Err(import_resolution_diagnostic(
                 span,
                 "verified import export name is missing",
@@ -648,7 +669,7 @@ fn referenced_axiom_dependency_targets(
         for axiom in &entry.axiom_dependencies {
             dependencies.insert(ImportDependencyTarget {
                 name: module
-                    .name_table
+                    .name_table()
                     .get(axiom.name)
                     .ok_or_else(|| {
                         import_resolution_diagnostic(span, "verified import axiom name is missing")
@@ -697,13 +718,13 @@ fn find_verified_module_export_by(
         .enumerate()
         .find_map(|(index, module)| {
             module
-                .export_block
+                .export_block()
                 .iter()
                 .any(|entry| {
                     kind.is_none_or(|kind| entry.kind == kind)
                         && entry.decl_interface_hash == decl_interface_hash
                         && module
-                            .name_table
+                            .name_table()
                             .get(entry.name)
                             .is_some_and(|entry_name| entry_name == name)
                 })
@@ -1386,6 +1407,104 @@ def Test.copy : UseRec.P := UseRec.w",
             &MachineCompileOptions::default(),
         )
         .expect("certificate construction should receive transitive import dependencies");
+    }
+
+    #[test]
+    fn machine_source_certificate_verifies_from_source_free_bytes() {
+        let cert = compile_machine_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "def Test.id.{u} (A : Sort u) (x : A) : A := x",
+            &[],
+            &MachineCompileOptions::default(),
+        )
+        .expect("machine source should compile to a certificate");
+        let bytes = npa_cert::encode_module_cert(&cert).expect("certificate should encode");
+        let decoded = npa_cert::decode_module_cert(&bytes).expect("certificate should decode");
+        assert_eq!(decoded, cert);
+
+        let mut session = npa_cert::VerifierSession::new();
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .expect("encoded certificate should verify without source");
+
+        assert_eq!(verified.module(), &npa_cert::Name::from_dotted("Test"));
+    }
+
+    #[test]
+    fn machine_source_certificate_hash_is_deterministic() {
+        let source = "def Test.id.{u} (A : Sort u) (x : A) : A := x";
+        let first = compile_machine_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &MachineCompileOptions::default(),
+        )
+        .expect("first certificate should compile");
+        let second = compile_machine_source_to_certificate(
+            FileId(99),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &MachineCompileOptions::default(),
+        )
+        .expect("second certificate should compile");
+
+        assert_eq!(
+            first.hashes.certificate_hash,
+            second.hashes.certificate_hash
+        );
+        assert_eq!(
+            npa_cert::encode_module_cert(&first).expect("first certificate should encode"),
+            npa_cert::encode_module_cert(&second).expect("second certificate should encode")
+        );
+    }
+
+    #[test]
+    fn machine_source_certificate_uses_verified_import_hashes() {
+        let mut import_session = npa_cert::VerifierSession::new();
+        let nat = verified_core_module_in_session(
+            npa_cert::CoreModule {
+                name: npa_cert::Name::from_dotted("Std.Nat.Basic"),
+                declarations: vec![Decl::Axiom {
+                    name: "Nat".to_owned(),
+                    universe_params: vec![],
+                    ty: Expr::sort(type0()),
+                }],
+            },
+            &[],
+            &mut import_session,
+        );
+
+        let cert = compile_machine_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+def Test.id_nat (n : Nat) : Nat := n",
+            std::slice::from_ref(&nat),
+            &MachineCompileOptions::default(),
+        )
+        .expect("imported machine source should compile to a certificate");
+
+        assert_eq!(cert.imports.len(), 1);
+        assert_eq!(cert.imports[0].module, nat.module().clone());
+        assert_eq!(cert.imports[0].export_hash, nat.export_hash());
+        assert_eq!(
+            cert.imports[0].certificate_hash,
+            Some(nat.certificate_hash())
+        );
+
+        let bytes = npa_cert::encode_module_cert(&cert).expect("certificate should encode");
+        let mut verify_session = npa_cert::VerifierSession::new();
+        verify_session.register_verified_module(nat);
+        npa_cert::verify_module_cert(
+            &bytes,
+            &mut verify_session,
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("encoded certificate should verify against registered verified import");
     }
 
     #[test]

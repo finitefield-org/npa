@@ -130,6 +130,15 @@ impl VerifierSession {
         Self::default()
     }
 
+    /// Register an already verified module as a normal-trust import for later verification.
+    ///
+    /// This is intended for callers that persist `VerifiedModule` values returned by
+    /// `verify_module_cert` and need to verify a downstream certificate without re-reading the
+    /// imported certificate bytes.
+    pub fn register_verified_module(&mut self, module: VerifiedModule) {
+        self.insert_verified(module, TrustMode::Normal);
+    }
+
     pub(crate) fn insert_verified(&mut self, module: VerifiedModule, mode: TrustMode) {
         let key = ImportKey {
             module: module.module.clone(),
@@ -201,23 +210,70 @@ impl VerifierSession {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerifiedModule {
     /// Module name from the verified certificate.
-    pub module: Name,
+    pub(crate) module: Name,
     /// Canonical name table from the verified certificate.
-    pub name_table: Vec<Name>,
+    pub(crate) name_table: Vec<Name>,
     /// Canonical level table from the verified certificate.
-    pub level_table: Vec<LevelNode>,
+    pub(crate) level_table: Vec<LevelNode>,
     /// Canonical term table from the verified certificate.
-    pub term_table: Vec<TermNode>,
+    pub(crate) term_table: Vec<TermNode>,
     /// Verified declaration certificates.
-    pub declarations: Vec<DeclCert>,
+    pub(crate) declarations: Vec<DeclCert>,
     /// Module export hash used by downstream imports.
-    pub export_hash: Hash,
+    pub(crate) export_hash: Hash,
     /// Full certificate hash used by high-trust imports.
-    pub certificate_hash: Hash,
+    pub(crate) certificate_hash: Hash,
     /// Public export interface derived from declarations.
-    pub export_block: ExportBlock,
+    pub(crate) export_block: ExportBlock,
     /// Axiom report recomputed during verification.
-    pub axiom_report: AxiomReport,
+    pub(crate) axiom_report: AxiomReport,
+}
+
+impl VerifiedModule {
+    /// Return the verified module name.
+    pub fn module(&self) -> &Name {
+        &self.module
+    }
+
+    /// Return the canonical name table from the verified certificate.
+    pub fn name_table(&self) -> &[Name] {
+        &self.name_table
+    }
+
+    /// Return the canonical level table from the verified certificate.
+    pub fn level_table(&self) -> &[LevelNode] {
+        &self.level_table
+    }
+
+    /// Return the canonical term table from the verified certificate.
+    pub fn term_table(&self) -> &[TermNode] {
+        &self.term_table
+    }
+
+    /// Return the verified declaration certificates.
+    pub fn declarations(&self) -> &[DeclCert] {
+        &self.declarations
+    }
+
+    /// Return the module export hash used by downstream imports.
+    pub fn export_hash(&self) -> Hash {
+        self.export_hash
+    }
+
+    /// Return the full certificate hash used by high-trust imports.
+    pub fn certificate_hash(&self) -> Hash {
+        self.certificate_hash
+    }
+
+    /// Return the public export interface derived from declarations.
+    pub fn export_block(&self) -> &[ExportEntry] {
+        &self.export_block
+    }
+
+    /// Return the axiom report recomputed during verification.
+    pub fn axiom_report(&self) -> &AxiomReport {
+        &self.axiom_report
+    }
 }
 
 /// Syntactic module certificate as represented after canonical binary decoding.

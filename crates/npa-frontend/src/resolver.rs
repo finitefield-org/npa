@@ -25,14 +25,14 @@ pub struct VerifiedImport {
 impl From<&npa_cert::VerifiedModule> for VerifiedImport {
     fn from(module: &npa_cert::VerifiedModule) -> Self {
         let exports = module
-            .export_block
+            .export_block()
             .iter()
             .map(|entry| VerifiedExport {
-                name: module.name_table[entry.name].clone(),
+                name: module.name_table()[entry.name].clone(),
                 universe_params: entry
                     .universe_params
                     .iter()
-                    .map(|name| module.name_table[*name].as_dotted())
+                    .map(|name| module.name_table()[*name].as_dotted())
                     .collect(),
                 ty: expr_from_verified_term(module, entry.ty),
                 decl_interface_hash: entry.decl_interface_hash,
@@ -40,9 +40,9 @@ impl From<&npa_cert::VerifiedModule> for VerifiedImport {
             .collect();
 
         Self {
-            module: module.module.clone(),
-            export_hash: module.export_hash,
-            certificate_hash: Some(module.certificate_hash),
+            module: module.module().clone(),
+            export_hash: module.export_hash(),
+            certificate_hash: Some(module.certificate_hash()),
             exports,
             kernel_decls: npa_cert::verified_module_to_kernel_decls(module)
                 .expect("verified module must reconstruct kernel declarations"),
@@ -560,7 +560,7 @@ fn expr_from_verified_term(
     module: &npa_cert::VerifiedModule,
     term: npa_cert::TermId,
 ) -> npa_kernel::Expr {
-    match &module.term_table[term] {
+    match &module.term_table()[term] {
         npa_cert::TermNode::Sort(level) => {
             npa_kernel::Expr::sort(level_from_verified_node(module, *level))
         }
@@ -599,7 +599,7 @@ fn level_from_verified_node(
     module: &npa_cert::VerifiedModule,
     level: npa_cert::LevelId,
 ) -> npa_kernel::Level {
-    match &module.level_table[level] {
+    match &module.level_table()[level] {
         npa_cert::LevelNode::Zero => npa_kernel::Level::zero(),
         npa_cert::LevelNode::Succ(inner) => {
             npa_kernel::Level::succ(level_from_verified_node(module, *inner))
@@ -613,7 +613,7 @@ fn level_from_verified_node(
             level_from_verified_node(module, *rhs),
         ),
         npa_cert::LevelNode::Param(name) => {
-            npa_kernel::Level::param(module.name_table[*name].as_dotted())
+            npa_kernel::Level::param(module.name_table()[*name].as_dotted())
         }
     }
 }
@@ -621,20 +621,22 @@ fn level_from_verified_node(
 fn global_ref_name(module: &npa_cert::VerifiedModule, global_ref: &npa_cert::GlobalRef) -> String {
     match global_ref {
         npa_cert::GlobalRef::Imported { name, .. }
-        | npa_cert::GlobalRef::LocalGenerated { name, .. } => module.name_table[*name].as_dotted(),
+        | npa_cert::GlobalRef::LocalGenerated { name, .. } => {
+            module.name_table()[*name].as_dotted()
+        }
         npa_cert::GlobalRef::Local { decl_index } => decl_name(module, *decl_index),
     }
 }
 
 fn decl_name(module: &npa_cert::VerifiedModule, decl_index: usize) -> String {
-    let decl = &module.declarations[decl_index];
+    let decl = &module.declarations()[decl_index];
     let name = match &decl.decl {
         npa_cert::DeclPayload::Axiom { name, .. }
         | npa_cert::DeclPayload::Def { name, .. }
         | npa_cert::DeclPayload::Theorem { name, .. }
         | npa_cert::DeclPayload::Inductive { name, .. } => *name,
     };
-    module.name_table[name].as_dotted()
+    module.name_table()[name].as_dotted()
 }
 
 #[cfg(test)]
