@@ -106,7 +106,7 @@ cargo test --workspace
 - [Phase 0: Core Spec](doc/phase0.md)
 - [Phase 1: Kernel](doc/phase1.md)
 - [Phase 2: Certificate](doc/phase2.md)
-- [Phase 3: Surface Language](doc/phase3.md)
+- [Phase 3: Human Surface Language](doc/phase3-human.md)
 - [Phase 3 AI Profile: Machine Surface](doc/phase3-ai.md)
 - [Phase 4: Tactic](doc/phase4.md)
 - [Phase 5: IDE/API](doc/phase5.md)

@@ -2,7 +2,7 @@
 
 この文書は、NPA の **AI 向け Phase 3** の設計と実装計画です。
 
-従来の `doc/phase3.md` は、人間が読み書きしやすい表層言語を canonical core AST に落とすための
+従来の `doc/phase3-human.md` は、人間が読み書きしやすい表層言語を canonical core AST に落とすための
 設計です。一方、AI 証明探索では、候補を大量に生成し、失敗を前提に高速に検査します。
 そのため、AI 向け Phase 3 では人間向けの便利機能を削り、canonical core に近い明示的な
 入力形式を使います。
