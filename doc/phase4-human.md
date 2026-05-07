@@ -1136,7 +1136,7 @@ tactic_script ::=
 
 tactic_seq ::=
   tactic*
-  
+
 tactic ::=
     "intro" ident
   | "exact" term
