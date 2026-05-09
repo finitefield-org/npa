@@ -89,7 +89,7 @@ Core kernel
   └── Eq primitive/generated
 
 Std.Logic
-  └── depends on Core
+  └── uses kernel/core profile
 
 Std.Nat
   └── depends on Std.Logic
@@ -101,6 +101,12 @@ Std.List
 Std.Algebra.Basic
   └── depends on Std.Logic
 ```
+
+ここでの `Core` / kernel/core profile は Phase 2 の module import ではありません。
+`Std.Logic` の certificate は `ImportEntry` named `Core` を持たず、`core_spec_id` / `kernel_semantics_profile_id`
+に対して verifier 内部で検査されます。
+`Eq` は `Std.Logic` certificate の public inductive export、`Nat` は `Std.Nat` certificate の public inductive export
+として扱います。
 
 図にすると：
 
@@ -1154,7 +1160,8 @@ Std.Algebra.Basic
 
 ```text
 Std.Logic
-  imports Core
+  imports no Phase 2 module
+  checked against kernel/core profile
 
 Std.Nat
   imports Std.Logic
@@ -1196,11 +1203,11 @@ Std.Algebra.Basic
   ],
   "export_block": [
     {
-      "name": "Std.Nat.add_zero",
+      "name": "Nat.add_zero",
       "decl_interface_hash": "sha256:..."
     },
     {
-      "name": "Std.Nat.zero_add",
+      "name": "Nat.zero_add",
       "decl_interface_hash": "sha256:..."
     }
   ],
@@ -1215,6 +1222,9 @@ Std.Algebra.Basic
   }
 }
 ```
+
+`ExportEntry.name` は certificate が export する declaration name そのものです。
+`module` field と連結して `Std.Nat.add_zero` のような synthetic name を作りません。
 
 重要なルール：
 
@@ -1303,8 +1313,8 @@ Phase 6 の最重要成果の一つは、`simp-lite` が使えるようになる
 
 ```text
 Std.Logic:
-  Eq.refl-related closure
-  Iff.refl maybe
+  none in Phase 6 AI MVP
+  Eq.refl is a generated constructor used through the Eq family, not a SimpRuleRef
 
 Std.Nat:
   Nat.add_zero

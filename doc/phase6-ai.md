@@ -120,6 +120,31 @@ locator must provide each module at the path shown above.
 Missing modules, extra modules, duplicate modules, non-canonical module order, or a path mismatch for one of these fixed module names
 are `InvalidStdLibraryRelease`.
 
+The package locator is a validation input, not trusted payload.
+For the MVP filesystem package, the validator receives one package root directory and resolves only the fixed POSIX relative paths
+shown above.
+Locator paths must use `/` separators, must not be absolute, and must not contain an empty component, `.`, `..`, `\`, a trailing
+slash, or duplicate slashes.
+If a local filesystem implementation follows symlinks, the resolved target must remain inside the package root; otherwise the
+release is `InvalidStdLibraryRelease`.
+Archive-based package readers must present the same normalized relative path table to the validator.
+Case folding, Unicode normalization, platform path aliases, search paths, environment variables, and package-manager module
+resolution are not part of the MVP locator rule.
+The path table only decides which raw bytes are read for each fixed module name; it is never included in any Phase 6 canonical
+bytes or hash.
+
+The concrete MVP `ModuleName` canonical order is:
+
+```text
+Std.Nat
+Std.List
+Std.Logic
+Std.Algebra.Basic
+```
+
+This order follows Phase 5 `Phase5Name canonical bytes`, not human dotted-name lexicographic order.
+Any emitted `MachineStdLibraryRelease.modules` array using a different order is `InvalidStdLibraryRelease`.
+
 `Std/*.npcert` files contain raw Phase 2 `ModuleCertBytes`.
 They are not JSON and not lowercase hex text.
 When a Phase 6 import bundle embeds the same certificate in a Phase 5 `VerifiedModuleCertificateRequest`, the raw file bytes are
@@ -199,6 +224,7 @@ MVP の canonical source of truth は `*.npcert` です。
 ```text
 String:
   Phase 5 UTF-8 string primitive bytes
+  In this Phase 6 document that means minimal unsigned LEB128 u64 byte length followed by the exact UTF-8 bytes after JSON decode.
 
 ModuleName / FullyQualifiedName:
   Phase 5 Phase5Name canonical bytes
@@ -224,6 +250,21 @@ Enum:
 All domain separator tags written as `tag "..."` in this document are encoded as `String` canonical bytes, not as raw ASCII
 bytes and not as enum tags.
 
+When this document refers to core expression canonical bytes, it means the Phase 2 `TermHashPayload(expr)` bytes from
+`doc/phase2.md`, using the owner certificate context that produced the expression for `GlobalRef` encoding.
+It does not mean Rust arena allocation bytes, `ExprId` / `TermId` table indices, pretty text, JSON, or Phase 5 `MachineExprView`
+bytes.
+The corresponding core expression hash is the Phase 2 `term_hash`:
+
+```text
+phase6_core_expr_hash(expr):
+  sha256("NPA-TERM-0.1" || TermHashPayload(expr))
+```
+
+If the expression is a Phase 2 `ExportEntry.type`, use the verifier-provided `ExportEntry.type_hash`.
+If the expression is a Phase 4 `ResolvedSimpRule` fragment, recompute the same Phase 2 `TermHashPayload` structurally from that
+resolved core expression under the source theorem's certificate context.
+
 JSON 上の `HashString` は Phase 5 `HashString` wire format をそのまま使います。
 つまり、値は `"sha256:"` に続く 64 文字の lowercase hex digest でなければなりません。
 `sha256:` prefix なしの bare hex、uppercase hex、別 algorithm prefix、base64、numeric JSON value は invalid です。
@@ -238,6 +279,11 @@ All JSON fields shown in the Rust-like struct definitions in this document are r
 field optional.
 `Option<T>` is encoded as JSON `null` for `None` and as the JSON encoding of `T` for `Some(T)`.
 Omitting an `Option<T>` field is invalid.
+When this document says "dictionary order" for identifier strings such as `bundle_id`, `profile_id`, `recipe_id`, or
+`metadata_profile_id`, validators compare the decoded UTF-8 byte sequences lexicographically.
+They do not use locale collation, Unicode normalization, JSON escape spelling, or the length-prefixed `String` canonical bytes.
+This rule does not override `ModuleName`, `FullyQualifiedName`, `MachineStdGlobalRef`, or other places that explicitly sort by
+canonical bytes.
 
 MVP JSON strings for scalar enum fields are fixed as follows.
 Tagged-object enums, such as `MachineStdGlobalRefView`, define their own JSON object shape in their section.
@@ -464,6 +510,8 @@ direct-import option validation.
 `Std.List` theorem sources and the `Std.Logic` Eq family, but must not include `Std.Nat` rewrite or simp rule sources.
 `Core` is not emitted as a Phase 6 verified module certificate.
 It is part of the kernel/core profile, not a standard-library import bundle artifact.
+In this document, any phrase like "Std.Logic depends on Core" means a verifier-internal dependency on the kernel/core profile named
+by `core_spec_id` and `kernel_semantics_profile_id`; it does not mean a Phase 2 `ImportEntry` named `Core`.
 For the MVP Phase 2 certificate format, no `ImportEntry` is treated as `Core` / prelude.
 Every entry in the certificate `Imports` vector is an ordinary module import and must resolve to a release module certificate in
 the bundle closure.
@@ -639,6 +687,14 @@ std.nat.family:
 For the MVP AI standard-library artifacts, `Eq`, `Eq.refl`, `Eq.rec`, `Nat`, `Nat.zero`, `Nat.succ`, and `Nat.rec` are
 certificate-bound standard-library exports.
 They are not modeled as Phase 6 builtin metadata.
+`Eq` is introduced by the checked `Std.Logic` certificate as an ordinary public `InductiveDecl` export with generated constructor
+and recursor exports.
+`Nat` is introduced by the checked `Std.Nat` certificate as an ordinary public `InductiveDecl` export with generated constructor
+and recursor exports.
+Even if an implementation bootstraps the kernel with initial inductive support for `Eq` or `Nat`, the MVP standard-library
+artifacts must expose and reference these names through the verified standard-library certificates, not through a special Phase 6
+builtin reference.
+The MVP recipes use `kernel_check_profile = "npa.kernel.v0.1.builtin-none"` and an explicit imported Eq family for this reason.
 These family exports are release-shape requirements, not optional tactic hints.
 Missing, private, stale, wrong-kind, or cross-parent `Eq` / `Nat` family exports reject the release as `InvalidStdLibraryRelease`.
 `std.logic.eq-family` must resolve to the `Std.Logic` direct import by Phase 5 option head resolution, including the public generated
@@ -1318,10 +1374,10 @@ Descriptor hashes are fixed as follows:
 
 ```text
 lhs_core_hash:
-  sha256(Phase 1 Expr canonical bytes of ResolvedSimpRule.theorem_lhs)
+  phase6_core_expr_hash(ResolvedSimpRule.theorem_lhs)
 
 rhs_core_hash:
-  sha256(Phase 1 Expr canonical bytes of ResolvedSimpRule.theorem_rhs)
+  phase6_core_expr_hash(ResolvedSimpRule.theorem_rhs)
 
 MachineStdRuleTelescope canonical bytes:
   - tag "npa.phase6.std-rule-telescope.v1"
@@ -1329,7 +1385,7 @@ MachineStdRuleTelescope canonical bytes:
       MachineUniverseParamName as String
   - rule_telescope in ResolvedSimpRule.rule_telescope order:
       param position as minimal unsigned LEB128 u64
-      param ty hash = sha256(Phase 1 Expr canonical bytes of ResolvedRuleParam.ty)
+      param ty hash = phase6_core_expr_hash(ResolvedRuleParam.ty)
 
 rule_telescope_hash:
   sha256(MachineStdRuleTelescope canonical bytes)
@@ -1619,7 +1675,7 @@ variable-only lhs:
 
 `rule is commutativity` and `rule is associativity` are structural recognizers over `from_pattern` / `to_pattern`, not name checks.
 The MVP recognizers are exactly the following checks.
-They use Phase 1 Expr canonical bytes for expression equality and flatten only syntactic `App` spines.
+They use Phase 6 core expression canonical bytes for expression equality and flatten only syntactic `App` spines.
 No WHNF, unfolding, eta, conversion, associativity normalization, or pretty-name matching is allowed.
 
 ```text
@@ -1628,7 +1684,7 @@ flatten_app(e):
   return (head, args) where args are restored in left-to-right application order
 
 same_expr(a, b):
-  Phase 1 Expr canonical bytes of a and b are byte-for-byte equal
+  Phase 6 core expression canonical bytes of a and b are byte-for-byte equal
 
 same_head_and_prefix(e1, e2):
   let (h1, args1) = flatten_app(e1)
@@ -1775,6 +1831,12 @@ std.all.simp:
   required_import_bundle_id = std.all.mvp
   rules = std.nat.simp rules + std.list.simp rules
 ```
+
+`std.logic.simp` is intentionally empty in the MVP AI profile.
+The generated `Eq.refl` constructor may be used through the explicit Eq family, but it is not a theorem-index entry and is not a
+`SimpRuleRef`.
+Human-facing notes that mention an "Eq.refl closure" are descriptive library guidance only and do not add a Phase 6 AI simp rule
+unless a future profile id defines one.
 
 Rules are emitted in Phase 4 `SimpRuleKey` canonical order.
 A `MachineStdSimpProfile.rules` artifact must not contain duplicate `SimpRuleKey` values.
@@ -1936,7 +1998,7 @@ For MVP prompt metadata it is:
 
 ```text
 goal_core_hash:
-  sha256(Phase 1 Expr canonical bytes of the closed example goal target Expr)
+  phase6_core_expr_hash(the closed example goal target Expr)
 ```
 
 The example goal target is elaborated under `imports_bundle_id` with an empty local context.
@@ -2091,7 +2153,7 @@ MachineStdRelease validation:
 
   3. Build module context table from verifier output.
      MVP manifest scalar mismatch, missing/extra release module, fixed module path mismatch, duplicate module,
-     non-canonical module order, unsupported core spec,
+     package locator normalization failure, non-canonical module order, unsupported core spec,
      ordinary Core/prelude ImportEntry, release module ImportEntry that does not resolve to one of the release module artifacts,
      missing/private/stale/wrong-kind/cross-parent MVP Eq/Nat family export:
        InvalidStdLibraryRelease
@@ -2283,6 +2345,7 @@ Phase 6 AI MVP should include these tests.
 release determinism:
   protocol_version/library_profile_id/core_spec_id/kernel_semantics_profile_id mismatch is rejected
   missing/extra MVP release modules or fixed module path mismatches are rejected
+  locator paths with absolute paths, `..`, `.`, backslashes, duplicate slashes, trailing slash, or symlink escape are rejected
   same certificate bytes and manifest-bound sidecars produce same std_library_release_hash
   reordered JSON object fields do not change std_library_release_hash
   changing only optional prompt metadata changes prompt_metadata_hash but not std_library_release_hash
@@ -2294,7 +2357,7 @@ release determinism:
   JSON enum strings use only the fixed wire spellings
   MachineStdGlobalRefView JSON requires kind = decl/generated and rejects mixed variant fields
   MachineStdAxiomRef JSON rejects kind/source_index/certificate_hash fields
-  reordered module list is rejected unless it is ModuleName canonical order
+  reordered module list is rejected unless it is the concrete MVP ModuleName canonical order
 
 recipe determinism:
   generated candidate simp_rules canonicalize before emission, but emitted duplicate/reordered recipe simp_rules are rejected
@@ -2306,6 +2369,7 @@ recipe determinism:
   std.none is not emitted by MVP bundles
   EqFamilyRef/NatFamilyRef options use the Phase 6 Option tag plus family payload bytes, not full MachineTacticOptions bytes
   emitted MVP recipes use explicit std.logic.eq-family, not eq_family = null
+  emitted MVP artifacts expose Eq/Nat through verified Std.Logic/Std.Nat exports, not Phase 6 builtin metadata
   std.logic.eq-family resolves Eq / Eq.refl / Eq.rec through direct public Std.Logic exports
   missing or non-public Eq.rec rejects the release before recipe validation
   stale or cross-parent Eq/Nat family exports reject the release before recipe validation
@@ -2340,6 +2404,7 @@ no axiom:
   transitive_axioms mismatch with verifier-derived import closure rejects release
 
 simp profile:
+  std.logic.simp is empty; Eq.refl is not emitted as a SimpRuleRef in MVP
   Nat.add_zero is accepted as SimpSafe
   Nat.add_comm is rejected from SimpSafe and allowed only as RwOnly
   Nat.add_assoc is rejected from SimpSafe by the fixed associativity recognizer
@@ -2386,6 +2451,7 @@ theorem index:
   theorem types containing a global ref not normalizable to MachineStdGlobalRefView::Decl/Generated reject the theorem index
 
 rewrite descriptor:
+  lhs_core_hash/rhs_core_hash/param type hashes use Phase 2 term_hash payloads, not Rust ExprId, TermId, JSON, or MachineExprView bytes
   lhs_core_hash/rhs_core_hash use ResolvedSimpRule.theorem_lhs/theorem_rhs, not from_pattern/to_pattern
   descriptors with same source/direction/safety/lhs/rhs but different rule_telescope_hash sort deterministically
   rule_telescope_hash ignores ResolvedRuleParam.name and uses zero-based rule_telescope position plus type hash
