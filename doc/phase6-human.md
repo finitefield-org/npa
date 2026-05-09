@@ -270,10 +270,16 @@ Eq x y
 
 に展開します。
 
+generated export：
+
+```text
+Eq.refl は Eq inductive の constructor refl から生成される public constructor export。
+Std.Logic は同じ exported name の theorem を別途 public export しない。
+```
+
 基本定理：
 
 ```npa
-theorem Eq.refl {A : Sort u} (x : A) : x = x := ...
 theorem Eq.symm {A : Sort u} {x y : A} : x = y -> y = x := ...
 theorem Eq.trans {A : Sort u} {x y z : A} : x = y -> y = z -> x = z := ...
 theorem Eq.subst {A : Sort u} {x y : A} (P : A -> Prop) :
@@ -285,7 +291,7 @@ theorem Eq.congrArg {A : Sort u} {B : Sort v} (f : A -> B) :
 属性：
 
 ```text
-Eq.refl      @[refl]
+Eq.refl      @[refl] generated constructor
 Eq.symm      usable by rw reverse
 Eq.trans     @[trans]
 Eq.congrArg  theorem search 用
@@ -1278,7 +1284,7 @@ induction:
 例：
 
 ```text
-Eq.refl              exact
+Eq.refl              exact, generated constructor callable; not a theorem-index entry
 Eq.trans             apply
 Nat.add_zero         exact/rw/simp
 Nat.add_comm         rw, but not simp
