@@ -726,9 +726,13 @@ decl_interface_hash(axiom)
       kind = axiom,
       name,
       universe_params,
-      type_hash
+      type_hash,
+      public_dependency_entries
     )
 ```
+
+`public_dependency_entries` は axiom の type に現れる direct `Const` 参照から導出します。
+この点は 11.11 の `DeclInterfacePayload` と同じ規則です。
 
 axiom report では：
 

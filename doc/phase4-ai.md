@@ -822,10 +822,11 @@ struct NatFamilyRef {
 
 `MachineTermSource` は Phase 4 の内部 tactic AST が持つ term payload です。外部 JSON は raw Machine
 Surface term text を渡してよいですが、`validate_machine_tactic_candidate` は実行前に Phase 3 AI M7 の
-`canonicalize_machine_term_source(source)` を呼び、`source` と `canonical_hash` を持つ
-`MachineTermSource` に変換します。`canonical_hash` は raw source text ではなく、Phase 3 Machine Surface
-term parser が作る canonical term-source bytes の hash です。whitespace、source span、pretty text、
-AI trace はこの hash に入りません。
+`canonicalize_machine_term_source(source)` を呼び、`source`、Phase 3 `canonical_bytes`、Phase 3
+`canonical_hash = hash(canonical_bytes)` を得ます。Phase 4 は Phase 3 `canonical_hash` をそのまま
+`MachineTermSource.canonical_hash` にしてはいけません。必ず下の Phase 4 wrapper bytes を組み立て、
+`MachineTermSource.canonical_hash = hash(MachineTermSource canonical bytes)` とします。
+whitespace、source span、pretty text、AI trace はこの hash に入りません。
 
 ```text
 MachineTermSource canonical bytes:
@@ -842,7 +843,7 @@ expected type に対して check しますが、tactic hash / cache key には `
 `MachineTermSource` の fields は public API では公開せず、`validate_machine_tactic_candidate` または
 `MachineTermSource::new_checked(source)` だけが作れます。serialization boundary から既に canonicalized された
 `MachineTactic` を受け取る debug/FFI API を作る場合でも、`run_machine_tactic` validation step 4 で
-`source` を再 canonicalize し、再計算 hash が `canonical_hash` と一致しなければ
+`source` を再 canonicalize して Phase 4 wrapper hash を再計算し、それが `canonical_hash` と一致しなければ
 `InvalidMachineTermSource` として reject します。
 
 `MachineTactic canonical bytes` は cache key と deterministic same-result 判定に使います。variant と field は
@@ -2644,7 +2645,7 @@ imports と既に checked 済みの prior declarations だけを kernel environm
 - exact は Machine Surface term check で goal を閉じる
 - MachineTermSource / canonicalize_machine_term_source を固定する
 - MachineTacticCandidate の raw term を MachineTermSource に checked constructor 経由で変換する
-- run_machine_tactic は MachineTermSource.source と canonical_hash の一致を再検査する
+- run_machine_tactic は MachineTermSource.source と Phase 4 wrapper canonical_hash の一致を再検査する
 - term elaboration error は max_expr_nodes より先に返す
 - intro は Pi target だけ lambda を作る
 - local shadowing rule を Phase 3 と揃える

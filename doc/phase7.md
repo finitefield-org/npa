@@ -102,6 +102,25 @@ verified proof
 ## 2.1 入力
 
 Phase 7 の入力は、Phase 5 の structured proof state です。
+Phase 7 MVP は独自の `/ai/*` proof-state / tactic execution protocol を定義せず、
+`doc/phase5-ai.md` の Machine API client として実装します。
+探索ノードの identity は `state_id` や text tactic ではなく、次の Phase 5 AI payload で固定します。
+
+```text
+required Phase 5 AI handles:
+  - session_id
+  - session_root_hash
+  - snapshot_id
+  - state_fingerprint
+  - goal_id
+  - MachineTacticCandidate raw payload
+  - deterministic_budget
+  - candidate_hash / proof_delta_hash for successful replay steps
+```
+
+この文書の古い `state_id`、`proof_script`、text tactic、`/ai/retrieve_premises` 形式の例は概念説明です。
+MVP 実装では `/machine/snapshots/get`、`/machine/search/for_goal`、`/machine/prompt_payload`、
+`/machine/tactics/run` / `/machine/tactics/batch`、`/machine/replay`、`/machine/verify` を使います。
 
 ```json
 {
@@ -465,6 +484,32 @@ score(premise, goal) =
 
 ## 3.6 Premise retrieval API
 
+Phase 7 MVP の premise retrieval は Phase 5 AI の `/machine/search/for_goal` を呼びます。
+独立した `/ai/retrieve_premises` endpoint は MVP には入れません。
+
+```json
+POST /machine/search/for_goal
+{
+  "session_id": "msess_001",
+  "snapshot_id": "mst_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "state_fingerprint": "sha256:...",
+  "goal_id": "g1",
+  "modes": ["exact", "apply", "rw", "simp"],
+  "limit": 32,
+  "filters": {
+    "exclude_axioms": true,
+    "allowed_modules": ["Std.Nat.Basic"]
+  }
+}
+```
+
+返却された premise は `module`、`name`、`export_hash`、`decl_interface_hash`、
+`universe_params`、`statement.core_hash`、`axioms_used` に固定された verified metadata として扱います。
+`suggested_candidates` がある場合も、探索器はそれを証明として信用せず、必ず
+`/machine/tactics/run` または `/machine/tactics/batch` に再投入します。
+
+次の `/ai/retrieve_premises` は旧設計の概念例であり、MVP の wire contract ではありません。
+
 ```json
 POST /ai/retrieve_premises
 {
@@ -690,6 +735,11 @@ rw [<- Nat.add_zero]
 ---
 
 ## 4.3 tactic candidate schema
+
+Phase 7 MVP で proof server に送る候補は、下の探索器内部 metadata 付き `TacticCandidate` ではなく、
+Phase 5 AI の raw `MachineTacticCandidate` wire payload です。
+score、source、premises_used、expected_effect、cost_estimate、trust_flags は探索器内部の非信頼 metadata であり、
+`candidate` object の内側に入れてはいけません。
 
 ```rust
 struct TacticCandidate {

@@ -1853,6 +1853,8 @@ NPA Core Spec v0.1
 - tactic execution API
 - theorem search API
 - goal display
+- Human Profile: IDE / Web UI / CLI 向け対話 API
+- AI Profile: deterministic Machine API / batch tactic execution / replay
 ```
 
 ## Phase 6: library

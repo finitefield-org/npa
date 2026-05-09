@@ -216,13 +216,14 @@ machine_app ::=
     machine_atom machine_atom*
 
 machine_atom ::=
-    qual_name universe_args?
-  | "@" qual_name universe_args?
-  | local_ident
+    term_name universe_args?
+  | "@" term_name universe_args?
   | "Prop"
   | "Type" level?
   | "Sort" level
   | "(" machine_term ")"
+
+term_name ::= name_component ("." name_component)*
 
 universe_params ::= ".{" ident ("," ident)* "}"
 universe_args   ::= ".{" level ("," level)* "}"
@@ -234,6 +235,42 @@ level ::=
   | "max" level level
   | "imax" level level
 ```
+
+`name_component` は machine source 上の name component spelling であり、identifier と同じ ASCII subset を使います。
+Keyword と同じ spelling の component は、grammar 上 keyword として読む位置では keyword ですが、dotted name の
+component として読む位置では name component です。
+たとえば `Nat.succ` の `succ` は name component であり、level grammar の `succ` keyword ではありません。
+
+Lexer / parser は reserved token を通常の binder `ident`、universe parameter `ident`、または
+unqualified / head `term_name` として受理してはいけません。
+次の token は、term の該当構文または dedicated keyword としてだけ扱います。
+
+```text
+reserved tokens:
+  import
+  def
+  theorem
+  forall
+  fun
+  let
+  in
+  Prop
+  Type
+  Sort
+  succ
+  max
+  imax
+  open
+  namespace
+  match
+  with
+```
+
+ただし `term_name` の `.` より後ろの component では、上の spelling も name component として使えます。
+たとえば `Nat.succ`、`M.Type`、`M.match` は dotted `term_name` として parse できます。
+たとえば単独の `Prop` は常に Prop atom、`Type` は Type atom、`Sort` は Sort atom であり、
+`NameAtom("Prop")` / `NameAtom("Type")` / `NameAtom("Sort")` として canonicalize してはいけません。
+`succ` / `max` / `imax` は level grammar 内では keyword であり、level parameter name には使えません。
 
 MVP では `->` / `→` を使いません。関数型は `forall (x : A), B` と書きます。
 anonymous binder も使いません。
@@ -282,11 +319,15 @@ add
 refl
 ```
 
-resolution は次の順に行います。
+term name resolution は `canonicalize_machine_term_source` ではなく、`elaborate_machine_term_check` / module
+elaboration でだけ行います。resolution は次の順に行います。
 
 ```text
-1. local context に未修飾 local name として存在するなら local
-2. qual_name が global exact match なら global
+1. term_name が @ term_name、universe_args 付き、または component_count > 1 の場合:
+   global exact match だけを試す。local context は見ない。
+2. それ以外の 1 component term_name の場合:
+   local context に未修飾 local name として存在するなら local。
+   存在しなければ global exact match を試す。
 3. それ以外は UnknownName
 ```
 
@@ -579,6 +620,45 @@ pub struct MachineCompileOptions {
     pub allow_universe_meta: bool,
 }
 
+pub struct MachineTermElabContext {
+    pub global_scope: MachineGlobalScope,
+    pub local_context: Vec<LocalDecl>,
+    pub universe_params: Vec<String>,
+    pub kernel_env: MachineKernelEnvView,
+}
+
+pub struct MachineKernelEnvView {
+    // Opaque checked environment built by the caller from verified imports and checked current decls.
+}
+
+pub struct MachineGlobalScope {
+    pub entries: Vec<MachineGlobalScopeEntry>,
+}
+
+pub enum MachineGlobalScopeEntry {
+    Imported {
+        name: Name,
+        import_index: u32,
+        decl_interface_hash: Hash,
+    },
+    CurrentModule {
+        name: Name,
+        source_index: u64,
+        decl_interface_hash: Hash,
+    },
+    CurrentGenerated {
+        name: Name,
+        parent_source_index: u64,
+        decl_interface_hash: Hash,
+    },
+}
+
+pub struct MachineTermSourceCanonical {
+    pub source: String,
+    pub canonical_bytes: Vec<u8>,
+    pub canonical_hash: Hash,
+}
+
 pub fn parse_machine_module(
     file_id: FileId,
     source: &str,
@@ -615,14 +695,102 @@ pub fn compile_machine_source_to_certificate(
 Phase 5 / Phase 7 用には term 単体 API も用意します。
 
 ```rust
+pub fn canonicalize_machine_term_source(
+    source: &str,
+) -> Result<MachineTermSourceCanonical, MachineDiagnostic>;
+
 pub fn elaborate_machine_term_check(
     source: &str,
-    local_context: &[LocalDecl],
+    context: &MachineTermElabContext,
     expected: &npa_kernel::Expr,
-    verified_imports: &[VerifiedImport],
     options: &MachineCompileOptions,
 ) -> Result<npa_kernel::Expr, MachineDiagnostic>;
 ```
+
+`MachineTermElabContext.global_scope` は exact name lookup 用の閉じた map です。
+resolver は filesystem、network、global package cache、`open` / namespace state を読んではいけません。
+Phase 5 は direct import の public export、checked current declaration、current generated constructor / recursor から
+この scope を構築します。
+`kernel_env` は同じ verified imports / checked current declaration から作った checked environment であり、
+global name lookup の候補を増やすために使ってはいけません。型取得、reduction、conversion、kernel check の入力にだけ使います。
+
+`Imported.import_index` は Phase 5 / Phase 4 が決めた canonical direct import order の index です。
+`CurrentModule.source_index` と `CurrentGenerated.parent_source_index` は Phase 5 session 内の source_index 座標です。
+最終 certificate 生成時に Phase 2 declaration index が source_index と異なる場合は、Phase 5 verify が
+`GlobalRef::Local` / `GlobalRef::LocalGenerated` を certificate-local index へ rewrite します。
+
+`canonicalize_machine_term_source` は raw source text ではなく、parse 後の Machine Surface term AST を canonical bytes にします。
+`MachineTermSourceCanonical.canonical_hash` は `hash(canonical_bytes)` であり、Phase 3 term-source hash です。
+これは Phase 4 wrapper hash ではありません。
+Phase 4 `MachineTermSource.canonical_hash` は、Phase 4 tag と `canonical_bytes` から Phase 4 側で計算します。
+`canonicalize_machine_term_source` は `MachineTermElabContext` を受け取らず、global name resolution、local context lookup、
+type checking、reduction、kernel environment lookup を行いません。
+context-dependent な check は `elaborate_machine_term_check` だけが行います。
+下の `NameAtom` は parser-level の構文 variant であり、core `GlobalRef` / local de Bruijn への解決結果ではありません。
+`Nat`、`Eq`、`n` のような 1 component name は、この段階ではすべて `NameAtom` として同じ規則で encode します。
+local context による local/global 分類、shadowing check、UnknownName は `elaborate_machine_term_check` でだけ判定します。
+この block の string / list / option / unsigned integer / hash primitive は、Phase 2 canonical encoding と同じ
+minimal unsigned LEB128 length + UTF-8 bytes / raw digest bytes を使います。
+
+```text
+Machine Surface term-source canonical bytes:
+  - tag "npa.phase3.machine-term-source.v1"
+  - parsed term AST encoded with the canonical grammar below
+
+Term canonical bytes:
+  - NameAtom:
+      variant tag
+      name component list:
+        component count as minimal unsigned LEB128 u32
+        each component as UTF-8 string primitive bytes
+      explicit-at marker: 0x00 normal | 0x01 at-form
+      universe_args list in source order as Level canonical bytes
+  - Sort:
+      level canonical bytes
+  - Type:
+      level canonical bytes for the displayed Type parameter
+  - Prop:
+      fixed variant tag
+  - App:
+      function term canonical bytes
+      argument term canonical bytes
+  - Lam:
+      binders in source order:
+        binder local identifier
+        binder type term canonical bytes
+      body term canonical bytes
+  - Pi:
+      binders in source order:
+        binder local identifier
+        binder type term canonical bytes
+      body term canonical bytes
+  - Let:
+      local identifier
+      type term canonical bytes
+      value term canonical bytes
+      body term canonical bytes
+  - Annot:
+      term canonical bytes
+      type term canonical bytes
+
+Level canonical bytes:
+  - natural:
+      minimal unsigned LEB128 value
+  - param:
+      universe parameter identifier as UTF-8 string primitive bytes
+  - succ:
+      payload level canonical bytes
+  - max / imax:
+      lhs level canonical bytes
+      rhs level canonical bytes
+```
+
+whitespace、式をグループ化するだけの parentheses、source span、diagnostic text、pretty text、AI trace は
+term-source canonical bytes に入りません。
+Binder / local / universe parameter name は JSON / source decode 後の UTF-8 byte sequence をそのまま encode します。
+したがって binder 名だけが違う alpha-equivalent source は、異なる Phase 3 term-source hash を持ち得ます。
+それを payload にする Phase 4 `MachineTermSource.canonical_hash` も異なり得ます。
+これは cache key を保守的に分けるためであり、証明の正しさは elaborated core term と kernel check で判断します。
 
 ---
 

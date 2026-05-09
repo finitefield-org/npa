@@ -1,4 +1,9 @@
-以下は **Phase 5: IDE/API** の詳細設計です。
+以下は **Phase 5 Human Profile: IDE/API** の詳細設計です。
+
+この文書は、Phase 5 を人間向け IDE / Web UI / CLI で使う設計として整理したものです。
+AI や証明探索器にも渡せる構造化情報は含みますが、AI 専用の決定的・transactional な機械 API 契約は
+`doc/phase5-ai.md` に分けます。
+
 Phase 4 までで、`intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` のような tactic を使って proof term を構築できるようになりました。Phase 5 では、それを **IDE・Web UI・外部AIエージェント・証明探索器が扱える API** として公開します。
 
 対象はこの4つです。
