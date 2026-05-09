@@ -415,14 +415,26 @@ Machine Surface elaboration は explicit であることを前提にします。
 5. codomain を instantiate
 ```
 
-関数型の metadata に implicit binder があっても、Machine Surface MVP では自動挿入しません。
-implicit binder を消費したい場合は `@` 付き head と明示引数を使います。
+関数型の caller-supplied metadata に implicit binder があっても、Machine Surface は implicit term argument を
+自動挿入しません。
+implicit binder 位置へ明示 argument を渡したい場合は `@` 付き head を使います。
 
 ```npa
 @Eq.refl.{1} Nat n
 ```
 
-`Eq.refl n` は `ImplicitArgumentRequired` として拒否します。
+`Eq.refl n` を `ImplicitArgumentRequired` として拒否するのは、caller が渡した callable profile で
+`Eq.refl` の先頭 term binder が implicit と固定されている場合です。
+Phase 5 AI MVP v1 のように caller が all-explicit callable profile を渡す protocol では、その profile が
+この判定の正本です。
+その場合 `@` は exact-match / canonical source marker として許されますが、implicit binder 消費は発生せず、
+implicit term binder 不足による `ImplicitArgumentRequired` も発生しません。
+Machine Surface parser / elaborator は server-local registry、元 source、pretty metadata から implicit profile を
+補完してはいけません。
+現行の `MachineTermElabContext` に callable profile field がない実装では、Phase 5 adapter が wrapper context または
+明示引数で同等の metadata を渡します。
+Machine Surface 単体テストで implicit binder の挙動を検査する場合も、どの callable profile を使うかを fixture に
+明示します。
 
 ## 6.2 Lambda
 
@@ -987,7 +999,8 @@ Machine Surface term を fully explicit core Expr に落とす。
 ```text
 - explicit id が core def になる
 - explicit Eq.refl proof が core theorem になる
-- Eq.refl n は ImplicitArgumentRequired
+- implicit binder を含む callable profile では Eq.refl n が ImplicitArgumentRequired
+- all-explicit callable profile では implicit term binder 不足による ImplicitArgumentRequired が発生しない
 - fun x => x は UnannotatedBinder
 - _ は HoleNotAllowed
 ```
