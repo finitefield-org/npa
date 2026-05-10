@@ -41,7 +41,7 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 - tactic: `doc/phase4-human.md`, `doc/phase4-ai.md`
 - IDE / API: `doc/phase5-human.md`, `doc/phase5-ai.md`
 - 標準ライブラリ: `doc/phase6-human.md`, `doc/phase6-ai.md`
-- AI 探索: `doc/phase7.md`
+- AI 探索: `doc/phase7-ai.md`
 - 独立 checker: `doc/phase8.md`
 - 高度化: `doc/phase9.md`
 
