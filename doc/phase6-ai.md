@@ -571,16 +571,25 @@ Changing this mapping is `InvalidStdImportBundle`, not merely a different `machi
 `root_imports` は Phase 5 `/machine/sessions.imports` に渡す direct import key list です。
 `import_closure` は Phase 5 `/machine/sessions.import_closure` に渡す complete certificate payload set です。
 `import_closure` は `root_imports` から certificate `ImportEntry` をたどって到達する最小 transitive closure と完全一致しなければなりません。
-extra certificate、欠落 dependency、duplicate closure key は invalid bundle です。
+extra certificate、欠落 dependency、duplicate root import key、duplicate closure key は invalid bundle です。
+The emitted `root_imports` and `import_closure` arrays must already be in the canonical order defined in section 5.2.
+Validators must reject non-canonical order as `InvalidStdImportBundle`; they must not sort or deduplicate a malformed bundle before
+computing `MachineStdImportBundle` canonical bytes.
 Every `VerifiedModuleCertificateRequest` in `import_closure` must carry the same canonical certificate bytes as the
 corresponding module artifact in `Std/*.npcert`.
 The raw bytes hash must equal `MachineStdModuleArtifact.certificate_bytes_hash`, and the request
 `expected_export_hash` / `expected_certificate_hash` must equal the same module artifact's
 `expected_export_hash` / `expected_certificate_hash`.
 An import bundle must not contain a byte-different re-encoding, alternate certificate, or stale copy for a release module.
+After JSON shape validation has accepted the `certificate` wrapper fields, `certificate.encoding` must be exactly
+`"npa.certificate.canonical.v0.1.hex"` and `certificate.bytes` must be lowercase even-length hex for the same raw bytes as the fixed
+release module artifact.
+Wrong encoding strings, malformed hex, decoded byte mismatch, stale `expected_export_hash` / `expected_certificate_hash`, or
+decoded raw-byte hash mismatch with `MachineStdModuleArtifact.certificate_bytes_hash` are `InvalidStdImportBundle`.
 
 `allow_axioms` は MVP 標準ライブラリでは必ず `[]` です。
 将来 `Std.Classical` を追加する場合は別 bundle id にし、`allow_axioms` に入る axiom を明示します。
+An MVP import bundle with a non-empty `allow_axioms` array is `InvalidStdImportBundle`.
 `allow_axioms` entries use Phase 5 `MachineAxiomRefWire` JSON, but Phase 6 import bundles may contain only the
 `kind = "imported"` variant.
 `kind = "current_module"` or any `source_index`-based axiom coordinate is invalid in a Phase 6 import bundle because the bundle
@@ -590,6 +599,10 @@ bundle's verified import closure.
 This uses the Phase 5 rule literally: an imported axiom ref may point to a public or private `AxiomDecl` as long as
 `module / export_hash / name / decl_interface_hash` resolves uniquely in the verified module.
 Phase 6 does not add a public-export requirement for axiom refs.
+`allow_axioms` arrays are emitted in Phase 5 `MachineAxiomRefWire` canonical order after resolving to the unique imported
+axiom identity, and duplicate resolved identities are rejected.
+Validators must reject non-canonical order, duplicate entries, invalid variants, malformed axiom refs, or unresolved future
+entries as `InvalidStdImportBundle`; they must not sort, deduplicate, or repair a malformed bundle before hashing.
 This explicit `allow_axioms` validation is distinct from interpreting a Phase 2 `GlobalRef::Imported` inside a certificate term;
 the latter is still constrained by the Phase 2 `ExportBlock` rule.
 constructive MVP bundle が classical axiom を transitively import してはいけません。
@@ -600,6 +613,10 @@ Phase 5 `MachineTacticOptionsRequest` field.
 Every `SimpRuleRef`, `EqFamilyRef`, and `NatFamilyRef` must resolve within the bundle's direct import scope using Phase 5 option
 validation rules.
 Unknown, stale, or ambiguous recipe references make the bundle `InvalidStdImportBundle`.
+In the fixed release validation order, this semantic Phase 5 option validation is performed in Step 10 after simp profiles have
+already been validated.
+Step 5 checks bundle membership, closure, `allow_axioms`, recipe id mapping, and emitted recipe payload canonical shape only; it
+must not decide unknown, stale, or ambiguous rule/family targets.
 
 ## 5.2 Bundle Order
 
@@ -926,6 +943,8 @@ A mismatch is `InvalidStdTheoremIndex`.
 
 `entries` は `MachineStdGlobalRef canonical order` で sort し、同じ
 `module / name / export_hash / certificate_hash / decl_interface_hash` を重複して持ってはいけません。
+Validators must reject non-canonical `entries` order or duplicate `global_ref` entries as `InvalidStdTheoremIndex`.
+They must not sort or deduplicate malformed theorem-index entries before recomputing `index_hash`.
 
 ```text
 MachineStdGlobalRef canonical order:
@@ -1039,6 +1058,9 @@ If an implementation recomputes it, it must use the Phase 2 declaration interfac
 `universe_params` are Phase 5 `MachineUniverseParamName` strings decoded from Phase 2 `ExportEntry.universe_params` in ExportEntry order.
 They must not be sorted, renamed, or deduplicated.
 Invalid `MachineUniverseParamName` is `InvalidStdTheoremIndex`.
+For every theorem entry, `kind`, `universe_params`, `statement_core_hash`, `statement_head`, `constants`, and
+`axiom_dependencies` must equal the values derived from the matching public `ExportEntry` and verifier output.
+Any sidecar mismatch in these certificate-derived fields is `InvalidStdTheoremIndex`.
 `axiom_dependencies` is the exact sorted/dedup projection of the same public `ExportEntry.axiom_dependencies` field to
 `MachineStdAxiomRef`.
 It is not derived from prompt metadata, theorem attributes, source text, proof pretty-printing, or
@@ -1082,6 +1104,11 @@ The emitted JSON arrays must be sorted in the canonical order above and must not
 Non-canonical order, duplicate mode, or duplicate attribute is `InvalidStdTheoremIndex`.
 The same rule applies to `constants`, `rewrite_descriptors`, and `axiom_dependencies`: the artifact must contain the derived
 canonical sorted/deduplicated list, not an input-order list.
+Validators must preserve the emitted arrays while validating this condition.
+They must not sort or deduplicate malformed theorem-entry arrays as a repair step before recomputing `index_hash`.
+For fields whose final expected contents depend on validated profiles, such as `modes`, `attributes`, and `rewrite_descriptors`,
+validators may defer the content equality check to Step 11, but duplicate and non-canonical emitted order are still theorem-index
+shape errors.
 
 ```text
 MachineStdTheoremEntry canonical bytes:
@@ -1466,6 +1493,9 @@ They are not direction-adjusted `from_pattern` / `to_pattern`.
 `ResolvedSimpRule.rule_telescope` vector.
 The first `ResolvedRuleParam` has position `0`, positions are contiguous, and universe parameters do not consume positions in this
 term-parameter index space.
+Every string in `ResolvedSimpRule.universe_params` must satisfy the Phase 5 `MachineUniverseParamName` rule before it is encoded
+into `MachineStdRuleTelescope` canonical bytes.
+Invalid universe parameter names in a rewrite descriptor are `InvalidStdRewriteProfile`.
 
 ```text
 MachineStdRewriteDescriptor canonical bytes:
@@ -1508,6 +1538,12 @@ Nat.add_assoc
 List.append_assoc
 List.length_append
 ```
+
+This exact `RwOnly` set is normative for `npa.stdlib.mvp.v1`.
+Human-profile notes that a theorem is "not simp", "慎重にする", or may later move to a dedicated tactic do not exclude it from
+Phase 6 AI `RwOnly` unless this exact set omits it.
+Conversely, theorems not listed here, such as `Nat.mul_comm`, `Nat.mul_assoc`, `Nat.left_distrib`,
+`Nat.right_distrib`, and `List.map_comp`, are not emitted in MVP rewrite profiles.
 
 `SimpSafe` must not be assigned by name pattern alone.
 The descriptor must pass Phase 4 rule validation and the Phase 6 simp lint described below.
@@ -1603,6 +1639,13 @@ If the same canonical bytes appear in both source profiles, they are one set mem
 The emitted `std.all.rw.descriptors` array must contain that set exactly once per member, in `MachineStdRewriteDescriptor`
 canonical order.
 Duplicate descriptors inside the emitted `std.all.rw` array remain `InvalidStdRewriteProfile`.
+After building the expected union, validators must still validate the emitted `std.all.rw` profile under `std.all.mvp`.
+For every union member, the descriptor source must resolve uniquely in the `std.all.mvp` direct import scope to the same
+`MachineStdGlobalRef`, and Phase 4 rule validation with `std.all.rw`'s `kernel_check_profile` / `eq_family` must reproduce the
+same `MachineStdRewriteDescriptor` canonical bytes.
+The descriptor hashes remain tied to the resolved source theorem's certificate context; validators must not recompute them from a
+synthetic `std.all` owner context.
+Any source mismatch, ambiguity, or descriptor-byte mismatch is `InvalidStdRewriteProfile`.
 
 `descriptors` は `source` の `MachineStdGlobalRef canonical order`、`direction`、`safety`、
 `lhs_core_hash`、`rhs_core_hash`、`rule_telescope_hash` の順で sort し、完全重複を許しません。
@@ -1934,6 +1977,13 @@ canonical bytes.
 If the same canonical bytes appear in both source profiles, they are one set member and are accepted once.
 The emitted `std.all.simp.rules` array must contain that set exactly once per member, in Phase 4 `SimpRuleKey` canonical order.
 Duplicate rules inside the emitted `std.all.simp` array remain `InvalidStdSimpProfile`.
+Before deduplicating that union, validators retain the resolved `MachineStdGlobalRef` target of each source-profile rule.
+If identical `SimpRuleKey` canonical bytes from source profiles resolve to different theorem targets, the union is ambiguous and
+the release is `InvalidStdSimpProfile`.
+After building the expected union, validators must still validate the emitted `std.all.simp` profile under `std.all.mvp`.
+Every emitted union rule must resolve uniquely in the `std.all.mvp` direct import scope to the same `MachineStdGlobalRef` target
+and direction as the source-profile rule, and the paired `std.all.rw` profile must contain the matching `SimpSafe` descriptor.
+Any ambiguity, source mismatch, or missing paired descriptor is `InvalidStdSimpProfile`.
 
 `std.logic.simp` is intentionally empty in the MVP AI profile.
 The generated `Eq.refl` constructor may be used through the explicit Eq family, but it is not a theorem-index entry and is not a
@@ -2072,6 +2122,11 @@ If emitted, it must validate against the theorem index entry set and carry its o
 `metadata_profile_id`, `library_profile_id`, and recomputed `prompt_metadata_hash` must match the MVP values and the artifact field.
 A mismatch is `InvalidStdPromptMetadata`.
 Absent prompt metadata is valid.
+When prompt metadata is emitted, `entries` may be empty or any subset of `MachineStdTheoremIndex.entries`.
+MVP prompt metadata has no completeness requirement, and validators must not compare prompt metadata entry count against theorem
+index entry count.
+Every emitted prompt metadata entry must target an existing theorem-index `global_ref`; a missing metadata entry for a theorem is
+valid, but an entry outside the theorem index is `InvalidStdPromptMetadata`.
 `entries` are sorted by `MachineStdGlobalRef canonical order`.
 Two prompt metadata entries with the same `global_ref` are rejected as `InvalidStdPromptMetadata`.
 
@@ -2216,6 +2271,7 @@ MVP has no axiom modules.
 
 `MachineStdAxiomReport.modules` must contain exactly the modules in `MachineStdLibraryRelease.modules`, in `ModuleName`
 canonical order.
+Duplicate modules or non-canonical module order are `InvalidStdAxiomPolicy`.
 Each entry's `export_hash` and `certificate_hash` must match the corresponding `MachineStdModuleArtifact`.
 For each module:
 
@@ -2230,6 +2286,8 @@ transitive_axioms:
 ```
 
 Both lists use `MachineStdAxiomRef canonical order`.
+Duplicate or non-canonical `module_axioms` / `transitive_axioms` arrays are `InvalidStdAxiomPolicy`.
+Validators must not sort or deduplicate a malformed axiom report before recomputing `axiom_report_hash`.
 MVP no-custom-axiom validation requires both `module_axioms` and `transitive_axioms` to be `[]` for every release module.
 Any mismatch with verifier-derived projection is `InvalidStdAxiomPolicy`.
 `module_axioms` is not recomputed from public exports, owned `AxiomDecl` declarations, theorem-index entries, or prompt metadata.
@@ -2315,21 +2373,35 @@ MachineStdRelease validation:
        InvalidStdLibraryRelease
 
   4. Validate no-custom-axiom policy.
-     Disallowed axiom, axiom ref projection failure, axiom report module-set mismatch, module/transitive axiom projection mismatch,
+     Disallowed axiom, axiom ref projection failure, axiom report module-set mismatch,
+     duplicate/non-canonical axiom report module order, duplicate/non-canonical module_axioms or transitive_axioms,
+     module/transitive axiom projection mismatch,
      MachineStdAxiomReport.axiom_report_hash self-mismatch:
        InvalidStdAxiomPolicy
 
-  5. Validate import bundle closure and recipe ids.
-     Missing/extra bundle id, duplicate/non-canonical bundle order, missing dependency, extra closure certificate,
+  5. Validate import bundle closure, `allow_axioms`, and recipe ids.
+     Missing/extra bundle id, duplicate/non-canonical bundle order,
+     duplicate root_imports or import_closure keys, non-canonical root_imports/import_closure order,
+     missing dependency, extra closure certificate,
+     embedded certificate encoding/hex failure, embedded certificate byte/hash mismatch,
      root import not in closure, invalid bundle-to-recipe mapping, non-renderable recipe name,
      non-canonical or duplicate recipe simp_rules,
+     non-empty MVP allow_axioms, invalid/non-imported allow_axioms variant, malformed/unresolved allow_axioms entry,
+     non-canonical or duplicate allow_axioms,
      MachineStdImportBundleSet.import_bundles_hash self-mismatch:
        InvalidStdImportBundle
+     This step does not resolve recipe `SimpRuleRef`, `EqFamilyRef`, or `NatFamilyRef` against the bundle direct import scope.
+     Stale, unknown, or ambiguous recipe references are checked in Step 10.
 
   6. Validate theorem index identity and certificate-derived fields against public ExportEntry set.
-     index_profile_id mismatch, entry stale export/interface hash, missing export, missing required entry, extra entry,
-     invalid renderable name/universe param, non-null proof_term_size, MachineStdTheoremIndex.index_hash self-mismatch:
+     index_profile_id mismatch, duplicate/non-canonical entry order, entry stale export/interface hash,
+     missing export, missing required entry, extra entry,
+     kind mismatch, universe_params mismatch, statement_core_hash mismatch, statement_head/constants mismatch,
+     axiom_dependencies mismatch, invalid renderable name/universe param,
+     non-canonical or duplicate modes/constants/rewrite_descriptors/axiom_dependencies,
+     non-null proof_term_size, MachineStdTheoremIndex.index_hash self-mismatch:
        InvalidStdTheoremIndex
+     For `modes` and `rewrite_descriptors`, this step checks only emitted order/duplicate shape, not final profile-derived content.
 
   7. Validate theorem entry attribute shape only.
      Non-canonical order, duplicate attribute, MVP-reserved attribute:
@@ -2339,7 +2411,8 @@ MachineStdRelease validation:
   8. Validate rewrite profiles.
      Missing/extra rewrite profile id, duplicate/non-canonical profile order, wrong required_import_bundle_id/kernel_check_profile/eq_family,
      unknown descriptor source, non-renderable family name, ambiguous membership-table name, duplicate descriptor, non-canonical descriptor order,
-     extra/missing descriptor, unsafe profile membership, axiom mismatch, eq_family unknown/stale/ambiguous/coherence failure,
+     extra/missing descriptor, unsafe profile membership, invalid rule universe parameter, axiom mismatch,
+     eq_family unknown/stale/ambiguous/coherence failure,
      per-profile profile_hash mismatch, MachineStdRewriteProfileSet.rewrite_profiles_hash self-mismatch:
        InvalidStdRewriteProfile
 
@@ -2352,17 +2425,21 @@ MachineStdRelease validation:
        InvalidStdSimpProfile
 
   10. Validate import bundle recommended tactic options against validated simp profiles.
-      Recipe/profile rule mismatch, recipe kernel/family/limit mismatch, Phase 5 option validation failure:
+      Recipe/profile rule mismatch, recipe kernel/family/limit mismatch, stale/unknown/ambiguous recipe rule or family reference,
+      Phase 5 option validation failure:
         InvalidStdImportBundle
 
   11. Validate theorem index derived metadata against validated profiles.
       modes mismatch, attributes/modes mismatch, rewrite_descriptors mismatch, rewrite shape failure:
         InvalidStdTheoremIndex
       Simp/Rw/Apply attributes must match the modes derived from the validated rewrite/simp profiles at this step.
+      This step compares final expected contents only; non-canonical emitted order and duplicates were already rejected in Steps 6 and 7.
 
   12. Compare validated sidecar hashes with MachineStdLibraryRelease manifest hash fields.
-     Also compare sidecar library_profile_id values and module-artifact summary counts
+     Also compare manifest-bound sidecar library_profile_id values and module-artifact summary counts
      (`public_export_count`, `theorem_index_entry_count`, `simp_rule_count`) against recomputed values.
+     Optional prompt metadata is not manifest-bound and is excluded from this step; if present, its `library_profile_id` is checked
+     in Step 13 and mismatches are `InvalidStdPromptMetadata`.
      The count checks happen after the theorem index and simp profiles have passed their own content validation; a count mismatch is
      a release/module-artifact summary mismatch.
      Manifest hash mismatch, sidecar/manifest library_profile_id mismatch, module count mismatch, summary count mismatch:
@@ -2370,8 +2447,10 @@ MachineStdRelease validation:
 
   13. If optional prompt metadata is present, validate it against the theorem index and import bundle set.
       metadata_profile_id mismatch, library_profile_id mismatch, prompt_metadata_hash self-mismatch,
-      stale global_ref target, duplicate tag, unknown tag, unknown imports_bundle_id:
+      non-canonical entry order, duplicate global_ref, stale global_ref target,
+      non-canonical tag order, duplicate tag, unknown tag, invalid candidate_kind, unknown imports_bundle_id:
         InvalidStdPromptMetadata
+      Prompt metadata may be empty or a strict subset of theorem-index entries; missing metadata entries are valid.
       At this step, the validator does not recompute or reject semantically stale goal_core_hash values in the MVP profile.
 ```
 
@@ -2486,8 +2565,14 @@ Audit checks:
 - every decl_interface_hash matches certificate verifier output
 - every axiom dependency in index equals the public ExportEntry.axiom_dependencies projection
 - axiom report sidecar module_axioms equals verifier-derived AxiomReport.module_axioms projection
+- axiom report sidecar transitive_axioms equals the deterministic union over certificate ImportEntry closure
 - every simp profile rule resolves to a theorem with matching decl_interface_hash
-- constructive bundles have empty module_axioms
+- every rewrite profile descriptor resolves to a theorem with matching decl_interface_hash and recomputed descriptor hashes
+- theorem index rewrite_descriptors equals the union of matching validated rewrite profile descriptors
+- SimpSafe descriptors satisfy the fixed Phase 6 simp lint and RwOnly descriptors are excluded from simp profiles
+- std.all.rw and std.all.simp revalidate under std.all.mvp and match their source-profile targets
+- constructive bundles have empty allow_axioms
+- every module in a constructive bundle closure has empty module_axioms and transitive_axioms
 - import bundles are minimal transitive closures
 ```
 
@@ -2556,7 +2641,13 @@ import bundle closure:
   MVP bundles are emitted in the concrete bundle_id dictionary order
   MachineStdImportBundle rejects an emitted machine_std_import_bundle_hash field as unknown
   import_bundles_hash is computed from verifier-recomputed per-bundle digests, not from a stored bundle hash field
-  missing dependency, extra dependency, duplicate closure key are rejected
+  missing dependency, extra dependency, duplicate root import key, duplicate closure key are rejected
+  reordered root_imports or import_closure arrays are rejected instead of being sorted before bundle hashing
+  embedded certificate.encoding mismatch and malformed certificate.bytes hex are rejected as InvalidStdImportBundle
+  embedded import_closure certificate byte/hash mismatches are rejected as InvalidStdImportBundle
+  MVP bundles with non-empty allow_axioms are rejected as InvalidStdImportBundle
+  allow_axioms rejects current_module/source_index variants and unresolved imported refs
+  allow_axioms rejects duplicate resolved axiom identities and non-canonical order
   ordinary Core/prelude ImportEntry values are rejected rather than excluded from MachineStdImportBundle.import_closure
   verifier-internal prelude dependencies typed outside Phase 2 ImportEntry are not emitted as bundle certificates
   std.list.mvp has root_import membership {Std.Logic, Std.List} and closure membership {Std.Logic, Std.Nat, Std.List}
@@ -2570,6 +2661,8 @@ no axiom:
   MachineStdAxiomReport.axiom_report_hash is the release-wide sidecar hash and self-mismatches reject as InvalidStdAxiomPolicy
   imported axiom dependencies project to the imported module/export_hash, not the dependent owner module
   axiom report modules exactly match release modules
+  reordered or duplicate axiom report modules are rejected as InvalidStdAxiomPolicy
+  duplicate or non-canonical module_axioms/transitive_axioms arrays are rejected as InvalidStdAxiomPolicy
   module_axioms and transitive_axioms are both empty for every MVP module
   transitive_axioms mismatch with verifier-derived import closure rejects release
 
@@ -2581,10 +2674,13 @@ simp profile:
   Nat.add_assoc is rejected from SimpSafe by the fixed associativity recognizer
   Nat.mul_succ is accepted as SimpSafe only through the fixed size/head-introduction exceptions
   List.length_nil and List.length_cons are accepted as SimpSafe only through fixed head-introduction exceptions
+  List.length_append is accepted as RwOnly but rejected from simp profiles
   head-introduction exceptions compare MachineStdGlobalRefView canonical bytes, not display names
   std.nat.simp membership exactly matches the MVP list
   std.list.simp does not include Nat rules because Nat is not a direct root import of std.list.mvp
   std.all.simp is the semantic union of validated std.nat.simp and std.list.simp, emitted in SimpRuleKey canonical order
+  std.all.simp rules re-resolve in std.all.mvp to the same MachineStdGlobalRef targets as their source profiles
+  identical SimpRuleKey bytes that resolve to different source-profile targets are rejected instead of being deduped
   a simp profile rule without a matching paired SimpSafe rewrite descriptor is rejected
   a rule with only a paired RwOnly descriptor is rejected from simp profiles
   non-renderable SimpRuleRef or EqFamilyRef names are rejected in simp profiles
@@ -2601,15 +2697,24 @@ Phase 5 handoff:
 
 theorem index:
   theorem index_profile_id mismatch is rejected
+  theorem index entries in non-canonical global_ref order are rejected
+  duplicate theorem index global_ref entries are rejected
   Nat.add_zero entry has exact/rw/simp modes
   List.append_assoc has rw but not simp mode
   all entries carry module/name/export_hash/certificate_hash/decl_interface_hash
   non-renderable theorem-index entry global_ref.name rejects the theorem index
   theorem entry kind is derived from public ExportEntry.kind
+  theorem entry kind mismatch with public ExportEntry.kind rejects the theorem index
+  universe_params mismatch, reorder, duplicate, or invalid MachineUniverseParamName rejects the theorem index
   statement_core_hash equals the Phase 2 ExportEntry.type_hash
+  statement_core_hash mismatch rejects the theorem index
   axiom_dependencies equals the projection of public ExportEntry.axiom_dependencies
+  axiom_dependencies mismatch rejects the theorem index
   statement_head peels leading Pi from ExportEntry.type without WHNF/reduction
+  statement_head mismatch rejects the theorem index
   constants include global refs in binder domains and conclusion, then sort/dedup by MachineStdGlobalRefView bytes
+  constants mismatch rejects the theorem index
+  non-canonical constants/rewrite_descriptors/axiom_dependencies arrays are rejected instead of being sorted before index_hash
   proof_term_size is None for every MVP entry
   non-null proof_term_size is rejected
   duplicate or non-canonical modes/attributes reject the theorem index
@@ -2635,13 +2740,16 @@ rewrite descriptor:
   descriptors with same source/direction/safety/lhs/rhs but different rule_telescope_hash sort deterministically
   rule_telescope_hash ignores ResolvedRuleParam.name and uses zero-based rule_telescope position plus type hash
   rule_telescope_hash is Phase 6-specific and does not reuse the Phase 4 SimpRegistry telescope hash
+  invalid MachineUniverseParamName in ResolvedSimpRule.universe_params rejects the rewrite profile
   missing or extra MVP rewrite profile ids are rejected
   ambiguous MVP rewrite membership table names are rejected before descriptor comparison
   non-canonical rewrite descriptor order and extra/missing profile descriptors are rejected
+  MVP RwOnly exact set is normative; non-listed not-simp theorems such as Nat.mul_comm or List.map_comp are rejected from MVP rewrite profiles
   MVP rewrite profiles emit only Forward descriptors
   rewrite descriptor sources whose axiom_dependencies are outside the profile bundle allow_axioms are rejected
   every MVP rewrite descriptor source has axiom_dependencies = []
   std.all.rw is the semantic union of validated std.nat.rw and std.list.rw, emitted in descriptor canonical order
+  std.all.rw descriptors revalidate under std.all.mvp and reproduce the same descriptor canonical bytes
   non-renderable EqFamilyRef names are rejected in rewrite profiles
   stale MachineStdRewriteProfile.profile_hash is rejected before computing rewrite_profiles_hash
   rewrite_profiles_hash is computed from recomputed per-profile digests, not from trusted JSON profile_hash values
@@ -2654,15 +2762,21 @@ axiom refs:
 prompt metadata:
   absent prompt metadata is valid
   metadata_profile_id/library_profile_id/prompt_metadata_hash mismatches are rejected
+  prompt metadata may be empty or a strict subset of theorem index entries
+  missing prompt metadata for a theorem index entry is valid
+  prompt metadata entries in non-canonical global_ref order are rejected
   duplicate prompt metadata global_ref is rejected
   stale prompt metadata global_ref target is rejected
+  prompt metadata library_profile_id mismatch is InvalidStdPromptMetadata, not InvalidStdLibraryRelease
   prompt example goal_core_hash is generated in the canonical Phase 5 direct-import context for imports_bundle_id
   prompt example GlobalRef::Imported indices are assigned from root_imports, not import_closure
   prompt examples that require direct references to closure-only modules are rejected by the generator, not recomputed by the release validator
   prompt examples are hashed in emitted JSON array order, and validators do not sort or dedup examples
   prompt example with unknown imports_bundle_id is rejected
+  prompt example with invalid candidate_kind is rejected
   prompt example goal_core_hash is a closed target Expr hash, not a hash of display text
   malformed goal_core_hash is rejected, but semantically stale goal_core_hash cannot be detected by the MVP release validator
+  prompt tags in non-canonical ASCII order are rejected
   unknown prompt tag is rejected
 ```
 
