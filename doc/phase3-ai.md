@@ -272,6 +272,45 @@ reserved tokens:
 `NameAtom("Prop")` / `NameAtom("Type")` / `NameAtom("Sort")` として canonicalize してはいけません。
 `succ` / `max` / `imax` は level grammar 内では keyword であり、level parameter name には使えません。
 
+Phase 7 の禁止 token filter 用に、Machine Surface lexer は parser / resolver / elaborator を通さない
+token-only API を公開します。これは `MachineSurfaceMode::Complete` / `Repair` とは別の lexical API であり、
+source を受理する mode ではありません。token-only API は Machine Surface parser と同じ lexical rule と
+longest-match rule を使い、lexical error の場合は parser 前の `MachineDiagnostic` を返します。
+
+```rust
+pub struct MachineSurfaceToken {
+    pub kind: MachineSurfaceTokenKind,
+    pub spelling: String,
+    pub span: Span,
+}
+
+pub enum MachineSurfaceTokenKind {
+    IdentLike,
+    Reserved,
+    Dot,
+    Punctuation,
+    Natural,
+    StringLiteral,
+    Whitespace,
+    Comment,
+    ExternalCommand,
+}
+
+pub fn lex_machine_surface_tokens(
+    source: &str,
+) -> Result<Vec<MachineSurfaceToken>, MachineDiagnostic>;
+```
+
+`spelling` は JSON decode 後の source に現れた token substring そのものです。
+case folding、Unicode normalization、name resolution、keyword の別名化をしてはいけません。
+`term_name` は token-only API では component ごとの `IdentLike` / `Reserved` と `Dot` として返します。
+したがって `Std.UnsafeName.foo` は `UnsafeName` component だけを持ち、`unsafe` token にはなりません。
+一方で `Std.unsafe.foo` は `unsafe` spelling の component を含みます。
+`StringLiteral` の中身は token-only API の呼び出し側が再 lex してはいけません。
+現行 MVP の Machine Surface grammar には external command / shell escape はないため、
+`ExternalCommand` は到達不能です。将来その token を導入する場合も parser で受理するかどうかとは独立に、
+token-only API では dedicated token kind として返します。
+
 MVP では `->` / `→` を使いません。関数型は `forall (x : A), B` と書きます。
 anonymous binder も使いません。
 
@@ -710,6 +749,10 @@ Phase 5 / Phase 7 用には term 単体 API も用意します。
 pub fn canonicalize_machine_term_source(
     source: &str,
 ) -> Result<MachineTermSourceCanonical, MachineDiagnostic>;
+
+pub fn lex_machine_surface_tokens(
+    source: &str,
+) -> Result<Vec<MachineSurfaceToken>, MachineDiagnostic>;
 
 pub fn elaborate_machine_term_check(
     source: &str,
