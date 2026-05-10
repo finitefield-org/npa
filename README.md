@@ -115,5 +115,6 @@ cargo test --workspace
 - [Phase 6 Human Profile: Library](doc/phase6-human.md)
 - [Phase 6 AI Profile: Machine Standard Library](doc/phase6-ai.md)
 - [Phase 7: AI Search](doc/phase7-ai.md)
-- [Phase 8: Independent Checker](doc/phase8.md)
+- [Phase 8 Human Profile: Independent Checker](doc/phase8-human.md)
+- [Phase 8 AI Profile: Checker Audit Automation](doc/phase8-ai.md)
 - [Phase 9: Advanced Features](doc/phase9.md)
