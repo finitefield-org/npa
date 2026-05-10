@@ -304,6 +304,9 @@ canonical bytes.
 MVP JSON strings for scalar enum fields are fixed as follows.
 Tagged-object enums, such as `MachineStdGlobalRefView`, define their own JSON object shape in their section.
 Any other spelling, casing, alias, numeric enum tag, or object wrapper is invalid.
+Unknown scalar enum JSON strings are wire-shape errors and are reported as `InvalidStdArtifactShape` in Step 1.
+After an enum value has been parsed successfully, semantic disagreements with verifier output or profile-derived contents are
+reported by the owning artifact validation step.
 
 ```text
 MachineStdTheoremKind:
@@ -399,7 +402,7 @@ Any other `certificate_encoding` spelling is `InvalidStdLibraryRelease`, even if
 `expected_certificate_hash` は Phase 2 certificate hash であり、`certificate_bytes_hash` と同じとは限りません。
 両方を混同してはいけません。
 `public_export_count` は Phase 2 verifier output の public `ExportEntry` 総数です。
-`theorem_index_entry_count` はその module の public `TheoremDecl` / `AxiomDecl` entry 数です。
+`theorem_index_entry_count` はその module の public `ExportKind::Theorem` / `ExportKind::Axiom` entry 数です。
 `simp_rule_count` は全 `MachineStdSimpProfile.rules` を検証し、各 `SimpRuleRef` をその profile の
 `required_import_bundle_id` で `MachineStdGlobalRef` に semantic resolution した後、その module の theorem entry に解決される
 unique rule target 数です。
@@ -741,10 +744,10 @@ std.nat.family:
 For the MVP AI standard-library artifacts, `Eq`, `Eq.refl`, `Eq.rec`, `Nat`, `Nat.zero`, `Nat.succ`, and `Nat.rec` are
 certificate-bound standard-library exports.
 They are not modeled as Phase 6 builtin metadata.
-`Eq` is introduced by the checked `Std.Logic` certificate as an ordinary public `InductiveDecl` export with generated constructor
-and recursor exports.
-`Nat` is introduced by the checked `Std.Nat` certificate as an ordinary public `InductiveDecl` export with generated constructor
-and recursor exports.
+`Eq` is introduced by the checked `Std.Logic` certificate as a public `ExportKind::Inductive` entry backed by a checked
+`InductiveDecl`, with generated constructor and recursor exports.
+`Nat` is introduced by the checked `Std.Nat` certificate as a public `ExportKind::Inductive` entry backed by a checked
+`InductiveDecl`, with generated constructor and recursor exports.
 Even if an implementation bootstraps the kernel with initial inductive support for `Eq` or `Nat`, the MVP standard-library
 artifacts must expose and reference these names through the verified standard-library certificates, not through a special Phase 6
 builtin reference.
@@ -881,11 +884,12 @@ Phase 7 can use this artifact for retrieval as long as every candidate is revali
 MVP index entries are public `ExportEntry` declarations whose kind is one of:
 
 ```text
-TheoremDecl
-AxiomDecl
+ExportKind::Theorem
+ExportKind::Axiom
 ```
 
-`DefDecl`, `InductiveDecl`, constructors, recursors, and private dependencies are not theorem index entries in MVP.
+`ExportKind::Def`, `ExportKind::Inductive`, `ExportKind::Constructor`, `ExportKind::Recursor`, and private dependencies are not
+theorem index entries in MVP.
 They may appear in `constants` / `head` metadata of theorem entries.
 
 Every entry is bound by:
@@ -902,7 +906,7 @@ decl_interface_hash
 Do not synthesize `module + "." + name`.
 In the MVP theorem index, every theorem-index entry `global_ref.name` must also satisfy the Phase 5
 `MachineSurfaceRenderableName` rule because Phase 7 may turn it into Phase 5 `exact` / `apply` / `rw` / `simp` candidate input.
-This renderability requirement applies to public `TheoremDecl` / `AxiomDecl` entry names and to emitted `SimpRuleRef`,
+This renderability requirement applies to public `ExportKind::Theorem` / `ExportKind::Axiom` entry names and to emitted `SimpRuleRef`,
 `EqFamilyRef`, and `NatFamilyRef` names.
 It does not apply to `MachineStdGlobalRefView` names that appear only inside `statement_head` / `constants`; those are
 certificate-bound identity metadata and must satisfy `FullyQualifiedName` plus the normalization rules in section 7.3.
@@ -911,7 +915,7 @@ Phase 5 renderer preflight.
 
 MVP theorem index is complete for the release modules.
 For every module listed in `MachineStdLibraryRelease.modules`, the validator recomputes the set of public `ExportEntry`
-items whose declaration kind is `TheoremDecl` or `AxiomDecl`.
+items whose `ExportEntry.kind` is `ExportKind::Theorem` or `ExportKind::Axiom`.
 `MachineStdTheoremIndex.entries` must contain exactly that set, no more and no less.
 Missing public theorem/axiom entries, extra private entries, generated constructor/recursor entries, or stale entries are
 `InvalidStdTheoremIndex`.
@@ -1057,7 +1061,11 @@ It is not a hash of pretty text, Machine Surface text, or `MachineExprView`.
 If an implementation recomputes it, it must use the Phase 2 declaration interface/type hash rule that produced `ExportEntry.type_hash`.
 `universe_params` are Phase 5 `MachineUniverseParamName` strings decoded from Phase 2 `ExportEntry.universe_params` in ExportEntry order.
 They must not be sorted, renamed, or deduplicated.
-Invalid `MachineUniverseParamName` is `InvalidStdTheoremIndex`.
+If the verifier-derived public `ExportEntry.universe_params` for a theorem-index-visible export contains a duplicate decoded name or
+a name that is not a valid `MachineUniverseParamName`, the release is not compatible with the MVP Phase 6 AI profile and validation
+fails as `InvalidStdLibraryRelease` in Step 3.
+Given valid verifier output, an emitted theorem-index sidecar whose `universe_params` are invalid, reordered, missing, extra, or
+duplicated is `InvalidStdTheoremIndex`.
 For every theorem entry, `kind`, `universe_params`, `statement_core_hash`, `statement_head`, `constants`, and
 `axiom_dependencies` must equal the values derived from the matching public `ExportEntry` and verifier output.
 Any sidecar mismatch in these certificate-derived fields is `InvalidStdTheoremIndex`.
@@ -1065,6 +1073,10 @@ Any sidecar mismatch in these certificate-derived fields is `InvalidStdTheoremIn
 `MachineStdAxiomRef`.
 It is not derived from prompt metadata, theorem attributes, source text, proof pretty-printing, or
 `AxiomReport.per_declaration`.
+If any verifier-derived `ExportEntry.axiom_dependencies` item cannot be projected to `MachineStdAxiomRef` by the section 7.3
+rules, validation fails as `InvalidStdAxiomPolicy` in Step 4 before theorem-index sidecar comparison.
+Given successful projection, a theorem-index sidecar whose `axiom_dependencies` differ from that projected list is
+`InvalidStdTheoremIndex` in Step 6.
 If the Phase 2 verifier exposes both `ExportEntry.axiom_dependencies` and a corresponding per-declaration transitive axiom
 report, an implementation may cross-check them, but the theorem index field is sourced from `ExportEntry.axiom_dependencies`.
 `attributes`, `rewrite_descriptors`, and `proof_term_size` are non-trusted metadata.
@@ -1283,7 +1295,7 @@ GlobalRef::Local(decl_index):
 GlobalRef::Imported(import_index, name, decl_interface_hash):
   - import_index must resolve through the owner certificate ImportEntry table to a release module artifact
   - target must resolve uniquely as a public ExportEntry in that imported module's ExportBlock
-  - target export kind must be AxiomDecl with matching name / decl_interface_hash
+  - target ExportEntry.kind must be ExportKind::Axiom with matching name / decl_interface_hash
   - MachineStdAxiomRef.module = imported module
   - MachineStdAxiomRef.export_hash = imported module expected_export_hash
   - name / decl_interface_hash come from the imported public axiom export
@@ -1768,13 +1780,15 @@ The names in the table above are labels for these canonical checks:
 ```text
 Head-introduction exception matching:
   - resolve the source theorem to `MachineStdGlobalRef`
-  - traverse the RHS head symbol set and normalize every new head to `MachineStdGlobalRefView`
+  - traverse the lhs and rhs head symbol sets and normalize every head to `MachineStdGlobalRefView`
     using the source theorem's owner module certificate context
+  - compute `introduced_heads = rhs_normalized_head_set - lhs_normalized_head_set`
+    using `MachineStdGlobalRefView canonical bytes` set difference
   - resolve each allowed head label in the release module table:
       Nat.add  -> the unique `Std.Nat` public export named `Nat.add`
       Nat.zero -> the unique `Std.Nat` public export or generated export named `Nat.zero`
       Nat.succ -> the unique `Std.Nat` public export or generated export named `Nat.succ`
-  - compare allowed heads to introduced heads by `MachineStdGlobalRefView canonical bytes`
+  - require `introduced_heads` to be a subset of the allowed heads by `MachineStdGlobalRefView canonical bytes`
 ```
 
 If an allowed head label cannot be resolved uniquely to a release declaration/generation artifact with matching
@@ -2369,11 +2383,13 @@ MachineStdRelease validation:
        InvalidStdLibraryRelease
 
   3. Build module context table from verifier output.
-     Unsupported verifier output for the MVP core spec, missing/private/stale/wrong-kind/cross-parent MVP Eq/Nat family export:
+     Unsupported verifier output for the MVP core spec, duplicate or non-renderable theorem-index-visible ExportEntry universe params,
+     missing/private/stale/wrong-kind/cross-parent MVP Eq/Nat family export:
        InvalidStdLibraryRelease
 
   4. Validate no-custom-axiom policy.
      Disallowed axiom, axiom ref projection failure, axiom report module-set mismatch,
+     ExportEntry.axiom_dependencies projection failure,
      duplicate/non-canonical axiom report module order, duplicate/non-canonical module_axioms or transitive_axioms,
      module/transitive axiom projection mismatch,
      MachineStdAxiomReport.axiom_report_hash self-mismatch:
@@ -2396,8 +2412,8 @@ MachineStdRelease validation:
   6. Validate theorem index identity and certificate-derived fields against public ExportEntry set.
      index_profile_id mismatch, duplicate/non-canonical entry order, entry stale export/interface hash,
      missing export, missing required entry, extra entry,
-     kind mismatch, universe_params mismatch, statement_core_hash mismatch, statement_head/constants mismatch,
-     axiom_dependencies mismatch, invalid renderable name/universe param,
+     kind mismatch, sidecar universe_params mismatch/duplicate/invalid, statement_core_hash mismatch, statement_head/constants mismatch,
+     axiom_dependencies sidecar mismatch, invalid renderable name/universe param,
      non-canonical or duplicate modes/constants/rewrite_descriptors/axiom_dependencies,
      non-null proof_term_size, MachineStdTheoremIndex.index_hash self-mismatch:
        InvalidStdTheoremIndex
@@ -2602,6 +2618,7 @@ release determinism:
   sidecar top-level arrays are rejected; each sidecar must use the fixed root object schema
   canonical enum bytes use the fixed one-byte tags, not JSON strings
   JSON enum strings use only the fixed wire spellings
+  unknown scalar enum JSON strings are rejected as InvalidStdArtifactShape, not as owning semantic mismatches
   MachineStdGlobalRefView JSON requires kind = decl/generated and rejects mixed variant fields
   MachineStdAxiomRef JSON rejects kind/source_index/certificate_hash fields
   reordered module list is rejected unless it is the concrete MVP ModuleName canonical order
@@ -2626,6 +2643,7 @@ recipe determinism:
   stale or cross-parent Eq/Nat family exports reject the release before recipe validation
   an ordinary public theorem export named Eq.refl rejects the release because Eq.refl is the generated constructor export
   emitted MVP recipes keep nat_family = null and therefore do not enable induction-nat
+  duplicate or non-renderable universe params in theorem-index-visible public ExportEntry verifier output reject the release
 
 certificate binding:
   changing one theorem proof changes certificate_hash and invalidates stale manifest
@@ -2675,7 +2693,7 @@ simp profile:
   Nat.mul_succ is accepted as SimpSafe only through the fixed size/head-introduction exceptions
   List.length_nil and List.length_cons are accepted as SimpSafe only through fixed head-introduction exceptions
   List.length_append is accepted as RwOnly but rejected from simp profiles
-  head-introduction exceptions compare MachineStdGlobalRefView canonical bytes, not display names
+  head-introduction exceptions compare introduced head set difference by MachineStdGlobalRefView canonical bytes, not display names
   std.nat.simp membership exactly matches the MVP list
   std.list.simp does not include Nat rules because Nat is not a direct root import of std.list.mvp
   std.all.simp is the semantic union of validated std.nat.simp and std.list.simp, emitted in SimpRuleKey canonical order
@@ -2705,10 +2723,11 @@ theorem index:
   non-renderable theorem-index entry global_ref.name rejects the theorem index
   theorem entry kind is derived from public ExportEntry.kind
   theorem entry kind mismatch with public ExportEntry.kind rejects the theorem index
-  universe_params mismatch, reorder, duplicate, or invalid MachineUniverseParamName rejects the theorem index
+  sidecar universe_params mismatch, reorder, duplicate, or invalid MachineUniverseParamName rejects the theorem index
   statement_core_hash equals the Phase 2 ExportEntry.type_hash
   statement_core_hash mismatch rejects the theorem index
   axiom_dependencies equals the projection of public ExportEntry.axiom_dependencies
+  unprojectable verifier-derived ExportEntry.axiom_dependencies rejects as InvalidStdAxiomPolicy before theorem index comparison
   axiom_dependencies mismatch rejects the theorem index
   statement_head peels leading Pi from ExportEntry.type without WHNF/reduction
   statement_head mismatch rejects the theorem index
@@ -2799,7 +2818,9 @@ Recommended order:
 
 4. Theorem index base generator
    public theorem / axiom ExportEntry から certificate-derived fields を持つ MachineStdTheoremEntry を作る。
-   rw/simp modes、Simp/Rw attributes、rewrite_descriptors は validated profiles 後まで final にしない
+   exact/apply modes と Apply attribute は certificate-derived statement shape からここで確定する。
+   rw/simp modes、Simp/Rw attributes、rewrite_descriptors は validated profiles 後まで final にしない。
+   modes / attributes / rewrite_descriptors を含む theorem_index_hash は finalizer 後まで emit しない
 
 5. Rewrite and simp profile generators
    Phase 4 ResolvedSimpRule から lhs/rhs hash と Phase 6 MachineStdRuleTelescope hash を導出する
