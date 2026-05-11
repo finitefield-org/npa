@@ -189,39 +189,45 @@ saved artifact:
    challenge manifest と replay result から作る deterministic coverage summary。
    checker verdict の代替ではなく release audit 用の補助 artifact。
 
+8. AxiomReport
+   checker が生成する used axiom の canonical report。
+   MachineCheckResult には `axiom_report_hash` だけを写し、report 本体は別 artifact として保存する。
+   `AxiomReport` は Phase 8 の saved artifact ですが、release audit bundle artifact kind には含めない。
+   release bundle には `axiom_policy` の passed `AuxiliaryResult` だけを含め、report 本体は bundle 生成前の deterministic CI step の input として扱う。
+
 untrusted sidecar:
-8. AiAuditSidecar
+9. AiAuditSidecar
    AI が生成する説明・分類・修正候補。
    verdict として扱ってはいけない。
 
 transient response:
-9. CompareValidationResult
+10. CompareValidationResult
    保存済み NormalizedCheckResult.comparison の integrity validation response。
    保存正本 artifact ではなく result_hash を持たない。
 
-10. AuditSidecarValidationResult
+11. AuditSidecarValidationResult
    AiAuditSidecar の schema-only / cross-artifact validation response。
    保存正本 artifact ではなく result_hash を持たない。
 
-11. NormalizationWriteResult
+12. NormalizationWriteResult
    normalize-results が `--out` 指定時に返す書き込み summary。
    保存正本 artifact ではなく result_hash を持たない。
 
-12. ChallengeRequestMaterializationResult
+13. ChallengeRequestMaterializationResult
    challenge replay request materialization の書き込み summary。
    保存正本 artifact ではなく result_hash を持たない。
 
-13. ChallengeGenerationResult
+14. ChallengeGenerationResult
    challenge generation が ChallengeManifest、mutated certificate、challenge output store を
    書き込んだ summary。
    保存正本 artifact ではなく result_hash を持たない。
 
-14. ReleaseBundleStagingResult
+15. ReleaseBundleStagingResult
    release bundle staging が staged artifact と bundle-local store manifest を
    書き込んだ summary。
    保存正本 artifact ではなく result_hash を持たない。
 
-15. CommandError
+16. CommandError
    challenge generate / challenge materialize-requests / challenge replay /
    release stage-bundle-inputs などが
    成功 response または saved artifact を作れない場合の transient diagnostic。
@@ -229,7 +235,7 @@ transient response:
    `NormalizeErrorResult` で返す。
    保存正本 artifact ではなく result_hash を持たない。
 
-16. ApiError
+17. ApiError
    machine API の wrapper object schema violation、workspace path validation failure、
    HTTP method / endpoint validation failure を表す transient transport diagnostic。
    endpoint 固有の artifact / response ではなく、result_hash を持たない。
@@ -346,6 +352,41 @@ hash 対象に含めます。
 
 `axioms_used` と `declarations_checked` は summary / instrumentation metadata です。
 axiom list の正本性は `axiom_report_hash` と別途保存される axiom report artifact で検査します。
+MVP の `AxiomReport` artifact schema：
+
+```json
+{
+  "schema": "npa.phase8.axiom_report.v1",
+  "axiom_report_hash": "sha256:...",
+  "module": "Std.Nat",
+  "certificate_hash": "sha256:...",
+  "axioms": [
+    { "name": "Classical.choice" }
+  ]
+}
+```
+
+`AxiomReport` は closed-world JSON object です。
+top-level required field は `schema`、`axiom_report_hash`、`module`、
+`certificate_hash`、`axioms` です。
+`schema` が `npa.phase8.axiom_report.v1` 以外の string の場合は
+`actual_value = "invalid_enum"` の schema failure とします。
+`axiom_report_hash` は `axiom_report_hash` field 自身を除いた `AxiomReport`
+object の canonical serialization hash です。
+`module` は canonical module name、`certificate_hash` は checked certificate の
+canonical certificate hash です。
+`module` と `certificate_hash` は metadata ではなく、`axiom_policy` oracle が
+selector で選んだ `NormalizedCheckResult` / result entry と照合する binding field です。
+`axioms` は used axiom set であり、重複を禁止します。
+各 entry は closed-world object で、MVP では `name` だけを required にします。
+`axioms` は `name` の UTF-8 bytewise lexicographic order で昇順に並べます。
+`AxiomReport` loader は duplicate key、unknown field、wrong type、explicit null、
+invalid hash format、order violation、duplicate axiom name を schema / domain failure として拒否します。
+duplicate axiom name の `actual_value` は `duplicate_axiom_name` です。
+schema / domain validation 後、validator は `axiom_report_hash` を再計算します。
+再計算値と field 値が一致しない場合は schema / domain failure ではなく、
+`axiom_policy` oracle の dedicated self-hash mismatch failure として扱います。
+`MachineCheckResult.axiom_report_hash` はこの canonical `axiom_report_hash` と一致しなければなりません。
 `checker.version` は audit / display 用 metadata であり、checker identity ではありません。
 `result_hash` は `checker.profile`、`checker.id`、`checker.binary_id`、`checker.binary_hash`、
 `checker.build_hash` を含めますが、`checker.version` は含めません。
@@ -496,6 +537,9 @@ MVP v1 ではすべての entry で `certificate.certificate_hash` を required 
 したがって sort key に absent value は存在しません。
 `module` と `certificate.path` はそれぞれ unique です。
 `certificate.kind = path` だけを MVP で許可します。
+`schema` が `npa.phase8.import_lock_manifest.v1` 以外の string の場合、
+および `certificate.kind` が `path` 以外の string の場合は
+`actual_value = "invalid_enum"` の schema / domain failure とします。
 `certificate.path` は workspace-relative path で、runner / checker は HTTP URL、
 directory scan、database lookup、network import resolution に fallback してはいけません。
 `certificate.file_hash` は referenced `.npcert` file bytes の SHA-256 です。
@@ -523,9 +567,11 @@ unreadable は `request_import_manifest_file_unreadable`、hash mismatch は
 `request_import_manifest_invalid` では JSON parse failure の `error.field` は
 `imports.manifest`、schema / domain root-level failure の `error.field` も `imports.manifest`、
 nested field failure の `error.field` は `imports.manifest.<JSON path>` とします。
-`expected_value` に schema requirement 名、`actual_value` に `invalid_json`、`missing`、
-`wrong_type`、`unknown_field`、`invalid_hash_format`、`invalid_path`、`null_not_allowed`、
-`order_violation`、`duplicate_field`、`duplicate_module`、`duplicate_path` のいずれかを入れます。
+JSON parse failure では `expected_value = "valid_json"`、`actual_value = "invalid_json"` とします。
+schema / domain failure では `expected_value` に schema requirement 名、
+`actual_value` に `missing`、`wrong_type`、`unknown_field`、`invalid_enum`、
+`invalid_hash_format`、`invalid_path`、`null_not_allowed`、`order_violation`、
+`duplicate_field`、`duplicate_module`、`duplicate_path` のいずれかを入れます。
 `auxiliary import-certificate-hash` で同じ invalid import lock manifest を検出した場合は
 `AuxiliaryResult.status = inconclusive`、`error.reason_code = import_certificate_hash_inconclusive` にします。
 この場合の `AuxiliaryResult.error.field` / `expected_value` / `actual_value` は
@@ -795,9 +841,10 @@ request_import_manifest_invalid:
     field = "imports.manifest" for root-level failure,
             otherwise "imports.manifest.<invalid import lock field path>"
     expected_value = import lock schema / domain requirement
-    actual_value = missing | wrong_type | unknown_field | invalid_hash_format |
-                   invalid_path | null_not_allowed | order_violation |
-                   duplicate_field | duplicate_module | duplicate_path
+    actual_value = missing | wrong_type | unknown_field | invalid_enum |
+                   invalid_hash_format | invalid_path | null_not_allowed |
+                   order_violation | duplicate_field | duplicate_module |
+                   duplicate_path
 
 request_certificate_file_unreadable:
   field = "certificate.path"
@@ -4991,6 +5038,38 @@ kind = audit_bundle:
   selector forbidden. artifact_hash is the validated bundle_hash.
 ```
 
+MVP の `AxiomReportStoreManifest` schema：
+
+```json
+{
+  "schema": "npa.phase8.axiom_report_store_manifest.v1",
+  "reports": [
+    {
+      "axiom_report_hash": "sha256:...",
+      "path": "build/axiom-reports/Std.Nat.json",
+      "file_hash": "sha256:..."
+    }
+  ]
+}
+```
+
+`AxiomReportStoreManifest` file の `manifest_hash` は manifest file bytes の SHA-256 です。
+top-level required field は `schema`、`reports` です。
+各 `reports[]` entry の required field は `axiom_report_hash`、`path`、`file_hash` です。
+`path` は workspace-relative path、`file_hash` は referenced `AxiomReport` file bytes の SHA-256、
+`axiom_report_hash` は parsed `AxiomReport.axiom_report_hash` です。
+`reports` は `axiom_report_hash` の UTF-8 bytewise lexicographic order で昇順に並べます。
+`axiom_report_hash` と `path` はそれぞれ unique です。
+`schema` が `npa.phase8.axiom_report_store_manifest.v1` 以外の string の場合は
+`actual_value = "invalid_enum"` の schema failure とします。
+`AxiomReportStoreManifest` loader は duplicate key、unknown field、wrong type、
+explicit null、invalid_enum、invalid hash format、invalid path、order violation、
+duplicate axiom_report_hash、duplicate path を schema / domain failure として拒否します。
+duplicate axiom_report_hash の `actual_value` は `duplicate_axiom_report_hash`、
+duplicate path の `actual_value` は `duplicate_path` です。
+`reports[].axiom_report_hash` と referenced `AxiomReport.axiom_report_hash` の一致は
+schema-only loader ではなく、artifact resolution / oracle evaluation の段階で検査します。
+
 required `axiom_policy` result for a CI target uses
 `RunnerPolicy.required_checker_profiles[0]` as `selector.checker_profile`.
 After `NormalizedCheckResult.comparison.status = all_agree_checked`, all required checked
@@ -5087,6 +5166,7 @@ MVP の AuxiliaryResult kind ごとの input と oracle は次です。
 kind = axiom_policy:
   input:
     - RunnerPolicy.axiom_policy.hash
+    - NormalizedCheckResult resolved by selector.normalized_result_hash
     - selector.normalized_result_hash
     - selector.checker_profile
     - selector.result_hash
@@ -5094,7 +5174,9 @@ kind = axiom_policy:
     - axiom report artifact resolved by axiom_report_hash
   oracle:
     deterministic axiom policy evaluator over the axiom report artifact.
-    passed iff every used axiom is allowed by the policy and the report hash matches.
+    passed iff the selected normalized result entry matches selector.result_hash and
+    selector.axiom_report_hash, the axiom report self-hash is valid, the report module /
+    certificate_hash match the selected target, and every used axiom is allowed by the policy.
 
 kind = reproducibility:
   input:
@@ -5130,6 +5212,201 @@ kind = audit_bundle:
     reference checks.
 ```
 
+`axiom_policy` oracle は次の順序で検査し、最初の失敗だけを
+`AuxiliaryResult.error` に記録します。
+
+```text
+selected normalized result entry missing / unusable:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "selector.checker_profile"
+  expected_value = "checked_normalized_result_entry"
+  actual_value = missing | not_checked | missing_axiom_report_hash
+
+selector / normalized result target mismatch:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "selector.normalized_result_hash" or "selector.result_hash" or "selector.axiom_report_hash"
+  expected_hash = validated NormalizedCheckResult.normalized_result_hash or selected result entry hash
+  actual_hash = selector field value
+
+axiom report artifact missing / unreadable:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "selector.axiom_report_hash"
+  expected_value = "resolvable_axiom_report"
+  actual_value = missing | unreadable
+
+axiom report JSON / schema / domain failure:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "axiom_report" for root-level failure, otherwise "axiom_report.<JSON path>"
+  expected_value = "valid_json" for JSON parse failure, otherwise <schema requirement name>
+  actual_value = invalid_json | missing | wrong_type | unknown_field |
+                 invalid_enum | invalid_hash_format | null_not_allowed |
+                 order_violation | duplicate_field | duplicate_axiom_name
+
+axiom report store entry file bytes hash mismatch:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "axiom_report_store.reports[<i>].file_hash"
+  expected_hash = AxiomReportStoreManifest.reports[<i>].file_hash
+  actual_hash = referenced AxiomReport file bytes sha256
+
+axiom report self-hash mismatch:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "axiom_report.axiom_report_hash"
+  expected_hash = recomputed AxiomReport.axiom_report_hash
+  actual_hash = parsed AxiomReport.axiom_report_hash
+
+axiom report store entry axiom_report_hash mismatch:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "axiom_report_store.reports[<i>].axiom_report_hash"
+  expected_hash = AxiomReportStoreManifest.reports[<i>].axiom_report_hash
+  actual_hash = parsed AxiomReport.axiom_report_hash
+
+axiom report hash mismatch:
+  status = failed
+  reason_code = axiom_policy_failed
+  field = "selector.axiom_report_hash"
+  expected_hash = selector.axiom_report_hash
+  actual_hash = parsed AxiomReport.axiom_report_hash
+
+axiom report target mismatch:
+  status = inconclusive
+  reason_code = axiom_policy_inconclusive
+  field = "axiom_report.module" or "axiom_report.certificate_hash"
+  expected_value / expected_hash = selected NormalizedCheckResult.artifact.module or selected result certificate_hash
+  actual_value / actual_hash = parsed AxiomReport.module or parsed AxiomReport.certificate_hash
+
+disallowed axiom:
+  status = failed
+  reason_code = axiom_policy_failed
+  field = "axiom_report.axioms[<i>].name"
+  expected_value = "allowed_axiom"
+  actual_value = canonical axiom name
+```
+
+`axiom_report.axioms[<i>]` の `<i>` は axiom report の deterministic order で最初に
+policy に違反した axiom entry の zero-based index です。
+`axiom_report_store.reports[<i>]` の `<i>` は axiom report store manifest 内の
+該当 entry の zero-based index です。
+`axiom_policy` の axiom report store entry validation は、missing / unreadable、
+invalid JSON、schema / domain failure、file_hash mismatch、artifact self-hash mismatch、
+manifest-field mismatch の順で判定します。
+
+`reproducibility` oracle は次の順序で検査し、最初の失敗だけを
+`AuxiliaryResult.error` に記録します。
+
+```text
+baseline / repeated MachineCheckResult missing / unreadable:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = "selector.baseline_run_artifact_hash" or "selector.repeated_run_artifact_hash"
+  expected_value = "resolvable_machine_check_result"
+  actual_value = missing | unreadable
+
+baseline / repeated MachineCheckResult JSON / schema / domain failure:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = "baseline" / "repeated" for root-level failure,
+          otherwise "baseline.<JSON path>" / "repeated.<JSON path>"
+  expected_value = "valid_json" for JSON parse failure, otherwise <schema requirement name>
+  actual_value = invalid_json | missing | wrong_type | unknown_field |
+                 invalid_enum | invalid_hash_format | null_not_allowed |
+                 order_violation | duplicate_field
+
+baseline / repeated result store entry file bytes hash mismatch:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = "result_store.results[<i>].file_hash"
+  expected_hash = result store entry file_hash
+  actual_hash = referenced MachineCheckResult file bytes sha256
+
+baseline / repeated MachineCheckResult result_hash self-hash mismatch:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = "baseline.result_hash" or "repeated.result_hash"
+  expected_hash = recomputed MachineCheckResult.result_hash
+  actual_hash = parsed MachineCheckResult.result_hash
+
+baseline / repeated MachineCheckResult run_artifact_hash self-hash mismatch:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = "baseline.run_artifact_hash" or "repeated.run_artifact_hash"
+  expected_hash = recomputed MachineCheckResult.run_artifact_hash
+  actual_hash = parsed MachineCheckResult.run_artifact_hash
+
+baseline / repeated selector run_artifact_hash mismatch:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = "selector.baseline_run_artifact_hash" or "selector.repeated_run_artifact_hash"
+  expected_hash = corresponding selector run_artifact_hash
+  actual_hash = parsed MachineCheckResult.run_artifact_hash
+
+selector / comparability precondition mismatch:
+  status = inconclusive
+  reason_code = reproducibility_inconclusive
+  field = first mismatching field in:
+          baseline.request_hash, repeated.request_hash,
+          baseline.checker.profile, repeated.checker.profile,
+          baseline.policy.hash, repeated.policy.hash,
+          baseline.checker.binary_id, repeated.checker.binary_id,
+          baseline.checker.binary_hash, repeated.checker.binary_hash,
+          baseline.checker.id, repeated.checker.id,
+          baseline.checker.build_hash,
+          repeated.checker.build_hash
+  expected_value / expected_hash:
+    - baseline.request_hash, repeated.request_hash:
+        selector.request_hash
+    - baseline.checker.profile, repeated.checker.profile:
+        selector.checker_profile
+    - baseline.policy.hash, repeated.policy.hash:
+        active RunnerPolicy hash
+    - baseline.checker.binary_id:
+        SelectedCheckerPolicy.binary_id
+    - baseline.checker.binary_hash:
+        SelectedCheckerPolicy.binary_hash
+    - baseline.checker.id:
+        SelectedCheckerPolicy.checker_id
+    - baseline.checker.build_hash:
+        SelectedCheckerPolicy.build_hash
+    - repeated checker identity fields:
+        corresponding baseline checker identity field
+  actual_value / actual_hash = loaded baseline or repeated value
+
+deterministic reproducibility mismatch:
+  status = failed
+  reason_code = reproducibility_mismatch
+  field = first mismatching field in:
+          repeated.status, repeated.error.failure_key,
+          repeated.certificate_hash, repeated.export_hash,
+          repeated.axiom_report_hash, repeated.result_hash
+  expected_value / expected_hash = baseline value
+  actual_value / actual_hash = repeated value
+```
+
+`reproducibility` の `certificate_hash`、`export_hash`、`axiom_report_hash` で
+presence だけが異なる場合は、`expected_value = present | absent`、
+`actual_value = missing | present` を使います。
+両方 present で値が違う場合は `expected_hash` / `actual_hash` を使います。
+`reproducibility` の comparability precondition で expected field が存在すべきなのに
+actual field が missing の場合は `expected_value = "present"`、
+`actual_value = "missing"` を使います。
+両方 present で値が違う場合、hash field では `expected_hash` / `actual_hash`、
+non-hash field では `expected_value` / `actual_value` を使います。
+`error.failure_key` は 7 の normalized failure key を canonical hash した値で比較し、
+`expected_hash` / `actual_hash` を使います。
+`MachineCheckResult.run_artifact_hash` self-hash は、同じ artifact の `result_hash`
+self-hash が一致した場合だけ正当な integrity hash として扱います。
+`result_store.results[<i>]` の `<i>` は machine result store manifest 内の
+該当 entry の zero-based index です。
+`reproducibility` の machine result store entry validation は、missing / unreadable、
+invalid JSON、schema / domain failure、file_hash mismatch、artifact self-hash mismatch、
+manifest-field mismatch の順で判定します。
+
 `import_certificate_hash` oracle は import lock manifest の `imports` order で entry を検査し、
 最初の失敗だけを `AuxiliaryResult.error` に記録します。
 下の field shape で `imports[<i>]` と書く場合、`<i>` は最初に失敗した entry の
@@ -5150,9 +5427,10 @@ import lock manifest schema / domain failure after readable/hash-verified:
   reason_code = import_certificate_hash_inconclusive
   field = "import_lock" for root-level failure, otherwise "import_lock.<JSON path>"
   expected_value = <schema requirement name>
-  actual_value = missing | wrong_type | unknown_field | invalid_hash_format |
-                 invalid_path | null_not_allowed | order_violation |
-                 duplicate_field | duplicate_module | duplicate_path
+  actual_value = missing | wrong_type | unknown_field | invalid_enum |
+                 invalid_hash_format | invalid_path | null_not_allowed |
+                 order_violation | duplicate_field | duplicate_module |
+                 duplicate_path
 
 imported certificate file missing / unreadable:
   status = inconclusive
@@ -6090,6 +6368,8 @@ bundle validator は required なすべての included `auxiliary_result` につ
 Phase 8 MVP の release bundle artifact kind は、kind-specific auxiliary oracle の
 全 oracle input artifact を保存しません。
 たとえば axiom report artifact と imported certificate files は bundle artifact kind に含めません。
+これは `AxiomReport` を Phase 8 saved artifact として保存しないという意味ではなく、
+release audit bundle の included artifact closed set から除外するという意味です。
 そのため bundle validator は `axiom_policy`、`reproducibility`、
 `import_certificate_hash` の oracle を再実行せず、保存済み `AuxiliaryResult` envelope と
 参照 hash の整合性だけを検査します。
@@ -6974,6 +7254,99 @@ CLI では `--policy` と `--policy-hash` が required です。
 書き込んだ `AuxiliaryResult` 自体を stdout に返します。
 write failure は CLI/API pipeline failure であり、`AuxiliaryResult.status = inconclusive` に変換してはいけません。
 `AuxiliaryResult.status` は oracle の評価結果だけを表します。
+
+`npa-check auxiliary axiom-policy` の required input は `--policy` / `--policy-hash`、
+`--normalized-result` / `--normalized-result-hash`、
+`--axiom-report-store` / `--axiom-report-store-hash`、および `--json` です。
+`npa-check auxiliary reproducibility` の required input は `--policy` / `--policy-hash`、
+`--baseline-run-artifact-hash`、`--repeated-run-artifact-hash`、
+`--result-store` / `--result-store-hash`、および `--json` です。
+missing required flag、duplicate singleton flag、unsupported flag、missing `--json` は
+CLI argument validation error であり、`CommandError` body を返しません。
+`--policy` / `--policy-hash` の validation は deterministic command 共通の
+`policy_reference_invalid` / `policy_file_unreadable` / `policy_hash_mismatch` field shape を使います。
+non-policy path/hash pair が片側指定、path schema violation、hash format violation の場合は
+`CommandError.reason_code = input_reference_invalid` です。
+
+```text
+auxiliary axiom-policy non-policy reference fields:
+  --normalized-result:
+    path field = "normalized_result.path"
+    hash field = "normalized_result.normalized_result_hash"
+    hash meaning = validated NormalizedCheckResult.normalized_result_hash after
+                   artifact_hash and normalized_result_hash self-hash checks
+  --axiom-report-store:
+    path field = "axiom_report_store.path"
+    hash field = "axiom_report_store.manifest_hash"
+    hash meaning = AxiomReportStoreManifest file bytes sha256
+
+auxiliary reproducibility non-policy reference fields:
+  --result-store:
+    path field = "result_store.path"
+    hash field = "result_store.manifest_hash"
+    hash meaning = machine result store manifest file bytes sha256
+  --baseline-run-artifact-hash:
+    field = "selector.baseline_run_artifact_hash"
+    expected_value = "sha256:<lower-hex>"
+  --repeated-run-artifact-hash:
+    field = "selector.repeated_run_artifact_hash"
+    expected_value = "sha256:<lower-hex>"
+```
+
+片側指定では missing path field または missing hash field に
+`expected_value = "required"`、`actual_value = "missing"` を入れます。
+path schema violation では path field に `expected_value = "workspace_relative_path"`、
+`actual_value = "invalid_path"` を入れます。
+hash format violation では hash field に `expected_value = "sha256:<lower-hex>"`、
+`actual_value = "invalid_hash_format"` を入れます。
+`--baseline-run-artifact-hash` と `--repeated-run-artifact-hash` が同じ値の場合は
+`CommandError.reason_code = input_reference_invalid`、
+`field = "selector.repeated_run_artifact_hash"`、
+`expected_value = "distinct_run_artifact_hash"`、`actual_value = "duplicate"` とします。
+
+`--normalized-result` file unreadable は `input_file_unreadable`、
+JSON parse failure は `input_json_invalid`、schema / domain failure は `input_schema_invalid`、
+artifact_hash / normalized_result_hash self-hash mismatch と caller hash mismatch は
+`input_hash_mismatch` です。
+このとき field はそれぞれ `normalized_result.path`、
+`normalized_result.path`、`normalized_result.<JSON path>`、該当 hash field です。
+file unreadable では `expected_value = "readable_file"`、`actual_value = "unreadable"`、
+JSON parse failure では `expected_value = "valid_json"`、`actual_value = "invalid_json"`、
+schema / domain failure では `expected_value = <schema requirement name>`、
+`actual_value = missing | wrong_type | unknown_field | invalid_enum |
+invalid_hash_format | null_not_allowed | order_violation | duplicate_field` のいずれかを入れます。
+`artifact_hash` self-hash mismatch では `field = "normalized_result.artifact_hash"`、
+`expected_hash` に再計算した `NormalizedCheckResult.artifact_hash`、
+`actual_hash` に parsed `NormalizedCheckResult.artifact_hash` を入れます。
+`normalized_result_hash` self-hash mismatch では
+`field = "normalized_result.normalized_result_hash"`、
+`expected_hash` に再計算した `NormalizedCheckResult.normalized_result_hash`、
+`actual_hash` に parsed `NormalizedCheckResult.normalized_result_hash` を入れます。
+caller supplied `--normalized-result-hash` との mismatch では
+`field = "normalized_result.normalized_result_hash"`、
+`expected_hash` に caller supplied hash、
+`actual_hash` に validated `NormalizedCheckResult.normalized_result_hash` を入れます。
+
+`--axiom-report-store` / `--result-store` manifest file unreadable は
+`input_file_unreadable`、manifest file hash mismatch は `input_hash_mismatch`、
+manifest JSON parse / schema / order / duplicate failure は `input_store_manifest_invalid` です。
+file unreadable では store path field、hash mismatch では store hash field を使い、
+file unreadable では `expected_value = "readable_file"`、`actual_value = "unreadable"`、
+hash mismatch では `expected_hash` は caller supplied hash、
+`actual_hash` は manifest file bytes sha256 です。
+JSON parse failure では store path field に `expected_value = "valid_json"`、
+`actual_value = "invalid_json"` を入れます。
+schema / order / duplicate failure では `field = "<store>.<JSON path>"`、
+`expected_value = store manifest schema requirement`、
+`actual_value` に `missing`、`wrong_type`、`unknown_field`、`invalid_enum`、
+`invalid_hash_format`、`invalid_path`、`null_not_allowed`、`order_violation`、
+`duplicate_field`、`duplicate_path` のいずれかを入れます。
+`axiom_report_store` では `duplicate_axiom_report_hash` も許可し、
+`result_store` では `duplicate_run_artifact_hash` も許可します。
+ここで `<store>` は `axiom_report_store` または `result_store` です。
+valid store manifest から selector が指す artifact を解決できない場合や、
+selector が指す artifact file を読めない場合は command input validation ではなく
+上の oracle-specific `*_inconclusive` field shape で `AuxiliaryResult` に記録します。
 
 `npa-check challenge coverage-summary` は filtered `ChallengeOutputStoreManifest`、
 `ChallengeReplayResult` store、machine result store から `ChallengeCoverageSummary` を生成します。
@@ -9192,8 +9565,18 @@ MVP で必要なテスト：
 - CompareValidationResult validates normalized_result_hash before policy and comparison
 - CompareValidationResult failure errors use fixed kind and expected/actual hash fields
 - NormalizeErrorResult uses error.kind = normalize_failure
+- AxiomReport axiom_report_hash excludes axiom_report_hash itself and rejects duplicate / unsorted axioms deterministically
+- AxiomReport self-hash mismatch is reported separately from selector axiom_report_hash mismatch
+- axiom-policy rejects AxiomReport module / certificate_hash that do not match the selected normalized result entry
+- AxiomReportStoreManifest has deterministic order, unique axiom_report_hash/path keys, and file-byte manifest_hash
+- axiom-policy validates NormalizedCheckResult artifact_hash and normalized_result_hash before using selector fields
+- axiom-policy reports selector / normalized result entry mismatch and axiom report store entry hash mismatch with dedicated fields
 - AuxiliaryResult kind-specific oracle inputs are deterministic
 - auxiliary commands generate AuxiliaryResult from deterministic oracles and write failures are not converted to oracle inconclusive
+- auxiliary axiom-policy and reproducibility commands map malformed non-policy references and store manifests to fixed CommandError reason codes
+- auxiliary axiom-policy and reproducibility oracles emit first-failure AuxiliaryResult errors with fixed field / expected / actual shapes
+- auxiliary axiom-policy and reproducibility store entry validation order is unreadable, JSON, schema, file_hash, self-hash, manifest-field mismatch
+- reproducibility validates MachineCheckResult result_hash and run_artifact_hash self-hashes before selector or deterministic equality checks
 - auxiliary import-certificate-hash maps readable hash-verified invalid import lock manifests to inconclusive, but unreadable or hash-mismatched top-level inputs to CommandError
 - auxiliary import-certificate-hash rejects one-sided import lock path/hash pairs with input_reference_invalid
 - auxiliary import-certificate-hash uses the built-in deterministic canonical certificate hash oracle and rejects non-high-trust ReleasePolicy
