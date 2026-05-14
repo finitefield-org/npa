@@ -241,7 +241,12 @@ Step 3:
   generic positivity checker で処理
 ```
 
-最初から完全一般の nested inductive を許すと positivity checker が難しくなるため、MVPでは `List` のような既知の strictly-positive functor の中だけ許可します。
+最初から完全一般の nested inductive を許すと positivity checker が難しくなるため、Human Profile の目標としては
+`List` のような既知の strictly-positive functor の中だけ許す段階を置きます。
+ただし AI Machine Profile の最初の MVP は Phase 2 の既存 certificate schema と deterministic recursor 生成に合わせ、
+nested inductive をいったん全面拒否します。
+approved functor 越しの nested inductive は、functoriality 証明、positivity traversal、recursor 生成、hash rule を固定した
+後続 profile で有効化します。
 
 ---
 
@@ -1032,7 +1037,10 @@ SMT proof を直接 NPA proof term に変換し、
 kernel が検査する
 ```
 
-最初のMVPでは、扱う理論を小さくして、NPA内で proof-producing reconstruction を実装する方がよいです。
+最初の functional MVP では、扱う理論を小さくして、NPA内で proof-producing reconstruction を実装する方がよいです。
+AI Machine Profile の最初の SMT milestone はこれより手前で、canonical schema、encoding payload、proof payload、
+reconstruction plan の deterministic rejection surface を先に固定します。
+SMT certificate success は、非空の encoder table と solver-native rule registry を持つ profile を定義してから有効化します。
 
 ---
 
