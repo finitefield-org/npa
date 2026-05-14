@@ -43,7 +43,7 @@ NPA は certificate first な依存型証明支援系です。便利な上位機
 - 標準ライブラリ: `doc/phase6-human.md`, `doc/phase6-ai.md`
 - AI 探索: `doc/phase7-ai.md`
 - 独立 checker: `doc/phase8-human.md`, `doc/phase8-ai.md`
-- 高度化: `doc/phase9.md`
+- 高度化: `doc/phase9-human.md`, `doc/phase9-ai.md`
 
 ## Rust kernel の設計ルール
 

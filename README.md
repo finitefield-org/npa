@@ -57,7 +57,8 @@ canonical certificate を検査します。
 | 6 | 小さく堅い標準ライブラリ: `Std.Logic`, `Std.Nat`, `Std.List`, `Std.Algebra.Basic` |
 | 7 | AI 証明探索: premise retrieval、tactic generation、search、repair |
 | 8 | 独立 checker、external checker、CI audit |
-| 9 | advanced inductive、universe polymorphism強化、quotient、typeclass、SMT certificates、theorem graph、natural language formalization |
+| 9 Human | advanced inductive、universe polymorphism強化、quotient、typeclass、SMT certificates、theorem graph、natural language formalization |
+| 9 AI | 高度機能向け Machine Profile: AI 候補、SMT 再構成、theorem graph、自然言語形式化の非信頼仕様 |
 
 ## リポジトリ構成
 
@@ -117,4 +118,5 @@ cargo test --workspace
 - [Phase 7: AI Search](doc/phase7-ai.md)
 - [Phase 8 Human Profile: Independent Checker](doc/phase8-human.md)
 - [Phase 8 AI Profile: Checker Audit Automation](doc/phase8-ai.md)
-- [Phase 9: Advanced Features](doc/phase9.md)
+- [Phase 9 Human Profile: Advanced Features](doc/phase9-human.md)
+- [Phase 9 AI Profile: Advanced Automation](doc/phase9-ai.md)
