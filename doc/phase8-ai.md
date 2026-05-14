@@ -5553,6 +5553,10 @@ schema-only validation でも適用します。
 `sidecar_schema_invalid` を使い、`error.field = "classification.checker_error_kind"`、
 `expected_value = "MachineCheckResult.error.kind"`、
 `actual_value = "invalid_enum"` とします。
+この invalid enum rule は、`classification.checker_error_kind` が source kind 上 forbidden ではない
+context にだけ適用します。
+`source.kind = normalized_comparison` では `classification.checker_error_kind` の値が malformed でも
+常に上の `forbidden_sidecar_field` が先に勝ち、enum validation は行いません。
 cross-artifact validation で参照先 `MachineCheckResult.status = failed` かつ
 `classification.checker_error_kind` が missing または参照先 `MachineCheckResult.error.kind` と
 一致しない場合は `referenced_artifact_value_mismatch` を使います。
@@ -6324,6 +6328,10 @@ MVP の sidecar schema は closed-world です。
 `AuditSidecarValidationResult.error.reason_code = sidecar_schema_invalid`、
 `actual_value = "unknown_field"` として扱います。
 `AiAuditSidecar` local JSON path の root marker は `$` です。
+top-level member の sidecar-local path は `summary` や `verdict` のように member 名だけで表し、
+`$.summary` や `$.verdict` とは書きません。
+root marker `$` は root object 自体の failure、または root object を containing object path として
+使う fallback の場合だけ使います。
 unknown field または duplicate unknown field 名を `schema_path_component` で表現できない場合は、
 raw key を copy せず sidecar-local containing object path を使います。
 `AiAuditSidecar` の containing object path は `$`、`source`、`input_policy`、`ai`、
@@ -16421,11 +16429,17 @@ exclusive phase enum です。
 `status = valid` では `input_policy_reached` を採用します。
 `status = failed` では `error.kind` と `error.reason_code` が schema-valid で、
 下の mode / reason_code compatibility check を通過した後でこの phase を計算します。
-`forbidden_sidecar_field` の phase 判定に使う `error.field` は、string として存在し、
-下の top-level policy-gated field path のいずれかと完全一致する場合だけ
+`forbidden_sidecar_field` の phase 判定に使う `error.field` は、`mode = cross_artifact` で
+string として存在し、下の top-level policy-gated field path のいずれかと完全一致する場合だけ
 `policy_gated_forbidden_field` と判定します。
+`mode = schema_only` では top-level policy-gated field path と一致しても
+`policy_gated_forbidden_field` とは判定せず、他の `forbidden_sidecar_field` と同じ
+before-input-policy failure として扱います。
 `error.field` が missing / null / wrong type / invalid field path の場合、metadata phase 判定では
-`policy_gated_forbidden_field` ではないものとして扱い、payload member failure は後続 item 12 で報告します。
+`policy_gated_forbidden_field` ではないものとして扱います。
+この場合でも item 11 の metadata required / forbidden failure は通常通り評価し、
+item 11 が成立する場合は item 12 の `error.field` payload member failure より先に返します。
+item 12 の `error.field` payload member failure は、item 11 が成立しない場合だけ報告します。
 `required` metadata が missing / null / wrong type / invalid hash format / invalid enum の場合は
 item 11 の response schema / domain failure です。
 `forbidden` metadata が存在する場合は item 11 の forbidden metadata failure です。
@@ -16445,7 +16459,8 @@ metadata state:
     status = failed and error.reason_code = sidecar_schema_invalid
 
   policy_gated_forbidden_field:
-    status = failed and error.reason_code = forbidden_sidecar_field
+    mode = cross_artifact
+    and status = failed and error.reason_code = forbidden_sidecar_field
     and error.field is exactly one of the top-level policy-gated field paths:
       source_text / source_excerpt / theorem_statement / proof_script /
       tactic_trace / tactic_script / elaboration_trace / ai_search_trace
@@ -16496,16 +16511,32 @@ source metadata:
     source_normalized_result_hash = required otherwise.
 ```
 
-forbidden metadata の `expected_value` は、`mode = schema_only` による禁止では
-`absent_for_mode`、`source_kind` による禁止では `absent_for_source_kind`、
-`unreadable_sidecar` による `sidecar_file_hash` 禁止では `absent_for_reason_code`、
-それ以外の validation-state による禁止では `absent_for_validation_state` です。
+forbidden metadata の `expected_value` は次の precedence で固定します。
+先に一致した rule を使い、後続 rule へ進みません。
+
+```text
+1. forbidden because mode = schema_only:
+   expected_value = absent_for_mode
+
+2. source_result_hash / source_normalized_result_hash forbidden because source_kind is omitted,
+   forbidden, or the selected source_kind makes that source metadata inapplicable:
+   expected_value = absent_for_source_kind
+
+3. sidecar_file_hash forbidden because metadata state = unreadable_sidecar:
+   expected_value = absent_for_reason_code
+
+4. input_policy_hash / source_kind forbidden because validation has not reached that metadata state:
+   expected_value = absent_for_validation_state
+```
+
 standalone validation は metadata state 判定のために `error.field` を読むのは
-`forbidden_sidecar_field` が top-level policy-gated field 由来かどうかを判定する場合だけに限定します。
+`mode = cross_artifact` の `forbidden_sidecar_field` が top-level policy-gated field 由来かどうかを
+判定する場合だけに限定します。
 `policy_gated_forbidden_field` は input policy を読んだ後の step 7 由来として扱うため、
 `mode = cross_artifact` では `input_policy_hash` が required です。
-top-level 以外の policy-gated field path、reserved field、source-kind-dependent static forbidden field など、
-それ以外の `forbidden_sidecar_field` は before-input-policy failure です。
+`mode = schema_only` の top-level policy-gated field path、top-level 以外の policy-gated field path、
+reserved field、source-kind-dependent static forbidden field など、それ以外の
+`forbidden_sidecar_field` は before-input-policy failure です。
 standalone validation は `sidecar_schema_failed` の `error.field` を読んで
 source metadata requiredness を細分化してはいけません。
 たとえば `mode = cross_artifact`、`status = failed`、
@@ -16605,16 +16636,23 @@ mode = cross_artifact:
 その field path に `expected_value = "absent_for_mode"`、
 `actual_value = "forbidden_field"` を入れます。
 この section で omit と定義した top-level metadata が存在する場合は forbidden です。
-`mode` により存在しない metadata には `expected_value = "absent_for_mode"`、
-`error.reason_code` により存在しない metadata には
-`expected_value = "absent_for_reason_code"`、`source_kind` により存在しない metadata には
-`expected_value = "absent_for_source_kind"`、validation order の到達 step または
-reference state により存在しない metadata には
-`expected_value = "absent_for_validation_state"` を使います。
+forbidden metadata の `expected_value` は上の forbidden metadata precedence に従います。
 `actual_value = "forbidden_field"` を入れます。
 required と定義した metadata の missing / null / wrong type / invalid hash format /
 invalid enum は、その field path に `expected_value` と `actual_value` を入れる
 response schema / domain failure です。
+metadata の malformed value で使う `expected_value` / `actual_value` は次で固定します。
+`missing` は required metadata にだけ使い、optional metadata が存在しない場合は failure にしません。
+
+```text
+metadata field                         expected_value                              actual_value
+sidecar_file_hash                      sha256:<lower-hex>                         missing / null_not_allowed / wrong_type / invalid_hash_format
+input_policy_hash                      sha256:<lower-hex>                         missing / null_not_allowed / wrong_type / invalid_hash_format
+source_kind                            AuditSidecarValidationResult.source_kind    missing / null_not_allowed / wrong_type / invalid_enum
+source_result_hash                     sha256:<lower-hex>                         missing / null_not_allowed / wrong_type / invalid_hash_format
+source_normalized_result_hash          sha256:<lower-hex>                         missing / null_not_allowed / wrong_type / invalid_hash_format
+```
+
 `AuditSidecarValidationResult` response schema / domain failure が複数成立する場合は、
 次の順で最初の1件だけを返します。
 
@@ -16707,8 +16745,101 @@ required payload member の missing / null / wrong type は、その payload mem
 `error.expected_hash` / `error.actual_hash` の `expected_value` は `sha256:<lower-hex>`、
 `error.expected_value` / `error.actual_value` の `expected_value` は
 `deterministic_json_scalar` です。
-`error.field` が string だが、その `error.kind` / `error.reason_code` /
-source subcase から選択された payload shape で定義された field path ではない場合は
+`error.field` の standalone validation でいう「定義された field path」は次で固定します。
+この検査は response-local な payload shape validation であり、対応する sidecar / policy /
+manifest file を開いて field の実在や値を再検査してはいけません。
+
+```text
+fixed-field reason_code / source subcase:
+  reason_codes not listed under delegated sidecar-local / input-policy / store-manifest
+  rules accept only the field paths below.
+
+  sidecar_file_unreadable:
+    sidecar.path
+  sidecar_json_invalid:
+    sidecar.path
+  validation_reference_missing:
+    result_store / normalized_store / input_policy
+  validation_reference_schema_invalid:
+    sidecar.path /
+    result_store / result_store.kind / result_store.path / result_store.manifest_hash /
+    input_policy / input_policy.path / input_policy.hash / input_policy.kind /
+    normalized_store / normalized_store.kind / normalized_store.path /
+    normalized_store.manifest_hash
+  input_policy_file_unreadable:
+    input_policy.path
+  input_policy_json_invalid:
+    input_policy.path
+  input_policy_hash_mismatch:
+    input_policy.hash
+  input_policy_field_mismatch:
+    input_policy.id / input_policy.version / input_policy.included_fields /
+    input_policy.redaction
+  result_store_manifest_hash_mismatch:
+    result_store.manifest_hash
+  normalized_store_manifest_hash_mismatch:
+    normalized_store.manifest_hash
+  referenced_file_hash_mismatch:
+    result_store.results[].file_hash / normalized_store.results[].file_hash
+  referenced_artifact_hash_mismatch:
+    result_store.results[].result_hash / result_store.results[].request_hash /
+    result_store.results[].run_artifact_hash /
+    normalized_store.results[].artifact_hash /
+    normalized_store.results[].normalized_result_hash
+  referenced_artifact_value_mismatch:
+    result_store.results[].checker_profile / status / classification.checker_error_kind
+  source_result_not_found:
+    source.run_artifact_hash
+  source_normalized_result_not_found:
+    source.normalized_result_hash
+  source_hash_mismatch:
+    source.result_hash / source.request_hash
+  source_id_mismatch:
+    source.result_id / source.normalized_result_id
+  normalized_result_missing_source:
+    normalized_result.results[].result_hash
+  prompt_hash_mismatch:
+    ai.prompt_hash
+
+delegated sidecar-local reason_code:
+  sidecar_schema_invalid accepts any valid AiAuditSidecar sidecar-local field path grammar,
+  including the containing object paths defined in section 7.
+
+  forbidden_sidecar_field accepts only a valid AiAuditSidecar sidecar-local field path
+  that is in the static forbidden-capable set:
+    - a path whose containing object is $, source, input_policy, ai, or classification
+      and whose final component is one of the reserved verdict / certificate field names
+      listed in section 7;
+    - a path whose containing object is $, source, input_policy, ai, or classification
+      and whose final component is one of the secret token field names listed in section 7;
+    - a path whose containing object is $, source, input_policy, ai, or classification
+      and whose final component is one of the policy-gated source/tactic field names
+      listed in section 7;
+    - source.result_hash / source.request_hash / source.run_artifact_hash /
+      source.result_id / classification.checker_error_kind.
+
+  The standalone validator checks only this static forbidden-capable path membership.
+  It does not read a sidecar, input policy, or source artifact to decide whether the
+  field would actually be forbidden in that concrete validation run.
+  This also applies to source-kind-dependent static entries: source.kind is not read,
+  so source.result_hash / source.request_hash / source.run_artifact_hash /
+  source.result_id / classification.checker_error_kind are accepted solely by
+  static set membership in both schema_only and cross_artifact responses.
+  For forbidden_sidecar_field, top-level policy-gated path membership is used only for
+  metadata state classification.
+
+delegated input-policy reason_code:
+  input_policy_schema_invalid accepts any valid input_policy-prefixed AiAuditInputPolicy field path
+  described in section 7.
+
+delegated store-manifest reason_code:
+  result_store_manifest_invalid and normalized_store_manifest_invalid accept:
+    - result_store.path or normalized_store.path for file unreadable / JSON invalid subcases;
+    - the corresponding result_store-prefixed or normalized_store-prefixed manifest
+      field path grammar for schema / domain subcases.
+```
+
+`error.field` が string だが、上の rule で選択された field path ではない場合は
 `field = "error.field"`、`expected_value = "field_path_for_error_payload"`、
 `actual_value = "unknown_field"` を使います。
 hash member の invalid hash format では `actual_value = "invalid_hash_format"` を使います。
@@ -18080,7 +18211,7 @@ MVP で必要なテスト：
 - AiAuditSidecar source-status rules allow normalized_comparison missing_checker_result and policy_failure required targets
 - audit-sidecar schema-only validation does not enforce source-artifact-dependent sidecar status permissions
 - audit-sidecar schema-only validation treats machine_result classification.checker_error_kind as optional enum-only metadata
-- audit-sidecar normalized_comparison classification.checker_error_kind reports forbidden_sidecar_field before enum validation
+- audit-sidecar normalized_comparison classification.checker_error_kind reports forbidden_sidecar_field before enum validation even when the value is malformed
 - audit-sidecar cross-artifact classification.checker_error_kind missing, mismatch, or checked-result presence maps to referenced_artifact_value_mismatch with fixed field shape
 - audit-sidecar classification.checker_error_kind mismatch takes precedence over sidecar status permission mismatch
 - audit-sidecar cross-artifact validation rejects sidecar status not allowed by the referenced source artifact status
@@ -18140,10 +18271,10 @@ MVP で必要なテスト：
 - AuditSidecarValidationResult omits source_kind when cross-artifact sidecar source.kind is unavailable
 - AuditSidecarValidationResult omits source hash fields when the corresponding sidecar source hash is invalid
 - AuditSidecarValidationResult field requirements depend on mode and source_kind
-- standalone AuditSidecarValidationResult schema/domain validation does not use sidecar context; response generation field population is separate from saved response requiredness, saved response metadata presence follows a fixed mode/status/error.reason_code/error.field/source_kind matrix with exclusive metadata states, mode/error.reason_code compatibility is fixed, top-level policy-gated forbidden_sidecar_field is classified as input-policy-reached while other forbidden_sidecar_field failures are before-input-policy, source_kind = machine_result treats source_normalized_result_hash as optional hash metadata, and sidecar-dependent presence/equality is checked by bundle or CI diagnostic context binding
+- standalone AuditSidecarValidationResult schema/domain validation does not use sidecar context; response generation field population is separate from saved response requiredness, saved response metadata presence follows a fixed mode/status/error.reason_code/error.field/source_kind matrix with exclusive metadata states, mode/error.reason_code compatibility is fixed, malformed error.field never skips item 11 metadata priority, forbidden metadata expected_value uses a fixed precedence, only cross_artifact top-level policy-gated forbidden_sidecar_field is classified as input-policy-reached while schema_only and other forbidden_sidecar_field failures are before-input-policy, source_kind = machine_result treats source_normalized_result_hash as optional hash metadata, and sidecar-dependent presence/equality is checked by bundle or CI diagnostic context binding
 - AuditSidecarValidationResult omits input_policy_hash for failures before validation references are inspected
 - AuditSidecarValidationResult records input_policy_hash for cross-artifact validation
-- AuditSidecarValidationResult reason codes use fixed error.field and expected/actual shapes
+- AuditSidecarValidationResult reason codes use fixed reason_code field sets or delegated error.field rules, top-level sidecar-local paths omit the $ root marker, forbidden_sidecar_field accepts only static forbidden-capable sidecar-local paths without reading source.kind, and metadata expected/actual shapes are fixed
 - AuditSidecarValidationResult input_policy_schema_invalid preserves the section 7 AiAuditInputPolicy expected_value / actual_value strings and does not genericize included_fields failures
 - AiAuditInputPolicy version uses the same positive i64 bounds and overflow diagnostics as other MVP policy versions
 - post-launch timeout/resource exhaustion uses checker_timeout/checker_resource_exhausted
