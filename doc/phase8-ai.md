@@ -156,7 +156,7 @@ deterministic budget               runner / checker resource bound。timeout / r
 axiom policy file                  axiom report に対する policy gate。core proof validity の追加公理ではない。
 ```
 
-MVP checker executable は `--trust-mode`、`--max-steps`、`--axiom-policy` を受け取れますが、
+MVP checker executable は 4.2 の runner-owned dynamic args を受け取れますが、
 実装境界として、これらは canonical core calculus の型検査規則を変更してはいけません。
 checker が axiom policy を直接評価する場合でも、それは `AxiomReport` に対する deterministic
 policy check であり、未許可 axiom を正しい proof として受理する根拠ではありません。
@@ -1613,6 +1613,10 @@ compare は `CompareValidationResult.error.kind = policy_failure` かつ
 `CommandError.reason_code = policy_reference_invalid` です。
 
 `RunnerPolicy.id` は `^[a-z][a-z0-9-]{0,63}$` に固定します。
+この grammar を以下では Phase 8 policy id grammar と呼び、
+`ReleasePolicy.id` と `AiAuditInputPolicy.id` にも同じ grammar を使います。
+この shared grammar の diagnostic `expected_value` は、artifact-specific に定義済みの
+`runner_policy_id` を使う箇所を除き、`phase8_policy_id` にします。
 `RunnerPolicy.version` は JSON integer で、`1 <= version <= 9223372036854775807` です。
 `checker_allowlist[].checker_id` と `checker_allowlist[].binary_id` は
 `^[a-z][a-z0-9._-]{0,127}$` に固定します。
@@ -2190,8 +2194,16 @@ runner は dynamic args の元になる request field を 4 の pre-check で po
 checker はこの dynamic args を唯一の import / axiom / budget 入力として扱い、source file、
 network、environment variable、current directory scan から追加 input を発見してはいけません。
 timeout と memory limit は runner が OS / sandbox でも enforcement します。
-`--max-steps` は checker 側の deterministic step budget で、checker が step count を実装できない場合でも
-flag は受け取り、resource usage の `steps = 0` として報告します。
+`--max-steps` は checker 側の deterministic step budget です。
+deterministic step counter を実装している checker は、この値を超える前に
+`resource_exhausted` を返さなければなりません。
+deterministic step counter を実装できない checker profile でも、MVP では flag 自体を
+受け取らなければなりません。この場合 `max_steps` は request / policy identity としては残りますが、
+実際に runner が強制できる resource bound は timeout / memory だけです。
+その checker は fake count を出してはいけません。runner は `resource_usage.steps = 0` を
+「未計測」として記録し、CI / release pass condition は `steps > 0` を要求してはいけません。
+strict step enforcement が必要な policy では、policy author が deterministic step counter を
+実装する checker profile だけを allowlist に登録します。v1 schema には step enforcement capability bit を持たせません。
 MVP runner が checker process に渡す environment は次の3つだけです。
 
 ```text
@@ -2210,6 +2222,10 @@ registry は AI、request、sidecar から指定できず、`binary_id` から r
 `CheckerBinaryRegistry` は runner-local configuration であり、Phase 8 saved artifact ではありません。
 `RunnerPolicy` の canonical hash、`MachineCheckRequest.request_hash`、
 `MachineCheckResult.result_hash` に registry file bytes や registry path を含めません。
+audit 対象になる executable identity は `binary_id` と実行 file bytes の `binary_hash` です。
+registry は `binary_id` を local executable path へ写す runner-local transport layer であり、
+同じ `binary_id` が同じ final target bytes に解決される限り registry path の違いは result identity を変えません。
+別 bytes へ解決された場合は `SelectedCheckerPolicy.binary_hash` との照合で拒否します。
 MVP の最小 internal shape は次です。
 
 ```json
@@ -2821,8 +2837,10 @@ unknown field:
 `steps`、`memory_peak_mb`、`elapsed_ms` は non-negative integer です。
 `memory_peak_mb` は MiB を切り上げた整数です。
 `elapsed_ms` は runner が観測した wall-clock elapsed milliseconds を切り上げた整数です。
-checker が deterministic step count を報告できない場合、runner は `steps = 0` を記録します。
+checker が deterministic step count を報告できない場合、runner は `steps = 0` を「未計測」として記録します。
 checker を起動していない result では `steps = 0`、`memory_peak_mb = 0`、`elapsed_ms = 0` です。
+したがって `steps = 0` は「0 step で検査した」ことを意味せず、reproducibility や pass condition の
+成功根拠として使ってはいけません。
 これらの resource metadata は `result_hash` から除外し、`run_artifact_hash` には含めます。
 
 `MachineCheckResult` schema / domain validation priority は、normalizer intrinsic validation order の
@@ -3854,7 +3872,7 @@ AI Profile では比較のために正規化します。
   },
   "artifact_hash": "sha256:...",
   "policy": {
-    "id": "phase8-release",
+    "id": "phase8-runner-release",
     "version": 1,
     "hash": "sha256:..."
   },
@@ -6189,10 +6207,11 @@ sidecar-local schema validation では次の field shape を使います。
 `sidecar_schema_invalid` として返します。
 
 ```text
-input_policy.id missing / null / type / empty:
+input_policy.id missing / null / type / empty / grammar:
   field = "input_policy.id"
-  expected_value = "non_empty_string"
-  actual_value = "missing" | "null_not_allowed" | "wrong_type" | "empty_string"
+  expected_value = "phase8_policy_id"
+  actual_value = "missing" | "null_not_allowed" | "wrong_type" |
+                 "empty_string" | "invalid_name_format"
 
 input_policy.version missing / null / type / domain:
   field = "input_policy.version"
@@ -6294,9 +6313,9 @@ input policy file は self-hash field を持ちません。
 `AiAuditSidecar.input_policy.hash` は、この policy file の canonical hash です。
 MVP の `AiAuditInputPolicy` top-level required field は `schema`、`id`、`version`、
 `included_fields`、`redaction`、`allow_source_text`、`allow_tactic_trace` です。
-`id` は non-empty string です。
-empty string は `input_policy_schema_invalid` の domain failure とし、
-`expected_value = "non_empty_string"`、`actual_value = "empty_string"` を使います。
+`id` は 4.1 の Phase 8 policy id grammar です。
+empty string または grammar violation は `input_policy_schema_invalid` の domain failure とし、
+`expected_value = "phase8_policy_id"`、`actual_value = "empty_string" | "invalid_name_format"` を使います。
 `version` は JSON integer で、`1 <= version <= 9223372036854775807` でなければなりません。
 wrong type / explicit null は `input_policy_schema_invalid` の schema failure、0 以下は
 `actual_value = "non_positive_integer"`、範囲超過は
@@ -6323,10 +6342,10 @@ generic field schema failure:
                  invalid_hash_format | null_not_allowed | order_violation |
                  duplicate_field
 
-id empty:
+id domain violation:
   field = "input_policy.id"
-  expected_value = "non_empty_string"
-  actual_value = "empty_string"
+  expected_value = "phase8_policy_id"
+  actual_value = "empty_string" | "invalid_name_format"
 
 version domain violation:
   field = "input_policy.version"
@@ -9033,7 +9052,7 @@ MVP の `ReleasePolicy` schema：
 PR mode は `ReleasePolicy` を使いません。
 MVP の `ReleasePolicy` top-level required field は `schema`、`id`、`version`、`mode`、
 `runner_policy_hash`、`challenge_runner_policy_hash`、`ai_triage` です。
-`id` は non-empty string、`version` は JSON integer で
+`id` は 4.1 の Phase 8 policy id grammar、`version` は JSON integer で
 `1 <= version <= 9223372036854775807`、hash field は `sha256:<lower-hex>` です。
 zero は「未設定」や「latest」を表しません。
 `ReleasePolicy` と `ai_triage` object は closed-world object で、unknown field と
@@ -9066,10 +9085,10 @@ generic field schema failure:
 ReleasePolicy domain failure の field shape は次で固定します。
 
 ```text
-id empty:
+id domain violation:
   field = "id"
-  expected_value = "non_empty_string"
-  actual_value = "empty_string"
+  expected_value = "phase8_policy_id"
+  actual_value = "empty_string" | "invalid_name_format"
 
 version domain violation:
   field = "version"
@@ -19566,10 +19585,11 @@ MVP で必要なテスト：
 - post-launch timeout without an adopted checker exit-code convention requires process.termination_reason = timeout
 - MachineCheckResult process forbids termination_reason when exit_code is present
 - killed_without_exit_status maps to checker_internal_error/process_exit_failure
-- MachineCheckResult resource_usage uses non-negative integer fields with zero values for not-launched runs
+- MachineCheckResult resource_usage uses non-negative integer fields with zero values for not-launched runs, and `steps = 0` for launched runs means unreported step count, not zero work
 - RunnerPolicy required_checker_profiles must match the trust_mode table
 - RunnerPolicy domain validation uses fixed field / expected_value / actual_value shapes
 - RunnerPolicy id/version/checker_id/binary_id/budget domains reject invalid names, non-positive integers, and integer overflow
+- Phase 8 policy id grammar is shared by RunnerPolicy.id, ReleasePolicy.id, AiAuditInputPolicy.id, and copied AiAuditSidecar.input_policy.id
 - high-trust required_checker_profiles includes release profiles plus high-trust-reference
 - high-trust-reference is a distinct checker profile with its own checker_allowlist / budgets entries and cannot reuse a reference MachineCheckResult for pass conditions
 - RunnerPolicy checker profile names are path-safe and reject slash, dot segments, uppercase, whitespace, and control characters
@@ -19580,6 +19600,7 @@ MVP で必要なテスト：
 - runner command construction clears inherited environment and passes only LC_ALL, LANG, and TZ fixed values
 - checker executable resolution uses runner-owned CheckerBinaryRegistry and validates final target bytes against binary_hash
 - CheckerBinaryRegistry is runner-local configuration, closed-world by binary_id, and cannot be overridden by RunnerPolicy, MachineCheckRequest, sidecar, or AI input
+- CheckerBinaryRegistry path / registry file bytes are not result identity; binary_id plus final executable binary_hash are the audit identity
 - malformed, unavailable, duplicate, missing-binary-id, root-escaped, or unreadable CheckerBinaryRegistry resolution all map to checker_binary_file_unreadable with the fixed actual_value tokens
 - checker executable symlink escape outside the selected registry root is rejected before binary hash validation and launch
 - runner rejects axiom policy file hash mismatch before checker launch
