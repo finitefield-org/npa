@@ -68,17 +68,13 @@ canonical certificate を検査します。
 ├── README.md
 ├── AGENTS.md
 ├── crates/
-│   └── npa-kernel/
+│   ├── npa-kernel/
+│   │   └── src/
+│   ├── npa-cert/
+│   │   ├── src/
+│   │   └── tests/
+│   └── npa-frontend/
 │       └── src/
-│           ├── lib.rs
-│           ├── builtins.rs
-│           ├── context.rs
-│           ├── decl.rs
-│           ├── env.rs
-│           ├── error.rs
-│           ├── expr.rs
-│           ├── level.rs
-│           └── subst.rs
 └── doc/
     ├── core-spec-v0.1.md
     ├── overall-design.md
@@ -87,8 +83,11 @@ canonical certificate を検査します。
     └── ...
 ```
 
-現時点では Rust kernel の最小実装と設計資料が中心です。certificate checker、surface language などは
-今後この設計に沿って追加します。
+現時点では Rust kernel と Phase 2 の certificate verifier は実装済みです。
+`crates/npa-cert` は `.npcert` の canonical encode/decode、hash 再計算、import 検査、
+axiom report 検査、Rust kernel への再検査ハンドオフを担当します。
+surface language / frontend は `crates/npa-frontend` で最小実装が進んでおり、
+独立 checker は Phase 8 の後続成果物として扱います。
 
 ## 開発メモ
 
