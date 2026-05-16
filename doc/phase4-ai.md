@@ -2519,6 +2519,13 @@ pub fn start_machine_proof(
     options: &MachineTacticOptions,
 ) -> Result<MachineProofState, MachineTacticDiagnostic>;
 
+pub fn start_machine_proof_from_verified_imports(
+    spec: MachineProofSpec,
+    imports: &[VerifiedImportRef],
+    checked_current_decls: &[CheckedCurrentDecl],
+    options: &MachineTacticOptions,
+) -> Result<MachineProofState, MachineTacticDiagnostic>;
+
 pub fn check_current_decl_for_machine_tactic(
     imports: &[VerifiedModule],
     checked_prior_current_decls: &[CheckedCurrentDecl],
@@ -2557,6 +2564,14 @@ debug / compatibility 用の補助入口であり、parse 後に必ず同じ val
 term-level API と verified import metadata を使います。
 
 imports、checked current declarations、simp rules、options は `start_machine_proof` で state に固定します。
+Phase 2 verifier 出力として `VerifiedImportRef` をすでに保持している caller は
+`start_machine_proof_from_verified_imports` を使います。
+この entrypoint の意味論は、`start_machine_proof` が `VerifiedModule` から import 環境を canonical order に正規化した後の状態と
+byte-for-byte に一致しなければなりません。
+`start_machine_proof_from_verified_imports` は filesystem、network、package registry、または current IDE session から
+import を補完してはいけません。
+`imports` は `(module, export_hash, certificate_hash)` の canonical order でなければならず、違反した場合は
+`MachineTacticDiagnostic` として deterministic に拒否します。
 `run_machine_tactic` は state 内の environment だけを使い、別の imports/options を受け取りません。
 呼び出し側が environment を変えたい場合は、新しい state を作り直します。
 

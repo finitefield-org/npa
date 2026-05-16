@@ -760,7 +760,27 @@ pub fn elaborate_machine_term_check(
     expected: &npa_kernel::Expr,
     options: &MachineCompileOptions,
 ) -> Result<npa_kernel::Expr, MachineDiagnostic>;
+
+pub struct MachineTermAst {
+    // parsed term AST; concrete fields are implementation-local.
+}
+
+pub fn decode_machine_term_source_canonical(
+    canonical_bytes: &[u8],
+) -> Result<MachineTermAst, MachineDiagnostic>;
+
+pub fn elaborate_machine_term_infer_from_ast(
+    ast: &MachineTermAst,
+    context: &MachineTermElabContext,
+    options: &MachineCompileOptions,
+) -> Result<(npa_kernel::Expr, npa_kernel::Expr), MachineDiagnostic>;
 ```
+
+`MachineTermAst` は `"npa.phase3.machine-term-source.v1"` canonical bytes から decode された parsed term AST です。
+`elaborate_machine_term_infer_from_ast` の戻り値は `(elaborated_core_term, inferred_type)` です。
+この API は Phase 9 の NaturalLanguageFormalization のように、term-source canonical bytes を replay input として受け取り、
+expected type をまだ持たない path で使います。
+canonical bytes から source string を復元したり pretty printer を経由したりしてはいけません。
 
 `MachineTermElabContext.global_scope` は exact name lookup 用の閉じた map です。
 resolver は filesystem、network、global package cache、`open` / namespace state を読んではいけません。
