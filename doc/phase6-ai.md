@@ -17,7 +17,8 @@ Phase 6 AI Profile の目的は次です。
 
 ```text
 - 標準ライブラリ certificate set を AI 探索器が決定的に import できるようにする
-- theorem search / simp-lite / rw 用 metadata を certificate hash に固定する
+- theorem search / simp-lite / rw 用 metadata を certificate hash / export hash に bind し、
+  metadata 自体は certificate hash の入力にしない
 - 属性、ranking、prompt 表示、embedding を trusted payload に入れない
 - Phase 5 AI session create に渡せる import_closure / imports / tactic_options recipe を提供する
 - Phase 7 が premise retrieval と candidate generation を再現可能に行える artifact を定義する
@@ -980,6 +981,9 @@ theorem_index_hash:
 `MachineStdLibraryRelease.theorem_index_hash` はこの `theorem_index_hash` と完全一致しなければなりません。
 theorem index 自体には `std_library_release_hash` を入れません。
 release hash は `theorem_index_hash` を含むため、index 側に release hash を戻すと循環依存になります。
+Phase 5 / Phase 7 の search response へ投影する場合は、`certificate_hash` を各 `global_ref` に重複して持たせず、
+それを包む `session_root_hash` / `theorem_index_fingerprint` / `query_fingerprint` で direct import certificate を束縛してよいです。
+その projection は session-local locator であり、この Phase 6 `MachineStdGlobalRef` の release artifact identity とは別物です。
 
 ## 7.3 MachineStdTheoremEntry
 
@@ -2121,7 +2125,8 @@ library_profile_id = "npa.stdlib.mvp.v1"
 MVP prompt metadata rules:
 
 ```text
-- metadata must bind to exact module/name/export_hash/certificate_hash/decl_interface_hash
+- metadata must carry an explicit binding to exact module/name/export_hash/certificate_hash/decl_interface_hash
+- metadata bytes must not be an input to certificate_hash, export_hash, theorem_index_hash, or simp_rule_identity
 - metadata must not be used to construct proof terms
 - tags are lower_ascii strings from a fixed vocabulary
 - examples are display-only and must not be copied into suggested_candidates without Phase 5 validation

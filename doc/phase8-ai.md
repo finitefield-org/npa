@@ -19787,7 +19787,7 @@ MVP で必要なテスト：
 - import-target mutations require exactly one matching ImportEntry.module_name and reject zero or multiple matches without choosing by hash
 - remove_dependency_entry supports declaration and import targets with deterministic candidate ordering and rejects ambiguous declaration/import target matches
 - add_forbidden_axiom recomputes certificate hashes while other MVP mutations leave stored hashes stale unless specified
-- add_forbidden_axiom appends an empty-universe AxiomDecl at declaration tail with Sort Level::Zero and self axiom dependency
+- add_forbidden_axiom inserts an empty-universe AxiomDecl into the declaration set and serializes the mutated declarations in Phase 2 canonical declaration order with Sort Level::Zero and self axiom dependency
 - add_forbidden_axiom self dependency uses GlobalRef::Local(new_decl_index) and checks freshness only in current module declarations/export block
 - add_forbidden_axiom does not repair pre-existing Declarations / ExportBlock inconsistency and rejects a target present in either structure
 - replace_nat_zero_with_noncanonical_placeholder counts reachable TermTable nodes, not reference edges

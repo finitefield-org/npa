@@ -87,7 +87,7 @@ AI 向け Phase 4 は、曖昧な syntax よりも構造化入力を優先しま
 }
 ```
 
-Machine Tactic MVP では次を使いません。
+AI 向け Phase 4 の構造化 tactic 層では次を使いません。
 
 ```text
 - open / namespace に依存する short name
@@ -101,7 +101,8 @@ Machine Tactic MVP では次を使いません。
 - IO / network / file access
 ```
 
-使うものは次です。
+Phase 4 full target で扱う tactic / API は次です。
+最初の AI MVP completion scope は Section 13 の `exact` / `intro` / `apply` に限定します。
 
 ```text
 - exact

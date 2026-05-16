@@ -995,7 +995,8 @@ certificate には使用axiomを必ず記録します。
 
 ## 6.8 Source map は非信頼情報
 
-certificate には source code 位置情報も入れてよいです。
+source code 位置情報は、canonical certificate trusted payload には入れません。
+必要なら certificate とは別の debug sidecar / audit envelope に入れてよいです。
 
 ```json
 {
@@ -1009,7 +1010,7 @@ certificate には source code 位置情報も入れてよいです。
 }
 ```
 
-ただし、source map は kernel 検査には使いません。
+ただし、source map は kernel 検査、certificate hash、export hash には使いません。
 
 これは IDE やエラー表示用です。
 

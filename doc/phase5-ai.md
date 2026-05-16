@@ -1565,7 +1565,7 @@ stage 9 の `RootTheoremTypeDependencyReport` は `theorem_type_core_hash`、imp
         },
         "target_hash": "sha256:...",
         "goal_fingerprint": "sha256:...",
-        "allowed_tactics": ["intro", "exact", "apply", "rw", "simp-lite", "induction-nat"]
+        "allowed_tactics": ["intro", "exact", "apply"]
       }
     ],
     "proof_skeleton_hash": "sha256:..."
@@ -2926,9 +2926,12 @@ goal_fingerprint:
 ```
 
 `allowed_tactics` の canonical order は `intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction-nat` です。
-`allowed_tactics` は Phase 5 protocol が受け付ける tactic constructor の deterministic capability hint であり、
-goal に対する成功可能性の予測ではありません。
-MVP では全 open goal に同じ canonical list を返します。
+`allowed_tactics` は Phase 5 protocol が受け付け、現在の session の resolved tactic environment で primitive が利用可能な
+tactic constructor の deterministic capability hint であり、goal に対する成功可能性の予測ではありません。
+MVP では同じ session の全 open goal に同じ canonical subset を返します。
+`intro` / `exact` / `apply` は常に含めます。
+`rw` / `simp-lite` は `MachineTacticEnv.eq_family = Some(_)` の場合だけ含めます。
+`induction-nat` は `MachineTacticEnv.nat_family = Some(_)` の場合だけ含めます。
 `allowed_tactics` は `goal_fingerprint`、`state_fingerprint`、search cache key には入りません。
 unknown tactic kind と duplicate tactic kind は `InvalidMachineProofState` です。
 
@@ -3011,7 +3014,7 @@ request の `state_fingerprint` が一致しない場合は `StateFingerprintMis
         },
         "target_hash": "sha256:...",
         "goal_fingerprint": "sha256:...",
-        "allowed_tactics": ["intro", "exact", "apply", "rw", "simp-lite", "induction-nat"]
+        "allowed_tactics": ["intro", "exact", "apply"]
       }
     ],
     "proof_skeleton_hash": "sha256:..."
@@ -4160,6 +4163,12 @@ accepted `MachineSchedulerLimits` 以外の server-local timeout / memory guard 
 
 Machine theorem retrieval は、AI に渡す premise 候補を verified metadata に固定して返します。
 ランキングは非信頼です。候補の定理参照は `decl_interface_hash` と import の `export_hash` で固定します。
+`global_ref` object 自体には `certificate_hash` を重複して入れません。
+Phase 5 response 内の premise identity は、それを包む `session_root_hash` / `theorem_index_fingerprint` /
+`query_fingerprint` が direct import の `(module, export_hash, certificate_hash)` を既に束縛している場合だけ有効な
+session-local locator です。
+この `global_ref` だけを Phase 6 `MachineStdGlobalRef` のような cross-session / release artifact identity として
+使ってはいけません。
 search / prompt response の `global_ref.name` は、Phase 2 `ExportEntry.name` そのものです。
 `module` はその declaration を export した module を別 field として持つだけで、`global_ref.name` に
 export module name を prefix として合成してはいけません。
@@ -4854,7 +4863,7 @@ POST /machine/prompt_payload
       "diagnostic_hash": "sha256:..."
     }
   ],
-  "allowed_tactics": ["intro", "exact", "apply", "rw", "simp-lite", "induction-nat"],
+  "allowed_tactics": ["intro", "exact", "apply"],
   "output_schema": "npa.machine_tactic_candidate.v1"
 }
 ```
@@ -5058,7 +5067,7 @@ response の `premises` は search result の `premise_id`、`global_ref`、`uni
 `name` だけの premise 表現は返しません。
 search / prompt response の各 premise は `universe_params` を必須 field として返します。
 空の場合も `[]` を返し、omitted や `null` にはしません。
-response の `allowed_tactics` は 6.2 の canonical `MachineTacticKind` order で返します。
+response の `allowed_tactics` は 6.2 の session capability subset を canonical `MachineTacticKind` order で返します。
 prompt response の `goal.context` item は、対応する `MachineLocalView` から次の wire field を返します。
 `machine_name` と `type_machine` は常に必須です。
 `value_machine` は local `value = Some(_)` の場合だけ返し、`value = None` では omit します。
