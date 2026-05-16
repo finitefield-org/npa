@@ -2281,9 +2281,13 @@ future extension で dependent operation を許可するまでは、この opera
 quotient argument binder を参照してはいけません。
 MVP の `/machine/phase9/quotient/check` は operation declaration hash を返さず、compatibility 検査だけを行います。
 したがって success response の `QuotientConstruction.decl_certificate_hash` は quotient type declaration だけの identity です。
-`operations` が検査済みであることは、その request の `candidate_hash` / `validation_result_hash` と replay input から追跡します。
+`operations` の検査結果はこの request 内の request-bound validation result であり、
+採用済み operation declaration artifact や certificate identity を意味しません。
+MVP validator は operation ごとの `DefDecl` bytes を success payload に含めず、success 前の Phase 8 independent checker にも
+operation declaration artifact として渡しません。
+`operations` が検査済みであることは、その request の `candidate_hash` / `validation_result_hash` と replay input からだけ追跡します。
 operation を standalone declaration artifact として保存・参照したい場合は、future extension で operation ごとの
-`decl_certificate_hash` を返す response schema を追加してから有効化します。
+`decl_certificate_hash` と checker 対象 certificate bytes を返す response schema を追加してから有効化します。
 
 QuotientConstruction の feature-specific validation 順序は固定します。
 この順序は common envelope validation step 5 が終わった後に適用します。
@@ -2375,9 +2379,11 @@ KernelRejected + QuotientConstruction(CompatibilityProofMismatch):
   operation.compatibility_proof が上の unary lift compatibility proof term として kernel check を通らない。
 ```
 
-採用条件:
+採用条件は、certificate artifact として採用する条件と、同じ request 内で operation compatibility を検証する条件に分けます。
+operation validation は request 全体の成功条件ですが、operation declaration artifact や certificate identity の採用条件ではありません。
 
 ```text
+certificate adoption:
 - envelope target.target_decl_hash は None である
 - options.quotient が Some であり、すべての primitive refs が envelope imports から一意に解決できる
 - validator が decl_name / universe_params / params / carrier / relation / equivalence_proof から
@@ -2387,19 +2393,26 @@ KernelRejected + QuotientConstruction(CompatibilityProofMismatch):
 - relation が carrier 上の relation として well-typed
 - equivalence_proof が `rel_equiv_type(carrier, relation)` の proof term として kernel check を通る
 - quotient primitive の intro / elim / soundness rule だけを使う
-- operation ごとの raw_function は params の下で type inference され、unary lift の `carrier -> result_type` 形と
-  result_type 条件を満たす
-- operation ごとの compatibility_proof が上の unary lift compatibility proof term として kernel check を通る
 - resulting certificate の feature report に `quotient_v1` が記録される
 - selected independent checker profile が `quotient_v1` 非対応であることを certificate 実行前に判定できる場合は
   `UnsupportedFeature` として拒否する
 - `quotient_v1` 対応 profile として実行した independent checker が resulting certificate を拒否した場合は
   `IndependentCheckerRejected` として拒否する
 - certificate には natural language explanation を入れない
+
+request-level operation validation:
+- operation ごとの raw_function は params の下で type inference され、unary lift の `carrier -> result_type` 形と
+  result_type 条件を満たす
+- operation ごとの compatibility_proof が上の unary lift compatibility proof term として kernel check を通る
+- operation validation に失敗した場合は request 全体を拒否する
+- operation validation の成功結果は `candidate_hash` / `validation_result_hash` / replay input で追跡し、
+  operation declaration artifact や independent checker target certificate として扱わない
 ```
 
 AI が「同値関係らしい」と説明しても、それは証明ではありません。
-`equivalence_proof` と `compatibility_proof` の core term が検査されるまで採用しません。
+`equivalence_proof` は quotient type certificate の採用条件として、
+`compatibility_proof` は request-level operation validation として、
+それぞれ core term が検査されるまで成功にしません。
 
 ---
 
@@ -4056,12 +4069,21 @@ theorem_graph_node_identity_key(node) =
   decl_interface_hash
 ```
 
+ここでの `certificate_hash` は、node が属する verified import certificate package の
+`VerifiedImportRef.certificate_hash` と byte-for-byte に一致する値です。
+これは declaration 単体の `decl_certificate_hash` ではありません。
+`export_hash` も同じ `VerifiedImportRef.export_hash` と一致しなければなりません。
+validator が node を解決するときは、まず envelope imports から
+`(module, export_hash, certificate_hash)` が一致する import を探し、その import の export table 内で
+`(name, decl_interface_hash)` を一意に解決します。
+`decl_certificate_hash` と `type_hash` は、この解決後に export / declaration から再計算して照合する verification field です。
+実装は `certificate_hash` を `decl_certificate_hash` で代用したり、`decl_certificate_hash` を identity key に追加したりしてはいけません。
+
 AI premise retrieval が graph node から `Phase9AiGlobalRef` を作る場合は、同じ field 値を
 `Phase9AiGlobalRef` の canonical field order
 `module / export_hash / certificate_hash / name / decl_interface_hash`
 へ並べ替えなければなりません。
 validator は theorem graph node identity comparator を `Phase9AiGlobalRef` tuple comparator で代用してはいけません。
-`decl_certificate_hash` と `type_hash` は identity ではなく、解決した export / declaration と一致することを確認する verification field です。
 同じ identity tuple を持つ node が複数ある snapshot は、`decl_certificate_hash` / `type_hash` が違っていても重複として拒否します。
 graph query の replay identity は `snapshot` と `query_features` を含みます。同じ goal でも、
 `graph_snapshot_hash` または `query_features_hash` が違う場合は別 request として扱います。
@@ -4487,7 +4509,16 @@ Phase 3 AI の term AST elaboration API は `(elaborated_core_term, inferred_typ
 `"npa.phase9_ai.formalization.accepted_statement.v1"` tag を付けて hash した値です。
 reviewed intent record を certificate に結びつける場合、certificate を作る request envelope の environment と certificate 内の theorem type から
 同じ `accepted_statement_hash` を再計算できなければなりません。
+ここでいう certificate は同じ `NaturalLanguageFormalization` task environment で作る proof bridge certificate を指します。
+別 endpoint / 別 `task_kind` の request で作る certificate へ portable に流用する identity ではありません。
 同じ theorem type bytes でも import closure / options が違う場合は別の accepted statement として扱います。
+これは intentional な request-bound statement identity です。
+`target.env_fingerprint` は `options_hash` を含むため、proof bridge を実行しない `CandidateStatementChecked` /
+`IntentRecordOnly` path でも、formalization tactic options や tactic budget を含む options bytes が変われば
+`accepted_statement_hash` は変わります。
+validator はこの hash を portable mathematical statement identity として扱ってはいけません。
+options-independent または cross-endpoint な theorem-type identity が必要な future workflow では、
+別の hash name と入力集合を定義してから有効化します。
 
 Formalization statement の Phase 3 elaboration context は次で固定します。
 
@@ -4676,6 +4707,7 @@ accepted_statement_hash =
 proof bridge 用の scratch identity は proof candidate 自体ではなく、statement / accepted theorem / environment に束縛します。
 `accepted_statement_hash` と `target.env_fingerprint` には imports と `options_hash` が含まれるため、同じ表層 statement でも
 import closure や formalization options が違う場合は別 root になります。
+この request-bound 性質は、proof bridge を実行しない success kind でも同じです。
 `accepted_statement_hash` という名前は、この request の environment で Machine Surface statement が
 well-typed core theorem type として採用可能だった identity を指します。
 人間または外部 reviewer が自然言語の意図一致を承認したことは意味しません。
