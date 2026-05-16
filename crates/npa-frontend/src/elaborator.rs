@@ -3646,6 +3646,41 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
     }
 
     #[test]
+    fn term_level_check_result_is_deterministic_for_same_input() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "n".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let expected = Expr::apps(
+            Expr::konst("Eq", vec![type0()]),
+            vec![nat(), Expr::bvar(0), Expr::bvar(0)],
+        );
+
+        let first = elaborate_machine_term_check(
+            "@Eq.refl.{1} Nat n",
+            &context,
+            &expected,
+            &MachineCompileOptions::default(),
+        )
+        .expect("first term should check");
+        let second = elaborate_machine_term_check(
+            "@Eq.refl.{1} Nat n",
+            &context,
+            &expected,
+            &MachineCompileOptions::default(),
+        )
+        .expect("second term should check");
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
     fn term_level_api_rejects_global_scope_decl_hash_mismatch() {
         let imports = [nat_import()];
         let mut context = term_context(&imports, Vec::new(), Vec::new());
@@ -4082,6 +4117,34 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
             MachineRepairSuggestionKind::UseFullyQualifiedName
         );
         assert_eq!(err.suggestions[0].replacement.as_deref(), Some("Eq.refl"));
+    }
+
+    #[test]
+    fn repair_mode_failed_candidate_diagnostic_is_deterministic() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "n".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let first = elaborate_machine_term_check("Eq.refl n", &context, &nat(), &options)
+            .expect_err("first failed candidate should return a repair diagnostic");
+        let second = elaborate_machine_term_check("Eq.refl n", &context, &nat(), &options)
+            .expect_err("second failed candidate should return the same repair diagnostic");
+
+        // M9 fixes the structured repair output, not human-facing messages or spans.
+        assert_eq!(first.kind, second.kind);
+        assert_eq!(first.payload, second.payload);
+        assert_eq!(first.suggestions, second.suggestions);
     }
 
     #[test]

@@ -838,6 +838,33 @@ mod tests {
     }
 
     #[test]
+    fn parser_output_is_deterministic_for_same_input() {
+        let source = "\
+import Std.Nat.Basic
+def Test.id.{u} (A : Sort u) (x : A) : A := (x : A)";
+
+        let first = parse_machine_module(FileId(7), source).expect("source should parse");
+        let second = parse_machine_module(FileId(7), source).expect("source should parse again");
+
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn unsupported_stateful_surface_features_do_not_affect_later_parse() {
+        for source in [
+            "open Nat",
+            "namespace Nat",
+            "notation \"x\" => Nat.zero",
+            "infixl:65 \" + \" => Nat.add",
+        ] {
+            assert_eq!(parse_err(source), MachineDiagnosticKind::UnsupportedSyntax);
+        }
+
+        let module = parse("def Test.ok : Prop := Prop");
+        assert_eq!(module.items.len(), 1);
+    }
+
+    #[test]
     fn rejects_import_after_item() {
         assert_eq!(
             parse_err("def Test.x : Prop := Prop\nimport Std.Nat.Basic"),
