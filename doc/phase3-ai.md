@@ -659,6 +659,32 @@ diagnostic payload には可能な範囲で次を入れます。
 ```
 
 ただし source span や suggestion は trusted payload に入りません。
+実装では `MachineDiagnostic.payload` と `MachineDiagnostic.suggestions` を分け、repair suggestion は
+display-only / retry input 用の補助情報として扱います。
+
+```rust
+pub struct MachineDiagnosticPayload {
+    pub head_symbol: Option<String>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub target_hash: Option<Hash>,
+    pub expected_universe_args: Option<usize>,
+    pub actual_universe_args: Option<usize>,
+    pub candidates: Vec<MachineRepairCandidate>,
+}
+
+pub enum MachineRepairSuggestionKind {
+    InsertExplicitArguments,
+    InsertExplicitUniverseArguments,
+    UseFullyQualifiedName,
+}
+
+pub struct MachineRepairSuggestion {
+    pub kind: MachineRepairSuggestionKind,
+    pub replacement: Option<String>,
+    pub candidates: Vec<MachineRepairCandidate>,
+}
+```
 
 ---
 
@@ -756,6 +782,12 @@ pub fn parse_machine_module(
 pub fn resolve_machine_module(
     module: MachineModule,
     verified_imports: &[VerifiedImport],
+) -> Result<ResolvedMachineModule, MachineDiagnostic>;
+
+pub fn resolve_machine_module_with_options(
+    module: MachineModule,
+    verified_imports: &[VerifiedImport],
+    options: &MachineCompileOptions,
 ) -> Result<ResolvedMachineModule, MachineDiagnostic>;
 
 pub fn elaborate_machine_module(
@@ -1239,6 +1271,7 @@ AI repair loop が使いやすい structured error と suggestion を返す。
 - suggestion は trusted payload に入らない
 - suggestion は再投入して通った場合だけ採用
 - same failure から same error enum が返る
+- TypeMismatch は expected/actual core hash payload を返す
 ```
 
 ## M9: Performance / determinism gate

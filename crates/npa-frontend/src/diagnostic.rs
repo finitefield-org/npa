@@ -40,12 +40,45 @@ pub enum MachineDiagnosticKind {
     CertificateRejected,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct MachineDiagnosticPayload {
+    pub head_symbol: Option<String>,
+    pub expected_hash: Option<npa_cert::Hash>,
+    pub actual_hash: Option<npa_cert::Hash>,
+    pub target_hash: Option<npa_cert::Hash>,
+    pub expected_universe_args: Option<usize>,
+    pub actual_universe_args: Option<usize>,
+    pub candidates: Vec<MachineRepairCandidate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MachineRepairCandidate {
+    pub name: npa_cert::Name,
+    pub decl_interface_hash: Option<npa_cert::Hash>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineRepairSuggestionKind {
+    InsertExplicitArguments,
+    InsertExplicitUniverseArguments,
+    UseFullyQualifiedName,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineRepairSuggestion {
+    pub kind: MachineRepairSuggestionKind,
+    pub replacement: Option<String>,
+    pub candidates: Vec<MachineRepairCandidate>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineDiagnostic {
     pub kind: MachineDiagnosticKind,
     pub severity: MachineDiagnosticSeverity,
     pub primary_span: Span,
     pub message: String,
+    pub payload: Option<Box<MachineDiagnosticPayload>>,
+    pub suggestions: Vec<MachineRepairSuggestion>,
 }
 
 impl MachineDiagnostic {
@@ -59,6 +92,8 @@ impl MachineDiagnostic {
             severity: MachineDiagnosticSeverity::Error,
             primary_span,
             message: message.into(),
+            payload: None,
+            suggestions: Vec::new(),
         }
     }
 
@@ -72,6 +107,8 @@ impl MachineDiagnostic {
             severity: MachineDiagnosticSeverity::Warning,
             primary_span,
             message: message.into(),
+            payload: None,
+            suggestions: Vec::new(),
         }
     }
 
@@ -85,6 +122,16 @@ impl MachineDiagnostic {
             primary_span,
             format!("unsupported Machine Surface syntax: {}", syntax.into()),
         )
+    }
+
+    pub fn with_payload(mut self, payload: MachineDiagnosticPayload) -> Self {
+        self.payload = Some(Box::new(payload));
+        self
+    }
+
+    pub fn with_suggestion(mut self, suggestion: MachineRepairSuggestion) -> Self {
+        self.suggestions.push(suggestion);
+        self
     }
 }
 
@@ -101,5 +148,7 @@ mod tests {
         assert_eq!(diagnostic.kind, MachineDiagnosticKind::UnsupportedSyntax);
         assert_eq!(diagnostic.severity, MachineDiagnosticSeverity::Error);
         assert_eq!(diagnostic.primary_span, span);
+        assert_eq!(diagnostic.payload, None);
+        assert!(diagnostic.suggestions.is_empty());
     }
 }

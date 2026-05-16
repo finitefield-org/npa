@@ -1,12 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    parse_machine_module, parse_machine_term, resolve_machine_module, MachineBinder,
-    MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl, MachineCompileOptions,
-    MachineDecl, MachineDiagnostic, MachineDiagnosticKind, MachineGlobalScope,
-    MachineGlobalScopeEntry, MachineItem, MachineLevel, MachineLocalDecl, MachineResolvedConstant,
-    MachineTerm, MachineTermAst, MachineTermCheckResult, MachineTermElabContext,
-    ResolvedMachineModule, Result, VerifiedDependency, VerifiedImport,
+    parse_machine_module, parse_machine_term, resolver::resolve_machine_module_with_options,
+    MachineBinder, MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl,
+    MachineCompileOptions, MachineDecl, MachineDiagnostic, MachineDiagnosticKind,
+    MachineDiagnosticPayload, MachineGlobalScope, MachineGlobalScopeEntry, MachineItem,
+    MachineLevel, MachineLocalDecl, MachineRepairCandidate, MachineRepairSuggestion,
+    MachineRepairSuggestionKind, MachineResolvedConstant, MachineSurfaceMode, MachineTerm,
+    MachineTermAst, MachineTermCheckResult, MachineTermElabContext, ResolvedMachineModule, Result,
+    VerifiedDependency, VerifiedImport,
 };
 use npa_kernel::{Ctx, Decl, Env, Expr, Level, Reducibility};
 use sha2::{Digest, Sha256};
@@ -15,7 +17,7 @@ pub fn elaborate_machine_module(
     module_name: npa_cert::ModuleName,
     module: ResolvedMachineModule,
     verified_imports: &[VerifiedImport],
-    _options: &MachineCompileOptions,
+    options: &MachineCompileOptions,
 ) -> Result<npa_cert::CoreModule> {
     let active_imports = active_verified_imports(&module.module.items, verified_imports)?;
     let kernel_env = kernel_env_from_imports(
@@ -24,7 +26,11 @@ pub fn elaborate_machine_module(
         module.module.span,
     )?
     .env;
-    let mut elaborator = Elaborator::new(active_imports.iter().copied(), kernel_env);
+    let mut elaborator = Elaborator::new(
+        active_imports.iter().copied(),
+        kernel_env,
+        options.mode == MachineSurfaceMode::Repair,
+    );
     let mut declarations = Vec::new();
 
     for item in module.module.items {
@@ -61,7 +67,7 @@ pub fn compile_machine_source_to_core(
     options: &MachineCompileOptions,
 ) -> Result<npa_cert::CoreModule> {
     let module = parse_machine_module(file_id, source)?;
-    let resolved = resolve_machine_module(module, verified_imports)?;
+    let resolved = resolve_machine_module_with_options(module, verified_imports, options)?;
     elaborate_machine_module(module_name, resolved, verified_imports, options)
 }
 
@@ -74,7 +80,7 @@ pub fn compile_machine_source_to_certificate(
 ) -> Result<npa_cert::ModuleCert> {
     let verified_imports: Vec<_> = verified_modules.iter().map(VerifiedImport::from).collect();
     let parsed = parse_machine_module(file_id, source)?;
-    let resolved = resolve_machine_module(parsed, &verified_imports)?;
+    let resolved = resolve_machine_module_with_options(parsed, &verified_imports, options)?;
     let active_import_indices =
         active_verified_import_indices(&resolved.module.items, &verified_imports)?;
     let module = elaborate_machine_module(module_name, resolved, &verified_imports, options)?;
@@ -114,12 +120,16 @@ pub fn elaborate_machine_term_check(
     source: &str,
     context: &MachineTermElabContext,
     expected: &npa_kernel::Expr,
-    _options: &MachineCompileOptions,
+    options: &MachineCompileOptions,
 ) -> Result<MachineTermCheckResult> {
     let parsed = parse_machine_term(crate::FileId(0), source)?;
     let span = crate::Span::new(crate::FileId(0), 0, source.len() as u32);
-    let (expr, inferred_type, elaborator, locals, constants) =
-        elaborate_machine_term_infer(parsed, span, context)?;
+    let (expr, inferred_type, elaborator, locals, constants) = elaborate_machine_term_infer(
+        parsed,
+        span,
+        context,
+        options.mode == MachineSurfaceMode::Repair,
+    )?;
     elaborator.check_expr(&expr, expected, &locals, &context.universe_params, span)?;
 
     Ok(MachineTermCheckResult {
@@ -134,11 +144,15 @@ pub fn elaborate_machine_term_check(
 pub fn elaborate_machine_term_infer_from_ast(
     ast: &MachineTermAst,
     context: &MachineTermElabContext,
-    _options: &MachineCompileOptions,
+    options: &MachineCompileOptions,
 ) -> Result<(npa_kernel::Expr, npa_kernel::Expr)> {
     let span = ast.term.span();
-    let (expr, inferred_type, _, _, _) =
-        elaborate_machine_term_infer(ast.term.clone(), span, context)?;
+    let (expr, inferred_type, _, _, _) = elaborate_machine_term_infer(
+        ast.term.clone(),
+        span,
+        context,
+        options.mode == MachineSurfaceMode::Repair,
+    )?;
     Ok((expr, inferred_type))
 }
 
@@ -250,6 +264,19 @@ impl LocalContext {
             .map(|index| index as u32)
     }
 
+    fn name_for_bvar(&self, index: u32) -> Option<&str> {
+        let index = usize::try_from(index).ok()?;
+        self.locals
+            .len()
+            .checked_sub(index + 1)
+            .and_then(|local_index| self.locals.get(local_index))
+            .map(|local| local.name.as_str())
+    }
+
+    fn contains_name(&self, name: &str) -> bool {
+        self.locals.iter().rev().any(|local| local.name == name)
+    }
+
     fn to_kernel_ctx(&self) -> Ctx {
         let mut ctx = Ctx::new();
         for local in &self.locals {
@@ -288,16 +315,19 @@ impl LocalScope {
 struct Elaborator {
     globals: BTreeMap<String, GlobalSignature>,
     kernel_env: Env,
+    repair_mode: bool,
 }
 
 impl Elaborator {
     fn new<'a>(
         verified_imports: impl IntoIterator<Item = &'a VerifiedImport>,
         kernel_env: Env,
+        repair_mode: bool,
     ) -> Self {
         let mut elaborator = Self {
             globals: BTreeMap::new(),
             kernel_env,
+            repair_mode,
         };
 
         for import in verified_imports {
@@ -314,11 +344,13 @@ impl Elaborator {
         context: &MachineTermElabContext,
         constants: &[MachineResolvedConstant],
         span: crate::Span,
+        repair_mode: bool,
     ) -> Result<Self> {
         let kernel_env = context.kernel_env.env().clone();
         let mut elaborator = Self {
             globals: BTreeMap::new(),
             kernel_env,
+            repair_mode,
         };
 
         for constant in constants {
@@ -436,6 +468,7 @@ impl Elaborator {
                     explicit_mode,
                     span,
                     &name,
+                    delta,
                 )?;
 
                 Ok(Expr::konst(name, levels))
@@ -450,10 +483,18 @@ impl Elaborator {
                 })
             }
             MachineTerm::Sort { level, .. } => Ok(Expr::sort(elaborate_level(level)?)),
-            MachineTerm::App { func, arg, .. } => Ok(Expr::app(
-                self.elaborate_term(*func, locals, delta)?,
-                self.elaborate_term(*arg, locals, delta)?,
-            )),
+            MachineTerm::App { func, arg, .. } => {
+                if let Some(diagnostic) =
+                    self.application_repair_diagnostic(&func, &arg, locals, delta)
+                {
+                    return Err(diagnostic);
+                }
+
+                Ok(Expr::app(
+                    self.elaborate_term(*func, locals, delta)?,
+                    self.elaborate_term(*arg, locals, delta)?,
+                ))
+            }
             MachineTerm::Lam { binders, body, .. } => {
                 let mut nested_locals = locals.clone();
                 let mut elaborated_binders = Vec::with_capacity(binders.len());
@@ -581,13 +622,18 @@ impl Elaborator {
         explicit_mode: bool,
         span: crate::Span,
         name: &str,
+        delta: &[String],
     ) -> Result<Vec<Level>> {
         match args {
             Some(args) => {
                 if args.len() != expected {
-                    return Err(MachineDiagnostic::error(
+                    let actual = args.len();
+                    return Err(self.universe_arg_diagnostic(
                         MachineDiagnosticKind::MissingExplicitUniverse,
                         span,
+                        name,
+                        UniverseArgCounts { expected, actual },
+                        explicit_universe_replacement(name, expected, delta),
                         format!(
                             "global name {name} expects {expected} explicit universe arguments"
                         ),
@@ -597,17 +643,538 @@ impl Elaborator {
                 args.into_iter().map(elaborate_level).collect()
             }
             None if expected == 0 => Ok(Vec::new()),
-            None if explicit_mode => Err(MachineDiagnostic::error(
+            None if explicit_mode => Err(self.universe_arg_diagnostic(
                 MachineDiagnosticKind::MissingExplicitUniverse,
                 span,
+                name,
+                UniverseArgCounts {
+                    expected,
+                    actual: 0,
+                },
+                explicit_universe_replacement(name, expected, delta),
                 format!("global name {name} requires explicit universe arguments"),
             )),
-            None => Err(MachineDiagnostic::error(
+            None => Err(self.universe_arg_diagnostic(
                 MachineDiagnosticKind::ImplicitArgumentRequired,
                 span,
+                name,
+                UniverseArgCounts {
+                    expected,
+                    actual: 0,
+                },
+                explicit_universe_replacement(name, expected, delta),
                 format!("global name {name} requires explicit arguments"),
             )),
         }
+    }
+
+    fn universe_arg_diagnostic(
+        &self,
+        kind: MachineDiagnosticKind,
+        span: crate::Span,
+        name: &str,
+        counts: UniverseArgCounts,
+        replacement: Option<String>,
+        message: String,
+    ) -> MachineDiagnostic {
+        let diagnostic = MachineDiagnostic::error(kind.clone(), span, message);
+        if !self.repair_mode {
+            return diagnostic;
+        }
+
+        let payload = MachineDiagnosticPayload {
+            head_symbol: Some(name.to_owned()),
+            expected_universe_args: Some(counts.expected),
+            actual_universe_args: Some(counts.actual),
+            ..MachineDiagnosticPayload::default()
+        };
+        let suggestion_kind = match kind {
+            MachineDiagnosticKind::ImplicitArgumentRequired => {
+                MachineRepairSuggestionKind::InsertExplicitArguments
+            }
+            MachineDiagnosticKind::MissingExplicitUniverse => {
+                MachineRepairSuggestionKind::InsertExplicitUniverseArguments
+            }
+            _ => return diagnostic.with_payload(payload),
+        };
+        let suggestion = MachineRepairSuggestion {
+            kind: suggestion_kind,
+            replacement,
+            candidates: Vec::new(),
+        };
+
+        diagnostic.with_payload(payload).with_suggestion(suggestion)
+    }
+
+    fn application_repair_diagnostic(
+        &self,
+        func: &MachineTerm,
+        arg: &MachineTerm,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> Option<MachineDiagnostic> {
+        if !self.repair_mode {
+            return None;
+        }
+
+        let (head, args) = machine_app_spine(func, arg);
+        let MachineTerm::Ident {
+            name,
+            universe_args: None,
+            explicit_mode,
+            span,
+        } = head
+        else {
+            return None;
+        };
+        let name = name.as_dotted();
+        let expected = self.universe_param_count(&name);
+        if expected == 0 {
+            return None;
+        }
+
+        let level_args =
+            self.repair_universe_level_sources(expected, args.first()?, locals, delta)?;
+        let level_sources: Vec<_> = level_args
+            .iter()
+            .map(|level| level.source.clone())
+            .collect();
+        let inserted_arg =
+            self.repair_inserted_type_argument(&name, &level_args, args.first()?, locals, delta);
+        let supplied_args = args
+            .iter()
+            .map(|arg| machine_term_repair_source(arg))
+            .collect::<Option<Vec<_>>>();
+        let replacement = match (inserted_arg, supplied_args) {
+            (InsertedTypeArgumentRepair::Unavailable, _) | (_, None) => None,
+            (inserted_arg, Some(supplied_args)) => {
+                let mut replacement_parts =
+                    vec![format!("@{}.{{{}}}", name, level_sources.join(", "))];
+                if let InsertedTypeArgumentRepair::Source(inserted_arg) = inserted_arg {
+                    replacement_parts.push(inserted_arg);
+                }
+                replacement_parts.extend(supplied_args);
+                Some(replacement_parts.join(" "))
+            }
+        }
+        .and_then(|replacement| self.validated_repair_replacement(replacement, locals, delta));
+
+        let kind = if *explicit_mode {
+            MachineDiagnosticKind::MissingExplicitUniverse
+        } else {
+            MachineDiagnosticKind::ImplicitArgumentRequired
+        };
+        let message = if *explicit_mode {
+            format!("global name {name} requires explicit universe arguments")
+        } else {
+            format!("global name {name} requires explicit arguments")
+        };
+
+        Some(self.universe_arg_diagnostic(
+            kind,
+            *span,
+            &name,
+            UniverseArgCounts {
+                expected,
+                actual: 0,
+            },
+            replacement,
+            message,
+        ))
+    }
+
+    fn repair_universe_level_sources(
+        &self,
+        expected: usize,
+        first_arg: &MachineTerm,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> Option<Vec<RepairUniverseLevel>> {
+        if expected == 1 {
+            if let Some(first_arg_ty) = self.repair_first_arg_type(first_arg, locals, delta) {
+                if let Expr::Sort(level) = &first_arg_ty {
+                    return Some(vec![RepairUniverseLevel::new(level.clone())?]);
+                }
+
+                let ctx = locals.to_kernel_ctx();
+                if let Ok(Expr::Sort(level)) = self.kernel_env.infer(&ctx, delta, &first_arg_ty) {
+                    return Some(vec![RepairUniverseLevel::new(level)?]);
+                }
+            }
+        }
+
+        explicit_universe_level_args(expected, delta)
+    }
+
+    fn repair_inserted_type_argument(
+        &self,
+        name: &str,
+        level_args: &[RepairUniverseLevel],
+        first_arg: &MachineTerm,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> InsertedTypeArgumentRepair {
+        let Some(first_arg_expr) = self.repair_elaborate_arg(first_arg, locals, delta) else {
+            return InsertedTypeArgumentRepair::Unavailable;
+        };
+        let Some(first_arg_ty) = self.repair_first_arg_type(first_arg, locals, delta) else {
+            return InsertedTypeArgumentRepair::Unavailable;
+        };
+        if self.first_supplied_arg_matches_first_binder(
+            name,
+            level_args,
+            &first_arg_expr,
+            locals,
+            delta,
+        ) {
+            return InsertedTypeArgumentRepair::NotNeeded;
+        }
+
+        match expr_repair_source(&first_arg_ty, locals) {
+            Some(source) => InsertedTypeArgumentRepair::Source(source),
+            None => InsertedTypeArgumentRepair::Unavailable,
+        }
+    }
+
+    fn repair_elaborate_arg(
+        &self,
+        arg: &MachineTerm,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> Option<Expr> {
+        let mut arg_locals = locals.clone();
+        self.elaborate_term(arg.clone(), &mut arg_locals, delta)
+            .ok()
+    }
+
+    fn repair_first_arg_type(
+        &self,
+        arg: &MachineTerm,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> Option<Expr> {
+        let arg_expr = self.repair_elaborate_arg(arg, locals, delta)?;
+        self.kernel_env
+            .infer(&locals.to_kernel_ctx(), delta, &arg_expr)
+            .ok()
+    }
+
+    fn first_supplied_arg_matches_first_binder(
+        &self,
+        name: &str,
+        level_args: &[RepairUniverseLevel],
+        first_arg_expr: &Expr,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> bool {
+        let ctx = locals.to_kernel_ctx();
+        let levels = level_args.iter().map(|level| level.level.clone()).collect();
+        let head = Expr::konst(name, levels);
+        let Ok(head_ty) = self.kernel_env.infer(&ctx, delta, &head) else {
+            return false;
+        };
+        let Ok(head_ty) = self.kernel_env.whnf(&ctx, delta, &head_ty) else {
+            return false;
+        };
+        let Expr::Pi { ty, .. } = head_ty else {
+            return false;
+        };
+
+        self.kernel_env
+            .check(&ctx, delta, first_arg_expr, &ty)
+            .is_ok()
+    }
+
+    fn validated_repair_replacement(
+        &self,
+        replacement: String,
+        locals: &LocalContext,
+        delta: &[String],
+    ) -> Option<String> {
+        let parsed = parse_machine_term(crate::FileId(0), &replacement).ok()?;
+        let parsed = localize_repair_term(parsed, locals);
+        let mut validation_locals = locals.clone();
+        let expr = self
+            .elaborate_term(parsed, &mut validation_locals, delta)
+            .ok()?;
+        self.kernel_env
+            .infer(&validation_locals.to_kernel_ctx(), delta, &expr)
+            .ok()?;
+        Some(replacement)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct UniverseArgCounts {
+    expected: usize,
+    actual: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct RepairUniverseLevel {
+    level: Level,
+    source: String,
+}
+
+impl RepairUniverseLevel {
+    fn new(level: Level) -> Option<Self> {
+        Some(Self {
+            source: level_repair_source(&level)?,
+            level,
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum InsertedTypeArgumentRepair {
+    NotNeeded,
+    Source(String),
+    Unavailable,
+}
+
+fn machine_app_spine<'a>(
+    func: &'a MachineTerm,
+    arg: &'a MachineTerm,
+) -> (&'a MachineTerm, Vec<&'a MachineTerm>) {
+    let mut head = func;
+    let mut args = vec![arg];
+    while let MachineTerm::App {
+        func: nested_func,
+        arg: nested_arg,
+        ..
+    } = head
+    {
+        args.push(nested_arg);
+        head = nested_func;
+    }
+    args.reverse();
+    (head, args)
+}
+
+fn explicit_universe_replacement(name: &str, expected: usize, delta: &[String]) -> Option<String> {
+    let levels = explicit_universe_level_args(expected, delta)?;
+    let levels: Vec<_> = levels.into_iter().map(|level| level.source).collect();
+    Some(format!("@{}.{{{}}}", name, levels.join(", ")))
+}
+
+fn explicit_universe_level_args(
+    expected: usize,
+    delta: &[String],
+) -> Option<Vec<RepairUniverseLevel>> {
+    if expected == 0 || delta.len() < expected {
+        return None;
+    }
+
+    Some(
+        delta[..expected]
+            .iter()
+            .map(|name| RepairUniverseLevel {
+                level: Level::param(name.clone()),
+                source: name.clone(),
+            })
+            .collect(),
+    )
+}
+
+fn machine_term_repair_source(term: &MachineTerm) -> Option<String> {
+    match term {
+        MachineTerm::Ident {
+            name,
+            universe_args,
+            explicit_mode,
+            ..
+        } => {
+            let mut source = if *explicit_mode {
+                format!("@{}", name.as_dotted())
+            } else {
+                name.as_dotted()
+            };
+            if let Some(universe_args) = universe_args {
+                let levels = universe_args
+                    .iter()
+                    .map(machine_level_repair_source)
+                    .collect::<Option<Vec<_>>>()?;
+                source.push_str(&format!(".{{{}}}", levels.join(", ")));
+            }
+            Some(source)
+        }
+        MachineTerm::Local { name, .. } => Some(name.clone()),
+        MachineTerm::Sort { level, .. } => Some(sort_repair_source(level)),
+        MachineTerm::App { .. } => {
+            let (head, args) = collect_machine_term_apps(term);
+            let mut parts = vec![machine_term_repair_source(head)?];
+            for arg in args {
+                parts.push(machine_term_atom_repair_source(arg)?);
+            }
+            Some(parts.join(" "))
+        }
+        MachineTerm::Lam { .. } | MachineTerm::Pi { .. } | MachineTerm::Let { .. } => None,
+        MachineTerm::Annot { expr, ty, .. } => Some(format!(
+            "({} : {})",
+            machine_term_repair_source(expr)?,
+            machine_term_repair_source(ty)?
+        )),
+    }
+}
+
+fn machine_term_atom_repair_source(term: &MachineTerm) -> Option<String> {
+    match term {
+        MachineTerm::Ident { .. }
+        | MachineTerm::Local { .. }
+        | MachineTerm::Sort { .. }
+        | MachineTerm::Annot { .. } => machine_term_repair_source(term),
+        MachineTerm::App { .. } => Some(format!("({})", machine_term_repair_source(term)?)),
+        MachineTerm::Lam { .. } | MachineTerm::Pi { .. } | MachineTerm::Let { .. } => None,
+    }
+}
+
+fn localize_repair_term(term: MachineTerm, locals: &LocalContext) -> MachineTerm {
+    match term {
+        MachineTerm::Ident {
+            name,
+            universe_args: None,
+            explicit_mode: false,
+            span,
+        } if name.parts.len() == 1 && locals.contains_name(&name.parts[0]) => MachineTerm::Local {
+            name: name.parts[0].clone(),
+            span,
+        },
+        MachineTerm::App { func, arg, span } => MachineTerm::App {
+            func: Box::new(localize_repair_term(*func, locals)),
+            arg: Box::new(localize_repair_term(*arg, locals)),
+            span,
+        },
+        MachineTerm::Annot { expr, ty, span } => MachineTerm::Annot {
+            expr: Box::new(localize_repair_term(*expr, locals)),
+            ty: Box::new(localize_repair_term(*ty, locals)),
+            span,
+        },
+        term => term,
+    }
+}
+
+fn collect_machine_term_apps(term: &MachineTerm) -> (&MachineTerm, Vec<&MachineTerm>) {
+    let mut args = Vec::new();
+    let mut head = term;
+    while let MachineTerm::App { func, arg, .. } = head {
+        args.push(arg.as_ref());
+        head = func.as_ref();
+    }
+    args.reverse();
+    (head, args)
+}
+
+fn expr_repair_source(expr: &Expr, locals: &LocalContext) -> Option<String> {
+    match expr {
+        Expr::Sort(level) => Some(sort_level_repair_source(level)),
+        Expr::BVar(index) => locals.name_for_bvar(*index).map(str::to_owned),
+        Expr::Const { name, levels } => {
+            if levels.is_empty() {
+                Some(name.clone())
+            } else {
+                let levels = levels
+                    .iter()
+                    .map(level_repair_source)
+                    .collect::<Option<Vec<_>>>()?;
+                Some(format!("@{}.{{{}}}", name, levels.join(", ")))
+            }
+        }
+        Expr::App(_, _) => {
+            let (head, args) = npa_kernel::expr::collect_apps(expr);
+            let mut parts = vec![expr_repair_source(&head, locals)?];
+            for arg in args {
+                parts.push(expr_atom_repair_source(&arg, locals)?);
+            }
+            Some(parts.join(" "))
+        }
+        Expr::Lam { .. } | Expr::Pi { .. } | Expr::Let { .. } => None,
+    }
+}
+
+fn expr_atom_repair_source(expr: &Expr, locals: &LocalContext) -> Option<String> {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => expr_repair_source(expr, locals),
+        Expr::App(_, _) => Some(format!("({})", expr_repair_source(expr, locals)?)),
+        Expr::Lam { .. } | Expr::Pi { .. } | Expr::Let { .. } => None,
+    }
+}
+
+fn sort_repair_source(level: &MachineLevel) -> String {
+    match machine_level_repair_source(level).as_deref() {
+        Some("0") => "Prop".to_owned(),
+        Some("1") => "Type".to_owned(),
+        Some(level) => format!("Sort {level}"),
+        None => "Sort 0".to_owned(),
+    }
+}
+
+fn sort_level_repair_source(level: &Level) -> String {
+    match level_repair_source(level).as_deref() {
+        Some("0") => "Prop".to_owned(),
+        Some("1") => "Type".to_owned(),
+        Some(level) => format!("Sort {level}"),
+        None => "Sort 0".to_owned(),
+    }
+}
+
+fn machine_level_repair_source(level: &MachineLevel) -> Option<String> {
+    match level {
+        MachineLevel::Nat { value, .. } => Some(value.to_string()),
+        MachineLevel::Param { name, .. } => Some(name.clone()),
+        MachineLevel::Succ { level, .. } => Some(format!(
+            "succ {}",
+            machine_level_atom_repair_source(level.as_ref())?
+        )),
+        MachineLevel::Max { lhs, rhs, .. } => Some(format!(
+            "max {} {}",
+            machine_level_atom_repair_source(lhs.as_ref())?,
+            machine_level_atom_repair_source(rhs.as_ref())?
+        )),
+        MachineLevel::IMax { lhs, rhs, .. } => Some(format!(
+            "imax {} {}",
+            machine_level_atom_repair_source(lhs.as_ref())?,
+            machine_level_atom_repair_source(rhs.as_ref())?
+        )),
+    }
+}
+
+fn machine_level_atom_repair_source(level: &MachineLevel) -> Option<String> {
+    match level {
+        MachineLevel::Nat { .. } | MachineLevel::Param { .. } => machine_level_repair_source(level),
+        MachineLevel::Succ { .. } | MachineLevel::Max { .. } | MachineLevel::IMax { .. } => {
+            Some(machine_level_repair_source(level)?)
+        }
+    }
+}
+
+fn level_repair_source(level: &Level) -> Option<String> {
+    let level = npa_kernel::level::normalize_level(level.clone());
+    if let Some(value) = level_as_u64(&level) {
+        return Some(value.to_string());
+    }
+
+    match level {
+        Level::Zero => Some("0".to_owned()),
+        Level::Param(name) => Some(name),
+        Level::Succ(level) => Some(format!("succ {}", level_repair_source(&level)?)),
+        Level::Max(lhs, rhs) => Some(format!(
+            "max {} {}",
+            level_repair_source(&lhs)?,
+            level_repair_source(&rhs)?
+        )),
+        Level::IMax(lhs, rhs) => Some(format!(
+            "imax {} {}",
+            level_repair_source(&lhs)?,
+            level_repair_source(&rhs)?
+        )),
+    }
+}
+
+fn level_as_u64(level: &Level) -> Option<u64> {
+    match level {
+        Level::Zero => Some(0),
+        Level::Succ(level) => Some(level_as_u64(level)? + 1),
+        _ => None,
     }
 }
 
@@ -615,6 +1182,7 @@ fn elaborate_machine_term_infer(
     term: MachineTerm,
     span: crate::Span,
     context: &MachineTermElabContext,
+    repair_mode: bool,
 ) -> Result<(
     Expr,
     Expr,
@@ -622,7 +1190,7 @@ fn elaborate_machine_term_infer(
     LocalContext,
     Vec<MachineResolvedConstant>,
 )> {
-    let resolver = TermResolver::new(&context.global_scope);
+    let resolver = TermResolver::new(&context.global_scope, repair_mode);
     let mut local_scope = LocalScope::from_machine_locals(&context.local_context);
     for local in &context.local_context {
         resolver.ensure_local_does_not_shadow_global(&local.name, span)?;
@@ -631,7 +1199,7 @@ fn elaborate_machine_term_infer(
     let resolved = resolver.resolve_term(term, &mut local_scope, &universe_params)?;
     let constants = resolver.constants_from_resolved_term(&resolved)?;
     let mut locals = local_context_from_machine(&context.local_context);
-    let elaborator = Elaborator::from_term_context(context, &constants, span)?;
+    let elaborator = Elaborator::from_term_context(context, &constants, span, repair_mode)?;
     let expr = elaborator.elaborate_term(resolved, &mut locals, &context.universe_params)?;
     let inferred_type = elaborator.infer_expr(&expr, &locals, &context.universe_params, span)?;
     Ok((expr, inferred_type, elaborator, locals, constants))
@@ -639,12 +1207,14 @@ fn elaborate_machine_term_infer(
 
 struct TermResolver {
     globals: TermGlobalTable,
+    repair_mode: bool,
 }
 
 impl TermResolver {
-    fn new(scope: &MachineGlobalScope) -> Self {
+    fn new(scope: &MachineGlobalScope, repair_mode: bool) -> Self {
         Self {
             globals: TermGlobalTable::new(scope),
+            repair_mode,
         }
     }
 
@@ -814,14 +1384,7 @@ impl TermResolver {
                     name.as_dotted()
                 ),
             )),
-            TermGlobalLookup::ShortGlobal => Err(MachineDiagnostic::error(
-                MachineDiagnosticKind::ShortGlobalName,
-                name.span,
-                format!(
-                    "global name {} must be written as a fully qualified exact name",
-                    name.as_dotted()
-                ),
-            )),
+            TermGlobalLookup::ShortGlobal => Err(self.short_global_diagnostic(&name)),
             TermGlobalLookup::UnknownLocal => Err(MachineDiagnostic::error(
                 MachineDiagnosticKind::UnknownLocalName,
                 name.span,
@@ -833,6 +1396,40 @@ impl TermResolver {
                 format!("unknown global name {}", name.as_dotted()),
             )),
         }
+    }
+
+    fn short_global_diagnostic(&self, name: &crate::MachineName) -> MachineDiagnostic {
+        let diagnostic = MachineDiagnostic::error(
+            MachineDiagnosticKind::ShortGlobalName,
+            name.span,
+            format!(
+                "global name {} must be written as a fully qualified exact name",
+                name.as_dotted()
+            ),
+        );
+        if !self.repair_mode {
+            return diagnostic;
+        }
+
+        let suffix = name.parts.first().map(String::as_str).unwrap_or_default();
+        let candidates = self.globals.repair_candidates_for_suffix(suffix);
+        let replacement = match candidates.as_slice() {
+            [candidate] if self.globals.has_resolved_name(&candidate.name) => {
+                Some(candidate.name.as_dotted())
+            }
+            _ => None,
+        };
+        let payload = MachineDiagnosticPayload {
+            candidates: candidates.clone(),
+            ..MachineDiagnosticPayload::default()
+        };
+        let suggestion = MachineRepairSuggestion {
+            kind: MachineRepairSuggestionKind::UseFullyQualifiedName,
+            replacement,
+            candidates,
+        };
+
+        diagnostic.with_payload(payload).with_suggestion(suggestion)
     }
 
     fn constants_from_resolved_term(
@@ -942,6 +1539,7 @@ struct TermGlobalTable {
     names: BTreeMap<String, TermGlobalEntry>,
     roots: BTreeSet<String>,
     suffixes: BTreeSet<String>,
+    suffix_candidates: BTreeMap<String, BTreeSet<MachineRepairCandidate>>,
 }
 
 impl TermGlobalTable {
@@ -973,6 +1571,13 @@ impl TermGlobalTable {
         }
         if let Some(last) = name.0.last() {
             self.suffixes.insert(last.clone());
+            self.suffix_candidates
+                .entry(last.clone())
+                .or_default()
+                .insert(MachineRepairCandidate {
+                    name: name.clone(),
+                    decl_interface_hash: Some(*entry.decl_interface_hash()),
+                });
         }
     }
 
@@ -1006,6 +1611,20 @@ impl TermGlobalTable {
             }),
             Some(TermGlobalEntry::Ambiguous) | None => None,
         }
+    }
+
+    fn repair_candidates_for_suffix(&self, suffix: &str) -> Vec<MachineRepairCandidate> {
+        self.suffix_candidates
+            .get(suffix)
+            .map(|candidates| candidates.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    fn has_resolved_name(&self, name: &npa_cert::Name) -> bool {
+        matches!(
+            self.names.get(&name.as_dotted()),
+            Some(TermGlobalEntry::Resolved { .. })
+        )
     }
 }
 
@@ -2292,11 +2911,20 @@ fn kernel_expr_diagnostic(span: crate::Span, err: npa_kernel::Error) -> MachineD
             span,
             format!("expected a type annotation, got {actual:?}"),
         ),
-        npa_kernel::Error::TypeMismatch { expected, actual } => MachineDiagnostic::error(
-            MachineDiagnosticKind::TypeMismatch,
-            span,
-            format!("type annotation mismatch: expected {expected:?}, got {actual:?}"),
-        ),
+        npa_kernel::Error::TypeMismatch { expected, actual } => {
+            let expected_hash = hash_owner_free_core_expr(&expected);
+            let actual_hash = hash_owner_free_core_expr(&actual);
+            MachineDiagnostic::error(
+                MachineDiagnosticKind::TypeMismatch,
+                span,
+                format!("type annotation mismatch: expected {expected:?}, got {actual:?}"),
+            )
+            .with_payload(MachineDiagnosticPayload {
+                expected_hash: Some(expected_hash),
+                actual_hash: Some(actual_hash),
+                ..MachineDiagnosticPayload::default()
+            })
+        }
         err => MachineDiagnostic::error(
             MachineDiagnosticKind::KernelRejected,
             span,
@@ -2403,6 +3031,37 @@ mod tests {
 
     fn eq_import() -> VerifiedImport {
         verified_import("Std.Logic.Eq", &[("Eq", &["u"]), ("Eq.refl", &["u"])])
+    }
+
+    fn poly_import() -> VerifiedImport {
+        let u = Level::param("u");
+        let k_ty = Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "B",
+                Expr::sort(u),
+                Expr::pi("x", Expr::bvar(1), Expr::bvar(2)),
+            ),
+        );
+
+        VerifiedImport {
+            module: npa_cert::Name::from_dotted("Std.Poly"),
+            export_hash: hash(21),
+            certificate_hash: None,
+            exports: vec![crate::VerifiedExport {
+                name: npa_cert::Name::from_dotted("Poly.K"),
+                universe_params: vec!["u".to_owned()],
+                ty: k_ty.clone(),
+                decl_interface_hash: hash(22),
+            }],
+            kernel_decls: vec![Decl::Axiom {
+                name: "Poly.K".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: k_ty,
+            }],
+            kernel_decl_dependencies: BTreeMap::new(),
+        }
     }
 
     fn hidden_import() -> VerifiedImport {
@@ -3367,6 +4026,15 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
         .expect_err("Eq.refl should not check against Nat");
 
         assert_eq!(err.kind, MachineDiagnosticKind::TypeMismatch);
+        let payload = err
+            .payload
+            .expect("type mismatch should include expected/actual hashes");
+        assert_eq!(
+            payload.expected_hash,
+            Some(hash_owner_free_core_expr(&nat()))
+        );
+        assert!(payload.actual_hash.is_some());
+        assert!(err.suggestions.is_empty());
     }
 
     #[test]
@@ -3383,6 +4051,283 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
         .expect_err("short global suffix should be rejected");
 
         assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+        assert_eq!(err.payload, None);
+        assert!(err.suggestions.is_empty());
+    }
+
+    #[test]
+    fn repair_mode_suggests_fully_qualified_name_for_short_global() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(&imports, Vec::new(), Vec::new());
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("refl", &context, &nat(), &options)
+            .expect_err("short global suffix should be rejected");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+        let payload = err.payload.expect("short global should include candidates");
+        assert_eq!(
+            payload.candidates,
+            vec![MachineRepairCandidate {
+                name: npa_cert::Name::from_dotted("Eq.refl"),
+                decl_interface_hash: Some(hash(3)),
+            }]
+        );
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(
+            err.suggestions[0].kind,
+            MachineRepairSuggestionKind::UseFullyQualifiedName
+        );
+        assert_eq!(err.suggestions[0].replacement.as_deref(), Some("Eq.refl"));
+    }
+
+    #[test]
+    fn repair_mode_omits_short_name_replacement_for_ambiguous_exact_name() {
+        let left = verified_import("Left.Module", &[("Shared.X", &[]), ("Direct.y", &[])]);
+        let mut right = verified_import("Right.Module", &[("Shared.X", &[])]);
+        set_single_axiom_ty(&mut right, Expr::sort(type0()));
+        let imports = [left, right];
+        let context = term_context(&imports, Vec::new(), Vec::new());
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("X", &context, &Expr::sort(type0()), &options)
+            .expect_err("short suffix should be rejected without an ambiguous replacement");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(err.suggestions[0].replacement, None);
+        assert_eq!(
+            err.suggestions[0].candidates,
+            vec![MachineRepairCandidate {
+                name: npa_cert::Name::from_dotted("Shared.X"),
+                decl_interface_hash: Some(hash(2)),
+            }]
+        );
+    }
+
+    #[test]
+    fn repair_mode_suggests_explicit_arguments_for_implicit_global_use() {
+        let imports = [eq_import()];
+        let context = term_context(&imports, Vec::new(), vec!["u".to_owned()]);
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("Eq.refl", &context, &Expr::sort(type0()), &options)
+            .expect_err("implicit global use should be rejected");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+        let payload = err.payload.expect("implicit error should include payload");
+        assert_eq!(payload.head_symbol.as_deref(), Some("Eq.refl"));
+        assert_eq!(payload.expected_universe_args, Some(1));
+        assert_eq!(payload.actual_universe_args, Some(0));
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(
+            err.suggestions[0].kind,
+            MachineRepairSuggestionKind::InsertExplicitArguments
+        );
+        assert_eq!(
+            err.suggestions[0].replacement.as_deref(),
+            Some("@Eq.refl.{u}")
+        );
+    }
+
+    #[test]
+    fn repair_mode_suggests_inserted_type_argument_for_eq_refl_app() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "n".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("Eq.refl n", &context, &nat(), &options)
+            .expect_err("implicit Eq.refl app should be rejected with a repair suggestion");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(
+            err.suggestions[0].kind,
+            MachineRepairSuggestionKind::InsertExplicitArguments
+        );
+        assert_eq!(
+            err.suggestions[0].replacement.as_deref(),
+            Some("@Eq.refl.{1} Nat n")
+        );
+    }
+
+    #[test]
+    fn repair_mode_omits_replacement_when_type_argument_cannot_be_printed() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "f".to_owned(),
+                ty: Expr::pi("x", nat(), nat()),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("Eq.refl f", &context, &nat(), &options).expect_err(
+            "non-printable inserted type argument should not produce a bad replacement",
+        );
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(err.suggestions[0].replacement, None);
+    }
+
+    #[test]
+    fn repair_mode_omits_replacement_when_generated_candidate_does_not_elaborate() {
+        let imports = [nat_import(), poly_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "x".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("Poly.K x", &context, &nat(), &options)
+            .expect_err("incomplete generated repair should not be offered as a replacement");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(err.suggestions[0].replacement, None);
+    }
+
+    #[test]
+    fn repair_mode_uses_level_value_for_first_binder_match() {
+        let imports = [eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "A".to_owned(),
+                ty: Expr::sort(Level::max(Level::param("u"), Level::param("v"))),
+                value: None,
+            }],
+            vec!["u".to_owned(), "v".to_owned()],
+        );
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err =
+            elaborate_machine_term_check("Eq.refl A", &context, &Expr::sort(type0()), &options)
+                .expect_err("repair mode should still reject missing explicit arguments");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+        assert_eq!(
+            err.suggestions[0].replacement.as_deref(),
+            Some("@Eq.refl.{max u v} A")
+        );
+    }
+
+    #[test]
+    fn repair_mode_suggests_missing_universe_arguments() {
+        let imports = [eq_import()];
+        let context = term_context(&imports, Vec::new(), vec!["u".to_owned()]);
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err =
+            elaborate_machine_term_check("@Eq.refl", &context, &Expr::sort(type0()), &options)
+                .expect_err("explicit global use should require universe arguments");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::MissingExplicitUniverse);
+        let payload = err.payload.expect("universe error should include payload");
+        assert_eq!(payload.head_symbol.as_deref(), Some("Eq.refl"));
+        assert_eq!(payload.expected_universe_args, Some(1));
+        assert_eq!(payload.actual_universe_args, Some(0));
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(
+            err.suggestions[0].kind,
+            MachineRepairSuggestionKind::InsertExplicitUniverseArguments
+        );
+        assert_eq!(
+            err.suggestions[0].replacement.as_deref(),
+            Some("@Eq.refl.{u}")
+        );
+    }
+
+    #[test]
+    fn repair_mode_suggests_universe_for_explicit_eq_refl_app() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "n".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = elaborate_machine_term_check("@Eq.refl Nat n", &context, &nat(), &options)
+            .expect_err("missing universe arguments should be rejected with a repair suggestion");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::MissingExplicitUniverse);
+        assert_eq!(
+            err.suggestions[0].replacement.as_deref(),
+            Some("@Eq.refl.{1} Nat n")
+        );
+    }
+
+    #[test]
+    fn repair_mode_module_compile_suggests_fully_qualified_short_name() {
+        let imports = [nat_import(), eq_import()];
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = compile_machine_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem Test.bad (n : Nat) : Eq.{1} Nat n n := refl",
+            &imports,
+            &options,
+        )
+        .expect_err("module resolver should attach repair suggestions in Repair mode");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+        assert_eq!(err.suggestions[0].replacement.as_deref(), Some("Eq.refl"));
     }
 
     #[test]

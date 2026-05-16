@@ -7,7 +7,10 @@ mod resolver;
 mod span;
 mod term_source;
 
-pub use diagnostic::{MachineDiagnostic, MachineDiagnosticKind, MachineDiagnosticSeverity, Result};
+pub use diagnostic::{
+    MachineDiagnostic, MachineDiagnosticKind, MachineDiagnosticPayload, MachineDiagnosticSeverity,
+    MachineRepairCandidate, MachineRepairSuggestion, MachineRepairSuggestionKind, Result,
+};
 pub use elaborator::{
     compile_machine_source_to_certificate, compile_machine_source_to_core,
     elaborate_machine_module, elaborate_machine_term_check, elaborate_machine_term_infer_from_ast,
@@ -23,8 +26,8 @@ pub use machine::{
 };
 pub use parser::{parse_machine_module, parse_machine_term};
 pub use resolver::{
-    resolve_machine_module, ResolvedMachineModule, VerifiedDependency, VerifiedExport,
-    VerifiedImport,
+    resolve_machine_module, resolve_machine_module_with_options, ResolvedMachineModule,
+    VerifiedDependency, VerifiedExport, VerifiedImport,
 };
 pub use span::{ByteOffset, FileId, Span};
 pub use term_source::{

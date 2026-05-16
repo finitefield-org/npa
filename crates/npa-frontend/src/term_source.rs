@@ -8,12 +8,13 @@ const TERM_SOURCE_TAG: &str = "npa.phase3.machine-term-source.v1";
 const MAX_CANONICAL_STRING_LEN: usize = 1 << 20;
 const MAX_CANONICAL_LIST_LEN: usize = 100_000;
 const MAX_CANONICAL_NODES: usize = 100_000;
-const MAX_CANONICAL_DEPTH: usize = 256;
+const MAX_CANONICAL_DEPTH: usize = 64;
 
 pub type MachineSurfaceToken = Token;
 
 pub fn canonicalize_machine_term_source(source: &str) -> Result<MachineTermSourceCanonical> {
     let term = parse_machine_term(FileId(0), source)?;
+    validate_term_depth(&term, 0)?;
     let mut canonical_bytes = Vec::new();
     encode_string_to(&mut canonical_bytes, TERM_SOURCE_TAG);
     encode_term_to(&mut canonical_bytes, &term);
@@ -23,6 +24,75 @@ pub fn canonicalize_machine_term_source(source: &str) -> Result<MachineTermSourc
         source: source.to_owned(),
         canonical_bytes,
         canonical_hash,
+    })
+}
+
+fn validate_term_depth(term: &MachineTerm, depth: usize) -> Result<()> {
+    ensure_canonical_depth(depth)?;
+    match term {
+        MachineTerm::Ident { universe_args, .. } => {
+            if let Some(levels) = universe_args {
+                for level in levels {
+                    validate_level_depth(level, child_depth(depth)?)?;
+                }
+            }
+        }
+        MachineTerm::Local { .. } => {}
+        MachineTerm::Sort { level, .. } => validate_level_depth(level, child_depth(depth)?)?,
+        MachineTerm::App { func, arg, .. } => {
+            validate_term_depth(func, child_depth(depth)?)?;
+            validate_term_depth(arg, child_depth(depth)?)?;
+        }
+        MachineTerm::Lam { binders, body, .. } | MachineTerm::Pi { binders, body, .. } => {
+            for binder in binders {
+                validate_term_depth(&binder.ty, child_depth(depth)?)?;
+            }
+            validate_term_depth(body, child_depth(depth)?)?;
+        }
+        MachineTerm::Let {
+            ty, value, body, ..
+        } => {
+            validate_term_depth(ty, child_depth(depth)?)?;
+            validate_term_depth(value, child_depth(depth)?)?;
+            validate_term_depth(body, child_depth(depth)?)?;
+        }
+        MachineTerm::Annot { expr, ty, .. } => {
+            validate_term_depth(expr, child_depth(depth)?)?;
+            validate_term_depth(ty, child_depth(depth)?)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_level_depth(level: &MachineLevel, depth: usize) -> Result<()> {
+    ensure_canonical_depth(depth)?;
+    match level {
+        MachineLevel::Nat { .. } | MachineLevel::Param { .. } => {}
+        MachineLevel::Succ { level, .. } => validate_level_depth(level, child_depth(depth)?)?,
+        MachineLevel::Max { lhs, rhs, .. } | MachineLevel::IMax { lhs, rhs, .. } => {
+            validate_level_depth(lhs, child_depth(depth)?)?;
+            validate_level_depth(rhs, child_depth(depth)?)?;
+        }
+    }
+    Ok(())
+}
+
+fn ensure_canonical_depth(depth: usize) -> Result<()> {
+    if depth > MAX_CANONICAL_DEPTH {
+        return Err(crate::MachineDiagnostic::parse(
+            Span::empty(FileId(0)),
+            "canonical term nesting is too deep",
+        ));
+    }
+    Ok(())
+}
+
+fn child_depth(depth: usize) -> Result<usize> {
+    depth.checked_add(1).ok_or_else(|| {
+        crate::MachineDiagnostic::parse(
+            Span::empty(FileId(0)),
+            "canonical term nesting is too deep",
+        )
     })
 }
 
@@ -646,5 +716,15 @@ mod tests {
 
         decode_machine_term_source_canonical(&bytes)
             .expect_err("deep canonical terms should be rejected before overflowing the stack");
+    }
+
+    #[test]
+    fn canonicalizer_rejects_terms_deeper_than_decoder_limit() {
+        let source = std::iter::repeat_n("f", MAX_CANONICAL_DEPTH + 3)
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        canonicalize_machine_term_source(&source)
+            .expect_err("canonicalizer and decoder must share the same depth limit");
     }
 }

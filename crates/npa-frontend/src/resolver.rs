@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    MachineBinder, MachineDecl, MachineDiagnostic, MachineDiagnosticKind, MachineItem,
-    MachineLevel, MachineModule, MachineName, MachineTerm, Result, Span,
+    MachineBinder, MachineCompileOptions, MachineDecl, MachineDiagnostic, MachineDiagnosticKind,
+    MachineDiagnosticPayload, MachineItem, MachineLevel, MachineModule, MachineName,
+    MachineRepairCandidate, MachineRepairSuggestion, MachineRepairSuggestionKind,
+    MachineSurfaceMode, MachineTerm, Result, Span,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -72,19 +74,41 @@ pub fn resolve_machine_module(
     module: MachineModule,
     verified_imports: &[VerifiedImport],
 ) -> Result<ResolvedMachineModule> {
-    Resolver::new(verified_imports).resolve_module(module)
+    resolve_machine_module_with_repair(module, verified_imports, false)
+}
+
+pub fn resolve_machine_module_with_options(
+    module: MachineModule,
+    verified_imports: &[VerifiedImport],
+    options: &MachineCompileOptions,
+) -> Result<ResolvedMachineModule> {
+    resolve_machine_module_with_repair(
+        module,
+        verified_imports,
+        options.mode == MachineSurfaceMode::Repair,
+    )
+}
+
+pub(crate) fn resolve_machine_module_with_repair(
+    module: MachineModule,
+    verified_imports: &[VerifiedImport],
+    repair_mode: bool,
+) -> Result<ResolvedMachineModule> {
+    Resolver::new(verified_imports, repair_mode).resolve_module(module)
 }
 
 struct Resolver<'a> {
     verified_imports: &'a [VerifiedImport],
     globals: GlobalTable,
+    repair_mode: bool,
 }
 
 impl<'a> Resolver<'a> {
-    fn new(verified_imports: &'a [VerifiedImport]) -> Self {
+    fn new(verified_imports: &'a [VerifiedImport], repair_mode: bool) -> Self {
         Self {
             verified_imports,
             globals: GlobalTable::default(),
+            repair_mode,
         }
     }
 
@@ -381,14 +405,7 @@ impl<'a> Resolver<'a> {
                     name.as_dotted()
                 ),
             )),
-            GlobalLookup::ShortGlobal => Err(MachineDiagnostic::error(
-                MachineDiagnosticKind::ShortGlobalName,
-                name.span,
-                format!(
-                    "global name {} must be written as a fully qualified exact name",
-                    name.as_dotted()
-                ),
-            )),
+            GlobalLookup::ShortGlobal => Err(self.short_global_diagnostic(&name)),
             GlobalLookup::UnknownLocal => Err(MachineDiagnostic::error(
                 MachineDiagnosticKind::UnknownLocalName,
                 name.span,
@@ -400,6 +417,40 @@ impl<'a> Resolver<'a> {
                 format!("unknown global name {}", name.as_dotted()),
             )),
         }
+    }
+
+    fn short_global_diagnostic(&self, name: &MachineName) -> MachineDiagnostic {
+        let diagnostic = MachineDiagnostic::error(
+            MachineDiagnosticKind::ShortGlobalName,
+            name.span,
+            format!(
+                "global name {} must be written as a fully qualified exact name",
+                name.as_dotted()
+            ),
+        );
+        if !self.repair_mode {
+            return diagnostic;
+        }
+
+        let suffix = name.parts.first().map(String::as_str).unwrap_or_default();
+        let candidates = self.globals.repair_candidates_for_suffix(suffix);
+        let replacement = match candidates.as_slice() {
+            [candidate] if self.globals.has_resolved_name(&candidate.name) => {
+                Some(candidate.name.as_dotted())
+            }
+            _ => None,
+        };
+        let payload = MachineDiagnosticPayload {
+            candidates: candidates.clone(),
+            ..MachineDiagnosticPayload::default()
+        };
+        let suggestion = MachineRepairSuggestion {
+            kind: MachineRepairSuggestionKind::UseFullyQualifiedName,
+            replacement,
+            candidates,
+        };
+
+        diagnostic.with_payload(payload).with_suggestion(suggestion)
     }
 
     fn resolve_level(
@@ -470,6 +521,7 @@ struct GlobalTable {
     names: BTreeMap<String, GlobalEntry>,
     roots: BTreeSet<String>,
     suffixes: BTreeSet<String>,
+    suffix_candidates: BTreeMap<String, BTreeSet<MachineRepairCandidate>>,
 }
 
 impl GlobalTable {
@@ -524,7 +576,14 @@ impl GlobalTable {
             self.roots.insert(first);
         }
         if let Some(last) = last {
-            self.suffixes.insert(last);
+            self.suffixes.insert(last.clone());
+            self.suffix_candidates
+                .entry(last)
+                .or_default()
+                .insert(MachineRepairCandidate {
+                    name: name.clone(),
+                    decl_interface_hash: interface_hash,
+                });
         }
 
         Ok(())
@@ -545,6 +604,20 @@ impl GlobalTable {
 
     fn has_root(&self, name: &str) -> bool {
         self.roots.contains(name)
+    }
+
+    fn repair_candidates_for_suffix(&self, suffix: &str) -> Vec<MachineRepairCandidate> {
+        self.suffix_candidates
+            .get(suffix)
+            .map(|candidates| candidates.iter().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    fn has_resolved_name(&self, name: &npa_cert::Name) -> bool {
+        matches!(
+            self.names.get(&name.as_dotted()),
+            Some(GlobalEntry::Resolved { .. })
+        )
     }
 }
 
@@ -798,7 +871,7 @@ fn collect_const_names_from_expr(names: &mut BTreeSet<String>, expr: &npa_kernel
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_machine_module, FileId};
+    use crate::{parse_machine_module, FileId, MachineCompileOptions, MachineSurfaceMode};
 
     fn hash(seed: u8) -> npa_cert::Hash {
         [seed; 32]
@@ -837,6 +910,15 @@ mod tests {
     fn resolve_source(source: &str, imports: &[VerifiedImport]) -> Result<ResolvedMachineModule> {
         let module = parse_machine_module(FileId(0), source).expect("source should parse");
         resolve_machine_module(module, imports)
+    }
+
+    fn resolve_source_with_options(
+        source: &str,
+        imports: &[VerifiedImport],
+        options: &MachineCompileOptions,
+    ) -> Result<ResolvedMachineModule> {
+        let module = parse_machine_module(FileId(0), source).expect("source should parse");
+        resolve_machine_module_with_options(module, imports, options)
     }
 
     fn resolve_err(source: &str, imports: &[VerifiedImport]) -> MachineDiagnosticKind {
@@ -881,6 +963,59 @@ mod tests {
             panic!("expected Nat.add global");
         };
         assert_eq!(name.as_dotted(), "Nat.add");
+    }
+
+    #[test]
+    fn resolve_with_repair_options_suggests_short_global_replacement() {
+        let imports = [nat_import()];
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = resolve_source_with_options(
+            "import Std.Nat.Basic\ndef Test.bad : Nat := zero",
+            &imports,
+            &options,
+        )
+        .expect_err("short global suffix should be rejected with a repair suggestion");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(err.suggestions[0].replacement.as_deref(), Some("Nat.zero"));
+    }
+
+    #[test]
+    fn resolve_with_repair_options_omits_replacement_for_ambiguous_exact_name() {
+        let imports = [
+            verified_import("Left.Module", &["Shared.X"]),
+            verified_import("Right.Module", &["Shared.X"]),
+        ];
+        let options = MachineCompileOptions {
+            mode: MachineSurfaceMode::Repair,
+            ..MachineCompileOptions::default()
+        };
+
+        let err = resolve_source_with_options(
+            "\
+import Left.Module
+import Right.Module
+def Test.bad : X := X",
+            &imports,
+            &options,
+        )
+        .expect_err("short suffix should be rejected without suggesting an ambiguous exact name");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+        assert_eq!(err.suggestions.len(), 1);
+        assert_eq!(err.suggestions[0].replacement, None);
+        assert_eq!(
+            err.suggestions[0].candidates,
+            vec![MachineRepairCandidate {
+                name: npa_cert::Name::from_dotted("Shared.X"),
+                decl_interface_hash: Some(hash(2)),
+            }]
+        );
     }
 
     #[test]
