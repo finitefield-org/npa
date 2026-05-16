@@ -13,6 +13,12 @@ pub struct VerifiedExport {
     pub decl_interface_hash: npa_cert::Hash,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VerifiedDependency {
+    pub name: npa_cert::Name,
+    pub decl_interface_hash: npa_cert::Hash,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerifiedImport {
     pub module: npa_cert::ModuleName,
@@ -20,6 +26,7 @@ pub struct VerifiedImport {
     pub certificate_hash: Option<npa_cert::Hash>,
     pub exports: Vec<VerifiedExport>,
     pub kernel_decls: Vec<npa_kernel::Decl>,
+    pub kernel_decl_dependencies: BTreeMap<String, BTreeSet<VerifiedDependency>>,
 }
 
 impl From<&npa_cert::VerifiedModule> for VerifiedImport {
@@ -39,13 +46,19 @@ impl From<&npa_cert::VerifiedModule> for VerifiedImport {
             })
             .collect();
 
+        let kernel_decls = npa_cert::verified_module_to_kernel_decls(module)
+            .expect("verified module must reconstruct kernel declarations");
+        let kernel_decl_dependencies =
+            kernel_decl_dependencies_from_verified_module(module, &kernel_decls)
+                .expect("verified module dependencies must be readable");
+
         Self {
             module: module.module().clone(),
             export_hash: module.export_hash(),
             certificate_hash: Some(module.certificate_hash()),
             exports,
-            kernel_decls: npa_cert::verified_module_to_kernel_decls(module)
-                .expect("verified module must reconstruct kernel declarations"),
+            kernel_decls,
+            kernel_decl_dependencies,
         }
     }
 }
@@ -639,6 +652,149 @@ fn decl_name(module: &npa_cert::VerifiedModule, decl_index: usize) -> String {
     module.name_table()[name].as_dotted()
 }
 
+fn kernel_decl_dependencies_from_verified_module(
+    module: &npa_cert::VerifiedModule,
+    kernel_decls: &[npa_kernel::Decl],
+) -> npa_cert::Result<BTreeMap<String, BTreeSet<VerifiedDependency>>> {
+    let imported_dependencies = imported_dependency_hashes(module)?;
+    let mut dependencies = BTreeMap::new();
+    for decl in kernel_decls {
+        let mut names = BTreeSet::new();
+        collect_const_names_from_decl(&mut names, decl);
+        let decl_dependencies = names
+            .into_iter()
+            .filter_map(|name| {
+                imported_dependencies.get(&name).map(|hashes| {
+                    hashes
+                        .iter()
+                        .map(|decl_interface_hash| VerifiedDependency {
+                            name: npa_cert::Name::from_dotted(&name),
+                            decl_interface_hash: *decl_interface_hash,
+                        })
+                        .collect::<BTreeSet<_>>()
+                })
+            })
+            .flatten()
+            .collect::<BTreeSet<_>>();
+        if !decl_dependencies.is_empty() {
+            dependencies.insert(decl.name().to_owned(), decl_dependencies);
+        }
+    }
+    Ok(dependencies)
+}
+
+fn imported_dependency_hashes(
+    module: &npa_cert::VerifiedModule,
+) -> npa_cert::Result<BTreeMap<String, BTreeSet<npa_cert::Hash>>> {
+    let mut dependencies = BTreeMap::new();
+    for term_id in 0..module.term_table().len() {
+        collect_imported_dependencies_from_verified_term(module, term_id, &mut dependencies)?;
+    }
+    Ok(dependencies)
+}
+
+fn collect_imported_dependencies_from_verified_term(
+    module: &npa_cert::VerifiedModule,
+    term: npa_cert::TermId,
+    dependencies: &mut BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+) -> npa_cert::Result<()> {
+    match module
+        .term_table()
+        .get(term)
+        .ok_or(npa_cert::CertError::DecodeError)?
+    {
+        npa_cert::TermNode::Sort(_) | npa_cert::TermNode::BVar(_) => {}
+        npa_cert::TermNode::Const { global_ref, .. } => {
+            if let npa_cert::GlobalRef::Imported {
+                name,
+                decl_interface_hash,
+                ..
+            } = global_ref
+            {
+                dependencies
+                    .entry(
+                        module
+                            .name_table()
+                            .get(*name)
+                            .ok_or(npa_cert::CertError::DecodeError)?
+                            .as_dotted(),
+                    )
+                    .or_default()
+                    .insert(*decl_interface_hash);
+            }
+        }
+        npa_cert::TermNode::App(func, arg) => {
+            collect_imported_dependencies_from_verified_term(module, *func, dependencies)?;
+            collect_imported_dependencies_from_verified_term(module, *arg, dependencies)?;
+        }
+        npa_cert::TermNode::Lam { ty, body } | npa_cert::TermNode::Pi { ty, body } => {
+            collect_imported_dependencies_from_verified_term(module, *ty, dependencies)?;
+            collect_imported_dependencies_from_verified_term(module, *body, dependencies)?;
+        }
+        npa_cert::TermNode::Let { ty, value, body } => {
+            collect_imported_dependencies_from_verified_term(module, *ty, dependencies)?;
+            collect_imported_dependencies_from_verified_term(module, *value, dependencies)?;
+            collect_imported_dependencies_from_verified_term(module, *body, dependencies)?;
+        }
+    }
+    Ok(())
+}
+
+fn collect_const_names_from_decl(names: &mut BTreeSet<String>, decl: &npa_kernel::Decl) {
+    match decl {
+        npa_kernel::Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
+        npa_kernel::Decl::Def { ty, value, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+        }
+        npa_kernel::Decl::Theorem { ty, proof, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, proof);
+        }
+        npa_kernel::Decl::Inductive { data, .. } => {
+            for param in &data.params {
+                collect_const_names_from_expr(names, &param.ty);
+            }
+            for index in &data.indices {
+                collect_const_names_from_expr(names, &index.ty);
+            }
+            for constructor in &data.constructors {
+                collect_const_names_from_expr(names, &constructor.ty);
+            }
+            if let Some(recursor) = &data.recursor {
+                collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        npa_kernel::Decl::Constructor { ty, .. } | npa_kernel::Decl::Recursor { ty, .. } => {
+            collect_const_names_from_expr(names, ty);
+        }
+    }
+}
+
+fn collect_const_names_from_expr(names: &mut BTreeSet<String>, expr: &npa_kernel::Expr) {
+    match expr {
+        npa_kernel::Expr::Sort(_) | npa_kernel::Expr::BVar(_) => {}
+        npa_kernel::Expr::Const { name, .. } => {
+            names.insert(name.clone());
+        }
+        npa_kernel::Expr::App(func, arg) => {
+            collect_const_names_from_expr(names, func);
+            collect_const_names_from_expr(names, arg);
+        }
+        npa_kernel::Expr::Lam { ty, body, .. } | npa_kernel::Expr::Pi { ty, body, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, body);
+        }
+        npa_kernel::Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+            collect_const_names_from_expr(names, body);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -674,6 +830,7 @@ mod tests {
             certificate_hash: None,
             exports,
             kernel_decls,
+            kernel_decl_dependencies: BTreeMap::new(),
         }
     }
 

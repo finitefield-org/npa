@@ -1,11 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    parse_machine_module, resolve_machine_module, MachineBinder, MachineCompileOptions,
-    MachineDecl, MachineDiagnostic, MachineDiagnosticKind, MachineItem, MachineLevel,
-    MachineLocalDecl, MachineTerm, ResolvedMachineModule, Result, VerifiedImport,
+    parse_machine_module, parse_machine_term, resolve_machine_module, MachineBinder,
+    MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl, MachineCompileOptions,
+    MachineDecl, MachineDiagnostic, MachineDiagnosticKind, MachineGlobalScope,
+    MachineGlobalScopeEntry, MachineItem, MachineLevel, MachineLocalDecl, MachineResolvedConstant,
+    MachineTerm, MachineTermAst, MachineTermCheckResult, MachineTermElabContext,
+    ResolvedMachineModule, Result, VerifiedDependency, VerifiedImport,
 };
 use npa_kernel::{Ctx, Decl, Env, Expr, Level, Reducibility};
+use sha2::{Digest, Sha256};
 
 pub fn elaborate_machine_module(
     module_name: npa_cert::ModuleName,
@@ -18,7 +22,8 @@ pub fn elaborate_machine_module(
         active_imports.iter().copied(),
         verified_imports,
         module.module.span,
-    )?;
+    )?
+    .env;
     let mut elaborator = Elaborator::new(active_imports.iter().copied(), kernel_env);
     let mut declarations = Vec::new();
 
@@ -107,15 +112,86 @@ pub fn compile_machine_source_to_certificate(
 
 pub fn elaborate_machine_term_check(
     source: &str,
-    _local_context: &[MachineLocalDecl],
-    _expected: &npa_kernel::Expr,
-    _verified_imports: &[VerifiedImport],
+    context: &MachineTermElabContext,
+    expected: &npa_kernel::Expr,
     _options: &MachineCompileOptions,
-) -> Result<npa_kernel::Expr> {
-    Err(MachineDiagnostic::unsupported_syntax(
-        crate::Span::new(crate::FileId(0), 0, source.len() as u32),
-        "term-level Machine Surface elaboration is implemented in M7",
-    ))
+) -> Result<MachineTermCheckResult> {
+    let parsed = parse_machine_term(crate::FileId(0), source)?;
+    let span = crate::Span::new(crate::FileId(0), 0, source.len() as u32);
+    let (expr, inferred_type, elaborator, locals, constants) =
+        elaborate_machine_term_infer(parsed, span, context)?;
+    elaborator.check_expr(&expr, expected, &locals, &context.universe_params, span)?;
+
+    Ok(MachineTermCheckResult {
+        core_hash: hash_owner_free_core_expr(&expr),
+        contextual_core_hash: hash_contextual_core_expr(&expr, context, &constants, span)?,
+        constants,
+        expr,
+        inferred_type,
+    })
+}
+
+pub fn elaborate_machine_term_infer_from_ast(
+    ast: &MachineTermAst,
+    context: &MachineTermElabContext,
+    _options: &MachineCompileOptions,
+) -> Result<(npa_kernel::Expr, npa_kernel::Expr)> {
+    let span = ast.term.span();
+    let (expr, inferred_type, _, _, _) =
+        elaborate_machine_term_infer(ast.term.clone(), span, context)?;
+    Ok((expr, inferred_type))
+}
+
+impl MachineTermElabContext {
+    pub fn from_verified_modules(
+        direct_verified_modules: &[npa_cert::VerifiedModule],
+        available_verified_modules: &[npa_cert::VerifiedModule],
+        local_context: Vec<MachineLocalDecl>,
+        universe_params: Vec<String>,
+    ) -> Result<Self> {
+        let direct_imports: Vec<_> = direct_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        let available_imports: Vec<_> = available_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        machine_term_context_from_verified_imports(
+            &direct_imports,
+            &available_imports,
+            local_context,
+            universe_params,
+            crate::Span::empty(crate::FileId(0)),
+        )
+    }
+
+    pub fn from_verified_modules_and_current_decls(
+        direct_verified_modules: &[npa_cert::VerifiedModule],
+        available_verified_modules: &[npa_cert::VerifiedModule],
+        checked_current_decls: &[MachineCheckedCurrentDecl],
+        current_generated_decls: &[MachineCheckedCurrentGeneratedDecl],
+        local_context: Vec<MachineLocalDecl>,
+        universe_params: Vec<String>,
+    ) -> Result<Self> {
+        let direct_imports: Vec<_> = direct_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        let available_imports: Vec<_> = available_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        machine_term_context_from_parts(
+            &direct_imports,
+            &available_imports,
+            checked_current_decls,
+            current_generated_decls,
+            local_context,
+            universe_params,
+            crate::Span::empty(crate::FileId(0)),
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -188,6 +264,27 @@ impl LocalContext {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+struct LocalScope {
+    names: Vec<String>,
+}
+
+impl LocalScope {
+    fn from_machine_locals(locals: &[MachineLocalDecl]) -> Self {
+        Self {
+            names: locals.iter().map(|local| local.name.clone()).collect(),
+        }
+    }
+
+    fn push(&mut self, name: String) {
+        self.names.push(name);
+    }
+
+    fn contains(&self, name: &str) -> bool {
+        self.names.iter().rev().any(|local| local == name)
+    }
+}
+
 struct Elaborator {
     globals: BTreeMap<String, GlobalSignature>,
     kernel_env: Env,
@@ -211,6 +308,46 @@ impl Elaborator {
         }
 
         elaborator
+    }
+
+    fn from_term_context(
+        context: &MachineTermElabContext,
+        constants: &[MachineResolvedConstant],
+        span: crate::Span,
+    ) -> Result<Self> {
+        let kernel_env = context.kernel_env.env().clone();
+        let mut elaborator = Self {
+            globals: BTreeMap::new(),
+            kernel_env,
+        };
+
+        for constant in constants {
+            let name = constant.name.as_dotted();
+            if !context
+                .kernel_env
+                .has_decl_interface_hash(&name, &constant.decl_interface_hash)
+            {
+                return Err(MachineDiagnostic::error(
+                    MachineDiagnosticKind::ImportResolutionError,
+                    span,
+                    format!(
+                        "resolved global {name} is not backed by a matching declaration interface hash"
+                    ),
+                ));
+            }
+
+            let Some(decl) = elaborator.kernel_env.decl(&name) else {
+                return Err(MachineDiagnostic::error(
+                    MachineDiagnosticKind::UnknownGlobalName,
+                    span,
+                    format!("resolved global {name} is missing from kernel environment"),
+                ));
+            };
+            let universe_params = decl.universe_params().to_vec();
+            elaborator.add_global_signature(name, universe_params);
+        }
+
+        Ok(elaborator)
     }
 
     fn add_decl_signature(&mut self, decl: &Decl) {
@@ -414,6 +551,19 @@ impl Elaborator {
             .map_err(|err| kernel_expr_diagnostic(span, err))
     }
 
+    fn infer_expr(
+        &self,
+        expr: &Expr,
+        locals: &LocalContext,
+        delta: &[String],
+        span: crate::Span,
+    ) -> Result<Expr> {
+        let ctx = locals.to_kernel_ctx();
+        self.kernel_env
+            .infer(&ctx, delta, expr)
+            .map_err(|err| kernel_expr_diagnostic(span, err))
+    }
+
     fn add_decl_to_kernel_env(&mut self, decl: &Decl, span: crate::Span) -> Result<()> {
         add_kernel_decl_to_env(&mut self.kernel_env, decl.clone()).map_err(|err| {
             MachineDiagnostic::error(
@@ -459,6 +609,714 @@ impl Elaborator {
             )),
         }
     }
+}
+
+fn elaborate_machine_term_infer(
+    term: MachineTerm,
+    span: crate::Span,
+    context: &MachineTermElabContext,
+) -> Result<(
+    Expr,
+    Expr,
+    Elaborator,
+    LocalContext,
+    Vec<MachineResolvedConstant>,
+)> {
+    let resolver = TermResolver::new(&context.global_scope);
+    let mut local_scope = LocalScope::from_machine_locals(&context.local_context);
+    for local in &context.local_context {
+        resolver.ensure_local_does_not_shadow_global(&local.name, span)?;
+    }
+    let universe_params: BTreeSet<_> = context.universe_params.iter().cloned().collect();
+    let resolved = resolver.resolve_term(term, &mut local_scope, &universe_params)?;
+    let constants = resolver.constants_from_resolved_term(&resolved)?;
+    let mut locals = local_context_from_machine(&context.local_context);
+    let elaborator = Elaborator::from_term_context(context, &constants, span)?;
+    let expr = elaborator.elaborate_term(resolved, &mut locals, &context.universe_params)?;
+    let inferred_type = elaborator.infer_expr(&expr, &locals, &context.universe_params, span)?;
+    Ok((expr, inferred_type, elaborator, locals, constants))
+}
+
+struct TermResolver {
+    globals: TermGlobalTable,
+}
+
+impl TermResolver {
+    fn new(scope: &MachineGlobalScope) -> Self {
+        Self {
+            globals: TermGlobalTable::new(scope),
+        }
+    }
+
+    fn resolve_term(
+        &self,
+        term: MachineTerm,
+        locals: &mut LocalScope,
+        universe_params: &BTreeSet<String>,
+    ) -> Result<MachineTerm> {
+        match term {
+            MachineTerm::Ident {
+                name,
+                universe_args,
+                explicit_mode,
+                span,
+            } => self.resolve_ident(
+                name,
+                universe_args,
+                explicit_mode,
+                span,
+                locals,
+                universe_params,
+            ),
+            MachineTerm::Local { .. } => Ok(term),
+            MachineTerm::Sort { level, span } => Ok(MachineTerm::Sort {
+                level: self.resolve_level(level, universe_params)?,
+                span,
+            }),
+            MachineTerm::App { func, arg, span } => Ok(MachineTerm::App {
+                func: Box::new(self.resolve_term(*func, locals, universe_params)?),
+                arg: Box::new(self.resolve_term(*arg, locals, universe_params)?),
+                span,
+            }),
+            MachineTerm::Lam {
+                binders,
+                body,
+                span,
+            } => {
+                let mut nested_locals = locals.clone();
+                let mut resolved_binders = Vec::with_capacity(binders.len());
+                for binder in binders {
+                    resolved_binders.push(self.resolve_binder(
+                        binder,
+                        &mut nested_locals,
+                        universe_params,
+                    )?);
+                }
+                Ok(MachineTerm::Lam {
+                    binders: resolved_binders,
+                    body: Box::new(self.resolve_term(
+                        *body,
+                        &mut nested_locals,
+                        universe_params,
+                    )?),
+                    span,
+                })
+            }
+            MachineTerm::Pi {
+                binders,
+                body,
+                span,
+            } => {
+                let mut nested_locals = locals.clone();
+                let mut resolved_binders = Vec::with_capacity(binders.len());
+                for binder in binders {
+                    resolved_binders.push(self.resolve_binder(
+                        binder,
+                        &mut nested_locals,
+                        universe_params,
+                    )?);
+                }
+                Ok(MachineTerm::Pi {
+                    binders: resolved_binders,
+                    body: Box::new(self.resolve_term(
+                        *body,
+                        &mut nested_locals,
+                        universe_params,
+                    )?),
+                    span,
+                })
+            }
+            MachineTerm::Let {
+                name,
+                ty,
+                value,
+                body,
+                span,
+            } => {
+                self.ensure_local_does_not_shadow_global(&name, span)?;
+                let ty = self.resolve_term(*ty, locals, universe_params)?;
+                let value = self.resolve_term(*value, locals, universe_params)?;
+                let mut nested_locals = locals.clone();
+                nested_locals.push(name.clone());
+                Ok(MachineTerm::Let {
+                    name,
+                    ty: Box::new(ty),
+                    value: Box::new(value),
+                    body: Box::new(self.resolve_term(
+                        *body,
+                        &mut nested_locals,
+                        universe_params,
+                    )?),
+                    span,
+                })
+            }
+            MachineTerm::Annot { expr, ty, span } => Ok(MachineTerm::Annot {
+                expr: Box::new(self.resolve_term(*expr, locals, universe_params)?),
+                ty: Box::new(self.resolve_term(*ty, locals, universe_params)?),
+                span,
+            }),
+        }
+    }
+
+    fn resolve_binder(
+        &self,
+        binder: MachineBinder,
+        locals: &mut LocalScope,
+        universe_params: &BTreeSet<String>,
+    ) -> Result<MachineBinder> {
+        self.ensure_local_does_not_shadow_global(&binder.name, binder.span)?;
+        let ty = self.resolve_term(binder.ty, locals, universe_params)?;
+        locals.push(binder.name.clone());
+        Ok(MachineBinder {
+            name: binder.name,
+            ty,
+            span: binder.span,
+        })
+    }
+
+    fn resolve_ident(
+        &self,
+        name: crate::MachineName,
+        universe_args: Option<Vec<MachineLevel>>,
+        explicit_mode: bool,
+        span: crate::Span,
+        locals: &LocalScope,
+        universe_params: &BTreeSet<String>,
+    ) -> Result<MachineTerm> {
+        let force_global = explicit_mode || universe_args.is_some() || name.parts.len() > 1;
+        if !force_global && name.parts.len() == 1 && locals.contains(&name.parts[0]) {
+            return Ok(MachineTerm::Local {
+                name: name.parts[0].clone(),
+                span,
+            });
+        }
+
+        let universe_args = universe_args
+            .map(|args| {
+                args.into_iter()
+                    .map(|arg| self.resolve_level(arg, universe_params))
+                    .collect::<Result<Vec<_>>>()
+            })
+            .transpose()?;
+
+        match self.globals.lookup(&name, force_global) {
+            TermGlobalLookup::Resolved => Ok(MachineTerm::Ident {
+                name,
+                universe_args,
+                explicit_mode,
+                span,
+            }),
+            TermGlobalLookup::Ambiguous => Err(MachineDiagnostic::error(
+                MachineDiagnosticKind::AmbiguousGlobalName,
+                name.span,
+                format!(
+                    "global name {} is exported more than once",
+                    name.as_dotted()
+                ),
+            )),
+            TermGlobalLookup::ShortGlobal => Err(MachineDiagnostic::error(
+                MachineDiagnosticKind::ShortGlobalName,
+                name.span,
+                format!(
+                    "global name {} must be written as a fully qualified exact name",
+                    name.as_dotted()
+                ),
+            )),
+            TermGlobalLookup::UnknownLocal => Err(MachineDiagnostic::error(
+                MachineDiagnosticKind::UnknownLocalName,
+                name.span,
+                format!("unknown local name {}", name.as_dotted()),
+            )),
+            TermGlobalLookup::UnknownGlobal => Err(MachineDiagnostic::error(
+                MachineDiagnosticKind::UnknownGlobalName,
+                name.span,
+                format!("unknown global name {}", name.as_dotted()),
+            )),
+        }
+    }
+
+    fn constants_from_resolved_term(
+        &self,
+        term: &MachineTerm,
+    ) -> Result<Vec<MachineResolvedConstant>> {
+        let mut constants = BTreeSet::new();
+        self.collect_constants_from_resolved_term(term, &mut constants)?;
+        Ok(constants.into_iter().collect())
+    }
+
+    fn collect_constants_from_resolved_term(
+        &self,
+        term: &MachineTerm,
+        constants: &mut BTreeSet<MachineResolvedConstant>,
+    ) -> Result<()> {
+        match term {
+            MachineTerm::Ident { name, span, .. } => {
+                let Some(constant) = self.globals.resolved_constant(name) else {
+                    return Err(MachineDiagnostic::error(
+                        MachineDiagnosticKind::UnknownGlobalName,
+                        *span,
+                        format!(
+                            "resolved global name {} lost its declaration hash",
+                            name.as_dotted()
+                        ),
+                    ));
+                };
+                constants.insert(constant);
+            }
+            MachineTerm::Local { .. } | MachineTerm::Sort { .. } => {}
+            MachineTerm::App { func, arg, .. } => {
+                self.collect_constants_from_resolved_term(func, constants)?;
+                self.collect_constants_from_resolved_term(arg, constants)?;
+            }
+            MachineTerm::Lam { binders, body, .. } | MachineTerm::Pi { binders, body, .. } => {
+                for binder in binders {
+                    self.collect_constants_from_resolved_term(&binder.ty, constants)?;
+                }
+                self.collect_constants_from_resolved_term(body, constants)?;
+            }
+            MachineTerm::Let {
+                ty, value, body, ..
+            } => {
+                self.collect_constants_from_resolved_term(ty, constants)?;
+                self.collect_constants_from_resolved_term(value, constants)?;
+                self.collect_constants_from_resolved_term(body, constants)?;
+            }
+            MachineTerm::Annot { expr, ty, .. } => {
+                self.collect_constants_from_resolved_term(expr, constants)?;
+                self.collect_constants_from_resolved_term(ty, constants)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn resolve_level(
+        &self,
+        level: MachineLevel,
+        universe_params: &BTreeSet<String>,
+    ) -> Result<MachineLevel> {
+        match level {
+            MachineLevel::Nat { .. } => Ok(level),
+            MachineLevel::Param { name, span } => {
+                if universe_params.contains(&name) {
+                    Ok(MachineLevel::Param { name, span })
+                } else {
+                    Err(MachineDiagnostic::error(
+                        MachineDiagnosticKind::UnknownUniverseParam,
+                        span,
+                        format!("unknown universe parameter {name}"),
+                    ))
+                }
+            }
+            MachineLevel::Succ { level, span } => Ok(MachineLevel::Succ {
+                level: Box::new(self.resolve_level(*level, universe_params)?),
+                span,
+            }),
+            MachineLevel::Max { lhs, rhs, span } => Ok(MachineLevel::Max {
+                lhs: Box::new(self.resolve_level(*lhs, universe_params)?),
+                rhs: Box::new(self.resolve_level(*rhs, universe_params)?),
+                span,
+            }),
+            MachineLevel::IMax { lhs, rhs, span } => Ok(MachineLevel::IMax {
+                lhs: Box::new(self.resolve_level(*lhs, universe_params)?),
+                rhs: Box::new(self.resolve_level(*rhs, universe_params)?),
+                span,
+            }),
+        }
+    }
+
+    fn ensure_local_does_not_shadow_global(&self, name: &str, span: crate::Span) -> Result<()> {
+        if self.globals.has_root(name) {
+            return Err(MachineDiagnostic::error(
+                MachineDiagnosticKind::GlobalShadowedByLocal,
+                span,
+                format!("local name {name} shadows a global namespace root"),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct TermGlobalTable {
+    names: BTreeMap<String, TermGlobalEntry>,
+    roots: BTreeSet<String>,
+    suffixes: BTreeSet<String>,
+}
+
+impl TermGlobalTable {
+    fn new(scope: &MachineGlobalScope) -> Self {
+        let mut table = Self::default();
+        for entry in &scope.entries {
+            table.add_name(entry);
+        }
+        table
+    }
+
+    fn add_name(&mut self, entry: &crate::MachineGlobalScopeEntry) {
+        let name = entry.name();
+        let dotted = name.as_dotted();
+        match self.names.get_mut(&dotted) {
+            Some(entry) => *entry = TermGlobalEntry::Ambiguous,
+            None => {
+                self.names.insert(
+                    dotted,
+                    TermGlobalEntry::Resolved {
+                        decl_interface_hash: *entry.decl_interface_hash(),
+                    },
+                );
+            }
+        }
+
+        if let Some(first) = name.0.first() {
+            self.roots.insert(first.clone());
+        }
+        if let Some(last) = name.0.last() {
+            self.suffixes.insert(last.clone());
+        }
+    }
+
+    fn lookup(&self, name: &crate::MachineName, force_global: bool) -> TermGlobalLookup {
+        let dotted = name.as_dotted();
+        match self.names.get(&dotted) {
+            Some(TermGlobalEntry::Resolved {
+                decl_interface_hash: _,
+            }) => TermGlobalLookup::Resolved,
+            Some(TermGlobalEntry::Ambiguous) => TermGlobalLookup::Ambiguous,
+            None if name.parts.len() == 1 && self.suffixes.contains(&name.parts[0]) => {
+                TermGlobalLookup::ShortGlobal
+            }
+            None if name.parts.len() == 1 && !force_global => TermGlobalLookup::UnknownLocal,
+            None => TermGlobalLookup::UnknownGlobal,
+        }
+    }
+
+    fn has_root(&self, name: &str) -> bool {
+        self.roots.contains(name)
+    }
+
+    fn resolved_constant(&self, name: &crate::MachineName) -> Option<MachineResolvedConstant> {
+        let dotted = name.as_dotted();
+        match self.names.get(&dotted) {
+            Some(TermGlobalEntry::Resolved {
+                decl_interface_hash,
+            }) => Some(MachineResolvedConstant {
+                name: npa_cert::Name::from_dotted(&dotted),
+                decl_interface_hash: *decl_interface_hash,
+            }),
+            Some(TermGlobalEntry::Ambiguous) | None => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TermGlobalEntry {
+    Resolved { decl_interface_hash: npa_cert::Hash },
+    Ambiguous,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TermGlobalLookup {
+    Resolved,
+    Ambiguous,
+    ShortGlobal,
+    UnknownLocal,
+    UnknownGlobal,
+}
+
+#[derive(Clone, Debug)]
+enum CoreHashGlobalRef {
+    Imported {
+        import_index: u32,
+        name: npa_cert::Name,
+        decl_interface_hash: npa_cert::Hash,
+    },
+    CurrentModule {
+        name: npa_cert::Name,
+        source_index: u64,
+        decl_interface_hash: npa_cert::Hash,
+    },
+    CurrentGenerated {
+        parent_source_index: u64,
+        name: npa_cert::Name,
+        decl_interface_hash: npa_cert::Hash,
+    },
+}
+
+fn hash_owner_free_core_expr(expr: &Expr) -> npa_cert::Hash {
+    let mut payload = Vec::new();
+    match expr {
+        Expr::Sort(level) => {
+            payload.push(0x00);
+            payload.extend(hash_core_level(&npa_kernel::level::normalize_level(
+                level.clone(),
+            )));
+        }
+        Expr::BVar(index) => {
+            payload.push(0x01);
+            encode_uvar_to(&mut payload, *index as u64);
+        }
+        Expr::Const { name, levels } => {
+            payload.push(0x02);
+            encode_string_to(&mut payload, name);
+            encode_uvar_to(&mut payload, levels.len() as u64);
+            for level in levels {
+                payload.extend(hash_core_level(&npa_kernel::level::normalize_level(
+                    level.clone(),
+                )));
+            }
+        }
+        Expr::App(func, arg) => {
+            payload.push(0x03);
+            payload.extend(hash_owner_free_core_expr(func));
+            payload.extend(hash_owner_free_core_expr(arg));
+        }
+        Expr::Lam { ty, body, .. } => {
+            payload.push(0x04);
+            payload.extend(hash_owner_free_core_expr(ty));
+            payload.extend(hash_owner_free_core_expr(body));
+        }
+        Expr::Pi { ty, body, .. } => {
+            payload.push(0x05);
+            payload.extend(hash_owner_free_core_expr(ty));
+            payload.extend(hash_owner_free_core_expr(body));
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            payload.push(0x06);
+            payload.extend(hash_owner_free_core_expr(ty));
+            payload.extend(hash_owner_free_core_expr(value));
+            payload.extend(hash_owner_free_core_expr(body));
+        }
+    }
+
+    hash_with_domain(b"NPA-PHASE1-EXPR-0.1", &payload)
+}
+
+fn hash_contextual_core_expr(
+    expr: &Expr,
+    context: &MachineTermElabContext,
+    constants: &[MachineResolvedConstant],
+    span: crate::Span,
+) -> Result<npa_cert::Hash> {
+    let mut refs = BTreeMap::new();
+    for constant in constants {
+        let name = constant.name.as_dotted();
+        let Some(entry) = context.global_scope.entries.iter().find(|entry| {
+            entry.name() == &constant.name
+                && entry.decl_interface_hash() == &constant.decl_interface_hash
+        }) else {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!("resolved global {name} is missing from the hash context"),
+            ));
+        };
+        let global_ref = match entry {
+            MachineGlobalScopeEntry::Imported {
+                name,
+                import_index,
+                decl_interface_hash,
+            } => CoreHashGlobalRef::Imported {
+                import_index: *import_index,
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            MachineGlobalScopeEntry::CurrentModule {
+                name,
+                source_index,
+                decl_interface_hash,
+            } => CoreHashGlobalRef::CurrentModule {
+                name: name.clone(),
+                source_index: *source_index,
+                decl_interface_hash: *decl_interface_hash,
+            },
+            MachineGlobalScopeEntry::CurrentGenerated {
+                name,
+                parent_source_index,
+                decl_interface_hash,
+            } => CoreHashGlobalRef::CurrentGenerated {
+                parent_source_index: *parent_source_index,
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+        };
+        refs.insert(name, global_ref);
+    }
+
+    hash_contextual_core_expr_with_refs(expr, &refs, span)
+}
+
+fn hash_contextual_core_expr_with_refs(
+    expr: &Expr,
+    refs: &BTreeMap<String, CoreHashGlobalRef>,
+    span: crate::Span,
+) -> Result<npa_cert::Hash> {
+    let mut payload = Vec::new();
+    match expr {
+        Expr::Sort(level) => {
+            payload.push(0x00);
+            payload.extend(hash_core_level(&npa_kernel::level::normalize_level(
+                level.clone(),
+            )));
+        }
+        Expr::BVar(index) => {
+            payload.push(0x01);
+            encode_uvar_to(&mut payload, *index as u64);
+        }
+        Expr::Const { name, levels } => {
+            let Some(global_ref) = refs.get(name) else {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!("constant {name} is missing from the hash context"),
+                ));
+            };
+            payload.push(0x02);
+            encode_core_hash_global_ref_to(&mut payload, global_ref);
+            encode_uvar_to(&mut payload, levels.len() as u64);
+            for level in levels {
+                payload.extend(hash_core_level(&npa_kernel::level::normalize_level(
+                    level.clone(),
+                )));
+            }
+        }
+        Expr::App(func, arg) => {
+            payload.push(0x03);
+            payload.extend(hash_contextual_core_expr_with_refs(func, refs, span)?);
+            payload.extend(hash_contextual_core_expr_with_refs(arg, refs, span)?);
+        }
+        Expr::Lam { ty, body, .. } => {
+            payload.push(0x04);
+            payload.extend(hash_contextual_core_expr_with_refs(ty, refs, span)?);
+            payload.extend(hash_contextual_core_expr_with_refs(body, refs, span)?);
+        }
+        Expr::Pi { ty, body, .. } => {
+            payload.push(0x05);
+            payload.extend(hash_contextual_core_expr_with_refs(ty, refs, span)?);
+            payload.extend(hash_contextual_core_expr_with_refs(body, refs, span)?);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            payload.push(0x06);
+            payload.extend(hash_contextual_core_expr_with_refs(ty, refs, span)?);
+            payload.extend(hash_contextual_core_expr_with_refs(value, refs, span)?);
+            payload.extend(hash_contextual_core_expr_with_refs(body, refs, span)?);
+        }
+    }
+
+    Ok(hash_with_domain(
+        b"NPA-PHASE3-MACHINE-TERM-CONTEXT-0.1",
+        &payload,
+    ))
+}
+
+fn hash_core_level(level: &Level) -> npa_cert::Hash {
+    let mut payload = Vec::new();
+    match level {
+        Level::Zero => payload.push(0x00),
+        Level::Succ(inner) => {
+            payload.push(0x01);
+            payload.extend(hash_core_level(inner));
+        }
+        Level::Max(lhs, rhs) => {
+            payload.push(0x02);
+            payload.extend(hash_core_level(lhs));
+            payload.extend(hash_core_level(rhs));
+        }
+        Level::IMax(lhs, rhs) => {
+            payload.push(0x03);
+            payload.extend(hash_core_level(lhs));
+            payload.extend(hash_core_level(rhs));
+        }
+        Level::Param(name) => {
+            payload.push(0x04);
+            encode_string_to(&mut payload, name);
+        }
+    }
+
+    hash_with_domain(b"NPA-LEVEL-0.1", &payload)
+}
+
+fn encode_core_hash_global_ref_to(out: &mut Vec<u8>, global_ref: &CoreHashGlobalRef) {
+    match global_ref {
+        CoreHashGlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x00);
+            encode_uvar_to(out, *import_index as u64);
+            encode_name_to(out, name);
+            out.extend(decl_interface_hash);
+        }
+        CoreHashGlobalRef::CurrentModule {
+            name,
+            source_index,
+            decl_interface_hash,
+        } => {
+            out.push(0x01);
+            encode_name_to(out, name);
+            encode_uvar_to(out, *source_index);
+            out.extend(decl_interface_hash);
+        }
+        CoreHashGlobalRef::CurrentGenerated {
+            parent_source_index,
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x02);
+            encode_uvar_to(out, *parent_source_index);
+            encode_name_to(out, name);
+            out.extend(decl_interface_hash);
+        }
+    }
+}
+
+fn encode_name_to(out: &mut Vec<u8>, name: &npa_cert::Name) {
+    encode_uvar_to(out, name.0.len() as u64);
+    for component in &name.0 {
+        encode_string_to(out, component);
+    }
+}
+
+fn encode_string_to(out: &mut Vec<u8>, value: &str) {
+    encode_uvar_to(out, value.len() as u64);
+    out.extend(value.as_bytes());
+}
+
+fn encode_uvar_to(out: &mut Vec<u8>, mut value: u64) {
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
+}
+
+fn hash_with_domain(domain: &[u8], payload: &[u8]) -> npa_cert::Hash {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    hasher.update(payload);
+    hasher.finalize().into()
+}
+
+fn local_context_from_machine(locals: &[MachineLocalDecl]) -> LocalContext {
+    let mut context = LocalContext::default();
+    for local in locals {
+        match &local.value {
+            Some(value) => {
+                context.push_definition(local.name.clone(), local.ty.clone(), value.clone())
+            }
+            None => context.push_assumption(local.name.clone(), local.ty.clone()),
+        }
+    }
+    context
 }
 
 fn active_verified_imports<'a>(
@@ -834,45 +1692,117 @@ fn import_resolution_diagnostic(
     MachineDiagnostic::error(MachineDiagnosticKind::ImportResolutionError, span, message)
 }
 
+struct KernelEnvBuild {
+    env: Env,
+    loaded_available_names: BTreeSet<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ImportKernelDecl {
+    decl: Decl,
+    dependencies: BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct DeclInterfaceKey {
+    name: String,
+    decl_interface_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum KernelDeclSource {
+    Direct,
+    Available,
+}
+
+#[derive(Clone, Debug)]
+struct PendingKernelDecl {
+    decl: Decl,
+    source: KernelDeclSource,
+    dependencies: BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+}
+
 fn kernel_env_from_imports<'a>(
     active_imports: impl IntoIterator<Item = &'a VerifiedImport>,
     available_imports: &'a [VerifiedImport],
     span: crate::Span,
-) -> Result<Env> {
-    let available_decls = collect_import_decls(available_imports);
-    let mut pending: Vec<_> = collect_import_decls(active_imports)
+) -> Result<KernelEnvBuild> {
+    let active_imports: Vec<_> = active_imports.into_iter().collect();
+    let available_decls = collect_import_decl_infos(available_imports);
+    let available_decl_interfaces = collect_import_decl_interface_infos(available_imports);
+    let mut pending: Vec<_> = collect_import_decl_infos(active_imports)
         .into_values()
         .flatten()
+        .map(|info| PendingKernelDecl {
+            decl: info.decl,
+            source: KernelDeclSource::Direct,
+            dependencies: info.dependencies,
+        })
         .collect();
     let mut queued: BTreeSet<_> = pending
         .iter()
-        .map(|decl: &Decl| decl.name().to_owned())
+        .map(|pending_decl| pending_decl.decl.name().to_owned())
         .collect();
     let mut env = Env::new();
+    let mut loaded_available_names = BTreeSet::new();
 
     while !pending.is_empty() {
         let mut progressed = false;
         let mut remaining = Vec::new();
 
-        for decl in pending {
-            if env.decl(decl.name()).is_some() {
+        for pending_decl in pending {
+            let PendingKernelDecl {
+                decl,
+                source,
+                dependencies,
+            } = pending_decl;
+            if let Some(existing) = env.decl(decl.name()) {
+                if existing != &decl {
+                    return Err(import_resolution_diagnostic(
+                        span,
+                        format!(
+                            "verified dependency {} conflicts with an existing kernel declaration",
+                            decl.name()
+                        ),
+                    ));
+                }
+                if source == KernelDeclSource::Available {
+                    loaded_available_names.extend(kernel_decl_lookup_names(&decl));
+                }
                 progressed = true;
                 continue;
             }
 
             match add_kernel_decl_to_env(&mut env, decl.clone()) {
                 Ok(()) => {
+                    if source == KernelDeclSource::Available {
+                        loaded_available_names.extend(kernel_decl_lookup_names(&decl));
+                    }
                     progressed = true;
                 }
                 Err(npa_kernel::Error::UnknownConstant(name)) => {
                     if !queued.contains(&name) {
-                        if let Some(Some(dependency)) = available_decls.get(&name) {
+                        if let Some(dependency) = resolve_available_dependency(
+                            &name,
+                            &dependencies,
+                            &available_decls,
+                            &available_decl_interfaces,
+                            span,
+                        )? {
                             queued.insert(name.clone());
-                            remaining.push(dependency.clone());
+                            remaining.push(PendingKernelDecl {
+                                decl: dependency.decl,
+                                source: KernelDeclSource::Available,
+                                dependencies: dependency.dependencies,
+                            });
                             progressed = true;
                         }
                     }
-                    remaining.push(decl);
+                    remaining.push(PendingKernelDecl {
+                        decl,
+                        source,
+                        dependencies,
+                    });
                 }
                 Err(err) => {
                     return Err(MachineDiagnostic::error(
@@ -891,24 +1821,339 @@ fn kernel_env_from_imports<'a>(
         pending = remaining;
     }
 
-    Ok(env)
+    Ok(KernelEnvBuild {
+        env,
+        loaded_available_names,
+    })
+}
+
+fn resolve_available_dependency(
+    name: &str,
+    dependencies: &BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+    available_decls: &BTreeMap<String, Option<ImportKernelDecl>>,
+    available_decl_interfaces: &BTreeMap<DeclInterfaceKey, Option<ImportKernelDecl>>,
+    span: crate::Span,
+) -> Result<Option<ImportKernelDecl>> {
+    let Some(hashes) = dependencies.get(name) else {
+        return Ok(available_decls.get(name).cloned().flatten());
+    };
+    let mut hashes = hashes.iter();
+    let Some(first_hash) = hashes.next() else {
+        return Ok(available_decls.get(name).cloned().flatten());
+    };
+    if hashes.next().is_some() {
+        return Err(import_resolution_diagnostic(
+            span,
+            format!("verified dependency {name} has multiple declaration interface hashes"),
+        ));
+    }
+
+    let key = DeclInterfaceKey {
+        name: name.to_owned(),
+        decl_interface_hash: *first_hash,
+    };
+    match available_decl_interfaces.get(&key) {
+        Some(Some(dependency)) => Ok(Some(dependency.clone())),
+        Some(None) => Err(import_resolution_diagnostic(
+            span,
+            format!(
+                "verified dependency {name} has multiple available declarations with the same interface hash"
+            ),
+        )),
+        None => Err(import_resolution_diagnostic(
+            span,
+            format!(
+                "verified dependency {name} with declaration interface hash is not present in the verified import set"
+            ),
+        )),
+    }
+}
+
+fn machine_term_context_from_verified_imports(
+    direct_imports: &[VerifiedImport],
+    available_imports: &[VerifiedImport],
+    local_context: Vec<MachineLocalDecl>,
+    universe_params: Vec<String>,
+    span: crate::Span,
+) -> Result<MachineTermElabContext> {
+    machine_term_context_from_parts(
+        direct_imports,
+        available_imports,
+        &[],
+        &[],
+        local_context,
+        universe_params,
+        span,
+    )
+}
+
+fn machine_term_context_from_parts(
+    direct_imports: &[VerifiedImport],
+    available_imports: &[VerifiedImport],
+    checked_current_decls: &[MachineCheckedCurrentDecl],
+    current_generated_decls: &[MachineCheckedCurrentGeneratedDecl],
+    local_context: Vec<MachineLocalDecl>,
+    universe_params: Vec<String>,
+    span: crate::Span,
+) -> Result<MachineTermElabContext> {
+    let direct_decls = collect_import_decls(direct_imports);
+    let mut build = kernel_env_from_imports(direct_imports.iter(), available_imports, span)?;
+    validate_direct_kernel_env_matches_import_exports(
+        &build.env,
+        direct_imports,
+        &direct_decls,
+        span,
+    )?;
+    validate_loaded_available_kernel_env_matches_import_exports(
+        &build.env,
+        available_imports,
+        &build.loaded_available_names,
+        span,
+    )?;
+    let mut entries: Vec<_> = direct_imports
+        .iter()
+        .enumerate()
+        .flat_map(|(import_index, import)| {
+            import
+                .exports
+                .iter()
+                .map(move |export| MachineGlobalScopeEntry::Imported {
+                    name: export.name.clone(),
+                    import_index: import_index as u32,
+                    decl_interface_hash: export.decl_interface_hash,
+                })
+        })
+        .collect();
+    let mut decl_interface_hashes: Vec<_> = entries
+        .iter()
+        .map(|entry| (entry.name().clone(), *entry.decl_interface_hash()))
+        .collect();
+    append_checked_current_decls_to_context(
+        &mut build.env,
+        &mut entries,
+        &mut decl_interface_hashes,
+        checked_current_decls,
+        current_generated_decls,
+        span,
+    )?;
+
+    Ok(MachineTermElabContext {
+        global_scope: MachineGlobalScope { entries },
+        local_context,
+        universe_params,
+        kernel_env: crate::MachineKernelEnvView::with_decl_interface_hashes(
+            build.env,
+            decl_interface_hashes,
+        ),
+    })
+}
+
+fn append_checked_current_decls_to_context(
+    env: &mut Env,
+    entries: &mut Vec<MachineGlobalScopeEntry>,
+    decl_interface_hashes: &mut Vec<(npa_cert::Name, npa_cert::Hash)>,
+    checked_current_decls: &[MachineCheckedCurrentDecl],
+    current_generated_decls: &[MachineCheckedCurrentGeneratedDecl],
+    span: crate::Span,
+) -> Result<()> {
+    let mut current_parents_by_source_index = BTreeMap::new();
+    for checked in checked_current_decls {
+        let name = checked.name.as_dotted();
+        if checked.decl.name() != name {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!("checked current declaration {name} does not match its kernel name"),
+            ));
+        }
+        if current_parents_by_source_index
+            .insert(
+                checked.source_index,
+                (name.clone(), checked.decl_interface_hash),
+            )
+            .is_some()
+        {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!(
+                    "checked current declaration source_index {} is duplicated",
+                    checked.source_index
+                ),
+            ));
+        }
+        add_kernel_decl_to_env(env, checked.decl.clone()).map_err(|err| {
+            MachineDiagnostic::error(
+                MachineDiagnosticKind::KernelRejected,
+                span,
+                format!("kernel rejected checked current declaration {name}: {err:?}"),
+            )
+        })?;
+        entries.push(MachineGlobalScopeEntry::CurrentModule {
+            name: checked.name.clone(),
+            source_index: checked.source_index,
+            decl_interface_hash: checked.decl_interface_hash,
+        });
+        decl_interface_hashes.push((checked.name.clone(), checked.decl_interface_hash));
+    }
+
+    for generated in current_generated_decls {
+        let Some((parent_name, parent_decl_interface_hash)) =
+            current_parents_by_source_index.get(&generated.parent_source_index)
+        else {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!(
+                    "current generated declaration {} has no checked parent source_index {}",
+                    generated.name.as_dotted(),
+                    generated.parent_source_index
+                ),
+            ));
+        };
+        let name = generated.name.as_dotted();
+        if generated.decl_interface_hash != *parent_decl_interface_hash {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!(
+                    "current generated declaration {name} has a declaration interface hash that does not match checked parent {parent_name}"
+                ),
+            ));
+        }
+        match env.decl(&name) {
+            Some(Decl::Constructor { inductive, .. } | Decl::Recursor { inductive, .. })
+                if inductive == parent_name => {}
+            Some(_) => {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "current generated declaration {name} is not generated by checked parent {parent_name}"
+                    ),
+                ));
+            }
+            None => {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "current generated declaration {name} is missing from kernel environment"
+                    ),
+                ));
+            }
+        }
+        entries.push(MachineGlobalScopeEntry::CurrentGenerated {
+            name: generated.name.clone(),
+            parent_source_index: generated.parent_source_index,
+            decl_interface_hash: generated.decl_interface_hash,
+        });
+        decl_interface_hashes.push((generated.name.clone(), generated.decl_interface_hash));
+    }
+
+    Ok(())
+}
+
+fn validate_direct_kernel_env_matches_import_exports(
+    env: &Env,
+    imports: &[VerifiedImport],
+    direct_decls: &BTreeMap<String, Option<Decl>>,
+    span: crate::Span,
+) -> Result<()> {
+    for import in imports {
+        for export in &import.exports {
+            let name = export.name.as_dotted();
+            if direct_decls.get(&name).is_some_and(Option::is_none) {
+                continue;
+            }
+            let Some(decl) = env.decl(&name) else {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "verified import {} exports {name}, but the kernel environment has no matching declaration",
+                        import.module.as_dotted()
+                    ),
+                ));
+            };
+
+            if decl.universe_params() != export.universe_params.as_slice()
+                || decl.ty() != &export.ty
+            {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "verified import {} export {name} does not match its kernel declaration",
+                        import.module.as_dotted()
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_loaded_available_kernel_env_matches_import_exports(
+    env: &Env,
+    imports: &[VerifiedImport],
+    loaded_names: &BTreeSet<String>,
+    span: crate::Span,
+) -> Result<()> {
+    for import in imports {
+        for export in &import.exports {
+            let name = export.name.as_dotted();
+            if !loaded_names.contains(&name) {
+                continue;
+            }
+            let Some(decl) = env.decl(&name) else {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "verified import {} exports {name}, but the kernel environment has no matching declaration",
+                        import.module.as_dotted()
+                    ),
+                ));
+            };
+
+            if decl.universe_params() != export.universe_params.as_slice()
+                || decl.ty() != &export.ty
+            {
+                return Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "verified import {} export {name} does not match its kernel declaration",
+                        import.module.as_dotted()
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn collect_import_decls<'a>(
     imports: impl IntoIterator<Item = &'a VerifiedImport>,
 ) -> BTreeMap<String, Option<Decl>> {
-    let mut decls: BTreeMap<String, Option<Decl>> = BTreeMap::new();
+    collect_import_decl_infos(imports)
+        .into_iter()
+        .map(|(name, info)| (name, info.map(|info| info.decl)))
+        .collect()
+}
+
+fn collect_import_decl_infos<'a>(
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+) -> BTreeMap<String, Option<ImportKernelDecl>> {
+    let mut decls: BTreeMap<String, Option<ImportKernelDecl>> = BTreeMap::new();
 
     for import in imports {
         for decl in kernel_decls_for_import(import) {
+            let info = ImportKernelDecl {
+                dependencies: dependencies_for_import_decl(import, decl.name()),
+                decl: decl.clone(),
+            };
             for name in kernel_decl_lookup_names(&decl) {
                 match decls.get_mut(&name) {
-                    Some(existing) if existing.as_ref() == Some(&decl) => {}
+                    Some(existing) if existing.as_ref() == Some(&info) => {}
                     Some(existing) => {
                         *existing = None;
                     }
                     None => {
-                        decls.insert(name, Some(decl.clone()));
+                        decls.insert(name, Some(info.clone()));
                     }
                 }
             }
@@ -916,6 +2161,57 @@ fn collect_import_decls<'a>(
     }
 
     decls
+}
+
+fn collect_import_decl_interface_infos<'a>(
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+) -> BTreeMap<DeclInterfaceKey, Option<ImportKernelDecl>> {
+    let mut decls: BTreeMap<DeclInterfaceKey, Option<ImportKernelDecl>> = BTreeMap::new();
+
+    for import in imports {
+        let import_decls = collect_import_decl_infos(std::iter::once(import));
+        for export in &import.exports {
+            let name = export.name.as_dotted();
+            let key = DeclInterfaceKey {
+                name: name.clone(),
+                decl_interface_hash: export.decl_interface_hash,
+            };
+            let Some(info) = import_decls.get(&name).cloned().flatten() else {
+                continue;
+            };
+            match decls.get_mut(&key) {
+                Some(existing) if existing.as_ref() == Some(&info) => {}
+                Some(existing) => {
+                    *existing = None;
+                }
+                None => {
+                    decls.insert(key, Some(info));
+                }
+            }
+        }
+    }
+
+    decls
+}
+
+fn dependencies_for_import_decl(
+    import: &VerifiedImport,
+    decl_name: &str,
+) -> BTreeMap<String, BTreeSet<npa_cert::Hash>> {
+    let mut dependencies: BTreeMap<String, BTreeSet<npa_cert::Hash>> = BTreeMap::new();
+    if let Some(decl_dependencies) = import.kernel_decl_dependencies.get(decl_name) {
+        for VerifiedDependency {
+            name,
+            decl_interface_hash,
+        } in decl_dependencies
+        {
+            dependencies
+                .entry(name.as_dotted())
+                .or_default()
+                .insert(*decl_interface_hash);
+        }
+    }
+    dependencies
 }
 
 fn kernel_decl_lookup_names(decl: &Decl) -> Vec<String> {
@@ -1097,6 +2393,7 @@ mod tests {
             certificate_hash: None,
             exports,
             kernel_decls,
+            kernel_decl_dependencies: BTreeMap::new(),
         }
     }
 
@@ -1106,6 +2403,58 @@ mod tests {
 
     fn eq_import() -> VerifiedImport {
         verified_import("Std.Logic.Eq", &[("Eq", &["u"]), ("Eq.refl", &["u"])])
+    }
+
+    fn hidden_import() -> VerifiedImport {
+        verified_import("Hidden.Module", &[("Hidden.Thing", &[])])
+    }
+
+    fn direct_using_hidden_import() -> VerifiedImport {
+        let ty = Expr::konst("Hidden.Thing", vec![]);
+        let mut kernel_decl_dependencies = BTreeMap::new();
+        kernel_decl_dependencies.insert(
+            "Direct.x".to_owned(),
+            BTreeSet::from([VerifiedDependency {
+                name: npa_cert::Name::from_dotted("Hidden.Thing"),
+                decl_interface_hash: hash(2),
+            }]),
+        );
+
+        VerifiedImport {
+            module: npa_cert::Name::from_dotted("Direct.Module"),
+            export_hash: hash(41),
+            certificate_hash: None,
+            exports: vec![crate::VerifiedExport {
+                name: npa_cert::Name::from_dotted("Direct.x"),
+                universe_params: Vec::new(),
+                ty: ty.clone(),
+                decl_interface_hash: hash(42),
+            }],
+            kernel_decls: vec![Decl::Axiom {
+                name: "Direct.x".to_owned(),
+                universe_params: Vec::new(),
+                ty,
+            }],
+            kernel_decl_dependencies,
+        }
+    }
+
+    fn set_single_axiom_ty(import: &mut VerifiedImport, ty: Expr) {
+        import.exports[0].ty = ty.clone();
+        let Decl::Axiom { ty: decl_ty, .. } = &mut import.kernel_decls[0] else {
+            panic!("test import should contain a single axiom declaration");
+        };
+        *decl_ty = ty;
+    }
+
+    fn term_context(
+        imports: &[VerifiedImport],
+        locals: Vec<MachineLocalDecl>,
+        universe_params: Vec<String>,
+    ) -> crate::MachineTermElabContext {
+        let span = crate::Span::empty(FileId(0));
+        machine_term_context_from_verified_imports(imports, imports, locals, universe_params, span)
+            .expect("term context imports should build a consistent kernel env")
     }
 
     fn export_ty(name: &str) -> Expr {
@@ -1256,6 +2605,7 @@ mod tests {
             certificate_hash: None,
             exports: Vec::new(),
             kernel_decls: unary_rec_core_module().declarations,
+            kernel_decl_dependencies: BTreeMap::new(),
         }
     }
 
@@ -1328,6 +2678,7 @@ mod tests {
                     ty: Expr::konst("UseRec.P", vec![]),
                 },
             ],
+            kernel_decl_dependencies: BTreeMap::new(),
         }
     }
 
@@ -1585,6 +2936,477 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
                 proof: Expr::lam("n", nat(), proof),
             }]
         );
+    }
+
+    #[test]
+    fn term_level_api_checks_exact_eq_refl_against_expected_type() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "n".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+        let expected = Expr::apps(
+            Expr::konst("Eq", vec![type0()]),
+            vec![nat(), Expr::bvar(0), Expr::bvar(0)],
+        );
+
+        let checked = elaborate_machine_term_check(
+            "@Eq.refl.{1} Nat n",
+            &context,
+            &expected,
+            &MachineCompileOptions::default(),
+        )
+        .expect("explicit Eq.refl should close the goal");
+
+        assert_eq!(
+            checked.expr,
+            Expr::apps(
+                Expr::konst("Eq.refl", vec![type0()]),
+                vec![nat(), Expr::bvar(0)]
+            )
+        );
+        assert_eq!(
+            checked.constants,
+            vec![
+                crate::MachineResolvedConstant {
+                    name: npa_cert::Name::from_dotted("Eq.refl"),
+                    decl_interface_hash: hash(3),
+                },
+                crate::MachineResolvedConstant {
+                    name: npa_cert::Name::from_dotted("Nat"),
+                    decl_interface_hash: hash(2),
+                },
+            ]
+        );
+        assert_ne!(checked.core_hash, [0; 32]);
+    }
+
+    #[test]
+    fn term_level_api_rejects_global_scope_decl_hash_mismatch() {
+        let imports = [nat_import()];
+        let mut context = term_context(&imports, Vec::new(), Vec::new());
+        match &mut context.global_scope.entries[0] {
+            crate::MachineGlobalScopeEntry::Imported {
+                decl_interface_hash,
+                ..
+            }
+            | crate::MachineGlobalScopeEntry::CurrentModule {
+                decl_interface_hash,
+                ..
+            }
+            | crate::MachineGlobalScopeEntry::CurrentGenerated {
+                decl_interface_hash,
+                ..
+            } => *decl_interface_hash = hash(99),
+        }
+
+        let err = elaborate_machine_term_check(
+            "Nat",
+            &context,
+            &Expr::sort(type0()),
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("term context declaration hash mismatch should be rejected");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_rejects_import_export_kernel_type_mismatch() {
+        let mut import = nat_import();
+        import.exports[0].ty = Expr::sort(Level::zero());
+        let imports = [import];
+
+        let err = machine_term_context_from_verified_imports(
+            &imports,
+            &imports,
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect_err("verified import export metadata must match the kernel environment");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_allows_unused_ambiguous_direct_exports() {
+        let left = verified_import("Left.Module", &[("Shared.X", &[]), ("Direct.y", &[])]);
+        let mut right = verified_import("Right.Module", &[("Shared.X", &[])]);
+        set_single_axiom_ty(&mut right, Expr::sort(type0()));
+        let imports = [left, right];
+
+        let context = machine_term_context_from_verified_imports(
+            &imports,
+            &imports,
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect("unused ambiguous direct exports should not poison the context");
+
+        elaborate_machine_term_check(
+            "Direct.y",
+            &context,
+            &Expr::sort(Level::zero()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("unambiguous direct export should remain usable");
+
+        let err = elaborate_machine_term_check(
+            "Shared.X",
+            &context,
+            &Expr::sort(Level::zero()),
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("ambiguous exact direct export should still be rejected when referenced");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::AmbiguousGlobalName);
+    }
+
+    #[test]
+    fn term_context_ignores_unused_available_export_collision() {
+        let direct = verified_import("Direct.Module", &[("Common.X", &[])]);
+        let mut available = verified_import("Available.Module", &[("Common.X", &[])]);
+        set_single_axiom_ty(&mut available, Expr::sort(type0()));
+
+        let context = machine_term_context_from_verified_imports(
+            std::slice::from_ref(&direct),
+            std::slice::from_ref(&available),
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect("unused available export collision should not reject the context");
+
+        elaborate_machine_term_check(
+            "Common.X",
+            &context,
+            &Expr::sort(Level::zero()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("direct export should remain usable");
+    }
+
+    #[test]
+    fn term_context_rejects_loaded_available_export_kernel_type_mismatch() {
+        let direct = direct_using_hidden_import();
+        let mut hidden = hidden_import();
+        hidden.exports[0].ty = Expr::sort(type0());
+
+        let err = machine_term_context_from_verified_imports(
+            std::slice::from_ref(&direct),
+            std::slice::from_ref(&hidden),
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect_err("loaded available export metadata must match its kernel declaration");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_rejects_available_dependency_hash_mismatch() {
+        let direct = direct_using_hidden_import();
+        let mut hidden = hidden_import();
+        hidden.exports[0].decl_interface_hash = hash(99);
+
+        let err = machine_term_context_from_verified_imports(
+            std::slice::from_ref(&direct),
+            std::slice::from_ref(&hidden),
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect_err("available dependency must match the direct import dependency hash");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_does_not_expose_available_transitive_imports() {
+        let direct = direct_using_hidden_import();
+        let hidden = hidden_import();
+        let context = machine_term_context_from_verified_imports(
+            std::slice::from_ref(&direct),
+            std::slice::from_ref(&hidden),
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect("available transitive import should be usable by the kernel env");
+
+        elaborate_machine_term_check(
+            "Direct.x",
+            &context,
+            &Expr::konst("Hidden.Thing", vec![]),
+            &MachineCompileOptions::default(),
+        )
+        .expect("direct import should remain usable");
+
+        let err = elaborate_machine_term_check(
+            "Hidden.Thing",
+            &context,
+            &Expr::sort(type0()),
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("available transitive import should not enter the direct lookup scope");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::UnknownGlobalName);
+    }
+
+    #[test]
+    fn term_level_api_infers_from_decoded_canonical_ast() {
+        let imports = [nat_import()];
+        let context = term_context(&imports, Vec::new(), Vec::new());
+        let canonical = crate::canonicalize_machine_term_source("Nat")
+            .expect("term source should canonicalize");
+        let ast = crate::decode_machine_term_source_canonical(&canonical.canonical_bytes)
+            .expect("canonical term source should decode");
+
+        let (expr, inferred_type) = elaborate_machine_term_infer_from_ast(
+            &ast,
+            &context,
+            &MachineCompileOptions::default(),
+        )
+        .expect("decoded term AST should infer");
+
+        assert_eq!(expr, nat());
+        assert_eq!(inferred_type, Expr::sort(type0()));
+    }
+
+    #[test]
+    fn term_level_contextual_hash_commits_to_import_decl_interface_hash() {
+        let imports = [nat_import()];
+        let context = term_context(&imports, Vec::new(), Vec::new());
+        let first = elaborate_machine_term_check(
+            "Nat",
+            &context,
+            &Expr::sort(type0()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("Nat should check");
+
+        let mut changed = nat_import();
+        changed.exports[0].decl_interface_hash = hash(99);
+        let changed_imports = [changed];
+        let changed_context = term_context(&changed_imports, Vec::new(), Vec::new());
+        let second = elaborate_machine_term_check(
+            "Nat",
+            &changed_context,
+            &Expr::sort(type0()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("Nat should still check with a different verified interface hash");
+
+        assert_eq!(first.core_hash, second.core_hash);
+        assert_ne!(first.contextual_core_hash, second.contextual_core_hash);
+    }
+
+    #[test]
+    fn term_level_contextual_hash_commits_to_current_decl_interface_hash() {
+        let checked = crate::MachineCheckedCurrentDecl {
+            name: npa_cert::Name::from_dotted("Current.T"),
+            source_index: 0,
+            decl_interface_hash: hash(10),
+            decl: Decl::Axiom {
+                name: "Current.T".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(type0()),
+            },
+        };
+        let context = crate::MachineTermElabContext::from_verified_modules_and_current_decls(
+            &[],
+            &[],
+            std::slice::from_ref(&checked),
+            &[],
+            Vec::new(),
+            Vec::new(),
+        )
+        .expect("checked current declaration should build a term context");
+        let first = elaborate_machine_term_check(
+            "Current.T",
+            &context,
+            &Expr::sort(type0()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("checked current declaration should elaborate");
+
+        let mut changed = checked;
+        changed.decl_interface_hash = hash(11);
+        let changed_context =
+            crate::MachineTermElabContext::from_verified_modules_and_current_decls(
+                &[],
+                &[],
+                std::slice::from_ref(&changed),
+                &[],
+                Vec::new(),
+                Vec::new(),
+            )
+            .expect("changed checked current declaration should build a term context");
+        let second = elaborate_machine_term_check(
+            "Current.T",
+            &changed_context,
+            &Expr::sort(type0()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("changed checked current declaration should elaborate");
+
+        assert_eq!(first.core_hash, second.core_hash);
+        assert_ne!(first.contextual_core_hash, second.contextual_core_hash);
+    }
+
+    #[test]
+    fn term_level_contextual_hash_uses_current_generated_parent_decl_interface_hash() {
+        let checked = crate::MachineCheckedCurrentDecl {
+            name: npa_cert::Name::from_dotted("Unary"),
+            source_index: 0,
+            decl_interface_hash: hash(10),
+            decl: unary_rec_core_module().declarations[0].clone(),
+        };
+        let generated = crate::MachineCheckedCurrentGeneratedDecl {
+            name: npa_cert::Name::from_dotted("Unary.zero"),
+            parent_source_index: 0,
+            decl_interface_hash: hash(10),
+        };
+        let context = crate::MachineTermElabContext::from_verified_modules_and_current_decls(
+            &[],
+            &[],
+            std::slice::from_ref(&checked),
+            std::slice::from_ref(&generated),
+            Vec::new(),
+            Vec::new(),
+        )
+        .expect("checked current generated declaration should build a term context");
+        let first = elaborate_machine_term_check(
+            "Unary.zero",
+            &context,
+            &unary_expr(),
+            &MachineCompileOptions::default(),
+        )
+        .expect("checked current generated declaration should elaborate");
+
+        let mut changed_checked = checked;
+        changed_checked.decl_interface_hash = hash(12);
+        let mut changed_generated = generated;
+        changed_generated.decl_interface_hash = hash(12);
+        let changed_context =
+            crate::MachineTermElabContext::from_verified_modules_and_current_decls(
+                &[],
+                &[],
+                std::slice::from_ref(&changed_checked),
+                std::slice::from_ref(&changed_generated),
+                Vec::new(),
+                Vec::new(),
+            )
+            .expect("changed checked current generated declaration should build a term context");
+        let second = elaborate_machine_term_check(
+            "Unary.zero",
+            &changed_context,
+            &unary_expr(),
+            &MachineCompileOptions::default(),
+        )
+        .expect("changed checked current generated declaration should elaborate");
+
+        assert_eq!(first.core_hash, second.core_hash);
+        assert_ne!(first.contextual_core_hash, second.contextual_core_hash);
+    }
+
+    #[test]
+    fn term_context_rejects_current_generated_decl_hash_mismatch() {
+        let checked = crate::MachineCheckedCurrentDecl {
+            name: npa_cert::Name::from_dotted("Unary"),
+            source_index: 0,
+            decl_interface_hash: hash(10),
+            decl: unary_rec_core_module().declarations[0].clone(),
+        };
+        let generated = crate::MachineCheckedCurrentGeneratedDecl {
+            name: npa_cert::Name::from_dotted("Unary.zero"),
+            parent_source_index: 0,
+            decl_interface_hash: hash(11),
+        };
+
+        let err = crate::MachineTermElabContext::from_verified_modules_and_current_decls(
+            &[],
+            &[],
+            std::slice::from_ref(&checked),
+            std::slice::from_ref(&generated),
+            Vec::new(),
+            Vec::new(),
+        )
+        .expect_err("current generated declarations must use the checked parent interface hash");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_level_api_returns_structured_error_for_type_mismatch() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "n".to_owned(),
+                ty: nat(),
+                value: None,
+            }],
+            Vec::new(),
+        );
+
+        let err = elaborate_machine_term_check(
+            "@Eq.refl.{1} Nat n",
+            &context,
+            &nat(),
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("Eq.refl should not check against Nat");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::TypeMismatch);
+    }
+
+    #[test]
+    fn term_level_api_uses_closed_global_scope_for_short_name_rejection() {
+        let imports = [nat_import(), eq_import()];
+        let context = term_context(&imports, Vec::new(), Vec::new());
+
+        let err = elaborate_machine_term_check(
+            "refl",
+            &context,
+            &nat(),
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("short global suffix should be rejected");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ShortGlobalName);
+    }
+
+    #[test]
+    fn term_level_api_rejects_local_name_shadowing_global_root() {
+        let imports = [nat_import()];
+        let context = term_context(
+            &imports,
+            vec![MachineLocalDecl {
+                name: "Nat".to_owned(),
+                ty: Expr::sort(type0()),
+                value: None,
+            }],
+            Vec::new(),
+        );
+
+        let err = elaborate_machine_term_check(
+            "Nat",
+            &context,
+            &nat(),
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("local/global root collision should be rejected");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::GlobalShadowedByLocal);
     }
 
     #[test]

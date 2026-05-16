@@ -355,7 +355,7 @@ VerifiedImportGeneratedDeclTableHash:
       parent fully-qualified name canonical bytes
       generated fully-qualified name canonical bytes
       parent_decl_interface_hash as HashString digest bytes
-      generated_decl_interface_hash as HashString digest bytes
+      generated_decl_interface_hash as HashString digest bytes (= parent_decl_interface_hash)
       public_export as 0x00 | 0x01
   )
 ```
@@ -1023,7 +1023,7 @@ VerifiedImportGeneratedDeclTable for import C:
       parent fully-qualified declaration name
       generated fully-qualified declaration name
       parent decl_interface_hash
-      generated decl_interface_hash
+      generated decl_interface_hash (= parent decl_interface_hash)
       public_export = whether the generated name/hash appears in C.export_block
       pointer/key to reconstructed generated declaration view derived from C certificate bytes
 
@@ -1040,7 +1040,7 @@ CurrentGeneratedDeclTable:
       parent fully-qualified declaration name
       parent_decl_interface_hash
       generated fully-qualified name
-      generated decl_interface_hash
+      generated decl_interface_hash (= parent_decl_interface_hash)
       generated interface reconstructed from the parent CheckedCurrentDecl.core_decl
       generated declaration view used by owner-aware renderer QA
 ```
@@ -1058,6 +1058,9 @@ MVP では `InvalidCheckedCurrentDecl` です。
 必ず `CurrentDeclIndexTable[parent_source_index]` の checked signature から取ります。
 parent entry が存在しない、parent name/hash が reconstructed generated interface の parent と一致しない、
 または generated interface hash を再構築できない場合は `InvalidCheckedCurrentDecl` です。
+Phase 2 の constructor / recursor export と `GlobalRef::LocalGenerated` dependency は parent `InductiveDecl` の
+`decl_interface_hash` を使うため、`generated_decl_interface_hash` は独立値ではなく
+`parent_decl_interface_hash` と byte-for-byte で一致しなければなりません。
 `MachineGlobalRefView::LocalGenerated` を current generated artifact から materialize する場合も、この parent name/hash を使い、
 renderer output、pretty metadata、または generated name の文字列から parent を推測してはいけません。
 
@@ -1112,8 +1115,8 @@ current-module ordinary dependency は `GlobalRef::Local(source_index)` を `Cur
 current-module generated dependency は `GlobalRef::LocalGenerated(parent_source_index, generated_name)` を
 `CurrentGeneratedDeclTable[(parent_source_index, generated_name)]` で解決し、
 `MachineDependencyRefWire::current_generated` に変換します。
-`DependencyEntry.decl_interface_hash` は解決先の checked signature hash、または generated artifact の
-interface hash と一致しなければなりません。
+`DependencyEntry.decl_interface_hash` は解決先の checked signature hash と一致しなければなりません。
+generated artifact の場合も parent checked signature hash を使い、独立した generated hash を使ってはいけません。
 `LocalGenerated` を `current_module` に潰してはいけません。
 current-module dependency は上の table で一意に解決できる prior current declaration / generated artifact
 だけを許します。
@@ -1437,7 +1440,7 @@ SessionCreate semantic validation order:
      stage 8 が成功した後に stage 9 でこの scope 外の GlobalRef が見つかった場合だけ、
      Phase 5 / Phase 3 adapter invariant failure として InvalidMachineProofState、diagnostic phase session_create です。
      root.module / theorem_name / source_index は MachineProofSpec と later certificate construction の metadata として
-     記録するだけで、この Phase 3 MachineTermElabContext.global_scope には root theorem 自身を入れない。
+     記録するだけで、この Phase 3 `MachineTermElabContext` 内部の global scope には root theorem 自身を入れない。
      失敗は MachineTermParseError / MachineTermElaborationError / UnknownName /
      ImplicitArgumentRequired / TypeMismatch / ExpectedPiType。
 
@@ -1457,8 +1460,8 @@ SessionCreate semantic validation order:
        imported ref は matching direct import public ExportEntry.decl_interface_hash を入れ、GlobalRef::Imported が持つ
        decl_interface_hash と一致しなければならない。
        current_module ref は checked_current_decls prefix の対応 source_index にある checked signature.decl_interface_hash を入れる。
-       current_generated ref は CurrentGeneratedDeclTable[(parent_source_index, generated_name)] の generated artifact
-       interface hash を入れる。
+       current_generated ref は CurrentGeneratedDeclTable[(parent_source_index, generated_name)] の
+       parent checked signature.decl_interface_hash を入れる。
      変換後の direct_dependency_entries は CurrentDeclDependencyEntry canonical bytes と同じ順序で sort/dedup する。
      axiom_dependencies は theorem type の direct_dependency_entries から次の closure で作る:
        imported ref は direct import ExportEntry の axiom_dependencies を MachineAxiomRefWire に変換して追加する。
@@ -1882,12 +1885,15 @@ LocalId wire:
     - context index as minimal unsigned LEB128 u32
 ```
 
-`MachineExprView.core_hash` は Phase 1 `Expr` canonical bytes の `sha256` です。
+`MachineExprView.core_hash` は Phase 1 `Expr` canonical payload を
+`NPA-PHASE1-EXPR-0.1` domain で hash した値です。
 `machine`、`pretty`、`head`、`constants`、`free_locals`、`size` は派生 view であり、`core_hash` の入力ではありません。
+Phase 3 term 単体 API の `MachineTermCheckResult.contextual_core_hash` は owner / import context 固定用の別 hash であり、
+`MachineExprView.core_hash`、`MachineGoalView.target_hash`、`theorem_type_core_hash` の代わりに使ってはいけません。
 `MachineGoalView.target_hash` は Phase 4 `target_hash` と同じ hash family で、必ず
 `MachineGoalView.target.core_hash` と byte-for-byte で一致しなければなりません。
 一致しない stored snapshot は `InvalidMachineProofState` です。
-`MachineLocalView.ty.core_hash` と `MachineLocalView.value.core_hash` も同じ Phase 1 `Expr` canonical bytes rule で計算します。
+`MachineLocalView.ty.core_hash` と `MachineLocalView.value.core_hash` も同じ Phase 1 `Expr` structural hash rule で計算します。
 
 `MachineExprView.head`、`MachineExprView.constants`、`MachineExprView.machine` の materialization は、
 core `Expr` に加えて、その `Expr` 内の `GlobalRef::Local` / `GlobalRef::LocalGenerated` を解釈する
@@ -2276,7 +2282,7 @@ enum MachineSurfaceCallableRef {
 }
 
 struct Phase5MachineTermElabContext {
-    // phase3_context.global_scope is caller-specific:
+    // phase3_context's internal global scope is caller-specific:
     // root/candidate/replay use the candidate validation scope,
     // renderer QA uses the display render scope.
     phase3_context: MachineTermElabContext,
@@ -2329,7 +2335,7 @@ missing-entry rule ではなく、root / candidate / replay なら Phase 5 adapt
 renderer なら renderer failure / renderer QA failure として扱います。
 
 Phase 5 term elaboration では `phase5_global_scope` を唯一の authoritative exact-name map とします。
-`phase3_context.global_scope` は Phase 3 API compatibility 用の projection であり、
+`phase3_context` 内部の global scope は Phase 3 API compatibility 用の projection であり、
 `phase5_global_scope` に存在しない名前を追加してはいけません。
 root theorem type、candidate validation、replay execution では、両方とも 5.2 / 6.2 の
 candidate validation / execution scope から構築します。
@@ -2348,10 +2354,10 @@ renderer QA の name resolution 候補にしてはいけません。
 実装がそのような entry を `phase5_global_scope.entries` に保持する場合でも、
 renderer QA resolver は `display_core_ref = none` の entry を UnknownName 相当として扱い、
 owner-aware expression へ戻してはいけません。
-既存の Phase 3 API が `MachineTermElabContext.global_scope` だけで名前解決する実装の場合、
+既存の Phase 3 API が `MachineTermElabContext` 内部の global scope だけで名前解決する実装の場合、
 Phase 5 adapter は display render scope を同じ exact-name map として projection するか、
 Phase 3 resolver の前後で `phase5_global_scope` による解決を挟まなければなりません。
-renderer QA 用に `phase3_context.global_scope` へ projection する名前は、
+renderer QA 用に `phase3_context` 内部の global scope へ projection する名前は、
 `display_core_ref = some(...)` の entry に限定します。
 `display_core_ref = none` の candidate-scope-only entry は collision check には使えますが、
 renderer QA の parse / elaborate で解決可能な global name として渡してはいけません。
@@ -2495,8 +2501,9 @@ Phase5CallableRef normalization for callable-interface lookup:
 
     Phase 5 source-indexed GlobalRef::LocalGenerated(parent_source_index, generated_name):
       CurrentGeneratedDeclTable[(parent_source_index, generated_name)] を引き、
-      current_generated(root.module, generated_name, parent_source_index, generated decl_interface_hash) にする。
-      table entry がない、または generated decl_interface_hash が一致しない場合は Phase 5 adapter invariant failure。
+      current_generated(root.module, generated_name, parent_source_index, parent decl_interface_hash) にする。
+      table entry がない、または generated decl_interface_hash が parent decl_interface_hash と一致しない場合は
+      Phase 5 adapter invariant failure。
 
   display render scope / renderer QA:
     MachineGlobalRefView::Imported { module, name, export_hash, decl_interface_hash, ... }:
@@ -4304,8 +4311,9 @@ name と `decl_interface_hash` があれば
 ただし theorem search の `global_ref` は direct import の public `ExportEntry` に限定し、tactic candidate の
 `TacticHead::Imported` は `tactic_head_visible = true` の `MachineGlobalRefView` からだけ生成します。
 private dependency だけを head に持つ entry は search result の suggested candidate を生成してはいけません。
-`LocalGenerated` の `generated decl_interface_hash` は Phase 2 verifier が parent `InductiveDecl` から再生成した
-constructor / recursor interface hash であり、ExportBlock index から推測してはいけません。
+`LocalGenerated` の `generated decl_interface_hash` は Phase 2 verifier が parent `InductiveDecl` に付与した
+`decl_interface_hash` と同一であり、constructor / recursor から独立に作った hash や ExportBlock index から
+推測した値を使ってはいけません。
 public generated constructor / recursor は
 `MachineGlobalRefView::LocalGenerated { public_export = true, export_hash = some(_), ... }` として表示してよく、
 `tactic_head_visible = true` の場合だけ、tactic candidate を作るときに Phase 4 external schema に合わせて
@@ -6537,7 +6545,8 @@ imports + prior checked decls に対して kernel check できない payload は
 `tactic_options_fingerprint` は Phase 4 `MachineTacticOptions canonical bytes` だけの hash で、resolved family bytes は
 `state_fingerprint` と `session_root_hash` 側で照合する。
 初期 snapshot は top-level binder を自動で開かず、`context = []` と `target = root.theorem_type` を返す。
-`MachineGoalView.target_hash` は `target.core_hash` と一致し、どちらも Phase 1 `Expr` canonical bytes の hash である。
+`MachineGoalView.target_hash` は `target.core_hash` と一致し、どちらも
+`NPA-PHASE1-EXPR-0.1` domain の Phase 1 `Expr` structural hash である。
 `snapshot_fingerprint` という別名 field は返さない。
 `snapshot_id` は `sha256:` prefix を除いた digest hex から導出される。
 `local_name_map_hash` は Phase 5 view integrity 用の派生 hash であり、Phase 4 の `context_hash` と

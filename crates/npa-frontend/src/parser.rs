@@ -10,6 +10,19 @@ pub fn parse_machine_module(file_id: FileId, source: &str) -> Result<MachineModu
     Parser::new(tokens).parse_module(file_id, source.len() as u32)
 }
 
+pub fn parse_machine_term(file_id: FileId, source: &str) -> Result<MachineTerm> {
+    let tokens = lex(file_id, source)?;
+    let mut parser = Parser::new(tokens);
+    let term = parser.parse_term()?;
+    if !parser.at_eof() {
+        return Err(MachineDiagnostic::parse(
+            parser.peek_span(),
+            "expected end of Machine Surface term",
+        ));
+    }
+    Ok(term)
+}
+
 struct Parser {
     tokens: Vec<Token>,
     pos: usize,
