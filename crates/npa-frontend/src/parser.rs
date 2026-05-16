@@ -60,13 +60,15 @@ impl Parser {
                 }
                 TokenKind::Open
                 | TokenKind::Namespace
+                | TokenKind::Match
+                | TokenKind::With
                 | TokenKind::Notation
                 | TokenKind::Infix
                 | TokenKind::Infixl
                 | TokenKind::Infixr => {
                     return Err(MachineDiagnostic::unsupported_syntax(
                         self.peek_span(),
-                        "open, namespace, and notation declarations are not Machine Surface syntax",
+                        "open, namespace, match, with, and notation declarations are not Machine Surface syntax",
                     ));
                 }
                 TokenKind::Axiom | TokenKind::Inductive => {
@@ -399,10 +401,7 @@ impl Parser {
 
     fn parse_prop(&mut self) -> Result<MachineTerm> {
         let span = self.expect_prop()?;
-        Ok(MachineTerm::Sort {
-            level: MachineLevel::Nat { value: 0, span },
-            span,
-        })
+        Ok(MachineTerm::Prop { span })
     }
 
     fn parse_type(&mut self) -> Result<MachineTerm> {
@@ -417,13 +416,7 @@ impl Parser {
         };
         let span = start.join(base.span());
 
-        Ok(MachineTerm::Sort {
-            level: MachineLevel::Succ {
-                level: Box::new(base),
-                span,
-            },
-            span,
-        })
+        Ok(MachineTerm::Type { level: base, span })
     }
 
     fn parse_sort(&mut self) -> Result<MachineTerm> {
@@ -441,7 +434,7 @@ impl Parser {
                 let span = self.advance().span;
                 Ok(MachineLevel::Nat { value, span })
             }
-            TokenKind::Ident(name) if name == "succ" => {
+            TokenKind::Succ => {
                 let start = self.advance().span;
                 let level = self.parse_level()?;
                 let span = start.join(level.span());
@@ -450,7 +443,7 @@ impl Parser {
                     span,
                 })
             }
-            TokenKind::Ident(name) if name == "max" => {
+            TokenKind::Max => {
                 let start = self.advance().span;
                 let lhs = self.parse_level()?;
                 let rhs = self.parse_level()?;
@@ -461,7 +454,7 @@ impl Parser {
                     span,
                 })
             }
-            TokenKind::Ident(name) if name == "imax" => {
+            TokenKind::IMax => {
                 let start = self.advance().span;
                 let lhs = self.parse_level()?;
                 let rhs = self.parse_level()?;
@@ -495,7 +488,8 @@ impl Parser {
             }
 
             self.expect_dot()?;
-            let (part, part_span) = self.expect_ident("expected identifier after '.'")?;
+            let (part, part_span) =
+                self.expect_dotted_name_component("expected identifier after '.'")?;
             parts.push(part);
             span = span.join(part_span);
         }
@@ -521,6 +515,7 @@ impl Parser {
     fn is_type_level_start(&self) -> bool {
         match self.peek_kind() {
             TokenKind::Number(_) => true,
+            TokenKind::Succ | TokenKind::Max | TokenKind::IMax => true,
             TokenKind::Ident(_) => !matches!(
                 self.peek_next_kind(),
                 Some(TokenKind::Dot) | Some(TokenKind::LBrace)
@@ -573,6 +568,14 @@ impl Parser {
             }
             _ => Err(MachineDiagnostic::parse(self.peek_span(), message)),
         }
+    }
+
+    fn expect_dotted_name_component(&mut self, message: &'static str) -> Result<(String, Span)> {
+        let Some(spelling) = reserved_name_component_spelling(self.peek_kind()) else {
+            return self.expect_ident(message);
+        };
+        let span = self.advance().span;
+        Ok((spelling.to_owned(), span))
     }
 
     fn expect_import(&mut self) -> Result<Span> {
@@ -662,6 +665,35 @@ impl Parser {
             Err(MachineDiagnostic::parse(self.peek_span(), message))
         }
     }
+}
+
+fn reserved_name_component_spelling(kind: &TokenKind) -> Option<&'static str> {
+    Some(match kind {
+        TokenKind::Import => "import",
+        TokenKind::Def => "def",
+        TokenKind::Theorem => "theorem",
+        TokenKind::Fun => "fun",
+        TokenKind::Forall => "forall",
+        TokenKind::Let => "let",
+        TokenKind::In => "in",
+        TokenKind::Prop => "Prop",
+        TokenKind::Type => "Type",
+        TokenKind::Sort => "Sort",
+        TokenKind::Succ => "succ",
+        TokenKind::Max => "max",
+        TokenKind::IMax => "imax",
+        TokenKind::Open => "open",
+        TokenKind::Namespace => "namespace",
+        TokenKind::Match => "match",
+        TokenKind::With => "with",
+        TokenKind::Notation => "notation",
+        TokenKind::Infix => "infix",
+        TokenKind::Infixl => "infixl",
+        TokenKind::Infixr => "infixr",
+        TokenKind::Axiom => "axiom",
+        TokenKind::Inductive => "inductive",
+        _ => return None,
+    })
 }
 
 #[derive(Clone, Copy)]
@@ -755,6 +787,35 @@ mod tests {
             panic!("expected import item");
         };
         assert_eq!(module.as_dotted(), "Std.Nat.Basic");
+    }
+
+    #[test]
+    fn parses_reserved_spellings_after_dot_as_name_components() {
+        let module = parse("def Test.kw.{u} : M.Type := M.match.{succ u}");
+
+        let MachineItem::Def(decl) = &module.items[0] else {
+            panic!("expected def item");
+        };
+        assert_eq!(decl.name.as_dotted(), "Test.kw");
+
+        let MachineTerm::Ident { name, .. } = &decl.ty else {
+            panic!("expected dotted type reference");
+        };
+        assert_eq!(name.as_dotted(), "M.Type");
+
+        let MachineTerm::Ident {
+            name,
+            universe_args,
+            ..
+        } = &decl.value
+        else {
+            panic!("expected dotted value reference");
+        };
+        assert_eq!(name.as_dotted(), "M.match");
+        assert!(matches!(
+            &universe_args.as_ref().expect("universe args")[0],
+            MachineLevel::Succ { .. }
+        ));
     }
 
     #[test]
@@ -909,6 +970,22 @@ def Test.id.{u} (A : Sort u) (x : A) : A := (x : A)";
     }
 
     #[test]
+    fn rejects_reserved_spellings_as_binders_universe_params_and_heads() {
+        assert_eq!(
+            parse_err("def Test.bad (succ : Prop) : Prop := Prop"),
+            MachineDiagnosticKind::ParseError
+        );
+        assert_eq!(
+            parse_err("def Test.bad.{max} : Prop := Prop"),
+            MachineDiagnosticKind::ParseError
+        );
+        assert_eq!(
+            parse_err("def Test.bad : Prop := match"),
+            MachineDiagnosticKind::ParseError
+        );
+    }
+
+    #[test]
     fn rejects_unannotated_lambda_binder() {
         assert_eq!(
             parse_err("def Test.id : Nat := fun x => x"),
@@ -929,6 +1006,15 @@ def Test.id.{u} (A : Sort u) (x : A) : A := (x : A)";
         assert_eq!(
             parse_err("def Test.x : Nat := n + Nat.zero"),
             MachineDiagnosticKind::UnsupportedSyntax
+        );
+    }
+
+    #[test]
+    fn rejects_comments_and_string_literals_as_machine_surface_syntax() {
+        assert_eq!(parse_err("-- doc"), MachineDiagnosticKind::ParseError);
+        assert_eq!(
+            parse_err("def Test.x : Prop := \"x\""),
+            MachineDiagnosticKind::ParseError
         );
     }
 }

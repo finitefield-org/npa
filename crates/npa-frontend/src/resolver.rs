@@ -286,6 +286,11 @@ impl<'a> Resolver<'a> {
                 universe_params,
             ),
             MachineTerm::Local { .. } => Ok(term),
+            MachineTerm::Prop { span } => Ok(MachineTerm::Prop { span }),
+            MachineTerm::Type { level, span } => Ok(MachineTerm::Type {
+                level: self.resolve_level(level, universe_params)?,
+                span,
+            }),
             MachineTerm::Sort { level, span } => Ok(MachineTerm::Sort {
                 level: self.resolve_level(level, universe_params)?,
                 span,
@@ -368,14 +373,8 @@ impl<'a> Resolver<'a> {
         locals: &LocalScope,
         universe_params: &BTreeSet<String>,
     ) -> Result<MachineTerm> {
-        if name.parts.len() == 1 && locals.contains(&name.parts[0]) {
-            if explicit_mode || universe_args.is_some() {
-                return Err(MachineDiagnostic::unsupported_syntax(
-                    span,
-                    "local names cannot use @ or explicit universe arguments",
-                ));
-            }
-
+        let force_global = explicit_mode || universe_args.is_some() || name.parts.len() > 1;
+        if !force_global && name.parts.len() == 1 && locals.contains(&name.parts[0]) {
             return Ok(MachineTerm::Local {
                 name: name.parts[0].clone(),
                 span,
@@ -390,7 +389,7 @@ impl<'a> Resolver<'a> {
             })
             .transpose()?;
 
-        match self.globals.lookup(&name) {
+        match self.globals.lookup(&name, force_global) {
             GlobalLookup::Resolved => Ok(MachineTerm::Ident {
                 name,
                 universe_args,
@@ -589,7 +588,7 @@ impl GlobalTable {
         Ok(())
     }
 
-    fn lookup(&self, name: &MachineName) -> GlobalLookup {
+    fn lookup(&self, name: &MachineName, force_global: bool) -> GlobalLookup {
         let dotted = name.as_dotted();
         match self.names.get(&dotted) {
             Some(GlobalEntry::Resolved { .. }) => GlobalLookup::Resolved,
@@ -597,7 +596,7 @@ impl GlobalTable {
             None if name.parts.len() == 1 && self.suffixes.contains(&name.parts[0]) => {
                 GlobalLookup::ShortGlobal
             }
-            None if name.parts.len() == 1 => GlobalLookup::UnknownLocal,
+            None if name.parts.len() == 1 && !force_global => GlobalLookup::UnknownLocal,
             None => GlobalLookup::UnknownGlobal,
         }
     }
@@ -1071,6 +1070,18 @@ def Test.use (A : Type) (x : A) : A := Test.id A x",
                 "import Std.Nat.Basic\ndef Test.bad (n : Nat) : Nat := Nat.mul n Nat.zero",
                 &imports,
             ),
+            MachineDiagnosticKind::UnknownGlobalName
+        );
+    }
+
+    #[test]
+    fn at_or_universe_args_force_global_lookup_before_local_lookup() {
+        assert_eq!(
+            resolve_err("def Test.bad (x : Type) : Type := @x", &[]),
+            MachineDiagnosticKind::UnknownGlobalName
+        );
+        assert_eq!(
+            resolve_err("def Test.bad.{u} (x : Type) : Type := x.{u}", &[]),
             MachineDiagnosticKind::UnknownGlobalName
         );
     }

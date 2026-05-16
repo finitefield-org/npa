@@ -114,6 +114,13 @@ pub enum MachineTerm {
         name: String,
         span: Span,
     },
+    Prop {
+        span: Span,
+    },
+    Type {
+        level: MachineLevel,
+        span: Span,
+    },
     Sort {
         level: MachineLevel,
         span: Span,
@@ -152,6 +159,8 @@ impl MachineTerm {
         match self {
             Self::Ident { span, .. }
             | Self::Local { span, .. }
+            | Self::Prop { span }
+            | Self::Type { span, .. }
             | Self::Sort { span, .. }
             | Self::App { span, .. }
             | Self::Lam { span, .. }

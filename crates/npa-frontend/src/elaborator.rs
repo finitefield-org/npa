@@ -482,6 +482,8 @@ impl Elaborator {
                     )
                 })
             }
+            MachineTerm::Prop { .. } => Ok(Expr::sort(Level::zero())),
+            MachineTerm::Type { level, .. } => Ok(Expr::sort(Level::succ(elaborate_level(level)?))),
             MachineTerm::Sort { level, .. } => Ok(Expr::sort(elaborate_level(level)?)),
             MachineTerm::App { func, arg, .. } => {
                 if let Some(diagnostic) =
@@ -999,7 +1001,11 @@ fn machine_term_repair_source(term: &MachineTerm) -> Option<String> {
             Some(source)
         }
         MachineTerm::Local { name, .. } => Some(name.clone()),
-        MachineTerm::Sort { level, .. } => Some(sort_repair_source(level)),
+        MachineTerm::Prop { .. } => Some("Prop".to_owned()),
+        MachineTerm::Type { level, .. } => Some(type_repair_source(level)),
+        MachineTerm::Sort { level, .. } => {
+            Some(format!("Sort {}", machine_level_repair_source(level)?))
+        }
         MachineTerm::App { .. } => {
             let (head, args) = collect_machine_term_apps(term);
             let mut parts = vec![machine_term_repair_source(head)?];
@@ -1021,6 +1027,8 @@ fn machine_term_atom_repair_source(term: &MachineTerm) -> Option<String> {
     match term {
         MachineTerm::Ident { .. }
         | MachineTerm::Local { .. }
+        | MachineTerm::Prop { .. }
+        | MachineTerm::Type { .. }
         | MachineTerm::Sort { .. }
         | MachineTerm::Annot { .. } => machine_term_repair_source(term),
         MachineTerm::App { .. } => Some(format!("({})", machine_term_repair_source(term)?)),
@@ -1099,12 +1107,11 @@ fn expr_atom_repair_source(expr: &Expr, locals: &LocalContext) -> Option<String>
     }
 }
 
-fn sort_repair_source(level: &MachineLevel) -> String {
+fn type_repair_source(level: &MachineLevel) -> String {
     match machine_level_repair_source(level).as_deref() {
-        Some("0") => "Prop".to_owned(),
-        Some("1") => "Type".to_owned(),
-        Some(level) => format!("Sort {level}"),
-        None => "Sort 0".to_owned(),
+        Some("0") => "Type".to_owned(),
+        Some(level) => format!("Type {level}"),
+        None => "Type 0".to_owned(),
     }
 }
 
@@ -1239,6 +1246,11 @@ impl TermResolver {
                 universe_params,
             ),
             MachineTerm::Local { .. } => Ok(term),
+            MachineTerm::Prop { span } => Ok(MachineTerm::Prop { span }),
+            MachineTerm::Type { level, span } => Ok(MachineTerm::Type {
+                level: self.resolve_level(level, universe_params)?,
+                span,
+            }),
             MachineTerm::Sort { level, span } => Ok(MachineTerm::Sort {
                 level: self.resolve_level(level, universe_params)?,
                 span,
@@ -1460,7 +1472,10 @@ impl TermResolver {
                 };
                 constants.insert(constant);
             }
-            MachineTerm::Local { .. } | MachineTerm::Sort { .. } => {}
+            MachineTerm::Local { .. }
+            | MachineTerm::Prop { .. }
+            | MachineTerm::Type { .. }
+            | MachineTerm::Sort { .. } => {}
             MachineTerm::App { func, arg, .. } => {
                 self.collect_constants_from_resolved_term(func, constants)?;
                 self.collect_constants_from_resolved_term(arg, constants)?;

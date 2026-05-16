@@ -20,8 +20,13 @@ pub enum TokenKind {
     Prop,
     Type,
     Sort,
+    Succ,
+    Max,
+    IMax,
     Open,
     Namespace,
+    Match,
+    With,
     Notation,
     Infix,
     Infixl,
@@ -40,6 +45,8 @@ pub enum TokenKind {
     At,
     Hole,
     NamedHole(String),
+    StringLiteral,
+    Comment,
     Eof,
     Unsupported(char),
 }
@@ -55,6 +62,10 @@ pub fn lex(file_id: crate::FileId, source: &str) -> Result<Vec<Token>> {
 
         let start = offset as u32;
         let token = match ch {
+            '-' if matches!(chars.peek(), Some((_, '-'))) => {
+                lex_comment(file_id, offset, ch, &mut chars)
+            }
+            '"' => lex_string_literal(file_id, source, start, offset, &mut chars)?,
             '.' => Token {
                 kind: TokenKind::Dot,
                 span: Span::new(file_id, start, start + 1),
@@ -142,6 +153,62 @@ pub fn lex(file_id: crate::FileId, source: &str) -> Result<Vec<Token>> {
     Ok(tokens)
 }
 
+fn lex_comment(
+    file_id: crate::FileId,
+    first_offset: usize,
+    first: char,
+    chars: &mut std::iter::Peekable<std::str::CharIndices<'_>>,
+) -> Token {
+    let (_, second) = chars.next().expect("peeked comment marker");
+    let mut end = first_offset + first.len_utf8() + second.len_utf8();
+    while let Some((next_offset, next)) = chars.peek().copied() {
+        if next == '\n' {
+            break;
+        }
+        chars.next();
+        end = next_offset + next.len_utf8();
+    }
+
+    Token {
+        kind: TokenKind::Comment,
+        span: Span::new(file_id, first_offset as u32, end as u32),
+    }
+}
+
+fn lex_string_literal(
+    file_id: crate::FileId,
+    source: &str,
+    start: u32,
+    start_offset: usize,
+    chars: &mut std::iter::Peekable<std::str::CharIndices<'_>>,
+) -> Result<Token> {
+    let mut escaped = false;
+    for (offset, ch) in chars.by_ref() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if ch == '\\' {
+            escaped = true;
+            continue;
+        }
+        if ch == '"' {
+            return Ok(Token {
+                kind: TokenKind::StringLiteral,
+                span: Span::new(file_id, start, (offset + ch.len_utf8()) as u32),
+            });
+        }
+    }
+
+    Err(MachineDiagnostic::parse(
+        Span::new(file_id, start, source.len() as u32),
+        format!(
+            "unterminated string literal starting at byte offset {}",
+            start_offset
+        ),
+    ))
+}
+
 fn lex_ident(
     file_id: crate::FileId,
     source: &str,
@@ -178,8 +245,13 @@ fn lex_ident(
         "Prop" => TokenKind::Prop,
         "Type" => TokenKind::Type,
         "Sort" => TokenKind::Sort,
+        "succ" => TokenKind::Succ,
+        "max" => TokenKind::Max,
+        "imax" => TokenKind::IMax,
         "open" => TokenKind::Open,
         "namespace" => TokenKind::Namespace,
+        "match" => TokenKind::Match,
+        "with" => TokenKind::With,
         "notation" => TokenKind::Notation,
         "infix" => TokenKind::Infix,
         "infixl" => TokenKind::Infixl,
@@ -269,4 +341,34 @@ fn is_ident_start(ch: char) -> bool {
 
 fn is_ident_continue(ch: char) -> bool {
     ch.is_ascii_alphanumeric() || ch == '_' || ch == '\''
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::FileId;
+
+    #[test]
+    fn lexes_comments_and_string_literals_as_tokens() {
+        let tokens = lex(FileId(0), "-- doc\n\"x\"").expect("comments and strings should lex");
+        let kinds = tokens
+            .iter()
+            .map(|token| token.kind.clone())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            kinds,
+            vec![TokenKind::Comment, TokenKind::StringLiteral, TokenKind::Eof]
+        );
+        assert_eq!(tokens[0].span, Span::new(FileId(0), 0, 6));
+        assert_eq!(tokens[1].span, Span::new(FileId(0), 7, 10));
+    }
+
+    #[test]
+    fn rejects_unterminated_string_literal_as_parse_error() {
+        let err = lex(FileId(0), "\"unterminated")
+            .expect_err("unterminated strings should be lexical diagnostics");
+
+        assert_eq!(err.kind, crate::MachineDiagnosticKind::ParseError);
+    }
 }

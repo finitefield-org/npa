@@ -32,5 +32,5 @@ pub use resolver::{
 pub use span::{ByteOffset, FileId, Span};
 pub use term_source::{
     canonicalize_machine_term_source, decode_machine_term_source_canonical,
-    lex_machine_surface_tokens, MachineSurfaceToken,
+    lex_machine_surface_tokens, MachineSurfaceToken, MachineSurfaceTokenKind,
 };
