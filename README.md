@@ -89,9 +89,9 @@ canonical certificate を検査します。
 `crates/npa-cert` は `.npcert` の canonical encode/decode、hash 再計算、import 検査、
 axiom report 検査、Rust kernel への再検査ハンドオフを担当します。
 surface language / frontend は `crates/npa-frontend` で最小実装が進んでおり、
-AI 向け Phase 4 M1/M2/M3/M4/M5 の tactic proof-state core と `exact` /
+AI 向け Phase 4 M1/M2/M3/M4/M5/M6 の tactic proof-state core と `exact` /
 `intro` / `apply` / `rw` / `simp-lite` / `induction-nat` は `crates/npa-tactic`
-で実装されています。
+で実装されています。closed proof state から canonical certificate へ渡す handoff API も同 crate で実装されています。
 独立 checker は Phase 8 の後続成果物として扱います。
 
 ## 開発メモ

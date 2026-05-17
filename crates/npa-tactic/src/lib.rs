@@ -4451,6 +4451,68 @@ pub fn extract_closed_machine_theorem_decl(state: &MachineProofState) -> Result<
     })
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineProofCertificate {
+    pub core_module: CoreModule,
+    pub certificate: npa_cert::ModuleCert,
+    pub certificate_bytes: Vec<u8>,
+    pub verified_module: VerifiedModule,
+}
+
+pub fn extract_closed_machine_core_module(state: &MachineProofState) -> Result<CoreModule> {
+    let theorem = extract_closed_machine_theorem_decl(state)?;
+    let mut declarations = state
+        .env
+        .checked_current_decls
+        .iter()
+        .map(|decl| decl.core_decl().clone())
+        .collect::<Vec<_>>();
+    declarations.push(theorem);
+    Ok(CoreModule {
+        name: state.root.module.clone(),
+        declarations,
+    })
+}
+
+pub fn extract_closed_machine_certificate(
+    state: &MachineProofState,
+) -> Result<MachineProofCertificate> {
+    let core_module = extract_closed_machine_core_module(state)?;
+    let imports = state
+        .env
+        .imports
+        .iter()
+        .map(|import| import.verified_module.as_ref().clone())
+        .collect::<Vec<_>>();
+    let certificate = npa_cert::build_module_cert(core_module.clone(), &imports)
+        .map_err(|err| certificate_handoff_diag("build_module_cert", err))?;
+    let certificate_bytes = npa_cert::encode_module_cert(&certificate)
+        .map_err(|err| certificate_handoff_diag("encode_module_cert", err))?;
+    let mut session = npa_cert::VerifierSession::new();
+    for import in imports {
+        session.register_verified_module(import);
+    }
+    let verified_module = npa_cert::verify_module_cert(
+        &certificate_bytes,
+        &mut session,
+        &npa_cert::AxiomPolicy::normal(),
+    )
+    .map_err(|err| certificate_handoff_diag("verify_module_cert", err))?;
+    Ok(MachineProofCertificate {
+        core_module,
+        certificate,
+        certificate_bytes,
+        verified_module,
+    })
+}
+
+fn certificate_handoff_diag(stage: &str, err: npa_cert::CertError) -> MachineTacticDiagnostic {
+    MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::KernelRejected,
+        format!("certificate handoff {stage} failed: {err:?}"),
+    )
+}
+
 pub fn validate_machine_proof_state(state: &MachineProofState) -> Result<()> {
     validate_options(&state.env.options)?;
     if state.env.options_fingerprint != machine_tactic_options_hash(&state.env.options) {
@@ -11393,6 +11455,102 @@ mod tests {
                 ty: type0(),
                 proof: prop(),
             }
+        );
+    }
+
+    #[test]
+    fn certificate_handoff_builds_and_verifies_closed_state() {
+        let state = start_trivial();
+        let (state, _) =
+            assign_goal(&state, GoalId(0), ProofExpr::Core(prop()), Vec::new()).unwrap();
+        let handoff = extract_closed_machine_certificate(&state)
+            .expect("closed machine proof should hand off to a verified certificate");
+
+        assert_eq!(handoff.core_module.name, Name::from_dotted("Test"));
+        assert_eq!(handoff.core_module.declarations.len(), 1);
+        assert_eq!(handoff.core_module.declarations[0].name(), "Test.thm");
+        assert_eq!(
+            handoff.verified_module.certificate_hash(),
+            handoff.certificate.hashes.certificate_hash
+        );
+        assert_eq!(
+            npa_cert::decode_module_cert(&handoff.certificate_bytes)
+                .expect("handoff certificate bytes should decode"),
+            handoff.certificate
+        );
+    }
+
+    #[test]
+    fn certificate_handoff_rejects_unresolved_goals() {
+        let state = start_trivial();
+        let err = extract_closed_machine_certificate(&state)
+            .expect_err("open proof states must not be certificate handoff inputs");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::UnresolvedGoal);
+    }
+
+    #[test]
+    fn certificate_handoff_includes_checked_current_prefix() {
+        let prior_decl = Decl::Def {
+            name: "Test.A".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::sort(Level::succ(Level::succ(Level::zero()))),
+            value: type0(),
+            reducibility: Reducibility::Reducible,
+        };
+        let prior =
+            check_current_decl_for_machine_tactic_from_verified_imports(&[], &[], 0, prior_decl)
+                .unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                source_index: 1,
+                theorem_type: Expr::konst("Test.A", Vec::new()),
+                ..trivial_spec()
+            },
+            Vec::new(),
+            vec![prior],
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) =
+            assign_goal(&state, GoalId(0), ProofExpr::Core(prop()), Vec::new()).unwrap();
+        let handoff = extract_closed_machine_certificate(&state)
+            .expect("checked current prefix should be included in certificate handoff");
+
+        assert_eq!(handoff.core_module.declarations.len(), 2);
+        assert_eq!(handoff.core_module.declarations[0].name(), "Test.A");
+        assert_eq!(handoff.core_module.declarations[1].name(), "Test.thm");
+    }
+
+    #[test]
+    fn certificate_handoff_excludes_tactic_metadata() {
+        let direct = start_trivial();
+        let (direct, _) =
+            assign_goal(&direct, GoalId(0), ProofExpr::Core(prop()), Vec::new()).unwrap();
+
+        let staged = start_trivial();
+        let (staged, _) = assign_goal(
+            &staged,
+            GoalId(0),
+            ProofExpr::Meta(MetaVarId(1)),
+            vec![MachineNewGoalSpec::new(Vec::new(), type0())],
+        )
+        .unwrap();
+        let (staged, _) =
+            assign_goal(&staged, GoalId(1), ProofExpr::Core(prop()), Vec::new()).unwrap();
+
+        assert_ne!(direct.fingerprint, staged.fingerprint);
+        assert_eq!(
+            extract_closed_machine_proof(&direct).unwrap(),
+            extract_closed_machine_proof(&staged).unwrap()
+        );
+
+        let direct_handoff = extract_closed_machine_certificate(&direct).unwrap();
+        let staged_handoff = extract_closed_machine_certificate(&staged).unwrap();
+
+        assert_eq!(
+            direct_handoff.certificate_bytes,
+            staged_handoff.certificate_bytes
         );
     }
 
