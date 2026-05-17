@@ -33,6 +33,8 @@ impl From<GoalId> for MetaVarId {
 pub enum MachineTacticDiagnosticKind {
     InvalidTacticOption,
     UnsupportedTacticOption,
+    InvalidMachineTactic,
+    InvalidMachineTermSource,
     UnsupportedMachineTactic,
     TacticFuelExhausted { kind: TacticFuelKind },
     InvalidMachineProofState,
@@ -127,6 +129,7 @@ enum DiagnosticHashSide {
 enum DiagnosticPayloadKind {
     Expr,
     CheckedDeclSignature,
+    MachineTermSource,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -136,6 +139,64 @@ pub struct MachineProofSpec {
     pub source_index: u64,
     pub universe_params: Vec<String>,
     pub theorem_type: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RawMachineTerm {
+    pub source: String,
+}
+
+impl RawMachineTerm {
+    pub fn new(source: impl Into<String>) -> Self {
+        Self {
+            source: source.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineTacticCandidate {
+    Exact {
+        goal_id: GoalId,
+        term: RawMachineTerm,
+    },
+    Intro {
+        goal_id: GoalId,
+        name: String,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTermSource {
+    source: String,
+    canonical_hash: Hash,
+}
+
+impl MachineTermSource {
+    pub fn new_checked(source: impl Into<String>) -> Result<Self> {
+        let source = source.into();
+        let canonical = npa_frontend::canonicalize_machine_term_source(&source).map_err(|err| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineTermSource,
+                format!(
+                    "machine term source canonicalization failed: {}",
+                    err.message
+                ),
+            )
+        })?;
+        Ok(Self {
+            source,
+            canonical_hash: machine_term_source_hash_from_phase3(&canonical.canonical_bytes),
+        })
+    }
+
+    pub fn source(&self) -> &str {
+        &self.source
+    }
+
+    pub fn canonical_hash(&self) -> Hash {
+        self.canonical_hash
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -537,7 +598,7 @@ pub struct TacticBudget {
 impl Default for TacticBudget {
     fn default() -> Self {
         Self {
-            max_tactic_steps: 1,
+            max_tactic_steps: 8,
             max_whnf_steps: 20_000,
             max_conversion_steps: 20_000,
             max_rewrite_steps: 1_000,
@@ -904,11 +965,34 @@ impl MachineProofState {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineTactic {
+    Exact {
+        goal_id: GoalId,
+        term: MachineTermSource,
+    },
+    Intro {
+        goal_id: GoalId,
+        name: String,
+    },
     Assign {
         goal_id: GoalId,
         proof: ProofExpr,
         new_goals: Vec<MachineNewGoalSpec>,
     },
+}
+
+pub fn validate_machine_tactic_candidate(
+    candidate: MachineTacticCandidate,
+) -> Result<MachineTactic> {
+    match candidate {
+        MachineTacticCandidate::Exact { goal_id, term } => Ok(MachineTactic::Exact {
+            goal_id,
+            term: MachineTermSource::new_checked(term.source)?,
+        }),
+        MachineTacticCandidate::Intro { goal_id, name } => {
+            validate_intro_name_shape(&name)?;
+            Ok(MachineTactic::Intro { goal_id, name })
+        }
+    }
 }
 
 pub fn start_machine_proof(
@@ -992,12 +1076,97 @@ pub fn run_machine_tactic_with_budget(
 ) -> Result<(MachineProofState, MachineProofDelta)> {
     validate_machine_proof_state(state)?;
     match tactic {
+        MachineTactic::Exact { goal_id, term } => {
+            run_exact_tactic_with_budget(state, goal_id, term, budget)
+        }
+        MachineTactic::Intro { goal_id, name } => {
+            run_intro_tactic_with_budget(state, goal_id, name, budget)
+        }
         MachineTactic::Assign {
             goal_id,
             proof,
             new_goals,
         } => assign_goal_with_budget(state, goal_id, proof, new_goals, budget),
     }
+}
+
+fn run_exact_tactic_with_budget(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    term: MachineTermSource,
+    budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta)> {
+    let goal = state.goal(goal_id)?;
+    validate_machine_term_source(&term)?;
+    let context = machine_term_elab_context(state, &goal.context)?;
+    let checked = npa_frontend::elaborate_machine_term_check(
+        term.source(),
+        &context,
+        &goal.target,
+        &npa_frontend::MachineCompileOptions::default(),
+    )
+    .map_err(machine_term_elaboration_diag)?;
+    ensure_tactic_step_fuel(budget, 2, goal_id, goal.meta_id)?;
+    assign_goal_with_budget_and_steps(
+        state,
+        goal_id,
+        ProofExpr::Core(checked.expr),
+        Vec::new(),
+        budget,
+        0,
+    )
+}
+
+fn run_intro_tactic_with_budget(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    name: String,
+    budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta)> {
+    let goal = state.goal(goal_id)?;
+    validate_intro_name_shape(&name)?;
+    validate_intro_name_available(state, &goal.context, &name)?;
+    let ctx = local_context_to_ctx(
+        state.env.kernel_env(),
+        &goal.context,
+        &state.root.universe_params,
+    )?;
+    let target_whnf = state
+        .env
+        .kernel_env()
+        .whnf(&ctx, &state.root.universe_params, &goal.target)
+        .map_err(kernel_diag)?;
+    let Expr::Pi { ty, body, .. } = target_whnf else {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::TypeMismatch,
+            "intro requires the goal target to reduce to a Pi",
+        )
+        .with_expected_actual_payloads(
+            DiagnosticPayloadKind::Expr,
+            &core_expr_canonical_bytes(&goal.target),
+            &core_expr_canonical_bytes(&target_whnf),
+        )
+        .with_goal(goal_id)
+        .with_meta(goal.meta_id));
+    };
+    ensure_tactic_step_fuel(budget, 3, goal_id, goal.meta_id)?;
+    let body_target = *body;
+    let binder_ty = *ty;
+    let new_meta_id = MetaVarId(state.metas.next_id);
+    let mut body_context = goal.context.clone();
+    body_context.push(MachineLocalDecl::assumption(
+        name.clone(),
+        binder_ty.clone(),
+    ));
+    let proof = ProofExpr::lam(name, binder_ty, ProofExpr::Meta(new_meta_id));
+    assign_goal_with_budget_and_steps(
+        state,
+        goal_id,
+        proof,
+        vec![MachineNewGoalSpec::new(body_context, body_target)],
+        budget,
+        0,
+    )
 }
 
 pub fn assign_goal(
@@ -1021,6 +1190,17 @@ pub fn assign_goal_with_budget(
     proof_expr: ProofExpr,
     new_goal_specs: Vec<MachineNewGoalSpec>,
     budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta)> {
+    assign_goal_with_budget_and_steps(state, goal_id, proof_expr, new_goal_specs, budget, 1)
+}
+
+fn assign_goal_with_budget_and_steps(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    proof_expr: ProofExpr,
+    new_goal_specs: Vec<MachineNewGoalSpec>,
+    budget: TacticBudget,
+    required_tactic_steps: u64,
 ) -> Result<(MachineProofState, MachineProofDelta)> {
     validate_machine_proof_state(state)?;
     let goal_index = state
@@ -1090,11 +1270,8 @@ pub fn assign_goal_with_budget(
         .with_meta(assigned_meta_id));
     }
 
-    let mut candidate = state.clone();
-    let mut new_meta_ids = BTreeSet::new();
-    let mut added_goals = Vec::new();
-    let mut new_metas_delta = Vec::new();
-    for spec in new_goal_specs {
+    let mut new_goal_expr_nodes = 0;
+    for spec in &new_goal_specs {
         if !machine_local_context_is_prefix(&assigned_meta.context, &spec.context) {
             return Err(MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::InvalidMetaContext,
@@ -1104,14 +1281,14 @@ pub fn assign_goal_with_budget(
             .with_meta(assigned_meta_id));
         }
         let ctx = local_context_to_ctx(
-            candidate.env.kernel_env(),
+            state.env.kernel_env(),
             &spec.context,
-            &candidate.root.universe_params,
+            &state.root.universe_params,
         )?;
         ensure_type_is_sort(
-            candidate.env.kernel_env(),
+            state.env.kernel_env(),
             &ctx,
-            &candidate.root.universe_params,
+            &state.root.universe_params,
             &spec.target,
         )
         .map_err(|err| {
@@ -1122,7 +1299,16 @@ pub fn assign_goal_with_budget(
             .with_goal(goal_id)
             .with_meta(assigned_meta_id)
         })?;
+        new_goal_expr_nodes += core_expr_node_count(&spec.target);
+    }
 
+    ensure_tactic_step_fuel(budget, required_tactic_steps, goal_id, assigned_meta_id)?;
+
+    let mut candidate = state.clone();
+    let mut new_meta_ids = BTreeSet::new();
+    let mut added_goals = Vec::new();
+    let mut new_metas_delta = Vec::new();
+    for spec in new_goal_specs {
         let meta_id = MetaVarId(candidate.metas.next_id);
         let new_goal_id = GoalId::from(meta_id);
         candidate.metas.next_id += 1;
@@ -1147,16 +1333,12 @@ pub fn assign_goal_with_budget(
         });
     }
 
-    if budget.max_tactic_steps == 0 {
-        return Err(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::TacticFuelExhausted {
-                kind: TacticFuelKind::TacticStep,
-            },
-            "tactic step fuel is exhausted",
-        )
-        .with_goal(goal_id)
-        .with_meta(assigned_meta_id));
-    }
+    ensure_expr_node_fuel(
+        budget,
+        proof_expr_node_count(&proof_expr) + new_goal_expr_nodes,
+        goal_id,
+        assigned_meta_id,
+    )?;
 
     check_proof_expr(
         candidate.env.kernel_env(),
@@ -2074,6 +2256,280 @@ fn validate_options(options: &MachineTacticOptions) -> Result<()> {
     Ok(())
 }
 
+fn validate_machine_term_source(term: &MachineTermSource) -> Result<()> {
+    let canonical =
+        npa_frontend::canonicalize_machine_term_source(&term.source).map_err(|err| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineTermSource,
+                format!(
+                    "machine term source canonicalization failed: {}",
+                    err.message
+                ),
+            )
+        })?;
+    let expected = machine_term_source_hash_from_phase3(&canonical.canonical_bytes);
+    if term.canonical_hash != expected {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMachineTermSource,
+            "machine term source canonical hash is stale",
+        )
+        .with_expected_actual_payloads(
+            DiagnosticPayloadKind::MachineTermSource,
+            &machine_term_source_canonical_bytes_from_phase3(&canonical.canonical_bytes),
+            &term.canonical_hash,
+        ));
+    }
+    Ok(())
+}
+
+fn validate_intro_name_shape(name: &str) -> Result<()> {
+    if !is_machine_identifier(name) || is_reserved_spelling(name) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMachineTactic,
+            format!("intro name {name:?} is not a valid machine local identifier"),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_intro_name_available(
+    state: &MachineProofState,
+    context: &[MachineLocalDecl],
+    name: &str,
+) -> Result<()> {
+    if context.iter().any(|local| local.name == name) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMetaContext,
+            format!("intro name {name} already exists in the local context"),
+        ));
+    }
+    if machine_global_roots(state).contains(name) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMetaContext,
+            format!("intro name {name} shadows a global namespace root"),
+        ));
+    }
+    Ok(())
+}
+
+fn machine_global_roots(state: &MachineProofState) -> BTreeSet<String> {
+    let mut roots = BTreeSet::new();
+    insert_name_root(&mut roots, &state.root.theorem_name);
+    for import in &state.env.imports {
+        for export in &import.exports {
+            insert_name_root(&mut roots, &export.name);
+        }
+    }
+    for checked in &state.env.checked_current_decls {
+        insert_name_root(&mut roots, checked.signature.name());
+        if let Decl::Inductive { data, .. } = &checked.core_decl {
+            for constructor in &data.constructors {
+                insert_dotted_name_root(&mut roots, &constructor.name);
+            }
+            if let Some(recursor) = &data.recursor {
+                insert_dotted_name_root(&mut roots, &recursor.name);
+            }
+        }
+    }
+    roots
+}
+
+fn insert_name_root(roots: &mut BTreeSet<String>, name: &Name) {
+    if let Some(root) = name.0.first() {
+        roots.insert(root.clone());
+    }
+}
+
+fn insert_dotted_name_root(roots: &mut BTreeSet<String>, name: &str) {
+    if let Some(root) = name.split('.').next() {
+        if !root.is_empty() {
+            roots.insert(root.to_owned());
+        }
+    }
+}
+
+fn is_machine_identifier(value: &str) -> bool {
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    first.is_ascii_alphabetic()
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '\'')
+}
+
+fn is_reserved_spelling(value: &str) -> bool {
+    matches!(
+        value,
+        "import"
+            | "def"
+            | "theorem"
+            | "fun"
+            | "forall"
+            | "let"
+            | "in"
+            | "Prop"
+            | "Type"
+            | "Sort"
+            | "open"
+            | "namespace"
+            | "match"
+            | "with"
+            | "notation"
+            | "infix"
+            | "infixl"
+            | "infixr"
+            | "axiom"
+            | "inductive"
+            | "succ"
+            | "max"
+            | "imax"
+    )
+}
+
+fn ensure_tactic_step_fuel(
+    budget: TacticBudget,
+    needed: u64,
+    goal_id: GoalId,
+    meta_id: MetaVarId,
+) -> Result<()> {
+    if budget.max_tactic_steps < needed {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::TacticStep,
+            },
+            format!(
+                "tactic requires {needed} tactic step fuel, remaining tactic step fuel is {}",
+                budget.max_tactic_steps
+            ),
+        )
+        .with_goal(goal_id)
+        .with_meta(meta_id));
+    }
+    Ok(())
+}
+
+fn ensure_expr_node_fuel(
+    budget: TacticBudget,
+    needed: u64,
+    goal_id: GoalId,
+    meta_id: MetaVarId,
+) -> Result<()> {
+    if budget.max_expr_nodes < needed {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::ExprNode,
+            },
+            format!(
+                "tactic requires {needed} expression node fuel, remaining expression node fuel is {}",
+                budget.max_expr_nodes
+            ),
+        )
+        .with_goal(goal_id)
+        .with_meta(meta_id));
+    }
+    Ok(())
+}
+
+fn machine_term_elab_context(
+    state: &MachineProofState,
+    context: &[MachineLocalDecl],
+) -> Result<npa_frontend::MachineTermElabContext> {
+    let imports = state
+        .env
+        .imports
+        .iter()
+        .map(|import| import.verified_module.as_ref().clone())
+        .collect::<Vec<_>>();
+    let checked_current_decls = state
+        .env
+        .checked_current_decls
+        .iter()
+        .map(|decl| npa_frontend::MachineCheckedCurrentDecl {
+            name: decl.signature.name().clone(),
+            source_index: decl.source_index,
+            decl_interface_hash: decl.signature.decl_interface_hash(),
+            decl: decl.core_decl.clone(),
+        })
+        .collect::<Vec<_>>();
+    let mut current_generated_decls = Vec::new();
+    for decl in &state.env.checked_current_decls {
+        if let Decl::Inductive { data, .. } = &decl.core_decl {
+            for constructor in &data.constructors {
+                current_generated_decls.push(npa_frontend::MachineCheckedCurrentGeneratedDecl {
+                    name: Name::from_dotted(&constructor.name),
+                    parent_source_index: decl.source_index,
+                    decl_interface_hash: decl.signature.decl_interface_hash(),
+                });
+            }
+            if let Some(recursor) = &data.recursor {
+                current_generated_decls.push(npa_frontend::MachineCheckedCurrentGeneratedDecl {
+                    name: Name::from_dotted(&recursor.name),
+                    parent_source_index: decl.source_index,
+                    decl_interface_hash: decl.signature.decl_interface_hash(),
+                });
+            }
+        }
+    }
+    let local_context = context
+        .iter()
+        .map(|local| npa_frontend::MachineLocalDecl {
+            name: local.name.clone(),
+            ty: local.ty.clone(),
+            value: local.value.clone(),
+        })
+        .collect();
+    npa_frontend::MachineTermElabContext::from_verified_modules_and_current_decls(
+        &imports,
+        &imports,
+        &checked_current_decls,
+        &current_generated_decls,
+        local_context,
+        state.root.universe_params.clone(),
+    )
+    .map_err(machine_term_elaboration_diag)
+}
+
+fn machine_term_elaboration_diag(err: npa_frontend::MachineDiagnostic) -> MachineTacticDiagnostic {
+    match err.kind {
+        npa_frontend::MachineDiagnosticKind::TypeMismatch => {
+            let mut diag = MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::TypeMismatch,
+                format!("machine term type check failed: {}", err.message),
+            );
+            if let Some(payload) = err.payload {
+                if let (Some(expected), Some(actual)) =
+                    (payload.expected_hash.as_ref(), payload.actual_hash.as_ref())
+                {
+                    diag.expected_hash = Some(Box::new(*expected));
+                    diag.actual_hash = Some(Box::new(*actual));
+                }
+            }
+            diag
+        }
+        npa_frontend::MachineDiagnosticKind::GlobalShadowedByLocal => MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMetaContext,
+            format!("machine term context is invalid: {}", err.message),
+        ),
+        npa_frontend::MachineDiagnosticKind::ParseError
+        | npa_frontend::MachineDiagnosticKind::UnsupportedSyntax
+        | npa_frontend::MachineDiagnosticKind::HoleNotAllowed => MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMachineTermSource,
+            format!("machine term source is invalid: {}", err.message),
+        ),
+        npa_frontend::MachineDiagnosticKind::KernelRejected => MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::KernelRejected,
+            format!(
+                "machine term elaboration was rejected by the kernel: {}",
+                err.message
+            ),
+        ),
+        _ => MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::KernelRejected,
+            format!("machine term elaboration failed: {}", err.message),
+        ),
+    }
+}
+
 fn canonicalize_imports(mut imports: Vec<VerifiedImportRef>) -> Vec<VerifiedImportRef> {
     imports.sort_by(|lhs, rhs| {
         lhs.module
@@ -2365,6 +2821,39 @@ fn contains_bound_var(expr: &Expr, target: u32) -> bool {
     }
 }
 
+fn core_expr_node_count(expr: &Expr) -> u64 {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => 1,
+        Expr::App(fun, arg) => 1 + core_expr_node_count(fun) + core_expr_node_count(arg),
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            1 + core_expr_node_count(ty) + core_expr_node_count(body)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            1 + core_expr_node_count(ty) + core_expr_node_count(value) + core_expr_node_count(body)
+        }
+    }
+}
+
+fn proof_expr_node_count(expr: &ProofExpr) -> u64 {
+    match expr {
+        ProofExpr::Core(core) => 1 + core_expr_node_count(core),
+        ProofExpr::Meta(_) => 1,
+        ProofExpr::App(fun, arg) => 1 + proof_expr_node_count(fun) + proof_expr_node_count(arg),
+        ProofExpr::Lam { ty, body, .. } => {
+            1 + core_expr_node_count(ty) + proof_expr_node_count(body)
+        }
+        ProofExpr::Let {
+            ty, value, body, ..
+        } => {
+            1 + core_expr_node_count(ty)
+                + proof_expr_node_count(value)
+                + proof_expr_node_count(body)
+        }
+    }
+}
+
 fn phase2_current_decl_hashes(
     imports: &[VerifiedImportRef],
     checked_prior_current_decls: &[CheckedCurrentDecl],
@@ -2503,6 +2992,19 @@ fn checked_env_fingerprint(
     hash_with_domain("npa.phase4.current.checked-env.v1", &out)
 }
 
+fn machine_term_source_canonical_bytes_from_phase3(phase3_canonical_bytes: &[u8]) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.machine-term-source.v1");
+    out.extend_from_slice(phase3_canonical_bytes);
+    out
+}
+
+fn machine_term_source_hash_from_phase3(phase3_canonical_bytes: &[u8]) -> Hash {
+    hash_with_domain(
+        "npa.phase4.machine-term-source.hash.v1",
+        &machine_term_source_canonical_bytes_from_phase3(phase3_canonical_bytes),
+    )
+}
+
 fn expected_actual_diagnostic_hash(
     kind: &MachineTacticDiagnosticKind,
     side: DiagnosticHashSide,
@@ -2591,6 +3093,29 @@ pub fn core_expr_hash(expr: &Expr) -> Hash {
 
 pub fn core_expr_canonical_bytes(expr: &Expr) -> Vec<u8> {
     npa_cert::core_expr_canonical_bytes(expr)
+}
+
+pub fn machine_term_source_canonical_bytes(term: &MachineTermSource) -> Result<Vec<u8>> {
+    let canonical =
+        npa_frontend::canonicalize_machine_term_source(term.source()).map_err(|err| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineTermSource,
+                format!(
+                    "machine term source canonicalization failed: {}",
+                    err.message
+                ),
+            )
+        })?;
+    Ok(machine_term_source_canonical_bytes_from_phase3(
+        &canonical.canonical_bytes,
+    ))
+}
+
+pub fn machine_term_source_hash(term: &MachineTermSource) -> Result<Hash> {
+    Ok(hash_with_domain(
+        "npa.phase4.machine-term-source.hash.v1",
+        &machine_term_source_canonical_bytes(term)?,
+    ))
 }
 
 pub fn machine_tactic_options_hash(options: &MachineTacticOptions) -> Hash {
@@ -2710,6 +3235,8 @@ fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKi
     out.push(match kind {
         MachineTacticDiagnosticKind::InvalidTacticOption => 0x00,
         MachineTacticDiagnosticKind::UnsupportedTacticOption => 0x01,
+        MachineTacticDiagnosticKind::InvalidMachineTactic => 0x15,
+        MachineTacticDiagnosticKind::InvalidMachineTermSource => 0x16,
         MachineTacticDiagnosticKind::UnsupportedMachineTactic => 0x02,
         MachineTacticDiagnosticKind::TacticFuelExhausted { kind } => {
             out.push(0x14);
@@ -2757,6 +3284,7 @@ fn encode_diagnostic_payload_kind_to(out: &mut Vec<u8>, kind: DiagnosticPayloadK
     out.push(match kind {
         DiagnosticPayloadKind::Expr => 0x00,
         DiagnosticPayloadKind::CheckedDeclSignature => 0x01,
+        DiagnosticPayloadKind::MachineTermSource => 0x02,
     });
 }
 
@@ -3044,6 +3572,10 @@ mod tests {
         .expect("trivial proof state should start")
     }
 
+    fn checked_term(source: &str) -> MachineTermSource {
+        MachineTermSource::new_checked(source).expect("test term source should canonicalize")
+    }
+
     #[test]
     fn start_machine_proof_allocates_deterministic_root_goal() {
         let state = start_trivial();
@@ -3157,6 +3689,37 @@ mod tests {
     }
 
     #[test]
+    fn machine_tactic_candidate_canonicalizes_exact_term_source() {
+        let first = validate_machine_tactic_candidate(MachineTacticCandidate::Exact {
+            goal_id: GoalId(0),
+            term: RawMachineTerm::new("Prop"),
+        })
+        .expect("exact candidate should validate");
+        let second = validate_machine_tactic_candidate(MachineTacticCandidate::Exact {
+            goal_id: GoalId(0),
+            term: RawMachineTerm::new("  Prop  "),
+        })
+        .expect("exact candidate should canonicalize whitespace-insensitive source");
+
+        let (
+            MachineTactic::Exact {
+                term: first_term, ..
+            },
+            MachineTactic::Exact {
+                term: second_term, ..
+            },
+        ) = (first, second)
+        else {
+            panic!("validated exact candidate must produce exact tactic");
+        };
+        assert_eq!(first_term.canonical_hash(), second_term.canonical_hash());
+        assert_eq!(
+            first_term.canonical_hash(),
+            machine_term_source_hash(&first_term).unwrap()
+        );
+    }
+
+    #[test]
     fn core_hashes_ignore_display_binder_names() {
         let pi_x = Expr::pi("x", type0(), Expr::bvar(0));
         let pi_y = Expr::pi("y", type0(), Expr::bvar(0));
@@ -3224,6 +3787,286 @@ mod tests {
 
         let proof = extract_closed_machine_proof(&closed).expect("proof should extract");
         assert_eq!(proof, prop());
+    }
+
+    #[test]
+    fn exact_tactic_closes_goal_with_machine_surface_term() {
+        let state = start_trivial();
+        let (closed, delta) = run_machine_tactic(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: checked_term("Prop"),
+            },
+        )
+        .expect("exact Prop should close a Type goal");
+
+        assert!(closed.open_goals.is_empty());
+        assert_eq!(delta.assigned_goal, GoalId(0));
+        assert_eq!(
+            extract_closed_machine_proof(&closed).expect("proof should extract"),
+            prop()
+        );
+    }
+
+    #[test]
+    fn exact_tactic_revalidates_machine_term_source_hash() {
+        let state = start_trivial();
+        let stale = MachineTermSource {
+            source: "Prop".to_owned(),
+            canonical_hash: ZERO_HASH,
+        };
+        let err = run_machine_tactic(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: stale,
+            },
+        )
+        .expect_err("stale term source hash must be rejected");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::InvalidMachineTermSource
+        );
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn exact_term_error_precedes_expr_node_budget() {
+        let state = start_trivial();
+        let budget = TacticBudget {
+            max_expr_nodes: 0,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: checked_term("Type"),
+            },
+            budget,
+        )
+        .expect_err("term type mismatch should be reported before expression-node fuel");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::TypeMismatch);
+    }
+
+    #[test]
+    fn exact_expr_node_budget_is_checked_after_elaboration() {
+        let state = start_trivial();
+        let budget = TacticBudget {
+            max_expr_nodes: 0,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: checked_term("Prop"),
+            },
+            budget,
+        )
+        .expect_err("valid exact proof still needs expression-node fuel");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::ExprNode
+            }
+        );
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn exact_tactic_consumes_dispatch_and_construction_steps() {
+        let state = start_trivial();
+        let budget = TacticBudget {
+            max_tactic_steps: 1,
+            max_expr_nodes: 0,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: checked_term("Prop"),
+            },
+            budget,
+        )
+        .expect_err("exact requires dispatch and proof construction step fuel");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::TacticStep
+            }
+        );
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn intro_tactic_creates_lambda_and_body_goal() {
+        let spec = MachineProofSpec {
+            theorem_type: Expr::pi("p", prop(), prop()),
+            ..trivial_spec()
+        };
+        let state = start_machine_proof(
+            spec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .expect("Pi theorem type should start");
+
+        let (state, delta) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .expect("intro should open the Pi body");
+
+        assert_eq!(state.open_goals, vec![GoalId(1)]);
+        assert_eq!(delta.added_goals, vec![GoalId(1)]);
+        let body_goal = state.goal(GoalId(1)).unwrap();
+        assert_eq!(
+            body_goal.context,
+            vec![MachineLocalDecl::assumption("p", prop())]
+        );
+        assert_eq!(body_goal.target, prop());
+
+        let (closed, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(1),
+                term: checked_term("p"),
+            },
+        )
+        .expect("introduced local should close the body goal");
+        assert_eq!(
+            extract_closed_machine_proof(&closed).unwrap(),
+            Expr::lam("p", prop(), Expr::bvar(0))
+        );
+    }
+
+    #[test]
+    fn intro_rejects_non_pi_before_tactic_step_fuel() {
+        let state = start_trivial();
+        let budget = TacticBudget {
+            max_tactic_steps: 0,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "x".to_owned(),
+            },
+            budget,
+        )
+        .expect_err("non-Pi target should be reported before tactic-step fuel");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::TypeMismatch);
+    }
+
+    #[test]
+    fn intro_tactic_consumes_dispatch_body_goal_and_lambda_steps() {
+        let spec = MachineProofSpec {
+            theorem_type: Expr::pi("p", prop(), prop()),
+            ..trivial_spec()
+        };
+        let state = start_machine_proof(
+            spec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .expect("Pi theorem type should start");
+        let budget = TacticBudget {
+            max_tactic_steps: 2,
+            max_expr_nodes: 0,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+            budget,
+        )
+        .expect_err("intro requires dispatch, body goal, and lambda step fuel");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::TacticStep
+            }
+        );
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn intro_rejects_local_and_global_root_shadowing() {
+        let spec = MachineProofSpec {
+            theorem_type: Expr::pi("p", prop(), Expr::pi("q", prop(), prop())),
+            ..trivial_spec()
+        };
+        let state = start_machine_proof(
+            spec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let duplicate = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "p".to_owned(),
+            },
+        )
+        .expect_err("intro should not reuse an existing local name");
+        assert_eq!(
+            duplicate.kind,
+            MachineTacticDiagnosticKind::InvalidMetaContext
+        );
+
+        let import =
+            VerifiedImportRef::from_verified_module(&verified_axiom_module("Nat", "Nat.T"))
+                .unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi("x", prop(), prop()),
+                ..trivial_spec()
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let global_shadow = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "Nat".to_owned(),
+            },
+        )
+        .expect_err("intro should follow Phase 3 local/global shadowing");
+        assert_eq!(
+            global_shadow.kind,
+            MachineTacticDiagnosticKind::InvalidMetaContext
+        );
     }
 
     #[test]
@@ -3403,6 +4246,40 @@ mod tests {
         assert_eq!(
             unknown_goal_err.kind,
             MachineTacticDiagnosticKind::UnknownGoal
+        );
+
+        let pi_state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi("p", prop(), prop()),
+                ..trivial_spec()
+            },
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (pi_state, _) = run_machine_tactic(
+            &pi_state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let invalid_new_goal_err = run_machine_tactic_with_budget(
+            &pi_state,
+            MachineTactic::Assign {
+                goal_id: GoalId(1),
+                proof: ProofExpr::Meta(MetaVarId(2)),
+                new_goals: vec![MachineNewGoalSpec::new(Vec::new(), prop())],
+            },
+            budget,
+        )
+        .expect_err("new goal static validation should run before tactic step fuel");
+
+        assert_eq!(
+            invalid_new_goal_err.kind,
+            MachineTacticDiagnosticKind::InvalidMetaContext
         );
     }
 
