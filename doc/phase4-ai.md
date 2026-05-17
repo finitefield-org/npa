@@ -2229,6 +2229,7 @@ enum MachineTacticDiagnosticKind {
     CurrentDeclSignatureMismatch,
     AmbiguousKernelEnvDecl,
     InvalidVerifiedImport,
+    InvalidBatchPolicy,
     InvalidTacticOption,
     UnsupportedTacticOption,
     InvalidEqFamily,
@@ -2305,6 +2306,9 @@ MachineTacticOptions numeric limit is 0:
 
 state fingerprint does not match state payload:
   InvalidMachineProofState
+
+batch request envelope / candidate_id / batch_policy is invalid:
+  InvalidBatchPolicy
 
 MachineTactic enum / Level / field shape is invalid:
   InvalidMachineTactic

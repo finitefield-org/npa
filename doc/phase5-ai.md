@@ -5218,6 +5218,8 @@ Phase 4 MachineTacticDiagnosticKind -> MachineApiErrorKind:
     InvalidMachineProofState
   InvalidMachineTactic:
     InvalidCandidate
+  InvalidBatchPolicy:
+    InvalidBatchPolicy
   InvalidMachineTermSource returned by Phase 4 after Phase 5 RawMachineTerm prepass has succeeded:
     InvalidMachineProofState
   UnknownGoal / GoalAlreadyAssigned:

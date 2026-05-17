@@ -37,6 +37,7 @@ impl From<GoalId> for MetaVarId {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineTacticDiagnosticKind {
     InvalidTacticOption,
+    InvalidBatchPolicy,
     UnsupportedTacticOption,
     InvalidMachineTactic,
     InvalidMachineTermSource,
@@ -99,6 +100,8 @@ pub struct MachineTacticDiagnostic {
     pub expected_hash: Option<Box<Hash>>,
     pub actual_hash: Option<Box<Hash>>,
     pub goal_id: Option<GoalId>,
+    pub tactic_kind: Option<String>,
+    pub primary_name: Option<Name>,
     pub meta_id: Option<MetaVarId>,
 }
 
@@ -110,6 +113,8 @@ impl MachineTacticDiagnostic {
             expected_hash: None,
             actual_hash: None,
             goal_id: None,
+            tactic_kind: None,
+            primary_name: None,
             meta_id: None,
         }
     }
@@ -153,6 +158,11 @@ impl MachineTacticDiagnostic {
 
     fn with_goal(mut self, goal_id: GoalId) -> Self {
         self.goal_id = Some(goal_id);
+        self
+    }
+
+    fn with_primary_name(mut self, primary_name: Name) -> Self {
+        self.primary_name = Some(primary_name);
         self
     }
 
@@ -778,6 +788,23 @@ impl Default for TacticBudget {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchPolicy {
+    pub max_evaluated_candidates: u32,
+    pub stop_after_successes: u32,
+    pub stop_after_failures: u32,
+}
+
+impl Default for MachineTacticBatchPolicy {
+    fn default() -> Self {
+        Self {
+            max_evaluated_candidates: 256,
+            stop_after_successes: 256,
+            stop_after_failures: 256,
+        }
+    }
+}
+
 #[derive(Debug)]
 struct TacticRunFuel {
     whnf_steps: Cell<usize>,
@@ -1225,62 +1252,170 @@ pub enum MachineTactic {
     },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticCacheKey {
+    pub state_fingerprint: Hash,
+    pub goal_id: GoalId,
+    pub tactic_hash: Hash,
+    pub deterministic_budget_hash: Hash,
+}
+
+#[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
+pub enum MachineTacticResult {
+    Success {
+        state: MachineProofState,
+        delta: MachineProofDelta,
+    },
+    Error {
+        diagnostic: MachineTacticDiagnostic,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchCandidate {
+    pub candidate_id: String,
+    pub candidate: MachineTacticCandidate,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MachineTacticBatchErrorPhase {
+    CandidateValidation,
+    TacticExecution,
+}
+
+#[derive(Clone, Debug)]
+#[allow(clippy::large_enum_variant)]
+pub enum MachineTacticBatchItemResult {
+    Success {
+        candidate_id: String,
+        candidate_hash: Hash,
+        state: MachineProofState,
+        delta: MachineProofDelta,
+    },
+    Error {
+        candidate_id: String,
+        candidate_hash: Option<Hash>,
+        phase: MachineTacticBatchErrorPhase,
+        diagnostic: MachineTacticDiagnostic,
+        retryable: bool,
+    },
+}
+
+#[derive(Clone, Debug)]
+pub struct MachineTacticBatchResult {
+    pub previous_state_fingerprint: Hash,
+    pub deterministic_budget_hash: Hash,
+    pub results: Vec<MachineTacticBatchItemResult>,
+}
+
+pub fn machine_tactic_goal_id(tactic: &MachineTactic) -> GoalId {
+    match tactic {
+        MachineTactic::Exact { goal_id, .. }
+        | MachineTactic::Intro { goal_id, .. }
+        | MachineTactic::Apply { goal_id, .. }
+        | MachineTactic::Rewrite { goal_id, .. }
+        | MachineTactic::SimpLite { goal_id, .. }
+        | MachineTactic::InductionNat { goal_id, .. }
+        | MachineTactic::Assign { goal_id, .. } => *goal_id,
+    }
+}
+
+pub fn machine_tactic_kind(tactic: &MachineTactic) -> Option<&'static str> {
+    match tactic {
+        MachineTactic::Exact { .. } => Some("exact"),
+        MachineTactic::Intro { .. } => Some("intro"),
+        MachineTactic::Apply { .. } => Some("apply"),
+        MachineTactic::Rewrite { .. } => Some("rw"),
+        MachineTactic::SimpLite { .. } => Some("simp-lite"),
+        MachineTactic::InductionNat { .. } => Some("induction-nat"),
+        MachineTactic::Assign { .. } => None,
+    }
+}
+
+pub fn machine_tactic_candidate_goal_id(candidate: &MachineTacticCandidate) -> GoalId {
+    match candidate {
+        MachineTacticCandidate::Exact { goal_id, .. }
+        | MachineTacticCandidate::Intro { goal_id, .. }
+        | MachineTacticCandidate::Apply { goal_id, .. }
+        | MachineTacticCandidate::Rewrite { goal_id, .. }
+        | MachineTacticCandidate::SimpLite { goal_id, .. }
+        | MachineTacticCandidate::InductionNat { goal_id, .. } => *goal_id,
+    }
+}
+
+pub fn machine_tactic_candidate_kind(candidate: &MachineTacticCandidate) -> &'static str {
+    match candidate {
+        MachineTacticCandidate::Exact { .. } => "exact",
+        MachineTacticCandidate::Intro { .. } => "intro",
+        MachineTacticCandidate::Apply { .. } => "apply",
+        MachineTacticCandidate::Rewrite { .. } => "rw",
+        MachineTacticCandidate::SimpLite { .. } => "simp-lite",
+        MachineTacticCandidate::InductionNat { .. } => "induction-nat",
+    }
+}
+
 pub fn validate_machine_tactic_candidate(
     candidate: MachineTacticCandidate,
 ) -> Result<MachineTactic> {
-    match candidate {
-        MachineTacticCandidate::Exact { goal_id, term } => Ok(MachineTactic::Exact {
-            goal_id,
-            term: MachineTermSource::new_checked(term.source)?,
-        }),
-        MachineTacticCandidate::Intro { goal_id, name } => {
-            validate_intro_name_shape(&name)?;
-            Ok(MachineTactic::Intro { goal_id, name })
-        }
-        MachineTacticCandidate::Apply {
-            goal_id,
-            head,
-            universe_args,
-            args,
-        } => {
-            validate_tactic_head_shape(&head)?;
-            let args = args
-                .into_iter()
-                .map(validate_candidate_apply_arg)
-                .collect::<Result<Vec<_>>>()?;
-            Ok(MachineTactic::Apply {
+    let goal_id = machine_tactic_candidate_goal_id(&candidate);
+    let tactic_kind = machine_tactic_candidate_kind(&candidate);
+    let result = (|| -> Result<MachineTactic> {
+        match candidate {
+            MachineTacticCandidate::Exact { goal_id, term } => Ok(MachineTactic::Exact {
+                goal_id,
+                term: MachineTermSource::new_checked(term.source)?,
+            }),
+            MachineTacticCandidate::Intro { goal_id, name } => {
+                validate_intro_name_shape(&name)?;
+                Ok(MachineTactic::Intro { goal_id, name })
+            }
+            MachineTacticCandidate::Apply {
                 goal_id,
                 head,
                 universe_args,
                 args,
-            })
-        }
-        MachineTacticCandidate::Rewrite {
-            goal_id,
-            rule,
-            direction,
-            site,
-        } => Ok(MachineTactic::Rewrite {
-            goal_id,
-            rule: validate_candidate_rewrite_rule(rule)?,
-            direction,
-            site,
-        }),
-        MachineTacticCandidate::SimpLite { goal_id, rules } => {
-            validate_simp_rule_refs(&rules)?;
-            Ok(MachineTactic::SimpLite { goal_id, rules })
-        }
-        MachineTacticCandidate::InductionNat {
-            goal_id,
-            local_name,
-        } => {
-            validate_intro_name_shape(&local_name)?;
-            Ok(MachineTactic::InductionNat {
+            } => {
+                validate_tactic_head_shape(&head)?;
+                let args = args
+                    .into_iter()
+                    .map(validate_candidate_apply_arg)
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(MachineTactic::Apply {
+                    goal_id,
+                    head,
+                    universe_args,
+                    args,
+                })
+            }
+            MachineTacticCandidate::Rewrite {
+                goal_id,
+                rule,
+                direction,
+                site,
+            } => Ok(MachineTactic::Rewrite {
+                goal_id,
+                rule: validate_candidate_rewrite_rule(rule)?,
+                direction,
+                site,
+            }),
+            MachineTacticCandidate::SimpLite { goal_id, rules } => {
+                validate_simp_rule_refs(&rules)?;
+                Ok(MachineTactic::SimpLite { goal_id, rules })
+            }
+            MachineTacticCandidate::InductionNat {
                 goal_id,
                 local_name,
-            })
+            } => {
+                validate_intro_name_shape(&local_name)?;
+                Ok(MachineTactic::InductionNat {
+                    goal_id,
+                    local_name,
+                })
+            }
         }
-    }
+    })();
+    result.map_err(|diag| attach_tactic_context(diag, goal_id, Some(tactic_kind)))
 }
 
 pub fn start_machine_proof(
@@ -1362,39 +1497,175 @@ pub fn run_machine_tactic_with_budget(
     tactic: MachineTactic,
     budget: TacticBudget,
 ) -> Result<(MachineProofState, MachineProofDelta)> {
-    validate_machine_proof_state(state)?;
-    match tactic {
-        MachineTactic::Exact { goal_id, term } => {
-            run_exact_tactic_with_budget(state, goal_id, term, budget)
+    let goal_id = machine_tactic_goal_id(&tactic);
+    let tactic_kind = machine_tactic_kind(&tactic);
+    let result = (|| -> Result<(MachineProofState, MachineProofDelta)> {
+        validate_machine_proof_state(state)?;
+        match tactic {
+            MachineTactic::Exact { goal_id, term } => {
+                run_exact_tactic_with_budget(state, goal_id, term, budget)
+            }
+            MachineTactic::Intro { goal_id, name } => {
+                run_intro_tactic_with_budget(state, goal_id, name, budget)
+            }
+            MachineTactic::Apply {
+                goal_id,
+                head,
+                universe_args,
+                args,
+            } => run_apply_tactic_with_budget(state, goal_id, head, universe_args, args, budget),
+            MachineTactic::Rewrite {
+                goal_id,
+                rule,
+                direction,
+                site,
+            } => run_rewrite_tactic_with_budget(state, goal_id, rule, direction, site, budget),
+            MachineTactic::SimpLite { goal_id, rules } => {
+                run_simp_lite_tactic_with_budget(state, goal_id, rules, budget)
+            }
+            MachineTactic::InductionNat {
+                goal_id,
+                local_name,
+            } => run_induction_nat_tactic_with_budget(state, goal_id, local_name, budget),
+            MachineTactic::Assign {
+                goal_id,
+                proof,
+                new_goals,
+            } => assign_goal_with_budget(state, goal_id, proof, new_goals, budget),
         }
-        MachineTactic::Intro { goal_id, name } => {
-            run_intro_tactic_with_budget(state, goal_id, name, budget)
-        }
-        MachineTactic::Apply {
-            goal_id,
-            head,
-            universe_args,
-            args,
-        } => run_apply_tactic_with_budget(state, goal_id, head, universe_args, args, budget),
-        MachineTactic::Rewrite {
-            goal_id,
-            rule,
-            direction,
-            site,
-        } => run_rewrite_tactic_with_budget(state, goal_id, rule, direction, site, budget),
-        MachineTactic::SimpLite { goal_id, rules } => {
-            run_simp_lite_tactic_with_budget(state, goal_id, rules, budget)
-        }
-        MachineTactic::InductionNat {
-            goal_id,
-            local_name,
-        } => run_induction_nat_tactic_with_budget(state, goal_id, local_name, budget),
-        MachineTactic::Assign {
-            goal_id,
-            proof,
-            new_goals,
-        } => assign_goal_with_budget(state, goal_id, proof, new_goals, budget),
+    })();
+    result.map_err(|diag| attach_tactic_context(diag, goal_id, tactic_kind))
+}
+
+pub fn run_machine_tactic_transactional(
+    state: &MachineProofState,
+    tactic: MachineTactic,
+    budget: TacticBudget,
+) -> MachineTacticResult {
+    match run_machine_tactic_with_budget(state, tactic, budget) {
+        Ok((state, delta)) => MachineTacticResult::Success { state, delta },
+        Err(diagnostic) => MachineTacticResult::Error { diagnostic },
     }
+}
+
+pub fn run_machine_tactic_candidates_batch(
+    state: &MachineProofState,
+    candidates: Vec<MachineTacticBatchCandidate>,
+    budget: TacticBudget,
+    policy: MachineTacticBatchPolicy,
+) -> Result<MachineTacticBatchResult> {
+    validate_machine_tactic_batch_request(&candidates, policy)?;
+    validate_machine_proof_state(state)?;
+
+    let mut results = Vec::new();
+    let mut successes = 0usize;
+    let mut failures = 0usize;
+    let max_evaluated = policy.max_evaluated_candidates as usize;
+    let stop_after_successes = policy.stop_after_successes as usize;
+    let stop_after_failures = policy.stop_after_failures as usize;
+
+    for (evaluated, item) in candidates.into_iter().enumerate() {
+        if evaluated >= max_evaluated
+            || successes >= stop_after_successes
+            || failures >= stop_after_failures
+        {
+            break;
+        }
+
+        let candidate_id = item.candidate_id;
+        let tactic = match validate_machine_tactic_candidate(item.candidate) {
+            Ok(tactic) => tactic,
+            Err(diagnostic) => {
+                failures += 1;
+                results.push(MachineTacticBatchItemResult::Error {
+                    candidate_id,
+                    candidate_hash: None,
+                    phase: MachineTacticBatchErrorPhase::CandidateValidation,
+                    diagnostic,
+                    retryable: false,
+                });
+                continue;
+            }
+        };
+        let candidate_hash = machine_tactic_hash(&tactic);
+
+        match run_machine_tactic_transactional(state, tactic, budget) {
+            MachineTacticResult::Success { state, delta } => {
+                successes += 1;
+                results.push(MachineTacticBatchItemResult::Success {
+                    candidate_id,
+                    candidate_hash,
+                    state,
+                    delta,
+                });
+            }
+            MachineTacticResult::Error { diagnostic } => {
+                failures += 1;
+                results.push(MachineTacticBatchItemResult::Error {
+                    candidate_id,
+                    candidate_hash: Some(candidate_hash),
+                    phase: MachineTacticBatchErrorPhase::TacticExecution,
+                    diagnostic,
+                    retryable: false,
+                });
+            }
+        }
+    }
+
+    Ok(MachineTacticBatchResult {
+        previous_state_fingerprint: state.fingerprint,
+        deterministic_budget_hash: tactic_budget_hash(budget),
+        results,
+    })
+}
+
+fn validate_machine_tactic_batch_request(
+    candidates: &[MachineTacticBatchCandidate],
+    policy: MachineTacticBatchPolicy,
+) -> Result<()> {
+    const MAX_BATCH_CANDIDATES: usize = 256;
+    if candidates.is_empty() {
+        return Err(invalid_batch_policy("batch candidates must be non-empty"));
+    }
+    if candidates.len() > MAX_BATCH_CANDIDATES {
+        return Err(invalid_batch_policy(
+            "batch candidates must not exceed 256 entries",
+        ));
+    }
+
+    let mut ids = BTreeSet::new();
+    for item in candidates {
+        if !is_machine_candidate_id(&item.candidate_id) {
+            return Err(invalid_batch_policy(format!(
+                "candidate_id {:?} does not match the machine batch grammar",
+                item.candidate_id
+            )));
+        }
+        if !ids.insert(item.candidate_id.as_str()) {
+            return Err(invalid_batch_policy(format!(
+                "duplicate candidate_id {:?}",
+                item.candidate_id
+            )));
+        }
+    }
+
+    validate_batch_policy_field("max_evaluated_candidates", policy.max_evaluated_candidates)?;
+    validate_batch_policy_field("stop_after_successes", policy.stop_after_successes)?;
+    validate_batch_policy_field("stop_after_failures", policy.stop_after_failures)?;
+    Ok(())
+}
+
+fn validate_batch_policy_field(name: &str, value: u32) -> Result<()> {
+    if !(1..=256).contains(&value) {
+        return Err(invalid_batch_policy(format!(
+            "{name} must be in the inclusive range 1..=256"
+        )));
+    }
+    Ok(())
+}
+
+fn invalid_batch_policy(message: impl Into<String>) -> MachineTacticDiagnostic {
+    MachineTacticDiagnostic::new(MachineTacticDiagnosticKind::InvalidBatchPolicy, message)
 }
 
 fn run_exact_tactic_with_budget(
@@ -1500,6 +1771,22 @@ fn attach_goal_meta(
     }
     if diag.meta_id.is_none() {
         diag.meta_id = Some(meta_id);
+    }
+    diag
+}
+
+fn attach_tactic_context(
+    mut diag: MachineTacticDiagnostic,
+    goal_id: GoalId,
+    tactic_kind: Option<&'static str>,
+) -> MachineTacticDiagnostic {
+    if diag.goal_id.is_none() {
+        diag.goal_id = Some(goal_id);
+    }
+    if diag.tactic_kind.is_none() {
+        if let Some(tactic_kind) = tactic_kind {
+            diag.tactic_kind = Some(tactic_kind.to_owned());
+        }
     }
     diag
 }
@@ -1784,11 +2071,13 @@ fn resolve_imported_apply_signature<'a>(
                     name.as_dotted()
                 ),
             )
+            .with_primary_name(name.clone())
         } else {
             MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::AmbiguousTacticHead,
                 format!("imported apply head {} is ambiguous", name.as_dotted()),
             )
+            .with_primary_name(name.clone())
         }
         .with_goal(goal.id)
         .with_meta(goal.meta_id));
@@ -1820,6 +2109,7 @@ fn resolve_current_apply_signature<'a>(
                     name.as_dotted()
                 ),
             )
+            .with_primary_name(name.clone())
         } else {
             MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::AmbiguousTacticHead,
@@ -1828,6 +2118,7 @@ fn resolve_current_apply_signature<'a>(
                     name.as_dotted()
                 ),
             )
+            .with_primary_name(name.clone())
         }
         .with_goal(goal.id)
         .with_meta(goal.meta_id));
@@ -1905,6 +2196,7 @@ fn validate_global_apply_signature<S: ApplySignature>(
                     signature.name().as_dotted()
                 ),
             )
+            .with_primary_name(signature.name().clone())
             .with_goal(goal.id)
             .with_meta(goal.meta_id)
         })?;
@@ -3132,11 +3424,13 @@ fn resolve_simp_lite_allowlist<'a>(
                         rule.name.as_dotted()
                     ),
                 )
+                .with_primary_name(rule.name.clone())
             } else {
                 MachineTacticDiagnostic::new(
                     MachineTacticDiagnosticKind::AmbiguousSimpRule,
                     format!("simp-lite rule {} is ambiguous", rule.name.as_dotted()),
                 )
+                .with_primary_name(rule.name.clone())
             }
             .with_goal(goal.id)
             .with_meta(goal.meta_id));
@@ -6285,6 +6579,7 @@ fn resolve_simp_rule(
                         export.name.as_dotted()
                     ),
                 )
+                .with_primary_name(export.name.clone())
             })?;
             let core_hash = import
                 .certified_env_decls()
@@ -6330,11 +6625,13 @@ fn resolve_simp_rule(
                     rule.name.as_dotted()
                 ),
             )
+            .with_primary_name(rule.name.clone())
         } else {
             MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::AmbiguousSimpRule,
                 format!("simp rule {} is ambiguous", rule.name.as_dotted()),
             )
+            .with_primary_name(rule.name.clone())
         });
     };
     ensure_simp_rule_decl_kind(core_decl, &rule.name, origin)?;
@@ -7059,6 +7356,13 @@ fn is_machine_identifier(value: &str) -> bool {
     };
     first.is_ascii_alphabetic()
         && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '\'')
+}
+
+fn is_machine_candidate_id(value: &str) -> bool {
+    (1..=64).contains(&value.len())
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
 }
 
 fn is_reserved_spelling(value: &str) -> bool {
@@ -8054,6 +8358,52 @@ pub fn machine_tactic_hash(tactic: &MachineTactic) -> Hash {
     )
 }
 
+pub fn tactic_budget_canonical_bytes(budget: TacticBudget) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.tactic-budget.v1");
+    encode_u64_to(&mut out, budget.max_tactic_steps);
+    encode_u64_to(&mut out, budget.max_whnf_steps);
+    encode_u64_to(&mut out, budget.max_conversion_steps);
+    encode_u64_to(&mut out, budget.max_rewrite_steps);
+    encode_u64_to(&mut out, budget.max_meta_allocations);
+    encode_u64_to(&mut out, budget.max_expr_nodes);
+    out
+}
+
+pub fn tactic_budget_hash(budget: TacticBudget) -> Hash {
+    let mut hasher = Sha256::new();
+    hasher.update(tactic_budget_canonical_bytes(budget));
+    hasher.finalize().into()
+}
+
+pub fn machine_tactic_cache_key(
+    state: &MachineProofState,
+    tactic: &MachineTactic,
+    budget: TacticBudget,
+) -> MachineTacticCacheKey {
+    MachineTacticCacheKey {
+        state_fingerprint: state.fingerprint,
+        goal_id: machine_tactic_goal_id(tactic),
+        tactic_hash: machine_tactic_hash(tactic),
+        deterministic_budget_hash: tactic_budget_hash(budget),
+    }
+}
+
+pub fn machine_tactic_cache_key_canonical_bytes(key: &MachineTacticCacheKey) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.machine-tactic-cache-key.v1");
+    encode_hash_to(&mut out, &key.state_fingerprint);
+    encode_goal_id_to(&mut out, key.goal_id);
+    encode_hash_to(&mut out, &key.tactic_hash);
+    encode_hash_to(&mut out, &key.deterministic_budget_hash);
+    out
+}
+
+pub fn machine_tactic_cache_key_hash(key: &MachineTacticCacheKey) -> Hash {
+    hash_with_domain(
+        "npa.phase4.machine-tactic-cache-key.hash.v1",
+        &machine_tactic_cache_key_canonical_bytes(key),
+    )
+}
+
 fn universe_param_list_canonical_bytes(params: &[String]) -> Vec<u8> {
     let mut out = tagged_bytes("npa.phase4.universe-param-list.v1");
     encode_list_len_to(&mut out, params.len());
@@ -8188,6 +8538,7 @@ fn kernel_check_profile_hash() -> Hash {
 fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKind) {
     out.push(match kind {
         MachineTacticDiagnosticKind::InvalidTacticOption => 0x00,
+        MachineTacticDiagnosticKind::InvalidBatchPolicy => 0x2d,
         MachineTacticDiagnosticKind::UnsupportedTacticOption => 0x01,
         MachineTacticDiagnosticKind::InvalidMachineTactic => 0x15,
         MachineTacticDiagnosticKind::InvalidMachineTermSource => 0x16,
@@ -9309,6 +9660,108 @@ mod tests {
     }
 
     #[test]
+    fn machine_tactic_candidate_validation_attaches_goal_and_tactic_kind() {
+        let err = validate_machine_tactic_candidate(MachineTacticCandidate::Intro {
+            goal_id: GoalId(7),
+            name: "bad-name".to_owned(),
+        })
+        .expect_err("invalid intro candidate should keep structured context");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidMachineTactic);
+        assert_eq!(err.goal_id, Some(GoalId(7)));
+        assert_eq!(err.tactic_kind.as_deref(), Some("intro"));
+        assert_eq!(err.primary_name, None);
+    }
+
+    #[test]
+    fn rewrite_candidate_validation_uses_rw_tactic_kind() {
+        let err = validate_machine_tactic_candidate(MachineTacticCandidate::Rewrite {
+            goal_id: GoalId(7),
+            rule: CandidateRewriteRuleRef {
+                head: TacticHead::Local {
+                    name: "bad-name".to_owned(),
+                },
+                universe_args: Vec::new(),
+                args: Vec::new(),
+            },
+            direction: RewriteDirection::Forward,
+            site: RewriteSite::EqTargetLeft,
+        })
+        .expect_err("invalid rw candidate should keep the wire tactic kind");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidMachineTactic);
+        assert_eq!(err.goal_id, Some(GoalId(7)));
+        assert_eq!(err.tactic_kind.as_deref(), Some("rw"));
+        assert_eq!(err.primary_name, None);
+    }
+
+    #[test]
+    fn tactic_budget_hash_is_deterministic_and_field_sensitive() {
+        let budget = TacticBudget {
+            max_tactic_steps: 1,
+            max_whnf_steps: 2,
+            max_conversion_steps: 3,
+            max_rewrite_steps: 4,
+            max_meta_allocations: 5,
+            max_expr_nodes: 6,
+        };
+        let changed = TacticBudget {
+            max_expr_nodes: 7,
+            ..budget
+        };
+
+        assert_eq!(tactic_budget_hash(budget), tactic_budget_hash(budget));
+        assert_ne!(tactic_budget_hash(budget), tactic_budget_hash(changed));
+        let mut expected = Sha256::new();
+        expected.update(tactic_budget_canonical_bytes(budget));
+        let expected_hash: Hash = expected.finalize().into();
+        assert_eq!(tactic_budget_hash(budget), expected_hash);
+        assert_ne!(
+            tactic_budget_canonical_bytes(budget),
+            tactic_budget_canonical_bytes(changed)
+        );
+    }
+
+    #[test]
+    fn tactic_cache_key_includes_goal_and_deterministic_budget() {
+        let state = start_trivial();
+        let tactic = MachineTactic::Exact {
+            goal_id: GoalId(0),
+            term: checked_term("Prop"),
+        };
+        let same_payload_other_goal = MachineTactic::Exact {
+            goal_id: GoalId(1),
+            term: checked_term("Prop"),
+        };
+        let budget = TacticBudget::default();
+        let bigger_budget = TacticBudget {
+            max_whnf_steps: budget.max_whnf_steps + 1,
+            ..budget
+        };
+
+        assert_eq!(
+            machine_tactic_hash(&tactic),
+            machine_tactic_hash(&same_payload_other_goal),
+            "canonical tactic hash intentionally excludes the selected goal"
+        );
+
+        let key = machine_tactic_cache_key(&state, &tactic, budget);
+        let other_goal_key = machine_tactic_cache_key(&state, &same_payload_other_goal, budget);
+        let other_budget_key = machine_tactic_cache_key(&state, &tactic, bigger_budget);
+
+        assert_eq!(key.goal_id, GoalId(0));
+        assert_eq!(key.deterministic_budget_hash, tactic_budget_hash(budget));
+        assert_ne!(
+            machine_tactic_cache_key_hash(&key),
+            machine_tactic_cache_key_hash(&other_goal_key)
+        );
+        assert_ne!(
+            machine_tactic_cache_key_hash(&key),
+            machine_tactic_cache_key_hash(&other_budget_key)
+        );
+    }
+
+    #[test]
     fn core_hashes_ignore_display_binder_names() {
         let pi_x = Expr::pi("x", type0(), Expr::bvar(0));
         let pi_y = Expr::pi("y", type0(), Expr::bvar(0));
@@ -9396,6 +9849,254 @@ mod tests {
             extract_closed_machine_proof(&closed).expect("proof should extract"),
             prop()
         );
+    }
+
+    #[test]
+    fn transactional_result_is_deterministic_for_same_input_and_budget() {
+        let state = start_trivial();
+        let tactic = MachineTactic::Exact {
+            goal_id: GoalId(0),
+            term: checked_term("Prop"),
+        };
+        let budget = TacticBudget::default();
+
+        let first = run_machine_tactic_transactional(&state, tactic.clone(), budget);
+        let second = run_machine_tactic_transactional(&state, tactic, budget);
+
+        let (
+            MachineTacticResult::Success {
+                state: first_state,
+                delta: first_delta,
+            },
+            MachineTacticResult::Success {
+                state: second_state,
+                delta: second_delta,
+            },
+        ) = (first, second)
+        else {
+            panic!("exact Prop should succeed deterministically");
+        };
+
+        assert_eq!(first_state.fingerprint, second_state.fingerprint);
+        assert_eq!(first_delta.delta_hash, second_delta.delta_hash);
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn transactional_result_keeps_failed_tactic_as_structured_error() {
+        let state = start_trivial();
+        let tactic = MachineTactic::Intro {
+            goal_id: GoalId(0),
+            name: "p".to_owned(),
+        };
+
+        let first =
+            run_machine_tactic_transactional(&state, tactic.clone(), TacticBudget::default());
+        let second = run_machine_tactic_transactional(&state, tactic, TacticBudget::default());
+
+        let (
+            MachineTacticResult::Error {
+                diagnostic: first_diagnostic,
+            },
+            MachineTacticResult::Error {
+                diagnostic: second_diagnostic,
+            },
+        ) = (first, second)
+        else {
+            panic!("intro on a non-Pi target should fail deterministically");
+        };
+
+        assert_eq!(first_diagnostic, second_diagnostic);
+        assert_eq!(
+            first_diagnostic.kind,
+            MachineTacticDiagnosticKind::TypeMismatch
+        );
+        assert_eq!(first_diagnostic.goal_id, Some(GoalId(0)));
+        assert_eq!(first_diagnostic.tactic_kind.as_deref(), Some("intro"));
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn tactic_batch_runs_candidates_against_the_same_input_state() {
+        let state = start_trivial();
+        let budget = TacticBudget::default();
+        let batch = run_machine_tactic_candidates_batch(
+            &state,
+            vec![
+                MachineTacticBatchCandidate {
+                    candidate_id: "c0".to_owned(),
+                    candidate: MachineTacticCandidate::Exact {
+                        goal_id: GoalId(0),
+                        term: RawMachineTerm::new("Prop"),
+                    },
+                },
+                MachineTacticBatchCandidate {
+                    candidate_id: "c1".to_owned(),
+                    candidate: MachineTacticCandidate::Intro {
+                        goal_id: GoalId(0),
+                        name: "p".to_owned(),
+                    },
+                },
+            ],
+            budget,
+            MachineTacticBatchPolicy::default(),
+        )
+        .expect("valid batch should run");
+
+        assert_eq!(batch.previous_state_fingerprint, state.fingerprint);
+        assert_eq!(batch.deterministic_budget_hash, tactic_budget_hash(budget));
+        assert_eq!(batch.results.len(), 2);
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+
+        match &batch.results[0] {
+            MachineTacticBatchItemResult::Success {
+                candidate_id,
+                state: next_state,
+                delta,
+                ..
+            } => {
+                assert_eq!(candidate_id, "c0");
+                assert!(next_state.open_goals.is_empty());
+                assert_eq!(delta.assigned_goal, GoalId(0));
+            }
+            other => panic!("first candidate should succeed: {other:?}"),
+        }
+
+        match &batch.results[1] {
+            MachineTacticBatchItemResult::Error {
+                candidate_id,
+                candidate_hash,
+                phase,
+                diagnostic,
+                retryable,
+            } => {
+                assert_eq!(candidate_id, "c1");
+                assert!(candidate_hash.is_some());
+                assert_eq!(*phase, MachineTacticBatchErrorPhase::TacticExecution);
+                assert_eq!(diagnostic.kind, MachineTacticDiagnosticKind::TypeMismatch);
+                assert!(!retryable);
+            }
+            other => panic!("second candidate should fail independently: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tactic_batch_reports_candidate_validation_without_candidate_hash() {
+        let state = start_trivial();
+        let batch = run_machine_tactic_candidates_batch(
+            &state,
+            vec![MachineTacticBatchCandidate {
+                candidate_id: "c0".to_owned(),
+                candidate: MachineTacticCandidate::Intro {
+                    goal_id: GoalId(0),
+                    name: "bad-name".to_owned(),
+                },
+            }],
+            TacticBudget::default(),
+            MachineTacticBatchPolicy::default(),
+        )
+        .expect("candidate validation failures are per-candidate batch results");
+
+        assert_eq!(batch.results.len(), 1);
+        match &batch.results[0] {
+            MachineTacticBatchItemResult::Error {
+                candidate_hash,
+                phase,
+                diagnostic,
+                ..
+            } => {
+                assert!(candidate_hash.is_none());
+                assert_eq!(*phase, MachineTacticBatchErrorPhase::CandidateValidation);
+                assert_eq!(
+                    diagnostic.kind,
+                    MachineTacticDiagnosticKind::InvalidMachineTactic
+                );
+                assert_eq!(diagnostic.goal_id, Some(GoalId(0)));
+                assert_eq!(diagnostic.tactic_kind.as_deref(), Some("intro"));
+            }
+            other => panic!("invalid candidate should produce an error item: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tactic_batch_policy_stops_on_request_order_prefix() {
+        let state = start_trivial();
+        let batch = run_machine_tactic_candidates_batch(
+            &state,
+            vec![
+                MachineTacticBatchCandidate {
+                    candidate_id: "c0".to_owned(),
+                    candidate: MachineTacticCandidate::Exact {
+                        goal_id: GoalId(0),
+                        term: RawMachineTerm::new("Prop"),
+                    },
+                },
+                MachineTacticBatchCandidate {
+                    candidate_id: "c1".to_owned(),
+                    candidate: MachineTacticCandidate::Exact {
+                        goal_id: GoalId(0),
+                        term: RawMachineTerm::new("Prop"),
+                    },
+                },
+            ],
+            TacticBudget::default(),
+            MachineTacticBatchPolicy {
+                max_evaluated_candidates: 1,
+                stop_after_successes: 256,
+                stop_after_failures: 256,
+            },
+        )
+        .expect("policy-limited batch should run");
+
+        assert_eq!(batch.results.len(), 1);
+        match &batch.results[0] {
+            MachineTacticBatchItemResult::Success { candidate_id, .. } => {
+                assert_eq!(candidate_id, "c0");
+            }
+            other => panic!("first candidate should be the only evaluated item: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tactic_batch_rejects_invalid_policy_before_candidate_validation() {
+        let state = start_trivial();
+        let err = run_machine_tactic_candidates_batch(
+            &state,
+            vec![MachineTacticBatchCandidate {
+                candidate_id: "bad space".to_owned(),
+                candidate: MachineTacticCandidate::Intro {
+                    goal_id: GoalId(0),
+                    name: "bad-name".to_owned(),
+                },
+            }],
+            TacticBudget::default(),
+            MachineTacticBatchPolicy::default(),
+        )
+        .expect_err("invalid candidate_id is a batch policy error");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidBatchPolicy);
+    }
+
+    #[test]
+    fn tactic_batch_policy_validation_precedes_state_validation() {
+        let mut state = start_trivial();
+        state.state_id.clear();
+
+        let err = run_machine_tactic_candidates_batch(
+            &state,
+            vec![MachineTacticBatchCandidate {
+                candidate_id: "bad space".to_owned(),
+                candidate: MachineTacticCandidate::Exact {
+                    goal_id: GoalId(0),
+                    term: RawMachineTerm::new("Prop"),
+                },
+            }],
+            TacticBudget::default(),
+            MachineTacticBatchPolicy::default(),
+        )
+        .expect_err("batch policy validation must run before state validation");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidBatchPolicy);
     }
 
     #[test]
@@ -11288,6 +11989,8 @@ mod tests {
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::UnknownTacticHead);
         assert_eq!(err.goal_id, Some(GoalId(1)));
+        assert_eq!(err.tactic_kind.as_deref(), Some("apply"));
+        assert_eq!(err.primary_name, Some(Name::from_dotted("Test.missing")));
         assert_eq!(err.meta_id, Some(MetaVarId(1)));
         assert_eq!(state.open_goals, vec![GoalId(1)]);
     }
@@ -11320,6 +12023,8 @@ mod tests {
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::UnknownTacticHead);
         assert_eq!(err.goal_id, Some(GoalId(1)));
+        assert_eq!(err.tactic_kind.as_deref(), Some("rw"));
+        assert_eq!(err.primary_name, Some(Name::from_dotted("Test.missing")));
         assert_eq!(err.meta_id, Some(MetaVarId(1)));
         assert_eq!(state.open_goals, vec![GoalId(1)]);
     }
@@ -11349,6 +12054,7 @@ mod tests {
             }
         );
         assert_eq!(err.goal_id, Some(GoalId(0)));
+        assert_eq!(err.tactic_kind, None);
         assert_eq!(state.open_goals, vec![GoalId(0)]);
 
         let unknown_goal_err = run_machine_tactic_with_budget(
@@ -11366,6 +12072,8 @@ mod tests {
             unknown_goal_err.kind,
             MachineTacticDiagnosticKind::UnknownGoal
         );
+        assert_eq!(unknown_goal_err.goal_id, Some(GoalId(99)));
+        assert_eq!(unknown_goal_err.tactic_kind, None);
 
         let pi_state = start_machine_proof(
             MachineProofSpec {
@@ -11403,6 +12111,8 @@ mod tests {
             invalid_new_goal_err.kind,
             MachineTacticDiagnosticKind::InvalidMetaContext
         );
+        assert_eq!(invalid_new_goal_err.goal_id, Some(GoalId(1)));
+        assert_eq!(invalid_new_goal_err.tactic_kind, None);
     }
 
     #[test]
