@@ -68,6 +68,7 @@ version = "0.1.0"
 dependencies = [
  "npa-cert",
  "npa-kernel",
+ "npa-tactic",
  "sha2",
 ]
 

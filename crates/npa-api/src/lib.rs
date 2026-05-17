@@ -3,10 +3,18 @@
 //! This crate is intentionally outside the trusted kernel. It handles wire JSON
 //! decoding and request-shape validation for machine-facing endpoints.
 
+mod current;
 mod json;
 mod projection;
 mod validation;
 
+pub use current::{
+    project_checked_current_decl_context, CheckedCurrentDeclPackageInput,
+    CheckedCurrentDeclProjectionError, CurrentDeclDependencyEntry, CurrentDeclDependencyReport,
+    CurrentDeclIndexEntry, CurrentGeneratedDeclEntry, CurrentGeneratedDeclKind,
+    MachineAxiomRefWire, MachineCheckedCurrentDeclContext, MachineCheckedDeclSignature,
+    MachineDependencyRefWire,
+};
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
     JsonValue, JsonValueKind,
