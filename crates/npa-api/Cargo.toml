@@ -6,3 +6,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+npa-cert = { path = "../npa-cert" }
+sha2 = "0.10"
+
+[dev-dependencies]
+npa-kernel = { path = "../npa-kernel" }
