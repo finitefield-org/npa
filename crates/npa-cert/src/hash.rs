@@ -1,11 +1,91 @@
 use sha2::{Digest, Sha256};
 
+use npa_kernel::{Expr, Level};
+
 use crate::*;
 
 pub(crate) fn term_hash_impl(cert: &ModuleCert, term: TermId) -> Result<Hash> {
     let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table)?;
     let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes)?;
     term_hashes.get(term).copied().ok_or(CertError::DecodeError)
+}
+
+pub(crate) fn core_expr_canonical_bytes_impl(expr: &Expr) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_core_expr_to(&mut out, expr);
+    out
+}
+
+pub(crate) fn core_expr_hash_impl(expr: &Expr) -> Hash {
+    hash_with_domain(b"NPA-CORE-EXPR-0.1", &core_expr_canonical_bytes_impl(expr))
+}
+
+fn encode_core_expr_to(out: &mut Vec<u8>, expr: &Expr) {
+    match expr {
+        Expr::Sort(level) => {
+            out.push(0x00);
+            encode_core_level_to(out, level);
+        }
+        Expr::BVar(index) => {
+            out.push(0x01);
+            encode_uvar_to(out, u64::from(*index));
+        }
+        Expr::Const { name, levels } => {
+            out.push(0x02);
+            encode_name_to(out, &Name::from_dotted(name));
+            encode_uvar_to(out, levels.len() as u64);
+            for level in levels {
+                encode_core_level_to(out, level);
+            }
+        }
+        Expr::App(fun, arg) => {
+            out.push(0x03);
+            encode_core_expr_to(out, fun);
+            encode_core_expr_to(out, arg);
+        }
+        Expr::Lam { ty, body, .. } => {
+            out.push(0x04);
+            encode_core_expr_to(out, ty);
+            encode_core_expr_to(out, body);
+        }
+        Expr::Pi { ty, body, .. } => {
+            out.push(0x05);
+            encode_core_expr_to(out, ty);
+            encode_core_expr_to(out, body);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            out.push(0x06);
+            encode_core_expr_to(out, ty);
+            encode_core_expr_to(out, value);
+            encode_core_expr_to(out, body);
+        }
+    }
+}
+
+fn encode_core_level_to(out: &mut Vec<u8>, level: &Level) {
+    match npa_kernel::level::normalize_level(level.clone()) {
+        Level::Zero => out.push(0x00),
+        Level::Succ(inner) => {
+            out.push(0x01);
+            encode_core_level_to(out, &inner);
+        }
+        Level::Max(lhs, rhs) => {
+            out.push(0x02);
+            encode_core_level_to(out, &lhs);
+            encode_core_level_to(out, &rhs);
+        }
+        Level::IMax(lhs, rhs) => {
+            out.push(0x03);
+            encode_core_level_to(out, &lhs);
+            encode_core_level_to(out, &rhs);
+        }
+        Level::Param(name) => {
+            out.push(0x04);
+            encode_name_to(out, &Name::from_dotted(name));
+        }
+    }
 }
 pub(crate) fn build_export_block(
     declarations: &[DeclCert],

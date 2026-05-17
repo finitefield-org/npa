@@ -84,6 +84,15 @@ name = "npa-kernel"
 version = "0.1.0"
 
 [[package]]
+name = "npa-tactic"
+version = "0.1.0"
+dependencies = [
+ "npa-cert",
+ "npa-kernel",
+ "sha2",
+]
+
+[[package]]
 name = "sha2"
 version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -78,5 +78,20 @@ pub fn term_hash(cert: &ModuleCert, term: TermId) -> Result<Hash> {
     hash::term_hash_impl(cert, term)
 }
 
+/// Return canonical bytes for a raw kernel expression.
+///
+/// This is the Phase 1 core expression view used by higher-level machine APIs before a term is
+/// embedded in a certificate module and resolved to certificate `GlobalRef`s.
+pub fn core_expr_canonical_bytes(expr: &npa_kernel::Expr) -> Vec<u8> {
+    hash::core_expr_canonical_bytes_impl(expr)
+}
+
+/// Return the canonical structural hash for a raw kernel expression.
+///
+/// This hash is computed from [`core_expr_canonical_bytes`] and ignores display-only binder names.
+pub fn core_expr_hash(expr: &npa_kernel::Expr) -> Hash {
+    hash::core_expr_hash_impl(expr)
+}
+
 #[cfg(test)]
 mod tests;

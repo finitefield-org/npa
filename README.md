@@ -73,7 +73,9 @@ canonical certificate を検査します。
 │   ├── npa-cert/
 │   │   ├── src/
 │   │   └── tests/
-│   └── npa-frontend/
+│   ├── npa-frontend/
+│   │   └── src/
+│   └── npa-tactic/
 │       └── src/
 └── doc/
     ├── core-spec-v0.1.md
@@ -87,6 +89,7 @@ canonical certificate を検査します。
 `crates/npa-cert` は `.npcert` の canonical encode/decode、hash 再計算、import 検査、
 axiom report 検査、Rust kernel への再検査ハンドオフを担当します。
 surface language / frontend は `crates/npa-frontend` で最小実装が進んでおり、
+AI 向け Phase 4 M1 の tactic proof-state core は `crates/npa-tactic` で実装されています。
 独立 checker は Phase 8 の後続成果物として扱います。
 
 ## 開発メモ
