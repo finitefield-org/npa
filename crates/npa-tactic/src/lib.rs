@@ -41,6 +41,9 @@ pub enum MachineTacticDiagnosticKind {
     UnsupportedTacticOption,
     InvalidMachineTactic,
     InvalidMachineTermSource,
+    MachineTermElaborationError,
+    UnknownName,
+    ImplicitArgumentRequired,
     UnsupportedMachineTactic,
     TacticFuelExhausted { kind: TacticFuelKind },
     InvalidMachineProofState,
@@ -48,19 +51,24 @@ pub enum MachineTacticDiagnosticKind {
     InvalidVerifiedImport,
     AmbiguousKernelEnvDecl,
     InvalidCurrentDeclOrder,
+    UncheckedCurrentDecl,
     CurrentDeclSignatureMismatch,
     UnknownGoal,
-    AssignedGoal,
+    GoalAlreadyAssigned,
+    UnknownMeta,
     GoalLimitExceeded,
     MetaLimitExceeded,
     InvalidMetaDependency,
     InvalidMetaContext,
     ProofExprScopeError,
+    ProofExprTypeMismatch,
     UnknownTacticHead,
     AmbiguousTacticHead,
     UnknownLocalName,
     AmbiguousLocalName,
     InvalidLocalHead,
+    ExpectedFunctionType,
+    ExpectedPiTarget,
     UniverseArgumentMismatch,
     MissingExplicitArgument,
     AmbiguousApplyArgument,
@@ -212,31 +220,25 @@ impl RawMachineTerm {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineTacticCandidate {
     Exact {
-        goal_id: GoalId,
         term: RawMachineTerm,
     },
     Intro {
-        goal_id: GoalId,
         name: String,
     },
     Apply {
-        goal_id: GoalId,
         head: TacticHead,
         universe_args: Vec<Level>,
         args: Vec<CandidateApplyArg>,
     },
     Rewrite {
-        goal_id: GoalId,
         rule: CandidateRewriteRuleRef,
         direction: RewriteDirection,
         site: RewriteSite,
     },
     SimpLite {
-        goal_id: GoalId,
         rules: Vec<SimpRuleRef>,
     },
     InductionNat {
-        goal_id: GoalId,
         local_name: String,
     },
 }
@@ -911,7 +913,7 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports(
     match &decl {
         Decl::Axiom { name, .. } => {
             return Err(MachineTacticDiagnostic::new(
-                MachineTacticDiagnosticKind::KernelRejected,
+                MachineTacticDiagnosticKind::UncheckedCurrentDecl,
                 format!(
                     "current declaration {name} is an axiom; checked current declarations must carry a kernel-checkable body"
                 ),
@@ -919,7 +921,7 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports(
         }
         Decl::Constructor { name, .. } | Decl::Recursor { name, .. } => {
             return Err(MachineTacticDiagnostic::new(
-                MachineTacticDiagnosticKind::KernelRejected,
+                MachineTacticDiagnosticKind::UncheckedCurrentDecl,
                 format!(
                     "generated declaration {name} cannot be checked as a standalone current declaration"
                 ),
@@ -936,7 +938,7 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports(
     )?;
     add_decl_to_kernel_env(&mut env.kernel_env, decl.clone()).map_err(|err| {
         MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::KernelRejected,
+            MachineTacticDiagnosticKind::UncheckedCurrentDecl,
             format!(
                 "kernel rejected current declaration {}: {err:?}",
                 decl.name()
@@ -1097,7 +1099,7 @@ impl MachineTacticEnv {
                     add_decl_to_kernel_env(&mut kernel_env, normalized.core_decl.clone()).map_err(
                         |err| {
                             MachineTacticDiagnostic::new(
-                                MachineTacticDiagnosticKind::KernelRejected,
+                                MachineTacticDiagnosticKind::UncheckedCurrentDecl,
                                 format!(
                                     "kernel rejected checked current declaration {}: {err:?}",
                                     normalized.core_decl.name()
@@ -1198,7 +1200,7 @@ impl MachineProofState {
         }
         if meta.assignment.is_some() {
             return Err(MachineTacticDiagnostic::new(
-                MachineTacticDiagnosticKind::AssignedGoal,
+                MachineTacticDiagnosticKind::GoalAlreadyAssigned,
                 format!("goal {} is already assigned", goal_id.0),
             )
             .with_goal(goal_id)
@@ -1244,11 +1246,6 @@ pub enum MachineTactic {
     InductionNat {
         goal_id: GoalId,
         local_name: String,
-    },
-    Assign {
-        goal_id: GoalId,
-        proof: ProofExpr,
-        new_goals: Vec<MachineNewGoalSpec>,
     },
 }
 
@@ -1316,8 +1313,7 @@ pub fn machine_tactic_goal_id(tactic: &MachineTactic) -> GoalId {
         | MachineTactic::Apply { goal_id, .. }
         | MachineTactic::Rewrite { goal_id, .. }
         | MachineTactic::SimpLite { goal_id, .. }
-        | MachineTactic::InductionNat { goal_id, .. }
-        | MachineTactic::Assign { goal_id, .. } => *goal_id,
+        | MachineTactic::InductionNat { goal_id, .. } => *goal_id,
     }
 }
 
@@ -1329,18 +1325,6 @@ pub fn machine_tactic_kind(tactic: &MachineTactic) -> Option<&'static str> {
         MachineTactic::Rewrite { .. } => Some("rw"),
         MachineTactic::SimpLite { .. } => Some("simp-lite"),
         MachineTactic::InductionNat { .. } => Some("induction-nat"),
-        MachineTactic::Assign { .. } => None,
-    }
-}
-
-pub fn machine_tactic_candidate_goal_id(candidate: &MachineTacticCandidate) -> GoalId {
-    match candidate {
-        MachineTacticCandidate::Exact { goal_id, .. }
-        | MachineTacticCandidate::Intro { goal_id, .. }
-        | MachineTacticCandidate::Apply { goal_id, .. }
-        | MachineTacticCandidate::Rewrite { goal_id, .. }
-        | MachineTacticCandidate::SimpLite { goal_id, .. }
-        | MachineTacticCandidate::InductionNat { goal_id, .. } => *goal_id,
     }
 }
 
@@ -1356,22 +1340,21 @@ pub fn machine_tactic_candidate_kind(candidate: &MachineTacticCandidate) -> &'st
 }
 
 pub fn validate_machine_tactic_candidate(
+    goal_id: GoalId,
     candidate: MachineTacticCandidate,
 ) -> Result<MachineTactic> {
-    let goal_id = machine_tactic_candidate_goal_id(&candidate);
     let tactic_kind = machine_tactic_candidate_kind(&candidate);
     let result = (|| -> Result<MachineTactic> {
         match candidate {
-            MachineTacticCandidate::Exact { goal_id, term } => Ok(MachineTactic::Exact {
+            MachineTacticCandidate::Exact { term } => Ok(MachineTactic::Exact {
                 goal_id,
                 term: MachineTermSource::new_checked(term.source)?,
             }),
-            MachineTacticCandidate::Intro { goal_id, name } => {
+            MachineTacticCandidate::Intro { name } => {
                 validate_intro_name_shape(&name)?;
                 Ok(MachineTactic::Intro { goal_id, name })
             }
             MachineTacticCandidate::Apply {
-                goal_id,
                 head,
                 universe_args,
                 args,
@@ -1389,7 +1372,6 @@ pub fn validate_machine_tactic_candidate(
                 })
             }
             MachineTacticCandidate::Rewrite {
-                goal_id,
                 rule,
                 direction,
                 site,
@@ -1399,14 +1381,11 @@ pub fn validate_machine_tactic_candidate(
                 direction,
                 site,
             }),
-            MachineTacticCandidate::SimpLite { goal_id, rules } => {
+            MachineTacticCandidate::SimpLite { rules } => {
                 validate_simp_rule_refs(&rules)?;
                 Ok(MachineTactic::SimpLite { goal_id, rules })
             }
-            MachineTacticCandidate::InductionNat {
-                goal_id,
-                local_name,
-            } => {
+            MachineTacticCandidate::InductionNat { local_name } => {
                 validate_intro_name_shape(&local_name)?;
                 Ok(MachineTactic::InductionNat {
                     goal_id,
@@ -1527,11 +1506,6 @@ pub fn run_machine_tactic_with_budget(
                 goal_id,
                 local_name,
             } => run_induction_nat_tactic_with_budget(state, goal_id, local_name, budget),
-            MachineTactic::Assign {
-                goal_id,
-                proof,
-                new_goals,
-            } => assign_goal_with_budget(state, goal_id, proof, new_goals, budget),
         }
     })();
     result.map_err(|diag| attach_tactic_context(diag, goal_id, tactic_kind))
@@ -1550,12 +1524,14 @@ pub fn run_machine_tactic_transactional(
 
 pub fn run_machine_tactic_candidates_batch(
     state: &MachineProofState,
+    goal_id: GoalId,
     candidates: Vec<MachineTacticBatchCandidate>,
     budget: TacticBudget,
     policy: MachineTacticBatchPolicy,
 ) -> Result<MachineTacticBatchResult> {
     validate_machine_tactic_batch_request(&candidates, policy)?;
     validate_machine_proof_state(state)?;
+    state.goal(goal_id)?;
 
     let mut results = Vec::new();
     let mut successes = 0usize;
@@ -1573,7 +1549,7 @@ pub fn run_machine_tactic_candidates_batch(
         }
 
         let candidate_id = item.candidate_id;
-        let tactic = match validate_machine_tactic_candidate(item.candidate) {
+        let tactic = match validate_machine_tactic_candidate(goal_id, item.candidate) {
             Ok(tactic) => tactic,
             Err(diagnostic) => {
                 failures += 1;
@@ -4555,7 +4531,7 @@ fn assign_goal_with_budget_and_steps(
     })?;
     if assigned_meta.assignment.is_some() {
         return Err(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::AssignedGoal,
+            MachineTacticDiagnosticKind::GoalAlreadyAssigned,
             format!("goal {} is already assigned", goal_id.0),
         )
         .with_goal(goal_id)
@@ -7499,6 +7475,29 @@ fn machine_term_elab_context(
 
 fn machine_term_elaboration_diag(err: npa_frontend::MachineDiagnostic) -> MachineTacticDiagnostic {
     match err.kind {
+        npa_frontend::MachineDiagnosticKind::UnknownGlobalName
+        | npa_frontend::MachineDiagnosticKind::ShortGlobalName
+        | npa_frontend::MachineDiagnosticKind::AmbiguousGlobalName
+        | npa_frontend::MachineDiagnosticKind::GlobalShadowedByLocal
+        | npa_frontend::MachineDiagnosticKind::UnknownLocalName => {
+            machine_term_frontend_diag_with_optional_name(
+                MachineTacticDiagnosticKind::UnknownName,
+                "machine term name resolution failed",
+                &err,
+            )
+        }
+        npa_frontend::MachineDiagnosticKind::ImplicitArgumentRequired
+        | npa_frontend::MachineDiagnosticKind::MissingExplicitUniverse => {
+            machine_term_frontend_diag_with_optional_name(
+                MachineTacticDiagnosticKind::ImplicitArgumentRequired,
+                "machine term requires explicit arguments",
+                &err,
+            )
+        }
+        npa_frontend::MachineDiagnosticKind::ExpectedFunctionType => MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::ExpectedFunctionType,
+            format!("machine term expected a function type: {}", err.message),
+        ),
         npa_frontend::MachineDiagnosticKind::TypeMismatch => {
             let mut diag = MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::TypeMismatch,
@@ -7514,28 +7513,42 @@ fn machine_term_elaboration_diag(err: npa_frontend::MachineDiagnostic) -> Machin
             }
             diag
         }
-        npa_frontend::MachineDiagnosticKind::GlobalShadowedByLocal => MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::InvalidMetaContext,
-            format!("machine term context is invalid: {}", err.message),
-        ),
         npa_frontend::MachineDiagnosticKind::ParseError
         | npa_frontend::MachineDiagnosticKind::UnsupportedSyntax
         | npa_frontend::MachineDiagnosticKind::HoleNotAllowed => MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineTermSource,
             format!("machine term source is invalid: {}", err.message),
         ),
-        npa_frontend::MachineDiagnosticKind::KernelRejected => MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::KernelRejected,
-            format!(
-                "machine term elaboration was rejected by the kernel: {}",
-                err.message
-            ),
-        ),
-        _ => MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::KernelRejected,
-            format!("machine term elaboration failed: {}", err.message),
+        npa_frontend::MachineDiagnosticKind::KernelRejected => {
+            machine_term_frontend_diag_with_optional_name(
+                MachineTacticDiagnosticKind::MachineTermElaborationError,
+                "machine term elaboration was rejected by the kernel",
+                &err,
+            )
+        }
+        _ => machine_term_frontend_diag_with_optional_name(
+            MachineTacticDiagnosticKind::MachineTermElaborationError,
+            "machine term elaboration failed",
+            &err,
         ),
     }
+}
+
+fn machine_term_frontend_diag_with_optional_name(
+    kind: MachineTacticDiagnosticKind,
+    prefix: &str,
+    err: &npa_frontend::MachineDiagnostic,
+) -> MachineTacticDiagnostic {
+    let mut diag = MachineTacticDiagnostic::new(kind, format!("{prefix}: {}", err.message));
+    if let Some(payload) = err.payload.as_ref() {
+        if let Some(head_symbol) = payload.head_symbol.as_ref() {
+            let name = Name::from_dotted(head_symbol);
+            if name.is_canonical() {
+                diag = diag.with_primary_name(name);
+            }
+        }
+    }
+    diag
 }
 
 fn canonicalize_imports(mut imports: Vec<VerifiedImportRef>) -> Vec<VerifiedImportRef> {
@@ -8105,7 +8118,7 @@ fn phase2_current_decl_hashes(
     )
     .map_err(|err| {
         MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::KernelRejected,
+            MachineTacticDiagnosticKind::UncheckedCurrentDecl,
             format!(
                 "Phase 2 rejected current declaration interface hash materialization for {}: {err:?}",
                 decl.name()
@@ -8131,7 +8144,7 @@ fn infer_current_module_name(decl: &Decl) -> Result<ModuleName> {
     let name = Name::from_dotted(decl.name());
     if !name.is_canonical() || name.0.len() < 2 {
         return Err(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::InvalidMachineProofSpec,
+            MachineTacticDiagnosticKind::UncheckedCurrentDecl,
             format!(
                 "current declaration {} must be a canonical qualified module declaration",
                 decl.name()
@@ -8542,6 +8555,9 @@ fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKi
         MachineTacticDiagnosticKind::UnsupportedTacticOption => 0x01,
         MachineTacticDiagnosticKind::InvalidMachineTactic => 0x15,
         MachineTacticDiagnosticKind::InvalidMachineTermSource => 0x16,
+        MachineTacticDiagnosticKind::MachineTermElaborationError => 0x32,
+        MachineTacticDiagnosticKind::UnknownName => 0x33,
+        MachineTacticDiagnosticKind::ImplicitArgumentRequired => 0x34,
         MachineTacticDiagnosticKind::UnsupportedMachineTactic => 0x02,
         MachineTacticDiagnosticKind::TacticFuelExhausted { kind } => {
             out.push(0x14);
@@ -8555,17 +8571,21 @@ fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKi
         MachineTacticDiagnosticKind::InvalidCurrentDeclOrder => 0x07,
         MachineTacticDiagnosticKind::CurrentDeclSignatureMismatch => 0x08,
         MachineTacticDiagnosticKind::UnknownGoal => 0x09,
-        MachineTacticDiagnosticKind::AssignedGoal => 0x0a,
+        MachineTacticDiagnosticKind::GoalAlreadyAssigned => 0x0a,
+        MachineTacticDiagnosticKind::UnknownMeta => 0x0d,
         MachineTacticDiagnosticKind::GoalLimitExceeded => 0x0b,
         MachineTacticDiagnosticKind::MetaLimitExceeded => 0x0c,
         MachineTacticDiagnosticKind::InvalidMetaDependency => 0x0e,
         MachineTacticDiagnosticKind::InvalidMetaContext => 0x0f,
         MachineTacticDiagnosticKind::ProofExprScopeError => 0x10,
+        MachineTacticDiagnosticKind::ProofExprTypeMismatch => 0x2e,
         MachineTacticDiagnosticKind::UnknownTacticHead => 0x17,
         MachineTacticDiagnosticKind::AmbiguousTacticHead => 0x18,
         MachineTacticDiagnosticKind::UnknownLocalName => 0x19,
         MachineTacticDiagnosticKind::AmbiguousLocalName => 0x1a,
         MachineTacticDiagnosticKind::InvalidLocalHead => 0x1b,
+        MachineTacticDiagnosticKind::ExpectedFunctionType => 0x2f,
+        MachineTacticDiagnosticKind::ExpectedPiTarget => 0x30,
         MachineTacticDiagnosticKind::UniverseArgumentMismatch => 0x1c,
         MachineTacticDiagnosticKind::MissingExplicitArgument => 0x1d,
         MachineTacticDiagnosticKind::AmbiguousApplyArgument => 0x1e,
@@ -8583,6 +8603,7 @@ fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKi
         MachineTacticDiagnosticKind::InvalidEqFamily => 0x2a,
         MachineTacticDiagnosticKind::InvalidNatFamily => 0x2b,
         MachineTacticDiagnosticKind::InvalidInductionTarget => 0x2c,
+        MachineTacticDiagnosticKind::UncheckedCurrentDecl => 0x31,
         MachineTacticDiagnosticKind::TypeMismatch => 0x11,
         MachineTacticDiagnosticKind::KernelRejected => 0x12,
         MachineTacticDiagnosticKind::UnresolvedGoal => 0x13,
@@ -8695,17 +8716,6 @@ fn encode_machine_tactic_to(out: &mut Vec<u8>, tactic: &MachineTactic) {
         MachineTactic::InductionNat { local_name, .. } => {
             out.push(0x05);
             encode_string_to(out, local_name);
-        }
-        MachineTactic::Assign {
-            proof, new_goals, ..
-        } => {
-            out.push(0x7f);
-            encode_proof_expr_to(out, proof);
-            encode_list_len_to(out, new_goals.len());
-            for spec in new_goals {
-                encode_hash_to(out, &machine_local_context_hash(&spec.context));
-                encode_hash_to(out, &core_expr_hash(&spec.target));
-            }
         }
     }
 }
@@ -9630,15 +9640,19 @@ mod tests {
 
     #[test]
     fn machine_tactic_candidate_canonicalizes_exact_term_source() {
-        let first = validate_machine_tactic_candidate(MachineTacticCandidate::Exact {
-            goal_id: GoalId(0),
-            term: RawMachineTerm::new("Prop"),
-        })
+        let first = validate_machine_tactic_candidate(
+            GoalId(0),
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm::new("Prop"),
+            },
+        )
         .expect("exact candidate should validate");
-        let second = validate_machine_tactic_candidate(MachineTacticCandidate::Exact {
-            goal_id: GoalId(0),
-            term: RawMachineTerm::new("  Prop  "),
-        })
+        let second = validate_machine_tactic_candidate(
+            GoalId(0),
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm::new("  Prop  "),
+            },
+        )
         .expect("exact candidate should canonicalize whitespace-insensitive source");
 
         let (
@@ -9661,10 +9675,12 @@ mod tests {
 
     #[test]
     fn machine_tactic_candidate_validation_attaches_goal_and_tactic_kind() {
-        let err = validate_machine_tactic_candidate(MachineTacticCandidate::Intro {
-            goal_id: GoalId(7),
-            name: "bad-name".to_owned(),
-        })
+        let err = validate_machine_tactic_candidate(
+            GoalId(7),
+            MachineTacticCandidate::Intro {
+                name: "bad-name".to_owned(),
+            },
+        )
         .expect_err("invalid intro candidate should keep structured context");
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidMachineTactic);
@@ -9674,19 +9690,115 @@ mod tests {
     }
 
     #[test]
+    fn machine_term_diagnostic_preserves_repair_relevant_frontend_kinds() {
+        let span = npa_frontend::Span::empty(npa_frontend::FileId(0));
+        let cases = [
+            (
+                npa_frontend::MachineDiagnosticKind::UnknownGlobalName,
+                MachineTacticDiagnosticKind::UnknownName,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::ShortGlobalName,
+                MachineTacticDiagnosticKind::UnknownName,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::AmbiguousGlobalName,
+                MachineTacticDiagnosticKind::UnknownName,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::GlobalShadowedByLocal,
+                MachineTacticDiagnosticKind::UnknownName,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::UnknownLocalName,
+                MachineTacticDiagnosticKind::UnknownName,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::ImplicitArgumentRequired,
+                MachineTacticDiagnosticKind::ImplicitArgumentRequired,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::MissingExplicitUniverse,
+                MachineTacticDiagnosticKind::ImplicitArgumentRequired,
+            ),
+            (
+                npa_frontend::MachineDiagnosticKind::ExpectedFunctionType,
+                MachineTacticDiagnosticKind::ExpectedFunctionType,
+            ),
+        ];
+
+        for (frontend_kind, tactic_kind) in cases {
+            let diagnostic =
+                npa_frontend::MachineDiagnostic::error(frontend_kind, span, "frontend failure");
+            let mapped = machine_term_elaboration_diag(diagnostic);
+
+            assert_eq!(mapped.kind, tactic_kind);
+        }
+    }
+
+    #[test]
+    fn machine_term_diagnostic_carries_structured_primary_name_when_available() {
+        let span = npa_frontend::Span::empty(npa_frontend::FileId(0));
+        let diagnostic = npa_frontend::MachineDiagnostic::error(
+            npa_frontend::MachineDiagnosticKind::ImplicitArgumentRequired,
+            span,
+            "frontend failure",
+        )
+        .with_payload(npa_frontend::MachineDiagnosticPayload {
+            head_symbol: Some("Eq".to_owned()),
+            ..npa_frontend::MachineDiagnosticPayload::default()
+        });
+
+        let mapped = machine_term_elaboration_diag(diagnostic);
+
+        assert_eq!(
+            mapped.kind,
+            MachineTacticDiagnosticKind::ImplicitArgumentRequired
+        );
+        assert_eq!(mapped.primary_name, Some(Name::from_dotted("Eq")));
+    }
+
+    #[test]
+    fn machine_term_elaboration_error_keeps_structured_primary_name() {
+        let span = npa_frontend::Span::empty(npa_frontend::FileId(0));
+        let cases = [
+            npa_frontend::MachineDiagnosticKind::KernelRejected,
+            npa_frontend::MachineDiagnosticKind::ExpectedSort,
+        ];
+
+        for frontend_kind in cases {
+            let diagnostic =
+                npa_frontend::MachineDiagnostic::error(frontend_kind, span, "frontend failure")
+                    .with_payload(npa_frontend::MachineDiagnosticPayload {
+                        head_symbol: Some("Nat".to_owned()),
+                        ..npa_frontend::MachineDiagnosticPayload::default()
+                    });
+            let mapped = machine_term_elaboration_diag(diagnostic);
+
+            assert_eq!(
+                mapped.kind,
+                MachineTacticDiagnosticKind::MachineTermElaborationError
+            );
+            assert_eq!(mapped.primary_name, Some(Name::from_dotted("Nat")));
+        }
+    }
+
+    #[test]
     fn rewrite_candidate_validation_uses_rw_tactic_kind() {
-        let err = validate_machine_tactic_candidate(MachineTacticCandidate::Rewrite {
-            goal_id: GoalId(7),
-            rule: CandidateRewriteRuleRef {
-                head: TacticHead::Local {
-                    name: "bad-name".to_owned(),
+        let err = validate_machine_tactic_candidate(
+            GoalId(7),
+            MachineTacticCandidate::Rewrite {
+                rule: CandidateRewriteRuleRef {
+                    head: TacticHead::Local {
+                        name: "bad-name".to_owned(),
+                    },
+                    universe_args: Vec::new(),
+                    args: Vec::new(),
                 },
-                universe_args: Vec::new(),
-                args: Vec::new(),
+                direction: RewriteDirection::Forward,
+                site: RewriteSite::EqTargetLeft,
             },
-            direction: RewriteDirection::Forward,
-            site: RewriteSite::EqTargetLeft,
-        })
+        )
         .expect_err("invalid rw candidate should keep the wire tactic kind");
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidMachineTactic);
@@ -9922,18 +10034,17 @@ mod tests {
         let budget = TacticBudget::default();
         let batch = run_machine_tactic_candidates_batch(
             &state,
+            GoalId(0),
             vec![
                 MachineTacticBatchCandidate {
                     candidate_id: "c0".to_owned(),
                     candidate: MachineTacticCandidate::Exact {
-                        goal_id: GoalId(0),
                         term: RawMachineTerm::new("Prop"),
                     },
                 },
                 MachineTacticBatchCandidate {
                     candidate_id: "c1".to_owned(),
                     candidate: MachineTacticCandidate::Intro {
-                        goal_id: GoalId(0),
                         name: "p".to_owned(),
                     },
                 },
@@ -9985,10 +10096,10 @@ mod tests {
         let state = start_trivial();
         let batch = run_machine_tactic_candidates_batch(
             &state,
+            GoalId(0),
             vec![MachineTacticBatchCandidate {
                 candidate_id: "c0".to_owned(),
                 candidate: MachineTacticCandidate::Intro {
-                    goal_id: GoalId(0),
                     name: "bad-name".to_owned(),
                 },
             }],
@@ -10019,22 +10130,43 @@ mod tests {
     }
 
     #[test]
+    fn tactic_batch_rejects_unknown_selected_goal_before_candidate_validation() {
+        let state = start_trivial();
+        let err = run_machine_tactic_candidates_batch(
+            &state,
+            GoalId(99),
+            vec![MachineTacticBatchCandidate {
+                candidate_id: "c0".to_owned(),
+                candidate: MachineTacticCandidate::Intro {
+                    name: "bad-name".to_owned(),
+                },
+            }],
+            TacticBudget::default(),
+            MachineTacticBatchPolicy::default(),
+        )
+        .expect_err("selected goal lookup should precede candidate validation");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::UnknownGoal);
+        assert_eq!(err.goal_id, Some(GoalId(99)));
+        assert_eq!(err.tactic_kind, None);
+    }
+
+    #[test]
     fn tactic_batch_policy_stops_on_request_order_prefix() {
         let state = start_trivial();
         let batch = run_machine_tactic_candidates_batch(
             &state,
+            GoalId(0),
             vec![
                 MachineTacticBatchCandidate {
                     candidate_id: "c0".to_owned(),
                     candidate: MachineTacticCandidate::Exact {
-                        goal_id: GoalId(0),
                         term: RawMachineTerm::new("Prop"),
                     },
                 },
                 MachineTacticBatchCandidate {
                     candidate_id: "c1".to_owned(),
                     candidate: MachineTacticCandidate::Exact {
-                        goal_id: GoalId(0),
                         term: RawMachineTerm::new("Prop"),
                     },
                 },
@@ -10062,10 +10194,10 @@ mod tests {
         let state = start_trivial();
         let err = run_machine_tactic_candidates_batch(
             &state,
+            GoalId(0),
             vec![MachineTacticBatchCandidate {
                 candidate_id: "bad space".to_owned(),
                 candidate: MachineTacticCandidate::Intro {
-                    goal_id: GoalId(0),
                     name: "bad-name".to_owned(),
                 },
             }],
@@ -10084,10 +10216,10 @@ mod tests {
 
         let err = run_machine_tactic_candidates_batch(
             &state,
+            GoalId(0),
             vec![MachineTacticBatchCandidate {
                 candidate_id: "bad space".to_owned(),
                 candidate: MachineTacticCandidate::Exact {
-                    goal_id: GoalId(0),
                     term: RawMachineTerm::new("Prop"),
                 },
             }],
@@ -10614,13 +10746,11 @@ mod tests {
         let rewritten = state.goal(GoalId(4)).unwrap();
         assert_eq!(rewritten.target, eq_nat(Expr::bvar(2), Expr::bvar(2)));
 
-        let (closed, _) = run_machine_tactic(
+        let (closed, _) = assign_goal(
             &state,
-            MachineTactic::Assign {
-                goal_id: GoalId(4),
-                proof: ProofExpr::Core(eq_refl_nat(Expr::bvar(2))),
-                new_goals: Vec::new(),
-            },
+            GoalId(4),
+            ProofExpr::Core(eq_refl_nat(Expr::bvar(2))),
+            Vec::new(),
         )
         .expect("rewritten reflexive goal should close");
         assert!(closed.open_goals.is_empty());
@@ -12036,13 +12166,11 @@ mod tests {
             max_tactic_steps: 0,
             ..TacticBudget::default()
         };
-        let err = run_machine_tactic_with_budget(
+        let err = assign_goal_with_budget(
             &state,
-            MachineTactic::Assign {
-                goal_id: GoalId(0),
-                proof: ProofExpr::Core(prop()),
-                new_goals: Vec::new(),
-            },
+            GoalId(0),
+            ProofExpr::Core(prop()),
+            Vec::new(),
             budget,
         )
         .expect_err("zero tactic step fuel should reject the first semantic transition");
@@ -12057,13 +12185,11 @@ mod tests {
         assert_eq!(err.tactic_kind, None);
         assert_eq!(state.open_goals, vec![GoalId(0)]);
 
-        let unknown_goal_err = run_machine_tactic_with_budget(
+        let unknown_goal_err = assign_goal_with_budget(
             &state,
-            MachineTactic::Assign {
-                goal_id: GoalId(99),
-                proof: ProofExpr::Core(prop()),
-                new_goals: Vec::new(),
-            },
+            GoalId(99),
+            ProofExpr::Core(prop()),
+            Vec::new(),
             budget,
         )
         .expect_err("input validation should run before tactic step fuel consumption");
@@ -12093,16 +12219,14 @@ mod tests {
             },
         )
         .unwrap();
-        let invalid_new_goal_err = run_machine_tactic_with_budget(
+        let invalid_new_goal_err = assign_goal_with_budget(
             &pi_state,
-            MachineTactic::Assign {
-                goal_id: GoalId(1),
-                proof: ProofExpr::Meta(MetaVarId(2)),
-                new_goals: vec![MachineNewGoalSpec::new(
-                    vec![MachineLocalDecl::assumption("q", prop())],
-                    prop(),
-                )],
-            },
+            GoalId(1),
+            ProofExpr::Meta(MetaVarId(2)),
+            vec![MachineNewGoalSpec::new(
+                vec![MachineLocalDecl::assumption("q", prop())],
+                prop(),
+            )],
             budget,
         )
         .expect_err("new goal static validation should run before tactic step fuel");
@@ -12493,7 +12617,7 @@ mod tests {
         )
         .expect_err("current checked declarations must not be forgeable axioms");
 
-        assert_eq!(err.kind, MachineTacticDiagnosticKind::KernelRejected);
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::UncheckedCurrentDecl);
     }
 
     #[test]

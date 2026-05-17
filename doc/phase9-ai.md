@@ -4850,13 +4850,13 @@ initial goal:
 
 proof bridge execution:
   1. state0 = start_machine_proof(...)
-  2. tactic = validate_machine_tactic_candidate(optional_proof_candidate.tactic)
-  3. result = run_machine_tactic(state0, initial_goal_id, tactic, options.formalization.tactic_budget)
-  4. result must be Success with no open goals
-  5. closed_proof = extract_closed_machine_proof(result.state)
+  2. tactic = validate_machine_tactic_candidate(initial_goal_id, optional_proof_candidate.tactic)
+  3. (state1, delta) = run_machine_tactic_with_budget(&state0, tactic, options.formalization.tactic_budget)
+  4. state1 must have no open goals
+  5. closed_proof = extract_closed_machine_proof(&state1)
 ```
 
-ここでの `start_machine_proof` は Phase 4 の `start_machine_proof_from_verified_imports` entrypoint を指します。
+ここでの `start_machine_proof` は Phase 4 の `VerifiedImportRef` sequence を受け取る `start_machine_proof` entrypoint を指します。
 Phase 4 `MachineProofSpec.universe_params` と initial goal の universe parameter context は `Vec<String>` なので、
 Phase 9 validator は `MachineSurfaceTerm.universe_params` を上で定義した `phase3_universe_param_ident` で変換して渡します。
 `accepted_universe_params` と `candidate_statement_hash` / `accepted_statement_hash` の hash input には、

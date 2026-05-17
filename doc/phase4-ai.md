@@ -491,6 +491,9 @@ assign_goal(
 途中で失敗した場合は state を変更しません。`exact` は `new_goal_specs = []`、`intro` は body goal を 1 つ、
 `apply` は premise goals、`rw` は premise goals と rewritten target goal を渡します。`simp-lite` は
 Eq.refl closure で閉じる場合は `new_goal_specs = []`、固定点で止まる場合は rewritten target goal を 1 つ渡します。
+`assign_goal` は proof-state core の低レベル helper であり、AI / wire から送れる `MachineTactic` variant では
+ありません。したがって `assign_goal` 自体には `MachineTactic canonical bytes`、candidate hash、search cache key を
+定義しません。
 
 `proof_expr` は今回作った `new_metas` と、既に assignment を持つ既存 meta を参照してよいです。ただし
 `proof_expr` を再帰展開した dependency graph は必ず DAG でなければなりません。`assign_goal` は
@@ -682,12 +685,12 @@ struct MachineTermSource {
 }
 
 enum MachineTactic {
-    Exact { term: MachineTermSource },
-    Intro { name: String },
-    Apply { head: TacticHead, universe_args: Vec<Level>, args: Vec<ApplyArg> },
-    Rewrite { rule: RewriteRuleRef, direction: RewriteDirection, site: RewriteSite },
-    SimpLite { rules: Vec<SimpRuleRef> },
-    InductionNat { local_name: String },
+    Exact { goal_id: GoalId, term: MachineTermSource },
+    Intro { goal_id: GoalId, name: String },
+    Apply { goal_id: GoalId, head: TacticHead, universe_args: Vec<Level>, args: Vec<ApplyArg> },
+    Rewrite { goal_id: GoalId, rule: RewriteRuleRef, direction: RewriteDirection, site: RewriteSite },
+    SimpLite { goal_id: GoalId, rules: Vec<SimpRuleRef> },
+    InductionNat { goal_id: GoalId, local_name: String },
 }
 
 enum TacticHead {
@@ -816,7 +819,9 @@ struct NatFamilyRef {
 }
 ```
 
-`MachineTacticCandidate` は外部 JSON / parser 直後の非 canonical 入力です。candidate は raw term text だけを
+`MachineTacticCandidate` は外部 JSON / parser 直後の非 canonical 入力です。selected `goal_id` は
+candidate payload に入れず、request / caller の outer field として `validate_machine_tactic_candidate(goal_id, candidate)` に
+渡します。validator はその `goal_id` を checked `MachineTactic` に注入します。candidate は raw term text だけを
 持ち、term hash を受け取りません。外部 JSON に `canonical_hash` 風の field が含まれる場合、validator は
 それを無視せず `InvalidMachineTactic` として reject します。term hash は必ず Phase 4 内部で
 `canonicalize_machine_term_source` から計算します。
@@ -849,6 +854,8 @@ expected type に対して check しますが、tactic hash / cache key には `
 
 `MachineTactic canonical bytes` は cache key と deterministic same-result 判定に使います。variant と field は
 次の順で encode します。
+`goal_id` は selected goal として `MachineTacticCacheKey` に別 field で入れるため、`MachineTactic canonical bytes` には
+入れません。
 
 ```text
 MachineTactic canonical bytes:
@@ -1923,7 +1930,6 @@ AI 探索では失敗が通常なので、tactic execution は常に transaction
 ```rust
 fn run_machine_tactic_transactional(
     state: &MachineProofState,
-    goal: GoalId,
     tactic: MachineTactic,
     budget: TacticBudget,
 ) -> MachineTacticResult;
@@ -2188,8 +2194,13 @@ enum TacticFuelKind {
 
 enum MachineTacticDiagnosticKind {
     InvalidMachineProofState,
+    InvalidMachineProofSpec,
     InvalidMachineTactic,
     InvalidMachineTermSource,
+    MachineTermElaborationError,
+    UnknownName,
+    ImplicitArgumentRequired,
+    UnsupportedMachineTactic,
     UnknownGoal,
     GoalAlreadyAssigned,
     UnknownMeta,
@@ -2234,6 +2245,7 @@ enum MachineTacticDiagnosticKind {
     UnsupportedTacticOption,
     InvalidEqFamily,
     InvalidNatFamily,
+    KernelRejected,
 }
 ```
 
@@ -2316,6 +2328,18 @@ MachineTactic enum / Level / field shape is invalid:
 MachineTermSource canonicalization fails:
   InvalidMachineTermSource
 
+Machine Surface term name resolution fails after canonical source validation:
+  UnknownName
+
+Machine Surface term requires implicit / explicit universe arguments that are not present:
+  ImplicitArgumentRequired
+
+Machine Surface term is applied where the head is not a function:
+  ExpectedFunctionType
+
+Machine Surface term elaboration / kernel check fails after canonical source validation and no more specific term diagnostic applies:
+  MachineTermElaborationError
+
 apply/rw TacticHead::Local resolves to a local let declaration:
   InvalidLocalHead
 
@@ -2330,6 +2354,12 @@ checked_current_decls prior_chain_fingerprint mismatch:
 
 checked_current_decls checked_env_fingerprint mismatch:
   UncheckedCurrentDecl
+
+checked_current_decls contains an axiom, generated declaration, or kernel-rejected payload:
+  UncheckedCurrentDecl
+
+MachineProofSpec module / theorem name / universe parameter shape is invalid:
+  InvalidMachineProofSpec
 
 EqFamilyRef head missing or not unique:
   InvalidEqFamily
@@ -2520,16 +2550,9 @@ struct MachineProofSpec {
 
 pub fn start_machine_proof(
     spec: MachineProofSpec,
-    imports: &[VerifiedModule],
-    checked_current_decls: &[CheckedCurrentDecl],
-    options: &MachineTacticOptions,
-) -> Result<MachineProofState, MachineTacticDiagnostic>;
-
-pub fn start_machine_proof_from_verified_imports(
-    spec: MachineProofSpec,
-    imports: &[VerifiedImportRef],
-    checked_current_decls: &[CheckedCurrentDecl],
-    options: &MachineTacticOptions,
+    imports: Vec<VerifiedImportRef>,
+    checked_current_decls: Vec<CheckedCurrentDecl>,
+    options: MachineTacticOptions,
 ) -> Result<MachineProofState, MachineTacticDiagnostic>;
 
 pub fn check_current_decl_for_machine_tactic(
@@ -2539,17 +2562,39 @@ pub fn check_current_decl_for_machine_tactic(
     decl: Decl,
 ) -> Result<CheckedCurrentDecl, MachineTacticDiagnostic>;
 
+pub fn check_current_decl_for_machine_tactic_from_verified_imports(
+    imports: &[VerifiedImportRef],
+    checked_prior_current_decls: &[CheckedCurrentDecl],
+    source_index: u64,
+    decl: Decl,
+) -> Result<CheckedCurrentDecl, MachineTacticDiagnostic>;
+
 pub fn validate_machine_tactic_candidate(
+    goal_id: GoalId,
     candidate: MachineTacticCandidate,
 ) -> Result<MachineTactic, MachineTacticDiagnostic>;
 
-pub fn parse_machine_tactic_candidate_text(
-    input: &str,
-) -> Result<MachineTacticCandidate, MachineTacticDiagnostic>;
+pub fn run_machine_tactic_candidates_batch(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    candidates: Vec<MachineTacticBatchCandidate>,
+    budget: TacticBudget,
+    policy: MachineTacticBatchPolicy,
+) -> Result<MachineTacticBatchResult, MachineTacticDiagnostic>;
 
 pub fn run_machine_tactic(
     state: &MachineProofState,
-    goal: GoalId,
+    tactic: MachineTactic,
+) -> Result<(MachineProofState, MachineProofDelta), MachineTacticDiagnostic>;
+
+pub fn run_machine_tactic_with_budget(
+    state: &MachineProofState,
+    tactic: MachineTactic,
+    budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta), MachineTacticDiagnostic>;
+
+pub fn run_machine_tactic_transactional(
+    state: &MachineProofState,
     tactic: MachineTactic,
     budget: TacticBudget,
 ) -> MachineTacticResult;
@@ -2563,21 +2608,20 @@ pub fn extract_closed_machine_theorem_decl(
 ) -> Result<Decl, MachineTacticDiagnostic>;
 ```
 
-`validate_machine_tactic_candidate` が主入口です。`parse_machine_tactic_candidate_text` は CLI /
-debug / compatibility 用の補助入口であり、parse 後に必ず同じ validator を通します。
+`validate_machine_tactic_candidate` が structured candidate の主入口です。AI 向け Phase 4 の Rust API は
+human tactic text parser を公開入口にせず、wire/API 層が構造化 candidate を組み立て、outer selected `goal_id` と
+一緒に必ず同じ validator を通します。`run_machine_tactic_candidates_batch` も batch 全体で 1 つの selected
+`goal_id` を受け取り、各 candidate は同じ input state / goal に対して評価します。
 
 `exact`, `apply`, `rw`, `simp-lite` が term や theorem interface を扱う場合は、Phase 3 AI の
 term-level API と verified import metadata を使います。
 
 imports、checked current declarations、simp rules、options は `start_machine_proof` で state に固定します。
-Phase 2 verifier 出力として `VerifiedImportRef` をすでに保持している caller は
-`start_machine_proof_from_verified_imports` を使います。
-この entrypoint の意味論は、`start_machine_proof` が `VerifiedModule` から import 環境を canonical order に正規化した後の状態と
-byte-for-byte に一致しなければなりません。
-`start_machine_proof_from_verified_imports` は filesystem、network、package registry、または current IDE session から
-import を補完してはいけません。
-`imports` は `(module, export_hash, certificate_hash)` の canonical order でなければならず、違反した場合は
-`MachineTacticDiagnostic` として deterministic に拒否します。
+Phase 2 verifier 出力として `VerifiedModule` を持つ caller は `VerifiedImportRef::from_verified_module`
+で Phase 4 import ref を構築してから `start_machine_proof` に渡します。`start_machine_proof` は filesystem、
+network、package registry、または current IDE session から import を補完してはいけません。
+`imports` は `start_machine_proof` 内で `(module, export_hash, certificate_hash)` の canonical order に正規化します。
+同一 module に異なる `export_hash` / `certificate_hash` が対応する場合は deterministic に拒否します。
 `run_machine_tactic` は state 内の environment だけを使い、別の imports/options を受け取りません。
 呼び出し側が environment を変えたい場合は、新しい state を作り直します。
 
