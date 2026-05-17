@@ -3,8 +3,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use npa_cert::{
     CoreModule, DeclHashes, DeclPayload, ExportKind, Hash, ModuleName, Name, VerifiedModule,
 };
+use npa_kernel::level::{ensure_level_wf, levels_eq, normalize_level};
 use npa_kernel::subst::{instantiate, shift};
-use npa_kernel::{Ctx, Decl, Env, Expr};
+use npa_kernel::{Ctx, Decl, Env, Expr, Level};
 use sha2::{Digest, Sha256};
 
 pub type Result<T> = std::result::Result<T, MachineTacticDiagnostic>;
@@ -50,6 +51,17 @@ pub enum MachineTacticDiagnosticKind {
     InvalidMetaDependency,
     InvalidMetaContext,
     ProofExprScopeError,
+    UnknownTacticHead,
+    AmbiguousTacticHead,
+    UnknownLocalName,
+    AmbiguousLocalName,
+    InvalidLocalHead,
+    UniverseArgumentMismatch,
+    MissingExplicitArgument,
+    AmbiguousApplyArgument,
+    TooManyApplyArguments,
+    TooFewApplyArguments,
+    SubgoalDataArgument,
     TypeMismatch,
     KernelRejected,
     UnresolvedGoal,
@@ -93,16 +105,32 @@ impl MachineTacticDiagnostic {
         expected_payload: &[u8],
         actual_payload: &[u8],
     ) -> Self {
+        self = self.with_expected_actual_payload_kinds(
+            payload_kind,
+            expected_payload,
+            payload_kind,
+            actual_payload,
+        );
+        self
+    }
+
+    fn with_expected_actual_payload_kinds(
+        mut self,
+        expected_payload_kind: DiagnosticPayloadKind,
+        expected_payload: &[u8],
+        actual_payload_kind: DiagnosticPayloadKind,
+        actual_payload: &[u8],
+    ) -> Self {
         self.expected_hash = Some(Box::new(expected_actual_diagnostic_hash(
             &self.kind,
             DiagnosticHashSide::Expected,
-            payload_kind,
+            expected_payload_kind,
             expected_payload,
         )));
         self.actual_hash = Some(Box::new(expected_actual_diagnostic_hash(
             &self.kind,
             DiagnosticHashSide::Actual,
-            payload_kind,
+            actual_payload_kind,
             actual_payload,
         )));
         self
@@ -130,6 +158,8 @@ enum DiagnosticPayloadKind {
     Expr,
     CheckedDeclSignature,
     MachineTermSource,
+    UniverseParamList,
+    LevelArgList,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -164,6 +194,41 @@ pub enum MachineTacticCandidate {
         goal_id: GoalId,
         name: String,
     },
+    Apply {
+        goal_id: GoalId,
+        head: TacticHead,
+        universe_args: Vec<Level>,
+        args: Vec<CandidateApplyArg>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CandidateApplyArg {
+    Term(RawMachineTerm),
+    Subgoal { name_hint: Option<String> },
+    InferFromTarget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TacticHead {
+    Imported {
+        name: Name,
+        decl_interface_hash: Hash,
+    },
+    CurrentModule {
+        name: Name,
+        decl_interface_hash: Hash,
+    },
+    Local {
+        name: String,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ApplyArg {
+    Term(MachineTermSource),
+    Subgoal { name_hint: Option<String> },
+    InferFromTarget,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -973,6 +1038,12 @@ pub enum MachineTactic {
         goal_id: GoalId,
         name: String,
     },
+    Apply {
+        goal_id: GoalId,
+        head: TacticHead,
+        universe_args: Vec<Level>,
+        args: Vec<ApplyArg>,
+    },
     Assign {
         goal_id: GoalId,
         proof: ProofExpr,
@@ -991,6 +1062,24 @@ pub fn validate_machine_tactic_candidate(
         MachineTacticCandidate::Intro { goal_id, name } => {
             validate_intro_name_shape(&name)?;
             Ok(MachineTactic::Intro { goal_id, name })
+        }
+        MachineTacticCandidate::Apply {
+            goal_id,
+            head,
+            universe_args,
+            args,
+        } => {
+            validate_tactic_head_shape(&head)?;
+            let args = args
+                .into_iter()
+                .map(validate_candidate_apply_arg)
+                .collect::<Result<Vec<_>>>()?;
+            Ok(MachineTactic::Apply {
+                goal_id,
+                head,
+                universe_args,
+                args,
+            })
         }
     }
 }
@@ -1082,6 +1171,12 @@ pub fn run_machine_tactic_with_budget(
         MachineTactic::Intro { goal_id, name } => {
             run_intro_tactic_with_budget(state, goal_id, name, budget)
         }
+        MachineTactic::Apply {
+            goal_id,
+            head,
+            universe_args,
+            args,
+        } => run_apply_tactic_with_budget(state, goal_id, head, universe_args, args, budget),
         MachineTactic::Assign {
             goal_id,
             proof,
@@ -1097,7 +1192,8 @@ fn run_exact_tactic_with_budget(
     budget: TacticBudget,
 ) -> Result<(MachineProofState, MachineProofDelta)> {
     let goal = state.goal(goal_id)?;
-    validate_machine_term_source(&term)?;
+    validate_machine_term_source(&term)
+        .map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
     let context = machine_term_elab_context(state, &goal.context)?;
     let checked = npa_frontend::elaborate_machine_term_check(
         term.source(),
@@ -1124,8 +1220,10 @@ fn run_intro_tactic_with_budget(
     budget: TacticBudget,
 ) -> Result<(MachineProofState, MachineProofDelta)> {
     let goal = state.goal(goal_id)?;
-    validate_intro_name_shape(&name)?;
-    validate_intro_name_available(state, &goal.context, &name)?;
+    validate_intro_name_shape(&name)
+        .map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
+    validate_intro_name_available(state, &goal.context, &name)
+        .map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
     let ctx = local_context_to_ctx(
         state.env.kernel_env(),
         &goal.context,
@@ -1167,6 +1265,553 @@ fn run_intro_tactic_with_budget(
         budget,
         0,
     )
+}
+
+fn attach_goal_meta(
+    mut diag: MachineTacticDiagnostic,
+    goal_id: GoalId,
+    meta_id: MetaVarId,
+) -> MachineTacticDiagnostic {
+    if diag.goal_id.is_none() {
+        diag.goal_id = Some(goal_id);
+    }
+    if diag.meta_id.is_none() {
+        diag.meta_id = Some(meta_id);
+    }
+    diag
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct PatternMetaId(u64);
+
+#[derive(Clone, Debug)]
+struct ResolvedApplyHead {
+    proof: ProofExpr,
+    ty: Expr,
+}
+
+#[derive(Clone, Debug)]
+enum PendingApplyArg {
+    Term {
+        term: MachineTermSource,
+        domain_pattern: Expr,
+    },
+    Subgoal {
+        domain_pattern: Expr,
+    },
+    InferFromTarget {
+        id: PatternMetaId,
+        domain_pattern: Expr,
+    },
+}
+
+#[derive(Clone, Debug)]
+enum CheckedApplyArg {
+    Core(Expr),
+    Subgoal(Expr),
+}
+
+#[derive(Clone, Debug)]
+struct ApplyAssembly {
+    proof: ProofExpr,
+    new_goal_specs: Vec<MachineNewGoalSpec>,
+}
+
+fn run_apply_tactic_with_budget(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    head: TacticHead,
+    universe_args: Vec<Level>,
+    args: Vec<ApplyArg>,
+    budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta)> {
+    let goal = state.goal(goal_id)?;
+    validate_tactic_head_shape(&head)
+        .map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
+    for arg in &args {
+        validate_apply_arg(arg).map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
+    }
+    for level in &universe_args {
+        ensure_level_wf(&state.root.universe_params, level).map_err(|err| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineTactic,
+                format!("apply universe argument is not well formed: {err:?}"),
+            )
+            .with_goal(goal_id)
+            .with_meta(goal.meta_id)
+        })?;
+    }
+
+    let ctx = local_context_to_ctx(
+        state.env.kernel_env(),
+        &goal.context,
+        &state.root.universe_params,
+    )?;
+    let resolved = resolve_apply_head(state, &goal, &ctx, &head, &universe_args)?;
+    let elab_context = machine_term_elab_context(state, &goal.context)?;
+    let assembly = assemble_apply(state, &goal, &ctx, &elab_context, resolved, &args, budget)?;
+    assign_goal_with_budget_and_steps(
+        state,
+        goal_id,
+        assembly.proof,
+        assembly.new_goal_specs,
+        budget,
+        0,
+    )
+}
+
+fn resolve_apply_head(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    head: &TacticHead,
+    universe_args: &[Level],
+) -> Result<ResolvedApplyHead> {
+    match head {
+        TacticHead::Local { name } => {
+            resolve_local_apply_head(state, goal, ctx, name, universe_args)
+        }
+        TacticHead::Imported {
+            name,
+            decl_interface_hash,
+        } => {
+            let signature =
+                resolve_imported_apply_signature(state, goal, name, decl_interface_hash)?;
+            resolve_global_apply_head(state, goal, ctx, signature, universe_args)
+        }
+        TacticHead::CurrentModule {
+            name,
+            decl_interface_hash,
+        } => {
+            let signature =
+                resolve_current_apply_signature(state, goal, name, decl_interface_hash)?;
+            resolve_global_apply_head(state, goal, ctx, signature, universe_args)
+        }
+    }
+}
+
+fn resolve_local_apply_head(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    name: &str,
+    universe_args: &[Level],
+) -> Result<ResolvedApplyHead> {
+    if !universe_args.is_empty() {
+        return Err(universe_argument_mismatch_diag(
+            &[],
+            universe_args,
+            goal.id,
+            goal.meta_id,
+        ));
+    }
+    let matches = goal
+        .context
+        .iter()
+        .enumerate()
+        .filter(|(_, local)| local.name == name)
+        .collect::<Vec<_>>();
+    let [(index, local)] = matches.as_slice() else {
+        return Err(if matches.is_empty() {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::UnknownLocalName,
+                format!("apply local head {name:?} is not in the goal context"),
+            )
+        } else {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousLocalName,
+                format!("apply local head {name:?} resolves to multiple locals"),
+            )
+        }
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    };
+    if local.value.is_some() {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidLocalHead,
+            format!("apply local head {name:?} resolves to a let declaration"),
+        )
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    }
+    let bvar = Expr::bvar((goal.context.len() - 1 - *index) as u32);
+    let ty = state
+        .env
+        .kernel_env()
+        .infer(ctx, &state.root.universe_params, &bvar)
+        .map_err(kernel_diag)?;
+    Ok(ResolvedApplyHead {
+        proof: ProofExpr::Core(bvar),
+        ty,
+    })
+}
+
+fn resolve_imported_apply_signature<'a>(
+    state: &'a MachineProofState,
+    goal: &MachineGoal,
+    name: &Name,
+    decl_interface_hash: &Hash,
+) -> Result<&'a VerifiedExportSignature> {
+    let matches = state
+        .env
+        .imports
+        .iter()
+        .flat_map(|import| import.exports.iter())
+        .filter(|export| &export.name == name && &export.decl_interface_hash == decl_interface_hash)
+        .collect::<Vec<_>>();
+    let [signature] = matches.as_slice() else {
+        return Err(if matches.is_empty() {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::UnknownTacticHead,
+                format!(
+                    "imported apply head {} with the requested interface hash is unknown",
+                    name.as_dotted()
+                ),
+            )
+        } else {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousTacticHead,
+                format!("imported apply head {} is ambiguous", name.as_dotted()),
+            )
+        }
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    };
+    Ok(signature)
+}
+
+fn resolve_current_apply_signature<'a>(
+    state: &'a MachineProofState,
+    goal: &MachineGoal,
+    name: &Name,
+    decl_interface_hash: &Hash,
+) -> Result<&'a CheckedDeclSignature> {
+    let matches = state
+        .env
+        .checked_current_decls
+        .iter()
+        .map(|decl| decl.signature())
+        .filter(|signature| {
+            signature.name() == name && signature.decl_interface_hash() == *decl_interface_hash
+        })
+        .collect::<Vec<_>>();
+    let [signature] = matches.as_slice() else {
+        return Err(if matches.is_empty() {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::UnknownTacticHead,
+                format!(
+                    "current-module apply head {} with the requested interface hash is unknown",
+                    name.as_dotted()
+                ),
+            )
+        } else {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousTacticHead,
+                format!(
+                    "current-module apply head {} is ambiguous",
+                    name.as_dotted()
+                ),
+            )
+        }
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    };
+    Ok(signature)
+}
+
+trait ApplySignature {
+    fn name(&self) -> &Name;
+    fn universe_params(&self) -> &[String];
+}
+
+impl ApplySignature for VerifiedExportSignature {
+    fn name(&self) -> &Name {
+        &self.name
+    }
+
+    fn universe_params(&self) -> &[String] {
+        // Verified export signatures do not store universe params directly. The
+        // canonical kernel declaration is authoritative for arity checks below.
+        &[]
+    }
+}
+
+impl ApplySignature for CheckedDeclSignature {
+    fn name(&self) -> &Name {
+        &self.name
+    }
+
+    fn universe_params(&self) -> &[String] {
+        &self.universe_params
+    }
+}
+
+fn resolve_global_apply_head<S: ApplySignature>(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    signature: &S,
+    universe_args: &[Level],
+) -> Result<ResolvedApplyHead> {
+    let decl = state
+        .env
+        .kernel_env()
+        .decl(&signature.name().as_dotted())
+        .ok_or_else(|| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::UnknownTacticHead,
+                format!(
+                    "apply head {} is not present in the kernel environment",
+                    signature.name().as_dotted()
+                ),
+            )
+            .with_goal(goal.id)
+            .with_meta(goal.meta_id)
+        })?;
+    let universe_params = if signature.universe_params().is_empty() {
+        decl.universe_params()
+    } else {
+        signature.universe_params()
+    };
+    if universe_params.len() != universe_args.len() {
+        return Err(universe_argument_mismatch_diag(
+            universe_params,
+            universe_args,
+            goal.id,
+            goal.meta_id,
+        ));
+    }
+    let proof = Expr::konst(signature.name().as_dotted(), universe_args.to_vec());
+    let ty = state
+        .env
+        .kernel_env()
+        .infer(ctx, &state.root.universe_params, &proof)
+        .map_err(kernel_diag)?;
+    Ok(ResolvedApplyHead {
+        proof: ProofExpr::Core(proof),
+        ty,
+    })
+}
+
+fn assemble_apply(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    elab_context: &npa_frontend::MachineTermElabContext,
+    resolved: ResolvedApplyHead,
+    args: &[ApplyArg],
+    budget: TacticBudget,
+) -> Result<ApplyAssembly> {
+    let env = state.env.kernel_env();
+    let delta = &state.root.universe_params;
+    let mut result_pattern = resolved.ty;
+    let mut pending = Vec::new();
+    let mut next_arg = 0;
+    let mut next_pattern_meta = 0;
+    let mut required_tactic_steps = 1;
+
+    ensure_tactic_step_fuel(budget, required_tactic_steps, goal.id, goal.meta_id)?;
+
+    loop {
+        let result_whnf = env.whnf(ctx, delta, &result_pattern).map_err(kernel_diag)?;
+        if !contains_pattern_meta(&result_whnf)
+            && env
+                .is_defeq(ctx, delta, &result_whnf, &goal.target)
+                .map_err(kernel_diag)?
+        {
+            if next_arg < args.len() {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::TooManyApplyArguments,
+                    "apply arguments remain after the result already matches the goal target",
+                )
+                .with_goal(goal.id)
+                .with_meta(goal.meta_id));
+            }
+            break;
+        }
+
+        let Expr::Pi { ty, body, .. } = result_whnf else {
+            if next_arg < args.len() {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::TooManyApplyArguments,
+                    "apply arguments remain after the head type stopped being a Pi",
+                )
+                .with_goal(goal.id)
+                .with_meta(goal.meta_id));
+            }
+            break;
+        };
+        let Some(arg) = args.get(next_arg) else {
+            result_pattern = Expr::pi("_", *ty, *body);
+            break;
+        };
+        required_tactic_steps += 1;
+        ensure_tactic_step_fuel(budget, required_tactic_steps, goal.id, goal.meta_id)?;
+        let domain_pattern = *ty;
+        result_pattern = match arg {
+            ApplyArg::Term(term) => {
+                let (expr, _) =
+                    elaborate_apply_term_infer(term, elab_context).map_err(|mut diag| {
+                        diag.goal_id = Some(goal.id);
+                        diag.meta_id = Some(goal.meta_id);
+                        diag
+                    })?;
+                let next = instantiate(&body, &expr).map_err(kernel_diag)?;
+                pending.push(PendingApplyArg::Term {
+                    term: term.clone(),
+                    domain_pattern,
+                });
+                next
+            }
+            ApplyArg::Subgoal { .. } => {
+                if !contains_pattern_meta(&domain_pattern) {
+                    ensure_subgoal_domain_is_prop(state, ctx, goal, &domain_pattern)?;
+                }
+                if contains_bound_var(&body, 0) {
+                    return Err(MachineTacticDiagnostic::new(
+                        MachineTacticDiagnosticKind::InvalidMetaDependency,
+                        "apply subgoal arguments cannot occur in dependent result positions",
+                    )
+                    .with_goal(goal.id)
+                    .with_meta(goal.meta_id));
+                }
+                let next = instantiate(&body, &Expr::bvar(0)).map_err(kernel_diag)?;
+                pending.push(PendingApplyArg::Subgoal { domain_pattern });
+                next
+            }
+            ApplyArg::InferFromTarget => {
+                let id = PatternMetaId(next_pattern_meta);
+                next_pattern_meta += 1;
+                let next = instantiate(&body, &pattern_meta_expr(id)).map_err(kernel_diag)?;
+                pending.push(PendingApplyArg::InferFromTarget { id, domain_pattern });
+                next
+            }
+        };
+        next_arg += 1;
+    }
+
+    let infer_ids = pending
+        .iter()
+        .filter_map(|arg| match arg {
+            PendingApplyArg::InferFromTarget { id, .. } => Some(*id),
+            PendingApplyArg::Term { .. } | PendingApplyArg::Subgoal { .. } => None,
+        })
+        .collect::<Vec<_>>();
+    let ran_infer_matcher = !infer_ids.is_empty();
+    let solutions = if ran_infer_matcher {
+        required_tactic_steps += 1;
+        ensure_tactic_step_fuel(budget, required_tactic_steps, goal.id, goal.meta_id)?;
+        infer_apply_args_from_target(state, ctx, goal, &result_pattern, &infer_ids)?
+    } else {
+        BTreeMap::new()
+    };
+    let result_after_solutions = replace_pattern_metas(&result_pattern, &solutions)?;
+    if contains_pattern_meta(&result_after_solutions) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+            "apply result still contains unresolved inferred arguments",
+        )
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    }
+
+    let result_whnf = env
+        .whnf(ctx, delta, &result_after_solutions)
+        .map_err(kernel_diag)?;
+    if !env
+        .is_defeq(ctx, delta, &result_whnf, &goal.target)
+        .map_err(kernel_diag)?
+    {
+        return if matches!(result_whnf, Expr::Pi { .. }) {
+            Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::TooFewApplyArguments,
+                "apply arguments were exhausted before the result reached the goal target",
+            )
+            .with_goal(goal.id)
+            .with_meta(goal.meta_id))
+        } else {
+            Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::TypeMismatch,
+                "apply result type does not match the goal target",
+            )
+            .with_expected_actual_payloads(
+                DiagnosticPayloadKind::Expr,
+                &core_expr_canonical_bytes(&goal.target),
+                &core_expr_canonical_bytes(&result_whnf),
+            )
+            .with_goal(goal.id)
+            .with_meta(goal.meta_id))
+        };
+    }
+
+    let mut checked_args = Vec::new();
+    for pending_arg in pending {
+        let checked_arg = match pending_arg {
+            PendingApplyArg::Term {
+                term,
+                domain_pattern,
+            } => {
+                let domain = replace_pattern_metas(&domain_pattern, &solutions)?;
+                let checked = npa_frontend::elaborate_machine_term_check(
+                    term.source(),
+                    elab_context,
+                    &domain,
+                    &npa_frontend::MachineCompileOptions::default(),
+                )
+                .map_err(|err| {
+                    let mut diag = machine_term_elaboration_diag(err);
+                    diag.goal_id = Some(goal.id);
+                    diag.meta_id = Some(goal.meta_id);
+                    diag
+                })?;
+                CheckedApplyArg::Core(checked.expr)
+            }
+            PendingApplyArg::Subgoal { domain_pattern } => {
+                let domain = replace_pattern_metas(&domain_pattern, &solutions)?;
+                ensure_subgoal_domain_is_prop(state, ctx, goal, &domain)?;
+                CheckedApplyArg::Subgoal(domain)
+            }
+            PendingApplyArg::InferFromTarget { id, domain_pattern } => {
+                let domain = replace_pattern_metas(&domain_pattern, &solutions)?;
+                let inferred = solutions.get(&id).ok_or_else(|| {
+                    MachineTacticDiagnostic::new(
+                        MachineTacticDiagnosticKind::MissingExplicitArgument,
+                        "apply inferred argument was not solved by the target matcher",
+                    )
+                    .with_goal(goal.id)
+                    .with_meta(goal.meta_id)
+                })?;
+                state
+                    .env
+                    .kernel_env()
+                    .check(ctx, delta, inferred, &domain)
+                    .map_err(kernel_diag)?;
+                CheckedApplyArg::Core(inferred.clone())
+            }
+        };
+        checked_args.push(checked_arg);
+    }
+
+    required_tactic_steps += 1;
+    ensure_tactic_step_fuel(budget, required_tactic_steps, goal.id, goal.meta_id)?;
+    let mut proof = resolved.proof;
+    let mut new_goal_specs = Vec::new();
+    for checked_arg in checked_args {
+        let proof_arg = match checked_arg {
+            CheckedApplyArg::Core(expr) => ProofExpr::Core(expr),
+            CheckedApplyArg::Subgoal(domain) => {
+                let meta_id = MetaVarId(state.metas.next_id + new_goal_specs.len() as u64);
+                new_goal_specs.push(MachineNewGoalSpec::new(goal.context.clone(), domain));
+                ProofExpr::Meta(meta_id)
+            }
+        };
+        proof = ProofExpr::app(proof, proof_arg);
+    }
+
+    Ok(ApplyAssembly {
+        proof,
+        new_goal_specs,
+    })
 }
 
 pub fn assign_goal(
@@ -2282,6 +2927,423 @@ fn validate_machine_term_source(term: &MachineTermSource) -> Result<()> {
     Ok(())
 }
 
+fn validate_tactic_head_shape(head: &TacticHead) -> Result<()> {
+    match head {
+        TacticHead::Imported { name, .. } | TacticHead::CurrentModule { name, .. } => {
+            if !name.is_canonical() {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidMachineTactic,
+                    format!("tactic head name {} is not canonical", name.as_dotted()),
+                ));
+            }
+        }
+        TacticHead::Local { name } => {
+            if !is_machine_identifier(name) || is_reserved_spelling(name) {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidMachineTactic,
+                    format!("local tactic head {name:?} is not a valid machine local identifier"),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_candidate_apply_arg(arg: CandidateApplyArg) -> Result<ApplyArg> {
+    match arg {
+        CandidateApplyArg::Term(term) => {
+            Ok(ApplyArg::Term(MachineTermSource::new_checked(term.source)?))
+        }
+        CandidateApplyArg::Subgoal { name_hint } => Ok(ApplyArg::Subgoal { name_hint }),
+        CandidateApplyArg::InferFromTarget => Ok(ApplyArg::InferFromTarget),
+    }
+}
+
+fn validate_apply_arg(arg: &ApplyArg) -> Result<()> {
+    match arg {
+        ApplyArg::Term(term) => validate_machine_term_source(term),
+        ApplyArg::Subgoal { .. } | ApplyArg::InferFromTarget => Ok(()),
+    }
+}
+
+fn elaborate_apply_term_infer(
+    term: &MachineTermSource,
+    context: &npa_frontend::MachineTermElabContext,
+) -> Result<(Expr, Expr)> {
+    validate_machine_term_source(term)?;
+    let canonical =
+        npa_frontend::canonicalize_machine_term_source(term.source()).map_err(|err| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineTermSource,
+                format!(
+                    "machine term source canonicalization failed: {}",
+                    err.message
+                ),
+            )
+        })?;
+    let ast = npa_frontend::decode_machine_term_source_canonical(&canonical.canonical_bytes)
+        .map_err(|err| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineTermSource,
+                format!("machine term canonical decode failed: {}", err.message),
+            )
+        })?;
+    npa_frontend::elaborate_machine_term_infer_from_ast(
+        &ast,
+        context,
+        &npa_frontend::MachineCompileOptions::default(),
+    )
+    .map_err(machine_term_elaboration_diag)
+}
+
+fn universe_argument_mismatch_diag(
+    expected_params: &[String],
+    actual_levels: &[Level],
+    goal_id: GoalId,
+    meta_id: MetaVarId,
+) -> MachineTacticDiagnostic {
+    MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::UniverseArgumentMismatch,
+        format!(
+            "tactic head expects {} universe arguments, got {}",
+            expected_params.len(),
+            actual_levels.len()
+        ),
+    )
+    .with_expected_actual_payload_kinds(
+        DiagnosticPayloadKind::UniverseParamList,
+        &universe_param_list_canonical_bytes(expected_params),
+        DiagnosticPayloadKind::LevelArgList,
+        &level_arg_list_canonical_bytes(actual_levels),
+    )
+    .with_goal(goal_id)
+    .with_meta(meta_id)
+}
+
+fn ensure_subgoal_domain_is_prop(
+    state: &MachineProofState,
+    ctx: &Ctx,
+    goal: &MachineGoal,
+    domain: &Expr,
+) -> Result<()> {
+    let env = state.env.kernel_env();
+    let domain_ty = env
+        .infer(ctx, &state.root.universe_params, domain)
+        .map_err(kernel_diag)?;
+    let domain_ty_whnf = env
+        .whnf(ctx, &state.root.universe_params, &domain_ty)
+        .map_err(kernel_diag)?;
+    match domain_ty_whnf {
+        Expr::Sort(level) if normalize_level(level.clone()) == Level::Zero => Ok(()),
+        actual => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::SubgoalDataArgument,
+            "apply Subgoal is only allowed for proposition-valued binder domains",
+        )
+        .with_expected_actual_payloads(
+            DiagnosticPayloadKind::Expr,
+            &core_expr_canonical_bytes(&Expr::sort(Level::zero())),
+            &core_expr_canonical_bytes(&actual),
+        )
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id)),
+    }
+}
+
+fn infer_apply_args_from_target(
+    state: &MachineProofState,
+    ctx: &Ctx,
+    goal: &MachineGoal,
+    result_pattern: &Expr,
+    infer_ids: &[PatternMetaId],
+) -> Result<BTreeMap<PatternMetaId, Expr>> {
+    let env = state.env.kernel_env();
+    let delta = &state.root.universe_params;
+    let pattern_whnf = env.whnf(ctx, delta, result_pattern).map_err(kernel_diag)?;
+    let target_whnf = env.whnf(ctx, delta, &goal.target).map_err(kernel_diag)?;
+    let mut present = BTreeSet::new();
+    collect_pattern_meta_ids(&pattern_whnf, &mut present);
+    for id in infer_ids {
+        if !present.contains(id) {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::MissingExplicitArgument,
+                "InferFromTarget argument does not occur in the result pattern",
+            )
+            .with_goal(goal.id)
+            .with_meta(goal.meta_id));
+        }
+    }
+    let mut solutions = BTreeMap::new();
+    match_apply_pattern(
+        env,
+        ctx,
+        delta,
+        &pattern_whnf,
+        &target_whnf,
+        false,
+        &mut solutions,
+    )
+    .map_err(|mut diag| {
+        diag.goal_id = Some(goal.id);
+        diag.meta_id = Some(goal.meta_id);
+        diag
+    })?;
+    for id in infer_ids {
+        if !solutions.contains_key(id) {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+                "InferFromTarget argument was not uniquely solved",
+            )
+            .with_goal(goal.id)
+            .with_meta(goal.meta_id));
+        }
+    }
+    Ok(solutions)
+}
+
+fn match_apply_pattern(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    pattern: &Expr,
+    target: &Expr,
+    allow_pattern_meta: bool,
+    solutions: &mut BTreeMap<PatternMetaId, Expr>,
+) -> Result<()> {
+    if let Some(id) = pattern_meta_id(pattern) {
+        if !allow_pattern_meta {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+                "InferFromTarget cannot be solved from a non-rigid result position",
+            ));
+        }
+        return assign_pattern_meta_solution(env, ctx, delta, id, target, solutions);
+    }
+    if !contains_pattern_meta(pattern) {
+        if env
+            .is_defeq(ctx, delta, pattern, target)
+            .map_err(kernel_diag)?
+        {
+            return Ok(());
+        }
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+            "rigid apply result pattern does not match the goal target",
+        ));
+    }
+
+    match pattern {
+        Expr::App(_, _) => {
+            let (pattern_head, pattern_args) = collect_core_apps(pattern);
+            if contains_pattern_meta(&pattern_head) {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+                    "InferFromTarget cannot occur in function-head position",
+                ));
+            }
+            let (target_head, target_args) = collect_core_apps(target);
+            if pattern_args.len() != target_args.len()
+                || !rigid_heads_match(env, ctx, delta, &pattern_head, &target_head)?
+            {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+                    "apply result pattern and target have incompatible rigid heads",
+                ));
+            }
+            for (pattern_arg, target_arg) in pattern_args.iter().zip(&target_args) {
+                match_apply_pattern(env, ctx, delta, pattern_arg, target_arg, true, solutions)?;
+            }
+            Ok(())
+        }
+        Expr::Lam { .. } | Expr::Pi { .. } | Expr::Let { .. } => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+            "InferFromTarget under binders or let bodies is not supported",
+        )),
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+            "unsupported InferFromTarget result pattern shape",
+        )),
+    }
+}
+
+fn assign_pattern_meta_solution(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    id: PatternMetaId,
+    target: &Expr,
+    solutions: &mut BTreeMap<PatternMetaId, Expr>,
+) -> Result<()> {
+    if contains_pattern_meta(target) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+            "InferFromTarget solution cannot contain another inferred argument",
+        ));
+    }
+    match solutions.get(&id) {
+        Some(existing)
+            if env
+                .is_defeq(ctx, delta, existing, target)
+                .map_err(kernel_diag)? =>
+        {
+            Ok(())
+        }
+        Some(_) => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+            "InferFromTarget has multiple non-convertible target matches",
+        )),
+        None => {
+            solutions.insert(id, target.clone());
+            Ok(())
+        }
+    }
+}
+
+fn rigid_heads_match(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    pattern_head: &Expr,
+    target_head: &Expr,
+) -> Result<bool> {
+    match (pattern_head, target_head) {
+        (
+            Expr::Const {
+                name: lhs_name,
+                levels: lhs_levels,
+            },
+            Expr::Const {
+                name: rhs_name,
+                levels: rhs_levels,
+            },
+        ) => Ok(lhs_name == rhs_name && levels_eq(lhs_levels, rhs_levels)),
+        (Expr::BVar(lhs), Expr::BVar(rhs)) => Ok(lhs == rhs),
+        _ => env
+            .is_defeq(ctx, delta, pattern_head, target_head)
+            .map_err(kernel_diag),
+    }
+}
+
+fn collect_core_apps(expr: &Expr) -> (Expr, Vec<Expr>) {
+    let mut args = Vec::new();
+    let mut head = expr.clone();
+    while let Expr::App(fun, arg) = head {
+        args.push(*arg);
+        head = *fun;
+    }
+    args.reverse();
+    (head, args)
+}
+
+const PATTERN_META_PREFIX: &str = "\0npa.phase4.pattern-meta.";
+
+fn pattern_meta_expr(id: PatternMetaId) -> Expr {
+    Expr::konst(format!("{PATTERN_META_PREFIX}{}", id.0), Vec::new())
+}
+
+fn pattern_meta_id(expr: &Expr) -> Option<PatternMetaId> {
+    let Expr::Const { name, levels } = expr else {
+        return None;
+    };
+    if !levels.is_empty() {
+        return None;
+    }
+    let suffix = name.strip_prefix(PATTERN_META_PREFIX)?;
+    suffix.parse::<u64>().ok().map(PatternMetaId)
+}
+
+fn contains_pattern_meta(expr: &Expr) -> bool {
+    if pattern_meta_id(expr).is_some() {
+        return true;
+    }
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => false,
+        Expr::App(fun, arg) => contains_pattern_meta(fun) || contains_pattern_meta(arg),
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            contains_pattern_meta(ty) || contains_pattern_meta(body)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            contains_pattern_meta(ty) || contains_pattern_meta(value) || contains_pattern_meta(body)
+        }
+    }
+}
+
+fn collect_pattern_meta_ids(expr: &Expr, ids: &mut BTreeSet<PatternMetaId>) {
+    if let Some(id) = pattern_meta_id(expr) {
+        ids.insert(id);
+        return;
+    }
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => {}
+        Expr::App(fun, arg) => {
+            collect_pattern_meta_ids(fun, ids);
+            collect_pattern_meta_ids(arg, ids);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_pattern_meta_ids(ty, ids);
+            collect_pattern_meta_ids(body, ids);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_pattern_meta_ids(ty, ids);
+            collect_pattern_meta_ids(value, ids);
+            collect_pattern_meta_ids(body, ids);
+        }
+    }
+}
+
+fn replace_pattern_metas(expr: &Expr, solutions: &BTreeMap<PatternMetaId, Expr>) -> Result<Expr> {
+    replace_pattern_metas_at_depth(expr, solutions, 0)
+}
+
+fn replace_pattern_metas_at_depth(
+    expr: &Expr,
+    solutions: &BTreeMap<PatternMetaId, Expr>,
+    depth: u32,
+) -> Result<Expr> {
+    if let Some(id) = pattern_meta_id(expr) {
+        let solution = solutions.get(&id).ok_or_else(|| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousApplyArgument,
+                "unresolved InferFromTarget argument remains after matching",
+            )
+        })?;
+        return shift(solution, depth as i32, 0).map_err(kernel_diag);
+    }
+    Ok(match expr {
+        Expr::Sort(level) => Expr::sort(level.clone()),
+        Expr::BVar(index) => Expr::bvar(*index),
+        Expr::Const { name, levels } => Expr::konst(name.clone(), levels.clone()),
+        Expr::App(fun, arg) => Expr::app(
+            replace_pattern_metas_at_depth(fun, solutions, depth)?,
+            replace_pattern_metas_at_depth(arg, solutions, depth)?,
+        ),
+        Expr::Lam { binder, ty, body } => Expr::lam(
+            binder.clone(),
+            replace_pattern_metas_at_depth(ty, solutions, depth)?,
+            replace_pattern_metas_at_depth(body, solutions, depth + 1)?,
+        ),
+        Expr::Pi { binder, ty, body } => Expr::pi(
+            binder.clone(),
+            replace_pattern_metas_at_depth(ty, solutions, depth)?,
+            replace_pattern_metas_at_depth(body, solutions, depth + 1)?,
+        ),
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => Expr::let_in(
+            binder.clone(),
+            replace_pattern_metas_at_depth(ty, solutions, depth)?,
+            replace_pattern_metas_at_depth(value, solutions, depth)?,
+            replace_pattern_metas_at_depth(body, solutions, depth + 1)?,
+        ),
+    })
+}
+
 fn validate_intro_name_shape(name: &str) -> Result<()> {
     if !is_machine_identifier(name) || is_reserved_spelling(name) {
         return Err(MachineTacticDiagnostic::new(
@@ -3118,6 +4180,37 @@ pub fn machine_term_source_hash(term: &MachineTermSource) -> Result<Hash> {
     ))
 }
 
+pub fn machine_tactic_canonical_bytes(tactic: &MachineTactic) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.machine-tactic.v1");
+    encode_machine_tactic_to(&mut out, tactic);
+    out
+}
+
+pub fn machine_tactic_hash(tactic: &MachineTactic) -> Hash {
+    hash_with_domain(
+        "npa.phase4.machine-tactic.hash.v1",
+        &machine_tactic_canonical_bytes(tactic),
+    )
+}
+
+fn universe_param_list_canonical_bytes(params: &[String]) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.universe-param-list.v1");
+    encode_list_len_to(&mut out, params.len());
+    for param in params {
+        encode_string_to(&mut out, param);
+    }
+    out
+}
+
+fn level_arg_list_canonical_bytes(levels: &[Level]) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.level-arg-list.v1");
+    encode_list_len_to(&mut out, levels.len());
+    for level in levels {
+        encode_level_to(&mut out, level);
+    }
+    out
+}
+
 pub fn machine_tactic_options_hash(options: &MachineTacticOptions) -> Hash {
     let mut out = tagged_bytes("npa.phase4.tactic-options.v1");
     encode_machine_tactic_options_to(&mut out, options);
@@ -3256,6 +4349,17 @@ fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKi
         MachineTacticDiagnosticKind::InvalidMetaDependency => 0x0e,
         MachineTacticDiagnosticKind::InvalidMetaContext => 0x0f,
         MachineTacticDiagnosticKind::ProofExprScopeError => 0x10,
+        MachineTacticDiagnosticKind::UnknownTacticHead => 0x17,
+        MachineTacticDiagnosticKind::AmbiguousTacticHead => 0x18,
+        MachineTacticDiagnosticKind::UnknownLocalName => 0x19,
+        MachineTacticDiagnosticKind::AmbiguousLocalName => 0x1a,
+        MachineTacticDiagnosticKind::InvalidLocalHead => 0x1b,
+        MachineTacticDiagnosticKind::UniverseArgumentMismatch => 0x1c,
+        MachineTacticDiagnosticKind::MissingExplicitArgument => 0x1d,
+        MachineTacticDiagnosticKind::AmbiguousApplyArgument => 0x1e,
+        MachineTacticDiagnosticKind::TooManyApplyArguments => 0x1f,
+        MachineTacticDiagnosticKind::TooFewApplyArguments => 0x20,
+        MachineTacticDiagnosticKind::SubgoalDataArgument => 0x21,
         MachineTacticDiagnosticKind::TypeMismatch => 0x11,
         MachineTacticDiagnosticKind::KernelRejected => 0x12,
         MachineTacticDiagnosticKind::UnresolvedGoal => 0x13,
@@ -3285,11 +4389,118 @@ fn encode_diagnostic_payload_kind_to(out: &mut Vec<u8>, kind: DiagnosticPayloadK
         DiagnosticPayloadKind::Expr => 0x00,
         DiagnosticPayloadKind::CheckedDeclSignature => 0x01,
         DiagnosticPayloadKind::MachineTermSource => 0x02,
+        DiagnosticPayloadKind::UniverseParamList => 0x03,
+        DiagnosticPayloadKind::LevelArgList => 0x04,
     });
 }
 
 fn encode_core_expr_bytes_to(out: &mut Vec<u8>, expr: &Expr) {
     out.extend_from_slice(&core_expr_canonical_bytes(expr));
+}
+
+fn encode_level_to(out: &mut Vec<u8>, level: &Level) {
+    match normalize_level(level.clone()) {
+        Level::Zero => out.push(0x00),
+        Level::Succ(inner) => {
+            out.push(0x01);
+            encode_level_to(out, &inner);
+        }
+        Level::Max(lhs, rhs) => {
+            out.push(0x02);
+            encode_level_to(out, &lhs);
+            encode_level_to(out, &rhs);
+        }
+        Level::IMax(lhs, rhs) => {
+            out.push(0x03);
+            encode_level_to(out, &lhs);
+            encode_level_to(out, &rhs);
+        }
+        Level::Param(name) => {
+            out.push(0x04);
+            encode_name_to(out, &Name::from_dotted(&name));
+        }
+    }
+}
+
+fn encode_machine_tactic_to(out: &mut Vec<u8>, tactic: &MachineTactic) {
+    match tactic {
+        MachineTactic::Exact { term, .. } => {
+            out.push(0x00);
+            encode_hash_to(out, &term.canonical_hash());
+        }
+        MachineTactic::Intro { name, .. } => {
+            out.push(0x01);
+            encode_string_to(out, name);
+        }
+        MachineTactic::Apply {
+            head,
+            universe_args,
+            args,
+            ..
+        } => {
+            out.push(0x02);
+            encode_tactic_head_to(out, head);
+            encode_list_len_to(out, universe_args.len());
+            for level in universe_args {
+                encode_level_to(out, level);
+            }
+            encode_list_len_to(out, args.len());
+            for arg in args {
+                encode_apply_arg_to(out, arg);
+            }
+        }
+        MachineTactic::Assign {
+            proof, new_goals, ..
+        } => {
+            out.push(0x7f);
+            encode_proof_expr_to(out, proof);
+            encode_list_len_to(out, new_goals.len());
+            for spec in new_goals {
+                encode_hash_to(out, &machine_local_context_hash(&spec.context));
+                encode_hash_to(out, &core_expr_hash(&spec.target));
+            }
+        }
+    }
+}
+
+fn encode_tactic_head_to(out: &mut Vec<u8>, head: &TacticHead) {
+    match head {
+        TacticHead::Imported {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x00);
+            encode_name_to(out, name);
+            encode_hash_to(out, decl_interface_hash);
+        }
+        TacticHead::CurrentModule {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x01);
+            encode_name_to(out, name);
+            encode_hash_to(out, decl_interface_hash);
+        }
+        TacticHead::Local { name } => {
+            out.push(0x02);
+            encode_string_to(out, name);
+        }
+    }
+}
+
+fn encode_apply_arg_to(out: &mut Vec<u8>, arg: &ApplyArg) {
+    match arg {
+        ApplyArg::Term(term) => {
+            out.push(0x00);
+            encode_hash_to(out, &term.canonical_hash());
+        }
+        ApplyArg::Subgoal { .. } => {
+            out.push(0x01);
+        }
+        ApplyArg::InferFromTarget => {
+            out.push(0x02);
+        }
+    }
 }
 
 fn encode_proof_expr_to(out: &mut Vec<u8>, expr: &ProofExpr) {
@@ -3576,6 +4787,74 @@ mod tests {
         MachineTermSource::new_checked(source).expect("test term source should canonicalize")
     }
 
+    fn prop_id_type() -> Expr {
+        Expr::pi("p", prop(), Expr::pi("hp", Expr::bvar(0), Expr::bvar(1)))
+    }
+
+    fn prop_id_proof() -> Expr {
+        Expr::lam("p", prop(), Expr::lam("hp", Expr::bvar(0), Expr::bvar(0)))
+    }
+
+    fn checked_current_theorem(name: &str, ty: Expr, proof: Expr) -> CheckedCurrentDecl {
+        check_current_decl_for_machine_tactic_from_verified_imports(
+            &[],
+            &[],
+            0,
+            Decl::Theorem {
+                name: name.to_owned(),
+                universe_params: Vec::new(),
+                ty,
+                proof,
+            },
+        )
+        .expect("current theorem should be checked")
+    }
+
+    fn lib_q(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("Lib.Q", Vec::new()), arg)
+    }
+
+    fn verified_apply_module() -> npa_cert::VerifiedModule {
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("Lib"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "Lib.Q".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("p", prop(), prop()),
+                },
+                Decl::Axiom {
+                    name: "Lib.mp".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi(
+                        "p",
+                        prop(),
+                        Expr::pi("hp", Expr::bvar(0), lib_q(Expr::bvar(1))),
+                    ),
+                },
+                Decl::Axiom {
+                    name: "Lib.drop".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("p", prop(), prop()),
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+            .unwrap()
+    }
+
+    fn export_interface_hash(import: &VerifiedImportRef, name: &str) -> Hash {
+        import
+            .exports()
+            .iter()
+            .find(|export| export.name == Name::from_dotted(name))
+            .expect("test export should exist")
+            .decl_interface_hash
+    }
+
     #[test]
     fn start_machine_proof_allocates_deterministic_root_goal() {
         let state = start_trivial();
@@ -3829,6 +5108,8 @@ mod tests {
             err.kind,
             MachineTacticDiagnosticKind::InvalidMachineTermSource
         );
+        assert_eq!(err.goal_id, Some(GoalId(0)));
+        assert_eq!(err.meta_id, Some(MetaVarId(0)));
         assert_eq!(state.open_goals, vec![GoalId(0)]);
     }
 
@@ -4066,6 +5347,507 @@ mod tests {
         assert_eq!(
             global_shadow.kind,
             MachineTacticDiagnosticKind::InvalidMetaContext
+        );
+    }
+
+    #[test]
+    fn apply_local_assumption_closes_goal() {
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: prop_id_type(),
+                ..trivial_spec()
+            },
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "hp".to_owned(),
+            },
+        )
+        .unwrap();
+
+        let (closed, delta) = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(2),
+                head: TacticHead::Local {
+                    name: "hp".to_owned(),
+                },
+                universe_args: Vec::new(),
+                args: Vec::new(),
+            },
+        )
+        .expect("local hypothesis should apply directly to the goal");
+
+        assert!(closed.open_goals.is_empty());
+        assert_eq!(delta.added_goals, Vec::<GoalId>::new());
+        assert_eq!(
+            extract_closed_machine_proof(&closed).unwrap(),
+            prop_id_proof()
+        );
+    }
+
+    #[test]
+    fn apply_current_theorem_uses_positional_term_arguments() {
+        let id = checked_current_theorem("Test.id", prop_id_type(), prop_id_proof());
+        let state = start_machine_proof(
+            MachineProofSpec {
+                source_index: 1,
+                theorem_type: prop_id_type(),
+                ..trivial_spec()
+            },
+            Vec::new(),
+            vec![id.clone()],
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "hp".to_owned(),
+            },
+        )
+        .unwrap();
+
+        let (closed, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(2),
+                head: TacticHead::CurrentModule {
+                    name: Name::from_dotted("Test.id"),
+                    decl_interface_hash: id.signature().decl_interface_hash(),
+                },
+                universe_args: Vec::new(),
+                args: vec![
+                    ApplyArg::Term(checked_term("p")),
+                    ApplyArg::Term(checked_term("hp")),
+                ],
+            },
+        )
+        .expect("current theorem should apply with explicit term arguments");
+
+        assert!(closed.open_goals.is_empty());
+        extract_closed_machine_proof(&closed).expect("closed apply proof should extract");
+    }
+
+    #[test]
+    fn apply_imported_theorem_infers_target_arg_and_orders_subgoals() {
+        let import = VerifiedImportRef::from_verified_module(&verified_apply_module()).unwrap();
+        let mp_hash = export_interface_hash(&import, "Lib.mp");
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi(
+                    "p",
+                    prop(),
+                    Expr::pi("hp", Expr::bvar(0), lib_q(Expr::bvar(1))),
+                ),
+                ..trivial_spec()
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "hp".to_owned(),
+            },
+        )
+        .unwrap();
+
+        let (state, delta) = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(2),
+                head: TacticHead::Imported {
+                    name: Name::from_dotted("Lib.mp"),
+                    decl_interface_hash: mp_hash,
+                },
+                universe_args: Vec::new(),
+                args: vec![
+                    ApplyArg::InferFromTarget,
+                    ApplyArg::Subgoal {
+                        name_hint: Some("premise".to_owned()),
+                    },
+                ],
+            },
+        )
+        .expect("imported theorem should infer p from the target and open premise goal");
+
+        assert_eq!(state.open_goals, vec![GoalId(3)]);
+        assert_eq!(delta.added_goals, vec![GoalId(3)]);
+        let premise = state.goal(GoalId(3)).unwrap();
+        assert_eq!(premise.context.len(), 2);
+        assert_eq!(premise.target, Expr::bvar(1));
+
+        let (closed, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(3),
+                term: checked_term("hp"),
+            },
+        )
+        .expect("premise subgoal should close with the local proof");
+        assert!(closed.open_goals.is_empty());
+        extract_closed_machine_proof(&closed).expect("closed imported apply proof should extract");
+    }
+
+    #[test]
+    fn apply_rejects_local_let_head() {
+        let mut state = start_trivial();
+        state.metas.get_mut(MetaVarId(0)).unwrap().assignment = Some(ProofExpr::Core(prop()));
+        state.metas.metas.insert(
+            MetaVarId(1),
+            MachineMetaVar {
+                id: MetaVarId(1),
+                goal_id: GoalId(1),
+                context: vec![MachineLocalDecl::definition("x", type0(), prop())],
+                target: type0(),
+                assignment: None,
+                creation_index: 1,
+            },
+        );
+        state.metas.next_id = 2;
+        state.open_goals = vec![GoalId(1)];
+        refresh_state_identity(&mut state);
+        validate_machine_proof_state(&state).unwrap();
+
+        let err = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(1),
+                head: TacticHead::Local {
+                    name: "x".to_owned(),
+                },
+                universe_args: Vec::new(),
+                args: Vec::new(),
+            },
+        )
+        .expect_err("local let declarations cannot be apply proof heads");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidLocalHead);
+        assert_eq!(state.open_goals, vec![GoalId(1)]);
+    }
+
+    #[test]
+    fn apply_validation_errors_include_goal_and_meta() {
+        let state = start_trivial();
+        let invalid_head = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(0),
+                head: TacticHead::Local {
+                    name: "let".to_owned(),
+                },
+                universe_args: Vec::new(),
+                args: Vec::new(),
+            },
+        )
+        .expect_err("invalid apply head shape should be rejected before execution");
+
+        assert_eq!(
+            invalid_head.kind,
+            MachineTacticDiagnosticKind::InvalidMachineTactic
+        );
+        assert_eq!(invalid_head.goal_id, Some(GoalId(0)));
+        assert_eq!(invalid_head.meta_id, Some(MetaVarId(0)));
+
+        let stale = MachineTermSource {
+            source: "Prop".to_owned(),
+            canonical_hash: ZERO_HASH,
+        };
+        let stale_term = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(0),
+                head: TacticHead::Local {
+                    name: "h".to_owned(),
+                },
+                universe_args: Vec::new(),
+                args: vec![ApplyArg::Term(stale)],
+            },
+        )
+        .expect_err("stale apply term source hash should include goal context");
+
+        assert_eq!(
+            stale_term.kind,
+            MachineTacticDiagnosticKind::InvalidMachineTermSource
+        );
+        assert_eq!(stale_term.goal_id, Some(GoalId(0)));
+        assert_eq!(stale_term.meta_id, Some(MetaVarId(0)));
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn apply_rejects_missing_infer_and_data_subgoal() {
+        let import = VerifiedImportRef::from_verified_module(&verified_apply_module()).unwrap();
+        let mp_hash = export_interface_hash(&import, "Lib.mp");
+        let drop_hash = export_interface_hash(&import, "Lib.drop");
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: prop(),
+                ..trivial_spec()
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let missing = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(0),
+                head: TacticHead::Imported {
+                    name: Name::from_dotted("Lib.drop"),
+                    decl_interface_hash: drop_hash,
+                },
+                universe_args: Vec::new(),
+                args: vec![ApplyArg::InferFromTarget],
+            },
+        )
+        .expect_err("InferFromTarget must occur in the rigid result pattern");
+        assert_eq!(
+            missing.kind,
+            MachineTacticDiagnosticKind::MissingExplicitArgument
+        );
+
+        let data_subgoal = run_machine_tactic(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(0),
+                head: TacticHead::Imported {
+                    name: Name::from_dotted("Lib.mp"),
+                    decl_interface_hash: mp_hash,
+                },
+                universe_args: Vec::new(),
+                args: vec![ApplyArg::Subgoal { name_hint: None }],
+            },
+        )
+        .expect_err("Subgoal cannot stand for a type parameter");
+        assert_eq!(
+            data_subgoal.kind,
+            MachineTacticDiagnosticKind::SubgoalDataArgument
+        );
+    }
+
+    #[test]
+    fn apply_tactic_step_fuel_precedes_binder_semantics() {
+        let import = VerifiedImportRef::from_verified_module(&verified_apply_module()).unwrap();
+        let mp_hash = export_interface_hash(&import, "Lib.mp");
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: prop(),
+                ..trivial_spec()
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(0),
+                head: TacticHead::Imported {
+                    name: Name::from_dotted("Lib.mp"),
+                    decl_interface_hash: mp_hash,
+                },
+                universe_args: Vec::new(),
+                args: vec![ApplyArg::Subgoal { name_hint: None }],
+            },
+            TacticBudget {
+                max_tactic_steps: 1,
+                ..TacticBudget::default()
+            },
+        )
+        .expect_err("binder consumption fuel must be checked before Subgoal domain semantics");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::TacticStep
+            }
+        );
+        assert_eq!(state.open_goals, vec![GoalId(0)]);
+    }
+
+    #[test]
+    fn apply_tactic_step_fuel_precedes_matcher_and_final_construction() {
+        let import = VerifiedImportRef::from_verified_module(&verified_apply_module()).unwrap();
+        let mp_hash = export_interface_hash(&import, "Lib.mp");
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi(
+                    "p",
+                    prop(),
+                    Expr::pi("hp", Expr::bvar(0), lib_q(Expr::bvar(1))),
+                ),
+                ..trivial_spec()
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "hp".to_owned(),
+            },
+        )
+        .unwrap();
+
+        let matcher_err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::Apply {
+                goal_id: GoalId(2),
+                head: TacticHead::Imported {
+                    name: Name::from_dotted("Lib.mp"),
+                    decl_interface_hash: mp_hash,
+                },
+                universe_args: Vec::new(),
+                args: vec![
+                    ApplyArg::InferFromTarget,
+                    ApplyArg::Subgoal {
+                        name_hint: Some("premise".to_owned()),
+                    },
+                ],
+            },
+            TacticBudget {
+                max_tactic_steps: 3,
+                ..TacticBudget::default()
+            },
+        )
+        .expect_err("matcher fuel must be checked before InferFromTarget matching");
+        assert_eq!(
+            matcher_err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::TacticStep
+            }
+        );
+        assert_eq!(state.open_goals, vec![GoalId(2)]);
+
+        let direct_state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: prop_id_type(),
+                ..trivial_spec()
+            },
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (direct_state, _) = run_machine_tactic(
+            &direct_state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "p".to_owned(),
+            },
+        )
+        .unwrap();
+        let (direct_state, _) = run_machine_tactic(
+            &direct_state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "hp".to_owned(),
+            },
+        )
+        .unwrap();
+        let final_err = run_machine_tactic_with_budget(
+            &direct_state,
+            MachineTactic::Apply {
+                goal_id: GoalId(2),
+                head: TacticHead::Local {
+                    name: "hp".to_owned(),
+                },
+                universe_args: Vec::new(),
+                args: Vec::new(),
+            },
+            TacticBudget {
+                max_tactic_steps: 1,
+                ..TacticBudget::default()
+            },
+        )
+        .expect_err("final proof construction fuel must be checked before closing the goal");
+        assert_eq!(
+            final_err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::TacticStep
+            }
+        );
+        assert_eq!(direct_state.open_goals, vec![GoalId(2)]);
+    }
+
+    #[test]
+    fn apply_tactic_hash_excludes_goal_id_and_subgoal_name_hint() {
+        let head = TacticHead::Local {
+            name: "h".to_owned(),
+        };
+        let first = MachineTactic::Apply {
+            goal_id: GoalId(0),
+            head: head.clone(),
+            universe_args: Vec::new(),
+            args: vec![ApplyArg::Subgoal {
+                name_hint: Some("left".to_owned()),
+            }],
+        };
+        let second = MachineTactic::Apply {
+            goal_id: GoalId(99),
+            head,
+            universe_args: Vec::new(),
+            args: vec![ApplyArg::Subgoal {
+                name_hint: Some("right".to_owned()),
+            }],
+        };
+
+        assert_eq!(machine_tactic_hash(&first), machine_tactic_hash(&second));
+        assert_ne!(
+            machine_tactic_hash(&first),
+            machine_tactic_hash(&MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "h".to_owned(),
+            })
         );
     }
 
