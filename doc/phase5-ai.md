@@ -6487,6 +6487,33 @@ Phase 5 AI substrate:
     endpoint/stage ごとの phase と option population から diagnostic_hash を作れること
 ```
 
+M1 `substrate` は大きいため、実装時は次のサブマイルストーンに分けます。
+
+| Milestone | 内容 | 完了条件 |
+| --- | --- | --- |
+| M1.1 | lossless JSON request decoder | duplicate key、unknown field、null、primitive type mismatch を endpoint ごとの error に写せる。`/machine/tactics/batch` の inner candidate や `/machine/replay` の delayed payload を raw slice または syntax tree として保持できる。 |
+| M1.2 | Phase 2 verifier output projection | certificate bytes から `VerifiedModuleContextEntry`、direct import projection、decl/generated table、axiom report projection を再構築し、Phase 5 session context に渡せる。 |
+| M1.3 | CheckedCurrentDeclPackage decoder / revalidator | package bytes から Phase 4 `CheckedCurrentDecl` を復元し、source_index prefix、prior_chain_fingerprint、checked_env_fingerprint、dependency / axiom report を再検証できる。 |
+| M1.4 | Phase 4 adapter boundary | `start_machine_proof`、`validate_machine_tactic_candidate(goal_id, candidate)`、`run_machine_tactic` / `run_machine_tactic_with_budget`、`extract_closed_machine_theorem_decl` の hash / error mapping を Phase 5 の diagnostic contract に固定する。 |
+| M1.5 | MachineSurfaceCallableInterfaceTable builder | Phase 3 elaborator、renderer、candidate validation、replay が同じ all-explicit callable profile table を参照できる。 |
+| M1.6 | owner-aware MachineExprRenderer v1 / renderer QA | snapshot、theorem statement、prompt payload の machine source を deterministic に render し、Phase 3 canonicalization / elaboration と round-trip QA できる。 |
+| M1.7 | MachineApiDiagnostic canonicalization | endpoint、diagnostic phase、goal/tactic/candidate context、expected/actual hash から deterministic `diagnostic_hash` を生成できる。transport / scheduler stop と deterministic diagnostic を混ぜない。 |
+
+M2-M11 は endpoint / subsystem 単位で次のマイルストーンに分けます。
+
+| Milestone | 内容 | 完了条件 |
+| --- | --- | --- |
+| M2 | Machine API types | `MachineProofSession`、`MachineProofSnapshot`、`MachineGoalView`、`MachineApiErrorWire`、request / response envelope、ID / hash string grammar を定義する。unknown field、duplicate key、required field omitted の分類先が endpoint ごとに固定されている。 |
+| M3 | Snapshot fingerprint / store | Phase 4 `MachineProofState` から `StoredSnapshotView canonical bytes`、`state_fingerprint`、`snapshot_id` を決定的に作れる。stored snapshot self-check、session-scoped lookup order、materialized view と executable payload の整合検査がある。 |
+| M4 | `/machine/sessions` | `import_closure`、direct `imports`、checked current declarations、root theorem type、`MachineApiOptions` を semantic validation order 通りに検査し、Phase 4 `start_machine_proof` から deterministic initial snapshot を作れる。 |
+| M5 | `/machine/snapshots/get` | `session_id` / `snapshot_id` lookup、stored snapshot self-check、`state_fingerprint` 照合の順序が固定され、pretty に依存しない `MachineGoalView` と machine source / hash payload を返せる。 |
+| M6 | `/machine/tactics/run` | 1 件の raw `MachineTacticCandidate` に対して wire validation、RawMachineTerm prepass、Phase 4 candidate canonicalization、transactional execution を順に行い、success / deterministic error / scheduler stop を契約通り返せる。 |
+| M7 | `/machine/tactics/batch` | 同一 input snapshot に対して candidates を request order prefix として評価し、各 candidate を独立 transaction として扱える。batch policy、partial stop、per-candidate result order、success / failure count が決定的である。 |
+| M8 | `/machine/search/for_goal` | direct verified imports と Phase 4 simp registry から theorem index を作り、query / filter / score / truncation を deterministic に返せる。search result は `export_hash` / `decl_interface_hash` に固定され、suggested candidate は Phase 5 validation 済みである。 |
+| M9 | replay plan / `/machine/replay` | replay plan wire / chain validation、session binding、step candidate re-validation、candidate / budget / delta hash 照合を実装する。MVP replay は initial snapshot から開始し、final snapshot だけを materialize する。 |
+| M10 | `/machine/verify` | closed snapshot を Phase 4 extraction、kernel check、Phase 2 certificate generation / verifier に渡せる。source_index to certificate index rewrite、axiom subset check、verify response の certificate / import payload を契約通り生成する。 |
+| M11 | `/machine/prompt_payload` | Phase 7 用に snapshot goal、verified premise metadata、allowed tactics、failed candidates を deterministic payload にまとめる。prompt payload fingerprint は入力だけから決まり、AI trace / score / cache state を含めない。 |
+
 おすすめの順番はこれです。
 
 ```text

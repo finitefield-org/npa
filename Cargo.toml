@@ -3,6 +3,7 @@ members = [
     "crates/npa-kernel",
     "crates/npa-cert",
     "crates/npa-frontend",
+    "crates/npa-api",
     "crates/npa-tactic",
 ]
 resolver = "2"
