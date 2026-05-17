@@ -1411,6 +1411,7 @@ GlobalRef =
   0x00 Imported(import_index: uvar, name: NameId, decl_interface_hash: hash)
   0x01 Local(decl_index: uvar)
   0x02 LocalGenerated(decl_index: uvar, name: NameId)
+  0x03 Builtin(name: NameId, decl_interface_hash: hash)
 ```
 
 `Imported.import_index` は `imports` の index です。
@@ -1421,6 +1422,11 @@ entry と一致しなければいけません。
 `LocalGenerated.name` はその `InductiveDecl` から生成された constructor または recursor の
 `NameId` です。checker は `decl_index` の `InductiveDecl` 内に同じ name の
 `ConstructorSpec` / `RecursorSpec` が存在することを確認します。
+`Builtin.name` は checker builtin profile が提供する stable name です。
+`decl_interface_hash` は builtin interface tag から決定的に再計算できなければならず、
+v0.1 では `Nat` / `Nat.zero` / `Nat.succ` / `Nat.rec` / `Eq` / `Eq.refl` / `Eq.rec`
+だけを許します。`Eq.rec` は builtin axiom interface なので、これを参照する declaration は
+axiom report に `Builtin(Eq.rec)` を含めます。
 Phase 2 では mutual declaration を扱わないため、local dependency は現在の declaration より
 小さい index だけを許します。
 ただし同じ `InductiveDecl` bundle 内の inductive self reference と generated artifact reference は、

@@ -8,15 +8,15 @@ pub mod level;
 pub mod subst;
 
 pub use builtins::{
-    eq, eq_inductive, eq_refl, eq_refl_type, eq_type, nat, nat_inductive, nat_rec_type, nat_succ,
-    nat_zero, prop, type0,
+    eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, eq_type, nat, nat_inductive,
+    nat_rec_type, nat_succ, nat_zero, prop, type0,
 };
 pub use context::Ctx;
 pub use decl::{
     Binder, ConstructorDecl, Decl, InductiveDecl, RecursorDecl, RecursorRules, Reducibility,
 };
 pub use env::Env;
-pub use error::{Error, Result};
+pub use error::{Error, ResourceLimitKind, Result};
 pub use expr::Expr;
 pub use level::Level;
 
@@ -590,6 +590,7 @@ mod tests {
             env.decl("Eq.refl"),
             Some(Decl::Constructor { .. })
         ));
+        assert!(matches!(env.decl("Eq.rec"), Some(Decl::Axiom { .. })));
 
         let zero_eq_zero = eq(type0(), nat(), nat_zero(), nat_zero());
         let proof = eq_refl(type0(), nat(), nat_zero());

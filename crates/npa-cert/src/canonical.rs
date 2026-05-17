@@ -95,9 +95,6 @@ pub(crate) fn build_module_cert_impl(
             && lhs.certificate_hash == rhs.certificate_hash
     });
 
-    let mut env = Env::new();
-    add_imports_to_env(&mut env, &imports)?;
-
     let local_names: Vec<Name> = module
         .declarations
         .iter()
@@ -160,6 +157,12 @@ pub(crate) fn build_module_cert_impl(
         })
         .collect();
     let imported_decls = imported_decl_map(&imports, &name_index, &directly_referenced_names)?;
+    let referenced_builtins =
+        referenced_builtin_names(&module.declarations, &imports, &local_public_names)?;
+
+    let mut env = Env::new();
+    add_referenced_builtins_to_env(&mut env, &referenced_builtins)?;
+    add_imports_to_env(&mut env, &imports)?;
 
     let mut canon_decls = Vec::new();
     for (decl_index, decl) in module.declarations.iter().cloned().enumerate() {
@@ -601,6 +604,12 @@ impl Resolver<'_> {
                 decl_interface_hash: info.decl_interface_hash,
             });
         }
+        if let Some(decl_interface_hash) = builtin_decl_interface_hash(name) {
+            return Ok(GlobalRef::Builtin {
+                name: self.name_id(name)?,
+                decl_interface_hash,
+            });
+        }
         Err(CertError::UnknownDependency { name: name.clone() })
     }
 }
@@ -689,6 +698,10 @@ fn collect_dependencies(term: &CanonTerm, deps: &mut BTreeSet<DependencyEntry>) 
         CanonTerm::Sort(_) | CanonTerm::BVar(_) => {}
         CanonTerm::Const { global_ref, .. } => {
             let decl_interface_hash = match global_ref {
+                GlobalRef::Builtin {
+                    decl_interface_hash,
+                    ..
+                } => *decl_interface_hash,
                 GlobalRef::Imported {
                     decl_interface_hash,
                     ..
@@ -724,6 +737,22 @@ fn axiom_dependencies_from_deps(
     let mut axioms = BTreeSet::new();
     for dep in deps {
         match &dep.global_ref {
+            GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => {
+                let is_builtin_axiom = resolver
+                    .name_index
+                    .iter()
+                    .any(|(candidate, index)| *index == *name && builtin_is_axiom(candidate));
+                if is_builtin_axiom {
+                    axioms.insert(AxiomRef {
+                        global_ref: dep.global_ref.clone(),
+                        name: *name,
+                        decl_interface_hash: *decl_interface_hash,
+                    });
+                }
+            }
             GlobalRef::Local { decl_index } | GlobalRef::LocalGenerated { decl_index, .. } => {
                 if let Some(dep_axioms) = previous_axioms.get(*decl_index) {
                     axioms.extend(dep_axioms.iter().cloned());
@@ -769,6 +798,10 @@ pub(crate) fn fill_local_dependency_hashes(
                     decl_interface_hash,
                     ..
                 } => *decl_interface_hash,
+                GlobalRef::Builtin {
+                    decl_interface_hash,
+                    ..
+                } => *decl_interface_hash,
             };
             Ok(DependencyEntry {
                 global_ref: dependency.global_ref.clone(),
@@ -787,6 +820,19 @@ fn axiom_dependencies_from_final_deps(
     let mut axioms = BTreeSet::new();
     for dependency in dependencies {
         match &dependency.global_ref {
+            GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => {
+                let name_value = name_table.get(*name).ok_or(CertError::DecodeError)?;
+                if builtin_is_axiom(name_value) {
+                    axioms.insert(AxiomRef {
+                        global_ref: dependency.global_ref.clone(),
+                        name: *name,
+                        decl_interface_hash: *decl_interface_hash,
+                    });
+                }
+            }
             GlobalRef::Local { decl_index } | GlobalRef::LocalGenerated { decl_index, .. } => {
                 if let Some(dep_axioms) = previous_axioms.get(*decl_index) {
                     axioms.extend(dep_axioms.iter().cloned());
@@ -833,6 +879,19 @@ fn direct_axioms_from_final_deps(
     let mut axioms = BTreeSet::new();
     for dependency in dependencies {
         match &dependency.global_ref {
+            GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => {
+                let name_value = name_table.get(*name).ok_or(CertError::DecodeError)?;
+                if builtin_is_axiom(name_value) {
+                    axioms.insert(AxiomRef {
+                        global_ref: dependency.global_ref.clone(),
+                        name: *name,
+                        decl_interface_hash: *decl_interface_hash,
+                    });
+                }
+            }
             GlobalRef::Local { decl_index } => {
                 if let Some(axiom) = previous_axioms
                     .get(*decl_index)
@@ -1329,6 +1388,25 @@ fn remap_imported_axiom_ref(
         .get(axiom.name)
         .ok_or(CertError::DecodeError)?;
     let name = *name_index.get(axiom_name).ok_or(CertError::DecodeError)?;
+    if let GlobalRef::Builtin {
+        decl_interface_hash,
+        ..
+    } = &axiom.global_ref
+    {
+        if builtin_decl_interface_hash(axiom_name) != Some(*decl_interface_hash) {
+            return Err(CertError::UnknownDependency {
+                name: axiom_name.clone(),
+            });
+        }
+        return Ok(AxiomRef {
+            global_ref: GlobalRef::Builtin {
+                name,
+                decl_interface_hash: *decl_interface_hash,
+            },
+            name,
+            decl_interface_hash: *decl_interface_hash,
+        });
+    }
     let import_index =
         import_index_exporting_axiom(imports, axiom_name, axiom.decl_interface_hash)?;
     Ok(AxiomRef {
@@ -1352,7 +1430,12 @@ fn referenced_imported_export_names(
         collect_const_names_from_decl(&mut referenced_names, decl);
     }
 
-    let local_public_names = local_public_names.iter().cloned().collect::<BTreeSet<_>>();
+    let mut local_public_names = local_public_names.iter().cloned().collect::<BTreeSet<_>>();
+    for decl in declarations {
+        if let Decl::Inductive { data, .. } = decl {
+            local_public_names.insert(Name::from_dotted(&data.name));
+        }
+    }
     referenced_names.retain(|name| !local_public_names.contains(name));
 
     let mut imported_exports = BTreeSet::new();
@@ -1368,6 +1451,43 @@ fn referenced_imported_export_names(
         }
     }
     referenced_names.retain(|name| imported_exports.contains(name));
+
+    Ok(referenced_names)
+}
+
+fn referenced_builtin_names(
+    declarations: &[Decl],
+    imports: &[&VerifiedModule],
+    local_public_names: &[Name],
+) -> Result<BTreeSet<Name>> {
+    let mut referenced_names = BTreeSet::new();
+    for decl in declarations {
+        collect_const_names_from_decl(&mut referenced_names, decl);
+    }
+
+    let mut local_public_names = local_public_names.iter().cloned().collect::<BTreeSet<_>>();
+    for decl in declarations {
+        if let Decl::Inductive { data, .. } = decl {
+            local_public_names.insert(Name::from_dotted(&data.name));
+        }
+    }
+    referenced_names.retain(|name| !local_public_names.contains(name));
+
+    let mut imported_exports = BTreeSet::new();
+    for import in imports {
+        for entry in &import.export_block {
+            imported_exports.insert(
+                import
+                    .name_table
+                    .get(entry.name)
+                    .cloned()
+                    .ok_or(CertError::DecodeError)?,
+            );
+        }
+    }
+    referenced_names.retain(|name| {
+        !imported_exports.contains(name) && builtin_decl_interface_hash(name).is_some()
+    });
 
     Ok(referenced_names)
 }

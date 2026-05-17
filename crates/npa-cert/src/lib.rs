@@ -13,15 +13,16 @@ mod kernel;
 mod types;
 mod verify;
 
-pub use kernel::verified_module_to_kernel_decls;
+pub use kernel::{builtin_decl_interface_hash, verified_module_to_kernel_decls};
 pub use types::*;
 
 pub(crate) use binary::*;
 pub(crate) use canonical::*;
 pub(crate) use hash::*;
 pub(crate) use kernel::{
-    add_decl_to_env, cert_to_kernel_decls, expr_from_term, level_from_node, name_to_string,
-    universe_names,
+    add_decl_to_env, add_referenced_builtins_to_env, builtin_is_axiom, cert_to_kernel_decls,
+    expr_from_term, level_from_node, name_to_string, universe_names,
+    verified_module_referenced_builtin_names,
 };
 pub(crate) use verify::*;
 

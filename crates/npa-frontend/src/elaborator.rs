@@ -10,7 +10,9 @@ use crate::{
     MachineTermAst, MachineTermCheckResult, MachineTermElabContext, ResolvedMachineModule, Result,
     VerifiedDependency, VerifiedImport,
 };
-use npa_kernel::{Ctx, Decl, Env, Expr, Level, Reducibility};
+use npa_kernel::{
+    eq_inductive, eq_rec_type, nat_inductive, Ctx, Decl, Env, Expr, Level, Reducibility,
+};
 use sha2::{Digest, Sha256};
 
 pub fn elaborate_machine_module(
@@ -2159,6 +2161,9 @@ fn referenced_axiom_dependency_targets(
         }
 
         for axiom in &entry.axiom_dependencies {
+            if matches!(axiom.global_ref, npa_cert::GlobalRef::Builtin { .. }) {
+                continue;
+            }
             dependencies.insert(ImportDependencyTarget {
                 name: module
                     .name_table()
@@ -2415,6 +2420,20 @@ fn kernel_env_from_imports<'a>(
                     progressed = true;
                 }
                 Err(npa_kernel::Error::UnknownConstant(name)) => {
+                    let has_explicit_dependency_hash = dependencies
+                        .get(&name)
+                        .is_some_and(|hashes| !hashes.is_empty());
+                    if dependency_matches_builtin_interface(&name, &dependencies, span)?
+                        && add_builtin_decl_for_unknown_constant(&mut env, &name, span)?
+                    {
+                        remaining.push(PendingKernelDecl {
+                            decl,
+                            source,
+                            dependencies,
+                        });
+                        progressed = true;
+                        continue;
+                    }
                     if !queued.contains(&name) {
                         if let Some(dependency) = resolve_available_dependency(
                             &name,
@@ -2431,6 +2450,17 @@ fn kernel_env_from_imports<'a>(
                             });
                             progressed = true;
                         }
+                    }
+                    if !has_explicit_dependency_hash
+                        && add_builtin_decl_for_unknown_constant(&mut env, &name, span)?
+                    {
+                        remaining.push(PendingKernelDecl {
+                            decl,
+                            source,
+                            dependencies,
+                        });
+                        progressed = true;
+                        continue;
                     }
                     remaining.push(PendingKernelDecl {
                         decl,
@@ -2459,6 +2489,32 @@ fn kernel_env_from_imports<'a>(
         env,
         loaded_available_names,
     })
+}
+
+fn dependency_matches_builtin_interface(
+    name: &str,
+    dependencies: &BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+    span: crate::Span,
+) -> Result<bool> {
+    let Some(hashes) = dependencies.get(name) else {
+        return Ok(false);
+    };
+    let Some(builtin_hash) =
+        npa_cert::builtin_decl_interface_hash(&npa_cert::Name::from_dotted(name))
+    else {
+        return Ok(false);
+    };
+    let mut hashes = hashes.iter();
+    let Some(first_hash) = hashes.next() else {
+        return Ok(false);
+    };
+    if hashes.next().is_some() {
+        return Err(import_resolution_diagnostic(
+            span,
+            format!("verified dependency {name} has multiple declaration interface hashes"),
+        ));
+    }
+    Ok(*first_hash == builtin_hash)
 }
 
 fn resolve_available_dependency(
@@ -2544,6 +2600,7 @@ fn machine_term_context_from_parts(
         &build.loaded_available_names,
         span,
     )?;
+    add_referenced_builtin_decls_to_env(&mut build.env, checked_current_decls, span)?;
     let mut entries: Vec<_> = direct_imports
         .iter()
         .enumerate()
@@ -2580,6 +2637,77 @@ fn machine_term_context_from_parts(
             decl_interface_hashes,
         ),
     })
+}
+
+fn add_referenced_builtin_decls_to_env(
+    env: &mut Env,
+    checked_current_decls: &[MachineCheckedCurrentDecl],
+    span: crate::Span,
+) -> Result<()> {
+    let mut names = BTreeSet::new();
+    for checked in checked_current_decls {
+        collect_const_names_from_decl(&mut names, &checked.decl);
+    }
+    add_builtin_decls_for_names(env, &names, span)
+}
+
+fn add_builtin_decl_for_unknown_constant(
+    env: &mut Env,
+    name: &str,
+    span: crate::Span,
+) -> Result<bool> {
+    if !matches!(
+        name,
+        "Nat" | "Nat.zero" | "Nat.succ" | "Nat.rec" | "Eq" | "Eq.refl" | "Eq.rec"
+    ) {
+        return Ok(false);
+    }
+    let mut names = BTreeSet::new();
+    names.insert(npa_cert::Name::from_dotted(name));
+    add_builtin_decls_for_names(env, &names, span)?;
+    Ok(true)
+}
+
+fn add_builtin_decls_for_names(
+    env: &mut Env,
+    names: &BTreeSet<npa_cert::Name>,
+    span: crate::Span,
+) -> Result<()> {
+    let needs_nat = names.iter().any(|name| {
+        let name = name.as_dotted();
+        matches!(name.as_str(), "Nat" | "Nat.zero" | "Nat.succ" | "Nat.rec")
+    });
+    let needs_eq = names.iter().any(|name| {
+        let name = name.as_dotted();
+        matches!(name.as_str(), "Eq" | "Eq.refl" | "Eq.rec")
+    });
+    let needs_eq_rec = names.iter().any(|name| name.as_dotted() == "Eq.rec");
+
+    if needs_nat && env.decl("Nat").is_none() {
+        env.add_inductive(nat_inductive())
+            .map_err(|err| builtin_kernel_diagnostic(span, err))?;
+    }
+    if needs_eq && env.decl("Eq").is_none() {
+        env.add_inductive(eq_inductive())
+            .map_err(|err| builtin_kernel_diagnostic(span, err))?;
+    }
+    if needs_eq_rec && env.decl("Eq.rec").is_none() {
+        env.add_axiom(
+            "Eq.rec",
+            vec!["u".to_owned(), "v".to_owned()],
+            eq_rec_type(Level::param("u"), Level::param("v")),
+        )
+        .map_err(|err| builtin_kernel_diagnostic(span, err))?;
+    }
+    Ok(())
+}
+
+fn builtin_kernel_diagnostic(span: crate::Span, err: npa_kernel::Error) -> MachineDiagnostic {
+    MachineDiagnostic::error(
+        MachineDiagnosticKind::KernelRejected,
+        span,
+        format!("kernel rejected builtin environment: {err:?}"),
+    )
 }
 
 fn append_checked_current_decls_to_context(
@@ -3113,6 +3241,36 @@ mod tests {
         }
     }
 
+    fn direct_using_imported_nat_dependency(decl_interface_hash: npa_cert::Hash) -> VerifiedImport {
+        let ty = nat();
+        let mut kernel_decl_dependencies = BTreeMap::new();
+        kernel_decl_dependencies.insert(
+            "Direct.nat_ty".to_owned(),
+            BTreeSet::from([VerifiedDependency {
+                name: npa_cert::Name::from_dotted("Nat"),
+                decl_interface_hash,
+            }]),
+        );
+
+        VerifiedImport {
+            module: npa_cert::Name::from_dotted("Direct.NatUser"),
+            export_hash: hash(51),
+            certificate_hash: None,
+            exports: vec![crate::VerifiedExport {
+                name: npa_cert::Name::from_dotted("Direct.nat_ty"),
+                universe_params: Vec::new(),
+                ty: ty.clone(),
+                decl_interface_hash: hash(52),
+            }],
+            kernel_decls: vec![Decl::Axiom {
+                name: "Direct.nat_ty".to_owned(),
+                universe_params: Vec::new(),
+                ty,
+            }],
+            kernel_decl_dependencies,
+        }
+    }
+
     fn set_single_axiom_ty(import: &mut VerifiedImport, ty: Expr) {
         import.exports[0].ty = ty.clone();
         let Decl::Axiom { ty: decl_ty, .. } = &mut import.kernel_decls[0] else {
@@ -3158,6 +3316,20 @@ mod tests {
         let bytes = npa_cert::encode_module_cert(&cert).expect("certificate should encode");
         npa_cert::verify_module_cert(&bytes, session, &npa_cert::AxiomPolicy::normal())
             .expect("certificate should verify")
+    }
+
+    fn eq_rec_alias_verified_module() -> npa_cert::VerifiedModule {
+        let u = Level::param("u");
+        let v = Level::param("v");
+        verified_core_module(npa_cert::CoreModule {
+            name: npa_cert::Name::from_dotted("Std.EqRecAlias"),
+            declarations: vec![Decl::Theorem {
+                name: "eq_rec_alias".to_owned(),
+                universe_params: vec!["u".to_owned(), "v".to_owned()],
+                ty: npa_kernel::eq_rec_type(u.clone(), v.clone()),
+                proof: Expr::konst("Eq.rec", vec![u, v]),
+            }],
+        })
     }
 
     fn alias_import() -> VerifiedImport {
@@ -3432,6 +3604,30 @@ def Test.copy : UseRec.P := UseRec.w",
             &MachineCompileOptions::default(),
         )
         .expect("certificate construction should receive transitive import dependencies");
+    }
+
+    #[test]
+    fn certificate_import_closure_ignores_builtin_axiom_dependencies() {
+        let import = eq_rec_alias_verified_module();
+        let u = Level::param("u");
+        let v = Level::param("v");
+        let module = npa_cert::CoreModule {
+            name: npa_cert::Name::from_dotted("Test"),
+            declarations: vec![Decl::Def {
+                name: "Test.copy_eq_rec".to_owned(),
+                universe_params: vec!["u".to_owned(), "v".to_owned()],
+                ty: npa_kernel::eq_rec_type(u.clone(), v.clone()),
+                value: Expr::konst("eq_rec_alias", vec![u, v]),
+                reducibility: Reducibility::Reducible,
+            }],
+        };
+
+        let imports =
+            certificate_imports_for_module(&module, &[0], std::slice::from_ref(&import), FileId(0))
+                .expect("builtin Eq.rec axiom dependency should not require a verified import");
+
+        assert_eq!(imports.len(), 1);
+        assert_eq!(imports[0].module(), import.module());
     }
 
     #[test]
@@ -3839,6 +4035,22 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
     }
 
     #[test]
+    fn term_context_rejects_imported_builtin_name_dependency_hash_mismatch() {
+        let direct = direct_using_imported_nat_dependency(hash(99));
+
+        let err = machine_term_context_from_verified_imports(
+            std::slice::from_ref(&direct),
+            std::slice::from_ref(&direct),
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect_err("non-builtin dependency hash for Nat must not be satisfied by builtin Nat");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
     fn term_context_does_not_expose_available_transitive_imports() {
         let direct = direct_using_hidden_import();
         let hidden = hidden_import();
@@ -3868,6 +4080,31 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
         .expect_err("available transitive import should not enter the direct lookup scope");
 
         assert_eq!(err.kind, MachineDiagnosticKind::UnknownGlobalName);
+    }
+
+    #[test]
+    fn term_context_loads_import_with_builtin_eq_rec_dependency() {
+        let import = eq_rec_alias_verified_module();
+        let context = crate::MachineTermElabContext::from_verified_modules(
+            std::slice::from_ref(&import),
+            std::slice::from_ref(&import),
+            Vec::new(),
+            vec!["u".to_owned(), "v".to_owned()],
+        )
+        .expect("verified import that references builtin Eq.rec should load");
+        let expected = npa_kernel::eq_rec_type(Level::param("u"), Level::param("v"));
+        let checked = elaborate_machine_term_check(
+            "@eq_rec_alias.{u, v}",
+            &context,
+            &expected,
+            &MachineCompileOptions::default(),
+        )
+        .expect("imported theorem with builtin dependency should elaborate");
+
+        assert_eq!(
+            checked.expr,
+            Expr::konst("eq_rec_alias", vec![Level::param("u"), Level::param("v")])
+        );
     }
 
     #[test]

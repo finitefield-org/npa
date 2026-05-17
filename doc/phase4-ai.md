@@ -445,7 +445,7 @@ kernel_check_profile_hash canonical bytes:
   - reduction profile id: "beta-delta-iota-zeta.v0.1"
   - universe profile id: "levels-imax-v0.1"
   - builtin profile id:
-      "builtin-eq-nat-v0.1" if the kernel exposes Eq/Nat builtins for this run,
+      "builtin-nat-eq-rec-v0.1" if the kernel exposes Nat / Eq / Eq.rec builtins for this run,
       otherwise "builtin-none-v0.1"
 ```
 
@@ -1044,6 +1044,7 @@ SimpRegistry canonical bytes:
       theorem_ty Expr hash
       universe_params as ordered string list
       rule_telescope hash
+      eq_levels Level canonical bytes
       eq_type Expr hash
       theorem_lhs Expr hash
       theorem_rhs Expr hash

@@ -1,14 +1,24 @@
+use std::collections::BTreeSet;
+
 use npa_kernel::{
-    Binder, ConstructorDecl, Decl, Env, Error, Expr, InductiveDecl, Level, RecursorDecl,
-    RecursorRules, Reducibility,
+    eq_inductive, eq_rec_type, nat_inductive, Binder, ConstructorDecl, Decl, Env, Error, Expr,
+    InductiveDecl, Level, RecursorDecl, RecursorRules, Reducibility,
 };
 
 use crate::types::{
-    CertError, CertHeader, CertReducibility, DeclPayload, ExportEntry, ExportKind, GlobalRef,
+    CertError, CertHeader, CertReducibility, DeclPayload, ExportEntry, ExportKind, GlobalRef, Hash,
     LevelId, LevelNode, ModuleCert, ModuleHashes, Name, NameId, Result, TermId, TermNode,
     VerifiedModule,
 };
-use crate::{CORE_SPEC, FORMAT};
+use crate::{hash_with_domain, CORE_SPEC, FORMAT};
+
+const BUILTIN_NAT: &str = "Nat";
+const BUILTIN_NAT_ZERO: &str = "Nat.zero";
+const BUILTIN_NAT_SUCC: &str = "Nat.succ";
+const BUILTIN_NAT_REC: &str = "Nat.rec";
+const BUILTIN_EQ: &str = "Eq";
+const BUILTIN_EQ_REFL: &str = "Eq.refl";
+const BUILTIN_EQ_REC: &str = "Eq.rec";
 
 pub(crate) fn cert_to_kernel_decls(cert: &ModuleCert) -> Result<Vec<Decl>> {
     cert.declarations
@@ -253,6 +263,7 @@ pub(crate) fn level_from_node(cert: &ModuleCert, level: LevelId) -> Result<Level
 
 fn global_ref_name(cert: &ModuleCert, global_ref: &GlobalRef) -> Result<String> {
     match global_ref {
+        GlobalRef::Builtin { name, .. } => name_to_string(cert, *name),
         GlobalRef::Imported { name, .. } => name_to_string(cert, *name),
         GlobalRef::Local { decl_index } => decl_name(cert, *decl_index),
         GlobalRef::LocalGenerated { name, .. } => name_to_string(cert, *name),
@@ -325,4 +336,88 @@ pub(crate) fn add_decl_to_env(env: &mut Env, decl: Decl) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// Return the canonical interface hash for a declaration supplied by the builtin checker profile.
+pub fn builtin_decl_interface_hash(name: &Name) -> Option<Hash> {
+    let tag = match name.as_dotted().as_str() {
+        BUILTIN_NAT => "npa.phase4.builtin.nat.v1",
+        BUILTIN_NAT_ZERO => "npa.phase4.builtin.nat.zero.v1",
+        BUILTIN_NAT_SUCC => "npa.phase4.builtin.nat.succ.v1",
+        BUILTIN_NAT_REC => "npa.phase4.builtin.nat.rec.v1",
+        BUILTIN_EQ => "npa.phase4.builtin.eq.v1",
+        BUILTIN_EQ_REFL => "npa.phase4.builtin.eq.refl.v1",
+        BUILTIN_EQ_REC => "npa.phase4.builtin.eq.rec.v1",
+        _ => return None,
+    };
+    Some(hash_with_domain(
+        b"NPA-BUILTIN-INTERFACE-0.1",
+        tag.as_bytes(),
+    ))
+}
+
+pub(crate) fn builtin_is_axiom(name: &Name) -> bool {
+    name.as_dotted() == BUILTIN_EQ_REC
+}
+
+pub(crate) fn add_referenced_builtins_to_env(
+    env: &mut Env,
+    referenced: &BTreeSet<Name>,
+) -> Result<()> {
+    let needs_nat = referenced.iter().any(|name| {
+        matches!(
+            name.as_dotted().as_str(),
+            BUILTIN_NAT | BUILTIN_NAT_ZERO | BUILTIN_NAT_SUCC | BUILTIN_NAT_REC
+        )
+    });
+    let needs_eq = referenced.iter().any(|name| {
+        matches!(
+            name.as_dotted().as_str(),
+            BUILTIN_EQ | BUILTIN_EQ_REFL | BUILTIN_EQ_REC
+        )
+    });
+    let needs_eq_rec = referenced
+        .iter()
+        .any(|name| name.as_dotted() == BUILTIN_EQ_REC);
+
+    if needs_nat && env.decl(BUILTIN_NAT).is_none() {
+        env.add_inductive(nat_inductive())?;
+    }
+    if needs_eq && env.decl(BUILTIN_EQ).is_none() {
+        env.add_inductive(eq_inductive())?;
+    }
+    if needs_eq_rec && env.decl(BUILTIN_EQ_REC).is_none() {
+        env.add_axiom(
+            BUILTIN_EQ_REC,
+            vec!["u".to_owned(), "v".to_owned()],
+            eq_rec_type(Level::param("u"), Level::param("v")),
+        )?;
+    }
+    Ok(())
+}
+
+pub(crate) fn verified_module_referenced_builtin_names(
+    module: &VerifiedModule,
+) -> Result<BTreeSet<Name>> {
+    let mut names = BTreeSet::new();
+    for term in &module.term_table {
+        if let TermNode::Const {
+            global_ref:
+                GlobalRef::Builtin {
+                    name,
+                    decl_interface_hash,
+                },
+            ..
+        } = term
+        {
+            let name_value = module.name_table.get(*name).ok_or(CertError::DecodeError)?;
+            if builtin_decl_interface_hash(name_value) != Some(*decl_interface_hash) {
+                return Err(CertError::UnknownDependency {
+                    name: name_value.clone(),
+                });
+            }
+            names.insert(name_value.clone());
+        }
+    }
+    Ok(names)
 }

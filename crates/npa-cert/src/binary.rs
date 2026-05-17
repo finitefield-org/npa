@@ -271,6 +271,14 @@ pub(crate) fn encode_axiom_refs_to(out: &mut Vec<u8>, axioms: &[AxiomRef]) {
 
 pub(crate) fn encode_global_ref_to(out: &mut Vec<u8>, global_ref: &GlobalRef) {
     match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x03);
+            encode_uvar_to(out, *name as u64);
+            encode_hash_to(out, decl_interface_hash);
+        }
         GlobalRef::Imported {
             import_index,
             name,
@@ -665,6 +673,10 @@ impl<'a> Decoder<'a> {
 
     fn global_ref(&mut self) -> Result<GlobalRef> {
         Ok(match self.byte()? {
+            0x03 => GlobalRef::Builtin {
+                name: self.usize()?,
+                decl_interface_hash: self.hash()?,
+            },
             0x00 => GlobalRef::Imported {
                 import_index: self.usize()?,
                 name: self.usize()?,

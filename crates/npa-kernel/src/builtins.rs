@@ -56,6 +56,46 @@ pub fn eq_refl_type(level: Level) -> Expr {
     )
 }
 
+pub fn eq_rec_type(value_level: Level, motive_level: Level) -> Expr {
+    let a_sort_level = value_level.clone();
+    let motive_ty = Expr::pi(
+        "b",
+        Expr::bvar(1),
+        Expr::pi(
+            "h",
+            eq(
+                value_level.clone(),
+                Expr::bvar(2),
+                Expr::bvar(1),
+                Expr::bvar(0),
+            ),
+            Expr::sort(motive_level),
+        ),
+    );
+    let refl_proof = eq_refl(value_level.clone(), Expr::bvar(2), Expr::bvar(1));
+    let minor_ty = Expr::apps(Expr::bvar(0), vec![Expr::bvar(1), refl_proof]);
+    let major_ty = eq(value_level, Expr::bvar(4), Expr::bvar(3), Expr::bvar(0));
+    let result_ty = Expr::apps(Expr::bvar(3), vec![Expr::bvar(1), Expr::bvar(0)]);
+
+    Expr::pi(
+        "A",
+        Expr::sort(a_sort_level),
+        Expr::pi(
+            "a",
+            Expr::bvar(0),
+            Expr::pi(
+                "motive",
+                motive_ty,
+                Expr::pi(
+                    "minor",
+                    minor_ty,
+                    Expr::pi("b", Expr::bvar(3), Expr::pi("h", major_ty, result_ty)),
+                ),
+            ),
+        ),
+    )
+}
+
 pub fn nat_rec_type(level: Level) -> Expr {
     let motive_ty = Expr::pi("_", nat(), Expr::sort(level.clone()));
     let z_ty = Expr::app(Expr::bvar(0), nat_zero());

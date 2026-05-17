@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    builtins::{eq_inductive, nat_inductive},
+    builtins::{eq_inductive, eq_rec_type, nat_inductive},
     context::Ctx,
     decl::{ConstructorDecl, Decl, InductiveDecl, RecursorDecl, RecursorRules, Reducibility},
-    error::{Error, Result},
+    error::{Error, ResourceLimitKind, Result},
     expr::{collect_apps, Expr},
     level::{ensure_level_wf, level_eq, levels_eq, Level},
     subst::{instantiate, subst_levels_expr},
@@ -27,6 +27,11 @@ impl Env {
         let mut env = Self::new();
         env.add_inductive(nat_inductive())?;
         env.add_inductive(eq_inductive())?;
+        env.add_axiom(
+            "Eq.rec",
+            vec!["u".to_owned(), "v".to_owned()],
+            eq_rec_type(Level::param("u"), Level::param("v")),
+        )?;
         Ok(env)
     }
 
@@ -238,12 +243,79 @@ impl Env {
         }
     }
 
+    pub fn infer_with_fuel_metered(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        whnf_fuel: &mut usize,
+        conversion_fuel: &mut usize,
+    ) -> Result<Expr> {
+        self.infer_with_remaining_fuel(ctx, delta, term, whnf_fuel, conversion_fuel)
+    }
+
+    pub fn check_with_fuel_metered(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        expected: &Expr,
+        whnf_fuel: &mut usize,
+        conversion_fuel: &mut usize,
+    ) -> Result<()> {
+        self.check_with_remaining_fuel(ctx, delta, term, expected, whnf_fuel, conversion_fuel)
+    }
+
     pub fn whnf(&self, ctx: &Ctx, delta: &[String], term: &Expr) -> Result<Expr> {
         self.whnf_with_fuel(ctx, delta, term, Self::WHNF_FUEL)
     }
 
     pub fn is_defeq(&self, ctx: &Ctx, delta: &[String], lhs: &Expr, rhs: &Expr) -> Result<bool> {
         self.is_defeq_with_fuel(ctx, delta, lhs, rhs, Self::DEFEQ_FUEL)
+    }
+
+    pub fn whnf_with_fuel(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        fuel: usize,
+    ) -> Result<Expr> {
+        let mut fuel = fuel;
+        self.whnf_with_fuel_metered(ctx, delta, term, &mut fuel)
+    }
+
+    pub fn whnf_with_fuel_metered(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        fuel: &mut usize,
+    ) -> Result<Expr> {
+        self.whnf_with_remaining_fuel(ctx, delta, term, fuel, ResourceLimitKind::Whnf)
+    }
+
+    pub fn is_defeq_with_fuel(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        lhs: &Expr,
+        rhs: &Expr,
+        fuel: usize,
+    ) -> Result<bool> {
+        let mut fuel = fuel;
+        self.is_defeq_with_fuel_metered(ctx, delta, lhs, rhs, &mut fuel)
+    }
+
+    pub fn is_defeq_with_fuel_metered(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        lhs: &Expr,
+        rhs: &Expr,
+        fuel: &mut usize,
+    ) -> Result<bool> {
+        self.is_defeq_with_remaining_fuel(ctx, delta, lhs, rhs, fuel)
     }
 
     fn ensure_fresh(&self, name: &str) -> Result<()> {
@@ -274,6 +346,152 @@ impl Env {
 
     fn expect_sort(&self, ctx: &Ctx, delta: &[String], term: &Expr) -> Result<Level> {
         match self.whnf(ctx, delta, &self.infer(ctx, delta, term)?)? {
+            Expr::Sort(level) => Ok(level),
+            actual => Err(Error::ExpectedSort { actual }),
+        }
+    }
+
+    fn infer_with_remaining_fuel(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        whnf_fuel: &mut usize,
+        conversion_fuel: &mut usize,
+    ) -> Result<Expr> {
+        match term {
+            Expr::Sort(level) => {
+                ensure_level_wf(delta, level)?;
+                Ok(Expr::sort(Level::succ(level.clone())))
+            }
+            Expr::BVar(index) => ctx.lookup_type(*index),
+            Expr::Const { name, levels } => {
+                let decl = self
+                    .decls
+                    .get(name)
+                    .ok_or_else(|| Error::UnknownConstant(name.clone()))?;
+                let params = decl.universe_params();
+                if params.len() != levels.len() {
+                    return Err(Error::BadUniverseArity {
+                        name: name.clone(),
+                        expected: params.len(),
+                        actual: levels.len(),
+                    });
+                }
+                for level in levels {
+                    ensure_level_wf(delta, level)?;
+                }
+                Ok(subst_levels_expr(decl.ty(), params, levels))
+            }
+            Expr::Pi { binder, ty, body } => {
+                let domain_sort = self.expect_sort_with_remaining_fuel(
+                    ctx,
+                    delta,
+                    ty,
+                    whnf_fuel,
+                    conversion_fuel,
+                )?;
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_assumption(binder.clone(), (**ty).clone());
+                let body_sort = self.expect_sort_with_remaining_fuel(
+                    &body_ctx,
+                    delta,
+                    body,
+                    whnf_fuel,
+                    conversion_fuel,
+                )?;
+                Ok(Expr::sort(Level::imax(domain_sort, body_sort)))
+            }
+            Expr::Lam { binder, ty, body } => {
+                self.expect_sort_with_remaining_fuel(ctx, delta, ty, whnf_fuel, conversion_fuel)?;
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_assumption(binder.clone(), (**ty).clone());
+                let body_ty = self.infer_with_remaining_fuel(
+                    &body_ctx,
+                    delta,
+                    body,
+                    whnf_fuel,
+                    conversion_fuel,
+                )?;
+                Ok(Expr::pi(binder.clone(), (**ty).clone(), body_ty))
+            }
+            Expr::App(fun, arg) => {
+                let fun_ty =
+                    self.infer_with_remaining_fuel(ctx, delta, fun, whnf_fuel, conversion_fuel)?;
+                match self.whnf_with_remaining_fuel(
+                    ctx,
+                    delta,
+                    &fun_ty,
+                    whnf_fuel,
+                    ResourceLimitKind::Whnf,
+                )? {
+                    Expr::Pi { ty, body, .. } => {
+                        self.check_with_remaining_fuel(
+                            ctx,
+                            delta,
+                            arg,
+                            &ty,
+                            whnf_fuel,
+                            conversion_fuel,
+                        )?;
+                        instantiate(&body, arg)
+                    }
+                    actual => Err(Error::ExpectedPi { actual }),
+                }
+            }
+            Expr::Let {
+                binder,
+                ty,
+                value,
+                body,
+            } => {
+                self.expect_sort_with_remaining_fuel(ctx, delta, ty, whnf_fuel, conversion_fuel)?;
+                self.check_with_remaining_fuel(ctx, delta, value, ty, whnf_fuel, conversion_fuel)?;
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_definition(binder.clone(), (**ty).clone(), (**value).clone());
+                let body_ty = self.infer_with_remaining_fuel(
+                    &body_ctx,
+                    delta,
+                    body,
+                    whnf_fuel,
+                    conversion_fuel,
+                )?;
+                instantiate(&body_ty, value)
+            }
+        }
+    }
+
+    fn check_with_remaining_fuel(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        expected: &Expr,
+        whnf_fuel: &mut usize,
+        conversion_fuel: &mut usize,
+    ) -> Result<()> {
+        let actual =
+            self.infer_with_remaining_fuel(ctx, delta, term, whnf_fuel, conversion_fuel)?;
+        if self.is_defeq_with_remaining_fuel(ctx, delta, &actual, expected, conversion_fuel)? {
+            Ok(())
+        } else {
+            Err(Error::TypeMismatch {
+                expected: expected.clone(),
+                actual,
+            })
+        }
+    }
+
+    fn expect_sort_with_remaining_fuel(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        whnf_fuel: &mut usize,
+        conversion_fuel: &mut usize,
+    ) -> Result<Level> {
+        let ty = self.infer_with_remaining_fuel(ctx, delta, term, whnf_fuel, conversion_fuel)?;
+        match self.whnf_with_remaining_fuel(ctx, delta, &ty, whnf_fuel, ResourceLimitKind::Whnf)? {
             Expr::Sort(level) => Ok(level),
             actual => Err(Error::ExpectedSort { actual }),
         }
@@ -509,19 +727,17 @@ impl Env {
         }
     }
 
-    fn whnf_with_fuel(
+    fn whnf_with_remaining_fuel(
         &self,
         ctx: &Ctx,
         delta: &[String],
         term: &Expr,
-        mut fuel: usize,
+        fuel: &mut usize,
+        kind: ResourceLimitKind,
     ) -> Result<Expr> {
         let mut current = term.clone();
         loop {
-            if fuel == 0 {
-                return Err(Error::ResourceLimit);
-            }
-            fuel -= 1;
+            spend_fuel(fuel, kind)?;
 
             match current {
                 Expr::BVar(index) => {
@@ -548,14 +764,14 @@ impl Env {
                     }
                 }
                 Expr::App(fun, arg) => {
-                    let fun_whnf = self.whnf_with_fuel(ctx, delta, &fun, fuel)?;
+                    let fun_whnf = self.whnf_with_remaining_fuel(ctx, delta, &fun, fuel, kind)?;
                     if let Expr::Lam { body, .. } = fun_whnf {
                         current = instantiate(&body, &arg)?;
                         continue;
                     }
 
                     let app = Expr::app(fun_whnf, (*arg).clone());
-                    if let Some(reduced) = self.reduce_recursor(ctx, delta, &app, fuel)? {
+                    if let Some(reduced) = self.reduce_recursor(ctx, delta, &app, fuel, kind)? {
                         current = reduced;
                         continue;
                     }
@@ -574,7 +790,8 @@ impl Env {
         ctx: &Ctx,
         delta: &[String],
         term: &Expr,
-        fuel: usize,
+        fuel: &mut usize,
+        kind: ResourceLimitKind,
     ) -> Result<Option<Expr>> {
         let (head, args) = collect_apps(term);
         let Expr::Const {
@@ -596,7 +813,7 @@ impl Env {
 
         let major = args[rules.major_index].clone();
         let rest = args[rules.major_index + 1..].to_vec();
-        let major_whnf = self.whnf_with_fuel(ctx, delta, &major, fuel)?;
+        let major_whnf = self.whnf_with_remaining_fuel(ctx, delta, &major, fuel, kind)?;
         let (ctor_head, ctor_args) = collect_apps(&major_whnf);
         let Expr::Const {
             name: ctor_name, ..
@@ -669,20 +886,20 @@ impl Env {
         }
     }
 
-    fn is_defeq_with_fuel(
+    fn is_defeq_with_remaining_fuel(
         &self,
         ctx: &Ctx,
         delta: &[String],
         lhs: &Expr,
         rhs: &Expr,
-        fuel: usize,
+        fuel: &mut usize,
     ) -> Result<bool> {
-        if fuel == 0 {
-            return Err(Error::ResourceLimit);
-        }
+        spend_fuel(fuel, ResourceLimitKind::Conversion)?;
 
-        let lhs = self.whnf_with_fuel(ctx, delta, lhs, fuel)?;
-        let rhs = self.whnf_with_fuel(ctx, delta, rhs, fuel)?;
+        let lhs =
+            self.whnf_with_remaining_fuel(ctx, delta, lhs, fuel, ResourceLimitKind::Conversion)?;
+        let rhs =
+            self.whnf_with_remaining_fuel(ctx, delta, rhs, fuel, ResourceLimitKind::Conversion)?;
 
         match (&lhs, &rhs) {
             (Expr::Sort(lhs), Expr::Sort(rhs)) => Ok(level_eq(lhs, rhs)),
@@ -697,10 +914,9 @@ impl Env {
                     levels: rhs_levels,
                 },
             ) => Ok(lhs_name == rhs_name && levels_eq(lhs_levels, rhs_levels)),
-            (Expr::App(lhs_f, lhs_a), Expr::App(rhs_f, rhs_a)) => {
-                Ok(self.is_defeq_with_fuel(ctx, delta, lhs_f, rhs_f, fuel - 1)?
-                    && self.is_defeq_with_fuel(ctx, delta, lhs_a, rhs_a, fuel - 1)?)
-            }
+            (Expr::App(lhs_f, lhs_a), Expr::App(rhs_f, rhs_a)) => Ok(self
+                .is_defeq_with_remaining_fuel(ctx, delta, lhs_f, rhs_f, fuel)?
+                && self.is_defeq_with_remaining_fuel(ctx, delta, lhs_a, rhs_a, fuel)?),
             (
                 Expr::Pi {
                     binder,
@@ -713,12 +929,12 @@ impl Env {
                     ..
                 },
             ) => {
-                if !self.is_defeq_with_fuel(ctx, delta, lhs_ty, rhs_ty, fuel - 1)? {
+                if !self.is_defeq_with_remaining_fuel(ctx, delta, lhs_ty, rhs_ty, fuel)? {
                     return Ok(false);
                 }
                 let mut body_ctx = ctx.clone();
                 body_ctx.push_assumption(binder.clone(), (**lhs_ty).clone());
-                self.is_defeq_with_fuel(&body_ctx, delta, lhs_body, rhs_body, fuel - 1)
+                self.is_defeq_with_remaining_fuel(&body_ctx, delta, lhs_body, rhs_body, fuel)
             }
             (
                 Expr::Lam {
@@ -732,16 +948,24 @@ impl Env {
                     ..
                 },
             ) => {
-                if !self.is_defeq_with_fuel(ctx, delta, lhs_ty, rhs_ty, fuel - 1)? {
+                if !self.is_defeq_with_remaining_fuel(ctx, delta, lhs_ty, rhs_ty, fuel)? {
                     return Ok(false);
                 }
                 let mut body_ctx = ctx.clone();
                 body_ctx.push_assumption(binder.clone(), (**lhs_ty).clone());
-                self.is_defeq_with_fuel(&body_ctx, delta, lhs_body, rhs_body, fuel - 1)
+                self.is_defeq_with_remaining_fuel(&body_ctx, delta, lhs_body, rhs_body, fuel)
             }
             _ => Ok(false),
         }
     }
+}
+
+fn spend_fuel(fuel: &mut usize, kind: ResourceLimitKind) -> Result<()> {
+    if *fuel == 0 {
+        return Err(Error::ResourceLimit { kind });
+    }
+    *fuel -= 1;
+    Ok(())
 }
 
 fn validate_universe_params(params: &[String]) -> Result<Vec<String>> {

@@ -28,6 +28,8 @@ pub(crate) fn verify_module_cert_impl(
     enforce_import_axiom_policy(&imports, policy)?;
 
     let mut env = Env::new();
+    let builtin_refs = referenced_builtins_from_cert(&cert)?;
+    add_referenced_builtins_to_env(&mut env, &builtin_refs)?;
     add_imports_to_env(&mut env, &imports)?;
 
     for decl in cert_to_kernel_decls(&cert)? {
@@ -293,7 +295,9 @@ fn collect_global_ref_names(
     names: &mut BTreeSet<Name>,
 ) -> Result<()> {
     match global_ref {
-        GlobalRef::Imported { name, .. } | GlobalRef::LocalGenerated { name, .. } => {
+        GlobalRef::Builtin { name, .. }
+        | GlobalRef::Imported { name, .. }
+        | GlobalRef::LocalGenerated { name, .. } => {
             collect_name_id(cert, *name, names)?;
         }
         GlobalRef::Local { .. } => {}
@@ -576,7 +580,7 @@ fn verify_declaration_order(cert: &ModuleCert) -> Result<()> {
                         }
                         deps.insert(*dependency_index);
                     }
-                    GlobalRef::Imported { .. } => {}
+                    GlobalRef::Builtin { .. } | GlobalRef::Imported { .. } => {}
                 }
             }
             Ok(deps)
@@ -617,6 +621,13 @@ fn verify_declaration_order(cert: &ModuleCert) -> Result<()> {
 
 fn global_ref_is_in_range(cert: &ModuleCert, global_ref: &GlobalRef) -> bool {
     match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => cert
+            .name_table
+            .get(*name)
+            .is_some_and(|name| builtin_decl_interface_hash(name) == Some(*decl_interface_hash)),
         GlobalRef::Imported {
             import_index, name, ..
         } => *import_index < cert.imports.len() && *name < cert.name_table.len(),
@@ -701,7 +712,13 @@ fn resolve_imports<'a>(
 }
 
 pub(crate) fn add_imports_to_env(env: &mut Env, imports: &[&VerifiedModule]) -> Result<()> {
-    for import in import_kernel_order(imports)? {
+    let ordered = import_kernel_order(imports)?;
+    let mut referenced_builtins = BTreeSet::new();
+    for import in &ordered {
+        referenced_builtins.extend(verified_module_referenced_builtin_names(import)?);
+    }
+    add_referenced_builtins_to_env(env, &referenced_builtins)?;
+    for import in ordered {
         for decl in verified_module_to_kernel_decls(import)? {
             add_decl_to_env(env, decl)?;
         }
@@ -1307,6 +1324,21 @@ pub(crate) fn expected_axioms_for_decl(
     let mut transitive = BTreeSet::new();
     for dependency in dependencies {
         match &dependency.global_ref {
+            GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => {
+                let name_value = cert.name_table.get(*name).ok_or(CertError::DecodeError)?;
+                if builtin_is_axiom(name_value) {
+                    let axiom = AxiomRef {
+                        global_ref: dependency.global_ref.clone(),
+                        name: *name,
+                        decl_interface_hash: *decl_interface_hash,
+                    };
+                    direct.insert(axiom.clone());
+                    transitive.insert(axiom);
+                }
+            }
             GlobalRef::Local { decl_index } => {
                 if let Some(dep_axioms) = previous_axioms.get(*decl_index) {
                     if let Some(axiom) = local_axiom_ref_for_decl(*decl_index, dep_axioms) {
@@ -1378,6 +1410,25 @@ fn remap_axiom_ref_from_cert_import(
         .iter()
         .position(|candidate| candidate == axiom_name)
         .ok_or(CertError::DecodeError)?;
+    if let GlobalRef::Builtin {
+        decl_interface_hash,
+        ..
+    } = &axiom.global_ref
+    {
+        if builtin_decl_interface_hash(axiom_name) != Some(*decl_interface_hash) {
+            return Err(CertError::UnknownDependency {
+                name: axiom_name.clone(),
+            });
+        }
+        return Ok(AxiomRef {
+            global_ref: GlobalRef::Builtin {
+                name,
+                decl_interface_hash: *decl_interface_hash,
+            },
+            name,
+            decl_interface_hash: *decl_interface_hash,
+        });
+    }
     let import_index =
         import_index_exporting_axiom(imports, axiom_name, axiom.decl_interface_hash)?;
     Ok(AxiomRef {
@@ -1478,6 +1529,30 @@ fn collect_global_refs_from_term(
     Ok(())
 }
 
+fn referenced_builtins_from_cert(cert: &ModuleCert) -> Result<BTreeSet<Name>> {
+    let mut names = BTreeSet::new();
+    for term in &cert.term_table {
+        if let TermNode::Const {
+            global_ref:
+                GlobalRef::Builtin {
+                    name,
+                    decl_interface_hash,
+                },
+            ..
+        } = term
+        {
+            let name_value = cert.name_table.get(*name).ok_or(CertError::DecodeError)?;
+            if builtin_decl_interface_hash(name_value) != Some(*decl_interface_hash) {
+                return Err(CertError::UnknownDependency {
+                    name: name_value.clone(),
+                });
+            }
+            names.insert(name_value.clone());
+        }
+    }
+    Ok(names)
+}
+
 fn interface_hash_for_global_ref(
     cert: &ModuleCert,
     imports: &[&VerifiedModule],
@@ -1485,6 +1560,16 @@ fn interface_hash_for_global_ref(
     global_ref: &GlobalRef,
 ) -> Result<Hash> {
     match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            let name = cert.name_table.get(*name).ok_or(CertError::DecodeError)?;
+            if builtin_decl_interface_hash(name) != Some(*decl_interface_hash) {
+                return Err(CertError::UnknownDependency { name: name.clone() });
+            }
+            Ok(*decl_interface_hash)
+        }
         GlobalRef::Local { decl_index } => {
             if *decl_index >= current_decl_index {
                 return Err(CertError::DependencyCycle {

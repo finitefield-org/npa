@@ -2,6 +2,12 @@ use crate::expr::Expr;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ResourceLimitKind {
+    Whnf,
+    Conversion,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
     UnknownConstant(String),
@@ -38,5 +44,7 @@ pub enum Error {
         constructor: String,
         result: Expr,
     },
-    ResourceLimit,
+    ResourceLimit {
+        kind: ResourceLimitKind,
+    },
 }

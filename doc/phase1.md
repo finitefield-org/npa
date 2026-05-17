@@ -958,7 +958,14 @@ Eq Nat n n
    Nat.rec on zero/succ
 
 10. Eq を追加
-    Eq, refl, possibly Eq.rec
+    Eq, refl, Eq.rec
+
+現行実装では、indexed inductive 用の一般 recursor generator がまだ `Eq.rec` の型を生成・検査できないため、
+`Eq.rec` は `Env::with_builtins()` が登録する kernel builtin axiom interface として扱います。
+理由は Phase 4 M4 の `rw` / `simp-lite` が生成する証明を小さい kernel に直接検査させるためです。
+代替案は indexed recursor generator を先に一般化することですが、これは Phase 1 inductive checker の責務拡張が大きいため、
+M4 では採用しません。信頼境界は `Eq.rec` の型 interface だけで、tactic / elaborator / AI は引き続き信頼しません。
+将来 indexed recursor generator が入ったら、この builtin axiom は生成 recursor に置き換えます。
 
 11. simple inductive checker 実装
     Nat/Eq を generic declaration として通す

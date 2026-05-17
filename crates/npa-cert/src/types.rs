@@ -391,6 +391,13 @@ pub enum TermNode {
 /// Canonical declaration reference used by terms, dependencies, and axiom reports.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum GlobalRef {
+    /// Declaration provided by the checker builtin profile.
+    Builtin {
+        /// Name table index for the builtin declaration.
+        name: NameId,
+        /// Interface hash expected for the builtin declaration.
+        decl_interface_hash: Hash,
+    },
     /// Declaration exported by an imported module.
     Imported {
         /// Index into the import table.
@@ -627,7 +634,17 @@ fn axiom_ref_order_key(axiom: &AxiomRef) -> Vec<u8> {
 
 fn global_ref_order_key(global_ref: &GlobalRef) -> Vec<u8> {
     let mut out = Vec::new();
+    // Keep these tags aligned with binary::encode_global_ref_to so BTreeSet order is the same as
+    // canonical GlobalRef byte order required by Phase 2.
     match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x03);
+            encode_order_uvar_to(&mut out, *name as u64);
+            out.extend(decl_interface_hash);
+        }
         GlobalRef::Imported {
             import_index,
             name,

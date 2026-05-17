@@ -1,6 +1,6 @@
 use super::*;
 use npa_kernel::{
-    eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
+    eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
     ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
 };
 
@@ -263,6 +263,35 @@ fn use_imported_use_id_module() -> CoreModule {
             universe_params: vec!["u".to_owned()],
             ty: id_type("A", "x"),
             value: Expr::konst("use_id", vec![Level::param("u")]),
+            reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn eq_rec_alias_module() -> CoreModule {
+    let u = Level::param("u");
+    let v = Level::param("v");
+    CoreModule {
+        name: Name::from_dotted("Test.EqRecAlias"),
+        declarations: vec![Decl::Theorem {
+            name: "eq_rec_alias".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: eq_rec_type(u.clone(), v.clone()),
+            proof: Expr::konst("Eq.rec", vec![u, v]),
+        }],
+    }
+}
+
+fn use_imported_eq_rec_alias_module() -> CoreModule {
+    let u = Level::param("u");
+    let v = Level::param("v");
+    CoreModule {
+        name: Name::from_dotted("Test.UseEqRecAlias"),
+        declarations: vec![Decl::Def {
+            name: "use_eq_rec_alias".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: eq_rec_type(u.clone(), v.clone()),
+            value: Expr::konst("eq_rec_alias", vec![u, v]),
             reducibility: Reducibility::Reducible,
         }],
     }
@@ -1099,6 +1128,21 @@ fn binder_names_do_not_affect_term_hashes() {
 
 #[test]
 fn dependency_and_axiom_refs_sort_by_canonical_bytes() {
+    fn encoded_global_ref(global_ref: &GlobalRef) -> Vec<u8> {
+        let mut out = Vec::new();
+        encode_global_ref_to(&mut out, global_ref);
+        out
+    }
+
+    fn assert_global_refs_are_in_canonical_byte_order(refs: &[GlobalRef]) {
+        for pair in refs.windows(2) {
+            assert!(
+                encoded_global_ref(&pair[0]) < encoded_global_ref(&pair[1]),
+                "GlobalRef order must match canonical binary bytes"
+            );
+        }
+    }
+
     let dep_255 = DependencyEntry {
         global_ref: GlobalRef::Local { decl_index: 255 },
         decl_interface_hash: [0x01; 32],
@@ -1116,6 +1160,12 @@ fn dependency_and_axiom_refs_sort_by_canonical_bytes() {
         deps[0].global_ref,
         GlobalRef::Local { decl_index: 16_384 }
     ));
+    assert_global_refs_are_in_canonical_byte_order(
+        &deps
+            .iter()
+            .map(|dependency| dependency.global_ref.clone())
+            .collect::<Vec<_>>(),
+    );
 
     let axiom_255 = AxiomRef {
         global_ref: GlobalRef::Local { decl_index: 255 },
@@ -1132,6 +1182,102 @@ fn dependency_and_axiom_refs_sort_by_canonical_bytes() {
         axioms[0].global_ref,
         GlobalRef::Local { decl_index: 16_384 }
     ));
+    assert_global_refs_are_in_canonical_byte_order(
+        &axioms
+            .iter()
+            .map(|axiom| axiom.global_ref.clone())
+            .collect::<Vec<_>>(),
+    );
+
+    let mixed_deps = [
+        DependencyEntry {
+            global_ref: GlobalRef::Builtin {
+                name: 1,
+                decl_interface_hash: [0x05; 32],
+            },
+            decl_interface_hash: [0x05; 32],
+        },
+        DependencyEntry {
+            global_ref: GlobalRef::LocalGenerated {
+                decl_index: 0,
+                name: 2,
+            },
+            decl_interface_hash: [0x06; 32],
+        },
+        DependencyEntry {
+            global_ref: GlobalRef::Local { decl_index: 0 },
+            decl_interface_hash: [0x07; 32],
+        },
+        DependencyEntry {
+            global_ref: GlobalRef::Imported {
+                import_index: 0,
+                name: 3,
+                decl_interface_hash: [0x08; 32],
+            },
+            decl_interface_hash: [0x08; 32],
+        },
+    ]
+    .into_iter()
+    .collect::<std::collections::BTreeSet<_>>()
+    .into_iter()
+    .map(|dependency| dependency.global_ref)
+    .collect::<Vec<_>>();
+    assert!(matches!(
+        mixed_deps.as_slice(),
+        [
+            GlobalRef::Imported { .. },
+            GlobalRef::Local { .. },
+            GlobalRef::LocalGenerated { .. },
+            GlobalRef::Builtin { .. }
+        ]
+    ));
+    assert_global_refs_are_in_canonical_byte_order(&mixed_deps);
+
+    let mixed_axioms = union_axioms([
+        AxiomRef {
+            global_ref: GlobalRef::Builtin {
+                name: 1,
+                decl_interface_hash: [0x09; 32],
+            },
+            name: 1,
+            decl_interface_hash: [0x09; 32],
+        },
+        AxiomRef {
+            global_ref: GlobalRef::LocalGenerated {
+                decl_index: 0,
+                name: 2,
+            },
+            name: 2,
+            decl_interface_hash: [0x0a; 32],
+        },
+        AxiomRef {
+            global_ref: GlobalRef::Local { decl_index: 0 },
+            name: 3,
+            decl_interface_hash: [0x0b; 32],
+        },
+        AxiomRef {
+            global_ref: GlobalRef::Imported {
+                import_index: 0,
+                name: 4,
+                decl_interface_hash: [0x0c; 32],
+            },
+            name: 4,
+            decl_interface_hash: [0x0c; 32],
+        },
+    ])
+    .into_iter()
+    .map(|axiom| axiom.global_ref)
+    .collect::<Vec<_>>();
+    assert!(matches!(
+        mixed_axioms.as_slice(),
+        [
+            GlobalRef::Imported { .. },
+            GlobalRef::Local { .. },
+            GlobalRef::LocalGenerated { .. },
+            GlobalRef::Builtin { .. }
+        ]
+    ));
+    assert_global_refs_are_in_canonical_byte_order(&mixed_axioms);
 }
 
 #[test]
@@ -1429,6 +1575,42 @@ fn transitive_imported_axiom_provenance_points_to_original_import() {
     ));
     verify_module_cert(
         &encode_module_cert(&use_use_p_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn transitive_imported_builtin_axioms_remain_builtin() {
+    let eq_rec_alias_cert = build_module_cert(eq_rec_alias_module(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_eq_rec_alias = verify_module_cert(
+        &encode_module_cert(&eq_rec_alias_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_alias_cert =
+        build_module_cert(use_imported_eq_rec_alias_module(), &[verified_eq_rec_alias]).unwrap();
+    let axiom = use_alias_cert
+        .axiom_report
+        .module_axioms
+        .iter()
+        .find(|axiom| use_alias_cert.name_table[axiom.name] == Name::from_dotted("Eq.rec"))
+        .expect("downstream module should report the builtin Eq.rec axiom");
+
+    assert!(matches!(axiom.global_ref, GlobalRef::Builtin { .. }));
+    assert!(matches!(
+        use_alias_cert.declarations[0].axiom_dependencies.as_slice(),
+        [AxiomRef {
+            global_ref: GlobalRef::Builtin { .. },
+            ..
+        }]
+    ));
+    verify_module_cert(
+        &encode_module_cert(&use_alias_cert).unwrap(),
         &mut session,
         &AxiomPolicy::normal(),
     )

@@ -705,7 +705,8 @@ fn level_from_verified_node(
 
 fn global_ref_name(module: &npa_cert::VerifiedModule, global_ref: &npa_cert::GlobalRef) -> String {
     match global_ref {
-        npa_cert::GlobalRef::Imported { name, .. }
+        npa_cert::GlobalRef::Builtin { name, .. }
+        | npa_cert::GlobalRef::Imported { name, .. }
         | npa_cert::GlobalRef::LocalGenerated { name, .. } => {
             module.name_table()[*name].as_dotted()
         }
@@ -776,13 +777,16 @@ fn collect_imported_dependencies_from_verified_term(
         .ok_or(npa_cert::CertError::DecodeError)?
     {
         npa_cert::TermNode::Sort(_) | npa_cert::TermNode::BVar(_) => {}
-        npa_cert::TermNode::Const { global_ref, .. } => {
-            if let npa_cert::GlobalRef::Imported {
+        npa_cert::TermNode::Const { global_ref, .. } => match global_ref {
+            npa_cert::GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            }
+            | npa_cert::GlobalRef::Imported {
                 name,
                 decl_interface_hash,
                 ..
-            } = global_ref
-            {
+            } => {
                 dependencies
                     .entry(
                         module
@@ -794,7 +798,8 @@ fn collect_imported_dependencies_from_verified_term(
                     .or_default()
                     .insert(*decl_interface_hash);
             }
-        }
+            npa_cert::GlobalRef::Local { .. } | npa_cert::GlobalRef::LocalGenerated { .. } => {}
+        },
         npa_cert::TermNode::App(func, arg) => {
             collect_imported_dependencies_from_verified_term(module, *func, dependencies)?;
             collect_imported_dependencies_from_verified_term(module, *arg, dependencies)?;
