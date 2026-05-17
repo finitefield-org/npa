@@ -75,6 +75,8 @@ pub enum MachineTacticDiagnosticKind {
     AmbiguousRewriteRule,
     TacticPrimitiveUnavailable,
     InvalidEqFamily,
+    InvalidNatFamily,
+    InvalidInductionTarget,
     TypeMismatch,
     KernelRejected,
     UnresolvedGoal,
@@ -222,6 +224,10 @@ pub enum MachineTacticCandidate {
     SimpLite {
         goal_id: GoalId,
         rules: Vec<SimpRuleRef>,
+    },
+    InductionNat {
+        goal_id: GoalId,
+        local_name: String,
     },
 }
 
@@ -1092,6 +1098,12 @@ impl MachineTacticEnv {
             &eq_family,
             &options.simp_rules,
         )?;
+        let nat_family = resolve_nat_family(
+            &kernel_env,
+            &imports,
+            &normalized_current,
+            options.nat_family.as_ref(),
+        )?;
         options.simp_rules = simp_registry
             .rules
             .iter()
@@ -1103,7 +1115,7 @@ impl MachineTacticEnv {
             checked_current_decls: normalized_current,
             simp_registry,
             eq_family,
-            nat_family: None,
+            nat_family,
             options,
             options_fingerprint,
             env_fingerprint: ZERO_HASH,
@@ -1202,6 +1214,10 @@ pub enum MachineTactic {
         goal_id: GoalId,
         rules: Vec<SimpRuleRef>,
     },
+    InductionNat {
+        goal_id: GoalId,
+        local_name: String,
+    },
     Assign {
         goal_id: GoalId,
         proof: ProofExpr,
@@ -1253,6 +1269,16 @@ pub fn validate_machine_tactic_candidate(
         MachineTacticCandidate::SimpLite { goal_id, rules } => {
             validate_simp_rule_refs(&rules)?;
             Ok(MachineTactic::SimpLite { goal_id, rules })
+        }
+        MachineTacticCandidate::InductionNat {
+            goal_id,
+            local_name,
+        } => {
+            validate_intro_name_shape(&local_name)?;
+            Ok(MachineTactic::InductionNat {
+                goal_id,
+                local_name,
+            })
         }
     }
 }
@@ -1359,6 +1385,10 @@ pub fn run_machine_tactic_with_budget(
         MachineTactic::SimpLite { goal_id, rules } => {
             run_simp_lite_tactic_with_budget(state, goal_id, rules, budget)
         }
+        MachineTactic::InductionNat {
+            goal_id,
+            local_name,
+        } => run_induction_nat_tactic_with_budget(state, goal_id, local_name, budget),
         MachineTactic::Assign {
             goal_id,
             proof,
@@ -3267,6 +3297,405 @@ fn simp_candidate_not_applicable(err: &MachineTacticDiagnostic) -> bool {
     )
 }
 
+#[derive(Clone, Debug)]
+struct InductionNatAssembly {
+    proof: ProofExpr,
+    new_goal_specs: Vec<MachineNewGoalSpec>,
+    required_tactic_steps: u64,
+}
+
+fn run_induction_nat_tactic_with_budget(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    local_name: String,
+    budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta)> {
+    let goal = state.goal(goal_id)?;
+    validate_intro_name_shape(&local_name)
+        .map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
+    let target = resolve_induction_nat_target(&goal, &local_name)?;
+    let family = state.env.nat_family.as_ref().ok_or_else(|| {
+        MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::TacticPrimitiveUnavailable,
+            "induction-nat requires a resolved Nat family",
+        )
+        .with_goal(goal_id)
+        .with_meta(goal.meta_id)
+    })?;
+    ensure_resolved_nat_family_heads(state, &goal, family)?;
+
+    let fuel = TacticRunFuel::new(budget);
+    let prefix_ctx = local_context_to_ctx_with_budget(
+        state.env.kernel_env(),
+        &goal.context[..target.index],
+        &state.root.universe_params,
+        &fuel,
+        goal_id,
+        goal.meta_id,
+    )?;
+    let nat_expr = nat_family_type_expr(family);
+    if !kernel_is_defeq_with_budget(
+        state.env.kernel_env(),
+        &prefix_ctx,
+        &state.root.universe_params,
+        &target.local.ty,
+        &nat_expr,
+        &fuel,
+        goal_id,
+        goal.meta_id,
+    )? {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidInductionTarget,
+            "induction-nat target local type is not definitionally equal to the resolved Nat family",
+        )
+        .with_expected_actual_payloads(
+            DiagnosticPayloadKind::Expr,
+            &core_expr_canonical_bytes(&nat_expr),
+            &core_expr_canonical_bytes(&target.local.ty),
+        )
+        .with_goal(goal_id)
+        .with_meta(goal.meta_id));
+    }
+    let ctx = local_context_to_ctx_with_budget(
+        state.env.kernel_env(),
+        &goal.context,
+        &state.root.universe_params,
+        &fuel,
+        goal_id,
+        goal.meta_id,
+    )?;
+    let assembly = assemble_induction_nat(state, &goal, &ctx, family, target.index, budget, &fuel)?;
+    assign_goal_with_budget_and_steps(
+        state,
+        goal_id,
+        assembly.proof,
+        assembly.new_goal_specs,
+        budget,
+        assembly.required_tactic_steps,
+        &fuel,
+    )
+}
+
+#[derive(Clone, Debug)]
+struct InductionNatTarget {
+    index: usize,
+    local: MachineLocalDecl,
+}
+
+fn resolve_induction_nat_target(
+    goal: &MachineGoal,
+    local_name: &str,
+) -> Result<InductionNatTarget> {
+    let matches = goal
+        .context
+        .iter()
+        .enumerate()
+        .filter(|(_, local)| local.name == local_name)
+        .collect::<Vec<_>>();
+    let [(index, local)] = matches.as_slice() else {
+        return Err(if matches.is_empty() {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::UnknownLocalName,
+                format!("induction-nat target {local_name:?} is not in the goal context"),
+            )
+        } else {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::AmbiguousLocalName,
+                format!("induction-nat target {local_name:?} resolves to multiple locals"),
+            )
+        }
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    };
+    if local.value.is_some() {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidInductionTarget,
+            format!("induction-nat target {local_name:?} resolves to a let declaration"),
+        )
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    }
+    if *index + 1 != goal.context.len() {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidInductionTarget,
+            "induction-nat MVP requires the target local to be the last local declaration",
+        )
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id));
+    }
+    Ok(InductionNatTarget {
+        index: *index,
+        local: (*local).clone(),
+    })
+}
+
+fn ensure_resolved_nat_family_heads(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    family: &ResolvedNatFamily,
+) -> Result<()> {
+    for name in [
+        &family.nat_name,
+        &family.zero_name,
+        &family.succ_name,
+        &family.rec_name,
+    ] {
+        if state.env.kernel_env().decl(&name.as_dotted()).is_none() {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidMachineProofState,
+                format!(
+                    "resolved Nat family head {} is missing from the kernel environment",
+                    name.as_dotted()
+                ),
+            )
+            .with_goal(goal.id)
+            .with_meta(goal.meta_id));
+        }
+    }
+    Ok(())
+}
+
+fn assemble_induction_nat(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    family: &ResolvedNatFamily,
+    target_index: usize,
+    budget: TacticBudget,
+    fuel: &TacticRunFuel,
+) -> Result<InductionNatAssembly> {
+    ensure_tactic_step_fuel(budget, 1, goal.id, goal.meta_id)?;
+    let sort_level = target_sort_level_with_budget(state, goal, ctx, fuel)?;
+    let nat_expr = nat_family_type_expr(family);
+    let zero_expr = nat_family_zero_expr(family);
+    let (step_n_name, step_ih_name) = deterministic_induction_local_names(&goal.context);
+
+    let motive_body = replace_induction_target_keep(&goal.target, Expr::bvar(0), 1)
+        .map_err(|err| invalid_induction_target_kernel_err(goal, err))?;
+    let motive = Expr::lam(step_n_name.clone(), nat_expr.clone(), motive_body);
+
+    ensure_tactic_step_fuel(budget, 2, goal.id, goal.meta_id)?;
+    let base_motive = Expr::lam(step_n_name.clone(), nat_expr.clone(), goal.target.clone());
+    let base_target = Expr::app(base_motive, zero_expr);
+    let ih_ty = Expr::app(
+        shift(&motive, 1, 0).map_err(|err| invalid_induction_target_kernel_err(goal, err))?,
+        Expr::bvar(0),
+    );
+    let step_target = Expr::app(
+        shift(&motive, 2, 0).map_err(|err| invalid_induction_target_kernel_err(goal, err))?,
+        nat_family_succ_expr(family, Expr::bvar(1)),
+    );
+
+    let base_context = goal.context[..target_index].to_vec();
+    let mut step_context = goal.context.clone();
+    step_context.push(MachineLocalDecl::assumption(
+        step_n_name.clone(),
+        nat_expr.clone(),
+    ));
+    step_context.push(MachineLocalDecl::assumption(
+        step_ih_name.clone(),
+        ih_ty.clone(),
+    ));
+
+    ensure_tactic_step_fuel(budget, 3, goal.id, goal.meta_id)?;
+    let base_meta = MetaVarId(state.metas.next_id);
+    let step_meta = MetaVarId(state.metas.next_id + 1);
+    let step_fun = ProofExpr::lam(
+        step_n_name,
+        nat_expr,
+        ProofExpr::lam(step_ih_name, ih_ty, ProofExpr::Meta(step_meta)),
+    );
+    let mut proof = ProofExpr::Core(Expr::konst(family.rec_name.as_dotted(), vec![sort_level]));
+    for arg in [
+        ProofExpr::Core(motive),
+        ProofExpr::Meta(base_meta),
+        step_fun,
+        ProofExpr::Core(Expr::bvar(0)),
+    ] {
+        proof = ProofExpr::app(proof, arg);
+    }
+
+    Ok(InductionNatAssembly {
+        proof,
+        new_goal_specs: vec![
+            MachineNewGoalSpec::new(base_context, base_target),
+            MachineNewGoalSpec::new(step_context, step_target),
+        ],
+        required_tactic_steps: 3,
+    })
+}
+
+fn target_sort_level_with_budget(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    fuel: &TacticRunFuel,
+) -> Result<Level> {
+    let ty = kernel_infer_with_budget(
+        state.env.kernel_env(),
+        ctx,
+        &state.root.universe_params,
+        &goal.target,
+        fuel,
+        goal.id,
+        goal.meta_id,
+    )?;
+    match kernel_whnf_with_budget(
+        state.env.kernel_env(),
+        ctx,
+        &state.root.universe_params,
+        &ty,
+        fuel,
+        goal.id,
+        goal.meta_id,
+    )? {
+        Expr::Sort(level) => Ok(level),
+        actual => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidInductionTarget,
+            "induction-nat target motive result is not a sort",
+        )
+        .with_expected_actual_payloads(
+            DiagnosticPayloadKind::Expr,
+            &core_expr_canonical_bytes(&Expr::sort(npa_kernel::type0())),
+            &core_expr_canonical_bytes(&actual),
+        )
+        .with_goal(goal.id)
+        .with_meta(goal.meta_id)),
+    }
+}
+
+fn invalid_induction_target_kernel_err(
+    goal: &MachineGoal,
+    err: npa_kernel::Error,
+) -> MachineTacticDiagnostic {
+    MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::InvalidInductionTarget,
+        format!("induction-nat could not structurally extract a motive: {err:?}"),
+    )
+    .with_goal(goal.id)
+    .with_meta(goal.meta_id)
+}
+
+fn nat_family_type_expr(family: &ResolvedNatFamily) -> Expr {
+    Expr::konst(family.nat_name.as_dotted(), Vec::new())
+}
+
+fn nat_family_zero_expr(family: &ResolvedNatFamily) -> Expr {
+    Expr::konst(family.zero_name.as_dotted(), Vec::new())
+}
+
+fn nat_family_succ_expr(family: &ResolvedNatFamily, arg: Expr) -> Expr {
+    Expr::app(Expr::konst(family.succ_name.as_dotted(), Vec::new()), arg)
+}
+
+fn deterministic_induction_local_names(context: &[MachineLocalDecl]) -> (String, String) {
+    let used = context
+        .iter()
+        .map(|local| local.name.as_str())
+        .collect::<BTreeSet<_>>();
+    for index in 0.. {
+        let n = format!("n{index}");
+        let ih = format!("ih{index}");
+        if !used.contains(n.as_str()) && !used.contains(ih.as_str()) {
+            return (n, ih);
+        }
+    }
+    unreachable!("unbounded deterministic name search should always find a pair")
+}
+
+fn replace_induction_target_keep(
+    expr: &Expr,
+    replacement: Expr,
+    added_after_original_context: u32,
+) -> npa_kernel::Result<Expr> {
+    replace_induction_target_keep_at_depth(expr, &replacement, added_after_original_context, 0)
+}
+
+fn replace_induction_target_keep_at_depth(
+    expr: &Expr,
+    replacement: &Expr,
+    added_after_original_context: u32,
+    depth: u32,
+) -> npa_kernel::Result<Expr> {
+    match expr {
+        Expr::Sort(level) => Ok(Expr::sort(level.clone())),
+        Expr::BVar(index) if *index < depth => Ok(Expr::bvar(*index)),
+        Expr::BVar(index) if *index == depth => shift(replacement, depth as i32, 0),
+        Expr::BVar(index) => Ok(Expr::bvar(index + added_after_original_context)),
+        Expr::Const { name, levels } => Ok(Expr::konst(name.clone(), levels.clone())),
+        Expr::App(fun, arg) => Ok(Expr::app(
+            replace_induction_target_keep_at_depth(
+                fun,
+                replacement,
+                added_after_original_context,
+                depth,
+            )?,
+            replace_induction_target_keep_at_depth(
+                arg,
+                replacement,
+                added_after_original_context,
+                depth,
+            )?,
+        )),
+        Expr::Lam { binder, ty, body } => Ok(Expr::lam(
+            binder.clone(),
+            replace_induction_target_keep_at_depth(
+                ty,
+                replacement,
+                added_after_original_context,
+                depth,
+            )?,
+            replace_induction_target_keep_at_depth(
+                body,
+                replacement,
+                added_after_original_context,
+                depth + 1,
+            )?,
+        )),
+        Expr::Pi { binder, ty, body } => Ok(Expr::pi(
+            binder.clone(),
+            replace_induction_target_keep_at_depth(
+                ty,
+                replacement,
+                added_after_original_context,
+                depth,
+            )?,
+            replace_induction_target_keep_at_depth(
+                body,
+                replacement,
+                added_after_original_context,
+                depth + 1,
+            )?,
+        )),
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => Ok(Expr::let_in(
+            binder.clone(),
+            replace_induction_target_keep_at_depth(
+                ty,
+                replacement,
+                added_after_original_context,
+                depth,
+            )?,
+            replace_induction_target_keep_at_depth(
+                value,
+                replacement,
+                added_after_original_context,
+                depth,
+            )?,
+            replace_induction_target_keep_at_depth(
+                body,
+                replacement,
+                added_after_original_context,
+                depth + 1,
+            )?,
+        )),
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn instantiate_simp_rule(
     state: &MachineProofState,
@@ -3879,10 +4308,12 @@ fn assign_goal_with_budget_and_steps(
 
     let mut new_goal_expr_nodes = 0;
     for spec in &new_goal_specs {
-        if !machine_local_context_is_prefix(&assigned_meta.context, &spec.context) {
+        if !machine_local_context_is_prefix(&assigned_meta.context, &spec.context)
+            && !machine_local_context_is_prefix(&spec.context, &assigned_meta.context)
+        {
             return Err(MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::InvalidMetaContext,
-                "new goal context must extend the assigned goal context",
+                "new goal context must be comparable with the assigned goal context",
             )
             .with_goal(goal_id)
             .with_meta(assigned_meta_id));
@@ -4974,12 +5405,6 @@ fn validate_options(options: &MachineTacticOptions) -> Result<()> {
             "max_metas must be nonzero",
         ));
     }
-    if options.nat_family.is_some() {
-        return Err(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::UnsupportedTacticOption,
-            "custom Nat family resolution is a Phase 4 post-M1 feature",
-        ));
-    }
     Ok(())
 }
 
@@ -5417,6 +5842,342 @@ fn expected_eq_rec_type(
                     minor_ty,
                     Expr::pi("b", Expr::bvar(3), Expr::pi("h", major_ty, result_ty)),
                 ),
+            ),
+        ),
+    )
+}
+
+fn resolve_nat_family(
+    kernel_env: &Env,
+    imports: &[VerifiedImportRef],
+    current: &[CheckedCurrentDecl],
+    family_ref: Option<&NatFamilyRef>,
+) -> Result<Option<ResolvedNatFamily>> {
+    let Some(reference) = family_ref else {
+        return Ok(None);
+    };
+    let nat = resolve_nat_family_signature(
+        kernel_env,
+        imports,
+        current,
+        &reference.nat_name,
+        &reference.nat_interface_hash,
+    )?;
+    let zero = resolve_nat_family_signature(
+        kernel_env,
+        imports,
+        current,
+        &reference.zero_name,
+        &reference.zero_interface_hash,
+    )?;
+    let succ = resolve_nat_family_signature(
+        kernel_env,
+        imports,
+        current,
+        &reference.succ_name,
+        &reference.succ_interface_hash,
+    )?;
+    let rec = resolve_nat_family_signature(
+        kernel_env,
+        imports,
+        current,
+        &reference.rec_name,
+        &reference.rec_interface_hash,
+    )?;
+    check_nat_family_interfaces(kernel_env, &nat, &zero, &succ, &rec)?;
+    if nat.origin != zero.origin || nat.origin != succ.origin || nat.origin != rec.origin {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            "Nat family heads must resolve to the same verified import or checked current declaration",
+        ));
+    }
+    let mut out = tagged_bytes("npa.phase4.resolved-nat-family.decl.v1");
+    encode_family_origin_to(&mut out, &nat.origin);
+    encode_checked_decl_signature_to(&mut out, &nat.signature);
+    encode_checked_decl_signature_to(&mut out, &zero.signature);
+    encode_checked_decl_signature_to(&mut out, &succ.signature);
+    encode_checked_decl_signature_to(&mut out, &rec.signature);
+    Ok(Some(ResolvedNatFamily {
+        nat_name: reference.nat_name.clone(),
+        zero_name: reference.zero_name.clone(),
+        succ_name: reference.succ_name.clone(),
+        rec_name: reference.rec_name.clone(),
+        fingerprint: hash_with_domain("npa.phase4.resolved-nat-family.v1", &out),
+    }))
+}
+
+fn resolve_nat_family_signature(
+    kernel_env: &Env,
+    imports: &[VerifiedImportRef],
+    current: &[CheckedCurrentDecl],
+    name: &Name,
+    decl_interface_hash: &Hash,
+) -> Result<ResolvedFamilySignature> {
+    let mut matches = Vec::new();
+    for import in imports {
+        for export in import.exports().iter().filter(|export| {
+            &export.name == name && &export.decl_interface_hash == decl_interface_hash
+        }) {
+            let decl = kernel_env.decl(&export.name.as_dotted()).ok_or_else(|| {
+                MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidNatFamily,
+                    format!(
+                        "Nat family head {} is exported but missing from kernel env",
+                        export.name.as_dotted()
+                    ),
+                )
+            })?;
+            matches.push(ResolvedFamilySignature {
+                signature: CheckedDeclSignature::from_core_decl(decl, export.decl_interface_hash),
+                origin: FamilyOrigin::Imported {
+                    module: import.module.clone(),
+                    export_hash: import.export_hash,
+                    certificate_hash: import.certificate_hash,
+                },
+            });
+        }
+    }
+    for decl in current {
+        if let Some(signature) =
+            resolve_current_nat_family_signature(kernel_env, decl, name, decl_interface_hash)?
+        {
+            matches.push(signature);
+        }
+    }
+    let [resolved] = matches.as_slice() else {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            if matches.is_empty() {
+                format!(
+                    "Nat family head {} with the requested interface hash is unknown",
+                    name.as_dotted()
+                )
+            } else {
+                format!("Nat family head {} is ambiguous", name.as_dotted())
+            },
+        ));
+    };
+    Ok(resolved.clone())
+}
+
+fn resolve_current_nat_family_signature(
+    kernel_env: &Env,
+    decl: &CheckedCurrentDecl,
+    name: &Name,
+    decl_interface_hash: &Hash,
+) -> Result<Option<ResolvedFamilySignature>> {
+    let parent_signature = decl.signature();
+    if parent_signature.name() == name
+        && parent_signature.decl_interface_hash() == *decl_interface_hash
+    {
+        return Ok(Some(ResolvedFamilySignature {
+            signature: parent_signature.clone(),
+            origin: FamilyOrigin::CurrentSourceDecl {
+                module: current_decl_module_name(parent_signature.name()),
+                source_index: decl.source_index(),
+                core_decl_hash: decl.core_decl_hash(),
+            },
+        }));
+    }
+
+    if parent_signature.decl_interface_hash() != *decl_interface_hash {
+        return Ok(None);
+    }
+    let Decl::Inductive { data, .. } = decl.core_decl() else {
+        return Ok(None);
+    };
+    let generated_by_parent = data
+        .constructors
+        .iter()
+        .any(|constructor| Name::from_dotted(&constructor.name) == *name)
+        || data
+            .recursor
+            .as_ref()
+            .map(|recursor| Name::from_dotted(&recursor.name) == *name)
+            .unwrap_or(false);
+    if !generated_by_parent {
+        return Ok(None);
+    }
+
+    let generated = kernel_env.decl(&name.as_dotted()).ok_or_else(|| {
+        MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            format!(
+                "current generated Nat family head {} is missing from kernel env",
+                name.as_dotted()
+            ),
+        )
+    })?;
+    match generated {
+        Decl::Constructor { inductive, .. } | Decl::Recursor { inductive, .. }
+            if inductive == decl.core_decl().name() => {}
+        _ => {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidNatFamily,
+                format!(
+                    "current generated Nat family head {} is not generated by {}",
+                    name.as_dotted(),
+                    decl.core_decl().name()
+                ),
+            ));
+        }
+    }
+
+    Ok(Some(ResolvedFamilySignature {
+        signature: CheckedDeclSignature::from_core_decl(generated, *decl_interface_hash),
+        origin: FamilyOrigin::CurrentSourceDecl {
+            module: current_decl_module_name(parent_signature.name()),
+            source_index: decl.source_index(),
+            core_decl_hash: decl.core_decl_hash(),
+        },
+    }))
+}
+
+fn check_nat_family_interfaces(
+    kernel_env: &Env,
+    nat: &ResolvedFamilySignature,
+    zero: &ResolvedFamilySignature,
+    succ: &ResolvedFamilySignature,
+    rec: &ResolvedFamilySignature,
+) -> Result<()> {
+    check_nat_family_decl_kinds(kernel_env, nat, zero, succ, rec)?;
+    if !nat.signature.universe_params().is_empty()
+        || !zero.signature.universe_params().is_empty()
+        || !succ.signature.universe_params().is_empty()
+        || rec.signature.universe_params().len() != 1
+    {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            "Nat family universe arity does not match Nat/Nat.zero/Nat.succ/Nat.rec",
+        ));
+    }
+    let nat_expr = Expr::konst(nat.signature.name().as_dotted(), Vec::new());
+    let expected_succ = Expr::pi("_", nat_expr.clone(), nat_expr.clone());
+    let rec_level = Level::param(rec.signature.universe_params()[0].clone());
+    let expected_rec = expected_nat_rec_type(
+        &nat.signature.name().as_dotted(),
+        &zero.signature.name().as_dotted(),
+        &succ.signature.name().as_dotted(),
+        rec_level,
+    );
+    for (actual, expected, delta, label) in [
+        (
+            zero.signature.ty(),
+            &nat_expr,
+            zero.signature.universe_params(),
+            "Nat.zero",
+        ),
+        (
+            succ.signature.ty(),
+            &expected_succ,
+            succ.signature.universe_params(),
+            "Nat.succ",
+        ),
+        (
+            rec.signature.ty(),
+            &expected_rec,
+            rec.signature.universe_params(),
+            "Nat.rec",
+        ),
+    ] {
+        if !kernel_env
+            .is_defeq(&Ctx::new(), delta, actual, expected)
+            .map_err(kernel_diag)?
+        {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidNatFamily,
+                format!("{label} family interface does not match the required M5 shape"),
+            )
+            .with_expected_actual_payloads(
+                DiagnosticPayloadKind::Expr,
+                &core_expr_canonical_bytes(expected),
+                &core_expr_canonical_bytes(actual),
+            ));
+        }
+    }
+    match nat.signature.ty() {
+        Expr::Sort(_) => Ok(()),
+        actual => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            "Nat family head must have a sort type",
+        )
+        .with_expected_actual_payloads(
+            DiagnosticPayloadKind::Expr,
+            &core_expr_canonical_bytes(&Expr::sort(npa_kernel::type0())),
+            &core_expr_canonical_bytes(actual),
+        )),
+    }
+}
+
+fn check_nat_family_decl_kinds(
+    kernel_env: &Env,
+    nat: &ResolvedFamilySignature,
+    zero: &ResolvedFamilySignature,
+    succ: &ResolvedFamilySignature,
+    rec: &ResolvedFamilySignature,
+) -> Result<()> {
+    let nat_name = nat.signature.name().as_dotted();
+    let nat_decl = kernel_env.decl(&nat_name).ok_or_else(|| {
+        MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            format!("Nat family head {nat_name} is missing from kernel env"),
+        )
+    })?;
+    if !matches!(nat_decl, Decl::Inductive { .. }) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            format!("Nat family head {nat_name} must be an inductive declaration"),
+        ));
+    }
+    for (signature, label) in [(zero, "Nat.zero"), (succ, "Nat.succ")] {
+        let name = signature.signature.name().as_dotted();
+        match kernel_env.decl(&name) {
+            Some(Decl::Constructor { inductive, .. }) if inductive == &nat_name => {}
+            _ => {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidNatFamily,
+                    format!(
+                        "{label} family head {name} must be a constructor generated by {nat_name}"
+                    ),
+                ));
+            }
+        }
+    }
+    let rec_name = rec.signature.name().as_dotted();
+    match kernel_env.decl(&rec_name) {
+        Some(Decl::Recursor { inductive, .. }) if inductive == &nat_name => Ok(()),
+        _ => Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidNatFamily,
+            format!("Nat.rec family head {rec_name} must be a recursor generated by {nat_name}"),
+        )),
+    }
+}
+
+fn expected_nat_rec_type(nat_name: &str, zero_name: &str, succ_name: &str, level: Level) -> Expr {
+    let nat = Expr::konst(nat_name, Vec::new());
+    let zero = Expr::konst(zero_name, Vec::new());
+    let succ = |arg| Expr::app(Expr::konst(succ_name, Vec::new()), arg);
+    let motive_ty = Expr::pi("_", nat.clone(), Expr::sort(level.clone()));
+    let z_ty = Expr::app(Expr::bvar(0), zero);
+    let s_ty = Expr::pi(
+        "n",
+        nat.clone(),
+        Expr::pi(
+            "ih",
+            Expr::app(Expr::bvar(2), Expr::bvar(0)),
+            Expr::app(Expr::bvar(3), succ(Expr::bvar(1))),
+        ),
+    );
+    Expr::pi(
+        "motive",
+        motive_ty,
+        Expr::pi(
+            "z",
+            z_ty,
+            Expr::pi(
+                "s",
+                s_ty,
+                Expr::pi("n", nat, Expr::app(Expr::bvar(3), Expr::bvar(0))),
             ),
         ),
     )
@@ -7407,6 +8168,8 @@ fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKi
         MachineTacticDiagnosticKind::AmbiguousRewriteRule => 0x28,
         MachineTacticDiagnosticKind::TacticPrimitiveUnavailable => 0x29,
         MachineTacticDiagnosticKind::InvalidEqFamily => 0x2a,
+        MachineTacticDiagnosticKind::InvalidNatFamily => 0x2b,
+        MachineTacticDiagnosticKind::InvalidInductionTarget => 0x2c,
         MachineTacticDiagnosticKind::TypeMismatch => 0x11,
         MachineTacticDiagnosticKind::KernelRejected => 0x12,
         MachineTacticDiagnosticKind::UnresolvedGoal => 0x13,
@@ -7515,6 +8278,10 @@ fn encode_machine_tactic_to(out: &mut Vec<u8>, tactic: &MachineTactic) {
             for rule in &canonical {
                 encode_simp_rule_ref_to(out, rule);
             }
+        }
+        MachineTactic::InductionNat { local_name, .. } => {
+            out.push(0x05);
+            encode_string_to(out, local_name);
         }
         MachineTactic::Assign {
             proof, new_goals, ..
@@ -8156,6 +8923,41 @@ mod tests {
             .decl_interface_hash
     }
 
+    fn nat_family_ref(import: &VerifiedImportRef) -> NatFamilyRef {
+        NatFamilyRef {
+            nat_name: Name::from_dotted("Nat"),
+            nat_interface_hash: export_interface_hash(import, "Nat"),
+            zero_name: Name::from_dotted("Nat.zero"),
+            zero_interface_hash: export_interface_hash(import, "Nat.zero"),
+            succ_name: Name::from_dotted("Nat.succ"),
+            succ_interface_hash: export_interface_hash(import, "Nat.succ"),
+            rec_name: Name::from_dotted("Nat.rec"),
+            rec_interface_hash: export_interface_hash(import, "Nat.rec"),
+        }
+    }
+
+    fn nat_family_options(import: &VerifiedImportRef) -> MachineTacticOptions {
+        MachineTacticOptions {
+            nat_family: Some(nat_family_ref(import)),
+            ..MachineTacticOptions::default()
+        }
+    }
+
+    fn start_nat_induction_goal() -> MachineProofState {
+        let nat_import =
+            VerifiedImportRef::from_verified_module(&verified_nat_builtin_module()).unwrap();
+        start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi("n", nat(), eq_nat(Expr::bvar(0), Expr::bvar(0))),
+                ..trivial_spec()
+            },
+            vec![nat_import.clone()],
+            Vec::new(),
+            nat_family_options(&nat_import),
+        )
+        .unwrap()
+    }
+
     #[test]
     fn start_machine_proof_allocates_deterministic_root_goal() {
         let state = start_trivial();
@@ -8283,6 +9085,103 @@ mod tests {
         .expect("current generated recursor should resolve through parent interface hash");
         assert_eq!(rec.signature.name(), &Name::from_dotted("Nat.rec"));
         assert_eq!(rec.origin, zero.origin);
+    }
+
+    #[test]
+    fn m5_resolves_imported_nat_family() {
+        let nat_import =
+            VerifiedImportRef::from_verified_module(&verified_nat_builtin_module()).unwrap();
+        let state = start_machine_proof(
+            trivial_spec(),
+            vec![nat_import.clone()],
+            Vec::new(),
+            nat_family_options(&nat_import),
+        )
+        .unwrap();
+
+        let family = state
+            .env
+            .nat_family
+            .as_ref()
+            .expect("Nat family should resolve");
+        assert_eq!(family.nat_name, Name::from_dotted("Nat"));
+        assert_eq!(family.zero_name, Name::from_dotted("Nat.zero"));
+        assert_eq!(family.succ_name, Name::from_dotted("Nat.succ"));
+        assert_eq!(family.rec_name, Name::from_dotted("Nat.rec"));
+    }
+
+    #[test]
+    fn m5_rejects_unknown_custom_nat_family() {
+        let options = MachineTacticOptions {
+            nat_family: Some(NatFamilyRef {
+                nat_name: Name::from_dotted("Nat"),
+                nat_interface_hash: ZERO_HASH,
+                zero_name: Name::from_dotted("Nat.zero"),
+                zero_interface_hash: ZERO_HASH,
+                succ_name: Name::from_dotted("Nat.succ"),
+                succ_interface_hash: ZERO_HASH,
+                rec_name: Name::from_dotted("Nat.rec"),
+                rec_interface_hash: ZERO_HASH,
+            }),
+            ..MachineTacticOptions::default()
+        };
+        let err = start_machine_proof(trivial_spec(), Vec::new(), Vec::new(), options)
+            .expect_err("unknown custom Nat family must be rejected");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidNatFamily);
+    }
+
+    #[test]
+    fn m5_rejects_axiomatic_nat_family_heads() {
+        let fake_nat = Expr::konst("Fake.Nat", Vec::new());
+        let fake = verified_core_module(CoreModule {
+            name: Name::from_dotted("Fake"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "Fake.Nat".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: type0(),
+                },
+                Decl::Axiom {
+                    name: "Fake.zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: fake_nat.clone(),
+                },
+                Decl::Axiom {
+                    name: "Fake.succ".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("_", fake_nat, Expr::konst("Fake.Nat", Vec::new())),
+                },
+                Decl::Axiom {
+                    name: "Fake.rec".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: expected_nat_rec_type(
+                        "Fake.Nat",
+                        "Fake.zero",
+                        "Fake.succ",
+                        Level::param("u"),
+                    ),
+                },
+            ],
+        });
+        let fake_import = VerifiedImportRef::from_verified_module(&fake).unwrap();
+        let options = MachineTacticOptions {
+            nat_family: Some(NatFamilyRef {
+                nat_name: Name::from_dotted("Fake.Nat"),
+                nat_interface_hash: export_interface_hash(&fake_import, "Fake.Nat"),
+                zero_name: Name::from_dotted("Fake.zero"),
+                zero_interface_hash: export_interface_hash(&fake_import, "Fake.zero"),
+                succ_name: Name::from_dotted("Fake.succ"),
+                succ_interface_hash: export_interface_hash(&fake_import, "Fake.succ"),
+                rec_name: Name::from_dotted("Fake.rec"),
+                rec_interface_hash: export_interface_hash(&fake_import, "Fake.rec"),
+            }),
+            ..MachineTacticOptions::default()
+        };
+        let err = start_machine_proof(trivial_spec(), vec![fake_import], Vec::new(), options)
+            .expect_err("Nat family must come from an inductive generated closure");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidNatFamily);
     }
 
     #[test]
@@ -8579,6 +9478,183 @@ mod tests {
             extract_closed_machine_proof(&closed).unwrap(),
             Expr::lam("p", prop(), Expr::bvar(0))
         );
+    }
+
+    #[test]
+    fn induction_nat_generates_base_and_step_goals() {
+        let state = start_nat_induction_goal();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, delta) = run_machine_tactic(
+            &state,
+            MachineTactic::InductionNat {
+                goal_id: GoalId(1),
+                local_name: "n".to_owned(),
+            },
+        )
+        .expect("induction-nat should produce base and step goals");
+
+        assert_eq!(delta.added_goals, vec![GoalId(2), GoalId(3)]);
+        assert_eq!(state.open_goals, vec![GoalId(2), GoalId(3)]);
+        let motive = Expr::lam("n0", nat(), eq_nat(Expr::bvar(0), Expr::bvar(0)));
+        let base = state.goal(GoalId(2)).unwrap();
+        assert!(base.context.is_empty());
+        assert_eq!(base.target, Expr::app(motive.clone(), nat_zero()));
+        let step = state.goal(GoalId(3)).unwrap();
+        assert_eq!(
+            step.context,
+            vec![
+                MachineLocalDecl::assumption("n", nat()),
+                MachineLocalDecl::assumption("n0", nat()),
+                MachineLocalDecl::assumption("ih0", Expr::app(motive.clone(), Expr::bvar(0)),),
+            ]
+        );
+        assert_eq!(step.target, Expr::app(motive, nat_succ(Expr::bvar(1))));
+
+        let (state, _) = assign_goal(
+            &state,
+            GoalId(2),
+            ProofExpr::Core(eq_refl_nat(nat_zero())),
+            Vec::new(),
+        )
+        .unwrap();
+        let (state, _) = assign_goal(
+            &state,
+            GoalId(3),
+            ProofExpr::Core(eq_refl_nat(nat_succ(Expr::bvar(1)))),
+            Vec::new(),
+        )
+        .unwrap();
+        extract_closed_machine_proof(&state).expect("closed induction proof should check");
+    }
+
+    #[test]
+    fn induction_nat_requires_explicit_nat_family() {
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi("n", nat(), eq_nat(Expr::bvar(0), Expr::bvar(0))),
+                ..trivial_spec()
+            },
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .unwrap();
+        let err = run_machine_tactic(
+            &state,
+            MachineTactic::InductionNat {
+                goal_id: GoalId(1),
+                local_name: "n".to_owned(),
+            },
+        )
+        .expect_err("induction-nat is disabled without nat_family");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
+        );
+    }
+
+    #[test]
+    fn induction_nat_rejects_non_last_target_before_fuel() {
+        let nat_import =
+            VerifiedImportRef::from_verified_module(&verified_nat_builtin_module()).unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                theorem_type: Expr::pi(
+                    "n",
+                    nat(),
+                    Expr::pi("m", nat(), eq_nat(Expr::bvar(1), Expr::bvar(1))),
+                ),
+                ..trivial_spec()
+            },
+            vec![nat_import.clone()],
+            Vec::new(),
+            nat_family_options(&nat_import),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "m".to_owned(),
+            },
+        )
+        .unwrap();
+        let budget = TacticBudget {
+            max_tactic_steps: 0,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::InductionNat {
+                goal_id: GoalId(2),
+                local_name: "n".to_owned(),
+            },
+            budget,
+        )
+        .expect_err("later locals should be rejected before tactic-step fuel");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::InvalidInductionTarget
+        );
+    }
+
+    #[test]
+    fn induction_nat_consumes_two_meta_allocations() {
+        let state = start_nat_induction_goal();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .unwrap();
+        let budget = TacticBudget {
+            max_meta_allocations: 1,
+            ..TacticBudget::default()
+        };
+        let err = run_machine_tactic_with_budget(
+            &state,
+            MachineTactic::InductionNat {
+                goal_id: GoalId(1),
+                local_name: "n".to_owned(),
+            },
+            budget,
+        )
+        .expect_err("induction-nat needs base and step metas");
+
+        assert_eq!(
+            err.kind,
+            MachineTacticDiagnosticKind::TacticFuelExhausted {
+                kind: TacticFuelKind::MetaAllocation
+            }
+        );
+        assert_eq!(state.open_goals, vec![GoalId(1)]);
     }
 
     #[test]
@@ -10252,7 +11328,10 @@ mod tests {
             MachineTactic::Assign {
                 goal_id: GoalId(1),
                 proof: ProofExpr::Meta(MetaVarId(2)),
-                new_goals: vec![MachineNewGoalSpec::new(Vec::new(), prop())],
+                new_goals: vec![MachineNewGoalSpec::new(
+                    vec![MachineLocalDecl::assumption("q", prop())],
+                    prop(),
+                )],
             },
             budget,
         )
