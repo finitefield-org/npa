@@ -17,6 +17,7 @@ mod snapshot;
 mod tactic;
 mod types;
 mod validation;
+mod verify;
 
 pub use adapter::{
     map_phase3_diagnostic_kind, map_phase4_diagnostic_kind,
@@ -121,4 +122,10 @@ pub use validation::{
     parse_strict_u64_token, validate_json_object, DelayedJsonPayload, FieldSpec, JsonFieldType,
     JsonPath, JsonPathElement, MachineApiErrorKind, MachineApiRequestError,
     MachineApiRequestErrorReason, ObjectSchema, StrictUnsignedIntegerError, ValidatedObject,
+};
+pub use verify::{
+    parse_machine_verify_request, run_machine_verify_request,
+    run_machine_verify_request_in_sessions, MachineCertificateWirePayload,
+    MachineVerifiedModuleCertificatePayload, MachineVerifyError, MachineVerifyOkFields,
+    MachineVerifyRequest, MachineVerifyResponse,
 };
