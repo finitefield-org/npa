@@ -1,5 +1,51 @@
-以下は **Phase 6 Human Profile: library** の詳細設計です。
+# Phase 6 Human Profile: Library
+
+この文書は、NPA の **人間向け Phase 6 標準ライブラリ設計**の正本です。
 Phase 6 の目的は、巨大な Mathlib 的ライブラリをいきなり作ることではなく、以後の証明探索・tactic・定理検索・AI補助が依存できる **小さく堅い標準ライブラリ** を作ることです。
+
+この Human Profile が扱うもの:
+
+```text
+- 人間が読み書きする標準ライブラリ source の構成
+- module dependency
+- 定義・定理・命名規則
+- 人間向け notation
+- simp-lite / rw / apply / theorem search に載せたい属性方針
+- no sorry / no custom axiom の library policy
+```
+
+この Human Profile が正本にしないもの:
+
+```text
+- canonical certificate bytes
+- release manifest
+- import bundle wire payload
+- theorem / simp / rewrite machine artifact hash
+- Phase 5 session create 用の import_closure / tactic_options recipe
+- Phase 7 retrieval cache key
+- Phase 8 audit hook
+```
+
+それらの machine artifact / wire contract / validation order は `doc/phase6-ai.md` が正本です。
+Human Profile の source text、pretty statement、notation、attribute 指定は、標準ライブラリを作るための入力・設計情報です。
+最終的な trust root ではありません。
+
+```text
+信頼しない:
+  library source text
+  notation / pretty statement
+  human-facing attribute annotation
+  theorem search ranking
+  prompt text
+  AI-generated proof hints
+
+信頼する:
+  Phase 2 canonical certificate bytes
+  export_hash / certificate_hash / decl_interface_hash
+  Phase 1 kernel check
+  Phase 2 verifier output
+  Phase 8 independent checker
+```
 
 対象モジュールはこの4つです。
 
@@ -9,6 +55,11 @@ Std.Nat
 Std.List
 Std.Algebra.Basic
 ```
+
+この MVP module membership は exact です。
+AI Profile の `npa.stdlib.mvp.v1` release では、同じ4 module だけが release module として許可されます。
+certificate artifact path、canonical module order、package locator rule は `doc/phase6-ai.md` の固定 table に従います。
+Human Profile 側の source file layout や build tool output order から、machine release identity を推測してはいけません。
 
 基本方針は次です。
 

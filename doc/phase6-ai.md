@@ -2828,6 +2828,12 @@ M9. Phase 8 audit hooks
 
 ## M0. Human / AI profile boundary fixed
 
+Status:
+
+```text
+DONE
+```
+
 目的:
 
 ```text
@@ -2846,6 +2852,7 @@ M9. Phase 8 audit hooks
     Std.List
     Std.Algebra.Basic
 - fixed package locator path table
+- trust boundary statement shared by Human / AI profiles
 ```
 
 完了条件:
@@ -2854,6 +2861,25 @@ M9. Phase 8 audit hooks
 - MVP module membership と canonical module order が文書上固定されている
 - optional prompt metadata が std_library_release_hash に入らないことが文書上固定されている
 - trusted / untrusted boundary が Phase 2 / Phase 5 / Phase 7 / Phase 8 と矛盾しない
+```
+
+M0 boundary contract:
+
+```text
+doc/phase6-human.md:
+  source organization, theorem names, notation, human-facing attributes, no-sorry policy
+
+doc/phase6-ai.md:
+  release manifest, package locator, import bundles, theorem index, simp/rw profiles,
+  artifact hashes, validation order, Phase 5 / Phase 7 / Phase 8 handoff
+
+Not trusted by either profile:
+  source text, notation, pretty statement, human-facing attributes, ranking,
+  embedding, usage stats, prompt text, AI-generated proof hints
+
+Trusted proof boundary:
+  Phase 2 canonical certificate bytes, verifier output, kernel check,
+  export_hash / certificate_hash / decl_interface_hash, independent checker
 ```
 
 ## M1. Certificate release loader
