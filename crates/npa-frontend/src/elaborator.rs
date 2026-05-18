@@ -1,7 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    parse_machine_module, parse_machine_term, resolver::resolve_machine_module_with_options,
+    machine::{
+        MachineDirectImportRef, MachineLoadedAvailableDeclRef, MachineVerifiedImportDeclRef,
+        MachineVerifiedImportDependencyRef, MachineVerifiedImportExportRef,
+        MachineVerifiedImportGeneratedDeclRef, MachineVerifiedImportGeneratedExportRef,
+        MachineVerifiedImportRef,
+    },
+    parse_machine_module, parse_machine_term,
+    resolver::resolve_machine_module_with_options,
     MachineBinder, MachineCallableBinderVisibility, MachineCheckedCurrentDecl,
     MachineCheckedCurrentGeneratedDecl, MachineCompileOptions, MachineDecl, MachineDiagnostic,
     MachineDiagnosticKind, MachineDiagnosticPayload, MachineGlobalScope, MachineGlobalScopeEntry,
@@ -182,6 +189,21 @@ impl MachineTermElabContext {
         )
     }
 
+    pub fn from_verified_imports(
+        direct_imports: &[VerifiedImport],
+        available_imports: &[VerifiedImport],
+        local_context: Vec<MachineLocalDecl>,
+        universe_params: Vec<String>,
+    ) -> Result<Self> {
+        machine_term_context_from_verified_imports(
+            direct_imports,
+            available_imports,
+            local_context,
+            universe_params,
+            crate::Span::empty(crate::FileId(0)),
+        )
+    }
+
     pub fn from_verified_modules_and_current_decls(
         direct_verified_modules: &[npa_cert::VerifiedModule],
         available_verified_modules: &[npa_cert::VerifiedModule],
@@ -198,15 +220,45 @@ impl MachineTermElabContext {
             .iter()
             .map(VerifiedImport::from)
             .collect();
-        machine_term_context_from_parts(
-            &direct_imports,
-            &available_imports,
+        machine_term_context_from_parts(MachineTermContextParts {
+            direct_imports: &direct_imports,
+            available_imports: &available_imports,
             checked_current_decls,
             current_generated_decls,
             local_context,
             universe_params,
-            crate::Span::empty(crate::FileId(0)),
-        )
+            current_module: None,
+            span: crate::Span::empty(crate::FileId(0)),
+        })
+    }
+
+    pub fn from_verified_modules_and_current_decls_in_module(
+        direct_verified_modules: &[npa_cert::VerifiedModule],
+        available_verified_modules: &[npa_cert::VerifiedModule],
+        current_module: npa_cert::ModuleName,
+        checked_current_decls: &[MachineCheckedCurrentDecl],
+        current_generated_decls: &[MachineCheckedCurrentGeneratedDecl],
+        local_context: Vec<MachineLocalDecl>,
+        universe_params: Vec<String>,
+    ) -> Result<Self> {
+        let direct_imports: Vec<_> = direct_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        let available_imports: Vec<_> = available_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        machine_term_context_from_parts(MachineTermContextParts {
+            direct_imports: &direct_imports,
+            available_imports: &available_imports,
+            checked_current_decls,
+            current_generated_decls,
+            local_context,
+            universe_params,
+            current_module: Some(current_module),
+            span: crate::Span::empty(crate::FileId(0)),
+        })
     }
 }
 
@@ -2419,19 +2471,51 @@ fn import_resolution_diagnostic(
 
 struct KernelEnvBuild {
     env: Env,
-    loaded_available_names: BTreeSet<String>,
+    loaded_available_interfaces: BTreeSet<DeclInterfaceKey>,
+    loaded_available_decl_keys: BTreeSet<LoadedImportDeclKey>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 struct ImportKernelDecl {
     decl: Decl,
-    dependencies: BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+    dependencies: BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    interfaces: BTreeSet<DeclInterfaceKey>,
+    loaded_decl_keys: BTreeSet<LoadedImportDeclKey>,
 }
+
+impl PartialEq for ImportKernelDecl {
+    fn eq(&self, other: &Self) -> bool {
+        self.decl == other.decl
+            && self.dependencies == other.dependencies
+            && self.interfaces == other.interfaces
+    }
+}
+
+impl Eq for ImportKernelDecl {}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct DeclInterfaceKey {
     name: String,
     decl_interface_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct ImportDeclInterfaceKey {
+    import_key: ImportKey,
+    name: String,
+    decl_interface_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct ImportKey {
+    module: npa_cert::ModuleName,
+    export_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct LoadedImportDeclKey {
+    import_key: ImportKey,
+    name: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2444,7 +2528,9 @@ enum KernelDeclSource {
 struct PendingKernelDecl {
     decl: Decl,
     source: KernelDeclSource,
-    dependencies: BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+    dependencies: BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    interfaces: BTreeSet<DeclInterfaceKey>,
+    loaded_decl_keys: BTreeSet<LoadedImportDeclKey>,
 }
 
 fn kernel_env_from_imports<'a>(
@@ -2455,6 +2541,8 @@ fn kernel_env_from_imports<'a>(
     let active_imports: Vec<_> = active_imports.into_iter().collect();
     let available_decls = collect_import_decl_infos(available_imports);
     let available_decl_interfaces = collect_import_decl_interface_infos(available_imports);
+    let available_decl_import_interfaces =
+        collect_import_decl_import_interface_infos(available_imports);
     let mut pending: Vec<_> = collect_import_decl_infos(active_imports)
         .into_values()
         .flatten()
@@ -2462,14 +2550,20 @@ fn kernel_env_from_imports<'a>(
             decl: info.decl,
             source: KernelDeclSource::Direct,
             dependencies: info.dependencies,
+            interfaces: info.interfaces,
+            loaded_decl_keys: info.loaded_decl_keys,
         })
         .collect();
     let mut queued: BTreeSet<_> = pending
         .iter()
         .map(|pending_decl| pending_decl.decl.name().to_owned())
         .collect();
+    let mut queued_dependencies = BTreeSet::new();
     let mut env = Env::new();
-    let mut loaded_available_names = BTreeSet::new();
+    let mut loaded_available_interfaces = BTreeSet::new();
+    let mut loaded_available_decl_keys = BTreeSet::new();
+    let mut loaded_dependency_refs: BTreeMap<String, BTreeSet<VerifiedDependency>> =
+        BTreeMap::new();
 
     while !pending.is_empty() {
         let mut progressed = false;
@@ -2480,7 +2574,23 @@ fn kernel_env_from_imports<'a>(
                 decl,
                 source,
                 dependencies,
+                interfaces,
+                loaded_decl_keys,
             } = pending_decl;
+            record_available_dependencies_backed_by_env(
+                &dependencies,
+                &env,
+                &available_decl_import_interfaces,
+                &mut loaded_dependency_refs,
+                &mut loaded_available_interfaces,
+                &mut loaded_available_decl_keys,
+                span,
+            )?;
+            validate_dependencies_against_loaded_refs(
+                &dependencies,
+                &loaded_dependency_refs,
+                span,
+            )?;
             if let Some(existing) = env.decl(decl.name()) {
                 if existing != &decl {
                     return Err(import_resolution_diagnostic(
@@ -2492,8 +2602,14 @@ fn kernel_env_from_imports<'a>(
                     ));
                 }
                 if source == KernelDeclSource::Available {
-                    loaded_available_names.extend(kernel_decl_lookup_names(&decl));
+                    loaded_available_interfaces.extend(interfaces.clone());
+                    loaded_available_decl_keys.extend(loaded_decl_keys.clone());
                 }
+                record_loaded_import_decl_refs(
+                    &mut loaded_dependency_refs,
+                    &interfaces,
+                    &loaded_decl_keys,
+                );
                 progressed = true;
                 continue;
             }
@@ -2501,31 +2617,45 @@ fn kernel_env_from_imports<'a>(
             match add_kernel_decl_to_env(&mut env, decl.clone()) {
                 Ok(()) => {
                     if source == KernelDeclSource::Available {
-                        loaded_available_names.extend(kernel_decl_lookup_names(&decl));
+                        loaded_available_interfaces.extend(interfaces.clone());
+                        loaded_available_decl_keys.extend(loaded_decl_keys.clone());
                     }
+                    record_loaded_import_decl_refs(
+                        &mut loaded_dependency_refs,
+                        &interfaces,
+                        &loaded_decl_keys,
+                    );
                     progressed = true;
                 }
                 Err(npa_kernel::Error::UnknownConstant(name)) => {
-                    let has_explicit_dependency_hash = dependencies
-                        .get(&name)
-                        .is_some_and(|hashes| !hashes.is_empty());
+                    let explicit_dependency =
+                        single_dependency_for_name(&name, &dependencies, span)?.cloned();
+                    let has_explicit_dependency_hash = explicit_dependency.is_some();
                     if dependency_matches_builtin_interface(&name, &dependencies, span)?
                         && add_builtin_decl_for_unknown_constant(&mut env, &name, span)?
                     {
+                        record_loaded_builtin_dependency_ref(&mut loaded_dependency_refs, &name);
                         remaining.push(PendingKernelDecl {
                             decl,
                             source,
                             dependencies,
+                            interfaces,
+                            loaded_decl_keys,
                         });
                         progressed = true;
                         continue;
                     }
-                    if !queued.contains(&name) {
+                    let should_resolve_available = explicit_dependency.as_ref().map_or_else(
+                        || queued.insert(name.clone()),
+                        |dependency| queued_dependencies.insert(dependency.clone()),
+                    );
+                    if should_resolve_available {
                         if let Some(dependency) = resolve_available_dependency(
                             &name,
                             &dependencies,
                             &available_decls,
                             &available_decl_interfaces,
+                            &available_decl_import_interfaces,
                             span,
                         )? {
                             queued.insert(name.clone());
@@ -2533,6 +2663,8 @@ fn kernel_env_from_imports<'a>(
                                 decl: dependency.decl,
                                 source: KernelDeclSource::Available,
                                 dependencies: dependency.dependencies,
+                                interfaces: dependency.interfaces,
+                                loaded_decl_keys: dependency.loaded_decl_keys,
                             });
                             progressed = true;
                         }
@@ -2540,10 +2672,13 @@ fn kernel_env_from_imports<'a>(
                     if !has_explicit_dependency_hash
                         && add_builtin_decl_for_unknown_constant(&mut env, &name, span)?
                     {
+                        record_loaded_builtin_dependency_ref(&mut loaded_dependency_refs, &name);
                         remaining.push(PendingKernelDecl {
                             decl,
                             source,
                             dependencies,
+                            interfaces,
+                            loaded_decl_keys,
                         });
                         progressed = true;
                         continue;
@@ -2552,6 +2687,8 @@ fn kernel_env_from_imports<'a>(
                         decl,
                         source,
                         dependencies,
+                        interfaces,
+                        loaded_decl_keys,
                     });
                 }
                 Err(err) => {
@@ -2573,16 +2710,239 @@ fn kernel_env_from_imports<'a>(
 
     Ok(KernelEnvBuild {
         env,
-        loaded_available_names,
+        loaded_available_interfaces,
+        loaded_available_decl_keys,
     })
+}
+
+fn record_available_dependencies_backed_by_env(
+    dependencies: &BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    env: &Env,
+    available_decl_import_interfaces: &BTreeMap<ImportDeclInterfaceKey, Option<ImportKernelDecl>>,
+    loaded_refs: &mut BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    loaded_available_interfaces: &mut BTreeSet<DeclInterfaceKey>,
+    loaded_available_decl_keys: &mut BTreeSet<LoadedImportDeclKey>,
+    span: crate::Span,
+) -> Result<()> {
+    let mut materializer = AvailableDependencyMaterializer {
+        env,
+        available_decl_import_interfaces,
+        loaded_refs,
+        loaded_available_interfaces,
+        loaded_available_decl_keys,
+        span,
+        materializing: BTreeSet::new(),
+    };
+    materializer.record(dependencies)
+}
+
+struct AvailableDependencyMaterializer<'a> {
+    env: &'a Env,
+    available_decl_import_interfaces:
+        &'a BTreeMap<ImportDeclInterfaceKey, Option<ImportKernelDecl>>,
+    loaded_refs: &'a mut BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    loaded_available_interfaces: &'a mut BTreeSet<DeclInterfaceKey>,
+    loaded_available_decl_keys: &'a mut BTreeSet<LoadedImportDeclKey>,
+    span: crate::Span,
+    materializing: BTreeSet<VerifiedDependency>,
+}
+
+impl AvailableDependencyMaterializer<'_> {
+    fn record(
+        &mut self,
+        dependencies: &BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    ) -> Result<()> {
+        for (name, dependencies) in dependencies {
+            let Some(expected) = single_dependency(name, dependencies, self.span)? else {
+                continue;
+            };
+            let Some(loaded) = self.loaded_refs.get(name) else {
+                continue;
+            };
+            if loaded.contains(expected) {
+                continue;
+            }
+            let Some(dependency) = available_dependency_for_explicit_ref(
+                name,
+                expected,
+                self.available_decl_import_interfaces,
+                self.span,
+            )?
+            .cloned() else {
+                continue;
+            };
+            if !import_kernel_decl_backed_by_env(self.env, &dependency) {
+                continue;
+            }
+            if !self.materializing.insert(expected.clone()) {
+                continue;
+            }
+            self.record(&dependency.dependencies)?;
+            validate_dependencies_against_loaded_refs(
+                &dependency.dependencies,
+                self.loaded_refs,
+                self.span,
+            )?;
+            self.loaded_available_interfaces
+                .extend(dependency.interfaces.clone());
+            self.loaded_available_decl_keys
+                .extend(dependency.loaded_decl_keys.clone());
+            record_loaded_import_decl_refs(
+                self.loaded_refs,
+                &dependency.interfaces,
+                &dependency.loaded_decl_keys,
+            );
+            self.materializing.remove(expected);
+        }
+        Ok(())
+    }
+}
+
+fn available_dependency_for_explicit_ref<'a>(
+    name: &str,
+    dependency: &VerifiedDependency,
+    available_decl_import_interfaces: &'a BTreeMap<
+        ImportDeclInterfaceKey,
+        Option<ImportKernelDecl>,
+    >,
+    span: crate::Span,
+) -> Result<Option<&'a ImportKernelDecl>> {
+    let (Some(module), Some(export_hash)) = (&dependency.module, dependency.export_hash) else {
+        if dependency.module.is_none() && dependency.export_hash.is_none() {
+            return Ok(None);
+        }
+        return Err(import_resolution_diagnostic(
+            span,
+            format!("verified dependency {name} has incomplete import identity"),
+        ));
+    };
+    let key = ImportDeclInterfaceKey {
+        import_key: ImportKey {
+            module: module.clone(),
+            export_hash,
+        },
+        name: name.to_owned(),
+        decl_interface_hash: dependency.decl_interface_hash,
+    };
+    match available_decl_import_interfaces.get(&key) {
+        Some(Some(dependency)) => Ok(Some(dependency)),
+        Some(None) => Err(import_resolution_diagnostic(
+            span,
+            format!(
+                "verified dependency {name} has multiple available declarations with the same import and interface hash"
+            ),
+        )),
+        None => Ok(None),
+    }
+}
+
+fn import_kernel_decl_backed_by_env(env: &Env, dependency: &ImportKernelDecl) -> bool {
+    env.decl(dependency.decl.name())
+        .is_some_and(|existing| existing == &dependency.decl)
+}
+
+fn validate_dependencies_against_loaded_refs(
+    dependencies: &BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    loaded_refs: &BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    span: crate::Span,
+) -> Result<()> {
+    for (name, dependencies) in dependencies {
+        let Some(expected) = single_dependency(name, dependencies, span)? else {
+            continue;
+        };
+        let Some(loaded) = loaded_refs.get(name) else {
+            continue;
+        };
+        if !loaded.contains(expected) {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!(
+                    "verified dependency {name} is already loaded with a different declaration interface hash or import identity"
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn single_dependency_for_name<'a>(
+    name: &str,
+    dependencies: &'a BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    span: crate::Span,
+) -> Result<Option<&'a VerifiedDependency>> {
+    let Some(dependencies) = dependencies.get(name) else {
+        return Ok(None);
+    };
+    single_dependency(name, dependencies, span)
+}
+
+fn single_dependency<'a>(
+    name: &str,
+    dependencies: &'a BTreeSet<VerifiedDependency>,
+    span: crate::Span,
+) -> Result<Option<&'a VerifiedDependency>> {
+    let mut dependencies = dependencies.iter();
+    let Some(first_dependency) = dependencies.next() else {
+        return Ok(None);
+    };
+    if dependencies.next().is_some() {
+        return Err(import_resolution_diagnostic(
+            span,
+            format!("verified dependency {name} has multiple declaration interface hashes"),
+        ));
+    }
+    Ok(Some(first_dependency))
+}
+
+fn record_loaded_import_decl_refs(
+    loaded_refs: &mut BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    interfaces: &BTreeSet<DeclInterfaceKey>,
+    loaded_decl_keys: &BTreeSet<LoadedImportDeclKey>,
+) {
+    for loaded_key in loaded_decl_keys {
+        for interface in interfaces
+            .iter()
+            .filter(|interface| interface.name == loaded_key.name)
+        {
+            let name = npa_cert::Name::from_dotted(&loaded_key.name);
+            loaded_refs
+                .entry(loaded_key.name.clone())
+                .or_default()
+                .insert(VerifiedDependency {
+                    module: Some(loaded_key.import_key.module.clone()),
+                    export_hash: Some(loaded_key.import_key.export_hash),
+                    name,
+                    decl_interface_hash: interface.decl_interface_hash,
+                });
+        }
+    }
+}
+
+fn record_loaded_builtin_dependency_ref(
+    loaded_refs: &mut BTreeMap<String, BTreeSet<VerifiedDependency>>,
+    name: &str,
+) {
+    let name = npa_cert::Name::from_dotted(name);
+    let Some(decl_interface_hash) = npa_cert::builtin_decl_interface_hash(&name) else {
+        return;
+    };
+    loaded_refs
+        .entry(name.as_dotted())
+        .or_default()
+        .insert(VerifiedDependency {
+            module: None,
+            export_hash: None,
+            name,
+            decl_interface_hash,
+        });
 }
 
 fn dependency_matches_builtin_interface(
     name: &str,
-    dependencies: &BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+    dependencies: &BTreeMap<String, BTreeSet<VerifiedDependency>>,
     span: crate::Span,
 ) -> Result<bool> {
-    let Some(hashes) = dependencies.get(name) else {
+    let Some(first_dependency) = single_dependency_for_name(name, dependencies, span)? else {
         return Ok(false);
     };
     let Some(builtin_hash) =
@@ -2590,43 +2950,61 @@ fn dependency_matches_builtin_interface(
     else {
         return Ok(false);
     };
-    let mut hashes = hashes.iter();
-    let Some(first_hash) = hashes.next() else {
-        return Ok(false);
-    };
-    if hashes.next().is_some() {
-        return Err(import_resolution_diagnostic(
-            span,
-            format!("verified dependency {name} has multiple declaration interface hashes"),
-        ));
-    }
-    Ok(*first_hash == builtin_hash)
+    Ok(first_dependency.module.is_none()
+        && first_dependency.export_hash.is_none()
+        && first_dependency.decl_interface_hash == builtin_hash)
 }
 
 fn resolve_available_dependency(
     name: &str,
-    dependencies: &BTreeMap<String, BTreeSet<npa_cert::Hash>>,
+    dependencies: &BTreeMap<String, BTreeSet<VerifiedDependency>>,
     available_decls: &BTreeMap<String, Option<ImportKernelDecl>>,
     available_decl_interfaces: &BTreeMap<DeclInterfaceKey, Option<ImportKernelDecl>>,
+    available_decl_import_interfaces: &BTreeMap<ImportDeclInterfaceKey, Option<ImportKernelDecl>>,
     span: crate::Span,
 ) -> Result<Option<ImportKernelDecl>> {
-    let Some(hashes) = dependencies.get(name) else {
+    let Some(first_dependency) = single_dependency_for_name(name, dependencies, span)? else {
         return Ok(available_decls.get(name).cloned().flatten());
     };
-    let mut hashes = hashes.iter();
-    let Some(first_hash) = hashes.next() else {
-        return Ok(available_decls.get(name).cloned().flatten());
-    };
-    if hashes.next().is_some() {
-        return Err(import_resolution_diagnostic(
-            span,
-            format!("verified dependency {name} has multiple declaration interface hashes"),
-        ));
+
+    match (&first_dependency.module, first_dependency.export_hash) {
+        (Some(module), Some(export_hash)) => {
+            let key = ImportDeclInterfaceKey {
+                import_key: ImportKey {
+                    module: module.clone(),
+                    export_hash,
+                },
+                name: name.to_owned(),
+                decl_interface_hash: first_dependency.decl_interface_hash,
+            };
+            return match available_decl_import_interfaces.get(&key) {
+                Some(Some(dependency)) => Ok(Some(dependency.clone())),
+                Some(None) => Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "verified dependency {name} has multiple available declarations with the same import and interface hash"
+                    ),
+                )),
+                None => Err(import_resolution_diagnostic(
+                    span,
+                    format!(
+                        "verified dependency {name} with import and declaration interface hash is not present in the verified import set"
+                    ),
+                )),
+            };
+        }
+        (None, None) => {}
+        _ => {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!("verified dependency {name} has incomplete import identity"),
+            ));
+        }
     }
 
     let key = DeclInterfaceKey {
         name: name.to_owned(),
-        decl_interface_hash: *first_hash,
+        decl_interface_hash: first_dependency.decl_interface_hash,
     };
     match available_decl_interfaces.get(&key) {
         Some(Some(dependency)) => Ok(Some(dependency.clone())),
@@ -2652,26 +3030,47 @@ fn machine_term_context_from_verified_imports(
     universe_params: Vec<String>,
     span: crate::Span,
 ) -> Result<MachineTermElabContext> {
-    machine_term_context_from_parts(
+    machine_term_context_from_parts(MachineTermContextParts {
         direct_imports,
         available_imports,
-        &[],
-        &[],
+        checked_current_decls: &[],
+        current_generated_decls: &[],
         local_context,
         universe_params,
+        current_module: None,
         span,
-    )
+    })
+}
+
+struct MachineTermContextParts<'a> {
+    direct_imports: &'a [VerifiedImport],
+    available_imports: &'a [VerifiedImport],
+    checked_current_decls: &'a [MachineCheckedCurrentDecl],
+    current_generated_decls: &'a [MachineCheckedCurrentGeneratedDecl],
+    local_context: Vec<MachineLocalDecl>,
+    universe_params: Vec<String>,
+    current_module: Option<npa_cert::ModuleName>,
+    span: crate::Span,
 }
 
 fn machine_term_context_from_parts(
-    direct_imports: &[VerifiedImport],
-    available_imports: &[VerifiedImport],
-    checked_current_decls: &[MachineCheckedCurrentDecl],
-    current_generated_decls: &[MachineCheckedCurrentGeneratedDecl],
-    local_context: Vec<MachineLocalDecl>,
-    universe_params: Vec<String>,
-    span: crate::Span,
+    parts: MachineTermContextParts<'_>,
 ) -> Result<MachineTermElabContext> {
+    let MachineTermContextParts {
+        direct_imports,
+        available_imports,
+        checked_current_decls,
+        current_generated_decls,
+        local_context,
+        universe_params,
+        current_module,
+        span,
+    } = parts;
+    validate_checked_current_decls_belong_to_module(
+        current_module.as_ref(),
+        checked_current_decls,
+        span,
+    )?;
     let direct_decls = collect_import_decls(direct_imports);
     let mut build = kernel_env_from_imports(direct_imports.iter(), available_imports, span)?;
     validate_direct_kernel_env_matches_import_exports(
@@ -2683,7 +3082,7 @@ fn machine_term_context_from_parts(
     validate_loaded_available_kernel_env_matches_import_exports(
         &build.env,
         available_imports,
-        &build.loaded_available_names,
+        &build.loaded_available_interfaces,
         span,
     )?;
     add_referenced_builtin_decls_to_env(&mut build.env, checked_current_decls, span)?;
@@ -2713,6 +3112,18 @@ fn machine_term_context_from_parts(
         current_generated_decls,
         span,
     )?;
+    append_loaded_available_decl_interface_hashes(
+        &mut decl_interface_hashes,
+        &build.loaded_available_interfaces,
+    );
+    append_verified_import_decl_interface_hashes(&mut decl_interface_hashes, direct_imports.iter());
+    append_loaded_available_import_decl_interface_hashes(
+        &mut decl_interface_hashes,
+        available_imports.iter(),
+        &build.loaded_available_decl_keys,
+    );
+    let loaded_available_decls =
+        machine_loaded_available_decl_refs(&build.loaded_available_decl_keys);
 
     Ok(MachineTermElabContext {
         global_scope: MachineGlobalScope { entries },
@@ -2723,7 +3134,274 @@ fn machine_term_context_from_parts(
             decl_interface_hashes,
         ),
         callable_interface_table: crate::MachineSurfaceCallableInterfaceTable::empty(),
+        current_module,
+        direct_imports: direct_imports
+            .iter()
+            .map(|import| MachineDirectImportRef {
+                module: import.module.clone(),
+                export_hash: import.export_hash,
+            })
+            .collect(),
+        loaded_available_decls,
+        verified_imports: collect_machine_verified_import_refs(
+            direct_imports.iter().chain(available_imports.iter()),
+        ),
     })
+}
+
+fn validate_checked_current_decls_belong_to_module(
+    current_module: Option<&npa_cert::ModuleName>,
+    checked_current_decls: &[MachineCheckedCurrentDecl],
+    span: crate::Span,
+) -> Result<()> {
+    let Some(current_module) = current_module else {
+        return Ok(());
+    };
+    for checked in checked_current_decls {
+        if !name_is_in_module(&checked.name, current_module) {
+            return Err(import_resolution_diagnostic(
+                span,
+                format!(
+                    "checked current declaration {} is outside current module {}",
+                    checked.name.as_dotted(),
+                    current_module.as_dotted()
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn name_is_in_module(name: &npa_cert::Name, module: &npa_cert::ModuleName) -> bool {
+    name.0.len() > module.0.len() && name.0.starts_with(&module.0)
+}
+
+fn collect_machine_verified_import_refs<'a>(
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+) -> Vec<MachineVerifiedImportRef> {
+    let mut seen = BTreeSet::new();
+    let mut refs = Vec::new();
+    for import in imports {
+        if seen.insert((import.module.clone(), import.export_hash)) {
+            refs.push(machine_verified_import_ref(import));
+        }
+    }
+    refs
+}
+
+fn machine_verified_import_ref(import: &VerifiedImport) -> MachineVerifiedImportRef {
+    let generated_decls = machine_verified_import_generated_decl_refs(import);
+    let generated_exports: Vec<_> = generated_decls
+        .iter()
+        .filter(|decl| decl.public_export)
+        .map(|decl| MachineVerifiedImportGeneratedExportRef {
+            parent_name: decl.parent_name.clone(),
+            name: decl.name.clone(),
+            parent_decl_interface_hash: decl.parent_decl_interface_hash,
+            decl_interface_hash: decl.decl_interface_hash,
+        })
+        .collect();
+    let generated_export_names: BTreeSet<_> = generated_exports
+        .iter()
+        .map(|export| export.name.clone())
+        .collect();
+    MachineVerifiedImportRef {
+        module: import.module.clone(),
+        export_hash: import.export_hash,
+        decls: machine_verified_import_decl_refs(import),
+        exports: import
+            .exports
+            .iter()
+            .filter(|export| !generated_export_names.contains(&export.name))
+            .map(|export| MachineVerifiedImportExportRef {
+                name: export.name.clone(),
+                decl_interface_hash: export.decl_interface_hash,
+            })
+            .collect(),
+        generated_decls,
+        generated_exports,
+        dependencies: machine_verified_import_dependency_refs(import),
+    }
+}
+
+fn machine_verified_import_decl_refs(import: &VerifiedImport) -> Vec<MachineVerifiedImportDeclRef> {
+    let public_exports: BTreeSet<_> = import
+        .exports
+        .iter()
+        .map(|export| (export.name.clone(), export.decl_interface_hash))
+        .collect();
+    let mut decls = BTreeSet::new();
+
+    for decl in kernel_decls_for_import(import) {
+        if matches!(decl, Decl::Constructor { .. } | Decl::Recursor { .. }) {
+            continue;
+        }
+        let name = npa_cert::Name::from_dotted(decl.name());
+        let Some(decl_interface_hash) = import_decl_interface_hash(import, &name) else {
+            continue;
+        };
+        decls.insert(MachineVerifiedImportDeclRef {
+            public_export: public_exports.contains(&(name.clone(), decl_interface_hash)),
+            name,
+            decl_interface_hash,
+        });
+    }
+
+    decls.into_iter().collect()
+}
+
+fn machine_verified_import_dependency_refs(
+    import: &VerifiedImport,
+) -> Vec<MachineVerifiedImportDependencyRef> {
+    let dependencies: BTreeSet<_> = import
+        .kernel_decl_dependencies
+        .values()
+        .flat_map(|dependencies| dependencies.iter())
+        .filter_map(|dependency| {
+            let (Some(module), Some(export_hash)) = (&dependency.module, dependency.export_hash)
+            else {
+                return None;
+            };
+            Some(MachineVerifiedImportDependencyRef {
+                module: module.clone(),
+                export_hash,
+                name: dependency.name.clone(),
+                decl_interface_hash: dependency.decl_interface_hash,
+            })
+        })
+        .collect();
+
+    dependencies.into_iter().collect()
+}
+
+fn machine_verified_import_generated_decl_refs(
+    import: &VerifiedImport,
+) -> Vec<MachineVerifiedImportGeneratedDeclRef> {
+    let public_exports_by_name: BTreeMap<_, _> = import
+        .exports
+        .iter()
+        .map(|export| (export.name.as_dotted(), export))
+        .collect();
+    let mut generated_decls = BTreeSet::new();
+
+    for decl in kernel_decls_for_import(import) {
+        let Decl::Inductive { name, data, .. } = decl else {
+            continue;
+        };
+        let parent_name = npa_cert::Name::from_dotted(&name);
+        let Some(parent_decl_interface_hash) = import_decl_interface_hash(import, &parent_name)
+        else {
+            continue;
+        };
+
+        for generated_name in data
+            .constructors
+            .iter()
+            .map(|constructor| constructor.name.as_str())
+            .chain(data.recursor.iter().map(|recursor| recursor.name.as_str()))
+        {
+            let public_export = public_exports_by_name
+                .get(generated_name)
+                .is_some_and(|export| export.decl_interface_hash == parent_decl_interface_hash);
+            generated_decls.insert(MachineVerifiedImportGeneratedDeclRef {
+                parent_name: parent_name.clone(),
+                name: npa_cert::Name::from_dotted(generated_name),
+                parent_decl_interface_hash,
+                decl_interface_hash: parent_decl_interface_hash,
+                public_export,
+            });
+        }
+    }
+
+    generated_decls.into_iter().collect()
+}
+
+fn import_decl_interface_hash(
+    import: &VerifiedImport,
+    name: &npa_cert::Name,
+) -> Option<npa_cert::Hash> {
+    import.decl_interface_hashes.get(name).copied().or_else(|| {
+        let mut matches = import
+            .exports
+            .iter()
+            .filter(|export| &export.name == name)
+            .map(|export| export.decl_interface_hash);
+        let first = matches.next()?;
+        matches.next().is_none().then_some(first)
+    })
+}
+
+fn append_loaded_available_decl_interface_hashes(
+    decl_interface_hashes: &mut Vec<(npa_cert::Name, npa_cert::Hash)>,
+    loaded_available_interfaces: &BTreeSet<DeclInterfaceKey>,
+) {
+    for interface in loaded_available_interfaces {
+        decl_interface_hashes.push((
+            npa_cert::Name::from_dotted(&interface.name),
+            interface.decl_interface_hash,
+        ));
+    }
+}
+
+fn append_verified_import_decl_interface_hashes<'a>(
+    decl_interface_hashes: &mut Vec<(npa_cert::Name, npa_cert::Hash)>,
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+) {
+    let mut seen_imports = BTreeSet::new();
+    for import in imports {
+        if !seen_imports.insert((import.module.clone(), import.export_hash)) {
+            continue;
+        }
+        for (name, decl_interface_hash) in &import.decl_interface_hashes {
+            decl_interface_hashes.push((name.clone(), *decl_interface_hash));
+        }
+        for generated in machine_verified_import_generated_decl_refs(import) {
+            decl_interface_hashes.push((generated.name, generated.decl_interface_hash));
+        }
+    }
+}
+
+fn append_loaded_available_import_decl_interface_hashes<'a>(
+    decl_interface_hashes: &mut Vec<(npa_cert::Name, npa_cert::Hash)>,
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+    loaded_decl_keys: &BTreeSet<LoadedImportDeclKey>,
+) {
+    let mut seen_imports = BTreeSet::new();
+    for import in imports {
+        let import_key = import_key_for_import(import);
+        if !seen_imports.insert(import_key.clone()) {
+            continue;
+        }
+        for (name, decl_interface_hash) in &import.decl_interface_hashes {
+            if loaded_decl_keys.contains(&LoadedImportDeclKey {
+                import_key: import_key.clone(),
+                name: name.as_dotted(),
+            }) {
+                decl_interface_hashes.push((name.clone(), *decl_interface_hash));
+            }
+        }
+        for generated in machine_verified_import_generated_decl_refs(import) {
+            if loaded_decl_keys.contains(&LoadedImportDeclKey {
+                import_key: import_key.clone(),
+                name: generated.name.as_dotted(),
+            }) {
+                decl_interface_hashes.push((generated.name, generated.decl_interface_hash));
+            }
+        }
+    }
+}
+
+fn machine_loaded_available_decl_refs(
+    loaded_decl_keys: &BTreeSet<LoadedImportDeclKey>,
+) -> Vec<MachineLoadedAvailableDeclRef> {
+    loaded_decl_keys
+        .iter()
+        .map(|key| MachineLoadedAvailableDeclRef {
+            module: key.import_key.module.clone(),
+            export_hash: key.import_key.export_hash,
+            name: npa_cert::Name::from_dotted(&key.name),
+        })
+        .collect()
 }
 
 fn add_referenced_builtin_decls_to_env(
@@ -2939,13 +3617,17 @@ fn validate_direct_kernel_env_matches_import_exports(
 fn validate_loaded_available_kernel_env_matches_import_exports(
     env: &Env,
     imports: &[VerifiedImport],
-    loaded_names: &BTreeSet<String>,
+    loaded_interfaces: &BTreeSet<DeclInterfaceKey>,
     span: crate::Span,
 ) -> Result<()> {
     for import in imports {
         for export in &import.exports {
             let name = export.name.as_dotted();
-            if !loaded_names.contains(&name) {
+            let key = DeclInterfaceKey {
+                name: name.clone(),
+                decl_interface_hash: export.decl_interface_hash,
+            };
+            if !loaded_interfaces.contains(&key) {
                 continue;
             }
             let Some(decl) = env.decl(&name) else {
@@ -2990,14 +3672,47 @@ fn collect_import_decl_infos<'a>(
     let mut decls: BTreeMap<String, Option<ImportKernelDecl>> = BTreeMap::new();
 
     for import in imports {
+        let import_key = import_key_for_import(import);
         for decl in kernel_decls_for_import(import) {
+            let lookup_names = kernel_decl_lookup_names(&decl);
+            let interfaces = import
+                .exports
+                .iter()
+                .filter_map(|export| {
+                    let name = export.name.as_dotted();
+                    if lookup_names.iter().any(|lookup_name| lookup_name == &name) {
+                        Some(DeclInterfaceKey {
+                            name,
+                            decl_interface_hash: export.decl_interface_hash,
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let loaded_decl_keys = lookup_names
+                .iter()
+                .map(|name| LoadedImportDeclKey {
+                    import_key: import_key.clone(),
+                    name: name.clone(),
+                })
+                .collect();
             let info = ImportKernelDecl {
                 dependencies: dependencies_for_import_decl(import, decl.name()),
                 decl: decl.clone(),
+                interfaces,
+                loaded_decl_keys,
             };
-            for name in kernel_decl_lookup_names(&decl) {
+            for name in lookup_names {
                 match decls.get_mut(&name) {
-                    Some(existing) if existing.as_ref() == Some(&info) => {}
+                    Some(existing) if existing.as_ref() == Some(&info) => {
+                        if let Some(existing) = existing.as_mut() {
+                            existing.interfaces.extend(info.interfaces.clone());
+                            existing
+                                .loaded_decl_keys
+                                .extend(info.loaded_decl_keys.clone());
+                        }
+                    }
                     Some(existing) => {
                         *existing = None;
                     }
@@ -3010,6 +3725,13 @@ fn collect_import_decl_infos<'a>(
     }
 
     decls
+}
+
+fn import_key_for_import(import: &VerifiedImport) -> ImportKey {
+    ImportKey {
+        module: import.module.clone(),
+        export_hash: import.export_hash,
+    }
 }
 
 fn collect_import_decl_interface_infos<'a>(
@@ -3043,21 +3765,50 @@ fn collect_import_decl_interface_infos<'a>(
     decls
 }
 
+fn collect_import_decl_import_interface_infos<'a>(
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+) -> BTreeMap<ImportDeclInterfaceKey, Option<ImportKernelDecl>> {
+    let mut decls: BTreeMap<ImportDeclInterfaceKey, Option<ImportKernelDecl>> = BTreeMap::new();
+
+    for import in imports {
+        let import_key = import_key_for_import(import);
+        let import_decls = collect_import_decl_infos(std::iter::once(import));
+        for export in &import.exports {
+            let name = export.name.as_dotted();
+            let key = ImportDeclInterfaceKey {
+                import_key: import_key.clone(),
+                name: name.clone(),
+                decl_interface_hash: export.decl_interface_hash,
+            };
+            let Some(info) = import_decls.get(&name).cloned().flatten() else {
+                continue;
+            };
+            match decls.get_mut(&key) {
+                Some(existing) if existing.as_ref() == Some(&info) => {}
+                Some(existing) => {
+                    *existing = None;
+                }
+                None => {
+                    decls.insert(key, Some(info));
+                }
+            }
+        }
+    }
+
+    decls
+}
+
 fn dependencies_for_import_decl(
     import: &VerifiedImport,
     decl_name: &str,
-) -> BTreeMap<String, BTreeSet<npa_cert::Hash>> {
-    let mut dependencies: BTreeMap<String, BTreeSet<npa_cert::Hash>> = BTreeMap::new();
+) -> BTreeMap<String, BTreeSet<VerifiedDependency>> {
+    let mut dependencies: BTreeMap<String, BTreeSet<VerifiedDependency>> = BTreeMap::new();
     if let Some(decl_dependencies) = import.kernel_decl_dependencies.get(decl_name) {
-        for VerifiedDependency {
-            name,
-            decl_interface_hash,
-        } in decl_dependencies
-        {
+        for dependency in decl_dependencies {
             dependencies
-                .entry(name.as_dotted())
+                .entry(dependency.name.as_dotted())
                 .or_default()
-                .insert(*decl_interface_hash);
+                .insert(dependency.clone());
         }
     }
     dependencies
@@ -3253,6 +4004,10 @@ mod tests {
             module: npa_cert::Name::from_dotted(module),
             export_hash: hash(1),
             certificate_hash: None,
+            decl_interface_hashes: exports
+                .iter()
+                .map(|export| (export.name.clone(), export.decl_interface_hash))
+                .collect(),
             exports,
             kernel_decls,
             kernel_decl_dependencies: BTreeMap::new(),
@@ -3283,6 +4038,10 @@ mod tests {
             module: npa_cert::Name::from_dotted("Std.Poly"),
             export_hash: hash(21),
             certificate_hash: None,
+            decl_interface_hashes: BTreeMap::from([(
+                npa_cert::Name::from_dotted("Poly.K"),
+                hash(22),
+            )]),
             exports: vec![crate::VerifiedExport {
                 name: npa_cert::Name::from_dotted("Poly.K"),
                 universe_params: vec!["u".to_owned()],
@@ -3303,28 +4062,54 @@ mod tests {
     }
 
     fn direct_using_hidden_import() -> VerifiedImport {
+        direct_using_hidden_dependency(
+            "Direct.Module",
+            hash(41),
+            "Direct.x",
+            hash(42),
+            "Hidden.Module",
+            hash(1),
+            hash(2),
+        )
+    }
+
+    fn direct_using_hidden_dependency(
+        module: &str,
+        export_hash: npa_cert::Hash,
+        decl_name: &str,
+        decl_interface_hash: npa_cert::Hash,
+        dependency_module: &str,
+        dependency_export_hash: npa_cert::Hash,
+        dependency_decl_interface_hash: npa_cert::Hash,
+    ) -> VerifiedImport {
         let ty = Expr::konst("Hidden.Thing", vec![]);
         let mut kernel_decl_dependencies = BTreeMap::new();
         kernel_decl_dependencies.insert(
-            "Direct.x".to_owned(),
+            decl_name.to_owned(),
             BTreeSet::from([VerifiedDependency {
+                module: Some(npa_cert::Name::from_dotted(dependency_module)),
+                export_hash: Some(dependency_export_hash),
                 name: npa_cert::Name::from_dotted("Hidden.Thing"),
-                decl_interface_hash: hash(2),
+                decl_interface_hash: dependency_decl_interface_hash,
             }]),
         );
 
         VerifiedImport {
-            module: npa_cert::Name::from_dotted("Direct.Module"),
-            export_hash: hash(41),
+            module: npa_cert::Name::from_dotted(module),
+            export_hash,
             certificate_hash: None,
+            decl_interface_hashes: BTreeMap::from([(
+                npa_cert::Name::from_dotted(decl_name),
+                decl_interface_hash,
+            )]),
             exports: vec![crate::VerifiedExport {
-                name: npa_cert::Name::from_dotted("Direct.x"),
+                name: npa_cert::Name::from_dotted(decl_name),
                 universe_params: Vec::new(),
                 ty: ty.clone(),
-                decl_interface_hash: hash(42),
+                decl_interface_hash,
             }],
             kernel_decls: vec![Decl::Axiom {
-                name: "Direct.x".to_owned(),
+                name: decl_name.to_owned(),
                 universe_params: Vec::new(),
                 ty,
             }],
@@ -3338,6 +4123,8 @@ mod tests {
         kernel_decl_dependencies.insert(
             "Direct.nat_ty".to_owned(),
             BTreeSet::from([VerifiedDependency {
+                module: None,
+                export_hash: None,
                 name: npa_cert::Name::from_dotted("Nat"),
                 decl_interface_hash,
             }]),
@@ -3347,6 +4134,10 @@ mod tests {
             module: npa_cert::Name::from_dotted("Direct.NatUser"),
             export_hash: hash(51),
             certificate_hash: None,
+            decl_interface_hashes: BTreeMap::from([(
+                npa_cert::Name::from_dotted("Direct.nat_ty"),
+                hash(52),
+            )]),
             exports: vec![crate::VerifiedExport {
                 name: npa_cert::Name::from_dotted("Direct.nat_ty"),
                 universe_params: Vec::new(),
@@ -3625,6 +4416,10 @@ mod tests {
             export_hash: hash(30),
             certificate_hash: None,
             exports: Vec::new(),
+            decl_interface_hashes: BTreeMap::from([(
+                npa_cert::Name::from_dotted("Unary"),
+                hash(30),
+            )]),
             kernel_decls: unary_rec_core_module().declarations,
             kernel_decl_dependencies: BTreeMap::new(),
         }
@@ -3673,6 +4468,10 @@ mod tests {
             module: npa_cert::Name::from_dotted("Test.UseRec"),
             export_hash: hash(31),
             certificate_hash: None,
+            decl_interface_hashes: BTreeMap::from([
+                (npa_cert::Name::from_dotted("UseRec.P"), hash(32)),
+                (npa_cert::Name::from_dotted("UseRec.w"), hash(33)),
+            ]),
             exports: vec![
                 crate::VerifiedExport {
                     name: npa_cert::Name::from_dotted("UseRec.P"),
@@ -4207,6 +5006,104 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
         .expect_err("available dependency must match the direct import dependency hash");
 
         assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_rejects_existing_env_dependency_hash_mismatch() {
+        let hidden = hidden_import();
+        let mismatched = direct_using_hidden_dependency(
+            "ZDirect.Module",
+            hash(61),
+            "ZDirect.x",
+            hash(62),
+            "Hidden.Other",
+            hash(63),
+            hash(99),
+        );
+
+        let err = machine_term_context_from_verified_imports(
+            &[hidden, mismatched],
+            &[],
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect_err("existing env declaration must satisfy explicit dependency identity and hash");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_accepts_existing_env_dependency_when_matching_direct_import_loaded() {
+        let hidden = hidden_import();
+        let hidden_other = verified_import("Hidden.Other", &[("Hidden.Thing", &[])]);
+        let direct = direct_using_hidden_dependency(
+            "ZDirect.Module",
+            hash(61),
+            "ZDirect.x",
+            hash(62),
+            "Hidden.Other",
+            hash(1),
+            hash(2),
+        );
+        let imports = [hidden, hidden_other, direct];
+
+        machine_term_context_from_verified_imports(
+            &imports,
+            &[],
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect("matching direct import identity should satisfy explicit dependency");
+    }
+
+    #[test]
+    fn term_context_accepts_existing_env_dependency_when_matching_available_import_is_backed_by_env(
+    ) {
+        let hidden = hidden_import();
+        let hidden_other = verified_import("Hidden.Other", &[("Hidden.Thing", &[])]);
+        let direct = direct_using_hidden_dependency(
+            "ZDirect.Module",
+            hash(61),
+            "ZDirect.x",
+            hash(62),
+            "Hidden.Other",
+            hash(1),
+            hash(2),
+        );
+
+        machine_term_context_from_verified_imports(
+            &[hidden, direct],
+            std::slice::from_ref(&hidden_other),
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect("matching available import identity should be recorded when Env already has the same declaration");
+    }
+
+    #[test]
+    fn term_context_records_only_loaded_available_interface_hashes() {
+        let direct = direct_using_hidden_import();
+        let hidden = hidden_import();
+        let mut colliding = hidden_import();
+        colliding.exports[0].decl_interface_hash = hash(99);
+        let context = machine_term_context_from_verified_imports(
+            std::slice::from_ref(&direct),
+            &[hidden, colliding],
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect("exact dependency hash should select the matching available import");
+
+        assert!(context
+            .kernel_env
+            .has_decl_interface_hash("Hidden.Thing", &hash(2)));
+        assert!(!context
+            .kernel_env
+            .has_decl_interface_hash("Hidden.Thing", &hash(99)));
     }
 
     #[test]

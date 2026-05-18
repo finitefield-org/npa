@@ -38,6 +38,7 @@ pub(crate) fn verify_module_cert_impl(
 
     let verified = VerifiedModule {
         module: cert.header.module.clone(),
+        imports: cert.imports.clone(),
         name_table: cert.name_table.clone(),
         level_table: cert.level_table.clone(),
         term_table: cert.term_table.clone(),

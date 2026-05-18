@@ -8,6 +8,7 @@ mod callable;
 mod current;
 mod json;
 mod projection;
+mod renderer;
 mod validation;
 
 pub use adapter::{
@@ -40,6 +41,12 @@ pub use projection::{
     MachineImportCertificateContext, VerifiedImportDeclIndexEntry,
     VerifiedImportGeneratedDeclEntry, VerifiedImportGeneratedDeclPayload, VerifiedImportKey,
     VerifiedModuleCertificateInput, VerifiedModuleContextEntry,
+};
+pub use renderer::{
+    render_machine_expr_source, render_machine_expr_view, renderer_qa_round_trip, LocalId,
+    MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineExprRendererContext,
+    MachineExprRendererError, MachineExprView, MachineGlobalRefView,
+    Phase5ResolvedDisplayCoreRefOwner,
 };
 pub use validation::{
     delayed_json_payload, parse_request_body, parse_request_body_with_limits,

@@ -7471,9 +7471,10 @@ fn machine_term_elab_context(
             value: local.value.clone(),
         })
         .collect();
-    npa_frontend::MachineTermElabContext::from_verified_modules_and_current_decls(
+    npa_frontend::MachineTermElabContext::from_verified_modules_and_current_decls_in_module(
         &imports,
         &imports,
+        state.root.module.clone(),
         &checked_current_decls,
         &current_generated_decls,
         local_context,

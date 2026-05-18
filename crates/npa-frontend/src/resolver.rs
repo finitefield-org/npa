@@ -17,6 +17,8 @@ pub struct VerifiedExport {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct VerifiedDependency {
+    pub module: Option<npa_cert::ModuleName>,
+    pub export_hash: Option<npa_cert::Hash>,
     pub name: npa_cert::Name,
     pub decl_interface_hash: npa_cert::Hash,
 }
@@ -27,6 +29,7 @@ pub struct VerifiedImport {
     pub export_hash: npa_cert::Hash,
     pub certificate_hash: Option<npa_cert::Hash>,
     pub exports: Vec<VerifiedExport>,
+    pub decl_interface_hashes: BTreeMap<npa_cert::Name, npa_cert::Hash>,
     pub kernel_decls: Vec<npa_kernel::Decl>,
     pub kernel_decl_dependencies: BTreeMap<String, BTreeSet<VerifiedDependency>>,
 }
@@ -53,15 +56,35 @@ impl From<&npa_cert::VerifiedModule> for VerifiedImport {
         let kernel_decl_dependencies =
             kernel_decl_dependencies_from_verified_module(module, &kernel_decls)
                 .expect("verified module dependencies must be readable");
+        let decl_interface_hashes = module
+            .declarations()
+            .iter()
+            .map(|decl| {
+                (
+                    module.name_table()[decl_payload_name(&decl.decl)].clone(),
+                    decl.hashes.decl_interface_hash,
+                )
+            })
+            .collect();
 
         Self {
             module: module.module().clone(),
             export_hash: module.export_hash(),
             certificate_hash: Some(module.certificate_hash()),
             exports,
+            decl_interface_hashes,
             kernel_decls,
             kernel_decl_dependencies,
         }
+    }
+}
+
+fn decl_payload_name(decl: &npa_cert::DeclPayload) -> npa_cert::NameId {
+    match decl {
+        npa_cert::DeclPayload::Axiom { name, .. }
+        | npa_cert::DeclPayload::Def { name, .. }
+        | npa_cert::DeclPayload::Theorem { name, .. }
+        | npa_cert::DeclPayload::Inductive { name, .. } => *name,
     }
 }
 
@@ -729,26 +752,20 @@ fn kernel_decl_dependencies_from_verified_module(
     module: &npa_cert::VerifiedModule,
     kernel_decls: &[npa_kernel::Decl],
 ) -> npa_cert::Result<BTreeMap<String, BTreeSet<VerifiedDependency>>> {
-    let imported_dependencies = imported_dependency_hashes(module)?;
+    if module.declarations().len() != kernel_decls.len() {
+        return Err(npa_cert::CertError::DecodeError);
+    }
+
     let mut dependencies = BTreeMap::new();
-    for decl in kernel_decls {
+    for (decl_cert, decl) in module.declarations().iter().zip(kernel_decls) {
         let mut names = BTreeSet::new();
         collect_const_names_from_decl(&mut names, decl);
-        let decl_dependencies = names
-            .into_iter()
-            .filter_map(|name| {
-                imported_dependencies.get(&name).map(|hashes| {
-                    hashes
-                        .iter()
-                        .map(|decl_interface_hash| VerifiedDependency {
-                            name: npa_cert::Name::from_dotted(&name),
-                            decl_interface_hash: *decl_interface_hash,
-                        })
-                        .collect::<BTreeSet<_>>()
-                })
-            })
-            .flatten()
-            .collect::<BTreeSet<_>>();
+        let decl_dependencies = verified_dependencies_from_entries(
+            module.imports(),
+            module.name_table(),
+            &names,
+            &decl_cert.dependencies,
+        )?;
         if !decl_dependencies.is_empty() {
             dependencies.insert(decl.name().to_owned(), decl_dependencies);
         }
@@ -756,65 +773,63 @@ fn kernel_decl_dependencies_from_verified_module(
     Ok(dependencies)
 }
 
-fn imported_dependency_hashes(
-    module: &npa_cert::VerifiedModule,
-) -> npa_cert::Result<BTreeMap<String, BTreeSet<npa_cert::Hash>>> {
-    let mut dependencies = BTreeMap::new();
-    for term_id in 0..module.term_table().len() {
-        collect_imported_dependencies_from_verified_term(module, term_id, &mut dependencies)?;
+fn verified_dependencies_from_entries(
+    imports: &[npa_cert::ImportEntry],
+    name_table: &[npa_cert::Name],
+    referenced_names: &BTreeSet<String>,
+    dependencies: &[npa_cert::DependencyEntry],
+) -> npa_cert::Result<BTreeSet<VerifiedDependency>> {
+    let mut verified_dependencies = BTreeSet::new();
+    for dependency in dependencies {
+        let Some(verified_dependency) =
+            verified_dependency_from_entry(imports, name_table, dependency)?
+        else {
+            continue;
+        };
+        if referenced_names.contains(&verified_dependency.name.as_dotted()) {
+            verified_dependencies.insert(verified_dependency);
+        }
     }
-    Ok(dependencies)
+    Ok(verified_dependencies)
 }
 
-fn collect_imported_dependencies_from_verified_term(
-    module: &npa_cert::VerifiedModule,
-    term: npa_cert::TermId,
-    dependencies: &mut BTreeMap<String, BTreeSet<npa_cert::Hash>>,
-) -> npa_cert::Result<()> {
-    match module
-        .term_table()
-        .get(term)
-        .ok_or(npa_cert::CertError::DecodeError)?
-    {
-        npa_cert::TermNode::Sort(_) | npa_cert::TermNode::BVar(_) => {}
-        npa_cert::TermNode::Const { global_ref, .. } => match global_ref {
-            npa_cert::GlobalRef::Builtin {
+fn verified_dependency_from_entry(
+    imports: &[npa_cert::ImportEntry],
+    name_table: &[npa_cert::Name],
+    dependency: &npa_cert::DependencyEntry,
+) -> npa_cert::Result<Option<VerifiedDependency>> {
+    match &dependency.global_ref {
+        npa_cert::GlobalRef::Builtin { name, .. } => {
+            let name = name_table
+                .get(*name)
+                .ok_or(npa_cert::CertError::DecodeError)?
+                .clone();
+            Ok(Some(VerifiedDependency {
+                module: None,
+                export_hash: None,
                 name,
-                decl_interface_hash,
-            }
-            | npa_cert::GlobalRef::Imported {
+                decl_interface_hash: dependency.decl_interface_hash,
+            }))
+        }
+        npa_cert::GlobalRef::Imported {
+            import_index, name, ..
+        } => {
+            let import = imports
+                .get(*import_index)
+                .ok_or(npa_cert::CertError::DecodeError)?;
+            let name = name_table
+                .get(*name)
+                .ok_or(npa_cert::CertError::DecodeError)?
+                .clone();
+            Ok(Some(VerifiedDependency {
+                module: Some(import.module.clone()),
+                export_hash: Some(import.export_hash),
                 name,
-                decl_interface_hash,
-                ..
-            } => {
-                dependencies
-                    .entry(
-                        module
-                            .name_table()
-                            .get(*name)
-                            .ok_or(npa_cert::CertError::DecodeError)?
-                            .as_dotted(),
-                    )
-                    .or_default()
-                    .insert(*decl_interface_hash);
-            }
-            npa_cert::GlobalRef::Local { .. } | npa_cert::GlobalRef::LocalGenerated { .. } => {}
-        },
-        npa_cert::TermNode::App(func, arg) => {
-            collect_imported_dependencies_from_verified_term(module, *func, dependencies)?;
-            collect_imported_dependencies_from_verified_term(module, *arg, dependencies)?;
+                decl_interface_hash: dependency.decl_interface_hash,
+            }))
         }
-        npa_cert::TermNode::Lam { ty, body } | npa_cert::TermNode::Pi { ty, body } => {
-            collect_imported_dependencies_from_verified_term(module, *ty, dependencies)?;
-            collect_imported_dependencies_from_verified_term(module, *body, dependencies)?;
-        }
-        npa_cert::TermNode::Let { ty, value, body } => {
-            collect_imported_dependencies_from_verified_term(module, *ty, dependencies)?;
-            collect_imported_dependencies_from_verified_term(module, *value, dependencies)?;
-            collect_imported_dependencies_from_verified_term(module, *body, dependencies)?;
-        }
+        npa_cert::GlobalRef::Local { .. } | npa_cert::GlobalRef::LocalGenerated { .. } => Ok(None),
     }
-    Ok(())
 }
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<String>, decl: &npa_kernel::Decl) {
@@ -905,6 +920,10 @@ mod tests {
             module: npa_cert::Name::from_dotted(module),
             export_hash: hash(1),
             certificate_hash: None,
+            decl_interface_hashes: exports
+                .iter()
+                .map(|export| (export.name.clone(), export.decl_interface_hash))
+                .collect(),
             exports,
             kernel_decls,
             kernel_decl_dependencies: BTreeMap::new(),
@@ -933,6 +952,76 @@ mod tests {
 
     fn nat_import() -> VerifiedImport {
         verified_import("Std.Nat.Basic", &["Nat", "Nat.zero", "Nat.add"])
+    }
+
+    #[test]
+    fn dependency_entries_keep_same_name_import_identities_per_decl() {
+        let imports = vec![
+            npa_cert::ImportEntry {
+                module: npa_cert::Name::from_dotted("Left.Module"),
+                export_hash: hash(11),
+                certificate_hash: None,
+            },
+            npa_cert::ImportEntry {
+                module: npa_cert::Name::from_dotted("Right.Module"),
+                export_hash: hash(12),
+                certificate_hash: None,
+            },
+        ];
+        let shared_name = npa_cert::Name::from_dotted("Shared.Foo");
+        let name_table = vec![shared_name.clone()];
+        let referenced_names = BTreeSet::from([shared_name.as_dotted()]);
+        let decl_interface_hash = hash(21);
+        let left_dependency = npa_cert::DependencyEntry {
+            global_ref: npa_cert::GlobalRef::Imported {
+                import_index: 0,
+                name: 0,
+                decl_interface_hash,
+            },
+            decl_interface_hash,
+        };
+        let right_dependency = npa_cert::DependencyEntry {
+            global_ref: npa_cert::GlobalRef::Imported {
+                import_index: 1,
+                name: 0,
+                decl_interface_hash,
+            },
+            decl_interface_hash,
+        };
+
+        let left_dependencies = verified_dependencies_from_entries(
+            &imports,
+            &name_table,
+            &referenced_names,
+            std::slice::from_ref(&left_dependency),
+        )
+        .expect("left dependency should decode");
+        assert_eq!(
+            left_dependencies,
+            BTreeSet::from([VerifiedDependency {
+                module: Some(imports[0].module.clone()),
+                export_hash: Some(imports[0].export_hash),
+                name: shared_name.clone(),
+                decl_interface_hash,
+            }])
+        );
+
+        let right_dependencies = verified_dependencies_from_entries(
+            &imports,
+            &name_table,
+            &referenced_names,
+            std::slice::from_ref(&right_dependency),
+        )
+        .expect("right dependency should decode");
+        assert_eq!(
+            right_dependencies,
+            BTreeSet::from([VerifiedDependency {
+                module: Some(imports[1].module.clone()),
+                export_hash: Some(imports[1].export_hash),
+                name: shared_name,
+                decl_interface_hash,
+            }])
+        );
     }
 
     #[test]

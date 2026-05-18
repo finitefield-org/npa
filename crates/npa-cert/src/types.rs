@@ -211,6 +211,8 @@ impl VerifierSession {
 pub struct VerifiedModule {
     /// Module name from the verified certificate.
     pub(crate) module: Name,
+    /// Canonical import list from the verified certificate.
+    pub(crate) imports: Vec<ImportEntry>,
     /// Canonical name table from the verified certificate.
     pub(crate) name_table: Vec<Name>,
     /// Canonical level table from the verified certificate.
@@ -233,6 +235,11 @@ impl VerifiedModule {
     /// Return the verified module name.
     pub fn module(&self) -> &Name {
         &self.module
+    }
+
+    /// Return the canonical import list from the verified certificate.
+    pub fn imports(&self) -> &[ImportEntry] {
+        &self.imports
     }
 
     /// Return the canonical name table from the verified certificate.

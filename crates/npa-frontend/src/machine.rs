@@ -207,6 +207,72 @@ pub struct MachineTermElabContext {
     pub(crate) universe_params: Vec<String>,
     pub(crate) kernel_env: MachineKernelEnvView,
     pub(crate) callable_interface_table: MachineSurfaceCallableInterfaceTable,
+    pub(crate) current_module: Option<npa_cert::ModuleName>,
+    pub(crate) direct_imports: Vec<MachineDirectImportRef>,
+    pub(crate) loaded_available_decls: Vec<MachineLoadedAvailableDeclRef>,
+    pub(crate) verified_imports: Vec<MachineVerifiedImportRef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MachineDirectImportRef {
+    pub module: npa_cert::ModuleName,
+    pub export_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MachineLoadedAvailableDeclRef {
+    pub module: npa_cert::ModuleName,
+    pub export_hash: npa_cert::Hash,
+    pub name: npa_cert::Name,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MachineVerifiedImportRef {
+    pub module: npa_cert::ModuleName,
+    pub export_hash: npa_cert::Hash,
+    pub decls: Vec<MachineVerifiedImportDeclRef>,
+    pub exports: Vec<MachineVerifiedImportExportRef>,
+    pub generated_decls: Vec<MachineVerifiedImportGeneratedDeclRef>,
+    pub generated_exports: Vec<MachineVerifiedImportGeneratedExportRef>,
+    pub dependencies: Vec<MachineVerifiedImportDependencyRef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct MachineVerifiedImportDeclRef {
+    pub name: npa_cert::Name,
+    pub decl_interface_hash: npa_cert::Hash,
+    pub public_export: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MachineVerifiedImportExportRef {
+    pub name: npa_cert::Name,
+    pub decl_interface_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct MachineVerifiedImportGeneratedDeclRef {
+    pub parent_name: npa_cert::Name,
+    pub name: npa_cert::Name,
+    pub parent_decl_interface_hash: npa_cert::Hash,
+    pub decl_interface_hash: npa_cert::Hash,
+    pub public_export: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MachineVerifiedImportGeneratedExportRef {
+    pub parent_name: npa_cert::Name,
+    pub name: npa_cert::Name,
+    pub parent_decl_interface_hash: npa_cert::Hash,
+    pub decl_interface_hash: npa_cert::Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct MachineVerifiedImportDependencyRef {
+    pub module: npa_cert::ModuleName,
+    pub export_hash: npa_cert::Hash,
+    pub name: npa_cert::Name,
+    pub decl_interface_hash: npa_cert::Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -296,6 +362,267 @@ impl MachineTermElabContext {
         &self.callable_interface_table
     }
 
+    pub fn direct_import_identity(
+        &self,
+        import_index: u32,
+    ) -> Option<(&npa_cert::ModuleName, npa_cert::Hash)> {
+        let index = usize::try_from(import_index).ok()?;
+        self.direct_imports
+            .get(index)
+            .map(|import| (&import.module, import.export_hash))
+    }
+
+    pub fn is_direct_import(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+    ) -> bool {
+        self.direct_imports
+            .iter()
+            .any(|import| &import.module == module && &import.export_hash == export_hash)
+    }
+
+    pub fn import_decl_loaded_in_kernel_env(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        name: &npa_cert::Name,
+    ) -> bool {
+        self.is_direct_import(module, export_hash)
+            || exactly_one(self.loaded_available_decls.iter().filter(|decl| {
+                &decl.module == module && &decl.export_hash == export_hash && &decl.name == name
+            }))
+    }
+
+    pub fn has_verified_import(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+    ) -> bool {
+        exactly_one(
+            self.verified_imports
+                .iter()
+                .filter(|import| &import.module == module && &import.export_hash == export_hash),
+        )
+    }
+
+    pub fn verified_import_depends_on_export(
+        &self,
+        owner_module: &npa_cert::ModuleName,
+        owner_export_hash: &npa_cert::Hash,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        name: &npa_cert::Name,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        let matching_imports: Vec<_> = self
+            .verified_imports
+            .iter()
+            .filter(|import| {
+                &import.module == owner_module && &import.export_hash == owner_export_hash
+            })
+            .collect();
+        let [import] = matching_imports.as_slice() else {
+            return false;
+        };
+
+        exactly_one(import.dependencies.iter().filter(|dependency| {
+            &dependency.module == module
+                && &dependency.export_hash == export_hash
+                && &dependency.name == name
+                && &dependency.decl_interface_hash == decl_interface_hash
+        }))
+    }
+
+    pub fn current_module_is(&self, module: &npa_cert::ModuleName) -> bool {
+        self.current_module
+            .as_ref()
+            .is_some_and(|current_module| current_module == module)
+    }
+
+    pub fn direct_import_export_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        name: &npa_cert::Name,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        self.is_direct_import(module, export_hash)
+            && self.verified_import_export_matches(module, export_hash, name, decl_interface_hash)
+    }
+
+    pub fn verified_import_export_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        name: &npa_cert::Name,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        let matching_imports: Vec<_> = self
+            .verified_imports
+            .iter()
+            .filter(|import| &import.module == module && &import.export_hash == export_hash)
+            .collect();
+        let [import] = matching_imports.as_slice() else {
+            return false;
+        };
+
+        exactly_one(import.exports.iter().filter(|export| {
+            &export.name == name && &export.decl_interface_hash == decl_interface_hash
+        }))
+    }
+
+    pub fn verified_import_decl_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        name: &npa_cert::Name,
+        decl_interface_hash: &npa_cert::Hash,
+        public_export: bool,
+    ) -> bool {
+        let matching_imports: Vec<_> = self
+            .verified_imports
+            .iter()
+            .filter(|import| &import.module == module && &import.export_hash == export_hash)
+            .collect();
+        let [import] = matching_imports.as_slice() else {
+            return false;
+        };
+
+        exactly_one(import.decls.iter().filter(|decl| {
+            &decl.name == name
+                && &decl.decl_interface_hash == decl_interface_hash
+                && decl.public_export == public_export
+        }))
+    }
+
+    pub fn direct_import_generated_export_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        parent_name: &npa_cert::Name,
+        name: &npa_cert::Name,
+        parent_decl_interface_hash: &npa_cert::Hash,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        self.is_direct_import(module, export_hash)
+            && self.verified_import_generated_export_matches(
+                module,
+                export_hash,
+                parent_name,
+                name,
+                parent_decl_interface_hash,
+                decl_interface_hash,
+            )
+    }
+
+    pub fn verified_import_generated_export_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        parent_name: &npa_cert::Name,
+        name: &npa_cert::Name,
+        parent_decl_interface_hash: &npa_cert::Hash,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        let matching_imports: Vec<_> = self
+            .verified_imports
+            .iter()
+            .filter(|import| &import.module == module && &import.export_hash == export_hash)
+            .collect();
+        let [import] = matching_imports.as_slice() else {
+            return false;
+        };
+
+        exactly_one(import.generated_exports.iter().filter(|export| {
+            &export.parent_name == parent_name
+                && &export.name == name
+                && &export.parent_decl_interface_hash == parent_decl_interface_hash
+                && &export.decl_interface_hash == decl_interface_hash
+        }))
+    }
+
+    pub fn verified_import_generated_decl_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        export_hash: &npa_cert::Hash,
+        parent_name: &npa_cert::Name,
+        name: &npa_cert::Name,
+        decl_interface_hash: &npa_cert::Hash,
+        public_export: bool,
+    ) -> bool {
+        let matching_imports: Vec<_> = self
+            .verified_imports
+            .iter()
+            .filter(|import| &import.module == module && &import.export_hash == export_hash)
+            .collect();
+        let [import] = matching_imports.as_slice() else {
+            return false;
+        };
+
+        exactly_one(import.generated_decls.iter().filter(|decl| {
+            &decl.parent_name == parent_name
+                && &decl.name == name
+                && &decl.parent_decl_interface_hash == decl_interface_hash
+                && &decl.decl_interface_hash == decl_interface_hash
+                && decl.public_export == public_export
+        }))
+    }
+
+    pub fn current_module_entry_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        name: &npa_cert::Name,
+        source_index: u64,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        let Some(current_module) = &self.current_module else {
+            return false;
+        };
+        if current_module != module || !name_is_in_module(name, current_module) {
+            return false;
+        }
+        exactly_one(self.global_scope.entries.iter().filter(|entry| {
+            matches!(
+                entry,
+                MachineGlobalScopeEntry::CurrentModule {
+                    name: entry_name,
+                    source_index: entry_source_index,
+                    decl_interface_hash: entry_decl_interface_hash,
+                } if entry_name == name
+                    && *entry_source_index == source_index
+                    && entry_decl_interface_hash == decl_interface_hash
+            )
+        }))
+    }
+
+    pub fn current_generated_entry_matches(
+        &self,
+        module: &npa_cert::ModuleName,
+        name: &npa_cert::Name,
+        parent_source_index: u64,
+        decl_interface_hash: &npa_cert::Hash,
+    ) -> bool {
+        let Some(current_module) = &self.current_module else {
+            return false;
+        };
+        if current_module != module || !name_is_in_module(name, current_module) {
+            return false;
+        }
+        exactly_one(self.global_scope.entries.iter().filter(|entry| {
+            matches!(
+                entry,
+                MachineGlobalScopeEntry::CurrentGenerated {
+                    name: entry_name,
+                    parent_source_index: entry_parent_source_index,
+                    decl_interface_hash: entry_decl_interface_hash,
+                } if entry_name == name
+                    && *entry_parent_source_index == parent_source_index
+                    && entry_decl_interface_hash == decl_interface_hash
+            )
+        }))
+    }
+
     pub fn with_callable_interface_table(
         mut self,
         table: MachineSurfaceCallableInterfaceTable,
@@ -303,6 +630,30 @@ impl MachineTermElabContext {
         self.callable_interface_table = table;
         self
     }
+
+    pub fn with_additional_global_scope_entries(
+        mut self,
+        entries: impl IntoIterator<Item = MachineGlobalScopeEntry>,
+    ) -> Self {
+        for entry in entries {
+            let exists = self.global_scope.entries.iter().any(|existing| {
+                existing.name() == entry.name()
+                    && existing.decl_interface_hash() == entry.decl_interface_hash()
+            });
+            if !exists {
+                self.global_scope.entries.push(entry);
+            }
+        }
+        self
+    }
+}
+
+fn exactly_one<T>(iter: impl Iterator<Item = T>) -> bool {
+    iter.take(2).count() == 1
+}
+
+fn name_is_in_module(name: &npa_cert::Name, module: &npa_cert::ModuleName) -> bool {
+    name.0.len() > module.0.len() && name.0.starts_with(&module.0)
 }
 
 #[derive(Clone, Debug)]
