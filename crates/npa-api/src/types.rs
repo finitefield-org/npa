@@ -7,7 +7,7 @@ use npa_tactic::{GoalId, MetaVarId};
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
 use crate::projection::{MachineImportCertificateContext, VerifiedImportKey};
-use crate::renderer::{LocalId, MachineExprView};
+use crate::renderer::{LocalId, MachineDisplayRenderScope, MachineExprView};
 use crate::snapshot::MachineSnapshotStore;
 use crate::validation::{
     parse_strict_u64_token, JsonPath, MachineApiErrorKind, MachineApiRequestError,
@@ -77,6 +77,7 @@ pub struct MachineProofSession {
     pub root: CheckedMachineProofRoot,
     pub imports: Vec<VerifiedImportKey>,
     pub import_certificate_context: MachineImportCertificateContext,
+    pub machine_display_render_scope: MachineDisplayRenderScope,
     pub machine_surface_callable_interface_table: MachineSurfaceCallableInterfaceTable,
     pub checked_current_decls: MachineCheckedCurrentDeclContext,
     pub options: MachineApiOptions,

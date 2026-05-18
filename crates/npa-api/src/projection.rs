@@ -1,14 +1,17 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+};
 
 use npa_cert::{
-    decode_module_cert, verify_module_cert, AxiomPolicy, AxiomRef, CertError, CertReducibility,
-    ConstructorSpec, DeclHashes, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef,
-    Hash, ModuleCert, Name, NameId, Opacity, RecursorSpec, TrustMode, VerifiedModule,
-    VerifierSession,
+    decode_module_cert, verify_module_cert, AxiomPolicy, AxiomRef, AxiomReport, CertError,
+    CertReducibility, ConstructorSpec, DeclHashes, DeclPayload, DependencyEntry, ExportEntry,
+    ExportKind, GlobalRef, Hash, ModuleCert, Name, NameId, Opacity, RecursorSpec, TrustMode,
+    VerifiedModule, VerifierSession,
 };
 use sha2::{Digest, Sha256};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerifiedImportKey {
     pub module: Name,
     pub export_hash: Hash,
@@ -30,6 +33,18 @@ impl VerifiedImportKey {
             export_hash: module.export_hash(),
             certificate_hash: module.certificate_hash(),
         }
+    }
+}
+
+impl PartialOrd for VerifiedImportKey {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for VerifiedImportKey {
+    fn cmp(&self, other: &Self) -> Ordering {
+        verified_import_key_canonical_bytes(self).cmp(&verified_import_key_canonical_bytes(other))
     }
 }
 
@@ -96,8 +111,12 @@ pub struct VerifiedModuleContextEntry {
     pub generated_decl_table: Vec<VerifiedImportGeneratedDeclEntry>,
     pub export_block: Vec<ExportEntry>,
     pub axiom_report: npa_cert::AxiomReport,
+    pub decoded_name_table_hash: Hash,
+    pub decl_index_table_hash: Hash,
+    pub generated_decl_table_hash: Hash,
     pub export_signature_summary_hash: Hash,
     pub certified_env_decl_hashes_summary_hash: Hash,
+    pub axiom_report_hash: Hash,
     pub verified_module: VerifiedModule,
 }
 
@@ -426,9 +445,14 @@ fn project_verified_module(
     let key = record.key.clone();
     let decl_index_table = project_decl_index_table(&key, &verified_module)?;
     let generated_decl_table = project_generated_decl_table(&key, &verified_module)?;
+    let decoded_name_table_hash = decoded_name_table_hash(&key, &verified_module);
+    let decl_index_table_hash = decl_index_table_hash(&key, &decl_index_table, &verified_module);
+    let generated_decl_table_hash =
+        generated_decl_table_hash(&key, &decl_index_table, &generated_decl_table);
     let export_signature_summary_hash = export_signature_summary_hash(&key, &verified_module)?;
     let certified_env_decl_hashes_summary_hash =
         certified_env_decl_hashes_summary_hash(&key, &verified_module);
+    let axiom_report_hash = axiom_report_hash(verified_module.axiom_report());
 
     Ok(VerifiedModuleContextEntry {
         key,
@@ -439,8 +463,12 @@ fn project_verified_module(
         generated_decl_table,
         export_block: verified_module.export_block().to_vec(),
         axiom_report: verified_module.axiom_report().clone(),
+        decoded_name_table_hash,
+        decl_index_table_hash,
+        generated_decl_table_hash,
         export_signature_summary_hash,
         certified_env_decl_hashes_summary_hash,
+        axiom_report_hash,
         verified_module,
     })
 }
@@ -614,6 +642,100 @@ fn export_signature_summary_hash(
     Ok(hash_bytes(&out))
 }
 
+fn decoded_name_table_hash(key: &VerifiedImportKey, module: &VerifiedModule) -> Hash {
+    let mut out = Vec::new();
+    encode_string(&mut out, "npa.phase5.decoded-name-table.v1");
+    encode_verified_import_key(&mut out, key);
+    encode_uvar(&mut out, module.name_table().len() as u64);
+    for name in module.name_table() {
+        encode_name(&mut out, name);
+    }
+    hash_bytes(&out)
+}
+
+fn decl_index_table_hash(
+    key: &VerifiedImportKey,
+    decls: &[VerifiedImportDeclIndexEntry],
+    module: &VerifiedModule,
+) -> Hash {
+    let mut out = Vec::new();
+    encode_string(&mut out, "npa.phase5.import-decl-index-table.v1");
+    encode_verified_import_key(&mut out, key);
+    encode_uvar(&mut out, decls.len() as u64);
+    for decl in decls {
+        encode_uvar(&mut out, decl.decl_index as u64);
+        encode_name(&mut out, &decl.name);
+        out.extend(decl.hashes.decl_interface_hash);
+        out.push(if decl_public_export(decl, module) {
+            0x01
+        } else {
+            0x00
+        });
+    }
+    hash_bytes(&out)
+}
+
+fn decl_public_export(decl: &VerifiedImportDeclIndexEntry, module: &VerifiedModule) -> bool {
+    module.export_block().iter().any(|export| {
+        export.decl_interface_hash == decl.hashes.decl_interface_hash
+            && export_kind_matches_decl_payload(export.kind, &decl.decl)
+            && module
+                .name_table()
+                .get(export.name)
+                .map(|name| name == &decl.name)
+                .unwrap_or(false)
+    })
+}
+
+fn export_kind_matches_decl_payload(kind: ExportKind, decl: &DeclPayload) -> bool {
+    matches!(
+        (kind, decl),
+        (ExportKind::Axiom, DeclPayload::Axiom { .. })
+            | (ExportKind::Def, DeclPayload::Def { .. })
+            | (ExportKind::Theorem, DeclPayload::Theorem { .. })
+            | (ExportKind::Inductive, DeclPayload::Inductive { .. })
+    )
+}
+
+fn generated_decl_table_hash(
+    key: &VerifiedImportKey,
+    decls: &[VerifiedImportDeclIndexEntry],
+    generated: &[VerifiedImportGeneratedDeclEntry],
+) -> Hash {
+    let mut entries = generated.iter().collect::<Vec<_>>();
+    entries.sort_by(|left, right| {
+        left.parent_decl_index
+            .cmp(&right.parent_decl_index)
+            .then_with(|| name_canonical_bytes(&left.name).cmp(&name_canonical_bytes(&right.name)))
+            .then_with(|| generated_kind_tag(left.kind).cmp(&generated_kind_tag(right.kind)))
+    });
+
+    let mut out = Vec::new();
+    encode_string(&mut out, "npa.phase5.import-generated-decl-table.v1");
+    encode_verified_import_key(&mut out, key);
+    encode_uvar(&mut out, entries.len() as u64);
+    for entry in entries {
+        let parent = decls
+            .iter()
+            .find(|decl| decl.decl_index == entry.parent_decl_index)
+            .expect("generated import entries are projected from an existing parent declaration");
+        encode_uvar(&mut out, entry.parent_decl_index as u64);
+        encode_name(&mut out, &parent.name);
+        encode_name(&mut out, &entry.name);
+        out.extend(parent.hashes.decl_interface_hash);
+        out.extend(entry.export.decl_interface_hash);
+        out.push(0x01);
+    }
+    hash_bytes(&out)
+}
+
+fn generated_kind_tag(kind: GeneratedDeclKind) -> u8 {
+    match kind {
+        GeneratedDeclKind::Constructor => 0x00,
+        GeneratedDeclKind::Recursor => 0x01,
+    }
+}
+
 fn certified_env_decl_hashes_summary_hash(
     key: &VerifiedImportKey,
     module: &VerifiedModule,
@@ -630,6 +752,52 @@ fn certified_env_decl_hashes_summary_hash(
         out.extend(decl.hashes.decl_certificate_hash);
     }
     hash_bytes(&out)
+}
+
+fn axiom_report_hash(report: &AxiomReport) -> Hash {
+    let mut out = Vec::new();
+    encode_uvar(&mut out, report.per_declaration.len() as u64);
+    for entry in &report.per_declaration {
+        encode_uvar(&mut out, entry.decl_index as u64);
+        encode_axiom_refs(&mut out, &entry.direct_axioms);
+        encode_axiom_refs(&mut out, &entry.transitive_axioms);
+    }
+    encode_axiom_refs(&mut out, &report.module_axioms);
+    hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &out)
+}
+
+fn encode_verified_import_key(out: &mut Vec<u8>, key: &VerifiedImportKey) {
+    encode_name(out, &key.module);
+    out.extend(key.export_hash);
+    out.extend(key.certificate_hash);
+}
+
+fn verified_import_key_canonical_bytes(key: &VerifiedImportKey) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_verified_import_key(&mut out, key);
+    out
+}
+
+fn name_canonical_bytes(name: &Name) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_name(&mut out, name);
+    out
+}
+
+fn encode_axiom_refs(out: &mut Vec<u8>, axioms: &[AxiomRef]) {
+    encode_uvar(out, axioms.len() as u64);
+    for axiom in axioms {
+        encode_global_ref(out, &axiom.global_ref);
+        encode_uvar(out, axiom.name as u64);
+        out.extend(axiom.decl_interface_hash);
+    }
+}
+
+fn hash_with_domain(domain: &[u8], payload: &[u8]) -> Hash {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    hasher.update(payload);
+    hasher.finalize().into()
 }
 
 fn hash_axiom_refs(axioms: &[AxiomRef]) -> Hash {
@@ -882,8 +1050,37 @@ mod tests {
         );
         assert!(entry.generated_decl_table.is_empty());
         assert_eq!(entry.axiom_report, *verified.axiom_report());
+        assert_ne!(entry.decoded_name_table_hash, [0; 32]);
+        assert_ne!(entry.decl_index_table_hash, [0; 32]);
+        assert_ne!(entry.generated_decl_table_hash, [0; 32]);
         assert_ne!(entry.export_signature_summary_hash, [0; 32]);
         assert_ne!(entry.certified_env_decl_hashes_summary_hash, [0; 32]);
+        assert_ne!(entry.axiom_report_hash, [0; 32]);
+    }
+
+    #[test]
+    fn import_keys_use_phase5_name_canonical_order() {
+        let (b_bytes, verified_b) = cert_bytes(id_module("B", "B.id"), &[]);
+        let (aa_bytes, verified_aa) = cert_bytes(id_module("AA", "AA.id"), &[]);
+        let b_key = key_from_verified(&verified_b);
+        let aa_key = key_from_verified(&verified_aa);
+
+        let context = project_import_certificate_context(
+            &[
+                input_from_verified(&verified_aa, &aa_bytes),
+                input_from_verified(&verified_b, &b_bytes),
+            ],
+            &[aa_key.clone(), b_key.clone()],
+            &AxiomPolicy::high_trust(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            context.direct_import_keys(),
+            &[b_key.clone(), aa_key.clone()]
+        );
+        assert_eq!(context.verified_modules()[0].key, b_key);
+        assert_eq!(context.verified_modules()[1].key, aa_key);
     }
 
     #[test]

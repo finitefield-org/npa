@@ -10,6 +10,7 @@ mod diagnostic;
 mod json;
 mod projection;
 mod renderer;
+mod session;
 mod snapshot;
 mod types;
 mod validation;
@@ -54,6 +55,10 @@ pub use renderer::{
     MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineExprRendererContext,
     MachineExprRendererError, MachineExprView, MachineGlobalRefView,
     Phase5ResolvedDisplayCoreRefOwner,
+};
+pub use session::{
+    create_machine_session, MachineSessionCreateError, MachineSessionCreateOk,
+    MachineSessionCreateRequest,
 };
 pub use snapshot::{
     materialize_machine_proof_snapshot, stored_snapshot_view_canonical_bytes,

@@ -90,7 +90,7 @@ pub struct CurrentDeclDependencyEntry {
     pub decl_interface_hash: Hash,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineDependencyRefWire {
     Imported {
         module: Name,
@@ -112,7 +112,7 @@ pub enum MachineDependencyRefWire {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineAxiomRefWire {
     Imported {
         module: Name,
@@ -358,6 +358,16 @@ pub fn project_checked_current_decl_context(
         decl_index_table,
         generated_decl_table,
     })
+}
+
+pub(crate) fn validate_checked_current_decl_package_bytes(
+    bytes: &[u8],
+) -> Result<(), CheckedCurrentDeclProjectionError> {
+    let decoded = decode_checked_current_decl_package(bytes)?;
+    if decoded.canonical_bytes != bytes {
+        return Err(CheckedCurrentDeclProjectionError::NonCanonicalPackage);
+    }
+    Ok(())
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -2558,7 +2568,7 @@ fn imported_export_by_name_hash<'a>(
         .find(|export| export.name == name_id && &export.decl_interface_hash == decl_interface_hash)
 }
 
-fn imported_axiom_ref_to_wire(
+pub(crate) fn imported_axiom_ref_to_wire(
     source_index: u64,
     imports: &MachineImportCertificateContext,
     owner: &VerifiedModuleContextEntry,
@@ -2753,6 +2763,310 @@ fn ensure_name_has_module_prefix(
             name: name.clone(),
         })
     }
+}
+
+#[cfg(test)]
+pub(crate) fn encode_checked_current_decl_package_for_test(
+    root_module: &Name,
+    source_index: u64,
+    decl: Decl,
+) -> Vec<u8> {
+    let cert = npa_cert::build_module_cert(
+        npa_cert::CoreModule {
+            name: root_module.clone(),
+            declarations: vec![decl.clone()],
+        },
+        &[],
+    )
+    .expect("test current declaration should build as a standalone certificate");
+    let root_decl = cert
+        .declarations
+        .into_iter()
+        .next()
+        .expect("test certificate should contain the current declaration")
+        .decl;
+    let core_package = canonicalize_core_decl_package_tables_for_test(CoreDeclPackage {
+        name_table: cert.name_table,
+        level_table: cert.level_table,
+        term_table: cert.term_table,
+        root_decl,
+    });
+    let checked =
+        check_current_decl_for_machine_tactic_from_verified_imports(&[], &[], source_index, decl)
+            .expect("test current declaration should pass Phase 4 current checking");
+    let imports = MachineImportCertificateContext::empty();
+    let dependency_report = derive_dependency_report(
+        root_module,
+        source_index,
+        &imports,
+        &[],
+        &core_package,
+        &[],
+        &[],
+    )
+    .expect("test current declaration dependency report should be derivable");
+    let decoded = DecodedCheckedCurrentDeclPackage {
+        source_index,
+        signature: MachineCheckedDeclSignature {
+            name: checked.signature().name().clone(),
+            universe_params: checked.signature().universe_params().to_vec(),
+            ty: checked.signature().ty().clone(),
+            decl_interface_hash: checked.signature().decl_interface_hash(),
+        },
+        signature_canonical_bytes: checked_decl_signature_canonical_bytes(checked.signature()),
+        core_package,
+        dependency_report,
+        prior_chain_fingerprint: checked.prior_chain_fingerprint(),
+        checked_env_fingerprint: checked.checked_env_fingerprint(),
+        canonical_bytes: Vec::new(),
+    };
+    encode_checked_current_decl_package(&decoded)
+}
+
+#[cfg(test)]
+fn canonicalize_core_decl_package_tables_for_test(package: CoreDeclPackage) -> CoreDeclPackage {
+    let mut name_refs = BTreeSet::new();
+    let mut level_refs = BTreeSet::new();
+    let mut term_refs = BTreeSet::new();
+    collect_decl_refs(
+        &package.root_decl,
+        &package.level_table,
+        &package.term_table,
+        &mut name_refs,
+        &mut level_refs,
+        &mut term_refs,
+    )
+    .expect("test current declaration package refs should be collectable");
+
+    let name_map = retained_index_map(package.name_table.len(), &name_refs);
+    let level_map = retained_index_map(package.level_table.len(), &level_refs);
+    let term_map = retained_index_map(package.term_table.len(), &term_refs);
+    let remapped = CoreDeclPackage {
+        name_table: name_refs
+            .iter()
+            .map(|index| package.name_table[*index].clone())
+            .collect(),
+        level_table: level_refs
+            .iter()
+            .map(|index| {
+                remap_level_node_for_test(&package.level_table[*index], &name_map, &level_map)
+            })
+            .collect(),
+        term_table: term_refs
+            .iter()
+            .map(|index| {
+                remap_term_node_for_test(
+                    &package.term_table[*index],
+                    &name_map,
+                    &level_map,
+                    &term_map,
+                )
+            })
+            .collect(),
+        root_decl: remap_decl_payload_for_test(
+            &package.root_decl,
+            &name_map,
+            &level_map,
+            &term_map,
+        ),
+    };
+    validate_core_decl_package(&remapped)
+        .expect("test current declaration package should be canonical after trimming");
+    remapped
+}
+
+#[cfg(test)]
+fn retained_index_map(len: usize, retained: &BTreeSet<usize>) -> Vec<Option<usize>> {
+    let mut map = vec![None; len];
+    for (new_index, old_index) in retained.iter().copied().enumerate() {
+        map[old_index] = Some(new_index);
+    }
+    map
+}
+
+#[cfg(test)]
+fn remap_index_for_test(map: &[Option<usize>], index: usize) -> usize {
+    map.get(index)
+        .and_then(|mapped| *mapped)
+        .expect("test package should only reference retained table entries")
+}
+
+#[cfg(test)]
+fn remap_level_node_for_test(
+    level: &LevelNode,
+    name_map: &[Option<usize>],
+    level_map: &[Option<usize>],
+) -> LevelNode {
+    match level {
+        LevelNode::Zero => LevelNode::Zero,
+        LevelNode::Succ(inner) => LevelNode::Succ(remap_index_for_test(level_map, *inner)),
+        LevelNode::Max(lhs, rhs) => LevelNode::Max(
+            remap_index_for_test(level_map, *lhs),
+            remap_index_for_test(level_map, *rhs),
+        ),
+        LevelNode::IMax(lhs, rhs) => LevelNode::IMax(
+            remap_index_for_test(level_map, *lhs),
+            remap_index_for_test(level_map, *rhs),
+        ),
+        LevelNode::Param(name) => LevelNode::Param(remap_index_for_test(name_map, *name)),
+    }
+}
+
+#[cfg(test)]
+fn remap_term_node_for_test(
+    term: &TermNode,
+    name_map: &[Option<usize>],
+    level_map: &[Option<usize>],
+    term_map: &[Option<usize>],
+) -> TermNode {
+    match term {
+        TermNode::Sort(level) => TermNode::Sort(remap_index_for_test(level_map, *level)),
+        TermNode::BVar(index) => TermNode::BVar(*index),
+        TermNode::Const { global_ref, levels } => TermNode::Const {
+            global_ref: remap_global_ref_for_test(global_ref, name_map),
+            levels: levels
+                .iter()
+                .map(|level| remap_index_for_test(level_map, *level))
+                .collect(),
+        },
+        TermNode::App(fun, arg) => TermNode::App(
+            remap_index_for_test(term_map, *fun),
+            remap_index_for_test(term_map, *arg),
+        ),
+        TermNode::Lam { ty, body } => TermNode::Lam {
+            ty: remap_index_for_test(term_map, *ty),
+            body: remap_index_for_test(term_map, *body),
+        },
+        TermNode::Pi { ty, body } => TermNode::Pi {
+            ty: remap_index_for_test(term_map, *ty),
+            body: remap_index_for_test(term_map, *body),
+        },
+        TermNode::Let { ty, value, body } => TermNode::Let {
+            ty: remap_index_for_test(term_map, *ty),
+            value: remap_index_for_test(term_map, *value),
+            body: remap_index_for_test(term_map, *body),
+        },
+    }
+}
+
+#[cfg(test)]
+fn remap_global_ref_for_test(global_ref: &GlobalRef, name_map: &[Option<usize>]) -> GlobalRef {
+    match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => GlobalRef::Builtin {
+            name: remap_index_for_test(name_map, *name),
+            decl_interface_hash: *decl_interface_hash,
+        },
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => GlobalRef::Imported {
+            import_index: *import_index,
+            name: remap_index_for_test(name_map, *name),
+            decl_interface_hash: *decl_interface_hash,
+        },
+        GlobalRef::Local { decl_index } => GlobalRef::Local {
+            decl_index: *decl_index,
+        },
+        GlobalRef::LocalGenerated { decl_index, name } => GlobalRef::LocalGenerated {
+            decl_index: *decl_index,
+            name: remap_index_for_test(name_map, *name),
+        },
+    }
+}
+
+#[cfg(test)]
+fn remap_decl_payload_for_test(
+    decl: &DeclPayload,
+    name_map: &[Option<usize>],
+    level_map: &[Option<usize>],
+    term_map: &[Option<usize>],
+) -> DeclPayload {
+    match decl {
+        DeclPayload::Axiom {
+            name,
+            universe_params,
+            ty,
+        } => DeclPayload::Axiom {
+            name: remap_index_for_test(name_map, *name),
+            universe_params: remap_name_ids_for_test(universe_params, name_map),
+            ty: remap_index_for_test(term_map, *ty),
+        },
+        DeclPayload::Def {
+            name,
+            universe_params,
+            ty,
+            value,
+            reducibility,
+        } => DeclPayload::Def {
+            name: remap_index_for_test(name_map, *name),
+            universe_params: remap_name_ids_for_test(universe_params, name_map),
+            ty: remap_index_for_test(term_map, *ty),
+            value: remap_index_for_test(term_map, *value),
+            reducibility: *reducibility,
+        },
+        DeclPayload::Theorem {
+            name,
+            universe_params,
+            ty,
+            proof,
+            opacity,
+        } => DeclPayload::Theorem {
+            name: remap_index_for_test(name_map, *name),
+            universe_params: remap_name_ids_for_test(universe_params, name_map),
+            ty: remap_index_for_test(term_map, *ty),
+            proof: remap_index_for_test(term_map, *proof),
+            opacity: *opacity,
+        },
+        DeclPayload::Inductive {
+            name,
+            universe_params,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+        } => DeclPayload::Inductive {
+            name: remap_index_for_test(name_map, *name),
+            universe_params: remap_name_ids_for_test(universe_params, name_map),
+            params: params
+                .iter()
+                .map(|binder| BinderType {
+                    ty: remap_index_for_test(term_map, binder.ty),
+                })
+                .collect(),
+            indices: indices
+                .iter()
+                .map(|binder| BinderType {
+                    ty: remap_index_for_test(term_map, binder.ty),
+                })
+                .collect(),
+            sort: remap_index_for_test(level_map, *sort),
+            constructors: constructors
+                .iter()
+                .map(|constructor| ConstructorSpec {
+                    name: remap_index_for_test(name_map, constructor.name),
+                    ty: remap_index_for_test(term_map, constructor.ty),
+                })
+                .collect(),
+            recursor: recursor.as_ref().map(|recursor| RecursorSpec {
+                name: remap_index_for_test(name_map, recursor.name),
+                universe_params: remap_name_ids_for_test(&recursor.universe_params, name_map),
+                ty: remap_index_for_test(term_map, recursor.ty),
+                rules: recursor.rules,
+            }),
+        },
+    }
+}
+
+#[cfg(test)]
+fn remap_name_ids_for_test(ids: &[usize], name_map: &[Option<usize>]) -> Vec<usize> {
+    ids.iter()
+        .map(|id| remap_index_for_test(name_map, *id))
+        .collect()
 }
 
 #[cfg(test)]

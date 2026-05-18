@@ -698,28 +698,11 @@ pub struct SimpRegistry {
     pub rules: Vec<ResolvedSimpRule>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SimpRuleRef {
     pub name: Name,
     pub decl_interface_hash: Hash,
     pub direction: RewriteDirection,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct SimpRuleKey {
-    name: Name,
-    decl_interface_hash: Hash,
-    direction: RewriteDirection,
-}
-
-impl From<&SimpRuleRef> for SimpRuleKey {
-    fn from(rule: &SimpRuleRef) -> Self {
-        Self {
-            name: rule.name.clone(),
-            decl_interface_hash: rule.decl_interface_hash,
-            direction: rule.direction,
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -5762,7 +5745,9 @@ fn canonicalize_simp_rule_refs(rules: Vec<SimpRuleRef>) -> Result<Vec<SimpRuleRe
     validate_simp_rule_refs(&rules)?;
     let mut keyed = BTreeMap::new();
     for rule in rules {
-        keyed.entry(SimpRuleKey::from(&rule)).or_insert(rule);
+        keyed
+            .entry(simp_rule_ref_canonical_bytes(&rule))
+            .or_insert(rule);
     }
     Ok(keyed.into_values().collect())
 }
@@ -6537,7 +6522,7 @@ fn resolve_simp_registry(
             kernel_env, imports, current, eq_family, rule,
         )?);
     }
-    resolved_rules.sort_by_key(|rule| SimpRuleKey::from(&rule.key));
+    resolved_rules.sort_by_key(|rule| simp_rule_ref_canonical_bytes(&rule.key));
     Ok(SimpRegistry {
         rules: resolved_rules,
     })
@@ -7760,8 +7745,8 @@ fn machine_term_frontend_diag_with_optional_name(
 
 fn canonicalize_imports(mut imports: Vec<VerifiedImportRef>) -> Vec<VerifiedImportRef> {
     imports.sort_by(|lhs, rhs| {
-        lhs.module
-            .cmp(&rhs.module)
+        name_canonical_bytes(&lhs.module)
+            .cmp(&name_canonical_bytes(&rhs.module))
             .then_with(|| lhs.export_hash.cmp(&rhs.export_hash))
             .then_with(|| lhs.certificate_hash.cmp(&rhs.certificate_hash))
     });
@@ -8741,15 +8726,32 @@ fn level_arg_list_canonical_bytes(levels: &[Level]) -> Vec<u8> {
 }
 
 pub fn machine_tactic_options_hash(options: &MachineTacticOptions) -> Hash {
+    hash_with_domain(
+        "npa.phase4.machine-tactic-options.v1",
+        &machine_tactic_options_canonical_bytes(options),
+    )
+}
+
+pub fn machine_tactic_options_canonical_bytes(options: &MachineTacticOptions) -> Vec<u8> {
     let mut out = tagged_bytes("npa.phase4.tactic-options.v1");
     encode_machine_tactic_options_to(&mut out, options);
-    hash_with_domain("npa.phase4.machine-tactic-options.v1", &out)
+    out
 }
 
 pub fn simp_registry_hash(registry: &SimpRegistry) -> Hash {
     let mut out = Vec::new();
     encode_simp_registry_to(&mut out, registry);
     hash_with_domain("npa.phase4.simp-registry.v1", &out)
+}
+
+pub fn resolved_family_options_canonical_bytes(
+    eq_family: Option<&ResolvedEqFamily>,
+    nat_family: Option<&ResolvedNatFamily>,
+) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.phase4.resolved-family-options.v1");
+    encode_option_resolved_eq_to(&mut out, eq_family);
+    encode_option_resolved_nat_to(&mut out, nat_family);
+    out
 }
 
 pub fn machine_proof_delta_hash(delta: &MachineProofDelta) -> Hash {
@@ -9208,6 +9210,12 @@ fn encode_simp_rule_ref_to(out: &mut Vec<u8>, rule: &SimpRuleRef) {
     encode_rewrite_direction_to(out, rule.direction);
 }
 
+fn simp_rule_ref_canonical_bytes(rule: &SimpRuleRef) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_simp_rule_ref_to(&mut out, rule);
+    out
+}
+
 fn encode_option_eq_ref_to(out: &mut Vec<u8>, value: Option<&EqFamilyRef>) {
     match value {
         Some(value) => {
@@ -9291,6 +9299,12 @@ fn encode_name_to(out: &mut Vec<u8>, name: &Name) {
     for component in &name.0 {
         encode_string_to(out, component);
     }
+}
+
+fn name_canonical_bytes(name: &Name) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_name_to(&mut out, name);
+    out
 }
 
 fn encode_option_hash_to(out: &mut Vec<u8>, value: Option<&Hash>) {
@@ -13114,6 +13128,41 @@ mod tests {
         assert_eq!(state_ab.fingerprint, state_ba.fingerprint);
         assert_eq!(state_ab.env.imports[0].module, Name::from_dotted("A"));
         assert_eq!(state_ab.env.imports[1].module, Name::from_dotted("B"));
+    }
+
+    #[test]
+    fn import_order_uses_name_canonical_bytes() {
+        let import_b =
+            VerifiedImportRef::from_verified_module(&verified_axiom_module("B", "B.T")).unwrap();
+        let import_aa =
+            VerifiedImportRef::from_verified_module(&verified_axiom_module("AA", "AA.T")).unwrap();
+
+        let ordered = canonicalize_imports(vec![import_aa.clone(), import_b.clone()]);
+
+        assert_eq!(ordered[0].module, Name::from_dotted("B"));
+        assert_eq!(ordered[1].module, Name::from_dotted("AA"));
+    }
+
+    #[test]
+    fn simp_rule_order_uses_name_canonical_bytes() {
+        let hash_b = [0x0b; 32];
+        let hash_aa = [0xaa; 32];
+        let ordered = canonicalize_simp_rule_refs(vec![
+            SimpRuleRef {
+                name: Name::from_dotted("AA.rule"),
+                decl_interface_hash: hash_aa,
+                direction: RewriteDirection::Forward,
+            },
+            SimpRuleRef {
+                name: Name::from_dotted("B.rule"),
+                decl_interface_hash: hash_b,
+                direction: RewriteDirection::Forward,
+            },
+        ])
+        .unwrap();
+
+        assert_eq!(ordered[0].name, Name::from_dotted("B.rule"));
+        assert_eq!(ordered[1].name, Name::from_dotted("AA.rule"));
     }
 
     #[test]

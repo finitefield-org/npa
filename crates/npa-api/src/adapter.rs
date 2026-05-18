@@ -7,8 +7,8 @@ use npa_tactic::{
     validate_machine_proof_state, validate_machine_tactic_candidate, CandidateApplyArg,
     CandidateRewriteRuleRef, CheckedCurrentDecl, GoalId, MachineProofDelta, MachineProofSpec,
     MachineProofState, MachineTactic, MachineTacticCandidate, MachineTacticDiagnostic,
-    MachineTacticDiagnosticKind, MachineTacticOptions, RawMachineTerm, TacticBudget,
-    TacticFuelKind, VerifiedImportRef,
+    MachineTacticDiagnosticKind, MachineTacticOptions, RawMachineTerm, ResolvedEqFamily,
+    ResolvedNatFamily, TacticBudget, TacticFuelKind, VerifiedImportRef,
 };
 
 use crate::current::MachineAxiomRefWire;
@@ -141,6 +141,9 @@ pub type Phase4AdapterResult<T> = Result<T, Box<Phase4AdapterError>>;
 pub struct Phase4StartProofOutput {
     pub state: MachineProofState,
     pub state_fingerprint: Hash,
+    pub options: MachineTacticOptions,
+    pub resolved_eq_family: Option<ResolvedEqFamily>,
+    pub resolved_nat_family: Option<ResolvedNatFamily>,
     pub options_fingerprint: Hash,
     pub env_fingerprint: Hash,
     pub simp_registry_hash: Hash,
@@ -181,6 +184,9 @@ pub fn phase4_start_machine_proof(
     start_machine_proof(spec, imports, checked_current_decls, options)
         .map(|state| Phase4StartProofOutput {
             state_fingerprint: state.fingerprint,
+            options: state.env.options.clone(),
+            resolved_eq_family: state.env.eq_family.clone(),
+            resolved_nat_family: state.env.nat_family.clone(),
             options_fingerprint: state.env.options_fingerprint,
             env_fingerprint: state.env.env_fingerprint,
             simp_registry_hash: npa_tactic::simp_registry_hash(&state.env.simp_registry),
