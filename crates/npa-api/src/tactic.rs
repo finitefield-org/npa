@@ -4,9 +4,9 @@ use std::time::{Duration, Instant};
 use npa_cert::{Hash, Name};
 use npa_kernel::Level;
 use npa_tactic::{
-    tactic_budget_hash, CandidateApplyArg, CandidateRewriteRuleRef, MachineTacticCandidate,
-    MachineTacticDiagnostic, MachineTacticDiagnosticKind, RawMachineTerm, RewriteDirection,
-    RewriteSite, SimpRuleRef, TacticBudget, TacticHead,
+    tactic_budget_hash, CandidateApplyArg, CandidateRewriteRuleRef, MachineTacticBatchPolicy,
+    MachineTacticCandidate, MachineTacticDiagnostic, MachineTacticDiagnosticKind, RawMachineTerm,
+    RewriteDirection, RewriteSite, SimpRuleRef, TacticBudget, TacticHead,
 };
 
 use crate::adapter::{
@@ -21,10 +21,10 @@ use crate::snapshot::{
 };
 use crate::types::{
     is_machine_local_name, is_machine_universe_param_name, parse_goal_id_wire,
-    parse_machine_surface_renderable_name_wire, HashString, MachineApiErrorResponse,
-    MachineApiErrorWire, MachineApiResponseStatus, MachineApiSchedulerResponse,
-    MachineProofSession, MachineSchedulerArtifact, MachineSchedulerArtifactKind,
-    MachineSchedulerArtifactScope, SessionId, SnapshotId,
+    parse_machine_surface_renderable_name_wire, HashString, MachineApiCompactErrorWire,
+    MachineApiErrorResponse, MachineApiErrorWire, MachineApiResponseStatus,
+    MachineApiSchedulerResponse, MachineProofSession, MachineSchedulerArtifact,
+    MachineSchedulerArtifactKind, MachineSchedulerArtifactScope, SessionId, SnapshotId,
 };
 use crate::validation::{
     delayed_json_payload, parse_request_body, parse_strict_u64_token, validate_json_object,
@@ -63,6 +63,36 @@ const BUDGET_FIELDS: &[FieldSpec] = &[
 const RUN_SCHEDULER_FIELDS: &[FieldSpec] = &[
     FieldSpec::optional(
         "timeout_ms",
+        JsonFieldType::UnsignedInteger { max: u64::MAX },
+    ),
+    FieldSpec::optional(
+        "max_memory_mb",
+        JsonFieldType::UnsignedInteger { max: u64::MAX },
+    ),
+];
+
+const BATCH_POLICY_FIELDS: &[FieldSpec] = &[
+    FieldSpec::required(
+        "max_evaluated_candidates",
+        JsonFieldType::UnsignedInteger { max: u64::MAX },
+    ),
+    FieldSpec::required(
+        "stop_after_successes",
+        JsonFieldType::UnsignedInteger { max: u64::MAX },
+    ),
+    FieldSpec::required(
+        "stop_after_failures",
+        JsonFieldType::UnsignedInteger { max: u64::MAX },
+    ),
+];
+
+const BATCH_SCHEDULER_FIELDS: &[FieldSpec] = &[
+    FieldSpec::optional(
+        "per_candidate_timeout_ms",
+        JsonFieldType::UnsignedInteger { max: u64::MAX },
+    ),
+    FieldSpec::optional(
+        "batch_timeout_ms",
         JsonFieldType::UnsignedInteger { max: u64::MAX },
     ),
     FieldSpec::optional(
@@ -217,6 +247,85 @@ pub struct MachineRunSchedulerLimits {
     pub max_memory_mb: Option<u64>,
 }
 
+pub type MachineTacticBatchResponse = MachineApiResponseEnvelope<
+    MachineTacticBatchOkFields,
+    MachineApiErrorWire,
+    (),
+    MachineTacticBatchSchedulerFields,
+>;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchOkFields {
+    pub previous_state_fingerprint: Hash,
+    pub deterministic_budget_hash: Hash,
+    pub results: Vec<MachineTacticBatchItemResponse>,
+    pub success_count: u32,
+    pub failure_count: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineTacticBatchItemResponse {
+    Success {
+        candidate_id: String,
+        candidate_hash: Hash,
+        next_snapshot_id: SnapshotId,
+        next_state_fingerprint: Hash,
+        proof_delta_hash: Hash,
+    },
+    Error {
+        candidate_id: String,
+        candidate_hash: Option<Hash>,
+        diagnostic: MachineApiCompactErrorWire,
+    },
+}
+
+impl MachineTacticBatchItemResponse {
+    pub const fn is_success(&self) -> bool {
+        matches!(self, Self::Success { .. })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchSchedulerFields {
+    pub previous_state_fingerprint: Hash,
+    pub deterministic_budget_hash: Hash,
+    pub completed_prefix_len: u32,
+    pub results: Vec<MachineTacticBatchItemResponse>,
+    pub success_count: u32,
+    pub failure_count: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchError {
+    pub diagnostic: MachineApiDiagnosticProjection,
+    pub response: MachineTacticBatchResponse,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchRequest<'src> {
+    pub session_id: SessionId,
+    pub snapshot_id: SnapshotId,
+    pub state_fingerprint: Hash,
+    pub goal_id: npa_tactic::GoalId,
+    pub candidates: Vec<MachineTacticBatchCandidateRequest<'src>>,
+    pub deterministic_budget: TacticBudget,
+    pub batch_policy: MachineTacticBatchPolicy,
+    pub scheduler_limits: MachineBatchSchedulerLimits,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineTacticBatchCandidateRequest<'src> {
+    pub candidate_id: String,
+    pub candidate: DelayedJsonPayload<'src>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct MachineBatchSchedulerLimits {
+    pub per_candidate_timeout_ms: Option<u64>,
+    pub batch_timeout_ms: Option<u64>,
+    pub max_memory_mb: Option<u64>,
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 struct RunErrorCorrelation {
     unchanged_state_fingerprint: Option<Hash>,
@@ -251,6 +360,33 @@ pub fn run_machine_tactic_request_in_sessions<'session>(
     };
 
     run_machine_tactic_request_parsed(session, request)
+}
+
+pub fn run_machine_tactic_batch_request(
+    source: &str,
+    session: &mut MachineProofSession,
+) -> Result<MachineTacticBatchResponse, Box<MachineTacticBatchError>> {
+    run_machine_tactic_batch_request_in_sessions(source, std::iter::once(session))
+}
+
+pub fn run_machine_tactic_batch_request_in_sessions<'session>(
+    source: &str,
+    sessions: impl IntoIterator<Item = &'session mut MachineProofSession>,
+) -> Result<MachineTacticBatchResponse, Box<MachineTacticBatchError>> {
+    let request = parse_machine_tactic_batch_request(source).map_err(batch_request_error)?;
+    let Some(session) = sessions
+        .into_iter()
+        .find(|session| session.session_id == request.session_id)
+    else {
+        return Err(batch_plain_error(
+            MachineApiErrorKind::UnknownSession,
+            MachineApiDiagnosticPhase::SessionLookup,
+            format!("unknown session {}", request.session_id.wire()),
+            None,
+        ));
+    };
+
+    run_machine_tactic_batch_request_parsed(session, request)
 }
 
 pub fn parse_machine_tactic_run_request<'src>(
@@ -343,6 +479,92 @@ pub fn parse_machine_tactic_run_request<'src>(
         goal_id,
         candidate,
         deterministic_budget,
+        scheduler_limits,
+    })
+}
+
+pub fn parse_machine_tactic_batch_request<'src>(
+    source: &'src str,
+) -> Result<MachineTacticBatchRequest<'src>, MachineApiRequestError> {
+    let doc = parse_request_body(source, MachineApiErrorKind::InvalidBatchPolicy)?;
+    let members = validate_batch_top_level(doc.root())?;
+
+    let session_id = SessionId::parse(required_string_member(
+        members,
+        "session_id",
+        MachineApiErrorKind::InvalidBatchPolicy,
+        &JsonPath::root().field("session_id"),
+    )?)
+    .map_err(|_| grammar_error("session_id", MachineApiErrorKind::InvalidBatchPolicy))?;
+    let snapshot_id = SnapshotId::parse(required_string_member(
+        members,
+        "snapshot_id",
+        MachineApiErrorKind::InvalidBatchPolicy,
+        &JsonPath::root().field("snapshot_id"),
+    )?)
+    .map_err(|_| grammar_error("snapshot_id", MachineApiErrorKind::InvalidBatchPolicy))?;
+    let state_fingerprint = HashString::parse(required_string_member(
+        members,
+        "state_fingerprint",
+        MachineApiErrorKind::InvalidBatchPolicy,
+        &JsonPath::root().field("state_fingerprint"),
+    )?)
+    .map_err(|_| grammar_error("state_fingerprint", MachineApiErrorKind::InvalidBatchPolicy))?
+    .digest();
+    let goal_id = parse_goal_id_wire(required_string_member(
+        members,
+        "goal_id",
+        MachineApiErrorKind::InvalidBatchPolicy,
+        &JsonPath::root().field("goal_id"),
+    )?)
+    .map_err(|_| grammar_error("goal_id", MachineApiErrorKind::InvalidBatchPolicy))?;
+
+    let candidates = parse_batch_candidates(
+        required_value_member(
+            members,
+            "candidates",
+            MachineApiErrorKind::InvalidBatchPolicy,
+            &JsonPath::root().field("candidates"),
+        )?,
+        &JsonPath::root().field("candidates"),
+    )?;
+
+    let budget_value = required_value_member(
+        members,
+        "deterministic_budget",
+        MachineApiErrorKind::InvalidBudget,
+        &JsonPath::root().field("deterministic_budget"),
+    )?;
+    let deterministic_budget = parse_deterministic_budget(
+        budget_value,
+        &JsonPath::root().field("deterministic_budget"),
+    )?;
+
+    let batch_policy = parse_batch_policy(
+        required_value_member(
+            members,
+            "batch_policy",
+            MachineApiErrorKind::InvalidBatchPolicy,
+            &JsonPath::root().field("batch_policy"),
+        )?,
+        &JsonPath::root().field("batch_policy"),
+    )?;
+
+    let scheduler_limits = match member_value(members, "scheduler_limits") {
+        Some(value) => {
+            parse_batch_scheduler_limits(value, &JsonPath::root().field("scheduler_limits"))?
+        }
+        None => MachineBatchSchedulerLimits::default(),
+    };
+
+    Ok(MachineTacticBatchRequest {
+        session_id,
+        snapshot_id,
+        state_fingerprint,
+        goal_id,
+        candidates,
+        deterministic_budget,
+        batch_policy,
         scheduler_limits,
     })
 }
@@ -512,27 +734,331 @@ fn run_machine_tactic_request_parsed(
     ))
 }
 
+fn run_machine_tactic_batch_request_parsed(
+    session: &mut MachineProofSession,
+    request: MachineTacticBatchRequest<'_>,
+) -> Result<MachineTacticBatchResponse, Box<MachineTacticBatchError>> {
+    if session.snapshots.session_id() != &session.session_id {
+        return Err(batch_plain_error(
+            MachineApiErrorKind::InvalidMachineProofState,
+            MachineApiDiagnosticPhase::SnapshotLookup,
+            "session snapshot store belongs to a different session",
+            None,
+        ));
+    }
+
+    let mut scheduler_observation = BatchSchedulerObservationContext::start();
+    let context = MachineSnapshotMaterializationContext {
+        session_id: &session.session_id,
+        display_scope: &session.machine_display_render_scope,
+        callable_interface_table: &session.machine_surface_callable_interface_table,
+    };
+    let input_state = {
+        let entry = session
+            .snapshots
+            .lookup_checked(&context, request.snapshot_id, request.state_fingerprint)
+            .map_err(batch_snapshot_lookup_error)?;
+        if !entry
+            .materialized_view_payload
+            .open_goals
+            .contains(&request.goal_id)
+        {
+            return Err(batch_plain_error(
+                MachineApiErrorKind::GoalNotOpen,
+                MachineApiDiagnosticPhase::SnapshotLookup,
+                format!("goal {} is not open", request.goal_id.0),
+                Some(request.goal_id),
+            ));
+        }
+        entry.executable_state_payload.clone()
+    };
+
+    let deterministic_budget_hash = tactic_budget_hash(request.deterministic_budget);
+    let candidate_count = request.candidates.len();
+    let mut results = Vec::new();
+    let mut success_count = 0u32;
+    let mut failure_count = 0u32;
+    let mut evaluated_count = 0u32;
+
+    if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+        return Ok(batch_scheduler_stop(
+            request.state_fingerprint,
+            deterministic_budget_hash,
+            results,
+            success_count,
+            failure_count,
+            stop,
+        ));
+    }
+
+    for (index, item) in request.candidates.into_iter().enumerate() {
+        if batch_policy_stop(
+            evaluated_count,
+            success_count,
+            failure_count,
+            candidate_count,
+            request.batch_policy,
+        ) {
+            break;
+        }
+
+        scheduler_observation.begin_candidate();
+        if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+            return Ok(batch_scheduler_stop(
+                request.state_fingerprint,
+                deterministic_budget_hash,
+                results,
+                success_count,
+                failure_count,
+                stop,
+            ));
+        }
+
+        let candidate_id = item.candidate_id;
+        let candidate_tactic_kind = candidate_tactic_kind_for_diagnostic(item.candidate.raw);
+        let candidate_path = JsonPath::root()
+            .field("candidates")
+            .index(index)
+            .field("candidate");
+        let candidate = match parse_candidate_payload_at(
+            item.candidate.raw,
+            &session.root.universe_params,
+            candidate_tactic_kind,
+            &candidate_path,
+        ) {
+            Ok(candidate) => candidate,
+            Err(error) => {
+                results.push(batch_candidate_request_error_item(
+                    candidate_id,
+                    error,
+                    request.goal_id,
+                    candidate_tactic_kind,
+                ));
+                evaluated_count += 1;
+                failure_count += 1;
+                if batch_policy_stop(
+                    evaluated_count,
+                    success_count,
+                    failure_count,
+                    candidate_count,
+                    request.batch_policy,
+                ) {
+                    break;
+                }
+                if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+                    return Ok(batch_scheduler_stop(
+                        request.state_fingerprint,
+                        deterministic_budget_hash,
+                        results,
+                        success_count,
+                        failure_count,
+                        stop,
+                    ));
+                }
+                continue;
+            }
+        };
+
+        if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+            return Ok(batch_scheduler_stop(
+                request.state_fingerprint,
+                deterministic_budget_hash,
+                results,
+                success_count,
+                failure_count,
+                stop,
+            ));
+        }
+
+        let validated = match phase4_validate_machine_tactic_candidate(request.goal_id, candidate) {
+            Ok(validated) => validated,
+            Err(error) => {
+                results.push(batch_adapter_error_item(candidate_id, error));
+                evaluated_count += 1;
+                failure_count += 1;
+                if batch_policy_stop(
+                    evaluated_count,
+                    success_count,
+                    failure_count,
+                    candidate_count,
+                    request.batch_policy,
+                ) {
+                    break;
+                }
+                if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+                    return Ok(batch_scheduler_stop(
+                        request.state_fingerprint,
+                        deterministic_budget_hash,
+                        results,
+                        success_count,
+                        failure_count,
+                        stop,
+                    ));
+                }
+                continue;
+            }
+        };
+
+        if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+            return Ok(batch_scheduler_stop(
+                request.state_fingerprint,
+                deterministic_budget_hash,
+                results,
+                success_count,
+                failure_count,
+                stop,
+            ));
+        }
+
+        let tactic_kind = validated.tactic_kind;
+        let candidate_hash = validated.candidate_hash;
+        let run = match phase4_run_machine_tactic_with_budget(
+            &input_state,
+            validated.tactic,
+            request.deterministic_budget,
+        ) {
+            Ok(run) => run,
+            Err(error) => {
+                results.push(batch_adapter_error_item(candidate_id, error));
+                evaluated_count += 1;
+                failure_count += 1;
+                if batch_policy_stop(
+                    evaluated_count,
+                    success_count,
+                    failure_count,
+                    candidate_count,
+                    request.batch_policy,
+                ) {
+                    break;
+                }
+                if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+                    return Ok(batch_scheduler_stop(
+                        request.state_fingerprint,
+                        deterministic_budget_hash,
+                        results,
+                        success_count,
+                        failure_count,
+                        stop,
+                    ));
+                }
+                continue;
+            }
+        };
+
+        if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+            return Ok(batch_scheduler_stop(
+                request.state_fingerprint,
+                deterministic_budget_hash,
+                results,
+                success_count,
+                failure_count,
+                stop,
+            ));
+        }
+
+        match session.snapshots.insert_state(&context, run.state) {
+            Ok(next_snapshot) => {
+                results.push(MachineTacticBatchItemResponse::Success {
+                    candidate_id,
+                    candidate_hash,
+                    next_snapshot_id: next_snapshot.snapshot_id,
+                    next_state_fingerprint: next_snapshot.state_fingerprint,
+                    proof_delta_hash: run.proof_delta_hash,
+                });
+                evaluated_count += 1;
+                success_count += 1;
+            }
+            Err(MachineSnapshotStoreError::SnapshotQuotaExceeded { .. }) => {
+                return Ok(batch_scheduler_stop(
+                    request.state_fingerprint,
+                    deterministic_budget_hash,
+                    results,
+                    success_count,
+                    failure_count,
+                    BatchSchedulerStop {
+                        kind: MachineSchedulerArtifactKind::ResourceLimitExceeded,
+                        scope: MachineSchedulerArtifactScope::Batch,
+                    },
+                ));
+            }
+            Err(error) => {
+                results.push(batch_next_snapshot_error_item(
+                    candidate_id,
+                    error,
+                    request.goal_id,
+                    tactic_kind,
+                    candidate_hash,
+                ));
+                evaluated_count += 1;
+                failure_count += 1;
+            }
+        }
+
+        if batch_policy_stop(
+            evaluated_count,
+            success_count,
+            failure_count,
+            candidate_count,
+            request.batch_policy,
+        ) {
+            break;
+        }
+        if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+            return Ok(batch_scheduler_stop(
+                request.state_fingerprint,
+                deterministic_budget_hash,
+                results,
+                success_count,
+                failure_count,
+                stop,
+            ));
+        }
+    }
+
+    Ok(MachineApiResponseEnvelope::Ok(
+        crate::MachineApiOkResponse {
+            status: MachineApiResponseStatus::Ok,
+            endpoint_fields: MachineTacticBatchOkFields {
+                previous_state_fingerprint: request.state_fingerprint,
+                deterministic_budget_hash,
+                results,
+                success_count,
+                failure_count,
+            },
+        },
+    ))
+}
+
 fn parse_candidate_payload(
     raw: &str,
     universe_params: &[String],
     tactic_kind: Option<MachineApiTacticKind>,
 ) -> Result<MachineTacticCandidate, MachineApiRequestError> {
+    parse_candidate_payload_at(
+        raw,
+        universe_params,
+        tactic_kind,
+        &JsonPath::root().field("candidate"),
+    )
+}
+
+fn parse_candidate_payload_at(
+    raw: &str,
+    universe_params: &[String],
+    tactic_kind: Option<MachineApiTacticKind>,
+    path: &JsonPath,
+) -> Result<MachineTacticCandidate, MachineApiRequestError> {
     let doc = JsonDocument::parse(raw).map_err(|err| {
         MachineApiRequestError::new(
             MachineApiErrorKind::InvalidCandidate,
-            JsonPath::root().field("candidate"),
+            path.clone(),
             MachineApiRequestErrorReason::JsonParse {
                 offset: err.offset,
                 kind: err.kind,
             },
         )
     })?;
-    parse_candidate_value(
-        doc.root(),
-        universe_params,
-        tactic_kind,
-        &JsonPath::root().field("candidate"),
-    )
+    parse_candidate_value(doc.root(), universe_params, tactic_kind, path)
 }
 
 fn parse_candidate_value(
@@ -1119,6 +1645,145 @@ fn validate_run_top_level<'value, 'src>(
     Ok(members)
 }
 
+fn validate_batch_top_level<'value, 'src>(
+    root: &'value JsonValue<'src>,
+) -> Result<&'value [JsonMember<'src>], MachineApiRequestError> {
+    let members = root.object_members().ok_or_else(|| {
+        MachineApiRequestError::new(
+            MachineApiErrorKind::InvalidBatchPolicy,
+            JsonPath::root(),
+            MachineApiRequestErrorReason::ExpectedObject {
+                actual: root.kind(),
+            },
+        )
+    })?;
+    reject_duplicate_keys(
+        members,
+        MachineApiErrorKind::InvalidBatchPolicy,
+        &JsonPath::root(),
+    )?;
+    let allowed = [
+        "session_id",
+        "snapshot_id",
+        "state_fingerprint",
+        "goal_id",
+        "candidates",
+        "deterministic_budget",
+        "batch_policy",
+        "scheduler_limits",
+    ];
+    for member in members {
+        if !allowed.contains(&member.key()) {
+            return Err(MachineApiRequestError::new(
+                MachineApiErrorKind::InvalidBatchPolicy,
+                JsonPath::root().field(member.key()),
+                MachineApiRequestErrorReason::UnknownField {
+                    field: member.key().to_owned(),
+                },
+            ));
+        }
+    }
+    Ok(members)
+}
+
+fn parse_batch_candidates<'src>(
+    value: &JsonValue<'src>,
+    path: &JsonPath,
+) -> Result<Vec<MachineTacticBatchCandidateRequest<'src>>, MachineApiRequestError> {
+    if value.kind() == JsonValueKind::Null {
+        return Err(null_field(
+            "candidates",
+            MachineApiErrorKind::InvalidBatchPolicy,
+            path,
+        ));
+    }
+    let elements = value.array_elements().ok_or_else(|| {
+        type_mismatch(
+            "candidates",
+            JsonFieldType::Array,
+            value,
+            MachineApiErrorKind::InvalidBatchPolicy,
+            path,
+        )
+    })?;
+    if elements.is_empty() || elements.len() > 256 {
+        return Err(MachineApiRequestError::new(
+            MachineApiErrorKind::InvalidBatchPolicy,
+            path.clone(),
+            MachineApiRequestErrorReason::TypeMismatch {
+                field: "candidates",
+                expected: JsonFieldType::Array,
+                actual: JsonValueKind::Array,
+            },
+        ));
+    }
+
+    let mut ids = BTreeSet::new();
+    let mut candidates = Vec::with_capacity(elements.len());
+    for (index, item) in elements.iter().enumerate() {
+        let item_path = path.index(index);
+        let members = item.object_members().ok_or_else(|| {
+            MachineApiRequestError::new(
+                MachineApiErrorKind::InvalidBatchPolicy,
+                item_path.clone(),
+                MachineApiRequestErrorReason::ExpectedObject {
+                    actual: item.kind(),
+                },
+            )
+        })?;
+        reject_duplicate_keys(members, MachineApiErrorKind::InvalidBatchPolicy, &item_path)?;
+        for member in members {
+            if !matches!(member.key(), "candidate_id" | "candidate") {
+                return Err(MachineApiRequestError::new(
+                    MachineApiErrorKind::InvalidBatchPolicy,
+                    item_path.field(member.key()),
+                    MachineApiRequestErrorReason::UnknownField {
+                        field: member.key().to_owned(),
+                    },
+                ));
+            }
+        }
+
+        let candidate_id = string_value(
+            member_value(members, "candidate_id").ok_or_else(|| {
+                MachineApiRequestError::new(
+                    MachineApiErrorKind::InvalidBatchPolicy,
+                    item_path.field("candidate_id"),
+                    MachineApiRequestErrorReason::MissingField {
+                        field: "candidate_id",
+                    },
+                )
+            })?,
+            "candidate_id",
+            MachineApiErrorKind::InvalidBatchPolicy,
+            &item_path.field("candidate_id"),
+        )?;
+        validate_machine_candidate_id(candidate_id, &item_path.field("candidate_id"))?;
+        if !ids.insert(candidate_id.to_owned()) {
+            return Err(MachineApiRequestError::new(
+                MachineApiErrorKind::InvalidBatchPolicy,
+                item_path.field("candidate_id"),
+                MachineApiRequestErrorReason::DuplicateKey {
+                    key: candidate_id.to_owned(),
+                },
+            ));
+        }
+
+        let candidate = member_value(members, "candidate").ok_or_else(|| {
+            MachineApiRequestError::new(
+                MachineApiErrorKind::InvalidBatchPolicy,
+                item_path.field("candidate"),
+                MachineApiRequestErrorReason::MissingField { field: "candidate" },
+            )
+        })?;
+        candidates.push(MachineTacticBatchCandidateRequest {
+            candidate_id: candidate_id.to_owned(),
+            candidate: delayed_json_payload(candidate),
+        });
+    }
+    Ok(candidates)
+}
+
 fn parse_deterministic_budget(
     value: &JsonValue<'_>,
     path: &JsonPath,
@@ -1138,6 +1803,68 @@ fn parse_deterministic_budget(
     })
 }
 
+fn parse_batch_policy(
+    value: &JsonValue<'_>,
+    path: &JsonPath,
+) -> Result<MachineTacticBatchPolicy, MachineApiRequestError> {
+    let object = validate_json_object(
+        value,
+        ObjectSchema::new(MachineApiErrorKind::InvalidBatchPolicy, BATCH_POLICY_FIELDS),
+        path,
+    )?;
+    Ok(MachineTacticBatchPolicy {
+        max_evaluated_candidates: required_batch_policy_u32(
+            &object,
+            "max_evaluated_candidates",
+            &path.field("max_evaluated_candidates"),
+        )?,
+        stop_after_successes: required_batch_policy_u32(
+            &object,
+            "stop_after_successes",
+            &path.field("stop_after_successes"),
+        )?,
+        stop_after_failures: required_batch_policy_u32(
+            &object,
+            "stop_after_failures",
+            &path.field("stop_after_failures"),
+        )?,
+    })
+}
+
+fn required_batch_policy_u32(
+    object: &crate::validation::ValidatedObject<'_, '_>,
+    field: &'static str,
+    path: &JsonPath,
+) -> Result<u32, MachineApiRequestError> {
+    let raw = object
+        .field(field)
+        .and_then(JsonValue::number_raw)
+        .expect("schema checked required batch policy u64 field");
+    let parsed = parse_strict_u64_token(raw, 256).map_err(|error| {
+        MachineApiRequestError::new(
+            MachineApiErrorKind::InvalidBatchPolicy,
+            path.clone(),
+            MachineApiRequestErrorReason::InvalidUnsignedInteger {
+                field,
+                raw: raw.to_owned(),
+                error,
+            },
+        )
+    })?;
+    if parsed == 0 {
+        return Err(MachineApiRequestError::new(
+            MachineApiErrorKind::InvalidBatchPolicy,
+            path.clone(),
+            MachineApiRequestErrorReason::InvalidUnsignedInteger {
+                field,
+                raw: raw.to_owned(),
+                error: StrictUnsignedIntegerError::InvalidGrammar,
+            },
+        ));
+    }
+    Ok(parsed as u32)
+}
+
 fn parse_run_scheduler_limits(
     value: &JsonValue<'_>,
     path: &JsonPath,
@@ -1152,6 +1879,37 @@ fn parse_run_scheduler_limits(
     )?;
     Ok(MachineRunSchedulerLimits {
         timeout_ms: optional_positive_u64(&object, "timeout_ms", &path.field("timeout_ms"))?,
+        max_memory_mb: optional_positive_u64(
+            &object,
+            "max_memory_mb",
+            &path.field("max_memory_mb"),
+        )?,
+    })
+}
+
+fn parse_batch_scheduler_limits(
+    value: &JsonValue<'_>,
+    path: &JsonPath,
+) -> Result<MachineBatchSchedulerLimits, MachineApiRequestError> {
+    let object = validate_json_object(
+        value,
+        ObjectSchema::new(
+            MachineApiErrorKind::InvalidSchedulerLimits,
+            BATCH_SCHEDULER_FIELDS,
+        ),
+        path,
+    )?;
+    Ok(MachineBatchSchedulerLimits {
+        per_candidate_timeout_ms: optional_positive_u64(
+            &object,
+            "per_candidate_timeout_ms",
+            &path.field("per_candidate_timeout_ms"),
+        )?,
+        batch_timeout_ms: optional_positive_u64(
+            &object,
+            "batch_timeout_ms",
+            &path.field("batch_timeout_ms"),
+        )?,
         max_memory_mb: optional_positive_u64(
             &object,
             "max_memory_mb",
@@ -1197,6 +1955,80 @@ fn observe_run_scheduler_limits(
     if let Some(timeout_ms) = limits.timeout_ms {
         if elapsed >= Duration::from_millis(timeout_ms) {
             return Some(MachineSchedulerArtifactKind::Timeout);
+        }
+    }
+
+    None
+}
+
+#[derive(Clone, Copy)]
+struct BatchSchedulerObservationContext {
+    batch_started_at: Instant,
+    candidate_started_at: Option<Instant>,
+    memory_usage_bytes: fn() -> Option<u64>,
+}
+
+impl BatchSchedulerObservationContext {
+    fn start() -> Self {
+        Self {
+            batch_started_at: Instant::now(),
+            candidate_started_at: None,
+            memory_usage_bytes: current_process_resident_bytes,
+        }
+    }
+
+    fn begin_candidate(&mut self) {
+        self.candidate_started_at = Some(Instant::now());
+    }
+
+    fn observe(self, limits: MachineBatchSchedulerLimits) -> Option<BatchSchedulerStop> {
+        observe_batch_scheduler_limits(
+            limits,
+            self.batch_started_at.elapsed(),
+            self.candidate_started_at
+                .map(|started_at| started_at.elapsed()),
+            (self.memory_usage_bytes)(),
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct BatchSchedulerStop {
+    kind: MachineSchedulerArtifactKind,
+    scope: MachineSchedulerArtifactScope,
+}
+
+fn observe_batch_scheduler_limits(
+    limits: MachineBatchSchedulerLimits,
+    batch_elapsed: Duration,
+    candidate_elapsed: Option<Duration>,
+    memory_usage_bytes: Option<u64>,
+) -> Option<BatchSchedulerStop> {
+    if let (Some(limit_mb), Some(usage_bytes)) = (limits.max_memory_mb, memory_usage_bytes) {
+        if usage_bytes > memory_limit_bytes(limit_mb) {
+            return Some(BatchSchedulerStop {
+                kind: MachineSchedulerArtifactKind::ResourceLimitExceeded,
+                scope: MachineSchedulerArtifactScope::Batch,
+            });
+        }
+    }
+
+    if let Some(timeout_ms) = limits.batch_timeout_ms {
+        if batch_elapsed >= Duration::from_millis(timeout_ms) {
+            return Some(BatchSchedulerStop {
+                kind: MachineSchedulerArtifactKind::Timeout,
+                scope: MachineSchedulerArtifactScope::Batch,
+            });
+        }
+    }
+
+    if let (Some(timeout_ms), Some(elapsed)) = (limits.per_candidate_timeout_ms, candidate_elapsed)
+    {
+        if elapsed >= Duration::from_millis(timeout_ms) {
+            return Some(BatchSchedulerStop {
+                kind: MachineSchedulerArtifactKind::Timeout,
+                scope: MachineSchedulerArtifactScope::Candidate,
+            });
         }
     }
 
@@ -1273,6 +2105,19 @@ fn new_goals_in_next_snapshot_order(
     (new_goals.len() == added.len()).then_some(new_goals)
 }
 
+fn batch_policy_stop(
+    evaluated_count: u32,
+    success_count: u32,
+    failure_count: u32,
+    candidate_count: usize,
+    policy: MachineTacticBatchPolicy,
+) -> bool {
+    usize::try_from(evaluated_count).is_ok_and(|count| count >= candidate_count)
+        || evaluated_count >= policy.max_evaluated_candidates
+        || success_count >= policy.stop_after_successes
+        || failure_count >= policy.stop_after_failures
+}
+
 fn request_error(error: MachineApiRequestError) -> Box<MachineTacticRunError> {
     plain_error(
         error.kind,
@@ -1283,6 +2128,19 @@ fn request_error(error: MachineApiRequestError) -> Box<MachineTacticRunError> {
             error.reason
         ),
         RunErrorCorrelation::default(),
+    )
+}
+
+fn batch_request_error(error: MachineApiRequestError) -> Box<MachineTacticBatchError> {
+    batch_plain_error(
+        error.kind,
+        MachineApiDiagnosticPhase::RequestValidation,
+        format!(
+            "request validation failed at {}: {:?}",
+            json_path_display(&error.path),
+            error.reason
+        ),
+        None,
     )
 }
 
@@ -1329,6 +2187,27 @@ fn snapshot_lookup_error(error: MachineSnapshotLookupError) -> Box<MachineTactic
         MachineApiDiagnosticPhase::SnapshotLookup,
         format!("snapshot lookup failed: {error:?}"),
         RunErrorCorrelation::default(),
+    )
+}
+
+fn batch_snapshot_lookup_error(error: MachineSnapshotLookupError) -> Box<MachineTacticBatchError> {
+    let kind = match error {
+        MachineSnapshotLookupError::UnknownSnapshot { .. } => MachineApiErrorKind::UnknownSnapshot,
+        MachineSnapshotLookupError::StateFingerprintMismatch { .. } => {
+            MachineApiErrorKind::StateFingerprintMismatch
+        }
+        MachineSnapshotLookupError::SnapshotIdentityMismatch { .. }
+        | MachineSnapshotLookupError::InvalidMachineProofState { .. }
+        | MachineSnapshotLookupError::ExecutableStateFingerprintMismatch { .. }
+        | MachineSnapshotLookupError::StoredSnapshotViewMismatch { .. } => {
+            MachineApiErrorKind::InvalidMachineProofState
+        }
+    };
+    batch_plain_error(
+        kind,
+        MachineApiDiagnosticPhase::SnapshotLookup,
+        format!("snapshot lookup failed: {error:?}"),
+        None,
     )
 }
 
@@ -1441,6 +2320,178 @@ fn scheduler_stop(
             previous_state_fingerprint,
             deterministic_budget_hash,
         },
+    })
+}
+
+fn batch_scheduler_stop(
+    previous_state_fingerprint: Hash,
+    deterministic_budget_hash: Hash,
+    results: Vec<MachineTacticBatchItemResponse>,
+    success_count: u32,
+    failure_count: u32,
+    stop: BatchSchedulerStop,
+) -> MachineTacticBatchResponse {
+    let status = match stop.kind {
+        MachineSchedulerArtifactKind::Timeout => MachineApiResponseStatus::PartialTimeout,
+        MachineSchedulerArtifactKind::ResourceLimitExceeded => {
+            MachineApiResponseStatus::PartialResourceLimit
+        }
+    };
+    MachineApiResponseEnvelope::SchedulerStopped(MachineApiSchedulerResponse {
+        status,
+        scheduler_artifact: MachineSchedulerArtifact {
+            kind: stop.kind,
+            scope: stop.scope,
+            retryable: true,
+        },
+        endpoint_fields: MachineTacticBatchSchedulerFields {
+            previous_state_fingerprint,
+            deterministic_budget_hash,
+            completed_prefix_len: results
+                .len()
+                .try_into()
+                .expect("batch protocol caps results at 256"),
+            results,
+            success_count,
+            failure_count,
+        },
+    })
+}
+
+fn batch_candidate_request_error_item(
+    candidate_id: String,
+    error: MachineApiRequestError,
+    goal_id: npa_tactic::GoalId,
+    tactic_kind: Option<MachineApiTacticKind>,
+) -> MachineTacticBatchItemResponse {
+    let message = format!(
+        "candidate validation failed at {}: {:?}",
+        json_path_display(&error.path),
+        error.reason
+    );
+    batch_plain_item_error(
+        candidate_id,
+        None,
+        error.kind,
+        MachineApiDiagnosticPhase::CandidateValidation,
+        message,
+        goal_id,
+        tactic_kind,
+    )
+}
+
+fn batch_adapter_error_item(
+    candidate_id: String,
+    error: Box<Phase4AdapterError>,
+) -> MachineTacticBatchItemResponse {
+    batch_error_item(candidate_id, error.candidate_hash, error.diagnostic)
+}
+
+fn batch_next_snapshot_error_item(
+    candidate_id: String,
+    error: MachineSnapshotStoreError,
+    goal_id: npa_tactic::GoalId,
+    tactic_kind: MachineApiTacticKind,
+    candidate_hash: Hash,
+) -> MachineTacticBatchItemResponse {
+    let message = match error {
+        MachineSnapshotStoreError::SnapshotQuotaExceeded { .. } => {
+            "unexpected snapshot quota error after scheduler handling".to_owned()
+        }
+        MachineSnapshotStoreError::Materialization(source) => {
+            format!("next snapshot materialization failed: {source:?}")
+        }
+        MachineSnapshotStoreError::Lookup(source) => {
+            format!("next snapshot store consistency check failed: {source:?}")
+        }
+    };
+    batch_plain_item_error(
+        candidate_id,
+        Some(candidate_hash),
+        MachineApiErrorKind::InvalidMachineProofState,
+        MachineApiDiagnosticPhase::TacticExecution,
+        message,
+        goal_id,
+        Some(tactic_kind),
+    )
+}
+
+fn batch_plain_item_error(
+    candidate_id: String,
+    candidate_hash: Option<Hash>,
+    kind: MachineApiErrorKind,
+    phase: MachineApiDiagnosticPhase,
+    message: impl Into<String>,
+    goal_id: npa_tactic::GoalId,
+    tactic_kind: Option<MachineApiTacticKind>,
+) -> MachineTacticBatchItemResponse {
+    let message = message.into();
+    let diagnostic = MachineApiDiagnosticProjection {
+        kind,
+        phase,
+        retryable: false,
+        goal_id: Some(goal_id),
+        tactic_kind,
+        primary_name: None,
+        primary_axiom_ref: None,
+        expected_hash: None,
+        actual_hash: None,
+        source_message: message.clone(),
+        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+            phase4_kind_for_api_kind(kind),
+            message,
+        )),
+    };
+    batch_error_item(candidate_id, candidate_hash, diagnostic)
+}
+
+fn batch_error_item(
+    candidate_id: String,
+    candidate_hash: Option<Hash>,
+    diagnostic: MachineApiDiagnosticProjection,
+) -> MachineTacticBatchItemResponse {
+    let wire = MachineApiErrorWire::from_projection(&diagnostic)
+        .expect("batch per-candidate diagnostics must satisfy Phase 5 wire invariants");
+    MachineTacticBatchItemResponse::Error {
+        candidate_id,
+        candidate_hash,
+        diagnostic: wire.into(),
+    }
+}
+
+fn batch_plain_error(
+    kind: MachineApiErrorKind,
+    phase: MachineApiDiagnosticPhase,
+    message: impl Into<String>,
+    goal_id: Option<npa_tactic::GoalId>,
+) -> Box<MachineTacticBatchError> {
+    let message = message.into();
+    let diagnostic = MachineApiDiagnosticProjection {
+        kind,
+        phase,
+        retryable: false,
+        goal_id,
+        tactic_kind: None,
+        primary_name: None,
+        primary_axiom_ref: None,
+        expected_hash: None,
+        actual_hash: None,
+        source_message: message.clone(),
+        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+            phase4_kind_for_api_kind(kind),
+            message,
+        )),
+    };
+    let wire = MachineApiErrorWire::from_projection(&diagnostic)
+        .expect("batch top-level diagnostics must satisfy Phase 5 wire invariants");
+    let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
+        status: MachineApiResponseStatus::Error,
+        error: wire,
+        endpoint_fields: (),
+    }));
+    Box::new(MachineTacticBatchError {
+        diagnostic,
+        response,
     })
 }
 
@@ -1748,6 +2799,26 @@ fn validate_machine_local_name(
     }
 }
 
+fn validate_machine_candidate_id(
+    value: &str,
+    path: &JsonPath,
+) -> Result<(), MachineApiRequestError> {
+    if (1..=64).contains(&value.len())
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+    {
+        Ok(())
+    } else {
+        Err(invalid_string_literal(
+            "candidate_id",
+            None,
+            MachineApiErrorKind::InvalidBatchPolicy,
+            path,
+        ))
+    }
+}
+
 fn invalid_string_literal(
     field: &'static str,
     _tactic_kind: Option<MachineApiTacticKind>,
@@ -1925,6 +2996,78 @@ mod tests {
         )
     }
 
+    fn batch_json(
+        session: &MachineProofSession,
+        state_fingerprint: Hash,
+        candidates: &str,
+    ) -> String {
+        batch_json_with_policy(
+            session,
+            state_fingerprint,
+            candidates,
+            r#"{
+              "max_evaluated_candidates":256,
+              "stop_after_successes":256,
+              "stop_after_failures":256
+            }"#,
+        )
+    }
+
+    fn batch_json_with_policy(
+        session: &MachineProofSession,
+        state_fingerprint: Hash,
+        candidates: &str,
+        batch_policy: &str,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidates":{},
+              "deterministic_budget":{},
+              "batch_policy":{}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&state_fingerprint),
+            candidates,
+            budget_json(),
+            batch_policy
+        )
+    }
+
+    fn batch_json_with_scheduler(
+        session: &MachineProofSession,
+        state_fingerprint: Hash,
+        candidates: &str,
+        scheduler_limits: &str,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidates":{},
+              "deterministic_budget":{},
+              "batch_policy":{{
+                "max_evaluated_candidates":256,
+                "stop_after_successes":256,
+                "stop_after_failures":256
+              }},
+              "scheduler_limits":{}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&state_fingerprint),
+            candidates,
+            budget_json(),
+            scheduler_limits
+        )
+    }
+
     #[test]
     fn tactic_run_exact_success_stores_next_snapshot() {
         let mut session = create_machine_session(&minimal_session_json("Type 0"))
@@ -1966,6 +3109,264 @@ mod tests {
         let MachineSnapshotGetOk { snapshot } =
             get_machine_snapshot(&get_request, [&session]).unwrap();
         assert!(snapshot.open_goals.is_empty());
+    }
+
+    #[test]
+    fn tactic_batch_runs_candidates_against_same_input_and_stores_success_snapshots() {
+        let mut session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json(
+            &session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[
+              {"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"Prop"}}},
+              {"candidate_id":"c1","candidate":{"kind":"intro","name":"p"}}
+            ]"#,
+        );
+
+        let response = run_machine_tactic_batch_request(&request, &mut session).unwrap();
+
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("expected batch ok response");
+        };
+        assert_eq!(ok.status, MachineApiResponseStatus::Ok);
+        assert_eq!(
+            ok.endpoint_fields.previous_state_fingerprint,
+            session.initial_snapshot.state_fingerprint
+        );
+        assert_eq!(ok.endpoint_fields.results.len(), 2);
+        assert_eq!(ok.endpoint_fields.success_count, 1);
+        assert_eq!(ok.endpoint_fields.failure_count, 1);
+
+        let first = &ok.endpoint_fields.results[0];
+        let MachineTacticBatchItemResponse::Success {
+            candidate_id,
+            next_snapshot_id,
+            next_state_fingerprint,
+            ..
+        } = first
+        else {
+            panic!("first candidate should succeed: {first:?}");
+        };
+        assert_eq!(candidate_id, "c0");
+        let get_request = format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "include_pretty":false
+            }}"#,
+            session.session_id.wire(),
+            next_snapshot_id.wire(),
+            format_hash_string(next_state_fingerprint)
+        );
+        let MachineSnapshotGetOk { snapshot } =
+            get_machine_snapshot(&get_request, [&session]).unwrap();
+        assert!(snapshot.open_goals.is_empty());
+
+        let second = &ok.endpoint_fields.results[1];
+        let MachineTacticBatchItemResponse::Error {
+            candidate_id,
+            candidate_hash,
+            diagnostic,
+        } = second
+        else {
+            panic!("second candidate should fail independently: {second:?}");
+        };
+        assert_eq!(candidate_id, "c1");
+        assert!(candidate_hash.is_some());
+        assert_eq!(diagnostic.error_kind, MachineApiErrorKind::TypeMismatch);
+        assert_eq!(
+            diagnostic.phase,
+            MachineApiDiagnosticPhase::MachineTermCheck
+        );
+        assert_eq!(diagnostic.goal_id, Some(npa_tactic::GoalId(0)));
+        assert_eq!(diagnostic.tactic_kind, Some(MachineApiTacticKind::Intro));
+    }
+
+    #[test]
+    fn tactic_batch_delays_inner_candidate_validation_until_after_snapshot_lookup() {
+        let mut session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json(
+            &session,
+            [7; 32],
+            r#"[{"candidate_id":"c0","candidate":{"kind":"bogus","extra":true}}]"#,
+        );
+
+        let err = run_machine_tactic_batch_request(&request, &mut session).unwrap_err();
+
+        assert_eq!(
+            err.diagnostic.kind,
+            MachineApiErrorKind::StateFingerprintMismatch
+        );
+        assert_eq!(
+            err.diagnostic.phase,
+            MachineApiDiagnosticPhase::SnapshotLookup
+        );
+    }
+
+    #[test]
+    fn tactic_batch_policy_stops_before_validating_prefix_external_candidates() {
+        let mut session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json_with_policy(
+            &session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[
+              {"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"Prop"}}},
+              {"candidate_id":"c1","candidate":null}
+            ]"#,
+            r#"{
+              "max_evaluated_candidates":1,
+              "stop_after_successes":256,
+              "stop_after_failures":256
+            }"#,
+        );
+
+        let response = run_machine_tactic_batch_request(&request, &mut session).unwrap();
+
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("expected policy-limited ok response");
+        };
+        assert_eq!(ok.endpoint_fields.results.len(), 1);
+        assert_eq!(ok.endpoint_fields.success_count, 1);
+        assert_eq!(ok.endpoint_fields.failure_count, 0);
+        assert!(ok.endpoint_fields.results[0].is_success());
+    }
+
+    #[test]
+    fn tactic_batch_raw_term_parse_error_has_no_candidate_hash() {
+        let mut session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json(
+            &session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[{"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"("}}}]"#,
+        );
+
+        let response = run_machine_tactic_batch_request(&request, &mut session).unwrap();
+
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("expected batch ok response with per-candidate error");
+        };
+        assert_eq!(ok.endpoint_fields.success_count, 0);
+        assert_eq!(ok.endpoint_fields.failure_count, 1);
+        let MachineTacticBatchItemResponse::Error {
+            candidate_id,
+            candidate_hash,
+            diagnostic,
+        } = &ok.endpoint_fields.results[0]
+        else {
+            panic!("expected per-candidate parse error");
+        };
+        assert_eq!(candidate_id, "c0");
+        assert!(candidate_hash.is_none());
+        assert_eq!(
+            diagnostic.error_kind,
+            MachineApiErrorKind::MachineTermParseError
+        );
+        assert_eq!(
+            diagnostic.phase,
+            MachineApiDiagnosticPhase::MachineTermParse
+        );
+        assert_eq!(diagnostic.goal_id, Some(npa_tactic::GoalId(0)));
+        assert_eq!(diagnostic.tactic_kind, Some(MachineApiTacticKind::Exact));
+    }
+
+    #[test]
+    fn tactic_batch_partial_scheduler_response_preserves_completed_prefix() {
+        let previous_state_fingerprint = [1; 32];
+        let deterministic_budget_hash = [2; 32];
+        let candidate_hash = [3; 32];
+        let next_state_fingerprint = [4; 32];
+        let proof_delta_hash = [5; 32];
+        let result = MachineTacticBatchItemResponse::Success {
+            candidate_id: "c0".to_owned(),
+            candidate_hash,
+            next_snapshot_id: SnapshotId::from_state_fingerprint(next_state_fingerprint),
+            next_state_fingerprint,
+            proof_delta_hash,
+        };
+
+        let response = batch_scheduler_stop(
+            previous_state_fingerprint,
+            deterministic_budget_hash,
+            vec![result.clone()],
+            1,
+            0,
+            BatchSchedulerStop {
+                kind: MachineSchedulerArtifactKind::Timeout,
+                scope: MachineSchedulerArtifactScope::Candidate,
+            },
+        );
+
+        let MachineApiResponseEnvelope::SchedulerStopped(response) = response else {
+            panic!("expected partial scheduler response");
+        };
+        assert_eq!(response.status, MachineApiResponseStatus::PartialTimeout);
+        assert_eq!(
+            response.scheduler_artifact.kind,
+            MachineSchedulerArtifactKind::Timeout
+        );
+        assert_eq!(
+            response.scheduler_artifact.scope,
+            MachineSchedulerArtifactScope::Candidate
+        );
+        assert_eq!(response.endpoint_fields.completed_prefix_len, 1);
+        assert_eq!(response.endpoint_fields.success_count, 1);
+        assert_eq!(response.endpoint_fields.failure_count, 0);
+        assert_eq!(response.endpoint_fields.results, vec![result]);
+    }
+
+    #[test]
+    fn tactic_batch_rejects_duplicate_candidate_ids_as_batch_policy() {
+        let session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json(
+            &session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[
+              {"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"Prop"}}},
+              {"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"Prop"}}}
+            ]"#,
+        );
+
+        let err = parse_machine_tactic_batch_request(&request).unwrap_err();
+
+        assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
+        assert_eq!(
+            err.reason,
+            MachineApiRequestErrorReason::DuplicateKey {
+                key: "c0".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn tactic_batch_rejects_policy_values_outside_protocol_cap() {
+        let session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json_with_policy(
+            &session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[{"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"Prop"}}}]"#,
+            r#"{
+              "max_evaluated_candidates":257,
+              "stop_after_successes":1,
+              "stop_after_failures":1
+            }"#,
+        );
+
+        let err = parse_machine_tactic_batch_request(&request).unwrap_err();
+
+        assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
     }
 
     #[test]
@@ -2064,6 +3465,58 @@ mod tests {
         );
     }
 
+    #[cfg(any(
+        target_os = "android",
+        target_os = "ios",
+        target_os = "linux",
+        target_os = "macos"
+    ))]
+    #[test]
+    fn tactic_batch_explicit_resource_limit_returns_partial_after_lookup() {
+        let mut session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = batch_json_with_scheduler(
+            &session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[{"candidate_id":"c0","candidate":{"kind":"bogus","extra":true}}]"#,
+            r#"{"max_memory_mb":1}"#,
+        );
+        let deterministic_budget_hash = tactic_budget_hash(
+            parse_machine_tactic_batch_request(&request)
+                .unwrap()
+                .deterministic_budget,
+        );
+
+        let response = run_machine_tactic_batch_request(&request, &mut session).unwrap();
+
+        let MachineApiResponseEnvelope::SchedulerStopped(response) = response else {
+            panic!("expected partial scheduler response");
+        };
+        assert_eq!(
+            response.status,
+            MachineApiResponseStatus::PartialResourceLimit
+        );
+        assert_eq!(
+            response.scheduler_artifact.kind,
+            MachineSchedulerArtifactKind::ResourceLimitExceeded
+        );
+        assert_eq!(
+            response.scheduler_artifact.scope,
+            MachineSchedulerArtifactScope::Batch
+        );
+        assert_eq!(response.endpoint_fields.completed_prefix_len, 0);
+        assert!(response.endpoint_fields.results.is_empty());
+        assert_eq!(
+            response.endpoint_fields.previous_state_fingerprint,
+            session.initial_snapshot.state_fingerprint
+        );
+        assert_eq!(
+            response.endpoint_fields.deterministic_budget_hash,
+            deterministic_budget_hash
+        );
+    }
+
     #[test]
     fn scheduler_observation_reports_timeout() {
         let kind = observe_run_scheduler_limits(
@@ -2107,6 +3560,45 @@ mod tests {
         );
 
         assert_eq!(kind, None);
+    }
+
+    #[test]
+    fn batch_scheduler_observation_prioritizes_resource_then_batch_timeout() {
+        let resource = observe_batch_scheduler_limits(
+            MachineBatchSchedulerLimits {
+                per_candidate_timeout_ms: Some(5),
+                batch_timeout_ms: Some(5),
+                max_memory_mb: Some(1),
+            },
+            Duration::from_millis(5),
+            Some(Duration::from_millis(5)),
+            Some(memory_limit_bytes(1) + 1),
+        );
+        assert_eq!(
+            resource,
+            Some(BatchSchedulerStop {
+                kind: MachineSchedulerArtifactKind::ResourceLimitExceeded,
+                scope: MachineSchedulerArtifactScope::Batch
+            })
+        );
+
+        let timeout = observe_batch_scheduler_limits(
+            MachineBatchSchedulerLimits {
+                per_candidate_timeout_ms: Some(5),
+                batch_timeout_ms: Some(5),
+                max_memory_mb: None,
+            },
+            Duration::from_millis(5),
+            Some(Duration::from_millis(5)),
+            None,
+        );
+        assert_eq!(
+            timeout,
+            Some(BatchSchedulerStop {
+                kind: MachineSchedulerArtifactKind::Timeout,
+                scope: MachineSchedulerArtifactScope::Batch
+            })
+        );
     }
 
     #[test]

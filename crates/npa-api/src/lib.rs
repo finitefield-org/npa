@@ -70,8 +70,12 @@ pub use snapshot::{
     StoredSnapshotEntry, StoredSnapshotView,
 };
 pub use tactic::{
-    parse_machine_tactic_run_request, run_machine_tactic_request,
-    run_machine_tactic_request_in_sessions, MachineRunSchedulerLimits,
+    parse_machine_tactic_batch_request, parse_machine_tactic_run_request,
+    run_machine_tactic_batch_request, run_machine_tactic_batch_request_in_sessions,
+    run_machine_tactic_request, run_machine_tactic_request_in_sessions,
+    MachineBatchSchedulerLimits, MachineRunSchedulerLimits, MachineTacticBatchCandidateRequest,
+    MachineTacticBatchError, MachineTacticBatchItemResponse, MachineTacticBatchOkFields,
+    MachineTacticBatchRequest, MachineTacticBatchResponse, MachineTacticBatchSchedulerFields,
     MachineTacticRunDeltaSummary, MachineTacticRunError, MachineTacticRunErrorFields,
     MachineTacticRunErrorObject, MachineTacticRunRequest, MachineTacticRunResponse,
     MachineTacticRunResultKind, MachineTacticRunSchedulerFields, MachineTacticRunSuccessFields,
