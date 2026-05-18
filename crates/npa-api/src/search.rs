@@ -26,21 +26,22 @@ use crate::snapshot::{MachineSnapshotLookupError, MachineSnapshotMaterialization
 use crate::types::{
     format_goal_id_wire, parse_goal_id_wire, parse_module_name_wire, HashString,
     MachineApiErrorResponse, MachineApiErrorWire, MachineApiOkResponse, MachineApiResponseEnvelope,
-    MachineApiResponseStatus, MachineProofSession, SessionId, SnapshotId,
+    MachineApiResponseStatus, MachineGoalView, MachineProofSession, SessionId, SnapshotId,
 };
 use crate::validation::{
-    parse_request_body, validate_json_object, FieldSpec, JsonFieldType, JsonPath, JsonPathElement,
-    MachineApiErrorKind, MachineApiRequestError, MachineApiRequestErrorReason, ObjectSchema,
+    parse_request_body, parse_strict_u64_token, validate_json_object, FieldSpec, JsonFieldType,
+    JsonPath, JsonPathElement, MachineApiErrorKind, MachineApiRequestError,
+    MachineApiRequestErrorReason, ObjectSchema, StrictUnsignedIntegerError,
 };
 use crate::{
     phase5_name_canonical_bytes, validate_machine_endpoint_envelope, MachineApiVersion,
     Phase5UpstreamDiagnostic,
 };
 
-const THEOREM_INDEX_SCHEMA_VERSION: &str =
+pub(crate) const THEOREM_INDEX_SCHEMA_VERSION: &str =
     "mvp-export-entry-v4-entry-bytes-visible-heads-universe-params";
-const SEARCH_PROFILE_VERSION: &str = "mvp-zero-score-v1";
-const SUGGESTION_PROFILE_VERSION: &str = "mvp-suggested-candidates-v1";
+pub(crate) const SEARCH_PROFILE_VERSION: &str = "mvp-zero-score-v1";
+pub(crate) const SUGGESTION_PROFILE_VERSION: &str = "mvp-suggested-candidates-v1";
 
 const FILTER_FIELDS: &[FieldSpec] = &[
     FieldSpec::required("exclude_axioms", JsonFieldType::Boolean),
@@ -159,6 +160,11 @@ pub enum MachineAllowedModulesFilter {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MachineAllowedModulesValidationError {
+    pub module: Name,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineTheoremSearchError {
     pub diagnostic: MachineApiDiagnosticProjection,
     pub response: MachineTheoremSearchResponse,
@@ -181,6 +187,13 @@ struct TheoremIndexEntry {
     axioms_used: Vec<MachineAxiomRefWire>,
     modes: Vec<MachineTheoremMode>,
     canonical_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct MachineTheoremSelection {
+    pub query_fingerprint: Hash,
+    pub theorem_index_fingerprint: Hash,
+    pub results: Vec<MachineTheoremSearchResult>,
 }
 
 pub fn search_machine_theorems_for_goal(
@@ -228,14 +241,20 @@ pub fn parse_machine_theorem_search_request(
         .digest();
     let goal_id = parse_goal_id_wire(required_string(&envelope, "goal_id"))
         .expect("endpoint validation checked goal_id grammar");
-    let modes = parse_modes(
+    let modes = parse_theorem_modes(
         required_field(&envelope, "modes"),
         &JsonPath::root().field("modes"),
+        MachineApiErrorKind::InvalidTheoremQuery,
     )?;
-    let limit = parse_limit(required_field(&envelope, "limit"));
-    let filters = parse_filters(
+    let limit = parse_theorem_limit(
+        required_field(&envelope, "limit"),
+        &JsonPath::root().field("limit"),
+        MachineApiErrorKind::InvalidTheoremQuery,
+    )?;
+    let filters = parse_theorem_filters(
         required_field(&envelope, "filters"),
         &JsonPath::root().field("filters"),
+        MachineApiErrorKind::InvalidTheoremQuery,
     )?;
 
     Ok(MachineTheoremSearchRequest {
@@ -253,6 +272,17 @@ fn search_machine_theorems_for_goal_parsed(
     session: &MachineProofSession,
     mut request: MachineTheoremSearchRequest,
 ) -> Result<MachineTheoremSearchResponse, Box<MachineTheoremSearchError>> {
+    canonicalize_allowed_modules_for_session(session, &mut request.filters).map_err(|error| {
+        search_plain_error(
+            MachineApiErrorKind::InvalidTheoremQuery,
+            MachineApiDiagnosticPhase::RequestValidation,
+            format!(
+                "allowed module {} is not a direct import of the session",
+                error.module.as_dotted()
+            ),
+        )
+    })?;
+
     if session.snapshots.session_id() != &session.session_id {
         return Err(search_plain_error(
             MachineApiErrorKind::InvalidMachineProofState,
@@ -260,8 +290,6 @@ fn search_machine_theorems_for_goal_parsed(
             "session snapshot store belongs to a different session",
         ));
     }
-
-    canonicalize_allowed_modules_for_session(session, &mut request.filters)?;
 
     let context = MachineSnapshotMaterializationContext {
         session_id: &session.session_id,
@@ -287,32 +315,66 @@ fn search_machine_theorems_for_goal_parsed(
         })?;
     let input_state = &entry.executable_state_payload;
 
-    let index = build_theorem_index(session, input_state).map_err(search_theorem_index_error)?;
+    let selection = select_machine_theorem_results_for_goal(
+        session,
+        input_state,
+        goal,
+        &request.modes,
+        &request.filters,
+        request.limit,
+        true,
+    )
+    .map_err(search_theorem_index_error)?;
+
+    Ok(MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
+        status: MachineApiResponseStatus::Ok,
+        endpoint_fields: MachineTheoremSearchOkFields {
+            query_fingerprint: selection.query_fingerprint,
+            theorem_index_fingerprint: selection.theorem_index_fingerprint,
+            search_profile_version: SEARCH_PROFILE_VERSION,
+            suggestion_profile_version: SUGGESTION_PROFILE_VERSION,
+            results: selection.results,
+        },
+    }))
+}
+
+pub(crate) fn select_machine_theorem_results_for_goal(
+    session: &MachineProofSession,
+    input_state: &npa_tactic::MachineProofState,
+    goal: &MachineGoalView,
+    modes: &[MachineTheoremMode],
+    filters: &MachineTheoremFilters,
+    limit: u32,
+    include_suggested_candidates: bool,
+) -> Result<MachineTheoremSelection, TheoremSearchBuildError> {
+    let index = build_theorem_index(session, input_state)?;
     let query_fingerprint = theorem_query_fingerprint(QueryFingerprintInput {
         protocol_version: session.protocol_version,
-        state_fingerprint: request.state_fingerprint,
-        goal_id: request.goal_id,
+        state_fingerprint: input_state.fingerprint,
+        goal_id: goal.goal_id,
         goal_fingerprint: goal.goal_fingerprint,
         theorem_index_fingerprint: index.fingerprint,
-        modes: &request.modes,
-        filters: &request.filters,
-        limit: request.limit,
+        modes,
+        filters,
+        limit,
     });
 
     let mut eligible = index
         .entries
         .iter()
-        .filter(|entry| theorem_entry_matches_query(entry, &request))
+        .filter(|entry| theorem_entry_matches_query(entry, modes, filters))
         .collect::<Vec<_>>();
     eligible.sort_by_key(|entry| theorem_entry_sort_key(entry));
-    eligible.truncate(request.limit as usize);
+    eligible.truncate(limit as usize);
 
     let mut results = Vec::with_capacity(eligible.len());
     for (index, entry) in eligible.into_iter().enumerate() {
-        let statement = render_statement(session, entry).map_err(search_theorem_index_error)?;
-        let suggested_candidates =
-            suggested_candidates_for_entry(entry, &request.modes, input_state, request.goal_id)
-                .map_err(search_theorem_index_error)?;
+        let statement = render_statement(session, entry)?;
+        let suggested_candidates = if include_suggested_candidates {
+            suggested_candidates_for_entry(entry, modes, input_state, goal.goal_id)?
+        } else {
+            Vec::new()
+        };
         results.push(MachineTheoremSearchResult {
             premise_id: format!("prem_{index}"),
             global_ref: entry.global_ref.clone(),
@@ -325,16 +387,11 @@ fn search_machine_theorems_for_goal_parsed(
         });
     }
 
-    Ok(MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
-        status: MachineApiResponseStatus::Ok,
-        endpoint_fields: MachineTheoremSearchOkFields {
-            query_fingerprint,
-            theorem_index_fingerprint: index.fingerprint,
-            search_profile_version: SEARCH_PROFILE_VERSION,
-            suggestion_profile_version: SUGGESTION_PROFILE_VERSION,
-            results,
-        },
-    }))
+    Ok(MachineTheoremSelection {
+        query_fingerprint,
+        theorem_index_fingerprint: index.fingerprint,
+        results,
+    })
 }
 
 fn build_theorem_index(
@@ -588,12 +645,13 @@ fn render_statement(
 
 fn theorem_entry_matches_query(
     entry: &TheoremIndexEntry,
-    request: &MachineTheoremSearchRequest,
+    modes: &[MachineTheoremMode],
+    filters: &MachineTheoremFilters,
 ) -> bool {
-    if request.filters.exclude_axioms && !entry.axioms_used.is_empty() {
+    if filters.exclude_axioms && !entry.axioms_used.is_empty() {
         return false;
     }
-    match &request.filters.allowed_modules {
+    match &filters.allowed_modules {
         MachineAllowedModulesFilter::AllDirect => {}
         MachineAllowedModulesFilter::Explicit(modules) => {
             if !modules.contains(&entry.global_ref.module) {
@@ -601,7 +659,7 @@ fn theorem_entry_matches_query(
             }
         }
     }
-    entry.modes.iter().any(|mode| request.modes.contains(mode))
+    entry.modes.iter().any(|mode| modes.contains(mode))
 }
 
 fn canonical_mode_intersection(
@@ -1165,12 +1223,14 @@ fn export_universe_params(
         .collect()
 }
 
-fn parse_modes(
+pub(crate) fn parse_theorem_modes(
     value: &JsonValue<'_>,
     path: &JsonPath,
+    error_kind: MachineApiErrorKind,
 ) -> Result<Vec<MachineTheoremMode>, MachineApiRequestError> {
     let elements = value.array_elements().ok_or_else(|| {
         request_error(
+            error_kind,
             path,
             MachineApiRequestErrorReason::TypeMismatch {
                 field: "modes",
@@ -1181,6 +1241,7 @@ fn parse_modes(
     })?;
     if elements.is_empty() {
         return Err(request_error(
+            error_kind,
             path,
             MachineApiRequestErrorReason::MissingField { field: "modes" },
         ));
@@ -1191,6 +1252,7 @@ fn parse_modes(
         let item_path = path.index(index);
         let Some(text) = item.string_value() else {
             return Err(request_error(
+                error_kind,
                 &item_path,
                 if item.kind() == JsonValueKind::Null {
                     MachineApiRequestErrorReason::NullField { field: "modes" }
@@ -1205,6 +1267,7 @@ fn parse_modes(
         };
         let Some(mode) = MachineTheoremMode::parse(text) else {
             return Err(request_error(
+                error_kind,
                 &item_path,
                 MachineApiRequestErrorReason::TypeMismatch {
                     field: "modes",
@@ -1215,6 +1278,7 @@ fn parse_modes(
         };
         if !seen.insert(mode) {
             return Err(request_error(
+                error_kind,
                 &item_path,
                 MachineApiRequestErrorReason::DuplicateKey {
                     key: text.to_owned(),
@@ -1227,23 +1291,57 @@ fn parse_modes(
     Ok(modes)
 }
 
-fn parse_limit(value: &JsonValue<'_>) -> u32 {
-    let raw = value
-        .number_raw()
-        .expect("endpoint validation checked search limit integer");
-    raw.parse::<u32>()
-        .expect("endpoint validation checked search limit <= 256")
-}
-
-fn parse_filters(
+pub(crate) fn parse_theorem_limit(
     value: &JsonValue<'_>,
     path: &JsonPath,
+    error_kind: MachineApiErrorKind,
+) -> Result<u32, MachineApiRequestError> {
+    if value.kind() == JsonValueKind::Null {
+        return Err(request_error(
+            error_kind,
+            path,
+            MachineApiRequestErrorReason::NullField { field: "limit" },
+        ));
+    }
+    let Some(raw) = value.number_raw() else {
+        return Err(request_error(
+            error_kind,
+            path,
+            MachineApiRequestErrorReason::TypeMismatch {
+                field: "limit",
+                expected: JsonFieldType::UnsignedInteger { max: 256 },
+                actual: value.kind(),
+            },
+        ));
+    };
+    let parsed = parse_strict_u64_token(raw, 256)
+        .and_then(|value| {
+            if value >= 1 {
+                Ok(value)
+            } else {
+                Err(StrictUnsignedIntegerError::InvalidGrammar)
+            }
+        })
+        .map_err(|error| {
+            request_error(
+                error_kind,
+                path,
+                MachineApiRequestErrorReason::InvalidUnsignedInteger {
+                    field: "limit",
+                    raw: raw.to_owned(),
+                    error,
+                },
+            )
+        })?;
+    Ok(parsed as u32)
+}
+
+pub(crate) fn parse_theorem_filters(
+    value: &JsonValue<'_>,
+    path: &JsonPath,
+    error_kind: MachineApiErrorKind,
 ) -> Result<MachineTheoremFilters, MachineApiRequestError> {
-    let object = validate_json_object(
-        value,
-        ObjectSchema::new(MachineApiErrorKind::InvalidTheoremQuery, FILTER_FIELDS),
-        path,
-    )?;
+    let object = validate_json_object(value, ObjectSchema::new(error_kind, FILTER_FIELDS), path)?;
     let exclude_axioms = object
         .field("exclude_axioms")
         .and_then(JsonValue::bool_value)
@@ -1252,6 +1350,7 @@ fn parse_filters(
         Some(value) => {
             let elements = value.array_elements().ok_or_else(|| {
                 request_error(
+                    error_kind,
                     &path.field("allowed_modules"),
                     MachineApiRequestErrorReason::TypeMismatch {
                         field: "allowed_modules",
@@ -1265,6 +1364,7 @@ fn parse_filters(
                 let item_path = path.field("allowed_modules").index(index);
                 let Some(text) = item.string_value() else {
                     return Err(request_error(
+                        error_kind,
                         &item_path,
                         if item.kind() == JsonValueKind::Null {
                             MachineApiRequestErrorReason::NullField {
@@ -1281,6 +1381,7 @@ fn parse_filters(
                 };
                 let module = parse_module_name_wire(text).map_err(|_| {
                     request_error(
+                        error_kind,
                         &item_path,
                         MachineApiRequestErrorReason::TypeMismatch {
                             field: "allowed_modules",
@@ -1303,10 +1404,10 @@ fn parse_filters(
     })
 }
 
-fn canonicalize_allowed_modules_for_session(
+pub(crate) fn canonicalize_allowed_modules_for_session(
     session: &MachineProofSession,
     filters: &mut MachineTheoremFilters,
-) -> Result<(), Box<MachineTheoremSearchError>> {
+) -> Result<(), MachineAllowedModulesValidationError> {
     let mut direct_modules = session
         .import_certificate_context
         .direct_import_entries()
@@ -1319,14 +1420,9 @@ fn canonicalize_allowed_modules_for_session(
     if let MachineAllowedModulesFilter::Explicit(modules) = &mut filters.allowed_modules {
         for module in modules.iter() {
             if !direct_modules.contains(module) {
-                return Err(search_plain_error(
-                    MachineApiErrorKind::InvalidTheoremQuery,
-                    MachineApiDiagnosticPhase::RequestValidation,
-                    format!(
-                        "allowed module {} is not a direct import of the session",
-                        module.as_dotted()
-                    ),
-                ));
+                return Err(MachineAllowedModulesValidationError {
+                    module: module.clone(),
+                });
             }
         }
         if *modules == direct_modules {
@@ -1354,12 +1450,12 @@ fn required_string<'value, 'src>(
         .expect("endpoint validation checked required string field")
 }
 
-fn request_error(path: &JsonPath, reason: MachineApiRequestErrorReason) -> MachineApiRequestError {
-    MachineApiRequestError::new(
-        MachineApiErrorKind::InvalidTheoremQuery,
-        path.clone(),
-        reason,
-    )
+fn request_error(
+    error_kind: MachineApiErrorKind,
+    path: &JsonPath,
+    reason: MachineApiRequestErrorReason,
+) -> MachineApiRequestError {
+    MachineApiRequestError::new(error_kind, path.clone(), reason)
 }
 
 fn theorem_index_fingerprint(session: &MachineProofSession, entries: &[TheoremIndexEntry]) -> Hash {
@@ -1582,7 +1678,7 @@ fn sha256(bytes: &[u8]) -> Hash {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum TheoremSearchBuildError {
+pub(crate) enum TheoremSearchBuildError {
     InvalidVerifiedImport,
     DuplicatePublicName,
     MissingKernelDecl,
@@ -2036,6 +2132,28 @@ mod tests {
             &session,
             r#"{"exclude_axioms":false,"allowed_modules":["Missing"]}"#,
         );
+        let err = search_machine_theorems_for_goal(&body, &session).unwrap_err();
+
+        assert_eq!(
+            err.diagnostic.kind,
+            MachineApiErrorKind::InvalidTheoremQuery
+        );
+        assert_eq!(
+            err.diagnostic.phase,
+            MachineApiDiagnosticPhase::RequestValidation
+        );
+    }
+
+    #[test]
+    fn search_rejects_non_direct_allowed_module_before_snapshot_store_invariant() {
+        let mut session = imported_axiom_session();
+        let body = search_json(
+            &session,
+            r#"{"exclude_axioms":false,"allowed_modules":["Missing"]}"#,
+        );
+        session.snapshots =
+            crate::MachineSnapshotStore::new(SessionId::new_unchecked("msess_other"));
+
         let err = search_machine_theorems_for_goal(&body, &session).unwrap_err();
 
         assert_eq!(

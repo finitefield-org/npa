@@ -9,6 +9,7 @@ mod current;
 mod diagnostic;
 mod json;
 mod projection;
+mod prompt;
 mod renderer;
 mod replay;
 mod search;
@@ -53,6 +54,13 @@ pub use projection::{
     MachineImportCertificateContext, VerifiedImportDeclIndexEntry,
     VerifiedImportGeneratedDeclEntry, VerifiedImportGeneratedDeclPayload, VerifiedImportKey,
     VerifiedModuleCertificateInput, VerifiedModuleContextEntry,
+};
+pub use prompt::{
+    build_machine_prompt_payload, build_machine_prompt_payload_in_sessions,
+    parse_machine_prompt_payload_request, FailedCandidateErrorKind, FailedCandidatePromptItem,
+    MachinePromptGoal, MachinePromptLocal, MachinePromptPayloadError, MachinePromptPayloadOkFields,
+    MachinePromptPayloadRequest, MachinePromptPayloadResponse, MachinePromptPremise,
+    MachinePromptPremiseSelection,
 };
 pub use renderer::{
     render_machine_expr_source, render_machine_expr_view, renderer_qa_round_trip, LocalId,
