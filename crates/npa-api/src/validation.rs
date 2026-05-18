@@ -98,7 +98,7 @@ pub struct MachineApiRequestError {
 }
 
 impl MachineApiRequestError {
-    fn new(
+    pub(crate) fn new(
         kind: MachineApiErrorKind,
         path: JsonPath,
         reason: MachineApiRequestErrorReason,

@@ -10,6 +10,7 @@ mod diagnostic;
 mod json;
 mod projection;
 mod renderer;
+mod types;
 mod validation;
 
 pub use adapter::{
@@ -52,6 +53,26 @@ pub use renderer::{
     MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineExprRendererContext,
     MachineExprRendererError, MachineExprView, MachineGlobalRefView,
     Phase5ResolvedDisplayCoreRefOwner,
+};
+pub use types::{
+    format_goal_id_wire, format_hash_string, format_meta_var_id_wire, is_machine_local_name,
+    is_machine_surface_name_component, is_machine_surface_renderable_name_wire,
+    is_machine_surface_term_head_component, is_machine_universe_param_name,
+    machine_endpoint_envelope_spec, parse_fully_qualified_name_wire, parse_goal_id_wire,
+    parse_hash_string, parse_local_id_wire, parse_machine_surface_renderable_name_wire,
+    parse_machine_universe_param_name, parse_meta_var_id_wire, parse_module_name_wire,
+    parse_phase5_name, phase5_name_canonical_bytes, validate_delete_session_request,
+    validate_machine_endpoint_envelope, CheckedMachineProofRoot, HashString, KernelCheckProfileId,
+    MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
+    MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope, MachineApiResponseStatus,
+    MachineApiSchedulerResponse, MachineApiVersion, MachineEndpointEnvelopeSpec,
+    MachineEndpointFieldSpec, MachineEndpointFieldType, MachineGoalView, MachineLocalView,
+    MachineProofSession, MachineProofSnapshot, MachineRootTermSource, MachineSchedulerArtifact,
+    MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
+    MachineTacticOptionsConversionError, MachineTacticOptionsRequest,
+    MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
+    SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC, MACHINE_API_VERSION,
+    MACHINE_DISPLAY_PROFILE_ID, MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
 };
 pub use validation::{
     delayed_json_payload, parse_request_body, parse_request_body_with_limits,

@@ -96,6 +96,7 @@ AI 探索向けの deterministic budget hash / tactic cache key / batch 実行 g
 Phase 5 AI の substrate は `crates/npa-api` で進めており、lossless JSON request decoder、
 import/current projection、Phase 4 adapter boundary、Machine Surface callable interface table builder、
 owner-aware MachineExprRenderer v1 / renderer QA substrate、MachineApiDiagnostic canonicalization
+に加えて、M2 の Machine API types / ID・HashString wire grammar / endpoint envelope validation
 を含みます。
 独立 checker は Phase 8 の後続成果物として扱います。
 
