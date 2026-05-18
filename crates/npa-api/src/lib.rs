@@ -4,6 +4,7 @@
 //! decoding and request-shape validation for machine-facing endpoints.
 
 mod adapter;
+mod callable;
 mod current;
 mod json;
 mod projection;
@@ -17,6 +18,11 @@ pub use adapter::{
     MachineApiDiagnosticProjection, MachineApiTacticKind, Phase4AdapterError, Phase4AdapterResult,
     Phase4ExtractedTheorem, Phase4StartProofOutput, Phase4TacticRunOutput, Phase4ValidatedTactic,
     Phase5UpstreamDiagnostic,
+};
+pub use callable::{
+    build_machine_surface_callable_interface_table,
+    build_machine_surface_callable_interface_table_from_parts,
+    MachineSurfaceCallableInterfaceBuildError,
 };
 pub use current::{
     project_checked_current_decl_context, CheckedCurrentDeclPackageInput,

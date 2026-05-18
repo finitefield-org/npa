@@ -1,3 +1,4 @@
+mod callable;
 mod diagnostic;
 mod elaborator;
 mod lexer;
@@ -7,6 +8,11 @@ mod resolver;
 mod span;
 mod term_source;
 
+pub use callable::{
+    is_machine_surface_renderable_name, MachineCallableBinderVisibility,
+    MachineSurfaceCallableInterfaceEntry, MachineSurfaceCallableInterfaceError,
+    MachineSurfaceCallableInterfaceTable, MachineSurfaceCallableRef,
+};
 pub use diagnostic::{
     MachineDiagnostic, MachineDiagnosticKind, MachineDiagnosticPayload, MachineDiagnosticSeverity,
     MachineRepairCandidate, MachineRepairSuggestion, MachineRepairSuggestionKind, Result,

@@ -93,6 +93,8 @@ AI 向け Phase 4 M1/M2/M3/M4/M5/M6/M7 の tactic proof-state core と `exact` /
 `intro` / `apply` / `rw` / `simp-lite` / `induction-nat` は `crates/npa-tactic`
 で実装されています。closed proof state から canonical certificate へ渡す handoff API と、
 AI 探索向けの deterministic budget hash / tactic cache key / batch 実行 gate も同 crate で実装されています。
+Phase 5 AI の substrate は `crates/npa-api` で進めており、lossless JSON request decoder、
+import/current projection、Phase 4 adapter boundary、Machine Surface callable interface table builder を含みます。
 独立 checker は Phase 8 の後続成果物として扱います。
 
 ## 開発メモ

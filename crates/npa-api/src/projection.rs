@@ -58,6 +58,13 @@ pub struct MachineImportCertificateContext {
 }
 
 impl MachineImportCertificateContext {
+    pub fn empty() -> Self {
+        Self {
+            verified_modules: Vec::new(),
+            direct_import_keys: Vec::new(),
+        }
+    }
+
     pub fn verified_modules(&self) -> &[VerifiedModuleContextEntry] {
         &self.verified_modules
     }

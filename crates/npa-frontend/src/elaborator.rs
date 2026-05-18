@@ -2,10 +2,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     parse_machine_module, parse_machine_term, resolver::resolve_machine_module_with_options,
-    MachineBinder, MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl,
-    MachineCompileOptions, MachineDecl, MachineDiagnostic, MachineDiagnosticKind,
-    MachineDiagnosticPayload, MachineGlobalScope, MachineGlobalScopeEntry, MachineItem,
-    MachineLevel, MachineLocalDecl, MachineRepairCandidate, MachineRepairSuggestion,
+    MachineBinder, MachineCallableBinderVisibility, MachineCheckedCurrentDecl,
+    MachineCheckedCurrentGeneratedDecl, MachineCompileOptions, MachineDecl, MachineDiagnostic,
+    MachineDiagnosticKind, MachineDiagnosticPayload, MachineGlobalScope, MachineGlobalScopeEntry,
+    MachineItem, MachineLevel, MachineLocalDecl, MachineRepairCandidate, MachineRepairSuggestion,
     MachineRepairSuggestionKind, MachineResolvedConstant, MachineSurfaceMode, MachineTerm,
     MachineTermAst, MachineTermCheckResult, MachineTermElabContext, ResolvedMachineModule, Result,
     VerifiedDependency, VerifiedImport,
@@ -227,6 +227,7 @@ struct ElaboratedBinder {
 #[derive(Clone, Debug)]
 struct GlobalSignature {
     universe_params: Vec<String>,
+    implicit_profile: Vec<MachineCallableBinderVisibility>,
 }
 
 #[derive(Clone, Debug)]
@@ -334,8 +335,11 @@ impl Elaborator {
 
         for import in verified_imports {
             for export in &import.exports {
-                elaborator
-                    .add_global_signature(export.name.as_dotted(), export.universe_params.clone());
+                elaborator.add_global_signature(
+                    export.name.as_dotted(),
+                    export.universe_params.clone(),
+                    Vec::new(),
+                );
             }
         }
 
@@ -378,19 +382,48 @@ impl Elaborator {
                 ));
             };
             let universe_params = decl.universe_params().to_vec();
-            elaborator.add_global_signature(name, universe_params);
+            let implicit_profile = match context
+                .callable_interface_table
+                .entries_for_decl(&constant.name, &constant.decl_interface_hash)
+                .as_slice()
+            {
+                [] => Vec::new(),
+                [entry] => entry.implicit_profile().to_vec(),
+                _ => {
+                    return Err(MachineDiagnostic::error(
+                        MachineDiagnosticKind::ImportResolutionError,
+                        span,
+                        format!("resolved global {name} has multiple callable interface entries"),
+                    ));
+                }
+            };
+            elaborator.add_global_signature(name, universe_params, implicit_profile);
         }
 
         Ok(elaborator)
     }
 
     fn add_decl_signature(&mut self, decl: &Decl) {
-        self.add_global_signature(decl.name().to_owned(), decl.universe_params().to_vec());
+        self.add_global_signature(
+            decl.name().to_owned(),
+            decl.universe_params().to_vec(),
+            Vec::new(),
+        );
     }
 
-    fn add_global_signature(&mut self, name: String, universe_params: Vec<String>) {
-        self.globals
-            .insert(name, GlobalSignature { universe_params });
+    fn add_global_signature(
+        &mut self,
+        name: String,
+        universe_params: Vec<String>,
+        implicit_profile: Vec<MachineCallableBinderVisibility>,
+    ) {
+        self.globals.insert(
+            name,
+            GlobalSignature {
+                universe_params,
+                implicit_profile,
+            },
+        );
     }
 
     fn elaborate_decl(&self, decl: MachineDecl, kind: DeclKind) -> Result<Decl> {
@@ -493,6 +526,9 @@ impl Elaborator {
                 {
                     return Err(diagnostic);
                 }
+                if let Some(diagnostic) = self.implicit_application_diagnostic(&func, &arg) {
+                    return Err(diagnostic);
+                }
 
                 Ok(Expr::app(
                     self.elaborate_term(*func, locals, delta)?,
@@ -554,6 +590,13 @@ impl Elaborator {
             .get(name)
             .map(|signature| signature.universe_params.len())
             .unwrap_or(0)
+    }
+
+    fn implicit_profile(&self, name: &str) -> &[MachineCallableBinderVisibility] {
+        self.globals
+            .get(name)
+            .map(|signature| signature.implicit_profile.as_slice())
+            .unwrap_or(&[])
     }
 
     fn ensure_type(
@@ -784,6 +827,49 @@ impl Elaborator {
             },
             replacement,
             message,
+        ))
+    }
+
+    fn implicit_application_diagnostic(
+        &self,
+        func: &MachineTerm,
+        arg: &MachineTerm,
+    ) -> Option<MachineDiagnostic> {
+        let (head, args) = machine_app_spine(func, arg);
+        let MachineTerm::Ident {
+            name,
+            universe_args,
+            explicit_mode,
+            span,
+        } = head
+        else {
+            return None;
+        };
+        if *explicit_mode {
+            return None;
+        }
+
+        let name = name.as_dotted();
+        let expected_universes = self.universe_param_count(&name);
+        match universe_args {
+            None if expected_universes != 0 => return None,
+            Some(args) if args.len() != expected_universes => return None,
+            _ => {}
+        }
+
+        let implicit_profile = self.implicit_profile(&name);
+        if !implicit_profile
+            .iter()
+            .take(args.len())
+            .any(|visibility| *visibility == MachineCallableBinderVisibility::Implicit)
+        {
+            return None;
+        }
+
+        Some(MachineDiagnostic::error(
+            MachineDiagnosticKind::ImplicitArgumentRequired,
+            *span,
+            format!("global name {name} requires explicit arguments"),
         ))
     }
 
@@ -2636,6 +2722,7 @@ fn machine_term_context_from_parts(
             build.env,
             decl_interface_hashes,
         ),
+        callable_interface_table: crate::MachineSurfaceCallableInterfaceTable::empty(),
     })
 }
 
@@ -3131,6 +3218,10 @@ mod tests {
         Level::succ(Level::zero())
     }
 
+    fn prop() -> Expr {
+        Expr::sort(Level::zero())
+    }
+
     fn nat() -> Expr {
         Expr::konst("Nat", vec![])
     }
@@ -3287,6 +3378,90 @@ mod tests {
         let span = crate::Span::empty(FileId(0));
         machine_term_context_from_verified_imports(imports, imports, locals, universe_params, span)
             .expect("term context imports should build a consistent kernel env")
+    }
+
+    #[test]
+    fn callable_table_implicit_profile_requires_explicit_mode_for_app() {
+        let mut import = verified_import("Std.Id", &[("id", &[])]);
+        set_single_axiom_ty(
+            &mut import,
+            Expr::pi(
+                "A",
+                Expr::sort(type0()),
+                Expr::pi("x", Expr::bvar(0), Expr::bvar(1)),
+            ),
+        );
+        let callable_ref = crate::MachineSurfaceCallableRef::Imported {
+            module: import.module.clone(),
+            name: import.exports[0].name.clone(),
+            export_hash: import.export_hash,
+            decl_interface_hash: import.exports[0].decl_interface_hash,
+        };
+        let table = crate::MachineSurfaceCallableInterfaceTable::from_entries([
+            crate::MachineSurfaceCallableInterfaceEntry::new(
+                callable_ref,
+                vec![
+                    crate::MachineCallableBinderVisibility::Implicit,
+                    crate::MachineCallableBinderVisibility::Explicit,
+                ],
+            ),
+        ])
+        .unwrap();
+        let imports = [import];
+        let context =
+            term_context(&imports, Vec::new(), Vec::new()).with_callable_interface_table(table);
+        let expected = Expr::pi("x", prop(), prop());
+
+        let err = elaborate_machine_term_check(
+            "id Prop",
+            &context,
+            &expected,
+            &MachineCompileOptions::default(),
+        )
+        .expect_err("implicit binder application should require explicit mode");
+        assert_eq!(err.kind, MachineDiagnosticKind::ImplicitArgumentRequired);
+
+        elaborate_machine_term_check(
+            "@id Prop",
+            &context,
+            &expected,
+            &MachineCompileOptions::default(),
+        )
+        .expect("explicit mode should allow supplying an implicit binder");
+    }
+
+    #[test]
+    fn callable_table_all_explicit_profile_allows_plain_app() {
+        let mut import = verified_import("Std.Id", &[("id", &[])]);
+        set_single_axiom_ty(
+            &mut import,
+            Expr::pi(
+                "A",
+                Expr::sort(type0()),
+                Expr::pi("x", Expr::bvar(0), Expr::bvar(1)),
+            ),
+        );
+        let callable_ref = crate::MachineSurfaceCallableRef::Imported {
+            module: import.module.clone(),
+            name: import.exports[0].name.clone(),
+            export_hash: import.export_hash,
+            decl_interface_hash: import.exports[0].decl_interface_hash,
+        };
+        let table = crate::MachineSurfaceCallableInterfaceTable::from_entries([
+            crate::MachineSurfaceCallableInterfaceEntry::all_explicit(callable_ref, 2),
+        ])
+        .unwrap();
+        let imports = [import];
+        let context =
+            term_context(&imports, Vec::new(), Vec::new()).with_callable_interface_table(table);
+
+        elaborate_machine_term_check(
+            "id Prop",
+            &context,
+            &Expr::pi("x", prop(), prop()),
+            &MachineCompileOptions::default(),
+        )
+        .expect("all-explicit profile should preserve the existing application behavior");
     }
 
     fn export_ty(name: &str) -> Expr {

@@ -7426,6 +7426,7 @@ fn machine_term_elab_context(
     state: &MachineProofState,
     context: &[MachineLocalDecl],
 ) -> Result<npa_frontend::MachineTermElabContext> {
+    let callable_interface_table = machine_surface_callable_interface_table(state)?;
     let imports = state
         .env
         .imports
@@ -7478,7 +7479,204 @@ fn machine_term_elab_context(
         local_context,
         state.root.universe_params.clone(),
     )
+    .map(|context| context.with_callable_interface_table(callable_interface_table))
     .map_err(machine_term_elaboration_diag)
+}
+
+fn machine_surface_callable_interface_table(
+    state: &MachineProofState,
+) -> Result<npa_frontend::MachineSurfaceCallableInterfaceTable> {
+    let mut entries = Vec::new();
+    for import in &state.env.imports {
+        for export in &import.exports {
+            ensure_imported_machine_surface_callable_name(import, &export.name)?;
+            let ty = import_export_type(import, export)?;
+            entries.push(
+                npa_frontend::MachineSurfaceCallableInterfaceEntry::all_explicit(
+                    npa_frontend::MachineSurfaceCallableRef::Imported {
+                        module: import.module.clone(),
+                        name: export.name.clone(),
+                        export_hash: import.export_hash,
+                        decl_interface_hash: export.decl_interface_hash,
+                    },
+                    expr_pi_telescope_len(&ty),
+                ),
+            );
+        }
+    }
+    for checked in &state.env.checked_current_decls {
+        ensure_current_machine_surface_callable_name(checked.signature.name())?;
+        entries.push(
+            npa_frontend::MachineSurfaceCallableInterfaceEntry::all_explicit(
+                npa_frontend::MachineSurfaceCallableRef::CurrentModule {
+                    module: state.root.module.clone(),
+                    name: checked.signature.name.clone(),
+                    source_index: checked.source_index,
+                    decl_interface_hash: checked.signature.decl_interface_hash,
+                },
+                expr_pi_telescope_len(&checked.signature.ty),
+            ),
+        );
+        if let Decl::Inductive { data, .. } = &checked.core_decl {
+            for constructor in &data.constructors {
+                let name = Name::from_dotted(&constructor.name);
+                ensure_current_machine_surface_callable_name(&name)?;
+                entries.push(
+                    npa_frontend::MachineSurfaceCallableInterfaceEntry::all_explicit(
+                        npa_frontend::MachineSurfaceCallableRef::CurrentGenerated {
+                            module: state.root.module.clone(),
+                            name,
+                            parent_source_index: checked.source_index,
+                            decl_interface_hash: checked.signature.decl_interface_hash,
+                        },
+                        expr_pi_telescope_len(&constructor.ty),
+                    ),
+                );
+            }
+            if let Some(recursor) = &data.recursor {
+                let name = Name::from_dotted(&recursor.name);
+                ensure_current_machine_surface_callable_name(&name)?;
+                entries.push(
+                    npa_frontend::MachineSurfaceCallableInterfaceEntry::all_explicit(
+                        npa_frontend::MachineSurfaceCallableRef::CurrentGenerated {
+                            module: state.root.module.clone(),
+                            name,
+                            parent_source_index: checked.source_index,
+                            decl_interface_hash: checked.signature.decl_interface_hash,
+                        },
+                        expr_pi_telescope_len(&recursor.ty),
+                    ),
+                );
+            }
+        }
+    }
+
+    npa_frontend::MachineSurfaceCallableInterfaceTable::from_entries(entries).map_err(|err| {
+        MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMachineProofSpec,
+            format!("machine surface callable interface table is invalid: {err:?}"),
+        )
+    })
+}
+
+fn ensure_imported_machine_surface_callable_name(
+    import: &VerifiedImportRef,
+    name: &Name,
+) -> Result<()> {
+    if npa_frontend::is_machine_surface_renderable_name(name) {
+        return Ok(());
+    }
+
+    Err(MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::InvalidVerifiedImport,
+        format!(
+            "verified import {} export {} is not Machine Surface renderable",
+            import.module.as_dotted(),
+            name.as_dotted()
+        ),
+    ))
+}
+
+fn ensure_current_machine_surface_callable_name(name: &Name) -> Result<()> {
+    if npa_frontend::is_machine_surface_renderable_name(name) {
+        return Ok(());
+    }
+
+    Err(MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::InvalidMachineProofSpec,
+        format!(
+            "current declaration {} is not Machine Surface renderable",
+            name.as_dotted()
+        ),
+    ))
+}
+
+fn import_export_type(
+    import: &VerifiedImportRef,
+    export: &VerifiedExportSignature,
+) -> Result<Expr> {
+    match export.kind {
+        ExportKind::Axiom | ExportKind::Def | ExportKind::Theorem | ExportKind::Inductive => {
+            import_ordinary_export_type(import, export)
+        }
+        ExportKind::Constructor | ExportKind::Recursor => {
+            import_generated_export_type(import, export)
+        }
+    }
+}
+
+fn import_ordinary_export_type(
+    import: &VerifiedImportRef,
+    export: &VerifiedExportSignature,
+) -> Result<Expr> {
+    let export_name = export.name.as_dotted();
+    import
+        .certified_env_decls
+        .iter()
+        .find(|decl| decl.name() == export_name)
+        .map(|decl| decl.ty().clone())
+        .ok_or_else(|| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                format!(
+                    "verified import {} export {} is missing from the reconstructed kernel env",
+                    import.module.as_dotted(),
+                    export.name.as_dotted()
+                ),
+            )
+        })
+}
+
+fn import_generated_export_type(
+    import: &VerifiedImportRef,
+    export: &VerifiedExportSignature,
+) -> Result<Expr> {
+    let export_name = export.name.as_dotted();
+    for decl in &import.certified_env_decls {
+        let Decl::Inductive { data, .. } = decl else {
+            continue;
+        };
+        match export.kind {
+            ExportKind::Constructor => {
+                if let Some(constructor) = data
+                    .constructors
+                    .iter()
+                    .find(|constructor| constructor.name == export_name)
+                {
+                    return Ok(constructor.ty.clone());
+                }
+            }
+            ExportKind::Recursor => {
+                if let Some(recursor) = data
+                    .recursor
+                    .as_ref()
+                    .filter(|recursor| recursor.name == export_name)
+                {
+                    return Ok(recursor.ty.clone());
+                }
+            }
+            _ => unreachable!("caller dispatches only generated export kinds"),
+        }
+    }
+
+    Err(MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::InvalidVerifiedImport,
+        format!(
+            "verified import {} generated export {} is missing from the reconstructed kernel env",
+            import.module.as_dotted(),
+            export.name.as_dotted()
+        ),
+    ))
+}
+
+fn expr_pi_telescope_len(expr: &Expr) -> usize {
+    let mut len = 0;
+    let mut current = expr;
+    while let Expr::Pi { body, .. } = current {
+        len += 1;
+        current = body;
+    }
+    len
 }
 
 fn machine_term_elaboration_diag(err: npa_frontend::MachineDiagnostic) -> MachineTacticDiagnostic {
@@ -10028,6 +10226,100 @@ mod tests {
             extract_closed_machine_proof(&closed).expect("proof should extract"),
             prop()
         );
+    }
+
+    #[test]
+    fn machine_term_elab_context_populates_callable_table_for_tactic_terms() {
+        let verified = verified_apply_module();
+        let import = VerifiedImportRef::from_verified_module(&verified).unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                module: Name::from_dotted("Test"),
+                theorem_name: Name::from_dotted("Test.thm"),
+                source_index: 0,
+                universe_params: Vec::new(),
+                theorem_type: prop(),
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+
+        let context = machine_term_elab_context(&state, &[]).unwrap();
+
+        assert!(context
+            .callable_interface_table()
+            .entries()
+            .iter()
+            .any(|entry| matches!(
+                entry.callable_ref(),
+                npa_frontend::MachineSurfaceCallableRef::Imported { name, .. }
+                    if name == &Name::from_dotted("Lib.mp")
+            )));
+    }
+
+    #[test]
+    fn machine_term_elab_context_populates_imported_generated_callable_entries() {
+        let verified = verified_nat_builtin_module();
+        let import = VerifiedImportRef::from_verified_module(&verified).unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                module: Name::from_dotted("Test"),
+                theorem_name: Name::from_dotted("Test.thm"),
+                source_index: 0,
+                universe_params: Vec::new(),
+                theorem_type: prop(),
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+
+        let context = machine_term_elab_context(&state, &[]).unwrap();
+
+        assert!(context
+            .callable_interface_table()
+            .entries()
+            .iter()
+            .any(|entry| matches!(
+                entry.callable_ref(),
+                npa_frontend::MachineSurfaceCallableRef::Imported { name, .. }
+                    if name == &Name::from_dotted("Nat.succ")
+            )));
+        assert!(context
+            .callable_interface_table()
+            .entries()
+            .iter()
+            .any(|entry| matches!(
+                entry.callable_ref(),
+                npa_frontend::MachineSurfaceCallableRef::Imported { name, .. }
+                    if name == &Name::from_dotted("Nat.rec")
+            )));
+    }
+
+    #[test]
+    fn machine_term_elab_context_rejects_unrenderable_import_callable_name() {
+        let verified = verified_axiom_module("Lib", "_bad");
+        let import = VerifiedImportRef::from_verified_module(&verified).unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                module: Name::from_dotted("Test"),
+                theorem_name: Name::from_dotted("Test.thm"),
+                source_index: 0,
+                universe_params: Vec::new(),
+                theorem_type: prop(),
+            },
+            vec![import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+
+        let err = machine_term_elab_context(&state, &[]).unwrap_err();
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidVerifiedImport);
     }
 
     #[test]

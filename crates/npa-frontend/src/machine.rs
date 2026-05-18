@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::MachineSurfaceCallableInterfaceTable;
 use crate::{FileId, Span};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -205,6 +206,7 @@ pub struct MachineTermElabContext {
     pub(crate) local_context: Vec<MachineLocalDecl>,
     pub(crate) universe_params: Vec<String>,
     pub(crate) kernel_env: MachineKernelEnvView,
+    pub(crate) callable_interface_table: MachineSurfaceCallableInterfaceTable,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -288,6 +290,18 @@ impl MachineTermElabContext {
 
     pub fn global_scope_entries(&self) -> &[MachineGlobalScopeEntry] {
         &self.global_scope.entries
+    }
+
+    pub fn callable_interface_table(&self) -> &MachineSurfaceCallableInterfaceTable {
+        &self.callable_interface_table
+    }
+
+    pub fn with_callable_interface_table(
+        mut self,
+        table: MachineSurfaceCallableInterfaceTable,
+    ) -> Self {
+        self.callable_interface_table = table;
+        self
     }
 }
 
