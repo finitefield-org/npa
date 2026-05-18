@@ -97,8 +97,8 @@ Phase 5 AI の substrate は `crates/npa-api` で進めており、lossless JSON
 import/current projection、Phase 4 adapter boundary、Machine Surface callable interface table builder、
 owner-aware MachineExprRenderer v1 / renderer QA substrate、MachineApiDiagnostic canonicalization
 に加えて、M2 の Machine API types / ID・HashString wire grammar / endpoint envelope validation
-と、M5 `/machine/snapshots/get`、M6 `/machine/tactics/run`、M7 `/machine/tactics/batch` の
-library API を含みます。
+と、M5 `/machine/snapshots/get`、M6 `/machine/tactics/run`、M7 `/machine/tactics/batch`、
+M8 `/machine/search/for_goal` の library API を含みます。
 独立 checker は Phase 8 の後続成果物として扱います。
 
 ## 開発メモ

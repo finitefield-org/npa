@@ -10,6 +10,7 @@ mod diagnostic;
 mod json;
 mod projection;
 mod renderer;
+mod search;
 mod session;
 mod snapshot;
 mod tactic;
@@ -56,6 +57,14 @@ pub use renderer::{
     MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineExprRendererContext,
     MachineExprRendererError, MachineExprView, MachineGlobalRefView,
     Phase5ResolvedDisplayCoreRefOwner,
+};
+pub use search::{
+    parse_machine_theorem_search_request, search_machine_theorems_for_goal,
+    search_machine_theorems_for_goal_in_sessions, MachineAllowedModulesFilter,
+    MachineSuggestedCandidate, MachineSuggestedCandidateStatus, MachineTheoremFilters,
+    MachineTheoremGlobalRef, MachineTheoremMode, MachineTheoremSearchError,
+    MachineTheoremSearchOkFields, MachineTheoremSearchRequest, MachineTheoremSearchResponse,
+    MachineTheoremSearchResult, MachineTheoremStatement,
 };
 pub use session::{
     create_machine_session, MachineSessionCreateError, MachineSessionCreateOk,
