@@ -61,7 +61,9 @@ pub use session::{
     MachineSessionCreateRequest,
 };
 pub use snapshot::{
-    materialize_machine_proof_snapshot, stored_snapshot_view_canonical_bytes,
+    get_machine_snapshot, get_machine_snapshot_from_session, materialize_machine_proof_snapshot,
+    parse_machine_snapshot_get_request, stored_snapshot_view_canonical_bytes,
+    MachineSnapshotGetError, MachineSnapshotGetOk, MachineSnapshotGetRequest,
     MachineSnapshotLookupError, MachineSnapshotMaterializationContext,
     MachineSnapshotMaterializationError, MachineSnapshotStore, MachineSnapshotStoreError,
     StoredSnapshotEntry, StoredSnapshotView,

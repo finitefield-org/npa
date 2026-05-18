@@ -6,7 +6,7 @@ use npa_tactic::{
     core_expr_hash, goal_id_canonical_bytes, machine_local_context_hash,
     machine_tactic_options_hash, meta_var_id_canonical_bytes, proof_expr_hash,
     validate_machine_proof_state, GoalId, MachineLocalDecl, MachineProofState,
-    MachineTacticDiagnostic, MetaVarId,
+    MachineTacticDiagnostic, MachineTacticDiagnosticKind, MetaVarId,
 };
 use sha2::{Digest, Sha256};
 
@@ -16,7 +16,15 @@ use crate::renderer::{
     MachineExprRendererError, MachineExprView, MachineGlobalRefView,
 };
 use crate::types::{
-    MachineGoalView, MachineLocalView, MachineProofSnapshot, SessionId, SnapshotId,
+    MachineApiEndpoint, MachineApiErrorWire, MachineGoalView, MachineLocalView,
+    MachineProofSession, MachineProofSnapshot, SessionId, SnapshotId,
+};
+use crate::validation::{
+    parse_request_body, JsonPath, JsonPathElement, MachineApiErrorKind, MachineApiRequestError,
+};
+use crate::{
+    validate_machine_endpoint_envelope, HashString, MachineApiDiagnosticPhase,
+    MachineApiDiagnosticProjection, Phase5UpstreamDiagnostic,
 };
 
 const STORED_SNAPSHOT_VIEW_TAG: &str = "npa.phase5.stored-snapshot-view.v1";
@@ -288,6 +296,110 @@ pub enum MachineSnapshotMaterializationError {
     DuplicateAllowedTactic {
         tactic: MachineApiTacticKind,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineSnapshotGetRequest {
+    pub session_id: SessionId,
+    pub snapshot_id: SnapshotId,
+    pub state_fingerprint: Hash,
+    pub include_pretty: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineSnapshotGetOk {
+    pub snapshot: MachineProofSnapshot,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineSnapshotGetError {
+    pub diagnostic: MachineApiDiagnosticProjection,
+    pub error: MachineApiErrorWire,
+}
+
+pub fn get_machine_snapshot<'session>(
+    source: &str,
+    sessions: impl IntoIterator<Item = &'session MachineProofSession>,
+) -> Result<MachineSnapshotGetOk, Box<MachineSnapshotGetError>> {
+    let request = parse_machine_snapshot_get_request(source).map_err(snapshot_request_error)?;
+    let Some(session) = sessions
+        .into_iter()
+        .find(|session| session.session_id == request.session_id)
+    else {
+        return Err(snapshot_semantic_error(
+            MachineApiErrorKind::UnknownSession,
+            MachineApiDiagnosticPhase::SessionLookup,
+            format!("unknown session {}", request.session_id.wire()),
+        ));
+    };
+
+    get_machine_snapshot_from_session_request(session, request)
+}
+
+pub fn get_machine_snapshot_from_session(
+    source: &str,
+    session: &MachineProofSession,
+) -> Result<MachineSnapshotGetOk, Box<MachineSnapshotGetError>> {
+    get_machine_snapshot(source, std::iter::once(session))
+}
+
+pub fn parse_machine_snapshot_get_request(
+    source: &str,
+) -> Result<MachineSnapshotGetRequest, MachineApiRequestError> {
+    let doc = parse_request_body(source, MachineApiErrorKind::InvalidSnapshotRequest)?;
+    let envelope = validate_machine_endpoint_envelope(
+        doc.root(),
+        MachineApiEndpoint::SnapshotGet,
+        &JsonPath::root(),
+    )?;
+    let session_id = SessionId::parse(required_string(&envelope, "session_id"))
+        .expect("endpoint validation checked session_id grammar");
+    let snapshot_id = SnapshotId::parse(required_string(&envelope, "snapshot_id"))
+        .expect("endpoint validation checked snapshot_id grammar");
+    let state_fingerprint = HashString::parse(required_string(&envelope, "state_fingerprint"))
+        .expect("endpoint validation checked state_fingerprint grammar")
+        .digest();
+    let include_pretty = envelope
+        .field("include_pretty")
+        .and_then(crate::JsonValue::bool_value)
+        .expect("endpoint validation checked include_pretty bool");
+
+    Ok(MachineSnapshotGetRequest {
+        session_id,
+        snapshot_id,
+        state_fingerprint,
+        include_pretty,
+    })
+}
+
+fn get_machine_snapshot_from_session_request(
+    session: &MachineProofSession,
+    request: MachineSnapshotGetRequest,
+) -> Result<MachineSnapshotGetOk, Box<MachineSnapshotGetError>> {
+    if session.snapshots.session_id() != &session.session_id {
+        return Err(snapshot_semantic_error(
+            MachineApiErrorKind::InvalidMachineProofState,
+            MachineApiDiagnosticPhase::SnapshotLookup,
+            "session snapshot store belongs to a different session",
+        ));
+    }
+
+    let context = MachineSnapshotMaterializationContext {
+        session_id: &session.session_id,
+        display_scope: &session.machine_display_render_scope,
+        callable_interface_table: &session.machine_surface_callable_interface_table,
+    };
+    let entry = session
+        .snapshots
+        .lookup_checked(&context, request.snapshot_id, request.state_fingerprint)
+        .map_err(snapshot_lookup_error)?;
+    let mut snapshot = entry
+        .materialized_view_payload
+        .to_snapshot(&session.session_id);
+    if request.include_pretty {
+        attach_pretty_projection(&mut snapshot);
+    }
+    Ok(MachineSnapshotGetOk { snapshot })
 }
 
 pub fn materialize_machine_proof_snapshot(
@@ -662,6 +774,112 @@ fn encode_global_ref_view(out: &mut Vec<u8>, view: &MachineGlobalRefView) {
     out.extend(view.canonical_bytes());
 }
 
+fn attach_pretty_projection(snapshot: &mut MachineProofSnapshot) {
+    for goal in &mut snapshot.goals {
+        attach_expr_pretty(&mut goal.target);
+        for local in &mut goal.context {
+            attach_expr_pretty(&mut local.ty);
+            if let Some(value) = &mut local.value {
+                attach_expr_pretty(value);
+            }
+        }
+    }
+}
+
+fn attach_expr_pretty(view: &mut MachineExprView) {
+    view.pretty = Some(view.machine.clone());
+}
+
+fn snapshot_request_error(error: MachineApiRequestError) -> Box<MachineSnapshotGetError> {
+    snapshot_semantic_error(
+        error.kind,
+        MachineApiDiagnosticPhase::RequestValidation,
+        format!(
+            "request validation failed at {}: {:?}",
+            json_path_display(&error.path),
+            error.reason
+        ),
+    )
+}
+
+fn snapshot_lookup_error(err: MachineSnapshotLookupError) -> Box<MachineSnapshotGetError> {
+    let kind = match err {
+        MachineSnapshotLookupError::UnknownSnapshot { .. } => MachineApiErrorKind::UnknownSnapshot,
+        MachineSnapshotLookupError::StateFingerprintMismatch { .. } => {
+            MachineApiErrorKind::StateFingerprintMismatch
+        }
+        MachineSnapshotLookupError::SnapshotIdentityMismatch { .. }
+        | MachineSnapshotLookupError::InvalidMachineProofState { .. }
+        | MachineSnapshotLookupError::ExecutableStateFingerprintMismatch { .. }
+        | MachineSnapshotLookupError::StoredSnapshotViewMismatch { .. } => {
+            MachineApiErrorKind::InvalidMachineProofState
+        }
+    };
+    snapshot_semantic_error(
+        kind,
+        MachineApiDiagnosticPhase::SnapshotLookup,
+        format!("snapshot lookup failed: {err:?}"),
+    )
+}
+
+fn snapshot_semantic_error(
+    kind: MachineApiErrorKind,
+    phase: MachineApiDiagnosticPhase,
+    message: impl Into<String>,
+) -> Box<MachineSnapshotGetError> {
+    let message = message.into();
+    let diagnostic = MachineApiDiagnosticProjection {
+        kind,
+        phase,
+        retryable: false,
+        goal_id: None,
+        tactic_kind: None,
+        primary_name: None,
+        primary_axiom_ref: None,
+        expected_hash: None,
+        actual_hash: None,
+        source_message: message.clone(),
+        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidMachineProofState,
+            message,
+        )),
+    };
+    let error = MachineApiErrorWire::from_projection(&diagnostic)
+        .expect("snapshot get diagnostics must satisfy Phase 5 wire invariants");
+    Box::new(MachineSnapshotGetError { diagnostic, error })
+}
+
+fn required_string<'value, 'src>(
+    envelope: &crate::MachineValidatedEndpointEnvelope<'value, 'src>,
+    field: &str,
+) -> &'value str {
+    envelope
+        .field(field)
+        .and_then(crate::JsonValue::string_value)
+        .expect("endpoint validation checked required string field")
+}
+
+fn json_path_display(path: &JsonPath) -> String {
+    if path.elements.is_empty() {
+        return "$".to_owned();
+    }
+    let mut out = "$".to_owned();
+    for element in &path.elements {
+        match element {
+            JsonPathElement::Field(field) => {
+                out.push('.');
+                out.push_str(field);
+            }
+            JsonPathElement::Index(index) => {
+                out.push('[');
+                out.push_str(&index.to_string());
+                out.push(']');
+            }
+        }
+    }
+    out
+}
+
 fn sha256(bytes: &[u8]) -> Hash {
     Sha256::digest(bytes).into()
 }
@@ -692,6 +910,7 @@ fn encode_uvar(out: &mut Vec<u8>, mut value: u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{create_machine_session, format_hash_string};
     use npa_frontend::MachineSurfaceCallableInterfaceTable;
     use npa_kernel::{Expr, Level};
     use npa_tactic::{
@@ -741,6 +960,63 @@ mod tests {
 
     fn empty_callable_table() -> MachineSurfaceCallableInterfaceTable {
         MachineSurfaceCallableInterfaceTable::from_entries(Vec::new()).unwrap()
+    }
+
+    fn default_options_json(allow_axioms: &str) -> String {
+        format!(
+            r#"{{
+              "kernel_check_profile":"npa.kernel.v0.1.builtin-nat-eq-rec",
+              "allow_axioms": {allow_axioms},
+              "tactic_options": {{
+                "simp_rules": [],
+                "eq_family": null,
+                "nat_family": null,
+                "max_simp_rewrite_steps": 100,
+                "max_open_goals": 32,
+                "max_metas": 64
+              }}
+            }}"#
+        )
+    }
+
+    fn minimal_session_json(theorem_type: &str) -> String {
+        format!(
+            r#"{{
+              "protocol_version":"npa.machine-api.v1",
+              "root":{{
+                "module":"Scratch",
+                "theorem_name":"Scratch.t",
+                "source_index":0,
+                "universe_params":[],
+                "theorem_type":{{"format":"machine_surface_v1","source":"{theorem_type}"}}
+              }},
+              "import_closure":[],
+              "imports":[],
+              "checked_current_decls":[],
+              "options":{}
+            }}"#,
+            default_options_json("[]")
+        )
+    }
+
+    fn snapshot_get_json(
+        session_id: &SessionId,
+        snapshot_id: SnapshotId,
+        state_fingerprint: Hash,
+        include_pretty: bool,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "include_pretty":{}
+            }}"#,
+            session_id.wire(),
+            snapshot_id.wire(),
+            format_hash_string(&state_fingerprint),
+            include_pretty
+        )
     }
 
     #[test]
@@ -883,5 +1159,115 @@ mod tests {
                 MachineSnapshotLookupError::StoredSnapshotViewMismatch { .. }
             )
         ));
+    }
+
+    #[test]
+    fn snapshot_get_returns_stored_snapshot_and_pretty_projection() {
+        let session = create_machine_session(&minimal_session_json("Prop"))
+            .unwrap()
+            .session;
+        let request = snapshot_get_json(
+            &session.session_id,
+            session.initial_snapshot.snapshot_id,
+            session.initial_snapshot.state_fingerprint,
+            false,
+        );
+
+        let ok = get_machine_snapshot(&request, [&session]).unwrap();
+
+        assert_eq!(ok.snapshot, session.initial_snapshot);
+        assert_eq!(ok.snapshot.goals[0].target.pretty, None);
+
+        let pretty_request = snapshot_get_json(
+            &session.session_id,
+            session.initial_snapshot.snapshot_id,
+            session.initial_snapshot.state_fingerprint,
+            true,
+        );
+        let pretty = get_machine_snapshot(&pretty_request, [&session]).unwrap();
+
+        assert_eq!(
+            pretty.snapshot.state_fingerprint,
+            session.initial_snapshot.state_fingerprint
+        );
+        assert_eq!(pretty.snapshot.goals[0].target.machine, "Prop");
+        assert_eq!(
+            pretty.snapshot.goals[0].target.pretty.as_deref(),
+            Some("Prop")
+        );
+        assert_eq!(session.initial_snapshot.goals[0].target.pretty, None);
+    }
+
+    #[test]
+    fn snapshot_get_maps_unknown_session_after_request_validation() {
+        let session = create_machine_session(&minimal_session_json("Prop"))
+            .unwrap()
+            .session;
+        let request = snapshot_get_json(
+            &SessionId::new_unchecked("msess_missing"),
+            session.initial_snapshot.snapshot_id,
+            session.initial_snapshot.state_fingerprint,
+            false,
+        );
+
+        let err = get_machine_snapshot(&request, [&session]).unwrap_err();
+
+        assert_eq!(err.diagnostic.kind, MachineApiErrorKind::UnknownSession);
+        assert_eq!(
+            err.diagnostic.phase,
+            MachineApiDiagnosticPhase::SessionLookup
+        );
+    }
+
+    #[test]
+    fn snapshot_get_checks_store_before_request_fingerprint_mismatch() {
+        let mut session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let snapshot = session.initial_snapshot.clone();
+        let entry = session
+            .snapshots
+            .entries
+            .get_mut(&snapshot.snapshot_id)
+            .unwrap();
+        entry.materialized_view_payload.proof_skeleton_hash = [9; 32];
+        entry.materialized_view_canonical_bytes =
+            stored_snapshot_view_canonical_bytes(&entry.materialized_view_payload);
+        let request = snapshot_get_json(&session.session_id, snapshot.snapshot_id, [7; 32], false);
+
+        let err = get_machine_snapshot(&request, [&session]).unwrap_err();
+
+        assert_eq!(
+            err.diagnostic.kind,
+            MachineApiErrorKind::InvalidMachineProofState
+        );
+        assert_eq!(
+            err.diagnostic.phase,
+            MachineApiDiagnosticPhase::SnapshotLookup
+        );
+    }
+
+    #[test]
+    fn snapshot_get_reports_state_fingerprint_mismatch_after_self_check() {
+        let session = create_machine_session(&minimal_session_json("Type 0"))
+            .unwrap()
+            .session;
+        let request = snapshot_get_json(
+            &session.session_id,
+            session.initial_snapshot.snapshot_id,
+            [7; 32],
+            false,
+        );
+
+        let err = get_machine_snapshot(&request, [&session]).unwrap_err();
+
+        assert_eq!(
+            err.diagnostic.kind,
+            MachineApiErrorKind::StateFingerprintMismatch
+        );
+        assert_eq!(
+            err.diagnostic.phase,
+            MachineApiDiagnosticPhase::SnapshotLookup
+        );
     }
 }
