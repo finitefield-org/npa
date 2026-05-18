@@ -2806,46 +2806,364 @@ prompt metadata:
 
 ---
 
-# 17. 実装順序
+# 17. マイルストーン
 
-Recommended order:
+Phase 6 AI Profile は、標準ライブラリを一度に「賢く」する工程ではありません。
+certificate-bound な最小 release を先に固定し、その上に import bundle、検索 index、simp/rw metadata、
+Phase 5 / Phase 7 / Phase 8 連携を順に載せます。
+各マイルストーンは、前段の canonical artifact と hash を壊さずに次段へ渡せることを完了条件にします。
 
 ```text
-1. Rename human library spec
-   doc/phase6-human.md を標準ライブラリの人間向け設計として固定する
-
-2. Certificate release loader
-   Std.*.npcert を Phase 2 verifier で high-trust 検査し、module artifact を作る
-
-3. Import bundle closure generator
-   std.logic.mvp / std.nat.mvp / std.list.mvp / std.algebra-basic.mvp / std.all.mvp の
-   root_imports / import_closure / allow_axioms と recipe_id mapping を作る
-
-4. Theorem index base generator
-   public theorem / axiom ExportEntry から certificate-derived fields を持つ MachineStdTheoremEntry を作る。
-   exact/apply modes と Apply attribute は certificate-derived statement shape からここで確定する。
-   rw/simp modes、Simp/Rw attributes、rewrite_descriptors は validated profiles 後まで final にしない。
-   modes / attributes / rewrite_descriptors を含む theorem_index_hash は finalizer 後まで emit しない
-
-5. Rewrite and simp profile generators
-   Phase 4 ResolvedSimpRule から lhs/rhs hash と Phase 6 MachineStdRuleTelescope hash を導出する
-   std.logic.rw / std.nat.rw / std.list.rw / std.all.rw を作る
-   std.logic.simp / std.nat.simp / std.list.simp / std.all.simp を作る
-
-6. Theorem index derived metadata finalizer
-   validated rewrite/simp profiles から rw/simp modes、Simp/Rw/Apply attributes、rewrite_descriptors を導出し、
-   MVP で未使用の attributes を拒否する
-
-7. Import bundle recipe finalizer and Phase 5 integration tests
-   validated simp profiles から recommended_tactic_options payload を確定し、
-   import bundle + tactic options recipe が /machine/sessions で検証されることを確認する
-
-8. Phase 7 retrieval fixtures
-   basic Nat/List goals で exact/rw/simp candidate source を再現できることを確認する
-
-9. Phase 8 audit checks
-   sidecar と certificate verifier output の一致を独立に検査する
+M0. Human / AI profile boundary fixed
+M1. Certificate release loader
+M2. Release manifest and axiom policy
+M3. Import bundle closure generator
+M4. Theorem index base generator
+M5. Rewrite and simp profile generator
+M6. Theorem index metadata finalizer
+M7. Phase 5 session handoff
+M8. Phase 7 retrieval fixtures
+M9. Phase 8 audit hooks
 ```
+
+## M0. Human / AI profile boundary fixed
+
+目的:
+
+```text
+- doc/phase6-human.md を人間向け標準ライブラリ設計として固定する
+- doc/phase6-ai.md は machine artifact / wire contract / validation order の正本にする
+- source text、pretty statement、attribute sidecar、ranking、prompt metadata が trusted payload ではないことを明確にする
+```
+
+成果物:
+
+```text
+- Phase 6 Human Profile と AI Profile の責務分離
+- MVP module set:
+    Std.Logic
+    Std.Nat
+    Std.List
+    Std.Algebra.Basic
+- fixed package locator path table
+```
+
+完了条件:
+
+```text
+- MVP module membership と canonical module order が文書上固定されている
+- optional prompt metadata が std_library_release_hash に入らないことが文書上固定されている
+- trusted / untrusted boundary が Phase 2 / Phase 5 / Phase 7 / Phase 8 と矛盾しない
+```
+
+## M1. Certificate release loader
+
+目的:
+
+```text
+- Std/*.npcert を唯一の canonical source of truth として読み込む
+- fixed locator path から raw Phase 2 certificate bytes を取得する
+- Phase 2 verifier を high-trust mode で呼び、module artifact に必要な verifier output を得る
+```
+
+成果物:
+
+```text
+- package root + fixed POSIX relative path の locator validator
+- raw .npcert reader
+- Phase 2 canonical certificate decoder integration
+- high-trust verifier integration
+- ModuleName -> verified certificate context table
+```
+
+完了条件:
+
+```text
+- missing / extra module、path mismatch、non-canonical module order を InvalidStdLibraryRelease として拒否できる
+- absolute path、..、.、backslash、duplicate slash、trailing slash、symlink escape を拒否できる
+- each certificate の export_hash / certificate_hash / module-level axiom_report_hash を再計算できる
+- import graph を certificate ImportEntry だけから構成し、Core/prelude ImportEntry を ordinary import として拒否できる
+- topological dependency order + ModuleName canonical tie-break で検証できる
+```
+
+## M2. Release manifest and axiom policy
+
+目的:
+
+```text
+- MachineStdLibraryRelease と MachineStdModuleArtifact の canonical bytes / hash を実装する
+- release-wide no-custom-axiom policy を verifier output から検査する
+- sidecar self-hash と manifest-bound hash comparison を分離する
+```
+
+成果物:
+
+```text
+- Std.machine-release.json parser / validator
+- MachineStdLibraryRelease canonical bytes
+- std_library_release_hash computation
+- MachineStdAxiomReport parser / validator
+- release-wide axiom_report_hash computation
+```
+
+完了条件:
+
+```text
+- protocol_version / library_profile_id / core_spec_id / kernel_semantics_profile_id mismatch を拒否できる
+- MachineStdLibraryRelease が std_library_release_hash field を持つ場合に unknown field として拒否できる
+- module_axioms と transitive_axioms が MVP では全 module で空であることを検査できる
+- stale MachineStdAxiomReport.axiom_report_hash を InvalidStdAxiomPolicy として manifest comparison 前に拒否できる
+- manifest-bound sidecar hash mismatch を InvalidStdLibraryRelease として分類できる
+```
+
+## M3. Import bundle closure generator
+
+目的:
+
+```text
+- Phase 5 /machine/sessions にそのまま渡せる import bundle を生成する
+- direct roots と transitive closure を certificate-bound identity で固定する
+- allow_axioms と recipe_id mapping を MVP profile に合わせて固定する
+```
+
+成果物:
+
+```text
+- MachineStdImportBundleSet generator / validator
+- std.logic.mvp
+- std.nat.mvp
+- std.list.mvp
+- std.algebra-basic.mvp
+- std.all.mvp
+- import_bundles_hash computation
+```
+
+完了条件:
+
+```text
+- missing / extra / duplicate bundle id と non-canonical bundle order を拒否できる
+- root_imports / import_closure が canonical tuple order であることを検査できる
+- import_closure certificate bytes が Std/*.npcert と byte-for-byte 一致することを検査できる
+- extra dependency、missing dependency、duplicate root / closure key を拒否できる
+- MVP allow_axioms が [] であることを検査できる
+- bundle-to-recipe mapping が固定表と一致することを検査できる
+```
+
+## M4. Theorem index base generator
+
+目的:
+
+```text
+- public theorem / axiom ExportEntry から certificate-derived theorem index を作る
+- theorem identity を module / name / export_hash / certificate_hash / decl_interface_hash に固定する
+- profile-derived metadata なしで確定できる fields だけを先に生成する
+```
+
+成果物:
+
+```text
+- MachineStdTheoremIndex base generator
+- MachineStdGlobalRef canonical bytes / order
+- MachineStdTheoremEntry certificate-derived fields:
+    kind
+    universe_params
+    statement_core_hash
+    statement_head
+    constants
+    axiom_dependencies
+    proof_term_size = None
+- exact / apply base mode derivation
+```
+
+完了条件:
+
+```text
+- theorem index entries が release module の public theorem / axiom ExportEntry と exact match する
+- generated constructor / recursor、private entry、extra entry、missing entry を拒否できる
+- statement_core_hash が Phase 2 ExportEntry.type_hash と一致する
+- statement_head / constants / axiom_dependencies を verifier output から決定的に再構成できる
+- rw/simp modes、Simp/Rw attributes、rewrite_descriptors をこの段階では final にしない
+- final theorem_index_hash は M6 まで emit しない
+```
+
+## M5. Rewrite and simp profile generator
+
+目的:
+
+```text
+- Phase 4 ResolvedSimpRule を Phase 6 の rewrite / simp sidecar に投影する
+- lhs/rhs core hash と MachineStdRuleTelescope hash を certificate context で決定的に計算する
+- unsafe な rewrite と simp-safe な rule を profile id ごとに分離する
+```
+
+成果物:
+
+```text
+- MachineStdRewriteProfileSet generator / validator
+- MachineStdSimpProfileSet generator / validator
+- std.logic.rw / std.nat.rw / std.list.rw / std.all.rw
+- std.logic.simp / std.nat.simp / std.list.simp / std.all.simp
+- rewrite_profiles_hash computation
+- simp_profiles_hash computation
+```
+
+完了条件:
+
+```text
+- MVP profile ids と required_import_bundle_id / kernel_check_profile / eq_family が固定表と一致する
+- lhs_core_hash / rhs_core_hash が Phase 2 term_hash payload から計算される
+- rule_telescope_hash が Phase 6-specific rule_telescope bytes から計算される
+- SimpSafe / RwOnly membership が MVP の固定集合と一致する
+- std.all.rw と std.all.simp が source profiles の semantic union として再検証できる
+- stale per-profile profile_hash を set hash 計算前に拒否できる
+```
+
+## M6. Theorem index metadata finalizer
+
+目的:
+
+```text
+- validated rewrite/simp profiles から theorem index の derived metadata を確定する
+- rw/simp modes、Simp/Rw/Apply attributes、rewrite_descriptors を theorem entry に反映する
+- MVP で未使用の attributes を拒否する
+```
+
+成果物:
+
+```text
+- theorem index finalizer
+- finalized modes
+- finalized attributes
+- finalized rewrite_descriptors
+- theorem_index_hash computation
+```
+
+完了条件:
+
+```text
+- modes / attributes / rewrite_descriptors が validated profiles の結果と一致する
+- duplicate / non-canonical modes、attributes、rewrite_descriptors を拒否できる
+- Intro / Elim / Refl / Trans / Congr attributes が MVP artifact に出た場合に拒否できる
+- theorem_index_hash self-mismatch を InvalidStdTheoremIndex として拒否できる
+- MachineStdModuleArtifact.theorem_index_entry_count と simp_rule_count を final sidecar から検査できる
+```
+
+## M7. Phase 5 session handoff
+
+目的:
+
+```text
+- import bundle と recommended_tactic_options recipe を Phase 5 API で再検証する
+- Phase 6 recipe を trusted state としてではなく Phase 5 request payload として扱う
+- stale recipe reference を Phase 5 option validation で検出する
+```
+
+成果物:
+
+```text
+- import bundle recipe finalizer
+- MachineStdTacticOptionsRecipe canonical bytes
+- Phase 5 MachineTacticOptionsRequest projection
+- /machine/sessions integration tests
+```
+
+完了条件:
+
+```text
+- recipe_id を drop した payload が Phase 5 MachineTacticOptionsRequest として検証される
+- SimpRuleRef / EqFamilyRef / NatFamilyRef が bundle direct import scope で解決される
+- emitted recipe simp_rules が referenced simp profile の canonical rules と一致する
+- std.logic.eq-family が verified Std.Logic exports に bind される
+- MVP recipes が nat_family = null を保ち、induction-nat を有効化しない
+```
+
+## M8. Phase 7 retrieval fixtures
+
+目的:
+
+```text
+- Phase 7 が Phase 6 metadata を使って premise retrieval / candidate generation を再現できることを確認する
+- AI が生成した候補を必ず Phase 5 run/batch/replay/verify に戻す境界を固定する
+```
+
+成果物:
+
+```text
+- Nat / List basic goal fixtures
+- exact candidate fixtures
+- rw candidate fixtures
+- simp candidate fixtures
+- query_fingerprint / theorem_index_fingerprint regression tests
+```
+
+完了条件:
+
+```text
+- 同一 release artifact から同一 candidate source set を再現できる
+- theorem ranking や prompt text を certificate hash / std_library_release_hash に入れない
+- Phase 7 candidate が Phase 5 /machine/tactics/run または /machine/tactics/batch なしに採用されない
+- stale global_ref / decl_interface_hash を持つ candidate が Phase 5 validation で拒否される
+```
+
+## M9. Phase 8 audit hooks
+
+目的:
+
+```text
+- independent checker / audit layer が Phase 6 sidecar と verifier output の一致を再検査できるようにする
+- trusted base を広げずに machine artifact の再現性を監査する
+```
+
+成果物:
+
+```text
+- Phase 8 audit checklist implementation
+- sidecar vs verifier output comparison
+- manifest-bound sidecar hash audit
+- optional prompt metadata exclusion audit
+```
+
+完了条件:
+
+```text
+- release manifest hashes が certificate bytes と validated sidecar hashes に一致することを監査できる
+- optional prompt metadata が std_library_release_hash から除外されていることを監査できる
+- every decl_interface_hash / export_hash / certificate_hash が verifier output と一致することを監査できる
+- every simp / rewrite profile target が matching decl_interface_hash に解決されることを監査できる
+- import bundles が minimal transitive closure であり、constructive bundle の allow_axioms が空であることを監査できる
+```
+
+## Milestone dependency graph
+
+```text
+M0
+  ↓
+M1
+  ↓
+M2
+  ├── M3
+  └── M4
+      ↓
+M3 + M4
+  ↓
+ M5
+  ↓
+ M6
+  ↓
+M3 + M6
+  ↓
+ M7
+  ↓
+ M8
+  ↓
+ M9
+```
+
+M3 は M2 の manifest / module artifact table に依存します。
+M4 は M2 の verified module context table に依存します。
+M5 は M3 の import bundle identity、M4 の theorem identity、Phase 4 `ResolvedSimpRule` に依存します。
+M7 は M3 の import bundle と M6 の finalized theorem / simp metadata を Phase 5 に引き渡します。
+M8 以降は Phase 5 で再検証できる candidate source を前提に、Phase 7 / Phase 8 の利用面を固定します。
 
 ---
 
