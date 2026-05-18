@@ -6,6 +6,7 @@
 mod adapter;
 mod callable;
 mod current;
+mod diagnostic;
 mod json;
 mod projection;
 mod renderer;
@@ -31,6 +32,10 @@ pub use current::{
     CurrentDeclIndexEntry, CurrentGeneratedDeclEntry, CurrentGeneratedDeclKind,
     MachineAxiomRefWire, MachineCheckedCurrentDeclContext, MachineCheckedDeclSignature,
     MachineDependencyRefWire,
+};
+pub use diagnostic::{
+    machine_api_diagnostic_canonical_bytes, machine_api_diagnostic_hash,
+    MachineApiDiagnosticCanonicalizationError,
 };
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,

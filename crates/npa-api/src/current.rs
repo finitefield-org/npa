@@ -1936,7 +1936,7 @@ fn encode_machine_dependency_ref_wire(value: &MachineDependencyRefWire) -> Vec<u
     out
 }
 
-fn encode_machine_axiom_ref_wire(value: &MachineAxiomRefWire) -> Vec<u8> {
+pub(crate) fn encode_machine_axiom_ref_wire(value: &MachineAxiomRefWire) -> Vec<u8> {
     let mut out = Vec::new();
     encode_string(&mut out, "npa.phase5.axiom-ref-wire.v1");
     match value {

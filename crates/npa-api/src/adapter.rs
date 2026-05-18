@@ -11,6 +11,7 @@ use npa_tactic::{
     TacticFuelKind, VerifiedImportRef,
 };
 
+use crate::current::MachineAxiomRefWire;
 use crate::MachineApiErrorKind;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -119,6 +120,7 @@ pub struct MachineApiDiagnosticProjection {
     pub goal_id: Option<GoalId>,
     pub tactic_kind: Option<MachineApiTacticKind>,
     pub primary_name: Option<Name>,
+    pub primary_axiom_ref: Option<MachineAxiomRefWire>,
     pub expected_hash: Option<Hash>,
     pub actual_hash: Option<Hash>,
     pub source_message: String,
@@ -507,6 +509,7 @@ fn project_phase4_diagnostic(
         goal_id,
         tactic_kind,
         primary_name,
+        primary_axiom_ref: None,
         expected_hash,
         actual_hash,
         source_message,
@@ -530,6 +533,7 @@ fn project_phase3_diagnostic(
         goal_id,
         tactic_kind,
         primary_name: None,
+        primary_axiom_ref: None,
         expected_hash,
         actual_hash,
         source_message,

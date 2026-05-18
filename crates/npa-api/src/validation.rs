@@ -46,6 +46,50 @@ pub enum MachineApiErrorKind {
     VerifyFailed,
 }
 
+impl MachineApiErrorKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::UnknownSession => "unknown_session",
+            Self::UnknownSnapshot => "unknown_snapshot",
+            Self::StateFingerprintMismatch => "state_fingerprint_mismatch",
+            Self::SessionRootHashMismatch => "session_root_hash_mismatch",
+            Self::InvalidVerifiedImport => "invalid_verified_import",
+            Self::InvalidCheckedCurrentDecl => "invalid_checked_current_decl",
+            Self::InvalidMachineApiOptions => "invalid_machine_api_options",
+            Self::InvalidMachineProofState => "invalid_machine_proof_state",
+            Self::InvalidSessionRequest => "invalid_session_request",
+            Self::InvalidSnapshotRequest => "invalid_snapshot_request",
+            Self::InvalidTacticRunRequest => "invalid_tactic_run_request",
+            Self::InvalidTheoremIndex => "invalid_theorem_index",
+            Self::InvalidTheoremQuery => "invalid_theorem_query",
+            Self::InvalidPromptPayloadRequest => "invalid_prompt_payload_request",
+            Self::InvalidBatchPolicy => "invalid_batch_policy",
+            Self::InvalidSchedulerLimits => "invalid_scheduler_limits",
+            Self::InvalidReplayPlan => "invalid_replay_plan",
+            Self::InvalidVerifyRequest => "invalid_verify_request",
+            Self::ReplayHashMismatch => "replay_hash_mismatch",
+            Self::DisallowedAxiom => "disallowed_axiom",
+            Self::GoalNotOpen => "goal_not_open",
+            Self::InvalidCandidate => "invalid_candidate",
+            Self::InvalidBudget => "invalid_budget",
+            Self::UnsupportedTactic => "unsupported_tactic",
+            Self::MachineTermParseError => "machine_term_parse_error",
+            Self::MachineTermElaborationError => "machine_term_elaboration_error",
+            Self::UnknownName => "unknown_name",
+            Self::ImplicitArgumentRequired => "implicit_argument_required",
+            Self::TypeMismatch => "type_mismatch",
+            Self::ExpectedPiType => "expected_pi_type",
+            Self::RewriteRuleInvalid => "rewrite_rule_invalid",
+            Self::SimpNoProgress => "simp_no_progress",
+            Self::InductionTargetNotNat => "induction_target_not_nat",
+            Self::BudgetExceeded => "budget_exceeded",
+            Self::TooManyGoals => "too_many_goals",
+            Self::TooLargeTerm => "too_large_term",
+            Self::VerifyFailed => "verify_failed",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineApiRequestError {
     pub kind: MachineApiErrorKind,
