@@ -5897,6 +5897,7 @@ fn resolve_family_signature(
                         export.name.as_dotted()
                     ),
                 )
+                .with_primary_name(export.name.clone())
             })?;
             matches.push(ResolvedFamilySignature {
                 signature: CheckedDeclSignature::from_core_decl(decl, export.decl_interface_hash),
@@ -5926,7 +5927,8 @@ fn resolve_family_signature(
             } else {
                 format!("Eq family head {} is ambiguous", name.as_dotted())
             },
-        ));
+        )
+        .with_primary_name(name.clone()));
     };
     Ok(resolved.clone())
 }
@@ -5978,6 +5980,7 @@ fn resolve_current_family_signature(
                 name.as_dotted()
             ),
         )
+        .with_primary_name(name.clone())
     })?;
     match generated {
         Decl::Constructor { inductive, .. } | Decl::Recursor { inductive, .. }
@@ -5990,7 +5993,8 @@ fn resolve_current_family_signature(
                     name.as_dotted(),
                     decl.core_decl().name()
                 ),
-            ));
+            )
+            .with_primary_name(name.clone()));
         }
     }
 
@@ -6258,6 +6262,7 @@ fn resolve_nat_family_signature(
                         export.name.as_dotted()
                     ),
                 )
+                .with_primary_name(export.name.clone())
             })?;
             matches.push(ResolvedFamilySignature {
                 signature: CheckedDeclSignature::from_core_decl(decl, export.decl_interface_hash),
@@ -6287,7 +6292,8 @@ fn resolve_nat_family_signature(
             } else {
                 format!("Nat family head {} is ambiguous", name.as_dotted())
             },
-        ));
+        )
+        .with_primary_name(name.clone()));
     };
     Ok(resolved.clone())
 }
@@ -6339,6 +6345,7 @@ fn resolve_current_nat_family_signature(
                 name.as_dotted()
             ),
         )
+        .with_primary_name(name.clone())
     })?;
     match generated {
         Decl::Constructor { inductive, .. } | Decl::Recursor { inductive, .. }
@@ -6351,7 +6358,8 @@ fn resolve_current_nat_family_signature(
                     name.as_dotted(),
                     decl.core_decl().name()
                 ),
-            ));
+            )
+            .with_primary_name(name.clone()));
         }
     }
 
@@ -7276,13 +7284,13 @@ fn validate_intro_name_available(
 ) -> Result<()> {
     if context.iter().any(|local| local.name == name) {
         return Err(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::InvalidMetaContext,
+            MachineTacticDiagnosticKind::InvalidMachineTactic,
             format!("intro name {name} already exists in the local context"),
         ));
     }
     if machine_global_roots(state).contains(name) {
         return Err(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::InvalidMetaContext,
+            MachineTacticDiagnosticKind::InvalidMachineTactic,
             format!("intro name {name} shadows a global namespace root"),
         ));
     }
@@ -8032,6 +8040,25 @@ fn theorem_type_diag(err: npa_kernel::Error) -> MachineTacticDiagnostic {
             MachineTacticDiagnosticKind::TypeMismatch,
             format!("theorem type must have a sort type, got {actual:?}"),
         ),
+        npa_kernel::Error::ExpectedPi { actual } => MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::ExpectedFunctionType,
+            format!("theorem type contains an application whose function has type {actual:?}"),
+        ),
+        npa_kernel::Error::TypeMismatch { expected, actual } => {
+            let message = format!(
+                "kernel rejected theorem type: {:?}",
+                npa_kernel::Error::TypeMismatch {
+                    expected: expected.clone(),
+                    actual: actual.clone()
+                }
+            );
+            MachineTacticDiagnostic::new(MachineTacticDiagnosticKind::TypeMismatch, message)
+                .with_expected_actual_payloads(
+                    DiagnosticPayloadKind::Expr,
+                    &core_expr_canonical_bytes(&expected),
+                    &core_expr_canonical_bytes(&actual),
+                )
+        }
         npa_kernel::Error::InvalidBVar(_) => MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::ProofExprScopeError,
             format!("kernel rejected theorem type scope: {err:?}"),
@@ -9445,6 +9472,44 @@ mod tests {
     }
 
     #[test]
+    fn theorem_type_application_requires_function_type() {
+        let spec = MachineProofSpec {
+            theorem_type: Expr::app(prop(), prop()),
+            ..trivial_spec()
+        };
+        let err = start_machine_proof(
+            spec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .expect_err("a non-function theorem type application must be rejected");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::ExpectedFunctionType);
+        assert!(err.expected_hash.is_none());
+        assert!(err.actual_hash.is_none());
+    }
+
+    #[test]
+    fn theorem_type_inner_type_mismatch_carries_hashes() {
+        let spec = MachineProofSpec {
+            theorem_type: Expr::let_in("x", prop(), type0(), Expr::bvar(0)),
+            ..trivial_spec()
+        };
+        let err = start_machine_proof(
+            spec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .expect_err("a theorem type with an ill-typed subterm must be rejected");
+
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::TypeMismatch);
+        assert!(err.expected_hash.is_some());
+        assert!(err.actual_hash.is_some());
+    }
+
+    #[test]
     fn m4_rejects_unknown_custom_eq_family() {
         let options = MachineTacticOptions {
             eq_family: Some(EqFamilyRef {
@@ -9461,6 +9526,7 @@ mod tests {
             .expect_err("unknown custom Eq family must be rejected");
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidEqFamily);
+        assert_eq!(err.primary_name, Some(Name::from_dotted("Eq")));
     }
 
     #[test]
@@ -9552,6 +9618,7 @@ mod tests {
             .expect_err("unknown custom Nat family must be rejected");
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidNatFamily);
+        assert_eq!(err.primary_name, Some(Name::from_dotted("Nat")));
     }
 
     #[test]
@@ -10640,7 +10707,7 @@ mod tests {
         .expect_err("intro should not reuse an existing local name");
         assert_eq!(
             duplicate.kind,
-            MachineTacticDiagnosticKind::InvalidMetaContext
+            MachineTacticDiagnosticKind::InvalidMachineTactic
         );
 
         let import =
@@ -10666,7 +10733,7 @@ mod tests {
         .expect_err("intro should follow Phase 3 local/global shadowing");
         assert_eq!(
             global_shadow.kind,
-            MachineTacticDiagnosticKind::InvalidMetaContext
+            MachineTacticDiagnosticKind::InvalidMachineTactic
         );
     }
 

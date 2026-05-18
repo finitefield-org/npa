@@ -3,11 +3,21 @@
 //! This crate is intentionally outside the trusted kernel. It handles wire JSON
 //! decoding and request-shape validation for machine-facing endpoints.
 
+mod adapter;
 mod current;
 mod json;
 mod projection;
 mod validation;
 
+pub use adapter::{
+    map_phase3_diagnostic_kind, map_phase4_diagnostic_kind,
+    phase4_extract_closed_machine_theorem_decl, phase4_machine_tactic_result_error,
+    phase4_run_machine_tactic, phase4_run_machine_tactic_with_budget, phase4_start_machine_proof,
+    phase4_validate_machine_tactic_candidate, MachineApiDiagnosticPhase,
+    MachineApiDiagnosticProjection, MachineApiTacticKind, Phase4AdapterError, Phase4AdapterResult,
+    Phase4ExtractedTheorem, Phase4StartProofOutput, Phase4TacticRunOutput, Phase4ValidatedTactic,
+    Phase5UpstreamDiagnostic,
+};
 pub use current::{
     project_checked_current_decl_context, CheckedCurrentDeclPackageInput,
     CheckedCurrentDeclProjectionError, CurrentDeclDependencyEntry, CurrentDeclDependencyReport,

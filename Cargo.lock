@@ -67,6 +67,7 @@ name = "npa-api"
 version = "0.1.0"
 dependencies = [
  "npa-cert",
+ "npa-frontend",
  "npa-kernel",
  "npa-tactic",
  "sha2",

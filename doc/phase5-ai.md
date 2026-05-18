@@ -5223,7 +5223,7 @@ Phase 3 MachineErrorKind -> MachineApiErrorKind:
     MachineTermParseError
   UnsupportedSyntax / UnsupportedItem / ImportAfterItem / ImportResolutionError / MissingVerifiedImport /
   DuplicateDeclaration / DuplicateUniverseParam / UnknownUniverseParam / UnannotatedBinder / UnannotatedLet /
-  HoleNotAllowed / UnsolvedUniverseMeta / KernelRejected:
+  HoleNotAllowed / UnsolvedUniverseMeta / UniverseLevelTooLarge / KernelRejected:
     MachineTermElaborationError
   UnknownGlobalName / ShortGlobalName / AmbiguousGlobalName / GlobalShadowedByLocal / UnknownLocalName:
     UnknownName
