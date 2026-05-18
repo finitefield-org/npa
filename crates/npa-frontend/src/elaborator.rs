@@ -260,6 +260,27 @@ impl MachineTermElabContext {
             span: crate::Span::empty(crate::FileId(0)),
         })
     }
+
+    pub fn from_verified_imports_and_current_decls_in_module(
+        direct_imports: &[VerifiedImport],
+        available_imports: &[VerifiedImport],
+        current_module: npa_cert::ModuleName,
+        checked_current_decls: &[MachineCheckedCurrentDecl],
+        current_generated_decls: &[MachineCheckedCurrentGeneratedDecl],
+        local_context: Vec<MachineLocalDecl>,
+        universe_params: Vec<String>,
+    ) -> Result<Self> {
+        machine_term_context_from_parts(MachineTermContextParts {
+            direct_imports,
+            available_imports,
+            checked_current_decls,
+            current_generated_decls,
+            local_context,
+            universe_params,
+            current_module: Some(current_module),
+            span: crate::Span::empty(crate::FileId(0)),
+        })
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

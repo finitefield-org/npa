@@ -2622,6 +2622,9 @@ Phase 2 verifier 出力として `VerifiedModule` を持つ caller は `Verified
 network、package registry、または current IDE session から import を補完してはいけません。
 `imports` は `start_machine_proof` 内で `(module, export_hash, certificate_hash)` の canonical order に正規化します。
 同一 module に異なる `export_hash` / `certificate_hash` が対応する場合は deterministic に拒否します。
+Phase 5 などの caller が transitive dependency reconstruction だけに使う env-only import を渡す場合、
+その import は kernel environment / conversion には入りますが、visible import flag は false になり、
+Machine Surface term の direct global scope、tactic head、simp rule、theorem search premise には出しません。
 `run_machine_tactic` は state 内の environment だけを使い、別の imports/options を受け取りません。
 呼び出し側が environment を変えたい場合は、新しい state を作り直します。
 
@@ -2634,6 +2637,9 @@ imports と既に checked 済みの prior declarations だけを kernel environm
 `extract_closed_machine_proof` は proof term だけを返します。certificate handoff で theorem declaration
 まで作る場合は `extract_closed_machine_theorem_decl` を使い、`MachineProofSpec` の
 `module / theorem_name / universe_params / theorem_type` と抽出した proof term から kernel `Decl` を作ります。
+certificate handoff の import table は visible direct imports と、その公開 interface / axiom provenance に必要な
+env-only transitive imports だけを Phase 2 canonical order で含めます。hidden proof dependency のためだけに
+渡された env-only import は、handoff certificate の hash に混入させません。
 
 ---
 

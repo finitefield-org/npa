@@ -1,10 +1,12 @@
 use std::{
     cell::Cell,
+    cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
 };
 
 use npa_cert::{
-    CoreModule, DeclHashes, DeclPayload, ExportKind, Hash, ModuleName, Name, VerifiedModule,
+    CoreModule, DeclHashes, DeclPayload, ExportKind, GlobalRef, Hash, ModuleName, Name, TermId,
+    TermNode, VerifiedModule,
 };
 use npa_kernel::expr::collect_apps;
 use npa_kernel::level::{ensure_level_wf, levels_eq, normalize_level};
@@ -505,6 +507,7 @@ pub struct VerifiedImportRef {
     module: ModuleName,
     export_hash: Hash,
     certificate_hash: Hash,
+    visible: bool,
     exports: Vec<VerifiedExportSignature>,
     certified_env_decls: Vec<Decl>,
     certified_env_decl_hashes: Vec<Hash>,
@@ -571,11 +574,19 @@ impl VerifiedImportRef {
             module: module.module().clone(),
             export_hash: module.export_hash(),
             certificate_hash: module.certificate_hash(),
+            visible: true,
             exports,
             certified_env_decls,
             certified_env_decl_hashes,
             verified_module: Box::new(module.clone()),
         })
+    }
+
+    pub fn from_verified_module_env_only(module: &VerifiedModule) -> Result<Self> {
+        let mut import = Self::from_verified_module(module)?;
+        import.visible = false;
+        import.exports.clear();
+        Ok(import)
     }
 
     pub fn module(&self) -> &ModuleName {
@@ -588,6 +599,10 @@ impl VerifiedImportRef {
 
     pub fn certificate_hash(&self) -> Hash {
         self.certificate_hash
+    }
+
+    pub fn is_visible(&self) -> bool {
+        self.visible
     }
 
     pub fn exports(&self) -> &[VerifiedExportSignature] {
@@ -957,42 +972,7 @@ impl MachineTacticEnv {
             )
         })?;
         let mut env_decl_hashes = BTreeMap::new();
-        for import in &imports {
-            for (decl, hash) in import
-                .certified_env_decls
-                .iter()
-                .zip(&import.certified_env_decl_hashes)
-            {
-                let name = decl.name().to_owned();
-                if let Some(existing_hash) = env_decl_hashes.get(&name) {
-                    if *existing_hash == *hash {
-                        continue;
-                    }
-                    return Err(MachineTacticDiagnostic::new(
-                        MachineTacticDiagnosticKind::AmbiguousKernelEnvDecl,
-                        format!(
-                            "kernel env has multiple declarations named {name} with different hashes"
-                        ),
-                    ));
-                }
-                match add_decl_to_kernel_env(&mut kernel_env, decl.clone()) {
-                    Ok(()) => {}
-                    Err(npa_kernel::Error::DuplicateDecl(_))
-                        if verified_builtin_decl_matches_kernel_env(&kernel_env, decl) => {}
-                    Err(err) => {
-                        return Err(MachineTacticDiagnostic::new(
-                            MachineTacticDiagnosticKind::InvalidVerifiedImport,
-                            format!(
-                                "kernel env rejected import {} declaration {}: {err:?}",
-                                import.module.as_dotted(),
-                                decl.name()
-                            ),
-                        ));
-                    }
-                }
-                env_decl_hashes.insert(name, *hash);
-            }
-        }
+        add_import_decls_to_kernel_env(&imports, &mut kernel_env, &mut env_decl_hashes)?;
 
         let mut normalized_current = Vec::new();
         let mut current_names = BTreeSet::new();
@@ -1140,6 +1120,94 @@ impl MachineTacticEnv {
     pub fn kernel_env(&self) -> &Env {
         &self.kernel_env
     }
+}
+
+fn add_import_decls_to_kernel_env(
+    imports: &[VerifiedImportRef],
+    kernel_env: &mut Env,
+    env_decl_hashes: &mut BTreeMap<String, Hash>,
+) -> Result<()> {
+    let mut pending = imports
+        .iter()
+        .flat_map(|import| {
+            import
+                .certified_env_decls
+                .iter()
+                .zip(&import.certified_env_decl_hashes)
+                .map(|(decl, hash)| (&import.module, decl, *hash))
+        })
+        .collect::<Vec<_>>();
+
+    while !pending.is_empty() {
+        let mut next = Vec::new();
+        let mut progressed = false;
+        let mut first_deferred = None;
+
+        for (module, decl, hash) in pending {
+            let name = decl.name().to_owned();
+            if let Some(existing_hash) = env_decl_hashes.get(&name) {
+                if *existing_hash == hash {
+                    progressed = true;
+                    continue;
+                }
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::AmbiguousKernelEnvDecl,
+                    format!(
+                        "kernel env has multiple declarations named {name} with different hashes"
+                    ),
+                ));
+            }
+            match add_decl_to_kernel_env(kernel_env, decl.clone()) {
+                Ok(()) => {
+                    env_decl_hashes.insert(name, hash);
+                    progressed = true;
+                }
+                Err(npa_kernel::Error::DuplicateDecl(_))
+                    if verified_builtin_decl_matches_kernel_env(kernel_env, decl) =>
+                {
+                    env_decl_hashes.insert(name, hash);
+                    progressed = true;
+                }
+                Err(err @ npa_kernel::Error::UnknownConstant(_)) => {
+                    if first_deferred.is_none() {
+                        first_deferred = Some((module, decl, err.clone()));
+                    }
+                    next.push((module, decl, hash));
+                }
+                Err(err) => {
+                    return Err(import_kernel_env_error(module, decl, &err));
+                }
+            }
+        }
+
+        if !progressed {
+            let Some((module, decl, err)) = first_deferred else {
+                return Err(MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                    "kernel env import dependency ordering did not make progress",
+                ));
+            };
+            return Err(import_kernel_env_error(module, decl, &err));
+        }
+        pending = next;
+    }
+
+    Ok(())
+}
+
+fn import_kernel_env_error(
+    module: &ModuleName,
+    decl: &Decl,
+    err: &npa_kernel::Error,
+) -> MachineTacticDiagnostic {
+    MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::InvalidVerifiedImport,
+        format!(
+            "kernel env rejected import {} declaration {}: {err:?}",
+            module.as_dotted(),
+            decl.name()
+        ),
+    )
 }
 
 #[derive(Clone, Debug)]
@@ -4731,18 +4799,20 @@ pub fn extract_closed_machine_certificate(
     state: &MachineProofState,
 ) -> Result<MachineProofCertificate> {
     let core_module = extract_closed_machine_core_module(state)?;
-    let imports = state
+    let certificate_imports =
+        certificate_imports_for_current_decl_hashes(&state.env.imports, &core_module.declarations)?;
+    let import_closure = state
         .env
         .imports
         .iter()
         .map(|import| import.verified_module.as_ref().clone())
         .collect::<Vec<_>>();
-    let certificate = npa_cert::build_module_cert(core_module.clone(), &imports)
+    let certificate = npa_cert::build_module_cert(core_module.clone(), &certificate_imports)
         .map_err(|err| certificate_handoff_diag("build_module_cert", err))?;
     let certificate_bytes = npa_cert::encode_module_cert(&certificate)
         .map_err(|err| certificate_handoff_diag("encode_module_cert", err))?;
     let mut session = npa_cert::VerifierSession::new();
-    for import in imports {
+    for import in import_closure {
         session.register_verified_module(import);
     }
     let verified_module = npa_cert::verify_module_cert(
@@ -7412,11 +7482,18 @@ fn machine_term_elab_context(
     context: &[MachineLocalDecl],
 ) -> Result<npa_frontend::MachineTermElabContext> {
     let callable_interface_table = machine_surface_callable_interface_table(state)?;
-    let imports = state
+    let direct_imports = state
         .env
         .imports
         .iter()
-        .map(|import| import.verified_module.as_ref().clone())
+        .filter(|import| import.is_visible())
+        .map(frontend_import_from_ref)
+        .collect::<Vec<_>>();
+    let available_imports = state
+        .env
+        .imports
+        .iter()
+        .map(|import| npa_frontend::VerifiedImport::from(import.verified_module.as_ref()))
         .collect::<Vec<_>>();
     let checked_current_decls = state
         .env
@@ -7456,9 +7533,9 @@ fn machine_term_elab_context(
             value: local.value.clone(),
         })
         .collect();
-    npa_frontend::MachineTermElabContext::from_verified_modules_and_current_decls_in_module(
-        &imports,
-        &imports,
+    npa_frontend::MachineTermElabContext::from_verified_imports_and_current_decls_in_module(
+        &direct_imports,
+        &available_imports,
         state.root.module.clone(),
         &checked_current_decls,
         &current_generated_decls,
@@ -7467,6 +7544,19 @@ fn machine_term_elab_context(
     )
     .map(|context| context.with_callable_interface_table(callable_interface_table))
     .map_err(machine_term_elaboration_diag)
+}
+
+fn frontend_import_from_ref(import: &VerifiedImportRef) -> npa_frontend::VerifiedImport {
+    let mut frontend = npa_frontend::VerifiedImport::from(import.verified_module.as_ref());
+    let visible_exports = import
+        .exports
+        .iter()
+        .map(|export| (export.name.clone(), export.decl_interface_hash))
+        .collect::<BTreeSet<_>>();
+    frontend.exports.retain(|export| {
+        visible_exports.contains(&(export.name.clone(), export.decl_interface_hash))
+    });
+    frontend
 }
 
 fn machine_surface_callable_interface_table(
@@ -8315,11 +8405,8 @@ fn phase2_current_decl_hashes(
         .iter()
         .map(|checked| checked.core_decl.clone())
         .chain(std::iter::once(decl.clone()))
-        .collect();
-    let verified_imports = imports
-        .iter()
-        .map(|import| import.verified_module.as_ref().clone())
         .collect::<Vec<_>>();
+    let verified_imports = certificate_imports_for_current_decl_hashes(imports, &declarations)?;
     let cert = npa_cert::build_module_cert(
         CoreModule {
             name: module_name,
@@ -8378,6 +8465,395 @@ fn decl_payload_name(cert: &npa_cert::ModuleCert, payload: &DeclPayload) -> Resu
             "Phase 2 materialization returned a declaration with an invalid name id",
         )
     })
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Phase2ImportKey {
+    module: ModuleName,
+    export_hash: Hash,
+    certificate_hash: Hash,
+}
+
+impl PartialOrd for Phase2ImportKey {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Phase2ImportKey {
+    fn cmp(&self, other: &Self) -> Ordering {
+        name_canonical_bytes(&self.module)
+            .cmp(&name_canonical_bytes(&other.module))
+            .then_with(|| self.export_hash.cmp(&other.export_hash))
+            .then_with(|| self.certificate_hash.cmp(&other.certificate_hash))
+    }
+}
+
+fn phase2_import_key_from_ref(import: &VerifiedImportRef) -> Phase2ImportKey {
+    Phase2ImportKey {
+        module: import.module.clone(),
+        export_hash: import.export_hash,
+        certificate_hash: import.certificate_hash,
+    }
+}
+
+fn phase2_import_key_from_entry(entry: &npa_cert::ImportEntry) -> Result<Phase2ImportKey> {
+    let Some(certificate_hash) = entry.certificate_hash else {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidVerifiedImport,
+            format!(
+                "verified import {} dependency is missing a certificate hash",
+                entry.module.as_dotted()
+            ),
+        ));
+    };
+    Ok(Phase2ImportKey {
+        module: entry.module.clone(),
+        export_hash: entry.export_hash,
+        certificate_hash,
+    })
+}
+
+fn certificate_imports_for_current_decl_hashes(
+    imports: &[VerifiedImportRef],
+    declarations: &[Decl],
+) -> Result<Vec<VerifiedModule>> {
+    let imports_by_key = imports
+        .iter()
+        .map(|import| (phase2_import_key_from_ref(import), import))
+        .collect::<BTreeMap<_, _>>();
+    let visible_imports = imports
+        .iter()
+        .filter(|import| import.is_visible())
+        .collect::<Vec<_>>();
+    let referenced_names = referenced_visible_import_export_names(declarations, &visible_imports);
+    let mut selected_keys = BTreeSet::new();
+    let mut pending_keys = Vec::new();
+
+    for import in &visible_imports {
+        select_phase2_import_key(
+            &phase2_import_key_from_ref(import),
+            &imports_by_key,
+            &mut selected_keys,
+            &mut pending_keys,
+        )?;
+    }
+    for import in visible_imports {
+        add_axiom_origin_imports_for_referenced_visible_exports(
+            import,
+            &imports_by_key,
+            &referenced_names,
+            &mut selected_keys,
+            &mut pending_keys,
+        )?;
+    }
+    while let Some(key) = pending_keys.pop() {
+        let import = imports_by_key.get(&key).copied().ok_or_else(|| {
+            MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                format!(
+                    "current declaration certificate import {} is missing from verified imports",
+                    key.module.as_dotted()
+                ),
+            )
+        })?;
+        add_export_interface_dependency_imports_for_current_decl(
+            import,
+            &imports_by_key,
+            &mut selected_keys,
+            &mut pending_keys,
+        )?;
+    }
+
+    selected_keys
+        .into_iter()
+        .map(|key| {
+            imports_by_key
+                .get(&key)
+                .map(|import| import.verified_module.as_ref().clone())
+                .ok_or_else(|| {
+                    MachineTacticDiagnostic::new(
+                        MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                        format!(
+                            "current declaration certificate import {} is missing from verified imports",
+                            key.module.as_dotted()
+                        ),
+                    )
+                })
+        })
+        .collect()
+}
+
+fn add_axiom_origin_imports_for_referenced_visible_exports(
+    import: &VerifiedImportRef,
+    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
+    referenced_names: &BTreeSet<Name>,
+    selected_keys: &mut BTreeSet<Phase2ImportKey>,
+    pending_keys: &mut Vec<Phase2ImportKey>,
+) -> Result<()> {
+    for export in import.verified_module.export_block() {
+        let Some(export_name) = import.verified_module.name_table().get(export.name) else {
+            return Err(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                "verified import export references an out-of-range name table entry",
+            ));
+        };
+        if !referenced_names.contains(export_name) {
+            continue;
+        }
+        for axiom in &export.axiom_dependencies {
+            let GlobalRef::Imported { import_index, .. } = &axiom.global_ref else {
+                continue;
+            };
+            let import_entry = import
+                .verified_module
+                .imports()
+                .get(*import_index)
+                .ok_or_else(|| {
+                    MachineTacticDiagnostic::new(
+                        MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                        "verified import axiom provenance references an out-of-range import table entry",
+                    )
+                })?;
+            let key = phase2_import_key_from_entry(import_entry)?;
+            select_phase2_import_key(&key, imports_by_key, selected_keys, pending_keys)?;
+        }
+    }
+    Ok(())
+}
+
+fn add_export_interface_dependency_imports_for_current_decl(
+    import: &VerifiedImportRef,
+    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
+    selected_keys: &mut BTreeSet<Phase2ImportKey>,
+    pending_keys: &mut Vec<Phase2ImportKey>,
+) -> Result<()> {
+    for export in import.verified_module.export_block() {
+        add_phase2_term_dependency_imports(
+            import,
+            export.ty,
+            imports_by_key,
+            selected_keys,
+            pending_keys,
+        )?;
+        if let Some(body) = export.body {
+            add_phase2_term_dependency_imports(
+                import,
+                body,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn add_phase2_term_dependency_imports(
+    import: &VerifiedImportRef,
+    term: TermId,
+    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
+    selected_keys: &mut BTreeSet<Phase2ImportKey>,
+    pending_keys: &mut Vec<Phase2ImportKey>,
+) -> Result<()> {
+    let Some(term) = import.verified_module.term_table().get(term) else {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidVerifiedImport,
+            "verified import export references an out-of-range term table entry",
+        ));
+    };
+    match term {
+        TermNode::Sort(_) | TermNode::BVar(_) => {}
+        TermNode::Const { global_ref, .. } => {
+            if let GlobalRef::Imported { import_index, .. } = global_ref {
+                let import_entry = import
+                    .verified_module
+                    .imports()
+                    .get(*import_index)
+                    .ok_or_else(|| {
+                        MachineTacticDiagnostic::new(
+                            MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                            "verified import export references an out-of-range import table entry",
+                        )
+                    })?;
+                let key = phase2_import_key_from_entry(import_entry)?;
+                select_phase2_import_key(&key, imports_by_key, selected_keys, pending_keys)?;
+            }
+        }
+        TermNode::App(fun, arg) => {
+            add_phase2_term_dependency_imports(
+                import,
+                *fun,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+            add_phase2_term_dependency_imports(
+                import,
+                *arg,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            add_phase2_term_dependency_imports(
+                import,
+                *ty,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+            add_phase2_term_dependency_imports(
+                import,
+                *body,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+        }
+        TermNode::Let { ty, value, body } => {
+            add_phase2_term_dependency_imports(
+                import,
+                *ty,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+            add_phase2_term_dependency_imports(
+                import,
+                *value,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+            add_phase2_term_dependency_imports(
+                import,
+                *body,
+                imports_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn select_phase2_import_key(
+    key: &Phase2ImportKey,
+    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
+    selected_keys: &mut BTreeSet<Phase2ImportKey>,
+    pending_keys: &mut Vec<Phase2ImportKey>,
+) -> Result<()> {
+    if !imports_by_key.contains_key(key) {
+        return Err(MachineTacticDiagnostic::new(
+            MachineTacticDiagnosticKind::InvalidVerifiedImport,
+            format!(
+                "current declaration certificate dependency module {} is missing from verified imports",
+                key.module.as_dotted()
+            ),
+        ));
+    }
+    if selected_keys.insert(key.clone()) {
+        pending_keys.push(key.clone());
+    }
+    Ok(())
+}
+
+fn referenced_visible_import_export_names(
+    declarations: &[Decl],
+    visible_imports: &[&VerifiedImportRef],
+) -> BTreeSet<Name> {
+    let mut referenced_names = referenced_const_names(declarations);
+    let local_names = local_public_names(declarations);
+    referenced_names.retain(|name| !local_names.contains(name));
+
+    let mut visible_export_names = BTreeSet::new();
+    for import in visible_imports {
+        visible_export_names.extend(import.exports.iter().map(|export| export.name.clone()));
+    }
+    referenced_names.retain(|name| visible_export_names.contains(name));
+    referenced_names
+}
+
+fn referenced_const_names(declarations: &[Decl]) -> BTreeSet<Name> {
+    let mut names = BTreeSet::new();
+    for decl in declarations {
+        collect_const_names_from_decl(&mut names, decl);
+    }
+    names
+}
+
+fn local_public_names(declarations: &[Decl]) -> BTreeSet<Name> {
+    let mut names = BTreeSet::new();
+    for decl in declarations {
+        names.insert(Name::from_dotted(decl.name()));
+        if let Decl::Inductive { data, .. } = decl {
+            for constructor in &data.constructors {
+                names.insert(Name::from_dotted(&constructor.name));
+            }
+            if let Some(recursor) = &data.recursor {
+                names.insert(Name::from_dotted(&recursor.name));
+            }
+        }
+    }
+    names
+}
+
+fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
+    match decl {
+        Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
+        Decl::Def { ty, value, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+        }
+        Decl::Theorem { ty, proof, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, proof);
+        }
+        Decl::Inductive { ty, data, .. } => {
+            collect_const_names_from_expr(names, ty);
+            for param in &data.params {
+                collect_const_names_from_expr(names, &param.ty);
+            }
+            for index in &data.indices {
+                collect_const_names_from_expr(names, &index.ty);
+            }
+            for constructor in &data.constructors {
+                collect_const_names_from_expr(names, &constructor.ty);
+            }
+            if let Some(recursor) = &data.recursor {
+                collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
+            collect_const_names_from_expr(names, ty);
+        }
+    }
+}
+
+fn collect_const_names_from_expr(names: &mut BTreeSet<Name>, expr: &Expr) {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => {}
+        Expr::Const { name, .. } => {
+            names.insert(Name::from_dotted(name));
+        }
+        Expr::App(fun, arg) => {
+            collect_const_names_from_expr(names, fun);
+            collect_const_names_from_expr(names, arg);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, body);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+            collect_const_names_from_expr(names, body);
+        }
+    }
 }
 
 fn verified_export_signature_hash(export: &VerifiedExportSignature) -> Hash {
@@ -9416,6 +9892,20 @@ mod tests {
             .unwrap()
     }
 
+    fn verified_core_module_with_imports(
+        module: CoreModule,
+        imports: &[npa_cert::VerifiedModule],
+    ) -> npa_cert::VerifiedModule {
+        let cert = npa_cert::build_module_cert(module, imports).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        for import in imports {
+            session.register_verified_module(import.clone());
+        }
+        npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+            .unwrap()
+    }
+
     fn verified_nat_builtin_module() -> npa_cert::VerifiedModule {
         verified_core_module(CoreModule {
             name: Name::from_dotted("Std.Nat.Basic"),
@@ -10404,6 +10894,97 @@ mod tests {
                 npa_frontend::MachineSurfaceCallableRef::Imported { name, .. }
                     if name == &Name::from_dotted("Nat.rec")
             )));
+    }
+
+    #[test]
+    fn machine_term_elab_context_hides_env_only_import_exports() {
+        let direct =
+            VerifiedImportRef::from_verified_module(&verified_axiom_module("A", "A.t")).unwrap();
+        let hidden = VerifiedImportRef::from_verified_module_env_only(&verified_axiom_module(
+            "Hidden",
+            "Hidden.helper",
+        ))
+        .unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                module: Name::from_dotted("Test"),
+                theorem_name: Name::from_dotted("Test.thm"),
+                source_index: 0,
+                universe_params: Vec::new(),
+                theorem_type: type0(),
+            },
+            vec![direct, hidden],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+
+        let context = machine_term_elab_context(&state, &[]).unwrap();
+        assert!(!context
+            .global_scope_entries()
+            .iter()
+            .any(|entry| entry.name() == &Name::from_dotted("Hidden.helper")));
+
+        let err = run_machine_tactic(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: checked_term("Hidden.helper"),
+            },
+        )
+        .unwrap_err();
+        assert_eq!(err.kind, MachineTacticDiagnosticKind::UnknownName);
+    }
+
+    #[test]
+    fn checked_current_decl_hash_omits_hidden_env_only_imports() {
+        let hidden = verified_core_module(CoreModule {
+            name: Name::from_dotted("H"),
+            declarations: vec![Decl::Theorem {
+                name: "H.helper".to_owned(),
+                universe_params: Vec::new(),
+                ty: type0(),
+                proof: prop(),
+            }],
+        });
+        let direct = verified_core_module_with_imports(
+            CoreModule {
+                name: Name::from_dotted("A"),
+                declarations: vec![Decl::Theorem {
+                    name: "A.t".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: type0(),
+                    proof: Expr::konst("H.helper", Vec::new()),
+                }],
+            },
+            std::slice::from_ref(&hidden),
+        );
+        let direct_import = VerifiedImportRef::from_verified_module(&direct).unwrap();
+        let hidden_import = VerifiedImportRef::from_verified_module_env_only(&hidden).unwrap();
+        let decl = Decl::Theorem {
+            name: "Test.prior".to_owned(),
+            universe_params: Vec::new(),
+            ty: type0(),
+            proof: Expr::konst("A.t", Vec::new()),
+        };
+
+        let direct_only = check_current_decl_for_machine_tactic_from_verified_imports(
+            std::slice::from_ref(&direct_import),
+            &[],
+            0,
+            decl.clone(),
+        )
+        .unwrap();
+        let with_hidden = check_current_decl_for_machine_tactic_from_verified_imports(
+            &[direct_import, hidden_import],
+            &[],
+            0,
+            decl,
+        )
+        .unwrap();
+
+        assert_eq!(with_hidden.signature(), direct_only.signature());
+        assert_eq!(with_hidden.core_decl_hash(), direct_only.core_decl_hash());
     }
 
     #[test]
@@ -12820,6 +13401,57 @@ mod tests {
         assert_eq!(handoff.core_module.declarations.len(), 2);
         assert_eq!(handoff.core_module.declarations[0].name(), "Test.A");
         assert_eq!(handoff.core_module.declarations[1].name(), "Test.thm");
+    }
+
+    #[test]
+    fn certificate_handoff_omits_hidden_env_only_non_axiom_imports() {
+        let hidden = verified_core_module(CoreModule {
+            name: Name::from_dotted("H"),
+            declarations: vec![Decl::Theorem {
+                name: "H.helper".to_owned(),
+                universe_params: Vec::new(),
+                ty: type0(),
+                proof: prop(),
+            }],
+        });
+        let direct = verified_core_module_with_imports(
+            CoreModule {
+                name: Name::from_dotted("A"),
+                declarations: vec![Decl::Theorem {
+                    name: "A.t".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: type0(),
+                    proof: Expr::konst("H.helper", Vec::new()),
+                }],
+            },
+            std::slice::from_ref(&hidden),
+        );
+        let direct_import = VerifiedImportRef::from_verified_module(&direct).unwrap();
+        let hidden_import = VerifiedImportRef::from_verified_module_env_only(&hidden).unwrap();
+        let state = start_machine_proof(
+            trivial_spec(),
+            vec![direct_import, hidden_import],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Exact {
+                goal_id: GoalId(0),
+                term: checked_term("A.t"),
+            },
+        )
+        .unwrap();
+
+        let handoff = extract_closed_machine_certificate(&state)
+            .expect("env-only proof dependency should not be a certificate import");
+
+        assert_eq!(handoff.certificate.imports.len(), 1);
+        assert_eq!(
+            handoff.certificate.imports[0].module,
+            Name::from_dotted("A")
+        );
     }
 
     #[test]

@@ -31,7 +31,7 @@ use crate::callable::{
     build_machine_surface_callable_interface_table, MachineSurfaceCallableInterfaceBuildError,
 };
 use crate::current::{
-    encode_machine_axiom_ref_wire, imported_axiom_ref_to_wire,
+    encode_machine_axiom_ref_wire, imported_axiom_ref_to_wire, phase4_import_refs_from_context,
     project_checked_current_decl_context, validate_checked_current_decl_package_bytes,
     CheckedCurrentDeclPackageInput, MachineAxiomRefWire, MachineCheckedCurrentDeclContext,
 };
@@ -1291,15 +1291,9 @@ fn validate_allow_axioms(
 fn phase4_direct_import_refs(
     import_context: &MachineImportCertificateContext,
 ) -> Result<Vec<VerifiedImportRef>, Box<MachineSessionCreateError>> {
-    import_context
-        .direct_import_entries()
-        .into_iter()
-        .map(|entry| {
-            VerifiedImportRef::from_verified_module(&entry.verified_module).map_err(|diagnostic| {
-                phase4_import_error(diagnostic, MachineApiErrorKind::InvalidVerifiedImport)
-            })
-        })
-        .collect()
+    phase4_import_refs_from_context(import_context).map_err(|diagnostic| {
+        phase4_import_error(diagnostic, MachineApiErrorKind::InvalidVerifiedImport)
+    })
 }
 
 fn phase4_tactic_options(

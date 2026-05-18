@@ -2,14 +2,16 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::{
     build_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy, AxiomRef, CertError,
-    CoreModule, DeclPayload, GlobalRef, Hash, ModuleCert, Name, VerifierSession,
+    CoreModule, DeclPayload, GlobalRef, Hash, ModuleCert, Name, TermId, TermNode, VerifiedModule,
+    VerifierSession,
 };
+use npa_kernel::{Decl, Expr};
 use npa_tactic::{
     extract_closed_machine_theorem_decl, MachineTacticDiagnostic, MachineTacticDiagnosticKind,
 };
 
 use crate::current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire};
-use crate::projection::VerifiedModuleContextEntry;
+use crate::projection::{VerifiedImportKey, VerifiedModuleContextEntry};
 use crate::snapshot::{MachineSnapshotLookupError, MachineSnapshotMaterializationContext};
 use crate::types::{
     HashString, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
@@ -178,7 +180,8 @@ fn run_machine_verify_request_parsed(
         .collect::<Vec<_>>();
     declarations.push(theorem);
 
-    let imports = session
+    let certificate_imports = certificate_imports_for_verify(session, &declarations)?;
+    let import_closure = session
         .import_certificate_context
         .verified_modules()
         .iter()
@@ -188,12 +191,12 @@ fn run_machine_verify_request_parsed(
         name: session.root.module.clone(),
         declarations,
     };
-    let certificate =
-        build_module_cert(core_module, &imports).map_err(certificate_generation_error)?;
+    let certificate = build_module_cert(core_module, &certificate_imports)
+        .map_err(certificate_generation_error)?;
     let certificate_bytes =
         encode_module_cert(&certificate).map_err(certificate_generation_error)?;
     let mut verifier_session = VerifierSession::new();
-    for import in imports {
+    for import in import_closure {
         verifier_session.register_verified_module(import);
     }
     let verified_module = verify_module_cert(
@@ -256,6 +259,317 @@ fn run_machine_verify_request_parsed(
             import_payload,
         },
     }))
+}
+
+fn certificate_imports_for_verify(
+    session: &MachineProofSession,
+    declarations: &[Decl],
+) -> Result<Vec<VerifiedModule>, Box<MachineVerifyError>> {
+    let entries_by_key = session
+        .import_certificate_context
+        .verified_modules()
+        .iter()
+        .map(|entry| (entry.key.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let direct_imports = session.import_certificate_context.direct_import_entries();
+    let referenced_names = referenced_import_export_names(declarations, &direct_imports)?;
+    let mut selected_keys = BTreeSet::new();
+    let mut pending_keys = Vec::new();
+
+    for entry in &direct_imports {
+        select_certificate_import_key(
+            &entry.key,
+            &entries_by_key,
+            &mut selected_keys,
+            &mut pending_keys,
+        )?;
+    }
+    for entry in direct_imports {
+        add_axiom_origin_imports_for_referenced_exports(
+            entry,
+            &entries_by_key,
+            &referenced_names,
+            &mut selected_keys,
+            &mut pending_keys,
+        )?;
+    }
+    while let Some(key) = pending_keys.pop() {
+        let entry = entries_by_key.get(&key).copied().ok_or_else(|| {
+            plain_error(
+                MachineApiErrorKind::VerifyFailed,
+                MachineApiDiagnosticPhase::CertificateGeneration,
+                format!(
+                    "verify certificate import {} is missing from the session import closure",
+                    key.module.as_dotted()
+                ),
+            )
+        })?;
+        add_export_interface_dependency_imports(
+            entry,
+            &entries_by_key,
+            &mut selected_keys,
+            &mut pending_keys,
+        )?;
+    }
+
+    selected_keys
+        .into_iter()
+        .map(|key| {
+            entries_by_key
+                .get(&key)
+                .map(|entry| entry.verified_module.clone())
+                .ok_or_else(|| {
+                    plain_error(
+                        MachineApiErrorKind::VerifyFailed,
+                        MachineApiDiagnosticPhase::CertificateGeneration,
+                        format!(
+                            "verify certificate import {} is missing from the session import closure",
+                            key.module.as_dotted()
+                        ),
+                    )
+                })
+        })
+        .collect()
+}
+
+fn add_axiom_origin_imports_for_referenced_exports(
+    entry: &VerifiedModuleContextEntry,
+    entries_by_key: &BTreeMap<VerifiedImportKey, &VerifiedModuleContextEntry>,
+    referenced_names: &BTreeSet<Name>,
+    selected_keys: &mut BTreeSet<VerifiedImportKey>,
+    pending_keys: &mut Vec<VerifiedImportKey>,
+) -> Result<(), Box<MachineVerifyError>> {
+    for export in &entry.export_block {
+        let Some(export_name) = entry.decoded_name_table.get(export.name) else {
+            return Err(plain_error(
+                MachineApiErrorKind::VerifyFailed,
+                MachineApiDiagnosticPhase::CertificateGeneration,
+                "direct import export references an out-of-range name table entry",
+            ));
+        };
+        if !referenced_names.contains(export_name) {
+            continue;
+        }
+        for axiom in &export.axiom_dependencies {
+            let GlobalRef::Imported { import_index, .. } = &axiom.global_ref else {
+                continue;
+            };
+            let key = entry
+                .certificate_import_table
+                .get(*import_index)
+                .ok_or_else(|| {
+                    plain_error(
+                        MachineApiErrorKind::VerifyFailed,
+                        MachineApiDiagnosticPhase::CertificateGeneration,
+                        "direct import axiom provenance references an out-of-range import table entry",
+                    )
+                })?;
+            select_certificate_import_key(key, entries_by_key, selected_keys, pending_keys)?;
+        }
+    }
+    Ok(())
+}
+
+fn add_export_interface_dependency_imports(
+    entry: &VerifiedModuleContextEntry,
+    entries_by_key: &BTreeMap<VerifiedImportKey, &VerifiedModuleContextEntry>,
+    selected_keys: &mut BTreeSet<VerifiedImportKey>,
+    pending_keys: &mut Vec<VerifiedImportKey>,
+) -> Result<(), Box<MachineVerifyError>> {
+    for export in &entry.export_block {
+        add_term_dependency_imports(
+            entry,
+            export.ty,
+            entries_by_key,
+            selected_keys,
+            pending_keys,
+        )?;
+        if let Some(body) = export.body {
+            add_term_dependency_imports(entry, body, entries_by_key, selected_keys, pending_keys)?;
+        }
+    }
+    Ok(())
+}
+
+fn add_term_dependency_imports(
+    entry: &VerifiedModuleContextEntry,
+    term: TermId,
+    entries_by_key: &BTreeMap<VerifiedImportKey, &VerifiedModuleContextEntry>,
+    selected_keys: &mut BTreeSet<VerifiedImportKey>,
+    pending_keys: &mut Vec<VerifiedImportKey>,
+) -> Result<(), Box<MachineVerifyError>> {
+    let Some(term) = entry.verified_module.term_table().get(term) else {
+        return Err(plain_error(
+            MachineApiErrorKind::VerifyFailed,
+            MachineApiDiagnosticPhase::CertificateGeneration,
+            "selected import export references an out-of-range term table entry",
+        ));
+    };
+    match term {
+        TermNode::Sort(_) | TermNode::BVar(_) => {}
+        TermNode::Const { global_ref, .. } => {
+            if let GlobalRef::Imported { import_index, .. } = global_ref {
+                let key = entry
+                    .certificate_import_table
+                    .get(*import_index)
+                    .ok_or_else(|| {
+                        plain_error(
+                            MachineApiErrorKind::VerifyFailed,
+                            MachineApiDiagnosticPhase::CertificateGeneration,
+                            "selected import export references an out-of-range import table entry",
+                        )
+                    })?;
+                select_certificate_import_key(key, entries_by_key, selected_keys, pending_keys)?;
+            }
+        }
+        TermNode::App(fun, arg) => {
+            add_term_dependency_imports(entry, *fun, entries_by_key, selected_keys, pending_keys)?;
+            add_term_dependency_imports(entry, *arg, entries_by_key, selected_keys, pending_keys)?;
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            add_term_dependency_imports(entry, *ty, entries_by_key, selected_keys, pending_keys)?;
+            add_term_dependency_imports(entry, *body, entries_by_key, selected_keys, pending_keys)?;
+        }
+        TermNode::Let { ty, value, body } => {
+            add_term_dependency_imports(entry, *ty, entries_by_key, selected_keys, pending_keys)?;
+            add_term_dependency_imports(
+                entry,
+                *value,
+                entries_by_key,
+                selected_keys,
+                pending_keys,
+            )?;
+            add_term_dependency_imports(entry, *body, entries_by_key, selected_keys, pending_keys)?;
+        }
+    }
+    Ok(())
+}
+
+fn select_certificate_import_key(
+    key: &VerifiedImportKey,
+    entries_by_key: &BTreeMap<VerifiedImportKey, &VerifiedModuleContextEntry>,
+    selected_keys: &mut BTreeSet<VerifiedImportKey>,
+    pending_keys: &mut Vec<VerifiedImportKey>,
+) -> Result<(), Box<MachineVerifyError>> {
+    if !entries_by_key.contains_key(key) {
+        return Err(plain_error(
+            MachineApiErrorKind::VerifyFailed,
+            MachineApiDiagnosticPhase::CertificateGeneration,
+            format!(
+                "verify certificate dependency module {} is missing from the session import closure",
+                key.module.as_dotted()
+            ),
+        ));
+    }
+    if selected_keys.insert(key.clone()) {
+        pending_keys.push(key.clone());
+    }
+    Ok(())
+}
+
+fn referenced_import_export_names(
+    declarations: &[Decl],
+    direct_imports: &[&VerifiedModuleContextEntry],
+) -> Result<BTreeSet<Name>, Box<MachineVerifyError>> {
+    let mut referenced_names = referenced_const_names(declarations);
+    let local_names = local_public_names(declarations);
+    referenced_names.retain(|name| !local_names.contains(name));
+
+    let mut direct_export_names = BTreeSet::new();
+    for entry in direct_imports {
+        for export in &entry.export_block {
+            let Some(export_name) = entry.decoded_name_table.get(export.name) else {
+                return Err(plain_error(
+                    MachineApiErrorKind::VerifyFailed,
+                    MachineApiDiagnosticPhase::CertificateGeneration,
+                    "direct import export references an out-of-range name table entry",
+                ));
+            };
+            direct_export_names.insert(export_name.clone());
+        }
+    }
+    referenced_names.retain(|name| direct_export_names.contains(name));
+    Ok(referenced_names)
+}
+
+fn referenced_const_names(declarations: &[Decl]) -> BTreeSet<Name> {
+    let mut names = BTreeSet::new();
+    for decl in declarations {
+        collect_const_names_from_decl(&mut names, decl);
+    }
+    names
+}
+
+fn local_public_names(declarations: &[Decl]) -> BTreeSet<Name> {
+    let mut names = BTreeSet::new();
+    for decl in declarations {
+        names.insert(Name::from_dotted(decl.name()));
+        if let Decl::Inductive { data, .. } = decl {
+            for constructor in &data.constructors {
+                names.insert(Name::from_dotted(&constructor.name));
+            }
+            if let Some(recursor) = &data.recursor {
+                names.insert(Name::from_dotted(&recursor.name));
+            }
+        }
+    }
+    names
+}
+
+fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
+    match decl {
+        Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
+        Decl::Def { ty, value, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+        }
+        Decl::Theorem { ty, proof, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, proof);
+        }
+        Decl::Inductive { ty, data, .. } => {
+            collect_const_names_from_expr(names, ty);
+            for param in &data.params {
+                collect_const_names_from_expr(names, &param.ty);
+            }
+            for index in &data.indices {
+                collect_const_names_from_expr(names, &index.ty);
+            }
+            for constructor in &data.constructors {
+                collect_const_names_from_expr(names, &constructor.ty);
+            }
+            if let Some(recursor) = &data.recursor {
+                collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
+            collect_const_names_from_expr(names, ty);
+        }
+    }
+}
+
+fn collect_const_names_from_expr(names: &mut BTreeSet<Name>, expr: &Expr) {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => {}
+        Expr::Const { name, .. } => {
+            names.insert(Name::from_dotted(name));
+        }
+        Expr::App(fun, arg) => {
+            collect_const_names_from_expr(names, fun);
+            collect_const_names_from_expr(names, arg);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, body);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+            collect_const_names_from_expr(names, body);
+        }
+    }
 }
 
 fn generated_certificate_context<'a>(
@@ -723,10 +1037,10 @@ fn hex_digit(value: u8) -> char {
 mod tests {
     use super::*;
     use npa_cert::{
-        build_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy, CoreModule,
-        VerifierSession,
+        build_module_cert, decode_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy,
+        CoreModule, VerifierSession,
     };
-    use npa_kernel::{Decl, Expr, Level};
+    use npa_kernel::{Decl, Expr, Level, Reducibility};
 
     use crate::{
         create_machine_session, format_goal_id_wire, format_hash_string,
@@ -982,6 +1296,17 @@ mod tests {
         let MachineApiResponseEnvelope::Ok(ok) = response else {
             panic!("expected verify success with transitive axiom provenance");
         };
+        let cert_bytes = decode_hex_bytes(&ok.endpoint_fields.certificate.bytes);
+        let cert = decode_module_cert(&cert_bytes).unwrap();
+        let import_modules = cert
+            .imports
+            .iter()
+            .map(|import| import.module.clone())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(cert.imports.len(), 2);
+        assert!(import_modules.contains(&Name::from_dotted("A")));
+        assert!(import_modules.contains(&Name::from_dotted("P")));
+
         let p_entry = session
             .import_certificate_context
             .verified_modules()
@@ -998,6 +1323,85 @@ mod tests {
                 decl_interface_hash: p_entry.decl_index_table[0].hashes.decl_interface_hash,
             }
         );
+        assert_eq!(ok.endpoint_fields.dependency_import_closure.len(), 2);
+    }
+
+    #[test]
+    fn verify_generated_certificate_import_table_omits_hidden_non_axiom_transitive_imports() {
+        let session_json = hidden_non_axiom_transitive_dependency_session_json();
+        let mut session = create_machine_session(&session_json).unwrap().session;
+        let response = run_machine_tactic_request(
+            &run_json(
+                &session,
+                session.initial_snapshot.snapshot_id,
+                session.initial_snapshot.state_fingerprint,
+                npa_tactic::GoalId(0),
+                r#"{"kind":"exact","term":{"source":"A.t"}}"#,
+            ),
+            &mut session,
+        )
+        .unwrap();
+        let run = unwrap_run_ok(response).result;
+
+        let response = run_machine_verify_request(
+            &verify_json(&session, run.next_snapshot_id, run.next_state_fingerprint),
+            &session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("expected verify success with hidden transitive dependency closure");
+        };
+        let cert_bytes = decode_hex_bytes(&ok.endpoint_fields.certificate.bytes);
+        let cert = decode_module_cert(&cert_bytes).unwrap();
+
+        assert_eq!(session.imports.len(), 1);
+        assert_eq!(cert.imports.len(), 1);
+        assert_eq!(cert.imports[0].module, session.imports[0].module);
+        assert_eq!(cert.imports[0].export_hash, session.imports[0].export_hash);
+        assert_eq!(
+            cert.imports[0].certificate_hash,
+            Some(session.imports[0].certificate_hash)
+        );
+        assert_eq!(ok.endpoint_fields.dependency_import_closure.len(), 2);
+    }
+
+    #[test]
+    fn verify_generated_certificate_import_table_includes_export_body_transitive_imports() {
+        let session_json = transparent_export_body_transitive_dependency_session_json();
+        let mut session = create_machine_session(&session_json).unwrap().session;
+        let response = run_machine_tactic_request(
+            &run_json(
+                &session,
+                session.initial_snapshot.snapshot_id,
+                session.initial_snapshot.state_fingerprint,
+                npa_tactic::GoalId(0),
+                r#"{"kind":"exact","term":{"source":"A.alias"}}"#,
+            ),
+            &mut session,
+        )
+        .unwrap();
+        let run = unwrap_run_ok(response).result;
+
+        let response = run_machine_verify_request(
+            &verify_json(&session, run.next_snapshot_id, run.next_state_fingerprint),
+            &session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("expected verify success with transparent export body dependency");
+        };
+        let cert_bytes = decode_hex_bytes(&ok.endpoint_fields.certificate.bytes);
+        let cert = decode_module_cert(&cert_bytes).unwrap();
+        let import_modules = cert
+            .imports
+            .iter()
+            .map(|import| import.module.clone())
+            .collect::<BTreeSet<_>>();
+
+        assert_eq!(session.imports.len(), 1);
+        assert_eq!(cert.imports.len(), 2);
+        assert!(import_modules.contains(&Name::from_dotted("A")));
+        assert!(import_modules.contains(&Name::from_dotted("H")));
         assert_eq!(ok.endpoint_fields.dependency_import_closure.len(), 2);
     }
 
@@ -1152,5 +1556,175 @@ mod tests {
             )
         };
         (session_json, allow)
+    }
+
+    fn hidden_non_axiom_transitive_dependency_session_json() -> String {
+        let h_module = CoreModule {
+            name: Name::from_dotted("H"),
+            declarations: vec![Decl::Theorem {
+                name: "H.helper".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::zero())),
+                proof: Expr::sort(Level::zero()),
+            }],
+        };
+        let h_cert = build_module_cert(h_module, &[]).unwrap();
+        let h_bytes = encode_module_cert(&h_cert).unwrap();
+        let mut verifier_session = VerifierSession::new();
+        let verified_h =
+            verify_module_cert(&h_bytes, &mut verifier_session, &AxiomPolicy::normal()).unwrap();
+
+        let a_module = CoreModule {
+            name: Name::from_dotted("A"),
+            declarations: vec![Decl::Theorem {
+                name: "A.t".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::zero())),
+                proof: Expr::konst("H.helper", Vec::new()),
+            }],
+        };
+        let a_cert = build_module_cert(a_module, std::slice::from_ref(&verified_h)).unwrap();
+        let a_bytes = encode_module_cert(&a_cert).unwrap();
+        let verified_a =
+            verify_module_cert(&a_bytes, &mut verifier_session, &AxiomPolicy::normal()).unwrap();
+
+        let h_export_hash = format_hash_string(&verified_h.export_hash());
+        let h_certificate_hash = format_hash_string(&verified_h.certificate_hash());
+        let h_cert_hex = hex_bytes(&h_bytes);
+        let a_export_hash = format_hash_string(&verified_a.export_hash());
+        let a_certificate_hash = format_hash_string(&verified_a.certificate_hash());
+        let a_cert_hex = hex_bytes(&a_bytes);
+
+        format!(
+            r#"{{
+              "protocol_version":"npa.machine-api.v1",
+              "root":{{
+                "module":"Scratch",
+                "theorem_name":"Scratch.t",
+                "source_index":0,
+                "universe_params":[],
+                "theorem_type":{{"format":"machine_surface_v1","source":"Type 0"}}
+              }},
+              "import_closure":[{{
+                "module":"H",
+                "expected_export_hash":"{h_export_hash}",
+                "expected_certificate_hash":"{h_certificate_hash}",
+                "certificate":{{
+                  "encoding":"npa.certificate.canonical.v0.1.hex",
+                  "bytes":"{h_cert_hex}"
+                }}
+              }},{{
+                "module":"A",
+                "expected_export_hash":"{a_export_hash}",
+                "expected_certificate_hash":"{a_certificate_hash}",
+                "certificate":{{
+                  "encoding":"npa.certificate.canonical.v0.1.hex",
+                  "bytes":"{a_cert_hex}"
+                }}
+              }}],
+              "imports":[{{
+                "module":"A",
+                "expected_export_hash":"{a_export_hash}",
+                "expected_certificate_hash":"{a_certificate_hash}"
+              }}],
+              "checked_current_decls":[],
+              "options":{}
+            }}"#,
+            default_options_json("[]")
+        )
+    }
+
+    fn transparent_export_body_transitive_dependency_session_json() -> String {
+        let h_module = CoreModule {
+            name: Name::from_dotted("H"),
+            declarations: vec![Decl::Theorem {
+                name: "H.helper".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::zero())),
+                proof: Expr::sort(Level::zero()),
+            }],
+        };
+        let h_cert = build_module_cert(h_module, &[]).unwrap();
+        let h_bytes = encode_module_cert(&h_cert).unwrap();
+        let mut verifier_session = VerifierSession::new();
+        let verified_h =
+            verify_module_cert(&h_bytes, &mut verifier_session, &AxiomPolicy::normal()).unwrap();
+
+        let a_module = CoreModule {
+            name: Name::from_dotted("A"),
+            declarations: vec![Decl::Def {
+                name: "A.alias".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::succ(Level::zero())),
+                value: Expr::konst("H.helper", Vec::new()),
+                reducibility: Reducibility::Reducible,
+            }],
+        };
+        let a_cert = build_module_cert(a_module, std::slice::from_ref(&verified_h)).unwrap();
+        let a_bytes = encode_module_cert(&a_cert).unwrap();
+        let verified_a =
+            verify_module_cert(&a_bytes, &mut verifier_session, &AxiomPolicy::normal()).unwrap();
+
+        let h_export_hash = format_hash_string(&verified_h.export_hash());
+        let h_certificate_hash = format_hash_string(&verified_h.certificate_hash());
+        let h_cert_hex = hex_bytes(&h_bytes);
+        let a_export_hash = format_hash_string(&verified_a.export_hash());
+        let a_certificate_hash = format_hash_string(&verified_a.certificate_hash());
+        let a_cert_hex = hex_bytes(&a_bytes);
+
+        format!(
+            r#"{{
+              "protocol_version":"npa.machine-api.v1",
+              "root":{{
+                "module":"Scratch",
+                "theorem_name":"Scratch.t",
+                "source_index":0,
+                "universe_params":[],
+                "theorem_type":{{"format":"machine_surface_v1","source":"Type 0"}}
+              }},
+              "import_closure":[{{
+                "module":"H",
+                "expected_export_hash":"{h_export_hash}",
+                "expected_certificate_hash":"{h_certificate_hash}",
+                "certificate":{{
+                  "encoding":"npa.certificate.canonical.v0.1.hex",
+                  "bytes":"{h_cert_hex}"
+                }}
+              }},{{
+                "module":"A",
+                "expected_export_hash":"{a_export_hash}",
+                "expected_certificate_hash":"{a_certificate_hash}",
+                "certificate":{{
+                  "encoding":"npa.certificate.canonical.v0.1.hex",
+                  "bytes":"{a_cert_hex}"
+                }}
+              }}],
+              "imports":[{{
+                "module":"A",
+                "expected_export_hash":"{a_export_hash}",
+                "expected_certificate_hash":"{a_certificate_hash}"
+              }}],
+              "checked_current_decls":[],
+              "options":{}
+            }}"#,
+            default_options_json("[]")
+        )
+    }
+
+    fn decode_hex_bytes(value: &str) -> Vec<u8> {
+        assert!(value.len().is_multiple_of(2));
+        value
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|chunk| (hex_value(chunk[0]) << 4) | hex_value(chunk[1]))
+            .collect()
+    }
+
+    fn hex_value(byte: u8) -> u8 {
+        match byte {
+            b'0'..=b'9' => byte - b'0',
+            b'a'..=b'f' => byte - b'a' + 10,
+            _ => panic!("invalid lowercase hex digit"),
+        }
     }
 }

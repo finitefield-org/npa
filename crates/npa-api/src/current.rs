@@ -252,16 +252,12 @@ pub fn project_checked_current_decl_context(
     }
 
     let direct_import_entries = imports.direct_import_entries();
-    let phase4_imports = direct_import_entries
-        .iter()
-        .map(|entry| VerifiedImportRef::from_verified_module(&entry.verified_module))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(
-            |diagnostic| CheckedCurrentDeclProjectionError::Phase4Rejected {
-                source_index: 0,
-                diagnostic: Box::new(diagnostic),
-            },
-        )?;
+    let phase4_imports = phase4_import_refs_from_context(imports).map_err(|diagnostic| {
+        CheckedCurrentDeclProjectionError::Phase4Rejected {
+            source_index: 0,
+            diagnostic: Box::new(diagnostic),
+        }
+    })?;
 
     let mut checked_current_decls = Vec::new();
     let mut decl_index_table = Vec::new();
@@ -368,6 +364,27 @@ pub(crate) fn validate_checked_current_decl_package_bytes(
         return Err(CheckedCurrentDeclProjectionError::NonCanonicalPackage);
     }
     Ok(())
+}
+
+pub(crate) fn phase4_import_refs_from_context(
+    imports: &MachineImportCertificateContext,
+) -> Result<Vec<VerifiedImportRef>, MachineTacticDiagnostic> {
+    let direct_keys = imports
+        .direct_import_keys()
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    imports
+        .verified_modules()
+        .iter()
+        .map(|entry| {
+            if direct_keys.contains(&entry.key) {
+                VerifiedImportRef::from_verified_module(&entry.verified_module)
+            } else {
+                VerifiedImportRef::from_verified_module_env_only(&entry.verified_module)
+            }
+        })
+        .collect()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
