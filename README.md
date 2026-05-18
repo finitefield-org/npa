@@ -98,7 +98,7 @@ import/current projection、Phase 4 adapter boundary、Machine Surface callable 
 owner-aware MachineExprRenderer v1 / renderer QA substrate、MachineApiDiagnostic canonicalization
 に加えて、M2 の Machine API types / ID・HashString wire grammar / endpoint envelope validation
 と、M5 `/machine/snapshots/get`、M6 `/machine/tactics/run`、M7 `/machine/tactics/batch`、
-M8 `/machine/search/for_goal` の library API を含みます。
+M8 `/machine/search/for_goal`、M9 `/machine/replay` の library API を含みます。
 独立 checker は Phase 8 の後続成果物として扱います。
 
 ## 開発メモ

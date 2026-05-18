@@ -10,6 +10,7 @@ mod diagnostic;
 mod json;
 mod projection;
 mod renderer;
+mod replay;
 mod search;
 mod session;
 mod snapshot;
@@ -57,6 +58,11 @@ pub use renderer::{
     MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineExprRendererContext,
     MachineExprRendererError, MachineExprView, MachineGlobalRefView,
     Phase5ResolvedDisplayCoreRefOwner,
+};
+pub use replay::{
+    parse_machine_replay_request, run_machine_replay_request,
+    run_machine_replay_request_in_sessions, MachineReplayError, MachineReplayOkFields,
+    MachineReplayPlan, MachineReplayRequest, MachineReplayResponse, MachineReplayStep,
 };
 pub use search::{
     parse_machine_theorem_search_request, search_machine_theorems_for_goal,

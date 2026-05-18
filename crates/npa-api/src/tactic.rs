@@ -1042,9 +1042,27 @@ fn parse_candidate_payload(
     )
 }
 
-fn parse_candidate_payload_at(
+pub(crate) fn parse_candidate_payload_at(
     raw: &str,
     universe_params: &[String],
+    tactic_kind: Option<MachineApiTacticKind>,
+    path: &JsonPath,
+) -> Result<MachineTacticCandidate, MachineApiRequestError> {
+    parse_candidate_payload_at_with_level_policy(raw, universe_params, false, tactic_kind, path)
+}
+
+pub(crate) fn parse_candidate_wire_shape_at(
+    raw: &str,
+    tactic_kind: Option<MachineApiTacticKind>,
+    path: &JsonPath,
+) -> Result<MachineTacticCandidate, MachineApiRequestError> {
+    parse_candidate_payload_at_with_level_policy(raw, &[], true, tactic_kind, path)
+}
+
+fn parse_candidate_payload_at_with_level_policy(
+    raw: &str,
+    universe_params: &[String],
+    allow_unbound_level_params: bool,
     tactic_kind: Option<MachineApiTacticKind>,
     path: &JsonPath,
 ) -> Result<MachineTacticCandidate, MachineApiRequestError> {
@@ -1058,12 +1076,19 @@ fn parse_candidate_payload_at(
             },
         )
     })?;
-    parse_candidate_value(doc.root(), universe_params, tactic_kind, path)
+    parse_candidate_value(
+        doc.root(),
+        universe_params,
+        allow_unbound_level_params,
+        tactic_kind,
+        path,
+    )
 }
 
 fn parse_candidate_value(
     value: &JsonValue<'_>,
     universe_params: &[String],
+    allow_unbound_level_params: bool,
     tactic_kind: Option<MachineApiTacticKind>,
     path: &JsonPath,
 ) -> Result<MachineTacticCandidate, MachineApiRequestError> {
@@ -1131,6 +1156,7 @@ fn parse_candidate_value(
                 universe_args: parse_level_array(
                     required_array_field(&object, "universe_args"),
                     universe_params,
+                    allow_unbound_level_params,
                     &path.field("universe_args"),
                 )?,
                 args: parse_apply_arg_array(
@@ -1149,6 +1175,7 @@ fn parse_candidate_value(
                 rule: parse_rewrite_rule(
                     required_object_field(&object, "rule"),
                     universe_params,
+                    allow_unbound_level_params,
                     &path.field("rule"),
                 )?,
                 direction: parse_rewrite_direction(
@@ -1300,6 +1327,7 @@ fn parse_tactic_head(
 fn parse_rewrite_rule(
     value: &JsonValue<'_>,
     universe_params: &[String],
+    allow_unbound_level_params: bool,
     path: &JsonPath,
 ) -> Result<CandidateRewriteRuleRef, MachineApiRequestError> {
     let object = validate_json_object(
@@ -1312,6 +1340,7 @@ fn parse_rewrite_rule(
         universe_args: parse_level_array(
             required_array_field(&object, "universe_args"),
             universe_params,
+            allow_unbound_level_params,
             &path.field("universe_args"),
         )?,
         args: parse_apply_arg_array(required_array_field(&object, "args"), &path.field("args"))?,
@@ -1446,6 +1475,7 @@ fn parse_simp_rule(
 fn parse_level_array(
     elements: &[JsonValue<'_>],
     universe_params: &[String],
+    allow_unbound_level_params: bool,
     path: &JsonPath,
 ) -> Result<Vec<Level>, MachineApiRequestError> {
     elements
@@ -1458,7 +1488,7 @@ fn parse_level_array(
                 MachineApiErrorKind::InvalidCandidate,
                 &path.index(index),
             )?;
-            parse_level_wire(source, universe_params).map_err(|_| {
+            parse_level_wire(source, universe_params, allow_unbound_level_params).map_err(|_| {
                 invalid_string_literal(
                     "level",
                     None,
@@ -1470,7 +1500,11 @@ fn parse_level_array(
         .collect()
 }
 
-fn parse_level_wire(source: &str, universe_params: &[String]) -> Result<Level, ()> {
+fn parse_level_wire(
+    source: &str,
+    universe_params: &[String],
+    allow_unbound_level_params: bool,
+) -> Result<Level, ()> {
     if source.is_empty()
         || source.starts_with(' ')
         || source.ends_with(' ')
@@ -1480,7 +1514,12 @@ fn parse_level_wire(source: &str, universe_params: &[String]) -> Result<Level, (
     }
     let tokens = source.split(' ').collect::<Vec<_>>();
     let mut cursor = 0;
-    let level = parse_level_tokens(&tokens, &mut cursor, universe_params)?;
+    let level = parse_level_tokens(
+        &tokens,
+        &mut cursor,
+        universe_params,
+        allow_unbound_level_params,
+    )?;
     if cursor != tokens.len() {
         return Err(());
     }
@@ -1494,6 +1533,7 @@ fn parse_level_tokens(
     tokens: &[&str],
     cursor: &mut usize,
     universe_params: &[String],
+    allow_unbound_level_params: bool,
 ) -> Result<Level, ()> {
     let token = tokens.get(*cursor).copied().ok_or(())?;
     *cursor += 1;
@@ -1502,20 +1542,26 @@ fn parse_level_tokens(
             tokens,
             cursor,
             universe_params,
+            allow_unbound_level_params,
         )?))),
         "max" => {
-            let lhs = parse_level_tokens(tokens, cursor, universe_params)?;
-            let rhs = parse_level_tokens(tokens, cursor, universe_params)?;
+            let lhs =
+                parse_level_tokens(tokens, cursor, universe_params, allow_unbound_level_params)?;
+            let rhs =
+                parse_level_tokens(tokens, cursor, universe_params, allow_unbound_level_params)?;
             Ok(Level::Max(Box::new(lhs), Box::new(rhs)))
         }
         "imax" => {
-            let lhs = parse_level_tokens(tokens, cursor, universe_params)?;
-            let rhs = parse_level_tokens(tokens, cursor, universe_params)?;
+            let lhs =
+                parse_level_tokens(tokens, cursor, universe_params, allow_unbound_level_params)?;
+            let rhs =
+                parse_level_tokens(tokens, cursor, universe_params, allow_unbound_level_params)?;
             Ok(Level::IMax(Box::new(lhs), Box::new(rhs)))
         }
         _ if is_canonical_decimal(token) => decimal_level(token),
         _ if is_machine_universe_param_name(token)
-            && universe_params.iter().any(|param| param == token) =>
+            && (allow_unbound_level_params
+                || universe_params.iter().any(|param| param == token)) =>
         {
             Ok(Level::Param(token.to_owned()))
         }
@@ -1788,11 +1834,15 @@ fn parse_deterministic_budget(
     value: &JsonValue<'_>,
     path: &JsonPath,
 ) -> Result<TacticBudget, MachineApiRequestError> {
-    let object = validate_json_object(
-        value,
-        ObjectSchema::new(MachineApiErrorKind::InvalidBudget, BUDGET_FIELDS),
-        path,
-    )?;
+    parse_deterministic_budget_with_error_kind(value, path, MachineApiErrorKind::InvalidBudget)
+}
+
+pub(crate) fn parse_deterministic_budget_with_error_kind(
+    value: &JsonValue<'_>,
+    path: &JsonPath,
+    error_kind: MachineApiErrorKind,
+) -> Result<TacticBudget, MachineApiRequestError> {
+    let object = validate_json_object(value, ObjectSchema::new(error_kind, BUDGET_FIELDS), path)?;
     Ok(TacticBudget {
         max_tactic_steps: required_u64(&object, "max_tactic_steps"),
         max_whnf_steps: required_u64(&object, "max_whnf_steps"),
@@ -2589,7 +2639,7 @@ fn phase4_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosti
     }
 }
 
-fn candidate_tactic_kind_for_diagnostic(raw: &str) -> Option<MachineApiTacticKind> {
+pub(crate) fn candidate_tactic_kind_for_diagnostic(raw: &str) -> Option<MachineApiTacticKind> {
     let doc = JsonDocument::parse(raw).ok()?;
     let members = doc.root().object_members()?;
     let kind = members
@@ -2878,7 +2928,7 @@ fn type_mismatch(
     )
 }
 
-fn json_path_display(path: &JsonPath) -> String {
+pub(crate) fn json_path_display(path: &JsonPath) -> String {
     if path.elements.is_empty() {
         return "$".to_owned();
     }
@@ -3603,8 +3653,8 @@ mod tests {
 
     #[test]
     fn level_wire_rejects_noncanonical_succ_numeral() {
-        assert!(parse_level_wire("1", &[]).is_ok());
-        assert!(parse_level_wire("succ 0", &[]).is_err());
-        assert!(parse_level_wire("max 0 0", &[]).is_ok());
+        assert!(parse_level_wire("1", &[], false).is_ok());
+        assert!(parse_level_wire("succ 0", &[], false).is_err());
+        assert!(parse_level_wire("max 0 0", &[], false).is_ok());
     }
 }
