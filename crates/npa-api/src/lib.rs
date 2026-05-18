@@ -10,6 +10,7 @@ mod diagnostic;
 mod json;
 mod projection;
 mod renderer;
+mod snapshot;
 mod types;
 mod validation;
 
@@ -53,6 +54,12 @@ pub use renderer::{
     MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineExprRendererContext,
     MachineExprRendererError, MachineExprView, MachineGlobalRefView,
     Phase5ResolvedDisplayCoreRefOwner,
+};
+pub use snapshot::{
+    materialize_machine_proof_snapshot, stored_snapshot_view_canonical_bytes,
+    MachineSnapshotLookupError, MachineSnapshotMaterializationContext,
+    MachineSnapshotMaterializationError, MachineSnapshotStore, MachineSnapshotStoreError,
+    StoredSnapshotEntry, StoredSnapshotView,
 };
 pub use types::{
     format_goal_id_wire, format_hash_string, format_meta_var_id_wire, is_machine_local_name,

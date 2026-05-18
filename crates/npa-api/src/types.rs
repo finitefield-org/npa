@@ -8,6 +8,7 @@ use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
 use crate::projection::{MachineImportCertificateContext, VerifiedImportKey};
 use crate::renderer::{LocalId, MachineExprView};
+use crate::snapshot::MachineSnapshotStore;
 use crate::validation::{
     parse_strict_u64_token, JsonPath, MachineApiErrorKind, MachineApiRequestError,
     MachineApiRequestErrorReason, StrictUnsignedIntegerError,
@@ -68,7 +69,7 @@ impl KernelCheckProfileId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct MachineProofSession {
     pub session_id: SessionId,
     pub protocol_version: MachineApiVersion,
@@ -80,7 +81,7 @@ pub struct MachineProofSession {
     pub checked_current_decls: MachineCheckedCurrentDeclContext,
     pub options: MachineApiOptions,
     pub initial_snapshot: MachineProofSnapshot,
-    pub snapshots: Vec<MachineProofSnapshot>,
+    pub snapshots: MachineSnapshotStore,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

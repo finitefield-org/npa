@@ -8554,11 +8554,90 @@ pub fn checked_decl_signature_hash(signature: &CheckedDeclSignature) -> Hash {
 }
 
 pub fn core_expr_hash(expr: &Expr) -> Hash {
-    npa_cert::core_expr_hash(expr)
+    phase1_core_expr_hash(expr)
 }
 
 pub fn core_expr_canonical_bytes(expr: &Expr) -> Vec<u8> {
     npa_cert::core_expr_canonical_bytes(expr)
+}
+
+fn phase1_core_expr_hash(expr: &Expr) -> Hash {
+    let mut payload = Vec::new();
+    match expr {
+        Expr::Sort(level) => {
+            payload.push(0x00);
+            payload.extend(phase1_core_level_hash(&normalize_level(level.clone())));
+        }
+        Expr::BVar(index) => {
+            payload.push(0x01);
+            encode_u64_to(&mut payload, u64::from(*index));
+        }
+        Expr::Const { name, levels } => {
+            payload.push(0x02);
+            encode_string_to(&mut payload, name);
+            encode_u64_to(&mut payload, levels.len() as u64);
+            for level in levels {
+                payload.extend(phase1_core_level_hash(&normalize_level(level.clone())));
+            }
+        }
+        Expr::App(func, arg) => {
+            payload.push(0x03);
+            payload.extend(phase1_core_expr_hash(func));
+            payload.extend(phase1_core_expr_hash(arg));
+        }
+        Expr::Lam { ty, body, .. } => {
+            payload.push(0x04);
+            payload.extend(phase1_core_expr_hash(ty));
+            payload.extend(phase1_core_expr_hash(body));
+        }
+        Expr::Pi { ty, body, .. } => {
+            payload.push(0x05);
+            payload.extend(phase1_core_expr_hash(ty));
+            payload.extend(phase1_core_expr_hash(body));
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            payload.push(0x06);
+            payload.extend(phase1_core_expr_hash(ty));
+            payload.extend(phase1_core_expr_hash(value));
+            payload.extend(phase1_core_expr_hash(body));
+        }
+    }
+    phase1_hash_with_domain(b"NPA-PHASE1-EXPR-0.1", &payload)
+}
+
+fn phase1_core_level_hash(level: &Level) -> Hash {
+    let mut payload = Vec::new();
+    match level {
+        Level::Zero => payload.push(0x00),
+        Level::Succ(inner) => {
+            payload.push(0x01);
+            payload.extend(phase1_core_level_hash(inner));
+        }
+        Level::Max(lhs, rhs) => {
+            payload.push(0x02);
+            payload.extend(phase1_core_level_hash(lhs));
+            payload.extend(phase1_core_level_hash(rhs));
+        }
+        Level::IMax(lhs, rhs) => {
+            payload.push(0x03);
+            payload.extend(phase1_core_level_hash(lhs));
+            payload.extend(phase1_core_level_hash(rhs));
+        }
+        Level::Param(name) => {
+            payload.push(0x04);
+            encode_string_to(&mut payload, name);
+        }
+    }
+    phase1_hash_with_domain(b"NPA-LEVEL-0.1", &payload)
+}
+
+fn phase1_hash_with_domain(domain: &[u8], payload: &[u8]) -> Hash {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    hasher.update(payload);
+    hasher.finalize().into()
 }
 
 pub fn machine_term_source_canonical_bytes(term: &MachineTermSource) -> Result<Vec<u8>> {
@@ -10181,6 +10260,19 @@ mod tests {
             checked_x.core_decl_hash(),
             cert_x.declarations[0].hashes.decl_certificate_hash
         );
+    }
+
+    #[test]
+    fn core_expr_hash_uses_phase1_machine_api_domain() {
+        let mut payload = vec![0x00];
+        payload.extend(phase1_core_level_hash(&Level::zero()));
+        let mut hasher = Sha256::new();
+        hasher.update(b"NPA-PHASE1-EXPR-0.1");
+        hasher.update(&payload);
+        let expected: Hash = hasher.finalize().into();
+
+        assert_eq!(core_expr_hash(&prop()), expected);
+        assert_ne!(core_expr_hash(&prop()), npa_cert::core_expr_hash(&prop()));
     }
 
     #[test]

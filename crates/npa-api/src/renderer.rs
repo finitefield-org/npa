@@ -9,12 +9,9 @@ use npa_frontend::{
     MachineTermCheckResult, MachineTermElabContext,
 };
 use npa_kernel::{Expr, Level};
-use sha2::{Digest, Sha256};
 
 const GLOBAL_REF_VIEW_TAG: &str = "npa.phase5.global-ref-view.v2";
 const LOCAL_ID_TAG: &str = "npa.phase5.local-id.v1";
-const PHASE1_EXPR_DOMAIN: &[u8] = b"NPA-PHASE1-EXPR-0.1";
-const LEVEL_DOMAIN: &[u8] = b"NPA-LEVEL-0.1";
 const PREC_BINDER: u8 = 10;
 const PREC_APP: u8 = 80;
 const PREC_ATOM: u8 = 100;
@@ -1772,83 +1769,7 @@ fn count_expr_nodes(expr: &Expr, size: &mut u32) -> Result<(), MachineExprRender
 }
 
 fn hash_core_expr(expr: &Expr) -> Hash {
-    let mut payload = Vec::new();
-    encode_core_expr_payload(&mut payload, expr);
-    hash_with_domain(PHASE1_EXPR_DOMAIN, &payload)
-}
-
-fn encode_core_expr_payload(out: &mut Vec<u8>, expr: &Expr) {
-    match expr {
-        Expr::Sort(level) => {
-            out.push(0x00);
-            out.extend(hash_core_level(&npa_kernel::level::normalize_level(
-                level.clone(),
-            )));
-        }
-        Expr::BVar(index) => {
-            out.push(0x01);
-            encode_uvar(out, *index as u64);
-        }
-        Expr::Const { name, levels } => {
-            out.push(0x02);
-            encode_string(out, name);
-            encode_uvar(out, levels.len() as u64);
-            for level in levels {
-                out.extend(hash_core_level(&npa_kernel::level::normalize_level(
-                    level.clone(),
-                )));
-            }
-        }
-        Expr::App(func, arg) => {
-            out.push(0x03);
-            out.extend(hash_core_expr(func));
-            out.extend(hash_core_expr(arg));
-        }
-        Expr::Lam { ty, body, .. } => {
-            out.push(0x04);
-            out.extend(hash_core_expr(ty));
-            out.extend(hash_core_expr(body));
-        }
-        Expr::Pi { ty, body, .. } => {
-            out.push(0x05);
-            out.extend(hash_core_expr(ty));
-            out.extend(hash_core_expr(body));
-        }
-        Expr::Let {
-            ty, value, body, ..
-        } => {
-            out.push(0x06);
-            out.extend(hash_core_expr(ty));
-            out.extend(hash_core_expr(value));
-            out.extend(hash_core_expr(body));
-        }
-    }
-}
-
-fn hash_core_level(level: &Level) -> Hash {
-    let mut payload = Vec::new();
-    match level {
-        Level::Zero => payload.push(0x00),
-        Level::Succ(inner) => {
-            payload.push(0x01);
-            payload.extend(hash_core_level(inner));
-        }
-        Level::Max(lhs, rhs) => {
-            payload.push(0x02);
-            payload.extend(hash_core_level(lhs));
-            payload.extend(hash_core_level(rhs));
-        }
-        Level::IMax(lhs, rhs) => {
-            payload.push(0x03);
-            payload.extend(hash_core_level(lhs));
-            payload.extend(hash_core_level(rhs));
-        }
-        Level::Param(name) => {
-            payload.push(0x04);
-            encode_string(&mut payload, name);
-        }
-    }
-    hash_with_domain(LEVEL_DOMAIN, &payload)
+    npa_tactic::core_expr_hash(expr)
 }
 
 fn encode_name(out: &mut Vec<u8>, name: &Name) {
@@ -1889,13 +1810,6 @@ fn encode_uvar(out: &mut Vec<u8>, mut value: u64) {
             break;
         }
     }
-}
-
-fn hash_with_domain(domain: &[u8], payload: &[u8]) -> Hash {
-    let mut hasher = Sha256::new();
-    hasher.update(domain);
-    hasher.update(payload);
-    hasher.finalize().into()
 }
 
 #[cfg(test)]
