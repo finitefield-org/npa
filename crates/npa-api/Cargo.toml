@@ -10,4 +10,5 @@ npa-cert = { path = "../npa-cert" }
 npa-frontend = { path = "../npa-frontend" }
 npa-kernel = { path = "../npa-kernel" }
 npa-tactic = { path = "../npa-tactic" }
+libc = "0.2"
 sha2 = "0.10"

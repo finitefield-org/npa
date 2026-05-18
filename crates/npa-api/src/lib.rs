@@ -12,6 +12,7 @@ mod projection;
 mod renderer;
 mod session;
 mod snapshot;
+mod tactic;
 mod types;
 mod validation;
 
@@ -67,6 +68,14 @@ pub use snapshot::{
     MachineSnapshotLookupError, MachineSnapshotMaterializationContext,
     MachineSnapshotMaterializationError, MachineSnapshotStore, MachineSnapshotStoreError,
     StoredSnapshotEntry, StoredSnapshotView,
+};
+pub use tactic::{
+    parse_machine_tactic_run_request, run_machine_tactic_request,
+    run_machine_tactic_request_in_sessions, MachineRunSchedulerLimits,
+    MachineTacticRunDeltaSummary, MachineTacticRunError, MachineTacticRunErrorFields,
+    MachineTacticRunErrorObject, MachineTacticRunRequest, MachineTacticRunResponse,
+    MachineTacticRunResultKind, MachineTacticRunSchedulerFields, MachineTacticRunSuccessFields,
+    MachineTacticRunSuccessResult,
 };
 pub use types::{
     format_goal_id_wire, format_hash_string, format_meta_var_id_wire, is_machine_local_name,
