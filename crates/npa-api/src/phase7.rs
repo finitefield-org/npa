@@ -1,12 +1,18 @@
+use std::cmp::Ordering;
 use std::collections::VecDeque;
 
-use npa_cert::Hash;
-use npa_tactic::{MachineTacticBatchPolicy, TacticBudget};
+use npa_cert::{Hash, Name};
+use npa_tactic::{goal_id_canonical_bytes, GoalId, MachineTacticBatchPolicy, TacticBudget};
 
+use crate::current::MachineAxiomRefWire;
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
+use crate::renderer::MachineGlobalRefView;
 use crate::snapshot::{MachineSnapshotGetError, MachineSnapshotGetOk};
 use crate::tactic::parse_deterministic_budget_with_error_kind;
-use crate::types::{format_hash_string, MachineProofSession, SessionId, SnapshotId};
+use crate::types::{
+    format_goal_id_wire, format_hash_string, MachineApiErrorWire, MachineApiResponseEnvelope,
+    MachineGoalView, MachineProofSession, MachineProofSnapshot, SessionId, SnapshotId,
+};
 use crate::validation::{
     parse_request_body, parse_strict_u64_token, validate_json_object, FieldSpec, JsonFieldType,
     JsonPath, MachineApiErrorKind, MachineApiRequestError, MachineApiRequestErrorReason,
@@ -17,11 +23,13 @@ use crate::{
     parse_machine_theorem_search_request, parse_machine_verify_request, run_machine_replay_request,
     run_machine_tactic_batch_request, run_machine_verify_request, search_machine_theorems_for_goal,
     MachineBatchSchedulerLimits, MachineReplayError, MachineReplayResponse,
-    MachineTacticBatchError, MachineTacticBatchResponse, MachineTheoremSearchError,
-    MachineTheoremSearchResponse, MachineVerifyError, MachineVerifyResponse,
+    MachineTacticBatchError, MachineTacticBatchResponse, MachineTheoremMode,
+    MachineTheoremSearchError, MachineTheoremSearchOkFields, MachineTheoremSearchResponse,
+    MachineTheoremSearchResult, MachineVerifyError, MachineVerifyResponse,
 };
 
 const PHASE7_MVP_MAX_TACTICS_PER_NODE: u32 = 16;
+const PHASE7_MVP_PREMISE_QUERY_LIMIT: u32 = 32;
 
 const PHASE7_CONFIG_FIELDS: &[FieldSpec] = &[
     FieldSpec::required("search_budget", JsonFieldType::Object),
@@ -101,6 +109,73 @@ pub struct Phase7SnapshotGetRequest {
     pub state_fingerprint: Hash,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7InitialSnapshot {
+    pub snapshot: MachineProofSnapshot,
+    pub goals: Vec<Phase7GoalSummary>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7GoalSummary {
+    pub goal_id: GoalId,
+    pub open_goal_index: u32,
+    pub goal_fingerprint: Hash,
+    pub target_hash: Hash,
+    pub target_head: Option<MachineGlobalRefView>,
+    pub target_free_local_count: u32,
+    pub context_size: u32,
+    pub expr_size: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PremiseQueryRequest {
+    pub session_id: SessionId,
+    pub snapshot_id: SnapshotId,
+    pub state_fingerprint: Hash,
+    pub goal_id: GoalId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7RetrievalCacheKey {
+    pub session_root_hash: Hash,
+    pub query_fingerprint: Hash,
+    pub theorem_index_fingerprint: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PremiseRef {
+    pub module: Name,
+    pub name: Name,
+    pub export_hash: Hash,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PremiseUsage {
+    pub premise_ref: Phase7PremiseRef,
+    pub universe_params: Vec<String>,
+    pub statement_core_hash: Hash,
+    pub axioms_used: Vec<MachineAxiomRefWire>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PremiseCacheEntry {
+    pub premise_ref: Phase7PremiseRef,
+    pub universe_params: Vec<String>,
+    pub statement_core_hash: Hash,
+    pub statement_head: Option<MachineGlobalRefView>,
+    pub axioms_used: Vec<MachineAxiomRefWire>,
+    pub modes: Vec<MachineTheoremMode>,
+    pub response_index: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PremiseRetrieval {
+    pub cache_key: Phase7RetrievalCacheKey,
+    pub cache_entries: Vec<Phase7PremiseCacheEntry>,
+    pub results: Vec<MachineTheoremSearchResult>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase7MachineApiEndpointKind {
     SnapshotGet,
@@ -139,6 +214,10 @@ pub enum Phase7MachineApiError {
     TacticBatch(Box<MachineTacticBatchError>),
     Replay(Box<MachineReplayError>),
     Verify(Box<MachineVerifyError>),
+    SearchForGoalResponse(Box<MachineApiErrorWire>),
+    UnexpectedSchedulerStop {
+        endpoint: Phase7MachineApiEndpointKind,
+    },
     FakeRequestValidation {
         endpoint: Phase7MachineApiEndpointKind,
         error: MachineApiRequestError,
@@ -371,6 +450,167 @@ pub fn phase7_snapshot_get_request_json(request: &Phase7SnapshotGetRequest) -> S
         request.snapshot_id.wire(),
         format_hash_string(&request.state_fingerprint)
     )
+}
+
+pub fn load_phase7_initial_snapshot(
+    client: &mut impl Phase7MachineApiClient,
+    request: Phase7SnapshotGetRequest,
+) -> Phase7MachineApiResult<Phase7InitialSnapshot> {
+    let snapshot = client.get_snapshot(request)?.snapshot;
+    let goals = phase7_goal_summaries(&snapshot);
+    Ok(Phase7InitialSnapshot { snapshot, goals })
+}
+
+pub fn phase7_goal_summaries(snapshot: &MachineProofSnapshot) -> Vec<Phase7GoalSummary> {
+    snapshot
+        .goals
+        .iter()
+        .enumerate()
+        .map(|(index, goal)| phase7_goal_summary(goal, index))
+        .collect()
+}
+
+pub fn select_phase7_goal(snapshot: &MachineProofSnapshot) -> Option<Phase7GoalSummary> {
+    phase7_goal_summaries(snapshot)
+        .into_iter()
+        .min_by(phase7_goal_selection_order)
+}
+
+pub fn phase7_mvp_premise_query_json(request: &Phase7PremiseQueryRequest) -> String {
+    format!(
+        r#"{{"session_id":"{}","snapshot_id":"{}","state_fingerprint":"{}","goal_id":"{}","modes":["exact","apply","rw","simp"],"limit":{},"filters":{{"exclude_axioms":true}}}}"#,
+        request.session_id.wire(),
+        request.snapshot_id.wire(),
+        format_hash_string(&request.state_fingerprint),
+        format_goal_id_wire(request.goal_id),
+        PHASE7_MVP_PREMISE_QUERY_LIMIT
+    )
+}
+
+pub fn retrieve_phase7_premises(
+    client: &mut impl Phase7MachineApiClient,
+    request: &Phase7PremiseQueryRequest,
+    session_root_hash: Hash,
+) -> Phase7MachineApiResult<Phase7PremiseRetrieval> {
+    let source = phase7_mvp_premise_query_json(request);
+    let response = client.search_for_goal(&source)?;
+    match response {
+        MachineApiResponseEnvelope::Ok(ok) => Ok(phase7_premise_retrieval_from_search_ok(
+            session_root_hash,
+            ok.endpoint_fields,
+        )),
+        MachineApiResponseEnvelope::Error(error) => Err(
+            Phase7MachineApiError::SearchForGoalResponse(Box::new(error.error)),
+        ),
+        MachineApiResponseEnvelope::SchedulerStopped(_) => {
+            Err(Phase7MachineApiError::UnexpectedSchedulerStop {
+                endpoint: Phase7MachineApiEndpointKind::SearchForGoal,
+            })
+        }
+    }
+}
+
+pub fn phase7_premise_retrieval_from_search_ok(
+    session_root_hash: Hash,
+    search: MachineTheoremSearchOkFields,
+) -> Phase7PremiseRetrieval {
+    let cache_key = phase7_retrieval_cache_key(session_root_hash, &search);
+    let cache_entries = phase7_premise_cache_entries(&search);
+    Phase7PremiseRetrieval {
+        cache_key,
+        cache_entries,
+        results: search.results,
+    }
+}
+
+pub fn phase7_retrieval_cache_key(
+    session_root_hash: Hash,
+    search: &MachineTheoremSearchOkFields,
+) -> Phase7RetrievalCacheKey {
+    Phase7RetrievalCacheKey {
+        session_root_hash,
+        query_fingerprint: search.query_fingerprint,
+        theorem_index_fingerprint: search.theorem_index_fingerprint,
+    }
+}
+
+pub fn phase7_premise_cache_entries(
+    search: &MachineTheoremSearchOkFields,
+) -> Vec<Phase7PremiseCacheEntry> {
+    search
+        .results
+        .iter()
+        .enumerate()
+        .map(|(index, result)| phase7_premise_cache_entry(result, index))
+        .collect()
+}
+
+pub fn phase7_premise_usages(search: &MachineTheoremSearchOkFields) -> Vec<Phase7PremiseUsage> {
+    search.results.iter().map(phase7_premise_usage).collect()
+}
+
+fn phase7_goal_summary(goal: &MachineGoalView, open_goal_index: usize) -> Phase7GoalSummary {
+    Phase7GoalSummary {
+        goal_id: goal.goal_id,
+        open_goal_index: usize_to_u32(open_goal_index),
+        goal_fingerprint: goal.goal_fingerprint,
+        target_hash: goal.target_hash,
+        target_head: goal.target.head.clone(),
+        target_free_local_count: usize_to_u32(goal.target.free_locals.len()),
+        context_size: usize_to_u32(goal.context.len()),
+        expr_size: goal.target.size,
+    }
+}
+
+fn phase7_goal_selection_order(left: &Phase7GoalSummary, right: &Phase7GoalSummary) -> Ordering {
+    left.expr_size
+        .cmp(&right.expr_size)
+        .then_with(|| left.context_size.cmp(&right.context_size))
+        .then_with(|| {
+            left.target_free_local_count
+                .cmp(&right.target_free_local_count)
+        })
+        .then_with(|| left.open_goal_index.cmp(&right.open_goal_index))
+        .then_with(|| {
+            goal_id_canonical_bytes(left.goal_id).cmp(&goal_id_canonical_bytes(right.goal_id))
+        })
+}
+
+fn phase7_premise_cache_entry(
+    result: &MachineTheoremSearchResult,
+    response_index: usize,
+) -> Phase7PremiseCacheEntry {
+    Phase7PremiseCacheEntry {
+        premise_ref: phase7_premise_ref(result),
+        universe_params: result.universe_params.clone(),
+        statement_core_hash: result.statement.core_hash,
+        statement_head: result.statement.head.clone(),
+        axioms_used: result.axioms_used.clone(),
+        modes: result.modes.clone(),
+        response_index: usize_to_u32(response_index),
+    }
+}
+
+fn phase7_premise_usage(result: &MachineTheoremSearchResult) -> Phase7PremiseUsage {
+    Phase7PremiseUsage {
+        premise_ref: phase7_premise_ref(result),
+        universe_params: result.universe_params.clone(),
+        statement_core_hash: result.statement.core_hash,
+        axioms_used: result.axioms_used.clone(),
+    }
+}
+
+fn phase7_premise_ref(result: &MachineTheoremSearchResult) -> Phase7PremiseRef {
+    Phase7PremiseRef {
+        module: result.global_ref.module.clone(),
+        name: result.global_ref.name.clone(),
+        export_hash: result.global_ref.export_hash,
+        decl_interface_hash: result.global_ref.decl_interface_hash,
+    }
+}
+
+fn usize_to_u32(value: usize) -> u32 {
+    u32::try_from(value).expect("machine API vector length fits in u32")
 }
 
 pub fn parse_phase7_mvp_controller_config(
@@ -824,10 +1064,22 @@ fn invalid_u64(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_machine_snapshot_get_request, JsonFieldType, MachineApiRequestErrorReason};
+    use npa_tactic::{MachineTacticCandidate, MetaVarId};
+
+    use crate::{
+        parse_machine_snapshot_get_request, parse_machine_theorem_search_request, JsonFieldType,
+        LocalId, MachineAllowedModulesFilter, MachineApiOkResponse, MachineApiRequestErrorReason,
+        MachineApiResponseEnvelope, MachineApiResponseStatus, MachineExprView, MachineLocalView,
+        MachineSuggestedCandidate, MachineSuggestedCandidateStatus, MachineTheoremGlobalRef,
+        MachineTheoremStatement,
+    };
 
     fn hash(byte: u8) -> Hash {
         [byte; 32]
+    }
+
+    fn name(value: &str) -> Name {
+        Name::from_dotted(value)
     }
 
     fn snapshot_request() -> Phase7SnapshotGetRequest {
@@ -835,6 +1087,119 @@ mod tests {
             session_id: SessionId::parse("msess_001").unwrap(),
             snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
             state_fingerprint: hash(1),
+        }
+    }
+
+    fn imported_ref(name_suffix: &str, byte: u8) -> MachineGlobalRefView {
+        MachineGlobalRefView::Imported {
+            module: name("Std.Nat.Basic"),
+            name: name(&format!("Nat.{name_suffix}")),
+            export_hash: hash(byte),
+            decl_interface_hash: hash(byte + 1),
+            public_export: true,
+            tactic_head_visible: true,
+        }
+    }
+
+    fn expr_view(
+        byte: u8,
+        size: u32,
+        free_local_count: u32,
+        head: Option<MachineGlobalRefView>,
+    ) -> MachineExprView {
+        MachineExprView {
+            core_hash: hash(byte),
+            head: head.clone(),
+            constants: head.into_iter().collect(),
+            free_locals: (0..free_local_count).map(LocalId).collect(),
+            size,
+            machine: format!("expr_{byte}"),
+            pretty: Some(format!("pretty_{byte}")),
+        }
+    }
+
+    fn local_view(index: u32) -> MachineLocalView {
+        MachineLocalView {
+            local_id: LocalId(index),
+            machine_name: format!("x{index}"),
+            display_name: format!("x{index}"),
+            ty: expr_view(70 + index as u8, 1, 0, None),
+            value: None,
+            depends_on: Vec::new(),
+            binder_index: index,
+        }
+    }
+
+    fn goal_view(
+        goal_id: GoalId,
+        byte: u8,
+        expr_size: u32,
+        free_local_count: u32,
+        context_size: u32,
+        head: Option<MachineGlobalRefView>,
+    ) -> MachineGoalView {
+        MachineGoalView {
+            goal_id,
+            meta_id: MetaVarId(goal_id.0),
+            context_hash: hash(byte + 10),
+            local_name_map_hash: hash(byte + 11),
+            context: (0..context_size).map(local_view).collect(),
+            target: expr_view(byte, expr_size, free_local_count, head),
+            target_hash: hash(byte + 12),
+            goal_fingerprint: hash(byte + 13),
+            allowed_tactics: Vec::new(),
+        }
+    }
+
+    fn snapshot_with_goals(goals: Vec<MachineGoalView>) -> MachineProofSnapshot {
+        MachineProofSnapshot {
+            snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
+            session_id: SessionId::parse("msess_001").unwrap(),
+            state_fingerprint: hash(1),
+            tactic_options_fingerprint: hash(2),
+            open_goals: goals.iter().map(|goal| goal.goal_id).collect(),
+            goals,
+            proof_skeleton_hash: hash(3),
+        }
+    }
+
+    fn theorem_result(
+        machine: &str,
+        suggested: Vec<MachineSuggestedCandidate>,
+    ) -> MachineTheoremSearchResult {
+        MachineTheoremSearchResult {
+            premise_id: "prem_0".to_owned(),
+            global_ref: MachineTheoremGlobalRef {
+                module: name("Std.Nat.Basic"),
+                name: name("Nat.add_zero"),
+                export_hash: hash(10),
+                decl_interface_hash: hash(11),
+            },
+            universe_params: vec!["u".to_owned()],
+            statement: MachineTheoremStatement {
+                core_hash: hash(12),
+                head: Some(imported_ref("Eq", 13)),
+                machine: machine.to_owned(),
+            },
+            modes: vec![MachineTheoremMode::Exact, MachineTheoremMode::Simp],
+            suggested_candidates: suggested,
+            score: 0,
+            axioms_used: vec![MachineAxiomRefWire::Imported {
+                module: name("Std.Nat.Basic"),
+                name: name("Nat.zero_ax"),
+                export_hash: hash(14),
+                decl_interface_hash: hash(15),
+            }],
+        }
+    }
+
+    fn search_ok_fields(result: MachineTheoremSearchResult) -> MachineTheoremSearchOkFields {
+        MachineTheoremSearchOkFields {
+            query_fingerprint: hash(20),
+            theorem_index_fingerprint: hash(21),
+            search_profile_version: "mvp-zero-score-v1",
+            suggestion_profile_version: "mvp-suggested-candidates-v1",
+            results: vec![result],
         }
     }
 
@@ -894,6 +1259,192 @@ mod tests {
                 state_fingerprint: request.state_fingerprint,
                 include_pretty: false,
             }]
+        );
+    }
+
+    #[test]
+    fn initial_snapshot_loader_uses_snapshot_boundary_and_derives_goal_summaries() {
+        let request = snapshot_request();
+        let snapshot = snapshot_with_goals(vec![
+            goal_view(GoalId(1), 30, 8, 0, 0, Some(imported_ref("Eq", 40))),
+            goal_view(GoalId(0), 31, 3, 1, 2, None),
+        ]);
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: snapshot.clone(),
+        }));
+
+        let loaded = load_phase7_initial_snapshot(&mut client, request.clone()).unwrap();
+
+        assert_eq!(loaded.snapshot, snapshot);
+        assert_eq!(loaded.goals.len(), 2);
+        assert_eq!(loaded.goals[0].goal_id, GoalId(1));
+        assert_eq!(loaded.goals[0].open_goal_index, 0);
+        assert_eq!(loaded.goals[0].expr_size, 8);
+        assert_eq!(loaded.goals[0].target_free_local_count, 0);
+        assert_eq!(
+            client.calls(),
+            &[Phase7MachineApiCall::SnapshotGet {
+                session_id: request.session_id,
+                snapshot_id: request.snapshot_id,
+                state_fingerprint: request.state_fingerprint,
+                include_pretty: false,
+            }]
+        );
+    }
+
+    #[test]
+    fn goal_selection_uses_derived_snapshot_fields_only() {
+        let snapshot = snapshot_with_goals(vec![
+            goal_view(GoalId(2), 30, 10, 0, 1, Some(imported_ref("Eq", 40))),
+            goal_view(GoalId(1), 31, 5, 2, 0, Some(imported_ref("And", 42))),
+            goal_view(GoalId(0), 32, 5, 1, 0, None),
+        ]);
+
+        let summaries = phase7_goal_summaries(&snapshot);
+        let selected = select_phase7_goal(&snapshot).unwrap();
+
+        assert_eq!(summaries[0].goal_id, GoalId(2));
+        assert_eq!(summaries[1].open_goal_index, 1);
+        assert_eq!(summaries[2].target_hash, hash(44));
+        assert_eq!(selected.goal_id, GoalId(0));
+        assert_eq!(selected.expr_size, 5);
+        assert_eq!(selected.target_free_local_count, 1);
+    }
+
+    #[test]
+    fn phase7_mvp_premise_query_is_fixed_phase5_search_shape() {
+        let source = phase7_mvp_premise_query_json(&Phase7PremiseQueryRequest {
+            session_id: SessionId::parse("msess_001").unwrap(),
+            snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
+            state_fingerprint: hash(1),
+            goal_id: GoalId(7),
+        });
+
+        let parsed = parse_machine_theorem_search_request(&source).unwrap();
+
+        assert_eq!(
+            parsed.modes,
+            vec![
+                MachineTheoremMode::Exact,
+                MachineTheoremMode::Apply,
+                MachineTheoremMode::Rw,
+                MachineTheoremMode::Simp,
+            ]
+        );
+        assert_eq!(parsed.limit, 32);
+        assert!(parsed.filters.exclude_axioms);
+        assert_eq!(
+            parsed.filters.allowed_modules,
+            MachineAllowedModulesFilter::AllDirect
+        );
+        assert!(!source.contains("allowed_modules"));
+    }
+
+    #[test]
+    fn retrieve_phase7_premises_uses_fixed_query_and_preserves_phase5_results() {
+        let request = Phase7PremiseQueryRequest {
+            session_id: SessionId::parse("msess_001").unwrap(),
+            snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
+            state_fingerprint: hash(1),
+            goal_id: GoalId(7),
+        };
+        let search = search_ok_fields(theorem_result("display", Vec::new()));
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_search_for_goal_response(Ok(MachineApiResponseEnvelope::Ok(
+            MachineApiOkResponse {
+                status: MachineApiResponseStatus::Ok,
+                endpoint_fields: search.clone(),
+            },
+        )));
+
+        let retrieval = retrieve_phase7_premises(&mut client, &request, hash(99)).unwrap();
+
+        assert_eq!(
+            retrieval.cache_key,
+            Phase7RetrievalCacheKey {
+                session_root_hash: hash(99),
+                query_fingerprint: hash(20),
+                theorem_index_fingerprint: hash(21),
+            }
+        );
+        assert_eq!(retrieval.cache_entries.len(), 1);
+        assert_eq!(retrieval.results, search.results);
+        assert_eq!(client.calls().len(), 1);
+        let Phase7MachineApiCall::SearchForGoal { source } = &client.calls()[0] else {
+            panic!("expected search_for_goal call");
+        };
+        let parsed = parse_machine_theorem_search_request(source).unwrap();
+        assert_eq!(parsed.goal_id, GoalId(7));
+        assert_eq!(
+            parsed.modes,
+            vec![
+                MachineTheoremMode::Exact,
+                MachineTheoremMode::Apply,
+                MachineTheoremMode::Rw,
+                MachineTheoremMode::Simp,
+            ]
+        );
+        assert_eq!(
+            parsed.filters.allowed_modules,
+            MachineAllowedModulesFilter::AllDirect
+        );
+    }
+
+    #[test]
+    fn premise_cache_entries_use_verified_metadata_not_display_or_suggestions() {
+        let suggested = MachineSuggestedCandidate {
+            status: MachineSuggestedCandidateStatus::Validated,
+            candidate_hash: hash(16),
+            candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+        };
+        let mut search = search_ok_fields(theorem_result("pretty theorem text", vec![suggested]));
+
+        let entries = phase7_premise_cache_entries(&search);
+        let usages = phase7_premise_usages(&search);
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].premise_ref.module, name("Std.Nat.Basic"));
+        assert_eq!(entries[0].premise_ref.name, name("Nat.add_zero"));
+        assert_eq!(entries[0].universe_params, vec!["u".to_owned()]);
+        assert_eq!(entries[0].statement_core_hash, hash(12));
+        assert_eq!(entries[0].statement_head, Some(imported_ref("Eq", 13)));
+        assert_eq!(
+            entries[0].modes,
+            vec![MachineTheoremMode::Exact, MachineTheoremMode::Simp]
+        );
+        assert_eq!(entries[0].response_index, 0);
+        assert_eq!(
+            usages[0],
+            Phase7PremiseUsage {
+                premise_ref: entries[0].premise_ref.clone(),
+                universe_params: entries[0].universe_params.clone(),
+                statement_core_hash: entries[0].statement_core_hash,
+                axioms_used: entries[0].axioms_used.clone(),
+            }
+        );
+
+        let original_entries = entries;
+        search.results[0].statement.machine = "different display".to_owned();
+        search.results[0].score = 99;
+        search.results[0].suggested_candidates.clear();
+
+        assert_eq!(phase7_premise_cache_entries(&search), original_entries);
+    }
+
+    #[test]
+    fn retrieval_cache_key_uses_phase5_fingerprints() {
+        let search = search_ok_fields(theorem_result("display", Vec::new()));
+
+        let key = phase7_retrieval_cache_key(hash(99), &search);
+
+        assert_eq!(
+            key,
+            Phase7RetrievalCacheKey {
+                session_root_hash: hash(99),
+                query_fingerprint: hash(20),
+                theorem_index_fingerprint: hash(21),
+            }
         );
     }
 

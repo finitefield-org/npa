@@ -52,11 +52,16 @@ pub use json::{
     JsonValue, JsonValueKind,
 };
 pub use phase7::{
-    parse_phase7_mvp_controller_config, phase7_snapshot_get_request_json,
-    validate_phase7_mvp_controller_config, Phase7FakeMachineApiClient, Phase7LocalMachineApiClient,
-    Phase7MachineApiCall, Phase7MachineApiClient, Phase7MachineApiEndpointKind,
-    Phase7MachineApiError, Phase7MachineApiResult, Phase7MvpControllerConfig, Phase7SearchBudget,
-    Phase7SnapshotGetRequest,
+    load_phase7_initial_snapshot, parse_phase7_mvp_controller_config, phase7_goal_summaries,
+    phase7_mvp_premise_query_json, phase7_premise_cache_entries,
+    phase7_premise_retrieval_from_search_ok, phase7_premise_usages, phase7_retrieval_cache_key,
+    phase7_snapshot_get_request_json, retrieve_phase7_premises, select_phase7_goal,
+    validate_phase7_mvp_controller_config, Phase7FakeMachineApiClient, Phase7GoalSummary,
+    Phase7InitialSnapshot, Phase7LocalMachineApiClient, Phase7MachineApiCall,
+    Phase7MachineApiClient, Phase7MachineApiEndpointKind, Phase7MachineApiError,
+    Phase7MachineApiResult, Phase7MvpControllerConfig, Phase7PremiseCacheEntry,
+    Phase7PremiseQueryRequest, Phase7PremiseRef, Phase7PremiseRetrieval, Phase7PremiseUsage,
+    Phase7RetrievalCacheKey, Phase7SearchBudget, Phase7SnapshotGetRequest,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,
