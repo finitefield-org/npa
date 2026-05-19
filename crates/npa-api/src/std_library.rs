@@ -5,9 +5,9 @@ use std::{
 };
 
 use npa_cert::{
-    decode_module_cert, verify_module_cert, AxiomPolicy, AxiomRef, CertError, DeclPayload,
-    ExportKind, GlobalRef, Hash, ImportEntry, ModuleCert, Name, TrustMode, VerifiedModule,
-    VerifierSession,
+    decode_module_cert, verify_module_cert, AxiomPolicy, AxiomRef, CertError, DeclCert,
+    DeclPayload, ExportEntry, ExportKind, GlobalRef, Hash, ImportEntry, ModuleCert, Name, TermId,
+    TermNode, TrustMode, VerifiedModule, VerifierSession,
 };
 use npa_tactic::{EqFamilyRef, NatFamilyRef, RewriteDirection, SimpRuleRef};
 use sha2::{Digest, Sha256};
@@ -16,9 +16,11 @@ use crate::{
     current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire},
     json::{JsonDocument, JsonParseErrorKind, JsonValue, JsonValueKind},
     projection::VerifiedImportKey,
+    search::MachineTheoremMode,
     types::{
-        parse_fully_qualified_name_wire, parse_hash_string, parse_module_name_wire,
-        phase5_name_canonical_bytes, MachineWireGrammarError,
+        parse_fully_qualified_name_wire, parse_hash_string,
+        parse_machine_surface_renderable_name_wire, parse_machine_universe_param_name,
+        parse_module_name_wire, phase5_name_canonical_bytes, MachineWireGrammarError,
         KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
     },
     validation::{parse_strict_u64_token, StrictUnsignedIntegerError},
@@ -48,7 +50,11 @@ const STD_IMPORT_BUNDLE_SET_TAG: &str = "npa.phase6.std-import-bundle-set.v1";
 const STD_TACTIC_OPTIONS_RECIPE_TAG: &str = "npa.phase6.std-tactic-options-recipe.v1";
 const PHASE4_KERNEL_CHECK_PROFILE_TAG: &str = "npa.phase4.kernel-check-profile.v1";
 const STD_AXIOM_REPORT_TAG: &str = "npa.phase6.std-axiom-report.v1";
+const STD_THEOREM_INDEX_TAG: &str = "npa.phase6.std-theorem-index.v1";
+const STD_GLOBAL_REF_TAG: &str = "npa.phase6.std-global-ref.v1";
+const STD_GLOBAL_REF_VIEW_TAG: &str = "npa.phase6.std-global-ref-view.v1";
 const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
+const STD_THEOREM_INDEX_PROFILE_ID: &str = "npa.stdlib.theorem-index.mvp.v1";
 const STD_LOGIC_BUNDLE_ID: &str = "std.logic.mvp";
 const STD_NAT_BUNDLE_ID: &str = "std.nat.mvp";
 const STD_LIST_BUNDLE_ID: &str = "std.list.mvp";
@@ -166,6 +172,81 @@ pub struct MachineStdAxiomRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdTheoremIndex {
+    pub index_profile_id: String,
+    pub library_profile_id: String,
+    pub entries: Vec<MachineStdTheoremEntry>,
+    pub index_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdTheoremEntry {
+    pub global_ref: MachineStdGlobalRef,
+    pub kind: MachineStdTheoremKind,
+    pub universe_params: Vec<String>,
+    pub statement_core_hash: Hash,
+    pub statement_head: Option<MachineStdGlobalRefView>,
+    pub constants: Vec<MachineStdGlobalRefView>,
+    pub modes: Vec<MachineTheoremMode>,
+    pub attributes: Vec<MachineStdAttribute>,
+    pub rewrite_descriptors: Vec<MachineStdRewriteDescriptor>,
+    pub axiom_dependencies: Vec<MachineStdAxiomRef>,
+    pub proof_term_size: Option<u64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MachineStdGlobalRef {
+    pub module: Name,
+    pub name: Name,
+    pub export_hash: Hash,
+    pub certificate_hash: Hash,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MachineStdTheoremKind {
+    Theorem,
+    Axiom,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MachineStdAttribute {
+    Simp,
+    Rw,
+    Intro,
+    Elim,
+    Apply,
+    Refl,
+    Trans,
+    Congr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineStdRewriteDescriptor {}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineStdGlobalRefView {
+    Decl {
+        module: Name,
+        name: Name,
+        export_hash: Hash,
+        certificate_hash: Hash,
+        decl_interface_hash: Hash,
+        public_export: bool,
+    },
+    Generated {
+        module: Name,
+        parent_name: Name,
+        name: Name,
+        export_hash: Hash,
+        certificate_hash: Hash,
+        parent_decl_interface_hash: Hash,
+        decl_interface_hash: Hash,
+        public_export: bool,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineStdImportBundleSet {
     pub library_profile_id: String,
     pub bundles: Vec<MachineStdImportBundle>,
@@ -215,6 +296,7 @@ pub struct MachineStdValidatedRelease {
 pub enum MachineStdArtifactKind {
     LibraryRelease,
     ImportBundles,
+    TheoremIndex,
     AxiomReport,
 }
 
@@ -284,6 +366,7 @@ pub enum MachineStdReleaseArtifactError {
     InvalidStdLibraryRelease(MachineStdLibraryReleaseError),
     InvalidStdAxiomPolicy(MachineStdAxiomPolicyError),
     InvalidStdImportBundle(MachineStdImportBundleError),
+    InvalidStdTheoremIndex(MachineStdTheoremIndexError),
 }
 
 #[derive(Debug)]
@@ -458,6 +541,104 @@ pub enum MachineStdImportBundleError {
         bundle_id: String,
         expected: &'static str,
         actual: String,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
+#[derive(Debug)]
+pub enum MachineStdTheoremIndexError {
+    IndexProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    LibraryProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    TheoremIndexHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    InvalidEntryMembership {
+        expected: Vec<MachineStdGlobalRef>,
+        actual: Vec<MachineStdGlobalRef>,
+    },
+    DuplicateEntry {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalEntryOrder {
+        expected: Vec<MachineStdGlobalRef>,
+        actual: Vec<MachineStdGlobalRef>,
+    },
+    KindMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    UniverseParamsMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    StatementCoreHashMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    StatementHeadMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    ConstantsMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    ModesMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    AttributesMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    RewriteDescriptorsMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    AxiomDependenciesMismatch {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonNullProofTermSize {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalModes {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalAttributes {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalConstants {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalAxiomDependencies {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    InvalidRenderableName {
+        module: Name,
+        name: Name,
+    },
+    InvalidUniverseParam {
+        module: Name,
+        name: Name,
+    },
+    DuplicateUniverseParam {
+        module: Name,
+        name: Name,
+        param: String,
+    },
+    InvalidGlobalRef {
+        module: Name,
+    },
+    InvalidTermRef {
+        module: Name,
+    },
+    InvalidExportKind {
+        module: Name,
+        name: Name,
+    },
+    AxiomRefProjectionFailed {
+        module: Name,
     },
     CanonicalBytes {
         source: MachineStdCanonicalBytesError,
@@ -912,6 +1093,120 @@ pub fn machine_std_import_bundle_set_hash(
     )?))
 }
 
+pub fn machine_std_global_ref_canonical_bytes(
+    global_ref: &MachineStdGlobalRef,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_GLOBAL_REF_TAG);
+    encode_name(&mut out, &global_ref.module)?;
+    encode_name(&mut out, &global_ref.name)?;
+    encode_hash(&mut out, &global_ref.export_hash);
+    encode_hash(&mut out, &global_ref.certificate_hash);
+    encode_hash(&mut out, &global_ref.decl_interface_hash);
+    Ok(out)
+}
+
+pub fn machine_std_global_ref_view_canonical_bytes(
+    view: &MachineStdGlobalRefView,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_GLOBAL_REF_VIEW_TAG);
+    match view {
+        MachineStdGlobalRefView::Decl {
+            module,
+            name,
+            export_hash,
+            certificate_hash,
+            decl_interface_hash,
+            public_export,
+        } => {
+            out.push(0x00);
+            encode_name(&mut out, module)?;
+            encode_name(&mut out, name)?;
+            encode_hash(&mut out, export_hash);
+            encode_hash(&mut out, certificate_hash);
+            encode_hash(&mut out, decl_interface_hash);
+            encode_bool(&mut out, *public_export);
+        }
+        MachineStdGlobalRefView::Generated {
+            module,
+            parent_name,
+            name,
+            export_hash,
+            certificate_hash,
+            parent_decl_interface_hash,
+            decl_interface_hash,
+            public_export,
+        } => {
+            out.push(0x01);
+            encode_name(&mut out, module)?;
+            encode_name(&mut out, parent_name)?;
+            encode_name(&mut out, name)?;
+            encode_hash(&mut out, export_hash);
+            encode_hash(&mut out, certificate_hash);
+            encode_hash(&mut out, parent_decl_interface_hash);
+            encode_hash(&mut out, decl_interface_hash);
+            encode_bool(&mut out, *public_export);
+        }
+    }
+    Ok(out)
+}
+
+pub fn machine_std_theorem_entry_canonical_bytes(
+    entry: &MachineStdTheoremEntry,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    out.extend(machine_std_global_ref_canonical_bytes(&entry.global_ref)?);
+    out.push(theorem_kind_byte(entry.kind));
+    encode_uvar(&mut out, entry.universe_params.len() as u64);
+    for param in &entry.universe_params {
+        encode_string(&mut out, param);
+    }
+    encode_hash(&mut out, &entry.statement_core_hash);
+    encode_option_global_ref_view(&mut out, entry.statement_head.as_ref())?;
+    encode_uvar(&mut out, entry.constants.len() as u64);
+    for constant in &entry.constants {
+        out.extend(machine_std_global_ref_view_canonical_bytes(constant)?);
+    }
+    encode_uvar(&mut out, entry.modes.len() as u64);
+    for mode in &entry.modes {
+        out.push(theorem_mode_byte(*mode));
+    }
+    encode_uvar(&mut out, entry.attributes.len() as u64);
+    for attribute in &entry.attributes {
+        out.push(theorem_attribute_byte(*attribute));
+    }
+    encode_uvar(&mut out, entry.rewrite_descriptors.len() as u64);
+    encode_uvar(&mut out, entry.axiom_dependencies.len() as u64);
+    for axiom in &entry.axiom_dependencies {
+        out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
+    }
+    encode_option_u64(&mut out, entry.proof_term_size);
+    Ok(out)
+}
+
+pub fn machine_std_theorem_index_canonical_bytes(
+    theorem_index: &MachineStdTheoremIndex,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_THEOREM_INDEX_TAG);
+    encode_string(&mut out, &theorem_index.index_profile_id);
+    encode_string(&mut out, &theorem_index.library_profile_id);
+    encode_uvar(&mut out, theorem_index.entries.len() as u64);
+    for entry in &theorem_index.entries {
+        out.extend(machine_std_theorem_entry_canonical_bytes(entry)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_theorem_index_hash(
+    theorem_index: &MachineStdTheoremIndex,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_theorem_index_canonical_bytes(
+        theorem_index,
+    )?))
+}
+
 pub fn machine_std_axiom_ref_canonical_bytes(
     axiom: &MachineStdAxiomRef,
 ) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
@@ -1245,6 +1540,784 @@ fn compare_module_count(
             actual,
         })
     }
+}
+
+pub fn generate_machine_std_mvp_theorem_index(
+    loaded: &MachineStdLoadedRelease,
+) -> Result<MachineStdTheoremIndex, MachineStdTheoremIndexError> {
+    let mut entries = Vec::new();
+    for module in loaded.modules() {
+        for export in module.verified_module.export_block() {
+            if matches!(export.kind, ExportKind::Theorem | ExportKind::Axiom) {
+                entries.push(generate_machine_std_theorem_entry(loaded, module, export)?);
+            }
+        }
+    }
+    let mut keyed_entries = entries
+        .into_iter()
+        .map(|entry| {
+            Ok((
+                machine_std_global_ref_canonical_bytes(&entry.global_ref)
+                    .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?,
+                entry,
+            ))
+        })
+        .collect::<Result<Vec<_>, MachineStdTheoremIndexError>>()?;
+    keyed_entries.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+
+    Ok(MachineStdTheoremIndex {
+        index_profile_id: STD_THEOREM_INDEX_PROFILE_ID.to_owned(),
+        library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+        entries: keyed_entries.into_iter().map(|(_, entry)| entry).collect(),
+        index_hash: [0; 32],
+    })
+}
+
+pub fn validate_machine_std_mvp_theorem_index(
+    actual: &MachineStdTheoremIndex,
+    expected: &MachineStdTheoremIndex,
+) -> Result<(), MachineStdTheoremIndexError> {
+    if actual.index_profile_id != STD_THEOREM_INDEX_PROFILE_ID {
+        return Err(MachineStdTheoremIndexError::IndexProfileMismatch {
+            expected: STD_THEOREM_INDEX_PROFILE_ID,
+            actual: actual.index_profile_id.clone(),
+        });
+    }
+    if actual.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdTheoremIndexError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: actual.library_profile_id.clone(),
+        });
+    }
+
+    validate_theorem_entry_membership(&actual.entries, &expected.entries)?;
+    let expected_by_key = expected_theorem_entries_by_key(expected)?;
+    for actual_entry in &actual.entries {
+        let key = machine_std_global_ref_canonical_bytes(&actual_entry.global_ref)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        let expected_entry = expected_by_key
+            .get(&key)
+            .expect("membership validation checked entry key");
+        validate_theorem_entry_order(actual_entry)?;
+        validate_theorem_entry_contents(actual_entry, expected_entry)?;
+    }
+    Ok(())
+}
+
+fn generate_machine_std_theorem_entry(
+    loaded: &MachineStdLoadedRelease,
+    module: &MachineStdLoadedModule,
+    export: &ExportEntry,
+) -> Result<MachineStdTheoremEntry, MachineStdTheoremIndexError> {
+    let name = theorem_export_name(module, export)?;
+    ensure_renderable_theorem_name(module, &name)?;
+    let kind = match export.kind {
+        ExportKind::Theorem => MachineStdTheoremKind::Theorem,
+        ExportKind::Axiom => MachineStdTheoremKind::Axiom,
+        _ => {
+            return Err(MachineStdTheoremIndexError::InvalidExportKind {
+                module: module.module.clone(),
+                name,
+            });
+        }
+    };
+    let universe_params = theorem_export_universe_params(module, export)?;
+    let statement_head = theorem_statement_head(loaded, module, export.ty)?;
+    let constants = theorem_statement_constants(loaded, module, export.ty)?;
+    let axiom_dependencies = project_export_axiom_dependencies(loaded, module, export)?;
+    let mut modes = vec![MachineTheoremMode::Exact];
+    if has_leading_pi_term(module, export.ty)? {
+        modes.push(MachineTheoremMode::Apply);
+    }
+
+    Ok(MachineStdTheoremEntry {
+        global_ref: MachineStdGlobalRef {
+            module: module.module.clone(),
+            name,
+            export_hash: module.expected_export_hash,
+            certificate_hash: module.expected_certificate_hash,
+            decl_interface_hash: export.decl_interface_hash,
+        },
+        kind,
+        universe_params,
+        statement_core_hash: export.type_hash,
+        statement_head,
+        constants,
+        modes,
+        attributes: Vec::new(),
+        rewrite_descriptors: Vec::new(),
+        axiom_dependencies,
+        proof_term_size: None,
+    })
+}
+
+fn validate_theorem_entry_membership(
+    actual: &[MachineStdTheoremEntry],
+    expected: &[MachineStdTheoremEntry],
+) -> Result<(), MachineStdTheoremIndexError> {
+    let mut actual_pairs = theorem_entry_global_ref_pairs(actual)?;
+    let mut seen = BTreeSet::new();
+    for (key, global_ref) in &actual_pairs {
+        if !seen.insert(key.clone()) {
+            return Err(MachineStdTheoremIndexError::DuplicateEntry {
+                global_ref: Box::new(global_ref.clone()),
+            });
+        }
+    }
+    let mut expected_pairs = theorem_entry_global_ref_pairs(expected)?;
+    actual_pairs.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    expected_pairs.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    let actual_sorted_refs = actual_pairs
+        .iter()
+        .map(|(_, global_ref)| global_ref.clone())
+        .collect::<Vec<_>>();
+    let expected_sorted_refs = expected_pairs
+        .iter()
+        .map(|(_, global_ref)| global_ref.clone())
+        .collect::<Vec<_>>();
+    if actual_sorted_refs != expected_sorted_refs {
+        return Err(MachineStdTheoremIndexError::InvalidEntryMembership {
+            expected: expected_sorted_refs,
+            actual: actual_sorted_refs,
+        });
+    }
+    let actual_refs = actual
+        .iter()
+        .map(|entry| entry.global_ref.clone())
+        .collect::<Vec<_>>();
+    if actual_refs != expected_sorted_refs {
+        return Err(MachineStdTheoremIndexError::NonCanonicalEntryOrder {
+            expected: expected_sorted_refs,
+            actual: actual_refs,
+        });
+    }
+    Ok(())
+}
+
+fn theorem_entry_global_ref_pairs(
+    entries: &[MachineStdTheoremEntry],
+) -> Result<Vec<(Vec<u8>, MachineStdGlobalRef)>, MachineStdTheoremIndexError> {
+    entries
+        .iter()
+        .map(|entry| {
+            Ok((
+                machine_std_global_ref_canonical_bytes(&entry.global_ref)
+                    .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?,
+                entry.global_ref.clone(),
+            ))
+        })
+        .collect()
+}
+
+fn expected_theorem_entries_by_key(
+    expected: &MachineStdTheoremIndex,
+) -> Result<BTreeMap<Vec<u8>, &MachineStdTheoremEntry>, MachineStdTheoremIndexError> {
+    expected
+        .entries
+        .iter()
+        .map(|entry| {
+            Ok((
+                machine_std_global_ref_canonical_bytes(&entry.global_ref)
+                    .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?,
+                entry,
+            ))
+        })
+        .collect()
+}
+
+fn validate_theorem_entry_order(
+    entry: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    validate_theorem_modes_order(entry)?;
+    validate_theorem_attributes_order(entry)?;
+    validate_theorem_constants_order(entry)?;
+    validate_theorem_axiom_dependencies_order(entry)?;
+    Ok(())
+}
+
+fn validate_theorem_entry_contents(
+    actual: &MachineStdTheoremEntry,
+    expected: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    let global_ref = || Box::new(actual.global_ref.clone());
+    if actual.kind != expected.kind {
+        return Err(MachineStdTheoremIndexError::KindMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.universe_params != expected.universe_params {
+        return Err(MachineStdTheoremIndexError::UniverseParamsMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.statement_core_hash != expected.statement_core_hash {
+        return Err(MachineStdTheoremIndexError::StatementCoreHashMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.statement_head != expected.statement_head {
+        return Err(MachineStdTheoremIndexError::StatementHeadMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.constants != expected.constants {
+        return Err(MachineStdTheoremIndexError::ConstantsMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.modes.contains(&MachineTheoremMode::Exact)
+        != expected.modes.contains(&MachineTheoremMode::Exact)
+        || actual.modes.contains(&MachineTheoremMode::Apply)
+            != expected.modes.contains(&MachineTheoremMode::Apply)
+    {
+        return Err(MachineStdTheoremIndexError::ModesMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.axiom_dependencies != expected.axiom_dependencies {
+        return Err(MachineStdTheoremIndexError::AxiomDependenciesMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.proof_term_size.is_some() {
+        return Err(MachineStdTheoremIndexError::NonNullProofTermSize {
+            global_ref: global_ref(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_theorem_modes_order(
+    entry: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    let mut previous = None;
+    for mode in &entry.modes {
+        let current = theorem_mode_byte(*mode);
+        if previous.is_some_and(|previous| previous >= current) {
+            return Err(MachineStdTheoremIndexError::NonCanonicalModes {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn validate_theorem_attributes_order(
+    entry: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    let mut previous = None;
+    for attribute in &entry.attributes {
+        let current = theorem_attribute_byte(*attribute);
+        if previous.is_some_and(|previous| previous >= current) {
+            return Err(MachineStdTheoremIndexError::NonCanonicalAttributes {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn validate_theorem_constants_order(
+    entry: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    let mut previous: Option<Vec<u8>> = None;
+    for constant in &entry.constants {
+        let current = machine_std_global_ref_view_canonical_bytes(constant)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        if previous
+            .as_ref()
+            .is_some_and(|previous| previous >= &current)
+        {
+            return Err(MachineStdTheoremIndexError::NonCanonicalConstants {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn validate_theorem_axiom_dependencies_order(
+    entry: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    let mut previous: Option<Vec<u8>> = None;
+    for axiom in &entry.axiom_dependencies {
+        let current = machine_std_axiom_ref_canonical_bytes(axiom)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        if previous
+            .as_ref()
+            .is_some_and(|previous| previous >= &current)
+        {
+            return Err(MachineStdTheoremIndexError::NonCanonicalAxiomDependencies {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn theorem_export_name(
+    module: &MachineStdLoadedModule,
+    export: &ExportEntry,
+) -> Result<Name, MachineStdTheoremIndexError> {
+    module
+        .verified_module
+        .name_table()
+        .get(export.name)
+        .cloned()
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: module.module.clone(),
+        })
+}
+
+fn ensure_renderable_theorem_name(
+    module: &MachineStdLoadedModule,
+    name: &Name,
+) -> Result<(), MachineStdTheoremIndexError> {
+    parse_machine_surface_renderable_name_wire(&name.as_dotted())
+        .map(|_| ())
+        .map_err(|_| MachineStdTheoremIndexError::InvalidRenderableName {
+            module: module.module.clone(),
+            name: name.clone(),
+        })
+}
+
+fn theorem_export_universe_params(
+    module: &MachineStdLoadedModule,
+    export: &ExportEntry,
+) -> Result<Vec<String>, MachineStdTheoremIndexError> {
+    let export_name = theorem_export_name(module, export)?;
+    let mut seen = BTreeSet::new();
+    export
+        .universe_params
+        .iter()
+        .map(|name_id| {
+            let name = module
+                .verified_module
+                .name_table()
+                .get(*name_id)
+                .ok_or_else(|| MachineStdTheoremIndexError::InvalidUniverseParam {
+                    module: module.module.clone(),
+                    name: export_name.clone(),
+                })?;
+            let [component] = name.0.as_slice() else {
+                return Err(MachineStdTheoremIndexError::InvalidUniverseParam {
+                    module: module.module.clone(),
+                    name: export_name.clone(),
+                });
+            };
+            let param = parse_machine_universe_param_name(component).map_err(|_| {
+                MachineStdTheoremIndexError::InvalidUniverseParam {
+                    module: module.module.clone(),
+                    name: export_name.clone(),
+                }
+            })?;
+            if !seen.insert(param.clone()) {
+                return Err(MachineStdTheoremIndexError::DuplicateUniverseParam {
+                    module: module.module.clone(),
+                    name: export_name.clone(),
+                    param,
+                });
+            }
+            Ok(param)
+        })
+        .collect()
+}
+
+fn theorem_statement_head(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    ty: TermId,
+) -> Result<Option<MachineStdGlobalRefView>, MachineStdTheoremIndexError> {
+    let mut conclusion = ty;
+    while let TermNode::Pi { body, .. } = term_node(owner, conclusion)?.clone() {
+        conclusion = body;
+    }
+    let mut current = conclusion;
+    while let TermNode::App(func, _) = term_node(owner, current)?.clone() {
+        current = func;
+    }
+    match term_node(owner, current)? {
+        TermNode::Const { global_ref, .. } => {
+            normalize_std_global_ref_view(loaded, owner, global_ref).map(Some)
+        }
+        _ => Ok(None),
+    }
+}
+
+fn theorem_statement_constants(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    ty: TermId,
+) -> Result<Vec<MachineStdGlobalRefView>, MachineStdTheoremIndexError> {
+    let mut constants = BTreeMap::new();
+    let mut visited = BTreeSet::new();
+    collect_term_constants(loaded, owner, ty, &mut visited, &mut constants)?;
+    Ok(constants.into_values().collect())
+}
+
+fn collect_term_constants(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    term: TermId,
+    visited: &mut BTreeSet<TermId>,
+    constants: &mut BTreeMap<Vec<u8>, MachineStdGlobalRefView>,
+) -> Result<(), MachineStdTheoremIndexError> {
+    if !visited.insert(term) {
+        return Ok(());
+    }
+    match term_node(owner, term)?.clone() {
+        TermNode::Sort(_) | TermNode::BVar(_) => Ok(()),
+        TermNode::Const { global_ref, .. } => {
+            let view = normalize_std_global_ref_view(loaded, owner, &global_ref)?;
+            let key = machine_std_global_ref_view_canonical_bytes(&view)
+                .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+            constants.insert(key, view);
+            Ok(())
+        }
+        TermNode::App(func, arg) => {
+            collect_term_constants(loaded, owner, func, visited, constants)?;
+            collect_term_constants(loaded, owner, arg, visited, constants)
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            collect_term_constants(loaded, owner, ty, visited, constants)?;
+            collect_term_constants(loaded, owner, body, visited, constants)
+        }
+        TermNode::Let { ty, value, body } => {
+            collect_term_constants(loaded, owner, ty, visited, constants)?;
+            collect_term_constants(loaded, owner, value, visited, constants)?;
+            collect_term_constants(loaded, owner, body, visited, constants)
+        }
+    }
+}
+
+fn has_leading_pi_term(
+    module: &MachineStdLoadedModule,
+    ty: TermId,
+) -> Result<bool, MachineStdTheoremIndexError> {
+    Ok(matches!(term_node(module, ty)?, TermNode::Pi { .. }))
+}
+
+fn term_node(
+    module: &MachineStdLoadedModule,
+    term: TermId,
+) -> Result<&TermNode, MachineStdTheoremIndexError> {
+    module
+        .verified_module
+        .term_table()
+        .get(term)
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidTermRef {
+            module: module.module.clone(),
+        })
+}
+
+fn normalize_std_global_ref_view(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    global_ref: &GlobalRef,
+) -> Result<MachineStdGlobalRefView, MachineStdTheoremIndexError> {
+    match global_ref {
+        GlobalRef::Builtin { .. } => Err(MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        }),
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => normalize_imported_global_ref_view(
+            loaded,
+            owner,
+            *import_index,
+            *name,
+            *decl_interface_hash,
+        ),
+        GlobalRef::Local { decl_index } => normalize_local_global_ref_view(owner, *decl_index),
+        GlobalRef::LocalGenerated { decl_index, name } => {
+            normalize_local_generated_global_ref_view(owner, *decl_index, *name)
+        }
+    }
+}
+
+fn normalize_imported_global_ref_view(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    import_index: usize,
+    name_id: usize,
+    decl_interface_hash: Hash,
+) -> Result<MachineStdGlobalRefView, MachineStdTheoremIndexError> {
+    let import = owner.imports.get(import_index).ok_or_else(|| {
+        MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        }
+    })?;
+    let imported = loaded.module(&import.module).ok_or_else(|| {
+        MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        }
+    })?;
+    if import.export_hash != imported.expected_export_hash
+        || import.certificate_hash != Some(imported.expected_certificate_hash)
+    {
+        return Err(MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        });
+    }
+    let name = owner
+        .verified_module
+        .name_table()
+        .get(name_id)
+        .cloned()
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        })?;
+    let export = unique_public_export(imported, &name, decl_interface_hash).ok_or_else(|| {
+        MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        }
+    })?;
+    match export.kind {
+        ExportKind::Constructor | ExportKind::Recursor => {
+            let (parent_name, parent_decl_interface_hash) =
+                generated_parent_for_public_export(imported, export)?;
+            Ok(MachineStdGlobalRefView::Generated {
+                module: imported.module.clone(),
+                parent_name,
+                name,
+                export_hash: imported.expected_export_hash,
+                certificate_hash: imported.expected_certificate_hash,
+                parent_decl_interface_hash,
+                decl_interface_hash,
+                public_export: true,
+            })
+        }
+        _ => Ok(MachineStdGlobalRefView::Decl {
+            module: imported.module.clone(),
+            name,
+            export_hash: imported.expected_export_hash,
+            certificate_hash: imported.expected_certificate_hash,
+            decl_interface_hash,
+            public_export: true,
+        }),
+    }
+}
+
+fn normalize_local_global_ref_view(
+    owner: &MachineStdLoadedModule,
+    decl_index: usize,
+) -> Result<MachineStdGlobalRefView, MachineStdTheoremIndexError> {
+    let decl = owner
+        .verified_module
+        .declarations()
+        .get(decl_index)
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        })?;
+    let name = decl_name(owner, decl)?;
+    Ok(MachineStdGlobalRefView::Decl {
+        module: owner.module.clone(),
+        name: name.clone(),
+        export_hash: owner.expected_export_hash,
+        certificate_hash: owner.expected_certificate_hash,
+        decl_interface_hash: decl.hashes.decl_interface_hash,
+        public_export: public_export_exists(owner, &name, decl.hashes.decl_interface_hash),
+    })
+}
+
+fn normalize_local_generated_global_ref_view(
+    owner: &MachineStdLoadedModule,
+    decl_index: usize,
+    name_id: usize,
+) -> Result<MachineStdGlobalRefView, MachineStdTheoremIndexError> {
+    let decl = owner
+        .verified_module
+        .declarations()
+        .get(decl_index)
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        })?;
+    let generated_name = owner
+        .verified_module
+        .name_table()
+        .get(name_id)
+        .cloned()
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: owner.module.clone(),
+        })?;
+    let parent_name = local_generated_parent_name(owner, decl, &generated_name)?;
+    Ok(MachineStdGlobalRefView::Generated {
+        module: owner.module.clone(),
+        parent_name,
+        name: generated_name.clone(),
+        export_hash: owner.expected_export_hash,
+        certificate_hash: owner.expected_certificate_hash,
+        parent_decl_interface_hash: decl.hashes.decl_interface_hash,
+        decl_interface_hash: decl.hashes.decl_interface_hash,
+        public_export: public_generated_export_exists(
+            owner,
+            &generated_name,
+            decl.hashes.decl_interface_hash,
+        ),
+    })
+}
+
+fn unique_public_export<'a>(
+    module: &'a MachineStdLoadedModule,
+    name: &Name,
+    decl_interface_hash: Hash,
+) -> Option<&'a ExportEntry> {
+    let mut matches = module
+        .verified_module
+        .export_block()
+        .iter()
+        .filter(|entry| {
+            module
+                .verified_module
+                .name_table()
+                .get(entry.name)
+                .is_some_and(|entry_name| {
+                    entry_name == name && entry.decl_interface_hash == decl_interface_hash
+                })
+        });
+    let first = matches.next()?;
+    if matches.next().is_none() {
+        Some(first)
+    } else {
+        None
+    }
+}
+
+fn public_export_exists(
+    module: &MachineStdLoadedModule,
+    name: &Name,
+    decl_interface_hash: Hash,
+) -> bool {
+    unique_public_export(module, name, decl_interface_hash).is_some()
+}
+
+fn public_generated_export_exists(
+    module: &MachineStdLoadedModule,
+    name: &Name,
+    decl_interface_hash: Hash,
+) -> bool {
+    unique_public_export(module, name, decl_interface_hash)
+        .is_some_and(|entry| matches!(entry.kind, ExportKind::Constructor | ExportKind::Recursor))
+}
+
+fn generated_parent_for_public_export(
+    module: &MachineStdLoadedModule,
+    export: &ExportEntry,
+) -> Result<(Name, Hash), MachineStdTheoremIndexError> {
+    let generated_name = theorem_export_name(module, export)?;
+    let mut matches = Vec::new();
+    for decl in module.verified_module.declarations() {
+        if decl.hashes.decl_interface_hash != export.decl_interface_hash {
+            continue;
+        }
+        if inductive_decl_contains_generated(module, decl, &generated_name, Some(export.kind))? {
+            matches.push((decl_name(module, decl)?, decl.hashes.decl_interface_hash));
+        }
+    }
+    match matches.as_slice() {
+        [result] => Ok(result.clone()),
+        _ => Err(MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: module.module.clone(),
+        }),
+    }
+}
+
+fn local_generated_parent_name(
+    module: &MachineStdLoadedModule,
+    decl: &DeclCert,
+    generated_name: &Name,
+) -> Result<Name, MachineStdTheoremIndexError> {
+    if inductive_decl_contains_generated(module, decl, generated_name, None)? {
+        decl_name(module, decl)
+    } else {
+        Err(MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: module.module.clone(),
+        })
+    }
+}
+
+fn inductive_decl_contains_generated(
+    module: &MachineStdLoadedModule,
+    decl: &DeclCert,
+    generated_name: &Name,
+    expected_kind: Option<ExportKind>,
+) -> Result<bool, MachineStdTheoremIndexError> {
+    let DeclPayload::Inductive {
+        constructors,
+        recursor,
+        ..
+    } = &decl.decl
+    else {
+        return Ok(false);
+    };
+    let constructor_allowed = expected_kind
+        .map(|kind| kind == ExportKind::Constructor)
+        .unwrap_or(true);
+    let recursor_allowed = expected_kind
+        .map(|kind| kind == ExportKind::Recursor)
+        .unwrap_or(true);
+    let constructor_match = constructor_allowed
+        && constructors.iter().any(|constructor| {
+            module
+                .verified_module
+                .name_table()
+                .get(constructor.name)
+                .is_some_and(|name| name == generated_name)
+        });
+    let recursor_match = recursor_allowed
+        && recursor.as_ref().is_some_and(|recursor| {
+            module
+                .verified_module
+                .name_table()
+                .get(recursor.name)
+                .is_some_and(|name| name == generated_name)
+        });
+    Ok(constructor_match || recursor_match)
+}
+
+fn decl_name(
+    module: &MachineStdLoadedModule,
+    decl: &DeclCert,
+) -> Result<Name, MachineStdTheoremIndexError> {
+    let name_id = match &decl.decl {
+        DeclPayload::Axiom { name, .. }
+        | DeclPayload::Def { name, .. }
+        | DeclPayload::Theorem { name, .. }
+        | DeclPayload::Inductive { name, .. } => *name,
+    };
+    module
+        .verified_module
+        .name_table()
+        .get(name_id)
+        .cloned()
+        .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: module.module.clone(),
+        })
+}
+
+fn project_export_axiom_dependencies(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    export: &ExportEntry,
+) -> Result<Vec<MachineStdAxiomRef>, MachineStdTheoremIndexError> {
+    let mut projected = BTreeMap::new();
+    for axiom in &export.axiom_dependencies {
+        let axiom = project_axiom_ref(loaded, owner, axiom).map_err(|_| {
+            MachineStdTheoremIndexError::AxiomRefProjectionFailed {
+                module: owner.module.clone(),
+            }
+        })?;
+        let key = machine_std_axiom_ref_canonical_bytes(&axiom)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        projected.insert(key, axiom);
+    }
+    Ok(projected.into_values().collect())
 }
 
 pub fn generate_machine_std_mvp_import_bundle_set(
@@ -3476,6 +4549,63 @@ fn encode_option_nat_family(
     Ok(())
 }
 
+fn encode_option_global_ref_view(
+    out: &mut Vec<u8>,
+    value: Option<&MachineStdGlobalRefView>,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            out.extend(machine_std_global_ref_view_canonical_bytes(value)?);
+        }
+        None => out.push(0x00),
+    }
+    Ok(())
+}
+
+fn encode_option_u64(out: &mut Vec<u8>, value: Option<u64>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_uvar(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn encode_bool(out: &mut Vec<u8>, value: bool) {
+    out.push(u8::from(value));
+}
+
+fn theorem_kind_byte(kind: MachineStdTheoremKind) -> u8 {
+    match kind {
+        MachineStdTheoremKind::Theorem => 0x00,
+        MachineStdTheoremKind::Axiom => 0x01,
+    }
+}
+
+fn theorem_mode_byte(mode: MachineTheoremMode) -> u8 {
+    match mode {
+        MachineTheoremMode::Exact => 0x00,
+        MachineTheoremMode::Apply => 0x01,
+        MachineTheoremMode::Rw => 0x02,
+        MachineTheoremMode::Simp => 0x03,
+    }
+}
+
+fn theorem_attribute_byte(attribute: MachineStdAttribute) -> u8 {
+    match attribute {
+        MachineStdAttribute::Simp => 0x00,
+        MachineStdAttribute::Rw => 0x01,
+        MachineStdAttribute::Intro => 0x02,
+        MachineStdAttribute::Elim => 0x03,
+        MachineStdAttribute::Apply => 0x04,
+        MachineStdAttribute::Refl => 0x05,
+        MachineStdAttribute::Trans => 0x06,
+        MachineStdAttribute::Congr => 0x07,
+    }
+}
+
 fn encode_string(out: &mut Vec<u8>, value: &str) {
     encode_uvar(out, value.len() as u64);
     out.extend_from_slice(value.as_bytes());
@@ -3785,6 +4915,179 @@ mod tests {
             bundle_set.import_bundles_hash,
             machine_std_import_bundle_set_hash(&bundle_set).unwrap()
         );
+    }
+
+    #[test]
+    fn generates_mvp_theorem_index_from_public_theorem_and_axiom_exports() {
+        let package = TestPackage::new("mvp_theorem_index_base");
+        let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let logic = loaded.module(&Name::from_dotted("Std.Logic")).unwrap();
+
+        let theorem_index = generate_machine_std_mvp_theorem_index(&loaded).unwrap();
+        validate_machine_std_mvp_theorem_index(&theorem_index, &theorem_index).unwrap();
+        assert_eq!(theorem_index.entries.len(), 2);
+        assert_eq!(theorem_index.index_hash, [0; 32]);
+        assert_ne!(
+            machine_std_theorem_index_hash(&theorem_index).unwrap(),
+            [0; 32]
+        );
+
+        let p_export = export_entry(logic, "P");
+        let p_id_export = export_entry(logic, "p_id");
+        let p_entry = theorem_index_entry(&theorem_index, "P");
+        let p_id_entry = theorem_index_entry(&theorem_index, "p_id");
+
+        assert_eq!(p_entry.kind, MachineStdTheoremKind::Axiom);
+        assert_eq!(p_entry.statement_core_hash, p_export.type_hash);
+        assert_eq!(p_id_entry.kind, MachineStdTheoremKind::Theorem);
+        assert_eq!(p_id_entry.statement_core_hash, p_id_export.type_hash);
+        assert_eq!(
+            p_id_entry.modes,
+            vec![MachineTheoremMode::Exact, MachineTheoremMode::Apply]
+        );
+        assert!(p_id_entry.attributes.is_empty());
+        assert!(p_id_entry.rewrite_descriptors.is_empty());
+        assert_eq!(p_id_entry.proof_term_size, None);
+        assert_eq!(
+            p_id_entry.statement_head.as_ref(),
+            p_id_entry.constants.first()
+        );
+        assert!(matches!(
+            p_id_entry.statement_head.as_ref(),
+            Some(MachineStdGlobalRefView::Decl {
+                module,
+                name,
+                public_export: true,
+                ..
+            }) if *module == Name::from_dotted("Std.Logic") && *name == Name::from_dotted("P")
+        ));
+        assert_eq!(
+            p_id_entry
+                .axiom_dependencies
+                .iter()
+                .map(|axiom| axiom.name.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["P"]
+        );
+    }
+
+    #[test]
+    fn theorem_index_base_validation_defers_profile_metadata_and_final_hash() {
+        let package = TestPackage::new("theorem_index_base_defers_metadata");
+        let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_theorem_index(&loaded).unwrap();
+        let p_id_index = expected
+            .entries
+            .iter()
+            .position(|entry| entry.global_ref.name == Name::from_dotted("p_id"))
+            .unwrap();
+
+        let mut actual = expected.clone();
+        actual.index_hash = test_hash(230);
+        actual.entries[p_id_index].modes = vec![
+            MachineTheoremMode::Exact,
+            MachineTheoremMode::Apply,
+            MachineTheoremMode::Rw,
+            MachineTheoremMode::Simp,
+        ];
+        actual.entries[p_id_index].attributes = vec![MachineStdAttribute::Simp];
+
+        validate_machine_std_mvp_theorem_index(&actual, &expected).unwrap();
+    }
+
+    #[test]
+    fn rejects_missing_extra_generated_and_private_theorem_index_entries() {
+        let package = TestPackage::new("bad_theorem_index_membership");
+        let certs = mvp_certificate_bytes_with_logic_eq_rec_axiom();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_theorem_index(&loaded).unwrap();
+        let logic = loaded.module(&Name::from_dotted("Std.Logic")).unwrap();
+
+        let mut missing = expected.clone();
+        missing.entries.clear();
+        refresh_theorem_index_hash(&mut missing);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&missing, &expected),
+            Err(MachineStdTheoremIndexError::InvalidEntryMembership { .. })
+        ));
+
+        let generated = export_entry(logic, "Eq.refl");
+        let mut extra_generated = expected.clone();
+        let mut generated_entry = expected.entries[0].clone();
+        generated_entry.global_ref.name = Name::from_dotted("Eq.refl");
+        generated_entry.global_ref.decl_interface_hash = generated.decl_interface_hash;
+        extra_generated.entries.push(generated_entry);
+        refresh_theorem_index_hash(&mut extra_generated);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&extra_generated, &expected),
+            Err(MachineStdTheoremIndexError::InvalidEntryMembership { .. })
+        ));
+
+        let mut private_like = expected.clone();
+        let mut private_entry = expected.entries[0].clone();
+        private_entry.global_ref.name = Name::from_dotted("private_helper");
+        private_entry.global_ref.decl_interface_hash = test_hash(222);
+        private_like.entries.push(private_entry);
+        refresh_theorem_index_hash(&mut private_like);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&private_like, &expected),
+            Err(MachineStdTheoremIndexError::InvalidEntryMembership { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_theorem_index_certificate_derived_field_mismatches() {
+        let package = TestPackage::new("bad_theorem_index_fields");
+        let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_theorem_index(&loaded).unwrap();
+        let p_id_index = expected
+            .entries
+            .iter()
+            .position(|entry| entry.global_ref.name == Name::from_dotted("p_id"))
+            .unwrap();
+
+        let mut bad_hash = expected.clone();
+        bad_hash.entries[p_id_index].statement_core_hash = test_hash(201);
+        refresh_theorem_index_hash(&mut bad_hash);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&bad_hash, &expected),
+            Err(MachineStdTheoremIndexError::StatementCoreHashMismatch { .. })
+        ));
+
+        let mut bad_constants = expected.clone();
+        bad_constants.entries[p_id_index].constants.clear();
+        refresh_theorem_index_hash(&mut bad_constants);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&bad_constants, &expected),
+            Err(MachineStdTheoremIndexError::ConstantsMismatch { .. })
+        ));
+
+        let mut bad_axioms = expected.clone();
+        bad_axioms.entries[p_id_index].axiom_dependencies.clear();
+        refresh_theorem_index_hash(&mut bad_axioms);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&bad_axioms, &expected),
+            Err(MachineStdTheoremIndexError::AxiomDependenciesMismatch { .. })
+        ));
+
+        let mut bad_size = expected.clone();
+        bad_size.entries[p_id_index].proof_term_size = Some(1);
+        refresh_theorem_index_hash(&mut bad_size);
+        assert!(matches!(
+            validate_machine_std_mvp_theorem_index(&bad_size, &expected),
+            Err(MachineStdTheoremIndexError::NonNullProofTermSize { .. })
+        ));
     }
 
     #[test]
@@ -4320,6 +5623,43 @@ mod tests {
         }
     }
 
+    fn mvp_certificate_bytes_with_logic_axiom_theorem() -> MvpCertificateBytes {
+        let mut session = VerifierSession::new();
+        let mut policy = AxiomPolicy::high_trust();
+        policy.allowlisted_axioms.insert(Name::from_dotted("P"));
+
+        let logic_cert = build_module_cert(logic_axiom_theorem_module(), &[]).unwrap();
+        let logic = encode_module_cert(&logic_cert).unwrap();
+        let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
+
+        let nat_cert = build_module_cert(
+            empty_module("Std.Nat"),
+            std::slice::from_ref(&logic_verified),
+        )
+        .unwrap();
+        let nat = encode_module_cert(&nat_cert).unwrap();
+        let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
+
+        let list_cert = build_module_cert(
+            empty_module("Std.List"),
+            &[logic_verified.clone(), nat_verified.clone()],
+        )
+        .unwrap();
+        let list = encode_module_cert(&list_cert).unwrap();
+        verify_module_cert(&list, &mut session, &policy).unwrap();
+
+        let algebra_cert =
+            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
+
+        MvpCertificateBytes {
+            logic,
+            nat,
+            list,
+            algebra_basic,
+        }
+    }
+
     fn mvp_certificate_bytes_with_logic_eq_rec_axiom() -> MvpCertificateBytes {
         let mut session = VerifierSession::new();
         let mut policy = AxiomPolicy::high_trust();
@@ -4395,6 +5735,26 @@ mod tests {
         }
     }
 
+    fn logic_axiom_theorem_module() -> CoreModule {
+        let p = Expr::konst("P", vec![]);
+        CoreModule {
+            name: Name::from_dotted("Std.Logic"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "P".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                },
+                Decl::Theorem {
+                    name: "p_id".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("h", p.clone(), p.clone()),
+                    proof: Expr::lam("h", p, Expr::bvar(0)),
+                },
+            ],
+        }
+    }
+
     fn logic_eq_rec_axiom_module() -> CoreModule {
         CoreModule {
             name: Name::from_dotted("Std.Logic"),
@@ -4438,6 +5798,36 @@ mod tests {
                 .collect(),
             axiom_report_hash: [0; 32],
         }
+    }
+
+    fn theorem_index_entry<'a>(
+        theorem_index: &'a MachineStdTheoremIndex,
+        name: &str,
+    ) -> &'a MachineStdTheoremEntry {
+        theorem_index
+            .entries
+            .iter()
+            .find(|entry| entry.global_ref.name == Name::from_dotted(name))
+            .unwrap()
+    }
+
+    fn export_entry<'a>(module: &'a MachineStdLoadedModule, name: &str) -> &'a ExportEntry {
+        module
+            .verified_module
+            .export_block()
+            .iter()
+            .find(|entry| {
+                module
+                    .verified_module
+                    .name_table()
+                    .get(entry.name)
+                    .is_some_and(|entry_name| *entry_name == Name::from_dotted(name))
+            })
+            .unwrap()
+    }
+
+    fn refresh_theorem_index_hash(theorem_index: &mut MachineStdTheoremIndex) {
+        theorem_index.index_hash = machine_std_theorem_index_hash(theorem_index).unwrap();
     }
 
     fn release_manifest_for(
