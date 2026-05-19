@@ -9,7 +9,11 @@ use npa_cert::{
     DeclPayload, ExportEntry, ExportKind, GlobalRef, Hash, ImportEntry, ModuleCert, Name, TermId,
     TermNode, TrustMode, VerifiedModule, VerifierSession,
 };
-use npa_tactic::{EqFamilyRef, NatFamilyRef, RewriteDirection, SimpRuleRef};
+use npa_kernel::{level::normalize_level, Expr, Level};
+use npa_tactic::{
+    EqFamilyRef, MachineTacticEnv, MachineTacticOptions, NatFamilyRef, ResolvedSimpRule,
+    RewriteDirection, SimpRuleRef, VerifiedImportRef,
+};
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -53,6 +57,11 @@ const STD_AXIOM_REPORT_TAG: &str = "npa.phase6.std-axiom-report.v1";
 const STD_THEOREM_INDEX_TAG: &str = "npa.phase6.std-theorem-index.v1";
 const STD_GLOBAL_REF_TAG: &str = "npa.phase6.std-global-ref.v1";
 const STD_GLOBAL_REF_VIEW_TAG: &str = "npa.phase6.std-global-ref-view.v1";
+const STD_RULE_TELESCOPE_TAG: &str = "npa.phase6.std-rule-telescope.v1";
+const STD_REWRITE_PROFILE_TAG: &str = "npa.phase6.std-rewrite-profile.v1";
+const STD_REWRITE_PROFILE_SET_TAG: &str = "npa.phase6.std-rewrite-profile-set.v1";
+const STD_SIMP_PROFILE_TAG: &str = "npa.phase6.std-simp-profile.v1";
+const STD_SIMP_PROFILE_SET_TAG: &str = "npa.phase6.std-simp-profile-set.v1";
 const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
 const STD_THEOREM_INDEX_PROFILE_ID: &str = "npa.stdlib.theorem-index.mvp.v1";
 const STD_LOGIC_BUNDLE_ID: &str = "std.logic.mvp";
@@ -64,6 +73,14 @@ const STD_LOGIC_RECIPE_ID: &str = "std.logic-basic";
 const STD_NAT_RECIPE_ID: &str = "std.nat-simp";
 const STD_LIST_RECIPE_ID: &str = "std.list-simp";
 const STD_ALL_RECIPE_ID: &str = "std.all-simp";
+const STD_LOGIC_RW_PROFILE_ID: &str = "std.logic.rw";
+const STD_NAT_RW_PROFILE_ID: &str = "std.nat.rw";
+const STD_LIST_RW_PROFILE_ID: &str = "std.list.rw";
+const STD_ALL_RW_PROFILE_ID: &str = "std.all.rw";
+const STD_LOGIC_SIMP_PROFILE_ID: &str = "std.logic.simp";
+const STD_NAT_SIMP_PROFILE_ID: &str = "std.nat.simp";
+const STD_LIST_SIMP_PROFILE_ID: &str = "std.list.simp";
+const STD_ALL_SIMP_PROFILE_ID: &str = "std.all.simp";
 const STD_MAX_SIMP_REWRITE_STEPS: u64 = 100;
 const STD_MAX_OPEN_GOALS: u64 = 32;
 const STD_MAX_METAS: u64 = 64;
@@ -222,7 +239,55 @@ pub enum MachineStdAttribute {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum MachineStdRewriteDescriptor {}
+pub struct MachineStdRewriteDescriptor {
+    pub source: MachineStdGlobalRef,
+    pub direction: RewriteDirection,
+    pub safety: MachineStdRewriteSafety,
+    pub lhs_core_hash: Hash,
+    pub rhs_core_hash: Hash,
+    pub rule_telescope_hash: Hash,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MachineStdRewriteSafety {
+    SimpSafe,
+    RwOnly,
+    UnsafeForAutomation,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdRewriteProfile {
+    pub profile_id: String,
+    pub required_import_bundle_id: String,
+    pub kernel_check_profile: String,
+    pub eq_family: Option<EqFamilyRef>,
+    pub descriptors: Vec<MachineStdRewriteDescriptor>,
+    pub profile_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdRewriteProfileSet {
+    pub library_profile_id: String,
+    pub profiles: Vec<MachineStdRewriteProfile>,
+    pub rewrite_profiles_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdSimpProfile {
+    pub profile_id: String,
+    pub required_import_bundle_id: String,
+    pub kernel_check_profile: String,
+    pub eq_family: Option<EqFamilyRef>,
+    pub rules: Vec<SimpRuleRef>,
+    pub profile_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdSimpProfileSet {
+    pub library_profile_id: String,
+    pub profiles: Vec<MachineStdSimpProfile>,
+    pub simp_profiles_hash: Hash,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineStdGlobalRefView {
@@ -548,6 +613,137 @@ pub enum MachineStdImportBundleError {
 }
 
 #[derive(Debug)]
+pub enum MachineStdRewriteProfileError {
+    LibraryProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    RewriteProfilesHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    ProfileHashMismatch {
+        profile_id: String,
+        expected: Hash,
+        actual: Hash,
+    },
+    InvalidProfileMembership {
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
+    DuplicateProfile {
+        profile_id: String,
+    },
+    NonCanonicalProfileOrder {
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
+    ProfileFieldMismatch {
+        profile_id: String,
+        field: &'static str,
+    },
+    DuplicateDescriptor {
+        profile_id: String,
+    },
+    NonCanonicalDescriptorOrder {
+        profile_id: String,
+    },
+    DescriptorsMismatch {
+        profile_id: String,
+    },
+    MissingEqFamily {
+        profile_id: String,
+    },
+    RuleResolutionFailed {
+        profile_id: String,
+        name: Name,
+    },
+    RuleValidationFailed {
+        profile_id: String,
+        name: Name,
+    },
+    SimpSafeLintFailed {
+        profile_id: String,
+        name: Name,
+    },
+    NonEmptyMvpAxiomDependencies {
+        profile_id: String,
+        name: Name,
+    },
+    InvalidUniverseParam {
+        profile_id: String,
+        name: Name,
+        param: String,
+    },
+    InvalidRuleTelescope {
+        profile_id: String,
+        name: Name,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
+#[derive(Debug)]
+pub enum MachineStdSimpProfileError {
+    LibraryProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    SimpProfilesHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    ProfileHashMismatch {
+        profile_id: String,
+        expected: Hash,
+        actual: Hash,
+    },
+    InvalidProfileMembership {
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
+    DuplicateProfile {
+        profile_id: String,
+    },
+    NonCanonicalProfileOrder {
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
+    ProfileFieldMismatch {
+        profile_id: String,
+        field: &'static str,
+    },
+    DuplicateRule {
+        profile_id: String,
+    },
+    NonCanonicalRuleOrder {
+        profile_id: String,
+    },
+    RulesMismatch {
+        profile_id: String,
+    },
+    MissingEqFamily {
+        profile_id: String,
+    },
+    RuleResolutionFailed {
+        profile_id: String,
+        name: Name,
+    },
+    MissingSimpSafeDescriptor {
+        profile_id: String,
+        name: Name,
+    },
+    NonEmptyMvpAxiomDependencies {
+        profile_id: String,
+        name: Name,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
+#[derive(Debug)]
 pub enum MachineStdTheoremIndexError {
     IndexProfileMismatch {
         expected: &'static str,
@@ -614,6 +810,9 @@ pub enum MachineStdTheoremIndexError {
     NonCanonicalAxiomDependencies {
         global_ref: Box<MachineStdGlobalRef>,
     },
+    NonCanonicalRewriteDescriptors {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
     InvalidRenderableName {
         module: Name,
         name: Name,
@@ -650,6 +849,10 @@ pub enum MachineStdCanonicalBytesError {
     InvalidName {
         name: Name,
         source: Box<MachineWireGrammarError>,
+    },
+    InvalidCoreGlobalRef {
+        module: Name,
+        name: Name,
     },
 }
 
@@ -1152,6 +1355,140 @@ pub fn machine_std_global_ref_view_canonical_bytes(
     Ok(out)
 }
 
+pub fn machine_std_rule_telescope_canonical_bytes(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    rule: &ResolvedSimpRule,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_RULE_TELESCOPE_TAG);
+    encode_uvar(&mut out, rule.universe_params.len() as u64);
+    for param in &rule.universe_params {
+        encode_string(&mut out, param);
+    }
+    encode_uvar(&mut out, rule.rule_telescope.len() as u64);
+    for (index, param) in rule.rule_telescope.iter().enumerate() {
+        encode_uvar(&mut out, index as u64);
+        encode_hash(&mut out, &phase6_core_expr_hash(loaded, owner, &param.ty)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_rule_telescope_hash(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    rule: &ResolvedSimpRule,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_rule_telescope_canonical_bytes(
+        loaded, owner, rule,
+    )?))
+}
+
+pub fn machine_std_rewrite_descriptor_canonical_bytes(
+    descriptor: &MachineStdRewriteDescriptor,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    out.extend(machine_std_global_ref_canonical_bytes(&descriptor.source)?);
+    encode_rewrite_direction(&mut out, descriptor.direction);
+    out.push(rewrite_safety_byte(descriptor.safety));
+    encode_hash(&mut out, &descriptor.lhs_core_hash);
+    encode_hash(&mut out, &descriptor.rhs_core_hash);
+    encode_hash(&mut out, &descriptor.rule_telescope_hash);
+    Ok(out)
+}
+
+pub fn machine_std_rewrite_profile_canonical_bytes(
+    profile: &MachineStdRewriteProfile,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_REWRITE_PROFILE_TAG);
+    encode_string(&mut out, &profile.profile_id);
+    encode_string(&mut out, &profile.required_import_bundle_id);
+    out.extend(machine_std_kernel_check_profile_canonical_bytes(
+        &profile.kernel_check_profile,
+    ));
+    encode_option_eq_family(&mut out, profile.eq_family.as_ref())?;
+    encode_uvar(&mut out, profile.descriptors.len() as u64);
+    for descriptor in &profile.descriptors {
+        out.extend(machine_std_rewrite_descriptor_canonical_bytes(descriptor)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_rewrite_profile_hash(
+    profile: &MachineStdRewriteProfile,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_rewrite_profile_canonical_bytes(
+        profile,
+    )?))
+}
+
+pub fn machine_std_rewrite_profile_set_canonical_bytes(
+    profile_set: &MachineStdRewriteProfileSet,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_REWRITE_PROFILE_SET_TAG);
+    encode_string(&mut out, &profile_set.library_profile_id);
+    encode_uvar(&mut out, profile_set.profiles.len() as u64);
+    for profile in &profile_set.profiles {
+        encode_hash(&mut out, &machine_std_rewrite_profile_hash(profile)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_rewrite_profile_set_hash(
+    profile_set: &MachineStdRewriteProfileSet,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_rewrite_profile_set_canonical_bytes(
+        profile_set,
+    )?))
+}
+
+pub fn machine_std_simp_profile_canonical_bytes(
+    profile: &MachineStdSimpProfile,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_SIMP_PROFILE_TAG);
+    encode_string(&mut out, &profile.profile_id);
+    encode_string(&mut out, &profile.required_import_bundle_id);
+    out.extend(machine_std_kernel_check_profile_canonical_bytes(
+        &profile.kernel_check_profile,
+    ));
+    encode_option_eq_family(&mut out, profile.eq_family.as_ref())?;
+    encode_uvar(&mut out, profile.rules.len() as u64);
+    for rule in &profile.rules {
+        encode_simp_rule_ref(&mut out, rule)?;
+    }
+    Ok(out)
+}
+
+pub fn machine_std_simp_profile_hash(
+    profile: &MachineStdSimpProfile,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_simp_profile_canonical_bytes(profile)?))
+}
+
+pub fn machine_std_simp_profile_set_canonical_bytes(
+    profile_set: &MachineStdSimpProfileSet,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_SIMP_PROFILE_SET_TAG);
+    encode_string(&mut out, &profile_set.library_profile_id);
+    encode_uvar(&mut out, profile_set.profiles.len() as u64);
+    for profile in &profile_set.profiles {
+        encode_hash(&mut out, &machine_std_simp_profile_hash(profile)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_simp_profile_set_hash(
+    profile_set: &MachineStdSimpProfileSet,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_simp_profile_set_canonical_bytes(
+        profile_set,
+    )?))
+}
+
 pub fn machine_std_theorem_entry_canonical_bytes(
     entry: &MachineStdTheoremEntry,
 ) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
@@ -1177,6 +1514,9 @@ pub fn machine_std_theorem_entry_canonical_bytes(
         out.push(theorem_attribute_byte(*attribute));
     }
     encode_uvar(&mut out, entry.rewrite_descriptors.len() as u64);
+    for descriptor in &entry.rewrite_descriptors {
+        out.extend(machine_std_rewrite_descriptor_canonical_bytes(descriptor)?);
+    }
     encode_uvar(&mut out, entry.axiom_dependencies.len() as u64);
     for axiom in &entry.axiom_dependencies {
         out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
@@ -1731,6 +2071,7 @@ fn validate_theorem_entry_order(
     validate_theorem_modes_order(entry)?;
     validate_theorem_attributes_order(entry)?;
     validate_theorem_constants_order(entry)?;
+    validate_theorem_rewrite_descriptors_order(entry)?;
     validate_theorem_axiom_dependencies_order(entry)?;
     Ok(())
 }
@@ -1853,6 +2194,28 @@ fn validate_theorem_axiom_dependencies_order(
             return Err(MachineStdTheoremIndexError::NonCanonicalAxiomDependencies {
                 global_ref: Box::new(entry.global_ref.clone()),
             });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn validate_theorem_rewrite_descriptors_order(
+    entry: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    let mut previous: Option<Vec<u8>> = None;
+    for descriptor in &entry.rewrite_descriptors {
+        let current = machine_std_rewrite_descriptor_canonical_bytes(descriptor)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        if previous
+            .as_ref()
+            .is_some_and(|previous| previous >= &current)
+        {
+            return Err(
+                MachineStdTheoremIndexError::NonCanonicalRewriteDescriptors {
+                    global_ref: Box::new(entry.global_ref.clone()),
+                },
+            );
         }
         previous = Some(current);
     }
@@ -2318,6 +2681,1387 @@ fn project_export_axiom_dependencies(
         projected.insert(key, axiom);
     }
     Ok(projected.into_values().collect())
+}
+
+pub fn generate_machine_std_mvp_rewrite_profile_set(
+    loaded: &MachineStdLoadedRelease,
+) -> Result<MachineStdRewriteProfileSet, MachineStdRewriteProfileError> {
+    let profiles = expected_mvp_rewrite_profile_specs()
+        .into_iter()
+        .map(|spec| generate_mvp_rewrite_profile(loaded, spec))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut profile_set = MachineStdRewriteProfileSet {
+        library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+        profiles,
+        rewrite_profiles_hash: [0; 32],
+    };
+    profile_set.rewrite_profiles_hash = machine_std_rewrite_profile_set_hash(&profile_set)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    Ok(profile_set)
+}
+
+pub fn validate_machine_std_mvp_rewrite_profile_set(
+    actual: &MachineStdRewriteProfileSet,
+    expected: &MachineStdRewriteProfileSet,
+) -> Result<(), MachineStdRewriteProfileError> {
+    validate_rewrite_profile_hashes(actual)?;
+    if actual.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdRewriteProfileError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: actual.library_profile_id.clone(),
+        });
+    }
+    validate_rewrite_profile_membership(&actual.profiles)?;
+
+    let expected_by_id = expected
+        .profiles
+        .iter()
+        .map(|profile| (profile.profile_id.as_str(), profile))
+        .collect::<BTreeMap<_, _>>();
+    for profile in &actual.profiles {
+        let expected_profile = expected_by_id
+            .get(profile.profile_id.as_str())
+            .expect("rewrite profile membership was validated");
+        validate_rewrite_descriptor_order(&profile.profile_id, &profile.descriptors)?;
+        if profile.required_import_bundle_id != expected_profile.required_import_bundle_id {
+            return Err(MachineStdRewriteProfileError::ProfileFieldMismatch {
+                profile_id: profile.profile_id.clone(),
+                field: "required_import_bundle_id",
+            });
+        }
+        if profile.kernel_check_profile != expected_profile.kernel_check_profile {
+            return Err(MachineStdRewriteProfileError::ProfileFieldMismatch {
+                profile_id: profile.profile_id.clone(),
+                field: "kernel_check_profile",
+            });
+        }
+        if profile.eq_family != expected_profile.eq_family {
+            return Err(MachineStdRewriteProfileError::ProfileFieldMismatch {
+                profile_id: profile.profile_id.clone(),
+                field: "eq_family",
+            });
+        }
+        if profile.descriptors != expected_profile.descriptors {
+            return Err(MachineStdRewriteProfileError::DescriptorsMismatch {
+                profile_id: profile.profile_id.clone(),
+            });
+        }
+    }
+
+    let actual_hash = machine_std_rewrite_profile_set_hash(actual)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    if actual_hash != actual.rewrite_profiles_hash {
+        return Err(MachineStdRewriteProfileError::RewriteProfilesHashMismatch {
+            expected: actual.rewrite_profiles_hash,
+            actual: actual_hash,
+        });
+    }
+    if actual.rewrite_profiles_hash != expected.rewrite_profiles_hash {
+        return Err(MachineStdRewriteProfileError::RewriteProfilesHashMismatch {
+            expected: expected.rewrite_profiles_hash,
+            actual: actual.rewrite_profiles_hash,
+        });
+    }
+    Ok(())
+}
+
+pub fn generate_machine_std_mvp_simp_profile_set(
+    loaded: &MachineStdLoadedRelease,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<MachineStdSimpProfileSet, MachineStdSimpProfileError> {
+    let profiles = expected_mvp_simp_profile_specs()
+        .into_iter()
+        .map(|spec| generate_mvp_simp_profile(loaded, rewrite_profiles, spec))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut profile_set = MachineStdSimpProfileSet {
+        library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+        profiles,
+        simp_profiles_hash: [0; 32],
+    };
+    profile_set.simp_profiles_hash = machine_std_simp_profile_set_hash(&profile_set)
+        .map_err(|source| MachineStdSimpProfileError::CanonicalBytes { source })?;
+    Ok(profile_set)
+}
+
+pub fn validate_machine_std_mvp_simp_profile_set(
+    actual: &MachineStdSimpProfileSet,
+    expected: &MachineStdSimpProfileSet,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<(), MachineStdSimpProfileError> {
+    validate_simp_profile_hashes(actual)?;
+    if actual.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdSimpProfileError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: actual.library_profile_id.clone(),
+        });
+    }
+    validate_simp_profile_membership(&actual.profiles)?;
+
+    let expected_by_id = expected
+        .profiles
+        .iter()
+        .map(|profile| (profile.profile_id.as_str(), profile))
+        .collect::<BTreeMap<_, _>>();
+    for profile in &actual.profiles {
+        let expected_profile = expected_by_id
+            .get(profile.profile_id.as_str())
+            .expect("simp profile membership was validated");
+        validate_simp_rule_order(&profile.profile_id, &profile.rules)?;
+        validate_simp_rules_have_paired_descriptors(profile, rewrite_profiles)?;
+        if profile.required_import_bundle_id != expected_profile.required_import_bundle_id {
+            return Err(MachineStdSimpProfileError::ProfileFieldMismatch {
+                profile_id: profile.profile_id.clone(),
+                field: "required_import_bundle_id",
+            });
+        }
+        if profile.kernel_check_profile != expected_profile.kernel_check_profile {
+            return Err(MachineStdSimpProfileError::ProfileFieldMismatch {
+                profile_id: profile.profile_id.clone(),
+                field: "kernel_check_profile",
+            });
+        }
+        if profile.eq_family != expected_profile.eq_family {
+            return Err(MachineStdSimpProfileError::ProfileFieldMismatch {
+                profile_id: profile.profile_id.clone(),
+                field: "eq_family",
+            });
+        }
+        if profile.rules != expected_profile.rules {
+            return Err(MachineStdSimpProfileError::RulesMismatch {
+                profile_id: profile.profile_id.clone(),
+            });
+        }
+    }
+
+    let actual_hash = machine_std_simp_profile_set_hash(actual)
+        .map_err(|source| MachineStdSimpProfileError::CanonicalBytes { source })?;
+    if actual_hash != actual.simp_profiles_hash {
+        return Err(MachineStdSimpProfileError::SimpProfilesHashMismatch {
+            expected: actual.simp_profiles_hash,
+            actual: actual_hash,
+        });
+    }
+    if actual.simp_profiles_hash != expected.simp_profiles_hash {
+        return Err(MachineStdSimpProfileError::SimpProfilesHashMismatch {
+            expected: expected.simp_profiles_hash,
+            actual: actual.simp_profiles_hash,
+        });
+    }
+    Ok(())
+}
+
+fn generate_mvp_rewrite_profile(
+    loaded: &MachineStdLoadedRelease,
+    spec: MvpRewriteProfileSpec,
+) -> Result<MachineStdRewriteProfile, MachineStdRewriteProfileError> {
+    let eq_family = std_logic_eq_family(loaded).ok_or_else(|| {
+        MachineStdRewriteProfileError::MissingEqFamily {
+            profile_id: spec.id.to_owned(),
+        }
+    })?;
+    let candidates = mvp_rewrite_rule_candidates(loaded, spec)?;
+    let rules = candidates
+        .iter()
+        .map(|candidate| candidate.rule_ref.clone())
+        .collect::<Vec<_>>();
+    let resolved_rules = resolve_rewrite_profile_rules(
+        loaded,
+        spec.id,
+        spec.required_import_bundle_id,
+        &eq_family,
+        &rules,
+    )?;
+    let resolved_by_key = resolved_rules
+        .into_iter()
+        .map(|rule| {
+            Ok((
+                simp_rule_ref_canonical_bytes(&rule.key)
+                    .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
+                rule,
+            ))
+        })
+        .collect::<Result<BTreeMap<_, _>, MachineStdRewriteProfileError>>()?;
+    let mut descriptors = Vec::new();
+    for candidate in candidates {
+        let key = simp_rule_ref_canonical_bytes(&candidate.rule_ref)
+            .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+        let rule = resolved_by_key.get(&key).ok_or_else(|| {
+            MachineStdRewriteProfileError::RuleValidationFailed {
+                profile_id: spec.id.to_owned(),
+                name: candidate.rule_ref.name.clone(),
+            }
+        })?;
+        let owner = loaded.module(&candidate.global_ref.module).ok_or_else(|| {
+            MachineStdRewriteProfileError::RuleValidationFailed {
+                profile_id: spec.id.to_owned(),
+                name: candidate.rule_ref.name.clone(),
+            }
+        })?;
+        validate_resolved_rule_telescope(spec.id, &candidate.rule_ref.name, rule)?;
+        let descriptor = MachineStdRewriteDescriptor {
+            source: candidate.global_ref.clone(),
+            direction: candidate.rule_ref.direction,
+            safety: candidate.safety,
+            lhs_core_hash: phase6_core_expr_hash(loaded, owner, &rule.theorem_lhs)
+                .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
+            rhs_core_hash: phase6_core_expr_hash(loaded, owner, &rule.theorem_rhs)
+                .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
+            rule_telescope_hash: machine_std_rule_telescope_hash(loaded, owner, rule)
+                .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
+        };
+        if descriptor.safety == MachineStdRewriteSafety::SimpSafe {
+            validate_simp_safe_rule(loaded, spec.id, rule, &descriptor.source)?;
+        }
+        descriptors.push(descriptor);
+    }
+    sort_rewrite_descriptors(&mut descriptors)?;
+    let mut profile = MachineStdRewriteProfile {
+        profile_id: spec.id.to_owned(),
+        required_import_bundle_id: spec.required_import_bundle_id.to_owned(),
+        kernel_check_profile: STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE.to_owned(),
+        eq_family: Some(eq_family),
+        descriptors,
+        profile_hash: [0; 32],
+    };
+    profile.profile_hash = machine_std_rewrite_profile_hash(&profile)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    Ok(profile)
+}
+
+fn generate_mvp_simp_profile(
+    loaded: &MachineStdLoadedRelease,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+    spec: MvpSimpProfileSpec,
+) -> Result<MachineStdSimpProfile, MachineStdSimpProfileError> {
+    let eq_family =
+        std_logic_eq_family(loaded).ok_or_else(|| MachineStdSimpProfileError::MissingEqFamily {
+            profile_id: spec.id.to_owned(),
+        })?;
+    let mut rules = mvp_simp_rule_candidates(loaded, spec)?
+        .into_iter()
+        .map(|candidate| candidate.rule_ref)
+        .collect::<Vec<_>>();
+    sort_simp_rules(&mut rules)?;
+    let mut profile = MachineStdSimpProfile {
+        profile_id: spec.id.to_owned(),
+        required_import_bundle_id: spec.required_import_bundle_id.to_owned(),
+        kernel_check_profile: STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE.to_owned(),
+        eq_family: Some(eq_family),
+        rules,
+        profile_hash: [0; 32],
+    };
+    validate_simp_rules_have_paired_descriptors(&profile, rewrite_profiles)?;
+    profile.profile_hash = machine_std_simp_profile_hash(&profile)
+        .map_err(|source| MachineStdSimpProfileError::CanonicalBytes { source })?;
+    Ok(profile)
+}
+
+#[derive(Clone, Copy)]
+struct MvpRewriteProfileSpec {
+    id: &'static str,
+    required_import_bundle_id: &'static str,
+    simp_safe: &'static [&'static str],
+    rw_only: &'static [&'static str],
+}
+
+#[derive(Clone, Copy)]
+struct MvpSimpProfileSpec {
+    id: &'static str,
+    required_import_bundle_id: &'static str,
+    rules: &'static [&'static str],
+}
+
+#[derive(Clone)]
+struct MvpRuleCandidate {
+    rule_ref: SimpRuleRef,
+    global_ref: MachineStdGlobalRef,
+    safety: MachineStdRewriteSafety,
+}
+
+fn expected_mvp_rewrite_profile_specs() -> Vec<MvpRewriteProfileSpec> {
+    vec![
+        MvpRewriteProfileSpec {
+            id: STD_ALL_RW_PROFILE_ID,
+            required_import_bundle_id: STD_ALL_BUNDLE_ID,
+            simp_safe: &[
+                "Nat.add_zero",
+                "Nat.add_succ",
+                "Nat.zero_add",
+                "Nat.mul_zero",
+                "Nat.mul_succ",
+                "Nat.zero_mul",
+                "Nat.pred_zero",
+                "Nat.pred_succ",
+                "List.nil_append",
+                "List.cons_append",
+                "List.append_nil",
+                "List.length_nil",
+                "List.length_cons",
+                "List.map_nil",
+                "List.map_cons",
+                "List.map_id",
+                "List.foldr_nil",
+                "List.foldr_cons",
+            ],
+            rw_only: &[
+                "Nat.add_comm",
+                "Nat.add_assoc",
+                "List.append_assoc",
+                "List.length_append",
+            ],
+        },
+        MvpRewriteProfileSpec {
+            id: STD_LIST_RW_PROFILE_ID,
+            required_import_bundle_id: STD_LIST_BUNDLE_ID,
+            simp_safe: &[
+                "List.nil_append",
+                "List.cons_append",
+                "List.append_nil",
+                "List.length_nil",
+                "List.length_cons",
+                "List.map_nil",
+                "List.map_cons",
+                "List.map_id",
+                "List.foldr_nil",
+                "List.foldr_cons",
+            ],
+            rw_only: &["List.append_assoc", "List.length_append"],
+        },
+        MvpRewriteProfileSpec {
+            id: STD_LOGIC_RW_PROFILE_ID,
+            required_import_bundle_id: STD_LOGIC_BUNDLE_ID,
+            simp_safe: &[],
+            rw_only: &[],
+        },
+        MvpRewriteProfileSpec {
+            id: STD_NAT_RW_PROFILE_ID,
+            required_import_bundle_id: STD_NAT_BUNDLE_ID,
+            simp_safe: &[
+                "Nat.add_zero",
+                "Nat.add_succ",
+                "Nat.zero_add",
+                "Nat.mul_zero",
+                "Nat.mul_succ",
+                "Nat.zero_mul",
+                "Nat.pred_zero",
+                "Nat.pred_succ",
+            ],
+            rw_only: &["Nat.add_comm", "Nat.add_assoc"],
+        },
+    ]
+}
+
+fn expected_mvp_simp_profile_specs() -> Vec<MvpSimpProfileSpec> {
+    vec![
+        MvpSimpProfileSpec {
+            id: STD_ALL_SIMP_PROFILE_ID,
+            required_import_bundle_id: STD_ALL_BUNDLE_ID,
+            rules: &[
+                "Nat.add_zero",
+                "Nat.add_succ",
+                "Nat.zero_add",
+                "Nat.mul_zero",
+                "Nat.mul_succ",
+                "Nat.zero_mul",
+                "Nat.pred_zero",
+                "Nat.pred_succ",
+                "List.nil_append",
+                "List.cons_append",
+                "List.append_nil",
+                "List.length_nil",
+                "List.length_cons",
+                "List.map_nil",
+                "List.map_cons",
+                "List.map_id",
+                "List.foldr_nil",
+                "List.foldr_cons",
+            ],
+        },
+        MvpSimpProfileSpec {
+            id: STD_LIST_SIMP_PROFILE_ID,
+            required_import_bundle_id: STD_LIST_BUNDLE_ID,
+            rules: &[
+                "List.nil_append",
+                "List.cons_append",
+                "List.append_nil",
+                "List.length_nil",
+                "List.length_cons",
+                "List.map_nil",
+                "List.map_cons",
+                "List.map_id",
+                "List.foldr_nil",
+                "List.foldr_cons",
+            ],
+        },
+        MvpSimpProfileSpec {
+            id: STD_LOGIC_SIMP_PROFILE_ID,
+            required_import_bundle_id: STD_LOGIC_BUNDLE_ID,
+            rules: &[],
+        },
+        MvpSimpProfileSpec {
+            id: STD_NAT_SIMP_PROFILE_ID,
+            required_import_bundle_id: STD_NAT_BUNDLE_ID,
+            rules: &[
+                "Nat.add_zero",
+                "Nat.add_succ",
+                "Nat.zero_add",
+                "Nat.mul_zero",
+                "Nat.mul_succ",
+                "Nat.zero_mul",
+                "Nat.pred_zero",
+                "Nat.pred_succ",
+            ],
+        },
+    ]
+}
+
+fn mvp_rewrite_rule_candidates(
+    loaded: &MachineStdLoadedRelease,
+    spec: MvpRewriteProfileSpec,
+) -> Result<Vec<MvpRuleCandidate>, MachineStdRewriteProfileError> {
+    let mut candidates = Vec::new();
+    for name in spec.simp_safe {
+        candidates.push(mvp_rewrite_rule_candidate(
+            loaded,
+            spec.id,
+            spec.required_import_bundle_id,
+            name,
+            MachineStdRewriteSafety::SimpSafe,
+        )?);
+    }
+    for name in spec.rw_only {
+        candidates.push(mvp_rewrite_rule_candidate(
+            loaded,
+            spec.id,
+            spec.required_import_bundle_id,
+            name,
+            MachineStdRewriteSafety::RwOnly,
+        )?);
+    }
+    Ok(candidates)
+}
+
+fn mvp_simp_rule_candidates(
+    loaded: &MachineStdLoadedRelease,
+    spec: MvpSimpProfileSpec,
+) -> Result<Vec<MvpRuleCandidate>, MachineStdSimpProfileError> {
+    spec.rules
+        .iter()
+        .map(|name| mvp_simp_rule_candidate(loaded, spec.id, spec.required_import_bundle_id, name))
+        .collect()
+}
+
+fn mvp_rewrite_rule_candidate(
+    loaded: &MachineStdLoadedRelease,
+    profile_id: &str,
+    bundle_id: &str,
+    name: &str,
+    safety: MachineStdRewriteSafety,
+) -> Result<MvpRuleCandidate, MachineStdRewriteProfileError> {
+    let (module, export, export_name) = resolve_profile_rule_export(loaded, bundle_id, name)
+        .ok_or_else(|| MachineStdRewriteProfileError::RuleResolutionFailed {
+            profile_id: profile_id.to_owned(),
+            name: Name::from_dotted(name),
+        })?;
+    if !export.axiom_dependencies.is_empty() {
+        return Err(
+            MachineStdRewriteProfileError::NonEmptyMvpAxiomDependencies {
+                profile_id: profile_id.to_owned(),
+                name: export_name,
+            },
+        );
+    }
+    Ok(MvpRuleCandidate {
+        rule_ref: SimpRuleRef {
+            name: export_name.clone(),
+            decl_interface_hash: export.decl_interface_hash,
+            direction: RewriteDirection::Forward,
+        },
+        global_ref: MachineStdGlobalRef {
+            module: module.module.clone(),
+            name: export_name,
+            export_hash: module.expected_export_hash,
+            certificate_hash: module.expected_certificate_hash,
+            decl_interface_hash: export.decl_interface_hash,
+        },
+        safety,
+    })
+}
+
+fn mvp_simp_rule_candidate(
+    loaded: &MachineStdLoadedRelease,
+    profile_id: &str,
+    bundle_id: &str,
+    name: &str,
+) -> Result<MvpRuleCandidate, MachineStdSimpProfileError> {
+    let (module, export, export_name) = resolve_profile_rule_export(loaded, bundle_id, name)
+        .ok_or_else(|| MachineStdSimpProfileError::RuleResolutionFailed {
+            profile_id: profile_id.to_owned(),
+            name: Name::from_dotted(name),
+        })?;
+    if !export.axiom_dependencies.is_empty() {
+        return Err(MachineStdSimpProfileError::NonEmptyMvpAxiomDependencies {
+            profile_id: profile_id.to_owned(),
+            name: export_name,
+        });
+    }
+    Ok(MvpRuleCandidate {
+        rule_ref: SimpRuleRef {
+            name: export_name.clone(),
+            decl_interface_hash: export.decl_interface_hash,
+            direction: RewriteDirection::Forward,
+        },
+        global_ref: MachineStdGlobalRef {
+            module: module.module.clone(),
+            name: export_name,
+            export_hash: module.expected_export_hash,
+            certificate_hash: module.expected_certificate_hash,
+            decl_interface_hash: export.decl_interface_hash,
+        },
+        safety: MachineStdRewriteSafety::SimpSafe,
+    })
+}
+
+fn resolve_profile_rule_export<'a>(
+    loaded: &'a MachineStdLoadedRelease,
+    bundle_id: &str,
+    name: &str,
+) -> Option<(&'a MachineStdLoadedModule, &'a ExportEntry, Name)> {
+    let target = Name::from_dotted(name);
+    let mut matches = Vec::new();
+    for module_name in root_modules_for_bundle_id(bundle_id)? {
+        let module = loaded.module(&Name::from_dotted(module_name))?;
+        for export in module
+            .verified_module
+            .export_block()
+            .iter()
+            .filter(|export| export.kind == ExportKind::Theorem)
+        {
+            let export_name = module.verified_module.name_table().get(export.name)?;
+            if *export_name == target {
+                matches.push((module, export, export_name.clone()));
+            }
+        }
+    }
+    match matches.as_slice() {
+        [single] => Some(single.clone()),
+        _ => None,
+    }
+}
+
+fn root_modules_for_bundle_id(bundle_id: &str) -> Option<&'static [&'static str]> {
+    expected_mvp_bundle_specs()
+        .into_iter()
+        .find(|spec| spec.id == bundle_id)
+        .map(|spec| spec.root_modules)
+}
+
+fn resolve_rewrite_profile_rules(
+    loaded: &MachineStdLoadedRelease,
+    profile_id: &str,
+    bundle_id: &str,
+    eq_family: &EqFamilyRef,
+    rules: &[SimpRuleRef],
+) -> Result<Vec<ResolvedSimpRule>, MachineStdRewriteProfileError> {
+    let imports = tactic_imports_for_bundle(loaded, bundle_id).map_err(|name| {
+        MachineStdRewriteProfileError::RuleValidationFailed {
+            profile_id: profile_id.to_owned(),
+            name,
+        }
+    })?;
+    let options = MachineTacticOptions {
+        simp_rules: rules.to_vec(),
+        max_simp_rewrite_steps: STD_MAX_SIMP_REWRITE_STEPS,
+        max_open_goals: STD_MAX_OPEN_GOALS as usize,
+        max_metas: STD_MAX_METAS as usize,
+        eq_family: Some(eq_family.clone()),
+        nat_family: None,
+    };
+    let env = MachineTacticEnv::new(imports, Vec::new(), options).map_err(|_| {
+        MachineStdRewriteProfileError::RuleValidationFailed {
+            profile_id: profile_id.to_owned(),
+            name: rules
+                .first()
+                .map(|rule| rule.name.clone())
+                .unwrap_or_else(|| Name::from_dotted(profile_id)),
+        }
+    })?;
+    Ok(env.simp_registry.rules)
+}
+
+fn tactic_imports_for_bundle(
+    loaded: &MachineStdLoadedRelease,
+    bundle_id: &str,
+) -> Result<Vec<VerifiedImportRef>, Name> {
+    let root_modules = root_modules_for_bundle_id(bundle_id)
+        .ok_or_else(|| Name::from_dotted(bundle_id))?
+        .iter()
+        .map(Name::from_dotted)
+        .collect::<BTreeSet<_>>();
+    let root_imports = root_modules
+        .iter()
+        .map(|module| {
+            import_key_for_loaded_module(loaded, module, bundle_id)
+                .map_err(|_| Name::from_dotted(bundle_id))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let closure = import_closure_for_roots(loaded, bundle_id, &root_imports)
+        .map_err(|_| Name::from_dotted(bundle_id))?;
+    let mut imports = Vec::new();
+    for certificate in closure {
+        let module = loaded
+            .module(&certificate.module)
+            .ok_or_else(|| certificate.module.clone())?;
+        let import = if root_modules.contains(&certificate.module) {
+            VerifiedImportRef::from_verified_module(&module.verified_module)
+        } else {
+            VerifiedImportRef::from_verified_module_env_only(&module.verified_module)
+        }
+        .map_err(|_| certificate.module.clone())?;
+        imports.push(import);
+    }
+    Ok(imports)
+}
+
+fn validate_resolved_rule_telescope(
+    profile_id: &str,
+    name: &Name,
+    rule: &ResolvedSimpRule,
+) -> Result<(), MachineStdRewriteProfileError> {
+    for param in &rule.universe_params {
+        parse_machine_universe_param_name(param).map_err(|_| {
+            MachineStdRewriteProfileError::InvalidUniverseParam {
+                profile_id: profile_id.to_owned(),
+                name: name.clone(),
+                param: param.clone(),
+            }
+        })?;
+    }
+    for (index, param) in rule.rule_telescope.iter().enumerate() {
+        if expr_has_bvar_at_or_above(&param.ty, index as u32) {
+            return Err(MachineStdRewriteProfileError::InvalidRuleTelescope {
+                profile_id: profile_id.to_owned(),
+                name: name.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn expr_has_bvar_at_or_above(expr: &Expr, limit: u32) -> bool {
+    match expr {
+        Expr::BVar(index) => *index >= limit,
+        Expr::Sort(_) | Expr::Const { .. } => false,
+        Expr::App(fun, arg) => {
+            expr_has_bvar_at_or_above(fun, limit) || expr_has_bvar_at_or_above(arg, limit)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_has_bvar_at_or_above(ty, limit) || expr_has_bvar_at_or_above(body, limit + 1)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_has_bvar_at_or_above(ty, limit)
+                || expr_has_bvar_at_or_above(value, limit)
+                || expr_has_bvar_at_or_above(body, limit + 1)
+        }
+    }
+}
+
+fn sort_rewrite_descriptors(
+    descriptors: &mut Vec<MachineStdRewriteDescriptor>,
+) -> Result<(), MachineStdRewriteProfileError> {
+    let mut keyed = descriptors
+        .drain(..)
+        .map(|descriptor| {
+            Ok((
+                machine_std_rewrite_descriptor_canonical_bytes(&descriptor)
+                    .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
+                descriptor,
+            ))
+        })
+        .collect::<Result<Vec<_>, MachineStdRewriteProfileError>>()?;
+    keyed.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    *descriptors = keyed
+        .into_iter()
+        .map(|(_, descriptor)| descriptor)
+        .collect();
+    Ok(())
+}
+
+fn sort_simp_rules(rules: &mut Vec<SimpRuleRef>) -> Result<(), MachineStdSimpProfileError> {
+    let mut keyed = rules
+        .drain(..)
+        .map(|rule| {
+            Ok((
+                simp_rule_ref_canonical_bytes(&rule)
+                    .map_err(|source| MachineStdSimpProfileError::CanonicalBytes { source })?,
+                rule,
+            ))
+        })
+        .collect::<Result<Vec<_>, MachineStdSimpProfileError>>()?;
+    keyed.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    keyed.dedup_by(|lhs, rhs| lhs.0 == rhs.0);
+    *rules = keyed.into_iter().map(|(_, rule)| rule).collect();
+    Ok(())
+}
+
+fn validate_simp_safe_rule(
+    loaded: &MachineStdLoadedRelease,
+    profile_id: &str,
+    rule: &ResolvedSimpRule,
+    source: &MachineStdGlobalRef,
+) -> Result<(), MachineStdRewriteProfileError> {
+    let owner = loaded.module(&source.module).ok_or_else(|| {
+        MachineStdRewriteProfileError::RuleValidationFailed {
+            profile_id: profile_id.to_owned(),
+            name: rule.key.name.clone(),
+        }
+    })?;
+    if rule.key.direction != RewriteDirection::Forward {
+        return Err(MachineStdRewriteProfileError::SimpSafeLintFailed {
+            profile_id: profile_id.to_owned(),
+            name: rule.key.name.clone(),
+        });
+    }
+    let lhs_hash = phase6_core_expr_hash(loaded, owner, &rule.from_pattern)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    let rhs_hash = phase6_core_expr_hash(loaded, owner, &rule.to_pattern)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    if lhs_hash == rhs_hash {
+        return Err(MachineStdRewriteProfileError::SimpSafeLintFailed {
+            profile_id: profile_id.to_owned(),
+            name: rule.key.name.clone(),
+        });
+    }
+    if !simp_size_exception(source)
+        && syntactic_expr_size(&rule.from_pattern) < syntactic_expr_size(&rule.to_pattern)
+    {
+        return Err(MachineStdRewriteProfileError::SimpSafeLintFailed {
+            profile_id: profile_id.to_owned(),
+            name: rule.key.name.clone(),
+        });
+    }
+    if variable_only_lhs(&rule.from_pattern)
+        || is_commutativity_rule(loaded, owner, &rule.from_pattern, &rule.to_pattern)?
+        || is_associativity_rule(loaded, owner, &rule.from_pattern, &rule.to_pattern)?
+        || introduces_disallowed_heads(loaded, source, &rule.from_pattern, &rule.to_pattern)?
+    {
+        return Err(MachineStdRewriteProfileError::SimpSafeLintFailed {
+            profile_id: profile_id.to_owned(),
+            name: rule.key.name.clone(),
+        });
+    }
+    Ok(())
+}
+
+fn simp_size_exception(source: &MachineStdGlobalRef) -> bool {
+    source.name == Name::from_dotted("Nat.mul_succ")
+}
+
+fn syntactic_expr_size(expr: &Expr) -> u64 {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => 1,
+        Expr::App(fun, arg) => 1 + syntactic_expr_size(fun) + syntactic_expr_size(arg),
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            1 + syntactic_expr_size(ty) + syntactic_expr_size(body)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => 1 + syntactic_expr_size(ty) + syntactic_expr_size(value) + syntactic_expr_size(body),
+    }
+}
+
+fn variable_only_lhs(expr: &Expr) -> bool {
+    matches!(flatten_expr_app(expr).0, Expr::BVar(_))
+}
+
+fn flatten_expr_app(expr: &Expr) -> (Expr, Vec<Expr>) {
+    let mut args = Vec::new();
+    let mut head = expr.clone();
+    while let Expr::App(fun, arg) = head {
+        args.push(*arg);
+        head = *fun;
+    }
+    args.reverse();
+    (head, args)
+}
+
+fn is_commutativity_rule(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    lhs: &Expr,
+    rhs: &Expr,
+) -> Result<bool, MachineStdRewriteProfileError> {
+    if !same_head_and_prefix(loaded, owner, lhs, rhs)? {
+        return Ok(false);
+    }
+    let (_, lhs_args) = flatten_expr_app(lhs);
+    let (_, rhs_args) = flatten_expr_app(rhs);
+    let prefix_len = lhs_args.len() - 2;
+    Ok(same_expr(
+        loaded,
+        owner,
+        &lhs_args[prefix_len],
+        &rhs_args[prefix_len + 1],
+    )? && same_expr(
+        loaded,
+        owner,
+        &lhs_args[prefix_len + 1],
+        &rhs_args[prefix_len],
+    )?)
+}
+
+fn is_associativity_rule(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    lhs: &Expr,
+    rhs: &Expr,
+) -> Result<bool, MachineStdRewriteProfileError> {
+    if !same_head_and_prefix(loaded, owner, lhs, rhs)? {
+        return Ok(false);
+    }
+    let (head, args) = flatten_expr_app(lhs);
+    let prefix = &args[..args.len() - 2];
+    if let Some((x1, y1, z1)) = left_assoc_shape(loaded, owner, lhs, &head, prefix)? {
+        if let Some((x2, y2, z2)) = right_assoc_shape(loaded, owner, rhs, &head, prefix)? {
+            return Ok(same_expr(loaded, owner, &x1, &x2)?
+                && same_expr(loaded, owner, &y1, &y2)?
+                && same_expr(loaded, owner, &z1, &z2)?);
+        }
+    }
+    if let Some((x1, y1, z1)) = right_assoc_shape(loaded, owner, lhs, &head, prefix)? {
+        if let Some((x2, y2, z2)) = left_assoc_shape(loaded, owner, rhs, &head, prefix)? {
+            return Ok(same_expr(loaded, owner, &x1, &x2)?
+                && same_expr(loaded, owner, &y1, &y2)?
+                && same_expr(loaded, owner, &z1, &z2)?);
+        }
+    }
+    Ok(false)
+}
+
+fn same_head_and_prefix(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    lhs: &Expr,
+    rhs: &Expr,
+) -> Result<bool, MachineStdRewriteProfileError> {
+    let (lhs_head, lhs_args) = flatten_expr_app(lhs);
+    let (rhs_head, rhs_args) = flatten_expr_app(rhs);
+    if lhs_args.len() != rhs_args.len()
+        || lhs_args.len() < 2
+        || !same_expr(loaded, owner, &lhs_head, &rhs_head)?
+    {
+        return Ok(false);
+    }
+    let prefix_len = lhs_args.len() - 2;
+    for index in 0..prefix_len {
+        if !same_expr(loaded, owner, &lhs_args[index], &rhs_args[index])? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+fn left_assoc_shape(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+    expected_head: &Expr,
+    prefix: &[Expr],
+) -> Result<Option<(Expr, Expr, Expr)>, MachineStdRewriteProfileError> {
+    let (outer_head, outer_args) = flatten_expr_app(expr);
+    if !same_expr(loaded, owner, &outer_head, expected_head)?
+        || outer_args.len() != prefix.len() + 2
+    {
+        return Ok(None);
+    }
+    for (actual, expected) in outer_args.iter().zip(prefix) {
+        if !same_expr(loaded, owner, actual, expected)? {
+            return Ok(None);
+        }
+    }
+    let inner = &outer_args[prefix.len()];
+    let z = outer_args[prefix.len() + 1].clone();
+    let (inner_head, inner_args) = flatten_expr_app(inner);
+    if !same_expr(loaded, owner, &inner_head, expected_head)?
+        || inner_args.len() != prefix.len() + 2
+    {
+        return Ok(None);
+    }
+    for (actual, expected) in inner_args.iter().zip(prefix) {
+        if !same_expr(loaded, owner, actual, expected)? {
+            return Ok(None);
+        }
+    }
+    Ok(Some((
+        inner_args[prefix.len()].clone(),
+        inner_args[prefix.len() + 1].clone(),
+        z,
+    )))
+}
+
+fn right_assoc_shape(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+    expected_head: &Expr,
+    prefix: &[Expr],
+) -> Result<Option<(Expr, Expr, Expr)>, MachineStdRewriteProfileError> {
+    let (outer_head, outer_args) = flatten_expr_app(expr);
+    if !same_expr(loaded, owner, &outer_head, expected_head)?
+        || outer_args.len() != prefix.len() + 2
+    {
+        return Ok(None);
+    }
+    for (actual, expected) in outer_args.iter().zip(prefix) {
+        if !same_expr(loaded, owner, actual, expected)? {
+            return Ok(None);
+        }
+    }
+    let x = outer_args[prefix.len()].clone();
+    let inner = &outer_args[prefix.len() + 1];
+    let (inner_head, inner_args) = flatten_expr_app(inner);
+    if !same_expr(loaded, owner, &inner_head, expected_head)?
+        || inner_args.len() != prefix.len() + 2
+    {
+        return Ok(None);
+    }
+    for (actual, expected) in inner_args.iter().zip(prefix) {
+        if !same_expr(loaded, owner, actual, expected)? {
+            return Ok(None);
+        }
+    }
+    Ok(Some((
+        x,
+        inner_args[prefix.len()].clone(),
+        inner_args[prefix.len() + 1].clone(),
+    )))
+}
+
+fn same_expr(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    lhs: &Expr,
+    rhs: &Expr,
+) -> Result<bool, MachineStdRewriteProfileError> {
+    let lhs = phase6_core_expr_canonical_bytes(loaded, owner, lhs)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    let rhs = phase6_core_expr_canonical_bytes(loaded, owner, rhs)
+        .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+    Ok(lhs == rhs)
+}
+
+fn introduces_disallowed_heads(
+    loaded: &MachineStdLoadedRelease,
+    source: &MachineStdGlobalRef,
+    lhs: &Expr,
+    rhs: &Expr,
+) -> Result<bool, MachineStdRewriteProfileError> {
+    let Some(owner) = loaded.module(&source.module) else {
+        return Ok(true);
+    };
+    let lhs_heads = expr_head_set(loaded, owner, lhs)?;
+    let rhs_heads = expr_head_set(loaded, owner, rhs)?;
+    let introduced = rhs_heads
+        .keys()
+        .filter(|key| !lhs_heads.contains_key(*key))
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    if introduced.is_empty() {
+        return Ok(false);
+    }
+    let allowed = allowed_intro_heads(loaded, source)?;
+    Ok(!introduced.iter().all(|key| allowed.contains(key)))
+}
+
+fn expr_head_set(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+) -> Result<BTreeMap<Vec<u8>, MachineStdGlobalRefView>, MachineStdRewriteProfileError> {
+    let mut heads = BTreeMap::new();
+    collect_expr_heads(loaded, owner, expr, &mut heads)?;
+    Ok(heads)
+}
+
+fn collect_expr_heads(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+    heads: &mut BTreeMap<Vec<u8>, MachineStdGlobalRefView>,
+) -> Result<(), MachineStdRewriteProfileError> {
+    match expr {
+        Expr::Const { name, .. } => {
+            if let Some(view) = normalize_expr_const_global_ref_view(loaded, owner, name)? {
+                let key = machine_std_global_ref_view_canonical_bytes(&view)
+                    .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+                heads.insert(key, view);
+            }
+            Ok(())
+        }
+        Expr::Sort(_) | Expr::BVar(_) => Ok(()),
+        Expr::App(fun, arg) => {
+            collect_expr_heads(loaded, owner, fun, heads)?;
+            collect_expr_heads(loaded, owner, arg, heads)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_expr_heads(loaded, owner, ty, heads)?;
+            collect_expr_heads(loaded, owner, body, heads)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_expr_heads(loaded, owner, ty, heads)?;
+            collect_expr_heads(loaded, owner, value, heads)?;
+            collect_expr_heads(loaded, owner, body, heads)
+        }
+    }
+}
+
+fn normalize_expr_const_global_ref_view(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    name: &str,
+) -> Result<Option<MachineStdGlobalRefView>, MachineStdRewriteProfileError> {
+    let name = Name::from_dotted(name);
+    for (decl_index, decl) in owner.verified_module.declarations().iter().enumerate() {
+        if phase6_decl_name(owner, decl).as_ref() == Some(&name) {
+            return Ok(Some(
+                normalize_local_global_ref_view(owner, decl_index).map_err(|source| {
+                    MachineStdRewriteProfileError::RuleValidationFailed {
+                        profile_id: owner.module.as_dotted(),
+                        name: match source {
+                            MachineStdTheoremIndexError::InvalidGlobalRef { module } => module,
+                            _ => name.clone(),
+                        },
+                    }
+                })?,
+            ));
+        }
+        if inductive_decl_contains_generated(owner, decl, &name, None).unwrap_or(false) {
+            let name_id = phase6_name_id(owner, &name)
+                .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+            return Ok(Some(
+                normalize_local_generated_global_ref_view(owner, decl_index, name_id).map_err(
+                    |source| MachineStdRewriteProfileError::RuleValidationFailed {
+                        profile_id: owner.module.as_dotted(),
+                        name: match source {
+                            MachineStdTheoremIndexError::InvalidGlobalRef { module } => module,
+                            _ => name.clone(),
+                        },
+                    },
+                )?,
+            ));
+        }
+    }
+    for import in &owner.imports {
+        let Some(imported) = loaded.module(&import.module) else {
+            continue;
+        };
+        if let Some(export) = unique_public_export_by_name(imported, &name) {
+            return Ok(Some(
+                export_to_global_ref_view(imported, export, true).map_err(|source| {
+                    MachineStdRewriteProfileError::RuleValidationFailed {
+                        profile_id: owner.module.as_dotted(),
+                        name: match source {
+                            MachineStdTheoremIndexError::InvalidGlobalRef { module } => module,
+                            _ => name.clone(),
+                        },
+                    }
+                })?,
+            ));
+        }
+    }
+    Ok(None)
+}
+
+fn unique_public_export_by_name<'a>(
+    module: &'a MachineStdLoadedModule,
+    name: &Name,
+) -> Option<&'a ExportEntry> {
+    let mut matches = module
+        .verified_module
+        .export_block()
+        .iter()
+        .filter(|entry| {
+            module
+                .verified_module
+                .name_table()
+                .get(entry.name)
+                .is_some_and(|entry_name| entry_name == name)
+        });
+    let first = matches.next()?;
+    if matches.next().is_none() {
+        Some(first)
+    } else {
+        None
+    }
+}
+
+fn export_to_global_ref_view(
+    module: &MachineStdLoadedModule,
+    export: &ExportEntry,
+    public_export: bool,
+) -> Result<MachineStdGlobalRefView, MachineStdTheoremIndexError> {
+    let name = theorem_export_name(module, export)?;
+    match export.kind {
+        ExportKind::Constructor | ExportKind::Recursor => {
+            let (parent_name, parent_decl_interface_hash) =
+                generated_parent_for_public_export(module, export)?;
+            Ok(MachineStdGlobalRefView::Generated {
+                module: module.module.clone(),
+                parent_name,
+                name,
+                export_hash: module.expected_export_hash,
+                certificate_hash: module.expected_certificate_hash,
+                parent_decl_interface_hash,
+                decl_interface_hash: export.decl_interface_hash,
+                public_export,
+            })
+        }
+        _ => Ok(MachineStdGlobalRefView::Decl {
+            module: module.module.clone(),
+            name,
+            export_hash: module.expected_export_hash,
+            certificate_hash: module.expected_certificate_hash,
+            decl_interface_hash: export.decl_interface_hash,
+            public_export,
+        }),
+    }
+}
+
+fn allowed_intro_heads(
+    loaded: &MachineStdLoadedRelease,
+    source: &MachineStdGlobalRef,
+) -> Result<BTreeSet<Vec<u8>>, MachineStdRewriteProfileError> {
+    let labels: &[&str] = if source.name == Name::from_dotted("Nat.mul_succ") {
+        &["Nat.add"]
+    } else if source.name == Name::from_dotted("List.length_nil") {
+        &["Nat.zero"]
+    } else if source.name == Name::from_dotted("List.length_cons") {
+        &["Nat.succ"]
+    } else {
+        &[]
+    };
+    let mut out = BTreeSet::new();
+    for label in labels {
+        let name = Name::from_dotted(label);
+        let Some(module) = loaded.module(&Name::from_dotted("Std.Nat")) else {
+            return Ok(BTreeSet::new());
+        };
+        let Some(export) = unique_public_export_by_name(module, &name) else {
+            return Ok(BTreeSet::new());
+        };
+        let view = export_to_global_ref_view(module, export, true).map_err(|_| {
+            MachineStdRewriteProfileError::RuleValidationFailed {
+                profile_id: source.module.as_dotted(),
+                name: source.name.clone(),
+            }
+        })?;
+        out.insert(
+            machine_std_global_ref_view_canonical_bytes(&view)
+                .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
+        );
+    }
+    Ok(out)
+}
+
+fn validate_rewrite_profile_hashes(
+    profile_set: &MachineStdRewriteProfileSet,
+) -> Result<(), MachineStdRewriteProfileError> {
+    for profile in &profile_set.profiles {
+        let actual = machine_std_rewrite_profile_hash(profile)
+            .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+        if actual != profile.profile_hash {
+            return Err(MachineStdRewriteProfileError::ProfileHashMismatch {
+                profile_id: profile.profile_id.clone(),
+                expected: profile.profile_hash,
+                actual,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_simp_profile_hashes(
+    profile_set: &MachineStdSimpProfileSet,
+) -> Result<(), MachineStdSimpProfileError> {
+    for profile in &profile_set.profiles {
+        let actual = machine_std_simp_profile_hash(profile)
+            .map_err(|source| MachineStdSimpProfileError::CanonicalBytes { source })?;
+        if actual != profile.profile_hash {
+            return Err(MachineStdSimpProfileError::ProfileHashMismatch {
+                profile_id: profile.profile_id.clone(),
+                expected: profile.profile_hash,
+                actual,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_rewrite_profile_membership(
+    profiles: &[MachineStdRewriteProfile],
+) -> Result<(), MachineStdRewriteProfileError> {
+    let expected = expected_mvp_rewrite_profile_ids();
+    let actual = profiles
+        .iter()
+        .map(|profile| profile.profile_id.clone())
+        .collect::<Vec<_>>();
+    let mut seen = BTreeSet::new();
+    for profile_id in &actual {
+        if !seen.insert(profile_id.clone()) {
+            return Err(MachineStdRewriteProfileError::DuplicateProfile {
+                profile_id: profile_id.clone(),
+            });
+        }
+    }
+    if expected.iter().cloned().collect::<BTreeSet<_>>()
+        != actual.iter().cloned().collect::<BTreeSet<_>>()
+    {
+        return Err(MachineStdRewriteProfileError::InvalidProfileMembership { expected, actual });
+    }
+    if expected != actual {
+        return Err(MachineStdRewriteProfileError::NonCanonicalProfileOrder { expected, actual });
+    }
+    Ok(())
+}
+
+fn validate_simp_profile_membership(
+    profiles: &[MachineStdSimpProfile],
+) -> Result<(), MachineStdSimpProfileError> {
+    let expected = expected_mvp_simp_profile_ids();
+    let actual = profiles
+        .iter()
+        .map(|profile| profile.profile_id.clone())
+        .collect::<Vec<_>>();
+    let mut seen = BTreeSet::new();
+    for profile_id in &actual {
+        if !seen.insert(profile_id.clone()) {
+            return Err(MachineStdSimpProfileError::DuplicateProfile {
+                profile_id: profile_id.clone(),
+            });
+        }
+    }
+    if expected.iter().cloned().collect::<BTreeSet<_>>()
+        != actual.iter().cloned().collect::<BTreeSet<_>>()
+    {
+        return Err(MachineStdSimpProfileError::InvalidProfileMembership { expected, actual });
+    }
+    if expected != actual {
+        return Err(MachineStdSimpProfileError::NonCanonicalProfileOrder { expected, actual });
+    }
+    Ok(())
+}
+
+fn expected_mvp_rewrite_profile_ids() -> Vec<String> {
+    expected_mvp_rewrite_profile_specs()
+        .into_iter()
+        .map(|spec| spec.id.to_owned())
+        .collect()
+}
+
+fn expected_mvp_simp_profile_ids() -> Vec<String> {
+    expected_mvp_simp_profile_specs()
+        .into_iter()
+        .map(|spec| spec.id.to_owned())
+        .collect()
+}
+
+fn validate_rewrite_descriptor_order(
+    profile_id: &str,
+    descriptors: &[MachineStdRewriteDescriptor],
+) -> Result<(), MachineStdRewriteProfileError> {
+    let mut previous: Option<Vec<u8>> = None;
+    for descriptor in descriptors {
+        let current = machine_std_rewrite_descriptor_canonical_bytes(descriptor)
+            .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
+        if let Some(previous) = previous.as_ref() {
+            if previous == &current {
+                return Err(MachineStdRewriteProfileError::DuplicateDescriptor {
+                    profile_id: profile_id.to_owned(),
+                });
+            }
+            if previous > &current {
+                return Err(MachineStdRewriteProfileError::NonCanonicalDescriptorOrder {
+                    profile_id: profile_id.to_owned(),
+                });
+            }
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn validate_simp_rule_order(
+    profile_id: &str,
+    rules: &[SimpRuleRef],
+) -> Result<(), MachineStdSimpProfileError> {
+    let mut previous: Option<Vec<u8>> = None;
+    for rule in rules {
+        let current = simp_rule_ref_canonical_bytes(rule)
+            .map_err(|source| MachineStdSimpProfileError::CanonicalBytes { source })?;
+        if let Some(previous) = previous.as_ref() {
+            if previous == &current {
+                return Err(MachineStdSimpProfileError::DuplicateRule {
+                    profile_id: profile_id.to_owned(),
+                });
+            }
+            if previous > &current {
+                return Err(MachineStdSimpProfileError::NonCanonicalRuleOrder {
+                    profile_id: profile_id.to_owned(),
+                });
+            }
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
+fn validate_simp_rules_have_paired_descriptors(
+    profile: &MachineStdSimpProfile,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<(), MachineStdSimpProfileError> {
+    let paired_id = paired_rewrite_profile_id(&profile.profile_id).ok_or_else(|| {
+        MachineStdSimpProfileError::ProfileFieldMismatch {
+            profile_id: profile.profile_id.clone(),
+            field: "profile_id",
+        }
+    })?;
+    let paired = rewrite_profiles
+        .profiles
+        .iter()
+        .find(|rewrite| rewrite.profile_id == paired_id)
+        .ok_or_else(|| MachineStdSimpProfileError::MissingSimpSafeDescriptor {
+            profile_id: profile.profile_id.clone(),
+            name: Name::from_dotted(paired_id),
+        })?;
+    for rule in &profile.rules {
+        let found = paired.descriptors.iter().any(|descriptor| {
+            descriptor.safety == MachineStdRewriteSafety::SimpSafe
+                && descriptor.direction == rule.direction
+                && descriptor.source.name == rule.name
+                && descriptor.source.decl_interface_hash == rule.decl_interface_hash
+        });
+        if !found {
+            return Err(MachineStdSimpProfileError::MissingSimpSafeDescriptor {
+                profile_id: profile.profile_id.clone(),
+                name: rule.name.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn paired_rewrite_profile_id(simp_profile_id: &str) -> Option<&'static str> {
+    match simp_profile_id {
+        STD_LOGIC_SIMP_PROFILE_ID => Some(STD_LOGIC_RW_PROFILE_ID),
+        STD_NAT_SIMP_PROFILE_ID => Some(STD_NAT_RW_PROFILE_ID),
+        STD_LIST_SIMP_PROFILE_ID => Some(STD_LIST_RW_PROFILE_ID),
+        STD_ALL_SIMP_PROFILE_ID => Some(STD_ALL_RW_PROFILE_ID),
+        _ => None,
+    }
 }
 
 pub fn generate_machine_std_mvp_import_bundle_set(
@@ -4606,6 +6350,223 @@ fn theorem_attribute_byte(attribute: MachineStdAttribute) -> u8 {
     }
 }
 
+fn rewrite_safety_byte(safety: MachineStdRewriteSafety) -> u8 {
+    match safety {
+        MachineStdRewriteSafety::SimpSafe => 0x00,
+        MachineStdRewriteSafety::RwOnly => 0x01,
+        MachineStdRewriteSafety::UnsafeForAutomation => 0x02,
+    }
+}
+
+fn simp_rule_ref_canonical_bytes(
+    rule: &SimpRuleRef,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_simp_rule_ref(&mut out, rule)?;
+    Ok(out)
+}
+
+fn phase6_core_expr_hash(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    let payload = phase6_core_expr_canonical_bytes(loaded, owner, expr)?;
+    let mut bytes = b"NPA-TERM-0.1".to_vec();
+    bytes.extend(payload);
+    Ok(sha256(&bytes))
+}
+
+fn phase6_core_expr_canonical_bytes(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_phase6_core_expr(&mut out, loaded, owner, expr)?;
+    Ok(out)
+}
+
+fn phase6_core_level_hash(level: &Level) -> Result<Hash, MachineStdCanonicalBytesError> {
+    let mut payload = Vec::new();
+    encode_phase6_core_level(&mut payload, &normalize_level(level.clone()))?;
+    let mut bytes = b"NPA-LEVEL-0.1".to_vec();
+    bytes.extend(payload);
+    Ok(sha256(&bytes))
+}
+
+fn encode_phase6_core_expr(
+    out: &mut Vec<u8>,
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    expr: &Expr,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    match expr {
+        Expr::Sort(level) => {
+            out.push(0x00);
+            encode_hash(out, &phase6_core_level_hash(level)?);
+        }
+        Expr::BVar(index) => {
+            out.push(0x01);
+            encode_uvar(out, u64::from(*index));
+        }
+        Expr::Const { name, levels } => {
+            out.push(0x02);
+            let global_ref = phase6_global_ref_for_const(loaded, owner, name)?;
+            encode_phase6_global_ref(out, &global_ref);
+            encode_uvar(out, levels.len() as u64);
+            for level in levels {
+                encode_hash(out, &phase6_core_level_hash(level)?);
+            }
+        }
+        Expr::App(fun, arg) => {
+            out.push(0x03);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, fun)?);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, arg)?);
+        }
+        Expr::Lam { ty, body, .. } => {
+            out.push(0x04);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, ty)?);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, body)?);
+        }
+        Expr::Pi { ty, body, .. } => {
+            out.push(0x05);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, ty)?);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, body)?);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            out.push(0x06);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, ty)?);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, value)?);
+            encode_hash(out, &phase6_core_expr_hash(loaded, owner, body)?);
+        }
+    }
+    Ok(())
+}
+
+fn phase6_global_ref_for_const(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    name: &str,
+) -> Result<GlobalRef, MachineStdCanonicalBytesError> {
+    let name = Name::from_dotted(name);
+    let name_id = phase6_name_id(owner, &name)?;
+    for (decl_index, decl) in owner.verified_module.declarations().iter().enumerate() {
+        if phase6_decl_name(owner, decl).as_ref() == Some(&name) {
+            return Ok(GlobalRef::Local { decl_index });
+        }
+        if inductive_decl_contains_generated(owner, decl, &name, None).unwrap_or(false) {
+            return Ok(GlobalRef::LocalGenerated {
+                decl_index,
+                name: name_id,
+            });
+        }
+    }
+    for (import_index, import) in owner.imports.iter().enumerate() {
+        let Some(imported) = loaded.module(&import.module) else {
+            continue;
+        };
+        if let Some(export) = unique_public_export_by_name(imported, &name) {
+            return Ok(GlobalRef::Imported {
+                import_index,
+                name: name_id,
+                decl_interface_hash: export.decl_interface_hash,
+            });
+        }
+    }
+    Err(MachineStdCanonicalBytesError::InvalidCoreGlobalRef {
+        module: owner.module.clone(),
+        name,
+    })
+}
+
+fn phase6_decl_name(module: &MachineStdLoadedModule, decl: &DeclCert) -> Option<Name> {
+    let name_id = match &decl.decl {
+        DeclPayload::Axiom { name, .. }
+        | DeclPayload::Def { name, .. }
+        | DeclPayload::Theorem { name, .. }
+        | DeclPayload::Inductive { name, .. } => *name,
+    };
+    module.verified_module.name_table().get(name_id).cloned()
+}
+
+fn phase6_name_id(
+    owner: &MachineStdLoadedModule,
+    name: &Name,
+) -> Result<usize, MachineStdCanonicalBytesError> {
+    owner
+        .verified_module
+        .name_table()
+        .iter()
+        .position(|entry| entry == name)
+        .ok_or_else(|| MachineStdCanonicalBytesError::InvalidCoreGlobalRef {
+            module: owner.module.clone(),
+            name: name.clone(),
+        })
+}
+
+fn encode_phase6_global_ref(out: &mut Vec<u8>, global_ref: &GlobalRef) {
+    match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x03);
+            encode_uvar(out, *name as u64);
+            encode_hash(out, decl_interface_hash);
+        }
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x00);
+            encode_uvar(out, *import_index as u64);
+            encode_uvar(out, *name as u64);
+            encode_hash(out, decl_interface_hash);
+        }
+        GlobalRef::Local { decl_index } => {
+            out.push(0x01);
+            encode_uvar(out, *decl_index as u64);
+        }
+        GlobalRef::LocalGenerated { decl_index, name } => {
+            out.push(0x02);
+            encode_uvar(out, *decl_index as u64);
+            encode_uvar(out, *name as u64);
+        }
+    }
+}
+
+fn encode_phase6_core_level(
+    out: &mut Vec<u8>,
+    level: &Level,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    match level {
+        Level::Zero => out.push(0x00),
+        Level::Succ(inner) => {
+            out.push(0x01);
+            encode_hash(out, &phase6_core_level_hash(inner)?);
+        }
+        Level::Max(lhs, rhs) => {
+            out.push(0x02);
+            encode_hash(out, &phase6_core_level_hash(lhs)?);
+            encode_hash(out, &phase6_core_level_hash(rhs)?);
+        }
+        Level::IMax(lhs, rhs) => {
+            out.push(0x03);
+            encode_hash(out, &phase6_core_level_hash(lhs)?);
+            encode_hash(out, &phase6_core_level_hash(rhs)?);
+        }
+        Level::Param(name) => {
+            out.push(0x04);
+            encode_name(out, &Name::from_dotted(name))?;
+        }
+    }
+    Ok(())
+}
+
 fn encode_string(out: &mut Vec<u8>, value: &str) {
     encode_uvar(out, value.len() as u64);
     out.extend_from_slice(value.as_bytes());
@@ -4646,7 +6607,10 @@ mod tests {
     use super::*;
     use crate::types::format_hash_string;
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
-    use npa_kernel::{eq_inductive, eq_rec_type, Decl, Expr, Level};
+    use npa_kernel::{
+        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, type0, Decl, Expr, Level,
+        Reducibility,
+    };
     use std::{
         fs,
         time::{SystemTime, UNIX_EPOCH},
@@ -4915,6 +6879,166 @@ mod tests {
             bundle_set.import_bundles_hash,
             machine_std_import_bundle_set_hash(&bundle_set).unwrap()
         );
+    }
+
+    #[test]
+    fn generates_mvp_rewrite_and_simp_profile_sets() {
+        let package = TestPackage::new("mvp_rewrite_simp_profiles");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        validate_machine_std_mvp_rewrite_profile_set(&rewrite_profiles, &rewrite_profiles).unwrap();
+        assert_eq!(
+            rewrite_profiles
+                .profiles
+                .iter()
+                .map(|profile| (
+                    profile.profile_id.as_str(),
+                    profile.required_import_bundle_id.as_str(),
+                    profile.descriptors.len(),
+                    profile
+                        .descriptors
+                        .iter()
+                        .filter(|descriptor| descriptor.safety == MachineStdRewriteSafety::SimpSafe)
+                        .count(),
+                    profile
+                        .descriptors
+                        .iter()
+                        .filter(|descriptor| descriptor.safety == MachineStdRewriteSafety::RwOnly)
+                        .count(),
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (STD_ALL_RW_PROFILE_ID, STD_ALL_BUNDLE_ID, 22, 18, 4),
+                (STD_LIST_RW_PROFILE_ID, STD_LIST_BUNDLE_ID, 12, 10, 2),
+                (STD_LOGIC_RW_PROFILE_ID, STD_LOGIC_BUNDLE_ID, 0, 0, 0),
+                (STD_NAT_RW_PROFILE_ID, STD_NAT_BUNDLE_ID, 10, 8, 2),
+            ]
+        );
+        assert!(rewrite_profiles
+            .profiles
+            .iter()
+            .flat_map(|profile| &profile.descriptors)
+            .all(|descriptor| descriptor.direction == RewriteDirection::Forward));
+        assert!(rewrite_profiles.profiles.iter().all(|profile| {
+            profile.profile_hash == machine_std_rewrite_profile_hash(profile).unwrap()
+        }));
+        assert_eq!(
+            rewrite_profiles.rewrite_profiles_hash,
+            machine_std_rewrite_profile_set_hash(&rewrite_profiles).unwrap()
+        );
+
+        let nat_rw = rewrite_profile(&rewrite_profiles, STD_NAT_RW_PROFILE_ID);
+        let list_rw = rewrite_profile(&rewrite_profiles, STD_LIST_RW_PROFILE_ID);
+        let all_rw = rewrite_profile(&rewrite_profiles, STD_ALL_RW_PROFILE_ID);
+        let union = nat_rw
+            .descriptors
+            .iter()
+            .chain(&list_rw.descriptors)
+            .map(|descriptor| machine_std_rewrite_descriptor_canonical_bytes(descriptor).unwrap())
+            .collect::<BTreeSet<_>>();
+        let all = all_rw
+            .descriptors
+            .iter()
+            .map(|descriptor| machine_std_rewrite_descriptor_canonical_bytes(descriptor).unwrap())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(all, union);
+
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        validate_machine_std_mvp_simp_profile_set(
+            &simp_profiles,
+            &simp_profiles,
+            &rewrite_profiles,
+        )
+        .unwrap();
+        assert_eq!(
+            simp_profiles
+                .profiles
+                .iter()
+                .map(|profile| (
+                    profile.profile_id.as_str(),
+                    profile.required_import_bundle_id.as_str(),
+                    profile.rules.len(),
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (STD_ALL_SIMP_PROFILE_ID, STD_ALL_BUNDLE_ID, 18),
+                (STD_LIST_SIMP_PROFILE_ID, STD_LIST_BUNDLE_ID, 10),
+                (STD_LOGIC_SIMP_PROFILE_ID, STD_LOGIC_BUNDLE_ID, 0),
+                (STD_NAT_SIMP_PROFILE_ID, STD_NAT_BUNDLE_ID, 8),
+            ]
+        );
+        assert!(simp_profiles
+            .profiles
+            .iter()
+            .flat_map(|profile| &profile.rules)
+            .all(|rule| rule.direction == RewriteDirection::Forward));
+        assert!(
+            simp_profiles
+                .profiles
+                .iter()
+                .all(|profile| profile.profile_hash
+                    == machine_std_simp_profile_hash(profile).unwrap())
+        );
+        assert_eq!(
+            simp_profiles.simp_profiles_hash,
+            machine_std_simp_profile_set_hash(&simp_profiles).unwrap()
+        );
+
+        let nat_simp = simp_profile(&simp_profiles, STD_NAT_SIMP_PROFILE_ID);
+        let list_simp = simp_profile(&simp_profiles, STD_LIST_SIMP_PROFILE_ID);
+        let all_simp = simp_profile(&simp_profiles, STD_ALL_SIMP_PROFILE_ID);
+        let union = nat_simp
+            .rules
+            .iter()
+            .chain(&list_simp.rules)
+            .map(|rule| simp_rule_ref_canonical_bytes(rule).unwrap())
+            .collect::<BTreeSet<_>>();
+        let all = all_simp
+            .rules
+            .iter()
+            .map(|rule| simp_rule_ref_canonical_bytes(rule).unwrap())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(all, union);
+    }
+
+    #[test]
+    fn rejects_stale_rewrite_and_simp_profile_hashes_before_set_hash() {
+        let package = TestPackage::new("stale_rewrite_simp_profile_hashes");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+
+        let mut stale_rewrite = rewrite_profiles.clone();
+        stale_rewrite.profiles[0].profile_hash = test_hash(77);
+        stale_rewrite.rewrite_profiles_hash =
+            machine_std_rewrite_profile_set_hash(&stale_rewrite).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_rewrite_profile_set(&stale_rewrite, &rewrite_profiles),
+            Err(MachineStdRewriteProfileError::ProfileHashMismatch { profile_id, .. })
+                if profile_id == STD_ALL_RW_PROFILE_ID
+        ));
+
+        let mut stale_simp = simp_profiles.clone();
+        stale_simp.profiles[0].profile_hash = test_hash(78);
+        stale_simp.simp_profiles_hash = machine_std_simp_profile_set_hash(&stale_simp).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_simp_profile_set(
+                &stale_simp,
+                &simp_profiles,
+                &rewrite_profiles,
+            ),
+            Err(MachineStdSimpProfileError::ProfileHashMismatch { profile_id, .. })
+                if profile_id == STD_ALL_SIMP_PROFILE_ID
+        ));
     }
 
     #[test]
@@ -5699,6 +7823,45 @@ mod tests {
         }
     }
 
+    fn mvp_certificate_bytes_with_m5_profiles() -> MvpCertificateBytes {
+        let mut session = VerifierSession::new();
+        let mut policy = AxiomPolicy::high_trust();
+        policy
+            .allowlisted_axioms
+            .insert(Name::from_dotted("Eq.rec"));
+
+        let logic_cert = build_module_cert(logic_eq_rec_axiom_module(), &[]).unwrap();
+        let logic = encode_module_cert(&logic_cert).unwrap();
+        let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
+
+        let nat_cert = build_module_cert(
+            nat_m5_profile_module(),
+            std::slice::from_ref(&logic_verified),
+        )
+        .unwrap();
+        let nat = encode_module_cert(&nat_cert).unwrap();
+        let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
+
+        let list_cert = build_module_cert(
+            list_m5_profile_module(),
+            &[logic_verified.clone(), nat_verified.clone()],
+        )
+        .unwrap();
+        let list = encode_module_cert(&list_cert).unwrap();
+        verify_module_cert(&list, &mut session, &policy).unwrap();
+
+        let algebra_cert =
+            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
+
+        MvpCertificateBytes {
+            logic,
+            nat,
+            list,
+            algebra_basic,
+        }
+    }
+
     fn write_valid_mvp_package(root: &Path) {
         let certs = mvp_certificate_bytes();
         write_mvp_package(root, &certs);
@@ -5782,6 +7945,96 @@ mod tests {
         }
     }
 
+    fn nat_m5_profile_module() -> CoreModule {
+        let mut declarations = vec![
+            Decl::Inductive {
+                name: "Nat".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(type0()),
+                data: Box::new(nat_inductive()),
+            },
+            profile_helper_def("Nat.m5_lhs"),
+        ];
+        declarations.extend(
+            [
+                "Nat.add_zero",
+                "Nat.add_succ",
+                "Nat.zero_add",
+                "Nat.mul_zero",
+                "Nat.mul_succ",
+                "Nat.zero_mul",
+                "Nat.pred_zero",
+                "Nat.pred_succ",
+                "Nat.add_comm",
+                "Nat.add_assoc",
+            ]
+            .into_iter()
+            .map(|name| profile_rule_theorem(name, "Nat.m5_lhs")),
+        );
+        CoreModule {
+            name: Name::from_dotted("Std.Nat"),
+            declarations,
+        }
+    }
+
+    fn list_m5_profile_module() -> CoreModule {
+        let mut declarations = vec![profile_helper_def("List.m5_lhs")];
+        declarations.extend(
+            [
+                "List.nil_append",
+                "List.cons_append",
+                "List.append_nil",
+                "List.length_nil",
+                "List.length_cons",
+                "List.map_nil",
+                "List.map_cons",
+                "List.map_id",
+                "List.foldr_nil",
+                "List.foldr_cons",
+                "List.append_assoc",
+                "List.length_append",
+            ]
+            .into_iter()
+            .map(|name| profile_rule_theorem(name, "List.m5_lhs")),
+        );
+        CoreModule {
+            name: Name::from_dotted("Std.List"),
+            declarations,
+        }
+    }
+
+    fn profile_helper_def(name: &str) -> Decl {
+        Decl::Def {
+            name: name.to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("n", nat(), nat()),
+            value: Expr::lam("n", nat(), Expr::bvar(0)),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn profile_rule_theorem(name: &str, helper_name: &str) -> Decl {
+        Decl::Theorem {
+            name: name.to_owned(),
+            universe_params: Vec::new(),
+            ty: profile_rule_type(helper_name),
+            proof: Expr::lam("n", nat(), eq_refl(type0(), nat(), Expr::bvar(0))),
+        }
+    }
+
+    fn profile_rule_type(helper_name: &str) -> Expr {
+        Expr::pi(
+            "n",
+            nat(),
+            eq(
+                type0(),
+                nat(),
+                Expr::app(Expr::konst(helper_name, vec![]), Expr::bvar(0)),
+                Expr::bvar(0),
+            ),
+        )
+    }
+
     fn empty_axiom_report_for(loaded: &MachineStdLoadedRelease) -> MachineStdAxiomReport {
         MachineStdAxiomReport {
             library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
@@ -5823,6 +8076,28 @@ mod tests {
                     .get(entry.name)
                     .is_some_and(|entry_name| *entry_name == Name::from_dotted(name))
             })
+            .unwrap()
+    }
+
+    fn rewrite_profile<'a>(
+        profile_set: &'a MachineStdRewriteProfileSet,
+        profile_id: &str,
+    ) -> &'a MachineStdRewriteProfile {
+        profile_set
+            .profiles
+            .iter()
+            .find(|profile| profile.profile_id == profile_id)
+            .unwrap()
+    }
+
+    fn simp_profile<'a>(
+        profile_set: &'a MachineStdSimpProfileSet,
+        profile_id: &str,
+    ) -> &'a MachineStdSimpProfile {
+        profile_set
+            .profiles
+            .iter()
+            .find(|profile| profile.profile_id == profile_id)
             .unwrap()
     }
 
