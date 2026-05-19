@@ -2930,6 +2930,12 @@ Implementation entrypoints:
 
 ## M2. Release manifest and axiom policy
 
+Status:
+
+```text
+DONE
+```
+
 目的:
 
 ```text
@@ -2946,6 +2952,17 @@ Implementation entrypoints:
 - std_library_release_hash computation
 - MachineStdAxiomReport parser / validator
 - release-wide axiom_report_hash computation
+```
+
+Implementation entrypoints:
+
+```text
+- npa_api::load_machine_std_mvp_release
+- npa_api::load_machine_std_mvp_release_from_json
+- npa_api::parse_machine_std_library_release_json
+- npa_api::parse_machine_std_axiom_report_json
+- npa_api::machine_std_library_release_hash
+- npa_api::machine_std_axiom_report_hash
 ```
 
 完了条件:

@@ -5,17 +5,36 @@ use std::{
 };
 
 use npa_cert::{
-    decode_module_cert, verify_module_cert, AxiomPolicy, CertError, Hash, ImportEntry, ModuleCert,
-    Name, TrustMode, VerifiedModule, VerifierSession,
+    decode_module_cert, verify_module_cert, AxiomPolicy, AxiomRef, CertError, DeclPayload,
+    ExportKind, GlobalRef, Hash, ImportEntry, ModuleCert, Name, TrustMode, VerifiedModule,
+    VerifierSession,
 };
 use sha2::{Digest, Sha256};
 
-use crate::types::{phase5_name_canonical_bytes, MachineWireGrammarError};
+use crate::{
+    json::{JsonDocument, JsonParseErrorKind, JsonValue, JsonValueKind},
+    types::{
+        parse_fully_qualified_name_wire, parse_hash_string, parse_module_name_wire,
+        phase5_name_canonical_bytes, MachineWireGrammarError,
+    },
+    validation::{parse_strict_u64_token, StrictUnsignedIntegerError},
+};
 
 const STD_LOGIC_PATH: &str = "Std/Logic.npcert";
 const STD_NAT_PATH: &str = "Std/Nat.npcert";
 const STD_LIST_PATH: &str = "Std/List.npcert";
 const STD_ALGEBRA_BASIC_PATH: &str = "Std/Algebra/Basic.npcert";
+const STD_MACHINE_RELEASE_JSON_PATH: &str = "Std.machine-release.json";
+const STD_MACHINE_AXIOM_REPORT_JSON_PATH: &str = "Std.machine-axiom-report.json";
+const STD_LIBRARY_PROTOCOL_VERSION: &str = "npa.stdlib-machine.v1";
+const STD_LIBRARY_PROFILE_ID: &str = "npa.stdlib.mvp.v1";
+const STD_CORE_SPEC_ID: &str = "core-spec-v0.1";
+const STD_KERNEL_SEMANTICS_PROFILE_ID: &str = "npa-kernel.phase1.v0.1";
+const STD_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
+const STD_MODULE_ARTIFACT_TAG: &str = "npa.phase6.std-module-artifact.v1";
+const STD_LIBRARY_RELEASE_TAG: &str = "npa.phase6.std-library-release.v1";
+const STD_AXIOM_REPORT_TAG: &str = "npa.phase6.std-axiom-report.v1";
+const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineStdModuleLocator {
@@ -67,6 +86,236 @@ pub struct MachineStdLoadedModule {
     pub axiom_report_hash: Hash,
     pub imports: Vec<ImportEntry>,
     pub verified_module: VerifiedModule,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdLibraryRelease {
+    pub protocol_version: String,
+    pub library_profile_id: String,
+    pub core_spec_id: String,
+    pub kernel_semantics_profile_id: String,
+    pub modules: Vec<MachineStdModuleArtifact>,
+    pub import_bundles_hash: Hash,
+    pub theorem_index_hash: Hash,
+    pub simp_profiles_hash: Hash,
+    pub rewrite_profiles_hash: Hash,
+    pub axiom_report_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdModuleArtifact {
+    pub module: Name,
+    pub expected_export_hash: Hash,
+    pub expected_certificate_hash: Hash,
+    pub certificate_encoding: String,
+    pub certificate_bytes_hash: Hash,
+    pub axiom_report_hash: Hash,
+    pub public_export_count: u64,
+    pub theorem_index_entry_count: u64,
+    pub simp_rule_count: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdAxiomReport {
+    pub library_profile_id: String,
+    pub modules: Vec<MachineStdModuleAxiomReport>,
+    pub axiom_report_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdModuleAxiomReport {
+    pub module: Name,
+    pub export_hash: Hash,
+    pub certificate_hash: Hash,
+    pub module_axioms: Vec<MachineStdAxiomRef>,
+    pub transitive_axioms: Vec<MachineStdAxiomRef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdAxiomRef {
+    pub module: Name,
+    pub name: Name,
+    pub export_hash: Hash,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug)]
+pub struct MachineStdValidatedRelease {
+    pub manifest: MachineStdLibraryRelease,
+    pub loaded: MachineStdLoadedRelease,
+    pub axiom_report: MachineStdAxiomReport,
+    pub std_library_release_hash: Hash,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MachineStdArtifactKind {
+    LibraryRelease,
+    AxiomReport,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdArtifactShapeError {
+    pub artifact: MachineStdArtifactKind,
+    pub path: String,
+    pub reason: MachineStdArtifactShapeErrorReason,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineStdArtifactShapeErrorReason {
+    JsonParse {
+        offset: usize,
+        kind: JsonParseErrorKind,
+    },
+    ExpectedObject {
+        actual: JsonValueKind,
+    },
+    ExpectedArray {
+        actual: JsonValueKind,
+    },
+    DuplicateKey {
+        key: String,
+    },
+    UnknownField {
+        field: String,
+    },
+    MissingField {
+        field: &'static str,
+    },
+    NullField {
+        field: &'static str,
+    },
+    TypeMismatch {
+        field: &'static str,
+        expected: &'static str,
+        actual: JsonValueKind,
+    },
+    InvalidUnsignedInteger {
+        field: &'static str,
+        raw: String,
+        error: StrictUnsignedIntegerError,
+    },
+    InvalidHashString {
+        field: &'static str,
+    },
+    InvalidName {
+        field: &'static str,
+    },
+}
+
+#[derive(Debug)]
+pub enum MachineStdReleaseArtifactError {
+    ReadArtifact {
+        artifact: MachineStdArtifactKind,
+        path: PathBuf,
+        source: io::Error,
+    },
+    InvalidStdArtifactShape(MachineStdArtifactShapeError),
+    InvalidStdLibraryRelease(MachineStdLibraryReleaseError),
+    InvalidStdAxiomPolicy(MachineStdAxiomPolicyError),
+}
+
+#[derive(Debug)]
+pub enum MachineStdLibraryReleaseError {
+    ScalarMismatch {
+        field: &'static str,
+        expected: &'static str,
+        actual: String,
+    },
+    InvalidModuleMembership {
+        expected: Vec<Name>,
+        actual: Vec<Name>,
+    },
+    DuplicateModule {
+        module: Name,
+    },
+    NonCanonicalModuleOrder {
+        expected: Vec<Name>,
+        actual: Vec<Name>,
+    },
+    CertificateEncodingMismatch {
+        module: Name,
+        actual: String,
+    },
+    CertificateLoader {
+        source: Box<MachineStdReleaseLoaderError>,
+    },
+    ModuleArtifactHashMismatch {
+        module: Name,
+        field: &'static str,
+        expected: Hash,
+        actual: Hash,
+    },
+    ModuleArtifactCountMismatch {
+        module: Name,
+        field: &'static str,
+        expected: u64,
+        actual: u64,
+    },
+    SidecarHashMismatch {
+        field: &'static str,
+        expected: Hash,
+        actual: Hash,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
+#[derive(Debug)]
+pub enum MachineStdAxiomPolicyError {
+    LibraryProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    AxiomReportHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    InvalidModuleMembership {
+        expected: Vec<Name>,
+        actual: Vec<Name>,
+    },
+    DuplicateModule {
+        module: Name,
+    },
+    NonCanonicalModuleOrder {
+        expected: Vec<Name>,
+        actual: Vec<Name>,
+    },
+    ModuleHashMismatch {
+        module: Name,
+        field: &'static str,
+        expected: Hash,
+        actual: Hash,
+    },
+    NonCanonicalAxiomOrder {
+        module: Name,
+        field: &'static str,
+    },
+    NonEmptyMvpAxiomList {
+        module: Name,
+        field: &'static str,
+    },
+    ModuleAxiomsMismatch {
+        module: Name,
+    },
+    TransitiveAxiomsMismatch {
+        module: Name,
+    },
+    AxiomRefProjectionFailed {
+        module: Name,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum MachineStdCanonicalBytesError {
+    InvalidName {
+        name: Name,
+        source: Box<MachineWireGrammarError>,
+    },
 }
 
 #[derive(Debug)]
@@ -201,7 +450,192 @@ pub fn load_machine_std_certificates_from_locators(
     let decoded = read_and_decode_std_modules(&package_root, locators)?;
     validate_import_graph(&decoded)?;
     let verification_order = topological_verification_order(&decoded)?;
-    verify_decoded_modules(decoded, verification_order)
+    verify_decoded_modules(decoded, verification_order, AxiomPolicy::high_trust())
+}
+
+pub fn load_machine_std_mvp_release(
+    package_root: impl AsRef<Path>,
+) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
+    let root = package_root.as_ref();
+    let release_json = read_std_artifact_json(
+        root,
+        STD_MACHINE_RELEASE_JSON_PATH,
+        MachineStdArtifactKind::LibraryRelease,
+    )?;
+    let axiom_report_json = read_std_artifact_json(
+        root,
+        STD_MACHINE_AXIOM_REPORT_JSON_PATH,
+        MachineStdArtifactKind::AxiomReport,
+    )?;
+    load_machine_std_mvp_release_from_json(root, &release_json, &axiom_report_json)
+}
+
+pub fn load_machine_std_mvp_release_from_json(
+    package_root: impl AsRef<Path>,
+    release_json: &str,
+    axiom_report_json: &str,
+) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
+    let manifest = parse_machine_std_library_release_json(release_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let axiom_report = parse_machine_std_axiom_report_json(axiom_report_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+
+    validate_machine_std_library_release_prepass(&manifest)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
+
+    let loaded = load_machine_std_mvp_certificates_for_manifest_validation(package_root.as_ref())
+        .map_err(|source| {
+        MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+            MachineStdLibraryReleaseError::CertificateLoader {
+                source: Box::new(source),
+            },
+        )
+    })?;
+    validate_machine_std_library_release_against_certificates(&manifest, &loaded)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
+
+    let actual_axiom_report_hash =
+        machine_std_axiom_report_hash(&axiom_report).map_err(|source| {
+            MachineStdReleaseArtifactError::InvalidStdAxiomPolicy(
+                MachineStdAxiomPolicyError::CanonicalBytes { source },
+            )
+        })?;
+    if actual_axiom_report_hash != axiom_report.axiom_report_hash {
+        return Err(MachineStdReleaseArtifactError::InvalidStdAxiomPolicy(
+            MachineStdAxiomPolicyError::AxiomReportHashMismatch {
+                expected: axiom_report.axiom_report_hash,
+                actual: actual_axiom_report_hash,
+            },
+        ));
+    }
+
+    validate_machine_std_axiom_report(&manifest, &loaded, &axiom_report)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdAxiomPolicy)?;
+    if manifest.axiom_report_hash != axiom_report.axiom_report_hash {
+        return Err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+            MachineStdLibraryReleaseError::SidecarHashMismatch {
+                field: "axiom_report_hash",
+                expected: manifest.axiom_report_hash,
+                actual: axiom_report.axiom_report_hash,
+            },
+        ));
+    }
+
+    let std_library_release_hash =
+        machine_std_library_release_hash(&manifest).map_err(|source| {
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::CanonicalBytes { source },
+            )
+        })?;
+
+    Ok(MachineStdValidatedRelease {
+        manifest,
+        loaded,
+        axiom_report,
+        std_library_release_hash,
+    })
+}
+
+pub fn parse_machine_std_library_release_json(
+    source: &str,
+) -> Result<MachineStdLibraryRelease, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::LibraryRelease)?;
+    parse_library_release_value(doc.root(), "$")
+}
+
+pub fn parse_machine_std_axiom_report_json(
+    source: &str,
+) -> Result<MachineStdAxiomReport, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::AxiomReport)?;
+    parse_axiom_report_value(doc.root(), "$")
+}
+
+pub fn machine_std_module_artifact_canonical_bytes(
+    artifact: &MachineStdModuleArtifact,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_MODULE_ARTIFACT_TAG);
+    encode_name(&mut out, &artifact.module)?;
+    encode_hash(&mut out, &artifact.expected_export_hash);
+    encode_hash(&mut out, &artifact.expected_certificate_hash);
+    encode_string(&mut out, &artifact.certificate_encoding);
+    encode_hash(&mut out, &artifact.certificate_bytes_hash);
+    encode_hash(&mut out, &artifact.axiom_report_hash);
+    encode_uvar(&mut out, artifact.public_export_count);
+    encode_uvar(&mut out, artifact.theorem_index_entry_count);
+    encode_uvar(&mut out, artifact.simp_rule_count);
+    Ok(out)
+}
+
+pub fn machine_std_library_release_canonical_bytes(
+    release: &MachineStdLibraryRelease,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_LIBRARY_RELEASE_TAG);
+    encode_string(&mut out, &release.protocol_version);
+    encode_string(&mut out, &release.library_profile_id);
+    encode_string(&mut out, &release.core_spec_id);
+    encode_string(&mut out, &release.kernel_semantics_profile_id);
+    encode_uvar(&mut out, release.modules.len() as u64);
+    for module in &release.modules {
+        out.extend(machine_std_module_artifact_canonical_bytes(module)?);
+    }
+    encode_hash(&mut out, &release.import_bundles_hash);
+    encode_hash(&mut out, &release.theorem_index_hash);
+    encode_hash(&mut out, &release.simp_profiles_hash);
+    encode_hash(&mut out, &release.rewrite_profiles_hash);
+    encode_hash(&mut out, &release.axiom_report_hash);
+    Ok(out)
+}
+
+pub fn machine_std_library_release_hash(
+    release: &MachineStdLibraryRelease,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_library_release_canonical_bytes(
+        release,
+    )?))
+}
+
+pub fn machine_std_axiom_ref_canonical_bytes(
+    axiom: &MachineStdAxiomRef,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, PHASE5_AXIOM_REF_WIRE_TAG);
+    out.push(0x00);
+    encode_name(&mut out, &axiom.module)?;
+    encode_name(&mut out, &axiom.name)?;
+    encode_hash(&mut out, &axiom.export_hash);
+    encode_hash(&mut out, &axiom.decl_interface_hash);
+    Ok(out)
+}
+
+pub fn machine_std_axiom_report_canonical_bytes(
+    report: &MachineStdAxiomReport,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_AXIOM_REPORT_TAG);
+    encode_string(&mut out, &report.library_profile_id);
+    encode_uvar(&mut out, report.modules.len() as u64);
+    for module in &report.modules {
+        encode_name(&mut out, &module.module)?;
+        encode_hash(&mut out, &module.export_hash);
+        encode_hash(&mut out, &module.certificate_hash);
+        encode_uvar(&mut out, module.module_axioms.len() as u64);
+        for axiom in &module.module_axioms {
+            out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
+        }
+        encode_uvar(&mut out, module.transitive_axioms.len() as u64);
+        for axiom in &module.transitive_axioms {
+            out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
+        }
+    }
+    Ok(out)
+}
+
+pub fn machine_std_axiom_report_hash(
+    report: &MachineStdAxiomReport,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_axiom_report_canonical_bytes(report)?))
 }
 
 pub fn validate_machine_std_mvp_locators(
@@ -285,6 +719,1008 @@ pub fn validate_machine_std_locator_path(path: &str) -> Result<(), MachineStdLoc
         }
     }
     Ok(())
+}
+
+fn read_std_artifact_json(
+    root: &Path,
+    relative_path: &str,
+    artifact: MachineStdArtifactKind,
+) -> Result<String, MachineStdReleaseArtifactError> {
+    let path = join_posix_relative_path(root, relative_path);
+    fs::read_to_string(&path).map_err(|source| MachineStdReleaseArtifactError::ReadArtifact {
+        artifact,
+        path,
+        source,
+    })
+}
+
+fn load_machine_std_mvp_certificates_for_manifest_validation(
+    package_root: &Path,
+) -> Result<MachineStdLoadedRelease, MachineStdReleaseLoaderError> {
+    let locators = machine_std_mvp_module_locators();
+    validate_machine_std_mvp_locators(&locators)?;
+    let package_root = canonical_package_root(package_root)?;
+    let decoded = read_and_decode_std_modules(&package_root, &locators)?;
+    validate_import_graph(&decoded)?;
+    let verification_order = topological_verification_order(&decoded)?;
+    let policy = high_trust_policy_allowing_decoded_axioms(&decoded);
+    verify_decoded_modules(decoded, verification_order, policy)
+}
+
+fn high_trust_policy_allowing_decoded_axioms(
+    decoded: &BTreeMap<Name, DecodedStdModule>,
+) -> AxiomPolicy {
+    let mut allowlisted_axioms = BTreeSet::new();
+    for module in decoded.values() {
+        allowlisted_axioms.extend(
+            module
+                .cert
+                .name_table
+                .iter()
+                .filter(|name| name.is_canonical())
+                .cloned(),
+        );
+    }
+    AxiomPolicy {
+        mode: TrustMode::HighTrust,
+        allowlisted_axioms,
+        deny_sorry: false,
+    }
+}
+
+fn validate_machine_std_library_release_prepass(
+    manifest: &MachineStdLibraryRelease,
+) -> Result<(), MachineStdLibraryReleaseError> {
+    validate_fixed_scalar(
+        "protocol_version",
+        STD_LIBRARY_PROTOCOL_VERSION,
+        &manifest.protocol_version,
+    )?;
+    validate_fixed_scalar(
+        "library_profile_id",
+        STD_LIBRARY_PROFILE_ID,
+        &manifest.library_profile_id,
+    )?;
+    validate_fixed_scalar("core_spec_id", STD_CORE_SPEC_ID, &manifest.core_spec_id)?;
+    validate_fixed_scalar(
+        "kernel_semantics_profile_id",
+        STD_KERNEL_SEMANTICS_PROFILE_ID,
+        &manifest.kernel_semantics_profile_id,
+    )?;
+    validate_manifest_module_membership(&manifest.modules)?;
+    for module in &manifest.modules {
+        if module.certificate_encoding != STD_CERTIFICATE_ENCODING {
+            return Err(MachineStdLibraryReleaseError::CertificateEncodingMismatch {
+                module: module.module.clone(),
+                actual: module.certificate_encoding.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_fixed_scalar(
+    field: &'static str,
+    expected: &'static str,
+    actual: &str,
+) -> Result<(), MachineStdLibraryReleaseError> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(MachineStdLibraryReleaseError::ScalarMismatch {
+            field,
+            expected,
+            actual: actual.to_owned(),
+        })
+    }
+}
+
+fn validate_manifest_module_membership(
+    modules: &[MachineStdModuleArtifact],
+) -> Result<(), MachineStdLibraryReleaseError> {
+    let expected = expected_mvp_modules();
+    let actual = modules
+        .iter()
+        .map(|module| module.module.clone())
+        .collect::<Vec<_>>();
+    let mut seen = BTreeSet::new();
+    for module in &actual {
+        if !seen.insert(module.clone()) {
+            return Err(MachineStdLibraryReleaseError::DuplicateModule {
+                module: module.clone(),
+            });
+        }
+    }
+    let expected_set = expected.iter().cloned().collect::<BTreeSet<_>>();
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    if expected_set != actual_set {
+        return Err(MachineStdLibraryReleaseError::InvalidModuleMembership { expected, actual });
+    }
+    if expected != actual {
+        return Err(MachineStdLibraryReleaseError::NonCanonicalModuleOrder { expected, actual });
+    }
+    Ok(())
+}
+
+fn validate_machine_std_library_release_against_certificates(
+    manifest: &MachineStdLibraryRelease,
+    loaded: &MachineStdLoadedRelease,
+) -> Result<(), MachineStdLibraryReleaseError> {
+    for artifact in &manifest.modules {
+        let module = loaded
+            .module(&artifact.module)
+            .expect("manifest prepass checked MVP module membership");
+        compare_module_hash(
+            &artifact.module,
+            "expected_export_hash",
+            artifact.expected_export_hash,
+            module.expected_export_hash,
+        )?;
+        compare_module_hash(
+            &artifact.module,
+            "expected_certificate_hash",
+            artifact.expected_certificate_hash,
+            module.expected_certificate_hash,
+        )?;
+        compare_module_hash(
+            &artifact.module,
+            "certificate_bytes_hash",
+            artifact.certificate_bytes_hash,
+            module.certificate_bytes_hash,
+        )?;
+        compare_module_hash(
+            &artifact.module,
+            "axiom_report_hash",
+            artifact.axiom_report_hash,
+            module.axiom_report_hash,
+        )?;
+        compare_module_count(
+            &artifact.module,
+            "public_export_count",
+            artifact.public_export_count,
+            module.verified_module.export_block().len() as u64,
+        )?;
+        compare_module_count(
+            &artifact.module,
+            "theorem_index_entry_count",
+            artifact.theorem_index_entry_count,
+            module
+                .verified_module
+                .export_block()
+                .iter()
+                .filter(|entry| matches!(entry.kind, ExportKind::Theorem | ExportKind::Axiom))
+                .count() as u64,
+        )?;
+    }
+    Ok(())
+}
+
+fn compare_module_hash(
+    module: &Name,
+    field: &'static str,
+    expected: Hash,
+    actual: Hash,
+) -> Result<(), MachineStdLibraryReleaseError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(MachineStdLibraryReleaseError::ModuleArtifactHashMismatch {
+            module: module.clone(),
+            field,
+            expected,
+            actual,
+        })
+    }
+}
+
+fn compare_module_count(
+    module: &Name,
+    field: &'static str,
+    expected: u64,
+    actual: u64,
+) -> Result<(), MachineStdLibraryReleaseError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(MachineStdLibraryReleaseError::ModuleArtifactCountMismatch {
+            module: module.clone(),
+            field,
+            expected,
+            actual,
+        })
+    }
+}
+
+fn validate_machine_std_axiom_report(
+    manifest: &MachineStdLibraryRelease,
+    loaded: &MachineStdLoadedRelease,
+    report: &MachineStdAxiomReport,
+) -> Result<(), MachineStdAxiomPolicyError> {
+    if report.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdAxiomPolicyError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: report.library_profile_id.clone(),
+        });
+    }
+    validate_axiom_report_module_membership(manifest, report)?;
+
+    let mut expected_transitive_by_module: BTreeMap<Name, Vec<MachineStdAxiomRef>> =
+        BTreeMap::new();
+    let report_by_module = report
+        .modules
+        .iter()
+        .map(|module| (module.module.clone(), module))
+        .collect::<BTreeMap<_, _>>();
+
+    for module_name in loaded.verification_order() {
+        let loaded_module = loaded
+            .module(module_name)
+            .expect("verification order came from loaded module table");
+        let report_module = report_by_module
+            .get(module_name)
+            .expect("axiom report membership was validated");
+
+        compare_axiom_report_hash(
+            module_name,
+            "export_hash",
+            report_module.export_hash,
+            loaded_module.expected_export_hash,
+        )?;
+        compare_axiom_report_hash(
+            module_name,
+            "certificate_hash",
+            report_module.certificate_hash,
+            loaded_module.expected_certificate_hash,
+        )?;
+        validate_axiom_ref_list_order(module_name, "module_axioms", &report_module.module_axioms)?;
+        validate_axiom_ref_list_order(
+            module_name,
+            "transitive_axioms",
+            &report_module.transitive_axioms,
+        )?;
+        if !report_module.module_axioms.is_empty() {
+            return Err(MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
+                module: module_name.clone(),
+                field: "module_axioms",
+            });
+        }
+        if !report_module.transitive_axioms.is_empty() {
+            return Err(MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
+                module: module_name.clone(),
+                field: "transitive_axioms",
+            });
+        }
+
+        let expected_module_axioms = project_module_axioms(loaded, loaded_module)?;
+        if report_module.module_axioms != expected_module_axioms {
+            return Err(MachineStdAxiomPolicyError::ModuleAxiomsMismatch {
+                module: module_name.clone(),
+            });
+        }
+
+        let mut transitive = BTreeMap::new();
+        for axiom in expected_module_axioms {
+            let key = machine_std_axiom_ref_canonical_bytes(&axiom)
+                .map_err(|source| MachineStdAxiomPolicyError::CanonicalBytes { source })?;
+            transitive.insert(key, axiom);
+        }
+        for import in &loaded_module.imports {
+            let imported = expected_transitive_by_module
+                .get(&import.module)
+                .ok_or_else(|| MachineStdAxiomPolicyError::TransitiveAxiomsMismatch {
+                    module: module_name.clone(),
+                })?;
+            for axiom in imported {
+                let key = machine_std_axiom_ref_canonical_bytes(axiom)
+                    .map_err(|source| MachineStdAxiomPolicyError::CanonicalBytes { source })?;
+                transitive.insert(key, axiom.clone());
+            }
+        }
+        let expected_transitive = transitive.into_values().collect::<Vec<_>>();
+        if report_module.transitive_axioms != expected_transitive {
+            return Err(MachineStdAxiomPolicyError::TransitiveAxiomsMismatch {
+                module: module_name.clone(),
+            });
+        }
+        expected_transitive_by_module.insert(module_name.clone(), expected_transitive);
+    }
+
+    Ok(())
+}
+
+fn validate_axiom_report_module_membership(
+    manifest: &MachineStdLibraryRelease,
+    report: &MachineStdAxiomReport,
+) -> Result<(), MachineStdAxiomPolicyError> {
+    let expected = manifest
+        .modules
+        .iter()
+        .map(|module| module.module.clone())
+        .collect::<Vec<_>>();
+    let actual = report
+        .modules
+        .iter()
+        .map(|module| module.module.clone())
+        .collect::<Vec<_>>();
+    let mut seen = BTreeSet::new();
+    for module in &actual {
+        if !seen.insert(module.clone()) {
+            return Err(MachineStdAxiomPolicyError::DuplicateModule {
+                module: module.clone(),
+            });
+        }
+    }
+    let expected_set = expected.iter().cloned().collect::<BTreeSet<_>>();
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    if expected_set != actual_set {
+        return Err(MachineStdAxiomPolicyError::InvalidModuleMembership { expected, actual });
+    }
+    if expected != actual {
+        return Err(MachineStdAxiomPolicyError::NonCanonicalModuleOrder { expected, actual });
+    }
+    Ok(())
+}
+
+fn compare_axiom_report_hash(
+    module: &Name,
+    field: &'static str,
+    expected: Hash,
+    actual: Hash,
+) -> Result<(), MachineStdAxiomPolicyError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(MachineStdAxiomPolicyError::ModuleHashMismatch {
+            module: module.clone(),
+            field,
+            expected,
+            actual,
+        })
+    }
+}
+
+fn validate_axiom_ref_list_order(
+    module: &Name,
+    field: &'static str,
+    axioms: &[MachineStdAxiomRef],
+) -> Result<(), MachineStdAxiomPolicyError> {
+    let mut previous: Option<Vec<u8>> = None;
+    for axiom in axioms {
+        let bytes = machine_std_axiom_ref_canonical_bytes(axiom)
+            .map_err(|source| MachineStdAxiomPolicyError::CanonicalBytes { source })?;
+        if previous.as_ref().is_some_and(|previous| previous >= &bytes) {
+            return Err(MachineStdAxiomPolicyError::NonCanonicalAxiomOrder {
+                module: module.clone(),
+                field,
+            });
+        }
+        previous = Some(bytes);
+    }
+    Ok(())
+}
+
+fn project_module_axioms(
+    loaded: &MachineStdLoadedRelease,
+    module: &MachineStdLoadedModule,
+) -> Result<Vec<MachineStdAxiomRef>, MachineStdAxiomPolicyError> {
+    let mut projected = BTreeMap::new();
+    for axiom in &module.verified_module.axiom_report().module_axioms {
+        let axiom = project_axiom_ref(loaded, module, axiom)?;
+        let key = machine_std_axiom_ref_canonical_bytes(&axiom)
+            .map_err(|source| MachineStdAxiomPolicyError::CanonicalBytes { source })?;
+        projected.insert(key, axiom);
+    }
+    Ok(projected.into_values().collect())
+}
+
+fn project_axiom_ref(
+    loaded: &MachineStdLoadedRelease,
+    owner: &MachineStdLoadedModule,
+    axiom: &AxiomRef,
+) -> Result<MachineStdAxiomRef, MachineStdAxiomPolicyError> {
+    match &axiom.global_ref {
+        GlobalRef::Local { decl_index } => {
+            let Some(decl) = owner.verified_module.declarations().get(*decl_index) else {
+                return Err(axiom_projection_error(&owner.module));
+            };
+            if !matches!(decl.decl, DeclPayload::Axiom { .. }) {
+                return Err(axiom_projection_error(&owner.module));
+            }
+            let Some(name) = owner.verified_module.name_table().get(axiom.name) else {
+                return Err(axiom_projection_error(&owner.module));
+            };
+            Ok(MachineStdAxiomRef {
+                module: owner.module.clone(),
+                name: name.clone(),
+                export_hash: owner.expected_export_hash,
+                decl_interface_hash: axiom.decl_interface_hash,
+            })
+        }
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            let Some(import) = owner.imports.get(*import_index) else {
+                return Err(axiom_projection_error(&owner.module));
+            };
+            let Some(imported) = loaded.module(&import.module) else {
+                return Err(axiom_projection_error(&owner.module));
+            };
+            if import.export_hash != imported.expected_export_hash
+                || import.certificate_hash != Some(imported.expected_certificate_hash)
+            {
+                return Err(axiom_projection_error(&owner.module));
+            }
+            let Some(axiom_name) = owner.verified_module.name_table().get(*name) else {
+                return Err(axiom_projection_error(&owner.module));
+            };
+            let matches_export = imported.verified_module.export_block().iter().any(|entry| {
+                imported
+                    .verified_module
+                    .name_table()
+                    .get(entry.name)
+                    .is_some_and(|entry_name| {
+                        entry.kind == ExportKind::Axiom
+                            && entry_name == axiom_name
+                            && entry.decl_interface_hash == *decl_interface_hash
+                    })
+            });
+            if !matches_export || axiom.decl_interface_hash != *decl_interface_hash {
+                return Err(axiom_projection_error(&owner.module));
+            }
+            Ok(MachineStdAxiomRef {
+                module: imported.module.clone(),
+                name: axiom_name.clone(),
+                export_hash: imported.expected_export_hash,
+                decl_interface_hash: *decl_interface_hash,
+            })
+        }
+        GlobalRef::Builtin { .. } | GlobalRef::LocalGenerated { .. } => {
+            Err(axiom_projection_error(&owner.module))
+        }
+    }
+}
+
+fn axiom_projection_error(module: &Name) -> MachineStdAxiomPolicyError {
+    MachineStdAxiomPolicyError::AxiomRefProjectionFailed {
+        module: module.clone(),
+    }
+}
+
+fn expected_mvp_modules() -> Vec<Name> {
+    machine_std_mvp_module_locators()
+        .into_iter()
+        .map(|locator| locator.module)
+        .collect()
+}
+
+const LIBRARY_RELEASE_FIELDS: &[&str] = &[
+    "protocol_version",
+    "library_profile_id",
+    "core_spec_id",
+    "kernel_semantics_profile_id",
+    "modules",
+    "import_bundles_hash",
+    "theorem_index_hash",
+    "simp_profiles_hash",
+    "rewrite_profiles_hash",
+    "axiom_report_hash",
+];
+const MODULE_ARTIFACT_FIELDS: &[&str] = &[
+    "module",
+    "expected_export_hash",
+    "expected_certificate_hash",
+    "certificate_encoding",
+    "certificate_bytes_hash",
+    "axiom_report_hash",
+    "public_export_count",
+    "theorem_index_entry_count",
+    "simp_rule_count",
+];
+const AXIOM_REPORT_FIELDS: &[&str] = &["library_profile_id", "modules", "axiom_report_hash"];
+const MODULE_AXIOM_REPORT_FIELDS: &[&str] = &[
+    "module",
+    "export_hash",
+    "certificate_hash",
+    "module_axioms",
+    "transitive_axioms",
+];
+const AXIOM_REF_FIELDS: &[&str] = &["module", "name", "export_hash", "decl_interface_hash"];
+
+fn parse_std_json<'src>(
+    source: &'src str,
+    artifact: MachineStdArtifactKind,
+) -> Result<JsonDocument<'src>, MachineStdArtifactShapeError> {
+    JsonDocument::parse(source).map_err(|err| MachineStdArtifactShapeError {
+        artifact,
+        path: "$".to_owned(),
+        reason: MachineStdArtifactShapeErrorReason::JsonParse {
+            offset: err.offset,
+            kind: err.kind,
+        },
+    })
+}
+
+fn parse_library_release_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdLibraryRelease, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::LibraryRelease,
+        path,
+        LIBRARY_RELEASE_FIELDS,
+    )?;
+    let modules = required_array(
+        members,
+        MachineStdArtifactKind::LibraryRelease,
+        path,
+        "modules",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_module_artifact_value(item, &array_path(path, "modules", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(MachineStdLibraryRelease {
+        protocol_version: required_string(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "protocol_version",
+        )?
+        .to_owned(),
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        core_spec_id: required_string(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "core_spec_id",
+        )?
+        .to_owned(),
+        kernel_semantics_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "kernel_semantics_profile_id",
+        )?
+        .to_owned(),
+        modules,
+        import_bundles_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "import_bundles_hash",
+        )?,
+        theorem_index_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "theorem_index_hash",
+        )?,
+        simp_profiles_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "simp_profiles_hash",
+        )?,
+        rewrite_profiles_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "rewrite_profiles_hash",
+        )?,
+        axiom_report_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "axiom_report_hash",
+        )?,
+    })
+}
+
+fn parse_module_artifact_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdModuleArtifact, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::LibraryRelease,
+        path,
+        MODULE_ARTIFACT_FIELDS,
+    )?;
+    Ok(MachineStdModuleArtifact {
+        module: required_module_name(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "module",
+        )?,
+        expected_export_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "expected_export_hash",
+        )?,
+        expected_certificate_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "expected_certificate_hash",
+        )?,
+        certificate_encoding: required_string(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "certificate_encoding",
+        )?
+        .to_owned(),
+        certificate_bytes_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "certificate_bytes_hash",
+        )?,
+        axiom_report_hash: required_hash(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "axiom_report_hash",
+        )?,
+        public_export_count: required_u64(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "public_export_count",
+        )?,
+        theorem_index_entry_count: required_u64(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "theorem_index_entry_count",
+        )?,
+        simp_rule_count: required_u64(
+            members,
+            MachineStdArtifactKind::LibraryRelease,
+            path,
+            "simp_rule_count",
+        )?,
+    })
+}
+
+fn parse_axiom_report_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdAxiomReport, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::AxiomReport,
+        path,
+        AXIOM_REPORT_FIELDS,
+    )?;
+    let modules = required_array(
+        members,
+        MachineStdArtifactKind::AxiomReport,
+        path,
+        "modules",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_module_axiom_report_value(item, &array_path(path, "modules", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdAxiomReport {
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        modules,
+        axiom_report_hash: required_hash(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "axiom_report_hash",
+        )?,
+    })
+}
+
+fn parse_module_axiom_report_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdModuleAxiomReport, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::AxiomReport,
+        path,
+        MODULE_AXIOM_REPORT_FIELDS,
+    )?;
+    Ok(MachineStdModuleAxiomReport {
+        module: required_module_name(members, MachineStdArtifactKind::AxiomReport, path, "module")?,
+        export_hash: required_hash(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "export_hash",
+        )?,
+        certificate_hash: required_hash(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "certificate_hash",
+        )?,
+        module_axioms: parse_axiom_ref_array(members, path, "module_axioms")?,
+        transitive_axioms: parse_axiom_ref_array(members, path, "transitive_axioms")?,
+    })
+}
+
+fn parse_axiom_ref_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineStdAxiomRef>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::AxiomReport, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_axiom_ref_value(item, &array_path(path, field, index)))
+        .collect()
+}
+
+fn parse_axiom_ref_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdAxiomRef, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::AxiomReport,
+        path,
+        AXIOM_REF_FIELDS,
+    )?;
+    Ok(MachineStdAxiomRef {
+        module: required_module_name(members, MachineStdArtifactKind::AxiomReport, path, "module")?,
+        name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "name",
+        )?,
+        export_hash: required_hash(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "export_hash",
+        )?,
+        decl_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::AxiomReport,
+            path,
+            "decl_interface_hash",
+        )?,
+    })
+}
+
+fn validated_object_members<'value, 'src>(
+    value: &'value JsonValue<'src>,
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    allowed_fields: &[&'static str],
+) -> Result<&'value [crate::json::JsonMember<'src>], MachineStdArtifactShapeError> {
+    let Some(members) = value.object_members() else {
+        return Err(shape_error(
+            artifact,
+            path,
+            MachineStdArtifactShapeErrorReason::ExpectedObject {
+                actual: value.kind(),
+            },
+        ));
+    };
+    let mut seen = BTreeSet::new();
+    for member in members {
+        if !seen.insert(member.key().to_owned()) {
+            return Err(shape_error(
+                artifact,
+                &field_path(path, member.key()),
+                MachineStdArtifactShapeErrorReason::DuplicateKey {
+                    key: member.key().to_owned(),
+                },
+            ));
+        }
+    }
+    for member in members {
+        if !allowed_fields.iter().any(|field| *field == member.key()) {
+            return Err(shape_error(
+                artifact,
+                &field_path(path, member.key()),
+                MachineStdArtifactShapeErrorReason::UnknownField {
+                    field: member.key().to_owned(),
+                },
+            ));
+        }
+    }
+    for field in allowed_fields {
+        if !members.iter().any(|member| member.key() == *field) {
+            return Err(shape_error(
+                artifact,
+                &field_path(path, field),
+                MachineStdArtifactShapeErrorReason::MissingField { field },
+            ));
+        }
+    }
+    Ok(members)
+}
+
+fn required_value<'value, 'src>(
+    members: &'value [crate::json::JsonMember<'src>],
+    field: &'static str,
+) -> &'value JsonValue<'src> {
+    members
+        .iter()
+        .find(|member| member.key() == field)
+        .expect("validated object contains required field")
+        .value()
+}
+
+fn required_string<'value, 'src>(
+    members: &'value [crate::json::JsonMember<'src>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<&'value str, MachineStdArtifactShapeError> {
+    let value = required_value(members, field);
+    match value.kind() {
+        JsonValueKind::Null => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::NullField { field },
+        )),
+        JsonValueKind::String => Ok(value.string_value().expect("kind checked string")),
+        actual => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::TypeMismatch {
+                field,
+                expected: "string",
+                actual,
+            },
+        )),
+    }
+}
+
+fn required_array<'value, 'src>(
+    members: &'value [crate::json::JsonMember<'src>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<&'value [JsonValue<'src>], MachineStdArtifactShapeError> {
+    let value = required_value(members, field);
+    match value.kind() {
+        JsonValueKind::Null => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::NullField { field },
+        )),
+        JsonValueKind::Array => Ok(value.array_elements().expect("kind checked array")),
+        actual => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::ExpectedArray { actual },
+        )),
+    }
+}
+
+fn required_hash(
+    members: &[crate::json::JsonMember<'_>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<Hash, MachineStdArtifactShapeError> {
+    let value = required_string(members, artifact, path, field)?;
+    parse_hash_string(value).map_err(|_| {
+        shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidHashString { field },
+        )
+    })
+}
+
+fn required_module_name(
+    members: &[crate::json::JsonMember<'_>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<Name, MachineStdArtifactShapeError> {
+    let value = required_string(members, artifact, path, field)?;
+    parse_module_name_wire(value).map_err(|_| {
+        shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidName { field },
+        )
+    })
+}
+
+fn required_fully_qualified_name(
+    members: &[crate::json::JsonMember<'_>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<Name, MachineStdArtifactShapeError> {
+    let value = required_string(members, artifact, path, field)?;
+    parse_fully_qualified_name_wire(value).map_err(|_| {
+        shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidName { field },
+        )
+    })
+}
+
+fn required_u64(
+    members: &[crate::json::JsonMember<'_>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<u64, MachineStdArtifactShapeError> {
+    let value = required_value(members, field);
+    match value.kind() {
+        JsonValueKind::Null => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::NullField { field },
+        )),
+        JsonValueKind::Number => {
+            let raw = value.number_raw().expect("kind checked number");
+            parse_strict_u64_token(raw, u64::MAX).map_err(|error| {
+                shape_error(
+                    artifact,
+                    &field_path(path, field),
+                    MachineStdArtifactShapeErrorReason::InvalidUnsignedInteger {
+                        field,
+                        raw: raw.to_owned(),
+                        error,
+                    },
+                )
+            })
+        }
+        actual => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::TypeMismatch {
+                field,
+                expected: "unsigned integer",
+                actual,
+            },
+        )),
+    }
+}
+
+fn shape_error(
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    reason: MachineStdArtifactShapeErrorReason,
+) -> MachineStdArtifactShapeError {
+    MachineStdArtifactShapeError {
+        artifact,
+        path: path.to_owned(),
+        reason,
+    }
+}
+
+fn field_path(path: &str, field: &str) -> String {
+    format!("{path}.{field}")
+}
+
+fn array_path(path: &str, field: &str, index: usize) -> String {
+    format!("{path}.{field}[{index}]")
 }
 
 fn canonical_package_root(package_root: &Path) -> Result<PathBuf, MachineStdReleaseLoaderError> {
@@ -476,12 +1912,8 @@ fn module_name_canonical_bytes(module: &Name) -> Result<Vec<u8>, MachineStdRelea
 fn verify_decoded_modules(
     decoded: BTreeMap<Name, DecodedStdModule>,
     verification_order: Vec<Name>,
+    policy: AxiomPolicy,
 ) -> Result<MachineStdLoadedRelease, MachineStdReleaseLoaderError> {
-    let policy = AxiomPolicy {
-        mode: TrustMode::HighTrust,
-        allowlisted_axioms: BTreeSet::new(),
-        deny_sorry: true,
-    };
     let mut session = VerifierSession::new();
     let mut verified_by_module = BTreeMap::new();
 
@@ -540,6 +1972,34 @@ fn verify_decoded_modules(
     })
 }
 
+fn encode_string(out: &mut Vec<u8>, value: &str) {
+    encode_uvar(out, value.len() as u64);
+    out.extend_from_slice(value.as_bytes());
+}
+
+fn encode_name(out: &mut Vec<u8>, name: &Name) -> Result<(), MachineStdCanonicalBytesError> {
+    let bytes = phase5_name_canonical_bytes(name).map_err(|source| {
+        MachineStdCanonicalBytesError::InvalidName {
+            name: name.clone(),
+            source: Box::new(source),
+        }
+    })?;
+    out.extend(bytes);
+    Ok(())
+}
+
+fn encode_hash(out: &mut Vec<u8>, hash: &Hash) {
+    out.extend_from_slice(hash);
+}
+
+fn encode_uvar(out: &mut Vec<u8>, mut value: u64) {
+    while value >= 0x80 {
+        out.push((value as u8 & 0x7f) | 0x80);
+        value >>= 7;
+    }
+    out.push(value as u8);
+}
+
 fn sha256(bytes: &[u8]) -> Hash {
     let digest = Sha256::digest(bytes);
     let mut out = [0; 32];
@@ -550,7 +2010,9 @@ fn sha256(bytes: &[u8]) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::format_hash_string;
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
+    use npa_kernel::{Decl, Expr, Level};
     use std::{
         fs,
         time::{SystemTime, UNIX_EPOCH},
@@ -735,6 +2197,201 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn loads_valid_mvp_release_manifest_and_axiom_report() {
+        let package = TestPackage::new("valid_mvp_release_manifest");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+        let release_json = release_manifest_json(&release);
+        let axiom_report_json = axiom_report_json(&axiom_report);
+
+        let validated = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_json,
+            &axiom_report_json,
+        )
+        .unwrap();
+        assert_eq!(validated.loaded.modules().len(), 4);
+        assert_eq!(
+            validated.axiom_report.axiom_report_hash,
+            axiom_report.axiom_report_hash
+        );
+        assert_eq!(
+            validated.std_library_release_hash,
+            machine_std_library_release_hash(&validated.manifest).unwrap()
+        );
+    }
+
+    #[test]
+    fn rejects_mvp_release_scalar_mismatch_as_library_release() {
+        let package = TestPackage::new("release_scalar_mismatch");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+        release.protocol_version = "npa.stdlib-machine.bad".to_owned();
+
+        let err = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::ScalarMismatch {
+                    field: "protocol_version",
+                    ..
+                }
+            )
+        ));
+    }
+
+    #[test]
+    fn rejects_std_library_release_hash_field_as_unknown_shape() {
+        let package = TestPackage::new("release_hash_unknown");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let axiom_report = empty_axiom_report_for(&loaded);
+        let release = release_manifest_for(&loaded, test_hash(9));
+        let release_json = release_manifest_json(&release).replacen(
+            "{\"protocol_version\"",
+            &format!(
+                "{{\"std_library_release_hash\":\"{}\",\"protocol_version\"",
+                format_hash_string(&test_hash(77))
+            ),
+            1,
+        );
+
+        let err = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_json,
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdArtifactShape(
+                MachineStdArtifactShapeError {
+                    reason: MachineStdArtifactShapeErrorReason::UnknownField { field },
+                    ..
+                }
+            ) if field == "std_library_release_hash"
+        ));
+    }
+
+    #[test]
+    fn rejects_non_empty_mvp_axiom_report_lists() {
+        let package = TestPackage::new("non_empty_axiom_report");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        let first = &mut axiom_report.modules[0];
+        first.module_axioms.push(MachineStdAxiomRef {
+            module: first.module.clone(),
+            name: Name::from_dotted("Std.Nat.synthetic_axiom"),
+            export_hash: first.export_hash,
+            decl_interface_hash: test_hash(88),
+        });
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+
+        let err = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdAxiomPolicy(
+                MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
+                    field: "module_axioms",
+                    ..
+                }
+            )
+        ));
+    }
+
+    #[test]
+    fn rejects_certificate_axioms_as_axiom_policy() {
+        let package = TestPackage::new("certificate_axiom_policy");
+        let certs = mvp_certificate_bytes_with_logic_axiom("Std.Logic.synthetic_axiom");
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+
+        let err = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdAxiomPolicy(
+                MachineStdAxiomPolicyError::ModuleAxiomsMismatch { .. }
+            )
+        ));
+    }
+
+    #[test]
+    fn rejects_stale_axiom_report_self_hash_before_manifest_comparison() {
+        let package = TestPackage::new("stale_axiom_report_self_hash");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = test_hash(44);
+        let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+
+        let err = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdAxiomPolicy(
+                MachineStdAxiomPolicyError::AxiomReportHashMismatch { .. }
+            )
+        ));
+    }
+
+    #[test]
+    fn rejects_manifest_bound_axiom_report_hash_mismatch_as_library_release() {
+        let package = TestPackage::new("manifest_bound_axiom_hash_mismatch");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for(&loaded, test_hash(45));
+
+        let err = load_machine_std_mvp_release_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::SidecarHashMismatch {
+                    field: "axiom_report_hash",
+                    ..
+                }
+            )
+        ));
+    }
+
     struct MvpCertificateBytes {
         logic: Vec<u8>,
         nat: Vec<u8>,
@@ -747,6 +2404,45 @@ mod tests {
         let policy = AxiomPolicy::high_trust();
 
         let logic_cert = build_module_cert(empty_module("Std.Logic"), &[]).unwrap();
+        let logic = encode_module_cert(&logic_cert).unwrap();
+        let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
+
+        let nat_cert = build_module_cert(
+            empty_module("Std.Nat"),
+            std::slice::from_ref(&logic_verified),
+        )
+        .unwrap();
+        let nat = encode_module_cert(&nat_cert).unwrap();
+        let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
+
+        let list_cert = build_module_cert(
+            empty_module("Std.List"),
+            &[logic_verified.clone(), nat_verified.clone()],
+        )
+        .unwrap();
+        let list = encode_module_cert(&list_cert).unwrap();
+        verify_module_cert(&list, &mut session, &policy).unwrap();
+
+        let algebra_cert =
+            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
+
+        MvpCertificateBytes {
+            logic,
+            nat,
+            list,
+            algebra_basic,
+        }
+    }
+
+    fn mvp_certificate_bytes_with_logic_axiom(axiom_name: &str) -> MvpCertificateBytes {
+        let mut session = VerifierSession::new();
+        let mut policy = AxiomPolicy::high_trust();
+        policy
+            .allowlisted_axioms
+            .insert(Name::from_dotted(axiom_name));
+
+        let logic_cert = build_module_cert(logic_axiom_module(axiom_name), &[]).unwrap();
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
@@ -801,6 +2497,159 @@ mod tests {
             name: Name::from_dotted(name),
             declarations: Vec::new(),
         }
+    }
+
+    fn logic_axiom_module(axiom_name: &str) -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Logic"),
+            declarations: vec![Decl::Axiom {
+                name: axiom_name.to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::zero()),
+            }],
+        }
+    }
+
+    fn empty_axiom_report_for(loaded: &MachineStdLoadedRelease) -> MachineStdAxiomReport {
+        MachineStdAxiomReport {
+            library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+            modules: loaded
+                .modules()
+                .iter()
+                .map(|module| MachineStdModuleAxiomReport {
+                    module: module.module.clone(),
+                    export_hash: module.expected_export_hash,
+                    certificate_hash: module.expected_certificate_hash,
+                    module_axioms: Vec::new(),
+                    transitive_axioms: Vec::new(),
+                })
+                .collect(),
+            axiom_report_hash: [0; 32],
+        }
+    }
+
+    fn release_manifest_for(
+        loaded: &MachineStdLoadedRelease,
+        axiom_report_hash: Hash,
+    ) -> MachineStdLibraryRelease {
+        MachineStdLibraryRelease {
+            protocol_version: STD_LIBRARY_PROTOCOL_VERSION.to_owned(),
+            library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+            core_spec_id: STD_CORE_SPEC_ID.to_owned(),
+            kernel_semantics_profile_id: STD_KERNEL_SEMANTICS_PROFILE_ID.to_owned(),
+            modules: loaded
+                .modules()
+                .iter()
+                .map(|module| MachineStdModuleArtifact {
+                    module: module.module.clone(),
+                    expected_export_hash: module.expected_export_hash,
+                    expected_certificate_hash: module.expected_certificate_hash,
+                    certificate_encoding: STD_CERTIFICATE_ENCODING.to_owned(),
+                    certificate_bytes_hash: module.certificate_bytes_hash,
+                    axiom_report_hash: module.axiom_report_hash,
+                    public_export_count: module.verified_module.export_block().len() as u64,
+                    theorem_index_entry_count: module
+                        .verified_module
+                        .export_block()
+                        .iter()
+                        .filter(|entry| {
+                            matches!(entry.kind, ExportKind::Theorem | ExportKind::Axiom)
+                        })
+                        .count() as u64,
+                    simp_rule_count: 0,
+                })
+                .collect(),
+            import_bundles_hash: test_hash(1),
+            theorem_index_hash: test_hash(2),
+            simp_profiles_hash: test_hash(3),
+            rewrite_profiles_hash: test_hash(4),
+            axiom_report_hash,
+        }
+    }
+
+    fn release_manifest_json(release: &MachineStdLibraryRelease) -> String {
+        format!(
+            "{{\"protocol_version\":\"{}\",\"library_profile_id\":\"{}\",\"core_spec_id\":\"{}\",\"kernel_semantics_profile_id\":\"{}\",\"modules\":[{}],\"import_bundles_hash\":\"{}\",\"theorem_index_hash\":\"{}\",\"simp_profiles_hash\":\"{}\",\"rewrite_profiles_hash\":\"{}\",\"axiom_report_hash\":\"{}\"}}",
+            release.protocol_version,
+            release.library_profile_id,
+            release.core_spec_id,
+            release.kernel_semantics_profile_id,
+            release
+                .modules
+                .iter()
+                .map(module_artifact_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&release.import_bundles_hash),
+            format_hash_string(&release.theorem_index_hash),
+            format_hash_string(&release.simp_profiles_hash),
+            format_hash_string(&release.rewrite_profiles_hash),
+            format_hash_string(&release.axiom_report_hash),
+        )
+    }
+
+    fn module_artifact_json(module: &MachineStdModuleArtifact) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"expected_export_hash\":\"{}\",\"expected_certificate_hash\":\"{}\",\"certificate_encoding\":\"{}\",\"certificate_bytes_hash\":\"{}\",\"axiom_report_hash\":\"{}\",\"public_export_count\":{},\"theorem_index_entry_count\":{},\"simp_rule_count\":{}}}",
+            module.module.as_dotted(),
+            format_hash_string(&module.expected_export_hash),
+            format_hash_string(&module.expected_certificate_hash),
+            module.certificate_encoding,
+            format_hash_string(&module.certificate_bytes_hash),
+            format_hash_string(&module.axiom_report_hash),
+            module.public_export_count,
+            module.theorem_index_entry_count,
+            module.simp_rule_count,
+        )
+    }
+
+    fn axiom_report_json(report: &MachineStdAxiomReport) -> String {
+        format!(
+            "{{\"library_profile_id\":\"{}\",\"modules\":[{}],\"axiom_report_hash\":\"{}\"}}",
+            report.library_profile_id,
+            report
+                .modules
+                .iter()
+                .map(module_axiom_report_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&report.axiom_report_hash),
+        )
+    }
+
+    fn module_axiom_report_json(module: &MachineStdModuleAxiomReport) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"module_axioms\":[{}],\"transitive_axioms\":[{}]}}",
+            module.module.as_dotted(),
+            format_hash_string(&module.export_hash),
+            format_hash_string(&module.certificate_hash),
+            module
+                .module_axioms
+                .iter()
+                .map(axiom_ref_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            module
+                .transitive_axioms
+                .iter()
+                .map(axiom_ref_json)
+                .collect::<Vec<_>>()
+                .join(","),
+        )
+    }
+
+    fn axiom_ref_json(axiom: &MachineStdAxiomRef) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"name\":\"{}\",\"export_hash\":\"{}\",\"decl_interface_hash\":\"{}\"}}",
+            axiom.module.as_dotted(),
+            axiom.name.as_dotted(),
+            format_hash_string(&axiom.export_hash),
+            format_hash_string(&axiom.decl_interface_hash),
+        )
+    }
+
+    fn test_hash(seed: u8) -> Hash {
+        [seed; 32]
     }
 
     struct TestPackage {

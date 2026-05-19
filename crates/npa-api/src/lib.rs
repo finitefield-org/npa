@@ -96,9 +96,19 @@ pub use snapshot::{
 };
 pub use std_library::{
     load_machine_std_certificates_from_locators, load_machine_std_mvp_certificates,
-    machine_std_mvp_module_locators, validate_machine_std_locator_path,
-    validate_machine_std_mvp_locators, MachineStdLoadedModule, MachineStdLoadedRelease,
-    MachineStdLocatorPathError, MachineStdModuleLocator, MachineStdReleaseLoaderError,
+    load_machine_std_mvp_release, load_machine_std_mvp_release_from_json,
+    machine_std_axiom_ref_canonical_bytes, machine_std_axiom_report_canonical_bytes,
+    machine_std_axiom_report_hash, machine_std_library_release_canonical_bytes,
+    machine_std_library_release_hash, machine_std_module_artifact_canonical_bytes,
+    machine_std_mvp_module_locators, parse_machine_std_axiom_report_json,
+    parse_machine_std_library_release_json, validate_machine_std_locator_path,
+    validate_machine_std_mvp_locators, MachineStdArtifactKind, MachineStdArtifactShapeError,
+    MachineStdArtifactShapeErrorReason, MachineStdAxiomPolicyError, MachineStdAxiomRef,
+    MachineStdAxiomReport, MachineStdCanonicalBytesError, MachineStdLibraryRelease,
+    MachineStdLibraryReleaseError, MachineStdLoadedModule, MachineStdLoadedRelease,
+    MachineStdLocatorPathError, MachineStdModuleArtifact, MachineStdModuleAxiomReport,
+    MachineStdModuleLocator, MachineStdReleaseArtifactError, MachineStdReleaseLoaderError,
+    MachineStdValidatedRelease,
 };
 pub use tactic::{
     parse_machine_tactic_batch_request, parse_machine_tactic_run_request,
