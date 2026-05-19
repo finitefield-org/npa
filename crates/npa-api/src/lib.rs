@@ -15,6 +15,7 @@ mod replay;
 mod search;
 mod session;
 mod snapshot;
+mod std_library;
 mod tactic;
 mod types;
 mod validation;
@@ -92,6 +93,12 @@ pub use snapshot::{
     MachineSnapshotLookupError, MachineSnapshotMaterializationContext,
     MachineSnapshotMaterializationError, MachineSnapshotStore, MachineSnapshotStoreError,
     StoredSnapshotEntry, StoredSnapshotView,
+};
+pub use std_library::{
+    load_machine_std_certificates_from_locators, load_machine_std_mvp_certificates,
+    machine_std_mvp_module_locators, validate_machine_std_locator_path,
+    validate_machine_std_mvp_locators, MachineStdLoadedModule, MachineStdLoadedRelease,
+    MachineStdLocatorPathError, MachineStdModuleLocator, MachineStdReleaseLoaderError,
 };
 pub use tactic::{
     parse_machine_tactic_batch_request, parse_machine_tactic_run_request,

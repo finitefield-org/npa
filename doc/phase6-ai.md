@@ -2884,6 +2884,12 @@ Trusted proof boundary:
 
 ## M1. Certificate release loader
 
+Status:
+
+```text
+DONE
+```
+
 目的:
 
 ```text
@@ -2900,6 +2906,16 @@ Trusted proof boundary:
 - Phase 2 canonical certificate decoder integration
 - high-trust verifier integration
 - ModuleName -> verified certificate context table
+```
+
+Implementation entrypoints:
+
+```text
+- npa_api::load_machine_std_mvp_certificates
+- npa_api::load_machine_std_certificates_from_locators
+- npa_api::machine_std_mvp_module_locators
+- npa_api::validate_machine_std_mvp_locators
+- npa_api::validate_machine_std_locator_path
 ```
 
 完了条件:
