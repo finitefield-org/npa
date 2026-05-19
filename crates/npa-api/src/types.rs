@@ -22,6 +22,7 @@ pub const MACHINE_API_VERSION: &str = "npa.machine-api.v1";
 pub const MACHINE_DISPLAY_PROFILE_ID: &str = "npa.phase5.display.v1";
 pub const MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA: &str = "npa.machine_tactic_candidate.v1";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.builtin-nat-eq-rec";
+pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MachineApiVersion {
@@ -48,23 +49,25 @@ impl MachineApiVersion {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum KernelCheckProfileId {
+    BuiltinNone,
     BuiltinNatEqRec,
 }
 
 impl KernelCheckProfileId {
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::BuiltinNone => KERNEL_CHECK_PROFILE_BUILTIN_NONE,
             Self::BuiltinNatEqRec => KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
         }
     }
 
     pub fn parse(value: &str) -> Result<Self, MachineWireGrammarError> {
-        if value == KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC {
-            Ok(Self::BuiltinNatEqRec)
-        } else {
-            Err(MachineWireGrammarError::new(
+        match value {
+            KERNEL_CHECK_PROFILE_BUILTIN_NONE => Ok(Self::BuiltinNone),
+            KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC => Ok(Self::BuiltinNatEqRec),
+            _ => Err(MachineWireGrammarError::new(
                 MachineWireGrammarErrorKind::UnsupportedLiteral,
-            ))
+            )),
         }
     }
 }

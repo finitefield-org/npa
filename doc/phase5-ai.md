@@ -779,7 +779,9 @@ final proof body / generated certificate からしか確定できない axiom de
 MVP ではこの `module` は必ず `root.module` です。`module` が一致しない item は subset mismatch ではなく
 `InvalidMachineApiOptions` です。
 `Builtin` item は selected builtin profile が提供する builtin axiom interface だけを許します。
-MVP では `name = "Eq.rec"` かつ `decl_interface_hash` が builtin interface tag から再計算した値と一致する場合だけ有効です。
+MVP では `builtin-nat-eq-rec` profile の場合だけ、`name = "Eq.rec"` かつ `decl_interface_hash` が builtin
+interface tag から再計算した値と一致する `Builtin` item が有効です。
+`builtin-none` profile では `Builtin` item は常に `InvalidMachineApiOptions` です。
 def / theorem / inductive / constructor / recursor / generated artifact を指す `allow_axioms` item は
 `InvalidMachineApiOptions` です。
 同じ axiom kind check は request `allow_axioms` だけでなく、verified import の `axiom_report`、
@@ -816,6 +818,7 @@ MachineAxiomRefWire item schema:
 
 ```text
 KernelCheckProfileId:
+  - "npa.kernel.v0.1.builtin-none"
   - "npa.kernel.v0.1.builtin-nat-eq-rec"
 
 kernel_check_profile canonical bytes:
@@ -825,15 +828,15 @@ kernel_check_profile canonical bytes:
   - reduction profile id: "beta-delta-iota-zeta.v0.1"
   - universe profile id: "levels-imax-v0.1"
   - builtin profile id:
+      "builtin-none-v0.1" for "npa.kernel.v0.1.builtin-none"
       "builtin-nat-eq-rec-v0.1" for "npa.kernel.v0.1.builtin-nat-eq-rec"
 ```
 
 `kernel_check_profile` omitted、`null`、上の allowed values 以外の string は `InvalidMachineApiOptions` です。
 server は request id から上の bytes を再構築し、実行中 kernel が公開する Phase 4
 `kernel_check_profile_hash` と一致しない場合も `InvalidMachineApiOptions` として拒否します。
-MVP の Phase 4 実装は Nat / Eq / Eq.rec builtins を持つ profile だけを公開します。
-`builtin-none` などの別 profile は、Phase 4 が対応する `kernel_check_profile_hash` と builtin 環境を公開するまで
-Phase 5 request の allowed value に入れてはいけません。
+`builtin-none` は Phase 6 標準ライブラリの import bundle handoff 用 profile であり、root term elaboration は
+verified import に含まれる certificate-bound `Eq` / `Nat` declarations を使います。
 `session_root_hash` と Phase 4 `state_fingerprint` には request string ではなく、この canonical bytes の hash を入れます。
 
 `MachineAxiomRefWire canonical bytes` は次です。
@@ -1520,8 +1523,8 @@ import certificate verification は selected `kernel_check_profile` の core spe
 universe profile と互換でなければなりません。
 MVP の Phase 2 certificate canonical bytes、`export_hash`、`certificate_hash` は
 `kernel_check_profile` 全体ではなく、certificate format version と core spec version にだけ profile 情報を持ちます。
-MVP の allowed profile は `builtin-nat-eq-rec` のみであり、その builtin profile id は imported certificate bytes、
-`export_hash`、`certificate_hash` の入力に入れません。
+MVP の allowed profile は `builtin-none` と `builtin-nat-eq-rec` であり、その builtin profile id は imported
+certificate bytes、`export_hash`、`certificate_hash` の入力に入れません。
 したがって MVP の import certificate compatibility check は次だけです。
 
 ```text

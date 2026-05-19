@@ -36,11 +36,11 @@ pub use callable::{
     MachineSurfaceCallableInterfaceBuildError,
 };
 pub use current::{
-    project_checked_current_decl_context, CheckedCurrentDeclPackageInput,
-    CheckedCurrentDeclProjectionError, CurrentDeclDependencyEntry, CurrentDeclDependencyReport,
-    CurrentDeclIndexEntry, CurrentGeneratedDeclEntry, CurrentGeneratedDeclKind,
-    MachineAxiomRefWire, MachineCheckedCurrentDeclContext, MachineCheckedDeclSignature,
-    MachineDependencyRefWire,
+    project_checked_current_decl_context, project_checked_current_decl_context_with_kernel_profile,
+    CheckedCurrentDeclPackageInput, CheckedCurrentDeclProjectionError, CurrentDeclDependencyEntry,
+    CurrentDeclDependencyReport, CurrentDeclIndexEntry, CurrentGeneratedDeclEntry,
+    CurrentGeneratedDeclKind, MachineAxiomRefWire, MachineCheckedCurrentDeclContext,
+    MachineCheckedDeclSignature, MachineDependencyRefWire,
 };
 pub use diagnostic::{
     machine_api_diagnostic_canonical_bytes, machine_api_diagnostic_hash,
@@ -95,7 +95,8 @@ pub use snapshot::{
     StoredSnapshotEntry, StoredSnapshotView,
 };
 pub use std_library::{
-    finalize_machine_std_mvp_theorem_index, generate_machine_std_mvp_final_theorem_index,
+    finalize_machine_std_mvp_import_bundle_recipes, finalize_machine_std_mvp_theorem_index,
+    generate_machine_std_mvp_final_import_bundle_set, generate_machine_std_mvp_final_theorem_index,
     generate_machine_std_mvp_import_bundle_set, generate_machine_std_mvp_rewrite_profile_set,
     generate_machine_std_mvp_simp_profile_set, generate_machine_std_mvp_theorem_index,
     load_machine_std_certificates_from_locators, load_machine_std_mvp_certificates,
@@ -112,12 +113,13 @@ pub use std_library::{
     machine_std_rule_telescope_canonical_bytes, machine_std_rule_telescope_hash,
     machine_std_simp_profile_canonical_bytes, machine_std_simp_profile_hash,
     machine_std_simp_profile_set_canonical_bytes, machine_std_simp_profile_set_hash,
-    machine_std_tactic_options_recipe_canonical_bytes, machine_std_theorem_entry_canonical_bytes,
-    machine_std_theorem_index_canonical_bytes, machine_std_theorem_index_hash,
-    parse_machine_std_axiom_report_json, parse_machine_std_import_bundle_set_json,
-    parse_machine_std_library_release_json, parse_machine_std_rewrite_profile_set_json,
-    parse_machine_std_simp_profile_set_json, parse_machine_std_theorem_index_json,
-    validate_machine_std_locator_path, validate_machine_std_mvp_final_theorem_index,
+    machine_std_tactic_options_recipe_canonical_bytes, machine_std_tactic_options_recipe_request,
+    machine_std_theorem_entry_canonical_bytes, machine_std_theorem_index_canonical_bytes,
+    machine_std_theorem_index_hash, parse_machine_std_axiom_report_json,
+    parse_machine_std_import_bundle_set_json, parse_machine_std_library_release_json,
+    parse_machine_std_rewrite_profile_set_json, parse_machine_std_simp_profile_set_json,
+    parse_machine_std_theorem_index_json, validate_machine_std_locator_path,
+    validate_machine_std_mvp_final_theorem_index, validate_machine_std_mvp_import_bundle_recipes,
     validate_machine_std_mvp_import_bundle_set, validate_machine_std_mvp_locators,
     validate_machine_std_mvp_release_final_sidecar_counts,
     validate_machine_std_mvp_rewrite_profile_set, validate_machine_std_mvp_simp_profile_set,
@@ -164,8 +166,9 @@ pub use types::{
     MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
     MachineTacticOptionsConversionError, MachineTacticOptionsRequest,
     MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
-    SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC, MACHINE_API_VERSION,
-    MACHINE_DISPLAY_PROFILE_ID, MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
+    SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
+    KERNEL_CHECK_PROFILE_BUILTIN_NONE, MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID,
+    MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
 };
 pub use validation::{
     delayed_json_payload, parse_request_body, parse_request_body_with_limits,

@@ -15,7 +15,7 @@ use crate::{
     MachineItem, MachineLevel, MachineLocalDecl, MachineRepairCandidate, MachineRepairSuggestion,
     MachineRepairSuggestionKind, MachineResolvedConstant, MachineSurfaceMode, MachineTerm,
     MachineTermAst, MachineTermCheckResult, MachineTermElabContext, ResolvedMachineModule, Result,
-    VerifiedDependency, VerifiedImport,
+    VerifiedDependency, VerifiedExport, VerifiedImport,
 };
 use npa_kernel::{
     eq_inductive, eq_rec_type, nat_inductive, Ctx, Decl, Env, Expr, Level, Reducibility,
@@ -32,6 +32,7 @@ pub fn elaborate_machine_module(
     let kernel_env = kernel_env_from_imports(
         active_imports.iter().copied(),
         verified_imports,
+        true,
         module.module.span,
     )?
     .env;
@@ -228,6 +229,7 @@ impl MachineTermElabContext {
             local_context,
             universe_params,
             current_module: None,
+            allow_builtin_kernel_decls: true,
             span: crate::Span::empty(crate::FileId(0)),
         })
     }
@@ -257,6 +259,33 @@ impl MachineTermElabContext {
             local_context,
             universe_params,
             current_module: Some(current_module),
+            allow_builtin_kernel_decls: true,
+            span: crate::Span::empty(crate::FileId(0)),
+        })
+    }
+
+    pub fn from_verified_modules_and_current_decls_in_module_request(
+        request: MachineTermElabContextInModuleRequest<'_>,
+    ) -> Result<Self> {
+        let direct_imports: Vec<_> = request
+            .direct_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        let available_imports: Vec<_> = request
+            .available_verified_modules
+            .iter()
+            .map(VerifiedImport::from)
+            .collect();
+        machine_term_context_from_parts(MachineTermContextParts {
+            direct_imports: &direct_imports,
+            available_imports: &available_imports,
+            checked_current_decls: request.checked_current_decls,
+            current_generated_decls: request.current_generated_decls,
+            local_context: request.local_context,
+            universe_params: request.universe_params,
+            current_module: Some(request.current_module),
+            allow_builtin_kernel_decls: request.allow_builtin_kernel_decls,
             span: crate::Span::empty(crate::FileId(0)),
         })
     }
@@ -278,9 +307,21 @@ impl MachineTermElabContext {
             local_context,
             universe_params,
             current_module: Some(current_module),
+            allow_builtin_kernel_decls: true,
             span: crate::Span::empty(crate::FileId(0)),
         })
     }
+}
+
+pub struct MachineTermElabContextInModuleRequest<'a> {
+    pub direct_verified_modules: &'a [npa_cert::VerifiedModule],
+    pub available_verified_modules: &'a [npa_cert::VerifiedModule],
+    pub current_module: npa_cert::ModuleName,
+    pub checked_current_decls: &'a [MachineCheckedCurrentDecl],
+    pub current_generated_decls: &'a [MachineCheckedCurrentGeneratedDecl],
+    pub local_context: Vec<MachineLocalDecl>,
+    pub universe_params: Vec<String>,
+    pub allow_builtin_kernel_decls: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -2557,6 +2598,7 @@ struct PendingKernelDecl {
 fn kernel_env_from_imports<'a>(
     active_imports: impl IntoIterator<Item = &'a VerifiedImport>,
     available_imports: &'a [VerifiedImport],
+    allow_builtin_kernel_decls: bool,
     span: crate::Span,
 ) -> Result<KernelEnvBuild> {
     let active_imports: Vec<_> = active_imports.into_iter().collect();
@@ -2613,7 +2655,7 @@ fn kernel_env_from_imports<'a>(
                 span,
             )?;
             if let Some(existing) = env.decl(decl.name()) {
-                if existing != &decl {
+                if !kernel_decl_matches_env(existing, &decl) {
                     return Err(import_resolution_diagnostic(
                         span,
                         format!(
@@ -2652,7 +2694,8 @@ fn kernel_env_from_imports<'a>(
                     let explicit_dependency =
                         single_dependency_for_name(&name, &dependencies, span)?.cloned();
                     let has_explicit_dependency_hash = explicit_dependency.is_some();
-                    if dependency_matches_builtin_interface(&name, &dependencies, span)?
+                    if allow_builtin_kernel_decls
+                        && dependency_matches_builtin_interface(&name, &dependencies, span)?
                         && add_builtin_decl_for_unknown_constant(&mut env, &name, span)?
                     {
                         record_loaded_builtin_dependency_ref(&mut loaded_dependency_refs, &name);
@@ -2690,7 +2733,8 @@ fn kernel_env_from_imports<'a>(
                             progressed = true;
                         }
                     }
-                    if !has_explicit_dependency_hash
+                    if allow_builtin_kernel_decls
+                        && !has_explicit_dependency_hash
                         && add_builtin_decl_for_unknown_constant(&mut env, &name, span)?
                     {
                         record_loaded_builtin_dependency_ref(&mut loaded_dependency_refs, &name);
@@ -2859,7 +2903,40 @@ fn available_dependency_for_explicit_ref<'a>(
 
 fn import_kernel_decl_backed_by_env(env: &Env, dependency: &ImportKernelDecl) -> bool {
     env.decl(dependency.decl.name())
-        .is_some_and(|existing| existing == &dependency.decl)
+        .is_some_and(|existing| kernel_decl_matches_env(existing, &dependency.decl))
+}
+
+fn kernel_decl_matches_env(existing: &Decl, candidate: &Decl) -> bool {
+    if existing == candidate {
+        return true;
+    }
+    match (existing, candidate) {
+        (
+            Decl::Inductive {
+                name: existing_name,
+                universe_params: existing_universe_params,
+                data: existing_data,
+                ..
+            },
+            Decl::Inductive {
+                name: candidate_name,
+                universe_params: candidate_universe_params,
+                data: candidate_data,
+                ..
+            },
+        ) => {
+            existing_name == candidate_name
+                && existing_universe_params == candidate_universe_params
+                && existing_data == candidate_data
+        }
+        _ => false,
+    }
+}
+
+fn kernel_decl_matches_export(decl: &Decl, export: &VerifiedExport) -> bool {
+    decl.name() == export.name.as_dotted()
+        && decl.universe_params() == export.universe_params.as_slice()
+        && npa_cert::core_expr_hash(decl.ty()) == npa_cert::core_expr_hash(&export.ty)
 }
 
 fn validate_dependencies_against_loaded_refs(
@@ -3059,6 +3136,7 @@ fn machine_term_context_from_verified_imports(
         local_context,
         universe_params,
         current_module: None,
+        allow_builtin_kernel_decls: true,
         span,
     })
 }
@@ -3071,6 +3149,7 @@ struct MachineTermContextParts<'a> {
     local_context: Vec<MachineLocalDecl>,
     universe_params: Vec<String>,
     current_module: Option<npa_cert::ModuleName>,
+    allow_builtin_kernel_decls: bool,
     span: crate::Span,
 }
 
@@ -3085,6 +3164,7 @@ fn machine_term_context_from_parts(
         local_context,
         universe_params,
         current_module,
+        allow_builtin_kernel_decls,
         span,
     } = parts;
     validate_checked_current_decls_belong_to_module(
@@ -3093,7 +3173,12 @@ fn machine_term_context_from_parts(
         span,
     )?;
     let direct_decls = collect_import_decls(direct_imports);
-    let mut build = kernel_env_from_imports(direct_imports.iter(), available_imports, span)?;
+    let mut build = kernel_env_from_imports(
+        direct_imports.iter(),
+        available_imports,
+        allow_builtin_kernel_decls,
+        span,
+    )?;
     validate_direct_kernel_env_matches_import_exports(
         &build.env,
         direct_imports,
@@ -3106,7 +3191,9 @@ fn machine_term_context_from_parts(
         &build.loaded_available_interfaces,
         span,
     )?;
-    add_referenced_builtin_decls_to_env(&mut build.env, checked_current_decls, span)?;
+    if allow_builtin_kernel_decls {
+        add_referenced_builtin_decls_to_env(&mut build.env, checked_current_decls, span)?;
+    }
     let mut entries: Vec<_> = direct_imports
         .iter()
         .enumerate()
@@ -3618,9 +3705,7 @@ fn validate_direct_kernel_env_matches_import_exports(
                 ));
             };
 
-            if decl.universe_params() != export.universe_params.as_slice()
-                || decl.ty() != &export.ty
-            {
+            if !kernel_decl_matches_export(decl, export) {
                 return Err(import_resolution_diagnostic(
                     span,
                     format!(
@@ -3661,9 +3746,7 @@ fn validate_loaded_available_kernel_env_matches_import_exports(
                 ));
             };
 
-            if decl.universe_params() != export.universe_params.as_slice()
-                || decl.ty() != &export.ty
-            {
+            if !kernel_decl_matches_export(decl, export) {
                 return Err(import_resolution_diagnostic(
                     span,
                     format!(
@@ -4930,6 +5013,54 @@ theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
             crate::Span::empty(FileId(0)),
         )
         .expect_err("verified import export metadata must match the kernel environment");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
+    }
+
+    #[test]
+    fn term_context_rejects_inductive_export_sort_without_full_kernel_type() {
+        let u = Level::param("u");
+        let data = npa_kernel::InductiveDecl::new(
+            "Param.Box",
+            vec!["u".to_owned()],
+            vec![npa_kernel::Binder::new("A", Expr::sort(u.clone()))],
+            Vec::new(),
+            u.clone(),
+            Vec::new(),
+            None,
+        );
+        let import = VerifiedImport {
+            module: npa_cert::Name::from_dotted("Test.Param"),
+            export_hash: hash(61),
+            certificate_hash: None,
+            decl_interface_hashes: BTreeMap::from([(
+                npa_cert::Name::from_dotted("Param.Box"),
+                hash(62),
+            )]),
+            exports: vec![crate::VerifiedExport {
+                name: npa_cert::Name::from_dotted("Param.Box"),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::sort(u),
+                decl_interface_hash: hash(62),
+            }],
+            kernel_decls: vec![Decl::Inductive {
+                name: "Param.Box".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::sort(type0()),
+                data: Box::new(data),
+            }],
+            kernel_decl_dependencies: BTreeMap::new(),
+        };
+        let imports = [import];
+
+        let err = machine_term_context_from_verified_imports(
+            &imports,
+            &imports,
+            Vec::new(),
+            Vec::new(),
+            crate::Span::empty(FileId(0)),
+        )
+        .expect_err("inductive exports must match the full kernel declaration type");
 
         assert_eq!(err.kind, MachineDiagnosticKind::ImportResolutionError);
     }

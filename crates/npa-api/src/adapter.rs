@@ -3,12 +3,12 @@ use npa_kernel::Decl;
 use npa_tactic::{
     extract_closed_machine_theorem_decl, machine_tactic_cache_key, machine_tactic_cache_key_hash,
     machine_tactic_candidate_kind, machine_tactic_goal_id, machine_tactic_hash,
-    run_machine_tactic_with_budget, start_machine_proof, tactic_budget_hash,
+    run_machine_tactic_with_budget, start_machine_proof_with_kernel_profile, tactic_budget_hash,
     validate_machine_proof_state, validate_machine_tactic_candidate, CandidateApplyArg,
-    CandidateRewriteRuleRef, CheckedCurrentDecl, GoalId, MachineProofDelta, MachineProofSpec,
-    MachineProofState, MachineTactic, MachineTacticCandidate, MachineTacticDiagnostic,
-    MachineTacticDiagnosticKind, MachineTacticOptions, RawMachineTerm, ResolvedEqFamily,
-    ResolvedNatFamily, TacticBudget, TacticFuelKind, VerifiedImportRef,
+    CandidateRewriteRuleRef, CheckedCurrentDecl, GoalId, MachineKernelProfile, MachineProofDelta,
+    MachineProofSpec, MachineProofState, MachineTactic, MachineTacticCandidate,
+    MachineTacticDiagnostic, MachineTacticDiagnosticKind, MachineTacticOptions, RawMachineTerm,
+    ResolvedEqFamily, ResolvedNatFamily, TacticBudget, TacticFuelKind, VerifiedImportRef,
 };
 
 use crate::current::MachineAxiomRefWire;
@@ -181,21 +181,43 @@ pub fn phase4_start_machine_proof(
     checked_current_decls: Vec<CheckedCurrentDecl>,
     options: MachineTacticOptions,
 ) -> Phase4AdapterResult<Phase4StartProofOutput> {
-    start_machine_proof(spec, imports, checked_current_decls, options)
-        .map(|state| Phase4StartProofOutput {
-            state_fingerprint: state.fingerprint,
-            options: state.env.options.clone(),
-            resolved_eq_family: state.env.eq_family.clone(),
-            resolved_nat_family: state.env.nat_family.clone(),
-            options_fingerprint: state.env.options_fingerprint,
-            env_fingerprint: state.env.env_fingerprint,
-            simp_registry_hash: npa_tactic::simp_registry_hash(&state.env.simp_registry),
-            state,
-        })
-        .map_err(|diagnostic| {
-            let phase = phase4_start_proof_phase(&diagnostic);
-            phase4_error(diagnostic, phase)
-        })
+    phase4_start_machine_proof_with_kernel_profile(
+        MachineKernelProfile::BuiltinNatEqRec,
+        spec,
+        imports,
+        checked_current_decls,
+        options,
+    )
+}
+
+pub fn phase4_start_machine_proof_with_kernel_profile(
+    kernel_profile: MachineKernelProfile,
+    spec: MachineProofSpec,
+    imports: Vec<VerifiedImportRef>,
+    checked_current_decls: Vec<CheckedCurrentDecl>,
+    options: MachineTacticOptions,
+) -> Phase4AdapterResult<Phase4StartProofOutput> {
+    start_machine_proof_with_kernel_profile(
+        kernel_profile,
+        spec,
+        imports,
+        checked_current_decls,
+        options,
+    )
+    .map(|state| Phase4StartProofOutput {
+        state_fingerprint: state.fingerprint,
+        options: state.env.options.clone(),
+        resolved_eq_family: state.env.eq_family.clone(),
+        resolved_nat_family: state.env.nat_family.clone(),
+        options_fingerprint: state.env.options_fingerprint,
+        env_fingerprint: state.env.env_fingerprint,
+        simp_registry_hash: npa_tactic::simp_registry_hash(&state.env.simp_registry),
+        state,
+    })
+    .map_err(|diagnostic| {
+        let phase = phase4_start_proof_phase(&diagnostic);
+        phase4_error(diagnostic, phase)
+    })
 }
 
 pub fn phase4_validate_machine_tactic_candidate(

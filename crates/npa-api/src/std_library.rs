@@ -17,15 +17,22 @@ use npa_tactic::{
 use sha2::{Digest, Sha256};
 
 use crate::{
-    current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire},
+    current::{
+        encode_machine_axiom_ref_wire, MachineAxiomRefWire, MachineCheckedCurrentDeclContext,
+    },
     json::{JsonDocument, JsonParseErrorKind, JsonValue, JsonValueKind},
-    projection::VerifiedImportKey,
+    projection::{
+        project_import_certificate_context, ImportProjectionError, MachineImportCertificateContext,
+        VerifiedImportKey, VerifiedModuleCertificateInput,
+    },
     search::MachineTheoremMode,
+    session::{validate_machine_tactic_options_request_against_context, MachineSessionCreateError},
     types::{
         parse_fully_qualified_name_wire, parse_hash_string,
         parse_machine_surface_renderable_name_wire, parse_machine_universe_param_name,
-        parse_module_name_wire, phase5_name_canonical_bytes, MachineWireGrammarError,
-        KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
+        parse_module_name_wire, phase5_name_canonical_bytes, KernelCheckProfileId,
+        MachineTacticOptionsRequest, MachineWireGrammarError,
+        KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC, KERNEL_CHECK_PROFILE_BUILTIN_NONE,
     },
     validation::{parse_strict_u64_token, StrictUnsignedIntegerError},
 };
@@ -46,7 +53,7 @@ const STD_CORE_SPEC_ID: &str = "core-spec-v0.1";
 const STD_KERNEL_SEMANTICS_PROFILE_ID: &str = "npa-kernel.phase1.v0.1";
 const STD_REDUCTION_PROFILE_ID: &str = "beta-delta-iota-zeta.v0.1";
 const STD_UNIVERSE_PROFILE_ID: &str = "levels-imax-v0.1";
-const STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
+const STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = KERNEL_CHECK_PROFILE_BUILTIN_NONE;
 const STD_KERNEL_BUILTIN_NONE_PROFILE_ID: &str = "builtin-none-v0.1";
 const STD_KERNEL_BUILTIN_NAT_EQ_REC_PROFILE_ID: &str = "builtin-nat-eq-rec-v0.1";
 const STD_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
@@ -614,6 +621,29 @@ pub enum MachineStdImportBundleError {
         expected: &'static str,
         actual: String,
     },
+    MissingRecipeSimpProfile {
+        bundle_id: String,
+        profile_id: &'static str,
+    },
+    MissingEqFamily {
+        bundle_id: String,
+    },
+    RecipeFieldMismatch {
+        bundle_id: String,
+        field: &'static str,
+    },
+    RecipeSimpRulesMismatch {
+        bundle_id: String,
+        profile_id: String,
+    },
+    RecipeImportProjectionFailed {
+        bundle_id: String,
+        source: Box<ImportProjectionError>,
+    },
+    RecipePhase5ValidationFailed {
+        bundle_id: String,
+        source: Box<MachineSessionCreateError>,
+    },
     CanonicalBytes {
         source: MachineStdCanonicalBytesError,
     },
@@ -1122,11 +1152,6 @@ pub fn load_machine_std_mvp_release_with_sidecars_from_json(
     let (manifest, loaded, axiom_report) =
         load_machine_std_mvp_release_core(package_root, release_json, axiom_report_json)?;
 
-    let expected_import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded)
-        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
-    validate_machine_std_mvp_import_bundle_set(&import_bundles, &expected_import_bundles)
-        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
-
     let expected_rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded)
         .map_err(MachineStdReleaseArtifactError::InvalidStdRewriteProfile)?;
     validate_machine_std_mvp_rewrite_profile_set(&rewrite_profiles, &expected_rewrite_profiles)
@@ -1141,6 +1166,16 @@ pub fn load_machine_std_mvp_release_with_sidecars_from_json(
         &rewrite_profiles,
     )
     .map_err(MachineStdReleaseArtifactError::InvalidStdSimpProfile)?;
+
+    let expected_import_bundles =
+        generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles)
+            .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    validate_machine_std_mvp_import_bundle_set_shape(&import_bundles, &expected_import_bundles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    validate_machine_std_mvp_import_bundle_recipes(&loaded, &import_bundles, &simp_profiles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    validate_import_bundle_set_expected_hash(&import_bundles, &expected_import_bundles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
 
     let expected_theorem_index =
         generate_machine_std_mvp_final_theorem_index(&loaded, &rewrite_profiles, &simp_profiles)
@@ -4643,7 +4678,39 @@ pub fn generate_machine_std_mvp_import_bundle_set(
     Ok(bundle_set)
 }
 
+pub fn generate_machine_std_mvp_final_import_bundle_set(
+    loaded: &MachineStdLoadedRelease,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<MachineStdImportBundleSet, MachineStdImportBundleError> {
+    let bundle_set = generate_machine_std_mvp_import_bundle_set(loaded)?;
+    finalize_machine_std_mvp_import_bundle_recipes(loaded, bundle_set, simp_profiles)
+}
+
+pub fn finalize_machine_std_mvp_import_bundle_recipes(
+    loaded: &MachineStdLoadedRelease,
+    mut bundle_set: MachineStdImportBundleSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<MachineStdImportBundleSet, MachineStdImportBundleError> {
+    for bundle in &mut bundle_set.bundles {
+        let profile = recipe_simp_profile_for_bundle(&bundle.bundle_id, simp_profiles)?;
+        bundle.recommended_tactic_options =
+            expected_final_recipe_for_bundle(loaded, &bundle.bundle_id, profile)?;
+    }
+    bundle_set.import_bundles_hash = machine_std_import_bundle_set_hash(&bundle_set)
+        .map_err(|source| MachineStdImportBundleError::CanonicalBytes { source })?;
+    validate_machine_std_mvp_import_bundle_recipes(loaded, &bundle_set, simp_profiles)?;
+    Ok(bundle_set)
+}
+
 pub fn validate_machine_std_mvp_import_bundle_set(
+    actual: &MachineStdImportBundleSet,
+    expected: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdImportBundleError> {
+    validate_machine_std_mvp_import_bundle_set_shape(actual, expected)?;
+    validate_import_bundle_set_expected_hash(actual, expected)
+}
+
+fn validate_machine_std_mvp_import_bundle_set_shape(
     actual: &MachineStdImportBundleSet,
     expected: &MachineStdImportBundleSet,
 ) -> Result<(), MachineStdImportBundleError> {
@@ -4725,6 +4792,13 @@ pub fn validate_machine_std_mvp_import_bundle_set(
             });
         }
     }
+    Ok(())
+}
+
+fn validate_import_bundle_set_expected_hash(
+    actual: &MachineStdImportBundleSet,
+    expected: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdImportBundleError> {
     if actual.import_bundles_hash != expected.import_bundles_hash {
         return Err(MachineStdImportBundleError::ImportBundlesHashMismatch {
             expected: expected.import_bundles_hash,
@@ -4732,6 +4806,44 @@ pub fn validate_machine_std_mvp_import_bundle_set(
         });
     }
     Ok(())
+}
+
+pub fn validate_machine_std_mvp_import_bundle_recipes(
+    loaded: &MachineStdLoadedRelease,
+    bundle_set: &MachineStdImportBundleSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<(), MachineStdImportBundleError> {
+    for bundle in &bundle_set.bundles {
+        if bundle.recommended_tactic_options.nat_family.is_some() {
+            return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+                bundle_id: bundle.bundle_id.clone(),
+                field: "nat_family",
+            });
+        }
+        validate_recipe_phase5_handoff(bundle)?;
+        let profile = recipe_simp_profile_for_bundle(&bundle.bundle_id, simp_profiles)?;
+        let expected_recipe = expected_final_recipe_for_bundle(loaded, &bundle.bundle_id, profile)?;
+        validate_final_recipe_shape(
+            bundle,
+            profile,
+            &bundle.recommended_tactic_options,
+            &expected_recipe,
+        )?;
+    }
+    Ok(())
+}
+
+pub fn machine_std_tactic_options_recipe_request(
+    recipe: &MachineStdTacticOptionsRecipe,
+) -> MachineTacticOptionsRequest {
+    MachineTacticOptionsRequest {
+        simp_rules: recipe.simp_rules.clone(),
+        eq_family: recipe.eq_family.clone(),
+        nat_family: recipe.nat_family.clone(),
+        max_simp_rewrite_steps: recipe.max_simp_rewrite_steps,
+        max_open_goals: recipe.max_open_goals,
+        max_metas: recipe.max_metas,
+    }
 }
 
 fn generate_mvp_import_bundle(
@@ -4761,6 +4873,180 @@ fn generate_mvp_import_bundle(
             max_metas: STD_MAX_METAS,
         },
     })
+}
+
+fn recipe_simp_profile_for_bundle<'a>(
+    bundle_id: &str,
+    simp_profiles: &'a MachineStdSimpProfileSet,
+) -> Result<&'a MachineStdSimpProfile, MachineStdImportBundleError> {
+    let Some(profile_id) = expected_simp_profile_id_for_bundle(bundle_id) else {
+        return Err(MachineStdImportBundleError::InvalidBundleMembership {
+            expected: expected_mvp_bundle_ids(),
+            actual: vec![bundle_id.to_owned()],
+        });
+    };
+    simp_profiles
+        .profiles
+        .iter()
+        .find(|profile| profile.profile_id == profile_id)
+        .ok_or_else(|| MachineStdImportBundleError::MissingRecipeSimpProfile {
+            bundle_id: bundle_id.to_owned(),
+            profile_id,
+        })
+}
+
+fn expected_final_recipe_for_bundle(
+    loaded: &MachineStdLoadedRelease,
+    bundle_id: &str,
+    profile: &MachineStdSimpProfile,
+) -> Result<MachineStdTacticOptionsRecipe, MachineStdImportBundleError> {
+    let Some(recipe_id) = expected_recipe_id_for_bundle(bundle_id) else {
+        return Err(MachineStdImportBundleError::InvalidBundleMembership {
+            expected: expected_mvp_bundle_ids(),
+            actual: vec![bundle_id.to_owned()],
+        });
+    };
+    let eq_family = std_logic_eq_family(loaded).ok_or_else(|| {
+        MachineStdImportBundleError::MissingEqFamily {
+            bundle_id: bundle_id.to_owned(),
+        }
+    })?;
+    Ok(MachineStdTacticOptionsRecipe {
+        recipe_id: recipe_id.to_owned(),
+        kernel_check_profile: STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE.to_owned(),
+        simp_rules: profile.rules.clone(),
+        eq_family: Some(eq_family),
+        nat_family: None,
+        max_simp_rewrite_steps: STD_MAX_SIMP_REWRITE_STEPS,
+        max_open_goals: STD_MAX_OPEN_GOALS,
+        max_metas: STD_MAX_METAS,
+    })
+}
+
+fn validate_final_recipe_shape(
+    bundle: &MachineStdImportBundle,
+    profile: &MachineStdSimpProfile,
+    actual: &MachineStdTacticOptionsRecipe,
+    expected: &MachineStdTacticOptionsRecipe,
+) -> Result<(), MachineStdImportBundleError> {
+    if actual.recipe_id != expected.recipe_id {
+        let expected_recipe_id = expected_recipe_id_for_bundle(&bundle.bundle_id)
+            .expect("bundle membership is validated before recipe validation");
+        return Err(MachineStdImportBundleError::InvalidRecipeIdMapping {
+            bundle_id: bundle.bundle_id.clone(),
+            expected: expected_recipe_id,
+            actual: actual.recipe_id.clone(),
+        });
+    }
+    if actual.kernel_check_profile != expected.kernel_check_profile {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "kernel_check_profile",
+        });
+    }
+    if actual.simp_rules != expected.simp_rules {
+        return Err(MachineStdImportBundleError::RecipeSimpRulesMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            profile_id: profile.profile_id.clone(),
+        });
+    }
+    if actual.eq_family != expected.eq_family {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "eq_family",
+        });
+    }
+    if actual.nat_family != expected.nat_family {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "nat_family",
+        });
+    }
+    if actual.max_simp_rewrite_steps != expected.max_simp_rewrite_steps {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "max_simp_rewrite_steps",
+        });
+    }
+    if actual.max_open_goals != expected.max_open_goals {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "max_open_goals",
+        });
+    }
+    if actual.max_metas != expected.max_metas {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "max_metas",
+        });
+    }
+    Ok(())
+}
+
+fn validate_recipe_phase5_handoff(
+    bundle: &MachineStdImportBundle,
+) -> Result<(), MachineStdImportBundleError> {
+    let import_context = import_bundle_certificate_context(bundle)?;
+    let kernel_profile =
+        KernelCheckProfileId::parse(&bundle.recommended_tactic_options.kernel_check_profile)
+            .map_err(|_| MachineStdImportBundleError::RecipeFieldMismatch {
+                bundle_id: bundle.bundle_id.clone(),
+                field: "kernel_check_profile",
+            })?;
+    let request = machine_std_tactic_options_recipe_request(&bundle.recommended_tactic_options);
+    let normalized = validate_machine_tactic_options_request_against_context(
+        kernel_profile,
+        &request,
+        &import_context,
+        &MachineCheckedCurrentDeclContext::empty(),
+    )
+    .map_err(
+        |source| MachineStdImportBundleError::RecipePhase5ValidationFailed {
+            bundle_id: bundle.bundle_id.clone(),
+            source,
+        },
+    )?;
+    if normalized != request {
+        return Err(MachineStdImportBundleError::RecipeFieldMismatch {
+            bundle_id: bundle.bundle_id.clone(),
+            field: "phase5_tactic_options_request",
+        });
+    }
+    Ok(())
+}
+
+fn import_bundle_certificate_context(
+    bundle: &MachineStdImportBundle,
+) -> Result<MachineImportCertificateContext, MachineStdImportBundleError> {
+    let inputs = bundle
+        .import_closure
+        .iter()
+        .map(|certificate| VerifiedModuleCertificateInput {
+            module: &certificate.module,
+            expected_export_hash: certificate.expected_export_hash,
+            expected_certificate_hash: certificate.expected_certificate_hash,
+            certificate_bytes: certificate.certificate_bytes.as_slice(),
+        })
+        .collect::<Vec<_>>();
+    let policy = high_trust_policy_for_import_bundle(bundle);
+    project_import_certificate_context(&inputs, &bundle.root_imports, &policy).map_err(|source| {
+        MachineStdImportBundleError::RecipeImportProjectionFailed {
+            bundle_id: bundle.bundle_id.clone(),
+            source: Box::new(source),
+        }
+    })
+}
+
+fn high_trust_policy_for_import_bundle(bundle: &MachineStdImportBundle) -> AxiomPolicy {
+    let mut policy = AxiomPolicy::high_trust();
+    for certificate in &bundle.import_closure {
+        if let Ok(cert) = decode_module_cert(&certificate.certificate_bytes) {
+            policy
+                .allowlisted_axioms
+                .extend(cert.name_table.into_iter().filter(Name::is_canonical));
+        }
+    }
+    policy
 }
 
 #[derive(Clone, Copy)]
@@ -4812,6 +5098,16 @@ fn expected_recipe_id_for_bundle(bundle_id: &str) -> Option<&'static str> {
         .into_iter()
         .find(|spec| spec.id == bundle_id)
         .map(|spec| spec.recipe_id)
+}
+
+fn expected_simp_profile_id_for_bundle(bundle_id: &str) -> Option<&'static str> {
+    match bundle_id {
+        STD_ALGEBRA_BASIC_BUNDLE_ID | STD_LOGIC_BUNDLE_ID => Some(STD_LOGIC_SIMP_PROFILE_ID),
+        STD_ALL_BUNDLE_ID => Some(STD_ALL_SIMP_PROFILE_ID),
+        STD_LIST_BUNDLE_ID => Some(STD_LIST_SIMP_PROFILE_ID),
+        STD_NAT_BUNDLE_ID => Some(STD_NAT_SIMP_PROFILE_ID),
+        _ => None,
+    }
 }
 
 fn std_logic_eq_family(loaded: &MachineStdLoadedRelease) -> Option<EqFamilyRef> {
@@ -8356,6 +8652,247 @@ mod tests {
     }
 
     #[test]
+    fn finalizes_mvp_import_bundle_recipes_for_phase5_handoff() {
+        let package = TestPackage::new("mvp_import_bundle_recipe_finalizer");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+
+        let bundle_set =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+        validate_machine_std_mvp_import_bundle_recipes(&loaded, &bundle_set, &simp_profiles)
+            .unwrap();
+
+        let nat_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        let nat_profile = simp_profile(&simp_profiles, STD_NAT_SIMP_PROFILE_ID);
+        let recipe = &nat_bundle.recommended_tactic_options;
+        let request = machine_std_tactic_options_recipe_request(recipe);
+        assert_eq!(recipe.recipe_id, STD_NAT_RECIPE_ID);
+        assert_eq!(
+            recipe.kernel_check_profile,
+            STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE
+        );
+        assert_eq!(recipe.simp_rules, nat_profile.rules);
+        assert_eq!(request.simp_rules, nat_profile.rules);
+        assert!(recipe.nat_family.is_none());
+        assert_eq!(recipe.max_simp_rewrite_steps, STD_MAX_SIMP_REWRITE_STEPS);
+        assert_eq!(recipe.max_open_goals, STD_MAX_OPEN_GOALS);
+        assert_eq!(recipe.max_metas, STD_MAX_METAS);
+
+        let logic = loaded.module(&Name::from_dotted("Std.Logic")).unwrap();
+        let family = recipe.eq_family.as_ref().unwrap();
+        assert_eq!(
+            family.eq_interface_hash,
+            export_entry(logic, "Eq").decl_interface_hash
+        );
+        assert_eq!(
+            family.refl_interface_hash,
+            export_entry(logic, "Eq.refl").decl_interface_hash
+        );
+        assert_eq!(
+            family.rec_interface_hash,
+            export_entry(logic, "Eq.rec").decl_interface_hash
+        );
+    }
+
+    #[test]
+    fn machine_session_rejects_stale_recipe_payload_before_root_elaboration() {
+        let package = TestPackage::new("mvp_import_bundle_recipe_session_handoff");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let bundle_set =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+        let mut nat_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap()
+            .clone();
+        nat_bundle.recommended_tactic_options.simp_rules[0].decl_interface_hash = test_hash(231);
+
+        let err = crate::create_machine_session(&session_create_json_for_bundle(&nat_bundle))
+            .unwrap_err();
+        assert_eq!(
+            err.error.kind,
+            crate::MachineApiErrorKind::InvalidMachineApiOptions
+        );
+    }
+
+    #[test]
+    fn machine_session_accepts_final_recipe_payload() {
+        let package = TestPackage::new("mvp_import_bundle_recipe_session_accepts_final");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let bundle_set =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+        let nat_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+
+        let ok =
+            crate::create_machine_session(&session_create_json_for_bundle(nat_bundle)).unwrap();
+
+        assert_eq!(
+            ok.session.options.kernel_check_profile,
+            crate::KernelCheckProfileId::BuiltinNone
+        );
+        assert_eq!(
+            ok.session.options.tactic_options,
+            machine_std_tactic_options_recipe_request(&nat_bundle.recommended_tactic_options)
+        );
+    }
+
+    #[test]
+    fn rejects_stale_import_bundle_recipe_refs_with_phase5_validation() {
+        let package = TestPackage::new("stale_import_bundle_recipe_phase5");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let mut simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let mut bundle_set =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+
+        let stale_rule = {
+            let profile = simp_profiles
+                .profiles
+                .iter_mut()
+                .find(|profile| profile.profile_id == STD_NAT_SIMP_PROFILE_ID)
+                .unwrap();
+            let mut rule = profile.rules[0].clone();
+            rule.decl_interface_hash = test_hash(222);
+            profile.rules[0] = rule.clone();
+            rule
+        };
+        let nat_bundle = bundle_set
+            .bundles
+            .iter_mut()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        nat_bundle.recommended_tactic_options.simp_rules[0] = stale_rule;
+        bundle_set.import_bundles_hash = machine_std_import_bundle_set_hash(&bundle_set).unwrap();
+
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_recipes(
+                &loaded,
+                &bundle_set,
+                &simp_profiles,
+            ),
+            Err(MachineStdImportBundleError::RecipePhase5ValidationFailed {
+                bundle_id,
+                ..
+            }) if bundle_id == STD_NAT_BUNDLE_ID
+        ));
+    }
+
+    #[test]
+    fn stale_recipe_validation_runs_before_expected_final_hash_comparison() {
+        let package = TestPackage::new("stale_import_bundle_recipe_before_hash");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let expected =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+        let mut actual = expected.clone();
+
+        let nat_bundle = actual
+            .bundles
+            .iter_mut()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        nat_bundle.recommended_tactic_options.simp_rules[0].decl_interface_hash = test_hash(232);
+        actual.import_bundles_hash = machine_std_import_bundle_set_hash(&actual).unwrap();
+
+        validate_machine_std_mvp_import_bundle_set_shape(&actual, &expected).unwrap();
+        let recipe_error =
+            validate_machine_std_mvp_import_bundle_recipes(&loaded, &actual, &simp_profiles)
+                .unwrap_err();
+        assert!(
+            matches!(
+                recipe_error,
+                MachineStdImportBundleError::RecipePhase5ValidationFailed {
+                    ref bundle_id,
+                    ..
+                } if bundle_id == STD_NAT_BUNDLE_ID
+            ),
+            "{recipe_error:?}"
+        );
+        assert!(matches!(
+            validate_import_bundle_set_expected_hash(&actual, &expected),
+            Err(MachineStdImportBundleError::ImportBundlesHashMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_mvp_import_bundle_recipe_nat_family() {
+        let package = TestPackage::new("bad_import_bundle_recipe_nat_family");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let mut bundle_set =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+
+        let nat_bundle = bundle_set
+            .bundles
+            .iter_mut()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        nat_bundle.recommended_tactic_options.nat_family = Some(NatFamilyRef {
+            nat_name: Name::from_dotted("Nat"),
+            nat_interface_hash: test_hash(1),
+            zero_name: Name::from_dotted("Nat.zero"),
+            zero_interface_hash: test_hash(2),
+            succ_name: Name::from_dotted("Nat.succ"),
+            succ_interface_hash: test_hash(3),
+            rec_name: Name::from_dotted("Nat.rec"),
+            rec_interface_hash: test_hash(4),
+        });
+        bundle_set.import_bundles_hash = machine_std_import_bundle_set_hash(&bundle_set).unwrap();
+
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_recipes(
+                &loaded,
+                &bundle_set,
+                &simp_profiles,
+            ),
+            Err(MachineStdImportBundleError::RecipeFieldMismatch {
+                bundle_id,
+                field: "nat_family",
+            }) if bundle_id == STD_NAT_BUNDLE_ID
+        ));
+    }
+
+    #[test]
     fn rejects_stale_rewrite_and_simp_profile_hashes_before_set_hash() {
         let package = TestPackage::new("stale_rewrite_simp_profile_hashes");
         let certs = mvp_certificate_bytes_with_m5_profiles();
@@ -9835,10 +10372,11 @@ mod tests {
         MachineStdSimpProfileSet,
         MachineStdAxiomReport,
     ) {
-        let import_bundles = generate_machine_std_mvp_import_bundle_set(loaded).unwrap();
         let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(loaded).unwrap();
         let simp_profiles =
             generate_machine_std_mvp_simp_profile_set(loaded, &rewrite_profiles).unwrap();
+        let import_bundles =
+            generate_machine_std_mvp_final_import_bundle_set(loaded, &simp_profiles).unwrap();
         let theorem_index =
             generate_machine_std_mvp_final_theorem_index(loaded, &rewrite_profiles, &simp_profiles)
                 .unwrap();
@@ -10044,11 +10582,105 @@ mod tests {
         )
     }
 
+    fn session_create_json_for_bundle(bundle: &MachineStdImportBundle) -> String {
+        format!(
+            r#"{{
+              "protocol_version":"npa.machine-api.v1",
+              "root":{{
+                "module":"Scratch",
+                "theorem_name":"Scratch.t",
+                "source_index":0,
+                "universe_params":[],
+                "theorem_type":{{"format":"machine_surface_v1","source":"Prop"}}
+              }},
+              "import_closure":[{}],
+              "imports":[{}],
+              "checked_current_decls":[],
+              "options":{{
+                "kernel_check_profile":"{}",
+                "allow_axioms":{},
+                "tactic_options":{}
+              }}
+            }}"#,
+            bundle
+                .import_closure
+                .iter()
+                .map(import_certificate_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            bundle
+                .root_imports
+                .iter()
+                .map(import_key_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            bundle.recommended_tactic_options.kernel_check_profile,
+            session_allow_axioms_json_for_bundle(bundle),
+            tactic_options_request_json(&bundle.recommended_tactic_options),
+        )
+    }
+
+    fn session_allow_axioms_json_for_bundle(bundle: &MachineStdImportBundle) -> String {
+        let Some(family) = &bundle.recommended_tactic_options.eq_family else {
+            return "[]".to_owned();
+        };
+        let Some(logic_certificate) = bundle
+            .import_closure
+            .iter()
+            .find(|certificate| certificate.module == Name::from_dotted("Std.Logic"))
+        else {
+            return "[]".to_owned();
+        };
+        let cert = decode_module_cert(&logic_certificate.certificate_bytes).unwrap();
+        let rec_is_axiom = cert.export_block.iter().any(|entry| {
+            entry.kind == ExportKind::Axiom
+                && cert
+                    .name_table
+                    .get(entry.name)
+                    .is_some_and(|name| *name == family.rec_name)
+        });
+        if !rec_is_axiom {
+            return "[]".to_owned();
+        }
+        let axiom = MachineAxiomRefWire::Imported {
+            module: logic_certificate.module.clone(),
+            name: family.rec_name.clone(),
+            export_hash: logic_certificate.expected_export_hash,
+            decl_interface_hash: family.rec_interface_hash,
+        };
+        format!("[{}]", machine_axiom_ref_wire_json(&axiom))
+    }
+
     fn tactic_options_recipe_json(recipe: &MachineStdTacticOptionsRecipe) -> String {
         format!(
             "{{\"recipe_id\":\"{}\",\"kernel_check_profile\":\"{}\",\"simp_rules\":[{}],\"eq_family\":{},\"nat_family\":{},\"max_simp_rewrite_steps\":{},\"max_open_goals\":{},\"max_metas\":{}}}",
             recipe.recipe_id,
             recipe.kernel_check_profile,
+            recipe
+                .simp_rules
+                .iter()
+                .map(simp_rule_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            recipe
+                .eq_family
+                .as_ref()
+                .map(eq_family_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            recipe
+                .nat_family
+                .as_ref()
+                .map(nat_family_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            recipe.max_simp_rewrite_steps,
+            recipe.max_open_goals,
+            recipe.max_metas,
+        )
+    }
+
+    fn tactic_options_request_json(recipe: &MachineStdTacticOptionsRecipe) -> String {
+        format!(
+            "{{\"simp_rules\":[{}],\"eq_family\":{},\"nat_family\":{},\"max_simp_rewrite_steps\":{},\"max_open_goals\":{},\"max_metas\":{}}}",
             recipe
                 .simp_rules
                 .iter()

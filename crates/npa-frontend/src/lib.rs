@@ -20,6 +20,7 @@ pub use diagnostic::{
 pub use elaborator::{
     compile_machine_source_to_certificate, compile_machine_source_to_core,
     elaborate_machine_module, elaborate_machine_term_check, elaborate_machine_term_infer_from_ast,
+    MachineTermElabContextInModuleRequest,
 };
 pub use lexer::{lex, Token, TokenKind};
 pub use machine::{

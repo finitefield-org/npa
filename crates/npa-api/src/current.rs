@@ -7,10 +7,12 @@ use npa_cert::{
 use npa_kernel::{
     level::normalize_level, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl,
 };
+#[cfg(test)]
+use npa_tactic::check_current_decl_for_machine_tactic_from_verified_imports;
 use npa_tactic::{
-    check_current_decl_for_machine_tactic_from_verified_imports,
-    checked_decl_signature_canonical_bytes, CheckedCurrentDecl, MachineTacticDiagnostic,
-    MachineTacticDiagnosticKind, VerifiedImportRef,
+    check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_profile,
+    checked_decl_signature_canonical_bytes, CheckedCurrentDecl, MachineKernelProfile,
+    MachineTacticDiagnostic, MachineTacticDiagnosticKind, VerifiedImportRef,
 };
 use sha2::{Digest, Sha256};
 
@@ -29,6 +31,14 @@ pub struct MachineCheckedCurrentDeclContext {
 }
 
 impl MachineCheckedCurrentDeclContext {
+    pub fn empty() -> Self {
+        Self {
+            checked_current_decls: Vec::new(),
+            decl_index_table: Vec::new(),
+            generated_decl_table: Vec::new(),
+        }
+    }
+
     pub fn checked_current_decls(&self) -> &[CheckedCurrentDecl] {
         &self.checked_current_decls
     }
@@ -208,6 +218,22 @@ pub fn project_checked_current_decl_context(
     imports: &MachineImportCertificateContext,
     packages: &[CheckedCurrentDeclPackageInput<'_>],
 ) -> Result<MachineCheckedCurrentDeclContext, CheckedCurrentDeclProjectionError> {
+    project_checked_current_decl_context_with_kernel_profile(
+        MachineKernelProfile::BuiltinNatEqRec,
+        root_module,
+        root_source_index,
+        imports,
+        packages,
+    )
+}
+
+pub fn project_checked_current_decl_context_with_kernel_profile(
+    kernel_profile: MachineKernelProfile,
+    root_module: &Name,
+    root_source_index: u64,
+    imports: &MachineImportCertificateContext,
+    packages: &[CheckedCurrentDeclPackageInput<'_>],
+) -> Result<MachineCheckedCurrentDeclContext, CheckedCurrentDeclProjectionError> {
     let mut decoded_by_index = BTreeMap::new();
     for input in packages {
         let decoded = decode_checked_current_decl_package(input.bytes)?;
@@ -300,18 +326,20 @@ pub fn project_checked_current_decl_context(
             );
         }
 
-        let checked = check_current_decl_for_machine_tactic_from_verified_imports(
-            &phase4_imports,
-            &checked_current_decls,
-            source_index,
-            core_decl.clone(),
-        )
-        .map_err(
-            |diagnostic| CheckedCurrentDeclProjectionError::Phase4Rejected {
+        let checked =
+            check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_profile(
+                kernel_profile,
+                &phase4_imports,
+                &checked_current_decls,
                 source_index,
-                diagnostic: Box::new(diagnostic),
-            },
-        )?;
+                core_decl.clone(),
+            )
+            .map_err(|diagnostic| {
+                CheckedCurrentDeclProjectionError::Phase4Rejected {
+                    source_index,
+                    diagnostic: Box::new(diagnostic),
+                }
+            })?;
         if decoded.signature_canonical_bytes
             != checked_decl_signature_canonical_bytes(checked.signature())
         {

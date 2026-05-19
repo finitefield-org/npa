@@ -19,6 +19,28 @@ pub type Result<T> = std::result::Result<T, MachineTacticDiagnostic>;
 const ZERO_HASH: Hash = [0; 32];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MachineKernelProfile {
+    BuiltinNone,
+    BuiltinNatEqRec,
+}
+
+impl MachineKernelProfile {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::BuiltinNone => "builtin-none-v0.1",
+            Self::BuiltinNatEqRec => "builtin-nat-eq-rec-v0.1",
+        }
+    }
+
+    fn initial_kernel_env(self) -> std::result::Result<Env, npa_kernel::Error> {
+        match self {
+            Self::BuiltinNone => Ok(Env::new()),
+            Self::BuiltinNatEqRec => Env::with_builtins(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MetaVarId(pub u64);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -864,6 +886,7 @@ impl Default for MachineTacticOptions {
 
 #[derive(Clone, Debug)]
 pub struct MachineTacticEnv {
+    pub kernel_profile: MachineKernelProfile,
     pub imports: Vec<VerifiedImportRef>,
     pub checked_current_decls: Vec<CheckedCurrentDecl>,
     pub simp_registry: SimpRegistry,
@@ -899,6 +922,22 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports(
     source_index: u64,
     decl: Decl,
 ) -> Result<CheckedCurrentDecl> {
+    check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_profile(
+        MachineKernelProfile::BuiltinNatEqRec,
+        imports,
+        checked_prior_current_decls,
+        source_index,
+        decl,
+    )
+}
+
+pub fn check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_profile(
+    kernel_profile: MachineKernelProfile,
+    imports: &[VerifiedImportRef],
+    checked_prior_current_decls: &[CheckedCurrentDecl],
+    source_index: u64,
+    decl: Decl,
+) -> Result<CheckedCurrentDecl> {
     if source_index != checked_prior_current_decls.len() as u64 {
         return Err(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidCurrentDeclOrder,
@@ -929,7 +968,8 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports(
     }
 
     let canonical_imports = canonicalize_imports(imports.to_vec());
-    let mut env = MachineTacticEnv::new(
+    let mut env = MachineTacticEnv::new_with_kernel_profile(
+        kernel_profile,
         canonical_imports.clone(),
         checked_prior_current_decls.to_vec(),
         MachineTacticOptions::default(),
@@ -951,7 +991,11 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports(
         decl_hashes.decl_interface_hash,
         decl_hashes.decl_certificate_hash,
         checked_current_chain_fingerprint(checked_prior_current_decls),
-        checked_env_fingerprint(&canonical_imports, checked_prior_current_decls),
+        checked_env_fingerprint_with_kernel_profile(
+            kernel_profile,
+            &canonical_imports,
+            checked_prior_current_decls,
+        ),
     ))
 }
 
@@ -961,14 +1005,31 @@ impl MachineTacticEnv {
         checked_current_decls: Vec<CheckedCurrentDecl>,
         options: MachineTacticOptions,
     ) -> Result<Self> {
+        Self::new_with_kernel_profile(
+            MachineKernelProfile::BuiltinNatEqRec,
+            imports,
+            checked_current_decls,
+            options,
+        )
+    }
+
+    pub fn new_with_kernel_profile(
+        kernel_profile: MachineKernelProfile,
+        imports: Vec<VerifiedImportRef>,
+        checked_current_decls: Vec<CheckedCurrentDecl>,
+        options: MachineTacticOptions,
+    ) -> Result<Self> {
         validate_options(&options)?;
         let imports = canonicalize_imports(imports);
         validate_imports(&imports)?;
 
-        let mut kernel_env = Env::with_builtins().map_err(|err| {
+        let mut kernel_env = kernel_profile.initial_kernel_env().map_err(|err| {
             MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::KernelRejected,
-                format!("kernel rejected builtin environment: {err:?}"),
+                format!(
+                    "kernel rejected {} environment: {err:?}",
+                    kernel_profile.as_str()
+                ),
             )
         })?;
         let mut env_decl_hashes = BTreeMap::new();
@@ -1017,7 +1078,11 @@ impl MachineTacticEnv {
             }
 
             let prior_chain = checked_current_chain_fingerprint(&normalized_current);
-            let checked_env_fingerprint = checked_env_fingerprint(&imports, &normalized_current);
+            let checked_env_fingerprint = checked_env_fingerprint_with_kernel_profile(
+                kernel_profile,
+                &imports,
+                &normalized_current,
+            );
             if checked.prior_chain_fingerprint != prior_chain {
                 return Err(MachineTacticDiagnostic::new(
                     MachineTacticDiagnosticKind::CurrentDeclSignatureMismatch,
@@ -1103,6 +1168,7 @@ impl MachineTacticEnv {
             .collect();
         let options_fingerprint = machine_tactic_options_hash(&options);
         let mut env = Self {
+            kernel_profile,
             imports,
             checked_current_decls: normalized_current,
             simp_registry,
@@ -1119,6 +1185,10 @@ impl MachineTacticEnv {
 
     pub fn kernel_env(&self) -> &Env {
         &self.kernel_env
+    }
+
+    pub fn kernel_profile(&self) -> MachineKernelProfile {
+        self.kernel_profile
     }
 }
 
@@ -1454,6 +1524,22 @@ pub fn start_machine_proof(
     checked_current_decls: Vec<CheckedCurrentDecl>,
     options: MachineTacticOptions,
 ) -> Result<MachineProofState> {
+    start_machine_proof_with_kernel_profile(
+        MachineKernelProfile::BuiltinNatEqRec,
+        spec,
+        imports,
+        checked_current_decls,
+        options,
+    )
+}
+
+pub fn start_machine_proof_with_kernel_profile(
+    kernel_profile: MachineKernelProfile,
+    spec: MachineProofSpec,
+    imports: Vec<VerifiedImportRef>,
+    checked_current_decls: Vec<CheckedCurrentDecl>,
+    options: MachineTacticOptions,
+) -> Result<MachineProofState> {
     validate_proof_spec(&spec)?;
     if checked_current_decls.len() as u64 != spec.source_index {
         return Err(MachineTacticDiagnostic::new(
@@ -1470,7 +1556,12 @@ pub fn start_machine_proof(
         &checked_current_decls,
     )?;
 
-    let env = MachineTacticEnv::new(imports, checked_current_decls, options)?;
+    let env = MachineTacticEnv::new_with_kernel_profile(
+        kernel_profile,
+        imports,
+        checked_current_decls,
+        options,
+    )?;
     ensure_type_is_sort(
         env.kernel_env(),
         &Ctx::new(),
@@ -8879,7 +8970,8 @@ fn checked_current_chain_fingerprint(checked_current_decls: &[CheckedCurrentDecl
     hash_with_domain("npa.phase4.current.prior-chain.v1", &out)
 }
 
-fn checked_env_fingerprint(
+fn checked_env_fingerprint_with_kernel_profile(
+    kernel_profile: MachineKernelProfile,
     imports: &[VerifiedImportRef],
     checked_current_decls: &[CheckedCurrentDecl],
 ) -> Hash {
@@ -8915,7 +9007,7 @@ fn checked_env_fingerprint(
         encode_hash_to(&mut out, &decl.core_decl_hash);
         encode_hash_to(&mut out, &decl.checked_env_fingerprint);
     }
-    encode_hash_to(&mut out, &kernel_check_profile_hash());
+    encode_hash_to(&mut out, &kernel_check_profile_hash(kernel_profile));
     hash_with_domain("npa.phase4.current.checked-env.v1", &out)
 }
 
@@ -9283,7 +9375,7 @@ fn machine_tactic_env_hash(env: &MachineTacticEnv) -> Hash {
     encode_option_resolved_eq_to(&mut out, env.eq_family.as_ref());
     encode_option_resolved_nat_to(&mut out, env.nat_family.as_ref());
     encode_hash_to(&mut out, &env.options_fingerprint);
-    encode_hash_to(&mut out, &kernel_check_profile_hash());
+    encode_hash_to(&mut out, &kernel_check_profile_hash(env.kernel_profile));
     hash_with_domain("npa.phase4.machine-tactic-env.v1", &out)
 }
 
@@ -9317,17 +9409,20 @@ fn machine_proof_state_hash(state: &MachineProofState) -> Hash {
     for name in &state.reserved_local_names {
         encode_string_to(&mut out, name);
     }
-    encode_hash_to(&mut out, &kernel_check_profile_hash());
+    encode_hash_to(
+        &mut out,
+        &kernel_check_profile_hash(state.env.kernel_profile),
+    );
     hash_with_domain("npa.phase4.machine-proof-state.v1", &out)
 }
 
-fn kernel_check_profile_hash() -> Hash {
+fn kernel_check_profile_hash(profile: MachineKernelProfile) -> Hash {
     let mut out = Vec::new();
     encode_string_to(&mut out, "core-spec-v0.1");
     encode_string_to(&mut out, "npa-kernel.phase1.v0.1");
     encode_string_to(&mut out, "beta-delta-iota-zeta.v0.1");
     encode_string_to(&mut out, "levels-imax-v0.1");
-    encode_string_to(&mut out, "builtin-nat-eq-rec-v0.1");
+    encode_string_to(&mut out, profile.as_str());
     hash_with_domain("npa.phase4.kernel-check-profile.v1", &out)
 }
 
@@ -10786,8 +10881,51 @@ mod tests {
             b"npa-kernel:core-spec-v0.1",
         );
 
-        assert_ne!(kernel_check_profile_hash(), old_profile_hash);
-        assert_eq!(kernel_check_profile_hash(), kernel_check_profile_hash());
+        assert_ne!(
+            kernel_check_profile_hash(MachineKernelProfile::BuiltinNatEqRec),
+            old_profile_hash
+        );
+        assert_ne!(
+            kernel_check_profile_hash(MachineKernelProfile::BuiltinNone),
+            kernel_check_profile_hash(MachineKernelProfile::BuiltinNatEqRec)
+        );
+        assert_eq!(
+            kernel_check_profile_hash(MachineKernelProfile::BuiltinNatEqRec),
+            kernel_check_profile_hash(MachineKernelProfile::BuiltinNatEqRec)
+        );
+    }
+
+    #[test]
+    fn tactic_env_kernel_profile_controls_initial_builtins_and_hashes() {
+        let builtin_none = MachineTacticEnv::new_with_kernel_profile(
+            MachineKernelProfile::BuiltinNone,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let builtin_nat_eq_rec = MachineTacticEnv::new_with_kernel_profile(
+            MachineKernelProfile::BuiltinNatEqRec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            builtin_none.kernel_profile(),
+            MachineKernelProfile::BuiltinNone
+        );
+        assert!(builtin_none.kernel_env().decl("Nat").is_none());
+        assert!(builtin_none.kernel_env().decl("Eq").is_none());
+        assert!(builtin_none.kernel_env().decl("Eq.rec").is_none());
+        assert!(builtin_nat_eq_rec.kernel_env().decl("Nat").is_some());
+        assert!(builtin_nat_eq_rec.kernel_env().decl("Eq").is_some());
+        assert!(builtin_nat_eq_rec.kernel_env().decl("Eq.rec").is_some());
+        assert_ne!(
+            builtin_none.env_fingerprint,
+            builtin_nat_eq_rec.env_fingerprint
+        );
     }
 
     #[test]

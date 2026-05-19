@@ -16,7 +16,7 @@ use npa_frontend::{
 use npa_kernel::{Ctx, Decl, Expr};
 use npa_tactic::{
     core_expr_hash, machine_tactic_options_canonical_bytes,
-    resolved_family_options_canonical_bytes, EqFamilyRef, MachineProofSpec,
+    resolved_family_options_canonical_bytes, EqFamilyRef, MachineKernelProfile, MachineProofSpec,
     MachineTacticDiagnostic, MachineTacticDiagnosticKind, MachineTacticEnv, MachineTacticOptions,
     NatFamilyRef, ResolvedEqFamily, ResolvedNatFamily, RewriteDirection, SimpRuleRef,
     VerifiedImportRef,
@@ -24,16 +24,17 @@ use npa_tactic::{
 use sha2::{Digest, Sha256};
 
 use crate::adapter::{
-    map_phase3_diagnostic_kind, phase4_start_machine_proof, MachineApiDiagnosticPhase,
-    MachineApiDiagnosticProjection, Phase5UpstreamDiagnostic,
+    map_phase3_diagnostic_kind, phase4_start_machine_proof_with_kernel_profile,
+    MachineApiDiagnosticPhase, MachineApiDiagnosticProjection, Phase5UpstreamDiagnostic,
 };
 use crate::callable::{
     build_machine_surface_callable_interface_table, MachineSurfaceCallableInterfaceBuildError,
 };
 use crate::current::{
     encode_machine_axiom_ref_wire, imported_axiom_ref_to_wire, phase4_import_refs_from_context,
-    project_checked_current_decl_context, validate_checked_current_decl_package_bytes,
-    CheckedCurrentDeclPackageInput, MachineAxiomRefWire, MachineCheckedCurrentDeclContext,
+    project_checked_current_decl_context_with_kernel_profile,
+    validate_checked_current_decl_package_bytes, CheckedCurrentDeclPackageInput,
+    MachineAxiomRefWire, MachineCheckedCurrentDeclContext,
 };
 use crate::json::{JsonValue, JsonValueKind};
 use crate::projection::{
@@ -212,8 +213,12 @@ pub fn create_machine_session(
         })?;
     validate_root_import_collisions(&request.root, &import_context)?;
 
-    let checked_current_decls =
-        build_checked_current_context(&request.root, &import_context, &request)?;
+    let checked_current_decls = build_checked_current_context(
+        &request.root,
+        &import_context,
+        &request,
+        phase4_kernel_profile(request.options.kernel_check_profile),
+    )?;
     validate_current_collisions(&request.root, &import_context, &checked_current_decls)?;
 
     let mut options = request.options.clone();
@@ -222,6 +227,7 @@ pub fn create_machine_session(
         &request.root.module,
         &import_context,
         &checked_current_decls,
+        options.kernel_check_profile,
     )?;
     validate_tactic_option_head_resolution(
         &options.tactic_options,
@@ -230,7 +236,9 @@ pub fn create_machine_session(
     )?;
     let phase4_imports = phase4_direct_import_refs(&import_context)?;
     let phase4_options = phase4_tactic_options(&options.tactic_options)?;
-    let tactic_env = MachineTacticEnv::new(
+    let phase4_kernel_profile = phase4_kernel_profile(options.kernel_check_profile);
+    let tactic_env = MachineTacticEnv::new_with_kernel_profile(
+        phase4_kernel_profile,
         phase4_imports.clone(),
         checked_current_decls.checked_current_decls().to_vec(),
         phase4_options.clone(),
@@ -257,6 +265,7 @@ pub fn create_machine_session(
         &import_context,
         &checked_current_decls,
         callable_table.clone(),
+        options.kernel_check_profile,
     )?;
     let checked_root = check_root_theorem_type(&request.root, &elab_context, &options)?;
     let root_axioms = root_theorem_type_axioms(
@@ -273,7 +282,8 @@ pub fn create_machine_session(
         universe_params: checked_root.root.universe_params.clone(),
         theorem_type: checked_root.expr,
     };
-    let started = phase4_start_machine_proof(
+    let started = phase4_start_machine_proof_with_kernel_profile(
+        phase4_kernel_profile,
         proof_spec,
         phase4_imports,
         checked_current_decls.checked_current_decls().to_vec(),
@@ -1061,7 +1071,15 @@ fn validate_kernel_profile(
     profile: KernelCheckProfileId,
 ) -> Result<(), Box<MachineSessionCreateError>> {
     match profile {
+        KernelCheckProfileId::BuiltinNone => Ok(()),
         KernelCheckProfileId::BuiltinNatEqRec => Ok(()),
+    }
+}
+
+fn phase4_kernel_profile(profile: KernelCheckProfileId) -> MachineKernelProfile {
+    match profile {
+        KernelCheckProfileId::BuiltinNone => MachineKernelProfile::BuiltinNone,
+        KernelCheckProfileId::BuiltinNatEqRec => MachineKernelProfile::BuiltinNatEqRec,
     }
 }
 
@@ -1135,6 +1153,7 @@ fn build_checked_current_context(
     root: &MachineSessionRootRequest,
     import_context: &MachineImportCertificateContext,
     request: &MachineSessionCreateRequest,
+    kernel_profile: MachineKernelProfile,
 ) -> Result<MachineCheckedCurrentDeclContext, Box<MachineSessionCreateError>> {
     let inputs = request
         .checked_current_decls
@@ -1143,14 +1162,20 @@ fn build_checked_current_context(
             bytes: &input.bytes,
         })
         .collect::<Vec<_>>();
-    project_checked_current_decl_context(&root.module, root.source_index, import_context, &inputs)
-        .map_err(|err| {
-            semantic_error(
-                MachineApiErrorKind::InvalidCheckedCurrentDecl,
-                MachineApiDiagnosticPhase::SessionCreate,
-                format!("checked current declaration projection failed: {err:?}"),
-            )
-        })
+    project_checked_current_decl_context_with_kernel_profile(
+        kernel_profile,
+        &root.module,
+        root.source_index,
+        import_context,
+        &inputs,
+    )
+    .map_err(|err| {
+        semantic_error(
+            MachineApiErrorKind::InvalidCheckedCurrentDecl,
+            MachineApiDiagnosticPhase::SessionCreate,
+            format!("checked current declaration projection failed: {err:?}"),
+        )
+    })
 }
 
 fn validate_current_collisions(
@@ -1206,6 +1231,7 @@ fn validate_allow_axioms(
     root_module: &Name,
     imports: &MachineImportCertificateContext,
     current: &MachineCheckedCurrentDeclContext,
+    kernel_check_profile: KernelCheckProfileId,
 ) -> Result<(), Box<MachineSessionCreateError>> {
     for axiom in allow_axioms {
         match axiom {
@@ -1274,6 +1300,13 @@ fn validate_allow_axioms(
                 name,
                 decl_interface_hash,
             } => {
+                if matches!(kernel_check_profile, KernelCheckProfileId::BuiltinNone) {
+                    return Err(invalid_options(format!(
+                        "allow_axioms builtin ref {} is not allowed by kernel_check_profile {}",
+                        name.as_dotted(),
+                        kernel_check_profile.as_str()
+                    )));
+                }
                 if name.as_dotted() != "Eq.rec"
                     || builtin_decl_interface_hash(name) != Some(*decl_interface_hash)
                 {
@@ -1303,6 +1336,25 @@ fn phase4_tactic_options(
         .clone()
         .try_into()
         .map_err(|err| invalid_options(format!("invalid tactic option integer width: {err:?}")))
+}
+
+pub(crate) fn validate_machine_tactic_options_request_against_context(
+    kernel_check_profile: KernelCheckProfileId,
+    options: &MachineTacticOptionsRequest,
+    imports: &MachineImportCertificateContext,
+    current: &MachineCheckedCurrentDeclContext,
+) -> Result<MachineTacticOptionsRequest, Box<MachineSessionCreateError>> {
+    validate_tactic_option_head_resolution(options, imports, current)?;
+    let phase4_imports = phase4_direct_import_refs(imports)?;
+    let phase4_options = phase4_tactic_options(options)?;
+    let tactic_env = MachineTacticEnv::new_with_kernel_profile(
+        phase4_kernel_profile(kernel_check_profile),
+        phase4_imports,
+        current.checked_current_decls().to_vec(),
+        phase4_options,
+    )
+    .map_err(option_semantic_error)?;
+    tactic_options_request_from_phase4(&tactic_env.options)
 }
 
 fn tactic_options_request_from_phase4(
@@ -1548,6 +1600,7 @@ fn root_term_elab_context(
     imports: &MachineImportCertificateContext,
     current: &MachineCheckedCurrentDeclContext,
     callable_table: npa_frontend::MachineSurfaceCallableInterfaceTable,
+    kernel_check_profile: KernelCheckProfileId,
 ) -> Result<MachineTermElabContext, Box<MachineSessionCreateError>> {
     let direct_verified_modules = imports
         .direct_import_entries()
@@ -1578,14 +1631,20 @@ fn root_term_elab_context(
             decl_interface_hash: entry.generated_decl_interface_hash,
         })
         .collect::<Vec<_>>();
-    MachineTermElabContext::from_verified_modules_and_current_decls_in_module(
-        &direct_verified_modules,
-        &all_verified_modules,
-        root.module.clone(),
-        &frontend_current_decls,
-        &frontend_generated_decls,
-        Vec::new(),
-        root.universe_params.clone(),
+    MachineTermElabContext::from_verified_modules_and_current_decls_in_module_request(
+        npa_frontend::MachineTermElabContextInModuleRequest {
+            direct_verified_modules: &direct_verified_modules,
+            available_verified_modules: &all_verified_modules,
+            current_module: root.module.clone(),
+            checked_current_decls: &frontend_current_decls,
+            current_generated_decls: &frontend_generated_decls,
+            local_context: Vec::new(),
+            universe_params: root.universe_params.clone(),
+            allow_builtin_kernel_decls: matches!(
+                kernel_check_profile,
+                KernelCheckProfileId::BuiltinNatEqRec
+            ),
+        },
     )
     .map(|context| context.with_callable_interface_table(callable_table))
     .map_err(|diagnostic| phase3_error(diagnostic, MachineApiDiagnosticPhase::SessionCreate))
@@ -1809,7 +1868,7 @@ fn encode_machine_api_options_to(
     simp_registry_hash: &Hash,
 ) {
     encode_string(out, "npa.phase5.machine-api-options.v1");
-    out.extend(kernel_check_profile_hash());
+    out.extend(kernel_check_profile_hash(options.kernel_check_profile));
     encode_list_len(out, options.allow_axioms.len());
     for axiom in &options.allow_axioms {
         out.extend(encode_machine_axiom_ref_wire(axiom));
@@ -2366,13 +2425,17 @@ fn has_strict_module_prefix(module: &Name, name: &Name) -> bool {
     name.0.starts_with(&module.0) && name.0.len() > module.0.len()
 }
 
-fn kernel_check_profile_hash() -> Hash {
+fn kernel_check_profile_hash(profile: KernelCheckProfileId) -> Hash {
     let mut out = Vec::new();
     encode_string(&mut out, "core-spec-v0.1");
     encode_string(&mut out, "npa-kernel.phase1.v0.1");
     encode_string(&mut out, "beta-delta-iota-zeta.v0.1");
     encode_string(&mut out, "levels-imax-v0.1");
-    encode_string(&mut out, "builtin-nat-eq-rec-v0.1");
+    let builtin_profile_id = match profile {
+        KernelCheckProfileId::BuiltinNone => "builtin-none-v0.1",
+        KernelCheckProfileId::BuiltinNatEqRec => "builtin-nat-eq-rec-v0.1",
+    };
+    encode_string(&mut out, builtin_profile_id);
     hash_with_domain("npa.phase4.kernel-check-profile.v1", &out)
 }
 
@@ -2450,7 +2513,9 @@ fn json_path_display(path: &JsonPath) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::current::encode_checked_current_decl_package_for_test;
+    use crate::current::{
+        encode_checked_current_decl_package_for_test, project_checked_current_decl_context,
+    };
     use crate::format_hash_string;
     use npa_cert::{
         build_module_cert, encode_module_cert, verify_module_cert, CoreModule, VerifierSession,
@@ -2483,6 +2548,10 @@ mod tests {
     }
 
     fn minimal_session_json(theorem_type: &str) -> String {
+        minimal_session_json_with_options(theorem_type, &default_options_json("[]"))
+    }
+
+    fn minimal_session_json_with_options(theorem_type: &str, options: &str) -> String {
         format!(
             r#"{{
               "protocol_version":"npa.machine-api.v1",
@@ -2496,9 +2565,8 @@ mod tests {
               "import_closure":[],
               "imports":[],
               "checked_current_decls":[],
-              "options":{}
+              "options":{options}
             }}"#,
-            default_options_json("[]")
         )
     }
 
@@ -2596,6 +2664,42 @@ mod tests {
     }
 
     #[test]
+    fn rejects_builtin_axiom_allowlist_with_builtin_none_profile() {
+        let eq_rec_hash =
+            format_hash_string(&builtin_decl_interface_hash(&Name::from_dotted("Eq.rec")).unwrap());
+        let options = format!(
+            r#"{{
+              "kernel_check_profile":"npa.kernel.v0.1.builtin-none",
+              "allow_axioms": [{{
+                "kind":"builtin",
+                "name":"Eq.rec",
+                "decl_interface_hash":"{eq_rec_hash}"
+              }}],
+              "tactic_options": {{
+                "simp_rules": [],
+                "eq_family": null,
+                "nat_family": null,
+                "max_simp_rewrite_steps": 100,
+                "max_open_goals": 32,
+                "max_metas": 64
+              }}
+            }}"#
+        );
+
+        let err = create_machine_session(&minimal_session_json_with_options("Prop", &options))
+            .unwrap_err();
+
+        assert_eq!(
+            err.error.kind,
+            MachineApiErrorKind::InvalidMachineApiOptions
+        );
+        assert!(err
+            .diagnostic
+            .source_message
+            .contains("not allowed by kernel_check_profile"));
+    }
+
+    #[test]
     fn checked_current_session_root_projection_uses_package_bytes_only() {
         let root_module = Name::from_dotted("Scratch");
         let current_bytes =
@@ -2648,13 +2752,21 @@ mod tests {
 
         let mut expected = Vec::new();
         encode_string(&mut expected, "npa.phase5.machine-api-options.v1");
-        expected.extend(kernel_check_profile_hash());
+        expected.extend(kernel_check_profile_hash(options.kernel_check_profile));
         encode_list_len(&mut expected, 0);
         expected.extend(machine_tactic_options_canonical_bytes(&phase4_options));
         expected.extend(resolved_family_options_canonical_bytes(None, None));
         expected.extend(simp_registry_hash);
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn kernel_check_profile_hash_distinguishes_builtin_profiles() {
+        assert_ne!(
+            kernel_check_profile_hash(KernelCheckProfileId::BuiltinNone),
+            kernel_check_profile_hash(KernelCheckProfileId::BuiltinNatEqRec)
+        );
     }
 
     #[test]
