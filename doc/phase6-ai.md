@@ -3210,6 +3210,12 @@ DONE
 
 ## M9. Phase 8 audit hooks
 
+Status:
+
+```text
+DONE
+```
+
 目的:
 
 ```text

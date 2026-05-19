@@ -77,8 +77,11 @@ const STD_SIMP_PROFILE_SET_TAG: &str = "npa.phase6.std-simp-profile-set.v1";
 const STD_PROMPT_METADATA_SET_TAG: &str = "npa.phase6.std-prompt-metadata-set.v1";
 const STD_PROMPT_METADATA_TAG: &str = "npa.phase6.std-prompt-metadata.v1";
 const STD_PROMPT_EXAMPLE_TAG: &str = "npa.phase6.std-prompt-example.v1";
+const STD_AUDIT_CHECK_TAG: &str = "npa.phase8.std-library-audit-check.v1";
+const STD_AUDIT_REPORT_TAG: &str = "npa.phase8.std-library-audit-report.v1";
 const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
 const STD_THEOREM_INDEX_PROFILE_ID: &str = "npa.stdlib.theorem-index.mvp.v1";
+const STD_AUDIT_PROFILE_ID: &str = "npa.phase8.stdlib-audit.mvp.v1";
 const STD_LOGIC_BUNDLE_ID: &str = "std.logic.mvp";
 const STD_NAT_BUNDLE_ID: &str = "std.nat.mvp";
 const STD_LIST_BUNDLE_ID: &str = "std.list.mvp";
@@ -406,6 +409,36 @@ pub struct MachineStdReleaseSidecarJson<'a> {
     pub prompt_metadata_json: Option<&'a str>,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct MachineStdAuditArtifacts<'a> {
+    pub import_bundles: &'a MachineStdImportBundleSet,
+    pub theorem_index: &'a MachineStdTheoremIndex,
+    pub rewrite_profiles: &'a MachineStdRewriteProfileSet,
+    pub simp_profiles: &'a MachineStdSimpProfileSet,
+    pub axiom_report: &'a MachineStdAxiomReport,
+    pub prompt_metadata: Option<&'a MachineStdPromptMetadataSet>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdAuditReport {
+    pub audit_profile_id: String,
+    pub library_profile_id: String,
+    pub std_library_release_hash: Hash,
+    pub manifest_hash: Hash,
+    pub prompt_metadata_hash: Option<Hash>,
+    pub prompt_metadata_excluded_from_release_hash: bool,
+    pub checks: Vec<MachineStdAuditCheck>,
+    pub audit_report_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdAuditCheck {
+    pub check_id: String,
+    pub subject: String,
+    pub passed: bool,
+    pub evidence_hash: Hash,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MachineStdArtifactKind {
     LibraryRelease,
@@ -487,6 +520,38 @@ pub enum MachineStdReleaseArtifactError {
     InvalidStdSimpProfile(MachineStdSimpProfileError),
     InvalidStdTheoremIndex(MachineStdTheoremIndexError),
     InvalidStdPromptMetadata(MachineStdPromptMetadataError),
+}
+
+#[derive(Debug)]
+pub enum MachineStdAuditError {
+    InvalidStdReleaseArtifact(MachineStdReleaseArtifactError),
+    InvalidStdLibraryRelease(MachineStdLibraryReleaseError),
+    InvalidStdAxiomPolicy(MachineStdAxiomPolicyError),
+    InvalidStdImportBundle(MachineStdImportBundleError),
+    InvalidStdRewriteProfile(MachineStdRewriteProfileError),
+    InvalidStdSimpProfile(MachineStdSimpProfileError),
+    InvalidStdTheoremIndex(MachineStdTheoremIndexError),
+    InvalidStdPromptMetadata(MachineStdPromptMetadataError),
+    ReleaseHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    SidecarHashMismatch {
+        field: &'static str,
+        expected: Hash,
+        actual: Hash,
+    },
+    ProfileTargetMismatch {
+        profile_id: String,
+        name: Name,
+    },
+    CustomAllowAxiom {
+        bundle_id: String,
+        axiom: Box<MachineAxiomRefWire>,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
 }
 
 #[derive(Debug)]
@@ -1533,6 +1598,310 @@ fn compare_release_sidecar_hash(
     }
 }
 
+pub fn audit_machine_std_mvp_validated_release(
+    validated: &MachineStdValidatedRelease,
+    theorem_index: &MachineStdTheoremIndex,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+    prompt_metadata: Option<&MachineStdPromptMetadataSet>,
+) -> Result<MachineStdAuditReport, MachineStdAuditError> {
+    let actual_release_hash = machine_std_library_release_hash(&validated.manifest)
+        .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+    if actual_release_hash != validated.std_library_release_hash {
+        return Err(MachineStdAuditError::ReleaseHashMismatch {
+            expected: actual_release_hash,
+            actual: validated.std_library_release_hash,
+        });
+    }
+
+    audit_machine_std_mvp_release_artifacts(
+        &validated.manifest,
+        &validated.loaded,
+        MachineStdAuditArtifacts {
+            import_bundles: &validated.import_bundles,
+            theorem_index,
+            rewrite_profiles,
+            simp_profiles,
+            axiom_report: &validated.axiom_report,
+            prompt_metadata,
+        },
+    )
+}
+
+pub fn audit_machine_std_mvp_release_artifacts(
+    manifest: &MachineStdLibraryRelease,
+    loaded: &MachineStdLoadedRelease,
+    artifacts: MachineStdAuditArtifacts<'_>,
+) -> Result<MachineStdAuditReport, MachineStdAuditError> {
+    let mut checks = Vec::new();
+    validate_machine_std_library_release_prepass(manifest)
+        .map_err(MachineStdAuditError::InvalidStdLibraryRelease)?;
+    validate_machine_std_library_release_against_certificates(manifest, loaded)
+        .map_err(MachineStdAuditError::InvalidStdLibraryRelease)?;
+    let std_library_release_hash = machine_std_library_release_hash(manifest)
+        .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+    let loaded_hash = machine_std_loaded_release_audit_hash(loaded)
+        .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+    checks.push(machine_std_audit_check(
+        "manifest.verifier-output",
+        "release manifest module hashes and counts match verifier output",
+        audit_evidence_hash(
+            "manifest.verifier-output",
+            &[std_library_release_hash, loaded_hash],
+            &[manifest.modules.len() as u64],
+        ),
+    ));
+    checks.push(machine_std_audit_check(
+        "manifest.release-hash",
+        "std_library_release_hash is recomputed from canonical release bytes",
+        audit_evidence_hash("manifest.release-hash", &[std_library_release_hash], &[]),
+    ));
+
+    let axiom_report_hash = machine_std_axiom_report_hash(artifacts.axiom_report)
+        .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+    if axiom_report_hash != artifacts.axiom_report.axiom_report_hash {
+        return Err(MachineStdAuditError::InvalidStdAxiomPolicy(
+            MachineStdAxiomPolicyError::AxiomReportHashMismatch {
+                expected: artifacts.axiom_report.axiom_report_hash,
+                actual: axiom_report_hash,
+            },
+        ));
+    }
+    validate_machine_std_axiom_report(manifest, loaded, artifacts.axiom_report)
+        .map_err(MachineStdAuditError::InvalidStdAxiomPolicy)?;
+    audit_compare_sidecar_hash(
+        "axiom_report_hash",
+        manifest.axiom_report_hash,
+        artifacts.axiom_report.axiom_report_hash,
+    )?;
+    checks.push(machine_std_audit_check(
+        "sidecar.axiom-report.hash",
+        "axiom report self-hash and manifest-bound hash match verifier output",
+        audit_evidence_hash(
+            "sidecar.axiom-report.hash",
+            &[manifest.axiom_report_hash, axiom_report_hash],
+            &[artifacts.axiom_report.modules.len() as u64],
+        ),
+    ));
+
+    let expected_rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(loaded)
+        .map_err(MachineStdAuditError::InvalidStdRewriteProfile)?;
+    validate_machine_std_mvp_rewrite_profile_set(
+        artifacts.rewrite_profiles,
+        &expected_rewrite_profiles,
+    )
+    .map_err(MachineStdAuditError::InvalidStdRewriteProfile)?;
+    audit_compare_sidecar_hash(
+        "rewrite_profiles_hash",
+        manifest.rewrite_profiles_hash,
+        artifacts.rewrite_profiles.rewrite_profiles_hash,
+    )?;
+    checks.push(machine_std_audit_check(
+        "sidecar.rewrite-profiles.hash",
+        "rewrite profiles self-hash and manifest-bound hash match verifier-derived profiles",
+        audit_evidence_hash(
+            "sidecar.rewrite-profiles.hash",
+            &[
+                manifest.rewrite_profiles_hash,
+                artifacts.rewrite_profiles.rewrite_profiles_hash,
+                expected_rewrite_profiles.rewrite_profiles_hash,
+            ],
+            &[artifacts.rewrite_profiles.profiles.len() as u64],
+        ),
+    ));
+
+    let expected_simp_profiles =
+        generate_machine_std_mvp_simp_profile_set(loaded, artifacts.rewrite_profiles)
+            .map_err(MachineStdAuditError::InvalidStdSimpProfile)?;
+    validate_machine_std_mvp_simp_profile_set(
+        artifacts.simp_profiles,
+        &expected_simp_profiles,
+        artifacts.rewrite_profiles,
+    )
+    .map_err(MachineStdAuditError::InvalidStdSimpProfile)?;
+    audit_compare_sidecar_hash(
+        "simp_profiles_hash",
+        manifest.simp_profiles_hash,
+        artifacts.simp_profiles.simp_profiles_hash,
+    )?;
+    checks.push(machine_std_audit_check(
+        "sidecar.simp-profiles.hash",
+        "simp profiles self-hash and manifest-bound hash match verifier-derived profiles",
+        audit_evidence_hash(
+            "sidecar.simp-profiles.hash",
+            &[
+                manifest.simp_profiles_hash,
+                artifacts.simp_profiles.simp_profiles_hash,
+                expected_simp_profiles.simp_profiles_hash,
+            ],
+            &[artifacts.simp_profiles.profiles.len() as u64],
+        ),
+    ));
+
+    validate_audit_bundle_allow_axioms(loaded, artifacts.import_bundles)?;
+    let expected_import_bundles =
+        generate_machine_std_mvp_final_import_bundle_set(loaded, artifacts.simp_profiles)
+            .map_err(MachineStdAuditError::InvalidStdImportBundle)?;
+    validate_machine_std_mvp_import_bundle_set_shape(
+        artifacts.import_bundles,
+        &expected_import_bundles,
+    )
+    .map_err(MachineStdAuditError::InvalidStdImportBundle)?;
+    validate_machine_std_mvp_import_bundle_recipes(
+        loaded,
+        artifacts.import_bundles,
+        artifacts.simp_profiles,
+    )
+    .map_err(MachineStdAuditError::InvalidStdImportBundle)?;
+    validate_import_bundle_set_expected_hash(artifacts.import_bundles, &expected_import_bundles)
+        .map_err(MachineStdAuditError::InvalidStdImportBundle)?;
+    audit_compare_sidecar_hash(
+        "import_bundles_hash",
+        manifest.import_bundles_hash,
+        artifacts.import_bundles.import_bundles_hash,
+    )?;
+    checks.push(machine_std_audit_check(
+        "sidecar.import-bundles.hash",
+        "import bundles self-hash and manifest-bound hash match minimal verifier closure",
+        audit_evidence_hash(
+            "sidecar.import-bundles.hash",
+            &[
+                manifest.import_bundles_hash,
+                artifacts.import_bundles.import_bundles_hash,
+                expected_import_bundles.import_bundles_hash,
+            ],
+            &[artifacts.import_bundles.bundles.len() as u64],
+        ),
+    ));
+
+    let expected_theorem_index = generate_machine_std_mvp_final_theorem_index(
+        loaded,
+        artifacts.rewrite_profiles,
+        artifacts.simp_profiles,
+    )
+    .map_err(MachineStdAuditError::InvalidStdTheoremIndex)?;
+    validate_machine_std_mvp_final_theorem_index(artifacts.theorem_index, &expected_theorem_index)
+        .map_err(MachineStdAuditError::InvalidStdTheoremIndex)?;
+    audit_compare_sidecar_hash(
+        "theorem_index_hash",
+        manifest.theorem_index_hash,
+        artifacts.theorem_index.index_hash,
+    )?;
+    validate_machine_std_mvp_release_final_sidecar_counts(
+        manifest,
+        artifacts.theorem_index,
+        artifacts.simp_profiles,
+        artifacts.rewrite_profiles,
+    )
+    .map_err(|source| match source {
+        MachineStdReleaseArtifactError::InvalidStdLibraryRelease(source) => {
+            MachineStdAuditError::InvalidStdLibraryRelease(source)
+        }
+        MachineStdReleaseArtifactError::InvalidStdTheoremIndex(source) => {
+            MachineStdAuditError::InvalidStdTheoremIndex(source)
+        }
+        source => MachineStdAuditError::InvalidStdReleaseArtifact(source),
+    })?;
+    checks.push(machine_std_audit_check(
+        "sidecar.theorem-index.hash",
+        "theorem index self-hash and manifest-bound hash match verifier-derived entries",
+        audit_evidence_hash(
+            "sidecar.theorem-index.hash",
+            &[
+                manifest.theorem_index_hash,
+                artifacts.theorem_index.index_hash,
+                expected_theorem_index.index_hash,
+            ],
+            &[artifacts.theorem_index.entries.len() as u64],
+        ),
+    ));
+
+    validate_audit_profile_targets(
+        artifacts.theorem_index,
+        artifacts.rewrite_profiles,
+        artifacts.simp_profiles,
+    )?;
+    checks.push(machine_std_audit_check(
+        "profiles.target-decl-interface-hash",
+        "rewrite and simp profile targets resolve to matching theorem-index decl_interface_hash",
+        audit_evidence_hash(
+            "profiles.target-decl-interface-hash",
+            &[
+                artifacts.theorem_index.index_hash,
+                artifacts.rewrite_profiles.rewrite_profiles_hash,
+                artifacts.simp_profiles.simp_profiles_hash,
+            ],
+            &[
+                rewrite_descriptor_count(artifacts.rewrite_profiles),
+                simp_rule_count(artifacts.simp_profiles),
+            ],
+        ),
+    ));
+
+    validate_audit_bundle_allow_axioms(loaded, artifacts.import_bundles)?;
+    checks.push(machine_std_audit_check(
+        "import-bundles.minimal-closure-and-axioms",
+        "import bundles are minimal transitive closures and contain no custom allow_axioms",
+        audit_evidence_hash(
+            "import-bundles.minimal-closure-and-axioms",
+            &[
+                artifacts.import_bundles.import_bundles_hash,
+                expected_import_bundles.import_bundles_hash,
+            ],
+            &[import_bundle_allow_axiom_count(artifacts.import_bundles)],
+        ),
+    ));
+
+    validate_machine_std_mvp_optional_prompt_metadata(
+        artifacts.prompt_metadata,
+        artifacts.theorem_index,
+        artifacts.import_bundles,
+    )
+    .map_err(MachineStdAuditError::InvalidStdPromptMetadata)?;
+    let prompt_metadata_hash = artifacts
+        .prompt_metadata
+        .map(machine_std_prompt_metadata_hash)
+        .transpose()
+        .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+    checks.push(machine_std_audit_check(
+        "optional.prompt-metadata.excluded-from-release-hash",
+        "optional prompt metadata validates but is excluded from std_library_release_hash",
+        audit_optional_prompt_metadata_evidence_hash(
+            std_library_release_hash,
+            prompt_metadata_hash,
+        ),
+    ));
+
+    let mut report = MachineStdAuditReport {
+        audit_profile_id: STD_AUDIT_PROFILE_ID.to_owned(),
+        library_profile_id: manifest.library_profile_id.clone(),
+        std_library_release_hash,
+        manifest_hash: std_library_release_hash,
+        prompt_metadata_hash,
+        prompt_metadata_excluded_from_release_hash: true,
+        checks,
+        audit_report_hash: [0; 32],
+    };
+    report.audit_report_hash = machine_std_audit_report_hash(&report);
+    Ok(report)
+}
+
+fn audit_compare_sidecar_hash(
+    field: &'static str,
+    expected: Hash,
+    actual: Hash,
+) -> Result<(), MachineStdAuditError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(MachineStdAuditError::SidecarHashMismatch {
+            field,
+            expected,
+            actual,
+        })
+    }
+}
+
 pub fn parse_machine_std_library_release_json(
     source: &str,
 ) -> Result<MachineStdLibraryRelease, MachineStdArtifactShapeError> {
@@ -2044,6 +2413,197 @@ pub fn machine_std_axiom_report_hash(
     report: &MachineStdAxiomReport,
 ) -> Result<Hash, MachineStdCanonicalBytesError> {
     Ok(sha256(&machine_std_axiom_report_canonical_bytes(report)?))
+}
+
+pub fn machine_std_audit_check_canonical_bytes(check: &MachineStdAuditCheck) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_AUDIT_CHECK_TAG);
+    encode_string(&mut out, &check.check_id);
+    encode_string(&mut out, &check.subject);
+    encode_bool(&mut out, check.passed);
+    encode_hash(&mut out, &check.evidence_hash);
+    out
+}
+
+pub fn machine_std_audit_report_canonical_bytes(report: &MachineStdAuditReport) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_AUDIT_REPORT_TAG);
+    encode_string(&mut out, &report.audit_profile_id);
+    encode_string(&mut out, &report.library_profile_id);
+    encode_hash(&mut out, &report.std_library_release_hash);
+    encode_hash(&mut out, &report.manifest_hash);
+    encode_option_hash(&mut out, report.prompt_metadata_hash.as_ref());
+    encode_bool(&mut out, report.prompt_metadata_excluded_from_release_hash);
+    encode_uvar(&mut out, report.checks.len() as u64);
+    for check in &report.checks {
+        out.extend(machine_std_audit_check_canonical_bytes(check));
+    }
+    out
+}
+
+pub fn machine_std_audit_report_hash(report: &MachineStdAuditReport) -> Hash {
+    sha256(&machine_std_audit_report_canonical_bytes(report))
+}
+
+fn machine_std_audit_check(
+    check_id: &'static str,
+    subject: &'static str,
+    evidence_hash: Hash,
+) -> MachineStdAuditCheck {
+    MachineStdAuditCheck {
+        check_id: check_id.to_owned(),
+        subject: subject.to_owned(),
+        passed: true,
+        evidence_hash,
+    }
+}
+
+fn audit_evidence_hash(tag: &str, hashes: &[Hash], counts: &[u64]) -> Hash {
+    let mut out = Vec::new();
+    encode_string(&mut out, tag);
+    encode_uvar(&mut out, hashes.len() as u64);
+    for hash in hashes {
+        encode_hash(&mut out, hash);
+    }
+    encode_uvar(&mut out, counts.len() as u64);
+    for count in counts {
+        encode_uvar(&mut out, *count);
+    }
+    sha256(&out)
+}
+
+fn audit_optional_prompt_metadata_evidence_hash(
+    std_library_release_hash: Hash,
+    prompt_metadata_hash: Option<Hash>,
+) -> Hash {
+    let mut out = Vec::new();
+    encode_string(
+        &mut out,
+        "optional.prompt-metadata.excluded-from-release-hash",
+    );
+    encode_hash(&mut out, &std_library_release_hash);
+    encode_option_hash(&mut out, prompt_metadata_hash.as_ref());
+    sha256(&out)
+}
+
+fn machine_std_loaded_release_audit_hash(
+    loaded: &MachineStdLoadedRelease,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, "npa.phase8.std-library-loaded-release.v1");
+    encode_uvar(&mut out, loaded.modules().len() as u64);
+    for module in loaded.modules() {
+        encode_name(&mut out, &module.module)?;
+        encode_string(&mut out, &module.locator_path);
+        encode_hash(&mut out, &module.certificate_bytes_hash);
+        encode_hash(&mut out, &module.expected_export_hash);
+        encode_hash(&mut out, &module.expected_certificate_hash);
+        encode_hash(&mut out, &module.axiom_report_hash);
+        encode_uvar(&mut out, module.verified_module.export_block().len() as u64);
+        encode_uvar(
+            &mut out,
+            module
+                .verified_module
+                .export_block()
+                .iter()
+                .filter(|entry| matches!(entry.kind, ExportKind::Theorem | ExportKind::Axiom))
+                .count() as u64,
+        );
+        encode_uvar(&mut out, module.imports.len() as u64);
+        for import in &module.imports {
+            encode_name(&mut out, &import.module)?;
+            encode_hash(&mut out, &import.export_hash);
+            encode_option_hash(&mut out, import.certificate_hash.as_ref());
+        }
+    }
+    Ok(sha256(&out))
+}
+
+fn validate_audit_profile_targets(
+    theorem_index: &MachineStdTheoremIndex,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<(), MachineStdAuditError> {
+    let mut theorem_by_ref = BTreeMap::new();
+    let mut theorem_by_rule_target = BTreeSet::new();
+    for entry in &theorem_index.entries {
+        let key = machine_std_global_ref_canonical_bytes(&entry.global_ref)
+            .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+        theorem_by_ref.insert(key, entry);
+        theorem_by_rule_target.insert((
+            entry.global_ref.name.clone(),
+            entry.global_ref.decl_interface_hash,
+        ));
+    }
+
+    for profile in &rewrite_profiles.profiles {
+        for descriptor in &profile.descriptors {
+            let key = machine_std_global_ref_canonical_bytes(&descriptor.source)
+                .map_err(|source| MachineStdAuditError::CanonicalBytes { source })?;
+            if !theorem_by_ref.contains_key(&key) {
+                return Err(MachineStdAuditError::ProfileTargetMismatch {
+                    profile_id: profile.profile_id.clone(),
+                    name: descriptor.source.name.clone(),
+                });
+            }
+        }
+    }
+
+    for profile in &simp_profiles.profiles {
+        for rule in &profile.rules {
+            if !theorem_by_rule_target.contains(&(rule.name.clone(), rule.decl_interface_hash)) {
+                return Err(MachineStdAuditError::ProfileTargetMismatch {
+                    profile_id: profile.profile_id.clone(),
+                    name: rule.name.clone(),
+                });
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_audit_bundle_allow_axioms(
+    loaded: &MachineStdLoadedRelease,
+    import_bundles: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdAuditError> {
+    let allowed_eq_rec =
+        std_logic_eq_rec_axiom_ref(loaded).map(|axiom| machine_std_axiom_ref_to_wire(&axiom));
+    for bundle in &import_bundles.bundles {
+        for axiom in &bundle.allow_axioms {
+            if allowed_eq_rec.as_ref() != Some(axiom) {
+                return Err(MachineStdAuditError::CustomAllowAxiom {
+                    bundle_id: bundle.bundle_id.clone(),
+                    axiom: Box::new(axiom.clone()),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn rewrite_descriptor_count(rewrite_profiles: &MachineStdRewriteProfileSet) -> u64 {
+    rewrite_profiles
+        .profiles
+        .iter()
+        .map(|profile| profile.descriptors.len() as u64)
+        .sum()
+}
+
+fn simp_rule_count(simp_profiles: &MachineStdSimpProfileSet) -> u64 {
+    simp_profiles
+        .profiles
+        .iter()
+        .map(|profile| profile.rules.len() as u64)
+        .sum()
+}
+
+fn import_bundle_allow_axiom_count(import_bundles: &MachineStdImportBundleSet) -> u64 {
+    import_bundles
+        .bundles
+        .iter()
+        .map(|bundle| bundle.allow_axioms.len() as u64)
+        .sum()
 }
 
 pub fn validate_machine_std_mvp_locators(
@@ -8632,6 +9192,16 @@ fn encode_option_string(out: &mut Vec<u8>, value: Option<&str>) {
     }
 }
 
+fn encode_option_hash(out: &mut Vec<u8>, value: Option<&Hash>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_hash(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
 fn encode_bool(out: &mut Vec<u8>, value: bool) {
     out.push(u8::from(value));
 }
@@ -9923,6 +10493,212 @@ mod tests {
             parsed.prompt_metadata_hash,
             prompt_metadata.prompt_metadata_hash
         );
+    }
+
+    #[test]
+    fn audits_mvp_release_artifacts_for_phase8() {
+        let package = TestPackage::new("phase8_audit_report");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        let nat_add_zero = theorem_index_entry(&theorem_index, "Nat.add_zero");
+        let prompt_metadata = prompt_metadata_set_for_entries(vec![prompt_metadata_entry(
+            nat_add_zero.global_ref.clone(),
+            STD_NAT_BUNDLE_ID,
+            "simp",
+            &["nat", "simp"],
+        )]);
+
+        let report = audit_machine_std_mvp_release_artifacts(
+            &release,
+            &loaded,
+            MachineStdAuditArtifacts {
+                import_bundles: &import_bundles,
+                theorem_index: &theorem_index,
+                rewrite_profiles: &rewrite_profiles,
+                simp_profiles: &simp_profiles,
+                axiom_report: &axiom_report,
+                prompt_metadata: Some(&prompt_metadata),
+            },
+        )
+        .unwrap();
+
+        let check_ids = report
+            .checks
+            .iter()
+            .map(|check| check.check_id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            check_ids,
+            vec![
+                "manifest.verifier-output",
+                "manifest.release-hash",
+                "sidecar.axiom-report.hash",
+                "sidecar.rewrite-profiles.hash",
+                "sidecar.simp-profiles.hash",
+                "sidecar.import-bundles.hash",
+                "sidecar.theorem-index.hash",
+                "profiles.target-decl-interface-hash",
+                "import-bundles.minimal-closure-and-axioms",
+                "optional.prompt-metadata.excluded-from-release-hash",
+            ]
+        );
+        assert!(report.checks.iter().all(|check| check.passed));
+        assert_eq!(report.audit_profile_id, STD_AUDIT_PROFILE_ID);
+        assert_eq!(report.library_profile_id, STD_LIBRARY_PROFILE_ID);
+        assert_eq!(
+            report.std_library_release_hash,
+            machine_std_library_release_hash(&release).unwrap()
+        );
+        assert_eq!(report.manifest_hash, report.std_library_release_hash);
+        assert_eq!(
+            report.prompt_metadata_hash,
+            Some(prompt_metadata.prompt_metadata_hash)
+        );
+        assert!(report.prompt_metadata_excluded_from_release_hash);
+        assert_eq!(
+            report.audit_report_hash,
+            machine_std_audit_report_hash(&report)
+        );
+        let validated = MachineStdValidatedRelease {
+            manifest: release.clone(),
+            loaded: loaded.clone(),
+            axiom_report: axiom_report.clone(),
+            import_bundles: import_bundles.clone(),
+            std_library_release_hash: machine_std_library_release_hash(&release).unwrap(),
+        };
+        let validated_report = audit_machine_std_mvp_validated_release(
+            &validated,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            Some(&prompt_metadata),
+        )
+        .unwrap();
+        assert_eq!(validated_report.audit_report_hash, report.audit_report_hash);
+
+        let mut stale_validated = validated.clone();
+        stale_validated.std_library_release_hash = test_hash(233);
+        assert!(matches!(
+            audit_machine_std_mvp_validated_release(
+                &stale_validated,
+                &theorem_index,
+                &rewrite_profiles,
+                &simp_profiles,
+                Some(&prompt_metadata),
+            ),
+            Err(MachineStdAuditError::ReleaseHashMismatch { .. })
+        ));
+
+        let mut display_only_metadata = prompt_metadata.clone();
+        display_only_metadata.entries[0].short_doc = Some("different display text".to_owned());
+        refresh_prompt_metadata_hash(&mut display_only_metadata);
+        let display_report = audit_machine_std_mvp_release_artifacts(
+            &release,
+            &loaded,
+            MachineStdAuditArtifacts {
+                import_bundles: &import_bundles,
+                theorem_index: &theorem_index,
+                rewrite_profiles: &rewrite_profiles,
+                simp_profiles: &simp_profiles,
+                axiom_report: &axiom_report,
+                prompt_metadata: Some(&display_only_metadata),
+            },
+        )
+        .unwrap();
+        assert_ne!(
+            report.prompt_metadata_hash,
+            display_report.prompt_metadata_hash
+        );
+        assert_eq!(
+            report.std_library_release_hash,
+            display_report.std_library_release_hash
+        );
+    }
+
+    #[test]
+    fn audit_rejects_manifest_bound_sidecar_hash_mismatch() {
+        let package = TestPackage::new("phase8_audit_sidecar_hash_mismatch");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (
+            mut release,
+            import_bundles,
+            theorem_index,
+            rewrite_profiles,
+            simp_profiles,
+            axiom_report,
+        ) = final_sidecar_artifacts_for_loaded(&loaded);
+        release.theorem_index_hash = test_hash(231);
+
+        let err = audit_machine_std_mvp_release_artifacts(
+            &release,
+            &loaded,
+            MachineStdAuditArtifacts {
+                import_bundles: &import_bundles,
+                theorem_index: &theorem_index,
+                rewrite_profiles: &rewrite_profiles,
+                simp_profiles: &simp_profiles,
+                axiom_report: &axiom_report,
+                prompt_metadata: None,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdAuditError::SidecarHashMismatch {
+                field: "theorem_index_hash",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn audit_rejects_custom_import_bundle_allow_axiom() {
+        let package = TestPackage::new("phase8_audit_custom_allow_axiom");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (
+            mut release,
+            mut import_bundles,
+            theorem_index,
+            rewrite_profiles,
+            simp_profiles,
+            axiom_report,
+        ) = final_sidecar_artifacts_for_loaded(&loaded);
+        import_bundles.bundles[0]
+            .allow_axioms
+            .push(MachineAxiomRefWire::CurrentModule {
+                module: Name::from_dotted("Std.Logic"),
+                name: Name::from_dotted("Unsafe.custom"),
+                source_index: 0,
+                decl_interface_hash: test_hash(232),
+            });
+        import_bundles.import_bundles_hash =
+            machine_std_import_bundle_set_hash(&import_bundles).unwrap();
+        release.import_bundles_hash = import_bundles.import_bundles_hash;
+
+        let err = audit_machine_std_mvp_release_artifacts(
+            &release,
+            &loaded,
+            MachineStdAuditArtifacts {
+                import_bundles: &import_bundles,
+                theorem_index: &theorem_index,
+                rewrite_profiles: &rewrite_profiles,
+                simp_profiles: &simp_profiles,
+                axiom_report: &axiom_report,
+                prompt_metadata: None,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(err, MachineStdAuditError::CustomAllowAxiom { .. }));
     }
 
     #[test]
