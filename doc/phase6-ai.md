@@ -2958,7 +2958,7 @@ Implementation entrypoints:
 
 ```text
 - npa_api::load_machine_std_mvp_release
-- npa_api::load_machine_std_mvp_release_from_json
+- npa_api::load_machine_std_mvp_release_with_sidecars_from_json
 - npa_api::parse_machine_std_library_release_json
 - npa_api::parse_machine_std_axiom_report_json
 - npa_api::machine_std_library_release_hash
@@ -3011,7 +3011,7 @@ Implementation entrypoints:
 - npa_api::parse_machine_std_import_bundle_set_json
 - npa_api::machine_std_import_bundle_hash
 - npa_api::machine_std_import_bundle_set_hash
-- npa_api::load_machine_std_mvp_release_with_import_bundles_from_json
+- npa_api::load_machine_std_mvp_release_with_sidecars_from_json
 ```
 
 M3 implementation note:

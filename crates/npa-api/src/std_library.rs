@@ -36,6 +36,9 @@ const STD_LIST_PATH: &str = "Std/List.npcert";
 const STD_ALGEBRA_BASIC_PATH: &str = "Std/Algebra/Basic.npcert";
 const STD_MACHINE_RELEASE_JSON_PATH: &str = "Std.machine-release.json";
 const STD_MACHINE_IMPORT_BUNDLES_JSON_PATH: &str = "Std.machine-import-bundles.json";
+const STD_MACHINE_THEOREM_INDEX_JSON_PATH: &str = "Std.machine-theorem-index.json";
+const STD_MACHINE_REWRITE_PROFILES_JSON_PATH: &str = "Std.machine-rewrite-profiles.json";
+const STD_MACHINE_SIMP_PROFILES_JSON_PATH: &str = "Std.machine-simp-profiles.json";
 const STD_MACHINE_AXIOM_REPORT_JSON_PATH: &str = "Std.machine-axiom-report.json";
 const STD_LIBRARY_PROTOCOL_VERSION: &str = "npa.stdlib-machine.v1";
 const STD_LIBRARY_PROFILE_ID: &str = "npa.stdlib.mvp.v1";
@@ -362,6 +365,8 @@ pub enum MachineStdArtifactKind {
     LibraryRelease,
     ImportBundles,
     TheoremIndex,
+    RewriteProfiles,
+    SimpProfiles,
     AxiomReport,
 }
 
@@ -431,6 +436,8 @@ pub enum MachineStdReleaseArtifactError {
     InvalidStdLibraryRelease(MachineStdLibraryReleaseError),
     InvalidStdAxiomPolicy(MachineStdAxiomPolicyError),
     InvalidStdImportBundle(MachineStdImportBundleError),
+    InvalidStdRewriteProfile(MachineStdRewriteProfileError),
+    InvalidStdSimpProfile(MachineStdSimpProfileError),
     InvalidStdTheoremIndex(MachineStdTheoremIndexError),
 }
 
@@ -1012,20 +1019,39 @@ pub fn load_machine_std_mvp_release(
         STD_MACHINE_IMPORT_BUNDLES_JSON_PATH,
         MachineStdArtifactKind::ImportBundles,
     )?;
+    let theorem_index_json = read_std_artifact_json(
+        root,
+        STD_MACHINE_THEOREM_INDEX_JSON_PATH,
+        MachineStdArtifactKind::TheoremIndex,
+    )?;
+    let rewrite_profiles_json = read_std_artifact_json(
+        root,
+        STD_MACHINE_REWRITE_PROFILES_JSON_PATH,
+        MachineStdArtifactKind::RewriteProfiles,
+    )?;
+    let simp_profiles_json = read_std_artifact_json(
+        root,
+        STD_MACHINE_SIMP_PROFILES_JSON_PATH,
+        MachineStdArtifactKind::SimpProfiles,
+    )?;
     let axiom_report_json = read_std_artifact_json(
         root,
         STD_MACHINE_AXIOM_REPORT_JSON_PATH,
         MachineStdArtifactKind::AxiomReport,
     )?;
-    load_machine_std_mvp_release_with_import_bundles_from_json(
+    load_machine_std_mvp_release_with_sidecars_from_json(
         root,
         &release_json,
         &import_bundles_json,
+        &theorem_index_json,
+        &rewrite_profiles_json,
+        &simp_profiles_json,
         &axiom_report_json,
     )
 }
 
-pub fn load_machine_std_mvp_release_from_json(
+#[cfg(test)]
+fn load_machine_std_mvp_release_from_json(
     package_root: impl AsRef<Path>,
     release_json: &str,
     axiom_report_json: &str,
@@ -1042,7 +1068,8 @@ pub fn load_machine_std_mvp_release_from_json(
     finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)
 }
 
-pub fn load_machine_std_mvp_release_with_import_bundles_from_json(
+#[cfg(test)]
+fn load_machine_std_mvp_release_with_import_bundles_from_json(
     package_root: impl AsRef<Path>,
     release_json: &str,
     import_bundles_json: &str,
@@ -1062,6 +1089,165 @@ pub fn load_machine_std_mvp_release_with_import_bundles_from_json(
         import_bundles.import_bundles_hash,
     )?;
     finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)
+}
+
+pub fn load_machine_std_mvp_release_with_sidecars_from_json(
+    package_root: impl AsRef<Path>,
+    release_json: &str,
+    import_bundles_json: &str,
+    theorem_index_json: &str,
+    rewrite_profiles_json: &str,
+    simp_profiles_json: &str,
+    axiom_report_json: &str,
+) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
+    let import_bundles = parse_machine_std_import_bundle_set_json(import_bundles_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let theorem_index = parse_machine_std_theorem_index_json(theorem_index_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let rewrite_profiles = parse_machine_std_rewrite_profile_set_json(rewrite_profiles_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let simp_profiles = parse_machine_std_simp_profile_set_json(simp_profiles_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let preflight_manifest = parse_machine_std_library_release_json(release_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    validate_machine_std_library_release_prepass(&preflight_manifest)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
+    validate_machine_std_release_sidecar_self_hashes(
+        &import_bundles,
+        &theorem_index,
+        &rewrite_profiles,
+        &simp_profiles,
+    )?;
+
+    let (manifest, loaded, axiom_report) =
+        load_machine_std_mvp_release_core(package_root, release_json, axiom_report_json)?;
+
+    let expected_import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    validate_machine_std_mvp_import_bundle_set(&import_bundles, &expected_import_bundles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+
+    let expected_rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdRewriteProfile)?;
+    validate_machine_std_mvp_rewrite_profile_set(&rewrite_profiles, &expected_rewrite_profiles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdRewriteProfile)?;
+
+    let expected_simp_profiles =
+        generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles)
+            .map_err(MachineStdReleaseArtifactError::InvalidStdSimpProfile)?;
+    validate_machine_std_mvp_simp_profile_set(
+        &simp_profiles,
+        &expected_simp_profiles,
+        &rewrite_profiles,
+    )
+    .map_err(MachineStdReleaseArtifactError::InvalidStdSimpProfile)?;
+
+    let expected_theorem_index =
+        generate_machine_std_mvp_final_theorem_index(&loaded, &rewrite_profiles, &simp_profiles)
+            .map_err(MachineStdReleaseArtifactError::InvalidStdTheoremIndex)?;
+    validate_machine_std_mvp_final_theorem_index(&theorem_index, &expected_theorem_index)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdTheoremIndex)?;
+
+    compare_release_sidecar_hash(
+        "import_bundles_hash",
+        manifest.import_bundles_hash,
+        import_bundles.import_bundles_hash,
+    )?;
+    compare_release_sidecar_hash(
+        "rewrite_profiles_hash",
+        manifest.rewrite_profiles_hash,
+        rewrite_profiles.rewrite_profiles_hash,
+    )?;
+    compare_release_sidecar_hash(
+        "simp_profiles_hash",
+        manifest.simp_profiles_hash,
+        simp_profiles.simp_profiles_hash,
+    )?;
+    compare_release_sidecar_hash(
+        "theorem_index_hash",
+        manifest.theorem_index_hash,
+        theorem_index.index_hash,
+    )?;
+    validate_machine_std_mvp_release_final_sidecar_counts(
+        &manifest,
+        &theorem_index,
+        &simp_profiles,
+        &rewrite_profiles,
+    )?;
+
+    finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)
+}
+
+fn validate_machine_std_release_sidecar_self_hashes(
+    import_bundles: &MachineStdImportBundleSet,
+    theorem_index: &MachineStdTheoremIndex,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<(), MachineStdReleaseArtifactError> {
+    let import_bundles_hash =
+        machine_std_import_bundle_set_hash(import_bundles).map_err(|source| {
+            MachineStdReleaseArtifactError::InvalidStdImportBundle(
+                MachineStdImportBundleError::CanonicalBytes { source },
+            )
+        })?;
+    if import_bundles_hash != import_bundles.import_bundles_hash {
+        return Err(MachineStdReleaseArtifactError::InvalidStdImportBundle(
+            MachineStdImportBundleError::ImportBundlesHashMismatch {
+                expected: import_bundles.import_bundles_hash,
+                actual: import_bundles_hash,
+            },
+        ));
+    }
+
+    validate_rewrite_profile_hashes(rewrite_profiles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdRewriteProfile)?;
+    let rewrite_profiles_hash =
+        machine_std_rewrite_profile_set_hash(rewrite_profiles).map_err(|source| {
+            MachineStdReleaseArtifactError::InvalidStdRewriteProfile(
+                MachineStdRewriteProfileError::CanonicalBytes { source },
+            )
+        })?;
+    if rewrite_profiles_hash != rewrite_profiles.rewrite_profiles_hash {
+        return Err(MachineStdReleaseArtifactError::InvalidStdRewriteProfile(
+            MachineStdRewriteProfileError::RewriteProfilesHashMismatch {
+                expected: rewrite_profiles.rewrite_profiles_hash,
+                actual: rewrite_profiles_hash,
+            },
+        ));
+    }
+
+    validate_simp_profile_hashes(simp_profiles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdSimpProfile)?;
+    let simp_profiles_hash =
+        machine_std_simp_profile_set_hash(simp_profiles).map_err(|source| {
+            MachineStdReleaseArtifactError::InvalidStdSimpProfile(
+                MachineStdSimpProfileError::CanonicalBytes { source },
+            )
+        })?;
+    if simp_profiles_hash != simp_profiles.simp_profiles_hash {
+        return Err(MachineStdReleaseArtifactError::InvalidStdSimpProfile(
+            MachineStdSimpProfileError::SimpProfilesHashMismatch {
+                expected: simp_profiles.simp_profiles_hash,
+                actual: simp_profiles_hash,
+            },
+        ));
+    }
+
+    let theorem_index_hash = machine_std_theorem_index_hash(theorem_index).map_err(|source| {
+        MachineStdReleaseArtifactError::InvalidStdTheoremIndex(
+            MachineStdTheoremIndexError::CanonicalBytes { source },
+        )
+    })?;
+    if theorem_index_hash != theorem_index.index_hash {
+        return Err(MachineStdReleaseArtifactError::InvalidStdTheoremIndex(
+            MachineStdTheoremIndexError::TheoremIndexHashMismatch {
+                expected: theorem_index.index_hash,
+                actual: theorem_index_hash,
+            },
+        ));
+    }
+
+    Ok(())
 }
 
 fn load_machine_std_mvp_release_core(
@@ -1182,6 +1368,27 @@ pub fn parse_machine_std_import_bundle_set_json(
 ) -> Result<MachineStdImportBundleSet, MachineStdArtifactShapeError> {
     let doc = parse_std_json(source, MachineStdArtifactKind::ImportBundles)?;
     parse_import_bundle_set_value(doc.root(), "$")
+}
+
+pub fn parse_machine_std_theorem_index_json(
+    source: &str,
+) -> Result<MachineStdTheoremIndex, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::TheoremIndex)?;
+    parse_theorem_index_value(doc.root(), "$")
+}
+
+pub fn parse_machine_std_rewrite_profile_set_json(
+    source: &str,
+) -> Result<MachineStdRewriteProfileSet, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::RewriteProfiles)?;
+    parse_rewrite_profile_set_value(doc.root(), "$")
+}
+
+pub fn parse_machine_std_simp_profile_set_json(
+    source: &str,
+) -> Result<MachineStdSimpProfileSet, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::SimpProfiles)?;
+    parse_simp_profile_set_value(doc.root(), "$")
 }
 
 pub fn machine_std_module_artifact_canonical_bytes(
@@ -5201,6 +5408,79 @@ const NAT_FAMILY_FIELDS: &[&str] = &[
     "rec_name",
     "rec_interface_hash",
 ];
+const THEOREM_INDEX_FIELDS: &[&str] = &[
+    "index_profile_id",
+    "library_profile_id",
+    "entries",
+    "index_hash",
+];
+const THEOREM_ENTRY_FIELDS: &[&str] = &[
+    "global_ref",
+    "kind",
+    "universe_params",
+    "statement_core_hash",
+    "statement_head",
+    "constants",
+    "modes",
+    "attributes",
+    "rewrite_descriptors",
+    "axiom_dependencies",
+    "proof_term_size",
+];
+const GLOBAL_REF_FIELDS: &[&str] = &[
+    "module",
+    "name",
+    "export_hash",
+    "certificate_hash",
+    "decl_interface_hash",
+];
+const GLOBAL_REF_VIEW_DECL_FIELDS: &[&str] = &[
+    "kind",
+    "module",
+    "name",
+    "export_hash",
+    "certificate_hash",
+    "decl_interface_hash",
+    "public_export",
+];
+const GLOBAL_REF_VIEW_GENERATED_FIELDS: &[&str] = &[
+    "kind",
+    "module",
+    "parent_name",
+    "name",
+    "export_hash",
+    "certificate_hash",
+    "parent_decl_interface_hash",
+    "decl_interface_hash",
+    "public_export",
+];
+const REWRITE_DESCRIPTOR_FIELDS: &[&str] = &[
+    "source",
+    "direction",
+    "safety",
+    "lhs_core_hash",
+    "rhs_core_hash",
+    "rule_telescope_hash",
+];
+const REWRITE_PROFILE_SET_FIELDS: &[&str] =
+    &["library_profile_id", "profiles", "rewrite_profiles_hash"];
+const REWRITE_PROFILE_FIELDS: &[&str] = &[
+    "profile_id",
+    "required_import_bundle_id",
+    "kernel_check_profile",
+    "eq_family",
+    "descriptors",
+    "profile_hash",
+];
+const SIMP_PROFILE_SET_FIELDS: &[&str] = &["library_profile_id", "profiles", "simp_profiles_hash"];
+const SIMP_PROFILE_FIELDS: &[&str] = &[
+    "profile_id",
+    "required_import_bundle_id",
+    "kernel_check_profile",
+    "eq_family",
+    "rules",
+    "profile_hash",
+];
 
 fn parse_std_json<'src>(
     source: &'src str,
@@ -5596,52 +5876,44 @@ fn parse_simp_rule_array(
     path: &str,
     field: &'static str,
 ) -> Result<Vec<SimpRuleRef>, MachineStdArtifactShapeError> {
-    required_array(members, MachineStdArtifactKind::ImportBundles, path, field)?
+    parse_simp_rule_array_for(MachineStdArtifactKind::ImportBundles, members, path, field)
+}
+
+fn parse_simp_rule_array_for(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<SimpRuleRef>, MachineStdArtifactShapeError> {
+    required_array(members, artifact, path, field)?
         .iter()
         .enumerate()
-        .map(|(index, item)| parse_simp_rule_value(item, &array_path(path, field, index)))
+        .map(|(index, item)| {
+            parse_simp_rule_value_for(artifact, item, &array_path(path, field, index))
+        })
         .collect()
 }
 
-fn parse_simp_rule_value(
+fn parse_simp_rule_value_for(
+    artifact: MachineStdArtifactKind,
     value: &JsonValue<'_>,
     path: &str,
 ) -> Result<SimpRuleRef, MachineStdArtifactShapeError> {
-    let members = validated_object_members(
-        value,
-        MachineStdArtifactKind::ImportBundles,
-        path,
-        SIMP_RULE_FIELDS,
-    )?;
-    let direction = match required_string(
-        members,
-        MachineStdArtifactKind::ImportBundles,
-        path,
-        "direction",
-    )? {
+    let members = validated_object_members(value, artifact, path, SIMP_RULE_FIELDS)?;
+    let direction = match required_string(members, artifact, path, "direction")? {
         "forward" => RewriteDirection::Forward,
         "backward" => RewriteDirection::Backward,
         _ => {
             return Err(shape_error(
-                MachineStdArtifactKind::ImportBundles,
+                artifact,
                 &field_path(path, "direction"),
                 MachineStdArtifactShapeErrorReason::InvalidEnumString { field: "direction" },
             ));
         }
     };
     Ok(SimpRuleRef {
-        name: required_fully_qualified_name(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            path,
-            "name",
-        )?,
-        decl_interface_hash: required_hash(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            path,
-            "decl_interface_hash",
-        )?,
+        name: required_fully_qualified_name(members, artifact, path, "name")?,
+        decl_interface_hash: required_hash(members, artifact, path, "decl_interface_hash")?,
         direction,
     })
 }
@@ -5650,53 +5922,26 @@ fn parse_optional_eq_family_value(
     value: &JsonValue<'_>,
     path: &str,
 ) -> Result<Option<EqFamilyRef>, MachineStdArtifactShapeError> {
+    parse_optional_eq_family_value_for(MachineStdArtifactKind::ImportBundles, value, path)
+}
+
+fn parse_optional_eq_family_value_for(
+    artifact: MachineStdArtifactKind,
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<Option<EqFamilyRef>, MachineStdArtifactShapeError> {
     if value.kind() == JsonValueKind::Null {
         return Ok(None);
     }
     let path = field_path(path, "eq_family");
-    let members = validated_object_members(
-        value,
-        MachineStdArtifactKind::ImportBundles,
-        &path,
-        EQ_FAMILY_FIELDS,
-    )?;
+    let members = validated_object_members(value, artifact, &path, EQ_FAMILY_FIELDS)?;
     Ok(Some(EqFamilyRef {
-        eq_name: required_fully_qualified_name(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            &path,
-            "eq_name",
-        )?,
-        eq_interface_hash: required_hash(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            &path,
-            "eq_interface_hash",
-        )?,
-        refl_name: required_fully_qualified_name(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            &path,
-            "refl_name",
-        )?,
-        refl_interface_hash: required_hash(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            &path,
-            "refl_interface_hash",
-        )?,
-        rec_name: required_fully_qualified_name(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            &path,
-            "rec_name",
-        )?,
-        rec_interface_hash: required_hash(
-            members,
-            MachineStdArtifactKind::ImportBundles,
-            &path,
-            "rec_interface_hash",
-        )?,
+        eq_name: required_fully_qualified_name(members, artifact, &path, "eq_name")?,
+        eq_interface_hash: required_hash(members, artifact, &path, "eq_interface_hash")?,
+        refl_name: required_fully_qualified_name(members, artifact, &path, "refl_name")?,
+        refl_interface_hash: required_hash(members, artifact, &path, "refl_interface_hash")?,
+        rec_name: required_fully_qualified_name(members, artifact, &path, "rec_name")?,
+        rec_interface_hash: required_hash(members, artifact, &path, "rec_interface_hash")?,
     }))
 }
 
@@ -5932,6 +6177,623 @@ fn validated_machine_axiom_ref_wire_members<'value, 'src>(
     Ok(members)
 }
 
+fn parse_theorem_index_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdTheoremIndex, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::TheoremIndex,
+        path,
+        THEOREM_INDEX_FIELDS,
+    )?;
+    let entries = required_array(
+        members,
+        MachineStdArtifactKind::TheoremIndex,
+        path,
+        "entries",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_theorem_entry_value(item, &array_path(path, "entries", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdTheoremIndex {
+        index_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::TheoremIndex,
+            path,
+            "index_profile_id",
+        )?
+        .to_owned(),
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::TheoremIndex,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        entries,
+        index_hash: required_hash(
+            members,
+            MachineStdArtifactKind::TheoremIndex,
+            path,
+            "index_hash",
+        )?,
+    })
+}
+
+fn parse_theorem_entry_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdTheoremEntry, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::TheoremIndex,
+        path,
+        THEOREM_ENTRY_FIELDS,
+    )?;
+    Ok(MachineStdTheoremEntry {
+        global_ref: parse_global_ref_value(
+            required_value(members, "global_ref"),
+            &field_path(path, "global_ref"),
+        )?,
+        kind: parse_theorem_kind(members, path, "kind")?,
+        universe_params: parse_string_array(
+            MachineStdArtifactKind::TheoremIndex,
+            members,
+            path,
+            "universe_params",
+        )?,
+        statement_core_hash: required_hash(
+            members,
+            MachineStdArtifactKind::TheoremIndex,
+            path,
+            "statement_core_hash",
+        )?,
+        statement_head: parse_optional_global_ref_view(
+            required_value(members, "statement_head"),
+            &field_path(path, "statement_head"),
+        )?,
+        constants: parse_global_ref_view_array(members, path, "constants")?,
+        modes: parse_theorem_mode_array(members, path, "modes")?,
+        attributes: parse_std_attribute_array(members, path, "attributes")?,
+        rewrite_descriptors: parse_rewrite_descriptor_array(
+            MachineStdArtifactKind::TheoremIndex,
+            members,
+            path,
+            "rewrite_descriptors",
+        )?,
+        axiom_dependencies: parse_axiom_ref_array_for(
+            MachineStdArtifactKind::TheoremIndex,
+            members,
+            path,
+            "axiom_dependencies",
+        )?,
+        proof_term_size: parse_optional_u64_value(
+            MachineStdArtifactKind::TheoremIndex,
+            required_value(members, "proof_term_size"),
+            &field_path(path, "proof_term_size"),
+            "proof_term_size",
+        )?,
+    })
+}
+
+fn parse_global_ref_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdGlobalRef, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::TheoremIndex,
+        path,
+        GLOBAL_REF_FIELDS,
+    )?;
+    parse_global_ref_from_members(MachineStdArtifactKind::TheoremIndex, members, path)
+}
+
+fn parse_global_ref_value_for(
+    artifact: MachineStdArtifactKind,
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdGlobalRef, MachineStdArtifactShapeError> {
+    let members = validated_object_members(value, artifact, path, GLOBAL_REF_FIELDS)?;
+    parse_global_ref_from_members(artifact, members, path)
+}
+
+fn parse_global_ref_from_members(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+) -> Result<MachineStdGlobalRef, MachineStdArtifactShapeError> {
+    Ok(MachineStdGlobalRef {
+        module: required_module_name(members, artifact, path, "module")?,
+        name: required_fully_qualified_name(members, artifact, path, "name")?,
+        export_hash: required_hash(members, artifact, path, "export_hash")?,
+        certificate_hash: required_hash(members, artifact, path, "certificate_hash")?,
+        decl_interface_hash: required_hash(members, artifact, path, "decl_interface_hash")?,
+    })
+}
+
+fn parse_optional_global_ref_view(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<Option<MachineStdGlobalRefView>, MachineStdArtifactShapeError> {
+    if value.kind() == JsonValueKind::Null {
+        Ok(None)
+    } else {
+        parse_global_ref_view_value(value, path).map(Some)
+    }
+}
+
+fn parse_global_ref_view_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineStdGlobalRefView>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::TheoremIndex, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_global_ref_view_value(item, &array_path(path, field, index)))
+        .collect()
+}
+
+fn parse_global_ref_view_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdGlobalRefView, MachineStdArtifactShapeError> {
+    let kind_members =
+        validated_kinded_object_members(value, MachineStdArtifactKind::TheoremIndex, path)?;
+    let kind = required_string(
+        kind_members,
+        MachineStdArtifactKind::TheoremIndex,
+        path,
+        "kind",
+    )?;
+    match kind {
+        "decl" => {
+            let members = validated_object_members(
+                value,
+                MachineStdArtifactKind::TheoremIndex,
+                path,
+                GLOBAL_REF_VIEW_DECL_FIELDS,
+            )?;
+            Ok(MachineStdGlobalRefView::Decl {
+                module: required_module_name(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "module",
+                )?,
+                name: required_fully_qualified_name(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "name",
+                )?,
+                export_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "export_hash",
+                )?,
+                certificate_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "certificate_hash",
+                )?,
+                decl_interface_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "decl_interface_hash",
+                )?,
+                public_export: required_bool(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "public_export",
+                )?,
+            })
+        }
+        "generated" => {
+            let members = validated_object_members(
+                value,
+                MachineStdArtifactKind::TheoremIndex,
+                path,
+                GLOBAL_REF_VIEW_GENERATED_FIELDS,
+            )?;
+            Ok(MachineStdGlobalRefView::Generated {
+                module: required_module_name(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "module",
+                )?,
+                parent_name: required_fully_qualified_name(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "parent_name",
+                )?,
+                name: required_fully_qualified_name(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "name",
+                )?,
+                export_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "export_hash",
+                )?,
+                certificate_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "certificate_hash",
+                )?,
+                parent_decl_interface_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "parent_decl_interface_hash",
+                )?,
+                decl_interface_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "decl_interface_hash",
+                )?,
+                public_export: required_bool(
+                    members,
+                    MachineStdArtifactKind::TheoremIndex,
+                    path,
+                    "public_export",
+                )?,
+            })
+        }
+        _ => Err(shape_error(
+            MachineStdArtifactKind::TheoremIndex,
+            &field_path(path, "kind"),
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field: "kind" },
+        )),
+    }
+}
+
+fn parse_theorem_kind(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<MachineStdTheoremKind, MachineStdArtifactShapeError> {
+    match required_string(members, MachineStdArtifactKind::TheoremIndex, path, field)? {
+        "theorem" => Ok(MachineStdTheoremKind::Theorem),
+        "axiom" => Ok(MachineStdTheoremKind::Axiom),
+        _ => Err(shape_error(
+            MachineStdArtifactKind::TheoremIndex,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field },
+        )),
+    }
+}
+
+fn parse_theorem_mode_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineTheoremMode>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::TheoremIndex, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_theorem_mode_value(item, &array_path(path, field, index), field))
+        .collect()
+}
+
+fn parse_theorem_mode_value(
+    value: &JsonValue<'_>,
+    path: &str,
+    field: &'static str,
+) -> Result<MachineTheoremMode, MachineStdArtifactShapeError> {
+    match parse_string_value(MachineStdArtifactKind::TheoremIndex, value, path, field)? {
+        "exact" => Ok(MachineTheoremMode::Exact),
+        "apply" => Ok(MachineTheoremMode::Apply),
+        "rw" => Ok(MachineTheoremMode::Rw),
+        "simp" => Ok(MachineTheoremMode::Simp),
+        _ => Err(shape_error(
+            MachineStdArtifactKind::TheoremIndex,
+            path,
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field },
+        )),
+    }
+}
+
+fn parse_std_attribute_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineStdAttribute>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::TheoremIndex, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            parse_std_attribute_value(item, &array_path(path, field, index), field)
+        })
+        .collect()
+}
+
+fn parse_std_attribute_value(
+    value: &JsonValue<'_>,
+    path: &str,
+    field: &'static str,
+) -> Result<MachineStdAttribute, MachineStdArtifactShapeError> {
+    match parse_string_value(MachineStdArtifactKind::TheoremIndex, value, path, field)? {
+        "simp" => Ok(MachineStdAttribute::Simp),
+        "rw" => Ok(MachineStdAttribute::Rw),
+        "intro" => Ok(MachineStdAttribute::Intro),
+        "elim" => Ok(MachineStdAttribute::Elim),
+        "apply" => Ok(MachineStdAttribute::Apply),
+        "refl" => Ok(MachineStdAttribute::Refl),
+        "trans" => Ok(MachineStdAttribute::Trans),
+        "congr" => Ok(MachineStdAttribute::Congr),
+        _ => Err(shape_error(
+            MachineStdArtifactKind::TheoremIndex,
+            path,
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field },
+        )),
+    }
+}
+
+fn parse_rewrite_profile_set_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdRewriteProfileSet, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::RewriteProfiles,
+        path,
+        REWRITE_PROFILE_SET_FIELDS,
+    )?;
+    let profiles = required_array(
+        members,
+        MachineStdArtifactKind::RewriteProfiles,
+        path,
+        "profiles",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_rewrite_profile_value(item, &array_path(path, "profiles", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdRewriteProfileSet {
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::RewriteProfiles,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        profiles,
+        rewrite_profiles_hash: required_hash(
+            members,
+            MachineStdArtifactKind::RewriteProfiles,
+            path,
+            "rewrite_profiles_hash",
+        )?,
+    })
+}
+
+fn parse_rewrite_profile_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdRewriteProfile, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::RewriteProfiles,
+        path,
+        REWRITE_PROFILE_FIELDS,
+    )?;
+    Ok(MachineStdRewriteProfile {
+        profile_id: required_string(
+            members,
+            MachineStdArtifactKind::RewriteProfiles,
+            path,
+            "profile_id",
+        )?
+        .to_owned(),
+        required_import_bundle_id: required_string(
+            members,
+            MachineStdArtifactKind::RewriteProfiles,
+            path,
+            "required_import_bundle_id",
+        )?
+        .to_owned(),
+        kernel_check_profile: required_string(
+            members,
+            MachineStdArtifactKind::RewriteProfiles,
+            path,
+            "kernel_check_profile",
+        )?
+        .to_owned(),
+        eq_family: parse_optional_eq_family_value_for(
+            MachineStdArtifactKind::RewriteProfiles,
+            required_value(members, "eq_family"),
+            path,
+        )?,
+        descriptors: parse_rewrite_descriptor_array(
+            MachineStdArtifactKind::RewriteProfiles,
+            members,
+            path,
+            "descriptors",
+        )?,
+        profile_hash: required_hash(
+            members,
+            MachineStdArtifactKind::RewriteProfiles,
+            path,
+            "profile_hash",
+        )?,
+    })
+}
+
+fn parse_rewrite_descriptor_array(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineStdRewriteDescriptor>, MachineStdArtifactShapeError> {
+    required_array(members, artifact, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            parse_rewrite_descriptor_value(artifact, item, &array_path(path, field, index))
+        })
+        .collect()
+}
+
+fn parse_rewrite_descriptor_value(
+    artifact: MachineStdArtifactKind,
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdRewriteDescriptor, MachineStdArtifactShapeError> {
+    let members = validated_object_members(value, artifact, path, REWRITE_DESCRIPTOR_FIELDS)?;
+    Ok(MachineStdRewriteDescriptor {
+        source: parse_global_ref_value_for(
+            artifact,
+            required_value(members, "source"),
+            &field_path(path, "source"),
+        )?,
+        direction: parse_rewrite_direction(artifact, members, path, "direction")?,
+        safety: parse_rewrite_safety(artifact, members, path, "safety")?,
+        lhs_core_hash: required_hash(members, artifact, path, "lhs_core_hash")?,
+        rhs_core_hash: required_hash(members, artifact, path, "rhs_core_hash")?,
+        rule_telescope_hash: required_hash(members, artifact, path, "rule_telescope_hash")?,
+    })
+}
+
+fn parse_simp_profile_set_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdSimpProfileSet, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::SimpProfiles,
+        path,
+        SIMP_PROFILE_SET_FIELDS,
+    )?;
+    let profiles = required_array(
+        members,
+        MachineStdArtifactKind::SimpProfiles,
+        path,
+        "profiles",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_simp_profile_value(item, &array_path(path, "profiles", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdSimpProfileSet {
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::SimpProfiles,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        profiles,
+        simp_profiles_hash: required_hash(
+            members,
+            MachineStdArtifactKind::SimpProfiles,
+            path,
+            "simp_profiles_hash",
+        )?,
+    })
+}
+
+fn parse_simp_profile_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdSimpProfile, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::SimpProfiles,
+        path,
+        SIMP_PROFILE_FIELDS,
+    )?;
+    Ok(MachineStdSimpProfile {
+        profile_id: required_string(
+            members,
+            MachineStdArtifactKind::SimpProfiles,
+            path,
+            "profile_id",
+        )?
+        .to_owned(),
+        required_import_bundle_id: required_string(
+            members,
+            MachineStdArtifactKind::SimpProfiles,
+            path,
+            "required_import_bundle_id",
+        )?
+        .to_owned(),
+        kernel_check_profile: required_string(
+            members,
+            MachineStdArtifactKind::SimpProfiles,
+            path,
+            "kernel_check_profile",
+        )?
+        .to_owned(),
+        eq_family: parse_optional_eq_family_value_for(
+            MachineStdArtifactKind::SimpProfiles,
+            required_value(members, "eq_family"),
+            path,
+        )?,
+        rules: parse_simp_rule_array_for(
+            MachineStdArtifactKind::SimpProfiles,
+            members,
+            path,
+            "rules",
+        )?,
+        profile_hash: required_hash(
+            members,
+            MachineStdArtifactKind::SimpProfiles,
+            path,
+            "profile_hash",
+        )?,
+    })
+}
+
+fn parse_rewrite_direction(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<RewriteDirection, MachineStdArtifactShapeError> {
+    match required_string(members, artifact, path, field)? {
+        "forward" => Ok(RewriteDirection::Forward),
+        "backward" => Ok(RewriteDirection::Backward),
+        _ => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field },
+        )),
+    }
+}
+
+fn parse_rewrite_safety(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<MachineStdRewriteSafety, MachineStdArtifactShapeError> {
+    match required_string(members, artifact, path, field)? {
+        "simp_safe" => Ok(MachineStdRewriteSafety::SimpSafe),
+        "rw_only" => Ok(MachineStdRewriteSafety::RwOnly),
+        "unsafe_for_automation" => Ok(MachineStdRewriteSafety::UnsafeForAutomation),
+        _ => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field },
+        )),
+    }
+}
+
 fn parse_axiom_report_value(
     value: &JsonValue<'_>,
     path: &str,
@@ -6004,43 +6866,35 @@ fn parse_axiom_ref_array(
     path: &str,
     field: &'static str,
 ) -> Result<Vec<MachineStdAxiomRef>, MachineStdArtifactShapeError> {
-    required_array(members, MachineStdArtifactKind::AxiomReport, path, field)?
+    parse_axiom_ref_array_for(MachineStdArtifactKind::AxiomReport, members, path, field)
+}
+
+fn parse_axiom_ref_array_for(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineStdAxiomRef>, MachineStdArtifactShapeError> {
+    required_array(members, artifact, path, field)?
         .iter()
         .enumerate()
-        .map(|(index, item)| parse_axiom_ref_value(item, &array_path(path, field, index)))
+        .map(|(index, item)| {
+            parse_axiom_ref_value_for(artifact, item, &array_path(path, field, index))
+        })
         .collect()
 }
 
-fn parse_axiom_ref_value(
+fn parse_axiom_ref_value_for(
+    artifact: MachineStdArtifactKind,
     value: &JsonValue<'_>,
     path: &str,
 ) -> Result<MachineStdAxiomRef, MachineStdArtifactShapeError> {
-    let members = validated_object_members(
-        value,
-        MachineStdArtifactKind::AxiomReport,
-        path,
-        AXIOM_REF_FIELDS,
-    )?;
+    let members = validated_object_members(value, artifact, path, AXIOM_REF_FIELDS)?;
     Ok(MachineStdAxiomRef {
-        module: required_module_name(members, MachineStdArtifactKind::AxiomReport, path, "module")?,
-        name: required_fully_qualified_name(
-            members,
-            MachineStdArtifactKind::AxiomReport,
-            path,
-            "name",
-        )?,
-        export_hash: required_hash(
-            members,
-            MachineStdArtifactKind::AxiomReport,
-            path,
-            "export_hash",
-        )?,
-        decl_interface_hash: required_hash(
-            members,
-            MachineStdArtifactKind::AxiomReport,
-            path,
-            "decl_interface_hash",
-        )?,
+        module: required_module_name(members, artifact, path, "module")?,
+        name: required_fully_qualified_name(members, artifact, path, "name")?,
+        export_hash: required_hash(members, artifact, path, "export_hash")?,
+        decl_interface_hash: required_hash(members, artifact, path, "decl_interface_hash")?,
     })
 }
 
@@ -6094,6 +6948,42 @@ fn validated_object_members<'value, 'src>(
     Ok(members)
 }
 
+fn validated_kinded_object_members<'value, 'src>(
+    value: &'value JsonValue<'src>,
+    artifact: MachineStdArtifactKind,
+    path: &str,
+) -> Result<&'value [crate::json::JsonMember<'src>], MachineStdArtifactShapeError> {
+    let Some(members) = value.object_members() else {
+        return Err(shape_error(
+            artifact,
+            path,
+            MachineStdArtifactShapeErrorReason::ExpectedObject {
+                actual: value.kind(),
+            },
+        ));
+    };
+    let mut seen = BTreeSet::new();
+    for member in members {
+        if !seen.insert(member.key().to_owned()) {
+            return Err(shape_error(
+                artifact,
+                &field_path(path, member.key()),
+                MachineStdArtifactShapeErrorReason::DuplicateKey {
+                    key: member.key().to_owned(),
+                },
+            ));
+        }
+    }
+    if !members.iter().any(|member| member.key() == "kind") {
+        return Err(shape_error(
+            artifact,
+            &field_path(path, "kind"),
+            MachineStdArtifactShapeErrorReason::MissingField { field: "kind" },
+        ));
+    }
+    Ok(members)
+}
+
 fn required_value<'value, 'src>(
     members: &'value [crate::json::JsonMember<'src>],
     field: &'static str,
@@ -6122,6 +7012,47 @@ fn required_string<'value, 'src>(
         actual => Err(shape_error(
             artifact,
             &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::TypeMismatch {
+                field,
+                expected: "string",
+                actual,
+            },
+        )),
+    }
+}
+
+fn parse_string_array(
+    artifact: MachineStdArtifactKind,
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<String>, MachineStdArtifactShapeError> {
+    required_array(members, artifact, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            parse_string_value(artifact, item, &array_path(path, field, index), field)
+                .map(str::to_owned)
+        })
+        .collect()
+}
+
+fn parse_string_value<'value>(
+    artifact: MachineStdArtifactKind,
+    value: &'value JsonValue<'_>,
+    path: &str,
+    field: &'static str,
+) -> Result<&'value str, MachineStdArtifactShapeError> {
+    match value.kind() {
+        JsonValueKind::Null => Err(shape_error(
+            artifact,
+            path,
+            MachineStdArtifactShapeErrorReason::NullField { field },
+        )),
+        JsonValueKind::String => Ok(value.string_value().expect("kind checked string")),
+        actual => Err(shape_error(
+            artifact,
+            path,
             MachineStdArtifactShapeErrorReason::TypeMismatch {
                 field,
                 expected: "string",
@@ -6167,6 +7098,32 @@ fn required_hash(
             MachineStdArtifactShapeErrorReason::InvalidHashString { field },
         )
     })
+}
+
+fn required_bool(
+    members: &[crate::json::JsonMember<'_>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<bool, MachineStdArtifactShapeError> {
+    let value = required_value(members, field);
+    match value.kind() {
+        JsonValueKind::Null => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::NullField { field },
+        )),
+        JsonValueKind::Bool => Ok(value.bool_value().expect("kind checked bool")),
+        actual => Err(shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::TypeMismatch {
+                field,
+                expected: "bool",
+                actual,
+            },
+        )),
+    }
 }
 
 fn required_hex_bytes(
@@ -6250,6 +7207,42 @@ fn required_u64(
             MachineStdArtifactShapeErrorReason::TypeMismatch {
                 field,
                 expected: "unsigned integer",
+                actual,
+            },
+        )),
+    }
+}
+
+fn parse_optional_u64_value(
+    artifact: MachineStdArtifactKind,
+    value: &JsonValue<'_>,
+    path: &str,
+    field: &'static str,
+) -> Result<Option<u64>, MachineStdArtifactShapeError> {
+    match value.kind() {
+        JsonValueKind::Null => Ok(None),
+        JsonValueKind::Number => {
+            let raw = value.number_raw().expect("kind checked number");
+            parse_strict_u64_token(raw, u64::MAX)
+                .map(Some)
+                .map_err(|error| {
+                    shape_error(
+                        artifact,
+                        path,
+                        MachineStdArtifactShapeErrorReason::InvalidUnsignedInteger {
+                            field,
+                            raw: raw.to_owned(),
+                            error,
+                        },
+                    )
+                })
+        }
+        actual => Err(shape_error(
+            artifact,
+            path,
+            MachineStdArtifactShapeErrorReason::TypeMismatch {
+                field,
+                expected: "unsigned integer or null",
                 actual,
             },
         )),
@@ -7615,6 +8608,43 @@ mod tests {
     }
 
     #[test]
+    fn package_loader_rejects_stale_final_theorem_index_self_hash() {
+        let package = TestPackage::new("stale_final_theorem_index_package");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (
+            mut release,
+            import_bundles,
+            mut theorem_index,
+            rewrite_profiles,
+            simp_profiles,
+            axiom_report,
+        ) = final_sidecar_artifacts_for_loaded(&loaded);
+        theorem_index.index_hash = test_hash(210);
+        release.theorem_index_hash = theorem_index.index_hash;
+
+        write_machine_std_release_sidecars(
+            package.path(),
+            &release,
+            &import_bundles,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            &axiom_report,
+        );
+
+        let err = load_machine_std_mvp_release(package.path()).unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdTheoremIndex(
+                MachineStdTheoremIndexError::TheoremIndexHashMismatch { .. }
+            )
+        ));
+    }
+
+    #[test]
     fn generates_mvp_theorem_index_from_public_theorem_and_axiom_exports() {
         let package = TestPackage::new("mvp_theorem_index_base");
         let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
@@ -8495,26 +9525,34 @@ mod tests {
         CoreModule {
             name: Name::from_dotted("Std.Logic"),
             declarations: vec![
-                Decl::Inductive {
-                    name: "Eq".to_owned(),
-                    universe_params: vec!["u".to_owned()],
-                    ty: Expr::pi(
-                        "A",
-                        Expr::sort(Level::param("u")),
-                        Expr::pi(
-                            "lhs",
-                            Expr::bvar(0),
-                            Expr::pi("rhs", Expr::bvar(1), Expr::sort(Level::zero())),
-                        ),
-                    ),
-                    data: Box::new(eq_inductive()),
-                },
+                logic_eq_inductive_decl(),
                 Decl::Axiom {
                     name: "Eq.rec".to_owned(),
                     universe_params: vec!["u".to_owned(), "v".to_owned()],
                     ty: eq_rec_type(Level::param("u"), Level::param("v")),
                 },
             ],
+        }
+    }
+
+    fn logic_eq_inductive_decl() -> Decl {
+        logic_eq_inductive_decl_with_data(eq_inductive())
+    }
+
+    fn logic_eq_inductive_decl_with_data(data: npa_kernel::InductiveDecl) -> Decl {
+        Decl::Inductive {
+            name: "Eq".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(Level::param("u")),
+                Expr::pi(
+                    "lhs",
+                    Expr::bvar(0),
+                    Expr::pi("rhs", Expr::bvar(1), Expr::sort(Level::zero())),
+                ),
+            ),
+            data: Box::new(data),
         }
     }
 
@@ -8770,6 +9808,101 @@ mod tests {
         }
     }
 
+    fn release_manifest_for_final_sidecars(
+        loaded: &MachineStdLoadedRelease,
+        axiom_report_hash: Hash,
+        import_bundles: &MachineStdImportBundleSet,
+        theorem_index: &MachineStdTheoremIndex,
+        simp_profiles: &MachineStdSimpProfileSet,
+        rewrite_profiles: &MachineStdRewriteProfileSet,
+    ) -> MachineStdLibraryRelease {
+        let mut release = release_manifest_for(loaded, axiom_report_hash);
+        release.import_bundles_hash = import_bundles.import_bundles_hash;
+        release.theorem_index_hash = theorem_index.index_hash;
+        release.simp_profiles_hash = simp_profiles.simp_profiles_hash;
+        release.rewrite_profiles_hash = rewrite_profiles.rewrite_profiles_hash;
+        apply_final_sidecar_counts(&mut release, theorem_index, simp_profiles, rewrite_profiles);
+        release
+    }
+
+    fn final_sidecar_artifacts_for_loaded(
+        loaded: &MachineStdLoadedRelease,
+    ) -> (
+        MachineStdLibraryRelease,
+        MachineStdImportBundleSet,
+        MachineStdTheoremIndex,
+        MachineStdRewriteProfileSet,
+        MachineStdSimpProfileSet,
+        MachineStdAxiomReport,
+    ) {
+        let import_bundles = generate_machine_std_mvp_import_bundle_set(loaded).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(loaded, &rewrite_profiles).unwrap();
+        let theorem_index =
+            generate_machine_std_mvp_final_theorem_index(loaded, &rewrite_profiles, &simp_profiles)
+                .unwrap();
+        let mut axiom_report = empty_axiom_report_for(loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for_final_sidecars(
+            loaded,
+            axiom_report.axiom_report_hash,
+            &import_bundles,
+            &theorem_index,
+            &simp_profiles,
+            &rewrite_profiles,
+        );
+        (
+            release,
+            import_bundles,
+            theorem_index,
+            rewrite_profiles,
+            simp_profiles,
+            axiom_report,
+        )
+    }
+
+    fn write_machine_std_release_sidecars(
+        root: &Path,
+        release: &MachineStdLibraryRelease,
+        import_bundles: &MachineStdImportBundleSet,
+        theorem_index: &MachineStdTheoremIndex,
+        rewrite_profiles: &MachineStdRewriteProfileSet,
+        simp_profiles: &MachineStdSimpProfileSet,
+        axiom_report: &MachineStdAxiomReport,
+    ) {
+        fs::write(
+            join_posix_relative_path(root, STD_MACHINE_RELEASE_JSON_PATH),
+            release_manifest_json(release),
+        )
+        .unwrap();
+        fs::write(
+            join_posix_relative_path(root, STD_MACHINE_IMPORT_BUNDLES_JSON_PATH),
+            import_bundle_set_json(import_bundles),
+        )
+        .unwrap();
+        fs::write(
+            join_posix_relative_path(root, STD_MACHINE_THEOREM_INDEX_JSON_PATH),
+            theorem_index_json(theorem_index),
+        )
+        .unwrap();
+        fs::write(
+            join_posix_relative_path(root, STD_MACHINE_REWRITE_PROFILES_JSON_PATH),
+            rewrite_profile_set_json(rewrite_profiles),
+        )
+        .unwrap();
+        fs::write(
+            join_posix_relative_path(root, STD_MACHINE_SIMP_PROFILES_JSON_PATH),
+            simp_profile_set_json(simp_profiles),
+        )
+        .unwrap();
+        fs::write(
+            join_posix_relative_path(root, STD_MACHINE_AXIOM_REPORT_JSON_PATH),
+            axiom_report_json(axiom_report),
+        )
+        .unwrap();
+    }
+
     fn release_manifest_json(release: &MachineStdLibraryRelease) -> String {
         format!(
             "{{\"protocol_version\":\"{}\",\"library_profile_id\":\"{}\",\"core_spec_id\":\"{}\",\"kernel_semantics_profile_id\":\"{}\",\"modules\":[{}],\"import_bundles_hash\":\"{}\",\"theorem_index_hash\":\"{}\",\"simp_profiles_hash\":\"{}\",\"rewrite_profiles_hash\":\"{}\",\"axiom_report_hash\":\"{}\"}}",
@@ -9011,6 +10144,244 @@ mod tests {
                 name.as_dotted(),
                 format_hash_string(decl_interface_hash),
             ),
+        }
+    }
+
+    fn theorem_index_json(theorem_index: &MachineStdTheoremIndex) -> String {
+        format!(
+            "{{\"index_profile_id\":\"{}\",\"library_profile_id\":\"{}\",\"entries\":[{}],\"index_hash\":\"{}\"}}",
+            theorem_index.index_profile_id,
+            theorem_index.library_profile_id,
+            theorem_index
+                .entries
+                .iter()
+                .map(theorem_entry_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&theorem_index.index_hash),
+        )
+    }
+
+    fn theorem_entry_json(entry: &MachineStdTheoremEntry) -> String {
+        format!(
+            "{{\"global_ref\":{},\"kind\":\"{}\",\"universe_params\":[{}],\"statement_core_hash\":\"{}\",\"statement_head\":{},\"constants\":[{}],\"modes\":[{}],\"attributes\":[{}],\"rewrite_descriptors\":[{}],\"axiom_dependencies\":[{}],\"proof_term_size\":{}}}",
+            global_ref_json(&entry.global_ref),
+            theorem_kind_json(entry.kind),
+            entry
+                .universe_params
+                .iter()
+                .map(|param| format!("\"{param}\""))
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&entry.statement_core_hash),
+            entry
+                .statement_head
+                .as_ref()
+                .map(global_ref_view_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            entry
+                .constants
+                .iter()
+                .map(global_ref_view_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            entry
+                .modes
+                .iter()
+                .map(|mode| format!("\"{}\"", mode.as_str()))
+                .collect::<Vec<_>>()
+                .join(","),
+            entry
+                .attributes
+                .iter()
+                .map(|attribute| format!("\"{}\"", std_attribute_json(*attribute)))
+                .collect::<Vec<_>>()
+                .join(","),
+            entry
+                .rewrite_descriptors
+                .iter()
+                .map(rewrite_descriptor_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            entry
+                .axiom_dependencies
+                .iter()
+                .map(axiom_ref_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            entry
+                .proof_term_size
+                .map(|size| size.to_string())
+                .unwrap_or_else(|| "null".to_owned()),
+        )
+    }
+
+    fn global_ref_json(global_ref: &MachineStdGlobalRef) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"name\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"decl_interface_hash\":\"{}\"}}",
+            global_ref.module.as_dotted(),
+            global_ref.name.as_dotted(),
+            format_hash_string(&global_ref.export_hash),
+            format_hash_string(&global_ref.certificate_hash),
+            format_hash_string(&global_ref.decl_interface_hash),
+        )
+    }
+
+    fn global_ref_view_json(view: &MachineStdGlobalRefView) -> String {
+        match view {
+            MachineStdGlobalRefView::Decl {
+                module,
+                name,
+                export_hash,
+                certificate_hash,
+                decl_interface_hash,
+                public_export,
+            } => format!(
+                "{{\"kind\":\"decl\",\"module\":\"{}\",\"name\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"decl_interface_hash\":\"{}\",\"public_export\":{}}}",
+                module.as_dotted(),
+                name.as_dotted(),
+                format_hash_string(export_hash),
+                format_hash_string(certificate_hash),
+                format_hash_string(decl_interface_hash),
+                public_export,
+            ),
+            MachineStdGlobalRefView::Generated {
+                module,
+                parent_name,
+                name,
+                export_hash,
+                certificate_hash,
+                parent_decl_interface_hash,
+                decl_interface_hash,
+                public_export,
+            } => format!(
+                "{{\"kind\":\"generated\",\"module\":\"{}\",\"parent_name\":\"{}\",\"name\":\"{}\",\"export_hash\":\"{}\",\"certificate_hash\":\"{}\",\"parent_decl_interface_hash\":\"{}\",\"decl_interface_hash\":\"{}\",\"public_export\":{}}}",
+                module.as_dotted(),
+                parent_name.as_dotted(),
+                name.as_dotted(),
+                format_hash_string(export_hash),
+                format_hash_string(certificate_hash),
+                format_hash_string(parent_decl_interface_hash),
+                format_hash_string(decl_interface_hash),
+                public_export,
+            ),
+        }
+    }
+
+    fn theorem_kind_json(kind: MachineStdTheoremKind) -> &'static str {
+        match kind {
+            MachineStdTheoremKind::Theorem => "theorem",
+            MachineStdTheoremKind::Axiom => "axiom",
+        }
+    }
+
+    fn std_attribute_json(attribute: MachineStdAttribute) -> &'static str {
+        match attribute {
+            MachineStdAttribute::Simp => "simp",
+            MachineStdAttribute::Rw => "rw",
+            MachineStdAttribute::Intro => "intro",
+            MachineStdAttribute::Elim => "elim",
+            MachineStdAttribute::Apply => "apply",
+            MachineStdAttribute::Refl => "refl",
+            MachineStdAttribute::Trans => "trans",
+            MachineStdAttribute::Congr => "congr",
+        }
+    }
+
+    fn rewrite_profile_set_json(profile_set: &MachineStdRewriteProfileSet) -> String {
+        format!(
+            "{{\"library_profile_id\":\"{}\",\"profiles\":[{}],\"rewrite_profiles_hash\":\"{}\"}}",
+            profile_set.library_profile_id,
+            profile_set
+                .profiles
+                .iter()
+                .map(rewrite_profile_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&profile_set.rewrite_profiles_hash),
+        )
+    }
+
+    fn rewrite_profile_json(profile: &MachineStdRewriteProfile) -> String {
+        format!(
+            "{{\"profile_id\":\"{}\",\"required_import_bundle_id\":\"{}\",\"kernel_check_profile\":\"{}\",\"eq_family\":{},\"descriptors\":[{}],\"profile_hash\":\"{}\"}}",
+            profile.profile_id,
+            profile.required_import_bundle_id,
+            profile.kernel_check_profile,
+            profile
+                .eq_family
+                .as_ref()
+                .map(eq_family_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            profile
+                .descriptors
+                .iter()
+                .map(rewrite_descriptor_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&profile.profile_hash),
+        )
+    }
+
+    fn rewrite_descriptor_json(descriptor: &MachineStdRewriteDescriptor) -> String {
+        format!(
+            "{{\"source\":{},\"direction\":\"{}\",\"safety\":\"{}\",\"lhs_core_hash\":\"{}\",\"rhs_core_hash\":\"{}\",\"rule_telescope_hash\":\"{}\"}}",
+            global_ref_json(&descriptor.source),
+            rewrite_direction_json(descriptor.direction),
+            rewrite_safety_json(descriptor.safety),
+            format_hash_string(&descriptor.lhs_core_hash),
+            format_hash_string(&descriptor.rhs_core_hash),
+            format_hash_string(&descriptor.rule_telescope_hash),
+        )
+    }
+
+    fn simp_profile_set_json(profile_set: &MachineStdSimpProfileSet) -> String {
+        format!(
+            "{{\"library_profile_id\":\"{}\",\"profiles\":[{}],\"simp_profiles_hash\":\"{}\"}}",
+            profile_set.library_profile_id,
+            profile_set
+                .profiles
+                .iter()
+                .map(simp_profile_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&profile_set.simp_profiles_hash),
+        )
+    }
+
+    fn simp_profile_json(profile: &MachineStdSimpProfile) -> String {
+        format!(
+            "{{\"profile_id\":\"{}\",\"required_import_bundle_id\":\"{}\",\"kernel_check_profile\":\"{}\",\"eq_family\":{},\"rules\":[{}],\"profile_hash\":\"{}\"}}",
+            profile.profile_id,
+            profile.required_import_bundle_id,
+            profile.kernel_check_profile,
+            profile
+                .eq_family
+                .as_ref()
+                .map(eq_family_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            profile
+                .rules
+                .iter()
+                .map(simp_rule_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&profile.profile_hash),
+        )
+    }
+
+    fn rewrite_direction_json(direction: RewriteDirection) -> &'static str {
+        match direction {
+            RewriteDirection::Forward => "forward",
+            RewriteDirection::Backward => "backward",
+        }
+    }
+
+    fn rewrite_safety_json(safety: MachineStdRewriteSafety) -> &'static str {
+        match safety {
+            MachineStdRewriteSafety::SimpSafe => "simp_safe",
+            MachineStdRewriteSafety::RwOnly => "rw_only",
+            MachineStdRewriteSafety::UnsafeForAutomation => "unsafe_for_automation",
         }
     }
 
