@@ -3434,7 +3434,7 @@ fn validate_simp_safe_rule(
             name: rule.key.name.clone(),
         });
     }
-    if !simp_size_exception(source)
+    if !simp_size_exception(loaded, source)
         && syntactic_expr_size(&rule.from_pattern) < syntactic_expr_size(&rule.to_pattern)
     {
         return Err(MachineStdRewriteProfileError::SimpSafeLintFailed {
@@ -3455,8 +3455,8 @@ fn validate_simp_safe_rule(
     Ok(())
 }
 
-fn simp_size_exception(source: &MachineStdGlobalRef) -> bool {
-    source.name == Name::from_dotted("Nat.mul_succ")
+fn simp_size_exception(loaded: &MachineStdLoadedRelease, source: &MachineStdGlobalRef) -> bool {
+    mvp_source_matches_public_theorem(loaded, source, "Std.Nat", "Nat.mul_succ")
 }
 
 fn syntactic_expr_size(expr: &Expr) -> u64 {
@@ -3835,15 +3835,17 @@ fn allowed_intro_heads(
     loaded: &MachineStdLoadedRelease,
     source: &MachineStdGlobalRef,
 ) -> Result<BTreeSet<Vec<u8>>, MachineStdRewriteProfileError> {
-    let labels: &[&str] = if source.name == Name::from_dotted("Nat.mul_succ") {
-        &["Nat.add"]
-    } else if source.name == Name::from_dotted("List.length_nil") {
-        &["Nat.zero"]
-    } else if source.name == Name::from_dotted("List.length_cons") {
-        &["Nat.succ"]
-    } else {
-        &[]
-    };
+    let labels: &[&str] =
+        if mvp_source_matches_public_theorem(loaded, source, "Std.Nat", "Nat.mul_succ") {
+            &["Nat.add"]
+        } else if mvp_source_matches_public_theorem(loaded, source, "Std.List", "List.length_nil") {
+            &["Nat.zero"]
+        } else if mvp_source_matches_public_theorem(loaded, source, "Std.List", "List.length_cons")
+        {
+            &["Nat.succ"]
+        } else {
+            &[]
+        };
     let mut out = BTreeSet::new();
     for label in labels {
         let name = Name::from_dotted(label);
@@ -3865,6 +3867,32 @@ fn allowed_intro_heads(
         );
     }
     Ok(out)
+}
+
+fn mvp_source_matches_public_theorem(
+    loaded: &MachineStdLoadedRelease,
+    source: &MachineStdGlobalRef,
+    module_name: &str,
+    theorem_name: &str,
+) -> bool {
+    let module_name = Name::from_dotted(module_name);
+    if source.module != module_name {
+        return false;
+    }
+    let Some(module) = loaded.module(&module_name) else {
+        return false;
+    };
+    let theorem_name = Name::from_dotted(theorem_name);
+    if source.name != theorem_name {
+        return false;
+    }
+    let Some(export) = unique_public_export_by_name(module, &theorem_name) else {
+        return false;
+    };
+    export.kind == ExportKind::Theorem
+        && source.export_hash == module.expected_export_hash
+        && source.certificate_hash == module.expected_certificate_hash
+        && source.decl_interface_hash == export.decl_interface_hash
 }
 
 fn validate_rewrite_profile_hashes(
@@ -7042,6 +7070,32 @@ mod tests {
     }
 
     #[test]
+    fn simp_safe_exception_sources_are_hash_bound() {
+        let package = TestPackage::new("simp_safe_exception_hash_bound");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let nat = loaded.module(&Name::from_dotted("Std.Nat")).unwrap();
+        let nat_mul_succ = export_entry(nat, "Nat.mul_succ");
+        let source = MachineStdGlobalRef {
+            module: nat.module.clone(),
+            name: Name::from_dotted("Nat.mul_succ"),
+            export_hash: nat.expected_export_hash,
+            certificate_hash: nat.expected_certificate_hash,
+            decl_interface_hash: nat_mul_succ.decl_interface_hash,
+        };
+
+        assert!(simp_size_exception(&loaded, &source));
+        assert_eq!(allowed_intro_heads(&loaded, &source).unwrap().len(), 1);
+
+        let mut spoofed = source;
+        spoofed.decl_interface_hash = test_hash(202);
+        assert!(!simp_size_exception(&loaded, &spoofed));
+        assert!(allowed_intro_heads(&loaded, &spoofed).unwrap().is_empty());
+    }
+
+    #[test]
     fn generates_mvp_theorem_index_from_public_theorem_and_axiom_exports() {
         let package = TestPackage::new("mvp_theorem_index_base");
         let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
@@ -7953,6 +8007,7 @@ mod tests {
                 ty: Expr::sort(type0()),
                 data: Box::new(nat_inductive()),
             },
+            nat_binary_def("Nat.add"),
             profile_helper_def("Nat.m5_lhs"),
         ];
         declarations.extend(
@@ -8009,6 +8064,16 @@ mod tests {
             universe_params: Vec::new(),
             ty: Expr::pi("n", nat(), nat()),
             value: Expr::lam("n", nat(), Expr::bvar(0)),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn nat_binary_def(name: &str) -> Decl {
+        Decl::Def {
+            name: name.to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("lhs", nat(), Expr::pi("rhs", nat(), nat())),
+            value: Expr::lam("lhs", nat(), Expr::lam("rhs", nat(), Expr::bvar(0))),
             reducibility: Reducibility::Reducible,
         }
     }
