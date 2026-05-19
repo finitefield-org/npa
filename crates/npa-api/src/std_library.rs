@@ -839,6 +839,13 @@ pub enum MachineStdTheoremIndexError {
     AxiomRefProjectionFailed {
         module: Name,
     },
+    ProfileMetadataMismatch {
+        profile_id: String,
+        name: Name,
+    },
+    ProfileSourceMissing {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
     CanonicalBytes {
         source: MachineStdCanonicalBytesError,
     },
@@ -1944,6 +1951,294 @@ pub fn validate_machine_std_mvp_theorem_index(
     Ok(())
 }
 
+pub fn finalize_machine_std_mvp_theorem_index(
+    base: &MachineStdTheoremIndex,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<MachineStdTheoremIndex, MachineStdTheoremIndexError> {
+    let mut finalized = base.clone();
+    let mut rewrite_metadata = rewrite_metadata_by_source(rewrite_profiles)?;
+    let mut simp_metadata = simp_metadata_by_source(simp_profiles, rewrite_profiles)?;
+
+    for entry in &mut finalized.entries {
+        let source_key = machine_std_global_ref_canonical_bytes(&entry.global_ref)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        let rewrite_descriptors: Vec<MachineStdRewriteDescriptor> = rewrite_metadata
+            .remove(&source_key)
+            .map(|(_, descriptors)| descriptors.into_values().collect())
+            .unwrap_or_default();
+        let has_rw = !rewrite_descriptors.is_empty();
+        let has_simp = simp_metadata.remove(&source_key).is_some();
+        entry.modes = finalized_theorem_modes(&entry.modes, has_rw, has_simp);
+        entry.attributes = finalized_theorem_attributes(&entry.modes);
+        entry.rewrite_descriptors = rewrite_descriptors;
+    }
+
+    if let Some((_, (global_ref, _))) = rewrite_metadata.into_iter().next() {
+        return Err(MachineStdTheoremIndexError::ProfileSourceMissing {
+            global_ref: Box::new(global_ref),
+        });
+    }
+    if let Some((_, global_ref)) = simp_metadata.into_iter().next() {
+        return Err(MachineStdTheoremIndexError::ProfileSourceMissing {
+            global_ref: Box::new(global_ref),
+        });
+    }
+
+    finalized.index_hash = machine_std_theorem_index_hash(&finalized)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    Ok(finalized)
+}
+
+pub fn generate_machine_std_mvp_final_theorem_index(
+    loaded: &MachineStdLoadedRelease,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+    simp_profiles: &MachineStdSimpProfileSet,
+) -> Result<MachineStdTheoremIndex, MachineStdTheoremIndexError> {
+    let base = generate_machine_std_mvp_theorem_index(loaded)?;
+    finalize_machine_std_mvp_theorem_index(&base, rewrite_profiles, simp_profiles)
+}
+
+pub fn validate_machine_std_mvp_final_theorem_index(
+    actual: &MachineStdTheoremIndex,
+    expected: &MachineStdTheoremIndex,
+) -> Result<(), MachineStdTheoremIndexError> {
+    if actual.index_profile_id != STD_THEOREM_INDEX_PROFILE_ID {
+        return Err(MachineStdTheoremIndexError::IndexProfileMismatch {
+            expected: STD_THEOREM_INDEX_PROFILE_ID,
+            actual: actual.index_profile_id.clone(),
+        });
+    }
+    if actual.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdTheoremIndexError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: actual.library_profile_id.clone(),
+        });
+    }
+
+    validate_theorem_entry_membership(&actual.entries, &expected.entries)?;
+    let expected_by_key = expected_theorem_entries_by_key(expected)?;
+    for actual_entry in &actual.entries {
+        let key = machine_std_global_ref_canonical_bytes(&actual_entry.global_ref)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        let expected_entry = expected_by_key
+            .get(&key)
+            .expect("membership validation checked entry key");
+        validate_theorem_entry_order(actual_entry)?;
+        validate_final_theorem_entry_contents(actual_entry, expected_entry)?;
+    }
+
+    let actual_hash = machine_std_theorem_index_hash(actual)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    if actual_hash != actual.index_hash {
+        return Err(MachineStdTheoremIndexError::TheoremIndexHashMismatch {
+            expected: actual.index_hash,
+            actual: actual_hash,
+        });
+    }
+    if actual.index_hash != expected.index_hash {
+        return Err(MachineStdTheoremIndexError::TheoremIndexHashMismatch {
+            expected: expected.index_hash,
+            actual: actual.index_hash,
+        });
+    }
+    Ok(())
+}
+
+pub fn validate_machine_std_mvp_release_final_sidecar_counts(
+    manifest: &MachineStdLibraryRelease,
+    theorem_index: &MachineStdTheoremIndex,
+    simp_profiles: &MachineStdSimpProfileSet,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<(), MachineStdReleaseArtifactError> {
+    let mut theorem_counts = BTreeMap::<Name, u64>::new();
+    for entry in &theorem_index.entries {
+        *theorem_counts
+            .entry(entry.global_ref.module.clone())
+            .or_default() += 1;
+    }
+    let simp_counts = simp_rule_counts_by_module(simp_profiles, rewrite_profiles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdTheoremIndex)?;
+
+    for artifact in &manifest.modules {
+        compare_module_count(
+            &artifact.module,
+            "theorem_index_entry_count",
+            artifact.theorem_index_entry_count,
+            *theorem_counts.get(&artifact.module).unwrap_or(&0),
+        )
+        .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
+        compare_module_count(
+            &artifact.module,
+            "simp_rule_count",
+            artifact.simp_rule_count,
+            *simp_counts.get(&artifact.module).unwrap_or(&0),
+        )
+        .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
+    }
+    Ok(())
+}
+
+type RewriteMetadataBySource = BTreeMap<
+    Vec<u8>,
+    (
+        MachineStdGlobalRef,
+        BTreeMap<Vec<u8>, MachineStdRewriteDescriptor>,
+    ),
+>;
+
+fn rewrite_metadata_by_source(
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<RewriteMetadataBySource, MachineStdTheoremIndexError> {
+    let mut out = RewriteMetadataBySource::new();
+    for profile in &rewrite_profiles.profiles {
+        for descriptor in &profile.descriptors {
+            let source_key = machine_std_global_ref_canonical_bytes(&descriptor.source)
+                .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+            let descriptor_key = machine_std_rewrite_descriptor_canonical_bytes(descriptor)
+                .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+            out.entry(source_key)
+                .or_insert_with(|| (descriptor.source.clone(), BTreeMap::new()))
+                .1
+                .insert(descriptor_key, descriptor.clone());
+        }
+    }
+    Ok(out)
+}
+
+fn simp_metadata_by_source(
+    simp_profiles: &MachineStdSimpProfileSet,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<BTreeMap<Vec<u8>, MachineStdGlobalRef>, MachineStdTheoremIndexError> {
+    let mut out = BTreeMap::new();
+    for (_, (source, _)) in resolved_simp_rule_targets(simp_profiles, rewrite_profiles)? {
+        let source_key = machine_std_global_ref_canonical_bytes(&source)
+            .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+        out.entry(source_key).or_insert(source);
+    }
+    Ok(out)
+}
+
+fn simp_rule_counts_by_module(
+    simp_profiles: &MachineStdSimpProfileSet,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<BTreeMap<Name, u64>, MachineStdTheoremIndexError> {
+    let mut targets_by_module = BTreeMap::<Name, BTreeSet<Vec<u8>>>::new();
+    for (target_key, (source, _)) in resolved_simp_rule_targets(simp_profiles, rewrite_profiles)? {
+        targets_by_module
+            .entry(source.module)
+            .or_default()
+            .insert(target_key);
+    }
+    Ok(targets_by_module
+        .into_iter()
+        .map(|(module, targets)| (module, targets.len() as u64))
+        .collect())
+}
+
+fn resolved_simp_rule_targets(
+    simp_profiles: &MachineStdSimpProfileSet,
+    rewrite_profiles: &MachineStdRewriteProfileSet,
+) -> Result<BTreeMap<Vec<u8>, (MachineStdGlobalRef, RewriteDirection)>, MachineStdTheoremIndexError>
+{
+    let mut out = BTreeMap::new();
+    for profile in &simp_profiles.profiles {
+        let paired_id = paired_rewrite_profile_id(&profile.profile_id).ok_or_else(|| {
+            MachineStdTheoremIndexError::ProfileMetadataMismatch {
+                profile_id: profile.profile_id.clone(),
+                name: Name::from_dotted(&profile.profile_id),
+            }
+        })?;
+        let paired = rewrite_profiles
+            .profiles
+            .iter()
+            .find(|rewrite| rewrite.profile_id == paired_id)
+            .ok_or_else(|| MachineStdTheoremIndexError::ProfileMetadataMismatch {
+                profile_id: profile.profile_id.clone(),
+                name: Name::from_dotted(paired_id),
+            })?;
+        for rule in &profile.rules {
+            let descriptor = unique_paired_simp_descriptor(&profile.profile_id, paired, rule)?;
+            let target_key = simp_rule_target_key(&descriptor.source, descriptor.direction)?;
+            out.entry(target_key)
+                .or_insert((descriptor.source.clone(), descriptor.direction));
+        }
+    }
+    Ok(out)
+}
+
+fn unique_paired_simp_descriptor<'a>(
+    profile_id: &str,
+    paired: &'a MachineStdRewriteProfile,
+    rule: &SimpRuleRef,
+) -> Result<&'a MachineStdRewriteDescriptor, MachineStdTheoremIndexError> {
+    let mut matches = paired.descriptors.iter().filter(|descriptor| {
+        descriptor.safety == MachineStdRewriteSafety::SimpSafe
+            && descriptor.direction == rule.direction
+            && descriptor.source.name == rule.name
+            && descriptor.source.decl_interface_hash == rule.decl_interface_hash
+    });
+    let first =
+        matches
+            .next()
+            .ok_or_else(|| MachineStdTheoremIndexError::ProfileMetadataMismatch {
+                profile_id: profile_id.to_owned(),
+                name: rule.name.clone(),
+            })?;
+    if matches.next().is_some() {
+        return Err(MachineStdTheoremIndexError::ProfileMetadataMismatch {
+            profile_id: profile_id.to_owned(),
+            name: rule.name.clone(),
+        });
+    }
+    Ok(first)
+}
+
+fn simp_rule_target_key(
+    source: &MachineStdGlobalRef,
+    direction: RewriteDirection,
+) -> Result<Vec<u8>, MachineStdTheoremIndexError> {
+    let mut out = machine_std_global_ref_canonical_bytes(source)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    encode_rewrite_direction(&mut out, direction);
+    Ok(out)
+}
+
+fn finalized_theorem_modes(
+    base_modes: &[MachineTheoremMode],
+    has_rw: bool,
+    has_simp: bool,
+) -> Vec<MachineTheoremMode> {
+    let mut modes = Vec::new();
+    if base_modes.contains(&MachineTheoremMode::Exact) {
+        modes.push(MachineTheoremMode::Exact);
+    }
+    if base_modes.contains(&MachineTheoremMode::Apply) {
+        modes.push(MachineTheoremMode::Apply);
+    }
+    if has_rw {
+        modes.push(MachineTheoremMode::Rw);
+    }
+    if has_simp {
+        modes.push(MachineTheoremMode::Simp);
+    }
+    modes
+}
+
+fn finalized_theorem_attributes(modes: &[MachineTheoremMode]) -> Vec<MachineStdAttribute> {
+    let mut attributes = Vec::new();
+    if modes.contains(&MachineTheoremMode::Simp) {
+        attributes.push(MachineStdAttribute::Simp);
+    }
+    if modes.contains(&MachineTheoremMode::Rw) {
+        attributes.push(MachineStdAttribute::Rw);
+    }
+    if modes.contains(&MachineTheoremMode::Apply) {
+        attributes.push(MachineStdAttribute::Apply);
+    }
+    attributes
+}
+
 fn generate_machine_std_theorem_entry(
     loaded: &MachineStdLoadedRelease,
     module: &MachineStdLoadedModule,
@@ -2080,6 +2375,48 @@ fn validate_theorem_entry_contents(
     actual: &MachineStdTheoremEntry,
     expected: &MachineStdTheoremEntry,
 ) -> Result<(), MachineStdTheoremIndexError> {
+    validate_certificate_derived_theorem_entry_contents(actual, expected)?;
+    let global_ref = || Box::new(actual.global_ref.clone());
+    if actual.modes.contains(&MachineTheoremMode::Exact)
+        != expected.modes.contains(&MachineTheoremMode::Exact)
+        || actual.modes.contains(&MachineTheoremMode::Apply)
+            != expected.modes.contains(&MachineTheoremMode::Apply)
+    {
+        return Err(MachineStdTheoremIndexError::ModesMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_final_theorem_entry_contents(
+    actual: &MachineStdTheoremEntry,
+    expected: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
+    validate_certificate_derived_theorem_entry_contents(actual, expected)?;
+    let global_ref = || Box::new(actual.global_ref.clone());
+    if actual.modes != expected.modes {
+        return Err(MachineStdTheoremIndexError::ModesMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.attributes != expected.attributes {
+        return Err(MachineStdTheoremIndexError::AttributesMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    if actual.rewrite_descriptors != expected.rewrite_descriptors {
+        return Err(MachineStdTheoremIndexError::RewriteDescriptorsMismatch {
+            global_ref: global_ref(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_certificate_derived_theorem_entry_contents(
+    actual: &MachineStdTheoremEntry,
+    expected: &MachineStdTheoremEntry,
+) -> Result<(), MachineStdTheoremIndexError> {
     let global_ref = || Box::new(actual.global_ref.clone());
     if actual.kind != expected.kind {
         return Err(MachineStdTheoremIndexError::KindMismatch {
@@ -2103,15 +2440,6 @@ fn validate_theorem_entry_contents(
     }
     if actual.constants != expected.constants {
         return Err(MachineStdTheoremIndexError::ConstantsMismatch {
-            global_ref: global_ref(),
-        });
-    }
-    if actual.modes.contains(&MachineTheoremMode::Exact)
-        != expected.modes.contains(&MachineTheoremMode::Exact)
-        || actual.modes.contains(&MachineTheoremMode::Apply)
-            != expected.modes.contains(&MachineTheoremMode::Apply)
-    {
-        return Err(MachineStdTheoremIndexError::ModesMismatch {
             global_ref: global_ref(),
         });
     }
@@ -7096,6 +7424,197 @@ mod tests {
     }
 
     #[test]
+    fn finalizes_mvp_theorem_index_metadata_from_validated_profiles() {
+        let package = TestPackage::new("mvp_theorem_index_metadata_finalizer");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let base = generate_machine_std_mvp_theorem_index(&loaded).unwrap();
+
+        let finalized =
+            finalize_machine_std_mvp_theorem_index(&base, &rewrite_profiles, &simp_profiles)
+                .unwrap();
+        assert_eq!(
+            finalized,
+            generate_machine_std_mvp_final_theorem_index(
+                &loaded,
+                &rewrite_profiles,
+                &simp_profiles
+            )
+            .unwrap()
+        );
+        validate_machine_std_mvp_final_theorem_index(&finalized, &finalized).unwrap();
+        assert_ne!(finalized.index_hash, [0; 32]);
+        assert_eq!(
+            finalized.index_hash,
+            machine_std_theorem_index_hash(&finalized).unwrap()
+        );
+
+        let nat_add_zero = theorem_index_entry(&finalized, "Nat.add_zero");
+        assert_eq!(
+            nat_add_zero.modes,
+            vec![
+                MachineTheoremMode::Exact,
+                MachineTheoremMode::Apply,
+                MachineTheoremMode::Rw,
+                MachineTheoremMode::Simp,
+            ]
+        );
+        assert_eq!(
+            nat_add_zero.attributes,
+            vec![
+                MachineStdAttribute::Simp,
+                MachineStdAttribute::Rw,
+                MachineStdAttribute::Apply,
+            ]
+        );
+        assert_eq!(nat_add_zero.rewrite_descriptors.len(), 1);
+        assert_eq!(
+            nat_add_zero.rewrite_descriptors[0].safety,
+            MachineStdRewriteSafety::SimpSafe
+        );
+
+        let nat_add_comm = theorem_index_entry(&finalized, "Nat.add_comm");
+        assert_eq!(
+            nat_add_comm.modes,
+            vec![
+                MachineTheoremMode::Exact,
+                MachineTheoremMode::Apply,
+                MachineTheoremMode::Rw,
+            ]
+        );
+        assert_eq!(
+            nat_add_comm.attributes,
+            vec![MachineStdAttribute::Rw, MachineStdAttribute::Apply]
+        );
+        assert_eq!(nat_add_comm.rewrite_descriptors.len(), 1);
+        assert_eq!(
+            nat_add_comm.rewrite_descriptors[0].safety,
+            MachineStdRewriteSafety::RwOnly
+        );
+
+        let eq_rec = theorem_index_entry(&finalized, "Eq.rec");
+        assert_eq!(
+            eq_rec.modes,
+            vec![MachineTheoremMode::Exact, MachineTheoremMode::Apply]
+        );
+        assert_eq!(eq_rec.attributes, vec![MachineStdAttribute::Apply]);
+        assert!(eq_rec.rewrite_descriptors.is_empty());
+
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+        let err = validate_machine_std_mvp_release_final_sidecar_counts(
+            &release,
+            &finalized,
+            &simp_profiles,
+            &rewrite_profiles,
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::ModuleArtifactCountMismatch {
+                    field: "simp_rule_count",
+                    ..
+                }
+            )
+        ));
+
+        apply_final_sidecar_counts(&mut release, &finalized, &simp_profiles, &rewrite_profiles);
+        validate_machine_std_mvp_release_final_sidecar_counts(
+            &release,
+            &finalized,
+            &simp_profiles,
+            &rewrite_profiles,
+        )
+        .unwrap();
+        assert_eq!(module_artifact(&release, "Std.Nat").simp_rule_count, 8);
+        assert_eq!(module_artifact(&release, "Std.List").simp_rule_count, 10);
+    }
+
+    #[test]
+    fn rejects_final_theorem_index_metadata_mismatches() {
+        let package = TestPackage::new("bad_final_theorem_index_metadata");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let expected = generate_machine_std_mvp_final_theorem_index(
+            &loaded,
+            &rewrite_profiles,
+            &simp_profiles,
+        )
+        .unwrap();
+        let nat_add_zero_index = theorem_index_entry_index(&expected, "Nat.add_zero");
+
+        let mut stale_hash = expected.clone();
+        stale_hash.index_hash = test_hash(210);
+        assert!(matches!(
+            validate_machine_std_mvp_final_theorem_index(&stale_hash, &expected),
+            Err(MachineStdTheoremIndexError::TheoremIndexHashMismatch { .. })
+        ));
+
+        let mut bad_modes = expected.clone();
+        bad_modes.entries[nat_add_zero_index]
+            .modes
+            .retain(|mode| *mode != MachineTheoremMode::Simp);
+        refresh_theorem_index_hash(&mut bad_modes);
+        assert!(matches!(
+            validate_machine_std_mvp_final_theorem_index(&bad_modes, &expected),
+            Err(MachineStdTheoremIndexError::ModesMismatch { .. })
+        ));
+
+        let mut bad_attributes = expected.clone();
+        bad_attributes.entries[nat_add_zero_index]
+            .attributes
+            .insert(2, MachineStdAttribute::Intro);
+        refresh_theorem_index_hash(&mut bad_attributes);
+        assert!(matches!(
+            validate_machine_std_mvp_final_theorem_index(&bad_attributes, &expected),
+            Err(MachineStdTheoremIndexError::AttributesMismatch { .. })
+        ));
+
+        let mut bad_rewrites = expected.clone();
+        bad_rewrites.entries[nat_add_zero_index]
+            .rewrite_descriptors
+            .clear();
+        refresh_theorem_index_hash(&mut bad_rewrites);
+        assert!(matches!(
+            validate_machine_std_mvp_final_theorem_index(&bad_rewrites, &expected),
+            Err(MachineStdTheoremIndexError::RewriteDescriptorsMismatch { .. })
+        ));
+
+        let mut duplicate_modes = expected.clone();
+        duplicate_modes.entries[nat_add_zero_index].modes =
+            vec![MachineTheoremMode::Exact, MachineTheoremMode::Exact];
+        refresh_theorem_index_hash(&mut duplicate_modes);
+        assert!(matches!(
+            validate_machine_std_mvp_final_theorem_index(&duplicate_modes, &expected),
+            Err(MachineStdTheoremIndexError::NonCanonicalModes { .. })
+        ));
+
+        let mut duplicate_rewrites = expected.clone();
+        let descriptor =
+            duplicate_rewrites.entries[nat_add_zero_index].rewrite_descriptors[0].clone();
+        duplicate_rewrites.entries[nat_add_zero_index]
+            .rewrite_descriptors
+            .push(descriptor);
+        refresh_theorem_index_hash(&mut duplicate_rewrites);
+        assert!(matches!(
+            validate_machine_std_mvp_final_theorem_index(&duplicate_rewrites, &expected),
+            Err(MachineStdTheoremIndexError::NonCanonicalRewriteDescriptors { .. })
+        ));
+    }
+
+    #[test]
     fn generates_mvp_theorem_index_from_public_theorem_and_axiom_exports() {
         let package = TestPackage::new("mvp_theorem_index_base");
         let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
@@ -8127,6 +8646,45 @@ mod tests {
             .iter()
             .find(|entry| entry.global_ref.name == Name::from_dotted(name))
             .unwrap()
+    }
+
+    fn theorem_index_entry_index(theorem_index: &MachineStdTheoremIndex, name: &str) -> usize {
+        theorem_index
+            .entries
+            .iter()
+            .position(|entry| entry.global_ref.name == Name::from_dotted(name))
+            .unwrap()
+    }
+
+    fn module_artifact<'a>(
+        release: &'a MachineStdLibraryRelease,
+        module: &str,
+    ) -> &'a MachineStdModuleArtifact {
+        release
+            .modules
+            .iter()
+            .find(|artifact| artifact.module == Name::from_dotted(module))
+            .unwrap()
+    }
+
+    fn apply_final_sidecar_counts(
+        release: &mut MachineStdLibraryRelease,
+        theorem_index: &MachineStdTheoremIndex,
+        simp_profiles: &MachineStdSimpProfileSet,
+        rewrite_profiles: &MachineStdRewriteProfileSet,
+    ) {
+        let mut theorem_counts = BTreeMap::<Name, u64>::new();
+        for entry in &theorem_index.entries {
+            *theorem_counts
+                .entry(entry.global_ref.module.clone())
+                .or_default() += 1;
+        }
+        let simp_counts = simp_rule_counts_by_module(simp_profiles, rewrite_profiles).unwrap();
+        for artifact in &mut release.modules {
+            artifact.theorem_index_entry_count =
+                *theorem_counts.get(&artifact.module).unwrap_or(&0);
+            artifact.simp_rule_count = *simp_counts.get(&artifact.module).unwrap_or(&0);
+        }
     }
 
     fn export_entry<'a>(module: &'a MachineStdLoadedModule, name: &str) -> &'a ExportEntry {

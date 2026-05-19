@@ -95,6 +95,7 @@ pub use snapshot::{
     StoredSnapshotEntry, StoredSnapshotView,
 };
 pub use std_library::{
+    finalize_machine_std_mvp_theorem_index, generate_machine_std_mvp_final_theorem_index,
     generate_machine_std_mvp_import_bundle_set, generate_machine_std_mvp_rewrite_profile_set,
     generate_machine_std_mvp_simp_profile_set, generate_machine_std_mvp_theorem_index,
     load_machine_std_certificates_from_locators, load_machine_std_mvp_certificates,
@@ -116,7 +117,8 @@ pub use std_library::{
     machine_std_theorem_index_canonical_bytes, machine_std_theorem_index_hash,
     parse_machine_std_axiom_report_json, parse_machine_std_import_bundle_set_json,
     parse_machine_std_library_release_json, validate_machine_std_locator_path,
-    validate_machine_std_mvp_import_bundle_set, validate_machine_std_mvp_locators,
+    validate_machine_std_mvp_final_theorem_index, validate_machine_std_mvp_import_bundle_set,
+    validate_machine_std_mvp_locators, validate_machine_std_mvp_release_final_sidecar_counts,
     validate_machine_std_mvp_rewrite_profile_set, validate_machine_std_mvp_simp_profile_set,
     validate_machine_std_mvp_theorem_index, MachineStdArtifactKind, MachineStdArtifactShapeError,
     MachineStdArtifactShapeErrorReason, MachineStdAttribute, MachineStdAxiomPolicyError,
