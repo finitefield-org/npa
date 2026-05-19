@@ -1819,15 +1819,22 @@ mod tests {
     use super::*;
     use crate::{
         create_machine_session, format_hash_string, project_import_certificate_context,
-        MachineDisplayRenderScope, MachineDisplayRenderScopeEntry,
+        run_machine_tactic_batch_request, run_machine_tactic_request, MachineDisplayRenderScope,
+        MachineDisplayRenderScopeEntry, MachineTacticBatchItemResponse, MachineTacticRunResultKind,
         Phase5ResolvedDisplayCoreRefOwner, VerifiedImportKey, VerifiedModuleCertificateInput,
     };
     use npa_cert::{
         build_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy, CoreModule,
-        VerifierSession,
+        VerifiedModule, VerifierSession,
     };
     use npa_frontend::{MachineGlobalScopeEntry, MachineSurfaceCallableRef};
-    use npa_kernel::{Decl, Level};
+    use npa_kernel::{Binder, ConstructorDecl, Decl, InductiveDecl, Level, Reducibility};
+
+    #[derive(Clone)]
+    struct FixtureModule {
+        verified: VerifiedModule,
+        bytes: Vec<u8>,
+    }
 
     fn prop() -> Expr {
         Expr::sort(Level::zero())
@@ -1835,6 +1842,157 @@ mod tests {
 
     fn imported_axiom_type() -> Expr {
         Expr::pi("p", prop(), prop())
+    }
+
+    fn type0_level() -> Level {
+        npa_kernel::type0()
+    }
+
+    fn nat() -> Expr {
+        npa_kernel::nat()
+    }
+
+    fn nat_zero() -> Expr {
+        npa_kernel::nat_zero()
+    }
+
+    fn nat_succ(arg: Expr) -> Expr {
+        npa_kernel::nat_succ(arg)
+    }
+
+    fn eq_nat(lhs: Expr, rhs: Expr) -> Expr {
+        npa_kernel::eq(type0_level(), nat(), lhs, rhs)
+    }
+
+    fn eq_refl_nat(value: Expr) -> Expr {
+        npa_kernel::eq_refl(type0_level(), nat(), value)
+    }
+
+    fn list_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        let list_a = |level: Level, a: Expr| Expr::app(Expr::konst("List", vec![level]), a);
+        InductiveDecl::new(
+            "List",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![
+                ConstructorDecl::new(
+                    "List.nil",
+                    Expr::pi("A", Expr::sort(u.clone()), list_a(u.clone(), Expr::bvar(0))),
+                ),
+                ConstructorDecl::new(
+                    "List.cons",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "x",
+                            Expr::bvar(0),
+                            Expr::pi(
+                                "xs",
+                                list_a(u.clone(), Expr::bvar(1)),
+                                list_a(u.clone(), Expr::bvar(2)),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn fixture_module(module: CoreModule, imports: &[VerifiedModule]) -> FixtureModule {
+        let cert = build_module_cert(module, imports).unwrap();
+        let bytes = encode_module_cert(&cert).unwrap();
+        let mut session = VerifierSession::new();
+        for import in imports {
+            session.register_verified_module(import.clone());
+        }
+        let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+        FixtureModule { verified, bytes }
+    }
+
+    fn nat_fixture_module() -> FixtureModule {
+        fixture_module(
+            CoreModule {
+                name: Name::from_dotted("Std.Nat.Basic"),
+                declarations: vec![Decl::Inductive {
+                    name: "Nat".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(type0_level()),
+                    data: Box::new(npa_kernel::nat_inductive()),
+                }],
+            },
+            &[],
+        )
+    }
+
+    fn eq_fixture_module() -> FixtureModule {
+        fixture_module(
+            CoreModule {
+                name: Name::from_dotted("Std.Logic.Eq"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: "Eq".to_owned(),
+                        universe_params: vec!["u".to_owned()],
+                        ty: npa_kernel::eq_type(Level::param("u")),
+                        data: Box::new(npa_kernel::eq_inductive()),
+                    },
+                    Decl::Axiom {
+                        name: "Eq.rec".to_owned(),
+                        universe_params: vec!["u".to_owned(), "v".to_owned()],
+                        ty: npa_kernel::eq_rec_type(Level::param("u"), Level::param("v")),
+                    },
+                ],
+            },
+            &[],
+        )
+    }
+
+    fn list_fixture_module() -> FixtureModule {
+        fixture_module(
+            CoreModule {
+                name: Name::from_dotted("Std.List.Basic"),
+                declarations: vec![Decl::Inductive {
+                    name: "List".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "A",
+                        Expr::sort(Level::param("u")),
+                        Expr::sort(Level::param("u")),
+                    ),
+                    data: Box::new(list_inductive()),
+                }],
+            },
+            &[],
+        )
+    }
+
+    fn retrieval_fixture_module(imports: &[VerifiedModule]) -> FixtureModule {
+        let one = Expr::konst("Lib.one", Vec::new());
+        fixture_module(
+            CoreModule {
+                name: Name::from_dotted("Lib.Simp"),
+                declarations: vec![
+                    Decl::Def {
+                        name: "Lib.one".to_owned(),
+                        universe_params: Vec::new(),
+                        ty: nat(),
+                        value: nat_succ(nat_zero()),
+                        reducibility: Reducibility::Reducible,
+                    },
+                    Decl::Theorem {
+                        name: "Lib.one_unfold".to_owned(),
+                        universe_params: Vec::new(),
+                        ty: eq_nat(one, nat_succ(nat_zero())),
+                        proof: eq_refl_nat(nat_succ(nat_zero())),
+                    },
+                ],
+            },
+            imports,
+        )
     }
 
     fn default_options_json(allow_axioms: &str) -> String {
@@ -1852,6 +2010,168 @@ mod tests {
               }}
             }}"#
         )
+    }
+
+    fn phase7_retrieval_options_json(
+        eq: &FixtureModule,
+        rule: &FixtureModule,
+        allow_axioms: &str,
+    ) -> String {
+        format!(
+            r#"{{
+              "kernel_check_profile":"npa.kernel.v0.1.builtin-nat-eq-rec",
+              "allow_axioms": {allow_axioms},
+              "tactic_options": {{
+                "simp_rules": [{{
+                  "name":"Lib.one_unfold",
+                  "decl_interface_hash":"{}",
+                  "direction":"forward"
+                }}],
+                "eq_family": {{
+                  "eq_name":"Eq",
+                  "eq_interface_hash":"{}",
+                  "refl_name":"Eq.refl",
+                  "refl_interface_hash":"{}",
+                  "rec_name":"Eq.rec",
+                  "rec_interface_hash":"{}"
+                }},
+                "nat_family": null,
+                "max_simp_rewrite_steps": 100,
+                "max_open_goals": 32,
+                "max_metas": 64
+              }}
+            }}"#,
+            format_hash_string(&export_interface_hash(rule, "Lib.one_unfold")),
+            format_hash_string(&export_interface_hash(eq, "Eq")),
+            format_hash_string(&export_interface_hash(eq, "Eq.refl")),
+            format_hash_string(&export_interface_hash(eq, "Eq.rec")),
+        )
+    }
+
+    fn export_interface_hash(module: &FixtureModule, name: &str) -> Hash {
+        let name = Name::from_dotted(name);
+        *module
+            .verified
+            .export_block()
+            .iter()
+            .find_map(|export| {
+                let export_name = module.verified.name_table().get(export.name)?;
+                (export_name == &name).then_some(&export.decl_interface_hash)
+            })
+            .expect("fixture export should exist")
+    }
+
+    fn eq_rec_allow_axioms_json(eq: &FixtureModule) -> String {
+        format!(
+            r#"[{{
+              "kind":"imported",
+              "module":"Std.Logic.Eq",
+              "name":"Eq.rec",
+              "export_hash":"{}",
+              "decl_interface_hash":"{}"
+            }}]"#,
+            format_hash_string(&eq.verified.export_hash()),
+            format_hash_string(&export_interface_hash(eq, "Eq.rec")),
+        )
+    }
+
+    fn module_certificate_json(module: &FixtureModule) -> String {
+        format!(
+            r#"{{
+              "module":"{}",
+              "expected_export_hash":"{}",
+              "expected_certificate_hash":"{}",
+              "certificate":{{
+                "encoding":"npa.certificate.canonical.v0.1.hex",
+                "bytes":"{}"
+              }}
+            }}"#,
+            module.verified.module().as_dotted(),
+            format_hash_string(&module.verified.export_hash()),
+            format_hash_string(&module.verified.certificate_hash()),
+            hex_bytes(&module.bytes),
+        )
+    }
+
+    fn module_import_json(module: &FixtureModule) -> String {
+        format!(
+            r#"{{
+              "module":"{}",
+              "expected_export_hash":"{}",
+              "expected_certificate_hash":"{}"
+            }}"#,
+            module.verified.module().as_dotted(),
+            format_hash_string(&module.verified.export_hash()),
+            format_hash_string(&module.verified.certificate_hash()),
+        )
+    }
+
+    fn session_json_for_modules(
+        theorem_type: &str,
+        import_closure: &[&FixtureModule],
+        imports: &[&FixtureModule],
+        options_json: &str,
+    ) -> String {
+        format!(
+            r#"{{
+              "protocol_version":"npa.machine-api.v1",
+              "root":{{
+                "module":"Scratch",
+                "theorem_name":"Scratch.t",
+                "source_index":0,
+                "universe_params":[],
+                "theorem_type":{{"format":"machine_surface_v1","source":"{theorem_type}"}}
+              }},
+              "import_closure":[{}],
+              "imports":[{}],
+              "checked_current_decls":[],
+              "options":{}
+            }}"#,
+            import_closure
+                .iter()
+                .map(|module| module_certificate_json(module))
+                .collect::<Vec<_>>()
+                .join(","),
+            imports
+                .iter()
+                .map(|module| module_import_json(module))
+                .collect::<Vec<_>>()
+                .join(","),
+            options_json
+        )
+    }
+
+    fn phase7_retrieval_session() -> MachineProofSession {
+        let nat = nat_fixture_module();
+        let eq = eq_fixture_module();
+        let list = list_fixture_module();
+        let simp = retrieval_fixture_module(&[nat.verified.clone(), eq.verified.clone()]);
+        let allow_axioms = eq_rec_allow_axioms_json(&eq);
+        let options = phase7_retrieval_options_json(&eq, &simp, &allow_axioms);
+        create_machine_session(&session_json_for_modules(
+            "Eq.{1} Nat Lib.one Nat.zero",
+            &[&nat, &eq, &list, &simp],
+            &[&nat, &eq, &list, &simp],
+            &options,
+        ))
+        .unwrap()
+        .session
+    }
+
+    fn phase7_exact_session(theorem_type: &str) -> MachineProofSession {
+        let nat = nat_fixture_module();
+        let eq = eq_fixture_module();
+        let list = list_fixture_module();
+        let allow_axioms = eq_rec_allow_axioms_json(&eq);
+        let options = default_options_json(&allow_axioms);
+        create_machine_session(&session_json_for_modules(
+            theorem_type,
+            &[&nat, &eq, &list],
+            &[&nat, &eq, &list],
+            &options,
+        ))
+        .unwrap()
+        .session
     }
 
     fn imported_axiom_session() -> MachineProofSession {
@@ -2071,6 +2391,334 @@ mod tests {
             goal_id,
             filters
         )
+    }
+
+    fn phase7_budget_json() -> &'static str {
+        r#"{
+          "max_tactic_steps":100,
+          "max_whnf_steps":100,
+          "max_conversion_steps":100,
+          "max_rewrite_steps":100,
+          "max_meta_allocations":8,
+          "max_expr_nodes":20000
+        }"#
+    }
+
+    fn phase7_run_json(session: &MachineProofSession, candidate: &str) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidate":{},
+              "deterministic_budget":{}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&session.initial_snapshot.state_fingerprint),
+            candidate,
+            phase7_budget_json(),
+        )
+    }
+
+    fn phase7_batch_json(session: &MachineProofSession, candidates: &str) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidates":{},
+              "deterministic_budget":{},
+              "batch_policy":{{
+                "max_evaluated_candidates":256,
+                "stop_after_successes":256,
+                "stop_after_failures":256
+              }}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&session.initial_snapshot.state_fingerprint),
+            candidates,
+            phase7_budget_json(),
+        )
+    }
+
+    fn exact_candidate_json(source: &str) -> String {
+        format!(r#"{{"kind":"exact","term":{{"source":"{source}"}}}}"#)
+    }
+
+    fn batch_candidate_json(candidate_id: &str, candidate_json: &str) -> String {
+        format!(r#"{{"candidate_id":"{candidate_id}","candidate":{candidate_json}}}"#)
+    }
+
+    fn suggested_candidate_json(candidate: &MachineTacticCandidate) -> String {
+        match candidate {
+            MachineTacticCandidate::Rewrite {
+                rule,
+                direction,
+                site,
+            } => {
+                assert!(rule.universe_args.is_empty());
+                format!(
+                    r#"{{"kind":"rw","rule":{{"head":{},"universe_args":[],"args":[{}]}},"direction":"{}","site":"{}"}}"#,
+                    tactic_head_json(&rule.head),
+                    rule.args
+                        .iter()
+                        .map(apply_arg_json)
+                        .collect::<Vec<_>>()
+                        .join(","),
+                    rewrite_direction_json(*direction),
+                    rewrite_site_json(*site),
+                )
+            }
+            MachineTacticCandidate::SimpLite { rules } => {
+                format!(
+                    r#"{{"kind":"simp-lite","rules":[{}]}}"#,
+                    rules
+                        .iter()
+                        .map(simp_rule_json)
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            }
+            _ => panic!("phase7 fixture serializes only rw/simp search suggestions"),
+        }
+    }
+
+    fn tactic_head_json(head: &TacticHead) -> String {
+        match head {
+            TacticHead::Imported {
+                name,
+                decl_interface_hash,
+            } => format!(
+                r#"{{"imported":{{"name":"{}","decl_interface_hash":"{}"}}}}"#,
+                name.as_dotted(),
+                format_hash_string(decl_interface_hash),
+            ),
+            _ => panic!("phase7 fixture expects imported tactic heads"),
+        }
+    }
+
+    fn apply_arg_json(arg: &CandidateApplyArg) -> String {
+        match arg {
+            CandidateApplyArg::InferFromTarget => r#"{"mode":"infer_from_target"}"#.to_owned(),
+            _ => panic!("phase7 fixture expects infer_from_target rw args"),
+        }
+    }
+
+    fn simp_rule_json(rule: &SimpRuleRef) -> String {
+        format!(
+            r#"{{"name":"{}","decl_interface_hash":"{}","direction":"{}"}}"#,
+            rule.name.as_dotted(),
+            format_hash_string(&rule.decl_interface_hash),
+            rewrite_direction_json(rule.direction),
+        )
+    }
+
+    fn rewrite_direction_json(direction: RewriteDirection) -> &'static str {
+        match direction {
+            RewriteDirection::Forward => "forward",
+            RewriteDirection::Backward => "backward",
+        }
+    }
+
+    fn rewrite_site_json(site: RewriteSite) -> &'static str {
+        match site {
+            RewriteSite::EqTargetLeft => "eq_target_left",
+            RewriteSite::EqTargetRight => "eq_target_right",
+        }
+    }
+
+    #[test]
+    fn phase7_nat_and_list_exact_fixtures_must_reenter_phase5_run() {
+        let mut nat_session = phase7_exact_session("Nat");
+        let nat_run = run_machine_tactic_request(
+            &phase7_run_json(&nat_session, &exact_candidate_json("Nat.zero")),
+            &mut nat_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(nat_ok) = nat_run else {
+            panic!("Nat exact candidate should close through Phase 5 run");
+        };
+        assert_eq!(
+            nat_ok.endpoint_fields.result.kind,
+            MachineTacticRunResultKind::Closed
+        );
+
+        let mut list_session = phase7_exact_session("List.{1} Nat");
+        let list_run = run_machine_tactic_request(
+            &phase7_run_json(&list_session, &exact_candidate_json("@List.nil.{1} Nat")),
+            &mut list_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(list_ok) = list_run else {
+            panic!("List exact candidate should close through Phase 5 run");
+        };
+        assert_eq!(
+            list_ok.endpoint_fields.result.kind,
+            MachineTacticRunResultKind::Closed
+        );
+    }
+
+    #[test]
+    fn phase7_retrieval_fixtures_reproduce_rw_and_simp_candidate_sources() {
+        let session = phase7_retrieval_session();
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Lib.Simp"]}"#;
+        let first =
+            search_machine_theorems_for_goal(&search_json(&session, filters), &session).unwrap();
+        let second =
+            search_machine_theorems_for_goal(&search_json(&session, filters), &session).unwrap();
+
+        let (first_fields, second_fields) = match (first, second) {
+            (MachineApiResponseEnvelope::Ok(first), MachineApiResponseEnvelope::Ok(second)) => {
+                (first.endpoint_fields, second.endpoint_fields)
+            }
+            _ => panic!("phase7 retrieval search should succeed"),
+        };
+
+        assert_eq!(
+            first_fields.query_fingerprint,
+            second_fields.query_fingerprint
+        );
+        assert_eq!(
+            first_fields.theorem_index_fingerprint,
+            second_fields.theorem_index_fingerprint
+        );
+        assert_eq!(
+            format_hash_string(&first_fields.query_fingerprint),
+            "sha256:b7c51744b1cca514858837778f5cc0e218b1d9cc3f95e5ac0d500be1173575ab"
+        );
+        assert_eq!(
+            format_hash_string(&first_fields.theorem_index_fingerprint),
+            "sha256:f0622ab6c7a84ee99b0469fda9f000bdb02d148714c840573d7af3006fb220f3"
+        );
+        assert_eq!(first_fields.results, second_fields.results);
+        assert_eq!(first_fields.results.len(), 1);
+
+        let result = &first_fields.results[0];
+        assert_eq!(result.global_ref.module, Name::from_dotted("Lib.Simp"));
+        assert_eq!(result.global_ref.name, Name::from_dotted("Lib.one_unfold"));
+        assert_eq!(
+            result.modes,
+            vec![
+                MachineTheoremMode::Exact,
+                MachineTheoremMode::Rw,
+                MachineTheoremMode::Simp
+            ]
+        );
+        assert_eq!(result.suggested_candidates.len(), 2);
+        assert!(matches!(
+            result.suggested_candidates[0].candidate,
+            MachineTacticCandidate::Rewrite { .. }
+        ));
+        assert!(matches!(
+            result.suggested_candidates[1].candidate,
+            MachineTacticCandidate::SimpLite { .. }
+        ));
+        assert_eq!(
+            result
+                .suggested_candidates
+                .iter()
+                .map(|candidate| candidate.status)
+                .collect::<Vec<_>>(),
+            vec![
+                MachineSuggestedCandidateStatus::Validated,
+                MachineSuggestedCandidateStatus::Validated
+            ]
+        );
+
+        let batch_candidates = result
+            .suggested_candidates
+            .iter()
+            .enumerate()
+            .map(|(index, candidate)| {
+                batch_candidate_json(
+                    &format!("cand_{index}"),
+                    &suggested_candidate_json(&candidate.candidate),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let mut batch_session = phase7_retrieval_session();
+        let batch_response = run_machine_tactic_batch_request(
+            &phase7_batch_json(&batch_session, &format!("[{batch_candidates}]")),
+            &mut batch_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(batch_ok) = batch_response else {
+            panic!("phase7 suggested candidates should re-enter Phase 5 batch");
+        };
+        assert_eq!(
+            batch_ok.endpoint_fields.success_count + batch_ok.endpoint_fields.failure_count,
+            2
+        );
+        for (index, item) in batch_ok.endpoint_fields.results.iter().enumerate() {
+            let candidate_hash = match item {
+                MachineTacticBatchItemResponse::Success { candidate_hash, .. } => *candidate_hash,
+                MachineTacticBatchItemResponse::Error {
+                    candidate_hash: Some(candidate_hash),
+                    ..
+                } => *candidate_hash,
+                MachineTacticBatchItemResponse::Error {
+                    candidate_hash: None,
+                    ..
+                } => panic!("candidate {index} should canonicalize before execution"),
+            };
+            assert_eq!(
+                candidate_hash,
+                result.suggested_candidates[index].candidate_hash
+            );
+        }
+    }
+
+    #[test]
+    fn phase7_stale_global_ref_candidate_is_rejected_by_phase5_batch() {
+        let session = phase7_retrieval_session();
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Lib.Simp"]}"#;
+        let response =
+            search_machine_theorems_for_goal(&search_json(&session, filters), &session).unwrap();
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("phase7 retrieval search should succeed");
+        };
+        let result = &ok.endpoint_fields.results[0];
+        let mut candidate = result.suggested_candidates[0].candidate.clone();
+        let MachineTacticCandidate::Rewrite { rule, .. } = &mut candidate else {
+            panic!("first candidate should be rw");
+        };
+        let TacticHead::Imported {
+            decl_interface_hash,
+            ..
+        } = &mut rule.head
+        else {
+            panic!("rw head should be imported");
+        };
+        decl_interface_hash[0] ^= 0x80;
+        let stale_candidate = suggested_candidate_json(&candidate);
+        let mut batch_session = phase7_retrieval_session();
+        let batch_response = run_machine_tactic_batch_request(
+            &phase7_batch_json(
+                &batch_session,
+                &format!("[{}]", batch_candidate_json("stale", &stale_candidate)),
+            ),
+            &mut batch_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(batch_ok) = batch_response else {
+            panic!("batch should report stale candidate as item error");
+        };
+        assert_eq!(batch_ok.endpoint_fields.success_count, 0);
+        assert_eq!(batch_ok.endpoint_fields.failure_count, 1);
+        let [MachineTacticBatchItemResponse::Error {
+            candidate_hash: Some(_),
+            diagnostic,
+            ..
+        }] = batch_ok.endpoint_fields.results.as_slice()
+        else {
+            panic!("stale global ref should be rejected after candidate canonicalization");
+        };
+        assert_eq!(diagnostic.error_kind, MachineApiErrorKind::InvalidCandidate);
     }
 
     #[test]

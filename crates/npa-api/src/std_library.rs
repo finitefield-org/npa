@@ -47,8 +47,10 @@ const STD_MACHINE_THEOREM_INDEX_JSON_PATH: &str = "Std.machine-theorem-index.jso
 const STD_MACHINE_REWRITE_PROFILES_JSON_PATH: &str = "Std.machine-rewrite-profiles.json";
 const STD_MACHINE_SIMP_PROFILES_JSON_PATH: &str = "Std.machine-simp-profiles.json";
 const STD_MACHINE_AXIOM_REPORT_JSON_PATH: &str = "Std.machine-axiom-report.json";
+const STD_MACHINE_PROMPT_METADATA_JSON_PATH: &str = "Std.machine-prompt-metadata.json";
 const STD_LIBRARY_PROTOCOL_VERSION: &str = "npa.stdlib-machine.v1";
 const STD_LIBRARY_PROFILE_ID: &str = "npa.stdlib.mvp.v1";
+const STD_PROMPT_METADATA_PROFILE_ID: &str = "npa.stdlib.prompt-metadata.mvp.v1";
 const STD_CORE_SPEC_ID: &str = "core-spec-v0.1";
 const STD_KERNEL_SEMANTICS_PROFILE_ID: &str = "npa-kernel.phase1.v0.1";
 const STD_REDUCTION_PROFILE_ID: &str = "beta-delta-iota-zeta.v0.1";
@@ -72,6 +74,9 @@ const STD_REWRITE_PROFILE_TAG: &str = "npa.phase6.std-rewrite-profile.v1";
 const STD_REWRITE_PROFILE_SET_TAG: &str = "npa.phase6.std-rewrite-profile-set.v1";
 const STD_SIMP_PROFILE_TAG: &str = "npa.phase6.std-simp-profile.v1";
 const STD_SIMP_PROFILE_SET_TAG: &str = "npa.phase6.std-simp-profile-set.v1";
+const STD_PROMPT_METADATA_SET_TAG: &str = "npa.phase6.std-prompt-metadata-set.v1";
+const STD_PROMPT_METADATA_TAG: &str = "npa.phase6.std-prompt-metadata.v1";
+const STD_PROMPT_EXAMPLE_TAG: &str = "npa.phase6.std-prompt-example.v1";
 const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
 const STD_THEOREM_INDEX_PROFILE_ID: &str = "npa.stdlib.theorem-index.mvp.v1";
 const STD_LOGIC_BUNDLE_ID: &str = "std.logic.mvp";
@@ -300,6 +305,30 @@ pub struct MachineStdSimpProfileSet {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdPromptMetadataSet {
+    pub metadata_profile_id: String,
+    pub library_profile_id: String,
+    pub entries: Vec<MachineStdPromptMetadata>,
+    pub prompt_metadata_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdPromptMetadata {
+    pub global_ref: MachineStdGlobalRef,
+    pub short_doc: Option<String>,
+    pub examples: Vec<MachineStdPromptExample>,
+    pub tags: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdPromptExample {
+    pub goal_core_hash: Hash,
+    pub imports_bundle_id: String,
+    pub candidate_kind: String,
+    pub display: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineStdGlobalRefView {
     Decl {
         module: Name,
@@ -367,6 +396,16 @@ pub struct MachineStdValidatedRelease {
     pub std_library_release_hash: Hash,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct MachineStdReleaseSidecarJson<'a> {
+    pub import_bundles_json: &'a str,
+    pub theorem_index_json: &'a str,
+    pub rewrite_profiles_json: &'a str,
+    pub simp_profiles_json: &'a str,
+    pub axiom_report_json: &'a str,
+    pub prompt_metadata_json: Option<&'a str>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MachineStdArtifactKind {
     LibraryRelease,
@@ -375,6 +414,7 @@ pub enum MachineStdArtifactKind {
     RewriteProfiles,
     SimpProfiles,
     AxiomReport,
+    PromptMetadata,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -446,6 +486,7 @@ pub enum MachineStdReleaseArtifactError {
     InvalidStdRewriteProfile(MachineStdRewriteProfileError),
     InvalidStdSimpProfile(MachineStdSimpProfileError),
     InvalidStdTheoremIndex(MachineStdTheoremIndexError),
+    InvalidStdPromptMetadata(MachineStdPromptMetadataError),
 }
 
 #[derive(Debug)]
@@ -615,6 +656,18 @@ pub enum MachineStdImportBundleError {
     },
     NonEmptyMvpAllowAxioms {
         bundle_id: String,
+    },
+    DuplicateAllowAxiom {
+        bundle_id: String,
+        axiom: Box<MachineAxiomRefWire>,
+    },
+    NonCanonicalAllowAxiomOrder {
+        bundle_id: String,
+    },
+    AllowAxiomsMismatch {
+        bundle_id: String,
+        expected: Vec<MachineAxiomRefWire>,
+        actual: Vec<MachineAxiomRefWire>,
     },
     InvalidRecipeIdMapping {
         bundle_id: String,
@@ -888,6 +941,54 @@ pub enum MachineStdTheoremIndexError {
     },
 }
 
+#[derive(Debug)]
+pub enum MachineStdPromptMetadataError {
+    MetadataProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    LibraryProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    PromptMetadataHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    DuplicateEntry {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalEntryOrder {
+        expected: Vec<MachineStdGlobalRef>,
+        actual: Vec<MachineStdGlobalRef>,
+    },
+    StaleGlobalRef {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    NonCanonicalTagOrder {
+        global_ref: Box<MachineStdGlobalRef>,
+    },
+    DuplicateTag {
+        global_ref: Box<MachineStdGlobalRef>,
+        tag: String,
+    },
+    UnknownTag {
+        global_ref: Box<MachineStdGlobalRef>,
+        tag: String,
+    },
+    InvalidCandidateKind {
+        global_ref: Box<MachineStdGlobalRef>,
+        candidate_kind: String,
+    },
+    UnknownImportBundle {
+        global_ref: Box<MachineStdGlobalRef>,
+        imports_bundle_id: String,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MachineStdCanonicalBytesError {
     InvalidName {
@@ -1069,15 +1170,24 @@ pub fn load_machine_std_mvp_release(
         STD_MACHINE_AXIOM_REPORT_JSON_PATH,
         MachineStdArtifactKind::AxiomReport,
     )?;
-    load_machine_std_mvp_release_with_sidecars_from_json(
+    let prompt_metadata_json = read_optional_std_artifact_json(
+        root,
+        STD_MACHINE_PROMPT_METADATA_JSON_PATH,
+        MachineStdArtifactKind::PromptMetadata,
+    )?;
+    let (validated, _) = load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
         root,
         &release_json,
-        &import_bundles_json,
-        &theorem_index_json,
-        &rewrite_profiles_json,
-        &simp_profiles_json,
-        &axiom_report_json,
-    )
+        MachineStdReleaseSidecarJson {
+            import_bundles_json: &import_bundles_json,
+            theorem_index_json: &theorem_index_json,
+            rewrite_profiles_json: &rewrite_profiles_json,
+            simp_profiles_json: &simp_profiles_json,
+            axiom_report_json: &axiom_report_json,
+            prompt_metadata_json: prompt_metadata_json.as_deref(),
+        },
+    )?;
+    Ok(validated)
 }
 
 #[cfg(test)]
@@ -1130,13 +1240,45 @@ pub fn load_machine_std_mvp_release_with_sidecars_from_json(
     simp_profiles_json: &str,
     axiom_report_json: &str,
 ) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
-    let import_bundles = parse_machine_std_import_bundle_set_json(import_bundles_json)
+    load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+        package_root,
+        release_json,
+        MachineStdReleaseSidecarJson {
+            import_bundles_json,
+            theorem_index_json,
+            rewrite_profiles_json,
+            simp_profiles_json,
+            axiom_report_json,
+            prompt_metadata_json: None,
+        },
+    )
+    .map(|(validated, _)| validated)
+}
+
+pub fn load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+    package_root: impl AsRef<Path>,
+    release_json: &str,
+    sidecars: MachineStdReleaseSidecarJson<'_>,
+) -> Result<
+    (
+        MachineStdValidatedRelease,
+        Option<MachineStdPromptMetadataSet>,
+    ),
+    MachineStdReleaseArtifactError,
+> {
+    let import_bundles = parse_machine_std_import_bundle_set_json(sidecars.import_bundles_json)
         .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
-    let theorem_index = parse_machine_std_theorem_index_json(theorem_index_json)
+    let theorem_index = parse_machine_std_theorem_index_json(sidecars.theorem_index_json)
         .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
-    let rewrite_profiles = parse_machine_std_rewrite_profile_set_json(rewrite_profiles_json)
+    let rewrite_profiles =
+        parse_machine_std_rewrite_profile_set_json(sidecars.rewrite_profiles_json)
+            .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let simp_profiles = parse_machine_std_simp_profile_set_json(sidecars.simp_profiles_json)
         .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
-    let simp_profiles = parse_machine_std_simp_profile_set_json(simp_profiles_json)
+    let prompt_metadata = sidecars
+        .prompt_metadata_json
+        .map(parse_machine_std_prompt_metadata_json)
+        .transpose()
         .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
     let preflight_manifest = parse_machine_std_library_release_json(release_json)
         .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
@@ -1150,7 +1292,7 @@ pub fn load_machine_std_mvp_release_with_sidecars_from_json(
     )?;
 
     let (manifest, loaded, axiom_report) =
-        load_machine_std_mvp_release_core(package_root, release_json, axiom_report_json)?;
+        load_machine_std_mvp_release_core(package_root, release_json, sidecars.axiom_report_json)?;
 
     let expected_rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded)
         .map_err(MachineStdReleaseArtifactError::InvalidStdRewriteProfile)?;
@@ -1209,8 +1351,15 @@ pub fn load_machine_std_mvp_release_with_sidecars_from_json(
         &simp_profiles,
         &rewrite_profiles,
     )?;
+    validate_machine_std_mvp_optional_prompt_metadata(
+        prompt_metadata.as_ref(),
+        &theorem_index,
+        &import_bundles,
+    )
+    .map_err(MachineStdReleaseArtifactError::InvalidStdPromptMetadata)?;
 
-    finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)
+    let validated = finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)?;
+    Ok((validated, prompt_metadata))
 }
 
 fn validate_machine_std_release_sidecar_self_hashes(
@@ -1424,6 +1573,13 @@ pub fn parse_machine_std_simp_profile_set_json(
 ) -> Result<MachineStdSimpProfileSet, MachineStdArtifactShapeError> {
     let doc = parse_std_json(source, MachineStdArtifactKind::SimpProfiles)?;
     parse_simp_profile_set_value(doc.root(), "$")
+}
+
+pub fn parse_machine_std_prompt_metadata_json(
+    source: &str,
+) -> Result<MachineStdPromptMetadataSet, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::PromptMetadata)?;
+    parse_prompt_metadata_set_value(doc.root(), "$")
 }
 
 pub fn machine_std_module_artifact_canonical_bytes(
@@ -1738,6 +1894,58 @@ pub fn machine_std_simp_profile_set_hash(
     )?))
 }
 
+pub fn machine_std_prompt_example_canonical_bytes(example: &MachineStdPromptExample) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_PROMPT_EXAMPLE_TAG);
+    encode_hash(&mut out, &example.goal_core_hash);
+    encode_string(&mut out, &example.imports_bundle_id);
+    encode_string(&mut out, &example.candidate_kind);
+    encode_string(&mut out, &example.display);
+    out
+}
+
+pub fn machine_std_prompt_metadata_canonical_bytes(
+    metadata: &MachineStdPromptMetadata,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_PROMPT_METADATA_TAG);
+    out.extend(machine_std_global_ref_canonical_bytes(
+        &metadata.global_ref,
+    )?);
+    encode_option_string(&mut out, metadata.short_doc.as_deref());
+    encode_uvar(&mut out, metadata.examples.len() as u64);
+    for example in &metadata.examples {
+        out.extend(machine_std_prompt_example_canonical_bytes(example));
+    }
+    encode_uvar(&mut out, metadata.tags.len() as u64);
+    for tag in &metadata.tags {
+        encode_string(&mut out, tag);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_prompt_metadata_set_canonical_bytes(
+    metadata_set: &MachineStdPromptMetadataSet,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_PROMPT_METADATA_SET_TAG);
+    encode_string(&mut out, &metadata_set.metadata_profile_id);
+    encode_string(&mut out, &metadata_set.library_profile_id);
+    encode_uvar(&mut out, metadata_set.entries.len() as u64);
+    for metadata in &metadata_set.entries {
+        out.extend(machine_std_prompt_metadata_canonical_bytes(metadata)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_prompt_metadata_hash(
+    metadata_set: &MachineStdPromptMetadataSet,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_prompt_metadata_set_canonical_bytes(
+        metadata_set,
+    )?))
+}
+
 pub fn machine_std_theorem_entry_canonical_bytes(
     entry: &MachineStdTheoremEntry,
 ) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
@@ -1932,6 +2140,23 @@ fn read_std_artifact_json(
         path,
         source,
     })
+}
+
+fn read_optional_std_artifact_json(
+    root: &Path,
+    relative_path: &str,
+    artifact: MachineStdArtifactKind,
+) -> Result<Option<String>, MachineStdReleaseArtifactError> {
+    let path = join_posix_relative_path(root, relative_path);
+    match fs::read_to_string(&path) {
+        Ok(source) => Ok(Some(source)),
+        Err(source) if source.kind() == io::ErrorKind::NotFound => Ok(None),
+        Err(source) => Err(MachineStdReleaseArtifactError::ReadArtifact {
+            artifact,
+            path,
+            source,
+        }),
+    }
 }
 
 fn load_machine_std_mvp_certificates_for_manifest_validation(
@@ -2319,6 +2544,179 @@ pub fn validate_machine_std_mvp_release_final_sidecar_counts(
         .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
     }
     Ok(())
+}
+
+pub fn validate_machine_std_mvp_optional_prompt_metadata(
+    metadata: Option<&MachineStdPromptMetadataSet>,
+    theorem_index: &MachineStdTheoremIndex,
+    import_bundles: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdPromptMetadataError> {
+    let Some(metadata) = metadata else {
+        return Ok(());
+    };
+    validate_machine_std_mvp_prompt_metadata(metadata, theorem_index, import_bundles)
+}
+
+pub fn validate_machine_std_mvp_prompt_metadata(
+    metadata: &MachineStdPromptMetadataSet,
+    theorem_index: &MachineStdTheoremIndex,
+    import_bundles: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdPromptMetadataError> {
+    if metadata.metadata_profile_id != STD_PROMPT_METADATA_PROFILE_ID {
+        return Err(MachineStdPromptMetadataError::MetadataProfileMismatch {
+            expected: STD_PROMPT_METADATA_PROFILE_ID,
+            actual: metadata.metadata_profile_id.clone(),
+        });
+    }
+    if metadata.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdPromptMetadataError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: metadata.library_profile_id.clone(),
+        });
+    }
+
+    validate_prompt_metadata_entries(metadata, theorem_index)?;
+    validate_prompt_metadata_examples(metadata, import_bundles)?;
+
+    let actual_hash = machine_std_prompt_metadata_hash(metadata)
+        .map_err(|source| MachineStdPromptMetadataError::CanonicalBytes { source })?;
+    if actual_hash != metadata.prompt_metadata_hash {
+        return Err(MachineStdPromptMetadataError::PromptMetadataHashMismatch {
+            expected: metadata.prompt_metadata_hash,
+            actual: actual_hash,
+        });
+    }
+    Ok(())
+}
+
+fn validate_prompt_metadata_entries(
+    metadata: &MachineStdPromptMetadataSet,
+    theorem_index: &MachineStdTheoremIndex,
+) -> Result<(), MachineStdPromptMetadataError> {
+    let theorem_refs = theorem_index
+        .entries
+        .iter()
+        .map(|entry| {
+            Ok((
+                machine_std_global_ref_canonical_bytes(&entry.global_ref)
+                    .map_err(|source| MachineStdPromptMetadataError::CanonicalBytes { source })?,
+                entry.global_ref.clone(),
+            ))
+        })
+        .collect::<Result<BTreeMap<_, _>, MachineStdPromptMetadataError>>()?;
+
+    let mut actual_pairs = Vec::with_capacity(metadata.entries.len());
+    let mut seen = BTreeSet::new();
+    for entry in &metadata.entries {
+        validate_prompt_metadata_tags(entry)?;
+        let key = machine_std_global_ref_canonical_bytes(&entry.global_ref)
+            .map_err(|source| MachineStdPromptMetadataError::CanonicalBytes { source })?;
+        if !seen.insert(key.clone()) {
+            return Err(MachineStdPromptMetadataError::DuplicateEntry {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        if !theorem_refs.contains_key(&key) {
+            return Err(MachineStdPromptMetadataError::StaleGlobalRef {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        actual_pairs.push((key, entry.global_ref.clone()));
+    }
+
+    let mut expected_pairs = actual_pairs.clone();
+    expected_pairs.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    let actual_refs = actual_pairs
+        .iter()
+        .map(|(_, global_ref)| global_ref.clone())
+        .collect::<Vec<_>>();
+    let expected_refs = expected_pairs
+        .iter()
+        .map(|(_, global_ref)| global_ref.clone())
+        .collect::<Vec<_>>();
+    if actual_refs != expected_refs {
+        return Err(MachineStdPromptMetadataError::NonCanonicalEntryOrder {
+            expected: expected_refs,
+            actual: actual_refs,
+        });
+    }
+    Ok(())
+}
+
+fn validate_prompt_metadata_tags(
+    metadata: &MachineStdPromptMetadata,
+) -> Result<(), MachineStdPromptMetadataError> {
+    let mut previous: Option<&str> = None;
+    let mut seen = BTreeSet::new();
+    for tag in &metadata.tags {
+        if !seen.insert(tag.as_str()) {
+            return Err(MachineStdPromptMetadataError::DuplicateTag {
+                global_ref: Box::new(metadata.global_ref.clone()),
+                tag: tag.clone(),
+            });
+        }
+        if previous.is_some_and(|previous| previous.as_bytes() > tag.as_bytes()) {
+            return Err(MachineStdPromptMetadataError::NonCanonicalTagOrder {
+                global_ref: Box::new(metadata.global_ref.clone()),
+            });
+        }
+        previous = Some(tag);
+        if !is_mvp_prompt_tag(tag) {
+            return Err(MachineStdPromptMetadataError::UnknownTag {
+                global_ref: Box::new(metadata.global_ref.clone()),
+                tag: tag.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_prompt_metadata_examples(
+    metadata: &MachineStdPromptMetadataSet,
+    import_bundles: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdPromptMetadataError> {
+    let bundle_ids = import_bundles
+        .bundles
+        .iter()
+        .map(|bundle| bundle.bundle_id.as_str())
+        .collect::<BTreeSet<_>>();
+    for entry in &metadata.entries {
+        for example in &entry.examples {
+            if !is_mvp_prompt_candidate_kind(&example.candidate_kind) {
+                return Err(MachineStdPromptMetadataError::InvalidCandidateKind {
+                    global_ref: Box::new(entry.global_ref.clone()),
+                    candidate_kind: example.candidate_kind.clone(),
+                });
+            }
+            if !bundle_ids.contains(example.imports_bundle_id.as_str()) {
+                return Err(MachineStdPromptMetadataError::UnknownImportBundle {
+                    global_ref: Box::new(entry.global_ref.clone()),
+                    imports_bundle_id: example.imports_bundle_id.clone(),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn is_mvp_prompt_tag(tag: &str) -> bool {
+    matches!(
+        tag,
+        "eq" | "logic"
+            | "nat"
+            | "list"
+            | "algebra"
+            | "simp"
+            | "rw"
+            | "apply"
+            | "intro"
+            | "elim"
+            | "induction"
+    )
+}
+
+fn is_mvp_prompt_candidate_kind(candidate_kind: &str) -> bool {
+    matches!(candidate_kind, "exact" | "apply" | "rw" | "simp" | "note")
 }
 
 type RewriteMetadataBySource = BTreeMap<
@@ -4777,9 +5175,12 @@ fn validate_machine_std_mvp_import_bundle_set_shape(
                 expected_certificate,
             )?;
         }
-        if !bundle.allow_axioms.is_empty() {
-            return Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms {
+        validate_allow_axiom_order(&bundle.bundle_id, &bundle.allow_axioms)?;
+        if bundle.allow_axioms != expected_bundle.allow_axioms {
+            return Err(MachineStdImportBundleError::AllowAxiomsMismatch {
                 bundle_id: bundle.bundle_id.clone(),
+                expected: expected_bundle.allow_axioms.clone(),
+                actual: bundle.allow_axioms.clone(),
             });
         }
         let expected_recipe_id = expected_recipe_id_for_bundle(&bundle.bundle_id)
@@ -4857,11 +5258,12 @@ fn generate_mvp_import_bundle(
         .collect::<Result<Vec<_>, _>>()?;
     root_imports.sort();
     let import_closure = import_closure_for_roots(loaded, spec.id, &root_imports)?;
+    let allow_axioms = mvp_bundle_allow_axioms(loaded, &import_closure);
     Ok(MachineStdImportBundle {
         bundle_id: spec.id.to_owned(),
         root_imports,
         import_closure,
-        allow_axioms: Vec::new(),
+        allow_axioms,
         recommended_tactic_options: MachineStdTacticOptionsRecipe {
             recipe_id: spec.recipe_id.to_owned(),
             kernel_check_profile: KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC.to_owned(),
@@ -5152,6 +5554,56 @@ fn find_std_logic_export(
         })
 }
 
+fn std_logic_eq_rec_axiom_ref(loaded: &MachineStdLoadedRelease) -> Option<MachineStdAxiomRef> {
+    let family = std_logic_eq_family(loaded)?;
+    let logic = loaded.module(&Name::from_dotted("Std.Logic"))?;
+    let is_axiom_export = logic.verified_module.export_block().iter().any(|entry| {
+        entry.kind == ExportKind::Axiom
+            && entry.decl_interface_hash == family.rec_interface_hash
+            && logic
+                .verified_module
+                .name_table()
+                .get(entry.name)
+                .is_some_and(|name| *name == family.rec_name)
+    });
+    is_axiom_export.then(|| MachineStdAxiomRef {
+        module: logic.module.clone(),
+        name: family.rec_name,
+        export_hash: logic.expected_export_hash,
+        decl_interface_hash: family.rec_interface_hash,
+    })
+}
+
+fn machine_std_axiom_ref_to_wire(axiom: &MachineStdAxiomRef) -> MachineAxiomRefWire {
+    MachineAxiomRefWire::Imported {
+        module: axiom.module.clone(),
+        name: axiom.name.clone(),
+        export_hash: axiom.export_hash,
+        decl_interface_hash: axiom.decl_interface_hash,
+    }
+}
+
+fn mvp_bundle_allow_axioms(
+    loaded: &MachineStdLoadedRelease,
+    import_closure: &[MachineStdImportCertificate],
+) -> Vec<MachineAxiomRefWire> {
+    let Some(axiom) = std_logic_eq_rec_axiom_ref(loaded) else {
+        return Vec::new();
+    };
+    let Some(logic) = loaded.module(&axiom.module) else {
+        return Vec::new();
+    };
+    if import_closure.iter().any(|certificate| {
+        certificate.module == logic.module
+            && certificate.expected_export_hash == logic.expected_export_hash
+            && certificate.expected_certificate_hash == logic.expected_certificate_hash
+    }) {
+        vec![machine_std_axiom_ref_to_wire(&axiom)]
+    } else {
+        Vec::new()
+    }
+}
+
 fn validate_import_bundle_membership(
     bundles: &[MachineStdImportBundle],
 ) -> Result<(), MachineStdImportBundleError> {
@@ -5312,6 +5764,33 @@ fn validate_import_certificate_order(
     Ok(())
 }
 
+fn validate_allow_axiom_order(
+    bundle_id: &str,
+    axioms: &[MachineAxiomRefWire],
+) -> Result<(), MachineStdImportBundleError> {
+    let mut seen = BTreeSet::new();
+    let mut previous: Option<Vec<u8>> = None;
+    for axiom in axioms {
+        let current = encode_machine_axiom_ref_wire(axiom);
+        if !seen.insert(current.clone()) {
+            return Err(MachineStdImportBundleError::DuplicateAllowAxiom {
+                bundle_id: bundle_id.to_owned(),
+                axiom: Box::new(axiom.clone()),
+            });
+        }
+        if previous
+            .as_ref()
+            .is_some_and(|previous| previous > &current)
+        {
+            return Err(MachineStdImportBundleError::NonCanonicalAllowAxiomOrder {
+                bundle_id: bundle_id.to_owned(),
+            });
+        }
+        previous = Some(current);
+    }
+    Ok(())
+}
+
 fn validate_import_certificate_bytes(
     bundle_id: &str,
     actual: &MachineStdImportCertificate,
@@ -5406,13 +5885,21 @@ fn validate_machine_std_axiom_report(
             "transitive_axioms",
             &report_module.transitive_axioms,
         )?;
-        if !report_module.module_axioms.is_empty() {
+        if report_module
+            .module_axioms
+            .iter()
+            .any(|axiom| !is_allowed_mvp_std_axiom(loaded, axiom))
+        {
             return Err(MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
                 module: module_name.clone(),
                 field: "module_axioms",
             });
         }
-        if !report_module.transitive_axioms.is_empty() {
+        if report_module
+            .transitive_axioms
+            .iter()
+            .any(|axiom| !is_allowed_mvp_std_axiom(loaded, axiom))
+        {
             return Err(MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
                 module: module_name.clone(),
                 field: "transitive_axioms",
@@ -5454,6 +5941,12 @@ fn validate_machine_std_axiom_report(
     }
 
     Ok(())
+}
+
+fn is_allowed_mvp_std_axiom(loaded: &MachineStdLoadedRelease, axiom: &MachineStdAxiomRef) -> bool {
+    std_logic_eq_rec_axiom_ref(loaded)
+        .as_ref()
+        .is_some_and(|allowed| allowed == axiom)
 }
 
 fn validate_axiom_report_module_membership(
@@ -5776,6 +6269,19 @@ const SIMP_PROFILE_FIELDS: &[&str] = &[
     "eq_family",
     "rules",
     "profile_hash",
+];
+const PROMPT_METADATA_SET_FIELDS: &[&str] = &[
+    "metadata_profile_id",
+    "library_profile_id",
+    "entries",
+    "prompt_metadata_hash",
+];
+const PROMPT_METADATA_FIELDS: &[&str] = &["global_ref", "short_doc", "examples", "tags"];
+const PROMPT_EXAMPLE_FIELDS: &[&str] = &[
+    "goal_core_hash",
+    "imports_bundle_id",
+    "candidate_kind",
+    "display",
 ];
 
 fn parse_std_json<'src>(
@@ -7055,6 +7561,134 @@ fn parse_simp_profile_value(
     })
 }
 
+fn parse_prompt_metadata_set_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdPromptMetadataSet, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::PromptMetadata,
+        path,
+        PROMPT_METADATA_SET_FIELDS,
+    )?;
+    let entries = required_array(
+        members,
+        MachineStdArtifactKind::PromptMetadata,
+        path,
+        "entries",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_prompt_metadata_value(item, &array_path(path, "entries", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdPromptMetadataSet {
+        metadata_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "metadata_profile_id",
+        )?
+        .to_owned(),
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        entries,
+        prompt_metadata_hash: required_hash(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "prompt_metadata_hash",
+        )?,
+    })
+}
+
+fn parse_prompt_metadata_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdPromptMetadata, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::PromptMetadata,
+        path,
+        PROMPT_METADATA_FIELDS,
+    )?;
+    let examples = required_array(
+        members,
+        MachineStdArtifactKind::PromptMetadata,
+        path,
+        "examples",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_prompt_example_value(item, &array_path(path, "examples", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdPromptMetadata {
+        global_ref: parse_global_ref_value_for(
+            MachineStdArtifactKind::PromptMetadata,
+            required_value(members, "global_ref"),
+            &field_path(path, "global_ref"),
+        )?,
+        short_doc: parse_optional_string_value(
+            MachineStdArtifactKind::PromptMetadata,
+            required_value(members, "short_doc"),
+            &field_path(path, "short_doc"),
+            "short_doc",
+        )?,
+        examples,
+        tags: parse_string_array(
+            MachineStdArtifactKind::PromptMetadata,
+            members,
+            path,
+            "tags",
+        )?,
+    })
+}
+
+fn parse_prompt_example_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdPromptExample, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::PromptMetadata,
+        path,
+        PROMPT_EXAMPLE_FIELDS,
+    )?;
+    Ok(MachineStdPromptExample {
+        goal_core_hash: required_hash(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "goal_core_hash",
+        )?,
+        imports_bundle_id: required_string(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "imports_bundle_id",
+        )?
+        .to_owned(),
+        candidate_kind: required_string(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "candidate_kind",
+        )?
+        .to_owned(),
+        display: required_string(
+            members,
+            MachineStdArtifactKind::PromptMetadata,
+            path,
+            "display",
+        )?
+        .to_owned(),
+    })
+}
+
 fn parse_rewrite_direction(
     artifact: MachineStdArtifactKind,
     members: &[crate::json::JsonMember<'_>],
@@ -7545,6 +8179,32 @@ fn parse_optional_u64_value(
     }
 }
 
+fn parse_optional_string_value(
+    artifact: MachineStdArtifactKind,
+    value: &JsonValue<'_>,
+    path: &str,
+    field: &'static str,
+) -> Result<Option<String>, MachineStdArtifactShapeError> {
+    match value.kind() {
+        JsonValueKind::Null => Ok(None),
+        JsonValueKind::String => Ok(Some(
+            value
+                .string_value()
+                .expect("kind checked string")
+                .to_owned(),
+        )),
+        actual => Err(shape_error(
+            artifact,
+            path,
+            MachineStdArtifactShapeErrorReason::TypeMismatch {
+                field,
+                expected: "string or null",
+                actual,
+            },
+        )),
+    }
+}
+
 fn decode_lower_hex_bytes(value: &str) -> Result<Vec<u8>, ()> {
     if !value.len().is_multiple_of(2) {
         return Err(());
@@ -7962,6 +8622,16 @@ fn encode_option_u64(out: &mut Vec<u8>, value: Option<u64>) {
     }
 }
 
+fn encode_option_string(out: &mut Vec<u8>, value: Option<&str>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_string(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
 fn encode_bool(out: &mut Vec<u8>, value: bool) {
     out.push(u8::from(value));
 }
@@ -8250,12 +8920,17 @@ fn sha256(bytes: &[u8]) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::format_hash_string;
+    use crate::{
+        run_machine_tactic_batch_request, search_machine_theorems_for_goal,
+        types::format_hash_string, MachineApiResponseEnvelope, MachineSuggestedCandidateStatus,
+        MachineTacticBatchItemResponse,
+    };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
     use npa_kernel::{
         eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, type0, Decl, Expr, Level,
         Reducibility,
     };
+    use npa_tactic::{CandidateApplyArg, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
         fs,
         time::{SystemTime, UNIX_EPOCH},
@@ -9182,6 +9857,426 @@ mod tests {
     }
 
     #[test]
+    fn validates_optional_prompt_metadata_subset_without_manifest_binding() {
+        let package = TestPackage::new("prompt_metadata_subset");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (
+            release,
+            import_bundles,
+            theorem_index,
+            _rewrite_profiles,
+            _simp_profiles,
+            _axiom_report,
+        ) = final_sidecar_artifacts_for_loaded(&loaded);
+        let nat_add_zero = theorem_index_entry(&theorem_index, "Nat.add_zero");
+        let mut prompt_metadata = prompt_metadata_set_for_entries(vec![prompt_metadata_entry(
+            nat_add_zero.global_ref.clone(),
+            STD_NAT_BUNDLE_ID,
+            "simp",
+            &["nat", "simp"],
+        )]);
+        validate_machine_std_mvp_optional_prompt_metadata(None, &theorem_index, &import_bundles)
+            .unwrap();
+        validate_machine_std_mvp_optional_prompt_metadata(
+            Some(&prompt_metadata),
+            &theorem_index,
+            &import_bundles,
+        )
+        .unwrap();
+
+        let parsed =
+            parse_machine_std_prompt_metadata_json(&prompt_metadata_set_json(&prompt_metadata))
+                .unwrap();
+        assert_eq!(parsed, prompt_metadata);
+        validate_machine_std_mvp_prompt_metadata(&parsed, &theorem_index, &import_bundles).unwrap();
+
+        let mut example_order = prompt_metadata.clone();
+        example_order.entries[0]
+            .examples
+            .push(MachineStdPromptExample {
+                goal_core_hash: test_hash(172),
+                imports_bundle_id: STD_NAT_BUNDLE_ID.to_owned(),
+                candidate_kind: "note".to_owned(),
+                display: "note".to_owned(),
+            });
+        refresh_prompt_metadata_hash(&mut example_order);
+        let original_example_order_hash = example_order.prompt_metadata_hash;
+        example_order.entries[0].examples.swap(0, 1);
+        refresh_prompt_metadata_hash(&mut example_order);
+        assert_ne!(
+            original_example_order_hash,
+            example_order.prompt_metadata_hash
+        );
+
+        let release_hash = machine_std_library_release_hash(&release).unwrap();
+        prompt_metadata.entries[0].short_doc =
+            Some("same trusted release, new display text".into());
+        refresh_prompt_metadata_hash(&mut prompt_metadata);
+        assert_eq!(
+            machine_std_library_release_hash(&release).unwrap(),
+            release_hash
+        );
+        assert_ne!(
+            parsed.prompt_metadata_hash,
+            prompt_metadata.prompt_metadata_hash
+        );
+    }
+
+    #[test]
+    fn phase6_release_artifacts_drive_m8_search_candidates_through_phase5_batch() {
+        let package = TestPackage::new("phase6_release_m8_search_candidates");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        let release_json = release_manifest_json(&release);
+        let import_bundles_json = import_bundle_set_json(&import_bundles);
+        let theorem_index_json = theorem_index_json(&theorem_index);
+        let rewrite_profiles_json = rewrite_profile_set_json(&rewrite_profiles);
+        let simp_profiles_json = simp_profile_set_json(&simp_profiles);
+        let axiom_report_json = axiom_report_json(&axiom_report);
+        let nat_add_zero_sidecar = theorem_index_entry(&theorem_index, "Nat.add_zero").clone();
+        let prompt_metadata = prompt_metadata_set_for_entries(vec![prompt_metadata_entry(
+            nat_add_zero_sidecar.global_ref.clone(),
+            STD_NAT_BUNDLE_ID,
+            "simp",
+            &["nat", "simp"],
+        )]);
+        let prompt_metadata_json = prompt_metadata_set_json(&prompt_metadata);
+
+        let (validated, loaded_prompt_metadata) =
+            load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+                package.path(),
+                &release_json,
+                MachineStdReleaseSidecarJson {
+                    import_bundles_json: &import_bundles_json,
+                    theorem_index_json: &theorem_index_json,
+                    rewrite_profiles_json: &rewrite_profiles_json,
+                    simp_profiles_json: &simp_profiles_json,
+                    axiom_report_json: &axiom_report_json,
+                    prompt_metadata_json: Some(&prompt_metadata_json),
+                },
+            )
+            .unwrap();
+        assert_eq!(validated.import_bundles, import_bundles);
+
+        let parsed_theorem_index =
+            parse_machine_std_theorem_index_json(&theorem_index_json).unwrap();
+        let loaded_prompt_metadata = loaded_prompt_metadata.unwrap();
+        assert_eq!(loaded_prompt_metadata, prompt_metadata);
+        assert_eq!(
+            loaded_prompt_metadata.entries[0].global_ref,
+            nat_add_zero_sidecar.global_ref
+        );
+        assert_eq!(
+            loaded_prompt_metadata.entries[0].examples[0].imports_bundle_id,
+            STD_NAT_BUNDLE_ID
+        );
+
+        let nat_bundle = validated
+            .import_bundles
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        assert_eq!(
+            nat_bundle.recommended_tactic_options.recipe_id,
+            STD_NAT_RECIPE_ID
+        );
+        let nat_add_zero_recipe_rule = nat_bundle
+            .recommended_tactic_options
+            .simp_rules
+            .iter()
+            .find(|rule| {
+                rule.name == nat_add_zero_sidecar.global_ref.name
+                    && rule.decl_interface_hash
+                        == nat_add_zero_sidecar.global_ref.decl_interface_hash
+                    && rule.direction == RewriteDirection::Forward
+            })
+            .unwrap();
+
+        let session = crate::create_machine_session(&session_create_json_for_bundle(nat_bundle))
+            .unwrap()
+            .session;
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Std.Nat"]}"#;
+        let first =
+            search_machine_theorems_for_goal(&m8_search_json(&session, filters), &session).unwrap();
+        let second =
+            search_machine_theorems_for_goal(&m8_search_json(&session, filters), &session).unwrap();
+        let (first_fields, second_fields) = match (first, second) {
+            (MachineApiResponseEnvelope::Ok(first), MachineApiResponseEnvelope::Ok(second)) => {
+                (first.endpoint_fields, second.endpoint_fields)
+            }
+            _ => panic!("Phase 6 Nat bundle search should succeed"),
+        };
+        assert_eq!(
+            first_fields.query_fingerprint,
+            second_fields.query_fingerprint
+        );
+        assert_eq!(
+            first_fields.theorem_index_fingerprint,
+            second_fields.theorem_index_fingerprint
+        );
+        assert_eq!(first_fields.results, second_fields.results);
+
+        let expected_nat_entries = parsed_theorem_index
+            .entries
+            .iter()
+            .filter(|entry| entry.global_ref.module == Name::from_dotted("Std.Nat"))
+            .map(|entry| (entry.global_ref.name.clone(), entry))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(first_fields.results.len(), expected_nat_entries.len());
+        for result in &first_fields.results {
+            let sidecar = expected_nat_entries
+                .get(&result.global_ref.name)
+                .expect("search result should come from the Phase 6 theorem index sidecar");
+            assert_eq!(result.global_ref.module, sidecar.global_ref.module);
+            assert_eq!(
+                result.global_ref.export_hash,
+                sidecar.global_ref.export_hash
+            );
+            assert_eq!(
+                result.global_ref.decl_interface_hash,
+                sidecar.global_ref.decl_interface_hash
+            );
+            assert_eq!(result.statement.core_hash, sidecar.statement_core_hash);
+            assert_eq!(result.modes, sidecar.modes);
+        }
+
+        let result = first_fields
+            .results
+            .iter()
+            .find(|result| result.global_ref.name == Name::from_dotted("Nat.add_zero"))
+            .unwrap();
+        assert_eq!(result.modes, nat_add_zero_sidecar.modes);
+        assert_eq!(result.suggested_candidates.len(), 2);
+        assert_eq!(
+            result
+                .suggested_candidates
+                .iter()
+                .map(|candidate| candidate.status)
+                .collect::<Vec<_>>(),
+            vec![
+                MachineSuggestedCandidateStatus::Validated,
+                MachineSuggestedCandidateStatus::Validated,
+            ]
+        );
+
+        let MachineTacticCandidate::Rewrite {
+            rule,
+            direction,
+            site,
+        } = &result.suggested_candidates[0].candidate
+        else {
+            panic!("first Nat.add_zero suggestion should be rw");
+        };
+        assert_eq!(*direction, RewriteDirection::Forward);
+        assert_eq!(*site, RewriteSite::EqTargetLeft);
+        let TacticHead::Imported {
+            name,
+            decl_interface_hash,
+        } = &rule.head
+        else {
+            panic!("rw suggestion should reference an imported theorem");
+        };
+        assert_eq!(name, &nat_add_zero_sidecar.global_ref.name);
+        assert_eq!(
+            decl_interface_hash,
+            &nat_add_zero_sidecar.global_ref.decl_interface_hash
+        );
+        assert!(rule.universe_args.is_empty());
+        assert_eq!(rule.args.len(), 1);
+        assert!(matches!(rule.args[0], CandidateApplyArg::InferFromTarget));
+
+        let MachineTacticCandidate::SimpLite { rules } = &result.suggested_candidates[1].candidate
+        else {
+            panic!("second Nat.add_zero suggestion should be simp-lite");
+        };
+        assert_eq!(
+            rules.as_slice(),
+            std::slice::from_ref(nat_add_zero_recipe_rule)
+        );
+
+        let batch_candidates = result
+            .suggested_candidates
+            .iter()
+            .enumerate()
+            .map(|(index, candidate)| {
+                m8_batch_candidate_json(
+                    &format!("phase6_nat_add_zero_{index}"),
+                    &m8_suggested_candidate_json(&candidate.candidate),
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let mut batch_session =
+            crate::create_machine_session(&session_create_json_for_bundle(nat_bundle))
+                .unwrap()
+                .session;
+        let batch_response = run_machine_tactic_batch_request(
+            &m8_batch_json(&batch_session, &format!("[{batch_candidates}]")),
+            &mut batch_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(batch_ok) = batch_response else {
+            panic!("Phase 6 suggested candidates should re-enter Phase 5 batch");
+        };
+        assert_eq!(
+            batch_ok.endpoint_fields.success_count + batch_ok.endpoint_fields.failure_count,
+            result.suggested_candidates.len() as u32
+        );
+        for (index, item) in batch_ok.endpoint_fields.results.iter().enumerate() {
+            let candidate_hash = match item {
+                MachineTacticBatchItemResponse::Success { candidate_hash, .. } => *candidate_hash,
+                MachineTacticBatchItemResponse::Error {
+                    candidate_hash: Some(candidate_hash),
+                    ..
+                } => *candidate_hash,
+                MachineTacticBatchItemResponse::Error {
+                    candidate_hash: None,
+                    ..
+                } => panic!("candidate {index} should canonicalize before execution"),
+            };
+            assert_eq!(
+                candidate_hash,
+                result.suggested_candidates[index].candidate_hash
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_prompt_metadata_profile_hash_entry_and_example_mismatches() {
+        let package = TestPackage::new("bad_prompt_metadata");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (
+            _release,
+            import_bundles,
+            theorem_index,
+            _rewrite_profiles,
+            _simp_profiles,
+            _axiom_report,
+        ) = final_sidecar_artifacts_for_loaded(&loaded);
+        let first = theorem_index.entries[0].global_ref.clone();
+        let second = theorem_index.entries[1].global_ref.clone();
+        let valid = prompt_metadata_set_for_entries(vec![prompt_metadata_entry(
+            first.clone(),
+            STD_NAT_BUNDLE_ID,
+            "simp",
+            &["nat", "simp"],
+        )]);
+
+        let mut bad_profile = valid.clone();
+        bad_profile.metadata_profile_id = "npa.stdlib.prompt-metadata.bad".to_owned();
+        refresh_prompt_metadata_hash(&mut bad_profile);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&bad_profile, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::MetadataProfileMismatch { .. })
+        ));
+
+        let mut bad_library = valid.clone();
+        bad_library.library_profile_id = "npa.stdlib.bad".to_owned();
+        refresh_prompt_metadata_hash(&mut bad_library);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&bad_library, &theorem_index, &import_bundles,),
+            Err(MachineStdPromptMetadataError::LibraryProfileMismatch { .. })
+        ));
+
+        let mut stale_hash = valid.clone();
+        stale_hash.prompt_metadata_hash = test_hash(211);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&stale_hash, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::PromptMetadataHashMismatch { .. })
+        ));
+
+        let mut duplicate = valid.clone();
+        duplicate.entries.push(duplicate.entries[0].clone());
+        refresh_prompt_metadata_hash(&mut duplicate);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&duplicate, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::DuplicateEntry { .. })
+        ));
+
+        let mut reordered = prompt_metadata_set_for_entries(vec![
+            prompt_metadata_entry(first.clone(), STD_NAT_BUNDLE_ID, "simp", &["nat", "simp"]),
+            prompt_metadata_entry(second.clone(), STD_NAT_BUNDLE_ID, "simp", &["nat", "simp"]),
+        ]);
+        reordered.entries.swap(0, 1);
+        refresh_prompt_metadata_hash(&mut reordered);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&reordered, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::NonCanonicalEntryOrder { .. })
+        ));
+
+        let mut stale_ref = valid.clone();
+        stale_ref.entries[0].global_ref.decl_interface_hash = test_hash(212);
+        refresh_prompt_metadata_hash(&mut stale_ref);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&stale_ref, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::StaleGlobalRef { .. })
+        ));
+
+        let mut bad_tag_order = valid.clone();
+        bad_tag_order.entries[0].tags = vec!["simp".to_owned(), "nat".to_owned()];
+        refresh_prompt_metadata_hash(&mut bad_tag_order);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(
+                &bad_tag_order,
+                &theorem_index,
+                &import_bundles,
+            ),
+            Err(MachineStdPromptMetadataError::NonCanonicalTagOrder { .. })
+        ));
+
+        let mut duplicate_tag = valid.clone();
+        duplicate_tag.entries[0].tags = vec!["nat".to_owned(), "nat".to_owned()];
+        refresh_prompt_metadata_hash(&mut duplicate_tag);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(
+                &duplicate_tag,
+                &theorem_index,
+                &import_bundles,
+            ),
+            Err(MachineStdPromptMetadataError::DuplicateTag { .. })
+        ));
+
+        let mut unknown_tag = valid.clone();
+        unknown_tag.entries[0].tags = vec!["nat".to_owned(), "unknown".to_owned()];
+        refresh_prompt_metadata_hash(&mut unknown_tag);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&unknown_tag, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::UnknownTag { .. })
+        ));
+
+        let mut bad_candidate = valid.clone();
+        bad_candidate.entries[0].examples[0].candidate_kind = "intro".to_owned();
+        refresh_prompt_metadata_hash(&mut bad_candidate);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(
+                &bad_candidate,
+                &theorem_index,
+                &import_bundles,
+            ),
+            Err(MachineStdPromptMetadataError::InvalidCandidateKind { .. })
+        ));
+
+        let mut bad_bundle = valid.clone();
+        bad_bundle.entries[0].examples[0].imports_bundle_id = "std.missing.mvp".to_owned();
+        refresh_prompt_metadata_hash(&mut bad_bundle);
+        assert!(matches!(
+            validate_machine_std_mvp_prompt_metadata(&bad_bundle, &theorem_index, &import_bundles),
+            Err(MachineStdPromptMetadataError::UnknownImportBundle { .. })
+        ));
+    }
+
+    #[test]
     fn generates_mvp_theorem_index_from_public_theorem_and_axiom_exports() {
         let package = TestPackage::new("mvp_theorem_index_base");
         let certs = mvp_certificate_bytes_with_logic_axiom_theorem();
@@ -9478,7 +10573,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_non_empty_mvp_import_bundle_allow_axioms() {
+    fn rejects_unexpected_mvp_import_bundle_allow_axioms() {
         let package = TestPackage::new("bad_import_bundle_allow_axioms");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
@@ -9498,12 +10593,12 @@ mod tests {
 
         assert!(matches!(
             validate_machine_std_mvp_import_bundle_set(&actual, &expected),
-            Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms { .. })
+            Err(MachineStdImportBundleError::AllowAxiomsMismatch { .. })
         ));
     }
 
     #[test]
-    fn parses_imported_allow_axioms_before_rejecting_non_empty_mvp_bundle() {
+    fn parses_imported_allow_axioms_before_rejecting_unexpected_bundle_axioms() {
         let package = TestPackage::new("import_bundle_allow_axioms_json");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
@@ -9526,7 +10621,7 @@ mod tests {
 
         assert!(matches!(
             validate_machine_std_mvp_import_bundle_set(&parsed, &expected),
-            Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms { .. })
+            Err(MachineStdImportBundleError::AllowAxiomsMismatch { .. })
         ));
     }
 
@@ -9562,6 +10657,15 @@ mod tests {
         assert_eq!(family.eq_name, Name::from_dotted("Eq"));
         assert_eq!(family.refl_name, Name::from_dotted("Eq.refl"));
         assert_eq!(family.rec_name, Name::from_dotted("Eq.rec"));
+        assert_eq!(
+            logic_bundle.allow_axioms,
+            vec![MachineAxiomRefWire::Imported {
+                module: logic.module.clone(),
+                name: family.rec_name.clone(),
+                export_hash: logic.expected_export_hash,
+                decl_interface_hash: family.rec_interface_hash,
+            }]
+        );
     }
 
     #[test]
@@ -10212,6 +11316,56 @@ mod tests {
         }
     }
 
+    fn mvp_axiom_report_for(loaded: &MachineStdLoadedRelease) -> MachineStdAxiomReport {
+        let mut reports_by_module = BTreeMap::new();
+        let mut expected_transitive_by_module: BTreeMap<Name, Vec<MachineStdAxiomRef>> =
+            BTreeMap::new();
+
+        for module_name in loaded.verification_order() {
+            let loaded_module = loaded.module(module_name).unwrap();
+            let module_axioms = project_module_axioms(loaded, loaded_module).unwrap();
+            let mut transitive = BTreeMap::new();
+            for axiom in &module_axioms {
+                transitive.insert(
+                    machine_std_axiom_ref_canonical_bytes(axiom).unwrap(),
+                    axiom.clone(),
+                );
+            }
+            for import in &loaded_module.imports {
+                for axiom in expected_transitive_by_module.get(&import.module).unwrap() {
+                    transitive.insert(
+                        machine_std_axiom_ref_canonical_bytes(axiom).unwrap(),
+                        axiom.clone(),
+                    );
+                }
+            }
+            let transitive_axioms = transitive.into_values().collect::<Vec<_>>();
+            expected_transitive_by_module.insert(module_name.clone(), transitive_axioms.clone());
+            reports_by_module.insert(
+                module_name.clone(),
+                MachineStdModuleAxiomReport {
+                    module: loaded_module.module.clone(),
+                    export_hash: loaded_module.expected_export_hash,
+                    certificate_hash: loaded_module.expected_certificate_hash,
+                    module_axioms,
+                    transitive_axioms,
+                },
+            );
+        }
+
+        let mut report = MachineStdAxiomReport {
+            library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+            modules: loaded
+                .modules()
+                .iter()
+                .map(|module| reports_by_module.remove(&module.module).unwrap())
+                .collect(),
+            axiom_report_hash: [0; 32],
+        };
+        report.axiom_report_hash = machine_std_axiom_report_hash(&report).unwrap();
+        report
+    }
+
     fn theorem_index_entry<'a>(
         theorem_index: &'a MachineStdTheoremIndex,
         name: &str,
@@ -10303,6 +11457,42 @@ mod tests {
         theorem_index.index_hash = machine_std_theorem_index_hash(theorem_index).unwrap();
     }
 
+    fn prompt_metadata_entry(
+        global_ref: MachineStdGlobalRef,
+        imports_bundle_id: &str,
+        candidate_kind: &str,
+        tags: &[&str],
+    ) -> MachineStdPromptMetadata {
+        MachineStdPromptMetadata {
+            global_ref,
+            short_doc: Some("display-only theorem metadata".to_owned()),
+            examples: vec![MachineStdPromptExample {
+                goal_core_hash: test_hash(171),
+                imports_bundle_id: imports_bundle_id.to_owned(),
+                candidate_kind: candidate_kind.to_owned(),
+                display: candidate_kind.to_owned(),
+            }],
+            tags: tags.iter().map(|tag| (*tag).to_owned()).collect(),
+        }
+    }
+
+    fn prompt_metadata_set_for_entries(
+        entries: Vec<MachineStdPromptMetadata>,
+    ) -> MachineStdPromptMetadataSet {
+        let mut metadata = MachineStdPromptMetadataSet {
+            metadata_profile_id: STD_PROMPT_METADATA_PROFILE_ID.to_owned(),
+            library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+            entries,
+            prompt_metadata_hash: [0; 32],
+        };
+        refresh_prompt_metadata_hash(&mut metadata);
+        metadata
+    }
+
+    fn refresh_prompt_metadata_hash(metadata: &mut MachineStdPromptMetadataSet) {
+        metadata.prompt_metadata_hash = machine_std_prompt_metadata_hash(metadata).unwrap();
+    }
+
     fn release_manifest_for(
         loaded: &MachineStdLoadedRelease,
         axiom_report_hash: Hash,
@@ -10380,8 +11570,7 @@ mod tests {
         let theorem_index =
             generate_machine_std_mvp_final_theorem_index(loaded, &rewrite_profiles, &simp_profiles)
                 .unwrap();
-        let mut axiom_report = empty_axiom_report_for(loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(loaded);
         let release = release_manifest_for_final_sidecars(
             loaded,
             axiom_report.axiom_report_hash,
@@ -10583,6 +11772,15 @@ mod tests {
     }
 
     fn session_create_json_for_bundle(bundle: &MachineStdImportBundle) -> String {
+        let allow_axioms_json = format!(
+            "[{}]",
+            bundle
+                .allow_axioms
+                .iter()
+                .map(machine_axiom_ref_wire_json)
+                .collect::<Vec<_>>()
+                .join(",")
+        );
         format!(
             r#"{{
               "protocol_version":"npa.machine-api.v1",
@@ -10615,40 +11813,127 @@ mod tests {
                 .collect::<Vec<_>>()
                 .join(","),
             bundle.recommended_tactic_options.kernel_check_profile,
-            session_allow_axioms_json_for_bundle(bundle),
+            allow_axioms_json,
             tactic_options_request_json(&bundle.recommended_tactic_options),
         )
     }
 
-    fn session_allow_axioms_json_for_bundle(bundle: &MachineStdImportBundle) -> String {
-        let Some(family) = &bundle.recommended_tactic_options.eq_family else {
-            return "[]".to_owned();
-        };
-        let Some(logic_certificate) = bundle
-            .import_closure
-            .iter()
-            .find(|certificate| certificate.module == Name::from_dotted("Std.Logic"))
-        else {
-            return "[]".to_owned();
-        };
-        let cert = decode_module_cert(&logic_certificate.certificate_bytes).unwrap();
-        let rec_is_axiom = cert.export_block.iter().any(|entry| {
-            entry.kind == ExportKind::Axiom
-                && cert
-                    .name_table
-                    .get(entry.name)
-                    .is_some_and(|name| *name == family.rec_name)
-        });
-        if !rec_is_axiom {
-            return "[]".to_owned();
+    fn m8_search_json(session: &crate::MachineProofSession, filters: &str) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "modes":["apply","exact","rw","simp"],
+              "limit":20,
+              "filters":{}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&session.initial_snapshot.state_fingerprint),
+            filters
+        )
+    }
+
+    fn m8_budget_json() -> &'static str {
+        r#"{
+          "max_tactic_steps":100,
+          "max_whnf_steps":100,
+          "max_conversion_steps":100,
+          "max_rewrite_steps":100,
+          "max_meta_allocations":8,
+          "max_expr_nodes":20000
+        }"#
+    }
+
+    fn m8_batch_json(session: &crate::MachineProofSession, candidates: &str) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidates":{},
+              "deterministic_budget":{},
+              "batch_policy":{{
+                "max_evaluated_candidates":256,
+                "stop_after_successes":256,
+                "stop_after_failures":256
+              }}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&session.initial_snapshot.state_fingerprint),
+            candidates,
+            m8_budget_json(),
+        )
+    }
+
+    fn m8_batch_candidate_json(candidate_id: &str, candidate_json: &str) -> String {
+        format!(r#"{{"candidate_id":"{candidate_id}","candidate":{candidate_json}}}"#)
+    }
+
+    fn m8_suggested_candidate_json(candidate: &MachineTacticCandidate) -> String {
+        match candidate {
+            MachineTacticCandidate::Rewrite {
+                rule,
+                direction,
+                site,
+            } => {
+                assert!(rule.universe_args.is_empty());
+                format!(
+                    r#"{{"kind":"rw","rule":{{"head":{},"universe_args":[],"args":[{}]}},"direction":"{}","site":"{}"}}"#,
+                    m8_tactic_head_json(&rule.head),
+                    rule.args
+                        .iter()
+                        .map(m8_apply_arg_json)
+                        .collect::<Vec<_>>()
+                        .join(","),
+                    rewrite_direction_json(*direction),
+                    m8_rewrite_site_json(*site),
+                )
+            }
+            MachineTacticCandidate::SimpLite { rules } => {
+                format!(
+                    r#"{{"kind":"simp-lite","rules":[{}]}}"#,
+                    rules
+                        .iter()
+                        .map(simp_rule_json)
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            }
+            _ => panic!("M8 fixture serializes only rw/simp search suggestions"),
         }
-        let axiom = MachineAxiomRefWire::Imported {
-            module: logic_certificate.module.clone(),
-            name: family.rec_name.clone(),
-            export_hash: logic_certificate.expected_export_hash,
-            decl_interface_hash: family.rec_interface_hash,
-        };
-        format!("[{}]", machine_axiom_ref_wire_json(&axiom))
+    }
+
+    fn m8_tactic_head_json(head: &TacticHead) -> String {
+        match head {
+            TacticHead::Imported {
+                name,
+                decl_interface_hash,
+            } => format!(
+                r#"{{"imported":{{"name":"{}","decl_interface_hash":"{}"}}}}"#,
+                name.as_dotted(),
+                format_hash_string(decl_interface_hash),
+            ),
+            _ => panic!("M8 fixture expects imported tactic heads"),
+        }
+    }
+
+    fn m8_apply_arg_json(arg: &CandidateApplyArg) -> String {
+        match arg {
+            CandidateApplyArg::InferFromTarget => r#"{"mode":"infer_from_target"}"#.to_owned(),
+            _ => panic!("M8 fixture expects infer_from_target rw args"),
+        }
+    }
+
+    fn m8_rewrite_site_json(site: RewriteSite) -> &'static str {
+        match site {
+            RewriteSite::EqTargetLeft => "eq_target_left",
+            RewriteSite::EqTargetRight => "eq_target_right",
+        }
     }
 
     fn tactic_options_recipe_json(recipe: &MachineStdTacticOptionsRecipe) -> String {
@@ -10791,6 +12076,55 @@ mod tests {
                 .collect::<Vec<_>>()
                 .join(","),
             format_hash_string(&theorem_index.index_hash),
+        )
+    }
+
+    fn prompt_metadata_set_json(metadata: &MachineStdPromptMetadataSet) -> String {
+        format!(
+            "{{\"metadata_profile_id\":\"{}\",\"library_profile_id\":\"{}\",\"entries\":[{}],\"prompt_metadata_hash\":\"{}\"}}",
+            metadata.metadata_profile_id,
+            metadata.library_profile_id,
+            metadata
+                .entries
+                .iter()
+                .map(prompt_metadata_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&metadata.prompt_metadata_hash),
+        )
+    }
+
+    fn prompt_metadata_json(metadata: &MachineStdPromptMetadata) -> String {
+        format!(
+            "{{\"global_ref\":{},\"short_doc\":{},\"examples\":[{}],\"tags\":[{}]}}",
+            global_ref_json(&metadata.global_ref),
+            metadata
+                .short_doc
+                .as_ref()
+                .map(|doc| format!("\"{doc}\""))
+                .unwrap_or_else(|| "null".to_owned()),
+            metadata
+                .examples
+                .iter()
+                .map(prompt_example_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            metadata
+                .tags
+                .iter()
+                .map(|tag| format!("\"{tag}\""))
+                .collect::<Vec<_>>()
+                .join(","),
+        )
+    }
+
+    fn prompt_example_json(example: &MachineStdPromptExample) -> String {
+        format!(
+            "{{\"goal_core_hash\":\"{}\",\"imports_bundle_id\":\"{}\",\"candidate_kind\":\"{}\",\"display\":\"{}\"}}",
+            format_hash_string(&example.goal_core_hash),
+            example.imports_bundle_id,
+            example.candidate_kind,
+            example.display,
         )
     }
 

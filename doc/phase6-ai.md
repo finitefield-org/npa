@@ -591,9 +591,11 @@ release module artifact.
 Wrong encoding strings, malformed hex, decoded byte mismatch, stale `expected_export_hash` / `expected_certificate_hash`, or
 decoded raw-byte hash mismatch with `MachineStdModuleArtifact.certificate_bytes_hash` are `InvalidStdImportBundle`.
 
-`allow_axioms` は MVP 標準ライブラリでは必ず `[]` です。
+`allow_axioms` は MVP 標準ライブラリでは no-custom-axiom です。
+通常は `[]` ですが、現在の kernel が `Std.Logic` の標準 `Eq.rec` family head を `AxiomDecl` として表現する場合だけ、
+その exact imported `Std.Logic.Eq.rec` ref を含みます。
 将来 `Std.Classical` を追加する場合は別 bundle id にし、`allow_axioms` に入る axiom を明示します。
-An MVP import bundle with a non-empty `allow_axioms` array is `InvalidStdImportBundle`.
+An MVP import bundle whose `allow_axioms` differs from this expected empty-or-standard-`Eq.rec` set is `InvalidStdImportBundle`.
 `allow_axioms` entries use Phase 5 `MachineAxiomRefWire` JSON, but Phase 6 import bundles may contain only the
 `kind = "imported"` variant.
 `kind = "current_module"` or any `source_index`-based axiom coordinate is invalid in a Phase 6 import bundle because the bundle
@@ -609,7 +611,7 @@ Validators must reject non-canonical order, duplicate entries, invalid variants,
 entries as `InvalidStdImportBundle`; they must not sort, deduplicate, or repair a malformed bundle before hashing.
 This explicit `allow_axioms` validation is distinct from interpreting a Phase 2 `GlobalRef::Imported` inside a certificate term;
 the latter is still constrained by the Phase 2 `ExportBlock` rule.
-constructive MVP bundle が classical axiom を transitively import してはいけません。
+constructive MVP bundle が classical axiom や標準 `Eq.rec` 例外以外の custom axiom を transitively import してはいけません。
 `recommended_tactic_options` must validate as Phase 5 `MachineTacticOptionsRequest` against exactly this bundle's
 `root_imports` / `import_closure` and an empty checked-current-declaration list.
 This Phase 5 validation uses the recipe payload after dropping `recipe_id`; `recipe_id` is Phase 6 metadata and is not a
@@ -723,10 +725,10 @@ std.logic.eq-family:
     refl_name = "Eq.refl"
     rec_name = "Eq.rec"
   each *_interface_hash is the matching public ExportEntry.decl_interface_hash
-  the exports must be generated from one checked Std.Logic InductiveDecl:
+  the exports must be generated from one checked Std.Logic InductiveDecl or the kernel's standard Eq recursor axiom:
     Eq      has ExportKind::Inductive
     Eq.refl has ExportKind::Constructor
-    Eq.rec  has ExportKind::Recursor
+    Eq.rec  has ExportKind::Recursor, or ExportKind::Axiom only when it is the standard kernel Eq.rec head
 
 std.nat.family:
   NatFamilyRef whose heads resolve in the direct import scope to public Std.Nat exports:
@@ -758,6 +760,10 @@ Missing, private, stale, wrong-kind, or cross-parent `Eq` / `Nat` family exports
 `std.logic.eq-family` must resolve to the `Std.Logic` direct import by Phase 5 option head resolution, including the public generated
 constructor / recursor exports.
 The generated `Eq.refl` / `Eq.rec` exports are family heads; they are not theorem-index entries.
+Current MVP fixtures may represent `Eq.rec` as the kernel standard axiom export because the Phase 1 kernel models `Eq.rec` as a
+builtin axiom rather than a generated indexed recursor.
+That exception is limited to the exact `Std.Logic` `Eq.rec` family head and is still reported in the axiom sidecar; arbitrary
+standard-library axioms remain invalid.
 In the MVP AI profile, the public export name `Eq.refl` is reserved for the generated constructor of the `Eq` inductive.
 No ordinary theorem may be exported with the same fully-qualified name.
 Human-facing documentation and pretty-printers may display this generated constructor as `Eq.refl`, but the certificate export is the
@@ -2252,7 +2258,8 @@ Duplicate examples are allowed; they change `prompt_metadata_hash` but do not af
 
 # 11. Axiom Policy
 
-MVP standard library modules are constructive and no-custom-axiom.
+MVP standard library modules are constructive and no-custom-axiom, except for the exact kernel standard `Std.Logic` `Eq.rec`
+family head when the current kernel represents it as an `AxiomDecl`.
 
 ```rust
 struct MachineStdAxiomReport {
@@ -2272,21 +2279,21 @@ struct MachineStdModuleAxiomReport {
 
 ```text
 Std.Logic:
-  module_axioms = []
-  transitive_axioms = []
+  module_axioms = [] or [Eq.rec] when Eq.rec is emitted as the kernel standard axiom export
+  transitive_axioms = [] or [Eq.rec] when Eq.rec is emitted as the kernel standard axiom export
 Std.Nat:
   module_axioms = []
-  transitive_axioms = []
+  transitive_axioms = [] or [Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
 Std.List:
   module_axioms = []
-  transitive_axioms = []
+  transitive_axioms = [] or [Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
 Std.Algebra.Basic:
   module_axioms = []
-  transitive_axioms = []
+  transitive_axioms = [] or [Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
 ```
 
-Any `AxiomDecl` in these modules is invalid unless the module is explicitly listed as an axiom module in the release profile.
-MVP has no axiom modules.
+Any other `AxiomDecl` in these modules is invalid unless the module is explicitly listed as an axiom module in the release profile.
+MVP has no axiom modules beyond the `Std.Logic` `Eq.rec` kernel-standard exception.
 
 `MachineStdAxiomReport.modules` must contain exactly the modules in `MachineStdLibraryRelease.modules`, in `ModuleName`
 canonical order.
@@ -2407,7 +2414,8 @@ MachineStdRelease validation:
      embedded certificate encoding/hex failure, embedded certificate byte/hash mismatch,
      root import not in closure, invalid bundle-to-recipe mapping, non-renderable recipe name,
      non-canonical or duplicate recipe simp_rules,
-     non-empty MVP allow_axioms, invalid/non-imported allow_axioms variant, malformed/unresolved allow_axioms entry,
+     allow_axioms mismatch from the expected empty-or-standard-Eq.rec set, invalid/non-imported allow_axioms variant,
+     malformed/unresolved allow_axioms entry,
      non-canonical or duplicate allow_axioms,
      MachineStdImportBundleSet.import_bundles_hash self-mismatch:
        InvalidStdImportBundle
@@ -2527,6 +2535,9 @@ It expands a Phase 6 import bundle into a Phase 5 request.
 }
 ```
 
+If the current kernel emits `Std.Logic.Eq.rec` as a standard axiom export, the same session request must carry that exact imported
+ref in `allow_axioms`; otherwise it remains `[]`.
+
 Phase 5 is still authoritative for:
 
 ```text
@@ -2592,8 +2603,8 @@ Audit checks:
 - theorem index rewrite_descriptors equals the union of matching validated rewrite profile descriptors
 - SimpSafe descriptors satisfy the fixed Phase 6 simp lint and RwOnly descriptors are excluded from simp profiles
 - std.all.rw and std.all.simp revalidate under std.all.mvp and match their source-profile targets
-- constructive bundles have empty allow_axioms
-- every module in a constructive bundle closure has empty module_axioms and transitive_axioms
+- constructive bundles have no custom allow_axioms, with only the standard Eq.rec exception when applicable
+- every module in a constructive bundle closure has empty module_axioms and transitive_axioms, except the transitive standard Eq.rec exception when applicable
 - import bundles are minimal transitive closures
 ```
 
@@ -2668,7 +2679,7 @@ import bundle closure:
   reordered root_imports or import_closure arrays are rejected instead of being sorted before bundle hashing
   embedded certificate.encoding mismatch and malformed certificate.bytes hex are rejected as InvalidStdImportBundle
   embedded import_closure certificate byte/hash mismatches are rejected as InvalidStdImportBundle
-  MVP bundles with non-empty allow_axioms are rejected as InvalidStdImportBundle
+  MVP bundles whose allow_axioms differs from the expected empty-or-standard-Eq.rec set are rejected as InvalidStdImportBundle
   allow_axioms rejects current_module/source_index variants and unresolved imported refs
   allow_axioms rejects duplicate resolved axiom identities and non-canonical order
   ordinary Core/prelude ImportEntry values are rejected rather than excluded from MachineStdImportBundle.import_closure
@@ -3031,7 +3042,7 @@ belongs to M7.
 - root_imports / import_closure が canonical tuple order であることを検査できる
 - import_closure certificate bytes が Std/*.npcert と byte-for-byte 一致することを検査できる
 - extra dependency、missing dependency、duplicate root / closure key を拒否できる
-- MVP allow_axioms が [] であることを検査できる
+- MVP allow_axioms が expected empty-or-standard-Eq.rec set と一致することを検査できる
 - bundle-to-recipe mapping が固定表と一致することを検査できる
 ```
 
@@ -3165,6 +3176,12 @@ belongs to M7.
 
 ## M8. Phase 7 retrieval fixtures
 
+Status:
+
+```text
+DONE
+```
+
 目的:
 
 ```text
@@ -3216,7 +3233,7 @@ belongs to M7.
 - optional prompt metadata が std_library_release_hash から除外されていることを監査できる
 - every decl_interface_hash / export_hash / certificate_hash が verifier output と一致することを監査できる
 - every simp / rewrite profile target が matching decl_interface_hash に解決されることを監査できる
-- import bundles が minimal transitive closure であり、constructive bundle の allow_axioms が空であることを監査できる
+- import bundles が minimal transitive closure であり、constructive bundle の allow_axioms が custom axiom を含まないことを監査できる
 ```
 
 ## Milestone dependency graph
