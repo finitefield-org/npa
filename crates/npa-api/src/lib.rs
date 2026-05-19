@@ -8,6 +8,7 @@ mod callable;
 mod current;
 mod diagnostic;
 mod json;
+mod phase7;
 mod projection;
 mod prompt;
 mod renderer;
@@ -49,6 +50,13 @@ pub use diagnostic::{
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
     JsonValue, JsonValueKind,
+};
+pub use phase7::{
+    parse_phase7_mvp_controller_config, phase7_snapshot_get_request_json,
+    validate_phase7_mvp_controller_config, Phase7FakeMachineApiClient, Phase7LocalMachineApiClient,
+    Phase7MachineApiCall, Phase7MachineApiClient, Phase7MachineApiEndpointKind,
+    Phase7MachineApiError, Phase7MachineApiResult, Phase7MvpControllerConfig, Phase7SearchBudget,
+    Phase7SnapshotGetRequest,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,
