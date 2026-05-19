@@ -3014,6 +3014,16 @@ Implementation entrypoints:
 - npa_api::load_machine_std_mvp_release_with_import_bundles_from_json
 ```
 
+M3 implementation note:
+
+```text
+The import bundle generator emits recipe payloads that are accepted by the current Phase 5 MVP API.
+Until Phase 4 / Phase 5 expose builtin-none as an allowed kernel_check_profile, M3 uses
+"npa.kernel.v0.1.builtin-nat-eq-rec" for recommended_tactic_options.kernel_check_profile.
+The stricter finalized recipe validation, including mandatory imported Std.Logic Eq family payloads,
+belongs to M7.
+```
+
 完了条件:
 
 ```text

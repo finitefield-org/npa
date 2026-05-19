@@ -19,6 +19,7 @@ use crate::{
     types::{
         parse_fully_qualified_name_wire, parse_hash_string, parse_module_name_wire,
         phase5_name_canonical_bytes, MachineWireGrammarError,
+        KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
     },
     validation::{parse_strict_u64_token, StrictUnsignedIntegerError},
 };
@@ -38,6 +39,7 @@ const STD_REDUCTION_PROFILE_ID: &str = "beta-delta-iota-zeta.v0.1";
 const STD_UNIVERSE_PROFILE_ID: &str = "levels-imax-v0.1";
 const STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
 const STD_KERNEL_BUILTIN_NONE_PROFILE_ID: &str = "builtin-none-v0.1";
+const STD_KERNEL_BUILTIN_NAT_EQ_REC_PROFILE_ID: &str = "builtin-nat-eq-rec-v0.1";
 const STD_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
 const STD_MODULE_ARTIFACT_TAG: &str = "npa.phase6.std-module-artifact.v1";
 const STD_LIBRARY_RELEASE_TAG: &str = "npa.phase6.std-library-release.v1";
@@ -1370,9 +1372,9 @@ fn generate_mvp_import_bundle(
         allow_axioms: Vec::new(),
         recommended_tactic_options: MachineStdTacticOptionsRecipe {
             recipe_id: spec.recipe_id.to_owned(),
-            kernel_check_profile: STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE.to_owned(),
+            kernel_check_profile: KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC.to_owned(),
             simp_rules: Vec::new(),
-            eq_family: None,
+            eq_family: std_logic_eq_family(loaded),
             nat_family: None,
             max_simp_rewrite_steps: STD_MAX_SIMP_REWRITE_STEPS,
             max_open_goals: STD_MAX_OPEN_GOALS,
@@ -1430,6 +1432,48 @@ fn expected_recipe_id_for_bundle(bundle_id: &str) -> Option<&'static str> {
         .into_iter()
         .find(|spec| spec.id == bundle_id)
         .map(|spec| spec.recipe_id)
+}
+
+fn std_logic_eq_family(loaded: &MachineStdLoadedRelease) -> Option<EqFamilyRef> {
+    let logic = loaded.module(&Name::from_dotted("Std.Logic"))?;
+    let eq = find_std_logic_export(logic, &[ExportKind::Inductive], &["Std.Logic.Eq", "Eq"])?;
+    let refl = find_std_logic_export(
+        logic,
+        &[ExportKind::Constructor],
+        &["Std.Logic.Eq.refl", "Eq.refl"],
+    )?;
+    let rec = find_std_logic_export(
+        logic,
+        &[ExportKind::Recursor, ExportKind::Axiom],
+        &["Std.Logic.Eq.rec", "Eq.rec"],
+    )?;
+    Some(EqFamilyRef {
+        eq_name: eq.0,
+        eq_interface_hash: eq.1,
+        refl_name: refl.0,
+        refl_interface_hash: refl.1,
+        rec_name: rec.0,
+        rec_interface_hash: rec.1,
+    })
+}
+
+fn find_std_logic_export(
+    module: &MachineStdLoadedModule,
+    kinds: &[ExportKind],
+    candidates: &[&str],
+) -> Option<(Name, Hash)> {
+    module
+        .verified_module
+        .export_block()
+        .iter()
+        .filter(|entry| kinds.contains(&entry.kind))
+        .find_map(|entry| {
+            let name = module.verified_module.name_table().get(entry.name)?;
+            candidates
+                .iter()
+                .any(|candidate| *name == Name::from_dotted(candidate))
+                .then(|| (name.clone(), entry.decl_interface_hash))
+        })
 }
 
 fn validate_import_bundle_membership(
@@ -2567,19 +2611,7 @@ fn parse_machine_axiom_ref_wire_value(
     value: &JsonValue<'_>,
     path: &str,
 ) -> Result<MachineAxiomRefWire, MachineStdArtifactShapeError> {
-    let members = validated_object_members(
-        value,
-        MachineStdArtifactKind::ImportBundles,
-        path,
-        &[
-            "kind",
-            "module",
-            "name",
-            "export_hash",
-            "source_index",
-            "decl_interface_hash",
-        ],
-    )?;
+    let members = validated_machine_axiom_ref_wire_members(value, path)?;
     let kind = required_string(members, MachineStdArtifactKind::ImportBundles, path, "kind")?;
     match kind {
         "imported" => {
@@ -2690,6 +2722,41 @@ fn parse_machine_axiom_ref_wire_value(
             MachineStdArtifactShapeErrorReason::InvalidEnumString { field: "kind" },
         )),
     }
+}
+
+fn validated_machine_axiom_ref_wire_members<'value, 'src>(
+    value: &'value JsonValue<'src>,
+    path: &str,
+) -> Result<&'value [crate::json::JsonMember<'src>], MachineStdArtifactShapeError> {
+    let Some(members) = value.object_members() else {
+        return Err(shape_error(
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            MachineStdArtifactShapeErrorReason::ExpectedObject {
+                actual: value.kind(),
+            },
+        ));
+    };
+    let mut seen = BTreeSet::new();
+    for member in members {
+        if !seen.insert(member.key().to_owned()) {
+            return Err(shape_error(
+                MachineStdArtifactKind::ImportBundles,
+                &field_path(path, member.key()),
+                MachineStdArtifactShapeErrorReason::DuplicateKey {
+                    key: member.key().to_owned(),
+                },
+            ));
+        }
+    }
+    if !members.iter().any(|member| member.key() == "kind") {
+        return Err(shape_error(
+            MachineStdArtifactKind::ImportBundles,
+            &field_path(path, "kind"),
+            MachineStdArtifactShapeErrorReason::MissingField { field: "kind" },
+        ));
+    }
+    Ok(members)
 }
 
 fn parse_axiom_report_value(
@@ -3316,6 +3383,7 @@ fn machine_std_kernel_check_profile_canonical_bytes(profile: &str) -> Vec<u8> {
     encode_string(&mut out, STD_REDUCTION_PROFILE_ID);
     encode_string(&mut out, STD_UNIVERSE_PROFILE_ID);
     let builtin_profile_id = match profile {
+        KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC => STD_KERNEL_BUILTIN_NAT_EQ_REC_PROFILE_ID,
         STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE => STD_KERNEL_BUILTIN_NONE_PROFILE_ID,
         other => other,
     };
@@ -3448,7 +3516,7 @@ mod tests {
     use super::*;
     use crate::types::format_hash_string;
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
-    use npa_kernel::{Decl, Expr, Level};
+    use npa_kernel::{eq_inductive, eq_rec_type, Decl, Expr, Level};
     use std::{
         fs,
         time::{SystemTime, UNIX_EPOCH},
@@ -3707,6 +3775,12 @@ mod tests {
             .bundles
             .iter()
             .all(|bundle| bundle.allow_axioms.is_empty()));
+        assert!(bundle_set.bundles.iter().all(|bundle| {
+            crate::types::KernelCheckProfileId::parse(
+                &bundle.recommended_tactic_options.kernel_check_profile,
+            )
+            .is_ok()
+        }));
         assert_eq!(
             bundle_set.import_bundles_hash,
             machine_std_import_bundle_set_hash(&bundle_set).unwrap()
@@ -3859,6 +3933,68 @@ mod tests {
             validate_machine_std_mvp_import_bundle_set(&actual, &expected),
             Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms { .. })
         ));
+    }
+
+    #[test]
+    fn parses_imported_allow_axioms_before_rejecting_non_empty_mvp_bundle() {
+        let package = TestPackage::new("import_bundle_allow_axioms_json");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+
+        let mut actual = expected.clone();
+        let key = actual.bundles[0].root_imports[0].clone();
+        actual.bundles[0]
+            .allow_axioms
+            .push(MachineAxiomRefWire::Imported {
+                module: key.module,
+                name: Name::from_dotted("Std.Logic.synthetic_axiom"),
+                export_hash: key.export_hash,
+                decl_interface_hash: test_hash(100),
+            });
+        actual.import_bundles_hash = machine_std_import_bundle_set_hash(&actual).unwrap();
+
+        let parsed = parse_machine_std_import_bundle_set_json(&import_bundle_set_json(&actual))
+            .expect("imported allow_axioms variant should parse");
+
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&parsed, &expected),
+            Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms { .. })
+        ));
+    }
+
+    #[test]
+    fn emits_eq_family_when_std_logic_exports_eq_rec_as_axiom() {
+        let package = TestPackage::new("import_bundle_eq_rec_axiom_family");
+        let certs = mvp_certificate_bytes_with_logic_eq_rec_axiom();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let logic = loaded.module(&Name::from_dotted("Std.Logic")).unwrap();
+        assert!(logic.verified_module.export_block().iter().any(|entry| {
+            entry.kind == ExportKind::Axiom
+                && logic
+                    .verified_module
+                    .name_table()
+                    .get(entry.name)
+                    .is_some_and(|name| *name == Name::from_dotted("Eq.rec"))
+        }));
+
+        let bundle_set = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+        let logic_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_LOGIC_BUNDLE_ID)
+            .unwrap();
+        let family = logic_bundle
+            .recommended_tactic_options
+            .eq_family
+            .as_ref()
+            .expect("Eq.rec axiom export should still produce an Eq family recipe");
+
+        assert_eq!(family.eq_name, Name::from_dotted("Eq"));
+        assert_eq!(family.refl_name, Name::from_dotted("Eq.refl"));
+        assert_eq!(family.rec_name, Name::from_dotted("Eq.rec"));
     }
 
     #[test]
@@ -4184,6 +4320,45 @@ mod tests {
         }
     }
 
+    fn mvp_certificate_bytes_with_logic_eq_rec_axiom() -> MvpCertificateBytes {
+        let mut session = VerifierSession::new();
+        let mut policy = AxiomPolicy::high_trust();
+        policy
+            .allowlisted_axioms
+            .insert(Name::from_dotted("Eq.rec"));
+
+        let logic_cert = build_module_cert(logic_eq_rec_axiom_module(), &[]).unwrap();
+        let logic = encode_module_cert(&logic_cert).unwrap();
+        let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
+
+        let nat_cert = build_module_cert(
+            empty_module("Std.Nat"),
+            std::slice::from_ref(&logic_verified),
+        )
+        .unwrap();
+        let nat = encode_module_cert(&nat_cert).unwrap();
+        let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
+
+        let list_cert = build_module_cert(
+            empty_module("Std.List"),
+            &[logic_verified.clone(), nat_verified.clone()],
+        )
+        .unwrap();
+        let list = encode_module_cert(&list_cert).unwrap();
+        verify_module_cert(&list, &mut session, &policy).unwrap();
+
+        let algebra_cert =
+            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
+
+        MvpCertificateBytes {
+            logic,
+            nat,
+            list,
+            algebra_basic,
+        }
+    }
+
     fn write_valid_mvp_package(root: &Path) {
         let certs = mvp_certificate_bytes();
         write_mvp_package(root, &certs);
@@ -4217,6 +4392,33 @@ mod tests {
                 universe_params: Vec::new(),
                 ty: Expr::sort(Level::zero()),
             }],
+        }
+    }
+
+    fn logic_eq_rec_axiom_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Logic"),
+            declarations: vec![
+                Decl::Inductive {
+                    name: "Eq".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "A",
+                        Expr::sort(Level::param("u")),
+                        Expr::pi(
+                            "lhs",
+                            Expr::bvar(0),
+                            Expr::pi("rhs", Expr::bvar(1), Expr::sort(Level::zero())),
+                        ),
+                    ),
+                    data: Box::new(eq_inductive()),
+                },
+                Decl::Axiom {
+                    name: "Eq.rec".to_owned(),
+                    universe_params: vec!["u".to_owned(), "v".to_owned()],
+                    ty: eq_rec_type(Level::param("u"), Level::param("v")),
+                },
+            ],
         }
     }
 
