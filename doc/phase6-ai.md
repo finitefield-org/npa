@@ -2977,6 +2977,12 @@ Implementation entrypoints:
 
 ## M3. Import bundle closure generator
 
+Status:
+
+```text
+DONE
+```
+
 目的:
 
 ```text
@@ -2995,6 +3001,17 @@ Implementation entrypoints:
 - std.algebra-basic.mvp
 - std.all.mvp
 - import_bundles_hash computation
+```
+
+Implementation entrypoints:
+
+```text
+- npa_api::generate_machine_std_mvp_import_bundle_set
+- npa_api::validate_machine_std_mvp_import_bundle_set
+- npa_api::parse_machine_std_import_bundle_set_json
+- npa_api::machine_std_import_bundle_hash
+- npa_api::machine_std_import_bundle_set_hash
+- npa_api::load_machine_std_mvp_release_with_import_bundles_from_json
 ```
 
 完了条件:

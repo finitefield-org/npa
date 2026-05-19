@@ -9,10 +9,13 @@ use npa_cert::{
     ExportKind, GlobalRef, Hash, ImportEntry, ModuleCert, Name, TrustMode, VerifiedModule,
     VerifierSession,
 };
+use npa_tactic::{EqFamilyRef, NatFamilyRef, RewriteDirection, SimpRuleRef};
 use sha2::{Digest, Sha256};
 
 use crate::{
+    current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire},
     json::{JsonDocument, JsonParseErrorKind, JsonValue, JsonValueKind},
+    projection::VerifiedImportKey,
     types::{
         parse_fully_qualified_name_wire, parse_hash_string, parse_module_name_wire,
         phase5_name_canonical_bytes, MachineWireGrammarError,
@@ -25,16 +28,37 @@ const STD_NAT_PATH: &str = "Std/Nat.npcert";
 const STD_LIST_PATH: &str = "Std/List.npcert";
 const STD_ALGEBRA_BASIC_PATH: &str = "Std/Algebra/Basic.npcert";
 const STD_MACHINE_RELEASE_JSON_PATH: &str = "Std.machine-release.json";
+const STD_MACHINE_IMPORT_BUNDLES_JSON_PATH: &str = "Std.machine-import-bundles.json";
 const STD_MACHINE_AXIOM_REPORT_JSON_PATH: &str = "Std.machine-axiom-report.json";
 const STD_LIBRARY_PROTOCOL_VERSION: &str = "npa.stdlib-machine.v1";
 const STD_LIBRARY_PROFILE_ID: &str = "npa.stdlib.mvp.v1";
 const STD_CORE_SPEC_ID: &str = "core-spec-v0.1";
 const STD_KERNEL_SEMANTICS_PROFILE_ID: &str = "npa-kernel.phase1.v0.1";
+const STD_REDUCTION_PROFILE_ID: &str = "beta-delta-iota-zeta.v0.1";
+const STD_UNIVERSE_PROFILE_ID: &str = "levels-imax-v0.1";
+const STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
+const STD_KERNEL_BUILTIN_NONE_PROFILE_ID: &str = "builtin-none-v0.1";
 const STD_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
 const STD_MODULE_ARTIFACT_TAG: &str = "npa.phase6.std-module-artifact.v1";
 const STD_LIBRARY_RELEASE_TAG: &str = "npa.phase6.std-library-release.v1";
+const STD_IMPORT_BUNDLE_TAG: &str = "npa.phase6.std-import-bundle.v1";
+const STD_IMPORT_BUNDLE_SET_TAG: &str = "npa.phase6.std-import-bundle-set.v1";
+const STD_TACTIC_OPTIONS_RECIPE_TAG: &str = "npa.phase6.std-tactic-options-recipe.v1";
+const PHASE4_KERNEL_CHECK_PROFILE_TAG: &str = "npa.phase4.kernel-check-profile.v1";
 const STD_AXIOM_REPORT_TAG: &str = "npa.phase6.std-axiom-report.v1";
 const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
+const STD_LOGIC_BUNDLE_ID: &str = "std.logic.mvp";
+const STD_NAT_BUNDLE_ID: &str = "std.nat.mvp";
+const STD_LIST_BUNDLE_ID: &str = "std.list.mvp";
+const STD_ALGEBRA_BASIC_BUNDLE_ID: &str = "std.algebra-basic.mvp";
+const STD_ALL_BUNDLE_ID: &str = "std.all.mvp";
+const STD_LOGIC_RECIPE_ID: &str = "std.logic-basic";
+const STD_NAT_RECIPE_ID: &str = "std.nat-simp";
+const STD_LIST_RECIPE_ID: &str = "std.list-simp";
+const STD_ALL_RECIPE_ID: &str = "std.all-simp";
+const STD_MAX_SIMP_REWRITE_STEPS: u64 = 100;
+const STD_MAX_OPEN_GOALS: u64 = 32;
+const STD_MAX_METAS: u64 = 64;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineStdModuleLocator {
@@ -139,17 +163,56 @@ pub struct MachineStdAxiomRef {
     pub decl_interface_hash: Hash,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdImportBundleSet {
+    pub library_profile_id: String,
+    pub bundles: Vec<MachineStdImportBundle>,
+    pub import_bundles_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdImportBundle {
+    pub bundle_id: String,
+    pub root_imports: Vec<VerifiedImportKey>,
+    pub import_closure: Vec<MachineStdImportCertificate>,
+    pub allow_axioms: Vec<MachineAxiomRefWire>,
+    pub recommended_tactic_options: MachineStdTacticOptionsRecipe,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdImportCertificate {
+    pub module: Name,
+    pub expected_export_hash: Hash,
+    pub expected_certificate_hash: Hash,
+    pub certificate_encoding: String,
+    pub certificate_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdTacticOptionsRecipe {
+    pub recipe_id: String,
+    pub kernel_check_profile: String,
+    pub simp_rules: Vec<SimpRuleRef>,
+    pub eq_family: Option<EqFamilyRef>,
+    pub nat_family: Option<NatFamilyRef>,
+    pub max_simp_rewrite_steps: u64,
+    pub max_open_goals: u64,
+    pub max_metas: u64,
+}
+
 #[derive(Clone, Debug)]
 pub struct MachineStdValidatedRelease {
     pub manifest: MachineStdLibraryRelease,
     pub loaded: MachineStdLoadedRelease,
     pub axiom_report: MachineStdAxiomReport,
+    pub import_bundles: MachineStdImportBundleSet,
     pub std_library_release_hash: Hash,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MachineStdArtifactKind {
     LibraryRelease,
+    ImportBundles,
     AxiomReport,
 }
 
@@ -200,6 +263,12 @@ pub enum MachineStdArtifactShapeErrorReason {
     InvalidName {
         field: &'static str,
     },
+    InvalidHexString {
+        field: &'static str,
+    },
+    InvalidEnumString {
+        field: &'static str,
+    },
 }
 
 #[derive(Debug)]
@@ -212,6 +281,7 @@ pub enum MachineStdReleaseArtifactError {
     InvalidStdArtifactShape(MachineStdArtifactShapeError),
     InvalidStdLibraryRelease(MachineStdLibraryReleaseError),
     InvalidStdAxiomPolicy(MachineStdAxiomPolicyError),
+    InvalidStdImportBundle(MachineStdImportBundleError),
 }
 
 #[derive(Debug)]
@@ -304,6 +374,88 @@ pub enum MachineStdAxiomPolicyError {
     },
     AxiomRefProjectionFailed {
         module: Name,
+    },
+    CanonicalBytes {
+        source: MachineStdCanonicalBytesError,
+    },
+}
+
+#[derive(Debug)]
+pub enum MachineStdImportBundleError {
+    LibraryProfileMismatch {
+        expected: &'static str,
+        actual: String,
+    },
+    ImportBundlesHashMismatch {
+        expected: Hash,
+        actual: Hash,
+    },
+    InvalidBundleMembership {
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
+    DuplicateBundle {
+        bundle_id: String,
+    },
+    NonCanonicalBundleOrder {
+        expected: Vec<String>,
+        actual: Vec<String>,
+    },
+    DuplicateRootImport {
+        bundle_id: String,
+        key: Box<VerifiedImportKey>,
+    },
+    DuplicateImportClosure {
+        bundle_id: String,
+        key: Box<VerifiedImportKey>,
+    },
+    NonCanonicalRootImportOrder {
+        bundle_id: String,
+    },
+    NonCanonicalImportClosureOrder {
+        bundle_id: String,
+    },
+    RootImportsMismatch {
+        bundle_id: String,
+        expected: Vec<VerifiedImportKey>,
+        actual: Vec<VerifiedImportKey>,
+    },
+    ImportClosureMismatch {
+        bundle_id: String,
+        expected: Vec<VerifiedImportKey>,
+        actual: Vec<VerifiedImportKey>,
+    },
+    CertificateEncodingMismatch {
+        bundle_id: String,
+        module: Name,
+        actual: String,
+    },
+    CertificateBytesMismatch {
+        bundle_id: String,
+        module: Name,
+    },
+    CertificateBytesHashMismatch {
+        bundle_id: String,
+        module: Name,
+        expected: Hash,
+        actual: Hash,
+    },
+    ImportKeyHashMismatch {
+        bundle_id: String,
+        module: Name,
+    },
+    MissingDependency {
+        bundle_id: String,
+        owner: Name,
+        missing: Name,
+    },
+    NonEmptyMvpAllowAxioms {
+        bundle_id: String,
+    },
+    InvalidRecipeIdMapping {
+        bundle_id: String,
+        expected: &'static str,
+        actual: String,
     },
     CanonicalBytes {
         source: MachineStdCanonicalBytesError,
@@ -462,12 +614,22 @@ pub fn load_machine_std_mvp_release(
         STD_MACHINE_RELEASE_JSON_PATH,
         MachineStdArtifactKind::LibraryRelease,
     )?;
+    let import_bundles_json = read_std_artifact_json(
+        root,
+        STD_MACHINE_IMPORT_BUNDLES_JSON_PATH,
+        MachineStdArtifactKind::ImportBundles,
+    )?;
     let axiom_report_json = read_std_artifact_json(
         root,
         STD_MACHINE_AXIOM_REPORT_JSON_PATH,
         MachineStdArtifactKind::AxiomReport,
     )?;
-    load_machine_std_mvp_release_from_json(root, &release_json, &axiom_report_json)
+    load_machine_std_mvp_release_with_import_bundles_from_json(
+        root,
+        &release_json,
+        &import_bundles_json,
+        &axiom_report_json,
+    )
 }
 
 pub fn load_machine_std_mvp_release_from_json(
@@ -475,6 +637,52 @@ pub fn load_machine_std_mvp_release_from_json(
     release_json: &str,
     axiom_report_json: &str,
 ) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
+    let (manifest, loaded, axiom_report) =
+        load_machine_std_mvp_release_core(package_root, release_json, axiom_report_json)?;
+    let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    compare_release_sidecar_hash(
+        "import_bundles_hash",
+        manifest.import_bundles_hash,
+        import_bundles.import_bundles_hash,
+    )?;
+    finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)
+}
+
+pub fn load_machine_std_mvp_release_with_import_bundles_from_json(
+    package_root: impl AsRef<Path>,
+    release_json: &str,
+    import_bundles_json: &str,
+    axiom_report_json: &str,
+) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
+    let import_bundles = parse_machine_std_import_bundle_set_json(import_bundles_json)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
+    let (manifest, loaded, axiom_report) =
+        load_machine_std_mvp_release_core(package_root, release_json, axiom_report_json)?;
+    let expected_import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    validate_machine_std_mvp_import_bundle_set(&import_bundles, &expected_import_bundles)
+        .map_err(MachineStdReleaseArtifactError::InvalidStdImportBundle)?;
+    compare_release_sidecar_hash(
+        "import_bundles_hash",
+        manifest.import_bundles_hash,
+        import_bundles.import_bundles_hash,
+    )?;
+    finish_machine_std_mvp_release(manifest, loaded, axiom_report, import_bundles)
+}
+
+fn load_machine_std_mvp_release_core(
+    package_root: impl AsRef<Path>,
+    release_json: &str,
+    axiom_report_json: &str,
+) -> Result<
+    (
+        MachineStdLibraryRelease,
+        MachineStdLoadedRelease,
+        MachineStdAxiomReport,
+    ),
+    MachineStdReleaseArtifactError,
+> {
     let manifest = parse_machine_std_library_release_json(release_json)
         .map_err(MachineStdReleaseArtifactError::InvalidStdArtifactShape)?;
     let axiom_report = parse_machine_std_axiom_report_json(axiom_report_json)
@@ -512,15 +720,22 @@ pub fn load_machine_std_mvp_release_from_json(
     validate_machine_std_axiom_report(&manifest, &loaded, &axiom_report)
         .map_err(MachineStdReleaseArtifactError::InvalidStdAxiomPolicy)?;
     if manifest.axiom_report_hash != axiom_report.axiom_report_hash {
-        return Err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
-            MachineStdLibraryReleaseError::SidecarHashMismatch {
-                field: "axiom_report_hash",
-                expected: manifest.axiom_report_hash,
-                actual: axiom_report.axiom_report_hash,
-            },
-        ));
+        compare_release_sidecar_hash(
+            "axiom_report_hash",
+            manifest.axiom_report_hash,
+            axiom_report.axiom_report_hash,
+        )?;
     }
 
+    Ok((manifest, loaded, axiom_report))
+}
+
+fn finish_machine_std_mvp_release(
+    manifest: MachineStdLibraryRelease,
+    loaded: MachineStdLoadedRelease,
+    axiom_report: MachineStdAxiomReport,
+    import_bundles: MachineStdImportBundleSet,
+) -> Result<MachineStdValidatedRelease, MachineStdReleaseArtifactError> {
     let std_library_release_hash =
         machine_std_library_release_hash(&manifest).map_err(|source| {
             MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
@@ -532,8 +747,27 @@ pub fn load_machine_std_mvp_release_from_json(
         manifest,
         loaded,
         axiom_report,
+        import_bundles,
         std_library_release_hash,
     })
+}
+
+fn compare_release_sidecar_hash(
+    field: &'static str,
+    expected: Hash,
+    actual: Hash,
+) -> Result<(), MachineStdReleaseArtifactError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+            MachineStdLibraryReleaseError::SidecarHashMismatch {
+                field,
+                expected,
+                actual,
+            },
+        ))
+    }
 }
 
 pub fn parse_machine_std_library_release_json(
@@ -548,6 +782,13 @@ pub fn parse_machine_std_axiom_report_json(
 ) -> Result<MachineStdAxiomReport, MachineStdArtifactShapeError> {
     let doc = parse_std_json(source, MachineStdArtifactKind::AxiomReport)?;
     parse_axiom_report_value(doc.root(), "$")
+}
+
+pub fn parse_machine_std_import_bundle_set_json(
+    source: &str,
+) -> Result<MachineStdImportBundleSet, MachineStdArtifactShapeError> {
+    let doc = parse_std_json(source, MachineStdArtifactKind::ImportBundles)?;
+    parse_import_bundle_set_value(doc.root(), "$")
 }
 
 pub fn machine_std_module_artifact_canonical_bytes(
@@ -593,6 +834,79 @@ pub fn machine_std_library_release_hash(
 ) -> Result<Hash, MachineStdCanonicalBytesError> {
     Ok(sha256(&machine_std_library_release_canonical_bytes(
         release,
+    )?))
+}
+
+pub fn machine_std_tactic_options_recipe_canonical_bytes(
+    recipe: &MachineStdTacticOptionsRecipe,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_TACTIC_OPTIONS_RECIPE_TAG);
+    encode_string(&mut out, &recipe.recipe_id);
+    out.extend(machine_std_kernel_check_profile_canonical_bytes(
+        &recipe.kernel_check_profile,
+    ));
+    encode_uvar(&mut out, recipe.simp_rules.len() as u64);
+    for rule in &recipe.simp_rules {
+        encode_simp_rule_ref(&mut out, rule)?;
+    }
+    encode_option_eq_family(&mut out, recipe.eq_family.as_ref())?;
+    encode_option_nat_family(&mut out, recipe.nat_family.as_ref())?;
+    encode_uvar(&mut out, recipe.max_simp_rewrite_steps);
+    encode_uvar(&mut out, recipe.max_open_goals);
+    encode_uvar(&mut out, recipe.max_metas);
+    Ok(out)
+}
+
+pub fn machine_std_import_bundle_canonical_bytes(
+    bundle: &MachineStdImportBundle,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_IMPORT_BUNDLE_TAG);
+    encode_string(&mut out, &bundle.bundle_id);
+    encode_uvar(&mut out, bundle.root_imports.len() as u64);
+    for key in &bundle.root_imports {
+        encode_verified_import_key(&mut out, key)?;
+    }
+    encode_uvar(&mut out, bundle.import_closure.len() as u64);
+    for certificate in &bundle.import_closure {
+        encode_import_certificate_key(&mut out, certificate)?;
+        encode_hash(&mut out, &sha256(&certificate.certificate_bytes));
+    }
+    encode_uvar(&mut out, bundle.allow_axioms.len() as u64);
+    for axiom in &bundle.allow_axioms {
+        out.extend(encode_machine_axiom_ref_wire(axiom));
+    }
+    out.extend(machine_std_tactic_options_recipe_canonical_bytes(
+        &bundle.recommended_tactic_options,
+    )?);
+    Ok(out)
+}
+
+pub fn machine_std_import_bundle_hash(
+    bundle: &MachineStdImportBundle,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_import_bundle_canonical_bytes(bundle)?))
+}
+
+pub fn machine_std_import_bundle_set_canonical_bytes(
+    bundle_set: &MachineStdImportBundleSet,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_IMPORT_BUNDLE_SET_TAG);
+    encode_string(&mut out, &bundle_set.library_profile_id);
+    encode_uvar(&mut out, bundle_set.bundles.len() as u64);
+    for bundle in &bundle_set.bundles {
+        encode_hash(&mut out, &machine_std_import_bundle_hash(bundle)?);
+    }
+    Ok(out)
+}
+
+pub fn machine_std_import_bundle_set_hash(
+    bundle_set: &MachineStdImportBundleSet,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&machine_std_import_bundle_set_canonical_bytes(
+        bundle_set,
     )?))
 }
 
@@ -931,6 +1245,400 @@ fn compare_module_count(
     }
 }
 
+pub fn generate_machine_std_mvp_import_bundle_set(
+    loaded: &MachineStdLoadedRelease,
+) -> Result<MachineStdImportBundleSet, MachineStdImportBundleError> {
+    let mut bundle_set = MachineStdImportBundleSet {
+        library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
+        bundles: expected_mvp_bundle_specs()
+            .into_iter()
+            .map(|spec| generate_mvp_import_bundle(loaded, spec))
+            .collect::<Result<Vec<_>, _>>()?,
+        import_bundles_hash: [0; 32],
+    };
+    bundle_set.import_bundles_hash = machine_std_import_bundle_set_hash(&bundle_set)
+        .map_err(|source| MachineStdImportBundleError::CanonicalBytes { source })?;
+    Ok(bundle_set)
+}
+
+pub fn validate_machine_std_mvp_import_bundle_set(
+    actual: &MachineStdImportBundleSet,
+    expected: &MachineStdImportBundleSet,
+) -> Result<(), MachineStdImportBundleError> {
+    let actual_hash = machine_std_import_bundle_set_hash(actual)
+        .map_err(|source| MachineStdImportBundleError::CanonicalBytes { source })?;
+    if actual_hash != actual.import_bundles_hash {
+        return Err(MachineStdImportBundleError::ImportBundlesHashMismatch {
+            expected: actual.import_bundles_hash,
+            actual: actual_hash,
+        });
+    }
+    if actual.library_profile_id != STD_LIBRARY_PROFILE_ID {
+        return Err(MachineStdImportBundleError::LibraryProfileMismatch {
+            expected: STD_LIBRARY_PROFILE_ID,
+            actual: actual.library_profile_id.clone(),
+        });
+    }
+    validate_import_bundle_membership(&actual.bundles)?;
+
+    let expected_by_id = expected
+        .bundles
+        .iter()
+        .map(|bundle| (bundle.bundle_id.as_str(), bundle))
+        .collect::<BTreeMap<_, _>>();
+
+    for bundle in &actual.bundles {
+        let expected_bundle = expected_by_id
+            .get(bundle.bundle_id.as_str())
+            .expect("bundle membership was validated");
+        validate_import_key_order(&bundle.bundle_id, &bundle.root_imports)?;
+        validate_import_certificate_order(&bundle.bundle_id, &bundle.import_closure)?;
+        let actual_closure_keys = bundle
+            .import_closure
+            .iter()
+            .map(import_certificate_key)
+            .collect::<Vec<_>>();
+        let expected_closure_keys = expected_bundle
+            .import_closure
+            .iter()
+            .map(import_certificate_key)
+            .collect::<Vec<_>>();
+        if bundle.root_imports != expected_bundle.root_imports {
+            return Err(MachineStdImportBundleError::RootImportsMismatch {
+                bundle_id: bundle.bundle_id.clone(),
+                expected: expected_bundle.root_imports.clone(),
+                actual: bundle.root_imports.clone(),
+            });
+        }
+        if actual_closure_keys != expected_closure_keys {
+            return Err(MachineStdImportBundleError::ImportClosureMismatch {
+                bundle_id: bundle.bundle_id.clone(),
+                expected: expected_closure_keys,
+                actual: actual_closure_keys,
+            });
+        }
+        for (actual_certificate, expected_certificate) in bundle
+            .import_closure
+            .iter()
+            .zip(&expected_bundle.import_closure)
+        {
+            validate_import_certificate_bytes(
+                &bundle.bundle_id,
+                actual_certificate,
+                expected_certificate,
+            )?;
+        }
+        if !bundle.allow_axioms.is_empty() {
+            return Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms {
+                bundle_id: bundle.bundle_id.clone(),
+            });
+        }
+        let expected_recipe_id = expected_recipe_id_for_bundle(&bundle.bundle_id)
+            .expect("bundle membership was validated");
+        if bundle.recommended_tactic_options.recipe_id != expected_recipe_id {
+            return Err(MachineStdImportBundleError::InvalidRecipeIdMapping {
+                bundle_id: bundle.bundle_id.clone(),
+                expected: expected_recipe_id,
+                actual: bundle.recommended_tactic_options.recipe_id.clone(),
+            });
+        }
+    }
+    if actual.import_bundles_hash != expected.import_bundles_hash {
+        return Err(MachineStdImportBundleError::ImportBundlesHashMismatch {
+            expected: expected.import_bundles_hash,
+            actual: actual.import_bundles_hash,
+        });
+    }
+    Ok(())
+}
+
+fn generate_mvp_import_bundle(
+    loaded: &MachineStdLoadedRelease,
+    spec: MvpBundleSpec,
+) -> Result<MachineStdImportBundle, MachineStdImportBundleError> {
+    let mut root_imports = spec
+        .root_modules
+        .iter()
+        .map(|module| import_key_for_loaded_module(loaded, &Name::from_dotted(module), spec.id))
+        .collect::<Result<Vec<_>, _>>()?;
+    root_imports.sort();
+    let import_closure = import_closure_for_roots(loaded, spec.id, &root_imports)?;
+    Ok(MachineStdImportBundle {
+        bundle_id: spec.id.to_owned(),
+        root_imports,
+        import_closure,
+        allow_axioms: Vec::new(),
+        recommended_tactic_options: MachineStdTacticOptionsRecipe {
+            recipe_id: spec.recipe_id.to_owned(),
+            kernel_check_profile: STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE.to_owned(),
+            simp_rules: Vec::new(),
+            eq_family: None,
+            nat_family: None,
+            max_simp_rewrite_steps: STD_MAX_SIMP_REWRITE_STEPS,
+            max_open_goals: STD_MAX_OPEN_GOALS,
+            max_metas: STD_MAX_METAS,
+        },
+    })
+}
+
+#[derive(Clone, Copy)]
+struct MvpBundleSpec {
+    id: &'static str,
+    root_modules: &'static [&'static str],
+    recipe_id: &'static str,
+}
+
+fn expected_mvp_bundle_specs() -> Vec<MvpBundleSpec> {
+    vec![
+        MvpBundleSpec {
+            id: STD_ALGEBRA_BASIC_BUNDLE_ID,
+            root_modules: &["Std.Algebra.Basic", "Std.Logic"],
+            recipe_id: STD_LOGIC_RECIPE_ID,
+        },
+        MvpBundleSpec {
+            id: STD_ALL_BUNDLE_ID,
+            root_modules: &["Std.Algebra.Basic", "Std.List", "Std.Logic", "Std.Nat"],
+            recipe_id: STD_ALL_RECIPE_ID,
+        },
+        MvpBundleSpec {
+            id: STD_LIST_BUNDLE_ID,
+            root_modules: &["Std.Logic", "Std.List"],
+            recipe_id: STD_LIST_RECIPE_ID,
+        },
+        MvpBundleSpec {
+            id: STD_LOGIC_BUNDLE_ID,
+            root_modules: &["Std.Logic"],
+            recipe_id: STD_LOGIC_RECIPE_ID,
+        },
+        MvpBundleSpec {
+            id: STD_NAT_BUNDLE_ID,
+            root_modules: &["Std.Logic", "Std.Nat"],
+            recipe_id: STD_NAT_RECIPE_ID,
+        },
+    ]
+}
+
+fn expected_mvp_bundle_ids() -> Vec<String> {
+    expected_mvp_bundle_specs()
+        .into_iter()
+        .map(|spec| spec.id.to_owned())
+        .collect()
+}
+
+fn expected_recipe_id_for_bundle(bundle_id: &str) -> Option<&'static str> {
+    expected_mvp_bundle_specs()
+        .into_iter()
+        .find(|spec| spec.id == bundle_id)
+        .map(|spec| spec.recipe_id)
+}
+
+fn validate_import_bundle_membership(
+    bundles: &[MachineStdImportBundle],
+) -> Result<(), MachineStdImportBundleError> {
+    let expected = expected_mvp_bundle_ids();
+    let actual = bundles
+        .iter()
+        .map(|bundle| bundle.bundle_id.clone())
+        .collect::<Vec<_>>();
+    let mut seen = BTreeSet::new();
+    for bundle_id in &actual {
+        if !seen.insert(bundle_id.clone()) {
+            return Err(MachineStdImportBundleError::DuplicateBundle {
+                bundle_id: bundle_id.clone(),
+            });
+        }
+    }
+    let expected_set = expected.iter().cloned().collect::<BTreeSet<_>>();
+    let actual_set = actual.iter().cloned().collect::<BTreeSet<_>>();
+    if expected_set != actual_set {
+        return Err(MachineStdImportBundleError::InvalidBundleMembership { expected, actual });
+    }
+    if expected != actual {
+        return Err(MachineStdImportBundleError::NonCanonicalBundleOrder { expected, actual });
+    }
+    Ok(())
+}
+
+fn import_key_for_loaded_module(
+    loaded: &MachineStdLoadedRelease,
+    module: &Name,
+    bundle_id: &str,
+) -> Result<VerifiedImportKey, MachineStdImportBundleError> {
+    let loaded_module =
+        loaded
+            .module(module)
+            .ok_or_else(|| MachineStdImportBundleError::MissingDependency {
+                bundle_id: bundle_id.to_owned(),
+                owner: module.clone(),
+                missing: module.clone(),
+            })?;
+    Ok(VerifiedImportKey::new(
+        loaded_module.module.clone(),
+        loaded_module.expected_export_hash,
+        loaded_module.expected_certificate_hash,
+    ))
+}
+
+fn import_closure_for_roots(
+    loaded: &MachineStdLoadedRelease,
+    bundle_id: &str,
+    root_imports: &[VerifiedImportKey],
+) -> Result<Vec<MachineStdImportCertificate>, MachineStdImportBundleError> {
+    let mut visited = BTreeSet::new();
+    let mut pending = root_imports
+        .iter()
+        .map(|key| key.module.clone())
+        .collect::<Vec<_>>();
+    while let Some(module) = pending.pop() {
+        if !visited.insert(module.clone()) {
+            continue;
+        }
+        let loaded_module = loaded.module(&module).ok_or_else(|| {
+            MachineStdImportBundleError::MissingDependency {
+                bundle_id: bundle_id.to_owned(),
+                owner: module.clone(),
+                missing: module.clone(),
+            }
+        })?;
+        for import in &loaded_module.imports {
+            let imported = loaded.module(&import.module).ok_or_else(|| {
+                MachineStdImportBundleError::MissingDependency {
+                    bundle_id: bundle_id.to_owned(),
+                    owner: module.clone(),
+                    missing: import.module.clone(),
+                }
+            })?;
+            if import.export_hash != imported.expected_export_hash
+                || import.certificate_hash != Some(imported.expected_certificate_hash)
+            {
+                return Err(MachineStdImportBundleError::MissingDependency {
+                    bundle_id: bundle_id.to_owned(),
+                    owner: module.clone(),
+                    missing: import.module.clone(),
+                });
+            }
+            pending.push(import.module.clone());
+        }
+    }
+    let mut closure = visited
+        .into_iter()
+        .map(|module| {
+            let loaded_module = loaded
+                .module(&module)
+                .expect("visited modules came from loaded release");
+            MachineStdImportCertificate {
+                module: loaded_module.module.clone(),
+                expected_export_hash: loaded_module.expected_export_hash,
+                expected_certificate_hash: loaded_module.expected_certificate_hash,
+                certificate_encoding: STD_CERTIFICATE_ENCODING.to_owned(),
+                certificate_bytes: loaded_module.certificate_bytes.clone(),
+            }
+        })
+        .collect::<Vec<_>>();
+    closure.sort_by_key(import_certificate_key);
+    Ok(closure)
+}
+
+fn validate_import_key_order(
+    bundle_id: &str,
+    keys: &[VerifiedImportKey],
+) -> Result<(), MachineStdImportBundleError> {
+    let mut seen = BTreeSet::new();
+    let mut previous: Option<Vec<u8>> = None;
+    for key in keys {
+        if !seen.insert(key.clone()) {
+            return Err(MachineStdImportBundleError::DuplicateRootImport {
+                bundle_id: bundle_id.to_owned(),
+                key: Box::new(key.clone()),
+            });
+        }
+        let bytes = verified_import_key_canonical_bytes(key)
+            .map_err(|source| MachineStdImportBundleError::CanonicalBytes { source })?;
+        if previous.as_ref().is_some_and(|previous| previous >= &bytes) {
+            return Err(MachineStdImportBundleError::NonCanonicalRootImportOrder {
+                bundle_id: bundle_id.to_owned(),
+            });
+        }
+        previous = Some(bytes);
+    }
+    Ok(())
+}
+
+fn validate_import_certificate_order(
+    bundle_id: &str,
+    certificates: &[MachineStdImportCertificate],
+) -> Result<(), MachineStdImportBundleError> {
+    let mut seen = BTreeSet::new();
+    let mut previous: Option<Vec<u8>> = None;
+    for certificate in certificates {
+        let key = import_certificate_key(certificate);
+        if !seen.insert(key.clone()) {
+            return Err(MachineStdImportBundleError::DuplicateImportClosure {
+                bundle_id: bundle_id.to_owned(),
+                key: Box::new(key),
+            });
+        }
+        let bytes = verified_import_key_canonical_bytes(&key)
+            .map_err(|source| MachineStdImportBundleError::CanonicalBytes { source })?;
+        if previous.as_ref().is_some_and(|previous| previous >= &bytes) {
+            return Err(
+                MachineStdImportBundleError::NonCanonicalImportClosureOrder {
+                    bundle_id: bundle_id.to_owned(),
+                },
+            );
+        }
+        previous = Some(bytes);
+    }
+    Ok(())
+}
+
+fn validate_import_certificate_bytes(
+    bundle_id: &str,
+    actual: &MachineStdImportCertificate,
+    expected: &MachineStdImportCertificate,
+) -> Result<(), MachineStdImportBundleError> {
+    if actual.certificate_encoding != STD_CERTIFICATE_ENCODING {
+        return Err(MachineStdImportBundleError::CertificateEncodingMismatch {
+            bundle_id: bundle_id.to_owned(),
+            module: actual.module.clone(),
+            actual: actual.certificate_encoding.clone(),
+        });
+    }
+    if actual.expected_export_hash != expected.expected_export_hash
+        || actual.expected_certificate_hash != expected.expected_certificate_hash
+    {
+        return Err(MachineStdImportBundleError::ImportKeyHashMismatch {
+            bundle_id: bundle_id.to_owned(),
+            module: actual.module.clone(),
+        });
+    }
+    let actual_hash = sha256(&actual.certificate_bytes);
+    let expected_hash = sha256(&expected.certificate_bytes);
+    if actual_hash != expected_hash {
+        return Err(MachineStdImportBundleError::CertificateBytesHashMismatch {
+            bundle_id: bundle_id.to_owned(),
+            module: actual.module.clone(),
+            expected: expected_hash,
+            actual: actual_hash,
+        });
+    }
+    if actual.certificate_bytes != expected.certificate_bytes {
+        return Err(MachineStdImportBundleError::CertificateBytesMismatch {
+            bundle_id: bundle_id.to_owned(),
+            module: actual.module.clone(),
+        });
+    }
+    Ok(())
+}
+
+fn import_certificate_key(certificate: &MachineStdImportCertificate) -> VerifiedImportKey {
+    VerifiedImportKey::new(
+        certificate.module.clone(),
+        certificate.expected_export_hash,
+        certificate.expected_certificate_hash,
+    )
+}
+
 fn validate_machine_std_axiom_report(
     manifest: &MachineStdLibraryRelease,
     loaded: &MachineStdLoadedRelease,
@@ -1227,6 +1935,55 @@ const MODULE_AXIOM_REPORT_FIELDS: &[&str] = &[
     "transitive_axioms",
 ];
 const AXIOM_REF_FIELDS: &[&str] = &["module", "name", "export_hash", "decl_interface_hash"];
+const IMPORT_BUNDLE_SET_FIELDS: &[&str] = &["library_profile_id", "bundles", "import_bundles_hash"];
+const IMPORT_BUNDLE_FIELDS: &[&str] = &[
+    "bundle_id",
+    "root_imports",
+    "import_closure",
+    "allow_axioms",
+    "recommended_tactic_options",
+];
+const IMPORT_KEY_FIELDS: &[&str] = &[
+    "module",
+    "expected_export_hash",
+    "expected_certificate_hash",
+];
+const IMPORT_CERTIFICATE_FIELDS: &[&str] = &[
+    "module",
+    "expected_export_hash",
+    "expected_certificate_hash",
+    "certificate",
+];
+const CERTIFICATE_WRAPPER_FIELDS: &[&str] = &["encoding", "bytes"];
+const TACTIC_OPTIONS_RECIPE_FIELDS: &[&str] = &[
+    "recipe_id",
+    "kernel_check_profile",
+    "simp_rules",
+    "eq_family",
+    "nat_family",
+    "max_simp_rewrite_steps",
+    "max_open_goals",
+    "max_metas",
+];
+const SIMP_RULE_FIELDS: &[&str] = &["name", "decl_interface_hash", "direction"];
+const EQ_FAMILY_FIELDS: &[&str] = &[
+    "eq_name",
+    "eq_interface_hash",
+    "refl_name",
+    "refl_interface_hash",
+    "rec_name",
+    "rec_interface_hash",
+];
+const NAT_FAMILY_FIELDS: &[&str] = &[
+    "nat_name",
+    "nat_interface_hash",
+    "zero_name",
+    "zero_interface_hash",
+    "succ_name",
+    "succ_interface_hash",
+    "rec_name",
+    "rec_interface_hash",
+];
 
 fn parse_std_json<'src>(
     source: &'src str,
@@ -1393,6 +2150,546 @@ fn parse_module_artifact_value(
             "simp_rule_count",
         )?,
     })
+}
+
+fn parse_import_bundle_set_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdImportBundleSet, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        IMPORT_BUNDLE_SET_FIELDS,
+    )?;
+    let bundles = required_array(
+        members,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        "bundles",
+    )?
+    .iter()
+    .enumerate()
+    .map(|(index, item)| parse_import_bundle_value(item, &array_path(path, "bundles", index)))
+    .collect::<Result<Vec<_>, _>>()?;
+    Ok(MachineStdImportBundleSet {
+        library_profile_id: required_string(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "library_profile_id",
+        )?
+        .to_owned(),
+        bundles,
+        import_bundles_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "import_bundles_hash",
+        )?,
+    })
+}
+
+fn parse_import_bundle_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdImportBundle, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        IMPORT_BUNDLE_FIELDS,
+    )?;
+    Ok(MachineStdImportBundle {
+        bundle_id: required_string(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "bundle_id",
+        )?
+        .to_owned(),
+        root_imports: parse_import_key_array(members, path, "root_imports")?,
+        import_closure: parse_import_certificate_array(members, path, "import_closure")?,
+        allow_axioms: parse_machine_axiom_ref_wire_array(members, path, "allow_axioms")?,
+        recommended_tactic_options: parse_tactic_options_recipe_value(
+            required_value(members, "recommended_tactic_options"),
+            &field_path(path, "recommended_tactic_options"),
+        )?,
+    })
+}
+
+fn parse_import_key_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<VerifiedImportKey>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::ImportBundles, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_import_key_value(item, &array_path(path, field, index)))
+        .collect()
+}
+
+fn parse_import_certificate_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineStdImportCertificate>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::ImportBundles, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_import_certificate_value(item, &array_path(path, field, index)))
+        .collect()
+}
+
+fn parse_import_key_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<VerifiedImportKey, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        IMPORT_KEY_FIELDS,
+    )?;
+    Ok(VerifiedImportKey::new(
+        required_module_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "module",
+        )?,
+        required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "expected_export_hash",
+        )?,
+        required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "expected_certificate_hash",
+        )?,
+    ))
+}
+
+fn parse_import_certificate_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdImportCertificate, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        IMPORT_CERTIFICATE_FIELDS,
+    )?;
+    let certificate_members = validated_object_members(
+        required_value(members, "certificate"),
+        MachineStdArtifactKind::ImportBundles,
+        &field_path(path, "certificate"),
+        CERTIFICATE_WRAPPER_FIELDS,
+    )?;
+    Ok(MachineStdImportCertificate {
+        module: required_module_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "module",
+        )?,
+        expected_export_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "expected_export_hash",
+        )?,
+        expected_certificate_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "expected_certificate_hash",
+        )?,
+        certificate_encoding: required_string(
+            certificate_members,
+            MachineStdArtifactKind::ImportBundles,
+            &field_path(path, "certificate"),
+            "encoding",
+        )?
+        .to_owned(),
+        certificate_bytes: required_hex_bytes(
+            certificate_members,
+            MachineStdArtifactKind::ImportBundles,
+            &field_path(path, "certificate"),
+            "bytes",
+        )?,
+    })
+}
+
+fn parse_tactic_options_recipe_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineStdTacticOptionsRecipe, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        TACTIC_OPTIONS_RECIPE_FIELDS,
+    )?;
+    Ok(MachineStdTacticOptionsRecipe {
+        recipe_id: required_string(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "recipe_id",
+        )?
+        .to_owned(),
+        kernel_check_profile: required_string(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "kernel_check_profile",
+        )?
+        .to_owned(),
+        simp_rules: parse_simp_rule_array(members, path, "simp_rules")?,
+        eq_family: parse_optional_eq_family_value(required_value(members, "eq_family"), path)?,
+        nat_family: parse_optional_nat_family_value(required_value(members, "nat_family"), path)?,
+        max_simp_rewrite_steps: required_u64(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "max_simp_rewrite_steps",
+        )?,
+        max_open_goals: required_u64(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "max_open_goals",
+        )?,
+        max_metas: required_u64(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "max_metas",
+        )?,
+    })
+}
+
+fn parse_simp_rule_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<SimpRuleRef>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::ImportBundles, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| parse_simp_rule_value(item, &array_path(path, field, index)))
+        .collect()
+}
+
+fn parse_simp_rule_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<SimpRuleRef, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        SIMP_RULE_FIELDS,
+    )?;
+    let direction = match required_string(
+        members,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        "direction",
+    )? {
+        "forward" => RewriteDirection::Forward,
+        "backward" => RewriteDirection::Backward,
+        _ => {
+            return Err(shape_error(
+                MachineStdArtifactKind::ImportBundles,
+                &field_path(path, "direction"),
+                MachineStdArtifactShapeErrorReason::InvalidEnumString { field: "direction" },
+            ));
+        }
+    };
+    Ok(SimpRuleRef {
+        name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "name",
+        )?,
+        decl_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            path,
+            "decl_interface_hash",
+        )?,
+        direction,
+    })
+}
+
+fn parse_optional_eq_family_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<Option<EqFamilyRef>, MachineStdArtifactShapeError> {
+    if value.kind() == JsonValueKind::Null {
+        return Ok(None);
+    }
+    let path = field_path(path, "eq_family");
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        &path,
+        EQ_FAMILY_FIELDS,
+    )?;
+    Ok(Some(EqFamilyRef {
+        eq_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "eq_name",
+        )?,
+        eq_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "eq_interface_hash",
+        )?,
+        refl_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "refl_name",
+        )?,
+        refl_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "refl_interface_hash",
+        )?,
+        rec_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "rec_name",
+        )?,
+        rec_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "rec_interface_hash",
+        )?,
+    }))
+}
+
+fn parse_optional_nat_family_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<Option<NatFamilyRef>, MachineStdArtifactShapeError> {
+    if value.kind() == JsonValueKind::Null {
+        return Ok(None);
+    }
+    let path = field_path(path, "nat_family");
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        &path,
+        NAT_FAMILY_FIELDS,
+    )?;
+    Ok(Some(NatFamilyRef {
+        nat_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "nat_name",
+        )?,
+        nat_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "nat_interface_hash",
+        )?,
+        zero_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "zero_name",
+        )?,
+        zero_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "zero_interface_hash",
+        )?,
+        succ_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "succ_name",
+        )?,
+        succ_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "succ_interface_hash",
+        )?,
+        rec_name: required_fully_qualified_name(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "rec_name",
+        )?,
+        rec_interface_hash: required_hash(
+            members,
+            MachineStdArtifactKind::ImportBundles,
+            &path,
+            "rec_interface_hash",
+        )?,
+    }))
+}
+
+fn parse_machine_axiom_ref_wire_array(
+    members: &[crate::json::JsonMember<'_>],
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<MachineAxiomRefWire>, MachineStdArtifactShapeError> {
+    required_array(members, MachineStdArtifactKind::ImportBundles, path, field)?
+        .iter()
+        .enumerate()
+        .map(|(index, item)| {
+            parse_machine_axiom_ref_wire_value(item, &array_path(path, field, index))
+        })
+        .collect()
+}
+
+fn parse_machine_axiom_ref_wire_value(
+    value: &JsonValue<'_>,
+    path: &str,
+) -> Result<MachineAxiomRefWire, MachineStdArtifactShapeError> {
+    let members = validated_object_members(
+        value,
+        MachineStdArtifactKind::ImportBundles,
+        path,
+        &[
+            "kind",
+            "module",
+            "name",
+            "export_hash",
+            "source_index",
+            "decl_interface_hash",
+        ],
+    )?;
+    let kind = required_string(members, MachineStdArtifactKind::ImportBundles, path, "kind")?;
+    match kind {
+        "imported" => {
+            let members = validated_object_members(
+                value,
+                MachineStdArtifactKind::ImportBundles,
+                path,
+                &[
+                    "kind",
+                    "module",
+                    "name",
+                    "export_hash",
+                    "decl_interface_hash",
+                ],
+            )?;
+            Ok(MachineAxiomRefWire::Imported {
+                module: required_module_name(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "module",
+                )?,
+                name: required_fully_qualified_name(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "name",
+                )?,
+                export_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "export_hash",
+                )?,
+                decl_interface_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "decl_interface_hash",
+                )?,
+            })
+        }
+        "current_module" => {
+            let members = validated_object_members(
+                value,
+                MachineStdArtifactKind::ImportBundles,
+                path,
+                &[
+                    "kind",
+                    "module",
+                    "name",
+                    "source_index",
+                    "decl_interface_hash",
+                ],
+            )?;
+            Ok(MachineAxiomRefWire::CurrentModule {
+                module: required_module_name(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "module",
+                )?,
+                name: required_fully_qualified_name(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "name",
+                )?,
+                source_index: required_u64(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "source_index",
+                )?,
+                decl_interface_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "decl_interface_hash",
+                )?,
+            })
+        }
+        "builtin" => {
+            let members = validated_object_members(
+                value,
+                MachineStdArtifactKind::ImportBundles,
+                path,
+                &["kind", "name", "decl_interface_hash"],
+            )?;
+            Ok(MachineAxiomRefWire::Builtin {
+                name: required_fully_qualified_name(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "name",
+                )?,
+                decl_interface_hash: required_hash(
+                    members,
+                    MachineStdArtifactKind::ImportBundles,
+                    path,
+                    "decl_interface_hash",
+                )?,
+            })
+        }
+        _ => Err(shape_error(
+            MachineStdArtifactKind::ImportBundles,
+            &field_path(path, "kind"),
+            MachineStdArtifactShapeErrorReason::InvalidEnumString { field: "kind" },
+        )),
+    }
 }
 
 fn parse_axiom_report_value(
@@ -1632,6 +2929,22 @@ fn required_hash(
     })
 }
 
+fn required_hex_bytes(
+    members: &[crate::json::JsonMember<'_>],
+    artifact: MachineStdArtifactKind,
+    path: &str,
+    field: &'static str,
+) -> Result<Vec<u8>, MachineStdArtifactShapeError> {
+    let value = required_string(members, artifact, path, field)?;
+    decode_lower_hex_bytes(value).map_err(|_| {
+        shape_error(
+            artifact,
+            &field_path(path, field),
+            MachineStdArtifactShapeErrorReason::InvalidHexString { field },
+        )
+    })
+}
+
 fn required_module_name(
     members: &[crate::json::JsonMember<'_>],
     artifact: MachineStdArtifactKind,
@@ -1700,6 +3013,29 @@ fn required_u64(
                 actual,
             },
         )),
+    }
+}
+
+fn decode_lower_hex_bytes(value: &str) -> Result<Vec<u8>, ()> {
+    if !value.len().is_multiple_of(2) {
+        return Err(());
+    }
+    value
+        .as_bytes()
+        .chunks_exact(2)
+        .map(|chunk| {
+            let high = lowercase_hex_value(chunk[0])?;
+            let low = lowercase_hex_value(chunk[1])?;
+            Ok((high << 4) | low)
+        })
+        .collect()
+}
+
+fn lowercase_hex_value(byte: u8) -> Result<u8, ()> {
+    match byte {
+        b'0'..=b'9' => Ok(byte - b'0'),
+        b'a'..=b'f' => Ok(byte - b'a' + 10),
+        _ => Err(()),
     }
 }
 
@@ -1972,6 +3308,106 @@ fn verify_decoded_modules(
     })
 }
 
+fn machine_std_kernel_check_profile_canonical_bytes(profile: &str) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_string(&mut out, PHASE4_KERNEL_CHECK_PROFILE_TAG);
+    encode_string(&mut out, STD_CORE_SPEC_ID);
+    encode_string(&mut out, STD_KERNEL_SEMANTICS_PROFILE_ID);
+    encode_string(&mut out, STD_REDUCTION_PROFILE_ID);
+    encode_string(&mut out, STD_UNIVERSE_PROFILE_ID);
+    let builtin_profile_id = match profile {
+        STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE => STD_KERNEL_BUILTIN_NONE_PROFILE_ID,
+        other => other,
+    };
+    encode_string(&mut out, builtin_profile_id);
+    out
+}
+
+fn encode_verified_import_key(
+    out: &mut Vec<u8>,
+    key: &VerifiedImportKey,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    encode_name(out, &key.module)?;
+    encode_hash(out, &key.export_hash);
+    encode_hash(out, &key.certificate_hash);
+    Ok(())
+}
+
+fn verified_import_key_canonical_bytes(
+    key: &VerifiedImportKey,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_verified_import_key(&mut out, key)?;
+    Ok(out)
+}
+
+fn encode_import_certificate_key(
+    out: &mut Vec<u8>,
+    certificate: &MachineStdImportCertificate,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    encode_name(out, &certificate.module)?;
+    encode_hash(out, &certificate.expected_export_hash);
+    encode_hash(out, &certificate.expected_certificate_hash);
+    Ok(())
+}
+
+fn encode_simp_rule_ref(
+    out: &mut Vec<u8>,
+    rule: &SimpRuleRef,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    encode_name(out, &rule.name)?;
+    encode_hash(out, &rule.decl_interface_hash);
+    encode_rewrite_direction(out, rule.direction);
+    Ok(())
+}
+
+fn encode_rewrite_direction(out: &mut Vec<u8>, direction: RewriteDirection) {
+    out.push(match direction {
+        RewriteDirection::Forward => 0x00,
+        RewriteDirection::Backward => 0x01,
+    });
+}
+
+fn encode_option_eq_family(
+    out: &mut Vec<u8>,
+    value: Option<&EqFamilyRef>,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_name(out, &value.eq_name)?;
+            encode_hash(out, &value.eq_interface_hash);
+            encode_name(out, &value.refl_name)?;
+            encode_hash(out, &value.refl_interface_hash);
+            encode_name(out, &value.rec_name)?;
+            encode_hash(out, &value.rec_interface_hash);
+        }
+        None => out.push(0x00),
+    }
+    Ok(())
+}
+
+fn encode_option_nat_family(
+    out: &mut Vec<u8>,
+    value: Option<&NatFamilyRef>,
+) -> Result<(), MachineStdCanonicalBytesError> {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_name(out, &value.nat_name)?;
+            encode_hash(out, &value.nat_interface_hash);
+            encode_name(out, &value.zero_name)?;
+            encode_hash(out, &value.zero_interface_hash);
+            encode_name(out, &value.succ_name)?;
+            encode_hash(out, &value.succ_interface_hash);
+            encode_name(out, &value.rec_name)?;
+            encode_hash(out, &value.rec_interface_hash);
+        }
+        None => out.push(0x00),
+    }
+    Ok(())
+}
+
 fn encode_string(out: &mut Vec<u8>, value: &str) {
     encode_uvar(out, value.len() as u64);
     out.extend_from_slice(value.as_bytes());
@@ -2223,6 +3659,280 @@ mod tests {
             validated.std_library_release_hash,
             machine_std_library_release_hash(&validated.manifest).unwrap()
         );
+    }
+
+    #[test]
+    fn generates_mvp_import_bundle_set_with_canonical_membership() {
+        let package = TestPackage::new("mvp_import_bundle_set");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+
+        let bundle_set = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+        assert_eq!(
+            bundle_set
+                .bundles
+                .iter()
+                .map(|bundle| bundle.bundle_id.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                STD_ALGEBRA_BASIC_BUNDLE_ID,
+                STD_ALL_BUNDLE_ID,
+                STD_LIST_BUNDLE_ID,
+                STD_LOGIC_BUNDLE_ID,
+                STD_NAT_BUNDLE_ID,
+            ]
+        );
+        let list_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_LIST_BUNDLE_ID)
+            .unwrap();
+        assert_eq!(
+            list_bundle
+                .root_imports
+                .iter()
+                .map(|key| key.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.List", "Std.Logic"]
+        );
+        assert_eq!(
+            list_bundle
+                .import_closure
+                .iter()
+                .map(|certificate| certificate.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Nat", "Std.List", "Std.Logic"]
+        );
+        assert!(bundle_set
+            .bundles
+            .iter()
+            .all(|bundle| bundle.allow_axioms.is_empty()));
+        assert_eq!(
+            bundle_set.import_bundles_hash,
+            machine_std_import_bundle_set_hash(&bundle_set).unwrap()
+        );
+    }
+
+    #[test]
+    fn loads_valid_mvp_release_with_import_bundle_sidecar() {
+        let package = TestPackage::new("valid_mvp_import_bundle_sidecar");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+
+        let validated = load_machine_std_mvp_release_with_import_bundles_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &import_bundle_set_json(&import_bundles),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap();
+
+        assert_eq!(
+            validated.import_bundles.import_bundles_hash,
+            import_bundles.import_bundles_hash
+        );
+        assert_eq!(
+            validated.manifest.import_bundles_hash,
+            import_bundles.import_bundles_hash
+        );
+    }
+
+    #[test]
+    fn rejects_missing_extra_duplicate_or_reordered_import_bundle_ids() {
+        let package = TestPackage::new("bad_import_bundle_membership");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+
+        let mut missing = expected.clone();
+        missing.bundles.pop();
+        missing.import_bundles_hash = machine_std_import_bundle_set_hash(&missing).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&missing, &expected),
+            Err(MachineStdImportBundleError::InvalidBundleMembership { .. })
+        ));
+
+        let mut extra = expected.clone();
+        let mut extra_bundle = extra.bundles[0].clone();
+        extra_bundle.bundle_id = "std.extra.mvp".to_owned();
+        extra.bundles.push(extra_bundle);
+        extra.import_bundles_hash = machine_std_import_bundle_set_hash(&extra).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&extra, &expected),
+            Err(MachineStdImportBundleError::InvalidBundleMembership { .. })
+        ));
+
+        let mut duplicate = expected.clone();
+        duplicate.bundles.push(duplicate.bundles[0].clone());
+        duplicate.import_bundles_hash = machine_std_import_bundle_set_hash(&duplicate).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&duplicate, &expected),
+            Err(MachineStdImportBundleError::DuplicateBundle { .. })
+        ));
+
+        let mut reordered = expected.clone();
+        reordered.bundles.swap(0, 1);
+        reordered.import_bundles_hash = machine_std_import_bundle_set_hash(&reordered).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&reordered, &expected),
+            Err(MachineStdImportBundleError::NonCanonicalBundleOrder { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_noncanonical_import_bundle_roots_and_closure_order() {
+        let package = TestPackage::new("bad_import_bundle_order");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+
+        let mut bad_roots = expected.clone();
+        let list = bad_roots
+            .bundles
+            .iter_mut()
+            .find(|bundle| bundle.bundle_id == STD_LIST_BUNDLE_ID)
+            .unwrap();
+        list.root_imports.swap(0, 1);
+        bad_roots.import_bundles_hash = machine_std_import_bundle_set_hash(&bad_roots).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&bad_roots, &expected),
+            Err(MachineStdImportBundleError::NonCanonicalRootImportOrder { .. })
+        ));
+
+        let mut bad_closure = expected.clone();
+        let list = bad_closure
+            .bundles
+            .iter_mut()
+            .find(|bundle| bundle.bundle_id == STD_LIST_BUNDLE_ID)
+            .unwrap();
+        list.import_closure.swap(0, 1);
+        bad_closure.import_bundles_hash = machine_std_import_bundle_set_hash(&bad_closure).unwrap();
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&bad_closure, &expected),
+            Err(MachineStdImportBundleError::NonCanonicalImportClosureOrder { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_import_bundle_certificate_bytes_mismatch() {
+        let package = TestPackage::new("bad_import_bundle_certificate_bytes");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+
+        let mut actual = expected.clone();
+        actual.bundles[0].import_closure[0]
+            .certificate_bytes
+            .push(0xff);
+        actual.import_bundles_hash = machine_std_import_bundle_set_hash(&actual).unwrap();
+
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&actual, &expected),
+            Err(MachineStdImportBundleError::CertificateBytesHashMismatch { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_non_empty_mvp_import_bundle_allow_axioms() {
+        let package = TestPackage::new("bad_import_bundle_allow_axioms");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+
+        let mut actual = expected.clone();
+        let key = actual.bundles[0].root_imports[0].clone();
+        actual.bundles[0]
+            .allow_axioms
+            .push(MachineAxiomRefWire::Imported {
+                module: key.module,
+                name: Name::from_dotted("Std.Logic.synthetic_axiom"),
+                export_hash: key.export_hash,
+                decl_interface_hash: test_hash(99),
+            });
+        actual.import_bundles_hash = machine_std_import_bundle_set_hash(&actual).unwrap();
+
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&actual, &expected),
+            Err(MachineStdImportBundleError::NonEmptyMvpAllowAxioms { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_invalid_import_bundle_recipe_mapping() {
+        let package = TestPackage::new("bad_import_bundle_recipe");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let expected = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+
+        let mut actual = expected.clone();
+        actual.bundles[0].recommended_tactic_options.recipe_id = "std.bad-recipe".to_owned();
+        actual.import_bundles_hash = machine_std_import_bundle_set_hash(&actual).unwrap();
+
+        assert!(matches!(
+            validate_machine_std_mvp_import_bundle_set(&actual, &expected),
+            Err(MachineStdImportBundleError::InvalidRecipeIdMapping { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_manifest_bound_import_bundle_hash_mismatch_as_library_release() {
+        let package = TestPackage::new("manifest_bound_import_bundle_hash_mismatch");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+        release.import_bundles_hash = test_hash(55);
+
+        let err = load_machine_std_mvp_release_with_import_bundles_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &import_bundle_set_json(&import_bundles),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::SidecarHashMismatch {
+                    field: "import_bundles_hash",
+                    ..
+                }
+            )
+        ));
+    }
+
+    #[test]
+    fn rejects_stale_import_bundle_self_hash_before_manifest_comparison() {
+        let package = TestPackage::new("stale_import_bundle_self_hash");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
+        import_bundles.import_bundles_hash = test_hash(56);
+        let mut axiom_report = empty_axiom_report_for(&loaded);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
+
+        let err = load_machine_std_mvp_release_with_import_bundles_from_json(
+            package.path(),
+            &release_manifest_json(&release),
+            &import_bundle_set_json(&import_bundles),
+            &axiom_report_json(&axiom_report),
+        )
+        .unwrap_err();
+
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdImportBundle(
+                MachineStdImportBundleError::ImportBundlesHashMismatch { .. }
+            )
+        ));
     }
 
     #[test]
@@ -2532,6 +4242,9 @@ mod tests {
         loaded: &MachineStdLoadedRelease,
         axiom_report_hash: Hash,
     ) -> MachineStdLibraryRelease {
+        let import_bundles_hash = generate_machine_std_mvp_import_bundle_set(loaded)
+            .unwrap()
+            .import_bundles_hash;
         MachineStdLibraryRelease {
             protocol_version: STD_LIBRARY_PROTOCOL_VERSION.to_owned(),
             library_profile_id: STD_LIBRARY_PROFILE_ID.to_owned(),
@@ -2559,7 +4272,7 @@ mod tests {
                     simp_rule_count: 0,
                 })
                 .collect(),
-            import_bundles_hash: test_hash(1),
+            import_bundles_hash,
             theorem_index_hash: test_hash(2),
             simp_profiles_hash: test_hash(3),
             rewrite_profiles_hash: test_hash(4),
@@ -2646,6 +4359,186 @@ mod tests {
             format_hash_string(&axiom.export_hash),
             format_hash_string(&axiom.decl_interface_hash),
         )
+    }
+
+    fn import_bundle_set_json(bundle_set: &MachineStdImportBundleSet) -> String {
+        format!(
+            "{{\"library_profile_id\":\"{}\",\"bundles\":[{}],\"import_bundles_hash\":\"{}\"}}",
+            bundle_set.library_profile_id,
+            bundle_set
+                .bundles
+                .iter()
+                .map(import_bundle_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            format_hash_string(&bundle_set.import_bundles_hash),
+        )
+    }
+
+    fn import_bundle_json(bundle: &MachineStdImportBundle) -> String {
+        format!(
+            "{{\"bundle_id\":\"{}\",\"root_imports\":[{}],\"import_closure\":[{}],\"allow_axioms\":[{}],\"recommended_tactic_options\":{}}}",
+            bundle.bundle_id,
+            bundle
+                .root_imports
+                .iter()
+                .map(import_key_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            bundle
+                .import_closure
+                .iter()
+                .map(import_certificate_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            bundle
+                .allow_axioms
+                .iter()
+                .map(machine_axiom_ref_wire_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            tactic_options_recipe_json(&bundle.recommended_tactic_options),
+        )
+    }
+
+    fn import_key_json(key: &VerifiedImportKey) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"expected_export_hash\":\"{}\",\"expected_certificate_hash\":\"{}\"}}",
+            key.module.as_dotted(),
+            format_hash_string(&key.export_hash),
+            format_hash_string(&key.certificate_hash),
+        )
+    }
+
+    fn import_certificate_json(certificate: &MachineStdImportCertificate) -> String {
+        format!(
+            "{{\"module\":\"{}\",\"expected_export_hash\":\"{}\",\"expected_certificate_hash\":\"{}\",\"certificate\":{{\"encoding\":\"{}\",\"bytes\":\"{}\"}}}}",
+            certificate.module.as_dotted(),
+            format_hash_string(&certificate.expected_export_hash),
+            format_hash_string(&certificate.expected_certificate_hash),
+            certificate.certificate_encoding,
+            lower_hex_bytes(&certificate.certificate_bytes),
+        )
+    }
+
+    fn tactic_options_recipe_json(recipe: &MachineStdTacticOptionsRecipe) -> String {
+        format!(
+            "{{\"recipe_id\":\"{}\",\"kernel_check_profile\":\"{}\",\"simp_rules\":[{}],\"eq_family\":{},\"nat_family\":{},\"max_simp_rewrite_steps\":{},\"max_open_goals\":{},\"max_metas\":{}}}",
+            recipe.recipe_id,
+            recipe.kernel_check_profile,
+            recipe
+                .simp_rules
+                .iter()
+                .map(simp_rule_json)
+                .collect::<Vec<_>>()
+                .join(","),
+            recipe
+                .eq_family
+                .as_ref()
+                .map(eq_family_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            recipe
+                .nat_family
+                .as_ref()
+                .map(nat_family_json)
+                .unwrap_or_else(|| "null".to_owned()),
+            recipe.max_simp_rewrite_steps,
+            recipe.max_open_goals,
+            recipe.max_metas,
+        )
+    }
+
+    fn simp_rule_json(rule: &SimpRuleRef) -> String {
+        let direction = match rule.direction {
+            RewriteDirection::Forward => "forward",
+            RewriteDirection::Backward => "backward",
+        };
+        format!(
+            "{{\"name\":\"{}\",\"decl_interface_hash\":\"{}\",\"direction\":\"{}\"}}",
+            rule.name.as_dotted(),
+            format_hash_string(&rule.decl_interface_hash),
+            direction,
+        )
+    }
+
+    fn eq_family_json(family: &EqFamilyRef) -> String {
+        format!(
+            "{{\"eq_name\":\"{}\",\"eq_interface_hash\":\"{}\",\"refl_name\":\"{}\",\"refl_interface_hash\":\"{}\",\"rec_name\":\"{}\",\"rec_interface_hash\":\"{}\"}}",
+            family.eq_name.as_dotted(),
+            format_hash_string(&family.eq_interface_hash),
+            family.refl_name.as_dotted(),
+            format_hash_string(&family.refl_interface_hash),
+            family.rec_name.as_dotted(),
+            format_hash_string(&family.rec_interface_hash),
+        )
+    }
+
+    fn nat_family_json(family: &NatFamilyRef) -> String {
+        format!(
+            "{{\"nat_name\":\"{}\",\"nat_interface_hash\":\"{}\",\"zero_name\":\"{}\",\"zero_interface_hash\":\"{}\",\"succ_name\":\"{}\",\"succ_interface_hash\":\"{}\",\"rec_name\":\"{}\",\"rec_interface_hash\":\"{}\"}}",
+            family.nat_name.as_dotted(),
+            format_hash_string(&family.nat_interface_hash),
+            family.zero_name.as_dotted(),
+            format_hash_string(&family.zero_interface_hash),
+            family.succ_name.as_dotted(),
+            format_hash_string(&family.succ_interface_hash),
+            family.rec_name.as_dotted(),
+            format_hash_string(&family.rec_interface_hash),
+        )
+    }
+
+    fn machine_axiom_ref_wire_json(axiom: &MachineAxiomRefWire) -> String {
+        match axiom {
+            MachineAxiomRefWire::Imported {
+                module,
+                name,
+                export_hash,
+                decl_interface_hash,
+            } => format!(
+                "{{\"kind\":\"imported\",\"module\":\"{}\",\"name\":\"{}\",\"export_hash\":\"{}\",\"decl_interface_hash\":\"{}\"}}",
+                module.as_dotted(),
+                name.as_dotted(),
+                format_hash_string(export_hash),
+                format_hash_string(decl_interface_hash),
+            ),
+            MachineAxiomRefWire::CurrentModule {
+                module,
+                name,
+                source_index,
+                decl_interface_hash,
+            } => format!(
+                "{{\"kind\":\"current_module\",\"module\":\"{}\",\"name\":\"{}\",\"source_index\":{},\"decl_interface_hash\":\"{}\"}}",
+                module.as_dotted(),
+                name.as_dotted(),
+                source_index,
+                format_hash_string(decl_interface_hash),
+            ),
+            MachineAxiomRefWire::Builtin {
+                name,
+                decl_interface_hash,
+            } => format!(
+                "{{\"kind\":\"builtin\",\"name\":\"{}\",\"decl_interface_hash\":\"{}\"}}",
+                name.as_dotted(),
+                format_hash_string(decl_interface_hash),
+            ),
+        }
+    }
+
+    fn lower_hex_bytes(bytes: &[u8]) -> String {
+        let mut out = String::with_capacity(bytes.len() * 2);
+        for byte in bytes {
+            out.push(hex_digit(byte >> 4));
+            out.push(hex_digit(byte & 0x0f));
+        }
+        out
+    }
+
+    fn hex_digit(value: u8) -> char {
+        match value {
+            0..=9 => (b'0' + value) as char,
+            10..=15 => (b'a' + (value - 10)) as char,
+            _ => unreachable!("hex nybble is in range"),
+        }
     }
 
     fn test_hash(seed: u8) -> Hash {
