@@ -1,7 +1,8 @@
 use npa_cert::{
-    build_module_cert, encode_module_cert, precheck_core_decl_candidate, producer_env_fingerprint,
-    producer_env_fingerprint_canonical_bytes, producer_import_env_key,
-    producer_limits_canonical_bytes, producer_limits_hash, stricter_or_equal,
+    build_module_cert, canonical_import_env_keys, canonical_import_export_views,
+    encode_module_cert, precheck_core_decl_candidate, producer_checked_decl_interface,
+    producer_env_fingerprint, producer_env_fingerprint_canonical_bytes, producer_import_env_key,
+    producer_limits_canonical_bytes, producer_limits_hash, producer_lookup_env, stricter_or_equal,
     validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, AxiomRef, CandidateBatch,
     CandidateBatchResult, CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate,
     CoreDeclCandidate, CoreModule, GlobalRef, Name, ProducerCheckedDeclInterface,
@@ -91,6 +92,15 @@ fn opaque_def_module(module_name: &str, value: Expr) -> CoreModule {
             value,
             reducibility: Reducibility::Opaque,
         }],
+    }
+}
+
+fn imported_theorem(name: &str, imported_name: &str) -> Decl {
+    Decl::Theorem {
+        name: name.to_owned(),
+        universe_params: vec![],
+        ty: Expr::konst(imported_name, vec![]),
+        proof: Expr::konst(imported_name, vec![]),
     }
 }
 
@@ -285,6 +295,97 @@ fn producer_env_fingerprint_sorts_axiom_dependencies_canonically() {
     assert_eq!(
         producer_env_fingerprint(&env_ab),
         producer_env_fingerprint(&env_ba)
+    );
+}
+
+#[test]
+fn canonical_import_keys_and_export_views_preserve_same_indices() {
+    let import_a = verify_module(axiom_module("Lib.IndexA", "IndexA"));
+    let import_b = verify_module(axiom_module("Lib.IndexB", "IndexB"));
+    let imports = [import_a, import_b];
+
+    let keys = canonical_import_env_keys(&imports).unwrap();
+    let views = canonical_import_export_views(&imports).unwrap();
+
+    assert_eq!(keys.len(), views.len());
+    for (key, view) in keys.iter().zip(&views) {
+        assert_eq!(key.module, view.module);
+        assert_eq!(key.export_hash, view.export_hash);
+    }
+}
+
+#[test]
+fn producer_checked_decl_interface_uses_import_export_view_indices() {
+    let import_a = verify_module(axiom_module("Lib.LookupA", "LookupA"));
+    let import_b = verify_module(axiom_module("Lib.LookupB", "LookupB"));
+    let imports = [import_a, import_b];
+    let lookup = producer_lookup_env(&imports, &[]).unwrap();
+
+    let interface =
+        producer_checked_decl_interface(&imported_theorem("UsesLookupB", "LookupB"), &lookup)
+            .unwrap();
+
+    assert_eq!(interface.axiom_dependencies.len(), 1);
+    assert!(matches!(
+        interface.axiom_dependencies[0].global_ref,
+        GlobalRef::Imported {
+            import_index: 1,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn producer_checked_decl_interface_recomputes_axioms_from_export_view_not_key() {
+    let import = verify_module(axiom_module("Lib.LookupSource", "LookupSource"));
+    let imports = [import];
+    let lookup = producer_lookup_env(&imports, &[]).unwrap();
+    let decl = imported_theorem("UsesLookupSource", "LookupSource");
+
+    let from_verified_view = producer_checked_decl_interface(&decl, &lookup).unwrap();
+
+    let mut tampered_lookup = lookup.clone();
+    tampered_lookup.import_exports[0].exports[0]
+        .axiom_dependencies
+        .clear();
+    let from_tampered_view = producer_checked_decl_interface(&decl, &tampered_lookup).unwrap();
+
+    assert_eq!(from_verified_view.axiom_dependencies.len(), 1);
+    assert!(from_tampered_view.axiom_dependencies.is_empty());
+    assert_ne!(
+        from_verified_view.decl_interface_hash,
+        from_tampered_view.decl_interface_hash
+    );
+}
+
+#[test]
+fn producer_checked_decl_interface_matches_certificate_generation_for_imported_axiom() {
+    let import = verify_module(axiom_module("Lib.MatchP", "MatchP"));
+    let imports = [import.clone()];
+    let decl = Decl::Axiom {
+        name: "MatchQ".to_owned(),
+        universe_params: vec![],
+        ty: Expr::konst("MatchP", vec![]),
+    };
+    let cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("MatchQ"),
+            declarations: vec![decl.clone()],
+        },
+        &imports,
+    )
+    .unwrap();
+    let lookup = producer_lookup_env(&imports, &[]).unwrap();
+
+    let interface = producer_checked_decl_interface(&decl, &lookup).unwrap();
+
+    assert_eq!(
+        interface.decl_interface_hash,
+        cert.declarations[0].hashes.decl_interface_hash
+    );
+    assert_eq!(
+        interface.axiom_dependencies,
+        cert.declarations[0].axiom_dependencies
     );
 }
 

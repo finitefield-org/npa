@@ -476,6 +476,111 @@ fn canonicalize_decl(
     }
 }
 
+pub(crate) fn canonical_producer_checked_decl_interface(
+    decl: &Decl,
+    lookup_env: &ProducerLookupEnv,
+) -> Result<ProducerCheckedDeclInterface> {
+    let current_decl_index = lookup_env.checked_decls.len();
+    let mut names = BTreeSet::new();
+    for import in &lookup_env.import_exports {
+        collect_name(&mut names, &import.module);
+    }
+    collect_names_from_decl(&mut names, decl);
+    let referenced_imports =
+        producer_referenced_imported_export_names(decl, &lookup_env.import_exports)?;
+    producer_collect_imported_axiom_names_for_referenced_exports(
+        &mut names,
+        &lookup_env.import_exports,
+        &referenced_imports,
+    )?;
+    let name_table: Vec<_> = names.into_iter().collect();
+    ensure_canonical_names(&name_table)?;
+    let name_index: BTreeMap<_, _> = name_table
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, name)| (name, index))
+        .collect();
+    let imported_decls =
+        producer_imported_decl_map(&lookup_env.import_exports, &name_index, &referenced_imports)?;
+    let local_name_to_index = BTreeMap::new();
+    let local_generated_name_to_index = BTreeMap::new();
+    let resolver = Resolver {
+        current_decl_index,
+        allow_self: matches!(decl, Decl::Inductive { .. } | Decl::Axiom { .. }),
+        local_name_to_index: &local_name_to_index,
+        local_generated_name_to_index: &local_generated_name_to_index,
+        imported_decls: &imported_decls,
+        name_index: &name_index,
+    };
+    let previous_axioms: Vec<_> = lookup_env
+        .checked_decls
+        .iter()
+        .map(|interface| union_axioms(interface.axiom_dependencies.iter().cloned()))
+        .collect();
+    let (canon_decl, _) = canonicalize_decl(
+        decl.clone(),
+        current_decl_index,
+        &resolver,
+        &previous_axioms,
+    )?;
+
+    let mut levels = BTreeSet::new();
+    let mut terms = BTreeSet::new();
+    collect_canon_decl_nodes(&canon_decl, &mut levels, &mut terms);
+    let (level_table, level_ids) = build_level_table(levels, &name_table)?;
+    let (term_table, term_ids) = build_term_table(terms, &level_ids, &name_table)?;
+    let level_hashes = compute_level_hashes(&level_table, &name_table)?;
+    let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
+    let payload = materialize_decl_payload(&canon_decl.decl, &level_ids, &term_ids);
+    let interface_hashes: Vec<_> = lookup_env
+        .checked_decls
+        .iter()
+        .map(|interface| interface.decl_interface_hash)
+        .collect();
+    let dependencies = fill_local_dependency_hashes(&canon_decl.dependencies, &interface_hashes)?;
+    let mut axiom_dependencies = axiom_dependencies_from_final_deps(
+        &dependencies,
+        &previous_axioms,
+        &imported_decls,
+        &name_table,
+    )?;
+
+    if let DeclPayload::Axiom { name, .. } = &payload {
+        let preliminary = compute_decl_hashes(
+            &payload,
+            &dependencies,
+            &[],
+            &term_table,
+            &level_hashes,
+            &term_hashes,
+            &name_table,
+        )?;
+        let self_ref = AxiomRef {
+            global_ref: GlobalRef::Local {
+                decl_index: current_decl_index,
+            },
+            name: *name,
+            decl_interface_hash: preliminary.decl_interface_hash,
+        };
+        axiom_dependencies = union_axioms(axiom_dependencies.into_iter().chain([self_ref]));
+    }
+
+    let hashes = compute_decl_hashes(
+        &payload,
+        &dependencies,
+        &axiom_dependencies,
+        &term_table,
+        &level_hashes,
+        &term_hashes,
+        &name_table,
+    )?;
+    Ok(ProducerCheckedDeclInterface {
+        decl_interface_hash: hashes.decl_interface_hash,
+        axiom_dependencies,
+    })
+}
+
 struct Resolver<'a> {
     current_decl_index: usize,
     allow_self: bool,
@@ -1377,6 +1482,43 @@ fn imported_decl_map(
     Ok(map)
 }
 
+fn producer_imported_decl_map(
+    imports: &[ProducerImportExportView],
+    name_index: &BTreeMap<Name, usize>,
+    referenced_names: &BTreeSet<Name>,
+) -> Result<BTreeMap<Name, ImportedDeclInfo>> {
+    let mut map = BTreeMap::new();
+    for (import_index, import) in imports.iter().enumerate() {
+        for entry in &import.exports {
+            let name = import
+                .name_table
+                .get(entry.name)
+                .ok_or(CertError::DecodeError)?;
+            if !referenced_names.contains(name) || !name_index.contains_key(name) {
+                continue;
+            }
+            let axiom_dependencies = entry
+                .axiom_dependencies
+                .iter()
+                .map(|axiom| remap_producer_imported_axiom_ref(imports, import, axiom, name_index))
+                .collect::<Result<Vec<_>>>()?;
+            let old = map.insert(
+                name.clone(),
+                ImportedDeclInfo {
+                    import_index,
+                    decl_interface_hash: entry.decl_interface_hash,
+                    kind: entry.kind,
+                    axiom_dependencies,
+                },
+            );
+            if old.is_some() {
+                return Err(CertError::DuplicateName { name: name.clone() });
+            }
+        }
+    }
+    Ok(map)
+}
+
 fn remap_imported_axiom_ref(
     imports: &[&VerifiedModule],
     import: &VerifiedModule,
@@ -1420,6 +1562,49 @@ fn remap_imported_axiom_ref(
     })
 }
 
+fn remap_producer_imported_axiom_ref(
+    imports: &[ProducerImportExportView],
+    import: &ProducerImportExportView,
+    axiom: &AxiomRef,
+    name_index: &BTreeMap<Name, usize>,
+) -> Result<AxiomRef> {
+    let axiom_name = import
+        .name_table
+        .get(axiom.name)
+        .ok_or(CertError::DecodeError)?;
+    let name = *name_index.get(axiom_name).ok_or(CertError::DecodeError)?;
+    if let GlobalRef::Builtin {
+        decl_interface_hash,
+        ..
+    } = &axiom.global_ref
+    {
+        if builtin_decl_interface_hash(axiom_name) != Some(*decl_interface_hash) {
+            return Err(CertError::UnknownDependency {
+                name: axiom_name.clone(),
+            });
+        }
+        return Ok(AxiomRef {
+            global_ref: GlobalRef::Builtin {
+                name,
+                decl_interface_hash: *decl_interface_hash,
+            },
+            name,
+            decl_interface_hash: *decl_interface_hash,
+        });
+    }
+    let import_index =
+        producer_import_index_exporting_axiom(imports, axiom_name, axiom.decl_interface_hash)?;
+    Ok(AxiomRef {
+        global_ref: GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash: axiom.decl_interface_hash,
+        },
+        name,
+        decl_interface_hash: axiom.decl_interface_hash,
+    })
+}
+
 fn referenced_imported_export_names(
     declarations: &[Decl],
     imports: &[&VerifiedModule],
@@ -1441,6 +1626,30 @@ fn referenced_imported_export_names(
     let mut imported_exports = BTreeSet::new();
     for import in imports {
         for entry in &import.export_block {
+            imported_exports.insert(
+                import
+                    .name_table
+                    .get(entry.name)
+                    .cloned()
+                    .ok_or(CertError::DecodeError)?,
+            );
+        }
+    }
+    referenced_names.retain(|name| imported_exports.contains(name));
+
+    Ok(referenced_names)
+}
+
+fn producer_referenced_imported_export_names(
+    decl: &Decl,
+    imports: &[ProducerImportExportView],
+) -> Result<BTreeSet<Name>> {
+    let mut referenced_names = BTreeSet::new();
+    collect_const_names_from_decl(&mut referenced_names, decl);
+
+    let mut imported_exports = BTreeSet::new();
+    for import in imports {
+        for entry in &import.exports {
             imported_exports.insert(
                 import
                     .name_table
@@ -1518,6 +1727,32 @@ fn collect_imported_axiom_names_for_referenced_exports(
     Ok(())
 }
 
+fn producer_collect_imported_axiom_names_for_referenced_exports(
+    names: &mut BTreeSet<Name>,
+    imports: &[ProducerImportExportView],
+    referenced_names: &BTreeSet<Name>,
+) -> Result<()> {
+    for import in imports {
+        for entry in &import.exports {
+            let entry_name = import
+                .name_table
+                .get(entry.name)
+                .ok_or(CertError::DecodeError)?;
+            if !referenced_names.contains(entry_name) {
+                continue;
+            }
+            for axiom in &entry.axiom_dependencies {
+                let axiom_name = import
+                    .name_table
+                    .get(axiom.name)
+                    .ok_or(CertError::DecodeError)?;
+                collect_name(names, axiom_name);
+            }
+        }
+    }
+    Ok(())
+}
+
 fn import_index_exporting_axiom(
     imports: &[&VerifiedModule],
     axiom_name: &Name,
@@ -1529,6 +1764,33 @@ fn import_index_exporting_axiom(
         .find_map(|(import_index, import)| {
             import
                 .export_block
+                .iter()
+                .any(|entry| {
+                    entry.kind == ExportKind::Axiom
+                        && entry.decl_interface_hash == decl_interface_hash
+                        && import
+                            .name_table
+                            .get(entry.name)
+                            .is_some_and(|name| name == axiom_name)
+                })
+                .then_some(import_index)
+        })
+        .ok_or_else(|| CertError::UnknownDependency {
+            name: axiom_name.clone(),
+        })
+}
+
+fn producer_import_index_exporting_axiom(
+    imports: &[ProducerImportExportView],
+    axiom_name: &Name,
+    decl_interface_hash: Hash,
+) -> Result<usize> {
+    imports
+        .iter()
+        .enumerate()
+        .find_map(|(import_index, import)| {
+            import
+                .exports
                 .iter()
                 .any(|entry| {
                     entry.kind == ExportKind::Axiom

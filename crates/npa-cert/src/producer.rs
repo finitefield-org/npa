@@ -4,7 +4,7 @@ use npa_kernel::{Ctx, Decl, Env, Error, Expr, Level};
 
 use crate::{
     encode_axiom_refs_to, encode_name_to, encode_uvar_to, hash_with_domain, union_axioms, AxiomRef,
-    CertError, Hash, ModuleName, ProducerLimitKind, VerifiedModule,
+    CertError, ExportEntry, Hash, ModuleName, ProducerLimitKind, VerifiedModule,
 };
 
 /// Sidecar-only producer classification for audit and diagnostics.
@@ -131,6 +131,38 @@ pub fn canonical_import_env_keys(
     Ok(keys)
 }
 
+/// Export lookup view for one producer direct import.
+///
+/// Unlike [`ProducerImportEnvKey`], this view keeps the verified import's exported declarations and
+/// name table so imported axiom dependencies can be recomputed from checked certificate data.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProducerImportExportView {
+    /// Imported module name.
+    pub module: ModuleName,
+    /// Imported module export hash.
+    pub export_hash: Hash,
+    /// Imported module name table used by export entries and axiom refs.
+    pub name_table: Vec<ModuleName>,
+    /// Imported module public export entries.
+    pub exports: Vec<ExportEntry>,
+}
+
+/// Validate canonical direct-import order and return export lookup views in the same order.
+pub fn canonical_import_export_views(
+    imports: &[VerifiedModule],
+) -> Result<Vec<ProducerImportExportView>, CertError> {
+    canonical_import_env_keys(imports)?;
+    Ok(imports
+        .iter()
+        .map(|import| ProducerImportExportView {
+            module: import.module().clone(),
+            export_hash: import.export_hash(),
+            name_table: import.name_table().to_vec(),
+            exports: import.export_block().to_vec(),
+        })
+        .collect())
+}
+
 /// Public checked declaration interface committed by the producer environment fingerprint.
 ///
 /// Declaration identity is represented by `decl_interface_hash`; exact proof or opaque body
@@ -154,6 +186,38 @@ pub struct ProducerEnvFingerprintBytes {
     pub direct_imports: Vec<ProducerImportEnvKey>,
     /// Checked current-module declaration interfaces in accepted order.
     pub checked_decls: Vec<ProducerCheckedDeclInterface>,
+}
+
+/// Producer lookup environment for dependency and axiom recomputation.
+///
+/// `import_exports` has the same order as `CandidateBatch.imports` and
+/// [`canonical_import_env_keys`]. `checked_decls` has the accepted current-module declaration
+/// order.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProducerLookupEnv {
+    /// Export views for direct imports in canonical import order.
+    pub import_exports: Vec<ProducerImportExportView>,
+    /// Checked current-module declaration interfaces in accepted order.
+    pub checked_decls: Vec<ProducerCheckedDeclInterface>,
+}
+
+/// Build a producer lookup environment from canonical imports and checked declaration interfaces.
+pub fn producer_lookup_env(
+    imports: &[VerifiedModule],
+    checked_decls: &[ProducerCheckedDeclInterface],
+) -> Result<ProducerLookupEnv, CertError> {
+    Ok(ProducerLookupEnv {
+        import_exports: canonical_import_export_views(imports)?,
+        checked_decls: checked_decls.to_vec(),
+    })
+}
+
+/// Recompute the producer checked declaration interface from canonical lookup data.
+pub fn producer_checked_decl_interface(
+    decl: &Decl,
+    lookup_env: &ProducerLookupEnv,
+) -> Result<ProducerCheckedDeclInterface, CertError> {
+    crate::canonical_producer_checked_decl_interface(decl, lookup_env)
 }
 
 /// Return canonical bytes for a producer public environment fingerprint input.
