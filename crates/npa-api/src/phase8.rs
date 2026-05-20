@@ -22,6 +22,11 @@ pub const PHASE8_MACHINE_RESULT_STORE_MANIFEST_SCHEMA: &str =
 pub const PHASE8_AXIOM_REPORT_SCHEMA: &str = "npa.phase8.axiom_report.v1";
 pub const PHASE8_AXIOM_REPORT_STORE_MANIFEST_SCHEMA: &str =
     "npa.phase8.axiom_report_store_manifest.v1";
+pub const PHASE8_NORMALIZED_CHECK_RESULT_SCHEMA: &str = "npa.phase8.normalized_check_result.v1";
+pub const PHASE8_NORMALIZED_RESULT_STORE_MANIFEST_SCHEMA: &str =
+    "npa.phase8.normalized_result_store_manifest.v1";
+pub const PHASE8_NORMALIZATION_WRITE_RESULT_SCHEMA: &str =
+    "npa.phase8.normalization_write_result.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
@@ -769,7 +774,7 @@ impl Phase8MachineCheckRequestErrorResult {
 pub struct Phase8NormalizeErrorResult {
     pub result_id: String,
     pub policy_hash: Option<Hash>,
-    error: Phase8StructuredError,
+    error: Box<Phase8StructuredError>,
 }
 
 impl Phase8NormalizeErrorResult {
@@ -781,7 +786,7 @@ impl Phase8NormalizeErrorResult {
         Self {
             result_id: result_id.into(),
             policy_hash: None,
-            error: Phase8StructuredError::normalize_failure(reason_code, field),
+            error: Box::new(Phase8StructuredError::normalize_failure(reason_code, field)),
         }
     }
 
@@ -810,8 +815,8 @@ impl Phase8NormalizeErrorResult {
         self
     }
 
-    pub const fn error(&self) -> &Phase8StructuredError {
-        &self.error
+    pub fn error(&self) -> &Phase8StructuredError {
+        self.error.as_ref()
     }
 
     pub fn result_hash(&self) -> Hash {
@@ -854,6 +859,7 @@ impl Phase8NormalizeErrorResult {
 pub enum Phase8CommandName {
     RequestMaterialize,
     Run,
+    NormalizeResults,
     ChallengeGenerate,
     ChallengeMaterializeRequests,
     ChallengeReplay,
@@ -872,6 +878,7 @@ impl Phase8CommandName {
         match self {
             Self::RequestMaterialize => "request materialize",
             Self::Run => "run",
+            Self::NormalizeResults => "normalize-results",
             Self::ChallengeGenerate => "challenge generate",
             Self::ChallengeMaterializeRequests => "challenge materialize-requests",
             Self::ChallengeReplay => "challenge replay",
@@ -2218,6 +2225,577 @@ impl Phase8AxiomReportStoreManifest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ArtifactSelector {
+    pub module: String,
+    pub request_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequestStoreReference {
+    pub path: String,
+    pub manifest_hash: Hash,
+}
+
+impl Phase8RequestStoreReference {
+    pub fn canonical_json(&self) -> String {
+        phase8_store_reference_canonical_json(&self.path, self.manifest_hash)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineResultStoreReference {
+    pub path: String,
+    pub manifest_hash: Hash,
+}
+
+impl Phase8MachineResultStoreReference {
+    pub fn canonical_json(&self) -> String {
+        phase8_store_reference_canonical_json(&self.path, self.manifest_hash)
+    }
+}
+
+fn phase8_store_reference_canonical_json(path: &str, manifest_hash: Hash) -> String {
+    canonical_json_object_from_pairs(vec![
+        ("kind".to_owned(), phase8_json_string_literal("manifest")),
+        (
+            "manifest_hash".to_owned(),
+            phase8_hash_json_literal(&manifest_hash),
+        ),
+        ("path".to_owned(), phase8_json_string_literal(path)),
+    ])
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8StoredMachineCheckRequest {
+    pub path: String,
+    pub file_hash: Hash,
+    pub request: Phase8MachineCheckRequest,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedArtifact {
+    pub module: String,
+    pub input_file_hash: Hash,
+    pub expected_certificate_hash: Hash,
+    pub import_lock_hash: Hash,
+    pub axiom_policy_hash: Hash,
+}
+
+impl Phase8NormalizedArtifact {
+    fn from_request(request: &Phase8MachineCheckRequest, policy: &Phase8RunnerPolicy) -> Self {
+        Self {
+            module: request.module.clone(),
+            input_file_hash: request.certificate.file_hash,
+            expected_certificate_hash: request.certificate.expected_certificate_hash,
+            import_lock_hash: request.imports.manifest_hash,
+            axiom_policy_hash: policy.axiom_policy.hash,
+        }
+    }
+
+    pub fn artifact_hash(&self) -> Hash {
+        phase8_sha256(self.canonical_json().as_bytes())
+    }
+
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "axiom_policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.axiom_policy_hash),
+            ),
+            (
+                "expected_certificate_hash".to_owned(),
+                phase8_hash_json_literal(&self.expected_certificate_hash),
+            ),
+            (
+                "import_lock_hash".to_owned(),
+                phase8_hash_json_literal(&self.import_lock_hash),
+            ),
+            (
+                "input_file_hash".to_owned(),
+                phase8_hash_json_literal(&self.input_file_hash),
+            ),
+            (
+                "module".to_owned(),
+                phase8_json_string_literal(&self.module),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedFailureKey {
+    pub kind: String,
+    pub reason_code: Option<String>,
+    pub field: Option<String>,
+    pub declaration: Option<String>,
+    pub core_path: Option<Vec<String>>,
+    pub section: Option<String>,
+    pub offset: Option<u64>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8NormalizedFailureKey {
+    pub fn from_error(error: &Phase8MachineCheckError) -> Self {
+        Self {
+            kind: error.kind.clone(),
+            reason_code: error.reason_code.clone(),
+            field: error.field.clone(),
+            declaration: error.declaration.clone(),
+            core_path: error.core_path.clone(),
+            section: error.section.clone(),
+            offset: error.offset,
+            expected_hash: error.expected_hash,
+            actual_hash: error.actual_hash,
+            expected_value: error.expected_value.clone(),
+            actual_value: error.actual_value.clone(),
+        }
+    }
+
+    pub fn failure_key_hash(&self) -> Hash {
+        phase8_sha256(self.canonical_json().as_bytes())
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![("kind".to_owned(), phase8_json_string_literal(&self.kind))];
+        push_optional_string_pair(&mut pairs, "reason_code", self.reason_code.as_deref());
+        push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
+        push_optional_string_pair(&mut pairs, "declaration", self.declaration.as_deref());
+        if let Some(core_path) = &self.core_path {
+            pairs.push(("core_path".to_owned(), phase8_json_string_array(core_path)));
+        }
+        push_optional_string_pair(&mut pairs, "section", self.section.as_deref());
+        if let Some(offset) = self.offset {
+            pairs.push(("offset".to_owned(), offset.to_string()));
+        }
+        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedCheckResultEntry {
+    pub result_id: String,
+    pub result_hash: Hash,
+    pub request_hash: Hash,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub checker_profile: String,
+    pub process_launched: bool,
+    pub status: Phase8MachineCheckStatus,
+    pub checker_binary_id: Option<String>,
+    pub checker_binary_hash: Option<Hash>,
+    pub checker_id: Option<String>,
+    pub checker_build_hash: Option<Hash>,
+    pub certificate_hash: Option<Hash>,
+    pub export_hash: Option<Hash>,
+    pub axiom_report_hash: Option<Hash>,
+    pub error: Option<Phase8MachineCheckError>,
+    pub failure_key: Option<Phase8NormalizedFailureKey>,
+}
+
+impl Phase8NormalizedCheckResultEntry {
+    fn canonical_json(&self) -> String {
+        self.canonical_json_with_result_id(true)
+    }
+
+    fn normalized_hash_projection_json(&self) -> String {
+        self.canonical_json_with_result_id(false)
+    }
+
+    fn canonical_json_with_result_id(&self, include_result_id: bool) -> String {
+        let mut pairs = vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "checker_profile".to_owned(),
+                phase8_json_string_literal(&self.checker_profile),
+            ),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "process_launched".to_owned(),
+                self.process_launched.to_string(),
+            ),
+            (
+                "request_hash".to_owned(),
+                phase8_hash_json_literal(&self.request_hash),
+            ),
+            (
+                "result_hash".to_owned(),
+                phase8_hash_json_literal(&self.result_hash),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+        ];
+        if include_result_id {
+            pairs.push((
+                "result_id".to_owned(),
+                phase8_json_string_literal(&self.result_id),
+            ));
+        }
+        push_optional_string_pair(
+            &mut pairs,
+            "checker_binary_id",
+            self.checker_binary_id.as_deref(),
+        );
+        push_optional_hash_pair(&mut pairs, "checker_binary_hash", self.checker_binary_hash);
+        push_optional_string_pair(&mut pairs, "checker_id", self.checker_id.as_deref());
+        push_optional_hash_pair(&mut pairs, "checker_build_hash", self.checker_build_hash);
+        push_optional_hash_pair(&mut pairs, "certificate_hash", self.certificate_hash);
+        push_optional_hash_pair(&mut pairs, "export_hash", self.export_hash);
+        push_optional_hash_pair(&mut pairs, "axiom_report_hash", self.axiom_report_hash);
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        if let Some(failure_key) = &self.failure_key {
+            pairs.push(("failure_key".to_owned(), failure_key.canonical_json()));
+        }
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8NormalizedComparisonStatus {
+    AllAgreeChecked,
+    AllAgreeFailed,
+    Disagreement,
+    MissingCheckerResult,
+    PolicyFailure,
+    Inconclusive,
+}
+
+impl Phase8NormalizedComparisonStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::AllAgreeChecked => "all_agree_checked",
+            Self::AllAgreeFailed => "all_agree_failed",
+            Self::Disagreement => "disagreement",
+            Self::MissingCheckerResult => "missing_checker_result",
+            Self::PolicyFailure => "policy_failure",
+            Self::Inconclusive => "inconclusive",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedDisagreement {
+    pub field: String,
+    pub baseline_checker_profile: Option<String>,
+    pub baseline_hash: Option<Hash>,
+    pub baseline_value: Option<String>,
+    pub checker_profile: String,
+    pub actual_hash: Option<Hash>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8NormalizedDisagreement {
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            ("field".to_owned(), phase8_json_string_literal(&self.field)),
+            (
+                "checker_profile".to_owned(),
+                phase8_json_string_literal(&self.checker_profile),
+            ),
+        ];
+        push_optional_string_pair(
+            &mut pairs,
+            "baseline_checker_profile",
+            self.baseline_checker_profile.as_deref(),
+        );
+        push_optional_hash_pair(&mut pairs, "baseline_hash", self.baseline_hash);
+        push_optional_string_pair(&mut pairs, "baseline_value", self.baseline_value.as_deref());
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedStatusReason {
+    pub checker_profile: String,
+    pub reason_code: String,
+    pub field: Option<String>,
+}
+
+impl Phase8NormalizedStatusReason {
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "checker_profile".to_owned(),
+                phase8_json_string_literal(&self.checker_profile),
+            ),
+            (
+                "reason_code".to_owned(),
+                phase8_json_string_literal(&self.reason_code),
+            ),
+        ];
+        push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedComparison {
+    pub status: Phase8NormalizedComparisonStatus,
+    pub matching_fields: Vec<String>,
+    pub missing_checker_profiles: Vec<String>,
+    pub disagreements: Vec<Phase8NormalizedDisagreement>,
+    pub status_reasons: Vec<Phase8NormalizedStatusReason>,
+}
+
+impl Phase8NormalizedComparison {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "disagreements".to_owned(),
+                canonical_json_array(
+                    self.disagreements
+                        .iter()
+                        .map(Phase8NormalizedDisagreement::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "matching_fields".to_owned(),
+                phase8_json_string_array(&self.matching_fields),
+            ),
+            (
+                "missing_checker_profiles".to_owned(),
+                phase8_json_string_array(&self.missing_checker_profiles),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+            (
+                "status_reasons".to_owned(),
+                canonical_json_array(
+                    self.status_reasons
+                        .iter()
+                        .map(Phase8NormalizedStatusReason::canonical_json)
+                        .collect(),
+                ),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedCheckResult {
+    pub normalized_result_id: String,
+    pub artifact: Phase8NormalizedArtifact,
+    pub policy: Phase8MachineCheckRequestPolicy,
+    pub results: Vec<Phase8NormalizedCheckResultEntry>,
+    pub comparison: Phase8NormalizedComparison,
+}
+
+impl Phase8NormalizedCheckResult {
+    pub fn artifact_hash(&self) -> Hash {
+        self.artifact.artifact_hash()
+    }
+
+    pub fn normalized_result_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        let artifact_hash = self.artifact_hash();
+        canonical_json_object_from_pairs(vec![
+            ("artifact".to_owned(), self.artifact.canonical_json()),
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&artifact_hash),
+            ),
+            ("comparison".to_owned(), self.comparison.canonical_json()),
+            ("policy".to_owned(), self.policy.canonical_json()),
+            (
+                "results".to_owned(),
+                canonical_json_array(
+                    self.results
+                        .iter()
+                        .map(Phase8NormalizedCheckResultEntry::normalized_hash_projection_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_NORMALIZED_CHECK_RESULT_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let artifact_hash = self.artifact_hash();
+        let normalized_result_hash = self.normalized_result_hash();
+        canonical_json_object_from_pairs(vec![
+            ("artifact".to_owned(), self.artifact.canonical_json()),
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&artifact_hash),
+            ),
+            ("comparison".to_owned(), self.comparison.canonical_json()),
+            (
+                "normalized_result_hash".to_owned(),
+                phase8_hash_json_literal(&normalized_result_hash),
+            ),
+            (
+                "normalized_result_id".to_owned(),
+                phase8_json_string_literal(&self.normalized_result_id),
+            ),
+            ("policy".to_owned(), self.policy.canonical_json()),
+            (
+                "results".to_owned(),
+                canonical_json_array(
+                    self.results
+                        .iter()
+                        .map(Phase8NormalizedCheckResultEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_NORMALIZED_CHECK_RESULT_SCHEMA),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedResultStoreEntry {
+    pub normalized_result_hash: Hash,
+    pub artifact_hash: Hash,
+    pub path: String,
+    pub file_hash: Hash,
+}
+
+impl Phase8NormalizedResultStoreEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            (
+                "normalized_result_hash".to_owned(),
+                phase8_hash_json_literal(&self.normalized_result_hash),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedResultStoreManifest {
+    pub results: Vec<Phase8NormalizedResultStoreEntry>,
+}
+
+impl Phase8NormalizedResultStoreManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "results".to_owned(),
+                canonical_json_array(
+                    self.results
+                        .iter()
+                        .map(Phase8NormalizedResultStoreEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_NORMALIZED_RESULT_STORE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn file_hash(&self) -> Hash {
+        phase8_file_hash(self.canonical_json().as_bytes())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizedResultStoreUpdate {
+    pub manifest: Phase8NormalizedResultStoreManifest,
+    pub rewrite_required: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizationWriteStore {
+    pub path: String,
+    pub manifest_hash: Hash,
+}
+
+impl Phase8NormalizationWriteStore {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("kind".to_owned(), phase8_json_string_literal("manifest")),
+            (
+                "manifest_hash".to_owned(),
+                phase8_hash_json_literal(&self.manifest_hash),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8NormalizationWriteResult {
+    pub normalized_result_hash: Hash,
+    pub artifact_hash: Hash,
+    pub output_path: String,
+    pub output_file_hash: Hash,
+    pub normalized_store: Option<Phase8NormalizationWriteStore>,
+}
+
+impl Phase8NormalizationWriteResult {
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "normalized_result_hash".to_owned(),
+                phase8_hash_json_literal(&self.normalized_result_hash),
+            ),
+            (
+                "output_file_hash".to_owned(),
+                phase8_hash_json_literal(&self.output_file_hash),
+            ),
+            (
+                "output_path".to_owned(),
+                phase8_json_string_literal(&self.output_path),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_NORMALIZATION_WRITE_RESULT_SCHEMA),
+            ),
+            ("status".to_owned(), phase8_json_string_literal("written")),
+        ];
+        if let Some(store) = &self.normalized_store {
+            pairs.push(("normalized_store".to_owned(), store.canonical_json()));
+        }
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Phase8RawRunnerBudget {
     max_steps: String,
     max_memory_mb: String,
@@ -3061,6 +3639,324 @@ pub fn parse_phase8_axiom_report_store_manifest(
     parse_phase8_axiom_report_store_manifest_value(document.root())
 }
 
+pub fn parse_phase8_request_store_reference(
+    source: &str,
+) -> Result<Phase8RequestStoreReference, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("request_store", "valid_json", "invalid_json")
+    })?;
+    let (path, manifest_hash) =
+        parse_phase8_store_reference_value(document.root(), "request_store")?;
+    Ok(Phase8RequestStoreReference {
+        path,
+        manifest_hash,
+    })
+}
+
+pub fn parse_phase8_machine_result_store_reference(
+    source: &str,
+) -> Result<Phase8MachineResultStoreReference, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("result_store", "valid_json", "invalid_json")
+    })?;
+    let (path, manifest_hash) =
+        parse_phase8_store_reference_value(document.root(), "result_store")?;
+    Ok(Phase8MachineResultStoreReference {
+        path,
+        manifest_hash,
+    })
+}
+
+pub fn phase8_normalize_results(
+    normalized_result_id: impl Into<String>,
+    normalize_error_result_id: impl Into<String>,
+    policy: &Phase8RunnerPolicy,
+    request_store_manifest: &Phase8RequestStoreManifest,
+    stored_requests: &[Phase8StoredMachineCheckRequest],
+    machine_results: &[Phase8MachineCheckResult],
+    selector: Option<Phase8ArtifactSelector>,
+) -> Result<Phase8NormalizedCheckResult, Phase8NormalizeErrorResult> {
+    let normalized_result_id = normalized_result_id.into();
+    let normalize_error_result_id = normalize_error_result_id.into();
+    let policy_hash = policy.policy_hash();
+
+    if !phase8_valid_request_id(&normalized_result_id) {
+        return Err(phase8_normalize_value_error(
+            normalize_error_result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::SelectorSchemaInvalid,
+            "normalized_result_id",
+            "normalized_result_id",
+            if normalized_result_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+
+    if machine_results.is_empty() {
+        return Err(phase8_normalize_value_error(
+            normalize_error_result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::SelectorAmbiguous,
+            "machine_results",
+            "one_or_more_machine_results",
+            "empty",
+        ));
+    }
+
+    if let Some(selector) = &selector {
+        if !phase8_valid_dotted_name(&selector.module) {
+            return Err(phase8_normalize_value_error(
+                normalize_error_result_id,
+                policy_hash,
+                Phase8NormalizeErrorReasonCode::SelectorSchemaInvalid,
+                "artifact_selector.module",
+                "module_name",
+                "invalid_name_format",
+            ));
+        }
+    }
+
+    if let Err(error) =
+        validate_request_store_domain(&request_store_manifest.requests, "request_store")
+    {
+        return Err(phase8_normalize_request_validation_error(
+            normalize_error_result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::RequestStoreManifestInvalid,
+            error,
+        ));
+    }
+
+    let mut seen_profiles = BTreeSet::new();
+    for result in machine_results {
+        if !seen_profiles.insert(result.checker.profile.clone()) {
+            return Err(phase8_normalize_value_error(
+                normalize_error_result_id,
+                policy_hash,
+                Phase8NormalizeErrorReasonCode::DuplicateCheckerProfileResult,
+                "machine_results[].checker.profile",
+                "unique_checker_profile",
+                &result.checker.profile,
+            ));
+        }
+        if let Err((field, expected, actual)) =
+            phase8_validate_machine_result_for_normalization(result)
+        {
+            return Err(phase8_normalize_value_error(
+                normalize_error_result_id,
+                policy_hash,
+                Phase8NormalizeErrorReasonCode::MachineResultSchemaInvalid,
+                field,
+                expected,
+                actual,
+            ));
+        }
+    }
+
+    let ordered_results = phase8_order_machine_results_for_normalization(policy, machine_results);
+    let baseline_request_hash = if let Some(selector) = selector.as_ref() {
+        selector.request_hash
+    } else {
+        let Some(required_baseline_profile) = policy.required_checker_profiles.first() else {
+            return Err(phase8_normalize_value_error(
+                normalize_error_result_id,
+                policy_hash,
+                Phase8NormalizeErrorReasonCode::SelectorAmbiguous,
+                "artifact_selector",
+                "baseline_required_checker_profile",
+                "missing",
+            ));
+        };
+        let Some(result) = machine_results
+            .iter()
+            .find(|result| &result.checker.profile == required_baseline_profile)
+        else {
+            return Err(phase8_normalize_value_error(
+                normalize_error_result_id,
+                policy_hash,
+                Phase8NormalizeErrorReasonCode::SelectorAmbiguous,
+                "artifact_selector",
+                "single_baseline_result",
+                "missing",
+            ));
+        };
+        result.request_hash
+    };
+
+    let baseline_request = phase8_lookup_stored_request(
+        request_store_manifest,
+        stored_requests,
+        baseline_request_hash,
+        "artifact_selector.request_hash",
+        normalize_error_result_id.clone(),
+        policy_hash,
+    )?;
+    if let Some(selector) = selector.as_ref() {
+        if selector.module != baseline_request.request.module {
+            return Err(phase8_normalize_value_error(
+                normalize_error_result_id,
+                policy_hash,
+                Phase8NormalizeErrorReasonCode::SelectorModuleMismatch,
+                "artifact_selector.module",
+                &baseline_request.request.module,
+                &selector.module,
+            ));
+        }
+    }
+
+    let artifact = Phase8NormalizedArtifact::from_request(&baseline_request.request, policy);
+    let mut entries = Vec::new();
+    for result in ordered_results {
+        let request = phase8_lookup_stored_request(
+            request_store_manifest,
+            stored_requests,
+            result.request_hash,
+            "machine_results[].request_hash",
+            normalize_error_result_id.clone(),
+            policy_hash,
+        )?;
+        let entry_artifact =
+            Phase8NormalizedArtifact::from_request(&request.request, policy).artifact_hash();
+        let entry = phase8_normalized_entry_from_machine_result(result, entry_artifact);
+        phase8_assert_normalized_entry_source_copy(&entry, result);
+        entries.push(entry);
+    }
+
+    let comparison = phase8_m4_normalized_comparison(policy, artifact.artifact_hash(), &entries);
+    Ok(Phase8NormalizedCheckResult {
+        normalized_result_id,
+        artifact,
+        policy: Phase8MachineCheckRequestPolicy {
+            id: policy.id.clone(),
+            version: policy.version,
+            hash: policy_hash,
+        },
+        results: entries,
+        comparison,
+    })
+}
+
+pub fn parse_phase8_normalized_result_store_manifest(
+    source: &str,
+) -> Result<Phase8NormalizedResultStoreManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "normalized_store",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_normalized_result_store_manifest_value(document.root(), "normalized_store")
+}
+
+pub fn phase8_normalized_result_store_entry_for_result(
+    result: &Phase8NormalizedCheckResult,
+    path: impl Into<String>,
+) -> Result<Phase8NormalizedResultStoreEntry, Phase8CommandError> {
+    let path = path.into();
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::NormalizeResults,
+            "input_reference_invalid",
+            "normalized_result.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let bytes = result.canonical_json();
+    Ok(Phase8NormalizedResultStoreEntry {
+        normalized_result_hash: result.normalized_result_hash(),
+        artifact_hash: result.artifact_hash(),
+        path,
+        file_hash: phase8_file_hash(bytes.as_bytes()),
+    })
+}
+
+pub fn phase8_normalized_result_store_with_entry(
+    existing_store: Option<&Phase8NormalizedResultStoreManifest>,
+    generated_entry: Phase8NormalizedResultStoreEntry,
+) -> Result<Phase8NormalizedResultStoreUpdate, Phase8CommandError> {
+    let mut manifest = existing_store
+        .cloned()
+        .unwrap_or(Phase8NormalizedResultStoreManifest {
+            results: Vec::new(),
+        });
+
+    for existing in &manifest.results {
+        let same_normalized_result_hash =
+            existing.normalized_result_hash == generated_entry.normalized_result_hash;
+        let same_path = existing.path == generated_entry.path;
+        let exact = same_normalized_result_hash
+            && same_path
+            && existing.artifact_hash == generated_entry.artifact_hash
+            && existing.file_hash == generated_entry.file_hash;
+        if exact {
+            return Ok(Phase8NormalizedResultStoreUpdate {
+                manifest,
+                rewrite_required: false,
+            });
+        }
+        if same_normalized_result_hash || same_path {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::NormalizeResults,
+                "normalized_store_entry_conflict",
+                "normalized_store.results[]",
+                generated_entry.canonical_json(),
+                existing.canonical_json(),
+            ));
+        }
+    }
+
+    manifest.results.push(generated_entry);
+    manifest.results.sort_by(|left, right| {
+        left.normalized_result_hash
+            .cmp(&right.normalized_result_hash)
+    });
+    Ok(Phase8NormalizedResultStoreUpdate {
+        manifest,
+        rewrite_required: true,
+    })
+}
+
+pub fn phase8_normalization_write_result(
+    normalized_result: &Phase8NormalizedCheckResult,
+    output_path: impl Into<String>,
+    normalized_store: Option<Phase8NormalizationWriteStore>,
+) -> Result<Phase8NormalizationWriteResult, Phase8CommandError> {
+    let output_path = output_path.into();
+    if !phase8_valid_workspace_relative_path(&output_path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::NormalizeResults,
+            "input_reference_invalid",
+            "output_path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    if let Some(store) = &normalized_store {
+        if !phase8_valid_workspace_relative_path(&store.path) {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::NormalizeResults,
+                "input_reference_invalid",
+                "normalized_store.path",
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+    }
+    let bytes = normalized_result.canonical_json();
+    Ok(Phase8NormalizationWriteResult {
+        normalized_result_hash: normalized_result.normalized_result_hash(),
+        artifact_hash: normalized_result.artifact_hash(),
+        output_path,
+        output_file_hash: phase8_file_hash(bytes.as_bytes()),
+        normalized_store,
+    })
+}
+
 impl Phase8RawResultSchemaError {
     fn new(
         field: impl Into<String>,
@@ -3101,6 +3997,505 @@ fn phase8_budget_mismatch_error(
     Phase8MachineCheckError::new("policy_failure")
         .with_reason_code("request_budget_mismatch")
         .with_value_payload(field, expected_value, actual_value)
+}
+
+fn phase8_normalize_value_error(
+    result_id: impl Into<String>,
+    policy_hash: Hash,
+    reason_code: Phase8NormalizeErrorReasonCode,
+    field: impl Into<String>,
+    expected_value: impl Into<String>,
+    actual_value: impl Into<String>,
+) -> Phase8NormalizeErrorResult {
+    Phase8NormalizeErrorResult::normalize_failure(result_id, reason_code, field)
+        .with_policy_hash(policy_hash)
+        .with_error_expected_value(expected_value)
+        .with_error_actual_value(actual_value)
+}
+
+fn phase8_normalize_hash_error(
+    result_id: impl Into<String>,
+    policy_hash: Hash,
+    reason_code: Phase8NormalizeErrorReasonCode,
+    field: impl Into<String>,
+    expected_hash: Hash,
+    actual_hash: Hash,
+) -> Phase8NormalizeErrorResult {
+    Phase8NormalizeErrorResult::normalize_failure(result_id, reason_code, field)
+        .with_policy_hash(policy_hash)
+        .with_error_expected_hash(expected_hash)
+        .with_error_actual_hash(actual_hash)
+}
+
+fn phase8_normalize_actual_hash_error(
+    result_id: impl Into<String>,
+    policy_hash: Hash,
+    reason_code: Phase8NormalizeErrorReasonCode,
+    field: impl Into<String>,
+    actual_hash: Hash,
+) -> Phase8NormalizeErrorResult {
+    Phase8NormalizeErrorResult::normalize_failure(result_id, reason_code, field)
+        .with_policy_hash(policy_hash)
+        .with_error_actual_hash(actual_hash)
+}
+
+fn phase8_normalize_request_validation_error(
+    result_id: impl Into<String>,
+    policy_hash: Hash,
+    reason_code: Phase8NormalizeErrorReasonCode,
+    error: Phase8RequestValidationError,
+) -> Phase8NormalizeErrorResult {
+    let mut out =
+        Phase8NormalizeErrorResult::normalize_failure(result_id, reason_code, error.field)
+            .with_policy_hash(policy_hash);
+    if let Some(expected_value) = error.expected_value {
+        out = out.with_error_expected_value(expected_value);
+    }
+    if let Some(actual_value) = error.actual_value {
+        out = out.with_error_actual_value(actual_value);
+    }
+    if let Some(expected_hash) = error.expected_hash {
+        out = out.with_error_expected_hash(*expected_hash);
+    }
+    if let Some(actual_hash) = error.actual_hash {
+        out = out.with_error_actual_hash(*actual_hash);
+    }
+    out
+}
+
+fn phase8_validate_machine_result_for_normalization(
+    result: &Phase8MachineCheckResult,
+) -> Result<(), (&'static str, &'static str, &'static str)> {
+    if !phase8_valid_request_id(&result.result_id) {
+        return Err((
+            "machine_results[].result_id",
+            "result_id",
+            if result.result_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+    if !phase8_valid_checker_profile_name(&result.checker.profile) {
+        return Err((
+            "machine_results[].checker.profile",
+            "checker_profile_name",
+            "invalid_name_format",
+        ));
+    }
+    if result.process.launched {
+        if result.checker.binary_id.is_none() {
+            return Err((
+                "machine_results[].checker.binary_id",
+                "checker_binary_id",
+                "missing",
+            ));
+        }
+        if result.checker.binary_hash.is_none() {
+            return Err((
+                "machine_results[].checker.binary_hash",
+                "sha256:<lower-hex>",
+                "missing",
+            ));
+        }
+    }
+    match result.status {
+        Phase8MachineCheckStatus::Checked => {
+            if result.certificate_hash.is_none() {
+                return Err((
+                    "machine_results[].certificate_hash",
+                    "sha256:<lower-hex>",
+                    "missing",
+                ));
+            }
+            if result.export_hash.is_none() {
+                return Err((
+                    "machine_results[].export_hash",
+                    "sha256:<lower-hex>",
+                    "missing",
+                ));
+            }
+            if result.axiom_report_hash.is_none() {
+                return Err((
+                    "machine_results[].axiom_report_hash",
+                    "sha256:<lower-hex>",
+                    "missing",
+                ));
+            }
+            if result.error.is_some() {
+                return Err((
+                    "machine_results[].error",
+                    "absent_for_status",
+                    "forbidden_field",
+                ));
+            }
+        }
+        Phase8MachineCheckStatus::Failed => {
+            if result.error.is_none() {
+                return Err((
+                    "machine_results[].error",
+                    "MachineCheckResult.error",
+                    "missing",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn phase8_order_machine_results_for_normalization<'a>(
+    policy: &Phase8RunnerPolicy,
+    machine_results: &'a [Phase8MachineCheckResult],
+) -> Vec<&'a Phase8MachineCheckResult> {
+    let mut out = Vec::new();
+    for profile in &policy.required_checker_profiles {
+        if let Some(result) = machine_results
+            .iter()
+            .find(|result| &result.checker.profile == profile)
+        {
+            out.push(result);
+        }
+    }
+    for profile in &policy.optional_checker_profiles {
+        if let Some(result) = machine_results
+            .iter()
+            .find(|result| &result.checker.profile == profile)
+        {
+            out.push(result);
+        }
+    }
+    let known = policy
+        .required_checker_profiles
+        .iter()
+        .chain(policy.optional_checker_profiles.iter())
+        .collect::<BTreeSet<_>>();
+    let mut outside_policy = machine_results
+        .iter()
+        .filter(|result| !known.contains(&result.checker.profile))
+        .collect::<Vec<_>>();
+    outside_policy.sort_by(|left, right| left.checker.profile.cmp(&right.checker.profile));
+    out.extend(outside_policy);
+    out
+}
+
+fn phase8_lookup_stored_request<'a>(
+    manifest: &Phase8RequestStoreManifest,
+    stored_requests: &'a [Phase8StoredMachineCheckRequest],
+    request_hash: Hash,
+    field: &'static str,
+    result_id: String,
+    policy_hash: Hash,
+) -> Result<&'a Phase8StoredMachineCheckRequest, Phase8NormalizeErrorResult> {
+    let Some(entry) = manifest
+        .requests
+        .iter()
+        .find(|entry| entry.request_hash == request_hash)
+    else {
+        return Err(phase8_normalize_actual_hash_error(
+            result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::RequestHashNotFound,
+            field,
+            request_hash,
+        ));
+    };
+    let Some(stored) = stored_requests
+        .iter()
+        .find(|request| request.request.request_hash() == request_hash)
+    else {
+        return Err(phase8_normalize_value_error(
+            result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::RequestFileUnreadable,
+            "request_store.requests[].path",
+            "readable",
+            "unreadable",
+        ));
+    };
+    if stored.path != entry.path {
+        return Err(phase8_normalize_value_error(
+            result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::RequestStoreManifestInvalid,
+            "request_store.requests[].path",
+            &entry.path,
+            &stored.path,
+        ));
+    }
+    if stored.file_hash != entry.file_hash {
+        return Err(phase8_normalize_hash_error(
+            result_id,
+            policy_hash,
+            Phase8NormalizeErrorReasonCode::RequestFileHashMismatch,
+            "request_store.requests[].file_hash",
+            entry.file_hash,
+            stored.file_hash,
+        ));
+    }
+    Ok(stored)
+}
+
+fn phase8_normalized_entry_from_machine_result(
+    result: &Phase8MachineCheckResult,
+    artifact_hash: Hash,
+) -> Phase8NormalizedCheckResultEntry {
+    let failure_key = result
+        .error
+        .as_ref()
+        .map(Phase8NormalizedFailureKey::from_error);
+    Phase8NormalizedCheckResultEntry {
+        result_id: result.result_id.clone(),
+        result_hash: result.result_hash(),
+        request_hash: result.request_hash,
+        policy_hash: result.policy.hash,
+        artifact_hash,
+        checker_profile: result.checker.profile.clone(),
+        process_launched: result.process.launched,
+        status: result.status,
+        checker_binary_id: result
+            .process
+            .launched
+            .then(|| result.checker.binary_id.clone())
+            .flatten(),
+        checker_binary_hash: result
+            .process
+            .launched
+            .then_some(result.checker.binary_hash)
+            .flatten(),
+        checker_id: result
+            .process
+            .launched
+            .then(|| result.checker.id.clone())
+            .flatten(),
+        checker_build_hash: result
+            .process
+            .launched
+            .then_some(result.checker.build_hash)
+            .flatten(),
+        certificate_hash: result.certificate_hash,
+        export_hash: result.export_hash,
+        axiom_report_hash: result.axiom_report_hash,
+        error: result.error.clone(),
+        failure_key,
+    }
+}
+
+fn phase8_assert_normalized_entry_source_copy(
+    entry: &Phase8NormalizedCheckResultEntry,
+    result: &Phase8MachineCheckResult,
+) {
+    debug_assert_eq!(entry.result_id, result.result_id);
+    debug_assert_eq!(entry.result_hash, result.result_hash());
+    debug_assert_eq!(entry.request_hash, result.request_hash);
+    debug_assert_eq!(entry.policy_hash, result.policy.hash);
+    debug_assert_eq!(entry.checker_profile, result.checker.profile);
+    debug_assert_eq!(entry.process_launched, result.process.launched);
+    debug_assert_eq!(entry.status, result.status);
+    if result.process.launched {
+        debug_assert_eq!(entry.checker_binary_id, result.checker.binary_id);
+        debug_assert_eq!(entry.checker_binary_hash, result.checker.binary_hash);
+        debug_assert_eq!(entry.checker_id, result.checker.id);
+        debug_assert_eq!(entry.checker_build_hash, result.checker.build_hash);
+    } else {
+        debug_assert_eq!(entry.checker_binary_id, None);
+        debug_assert_eq!(entry.checker_binary_hash, None);
+        debug_assert_eq!(entry.checker_id, None);
+        debug_assert_eq!(entry.checker_build_hash, None);
+    }
+    debug_assert_eq!(entry.certificate_hash, result.certificate_hash);
+    debug_assert_eq!(entry.export_hash, result.export_hash);
+    debug_assert_eq!(entry.axiom_report_hash, result.axiom_report_hash);
+    debug_assert_eq!(entry.error, result.error);
+}
+
+fn phase8_m4_normalized_comparison(
+    policy: &Phase8RunnerPolicy,
+    artifact_hash: Hash,
+    entries: &[Phase8NormalizedCheckResultEntry],
+) -> Phase8NormalizedComparison {
+    let present_profiles = entries
+        .iter()
+        .map(|entry| entry.checker_profile.as_str())
+        .collect::<BTreeSet<_>>();
+    let missing_checker_profiles = policy
+        .required_checker_profiles
+        .iter()
+        .filter(|profile| !present_profiles.contains(profile.as_str()))
+        .cloned()
+        .collect::<Vec<_>>();
+    if !missing_checker_profiles.is_empty() {
+        return Phase8NormalizedComparison {
+            status: Phase8NormalizedComparisonStatus::MissingCheckerResult,
+            matching_fields: Vec::new(),
+            missing_checker_profiles,
+            disagreements: Vec::new(),
+            status_reasons: Vec::new(),
+        };
+    }
+
+    let mut disagreements = Vec::new();
+    for entry in entries {
+        if entry.artifact_hash != artifact_hash {
+            disagreements.push(Phase8NormalizedDisagreement {
+                field: "artifact_hash".to_owned(),
+                baseline_checker_profile: None,
+                baseline_hash: Some(artifact_hash),
+                baseline_value: None,
+                checker_profile: entry.checker_profile.clone(),
+                actual_hash: Some(entry.artifact_hash),
+                actual_value: None,
+            });
+        }
+    }
+    if !disagreements.is_empty() {
+        disagreements.sort_by(|left, right| {
+            left.field
+                .cmp(&right.field)
+                .then_with(|| left.checker_profile.cmp(&right.checker_profile))
+        });
+        return Phase8NormalizedComparison {
+            status: Phase8NormalizedComparisonStatus::Disagreement,
+            matching_fields: Vec::new(),
+            missing_checker_profiles: Vec::new(),
+            disagreements,
+            status_reasons: Vec::new(),
+        };
+    }
+
+    let Some(baseline) = entries.first() else {
+        return Phase8NormalizedComparison {
+            status: Phase8NormalizedComparisonStatus::Inconclusive,
+            matching_fields: Vec::new(),
+            missing_checker_profiles: Vec::new(),
+            disagreements: Vec::new(),
+            status_reasons: Vec::new(),
+        };
+    };
+
+    if entries
+        .iter()
+        .all(|entry| entry.status == Phase8MachineCheckStatus::Checked)
+    {
+        for entry in entries.iter().skip(1) {
+            phase8_push_hash_disagreement(
+                &mut disagreements,
+                "certificate_hash",
+                baseline,
+                entry,
+                baseline.certificate_hash,
+                entry.certificate_hash,
+            );
+            phase8_push_hash_disagreement(
+                &mut disagreements,
+                "export_hash",
+                baseline,
+                entry,
+                baseline.export_hash,
+                entry.export_hash,
+            );
+            phase8_push_hash_disagreement(
+                &mut disagreements,
+                "axiom_report_hash",
+                baseline,
+                entry,
+                baseline.axiom_report_hash,
+                entry.axiom_report_hash,
+            );
+        }
+        if disagreements.is_empty() {
+            return Phase8NormalizedComparison {
+                status: Phase8NormalizedComparisonStatus::AllAgreeChecked,
+                matching_fields: vec![
+                    "certificate_hash".to_owned(),
+                    "export_hash".to_owned(),
+                    "axiom_report_hash".to_owned(),
+                ],
+                missing_checker_profiles: Vec::new(),
+                disagreements,
+                status_reasons: Vec::new(),
+            };
+        }
+    } else if entries
+        .iter()
+        .all(|entry| entry.status == Phase8MachineCheckStatus::Failed)
+    {
+        let baseline_hash = baseline
+            .failure_key
+            .as_ref()
+            .map(Phase8NormalizedFailureKey::failure_key_hash);
+        for entry in entries.iter().skip(1) {
+            let actual_hash = entry
+                .failure_key
+                .as_ref()
+                .map(Phase8NormalizedFailureKey::failure_key_hash);
+            phase8_push_hash_disagreement(
+                &mut disagreements,
+                "failure_key",
+                baseline,
+                entry,
+                baseline_hash,
+                actual_hash,
+            );
+        }
+        if disagreements.is_empty() {
+            return Phase8NormalizedComparison {
+                status: Phase8NormalizedComparisonStatus::AllAgreeFailed,
+                matching_fields: vec!["failure_key".to_owned()],
+                missing_checker_profiles: Vec::new(),
+                disagreements,
+                status_reasons: Vec::new(),
+            };
+        }
+    } else {
+        for entry in entries.iter().skip(1) {
+            if entry.status != baseline.status {
+                disagreements.push(Phase8NormalizedDisagreement {
+                    field: "status".to_owned(),
+                    baseline_checker_profile: Some(baseline.checker_profile.clone()),
+                    baseline_hash: None,
+                    baseline_value: Some(baseline.status.as_str().to_owned()),
+                    checker_profile: entry.checker_profile.clone(),
+                    actual_hash: None,
+                    actual_value: Some(entry.status.as_str().to_owned()),
+                });
+            }
+        }
+    }
+
+    disagreements.sort_by(|left, right| {
+        left.field
+            .cmp(&right.field)
+            .then_with(|| left.checker_profile.cmp(&right.checker_profile))
+    });
+    Phase8NormalizedComparison {
+        status: Phase8NormalizedComparisonStatus::Disagreement,
+        matching_fields: Vec::new(),
+        missing_checker_profiles: Vec::new(),
+        disagreements,
+        status_reasons: Vec::new(),
+    }
+}
+
+fn phase8_push_hash_disagreement(
+    disagreements: &mut Vec<Phase8NormalizedDisagreement>,
+    field: &str,
+    baseline: &Phase8NormalizedCheckResultEntry,
+    actual: &Phase8NormalizedCheckResultEntry,
+    baseline_hash: Option<Hash>,
+    actual_hash: Option<Hash>,
+) {
+    if baseline_hash != actual_hash {
+        disagreements.push(Phase8NormalizedDisagreement {
+            field: field.to_owned(),
+            baseline_checker_profile: Some(baseline.checker_profile.clone()),
+            baseline_hash,
+            baseline_value: None,
+            checker_profile: actual.checker_profile.clone(),
+            actual_hash,
+            actual_value: None,
+        });
+    }
 }
 
 fn phase8_adopt_checker_observation(
@@ -4437,6 +5832,111 @@ fn parse_phase8_axiom_report_store_manifest_value(
     Ok(Phase8AxiomReportStoreManifest { reports })
 }
 
+fn parse_phase8_normalized_result_store_manifest_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8NormalizedResultStoreManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{root_path}.schema"),
+        PHASE8_NORMALIZED_RESULT_STORE_MANIFEST_SCHEMA,
+        PHASE8_NORMALIZED_RESULT_STORE_MANIFEST_SCHEMA,
+    )?;
+    let results_value =
+        required_field_value(members, "results", &format!("{root_path}.results"), "array")?;
+    let Some(result_values) = results_value.array_elements() else {
+        return Err(wrong_type_error(
+            &format!("{root_path}.results"),
+            "array",
+            results_value.kind(),
+        )
+        .into());
+    };
+    let mut results = Vec::new();
+    for (index, result_value) in result_values.iter().enumerate() {
+        let path = format!("{root_path}.results[{index}]");
+        let result_members = object_members_or_policy_error(result_value, &path, "object")?;
+        let normalized_result_hash = required_hash_field(
+            result_members,
+            "normalized_result_hash",
+            &format!("{path}.normalized_result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let artifact_hash = required_hash_field(
+            result_members,
+            "artifact_hash",
+            &format!("{path}.artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let result_path = required_string_field(
+            result_members,
+            "path",
+            &format!("{path}.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&result_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            result_members,
+            "file_hash",
+            &format!("{path}.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(result_members, NORMALIZED_RESULT_STORE_ENTRY_FIELDS, &path)?;
+        results.push(Phase8NormalizedResultStoreEntry {
+            normalized_result_hash,
+            artifact_hash,
+            path: result_path,
+            file_hash,
+        });
+    }
+    reject_unknown_fields(members, NORMALIZED_RESULT_STORE_MANIFEST_FIELDS, root_path)?;
+    validate_normalized_result_store_domain(&results, root_path)?;
+    Ok(Phase8NormalizedResultStoreManifest { results })
+}
+
+fn parse_phase8_store_reference_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<(String, Hash), Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "kind",
+        &format!("{root_path}.kind"),
+        "manifest",
+        "manifest",
+    )?;
+    let path = required_string_field(
+        members,
+        "path",
+        &format!("{root_path}.path"),
+        "workspace_relative_path",
+    )?;
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(Phase8RequestValidationError::value_failure(
+            format!("{root_path}.path"),
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let manifest_hash = required_hash_field(
+        members,
+        "manifest_hash",
+        &format!("{root_path}.manifest_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    reject_unknown_fields(members, STORE_REFERENCE_FIELDS, root_path)?;
+    Ok((path, manifest_hash))
+}
+
 fn parse_phase8_import_lock_manifest_value(
     value: &JsonValue<'_>,
     root_path: &str,
@@ -4875,6 +6375,14 @@ const AXIOM_REPORT_FIELDS: &[&str] = &[
 const AXIOM_REPORT_ENTRY_FIELDS: &[&str] = &["name"];
 const AXIOM_REPORT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "reports"];
 const AXIOM_REPORT_STORE_ENTRY_FIELDS: &[&str] = &["axiom_report_hash", "path", "file_hash"];
+const NORMALIZED_RESULT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "results"];
+const NORMALIZED_RESULT_STORE_ENTRY_FIELDS: &[&str] = &[
+    "normalized_result_hash",
+    "artifact_hash",
+    "path",
+    "file_hash",
+];
+const STORE_REFERENCE_FIELDS: &[&str] = &["kind", "path", "manifest_hash"];
 
 const CHECKER_ALLOWLIST_FIELDS: &[&str] = &[
     "profile",
@@ -6076,6 +7584,44 @@ fn validate_axiom_report_store_domain(
         if !paths.insert(&report.path) {
             return Err(Phase8RequestValidationError::value_failure(
                 format!("reports[{index}].path"),
+                "unique_paths",
+                "duplicate_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_normalized_result_store_domain(
+    results: &[Phase8NormalizedResultStoreEntry],
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..results.len() {
+        if results[index].normalized_result_hash < results[index - 1].normalized_result_hash {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}]"),
+                "normalized_result_hash_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut hashes = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !hashes.insert(result.normalized_result_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].normalized_result_hash"),
+                "unique_normalized_result_hashes",
+                "duplicate_normalized_result_hash",
+            ));
+        }
+    }
+
+    let mut paths = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !paths.insert(&result.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].path"),
                 "unique_paths",
                 "duplicate_path",
             ));
@@ -8445,5 +9991,490 @@ mod tests {
             parse_phase8_axiom_report_store_manifest(&store.canonical_json()).unwrap(),
             store
         );
+    }
+
+    fn m4_runner_policy_json() -> String {
+        format!(
+            r#"{{
+              "schema":"npa.phase8.runner_policy.v1",
+              "id":"phase8-release",
+              "version":1,
+              "trust_mode":"release",
+              "required_checker_profiles":["fast-kernel","reference","external"],
+              "optional_checker_profiles":[],
+              "checker_allowlist":[
+                {{
+                  "profile":"external",
+                  "checker_id":"npa-checker-ext",
+                  "binary_id":"npa-checker-ext-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}",
+                  "allowed_args":["--json","--canonical-only"]
+                }},
+                {{
+                  "profile":"fast-kernel",
+                  "checker_id":"npa-fast-kernel",
+                  "binary_id":"npa-fast-kernel-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}",
+                  "allowed_args":["--json","--canonical-only"]
+                }},
+                {{
+                  "profile":"reference",
+                  "checker_id":"npa-checker-ref",
+                  "binary_id":"npa-checker-ref-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}",
+                  "allowed_args":["--json","--canonical-only"]
+                }}
+              ],
+              "checker_identity_manifest":{{
+                "kind":"file",
+                "path":"ci/checker-identity-manifest.json",
+                "manifest_hash":"{}"
+              }},
+              "import_policy":{{
+                "mode":"locked_store",
+                "network":"forbidden",
+                "require_import_lock_hash":true
+              }},
+              "axiom_policy":{{
+                "path":"ci/axiom-policy.toml",
+                "hash":"{}"
+              }},
+              "budgets":{{
+                "external":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}},
+                "fast-kernel":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}},
+                "reference":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}}
+              }},
+              "on_resource_exhausted":"fail",
+              "on_missing_required_checker":"fail",
+              "on_profile_requested_by_ai":"ignore_unless_policy_allows"
+            }}"#,
+            hash_wire(30),
+            hash_wire(31),
+            hash_wire(32),
+            hash_wire(33),
+            hash_wire(10),
+            hash_wire(11),
+            hash_wire(12),
+            hash_wire(13)
+        )
+    }
+
+    fn m4_stored_request(
+        policy: &Phase8RunnerPolicy,
+        profile: &str,
+        request_id: &str,
+    ) -> Phase8StoredMachineCheckRequest {
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let path = format!("build/check-requests/Std.Nat.{profile}.json");
+        let materialized = phase8_request_materialize(
+            policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            phase8_file_hash(imports_json.as_bytes()),
+            profile,
+            request_id,
+            &path,
+            None,
+        )
+        .unwrap();
+        Phase8StoredMachineCheckRequest {
+            path,
+            file_hash: materialized.request_file_hash,
+            request: materialized.request,
+        }
+    }
+
+    fn m4_request_store_manifest(
+        requests: &[Phase8StoredMachineCheckRequest],
+    ) -> Phase8RequestStoreManifest {
+        let mut entries = requests
+            .iter()
+            .map(|stored| Phase8RequestStoreEntry {
+                request_hash: stored.request.request_hash(),
+                path: stored.path.clone(),
+                file_hash: stored.file_hash,
+            })
+            .collect::<Vec<_>>();
+        entries.sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+        Phase8RequestStoreManifest { requests: entries }
+    }
+
+    fn m4_raw_checked(checker_id: &str, build_hash: Hash) -> String {
+        format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"{}",
+              "checker_version":"0.8.0",
+              "checker_build_hash":"{}",
+              "status":"checked",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "export_hash":"{}",
+              "axiom_report_hash":"{}"
+            }}"#,
+            checker_id,
+            format_hash_string(&build_hash),
+            hash_wire(70),
+            hash_wire(90),
+            hash_wire(91)
+        )
+    }
+
+    fn m4_checked_result(
+        request: &Phase8MachineCheckRequest,
+        policy: &Phase8RunnerPolicy,
+        result_id: &str,
+    ) -> Phase8MachineCheckResult {
+        let checker = policy
+            .selected_checker_policy(&request.checker_profile)
+            .unwrap();
+        phase8_machine_check_run(
+            request,
+            policy,
+            Phase8CheckerRunObservation {
+                result_id: result_id.to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(100),
+                stdout: m4_raw_checked(&checker.checker_id, checker.build_hash).into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn m4_normalizes_results_in_policy_order_and_copies_source_fields() {
+        let policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+
+        let external_result = m4_checked_result(&external.request, &policy, "mchkres_ext");
+        let reference_result = m4_checked_result(&reference.request, &policy, "mchkres_ref");
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_fast");
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_001",
+            "normerr_Std.Nat_001",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &[
+                external_result.clone(),
+                reference_result.clone(),
+                fast_result.clone(),
+            ],
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized
+                .results
+                .iter()
+                .map(|entry| entry.checker_profile.as_str())
+                .collect::<Vec<_>>(),
+            vec!["fast-kernel", "reference", "external"]
+        );
+        let fast_entry = &normalized.results[0];
+        assert_eq!(fast_entry.result_id, fast_result.result_id);
+        assert_eq!(fast_entry.result_hash, fast_result.result_hash());
+        assert_eq!(fast_entry.request_hash, fast_result.request_hash);
+        assert_eq!(fast_entry.policy_hash, fast_result.policy.hash);
+        assert_eq!(fast_entry.process_launched, fast_result.process.launched);
+        assert_eq!(fast_entry.checker_binary_id, fast_result.checker.binary_id);
+        assert_eq!(
+            fast_entry.checker_binary_hash,
+            fast_result.checker.binary_hash
+        );
+        assert_eq!(fast_entry.checker_id, fast_result.checker.id);
+        assert_eq!(
+            fast_entry.checker_build_hash,
+            fast_result.checker.build_hash
+        );
+        assert_eq!(fast_entry.certificate_hash, fast_result.certificate_hash);
+        assert_eq!(fast_entry.export_hash, fast_result.export_hash);
+        assert_eq!(fast_entry.axiom_report_hash, fast_result.axiom_report_hash);
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::AllAgreeChecked
+        );
+    }
+
+    #[test]
+    fn m4_normalized_hash_excludes_result_ids() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = m4_checked_result(&request, &policy, "mchkres_001");
+        let first = phase8_normalize_results(
+            "norm_Std.Nat_001",
+            "normerr_Std.Nat_001",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+        let mut second = first.clone();
+        second.normalized_result_id = "norm_Std.Nat_retry".to_owned();
+        second.results[0].result_id = "mchkres_retry".to_owned();
+
+        assert_eq!(
+            first.normalized_result_hash(),
+            second.normalized_result_hash()
+        );
+        assert_ne!(first.canonical_json(), second.canonical_json());
+        assert!(!first
+            .hash_input_canonical_json()
+            .contains("norm_Std.Nat_001"));
+        assert!(!first.hash_input_canonical_json().contains("mchkres_001"));
+    }
+
+    #[test]
+    fn m4_failed_entries_derive_failure_key_from_error() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let raw = format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"npa-checker-ref",
+              "checker_version":"0.8.0",
+              "checker_build_hash":"{}",
+              "status":"failed",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "error":{{
+                "kind":"type_mismatch",
+                "declaration":"Std.Nat"
+              }}
+            }}"#,
+            hash_wire(11),
+            hash_wire(70)
+        );
+        let failed = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_failed".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(1),
+                resource_usage: m3_resource_usage(100),
+                stdout: raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_failed",
+            "normerr_Std.Nat_failed",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&failed),
+            None,
+        )
+        .unwrap();
+
+        let expected = Phase8NormalizedFailureKey::from_error(failed.error.as_ref().unwrap());
+        assert_eq!(normalized.results[0].failure_key, Some(expected));
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::AllAgreeFailed
+        );
+    }
+
+    #[test]
+    fn m4_normalizer_failures_do_not_create_partial_artifacts() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let first = m4_checked_result(&request, &policy, "mchkres_001");
+        let second = m4_checked_result(&request, &policy, "mchkres_002");
+        let err = phase8_normalize_results(
+            "norm_Std.Nat_dup",
+            "normerr_Std.Nat_dup",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            &[first, second],
+            None,
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            err.error().reason_code,
+            Phase8NormalizeErrorReasonCode::DuplicateCheckerProfileResult.as_str()
+        );
+        assert_eq!(err.error().field, "machine_results[].checker.profile");
+        assert!(err
+            .canonical_json()
+            .contains(PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA));
+    }
+
+    #[test]
+    fn m4_normalizer_revalidates_request_store_manifest_domain() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let mut request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        request_store
+            .requests
+            .push(request_store.requests[0].clone());
+        let result = m4_checked_result(&request, &policy, "mchkres_001");
+        let err = phase8_normalize_results(
+            "norm_Std.Nat_store_bad",
+            "normerr_Std.Nat_store_bad",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            err.error().reason_code,
+            Phase8NormalizeErrorReasonCode::RequestStoreManifestInvalid.as_str()
+        );
+        assert_eq!(
+            err.error().actual_value.as_deref(),
+            Some("duplicate_request_hash")
+        );
+    }
+
+    #[test]
+    fn m4_normalized_store_and_write_result_are_deterministic() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = m4_checked_result(&request, &policy, "mchkres_001");
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_001",
+            "normerr_Std.Nat_001",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+        let entry = phase8_normalized_result_store_entry_for_result(
+            &normalized,
+            "build/normalized/Std.Nat.json",
+        )
+        .unwrap();
+        let update = phase8_normalized_result_store_with_entry(None, entry.clone()).unwrap();
+        assert_eq!(
+            parse_phase8_normalized_result_store_manifest(&update.manifest.canonical_json())
+                .unwrap(),
+            update.manifest
+        );
+        let retry =
+            phase8_normalized_result_store_with_entry(Some(&update.manifest), entry.clone())
+                .unwrap();
+        assert!(!retry.rewrite_required);
+
+        let write = phase8_normalization_write_result(
+            &normalized,
+            entry.path.clone(),
+            Some(Phase8NormalizationWriteStore {
+                path: "build/normalized/manifest.json".to_owned(),
+                manifest_hash: update.manifest.file_hash(),
+            }),
+        )
+        .unwrap();
+        let json = write.canonical_json();
+        assert!(json.contains(PHASE8_NORMALIZATION_WRITE_RESULT_SCHEMA));
+        assert!(!json.contains("\"result_hash\":"));
+        assert!(json.contains("\"status\":\"written\""));
+
+        let invalid_store = phase8_normalization_write_result(
+            &normalized,
+            entry.path,
+            Some(Phase8NormalizationWriteStore {
+                path: "/tmp/normalized-store.json".to_owned(),
+                manifest_hash: update.manifest.file_hash(),
+            }),
+        )
+        .unwrap_err();
+        assert_eq!(invalid_store.command, Phase8CommandName::NormalizeResults);
+        assert_eq!(
+            invalid_store.field.as_deref(),
+            Some("normalized_store.path")
+        );
+        assert_eq!(invalid_store.actual_value.as_deref(), Some("invalid_path"));
+    }
+
+    #[test]
+    fn m4_store_references_are_closed_manifest_references() {
+        let request_reference = parse_phase8_request_store_reference(&format!(
+            r#"{{
+              "kind":"manifest",
+              "path":"build/check-requests/manifest.json",
+              "manifest_hash":"{}"
+            }}"#,
+            hash_wire(44)
+        ))
+        .unwrap();
+        assert_eq!(request_reference.path, "build/check-requests/manifest.json");
+        assert!(request_reference
+            .canonical_json()
+            .contains("\"kind\":\"manifest\""));
+
+        let result_reference = parse_phase8_machine_result_store_reference(&format!(
+            r#"{{
+              "kind":"manifest",
+              "path":"build/check-results/manifest.json",
+              "manifest_hash":"{}"
+            }}"#,
+            hash_wire(45)
+        ))
+        .unwrap();
+        assert_eq!(result_reference.path, "build/check-results/manifest.json");
+
+        let invalid = parse_phase8_request_store_reference(&format!(
+            r#"{{
+              "kind":"manifest",
+              "path":"/tmp/manifest.json",
+              "manifest_hash":"{}"
+            }}"#,
+            hash_wire(46)
+        ))
+        .unwrap_err();
+        assert_eq!(invalid.field.as_ref(), "request_store.path");
+        assert_eq!(invalid.actual_value.as_deref(), Some("invalid_path"));
     }
 }
