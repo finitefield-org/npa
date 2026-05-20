@@ -1,14 +1,16 @@
 use npa_cert::{
     build_module_cert, canonical_import_env_keys, canonical_import_export_views,
     encode_module_cert, initial_env_fingerprint, post_env_fingerprint,
-    precheck_core_decl_candidate, producer_checked_decl_interface, producer_env_fingerprint,
+    precheck_core_decl_candidate, prior_chain_fingerprint, prior_chain_fingerprint_canonical_bytes,
+    producer_checked_decl_interface, producer_env_fingerprint,
     producer_env_fingerprint_canonical_bytes, producer_import_env_key,
     producer_limits_canonical_bytes, producer_limits_hash, producer_lookup_env, stricter_or_equal,
     validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, AxiomRef, CandidateBatch,
     CandidateBatchResult, CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate,
     CoreDeclCandidate, CoreModule, GlobalRef, Name, ProducerCheckedDeclInterface,
     ProducerEnvFingerprintBytes, ProducerImportEnvKey, ProducerLimitKind, ProducerLimits,
-    ProducerProfile, VerifiedModule, VerifierSession,
+    ProducerPriorChainBytes, ProducerPriorChainEntry, ProducerProfile, VerifiedModule,
+    VerifierSession,
 };
 use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
 
@@ -96,12 +98,66 @@ fn opaque_def_module(module_name: &str, value: Expr) -> CoreModule {
     }
 }
 
+fn id_type(a: &str, x: &str) -> Expr {
+    Expr::pi(
+        a,
+        Expr::sort(Level::param("u")),
+        Expr::pi(x, Expr::bvar(0), Expr::bvar(1)),
+    )
+}
+
+fn id_value(a: &str, x: &str) -> Expr {
+    Expr::lam(
+        a,
+        Expr::sort(Level::param("u")),
+        Expr::lam(x, Expr::bvar(0), Expr::bvar(0)),
+    )
+}
+
+fn id_value_with_beta_redex() -> Expr {
+    Expr::lam(
+        "A",
+        Expr::sort(Level::param("u")),
+        Expr::lam(
+            "x",
+            Expr::bvar(0),
+            Expr::app(Expr::lam("y", Expr::bvar(1), Expr::bvar(0)), Expr::bvar(0)),
+        ),
+    )
+}
+
+fn id_theorem_module(module_name: &str, proof: Expr) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted(module_name),
+        declarations: vec![Decl::Theorem {
+            name: "id_thm".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: id_type("A", "x"),
+            proof,
+        }],
+    }
+}
+
 fn imported_theorem(name: &str, imported_name: &str) -> Decl {
     Decl::Theorem {
         name: name.to_owned(),
         universe_params: vec![],
         ty: Expr::konst(imported_name, vec![]),
         proof: Expr::konst(imported_name, vec![]),
+    }
+}
+
+fn prior_entry(
+    decl_interface_hash: [u8; 32],
+    decl_certificate_hash: [u8; 32],
+    pre_env_fingerprint: [u8; 32],
+    post_env_fingerprint: [u8; 32],
+) -> ProducerPriorChainEntry {
+    ProducerPriorChainEntry {
+        decl_interface_hash,
+        decl_certificate_hash,
+        pre_env_fingerprint,
+        post_env_fingerprint,
     }
 }
 
@@ -475,6 +531,115 @@ fn post_env_fingerprint_uses_import_public_environment_not_certificate_identity(
     assert_eq!(
         post_env_fingerprint(&[import_a], &[], &decl).unwrap(),
         post_env_fingerprint(&[import_b], &[], &decl).unwrap()
+    );
+}
+
+#[test]
+fn prior_chain_fingerprint_canonical_bytes_fix_record_order() {
+    let chain = ProducerPriorChainBytes {
+        checked_decls: vec![prior_entry(hash(0x11), hash(0x22), hash(0x33), hash(0x44))],
+    };
+    let mut expected = vec![0x01];
+    expected.extend(hash(0x11));
+    expected.extend(hash(0x22));
+    expected.extend(hash(0x33));
+    expected.extend(hash(0x44));
+
+    assert_eq!(prior_chain_fingerprint_canonical_bytes(&chain), expected);
+}
+
+#[test]
+fn prior_chain_fingerprint_empty_chain_is_deterministic() {
+    let chain = ProducerPriorChainBytes {
+        checked_decls: vec![],
+    };
+
+    assert_eq!(prior_chain_fingerprint_canonical_bytes(&chain), vec![0x00]);
+    assert_eq!(
+        prior_chain_fingerprint(&chain),
+        [
+            0x81, 0x78, 0xcf, 0xcd, 0xe5, 0xe9, 0x89, 0x13, 0x8f, 0x61, 0x8d, 0x11, 0x02, 0x0f,
+            0xef, 0xd3, 0x68, 0xde, 0x61, 0x5a, 0x69, 0xb2, 0x3e, 0x45, 0x06, 0x0e, 0xac, 0xa9,
+            0xb8, 0xeb, 0x8b, 0xa4,
+        ]
+    );
+}
+
+#[test]
+fn prior_chain_fingerprint_preserves_declaration_order() {
+    let first = prior_entry(hash(0x11), hash(0x12), hash(0x13), hash(0x14));
+    let second = prior_entry(hash(0x21), hash(0x22), hash(0x23), hash(0x24));
+    let chain_ab = ProducerPriorChainBytes {
+        checked_decls: vec![first.clone(), second.clone()],
+    };
+    let chain_ba = ProducerPriorChainBytes {
+        checked_decls: vec![second, first],
+    };
+
+    assert_ne!(
+        prior_chain_fingerprint(&chain_ab),
+        prior_chain_fingerprint(&chain_ba)
+    );
+}
+
+#[test]
+fn prior_chain_fingerprint_changes_for_body_only_certificate_hash_change() {
+    let cert_a = build_module_cert(
+        id_theorem_module("Test.PriorBodyOnly", id_value("A", "x")),
+        &[],
+    )
+    .unwrap();
+    let cert_b = build_module_cert(
+        id_theorem_module("Test.PriorBodyOnly", id_value_with_beta_redex()),
+        &[],
+    )
+    .unwrap();
+    let decl_a = &cert_a.declarations[0];
+    let decl_b = &cert_b.declarations[0];
+
+    assert_eq!(
+        decl_a.hashes.decl_interface_hash,
+        decl_b.hashes.decl_interface_hash
+    );
+    assert_ne!(
+        decl_a.hashes.decl_certificate_hash,
+        decl_b.hashes.decl_certificate_hash
+    );
+
+    let pre_env = initial_env_fingerprint(&[]).unwrap();
+    let post_env_a = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: vec![],
+        checked_decls: vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: decl_a.hashes.decl_interface_hash,
+            axiom_dependencies: decl_a.axiom_dependencies.clone(),
+        }],
+    });
+    let post_env_b = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: vec![],
+        checked_decls: vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: decl_b.hashes.decl_interface_hash,
+            axiom_dependencies: decl_b.axiom_dependencies.clone(),
+        }],
+    });
+
+    assert_eq!(post_env_a, post_env_b);
+    assert_ne!(
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![prior_entry(
+                decl_a.hashes.decl_interface_hash,
+                decl_a.hashes.decl_certificate_hash,
+                pre_env,
+                post_env_a,
+            )],
+        }),
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![prior_entry(
+                decl_b.hashes.decl_interface_hash,
+                decl_b.hashes.decl_certificate_hash,
+                pre_env,
+                post_env_b,
+            )],
+        })
     );
 }
 

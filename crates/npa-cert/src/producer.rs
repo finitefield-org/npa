@@ -188,6 +188,28 @@ pub struct ProducerEnvFingerprintBytes {
     pub checked_decls: Vec<ProducerCheckedDeclInterface>,
 }
 
+/// One exact checked declaration token entry committed by the prior-chain fingerprint.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProducerPriorChainEntry {
+    /// Declaration interface hash for public environment identity.
+    pub decl_interface_hash: Hash,
+    /// Declaration certificate hash for exact proof/body identity.
+    pub decl_certificate_hash: Hash,
+    /// Producer environment fingerprint before this declaration was accepted.
+    pub pre_env_fingerprint: Hash,
+    /// Producer environment fingerprint after this declaration was accepted.
+    pub post_env_fingerprint: Hash,
+}
+
+/// Canonical producer prior-chain fingerprint input.
+///
+/// `checked_decls` order is the accepted current-module declaration token order.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProducerPriorChainBytes {
+    /// Exact checked declaration token entries in accepted order.
+    pub checked_decls: Vec<ProducerPriorChainEntry>,
+}
+
 /// Producer lookup environment for dependency and axiom recomputation.
 ///
 /// `import_exports` has the same order as `CandidateBatch.imports` and
@@ -242,6 +264,27 @@ pub fn producer_env_fingerprint(env: &ProducerEnvFingerprintBytes) -> Hash {
     hash_with_domain(
         b"NPA-PRODUCER-ENV-0.1",
         &producer_env_fingerprint_canonical_bytes(env),
+    )
+}
+
+/// Return canonical bytes for a producer prior-chain fingerprint input.
+pub fn prior_chain_fingerprint_canonical_bytes(chain: &ProducerPriorChainBytes) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, chain.checked_decls.len() as u64);
+    for entry in &chain.checked_decls {
+        out.extend(entry.decl_interface_hash);
+        out.extend(entry.decl_certificate_hash);
+        out.extend(entry.pre_env_fingerprint);
+        out.extend(entry.post_env_fingerprint);
+    }
+    out
+}
+
+/// Return the canonical producer prior-chain fingerprint.
+pub fn prior_chain_fingerprint(chain: &ProducerPriorChainBytes) -> Hash {
+    hash_with_domain(
+        b"NPA-PRODUCER-CHAIN-0.1",
+        &prior_chain_fingerprint_canonical_bytes(chain),
     )
 }
 
