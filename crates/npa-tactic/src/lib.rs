@@ -4863,6 +4863,12 @@ pub fn extract_closed_machine_theorem_decl(state: &MachineProofState) -> Result<
     })
 }
 
+/// Verified certificate handoff for a closed machine proof.
+///
+/// Phase 4/5/7 produce tactic candidates and proof states, not trusted Phase 2
+/// producer tokens. This handoff keeps the boundary at the final `CoreModule`,
+/// canonical `.npcert` bytes, and the `VerifiedModule` returned by
+/// `npa_cert::verify_module_cert`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineProofCertificate {
     pub core_module: CoreModule,
@@ -4886,6 +4892,7 @@ pub fn extract_closed_machine_core_module(state: &MachineProofState) -> Result<C
     })
 }
 
+/// Build, encode, and verify the final `.npcert` for a closed machine proof.
 pub fn extract_closed_machine_certificate(
     state: &MachineProofState,
 ) -> Result<MachineProofCertificate> {
@@ -13496,6 +13503,22 @@ mod tests {
             npa_cert::decode_module_cert(&handoff.certificate_bytes)
                 .expect("handoff certificate bytes should decode"),
             handoff.certificate
+        );
+    }
+
+    #[test]
+    fn certificate_handoff_stays_separate_from_phase2_producer_tokens() {
+        let _: fn(&MachineProofState) -> Result<CoreModule> = extract_closed_machine_core_module;
+        let _: fn(&MachineProofState) -> Result<MachineProofCertificate> =
+            extract_closed_machine_certificate;
+
+        assert_ne!(
+            std::any::TypeId::of::<MachineTacticCandidate>(),
+            std::any::TypeId::of::<npa_cert::CoreDeclCandidate>()
+        );
+        assert_ne!(
+            std::any::TypeId::of::<MachineProofCertificate>(),
+            std::any::TypeId::of::<npa_cert::CheckedDeclCandidate>()
         );
     }
 

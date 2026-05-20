@@ -4069,6 +4069,29 @@ mod tests {
         [seed; 32]
     }
 
+    #[test]
+    fn frontend_compile_boundary_stays_separate_from_phase2_producer_candidates() {
+        let _: fn(
+            FileId,
+            npa_cert::ModuleName,
+            &str,
+            &[VerifiedImport],
+            &MachineCompileOptions,
+        ) -> Result<npa_cert::CoreModule> = compile_machine_source_to_core;
+        let _: fn(
+            FileId,
+            npa_cert::ModuleName,
+            &str,
+            &[npa_cert::VerifiedModule],
+            &MachineCompileOptions,
+        ) -> Result<npa_cert::ModuleCert> = compile_machine_source_to_certificate;
+
+        assert_ne!(
+            std::any::TypeId::of::<npa_cert::CoreModule>(),
+            std::any::TypeId::of::<npa_cert::CoreDeclCandidate>()
+        );
+    }
+
     fn type0() -> Level {
         Level::succ(Level::zero())
     }

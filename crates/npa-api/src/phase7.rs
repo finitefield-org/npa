@@ -5142,6 +5142,35 @@ mod tests {
         [byte; 32]
     }
 
+    #[test]
+    fn phase7_candidate_api_stays_separate_from_phase2_core_candidates() {
+        let _: fn(
+            MachineTacticCandidate,
+            Option<Hash>,
+            Phase7CandidateMetadata,
+        ) -> Phase7CandidateEnvelope = phase7_candidate_envelope;
+        let _: fn(&MachineTacticCandidate) -> Hash = phase7_candidate_payload_hash;
+        let _: fn(&MachineTacticCandidate) -> String = phase7_candidate_payload_json;
+        let _: fn(&MachineTacticCandidate) -> Phase7ExpectedEffect = phase7_expected_effect;
+        let _: fn(&MachineTacticCandidate) -> Phase7CandidateCostEstimate =
+            phase7_candidate_cost_estimate;
+        let _: fn(
+            &MachineTacticCandidate,
+        )
+            -> std::result::Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> =
+            phase7_candidate_forbidden_token;
+        let _: fn(
+            GoalId,
+            MachineTacticCandidate,
+        ) -> crate::Phase4AdapterResult<crate::Phase4ValidatedTactic> =
+            crate::phase4_validate_machine_tactic_candidate;
+
+        assert_ne!(
+            std::any::TypeId::of::<MachineTacticCandidate>(),
+            std::any::TypeId::of::<npa_cert::CoreDeclCandidate>()
+        );
+    }
+
     fn unwrap_search_failure(result: Phase7SearchResult) -> Phase7SearchFailure {
         match result {
             Ok(proof) => panic!("expected search failure, got verified proof {proof:?}"),

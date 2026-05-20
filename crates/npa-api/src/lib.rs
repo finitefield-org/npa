@@ -2,6 +2,17 @@
 //!
 //! This crate is intentionally outside the trusted kernel. It handles wire JSON
 //! decoding and request-shape validation for machine-facing endpoints.
+//! Phase 4/5/7 candidate APIs operate on `MachineTacticCandidate`; Phase 2
+//! producer fast-path candidates remain in `npa-cert` until a separate upper-crate
+//! bridge is designed.
+//!
+//! ```compile_fail
+//! use npa_api::phase7_candidate_payload_hash;
+//! use npa_cert::CoreDeclCandidate;
+//!
+//! let candidate: &CoreDeclCandidate = unimplemented!();
+//! let _ = phase7_candidate_payload_hash(candidate);
+//! ```
 
 mod adapter;
 mod callable;
