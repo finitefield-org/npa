@@ -15,6 +15,13 @@ pub const PHASE8_CHECKER_BINARY_REGISTRY_SCHEMA: &str = "npa.phase8.checker_bina
 pub const PHASE8_IMPORT_LOCK_MANIFEST_SCHEMA: &str = "npa.phase8.import_lock_manifest.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_SCHEMA: &str = "npa.phase8.machine_check_request.v1";
 pub const PHASE8_REQUEST_STORE_MANIFEST_SCHEMA: &str = "npa.phase8.request_store_manifest.v1";
+pub const PHASE8_CHECKER_RAW_RESULT_SCHEMA: &str = "npa.phase8.checker_raw_result.v1";
+pub const PHASE8_MACHINE_CHECK_RESULT_SCHEMA: &str = "npa.phase8.machine_check_result.v1";
+pub const PHASE8_MACHINE_RESULT_STORE_MANIFEST_SCHEMA: &str =
+    "npa.phase8.machine_result_store_manifest.v1";
+pub const PHASE8_AXIOM_REPORT_SCHEMA: &str = "npa.phase8.axiom_report.v1";
+pub const PHASE8_AXIOM_REPORT_STORE_MANIFEST_SCHEMA: &str =
+    "npa.phase8.axiom_report_store_manifest.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
@@ -846,6 +853,7 @@ impl Phase8NormalizeErrorResult {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase8CommandName {
     RequestMaterialize,
+    Run,
     ChallengeGenerate,
     ChallengeMaterializeRequests,
     ChallengeReplay,
@@ -863,6 +871,7 @@ impl Phase8CommandName {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::RequestMaterialize => "request materialize",
+            Self::Run => "run",
             Self::ChallengeGenerate => "challenge generate",
             Self::ChallengeMaterializeRequests => "challenge materialize-requests",
             Self::ChallengeReplay => "challenge replay",
@@ -1615,6 +1624,599 @@ pub struct Phase8RequestMaterialization {
     pub request_store_rewrite_required: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8MachineCheckStatus {
+    Checked,
+    Failed,
+}
+
+impl Phase8MachineCheckStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Checked => "checked",
+            Self::Failed => "failed",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckError {
+    pub kind: String,
+    pub reason_code: Option<String>,
+    pub field: Option<String>,
+    pub declaration: Option<String>,
+    pub core_path: Option<Vec<String>>,
+    pub section: Option<String>,
+    pub offset: Option<u64>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8MachineCheckError {
+    pub fn new(kind: impl Into<String>) -> Self {
+        Self {
+            kind: kind.into(),
+            reason_code: None,
+            field: None,
+            declaration: None,
+            core_path: None,
+            section: None,
+            offset: None,
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    pub fn with_reason_code(mut self, reason_code: impl Into<String>) -> Self {
+        self.reason_code = Some(reason_code.into());
+        self
+    }
+
+    pub fn with_value_payload(
+        mut self,
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        self.field = Some(field.into());
+        self.expected_value = Some(expected_value.into());
+        self.actual_value = Some(actual_value.into());
+        self
+    }
+
+    pub fn with_hash_payload(
+        mut self,
+        field: impl Into<String>,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        self.field = Some(field.into());
+        self.expected_hash = Some(expected_hash);
+        self.actual_hash = Some(actual_hash);
+        self
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![("kind".to_owned(), phase8_json_string_literal(&self.kind))];
+        push_optional_string_pair(&mut pairs, "reason_code", self.reason_code.as_deref());
+        push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
+        push_optional_string_pair(&mut pairs, "declaration", self.declaration.as_deref());
+        if let Some(core_path) = &self.core_path {
+            pairs.push(("core_path".to_owned(), phase8_json_string_array(core_path)));
+        }
+        push_optional_string_pair(&mut pairs, "section", self.section.as_deref());
+        if let Some(offset) = self.offset {
+            pairs.push(("offset".to_owned(), offset.to_string()));
+        }
+        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckRunner {
+    pub id: String,
+    pub version: String,
+    pub build_hash: Hash,
+}
+
+impl Phase8MachineCheckRunner {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "build_hash".to_owned(),
+                phase8_hash_json_literal(&self.build_hash),
+            ),
+            ("id".to_owned(), phase8_json_string_literal(&self.id)),
+            (
+                "version".to_owned(),
+                phase8_json_string_literal(&self.version),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckChecker {
+    pub profile: String,
+    pub binary_id: Option<String>,
+    pub binary_hash: Option<Hash>,
+    pub id: Option<String>,
+    pub build_hash: Option<Hash>,
+    pub version: Option<String>,
+}
+
+impl Phase8MachineCheckChecker {
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![(
+            "profile".to_owned(),
+            phase8_json_string_literal(&self.profile),
+        )];
+        push_optional_string_pair(&mut pairs, "binary_id", self.binary_id.as_deref());
+        push_optional_hash_pair(&mut pairs, "binary_hash", self.binary_hash);
+        push_optional_string_pair(&mut pairs, "id", self.id.as_deref());
+        push_optional_hash_pair(&mut pairs, "build_hash", self.build_hash);
+        push_optional_string_pair(&mut pairs, "version", self.version.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn result_hash_projection_json(&self) -> String {
+        let mut pairs = vec![(
+            "profile".to_owned(),
+            phase8_json_string_literal(&self.profile),
+        )];
+        push_optional_string_pair(&mut pairs, "binary_id", self.binary_id.as_deref());
+        push_optional_hash_pair(&mut pairs, "binary_hash", self.binary_hash);
+        push_optional_string_pair(&mut pairs, "id", self.id.as_deref());
+        push_optional_hash_pair(&mut pairs, "build_hash", self.build_hash);
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckProcess {
+    pub launched: bool,
+    pub exit_code: Option<u8>,
+    pub termination_reason: Option<String>,
+}
+
+impl Phase8MachineCheckProcess {
+    pub const fn not_launched() -> Self {
+        Self {
+            launched: false,
+            exit_code: None,
+            termination_reason: None,
+        }
+    }
+
+    pub const fn exited(exit_code: u8) -> Self {
+        Self {
+            launched: true,
+            exit_code: Some(exit_code),
+            termination_reason: None,
+        }
+    }
+
+    pub fn terminated(reason: impl Into<String>) -> Self {
+        Self {
+            launched: true,
+            exit_code: None,
+            termination_reason: Some(reason.into()),
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![("launched".to_owned(), self.launched.to_string())];
+        if let Some(exit_code) = self.exit_code {
+            pairs.push(("exit_code".to_owned(), exit_code.to_string()));
+        }
+        push_optional_string_pair(
+            &mut pairs,
+            "termination_reason",
+            self.termination_reason.as_deref(),
+        );
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckResourceUsage {
+    pub steps: u64,
+    pub memory_peak_mb: u64,
+    pub elapsed_ms: u64,
+}
+
+impl Phase8MachineCheckResourceUsage {
+    pub const fn zero() -> Self {
+        Self {
+            steps: 0,
+            memory_peak_mb: 0,
+            elapsed_ms: 0,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("elapsed_ms".to_owned(), self.elapsed_ms.to_string()),
+            ("memory_peak_mb".to_owned(), self.memory_peak_mb.to_string()),
+            ("steps".to_owned(), self.steps.to_string()),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckResult {
+    pub request_id: String,
+    pub request_hash: Hash,
+    pub result_id: String,
+    pub policy: Phase8MachineCheckRequestPolicy,
+    pub runner: Phase8MachineCheckRunner,
+    pub checker: Phase8MachineCheckChecker,
+    pub attempt: u64,
+    pub status: Phase8MachineCheckStatus,
+    pub module: String,
+    pub process: Phase8MachineCheckProcess,
+    pub resource_usage: Phase8MachineCheckResourceUsage,
+    pub error: Option<Phase8MachineCheckError>,
+    pub certificate_hash: Option<Hash>,
+    pub export_hash: Option<Hash>,
+    pub axiom_report_hash: Option<Hash>,
+    pub diagnostics: Vec<String>,
+    pub axioms_used: Option<Vec<String>>,
+    pub declarations_checked: Option<u64>,
+}
+
+impl Phase8MachineCheckResult {
+    pub fn result_hash(&self) -> Hash {
+        phase8_sha256(self.result_hash_projection_json().as_bytes())
+    }
+
+    pub fn run_artifact_hash(&self) -> Hash {
+        phase8_sha256(self.canonical_json_without_run_artifact_hash().as_bytes())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let run_artifact_hash = self.run_artifact_hash();
+        let mut pairs = self.canonical_json_pairs_with_result_hash();
+        pairs.push((
+            "run_artifact_hash".to_owned(),
+            phase8_hash_json_literal(&run_artifact_hash),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    pub fn result_hash_projection_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "checker".to_owned(),
+                self.checker.result_hash_projection_json(),
+            ),
+            (
+                "module".to_owned(),
+                phase8_json_string_literal(&self.module),
+            ),
+            ("policy".to_owned(), self.policy.canonical_json()),
+            ("runner".to_owned(), self.runner.canonical_json()),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_MACHINE_CHECK_RESULT_SCHEMA),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+        ];
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        push_optional_hash_pair(&mut pairs, "certificate_hash", self.certificate_hash);
+        push_optional_hash_pair(&mut pairs, "export_hash", self.export_hash);
+        push_optional_hash_pair(&mut pairs, "axiom_report_hash", self.axiom_report_hash);
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn canonical_json_without_run_artifact_hash(&self) -> String {
+        canonical_json_object_from_pairs(self.canonical_json_pairs_with_result_hash())
+    }
+
+    fn canonical_json_pairs_with_result_hash(&self) -> Vec<(String, String)> {
+        let result_hash = self.result_hash();
+        let mut pairs = vec![
+            ("attempt".to_owned(), self.attempt.to_string()),
+            ("checker".to_owned(), self.checker.canonical_json()),
+            (
+                "module".to_owned(),
+                phase8_json_string_literal(&self.module),
+            ),
+            ("policy".to_owned(), self.policy.canonical_json()),
+            ("process".to_owned(), self.process.canonical_json()),
+            (
+                "request_hash".to_owned(),
+                phase8_hash_json_literal(&self.request_hash),
+            ),
+            (
+                "request_id".to_owned(),
+                phase8_json_string_literal(&self.request_id),
+            ),
+            (
+                "resource_usage".to_owned(),
+                self.resource_usage.canonical_json(),
+            ),
+            (
+                "result_hash".to_owned(),
+                phase8_hash_json_literal(&result_hash),
+            ),
+            (
+                "result_id".to_owned(),
+                phase8_json_string_literal(&self.result_id),
+            ),
+            ("runner".to_owned(), self.runner.canonical_json()),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_MACHINE_CHECK_RESULT_SCHEMA),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+        ];
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        push_optional_hash_pair(&mut pairs, "certificate_hash", self.certificate_hash);
+        push_optional_hash_pair(&mut pairs, "export_hash", self.export_hash);
+        push_optional_hash_pair(&mut pairs, "axiom_report_hash", self.axiom_report_hash);
+        if !self.diagnostics.is_empty() {
+            pairs.push((
+                "diagnostics".to_owned(),
+                phase8_json_string_array(&self.diagnostics),
+            ));
+        }
+        if let Some(axioms_used) = &self.axioms_used {
+            pairs.push((
+                "axioms_used".to_owned(),
+                phase8_json_string_array(axioms_used),
+            ));
+        }
+        if let Some(declarations_checked) = self.declarations_checked {
+            pairs.push((
+                "declarations_checked".to_owned(),
+                declarations_checked.to_string(),
+            ));
+        }
+        pairs
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8CheckerRawResult {
+    pub status: Phase8MachineCheckStatus,
+    pub checker_id: Option<String>,
+    pub checker_version: Option<String>,
+    pub checker_build_hash: Option<Hash>,
+    pub module: Option<String>,
+    pub certificate_hash: Option<Hash>,
+    pub export_hash: Option<Hash>,
+    pub axiom_report_hash: Option<Hash>,
+    pub error: Option<Phase8MachineCheckError>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RawResultSchemaError {
+    pub field: String,
+    pub expected_value: String,
+    pub actual_value: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8CheckerRunObservation {
+    pub result_id: String,
+    pub attempt: u64,
+    pub runner: Phase8MachineCheckRunner,
+    pub process: Phase8MachineCheckProcess,
+    pub resource_usage: Phase8MachineCheckResourceUsage,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineResultStoreEntry {
+    pub result_hash: Hash,
+    pub request_hash: Hash,
+    pub run_artifact_hash: Hash,
+    pub checker_profile: String,
+    pub path: String,
+    pub file_hash: Hash,
+}
+
+impl Phase8MachineResultStoreEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "checker_profile".to_owned(),
+                phase8_json_string_literal(&self.checker_profile),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+            (
+                "request_hash".to_owned(),
+                phase8_hash_json_literal(&self.request_hash),
+            ),
+            (
+                "result_hash".to_owned(),
+                phase8_hash_json_literal(&self.result_hash),
+            ),
+            (
+                "run_artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.run_artifact_hash),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineResultStoreManifest {
+    pub results: Vec<Phase8MachineResultStoreEntry>,
+}
+
+impl Phase8MachineResultStoreManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "results".to_owned(),
+                canonical_json_array(
+                    self.results
+                        .iter()
+                        .map(Phase8MachineResultStoreEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_MACHINE_RESULT_STORE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn file_hash(&self) -> Hash {
+        phase8_file_hash(self.canonical_json().as_bytes())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineResultStoreUpdate {
+    pub manifest: Phase8MachineResultStoreManifest,
+    pub rewrite_required: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AxiomReportEntry {
+    pub name: String,
+}
+
+impl Phase8AxiomReportEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![(
+            "name".to_owned(),
+            phase8_json_string_literal(&self.name),
+        )])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AxiomReport {
+    pub module: String,
+    pub certificate_hash: Hash,
+    pub axioms: Vec<Phase8AxiomReportEntry>,
+}
+
+impl Phase8AxiomReport {
+    pub fn axiom_report_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(self.base_canonical_json_pairs())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = self.base_canonical_json_pairs();
+        pairs.push((
+            "axiom_report_hash".to_owned(),
+            phase8_hash_json_literal(&self.axiom_report_hash()),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn base_canonical_json_pairs(&self) -> Vec<(String, String)> {
+        vec![
+            (
+                "axioms".to_owned(),
+                canonical_json_array(
+                    self.axioms
+                        .iter()
+                        .map(Phase8AxiomReportEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "certificate_hash".to_owned(),
+                phase8_hash_json_literal(&self.certificate_hash),
+            ),
+            (
+                "module".to_owned(),
+                phase8_json_string_literal(&self.module),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AXIOM_REPORT_SCHEMA),
+            ),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AxiomReportStoreEntry {
+    pub axiom_report_hash: Hash,
+    pub path: String,
+    pub file_hash: Hash,
+}
+
+impl Phase8AxiomReportStoreEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "axiom_report_hash".to_owned(),
+                phase8_hash_json_literal(&self.axiom_report_hash),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AxiomReportStoreManifest {
+    pub reports: Vec<Phase8AxiomReportStoreEntry>,
+}
+
+impl Phase8AxiomReportStoreManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "reports".to_owned(),
+                canonical_json_array(
+                    self.reports
+                        .iter()
+                        .map(Phase8AxiomReportStoreEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AXIOM_REPORT_STORE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn file_hash(&self) -> Hash {
+        phase8_file_hash(self.canonical_json().as_bytes())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Phase8RawRunnerBudget {
     max_steps: String,
@@ -2172,6 +2774,1669 @@ pub fn phase8_request_store_with_materialized_entry(
     })
 }
 
+pub fn parse_phase8_checker_raw_result(
+    source: &str,
+) -> Result<Phase8CheckerRawResult, Phase8RawResultSchemaError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RawResultSchemaError::new("checker_raw", "valid_json", "invalid_json")
+    })?;
+    parse_phase8_checker_raw_result_value(document.root())
+}
+
+pub fn phase8_machine_check_run(
+    request: &Phase8MachineCheckRequest,
+    policy: &Phase8RunnerPolicy,
+    observation: Phase8CheckerRunObservation,
+) -> Result<Phase8MachineCheckResult, Phase8CommandError> {
+    if !phase8_valid_request_id(&observation.result_id) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::Run,
+            "input_reference_invalid",
+            "result_id",
+            "result_id",
+            if observation.result_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+    if observation.attempt == 0 || observation.attempt > i64::MAX as u64 {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::Run,
+            "input_reference_invalid",
+            "attempt",
+            "positive_i64",
+            if observation.attempt == 0 {
+                "non_positive_integer"
+            } else {
+                "integer_out_of_range"
+            },
+        ));
+    }
+
+    if request.policy.id != policy.id {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_policy_hash_mismatch",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_policy_hash_mismatch")
+                .with_value_payload("policy.id", &policy.id, &request.policy.id),
+        ));
+    }
+    if request.policy.version != policy.version {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_policy_hash_mismatch",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_policy_hash_mismatch")
+                .with_value_payload(
+                    "policy.version",
+                    policy.version.to_string(),
+                    request.policy.version.to_string(),
+                ),
+        ));
+    }
+    let loaded_policy_hash = policy.policy_hash();
+    if request.policy.hash != loaded_policy_hash {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_policy_hash_mismatch",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_policy_hash_mismatch")
+                .with_hash_payload("policy.hash", loaded_policy_hash, request.policy.hash),
+        ));
+    }
+    if request.trust_mode != policy.trust_mode {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_trust_mode_mismatch",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_trust_mode_mismatch")
+                .with_value_payload(
+                    "trust_mode",
+                    policy.trust_mode.as_str(),
+                    request.trust_mode.as_str(),
+                ),
+        ));
+    }
+    if request.axiom_policy != policy.axiom_policy.path {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_axiom_policy_mismatch",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_axiom_policy_mismatch")
+                .with_value_payload(
+                    "axiom_policy",
+                    &policy.axiom_policy.path,
+                    &request.axiom_policy,
+                ),
+        ));
+    }
+    if request.imports.mode != policy.import_policy.mode {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_import_mode_mismatch",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_import_mode_mismatch")
+                .with_value_payload(
+                    "imports.mode",
+                    &policy.import_policy.mode,
+                    &request.imports.mode,
+                ),
+        ));
+    }
+
+    let Some(selected_checker) = policy.selected_checker_policy(&request.checker_profile) else {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_checker_profile_not_allowed",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_checker_profile_not_allowed")
+                .with_value_payload(
+                    "checker_profile",
+                    "policy_allowed_checker_profile",
+                    &request.checker_profile,
+                ),
+        ));
+    };
+    let Some(selected_budget) = policy.budgets.get(&request.checker_profile) else {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_checker_profile_not_allowed",
+            Phase8MachineCheckError::new("policy_failure")
+                .with_reason_code("request_checker_profile_not_allowed")
+                .with_value_payload(
+                    "checker_profile",
+                    "policy_allowed_checker_profile",
+                    &request.checker_profile,
+                ),
+        ));
+    };
+    if selected_budget != &request.budget {
+        return Ok(phase8_policy_failure_result(
+            request,
+            policy,
+            &observation,
+            "request_budget_mismatch",
+            phase8_budget_mismatch_error(selected_budget, &request.budget),
+        ));
+    }
+
+    if !observation.process.launched {
+        return Ok(phase8_infrastructure_failure_result(
+            request,
+            policy,
+            selected_checker,
+            &observation,
+            "checker_internal_error",
+            "process_not_launched",
+        ));
+    }
+
+    Ok(phase8_adopt_checker_observation(
+        request,
+        policy,
+        selected_checker,
+        observation,
+    ))
+}
+
+pub fn parse_phase8_machine_result_store_manifest(
+    source: &str,
+) -> Result<Phase8MachineResultStoreManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("result_store", "valid_json", "invalid_json")
+    })?;
+    parse_phase8_machine_result_store_manifest_value(document.root(), "result_store")
+}
+
+pub fn phase8_machine_result_store_entry_for_result(
+    result: &Phase8MachineCheckResult,
+    path: impl Into<String>,
+) -> Result<Phase8MachineResultStoreEntry, Phase8CommandError> {
+    let path = path.into();
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::Run,
+            "input_reference_invalid",
+            "result.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let bytes = result.canonical_json();
+    Ok(Phase8MachineResultStoreEntry {
+        result_hash: result.result_hash(),
+        request_hash: result.request_hash,
+        run_artifact_hash: result.run_artifact_hash(),
+        checker_profile: result.checker.profile.clone(),
+        path,
+        file_hash: phase8_file_hash(bytes.as_bytes()),
+    })
+}
+
+pub fn phase8_machine_result_store_with_entry(
+    existing_store: Option<&Phase8MachineResultStoreManifest>,
+    generated_entry: Phase8MachineResultStoreEntry,
+) -> Result<Phase8MachineResultStoreUpdate, Phase8CommandError> {
+    let mut manifest = existing_store
+        .cloned()
+        .unwrap_or(Phase8MachineResultStoreManifest {
+            results: Vec::new(),
+        });
+
+    for existing in &manifest.results {
+        let same_run_artifact_hash =
+            existing.run_artifact_hash == generated_entry.run_artifact_hash;
+        let same_path = existing.path == generated_entry.path;
+        let exact = same_run_artifact_hash
+            && same_path
+            && existing.file_hash == generated_entry.file_hash
+            && existing.result_hash == generated_entry.result_hash
+            && existing.request_hash == generated_entry.request_hash
+            && existing.checker_profile == generated_entry.checker_profile;
+        if exact {
+            return Ok(Phase8MachineResultStoreUpdate {
+                manifest,
+                rewrite_required: false,
+            });
+        }
+        if same_run_artifact_hash || same_path {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::Run,
+                "result_store_entry_conflict",
+                "result_store.results[]",
+                generated_entry.canonical_json(),
+                existing.canonical_json(),
+            ));
+        }
+    }
+
+    manifest.results.push(generated_entry);
+    manifest
+        .results
+        .sort_by(|left, right| left.run_artifact_hash.cmp(&right.run_artifact_hash));
+    Ok(Phase8MachineResultStoreUpdate {
+        manifest,
+        rewrite_required: true,
+    })
+}
+
+pub fn parse_phase8_axiom_report(
+    source: &str,
+) -> Result<Phase8AxiomReport, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("axiom_report", "valid_json", "invalid_json")
+    })?;
+    parse_phase8_axiom_report_value(document.root())
+}
+
+pub fn parse_phase8_axiom_report_store_manifest(
+    source: &str,
+) -> Result<Phase8AxiomReportStoreManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "axiom_report_store",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_axiom_report_store_manifest_value(document.root())
+}
+
+impl Phase8RawResultSchemaError {
+    fn new(
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            field: field.into(),
+            expected_value: expected_value.into(),
+            actual_value: actual_value.into(),
+        }
+    }
+}
+
+fn phase8_budget_mismatch_error(
+    expected: &Phase8RunnerBudget,
+    actual: &Phase8RunnerBudget,
+) -> Phase8MachineCheckError {
+    let (field, expected_value, actual_value) = if expected.max_steps != actual.max_steps {
+        (
+            "budget.max_steps",
+            expected.max_steps.to_string(),
+            actual.max_steps.to_string(),
+        )
+    } else if expected.max_memory_mb != actual.max_memory_mb {
+        (
+            "budget.max_memory_mb",
+            expected.max_memory_mb.to_string(),
+            actual.max_memory_mb.to_string(),
+        )
+    } else {
+        (
+            "budget.timeout_ms",
+            expected.timeout_ms.to_string(),
+            actual.timeout_ms.to_string(),
+        )
+    };
+    Phase8MachineCheckError::new("policy_failure")
+        .with_reason_code("request_budget_mismatch")
+        .with_value_payload(field, expected_value, actual_value)
+}
+
+fn phase8_adopt_checker_observation(
+    request: &Phase8MachineCheckRequest,
+    policy: &Phase8RunnerPolicy,
+    selected_checker: &Phase8CheckerAllowlistEntry,
+    observation: Phase8CheckerRunObservation,
+) -> Phase8MachineCheckResult {
+    if let Some(reason) = observation.process.termination_reason.as_deref() {
+        return match reason {
+            "timeout" => phase8_infrastructure_failure_result(
+                request,
+                policy,
+                selected_checker,
+                &observation,
+                "timeout",
+                "checker_timeout",
+            ),
+            "resource_exhausted" => phase8_infrastructure_failure_result(
+                request,
+                policy,
+                selected_checker,
+                &observation,
+                "resource_exhausted",
+                "checker_resource_exhausted",
+            ),
+            "killed_without_exit_status" => {
+                let error = Phase8MachineCheckError::new("checker_internal_error")
+                    .with_reason_code("process_exit_failure")
+                    .with_value_payload(
+                        "process.termination_reason",
+                        "process_exit_status",
+                        "killed_without_exit_status",
+                    );
+                phase8_machine_check_result_base(
+                    request,
+                    policy,
+                    Some(selected_checker),
+                    &observation,
+                    Phase8MachineCheckStatus::Failed,
+                    Some(error),
+                )
+            }
+            _ => phase8_infrastructure_failure_result(
+                request,
+                policy,
+                selected_checker,
+                &observation,
+                "checker_internal_error",
+                "process_exit_failure",
+            ),
+        };
+    }
+
+    let Some(exit_code) = observation.process.exit_code else {
+        let error = Phase8MachineCheckError::new("checker_internal_error")
+            .with_reason_code("process_exit_failure");
+        return phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+    };
+
+    if exit_code >= 3 {
+        let error = Phase8MachineCheckError::new("checker_internal_error")
+            .with_reason_code("process_exit_failure");
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.diagnostics.clear();
+        return result;
+    }
+
+    let stdout = std::str::from_utf8(&observation.stdout);
+    let raw = stdout
+        .ok()
+        .and_then(|source| parse_phase8_checker_raw_result(source).ok());
+    let raw_error = match stdout {
+        Ok(source) => parse_phase8_checker_raw_result(source).err(),
+        Err(_) => Some(Phase8RawResultSchemaError::new(
+            "checker_raw",
+            "valid_json",
+            "invalid_json",
+        )),
+    };
+    let Some(raw) = raw else {
+        let reason_code = match exit_code {
+            0 => "malformed_success_output",
+            1 => "malformed_rejection_output",
+            2 => "malformed_internal_error_output",
+            _ => unreachable!("exit_code >= 3 handled above"),
+        };
+        let mut error =
+            Phase8MachineCheckError::new("checker_internal_error").with_reason_code(reason_code);
+        if let Some(raw_error) = raw_error {
+            error = error.with_value_payload(
+                raw_error.field,
+                raw_error.expected_value,
+                raw_error.actual_value,
+            );
+        }
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        if !observation.stdout.is_empty() {
+            result
+                .diagnostics
+                .push("checker_process:stdout_present".to_owned());
+        }
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    };
+
+    let mut checker = phase8_machine_check_checker_for_request(request, Some(selected_checker));
+    checker.id = raw.checker_id.clone();
+    checker.build_hash = raw.checker_build_hash;
+    checker.version = raw.checker_version.clone();
+
+    if exit_code == 0 && raw.status != Phase8MachineCheckStatus::Checked {
+        let error = Phase8MachineCheckError::new("checker_internal_error")
+            .with_reason_code("success_exit_status_mismatch");
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.checker = checker;
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    }
+    if exit_code == 1 && (raw.status != Phase8MachineCheckStatus::Failed || raw.error.is_none()) {
+        let error = Phase8MachineCheckError::new("checker_internal_error")
+            .with_reason_code("missing_rejection_error");
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.checker = checker;
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    }
+    if exit_code == 1
+        && raw
+            .error
+            .as_ref()
+            .map(|error| error.kind.as_str() == "checker_internal_error")
+            .unwrap_or(false)
+    {
+        let error = Phase8MachineCheckError::new("checker_internal_error")
+            .with_reason_code("malformed_rejection_output");
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.checker = checker;
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    }
+    if exit_code == 2
+        && raw
+            .error
+            .as_ref()
+            .map(|error| error.kind.as_str() != "checker_internal_error")
+            .unwrap_or(true)
+    {
+        let error = Phase8MachineCheckError::new("checker_internal_error")
+            .with_reason_code("malformed_internal_error_output");
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.checker = checker;
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    }
+
+    if raw.checker_id.as_deref() != Some(selected_checker.checker_id.as_str()) {
+        let actual = raw.checker_id.as_deref().unwrap_or("missing");
+        let error = Phase8MachineCheckError::new("policy_failure")
+            .with_reason_code(if raw.checker_id.is_some() {
+                "checker_identity_mismatch"
+            } else {
+                "checker_identity_missing"
+            })
+            .with_value_payload("checker.id", &selected_checker.checker_id, actual);
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.checker = checker;
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    }
+    if raw.checker_build_hash != Some(selected_checker.build_hash) {
+        let mut error = Phase8MachineCheckError::new("policy_failure").with_reason_code(
+            if raw.checker_build_hash.is_some() {
+                "checker_build_hash_mismatch"
+            } else {
+                "checker_identity_missing"
+            },
+        );
+        error.field = Some("checker.build_hash".to_owned());
+        error.expected_hash = Some(selected_checker.build_hash);
+        error.actual_hash = raw.checker_build_hash;
+        let mut result = phase8_machine_check_result_base(
+            request,
+            policy,
+            Some(selected_checker),
+            &observation,
+            Phase8MachineCheckStatus::Failed,
+            Some(error),
+        );
+        result.checker = checker;
+        phase8_push_stderr_diagnostic(&mut result, &observation);
+        return result;
+    }
+
+    if let Some(raw_module) = raw.module.as_deref() {
+        if raw_module != request.module {
+            let error = Phase8MachineCheckError::new("checker_internal_error")
+                .with_reason_code("checker_module_mismatch")
+                .with_value_payload("module", &request.module, raw_module);
+            let mut result = phase8_machine_check_result_base(
+                request,
+                policy,
+                Some(selected_checker),
+                &observation,
+                Phase8MachineCheckStatus::Failed,
+                Some(error),
+            );
+            result.checker = checker;
+            phase8_push_stderr_diagnostic(&mut result, &observation);
+            return result;
+        }
+    }
+
+    if raw.status == Phase8MachineCheckStatus::Checked
+        || raw
+            .error
+            .as_ref()
+            .map(phase8_error_requires_certificate_hash)
+            .unwrap_or(false)
+    {
+        if let Some(certificate_hash) = raw.certificate_hash {
+            if certificate_hash != request.certificate.expected_certificate_hash {
+                let error = Phase8MachineCheckError::new("certificate_hash_mismatch")
+                    .with_hash_payload(
+                        "certificate_hash",
+                        request.certificate.expected_certificate_hash,
+                        certificate_hash,
+                    );
+                let mut result = phase8_machine_check_result_base(
+                    request,
+                    policy,
+                    Some(selected_checker),
+                    &observation,
+                    Phase8MachineCheckStatus::Failed,
+                    Some(error),
+                );
+                result.checker = checker;
+                result.certificate_hash = Some(certificate_hash);
+                phase8_push_stderr_diagnostic(&mut result, &observation);
+                return result;
+            }
+        }
+    }
+
+    match exit_code {
+        0 => {
+            let mut result = phase8_machine_check_result_base(
+                request,
+                policy,
+                Some(selected_checker),
+                &observation,
+                Phase8MachineCheckStatus::Checked,
+                None,
+            );
+            result.checker = checker;
+            result.certificate_hash = raw.certificate_hash;
+            result.export_hash = raw.export_hash;
+            result.axiom_report_hash = raw.axiom_report_hash;
+            phase8_push_stderr_diagnostic(&mut result, &observation);
+            result
+        }
+        1 => {
+            let mut result = phase8_machine_check_result_base(
+                request,
+                policy,
+                Some(selected_checker),
+                &observation,
+                Phase8MachineCheckStatus::Failed,
+                raw.error,
+            );
+            result.checker = checker;
+            result.certificate_hash = raw.certificate_hash;
+            result.export_hash = raw.export_hash;
+            result.axiom_report_hash = raw.axiom_report_hash;
+            phase8_push_stderr_diagnostic(&mut result, &observation);
+            result
+        }
+        2 => {
+            let error = raw.error.unwrap_or_else(|| {
+                Phase8MachineCheckError::new("checker_internal_error")
+                    .with_reason_code("checker_reported_internal_error")
+            });
+            let mut result = phase8_machine_check_result_base(
+                request,
+                policy,
+                Some(selected_checker),
+                &observation,
+                Phase8MachineCheckStatus::Failed,
+                Some(error),
+            );
+            result.checker = checker;
+            result.certificate_hash = raw.certificate_hash;
+            result.export_hash = raw.export_hash;
+            result.axiom_report_hash = raw.axiom_report_hash;
+            phase8_push_stderr_diagnostic(&mut result, &observation);
+            result
+        }
+        _ => unreachable!("exit_code >= 3 handled above"),
+    }
+}
+
+fn phase8_policy_failure_result(
+    request: &Phase8MachineCheckRequest,
+    policy: &Phase8RunnerPolicy,
+    observation: &Phase8CheckerRunObservation,
+    _reason_code: &str,
+    error: Phase8MachineCheckError,
+) -> Phase8MachineCheckResult {
+    let mut result = phase8_machine_check_result_base(
+        request,
+        policy,
+        None,
+        observation,
+        Phase8MachineCheckStatus::Failed,
+        Some(error),
+    );
+    result.process = Phase8MachineCheckProcess::not_launched();
+    result.resource_usage = Phase8MachineCheckResourceUsage::zero();
+    result.diagnostics.clear();
+    result
+}
+
+fn phase8_infrastructure_failure_result(
+    request: &Phase8MachineCheckRequest,
+    policy: &Phase8RunnerPolicy,
+    selected_checker: &Phase8CheckerAllowlistEntry,
+    observation: &Phase8CheckerRunObservation,
+    kind: &str,
+    reason_code: &str,
+) -> Phase8MachineCheckResult {
+    let error = Phase8MachineCheckError::new(kind).with_reason_code(reason_code);
+    phase8_machine_check_result_base(
+        request,
+        policy,
+        Some(selected_checker),
+        observation,
+        Phase8MachineCheckStatus::Failed,
+        Some(error),
+    )
+}
+
+fn phase8_machine_check_result_base(
+    request: &Phase8MachineCheckRequest,
+    policy: &Phase8RunnerPolicy,
+    selected_checker: Option<&Phase8CheckerAllowlistEntry>,
+    observation: &Phase8CheckerRunObservation,
+    status: Phase8MachineCheckStatus,
+    error: Option<Phase8MachineCheckError>,
+) -> Phase8MachineCheckResult {
+    let mut diagnostics = Vec::new();
+    if observation.process.exit_code.is_some()
+        && observation.process.exit_code.unwrap_or(255) <= 2
+        && !observation.stderr.is_empty()
+    {
+        diagnostics.push("checker_process:stderr_present".to_owned());
+    }
+    Phase8MachineCheckResult {
+        request_id: request.request_id.clone(),
+        request_hash: request.request_hash(),
+        result_id: observation.result_id.clone(),
+        policy: Phase8MachineCheckRequestPolicy {
+            id: policy.id.clone(),
+            version: policy.version,
+            hash: policy.policy_hash(),
+        },
+        runner: observation.runner.clone(),
+        checker: phase8_machine_check_checker_for_request(request, selected_checker),
+        attempt: observation.attempt,
+        status,
+        module: request.module.clone(),
+        process: observation.process.clone(),
+        resource_usage: observation.resource_usage.clone(),
+        error,
+        certificate_hash: None,
+        export_hash: None,
+        axiom_report_hash: None,
+        diagnostics,
+        axioms_used: None,
+        declarations_checked: None,
+    }
+}
+
+fn phase8_machine_check_checker_for_request(
+    request: &Phase8MachineCheckRequest,
+    selected_checker: Option<&Phase8CheckerAllowlistEntry>,
+) -> Phase8MachineCheckChecker {
+    Phase8MachineCheckChecker {
+        profile: request.checker_profile.clone(),
+        binary_id: selected_checker.map(|checker| checker.binary_id.clone()),
+        binary_hash: selected_checker.map(|checker| checker.binary_hash),
+        id: None,
+        build_hash: None,
+        version: None,
+    }
+}
+
+fn phase8_push_stderr_diagnostic(
+    result: &mut Phase8MachineCheckResult,
+    observation: &Phase8CheckerRunObservation,
+) {
+    if !observation.stderr.is_empty()
+        && observation.process.exit_code.is_some()
+        && observation.process.exit_code.unwrap_or(255) <= 2
+        && !result
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic == "checker_process:stderr_present")
+    {
+        result
+            .diagnostics
+            .push("checker_process:stderr_present".to_owned());
+    }
+}
+
+fn phase8_error_requires_certificate_hash(error: &Phase8MachineCheckError) -> bool {
+    matches!(
+        error.kind.as_str(),
+        "import_not_found"
+            | "import_hash_mismatch"
+            | "certificate_hash_mismatch"
+            | "axiom_report_mismatch"
+            | "export_hash_mismatch"
+            | "type_mismatch"
+            | "conversion_failure"
+            | "universe_inconsistency"
+            | "inductive_invalid"
+            | "positivity_failure"
+            | "declaration_hash_mismatch"
+            | "dependency_hash_mismatch"
+            | "forbidden_axiom"
+    )
+}
+
+fn parse_phase8_checker_raw_result_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8CheckerRawResult, Phase8RawResultSchemaError> {
+    let members = value
+        .object_members()
+        .ok_or_else(|| Phase8RawResultSchemaError::new("checker_raw", "object", "wrong_type"))?;
+    raw_required_fixed_string(
+        members,
+        "schema",
+        "checker_raw.schema",
+        PHASE8_CHECKER_RAW_RESULT_SCHEMA,
+    )?;
+    let status_raw = raw_required_string(
+        members,
+        "status",
+        "checker_raw.status",
+        "CheckerRawResult.status",
+    )?;
+    let status = match status_raw.as_str() {
+        "checked" => Phase8MachineCheckStatus::Checked,
+        "failed" => Phase8MachineCheckStatus::Failed,
+        _ => {
+            return Err(Phase8RawResultSchemaError::new(
+                "checker_raw.status",
+                "CheckerRawResult.status",
+                "invalid_enum",
+            ))
+        }
+    };
+    let checker_id = raw_optional_identity_string(
+        members,
+        "checker_id",
+        "checker_raw.checker_id",
+        "checker_id",
+    )?;
+    if let Some(checker_id) = checker_id.as_deref() {
+        if !phase8_valid_checker_id(checker_id) {
+            return Err(Phase8RawResultSchemaError::new(
+                "checker_raw.checker_id",
+                "checker_id",
+                "invalid_name_format",
+            ));
+        }
+    }
+    let checker_version = raw_optional_identity_string(
+        members,
+        "checker_version",
+        "checker_raw.checker_version",
+        "string",
+    )?;
+    let checker_build_hash = raw_optional_identity_hash(
+        members,
+        "checker_build_hash",
+        "checker_raw.checker_build_hash",
+    )?;
+
+    let module = raw_optional_module(members, "module", "checker_raw.module")?;
+    let certificate_hash =
+        raw_optional_hash(members, "certificate_hash", "checker_raw.certificate_hash")?;
+    let export_hash = raw_optional_hash(members, "export_hash", "checker_raw.export_hash")?;
+    let axiom_report_hash = raw_optional_hash(
+        members,
+        "axiom_report_hash",
+        "checker_raw.axiom_report_hash",
+    )?;
+    let error = raw_optional_error(members)?;
+
+    match status {
+        Phase8MachineCheckStatus::Checked => {
+            if module.is_none() {
+                return Err(Phase8RawResultSchemaError::new(
+                    "checker_raw.module",
+                    "module_name",
+                    "missing",
+                ));
+            }
+            if certificate_hash.is_none() {
+                return Err(Phase8RawResultSchemaError::new(
+                    "checker_raw.certificate_hash",
+                    "sha256:<lower-hex>",
+                    "missing",
+                ));
+            }
+            if export_hash.is_none() {
+                return Err(Phase8RawResultSchemaError::new(
+                    "checker_raw.export_hash",
+                    "sha256:<lower-hex>",
+                    "missing",
+                ));
+            }
+            if axiom_report_hash.is_none() {
+                return Err(Phase8RawResultSchemaError::new(
+                    "checker_raw.axiom_report_hash",
+                    "sha256:<lower-hex>",
+                    "missing",
+                ));
+            }
+            if duplicate_member(members, "error")
+                || members.iter().any(|member| member.key() == "error")
+            {
+                return Err(Phase8RawResultSchemaError::new(
+                    "checker_raw.error",
+                    "absent_for_status_kind",
+                    "forbidden_field",
+                ));
+            }
+        }
+        Phase8MachineCheckStatus::Failed => {
+            let Some(error) = &error else {
+                return Err(Phase8RawResultSchemaError::new(
+                    "checker_raw.error",
+                    "object",
+                    "missing",
+                ));
+            };
+            if phase8_error_requires_certificate_hash(error) {
+                if module.is_none() {
+                    return Err(Phase8RawResultSchemaError::new(
+                        "checker_raw.module",
+                        "module_name",
+                        "missing",
+                    ));
+                }
+                if certificate_hash.is_none() {
+                    return Err(Phase8RawResultSchemaError::new(
+                        "checker_raw.certificate_hash",
+                        "sha256:<lower-hex>",
+                        "missing",
+                    ));
+                }
+            }
+        }
+    }
+
+    raw_reject_unknown_fields(
+        members,
+        &[
+            "schema",
+            "checker_id",
+            "checker_version",
+            "checker_build_hash",
+            "status",
+            "module",
+            "certificate_hash",
+            "export_hash",
+            "axiom_report_hash",
+            "error",
+        ],
+        "checker_raw",
+    )?;
+
+    Ok(Phase8CheckerRawResult {
+        status,
+        checker_id,
+        checker_version,
+        checker_build_hash,
+        module,
+        certificate_hash,
+        export_hash,
+        axiom_report_hash,
+        error,
+    })
+}
+
+fn raw_required_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+) -> Result<String, Phase8RawResultSchemaError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value)
+    else {
+        return Err(Phase8RawResultSchemaError::new(field, expected, "missing"));
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            expected,
+            "null_not_allowed",
+        ));
+    }
+    value
+        .string_value()
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| Phase8RawResultSchemaError::new(field, expected, "wrong_type"))
+}
+
+fn raw_required_fixed_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    fixed: &str,
+) -> Result<(), Phase8RawResultSchemaError> {
+    let value = raw_required_string(members, name, field, fixed)?;
+    if value != fixed {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            fixed,
+            "invalid_enum",
+        ));
+    }
+    Ok(())
+}
+
+fn raw_optional_identity_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+) -> Result<Option<String>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            expected,
+            "null_not_allowed",
+        ));
+    }
+    value
+        .string_value()
+        .map(|value| Some(value.to_owned()))
+        .ok_or_else(|| Phase8RawResultSchemaError::new(field, expected, "wrong_type"))
+}
+
+fn raw_optional_identity_hash(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<Option<Hash>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "sha256:<lower-hex>",
+            "null_not_allowed",
+        ));
+    }
+    let Some(raw) = value.string_value() else {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "sha256:<lower-hex>",
+            "wrong_type",
+        ));
+    };
+    parse_hash_string(raw).map(Some).map_err(|_| {
+        Phase8RawResultSchemaError::new(field, "sha256:<lower-hex>", "invalid_hash_format")
+    })
+}
+
+fn raw_optional_module(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<Option<String>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "module_name",
+            "null_not_allowed",
+        ));
+    }
+    let Some(text) = value.string_value() else {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "module_name",
+            "wrong_type",
+        ));
+    };
+    if !phase8_valid_dotted_name(text) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "module_name",
+            "invalid_name_format",
+        ));
+    }
+    Ok(Some(text.to_owned()))
+}
+
+fn raw_optional_hash(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<Option<Hash>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "sha256:<lower-hex>",
+            "null_not_allowed",
+        ));
+    }
+    let Some(text) = value.string_value() else {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "sha256:<lower-hex>",
+            "wrong_type",
+        ));
+    };
+    parse_hash_string(text).map(Some).map_err(|_| {
+        Phase8RawResultSchemaError::new(field, "sha256:<lower-hex>", "invalid_hash_format")
+    })
+}
+
+fn raw_optional_error(
+    members: &[JsonMember<'_>],
+) -> Result<Option<Phase8MachineCheckError>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, "error") {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error",
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == "error")
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error",
+            "object",
+            "null_not_allowed",
+        ));
+    }
+    let Some(error_members) = value.object_members() else {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error",
+            "object",
+            "wrong_type",
+        ));
+    };
+    let kind = raw_required_string(
+        error_members,
+        "kind",
+        "checker_raw.error.kind",
+        "checker_raw_error_kind",
+    )?;
+    if !phase8_raw_checker_error_kind_allowed(&kind) {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error.kind",
+            "checker_raw_error_kind",
+            "invalid_enum",
+        ));
+    }
+    let mut error = Phase8MachineCheckError::new(kind.clone());
+    if kind == "checker_internal_error" {
+        let reason_code = raw_required_string(
+            error_members,
+            "reason_code",
+            "checker_raw.error.reason_code",
+            "checker_raw_internal_reason_code",
+        )?;
+        if reason_code != "checker_reported_internal_error" {
+            return Err(Phase8RawResultSchemaError::new(
+                "checker_raw.error.reason_code",
+                "checker_raw_internal_reason_code",
+                "invalid_enum",
+            ));
+        }
+        error.reason_code = Some(reason_code);
+    } else if duplicate_member(error_members, "reason_code")
+        || error_members
+            .iter()
+            .any(|member| member.key() == "reason_code")
+    {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error.reason_code",
+            "absent_for_error_kind",
+            "forbidden_field",
+        ));
+    }
+    if let Some(declaration) = raw_optional_module(
+        error_members,
+        "declaration",
+        "checker_raw.error.declaration",
+    )? {
+        error.declaration = Some(declaration);
+    }
+    if let Some(core_path) = raw_optional_core_path(error_members)? {
+        error.core_path = Some(core_path);
+    }
+    if let Some(section) = raw_optional_identity_string(
+        error_members,
+        "section",
+        "checker_raw.error.section",
+        "string",
+    )? {
+        error.section = Some(section);
+    }
+    if let Some(offset) =
+        raw_optional_u64(error_members, "offset", "checker_raw.error.offset", "u64")?
+    {
+        error.offset = Some(offset);
+    }
+    error.expected_hash = raw_optional_hash(
+        error_members,
+        "expected_hash",
+        "checker_raw.error.expected_hash",
+    )?;
+    error.actual_hash = raw_optional_hash(
+        error_members,
+        "actual_hash",
+        "checker_raw.error.actual_hash",
+    )?;
+    raw_reject_unknown_fields(
+        error_members,
+        &[
+            "kind",
+            "reason_code",
+            "declaration",
+            "core_path",
+            "section",
+            "offset",
+            "expected_hash",
+            "actual_hash",
+        ],
+        "checker_raw.error",
+    )?;
+    Ok(Some(error))
+}
+
+fn raw_optional_core_path(
+    members: &[JsonMember<'_>],
+) -> Result<Option<Vec<String>>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, "core_path") {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error.core_path",
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == "core_path")
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error.core_path",
+            "array",
+            "null_not_allowed",
+        ));
+    }
+    let Some(elements) = value.array_elements() else {
+        return Err(Phase8RawResultSchemaError::new(
+            "checker_raw.error.core_path",
+            "array",
+            "wrong_type",
+        ));
+    };
+    let mut out = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let Some(segment) = element.string_value() else {
+            return Err(Phase8RawResultSchemaError::new(
+                format!("checker_raw.error.core_path[{index}]"),
+                "string",
+                if element.kind() == JsonValueKind::Null {
+                    "null_not_allowed"
+                } else {
+                    "wrong_type"
+                },
+            ));
+        };
+        out.push(segment.to_owned());
+    }
+    Ok(Some(out))
+}
+
+fn raw_optional_u64(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+) -> Result<Option<u64>, Phase8RawResultSchemaError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(value) = members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value)
+    else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            expected,
+            "null_not_allowed",
+        ));
+    }
+    let Some(raw) = value.number_raw() else {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            expected,
+            "wrong_type",
+        ));
+    };
+    if raw.contains('.') || raw.contains('e') || raw.contains('E') {
+        return Err(Phase8RawResultSchemaError::new(
+            field,
+            expected,
+            "invalid_integer_format",
+        ));
+    }
+    raw.parse::<u64>()
+        .map(Some)
+        .map_err(|_| Phase8RawResultSchemaError::new(field, expected, "integer_out_of_range"))
+}
+
+fn phase8_raw_checker_error_kind_allowed(kind: &str) -> bool {
+    matches!(
+        kind,
+        "certificate_decode_error"
+            | "noncanonical_encoding"
+            | "unsupported_schema_version"
+            | "import_not_found"
+            | "import_hash_mismatch"
+            | "certificate_hash_mismatch"
+            | "axiom_report_mismatch"
+            | "export_hash_mismatch"
+            | "type_mismatch"
+            | "conversion_failure"
+            | "universe_inconsistency"
+            | "inductive_invalid"
+            | "positivity_failure"
+            | "declaration_hash_mismatch"
+            | "dependency_hash_mismatch"
+            | "forbidden_axiom"
+            | "checker_internal_error"
+    )
+}
+
+fn raw_reject_unknown_fields(
+    members: &[JsonMember<'_>],
+    allowed: &[&str],
+    container_path: &str,
+) -> Result<(), Phase8RawResultSchemaError> {
+    let mut unknown = members
+        .iter()
+        .map(JsonMember::key)
+        .filter(|field| !allowed.contains(field))
+        .collect::<Vec<_>>();
+    unknown.sort_by(|left, right| phase8_rfc8785_object_key_cmp(left, right));
+    if let Some(field) = unknown.first() {
+        let report_path = unknown_field_report_path(container_path, field);
+        return Err(Phase8RawResultSchemaError::new(
+            report_path,
+            "absent",
+            "unknown_field",
+        ));
+    }
+    Ok(())
+}
+
+fn parse_phase8_machine_result_store_manifest_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8MachineResultStoreManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{root_path}.schema"),
+        PHASE8_MACHINE_RESULT_STORE_MANIFEST_SCHEMA,
+        PHASE8_MACHINE_RESULT_STORE_MANIFEST_SCHEMA,
+    )?;
+    let results_value =
+        required_field_value(members, "results", &format!("{root_path}.results"), "array")?;
+    let Some(result_values) = results_value.array_elements() else {
+        return Err(wrong_type_error(
+            &format!("{root_path}.results"),
+            "array",
+            results_value.kind(),
+        )
+        .into());
+    };
+    let mut results = Vec::new();
+    for (index, result_value) in result_values.iter().enumerate() {
+        let path = format!("{root_path}.results[{index}]");
+        let result_members = object_members_or_policy_error(result_value, &path, "object")?;
+        let result_hash = required_hash_field(
+            result_members,
+            "result_hash",
+            &format!("{path}.result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let request_hash = required_hash_field(
+            result_members,
+            "request_hash",
+            &format!("{path}.request_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let run_artifact_hash = required_hash_field(
+            result_members,
+            "run_artifact_hash",
+            &format!("{path}.run_artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let checker_profile = required_string_field(
+            result_members,
+            "checker_profile",
+            &format!("{path}.checker_profile"),
+            "checker_profile_name",
+        )?;
+        if !phase8_valid_checker_profile_name(&checker_profile) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.checker_profile"),
+                "checker_profile_name",
+                "invalid_name_format",
+            ));
+        }
+        let result_path = required_string_field(
+            result_members,
+            "path",
+            &format!("{path}.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&result_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            result_members,
+            "file_hash",
+            &format!("{path}.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(result_members, MACHINE_RESULT_STORE_ENTRY_FIELDS, &path)?;
+        results.push(Phase8MachineResultStoreEntry {
+            result_hash,
+            request_hash,
+            run_artifact_hash,
+            checker_profile,
+            path: result_path,
+            file_hash,
+        });
+    }
+    reject_unknown_fields(members, MACHINE_RESULT_STORE_MANIFEST_FIELDS, root_path)?;
+    validate_machine_result_store_domain(&results, root_path)?;
+    Ok(Phase8MachineResultStoreManifest { results })
+}
+
+fn parse_phase8_axiom_report_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AxiomReport, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "$", "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        "schema",
+        PHASE8_AXIOM_REPORT_SCHEMA,
+        PHASE8_AXIOM_REPORT_SCHEMA,
+    )?;
+    let parsed_hash = required_hash_field(
+        members,
+        "axiom_report_hash",
+        "axiom_report_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let module = required_string_field(members, "module", "module", "module_name")?;
+    if !phase8_valid_dotted_name(&module) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "module",
+            "module_name",
+            "invalid_name_format",
+        ));
+    }
+    let certificate_hash = required_hash_field(
+        members,
+        "certificate_hash",
+        "certificate_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let axioms_value = required_field_value(members, "axioms", "axioms", "array")?;
+    let Some(axiom_values) = axioms_value.array_elements() else {
+        return Err(wrong_type_error("axioms", "array", axioms_value.kind()).into());
+    };
+    let mut axioms = Vec::new();
+    for (index, axiom_value) in axiom_values.iter().enumerate() {
+        let path = format!("axioms[{index}]");
+        let axiom_members = object_members_or_policy_error(axiom_value, &path, "object")?;
+        let name = required_string_field(
+            axiom_members,
+            "name",
+            &format!("{path}.name"),
+            "phase2_name",
+        )?;
+        if !phase8_valid_dotted_name(&name) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.name"),
+                "phase2_name",
+                "invalid_name_format",
+            ));
+        }
+        reject_unknown_fields(axiom_members, AXIOM_REPORT_ENTRY_FIELDS, &path)?;
+        axioms.push(Phase8AxiomReportEntry { name });
+    }
+    reject_unknown_fields(members, AXIOM_REPORT_FIELDS, "$")?;
+    validate_axiom_report_domain(&axioms)?;
+    let report = Phase8AxiomReport {
+        module,
+        certificate_hash,
+        axioms,
+    };
+    let recomputed = report.axiom_report_hash();
+    if recomputed != parsed_hash {
+        return Err(Phase8RequestValidationError::hash_failure(
+            "axiom_report_hash",
+            recomputed,
+            parsed_hash,
+        ));
+    }
+    Ok(report)
+}
+
+fn parse_phase8_axiom_report_store_manifest_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AxiomReportStoreManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "$", "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        "schema",
+        PHASE8_AXIOM_REPORT_STORE_MANIFEST_SCHEMA,
+        PHASE8_AXIOM_REPORT_STORE_MANIFEST_SCHEMA,
+    )?;
+    let reports_value = required_field_value(members, "reports", "reports", "array")?;
+    let Some(report_values) = reports_value.array_elements() else {
+        return Err(wrong_type_error("reports", "array", reports_value.kind()).into());
+    };
+    let mut reports = Vec::new();
+    for (index, report_value) in report_values.iter().enumerate() {
+        let path = format!("reports[{index}]");
+        let report_members = object_members_or_policy_error(report_value, &path, "object")?;
+        let axiom_report_hash = required_hash_field(
+            report_members,
+            "axiom_report_hash",
+            &format!("{path}.axiom_report_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let report_path = required_string_field(
+            report_members,
+            "path",
+            &format!("{path}.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&report_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            report_members,
+            "file_hash",
+            &format!("{path}.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(report_members, AXIOM_REPORT_STORE_ENTRY_FIELDS, &path)?;
+        reports.push(Phase8AxiomReportStoreEntry {
+            axiom_report_hash,
+            path: report_path,
+            file_hash,
+        });
+    }
+    reject_unknown_fields(members, AXIOM_REPORT_STORE_MANIFEST_FIELDS, "$")?;
+    validate_axiom_report_store_domain(&reports)?;
+    Ok(Phase8AxiomReportStoreManifest { reports })
+}
+
 fn parse_phase8_import_lock_manifest_value(
     value: &JsonValue<'_>,
     root_path: &str,
@@ -2591,6 +4856,25 @@ const MACHINE_CHECK_REQUEST_IMPORTS_FIELDS: &[&str] = &["mode", "manifest", "man
 const MACHINE_CHECK_REQUEST_BUDGET_FIELDS: &[&str] = &["max_steps", "max_memory_mb", "timeout_ms"];
 const REQUEST_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "requests"];
 const REQUEST_STORE_ENTRY_FIELDS: &[&str] = &["request_hash", "path", "file_hash"];
+const MACHINE_RESULT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "results"];
+const MACHINE_RESULT_STORE_ENTRY_FIELDS: &[&str] = &[
+    "result_hash",
+    "request_hash",
+    "run_artifact_hash",
+    "checker_profile",
+    "path",
+    "file_hash",
+];
+const AXIOM_REPORT_FIELDS: &[&str] = &[
+    "schema",
+    "axiom_report_hash",
+    "module",
+    "certificate_hash",
+    "axioms",
+];
+const AXIOM_REPORT_ENTRY_FIELDS: &[&str] = &["name"];
+const AXIOM_REPORT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "reports"];
+const AXIOM_REPORT_STORE_ENTRY_FIELDS: &[&str] = &["axiom_report_hash", "path", "file_hash"];
 
 const CHECKER_ALLOWLIST_FIELDS: &[&str] = &[
     "profile",
@@ -3691,6 +5975,107 @@ fn validate_request_store_domain(
         if !paths.insert(&request.path) {
             return Err(Phase8RequestValidationError::value_failure(
                 format!("{root_path}.requests[{index}].path"),
+                "unique_paths",
+                "duplicate_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_machine_result_store_domain(
+    results: &[Phase8MachineResultStoreEntry],
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..results.len() {
+        if results[index].run_artifact_hash < results[index - 1].run_artifact_hash {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}]"),
+                "run_artifact_hash_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut run_artifact_hashes = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !run_artifact_hashes.insert(result.run_artifact_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].run_artifact_hash"),
+                "unique_run_artifact_hashes",
+                "duplicate_run_artifact_hash",
+            ));
+        }
+    }
+
+    let mut paths = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !paths.insert(&result.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].path"),
+                "unique_paths",
+                "duplicate_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_axiom_report_domain(
+    axioms: &[Phase8AxiomReportEntry],
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..axioms.len() {
+        if phase8_dotted_name_cmp(&axioms[index].name, &axioms[index - 1].name) == Ordering::Less {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("axioms[{index}]"),
+                "axiom_name_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut names = BTreeSet::new();
+    for (index, axiom) in axioms.iter().enumerate() {
+        if !names.insert(&axiom.name) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("axioms[{index}].name"),
+                "unique_axiom_names",
+                "duplicate_axiom_name",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_axiom_report_store_domain(
+    reports: &[Phase8AxiomReportStoreEntry],
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..reports.len() {
+        if reports[index].axiom_report_hash < reports[index - 1].axiom_report_hash {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("reports[{index}]"),
+                "axiom_report_hash_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut hashes = BTreeSet::new();
+    for (index, report) in reports.iter().enumerate() {
+        if !hashes.insert(report.axiom_report_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("reports[{index}].axiom_report_hash"),
+                "unique_axiom_report_hashes",
+                "duplicate_axiom_report_hash",
+            ));
+        }
+    }
+
+    let mut paths = BTreeSet::new();
+    for (index, report) in reports.iter().enumerate() {
+        if !paths.insert(&report.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("reports[{index}].path"),
                 "unique_paths",
                 "duplicate_path",
             ));
@@ -5615,5 +8000,450 @@ mod tests {
             .unwrap()
             .contains("\"file_hash\":\"sha256:"));
         assert_ne!(err.expected_value, err.actual_value);
+    }
+
+    fn m3_request_and_policy() -> (Phase8MachineCheckRequest, Phase8RunnerPolicy) {
+        let policy = parse_phase8_runner_policy(&valid_runner_policy_json()).unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let materialized = phase8_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            phase8_file_hash(imports_json.as_bytes()),
+            "reference",
+            "mchkreq_001",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap();
+        (materialized.request, policy)
+    }
+
+    fn m3_runner() -> Phase8MachineCheckRunner {
+        Phase8MachineCheckRunner {
+            id: "npa-check-runner".to_owned(),
+            version: "0.8.0".to_owned(),
+            build_hash: test_hash(20),
+        }
+    }
+
+    fn m3_resource_usage(elapsed_ms: u64) -> Phase8MachineCheckResourceUsage {
+        Phase8MachineCheckResourceUsage {
+            steps: 128,
+            memory_peak_mb: 64,
+            elapsed_ms,
+        }
+    }
+
+    fn m3_raw_checked(version: &str) -> String {
+        format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"npa-checker-ref",
+              "checker_version":"{}",
+              "checker_build_hash":"{}",
+              "status":"checked",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "export_hash":"{}",
+              "axiom_report_hash":"{}"
+            }}"#,
+            version,
+            hash_wire(11),
+            hash_wire(70),
+            hash_wire(90),
+            hash_wire(91)
+        )
+    }
+
+    #[test]
+    fn m3_adopts_checked_raw_result_and_computes_distinct_hashes() {
+        let (request, policy) = m3_request_and_policy();
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_001".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(1732),
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(result.status, Phase8MachineCheckStatus::Checked);
+        assert_eq!(result.error, None);
+        assert_eq!(result.certificate_hash, Some(test_hash(70)));
+        assert_eq!(result.export_hash, Some(test_hash(90)));
+        assert_eq!(result.axiom_report_hash, Some(test_hash(91)));
+        assert_eq!(result.checker.id.as_deref(), Some("npa-checker-ref"));
+        assert_eq!(result.checker.build_hash, Some(test_hash(11)));
+        assert_ne!(result.result_hash(), result.run_artifact_hash());
+        assert!(result
+            .canonical_json()
+            .contains(PHASE8_MACHINE_CHECK_RESULT_SCHEMA));
+    }
+
+    #[test]
+    fn m3_result_hash_excludes_checker_version_process_and_diagnostics() {
+        let (request, policy) = m3_request_and_policy();
+        let first = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_001".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(100),
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let second = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_002".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(200),
+                stdout: m3_raw_checked("0.8.1").into_bytes(),
+                stderr: b"free form stderr".to_vec(),
+            },
+        )
+        .unwrap();
+
+        assert_eq!(first.result_hash(), second.result_hash());
+        assert_ne!(first.run_artifact_hash(), second.run_artifact_hash());
+        assert_eq!(
+            second.diagnostics,
+            vec!["checker_process:stderr_present".to_owned()]
+        );
+        assert!(!second.canonical_json().contains("free form stderr"));
+    }
+
+    #[test]
+    fn m3_malformed_raw_output_is_saved_as_checker_internal_error() {
+        let (request, policy) = m3_request_and_policy();
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_bad".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(1),
+                stdout: b"not json raw stdout text".to_vec(),
+                stderr: b"raw stderr text".to_vec(),
+            },
+        )
+        .unwrap();
+
+        let error = result.error.as_ref().unwrap();
+        assert_eq!(result.status, Phase8MachineCheckStatus::Failed);
+        assert_eq!(error.kind, "checker_internal_error");
+        assert_eq!(
+            error.reason_code.as_deref(),
+            Some("malformed_success_output")
+        );
+        assert_eq!(error.field.as_deref(), Some("checker_raw"));
+        assert_eq!(error.actual_value.as_deref(), Some("invalid_json"));
+        assert_eq!(
+            result.diagnostics,
+            vec![
+                "checker_process:stderr_present".to_owned(),
+                "checker_process:stdout_present".to_owned(),
+            ]
+        );
+        let canonical = result.canonical_json();
+        assert!(!canonical.contains("not json raw stdout text"));
+        assert!(!canonical.contains("raw stderr text"));
+    }
+
+    #[test]
+    fn m3_malformed_identity_fields_are_raw_schema_errors() {
+        let (request, policy) = m3_request_and_policy();
+        let raw = format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"npa-checker-ref",
+              "checker_id":"npa-checker-ref",
+              "checker_version":"0.8.0",
+              "checker_build_hash":"{}",
+              "status":"checked",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "export_hash":"{}",
+              "axiom_report_hash":"{}"
+            }}"#,
+            hash_wire(11),
+            hash_wire(70),
+            hash_wire(90),
+            hash_wire(91)
+        );
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_dup_identity".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(1),
+                stdout: raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        let error = result.error.as_ref().unwrap();
+        assert_eq!(result.status, Phase8MachineCheckStatus::Failed);
+        assert_eq!(error.kind, "checker_internal_error");
+        assert_eq!(
+            error.reason_code.as_deref(),
+            Some("malformed_success_output")
+        );
+        assert_eq!(error.field.as_deref(), Some("checker_raw.checker_id"));
+        assert_eq!(error.expected_value.as_deref(), Some("unique_object_keys"));
+        assert_eq!(error.actual_value.as_deref(), Some("duplicate_field"));
+
+        let raw = format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"npa-checker-ref",
+              "checker_version":"0.8.0",
+              "checker_build_hash":"{}",
+              "status":"failed",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "error":{{
+                "kind":"type_mismatch",
+                "reason_code":"checker_reported_internal_error"
+              }}
+            }}"#,
+            hash_wire(11),
+            hash_wire(70)
+        );
+        let error = parse_phase8_checker_raw_result(&raw).unwrap_err();
+        assert_eq!(error.field, "checker_raw.error.reason_code");
+        assert_eq!(error.expected_value, "absent_for_error_kind");
+        assert_eq!(error.actual_value, "forbidden_field");
+    }
+
+    #[test]
+    fn m3_adopts_checker_internal_error_payload() {
+        let (request, policy) = m3_request_and_policy();
+        let raw = format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"npa-checker-ref",
+              "checker_version":"0.8.0",
+              "checker_build_hash":"{}",
+              "status":"failed",
+              "error":{{
+                "kind":"checker_internal_error",
+                "reason_code":"checker_reported_internal_error",
+                "core_path":["decl","body"],
+                "section":"type",
+                "offset":3
+              }}
+            }}"#,
+            hash_wire(11)
+        );
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_internal".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(2),
+                resource_usage: m3_resource_usage(1),
+                stdout: raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        let error = result.error.as_ref().unwrap();
+        assert_eq!(result.status, Phase8MachineCheckStatus::Failed);
+        assert_eq!(error.kind, "checker_internal_error");
+        assert_eq!(
+            error.reason_code.as_deref(),
+            Some("checker_reported_internal_error")
+        );
+        assert_eq!(
+            error.core_path,
+            Some(vec!["decl".to_owned(), "body".to_owned()])
+        );
+        assert_eq!(error.section.as_deref(), Some("type"));
+        assert_eq!(error.offset, Some(3));
+    }
+
+    #[test]
+    fn m3_checked_status_requires_launched_process() {
+        let (request, policy) = m3_request_and_policy();
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_not_launched".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess {
+                    launched: false,
+                    exit_code: Some(0),
+                    termination_reason: None,
+                },
+                resource_usage: Phase8MachineCheckResourceUsage::zero(),
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        let error = result.error.as_ref().unwrap();
+        assert_eq!(result.status, Phase8MachineCheckStatus::Failed);
+        assert_eq!(error.kind, "checker_internal_error");
+        assert_eq!(error.reason_code.as_deref(), Some("process_not_launched"));
+        assert_eq!(result.checker.id, None);
+    }
+
+    #[test]
+    fn m3_policy_identity_gate_prevents_raw_checked_status_adoption() {
+        let (request, policy) = m3_request_and_policy();
+        let mismatched_raw =
+            m3_raw_checked("0.8.0").replace("npa-checker-ref", "npa-checker-other");
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_identity".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(10),
+                stdout: mismatched_raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        let error = result.error.as_ref().unwrap();
+        assert_eq!(result.status, Phase8MachineCheckStatus::Failed);
+        assert_eq!(error.kind, "policy_failure");
+        assert_eq!(
+            error.reason_code.as_deref(),
+            Some("checker_identity_mismatch")
+        );
+        assert_eq!(error.field.as_deref(), Some("checker.id"));
+        assert_eq!(result.certificate_hash, None);
+    }
+
+    #[test]
+    fn m3_machine_result_store_uses_run_artifact_hash_not_result_hash() {
+        let (request, policy) = m3_request_and_policy();
+        let first = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_001".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(100),
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let second = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_002".to_owned(),
+                attempt: 2,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(101),
+                stdout: m3_raw_checked("0.8.0").into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        assert_eq!(first.result_hash(), second.result_hash());
+        assert_ne!(first.run_artifact_hash(), second.run_artifact_hash());
+
+        let first_entry =
+            phase8_machine_result_store_entry_for_result(&first, "build/results/first.json")
+                .unwrap();
+        let second_entry =
+            phase8_machine_result_store_entry_for_result(&second, "build/results/second.json")
+                .unwrap();
+        let update = phase8_machine_result_store_with_entry(None, first_entry.clone()).unwrap();
+        let update =
+            phase8_machine_result_store_with_entry(Some(&update.manifest), second_entry).unwrap();
+        assert_eq!(update.manifest.results.len(), 2);
+        assert_eq!(
+            parse_phase8_machine_result_store_manifest(&update.manifest.canonical_json()).unwrap(),
+            update.manifest
+        );
+
+        let mut conflicting_entry = first_entry;
+        conflicting_entry.file_hash = test_hash(200);
+        let conflict =
+            phase8_machine_result_store_with_entry(Some(&update.manifest), conflicting_entry)
+                .unwrap_err();
+        assert_eq!(conflict.reason_code.as_ref(), "result_store_entry_conflict");
+    }
+
+    #[test]
+    fn m3_axiom_report_and_store_hashes_are_deterministic() {
+        let report = Phase8AxiomReport {
+            module: "Std.Nat".to_owned(),
+            certificate_hash: test_hash(70),
+            axioms: vec![
+                Phase8AxiomReportEntry {
+                    name: "Aaa.choice".to_owned(),
+                },
+                Phase8AxiomReportEntry {
+                    name: "Bbb.propExt".to_owned(),
+                },
+            ],
+        };
+        let parsed = parse_phase8_axiom_report(&report.canonical_json()).unwrap();
+        assert_eq!(parsed, report);
+
+        let bad_order = report
+            .canonical_json()
+            .replace("Aaa.choice", "Zzz.choice")
+            .replace("Bbb.propExt", "Aaa.propExt");
+        let bad_order = parse_phase8_axiom_report(&bad_order).unwrap_err();
+        assert_eq!(bad_order.field.as_ref(), "axioms[1]");
+        assert_eq!(bad_order.actual_value.as_deref(), Some("order_violation"));
+
+        let entry = Phase8AxiomReportStoreEntry {
+            axiom_report_hash: report.axiom_report_hash(),
+            path: "build/axiom-reports/Std.Nat.json".to_owned(),
+            file_hash: phase8_file_hash(report.canonical_json().as_bytes()),
+        };
+        let store = Phase8AxiomReportStoreManifest {
+            reports: vec![entry],
+        };
+        assert_eq!(
+            parse_phase8_axiom_report_store_manifest(&store.canonical_json()).unwrap(),
+            store
+        );
     }
 }
