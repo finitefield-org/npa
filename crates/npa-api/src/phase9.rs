@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use std::path::{Component, Path, PathBuf};
 
 use npa_cert::{
-    AxiomPolicy, CoreModule, Hash, InductiveArtifactProfileCheckV1, ModuleName, Name,
+    AxiomPolicy, CoreModule, ExportKind, Hash, InductiveArtifactProfileCheckV1, ModuleName, Name,
     VerifierSession,
 };
 use npa_kernel::{Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level};
@@ -18,12 +18,20 @@ const ENV_FINGERPRINT_TAG: &str = "npa.phase9_ai.env.v1";
 const GOAL_FINGERPRINT_TAG: &str = "npa.phase9_ai.goal.v1";
 const VALIDATION_RESULT_HASH_TAG: &str = "npa.phase9_ai.validation_result.v1";
 const UNIVERSE_CONSTRAINT_SET_HASH_TAG: &str = "npa.phase9_ai.universe.constraints.v1";
+const THEOREM_GRAPH_SNAPSHOT_HASH_TAG: &str = "npa.phase9_ai.theorem_graph.snapshot.v1";
+const THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG: &str = "npa.phase9_ai.theorem_graph.query_features.v1";
 
 const MAX_OPTIONS_BYTES: usize = 16_000_000;
 const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
 const MAX_PHASE9_INDUCTIVE_ITEMS: u64 = 65_536;
 const MAX_PHASE9_INDUCTIVE_EXPR_NODES: u64 = 1_000_000;
 const MAX_PHASE9_INDUCTIVE_LEVEL_NODES: u64 = 1_000_000;
+const MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES: usize = 128_000_000;
+const MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES: usize = 16_000_000;
+const MAX_PHASE9_THEOREM_GRAPH_NODES: u64 = 1_000_000;
+const MAX_PHASE9_THEOREM_GRAPH_EDGES: u64 = 1_000_000;
+const MAX_PHASE9_THEOREM_GRAPH_FEATURES: u64 = 65_536;
+const MAX_PHASE9_THEOREM_GRAPH_RESULT_LIMIT: u32 = 256;
 const MAX_PHASE9_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
 const MAX_NAME_COMPONENTS: u64 = 256;
 const MAX_STRING_BYTES: u64 = 1_048_576;
@@ -523,7 +531,203 @@ pub enum Phase9AiSuccessPayload {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase9MachineTheoremGraphResult {
-    pub result_hash: Hash,
+    pub entries: Vec<Phase9MachineTheoremGraphResultEntry>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphResultEntry {
+    pub node: Phase9MachineTheoremGraphNodeRef,
+    pub score: Phase9MachineTheoremGraphScore,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphScore {
+    pub score_microunits: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphNodeRef {
+    pub module: ModuleName,
+    pub name: Name,
+    pub export_hash: Hash,
+    pub decl_certificate_hash: Hash,
+    pub type_hash: Hash,
+    pub certificate_hash: Hash,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphQuery {
+    pub env_fingerprint: Hash,
+    pub goal_fingerprint: Hash,
+    pub goal: Phase9AiGoal,
+    pub snapshot: Phase9MachineTheoremGraphSnapshotRef,
+    pub query_features: Phase9MachineTheoremGraphQueryFeaturesRef,
+    pub ranking_profile: Phase9TheoremGraphRankingProfile,
+    pub limit: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphSnapshotRef {
+    pub source_release_hash: Hash,
+    pub extractor_version: Phase9TheoremGraphExtractorVersion,
+    pub source: Phase9MachineTheoremGraphSnapshotSource,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineTheoremGraphSnapshotSource {
+    Inline {
+        graph_snapshot_hash: Hash,
+        canonical_bytes: Vec<u8>,
+    },
+    Artifact {
+        path: String,
+        file_hash: Hash,
+        graph_snapshot_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineTheoremGraphQueryFeaturesRef {
+    Inline {
+        query_features_hash: Hash,
+        canonical_bytes: Vec<u8>,
+    },
+    Artifact {
+        path: String,
+        file_hash: Hash,
+        query_features_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9TheoremGraphRankingProfile {
+    MvpTupleOrder,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphSnapshot {
+    pub source_release_hash: Hash,
+    pub extractor_version: Phase9TheoremGraphExtractorVersion,
+    pub nodes: Vec<Phase9MachineTheoremGraphNodeRef>,
+    pub edges: Vec<Phase9MachineTheoremGraphEdge>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphEdge {
+    pub from: Phase9MachineTheoremGraphNodeRef,
+    pub to: Phase9MachineTheoremGraphNodeRef,
+    pub kind: Phase9TheoremGraphEdgeKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphQueryFeatures {
+    pub env_fingerprint: Hash,
+    pub goal_fingerprint: Hash,
+    pub feature_schema_version: Phase9TheoremGraphFeatureSchemaVersion,
+    pub features: Vec<Phase9MachineTheoremGraphFeature>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTheoremGraphFeature {
+    pub key: Phase9TheoremGraphFeatureKey,
+    pub value: Phase9TheoremGraphFeatureValue,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9TheoremGraphExtractorVersion {
+    MvpCertificateGraphV1,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9TheoremGraphFeatureSchemaVersion {
+    MvpGoalFeaturesV1,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9TheoremGraphEdgeKind {
+    ImportsDeclaration,
+    UsesConstant,
+    MentionsType,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9TheoremGraphFeatureKey {
+    pub namespace_ascii: Vec<u8>,
+    pub name_ascii: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9TheoremGraphFeatureValue {
+    Bool(bool),
+    I64(i64),
+    Hash(Hash),
+}
+
+impl Phase9TheoremGraphRankingProfile {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpTupleOrder => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpTupleOrder),
+            _ => None,
+        }
+    }
+}
+
+impl Phase9TheoremGraphExtractorVersion {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpCertificateGraphV1 => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpCertificateGraphV1),
+            _ => None,
+        }
+    }
+}
+
+impl Phase9TheoremGraphFeatureSchemaVersion {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpGoalFeaturesV1 => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpGoalFeaturesV1),
+            _ => None,
+        }
+    }
+}
+
+impl Phase9TheoremGraphEdgeKind {
+    fn tag(self) -> u8 {
+        match self {
+            Self::ImportsDeclaration => 0,
+            Self::UsesConstant => 1,
+            Self::MentionsType => 2,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::ImportsDeclaration),
+            1 => Some(Self::UsesConstant),
+            2 => Some(Self::MentionsType),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -568,6 +772,8 @@ pub enum Phase9AiCanonicalError {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum DecodeError {
     Malformed,
+    TheoremGraphSnapshotBytesTooLarge,
+    TheoremGraphQueryFeaturesBytesTooLarge,
 }
 
 pub fn phase9_ai_candidate_hash(envelope_canonical_bytes: &[u8]) -> Hash {
@@ -643,6 +849,52 @@ pub fn phase9_inductive_proposal_canonical_bytes(
     let mut out = Vec::new();
     encode_inductive_proposal_to(&mut out, proposal)?;
     Ok(out)
+}
+
+pub fn phase9_theorem_graph_query_canonical_bytes(
+    query: &Phase9MachineTheoremGraphQuery,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_theorem_graph_query_to(&mut out, query)?;
+    Ok(out)
+}
+
+pub fn phase9_theorem_graph_snapshot_canonical_bytes(
+    snapshot: &Phase9MachineTheoremGraphSnapshot,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_theorem_graph_snapshot_to(&mut out, snapshot)?;
+    Ok(out)
+}
+
+pub fn phase9_theorem_graph_query_features_canonical_bytes(
+    features: &Phase9MachineTheoremGraphQueryFeatures,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_theorem_graph_query_features_to(&mut out, features)?;
+    Ok(out)
+}
+
+pub fn phase9_theorem_graph_snapshot_hash(
+    canonical_bytes: &[u8],
+) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+    decode_theorem_graph_snapshot(canonical_bytes)
+        .map_err(|_| Phase9AiCanonicalError::InvalidName)?;
+    Ok(hash_with_domain(
+        THEOREM_GRAPH_SNAPSHOT_HASH_TAG,
+        canonical_bytes,
+    ))
+}
+
+pub fn phase9_theorem_graph_query_features_hash(
+    canonical_bytes: &[u8],
+) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+    decode_theorem_graph_query_features(canonical_bytes)
+        .map_err(|_| Phase9AiCanonicalError::InvalidName)?;
+    Ok(hash_with_domain(
+        THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG,
+        canonical_bytes,
+    ))
 }
 
 pub fn phase9_universe_repair_candidate_canonical_bytes(
@@ -822,12 +1074,17 @@ pub fn run_phase9_theorem_graph_query_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
+    match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
         Phase9AiTaskKind::TheoremGraphQuery,
-    )
+    ) {
+        Ok(validated) => {
+            run_phase9_theorem_graph_query_validated(validated, verified_imports, workspace_root)
+        }
+        Err(response) => response,
+    }
 }
 
 pub fn run_phase9_formalize_check_request(
@@ -1199,6 +1456,183 @@ fn run_phase9_inductive_validated(
         Phase9AiSuccessPayload::AdvancedInductive {
             decl_interface_hash: decl.hashes.decl_interface_hash,
             decl_certificate_hash: decl.hashes.decl_certificate_hash,
+        },
+    )
+}
+
+fn run_phase9_theorem_graph_query_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+    workspace_root: &Path,
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let query = match decode_theorem_graph_query(&validated.envelope.payload) {
+        Ok(query) => query,
+        Err(DecodeError::TheoremGraphSnapshotBytesTooLarge) => {
+            return theorem_graph_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9TheoremGraphError::SnapshotMalformed,
+            );
+        }
+        Err(DecodeError::TheoremGraphQueryFeaturesBytesTooLarge) => {
+            return theorem_graph_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9TheoremGraphError::QueryFeaturesMalformed,
+            );
+        }
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+
+    if query.env_fingerprint != validated.envelope.target.env_fingerprint
+        || Some(query.goal_fingerprint) != validated.envelope.target.goal_fingerprint
+        || phase9_ai_goal_fingerprint(validated.env_fingerprint, &query.goal)
+            != query.goal_fingerprint
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+
+    match validate_phase9_theorem_graph_goal(&query.goal, verified_imports) {
+        Ok(()) => {}
+        Err(Phase9GoalValidationError::EnvelopeMalformed) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+        Err(Phase9GoalValidationError::ImportClosureMismatch) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            );
+        }
+        Err(Phase9GoalValidationError::KernelRejected) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+    }
+
+    if query.limit > MAX_PHASE9_THEOREM_GRAPH_RESULT_LIMIT {
+        return theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::LimitOutOfRange,
+        );
+    }
+
+    let snapshot_bytes = match phase9_theorem_graph_snapshot_bytes(
+        candidate_hash,
+        &query.snapshot.source,
+        workspace_root,
+    ) {
+        Ok(bytes) => bytes,
+        Err(response) => return response,
+    };
+    let snapshot = match phase9_validate_theorem_graph_snapshot_bytes(
+        candidate_hash,
+        &snapshot_bytes,
+        &query.snapshot,
+    ) {
+        Ok(snapshot) => snapshot,
+        Err(response) => return response,
+    };
+
+    let feature_bytes = match phase9_theorem_graph_query_features_bytes(
+        candidate_hash,
+        &query.query_features,
+        workspace_root,
+    ) {
+        Ok(bytes) => bytes,
+        Err(response) => return response,
+    };
+    let query_features = match phase9_validate_theorem_graph_query_features_bytes(
+        candidate_hash,
+        &feature_bytes,
+        &query,
+    ) {
+        Ok(query_features) => query_features,
+        Err(response) => return response,
+    };
+
+    if snapshot.source_release_hash != query.snapshot.source_release_hash
+        || snapshot.extractor_version != query.snapshot.extractor_version
+    {
+        return theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::SnapshotMalformed,
+        );
+    }
+    if query_features.env_fingerprint != query.env_fingerprint
+        || query_features.goal_fingerprint != query.goal_fingerprint
+        || query_features.feature_schema_version
+            != Phase9TheoremGraphFeatureSchemaVersion::MvpGoalFeaturesV1
+    {
+        return theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::QueryFeaturesMalformed,
+        );
+    }
+    if !phase9_theorem_graph_features_are_well_formed(&query_features.features) {
+        return theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::QueryFeaturesMalformed,
+        );
+    }
+    if !phase9_theorem_graph_snapshot_is_well_formed(&snapshot) {
+        return theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::SnapshotMalformed,
+        );
+    }
+
+    let mut entries = Vec::new();
+    for node in &snapshot.nodes {
+        match phase9_resolve_theorem_graph_node(node, verified_imports) {
+            Phase9TheoremGraphNodeResolution::Missing => {}
+            Phase9TheoremGraphNodeResolution::Mismatch => {
+                return theorem_graph_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Phase9TheoremGraphError::NodeResolutionMismatch,
+                );
+            }
+            Phase9TheoremGraphNodeResolution::Resolved { eligible } => {
+                if eligible && entries.len() < query.limit as usize {
+                    entries.push(Phase9MachineTheoremGraphResultEntry {
+                        node: node.clone(),
+                        score: Phase9MachineTheoremGraphScore {
+                            score_microunits: 0,
+                        },
+                    });
+                }
+            }
+        }
+    }
+
+    success_response(
+        candidate_hash,
+        Phase9AiSuccessPayload::TheoremGraphQuery {
+            result: Phase9MachineTheoremGraphResult { entries },
         },
     )
 }
@@ -1680,6 +2114,444 @@ fn validate_required_options(
             Phase9AiValidationError::EnvelopeMalformed,
             None,
         ))
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase9GoalValidationError {
+    EnvelopeMalformed,
+    ImportClosureMismatch,
+    KernelRejected,
+}
+
+fn validate_phase9_theorem_graph_goal(
+    goal: &Phase9AiGoal,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<(), Phase9GoalValidationError> {
+    if !phase9_string_list_is_unique(&goal.universe_params)
+        || !expr_levels_are_in_scope(&goal.target, &goal.universe_params)
+        || !goal
+            .local_context
+            .iter()
+            .all(|local| local_decl_levels_are_in_scope(local, &goal.universe_params))
+    {
+        return Err(Phase9GoalValidationError::EnvelopeMalformed);
+    }
+    if !goal_imported_refs_are_resolved(goal, verified_imports) {
+        return Err(Phase9GoalValidationError::ImportClosureMismatch);
+    }
+    validate_goal_kernel(goal, verified_imports)
+        .map_err(|_| Phase9GoalValidationError::KernelRejected)
+}
+
+fn theorem_graph_rejected_response(
+    candidate_hash: Hash,
+    error: Phase9AiValidationError,
+    graph_error: Phase9TheoremGraphError,
+) -> Phase9AiEndpointResponse {
+    rejected_response(
+        candidate_hash,
+        error,
+        Some(Phase9AiFeatureError::TheoremGraphQuery(graph_error)),
+    )
+}
+
+fn phase9_theorem_graph_snapshot_bytes(
+    candidate_hash: Hash,
+    source: &Phase9MachineTheoremGraphSnapshotSource,
+    workspace_root: &Path,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    match source {
+        Phase9MachineTheoremGraphSnapshotSource::Inline {
+            canonical_bytes, ..
+        } => {
+            if canonical_bytes.len() > MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES {
+                return Err(theorem_graph_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9TheoremGraphError::SnapshotMalformed,
+                ));
+            }
+            Ok(canonical_bytes.clone())
+        }
+        Phase9MachineTheoremGraphSnapshotSource::Artifact {
+            path,
+            file_hash,
+            size_bytes,
+            ..
+        } => phase9_theorem_graph_artifact_bytes(
+            candidate_hash,
+            workspace_root,
+            path,
+            *file_hash,
+            *size_bytes,
+            MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES,
+            Phase9TheoremGraphError::SnapshotMalformed,
+        ),
+    }
+}
+
+fn phase9_theorem_graph_query_features_bytes(
+    candidate_hash: Hash,
+    source: &Phase9MachineTheoremGraphQueryFeaturesRef,
+    workspace_root: &Path,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    match source {
+        Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+            canonical_bytes, ..
+        } => {
+            if canonical_bytes.len() > MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES {
+                return Err(theorem_graph_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9TheoremGraphError::QueryFeaturesMalformed,
+                ));
+            }
+            Ok(canonical_bytes.clone())
+        }
+        Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+            path,
+            file_hash,
+            size_bytes,
+            ..
+        } => phase9_theorem_graph_artifact_bytes(
+            candidate_hash,
+            workspace_root,
+            path,
+            *file_hash,
+            *size_bytes,
+            MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES,
+            Phase9TheoremGraphError::QueryFeaturesMalformed,
+        ),
+    }
+}
+
+fn phase9_theorem_graph_artifact_bytes(
+    candidate_hash: Hash,
+    workspace_root: &Path,
+    path: &str,
+    file_hash: Hash,
+    size_bytes: u64,
+    max_bytes: usize,
+    malformed_error: Phase9TheoremGraphError,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    if usize::try_from(size_bytes)
+        .map(|size| size > max_bytes)
+        .unwrap_or(true)
+    {
+        return Err(theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            malformed_error,
+        ));
+    }
+    let path = match validate_artifact_path(workspace_root, path) {
+        Ok(path) => path,
+        Err(ArtifactPathError::EnvelopeMalformed) => {
+            return Err(theorem_graph_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                malformed_error,
+            ));
+        }
+        Err(ArtifactPathError::ArtifactUnavailable) => {
+            return Err(Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::ArtifactUnavailable,
+            });
+        }
+    };
+    let metadata = std::fs::metadata(&path).map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::ArtifactUnavailable,
+    })?;
+    if metadata.len() != size_bytes {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::ArtifactUnavailable,
+    })?;
+    if phase9_file_hash(&bytes) != file_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(bytes)
+}
+
+fn phase9_validate_theorem_graph_snapshot_bytes(
+    candidate_hash: Hash,
+    bytes: &[u8],
+    snapshot_ref: &Phase9MachineTheoremGraphSnapshotRef,
+) -> std::result::Result<Phase9MachineTheoremGraphSnapshot, Phase9AiEndpointResponse> {
+    phase9_precheck_theorem_graph_snapshot_outer(bytes).map_err(|_| {
+        theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::SnapshotMalformed,
+        )
+    })?;
+    let expected_hash = match &snapshot_ref.source {
+        Phase9MachineTheoremGraphSnapshotSource::Inline {
+            graph_snapshot_hash,
+            ..
+        }
+        | Phase9MachineTheoremGraphSnapshotSource::Artifact {
+            graph_snapshot_hash,
+            ..
+        } => *graph_snapshot_hash,
+    };
+    if hash_with_domain(THEOREM_GRAPH_SNAPSHOT_HASH_TAG, bytes) != expected_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    let snapshot = decode_theorem_graph_snapshot(bytes).map_err(|_| {
+        theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::SnapshotMalformed,
+        )
+    })?;
+    Ok(snapshot)
+}
+
+fn phase9_validate_theorem_graph_query_features_bytes(
+    candidate_hash: Hash,
+    bytes: &[u8],
+    query: &Phase9MachineTheoremGraphQuery,
+) -> std::result::Result<Phase9MachineTheoremGraphQueryFeatures, Phase9AiEndpointResponse> {
+    phase9_precheck_theorem_graph_query_features_outer(bytes).map_err(|_| {
+        theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::QueryFeaturesMalformed,
+        )
+    })?;
+    let expected_hash = match &query.query_features {
+        Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+            query_features_hash,
+            ..
+        }
+        | Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+            query_features_hash,
+            ..
+        } => *query_features_hash,
+    };
+    if hash_with_domain(THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG, bytes) != expected_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    let query_features = decode_theorem_graph_query_features(bytes).map_err(|_| {
+        theorem_graph_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9TheoremGraphError::QueryFeaturesMalformed,
+        )
+    })?;
+    Ok(query_features)
+}
+
+fn phase9_precheck_theorem_graph_snapshot_outer(
+    bytes: &[u8],
+) -> std::result::Result<(), DecodeError> {
+    let mut decoder = Decoder::new(bytes);
+    decoder.hash()?;
+    Phase9TheoremGraphExtractorVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
+    let node_len = decoder.u64()?;
+    if node_len > MAX_PHASE9_THEOREM_GRAPH_NODES {
+        return Err(DecodeError::Malformed);
+    }
+    for _ in 0..node_len {
+        decoder.skip_theorem_graph_node()?;
+    }
+    let edge_len = decoder.u64()?;
+    if edge_len > MAX_PHASE9_THEOREM_GRAPH_EDGES {
+        return Err(DecodeError::Malformed);
+    }
+    for _ in 0..edge_len {
+        decoder.skip_theorem_graph_edge()?;
+    }
+    decoder.done()
+}
+
+fn phase9_precheck_theorem_graph_query_features_outer(
+    bytes: &[u8],
+) -> std::result::Result<(), DecodeError> {
+    let mut decoder = Decoder::new(bytes);
+    decoder.hash()?;
+    decoder.hash()?;
+    Phase9TheoremGraphFeatureSchemaVersion::from_tag(decoder.u8()?)
+        .ok_or(DecodeError::Malformed)?;
+    let feature_len = decoder.u64()?;
+    if feature_len > MAX_PHASE9_THEOREM_GRAPH_FEATURES {
+        return Err(DecodeError::Malformed);
+    }
+    for _ in 0..feature_len {
+        decoder.skip_theorem_graph_feature()?;
+    }
+    decoder.done()
+}
+
+fn phase9_theorem_graph_features_are_well_formed(
+    features: &[Phase9MachineTheoremGraphFeature],
+) -> bool {
+    let mut previous = None;
+    for feature in features {
+        if !phase9_theorem_graph_feature_key_is_valid(&feature.key) {
+            return false;
+        }
+        let key = phase9_theorem_graph_feature_key_canonical_bytes(&feature.key);
+        if previous.as_ref().is_some_and(|previous| previous >= &key) {
+            return false;
+        }
+        previous = Some(key);
+    }
+    true
+}
+
+fn phase9_theorem_graph_feature_key_is_valid(key: &Phase9TheoremGraphFeatureKey) -> bool {
+    phase9_theorem_graph_feature_key_component_is_valid(&key.namespace_ascii)
+        && phase9_theorem_graph_feature_key_component_is_valid(&key.name_ascii)
+}
+
+fn phase9_theorem_graph_feature_key_component_is_valid(bytes: &[u8]) -> bool {
+    if bytes.is_empty() || bytes.len() > 64 {
+        return false;
+    }
+    let Some(first) = bytes.first().copied() else {
+        return false;
+    };
+    if !first.is_ascii_alphabetic() && first != b'_' {
+        return false;
+    }
+    bytes[1..]
+        .iter()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(*byte, b'_' | b'.' | b':' | b'-'))
+}
+
+fn phase9_theorem_graph_feature_key_canonical_bytes(key: &Phase9TheoremGraphFeatureKey) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_bytes_to(&mut out, &key.namespace_ascii);
+    encode_bytes_to(&mut out, &key.name_ascii);
+    out
+}
+
+fn phase9_theorem_graph_snapshot_is_well_formed(
+    snapshot: &Phase9MachineTheoremGraphSnapshot,
+) -> bool {
+    let mut previous_node = None;
+    let mut node_bytes = BTreeSet::new();
+    for node in &snapshot.nodes {
+        let identity = phase9_theorem_graph_node_identity_key(node);
+        if previous_node
+            .as_ref()
+            .is_some_and(|previous| previous >= &identity)
+        {
+            return false;
+        }
+        previous_node = Some(identity);
+        let Ok(bytes) = phase9_theorem_graph_node_canonical_bytes(node) else {
+            return false;
+        };
+        node_bytes.insert(bytes);
+    }
+
+    let mut previous_edge = None;
+    for edge in &snapshot.edges {
+        let key = phase9_theorem_graph_edge_key(edge);
+        if previous_edge
+            .as_ref()
+            .is_some_and(|previous| previous >= &key)
+        {
+            return false;
+        }
+        previous_edge = Some(key);
+
+        let Ok(from) = phase9_theorem_graph_node_canonical_bytes(&edge.from) else {
+            return false;
+        };
+        let Ok(to) = phase9_theorem_graph_node_canonical_bytes(&edge.to) else {
+            return false;
+        };
+        if !node_bytes.contains(&from) || !node_bytes.contains(&to) {
+            return false;
+        }
+    }
+    true
+}
+
+fn phase9_theorem_graph_node_identity_key(node: &Phase9MachineTheoremGraphNodeRef) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_name_to(&mut out, &node.module).expect("decoded theorem graph module is canonical");
+    encode_name_to(&mut out, &node.name).expect("decoded theorem graph name is canonical");
+    encode_hash_to(&mut out, &node.export_hash);
+    encode_hash_to(&mut out, &node.certificate_hash);
+    encode_hash_to(&mut out, &node.decl_interface_hash);
+    out
+}
+
+fn phase9_theorem_graph_edge_key(edge: &Phase9MachineTheoremGraphEdge) -> Vec<u8> {
+    let mut out = Vec::new();
+    out.extend_from_slice(&phase9_theorem_graph_node_identity_key(&edge.from));
+    out.extend_from_slice(&phase9_theorem_graph_node_identity_key(&edge.to));
+    out.push(edge.kind.tag());
+    out
+}
+
+enum Phase9TheoremGraphNodeResolution {
+    Missing,
+    Mismatch,
+    Resolved { eligible: bool },
+}
+
+fn phase9_resolve_theorem_graph_node(
+    node: &Phase9MachineTheoremGraphNodeRef,
+    imports: &[VerifiedImportRef],
+) -> Phase9TheoremGraphNodeResolution {
+    let Some(import) = imports.iter().find(|import| {
+        import.module() == &node.module
+            && import.export_hash() == node.export_hash
+            && import.certificate_hash() == node.certificate_hash
+    }) else {
+        return Phase9TheoremGraphNodeResolution::Missing;
+    };
+
+    let matches = import
+        .exports()
+        .iter()
+        .filter(|export| {
+            export.name == node.name && export.decl_interface_hash == node.decl_interface_hash
+        })
+        .collect::<Vec<_>>();
+    let [export] = matches.as_slice() else {
+        return Phase9TheoremGraphNodeResolution::Missing;
+    };
+    if export.type_hash != node.type_hash {
+        return Phase9TheoremGraphNodeResolution::Mismatch;
+    }
+    let Some(decl) = import
+        .verified_module()
+        .declarations()
+        .iter()
+        .find(|decl| decl.hashes.decl_interface_hash == export.decl_interface_hash)
+    else {
+        return Phase9TheoremGraphNodeResolution::Mismatch;
+    };
+    if decl.hashes.decl_certificate_hash != node.decl_certificate_hash {
+        return Phase9TheoremGraphNodeResolution::Mismatch;
+    }
+    Phase9TheoremGraphNodeResolution::Resolved {
+        eligible: matches!(export.kind, ExportKind::Axiom | ExportKind::Theorem),
     }
 }
 
@@ -2474,7 +3346,7 @@ fn encode_success_payload_to(out: &mut Vec<u8>, success: &Phase9AiSuccessPayload
         }
         Phase9AiSuccessPayload::TheoremGraphQuery { result } => {
             out.push(5);
-            encode_hash_to(out, &result.result_hash);
+            encode_theorem_graph_result_to(out, result);
         }
         Phase9AiSuccessPayload::NaturalLanguageFormalization {
             kind,
@@ -2704,6 +3576,170 @@ fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[Phase9MachineTelescopeBin
     encode_len_to(out, telescope.len());
     for binder in telescope {
         encode_expr_to(out, &binder.ty);
+    }
+}
+
+fn encode_theorem_graph_query_to(
+    out: &mut Vec<u8>,
+    query: &Phase9MachineTheoremGraphQuery,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_hash_to(out, &query.env_fingerprint);
+    encode_hash_to(out, &query.goal_fingerprint);
+    encode_goal_to(out, &query.goal)?;
+    encode_theorem_graph_snapshot_ref_to(out, &query.snapshot)?;
+    encode_theorem_graph_query_features_ref_to(out, &query.query_features);
+    out.push(query.ranking_profile.tag());
+    encode_u64_to(out, u64::from(query.limit));
+    Ok(())
+}
+
+fn encode_theorem_graph_snapshot_ref_to(
+    out: &mut Vec<u8>,
+    snapshot: &Phase9MachineTheoremGraphSnapshotRef,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_hash_to(out, &snapshot.source_release_hash);
+    out.push(snapshot.extractor_version.tag());
+    match &snapshot.source {
+        Phase9MachineTheoremGraphSnapshotSource::Inline {
+            graph_snapshot_hash,
+            canonical_bytes,
+        } => {
+            out.push(0);
+            encode_hash_to(out, graph_snapshot_hash);
+            encode_bytes_to(out, canonical_bytes);
+        }
+        Phase9MachineTheoremGraphSnapshotSource::Artifact {
+            path,
+            file_hash,
+            graph_snapshot_hash,
+            size_bytes,
+        } => {
+            out.push(1);
+            encode_string_to(out, path);
+            encode_hash_to(out, file_hash);
+            encode_hash_to(out, graph_snapshot_hash);
+            encode_u64_to(out, *size_bytes);
+        }
+    }
+    Ok(())
+}
+
+fn encode_theorem_graph_query_features_ref_to(
+    out: &mut Vec<u8>,
+    features: &Phase9MachineTheoremGraphQueryFeaturesRef,
+) {
+    match features {
+        Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+            query_features_hash,
+            canonical_bytes,
+        } => {
+            out.push(0);
+            encode_hash_to(out, query_features_hash);
+            encode_bytes_to(out, canonical_bytes);
+        }
+        Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+            path,
+            file_hash,
+            query_features_hash,
+            size_bytes,
+        } => {
+            out.push(1);
+            encode_string_to(out, path);
+            encode_hash_to(out, file_hash);
+            encode_hash_to(out, query_features_hash);
+            encode_u64_to(out, *size_bytes);
+        }
+    }
+}
+
+fn encode_theorem_graph_snapshot_to(
+    out: &mut Vec<u8>,
+    snapshot: &Phase9MachineTheoremGraphSnapshot,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_hash_to(out, &snapshot.source_release_hash);
+    out.push(snapshot.extractor_version.tag());
+    encode_len_to(out, snapshot.nodes.len());
+    for node in &snapshot.nodes {
+        encode_theorem_graph_node_to(out, node)?;
+    }
+    encode_len_to(out, snapshot.edges.len());
+    for edge in &snapshot.edges {
+        encode_theorem_graph_edge_to(out, edge)?;
+    }
+    Ok(())
+}
+
+fn encode_theorem_graph_query_features_to(
+    out: &mut Vec<u8>,
+    features: &Phase9MachineTheoremGraphQueryFeatures,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_hash_to(out, &features.env_fingerprint);
+    encode_hash_to(out, &features.goal_fingerprint);
+    out.push(features.feature_schema_version.tag());
+    encode_len_to(out, features.features.len());
+    for feature in &features.features {
+        encode_theorem_graph_feature_to(out, feature);
+    }
+    Ok(())
+}
+
+fn encode_theorem_graph_result_to(out: &mut Vec<u8>, result: &Phase9MachineTheoremGraphResult) {
+    encode_len_to(out, result.entries.len());
+    for entry in &result.entries {
+        encode_theorem_graph_node_to(out, &entry.node)
+            .expect("validated theorem graph result node names are canonical");
+        encode_i64_to(out, entry.score.score_microunits);
+    }
+}
+
+fn encode_theorem_graph_edge_to(
+    out: &mut Vec<u8>,
+    edge: &Phase9MachineTheoremGraphEdge,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_theorem_graph_node_to(out, &edge.from)?;
+    encode_theorem_graph_node_to(out, &edge.to)?;
+    out.push(edge.kind.tag());
+    Ok(())
+}
+
+fn encode_theorem_graph_node_to(
+    out: &mut Vec<u8>,
+    node: &Phase9MachineTheoremGraphNodeRef,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_name_to(out, &node.module)?;
+    encode_name_to(out, &node.name)?;
+    encode_hash_to(out, &node.export_hash);
+    encode_hash_to(out, &node.decl_certificate_hash);
+    encode_hash_to(out, &node.type_hash);
+    encode_hash_to(out, &node.certificate_hash);
+    encode_hash_to(out, &node.decl_interface_hash);
+    Ok(())
+}
+
+fn phase9_theorem_graph_node_canonical_bytes(
+    node: &Phase9MachineTheoremGraphNodeRef,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_theorem_graph_node_to(&mut out, node)?;
+    Ok(out)
+}
+
+fn encode_theorem_graph_feature_to(out: &mut Vec<u8>, feature: &Phase9MachineTheoremGraphFeature) {
+    encode_bytes_to(out, &feature.key.namespace_ascii);
+    encode_bytes_to(out, &feature.key.name_ascii);
+    match &feature.value {
+        Phase9TheoremGraphFeatureValue::Bool(value) => {
+            out.push(0);
+            out.push(u8::from(*value));
+        }
+        Phase9TheoremGraphFeatureValue::I64(value) => {
+            out.push(1);
+            encode_i64_to(out, *value);
+        }
+        Phase9TheoremGraphFeatureValue::Hash(value) => {
+            out.push(2);
+            encode_hash_to(out, value);
+        }
     }
 }
 
@@ -3055,6 +4091,48 @@ fn decode_inductive_proposal(
     Ok(proposal)
 }
 
+fn decode_theorem_graph_query(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineTheoremGraphQuery, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let query = decoder.theorem_graph_query()?;
+    decoder.done()?;
+    let encoded =
+        phase9_theorem_graph_query_canonical_bytes(&query).map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(query)
+}
+
+fn decode_theorem_graph_snapshot(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineTheoremGraphSnapshot, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let snapshot = decoder.theorem_graph_snapshot()?;
+    decoder.done()?;
+    let encoded = phase9_theorem_graph_snapshot_canonical_bytes(&snapshot)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(snapshot)
+}
+
+fn decode_theorem_graph_query_features(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineTheoremGraphQueryFeatures, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let features = decoder.theorem_graph_query_features()?;
+    decoder.done()?;
+    let encoded = phase9_theorem_graph_query_features_canonical_bytes(&features)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(features)
+}
+
 fn decode_universe_repair_candidate_outer(
     input: &[u8],
 ) -> std::result::Result<Phase9UniverseRepairCandidateOuter, DecodeError> {
@@ -3153,6 +4231,16 @@ impl<'a> Decoder<'a> {
         Ok(u64::from_be_bytes(bytes.try_into().unwrap()))
     }
 
+    fn i64(&mut self) -> std::result::Result<i64, DecodeError> {
+        let end = self.pos.checked_add(8).ok_or(DecodeError::Malformed)?;
+        let bytes = self
+            .input
+            .get(self.pos..end)
+            .ok_or(DecodeError::Malformed)?;
+        self.pos = end;
+        Ok(i64::from_be_bytes(bytes.try_into().unwrap()))
+    }
+
     fn hash(&mut self) -> std::result::Result<Hash, DecodeError> {
         let end = self.pos.checked_add(32).ok_or(DecodeError::Malformed)?;
         let bytes = self
@@ -3172,6 +4260,47 @@ impl<'a> Decoder<'a> {
             .ok_or(DecodeError::Malformed)?;
         self.pos = end;
         Ok(bytes.to_vec())
+    }
+
+    fn bytes_with_cap(
+        &mut self,
+        cap: usize,
+        cap_error: DecodeError,
+    ) -> std::result::Result<Vec<u8>, DecodeError> {
+        let len = self.u64()?;
+        if usize::try_from(len).map(|len| len > cap).unwrap_or(true) {
+            return Err(cap_error);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let end = self.pos.checked_add(len).ok_or(DecodeError::Malformed)?;
+        let bytes = self
+            .input
+            .get(self.pos..end)
+            .ok_or(DecodeError::Malformed)?;
+        self.pos = end;
+        Ok(bytes.to_vec())
+    }
+
+    fn skip_bytes(&mut self) -> std::result::Result<(), DecodeError> {
+        let len = usize::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+        self.skip_raw_bytes(len)
+    }
+
+    fn skip_string(&mut self) -> std::result::Result<(), DecodeError> {
+        let len = usize::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+        if len as u64 > MAX_STRING_BYTES {
+            return Err(DecodeError::Malformed);
+        }
+        self.skip_raw_bytes(len)
+    }
+
+    fn skip_raw_bytes(&mut self, len: usize) -> std::result::Result<(), DecodeError> {
+        let end = self.pos.checked_add(len).ok_or(DecodeError::Malformed)?;
+        self.input
+            .get(self.pos..end)
+            .ok_or(DecodeError::Malformed)?;
+        self.pos = end;
+        Ok(())
     }
 
     fn bytes_list_with_cap(&mut self, cap: u64) -> std::result::Result<Vec<Vec<u8>>, DecodeError> {
@@ -3609,6 +4738,227 @@ impl<'a> Decoder<'a> {
         Ok(levels)
     }
 
+    fn theorem_graph_query(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphQuery, DecodeError> {
+        let env_fingerprint = self.hash()?;
+        let goal_fingerprint = self.hash()?;
+        let goal = self.goal()?;
+        let snapshot = self.theorem_graph_snapshot_ref()?;
+        let query_features = self.theorem_graph_query_features_ref()?;
+        let ranking_profile =
+            Phase9TheoremGraphRankingProfile::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let limit = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+        Ok(Phase9MachineTheoremGraphQuery {
+            env_fingerprint,
+            goal_fingerprint,
+            goal,
+            snapshot,
+            query_features,
+            ranking_profile,
+            limit,
+        })
+    }
+
+    fn theorem_graph_snapshot_ref(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphSnapshotRef, DecodeError> {
+        let source_release_hash = self.hash()?;
+        let extractor_version = Phase9TheoremGraphExtractorVersion::from_tag(self.u8()?)
+            .ok_or(DecodeError::Malformed)?;
+        let source = match self.u8()? {
+            0 => Phase9MachineTheoremGraphSnapshotSource::Inline {
+                graph_snapshot_hash: self.hash()?,
+                canonical_bytes: self.bytes_with_cap(
+                    MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES,
+                    DecodeError::TheoremGraphSnapshotBytesTooLarge,
+                )?,
+            },
+            1 => Phase9MachineTheoremGraphSnapshotSource::Artifact {
+                path: self.string()?,
+                file_hash: self.hash()?,
+                graph_snapshot_hash: self.hash()?,
+                size_bytes: self.u64()?,
+            },
+            _ => return Err(DecodeError::Malformed),
+        };
+        Ok(Phase9MachineTheoremGraphSnapshotRef {
+            source_release_hash,
+            extractor_version,
+            source,
+        })
+    }
+
+    fn theorem_graph_query_features_ref(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphQueryFeaturesRef, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+                query_features_hash: self.hash()?,
+                canonical_bytes: self.bytes_with_cap(
+                    MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES,
+                    DecodeError::TheoremGraphQueryFeaturesBytesTooLarge,
+                )?,
+            }),
+            1 => Ok(Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+                path: self.string()?,
+                file_hash: self.hash()?,
+                query_features_hash: self.hash()?,
+                size_bytes: self.u64()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn theorem_graph_snapshot(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphSnapshot, DecodeError> {
+        let source_release_hash = self.hash()?;
+        let extractor_version = Phase9TheoremGraphExtractorVersion::from_tag(self.u8()?)
+            .ok_or(DecodeError::Malformed)?;
+        let node_len = self.u64()?;
+        if node_len > MAX_PHASE9_THEOREM_GRAPH_NODES {
+            return Err(DecodeError::Malformed);
+        }
+        let node_len = usize::try_from(node_len).map_err(|_| DecodeError::Malformed)?;
+        let mut nodes = Vec::new();
+        for _ in 0..node_len {
+            nodes.push(self.theorem_graph_node()?);
+        }
+        let edge_len = self.u64()?;
+        if edge_len > MAX_PHASE9_THEOREM_GRAPH_EDGES {
+            return Err(DecodeError::Malformed);
+        }
+        let edge_len = usize::try_from(edge_len).map_err(|_| DecodeError::Malformed)?;
+        let mut edges = Vec::new();
+        for _ in 0..edge_len {
+            edges.push(self.theorem_graph_edge()?);
+        }
+        Ok(Phase9MachineTheoremGraphSnapshot {
+            source_release_hash,
+            extractor_version,
+            nodes,
+            edges,
+        })
+    }
+
+    fn theorem_graph_query_features(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphQueryFeatures, DecodeError> {
+        let env_fingerprint = self.hash()?;
+        let goal_fingerprint = self.hash()?;
+        let feature_schema_version = Phase9TheoremGraphFeatureSchemaVersion::from_tag(self.u8()?)
+            .ok_or(DecodeError::Malformed)?;
+        let feature_len = self.u64()?;
+        if feature_len > MAX_PHASE9_THEOREM_GRAPH_FEATURES {
+            return Err(DecodeError::Malformed);
+        }
+        let feature_len = usize::try_from(feature_len).map_err(|_| DecodeError::Malformed)?;
+        let mut features = Vec::new();
+        for _ in 0..feature_len {
+            features.push(self.theorem_graph_feature()?);
+        }
+        Ok(Phase9MachineTheoremGraphQueryFeatures {
+            env_fingerprint,
+            goal_fingerprint,
+            feature_schema_version,
+            features,
+        })
+    }
+
+    fn theorem_graph_edge(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphEdge, DecodeError> {
+        let from = self.theorem_graph_node()?;
+        let to = self.theorem_graph_node()?;
+        let kind =
+            Phase9TheoremGraphEdgeKind::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        Ok(Phase9MachineTheoremGraphEdge { from, to, kind })
+    }
+
+    fn theorem_graph_node(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphNodeRef, DecodeError> {
+        Ok(Phase9MachineTheoremGraphNodeRef {
+            module: self.name()?,
+            name: self.name()?,
+            export_hash: self.hash()?,
+            decl_certificate_hash: self.hash()?,
+            type_hash: self.hash()?,
+            certificate_hash: self.hash()?,
+            decl_interface_hash: self.hash()?,
+        })
+    }
+
+    fn theorem_graph_feature(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTheoremGraphFeature, DecodeError> {
+        let key = Phase9TheoremGraphFeatureKey {
+            namespace_ascii: self.bytes()?,
+            name_ascii: self.bytes()?,
+        };
+        let value = match self.u8()? {
+            0 => match self.u8()? {
+                0 => Phase9TheoremGraphFeatureValue::Bool(false),
+                1 => Phase9TheoremGraphFeatureValue::Bool(true),
+                _ => return Err(DecodeError::Malformed),
+            },
+            1 => Phase9TheoremGraphFeatureValue::I64(self.i64()?),
+            2 => Phase9TheoremGraphFeatureValue::Hash(self.hash()?),
+            _ => return Err(DecodeError::Malformed),
+        };
+        Ok(Phase9MachineTheoremGraphFeature { key, value })
+    }
+
+    fn skip_theorem_graph_edge(&mut self) -> std::result::Result<(), DecodeError> {
+        self.skip_theorem_graph_node()?;
+        self.skip_theorem_graph_node()?;
+        Phase9TheoremGraphEdgeKind::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        Ok(())
+    }
+
+    fn skip_theorem_graph_node(&mut self) -> std::result::Result<(), DecodeError> {
+        self.skip_name()?;
+        self.skip_name()?;
+        self.hash()?;
+        self.hash()?;
+        self.hash()?;
+        self.hash()?;
+        self.hash()?;
+        Ok(())
+    }
+
+    fn skip_theorem_graph_feature(&mut self) -> std::result::Result<(), DecodeError> {
+        self.skip_bytes()?;
+        self.skip_bytes()?;
+        match self.u8()? {
+            0 => match self.u8()? {
+                0 | 1 => Ok(()),
+                _ => Err(DecodeError::Malformed),
+            },
+            1 => {
+                self.i64()?;
+                Ok(())
+            }
+            2 => {
+                self.hash()?;
+                Ok(())
+            }
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn skip_name(&mut self) -> std::result::Result<(), DecodeError> {
+        let len = self.u64()?;
+        if len == 0 || len > MAX_NAME_COMPONENTS {
+            return Err(DecodeError::Malformed);
+        }
+        for _ in 0..len {
+            self.skip_string()?;
+        }
+        Ok(())
+    }
+
     fn option_quotient(
         &mut self,
     ) -> std::result::Result<Option<Phase9QuotientOptions>, DecodeError> {
@@ -3854,6 +5204,10 @@ fn encode_u64_to(out: &mut Vec<u8>, value: u64) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
+fn encode_i64_to(out: &mut Vec<u8>, value: i64) {
+    out.extend_from_slice(&value.to_be_bytes());
+}
+
 fn hash_with_domain(domain: &str, payload: &[u8]) -> Hash {
     let mut bytes = Vec::new();
     bytes.extend_from_slice(domain.as_bytes());
@@ -4001,6 +5355,188 @@ mod tests {
 
     fn universe_target_expr() -> Expr {
         Expr::konst("Lib.T", vec![Level::param("u")])
+    }
+
+    fn verified_theorem_graph_import() -> VerifiedImportRef {
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("GraphLib"),
+            declarations: vec![
+                npa_kernel::Decl::Axiom {
+                    name: "GraphLib.P".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::succ(Level::zero())),
+                },
+                npa_kernel::Decl::Def {
+                    name: "GraphLib.Type0".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::succ(Level::zero())),
+                    value: Expr::sort(Level::zero()),
+                    reducibility: npa_kernel::Reducibility::Reducible,
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .unwrap();
+        VerifiedImportRef::from_verified_module(&verified).unwrap()
+    }
+
+    fn theorem_graph_node(
+        import: &VerifiedImportRef,
+        name: &str,
+    ) -> Phase9MachineTheoremGraphNodeRef {
+        let export = import
+            .exports()
+            .iter()
+            .find(|export| export.name == Name::from_dotted(name))
+            .unwrap();
+        let decl = import
+            .verified_module()
+            .declarations()
+            .iter()
+            .find(|decl| decl.hashes.decl_interface_hash == export.decl_interface_hash)
+            .unwrap();
+        Phase9MachineTheoremGraphNodeRef {
+            module: import.module().clone(),
+            name: export.name.clone(),
+            export_hash: import.export_hash(),
+            decl_certificate_hash: decl.hashes.decl_certificate_hash,
+            type_hash: export.type_hash,
+            certificate_hash: import.certificate_hash(),
+            decl_interface_hash: export.decl_interface_hash,
+        }
+    }
+
+    fn missing_theorem_graph_node() -> Phase9MachineTheoremGraphNodeRef {
+        Phase9MachineTheoremGraphNodeRef {
+            module: Name::from_dotted("Missing"),
+            name: Name::from_dotted("Missing.P"),
+            export_hash: hash(31),
+            decl_certificate_hash: hash(32),
+            type_hash: hash(33),
+            certificate_hash: hash(34),
+            decl_interface_hash: hash(35),
+        }
+    }
+
+    fn theorem_graph_goal() -> Phase9AiGoal {
+        Phase9AiGoal {
+            universe_params: Vec::new(),
+            local_context: Vec::new(),
+            target: Expr::sort(Level::zero()),
+        }
+    }
+
+    fn theorem_graph_features(
+        env_fingerprint: Hash,
+        goal_fingerprint: Hash,
+    ) -> Phase9MachineTheoremGraphQueryFeatures {
+        Phase9MachineTheoremGraphQueryFeatures {
+            env_fingerprint,
+            goal_fingerprint,
+            feature_schema_version: Phase9TheoremGraphFeatureSchemaVersion::MvpGoalFeaturesV1,
+            features: Vec::new(),
+        }
+    }
+
+    fn theorem_graph_snapshot(
+        source_release_hash: Hash,
+        mut nodes: Vec<Phase9MachineTheoremGraphNodeRef>,
+    ) -> Phase9MachineTheoremGraphSnapshot {
+        nodes.sort_by_key(phase9_theorem_graph_node_identity_key);
+        Phase9MachineTheoremGraphSnapshot {
+            source_release_hash,
+            extractor_version: Phase9TheoremGraphExtractorVersion::MvpCertificateGraphV1,
+            nodes,
+            edges: Vec::new(),
+        }
+    }
+
+    fn theorem_graph_snapshot_bytes_with_noncanonical_node_name(
+        source_release_hash: Hash,
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        encode_hash_to(&mut bytes, &source_release_hash);
+        bytes.push(Phase9TheoremGraphExtractorVersion::MvpCertificateGraphV1.tag());
+        encode_u64_to(&mut bytes, 1);
+        encode_u64_to(&mut bytes, 1);
+        encode_bytes_to(&mut bytes, b"");
+        encode_name_to(&mut bytes, &Name::from_dotted("GraphLib.P")).unwrap();
+        for seed in 51..=55 {
+            encode_hash_to(&mut bytes, &hash(seed));
+        }
+        encode_u64_to(&mut bytes, 0);
+        bytes
+    }
+
+    fn theorem_graph_inline_query_request(
+        import: &VerifiedImportRef,
+        snapshot_hash_override: Option<Hash>,
+        query_features_hash_override: Option<Hash>,
+        snapshot: Phase9MachineTheoremGraphSnapshot,
+        query_features_override: Option<Phase9MachineTheoremGraphQueryFeatures>,
+        limit: u32,
+    ) -> Vec<u8> {
+        let options_bytes = empty_options_bytes();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
+        let env_fingerprint = phase9_ai_env_fingerprint(
+            Phase9AiProfileVersion::MvpV1,
+            Phase9AiTaskKind::TheoremGraphQuery,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let goal = theorem_graph_goal();
+        let goal_fingerprint = phase9_ai_goal_fingerprint(env_fingerprint, &goal);
+        let snapshot_bytes = phase9_theorem_graph_snapshot_canonical_bytes(&snapshot).unwrap();
+        let snapshot_hash = snapshot_hash_override
+            .unwrap_or_else(|| phase9_theorem_graph_snapshot_hash(&snapshot_bytes).unwrap());
+        let query_features = query_features_override
+            .unwrap_or_else(|| theorem_graph_features(env_fingerprint, goal_fingerprint));
+        let query_features_bytes =
+            phase9_theorem_graph_query_features_canonical_bytes(&query_features).unwrap();
+        let query_features_hash = query_features_hash_override.unwrap_or_else(|| {
+            phase9_theorem_graph_query_features_hash(&query_features_bytes).unwrap()
+        });
+        let query = Phase9MachineTheoremGraphQuery {
+            env_fingerprint,
+            goal_fingerprint,
+            goal,
+            snapshot: Phase9MachineTheoremGraphSnapshotRef {
+                source_release_hash: snapshot.source_release_hash,
+                extractor_version: Phase9TheoremGraphExtractorVersion::MvpCertificateGraphV1,
+                source: Phase9MachineTheoremGraphSnapshotSource::Inline {
+                    graph_snapshot_hash: snapshot_hash,
+                    canonical_bytes: snapshot_bytes,
+                },
+            },
+            query_features: Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+                query_features_hash,
+                canonical_bytes: query_features_bytes,
+            },
+            ranking_profile: Phase9TheoremGraphRankingProfile::MvpTupleOrder,
+            limit,
+        };
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::TheoremGraphQuery,
+            target: Phase9AiTarget {
+                env_fingerprint,
+                target_decl_hash: None,
+                goal_fingerprint: Some(goal_fingerprint),
+            },
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_theorem_graph_query_canonical_bytes(&query).unwrap(),
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn phase9_unary_expr() -> Expr {
@@ -4676,6 +6212,399 @@ mod tests {
                 Phase9AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
+    }
+
+    #[test]
+    fn theorem_graph_query_returns_only_resolved_public_axiom_nodes_with_zero_score() {
+        let import = verified_theorem_graph_import();
+        let eligible = theorem_graph_node(&import, "GraphLib.P");
+        let ineligible = theorem_graph_node(&import, "GraphLib.Type0");
+        let missing = missing_theorem_graph_node();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![ineligible, missing, eligible.clone()]);
+        let request = theorem_graph_inline_query_request(&import, None, None, snapshot, None, 16);
+
+        let response = run_phase9_theorem_graph_query_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        );
+
+        let Phase9AiEndpointResponse::Success { payload, .. } = response else {
+            panic!("expected theorem graph success");
+        };
+        let Phase9AiSuccessPayload::TheoremGraphQuery { result } = *payload else {
+            panic!("expected theorem graph payload");
+        };
+        assert_eq!(result.entries.len(), 1);
+        assert_eq!(result.entries[0].node, eligible);
+        assert_eq!(result.entries[0].score.score_microunits, 0);
+    }
+
+    #[test]
+    fn theorem_graph_snapshot_hash_mismatch_is_payload_hash_mismatch() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let request =
+            theorem_graph_inline_query_request(&import, Some(hash(99)), None, snapshot, None, 16);
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+    }
+
+    #[test]
+    fn theorem_graph_query_features_hash_mismatch_is_payload_hash_mismatch() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let request =
+            theorem_graph_inline_query_request(&import, None, Some(hash(98)), snapshot, None, 16);
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+    }
+
+    #[test]
+    fn theorem_graph_snapshot_metadata_mismatch_is_snapshot_malformed() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let mut request = decode_candidate_envelope(&theorem_graph_inline_query_request(
+            &import, None, None, snapshot, None, 16,
+        ))
+        .unwrap();
+        let mut query = decode_theorem_graph_query(&request.payload).unwrap();
+        query.snapshot.source_release_hash = hash(42);
+        request.payload = phase9_theorem_graph_query_canonical_bytes(&query).unwrap();
+        let request = phase9_ai_candidate_envelope_canonical_bytes(&request).unwrap();
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            Some(Phase9AiFeatureError::TheoremGraphQuery(
+                Phase9TheoremGraphError::SnapshotMalformed,
+            )),
+        );
+    }
+
+    #[test]
+    fn theorem_graph_query_features_metadata_mismatch_is_query_features_malformed() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let request_base =
+            theorem_graph_inline_query_request(&import, None, None, snapshot, None, 16);
+        let envelope = decode_candidate_envelope(&request_base).unwrap();
+        let query = decode_theorem_graph_query(&envelope.payload).unwrap();
+        let bad_features = theorem_graph_features(query.env_fingerprint, hash(77));
+        let request = theorem_graph_inline_query_request(
+            &import,
+            None,
+            None,
+            decode_theorem_graph_snapshot(match &query.snapshot.source {
+                Phase9MachineTheoremGraphSnapshotSource::Inline {
+                    canonical_bytes, ..
+                } => canonical_bytes,
+                Phase9MachineTheoremGraphSnapshotSource::Artifact { .. } => unreachable!(),
+            })
+            .unwrap(),
+            Some(bad_features),
+            16,
+        );
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            Some(Phase9AiFeatureError::TheoremGraphQuery(
+                Phase9TheoremGraphError::QueryFeaturesMalformed,
+            )),
+        );
+    }
+
+    #[test]
+    fn theorem_graph_node_hash_mismatch_is_node_resolution_mismatch() {
+        let import = verified_theorem_graph_import();
+        let mut node = theorem_graph_node(&import, "GraphLib.P");
+        node.type_hash = hash(97);
+        let snapshot = theorem_graph_snapshot(hash(41), vec![node]);
+        let request = theorem_graph_inline_query_request(&import, None, None, snapshot, None, 16);
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::TheoremGraphQuery(
+                Phase9TheoremGraphError::NodeResolutionMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn theorem_graph_limit_is_checked_before_artifact_hashes() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let request =
+            theorem_graph_inline_query_request(&import, Some(hash(99)), None, snapshot, None, 257);
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            Some(Phase9AiFeatureError::TheoremGraphQuery(
+                Phase9TheoremGraphError::LimitOutOfRange,
+            )),
+        );
+    }
+
+    #[test]
+    fn theorem_graph_inline_snapshot_raw_cap_is_snapshot_malformed() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let mut envelope = decode_candidate_envelope(&theorem_graph_inline_query_request(
+            &import, None, None, snapshot, None, 16,
+        ))
+        .unwrap();
+        let query = decode_theorem_graph_query(&envelope.payload).unwrap();
+        let mut payload = Vec::new();
+        encode_hash_to(&mut payload, &query.env_fingerprint);
+        encode_hash_to(&mut payload, &query.goal_fingerprint);
+        encode_goal_to(&mut payload, &query.goal).unwrap();
+        encode_hash_to(&mut payload, &query.snapshot.source_release_hash);
+        payload.push(query.snapshot.extractor_version.tag());
+        payload.push(0);
+        encode_hash_to(&mut payload, &hash(99));
+        encode_u64_to(
+            &mut payload,
+            u64::try_from(MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES).unwrap() + 1,
+        );
+        encode_theorem_graph_query_features_ref_to(&mut payload, &query.query_features);
+        payload.push(query.ranking_profile.tag());
+        encode_u64_to(&mut payload, u64::from(query.limit));
+        envelope.payload = payload;
+        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            Some(Phase9AiFeatureError::TheoremGraphQuery(
+                Phase9TheoremGraphError::SnapshotMalformed,
+            )),
+        );
+    }
+
+    #[test]
+    fn theorem_graph_inline_query_features_raw_cap_is_query_features_malformed() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let mut envelope = decode_candidate_envelope(&theorem_graph_inline_query_request(
+            &import, None, None, snapshot, None, 16,
+        ))
+        .unwrap();
+        let query = decode_theorem_graph_query(&envelope.payload).unwrap();
+        let mut payload = Vec::new();
+        encode_hash_to(&mut payload, &query.env_fingerprint);
+        encode_hash_to(&mut payload, &query.goal_fingerprint);
+        encode_goal_to(&mut payload, &query.goal).unwrap();
+        encode_theorem_graph_snapshot_ref_to(&mut payload, &query.snapshot).unwrap();
+        payload.push(0);
+        encode_hash_to(&mut payload, &hash(98));
+        encode_u64_to(
+            &mut payload,
+            u64::try_from(MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES).unwrap() + 1,
+        );
+        payload.push(query.ranking_profile.tag());
+        encode_u64_to(&mut payload, u64::from(query.limit));
+        envelope.payload = payload;
+        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            Some(Phase9AiFeatureError::TheoremGraphQuery(
+                Phase9TheoremGraphError::QueryFeaturesMalformed,
+            )),
+        );
+    }
+
+    #[test]
+    fn theorem_graph_snapshot_hash_mismatch_precedes_full_decode_failure() {
+        let import = verified_theorem_graph_import();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let mut envelope = decode_candidate_envelope(&theorem_graph_inline_query_request(
+            &import, None, None, snapshot, None, 16,
+        ))
+        .unwrap();
+        let mut query = decode_theorem_graph_query(&envelope.payload).unwrap();
+        query.snapshot.source = Phase9MachineTheoremGraphSnapshotSource::Inline {
+            graph_snapshot_hash: hash(99),
+            canonical_bytes: theorem_graph_snapshot_bytes_with_noncanonical_node_name(hash(41)),
+        };
+        envelope.payload = phase9_theorem_graph_query_canonical_bytes(&query).unwrap();
+        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+    }
+
+    #[test]
+    fn theorem_graph_snapshot_artifact_file_hash_mismatch_is_payload_hash_mismatch() {
+        let import = verified_theorem_graph_import();
+        let root = std::env::temp_dir().join(format!("npa-phase9-m4-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let snapshot_bytes = phase9_theorem_graph_snapshot_canonical_bytes(&snapshot).unwrap();
+        fs::write(root.join("snapshot.bin"), &snapshot_bytes).unwrap();
+        let query_features_env = {
+            let options_bytes = empty_options_bytes();
+            let options_hash = phase9_ai_options_hash(&options_bytes);
+            let imports = vec![Phase9ImportIdentity::from_verified_import(&import)];
+            phase9_ai_env_fingerprint(
+                Phase9AiProfileVersion::MvpV1,
+                Phase9AiTaskKind::TheoremGraphQuery,
+                &imports,
+                options_hash,
+            )
+            .unwrap()
+        };
+        let goal = theorem_graph_goal();
+        let goal_fingerprint = phase9_ai_goal_fingerprint(query_features_env, &goal);
+        let features = theorem_graph_features(query_features_env, goal_fingerprint);
+        let feature_bytes = phase9_theorem_graph_query_features_canonical_bytes(&features).unwrap();
+        let query = Phase9MachineTheoremGraphQuery {
+            env_fingerprint: query_features_env,
+            goal_fingerprint,
+            goal,
+            snapshot: Phase9MachineTheoremGraphSnapshotRef {
+                source_release_hash: snapshot.source_release_hash,
+                extractor_version: snapshot.extractor_version,
+                source: Phase9MachineTheoremGraphSnapshotSource::Artifact {
+                    path: "snapshot.bin".to_owned(),
+                    file_hash: hash(1),
+                    graph_snapshot_hash: phase9_theorem_graph_snapshot_hash(&snapshot_bytes)
+                        .unwrap(),
+                    size_bytes: snapshot_bytes.len() as u64,
+                },
+            },
+            query_features: Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+                query_features_hash: phase9_theorem_graph_query_features_hash(&feature_bytes)
+                    .unwrap(),
+                canonical_bytes: feature_bytes,
+            },
+            ranking_profile: Phase9TheoremGraphRankingProfile::MvpTupleOrder,
+            limit: 16,
+        };
+        let options_bytes = empty_options_bytes();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::TheoremGraphQuery,
+            target: Phase9AiTarget {
+                env_fingerprint: query_features_env,
+                target_decl_hash: None,
+                goal_fingerprint: Some(goal_fingerprint),
+            },
+            imports: vec![Phase9ImportIdentity::from_verified_import(&import)],
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_theorem_graph_query_canonical_bytes(&query).unwrap(),
+        };
+        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(&request, std::slice::from_ref(&import), &root),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn theorem_graph_query_features_artifact_file_hash_mismatch_is_payload_hash_mismatch() {
+        let import = verified_theorem_graph_import();
+        let root =
+            std::env::temp_dir().join(format!("npa-phase9-m4-features-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let snapshot =
+            theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
+        let mut envelope = decode_candidate_envelope(&theorem_graph_inline_query_request(
+            &import, None, None, snapshot, None, 16,
+        ))
+        .unwrap();
+        let mut query = decode_theorem_graph_query(&envelope.payload).unwrap();
+        let (query_features_hash, feature_bytes) = match &query.query_features {
+            Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+                query_features_hash,
+                canonical_bytes,
+            } => (*query_features_hash, canonical_bytes.clone()),
+            Phase9MachineTheoremGraphQueryFeaturesRef::Artifact { .. } => unreachable!(),
+        };
+        fs::write(root.join("features.bin"), &feature_bytes).unwrap();
+        query.query_features = Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+            path: "features.bin".to_owned(),
+            file_hash: hash(2),
+            query_features_hash,
+            size_bytes: feature_bytes.len() as u64,
+        };
+        envelope.payload = phase9_theorem_graph_query_canonical_bytes(&query).unwrap();
+        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+
+        assert_rejected(
+            run_phase9_theorem_graph_query_request(&request, std::slice::from_ref(&import), &root),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]
