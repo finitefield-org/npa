@@ -9,6 +9,7 @@ mod current;
 mod diagnostic;
 mod json;
 mod phase7;
+mod phase8;
 mod projection;
 mod prompt;
 mod renderer;
@@ -97,6 +98,23 @@ pub use phase7::{
     Phase7TacticBatchRequest, Phase7TacticBatchRunError, Phase7TraceEvent,
     Phase7TrainingTraceCandidate, Phase7TrainingTraceRecord, Phase7TrustFlags, Phase7VerifiedProof,
     PHASE7_TRAINING_TRACE_SCHEMA,
+};
+pub use phase8::{
+    phase8_canonical_json_bytes, phase8_canonical_json_object_excluding_top_level_fields,
+    phase8_canonical_json_string, phase8_canonical_json_value_bytes, phase8_file_hash,
+    phase8_first_forbidden_verification_input_field, phase8_forbids_verification_input_field,
+    phase8_hash_json_object_excluding_top_level_fields, phase8_hash_usage_rule,
+    phase8_json_artifact_hash_from_source, phase8_rfc8785_object_key_cmp, phase8_sha256,
+    validate_phase8_closed_object, Phase8ApiError, Phase8ApiErrorReasonCode,
+    Phase8ArtifactClassification, Phase8ArtifactKind, Phase8CanonicalJsonError, Phase8ClosedSchema,
+    Phase8CommandError, Phase8CommandName, Phase8FieldSpec, Phase8HashInputKind,
+    Phase8HashUsageKind, Phase8HashUsageRule, Phase8JsonFieldType, Phase8JsonPath,
+    Phase8JsonPathElement, Phase8MachineCheckRequestErrorReasonCode,
+    Phase8MachineCheckRequestErrorResult, Phase8NormalizeErrorReasonCode,
+    Phase8NormalizeErrorResult, Phase8PipelineErrorKind, Phase8SchemaError,
+    Phase8SchemaErrorReason, Phase8StructuredError, Phase8ValidatedObject, PHASE8_API_ERROR_SCHEMA,
+    PHASE8_COMMAND_ERROR_SCHEMA, PHASE8_FORBIDDEN_VERIFICATION_INPUT_FIELDS,
+    PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA, PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,
