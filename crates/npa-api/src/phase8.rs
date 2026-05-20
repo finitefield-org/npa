@@ -5,11 +5,16 @@ use npa_cert::Hash;
 use sha2::{Digest, Sha256};
 
 use crate::json::{JsonDocument, JsonMember, JsonParseErrorKind, JsonValue, JsonValueKind};
-use crate::types::{format_hash_string, parse_hash_string};
+use crate::types::{
+    format_hash_string, parse_hash_string, parse_module_name_wire, phase5_name_canonical_bytes,
+};
 
 pub const PHASE8_RUNNER_POLICY_SCHEMA: &str = "npa.phase8.runner_policy.v1";
 pub const PHASE8_CHECKER_IDENTITY_MANIFEST_SCHEMA: &str = "npa.phase8.checker_identity_manifest.v1";
 pub const PHASE8_CHECKER_BINARY_REGISTRY_SCHEMA: &str = "npa.phase8.checker_binary_registry.v1";
+pub const PHASE8_IMPORT_LOCK_MANIFEST_SCHEMA: &str = "npa.phase8.import_lock_manifest.v1";
+pub const PHASE8_MACHINE_CHECK_REQUEST_SCHEMA: &str = "npa.phase8.machine_check_request.v1";
+pub const PHASE8_REQUEST_STORE_MANIFEST_SCHEMA: &str = "npa.phase8.request_store_manifest.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
@@ -876,12 +881,12 @@ impl Phase8CommandName {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase8CommandError {
     pub command: Phase8CommandName,
-    pub reason_code: String,
-    pub field: Option<String>,
-    pub expected_hash: Option<Hash>,
-    pub actual_hash: Option<Hash>,
-    pub expected_value: Option<String>,
-    pub actual_value: Option<String>,
+    pub reason_code: Box<str>,
+    pub field: Option<Box<str>>,
+    pub expected_hash: Option<Box<Hash>>,
+    pub actual_hash: Option<Box<Hash>>,
+    pub expected_value: Option<Box<str>>,
+    pub actual_value: Option<Box<str>>,
     pub diagnostics: Vec<String>,
 }
 
@@ -889,7 +894,7 @@ impl Phase8CommandError {
     pub fn new(command: Phase8CommandName, reason_code: impl Into<String>) -> Self {
         Self {
             command,
-            reason_code: reason_code.into(),
+            reason_code: reason_code.into().into_boxed_str(),
             field: None,
             expected_hash: None,
             actual_hash: None,
@@ -915,8 +920,16 @@ impl Phase8CommandError {
             ),
         ];
         push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
-        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
-        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_hash_pair(
+            &mut pairs,
+            "expected_hash",
+            self.expected_hash.as_deref().copied(),
+        );
+        push_optional_hash_pair(
+            &mut pairs,
+            "actual_hash",
+            self.actual_hash.as_deref().copied(),
+        );
         push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
         push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
         if !self.diagnostics.is_empty() {
@@ -1021,6 +1034,47 @@ impl Phase8PolicyValidationError {
             expected_value: expected_value.into(),
             actual_value: actual_value.into(),
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequestValidationError {
+    pub field: Box<str>,
+    pub expected_value: Option<Box<str>>,
+    pub actual_value: Option<Box<str>>,
+    pub expected_hash: Option<Box<Hash>>,
+    pub actual_hash: Option<Box<Hash>>,
+}
+
+impl Phase8RequestValidationError {
+    fn value_failure(
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            field: field.into().into_boxed_str(),
+            expected_value: Some(expected_value.into().into_boxed_str()),
+            actual_value: Some(actual_value.into().into_boxed_str()),
+            expected_hash: None,
+            actual_hash: None,
+        }
+    }
+
+    fn hash_failure(field: impl Into<String>, expected_hash: Hash, actual_hash: Hash) -> Self {
+        Self {
+            field: field.into().into_boxed_str(),
+            expected_value: None,
+            actual_value: None,
+            expected_hash: Some(Box::new(expected_hash)),
+            actual_hash: Some(Box::new(actual_hash)),
+        }
+    }
+}
+
+impl From<Phase8PolicyValidationError> for Phase8RequestValidationError {
+    fn from(error: Phase8PolicyValidationError) -> Self {
+        Self::value_failure(error.field, error.expected_value, error.actual_value)
     }
 }
 
@@ -1280,6 +1334,285 @@ impl Phase8RunnerPolicy {
             .iter()
             .find(|entry| entry.profile == profile)
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckRequestPolicy {
+    pub id: String,
+    pub version: u64,
+    pub hash: Hash,
+}
+
+impl Phase8MachineCheckRequestPolicy {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("hash".to_owned(), phase8_hash_json_literal(&self.hash)),
+            ("id".to_owned(), phase8_json_string_literal(&self.id)),
+            ("version".to_owned(), self.version.to_string()),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckRequestCertificate {
+    pub path: String,
+    pub file_hash: Hash,
+    pub expected_certificate_hash: Hash,
+}
+
+impl Phase8MachineCheckRequestCertificate {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "expected_certificate_hash".to_owned(),
+                phase8_hash_json_literal(&self.expected_certificate_hash),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            ("kind".to_owned(), phase8_json_string_literal("path")),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckRequestImports {
+    pub mode: String,
+    pub manifest: String,
+    pub manifest_hash: Hash,
+}
+
+impl Phase8MachineCheckRequestImports {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "manifest".to_owned(),
+                phase8_json_string_literal(&self.manifest),
+            ),
+            (
+                "manifest_hash".to_owned(),
+                phase8_hash_json_literal(&self.manifest_hash),
+            ),
+            ("mode".to_owned(), phase8_json_string_literal(&self.mode)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8MachineCheckRequest {
+    pub request_id: String,
+    pub module: String,
+    pub policy: Phase8MachineCheckRequestPolicy,
+    pub certificate: Phase8MachineCheckRequestCertificate,
+    pub imports: Phase8MachineCheckRequestImports,
+    pub checker_profile: String,
+    pub trust_mode: Phase8TrustMode,
+    pub axiom_policy: String,
+    pub budget: Phase8RunnerBudget,
+}
+
+impl Phase8MachineCheckRequest {
+    pub fn request_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(self.semantic_canonical_json_pairs())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = self.semantic_canonical_json_pairs();
+        pairs.push((
+            "request_hash".to_owned(),
+            phase8_hash_json_literal(&self.request_hash()),
+        ));
+        pairs.push((
+            "request_id".to_owned(),
+            phase8_json_string_literal(&self.request_id),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn semantic_canonical_json_pairs(&self) -> Vec<(String, String)> {
+        vec![
+            (
+                "axiom_policy".to_owned(),
+                phase8_json_string_literal(&self.axiom_policy),
+            ),
+            ("budget".to_owned(), self.budget.canonical_json()),
+            ("certificate".to_owned(), self.certificate.canonical_json()),
+            (
+                "checker_profile".to_owned(),
+                phase8_json_string_literal(&self.checker_profile),
+            ),
+            ("imports".to_owned(), self.imports.canonical_json()),
+            (
+                "module".to_owned(),
+                phase8_json_string_literal(&self.module),
+            ),
+            ("policy".to_owned(), self.policy.canonical_json()),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_MACHINE_CHECK_REQUEST_SCHEMA),
+            ),
+            (
+                "trust_mode".to_owned(),
+                phase8_json_string_literal(self.trust_mode.as_str()),
+            ),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ImportLockCertificate {
+    pub path: String,
+    pub file_hash: Hash,
+    pub certificate_hash: Hash,
+}
+
+impl Phase8ImportLockCertificate {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "certificate_hash".to_owned(),
+                phase8_hash_json_literal(&self.certificate_hash),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            ("kind".to_owned(), phase8_json_string_literal("path")),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ImportLockEntry {
+    pub module: String,
+    pub export_hash: Hash,
+    pub certificate: Phase8ImportLockCertificate,
+}
+
+impl Phase8ImportLockEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("certificate".to_owned(), self.certificate.canonical_json()),
+            (
+                "export_hash".to_owned(),
+                phase8_hash_json_literal(&self.export_hash),
+            ),
+            (
+                "module".to_owned(),
+                phase8_json_string_literal(&self.module),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ImportLockManifest {
+    pub imports: Vec<Phase8ImportLockEntry>,
+}
+
+impl Phase8ImportLockManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "imports".to_owned(),
+                canonical_json_array(
+                    self.imports
+                        .iter()
+                        .map(Phase8ImportLockEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_IMPORT_LOCK_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequestStoreEntry {
+    pub request_hash: Hash,
+    pub path: String,
+    pub file_hash: Hash,
+}
+
+impl Phase8RequestStoreEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+            (
+                "request_hash".to_owned(),
+                phase8_hash_json_literal(&self.request_hash),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequestStoreManifest {
+    pub requests: Vec<Phase8RequestStoreEntry>,
+}
+
+impl Phase8RequestStoreManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "requests".to_owned(),
+                canonical_json_array(
+                    self.requests
+                        .iter()
+                        .map(Phase8RequestStoreEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_REQUEST_STORE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn file_hash(&self) -> Hash {
+        phase8_file_hash(self.canonical_json().as_bytes())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequestStoreUpdate {
+    pub manifest: Phase8RequestStoreManifest,
+    pub rewrite_required: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RawCertificateClaims {
+    pub module: String,
+    pub certificate_hash: Hash,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8RawCertificateClaimError {
+    DecodeFailed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequestMaterialization {
+    pub request: Phase8MachineCheckRequest,
+    pub request_file_hash: Hash,
+    pub request_store: Phase8RequestStoreManifest,
+    pub request_store_file_hash: Hash,
+    pub request_store_rewrite_required: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1602,6 +1935,524 @@ pub fn phase8_runner_fixed_environment() -> Vec<(String, String)> {
         .collect()
 }
 
+pub fn parse_phase8_import_lock_manifest(
+    source: &str,
+) -> Result<Phase8ImportLockManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "imports.manifest",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_import_lock_manifest_value(document.root(), "imports.manifest")
+}
+
+pub fn parse_phase8_machine_check_request(
+    source: &str,
+) -> Result<Phase8MachineCheckRequest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("request", "valid_json", "invalid_json")
+    })?;
+    parse_phase8_machine_check_request_value(document.root())
+}
+
+pub fn parse_phase8_request_store_manifest(
+    source: &str,
+) -> Result<Phase8RequestStoreManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("request_store", "valid_json", "invalid_json")
+    })?;
+    parse_phase8_request_store_manifest_value(document.root(), "request_store")
+}
+
+pub fn phase8_machine_check_request_hash(
+    source: &str,
+) -> Result<Hash, Phase8RequestValidationError> {
+    Ok(parse_phase8_machine_check_request(source)?.request_hash())
+}
+
+pub fn phase8_raw_certificate_claims(
+    certificate_bytes: &[u8],
+) -> Result<Phase8RawCertificateClaims, Phase8RawCertificateClaimError> {
+    let module = phase8_raw_certificate_header_module(certificate_bytes)?;
+    let certificate_hash = phase8_raw_claimed_certificate_hash(certificate_bytes)?;
+    Ok(Phase8RawCertificateClaims {
+        module,
+        certificate_hash,
+    })
+}
+
+pub fn phase8_raw_claimed_certificate_hash(
+    certificate_bytes: &[u8],
+) -> Result<Hash, Phase8RawCertificateClaimError> {
+    let Some(hash_bytes) = certificate_bytes.get(certificate_bytes.len().saturating_sub(32)..)
+    else {
+        return Err(Phase8RawCertificateClaimError::DecodeFailed);
+    };
+    if certificate_bytes.len() < 32 {
+        return Err(Phase8RawCertificateClaimError::DecodeFailed);
+    }
+    let mut hash = [0; 32];
+    hash.copy_from_slice(hash_bytes);
+    Ok(hash)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn phase8_request_materialize(
+    policy: &Phase8RunnerPolicy,
+    module: impl Into<String>,
+    certificate_path: impl Into<String>,
+    certificate_bytes: &[u8],
+    imports_manifest_path: impl Into<String>,
+    imports_manifest_bytes: &[u8],
+    expected_imports_manifest_hash: Hash,
+    checker_profile: impl Into<String>,
+    request_id: impl Into<String>,
+    output_request_path: impl Into<String>,
+    existing_store: Option<&Phase8RequestStoreManifest>,
+) -> Result<Phase8RequestMaterialization, Phase8CommandError> {
+    let module = module.into();
+    let certificate_path = certificate_path.into();
+    let imports_manifest_path = imports_manifest_path.into();
+    let checker_profile = checker_profile.into();
+    let request_id = request_id.into();
+    let output_request_path = output_request_path.into();
+
+    validate_request_materialize_input_shape(
+        &module,
+        &checker_profile,
+        &request_id,
+        &certificate_path,
+        &imports_manifest_path,
+        &output_request_path,
+    )?;
+
+    let actual_imports_manifest_hash = phase8_file_hash(imports_manifest_bytes);
+    if actual_imports_manifest_hash != expected_imports_manifest_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_hash_mismatch",
+            "imports.manifest_hash",
+            expected_imports_manifest_hash,
+            actual_imports_manifest_hash,
+        ));
+    }
+    let import_lock_source = std::str::from_utf8(imports_manifest_bytes).map_err(|_| {
+        phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_json_invalid",
+            "imports.manifest",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_import_lock_manifest(import_lock_source).map_err(|error| {
+        let field = error.field.to_string();
+        phase8_command_error_from_request_validation(
+            Phase8CommandName::RequestMaterialize,
+            "input_schema_invalid",
+            field,
+            error,
+        )
+    })?;
+
+    let selected_budget = policy.budgets.get(&checker_profile);
+    if policy.selected_checker_policy(&checker_profile).is_none() || selected_budget.is_none() {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "request_materialization_failed",
+            "checker_profile",
+            "required_or_optional_checker_profile",
+            checker_profile,
+        ));
+    }
+
+    let claims = phase8_raw_certificate_claims(certificate_bytes).map_err(|_| {
+        phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "request_materialization_failed",
+            "certificate.expected_certificate_hash",
+            "raw_claimed_certificate_hash",
+            "decode_failed",
+        )
+    })?;
+    if claims.module != module {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "request_materialization_failed",
+            "module",
+            module,
+            claims.module,
+        ));
+    }
+
+    let request = Phase8MachineCheckRequest {
+        request_id,
+        module,
+        policy: Phase8MachineCheckRequestPolicy {
+            id: policy.id.clone(),
+            version: policy.version,
+            hash: policy.policy_hash(),
+        },
+        certificate: Phase8MachineCheckRequestCertificate {
+            path: certificate_path,
+            file_hash: phase8_file_hash(certificate_bytes),
+            expected_certificate_hash: claims.certificate_hash,
+        },
+        imports: Phase8MachineCheckRequestImports {
+            mode: policy.import_policy.mode.clone(),
+            manifest: imports_manifest_path,
+            manifest_hash: expected_imports_manifest_hash,
+        },
+        checker_profile: checker_profile.clone(),
+        trust_mode: policy.trust_mode,
+        axiom_policy: policy.axiom_policy.path.clone(),
+        budget: selected_budget
+            .expect("selected budget checked above")
+            .clone(),
+    };
+    let request_file_hash = phase8_file_hash(request.canonical_json().as_bytes());
+    let generated_entry = Phase8RequestStoreEntry {
+        request_hash: request.request_hash(),
+        path: output_request_path,
+        file_hash: request_file_hash,
+    };
+    let store_update =
+        phase8_request_store_with_materialized_entry(existing_store, generated_entry)?;
+    let request_store_file_hash = store_update.manifest.file_hash();
+
+    Ok(Phase8RequestMaterialization {
+        request,
+        request_file_hash,
+        request_store: store_update.manifest,
+        request_store_file_hash,
+        request_store_rewrite_required: store_update.rewrite_required,
+    })
+}
+
+pub fn phase8_request_store_with_materialized_entry(
+    existing_store: Option<&Phase8RequestStoreManifest>,
+    generated_entry: Phase8RequestStoreEntry,
+) -> Result<Phase8RequestStoreUpdate, Phase8CommandError> {
+    let mut manifest = existing_store
+        .cloned()
+        .unwrap_or(Phase8RequestStoreManifest {
+            requests: Vec::new(),
+        });
+
+    for existing in &manifest.requests {
+        let same_request_hash = existing.request_hash == generated_entry.request_hash;
+        let same_path = existing.path == generated_entry.path;
+        let same_file_hash = existing.file_hash == generated_entry.file_hash;
+        if same_request_hash && same_path && same_file_hash {
+            return Ok(Phase8RequestStoreUpdate {
+                manifest,
+                rewrite_required: false,
+            });
+        }
+        if same_request_hash || same_path {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::RequestMaterialize,
+                "request_store_entry_conflict",
+                "request_store.requests[]",
+                generated_entry.canonical_json(),
+                existing.canonical_json(),
+            ));
+        }
+    }
+
+    manifest.requests.push(generated_entry);
+    manifest
+        .requests
+        .sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+    Ok(Phase8RequestStoreUpdate {
+        manifest,
+        rewrite_required: true,
+    })
+}
+
+fn parse_phase8_import_lock_manifest_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8ImportLockManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{root_path}.schema"),
+        PHASE8_IMPORT_LOCK_MANIFEST_SCHEMA,
+        PHASE8_IMPORT_LOCK_MANIFEST_SCHEMA,
+    )?;
+    let imports_value =
+        required_field_value(members, "imports", &format!("{root_path}.imports"), "array")?;
+    let Some(import_values) = imports_value.array_elements() else {
+        return Err(wrong_type_error(
+            &format!("{root_path}.imports"),
+            "array",
+            imports_value.kind(),
+        )
+        .into());
+    };
+
+    let mut imports = Vec::new();
+    for (index, import_value) in import_values.iter().enumerate() {
+        let path = format!("{root_path}.imports[{index}]");
+        let import_members = object_members_or_policy_error(import_value, &path, "object")?;
+        let module = required_string_field(
+            import_members,
+            "module",
+            &format!("{path}.module"),
+            "module_name",
+        )?;
+        if !phase8_valid_dotted_name(&module) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.module"),
+                "module_name",
+                "invalid_name_format",
+            ));
+        }
+        let export_hash = required_hash_field(
+            import_members,
+            "export_hash",
+            &format!("{path}.export_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let certificate_value = required_field_value(
+            import_members,
+            "certificate",
+            &format!("{path}.certificate"),
+            "object",
+        )?;
+        let certificate_members = object_members_or_policy_error(
+            certificate_value,
+            &format!("{path}.certificate"),
+            "object",
+        )?;
+        required_fixed_string_field(
+            certificate_members,
+            "kind",
+            &format!("{path}.certificate.kind"),
+            "path",
+            "path",
+        )?;
+        let certificate_path = required_string_field(
+            certificate_members,
+            "path",
+            &format!("{path}.certificate.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&certificate_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.certificate.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            certificate_members,
+            "file_hash",
+            &format!("{path}.certificate.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let certificate_hash = required_hash_field(
+            certificate_members,
+            "certificate_hash",
+            &format!("{path}.certificate.certificate_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(
+            certificate_members,
+            IMPORT_LOCK_CERTIFICATE_FIELDS,
+            &format!("{path}.certificate"),
+        )?;
+        reject_unknown_fields(import_members, IMPORT_LOCK_ENTRY_FIELDS, &path)?;
+        imports.push(Phase8ImportLockEntry {
+            module,
+            export_hash,
+            certificate: Phase8ImportLockCertificate {
+                path: certificate_path,
+                file_hash,
+                certificate_hash,
+            },
+        });
+    }
+    reject_unknown_fields(members, IMPORT_LOCK_MANIFEST_FIELDS, root_path)?;
+    validate_import_lock_domain(&imports, root_path)?;
+    Ok(Phase8ImportLockManifest { imports })
+}
+
+fn parse_phase8_machine_check_request_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8MachineCheckRequest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "$", "object")?;
+    if !members.iter().any(|member| member.key() == "request_hash") {
+        return Err(Phase8RequestValidationError::value_failure(
+            "request_hash",
+            "sha256:<lower-hex>",
+            "missing",
+        ));
+    }
+
+    required_fixed_string_field(
+        members,
+        "schema",
+        "schema",
+        PHASE8_MACHINE_CHECK_REQUEST_SCHEMA,
+        PHASE8_MACHINE_CHECK_REQUEST_SCHEMA,
+    )?;
+    let request_id = required_string_field(members, "request_id", "request_id", "request_id")?;
+    if !phase8_valid_request_id(&request_id) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "request_id",
+            "request_id",
+            if request_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+    let parsed_request_hash = required_hash_field(
+        members,
+        "request_hash",
+        "request_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let module = required_string_field(members, "module", "module", "module_name")?;
+    if !phase8_valid_dotted_name(&module) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "module",
+            "module_name",
+            "invalid_name_format",
+        ));
+    }
+    let policy = parse_machine_check_request_policy(members)?;
+    let certificate = parse_machine_check_request_certificate(members)?;
+    let imports = parse_machine_check_request_imports(members)?;
+    let checker_profile = required_string_field(
+        members,
+        "checker_profile",
+        "checker_profile",
+        "checker_profile_name",
+    )?;
+    if !phase8_valid_checker_profile_name(&checker_profile) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "checker_profile",
+            "checker_profile_name",
+            "invalid_name_format",
+        ));
+    }
+    let trust_mode_raw = required_string_field(members, "trust_mode", "trust_mode", "trust_mode")?;
+    let trust_mode = Phase8TrustMode::parse(&trust_mode_raw).ok_or_else(|| {
+        Phase8RequestValidationError::value_failure("trust_mode", "trust_mode", "invalid_enum")
+    })?;
+    let axiom_policy = required_string_field(
+        members,
+        "axiom_policy",
+        "axiom_policy",
+        "workspace_relative_path",
+    )?;
+    if !phase8_valid_workspace_relative_path(&axiom_policy) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "axiom_policy",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let budget = parse_machine_check_request_budget(members)?;
+    reject_unknown_fields(members, MACHINE_CHECK_REQUEST_FIELDS, "$")?;
+
+    let request = Phase8MachineCheckRequest {
+        request_id,
+        module,
+        policy,
+        certificate,
+        imports,
+        checker_profile,
+        trust_mode,
+        axiom_policy,
+        budget,
+    };
+    let recomputed = request.request_hash();
+    if recomputed != parsed_request_hash {
+        return Err(Phase8RequestValidationError::hash_failure(
+            "request_hash",
+            recomputed,
+            parsed_request_hash,
+        ));
+    }
+    Ok(request)
+}
+
+fn parse_phase8_request_store_manifest_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8RequestStoreManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{root_path}.schema"),
+        PHASE8_REQUEST_STORE_MANIFEST_SCHEMA,
+        PHASE8_REQUEST_STORE_MANIFEST_SCHEMA,
+    )?;
+    let requests_value = required_field_value(
+        members,
+        "requests",
+        &format!("{root_path}.requests"),
+        "array",
+    )?;
+    let Some(request_values) = requests_value.array_elements() else {
+        return Err(wrong_type_error(
+            &format!("{root_path}.requests"),
+            "array",
+            requests_value.kind(),
+        )
+        .into());
+    };
+
+    let mut requests = Vec::new();
+    for (index, request_value) in request_values.iter().enumerate() {
+        let path = format!("{root_path}.requests[{index}]");
+        let request_members = object_members_or_policy_error(request_value, &path, "object")?;
+        let request_hash = required_hash_field(
+            request_members,
+            "request_hash",
+            &format!("{path}.request_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let request_path = required_string_field(
+            request_members,
+            "path",
+            &format!("{path}.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&request_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            request_members,
+            "file_hash",
+            &format!("{path}.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(request_members, REQUEST_STORE_ENTRY_FIELDS, &path)?;
+        requests.push(Phase8RequestStoreEntry {
+            request_hash,
+            path: request_path,
+            file_hash,
+        });
+    }
+    reject_unknown_fields(members, REQUEST_STORE_MANIFEST_FIELDS, root_path)?;
+    validate_request_store_domain(&requests, root_path)?;
+    Ok(Phase8RequestStoreManifest { requests })
+}
+
 fn parse_phase8_runner_policy_value(
     value: &JsonValue<'_>,
 ) -> Result<Phase8RunnerPolicy, Phase8PolicyValidationError> {
@@ -1717,6 +2568,30 @@ const RUNNER_POLICY_FIELDS: &[&str] = &[
     "on_profile_requested_by_ai",
 ];
 
+const IMPORT_LOCK_MANIFEST_FIELDS: &[&str] = &["schema", "imports"];
+const IMPORT_LOCK_ENTRY_FIELDS: &[&str] = &["module", "export_hash", "certificate"];
+const IMPORT_LOCK_CERTIFICATE_FIELDS: &[&str] = &["kind", "path", "file_hash", "certificate_hash"];
+const MACHINE_CHECK_REQUEST_FIELDS: &[&str] = &[
+    "schema",
+    "request_id",
+    "request_hash",
+    "module",
+    "policy",
+    "certificate",
+    "imports",
+    "checker_profile",
+    "trust_mode",
+    "axiom_policy",
+    "budget",
+];
+const MACHINE_CHECK_REQUEST_POLICY_FIELDS: &[&str] = &["id", "version", "hash"];
+const MACHINE_CHECK_REQUEST_CERTIFICATE_FIELDS: &[&str] =
+    &["kind", "path", "file_hash", "expected_certificate_hash"];
+const MACHINE_CHECK_REQUEST_IMPORTS_FIELDS: &[&str] = &["mode", "manifest", "manifest_hash"];
+const MACHINE_CHECK_REQUEST_BUDGET_FIELDS: &[&str] = &["max_steps", "max_memory_mb", "timeout_ms"];
+const REQUEST_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "requests"];
+const REQUEST_STORE_ENTRY_FIELDS: &[&str] = &["request_hash", "path", "file_hash"];
+
 const CHECKER_ALLOWLIST_FIELDS: &[&str] = &[
     "profile",
     "checker_id",
@@ -1737,6 +2612,159 @@ const CHECKER_IDENTITY_ENTRY_FIELDS: &[&str] = &[
     "binary_hash",
     "build_hash",
 ];
+
+fn parse_machine_check_request_policy(
+    members: &[JsonMember<'_>],
+) -> Result<Phase8MachineCheckRequestPolicy, Phase8RequestValidationError> {
+    let value = required_field_value(members, "policy", "policy", "object")?;
+    let policy_members = object_members_or_policy_error(value, "policy", "object")?;
+    let id = required_string_field(policy_members, "id", "policy.id", "runner_policy_id")?;
+    if !phase8_valid_runner_policy_id(&id) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "policy.id",
+            "runner_policy_id",
+            "invalid_name_format",
+        ));
+    }
+    let version_raw =
+        required_integer_raw_field(policy_members, "version", "policy.version", "positive_i64")?;
+    let version = parse_positive_i64_domain(&version_raw, "policy.version")?;
+    let hash = required_hash_field(policy_members, "hash", "policy.hash", "sha256:<lower-hex>")?;
+    reject_unknown_fields(
+        policy_members,
+        MACHINE_CHECK_REQUEST_POLICY_FIELDS,
+        "policy",
+    )?;
+    Ok(Phase8MachineCheckRequestPolicy { id, version, hash })
+}
+
+fn parse_machine_check_request_certificate(
+    members: &[JsonMember<'_>],
+) -> Result<Phase8MachineCheckRequestCertificate, Phase8RequestValidationError> {
+    let value = required_field_value(members, "certificate", "certificate", "object")?;
+    let certificate_members = object_members_or_policy_error(value, "certificate", "object")?;
+    required_fixed_string_field(
+        certificate_members,
+        "kind",
+        "certificate.kind",
+        "path",
+        "path",
+    )?;
+    let path = required_string_field(
+        certificate_members,
+        "path",
+        "certificate.path",
+        "workspace_relative_path",
+    )?;
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "certificate.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let file_hash = required_hash_field(
+        certificate_members,
+        "file_hash",
+        "certificate.file_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let expected_certificate_hash = required_hash_field(
+        certificate_members,
+        "expected_certificate_hash",
+        "certificate.expected_certificate_hash",
+        "sha256:<lower-hex>",
+    )?;
+    reject_unknown_fields(
+        certificate_members,
+        MACHINE_CHECK_REQUEST_CERTIFICATE_FIELDS,
+        "certificate",
+    )?;
+    Ok(Phase8MachineCheckRequestCertificate {
+        path,
+        file_hash,
+        expected_certificate_hash,
+    })
+}
+
+fn parse_machine_check_request_imports(
+    members: &[JsonMember<'_>],
+) -> Result<Phase8MachineCheckRequestImports, Phase8RequestValidationError> {
+    let value = required_field_value(members, "imports", "imports", "object")?;
+    let imports_members = object_members_or_policy_error(value, "imports", "object")?;
+    let mode = required_string_field(imports_members, "mode", "imports.mode", "locked_store")?;
+    if mode != "locked_store" {
+        return Err(Phase8RequestValidationError::value_failure(
+            "imports.mode",
+            "locked_store",
+            "invalid_enum",
+        ));
+    }
+    let manifest = required_string_field(
+        imports_members,
+        "manifest",
+        "imports.manifest",
+        "workspace_relative_path",
+    )?;
+    if !phase8_valid_workspace_relative_path(&manifest) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "imports.manifest",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let manifest_hash = required_hash_field(
+        imports_members,
+        "manifest_hash",
+        "imports.manifest_hash",
+        "sha256:<lower-hex>",
+    )?;
+    reject_unknown_fields(
+        imports_members,
+        MACHINE_CHECK_REQUEST_IMPORTS_FIELDS,
+        "imports",
+    )?;
+    Ok(Phase8MachineCheckRequestImports {
+        mode,
+        manifest,
+        manifest_hash,
+    })
+}
+
+fn parse_machine_check_request_budget(
+    members: &[JsonMember<'_>],
+) -> Result<Phase8RunnerBudget, Phase8RequestValidationError> {
+    let value = required_field_value(members, "budget", "budget", "object")?;
+    let budget_members = object_members_or_policy_error(value, "budget", "object")?;
+    let max_steps_raw = required_integer_raw_field(
+        budget_members,
+        "max_steps",
+        "budget.max_steps",
+        "positive_i64",
+    )?;
+    let max_memory_mb_raw = required_integer_raw_field(
+        budget_members,
+        "max_memory_mb",
+        "budget.max_memory_mb",
+        "positive_i64",
+    )?;
+    let timeout_ms_raw = required_integer_raw_field(
+        budget_members,
+        "timeout_ms",
+        "budget.timeout_ms",
+        "positive_i64",
+    )?;
+    reject_unknown_fields(
+        budget_members,
+        MACHINE_CHECK_REQUEST_BUDGET_FIELDS,
+        "budget",
+    )?;
+    Ok(Phase8RunnerBudget {
+        max_steps: parse_positive_i64_domain(&max_steps_raw, "budget.max_steps")?,
+        max_memory_mb: parse_positive_i64_domain(&max_memory_mb_raw, "budget.max_memory_mb")?,
+        timeout_ms: parse_positive_i64_domain(&timeout_ms_raw, "budget.timeout_ms")?,
+    })
+}
 
 fn parse_phase8_runner_policy_reference_value(
     value: &JsonValue<'_>,
@@ -2559,6 +3587,324 @@ fn parse_phase8_checker_identity_manifest_value(
     })
 }
 
+fn validate_import_lock_domain(
+    imports: &[Phase8ImportLockEntry],
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..imports.len() {
+        if import_lock_sort_key_cmp(&imports[index], &imports[index - 1]) == Ordering::Less {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.imports[{index}]"),
+                "imports_module_path_certificate_hash_file_hash_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut modules = BTreeSet::new();
+    for (index, import) in imports.iter().enumerate() {
+        if !modules.insert(&import.module) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.imports[{index}].module"),
+                "unique_modules",
+                "duplicate_module",
+            ));
+        }
+    }
+
+    let mut paths = BTreeSet::new();
+    for (index, import) in imports.iter().enumerate() {
+        if !paths.insert(&import.certificate.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.imports[{index}].certificate.path"),
+                "unique_certificate_paths",
+                "duplicate_path",
+            ));
+        }
+    }
+
+    let mut certificate_hashes = BTreeSet::new();
+    for (index, import) in imports.iter().enumerate() {
+        if !certificate_hashes.insert(import.certificate.certificate_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.imports[{index}].certificate.certificate_hash"),
+                "unique_certificate_hashes",
+                "duplicate_certificate_hash",
+            ));
+        }
+    }
+
+    let mut file_hashes = BTreeSet::new();
+    for (index, import) in imports.iter().enumerate() {
+        if !file_hashes.insert(import.certificate.file_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.imports[{index}].certificate.file_hash"),
+                "unique_file_hashes",
+                "duplicate_file_hash",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn import_lock_sort_key_cmp(
+    left: &Phase8ImportLockEntry,
+    right: &Phase8ImportLockEntry,
+) -> Ordering {
+    phase8_dotted_name_cmp(&left.module, &right.module)
+        .then_with(|| left.certificate.path.cmp(&right.certificate.path))
+        .then_with(|| {
+            left.certificate
+                .certificate_hash
+                .cmp(&right.certificate.certificate_hash)
+        })
+        .then_with(|| left.certificate.file_hash.cmp(&right.certificate.file_hash))
+}
+
+fn validate_request_store_domain(
+    requests: &[Phase8RequestStoreEntry],
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..requests.len() {
+        if requests[index].request_hash < requests[index - 1].request_hash {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.requests[{index}]"),
+                "request_hash_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut request_hashes = BTreeSet::new();
+    for (index, request) in requests.iter().enumerate() {
+        if !request_hashes.insert(request.request_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.requests[{index}].request_hash"),
+                "unique_request_hashes",
+                "duplicate_request_hash",
+            ));
+        }
+    }
+
+    let mut paths = BTreeSet::new();
+    for (index, request) in requests.iter().enumerate() {
+        if !paths.insert(&request.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.requests[{index}].path"),
+                "unique_paths",
+                "duplicate_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_request_materialize_input_shape(
+    module: &str,
+    checker_profile: &str,
+    request_id: &str,
+    certificate_path: &str,
+    imports_manifest_path: &str,
+    output_request_path: &str,
+) -> Result<(), Phase8CommandError> {
+    if !phase8_valid_dotted_name(module) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_reference_invalid",
+            "module",
+            "module_name",
+            "invalid_name_format",
+        ));
+    }
+    if !phase8_valid_checker_profile_name(checker_profile) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_reference_invalid",
+            "checker_profile",
+            "checker_profile",
+            "invalid_name_format",
+        ));
+    }
+    if !phase8_valid_request_id(request_id) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_reference_invalid",
+            "request_id",
+            "request_id",
+            if request_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+    if !phase8_valid_workspace_relative_path(certificate_path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_reference_invalid",
+            "certificate.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    if !phase8_valid_workspace_relative_path(imports_manifest_path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_reference_invalid",
+            "imports.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    if !phase8_valid_workspace_relative_path(output_request_path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::RequestMaterialize,
+            "input_reference_invalid",
+            "out.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_command_error_from_request_validation(
+    command: Phase8CommandName,
+    reason_code: &str,
+    field: String,
+    error: Phase8RequestValidationError,
+) -> Phase8CommandError {
+    let mut command_error = Phase8CommandError::new(command, reason_code);
+    command_error.field = Some(field.into_boxed_str());
+    command_error.expected_hash = error.expected_hash;
+    command_error.actual_hash = error.actual_hash;
+    command_error.expected_value = error.expected_value;
+    command_error.actual_value = error.actual_value;
+    command_error
+}
+
+fn phase8_command_value_error(
+    command: Phase8CommandName,
+    reason_code: impl Into<String>,
+    field: impl Into<String>,
+    expected_value: impl Into<String>,
+    actual_value: impl Into<String>,
+) -> Phase8CommandError {
+    let mut error = Phase8CommandError::new(command, reason_code);
+    error.field = Some(field.into().into_boxed_str());
+    error.expected_value = Some(expected_value.into().into_boxed_str());
+    error.actual_value = Some(actual_value.into().into_boxed_str());
+    error
+}
+
+fn phase8_command_hash_error(
+    command: Phase8CommandName,
+    reason_code: impl Into<String>,
+    field: impl Into<String>,
+    expected_hash: Hash,
+    actual_hash: Hash,
+) -> Phase8CommandError {
+    let mut error = Phase8CommandError::new(command, reason_code);
+    error.field = Some(field.into().into_boxed_str());
+    error.expected_hash = Some(Box::new(expected_hash));
+    error.actual_hash = Some(Box::new(actual_hash));
+    error
+}
+
+fn phase8_raw_certificate_header_module(
+    certificate_bytes: &[u8],
+) -> Result<String, Phase8RawCertificateClaimError> {
+    let mut decoder = Phase8RawCertificateHeaderDecoder::new(certificate_bytes);
+    let _format = decoder.string()?;
+    let _core_spec = decoder.string()?;
+    decoder.name()
+}
+
+struct Phase8RawCertificateHeaderDecoder<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> Phase8RawCertificateHeaderDecoder<'a> {
+    fn new(bytes: &'a [u8]) -> Self {
+        Self { bytes, offset: 0 }
+    }
+
+    fn name(&mut self) -> Result<String, Phase8RawCertificateClaimError> {
+        let len = self.usize()?;
+        if len == 0 {
+            return Err(Phase8RawCertificateClaimError::DecodeFailed);
+        }
+        let mut components = Vec::with_capacity(len);
+        for _ in 0..len {
+            let component = self.string()?;
+            if component.is_empty() || component.contains('.') {
+                return Err(Phase8RawCertificateClaimError::DecodeFailed);
+            }
+            components.push(component);
+        }
+        let module = components.join(".");
+        if !phase8_valid_dotted_name(&module) {
+            return Err(Phase8RawCertificateClaimError::DecodeFailed);
+        }
+        Ok(module)
+    }
+
+    fn string(&mut self) -> Result<String, Phase8RawCertificateClaimError> {
+        let len = self.usize()?;
+        let bytes = self.take(len)?;
+        std::str::from_utf8(bytes)
+            .map(str::to_owned)
+            .map_err(|_| Phase8RawCertificateClaimError::DecodeFailed)
+    }
+
+    fn usize(&mut self) -> Result<usize, Phase8RawCertificateClaimError> {
+        usize::try_from(self.uvar()?).map_err(|_| Phase8RawCertificateClaimError::DecodeFailed)
+    }
+
+    fn uvar(&mut self) -> Result<u64, Phase8RawCertificateClaimError> {
+        let start = self.offset;
+        let mut shift = 0;
+        let mut value = 0u64;
+        loop {
+            let byte = self.byte()?;
+            value |= u64::from(byte & 0x7f) << shift;
+            if byte & 0x80 == 0 {
+                if phase8_encode_uvar(value) != self.bytes[start..self.offset] {
+                    return Err(Phase8RawCertificateClaimError::DecodeFailed);
+                }
+                return Ok(value);
+            }
+            shift += 7;
+            if shift >= 64 {
+                return Err(Phase8RawCertificateClaimError::DecodeFailed);
+            }
+        }
+    }
+
+    fn byte(&mut self) -> Result<u8, Phase8RawCertificateClaimError> {
+        let byte = *self
+            .bytes
+            .get(self.offset)
+            .ok_or(Phase8RawCertificateClaimError::DecodeFailed)?;
+        self.offset += 1;
+        Ok(byte)
+    }
+
+    fn take(&mut self, len: usize) -> Result<&'a [u8], Phase8RawCertificateClaimError> {
+        let end = self
+            .offset
+            .checked_add(len)
+            .ok_or(Phase8RawCertificateClaimError::DecodeFailed)?;
+        let bytes = self
+            .bytes
+            .get(self.offset..end)
+            .ok_or(Phase8RawCertificateClaimError::DecodeFailed)?;
+        self.offset = end;
+        Ok(bytes)
+    }
+}
+
 fn object_members_or_policy_error<'value, 'src>(
     value: &'value JsonValue<'src>,
     field: &str,
@@ -2670,7 +4016,7 @@ fn required_fixed_string_field(
             expected,
             if field.ends_with("schema") || field == "schema" {
                 value
-            } else if expected == "file" {
+            } else if expected == "file" || expected == "path" {
                 "invalid_enum".to_owned()
             } else {
                 "invalid_fixed_value".to_owned()
@@ -2858,6 +4204,24 @@ fn phase8_visible_ascii_nonempty(value: &str) -> bool {
     !value.is_empty() && value.bytes().all(|byte| (0x21..=0x7e).contains(&byte))
 }
 
+fn phase8_valid_request_id(value: &str) -> bool {
+    phase8_visible_ascii_nonempty(value)
+}
+
+fn phase8_valid_dotted_name(value: &str) -> bool {
+    parse_module_name_wire(value).is_ok()
+}
+
+fn phase8_dotted_name_cmp(left: &str, right: &str) -> Ordering {
+    phase8_dotted_name_sort_key(left).cmp(&phase8_dotted_name_sort_key(right))
+}
+
+fn phase8_dotted_name_sort_key(value: &str) -> Vec<u8> {
+    parse_module_name_wire(value)
+        .and_then(|name| phase5_name_canonical_bytes(&name))
+        .unwrap_or_else(|_| value.as_bytes().to_vec())
+}
+
 fn phase8_valid_workspace_relative_path(value: &str) -> bool {
     if value.is_empty()
         || value.starts_with('/')
@@ -2915,6 +4279,22 @@ fn canonical_json_array(values: Vec<String>) -> String {
         out.push_str(value);
     }
     out.push(']');
+    out
+}
+
+fn phase8_encode_uvar(mut value: u64) -> Vec<u8> {
+    let mut out = Vec::new();
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
     out
 }
 
@@ -3454,6 +4834,61 @@ mod tests {
         )
     }
 
+    fn valid_import_lock_manifest_json() -> String {
+        format!(
+            r#"{{
+              "schema":"npa.phase8.import_lock_manifest.v1",
+              "imports":[
+                {{
+                  "module":"Std.Nat",
+                  "export_hash":"{}",
+                  "certificate":{{
+                    "kind":"path",
+                    "path":"build/certs/Std/Nat.npcert",
+                    "file_hash":"{}",
+                    "certificate_hash":"{}"
+                  }}
+                }},
+                {{
+                  "module":"Std.Logic",
+                  "export_hash":"{}",
+                  "certificate":{{
+                    "kind":"path",
+                    "path":"build/certs/Std/Logic.npcert",
+                    "file_hash":"{}",
+                    "certificate_hash":"{}"
+                  }}
+                }}
+              ]
+            }}"#,
+            hash_wire(50),
+            hash_wire(51),
+            hash_wire(52),
+            hash_wire(53),
+            hash_wire(54),
+            hash_wire(55)
+        )
+    }
+
+    fn test_raw_certificate_bytes(module: &str, certificate_hash: Hash) -> Vec<u8> {
+        fn push_string(out: &mut Vec<u8>, value: &str) {
+            out.extend(phase8_encode_uvar(value.len() as u64));
+            out.extend(value.as_bytes());
+        }
+
+        let mut out = Vec::new();
+        push_string(&mut out, "NPA-CERT-0.1");
+        push_string(&mut out, "NPA-Core-0.1");
+        let components = module.split('.').collect::<Vec<_>>();
+        out.extend(phase8_encode_uvar(components.len() as u64));
+        for component in components {
+            push_string(&mut out, component);
+        }
+        out.extend(b"opaque certificate payload not decoded by phase8 request materialize");
+        out.extend(certificate_hash);
+        out
+    }
+
     #[test]
     fn canonical_json_uses_rfc8785_object_order_and_string_rules() {
         let canonical = phase8_canonical_json_string(
@@ -3713,9 +5148,9 @@ mod tests {
             Phase8CommandName::ChallengeMaterializeRequests,
             "output_write_failure",
         );
-        command.field = Some("request_output_dir/reference.json".to_owned());
-        command.expected_hash = Some(test_hash(3));
-        command.actual_hash = Some(test_hash(4));
+        command.field = Some("request_output_dir/reference.json".into());
+        command.expected_hash = Some(Box::new(test_hash(3)));
+        command.actual_hash = Some(Box::new(test_hash(4)));
         let command_json = command.canonical_json();
         assert!(command_json.contains(PHASE8_COMMAND_ERROR_SCHEMA));
         assert!(!command_json.contains("result_hash"));
@@ -3922,5 +5357,263 @@ mod tests {
                 ("TZ".to_owned(), "UTC".to_owned()),
             ]
         );
+    }
+
+    #[test]
+    fn m2_import_lock_manifest_validates_sorted_unique_identity_fields() {
+        let manifest =
+            parse_phase8_import_lock_manifest(&valid_import_lock_manifest_json()).unwrap();
+        assert_eq!(manifest.imports.len(), 2);
+        assert_eq!(manifest.imports[0].module, "Std.Nat");
+        assert_eq!(
+            manifest.imports[1].certificate.path,
+            "build/certs/Std/Logic.npcert"
+        );
+
+        let unsorted = parse_phase8_import_lock_manifest(
+            &valid_import_lock_manifest_json().replace("Std.Nat", "Std.Zzzzz"),
+        )
+        .unwrap_err();
+        assert_eq!(unsorted.field.as_ref(), "imports.manifest.imports[1]");
+        assert_eq!(unsorted.actual_value.as_deref(), Some("order_violation"));
+
+        let bad_module = parse_phase8_import_lock_manifest(
+            &valid_import_lock_manifest_json().replace("Std.Nat", "Std..Nat"),
+        )
+        .unwrap_err();
+        assert_eq!(
+            bad_module.field.as_ref(),
+            "imports.manifest.imports[0].module"
+        );
+        assert_eq!(
+            bad_module.actual_value.as_deref(),
+            Some("invalid_name_format")
+        );
+
+        let duplicate_module_source = valid_import_lock_manifest_json()
+            .replace(r#""module":"Std.Logic""#, r#""module":"Std.Nat""#)
+            .replace("build/certs/Std/Logic.npcert", "build/certs/Std/Zzz.npcert");
+        let duplicate_module =
+            parse_phase8_import_lock_manifest(&duplicate_module_source).unwrap_err();
+        assert_eq!(
+            duplicate_module.field.as_ref(),
+            "imports.manifest.imports[1].module"
+        );
+        assert_eq!(
+            duplicate_module.actual_value.as_deref(),
+            Some("duplicate_module")
+        );
+
+        let duplicate_path = parse_phase8_import_lock_manifest(
+            &valid_import_lock_manifest_json()
+                .replace("build/certs/Std/Nat.npcert", "build/certs/Std/Logic.npcert"),
+        )
+        .unwrap_err();
+        assert_eq!(
+            duplicate_path.field.as_ref(),
+            "imports.manifest.imports[1].certificate.path"
+        );
+        assert_eq!(
+            duplicate_path.actual_value.as_deref(),
+            Some("duplicate_path")
+        );
+
+        let duplicate_certificate_hash = parse_phase8_import_lock_manifest(
+            &valid_import_lock_manifest_json().replace(&hash_wire(55), &hash_wire(52)),
+        )
+        .unwrap_err();
+        assert_eq!(
+            duplicate_certificate_hash.field.as_ref(),
+            "imports.manifest.imports[1].certificate.certificate_hash"
+        );
+        assert_eq!(
+            duplicate_certificate_hash.actual_value.as_deref(),
+            Some("duplicate_certificate_hash")
+        );
+
+        let duplicate_file_hash = parse_phase8_import_lock_manifest(
+            &valid_import_lock_manifest_json().replace(&hash_wire(54), &hash_wire(51)),
+        )
+        .unwrap_err();
+        assert_eq!(
+            duplicate_file_hash.field.as_ref(),
+            "imports.manifest.imports[1].certificate.file_hash"
+        );
+        assert_eq!(
+            duplicate_file_hash.actual_value.as_deref(),
+            Some("duplicate_file_hash")
+        );
+
+        let bad_kind = parse_phase8_import_lock_manifest(
+            &valid_import_lock_manifest_json().replace(r#""kind":"path""#, r#""kind":"url""#),
+        )
+        .unwrap_err();
+        assert_eq!(
+            bad_kind.field.as_ref(),
+            "imports.manifest.imports[0].certificate.kind"
+        );
+        assert_eq!(bad_kind.actual_value.as_deref(), Some("invalid_enum"));
+    }
+
+    #[test]
+    fn m2_request_hash_is_semantic_and_file_hash_tracks_exact_bytes() {
+        let policy = parse_phase8_runner_policy(&valid_runner_policy_json()).unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let imports_hash = phase8_file_hash(imports_json.as_bytes());
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+
+        let first = phase8_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            imports_hash,
+            "reference",
+            "mchkreq_001",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap();
+        let second = phase8_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            imports_hash,
+            "reference",
+            "mchkreq_002",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(first.request.request_hash(), second.request.request_hash());
+        assert_ne!(first.request_file_hash, second.request_file_hash);
+        assert_eq!(
+            first.request.certificate.file_hash,
+            phase8_file_hash(&cert_bytes)
+        );
+        assert_eq!(
+            first.request.certificate.expected_certificate_hash,
+            test_hash(70)
+        );
+        assert_eq!(first.request.imports.manifest_hash, imports_hash);
+        assert_eq!(
+            parse_phase8_machine_check_request(&first.request.canonical_json())
+                .unwrap()
+                .request_hash(),
+            first.request.request_hash()
+        );
+    }
+
+    #[test]
+    fn m2_materialize_rejects_import_hash_and_raw_certificate_claim_failures() {
+        let policy = parse_phase8_runner_policy(&valid_runner_policy_json()).unwrap();
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+
+        let import_hash_err = phase8_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            test_hash(99),
+            "reference",
+            "mchkreq_001",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(import_hash_err.reason_code.as_ref(), "input_hash_mismatch");
+        assert_eq!(
+            import_hash_err.field.as_deref(),
+            Some("imports.manifest_hash")
+        );
+
+        let malformed_cert = b"too short".to_vec();
+        let cert_err = phase8_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &malformed_cert,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            phase8_file_hash(imports_json.as_bytes()),
+            "reference",
+            "mchkreq_001",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(
+            cert_err.reason_code.as_ref(),
+            "request_materialization_failed"
+        );
+        assert_eq!(
+            cert_err.field.as_deref(),
+            Some("certificate.expected_certificate_hash")
+        );
+
+        let module_err = phase8_request_materialize(
+            &policy,
+            "Std.Bool",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            phase8_file_hash(imports_json.as_bytes()),
+            "reference",
+            "mchkreq_001",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(
+            module_err.reason_code.as_ref(),
+            "request_materialization_failed"
+        );
+        assert_eq!(module_err.field.as_deref(), Some("module"));
+        assert_eq!(module_err.actual_value.as_deref(), Some("Std.Nat"));
+    }
+
+    #[test]
+    fn m2_request_store_exact_match_retry_and_conflict_are_deterministic() {
+        let generated = Phase8RequestStoreEntry {
+            request_hash: test_hash(80),
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: test_hash(81),
+        };
+        let existing = Phase8RequestStoreManifest {
+            requests: vec![generated.clone()],
+        };
+        let idempotent =
+            phase8_request_store_with_materialized_entry(Some(&existing), generated.clone())
+                .unwrap();
+        assert!(!idempotent.rewrite_required);
+        assert_eq!(idempotent.manifest, existing);
+
+        let conflict = Phase8RequestStoreManifest {
+            requests: vec![Phase8RequestStoreEntry {
+                request_hash: generated.request_hash,
+                path: generated.path.clone(),
+                file_hash: test_hash(82),
+            }],
+        };
+        let err =
+            phase8_request_store_with_materialized_entry(Some(&conflict), generated).unwrap_err();
+        assert_eq!(err.reason_code.as_ref(), "request_store_entry_conflict");
+        assert_eq!(err.field.as_deref(), Some("request_store.requests[]"));
+        assert!(err
+            .expected_value
+            .as_deref()
+            .unwrap()
+            .contains("\"file_hash\":\"sha256:"));
+        assert_ne!(err.expected_value, err.actual_value);
     }
 }
