@@ -176,7 +176,7 @@ pub(crate) fn build_module_cert_impl(
             imported_decls: &imported_decls,
             name_index: &name_index,
         };
-        let (canon_decl, _) = canonicalize_decl(decl.clone(), decl_index, &resolver, &[])?;
+        let canon_decl = canonicalize_decl(decl.clone(), decl_index, &resolver)?;
         canon_decls.push(canon_decl);
     }
 
@@ -191,71 +191,39 @@ pub(crate) fn build_module_cert_impl(
     let level_hashes = compute_level_hashes(&level_table, &name_table)?;
     let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
 
-    let payloads: Vec<_> = canon_decls
-        .iter()
-        .map(|canon_decl| materialize_decl_payload(&canon_decl.decl, &level_ids, &term_ids))
-        .collect();
     let mut declarations: Vec<DeclCert> = Vec::new();
     let mut per_declaration = Vec::new();
     let mut previous_axioms: Vec<Vec<AxiomRef>> = Vec::new();
     let mut interface_hashes: Vec<Hash> = Vec::new();
-    for (decl_index, (payload, canon_decl)) in payloads.iter().zip(&canon_decls).enumerate() {
-        let dependencies =
-            fill_local_dependency_hashes(&canon_decl.dependencies, &interface_hashes)?;
-        let mut axiom_dependencies = axiom_dependencies_from_final_deps(
-            &dependencies,
-            &previous_axioms,
-            &imported_decls,
-            &name_table,
+    for (decl_index, canon_decl) in canon_decls.iter().enumerate() {
+        let finalized = finalize_canon_decl(
+            decl_index,
+            canon_decl,
+            CanonDeclFinalizeContext {
+                level_ids: &level_ids,
+                term_ids: &term_ids,
+                interface_hashes: &interface_hashes,
+                previous_axioms: &previous_axioms,
+                imported_decls: &imported_decls,
+                name_table: &name_table,
+                term_table: &term_table,
+                level_hashes: &level_hashes,
+                term_hashes: &term_hashes,
+                include_direct_axioms: true,
+            },
         )?;
-        let mut direct_axioms = direct_axioms_from_final_deps(
-            &dependencies,
-            &previous_axioms,
-            &imported_decls,
-            &name_table,
-        )?;
-
-        if let DeclPayload::Axiom { name, .. } = payload {
-            let preliminary = compute_decl_hashes(
-                payload,
-                &dependencies,
-                &[],
-                &term_table,
-                &level_hashes,
-                &term_hashes,
-                &name_table,
-            )?;
-            let self_ref = AxiomRef {
-                global_ref: GlobalRef::Local { decl_index },
-                name: *name,
-                decl_interface_hash: preliminary.decl_interface_hash,
-            };
-            axiom_dependencies =
-                union_axioms(axiom_dependencies.into_iter().chain([self_ref.clone()]));
-            direct_axioms = union_axioms(direct_axioms.into_iter().chain([self_ref]));
-        }
-
-        let hashes = compute_decl_hashes(
-            payload,
-            &dependencies,
-            &axiom_dependencies,
-            &term_table,
-            &level_hashes,
-            &term_hashes,
-            &name_table,
-        )?;
-        interface_hashes.push(hashes.decl_interface_hash);
-        previous_axioms.push(axiom_dependencies.clone());
+        interface_hashes.push(finalized.hashes.decl_interface_hash);
+        previous_axioms.push(finalized.axiom_dependencies.clone());
         declarations.push(DeclCert {
-            decl: payload.clone(),
-            dependencies,
-            axiom_dependencies: axiom_dependencies.clone(),
-            hashes,
+            decl: finalized.payload,
+            dependencies: finalized.dependencies,
+            axiom_dependencies: finalized.axiom_dependencies.clone(),
+            hashes: finalized.hashes,
         });
         per_declaration.push(DeclAxiomReport {
             decl_index,
-            direct_axioms,
-            transitive_axioms: axiom_dependencies,
+            direct_axioms: finalized.direct_axioms,
+            transitive_axioms: finalized.axiom_dependencies,
         });
     }
 
@@ -303,12 +271,7 @@ pub(crate) fn build_module_cert_impl(
     Ok(cert)
 }
 
-fn canonicalize_decl(
-    decl: Decl,
-    decl_index: usize,
-    resolver: &Resolver<'_>,
-    previous_axioms: &[Vec<AxiomRef>],
-) -> Result<(CanonDecl, Vec<AxiomRef>)> {
+fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> Result<CanonDecl> {
     match decl {
         Decl::Axiom {
             name,
@@ -318,24 +281,14 @@ fn canonicalize_decl(
             let name_id = resolver.name_id(&Name::from_dotted(&name))?;
             let ty = canonicalize_expr(&ty, resolver)?;
             let deps = dependencies_from_terms([&ty]);
-            let ax = axiom_dependencies_from_deps(&deps, previous_axioms, resolver);
-            let self_ref = AxiomRef {
-                global_ref: GlobalRef::Local { decl_index },
-                name: name_id,
-                decl_interface_hash: [0; 32],
-            };
-            let axiom_dependencies = union_axioms(ax.into_iter().chain([self_ref.clone()]));
-            Ok((
-                CanonDecl {
-                    decl: CanonDeclPayload::Axiom {
-                        name: name_id,
-                        universe_params: universe_param_ids(&universe_params, resolver)?,
-                        ty,
-                    },
-                    dependencies: deps,
+            Ok(CanonDecl {
+                decl: CanonDeclPayload::Axiom {
+                    name: name_id,
+                    universe_params: universe_param_ids(&universe_params, resolver)?,
+                    ty,
                 },
-                axiom_dependencies,
-            ))
+                dependencies: deps,
+            })
         }
         Decl::Def {
             name,
@@ -347,20 +300,16 @@ fn canonicalize_decl(
             let ty = canonicalize_expr(&ty, resolver)?;
             let value = canonicalize_expr(&value, resolver)?;
             let deps = dependencies_from_terms([&ty, &value]);
-            let ax = axiom_dependencies_from_deps(&deps, previous_axioms, resolver);
-            Ok((
-                CanonDecl {
-                    decl: CanonDeclPayload::Def {
-                        name: resolver.name_id(&Name::from_dotted(&name))?,
-                        universe_params: universe_param_ids(&universe_params, resolver)?,
-                        ty,
-                        value,
-                        reducibility: CertReducibility::from(&reducibility),
-                    },
-                    dependencies: deps,
+            Ok(CanonDecl {
+                decl: CanonDeclPayload::Def {
+                    name: resolver.name_id(&Name::from_dotted(&name))?,
+                    universe_params: universe_param_ids(&universe_params, resolver)?,
+                    ty,
+                    value,
+                    reducibility: CertReducibility::from(&reducibility),
                 },
-                ax,
-            ))
+                dependencies: deps,
+            })
         }
         Decl::Theorem {
             name,
@@ -371,19 +320,15 @@ fn canonicalize_decl(
             let ty = canonicalize_expr(&ty, resolver)?;
             let proof = canonicalize_expr(&proof, resolver)?;
             let deps = dependencies_from_terms([&ty, &proof]);
-            let ax = axiom_dependencies_from_deps(&deps, previous_axioms, resolver);
-            Ok((
-                CanonDecl {
-                    decl: CanonDeclPayload::Theorem {
-                        name: resolver.name_id(&Name::from_dotted(&name))?,
-                        universe_params: universe_param_ids(&universe_params, resolver)?,
-                        ty,
-                        proof,
-                    },
-                    dependencies: deps,
+            Ok(CanonDecl {
+                decl: CanonDeclPayload::Theorem {
+                    name: resolver.name_id(&Name::from_dotted(&name))?,
+                    universe_params: universe_param_ids(&universe_params, resolver)?,
+                    ty,
+                    proof,
                 },
-                ax,
-            ))
+                dependencies: deps,
+            })
         }
         Decl::Inductive {
             name,
@@ -451,22 +396,18 @@ fn canonicalize_decl(
             }
             let mut deps = dependencies_from_terms(terms.iter());
             remove_self_dependency(&mut deps, decl_index);
-            let ax = axiom_dependencies_from_deps(&deps, previous_axioms, resolver);
-            Ok((
-                CanonDecl {
-                    decl: CanonDeclPayload::Inductive {
-                        name: resolver.name_id(&Name::from_dotted(&name))?,
-                        universe_params: universe_param_ids(&universe_params, resolver)?,
-                        params,
-                        indices,
-                        sort,
-                        constructors,
-                        recursor,
-                    },
-                    dependencies: deps,
+            Ok(CanonDecl {
+                decl: CanonDeclPayload::Inductive {
+                    name: resolver.name_id(&Name::from_dotted(&name))?,
+                    universe_params: universe_param_ids(&universe_params, resolver)?,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor,
                 },
-                ax,
-            ))
+                dependencies: deps,
+            })
         }
         Decl::Constructor { name, .. } | Decl::Recursor { name, .. } => {
             Err(CertError::UnknownDependency {
@@ -530,12 +471,7 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         .iter()
         .map(|interface| union_axioms(interface.axiom_dependencies.iter().cloned()))
         .collect();
-    let (canon_decl, _) = canonicalize_decl(
-        decl.clone(),
-        current_decl_index,
-        &resolver,
-        &previous_axioms,
-    )?;
+    let canon_decl = canonicalize_decl(decl.clone(), current_decl_index, &resolver)?;
 
     let mut levels = BTreeSet::new();
     let mut terms = BTreeSet::new();
@@ -544,54 +480,32 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
     let (term_table, term_ids) = build_term_table(terms, &level_ids, &name_table)?;
     let level_hashes = compute_level_hashes(&level_table, &name_table)?;
     let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
-    let payload = materialize_decl_payload(&canon_decl.decl, &level_ids, &term_ids);
     let interface_hashes: Vec<_> = lookup_env
         .checked_decls
         .iter()
         .map(|interface| interface.decl_interface_hash)
         .collect();
-    let dependencies = fill_local_dependency_hashes(&canon_decl.dependencies, &interface_hashes)?;
-    let mut axiom_dependencies = axiom_dependencies_from_final_deps(
-        &dependencies,
-        &previous_axioms,
-        &imported_decls,
-        &name_table,
-    )?;
-
-    if let DeclPayload::Axiom { name, .. } = &payload {
-        let preliminary = compute_decl_hashes(
-            &payload,
-            &dependencies,
-            &[],
-            &term_table,
-            &level_hashes,
-            &term_hashes,
-            &name_table,
-        )?;
-        let self_ref = AxiomRef {
-            global_ref: GlobalRef::Local {
-                decl_index: current_decl_index,
-            },
-            name: *name,
-            decl_interface_hash: preliminary.decl_interface_hash,
-        };
-        axiom_dependencies = union_axioms(axiom_dependencies.into_iter().chain([self_ref]));
-    }
-
-    let hashes = compute_decl_hashes(
-        &payload,
-        &dependencies,
-        &axiom_dependencies,
-        &term_table,
-        &level_hashes,
-        &term_hashes,
-        &name_table,
+    let finalized = finalize_canon_decl(
+        current_decl_index,
+        &canon_decl,
+        CanonDeclFinalizeContext {
+            level_ids: &level_ids,
+            term_ids: &term_ids,
+            interface_hashes: &interface_hashes,
+            previous_axioms: &previous_axioms,
+            imported_decls: &imported_decls,
+            name_table: &name_table,
+            term_table: &term_table,
+            level_hashes: &level_hashes,
+            term_hashes: &term_hashes,
+            include_direct_axioms: false,
+        },
     )?;
     let interface = ProducerCheckedDeclInterface {
-        decl_interface_hash: hashes.decl_interface_hash,
-        axiom_dependencies,
+        decl_interface_hash: finalized.hashes.decl_interface_hash,
+        axiom_dependencies: finalized.axiom_dependencies,
     };
-    Ok((interface, hashes))
+    Ok((interface, finalized.hashes))
 }
 
 struct Resolver<'a> {
@@ -609,6 +523,94 @@ struct ImportedDeclInfo {
     decl_interface_hash: Hash,
     kind: ExportKind,
     axiom_dependencies: Vec<AxiomRef>,
+}
+
+struct FinalizedCanonDecl {
+    payload: DeclPayload,
+    dependencies: Vec<DependencyEntry>,
+    axiom_dependencies: Vec<AxiomRef>,
+    direct_axioms: Vec<AxiomRef>,
+    hashes: DeclHashes,
+}
+
+struct CanonDeclFinalizeContext<'a> {
+    level_ids: &'a BTreeMap<CanonLevel, LevelId>,
+    term_ids: &'a BTreeMap<CanonTerm, TermId>,
+    interface_hashes: &'a [Hash],
+    previous_axioms: &'a [Vec<AxiomRef>],
+    imported_decls: &'a BTreeMap<Name, ImportedDeclInfo>,
+    name_table: &'a [Name],
+    term_table: &'a [TermNode],
+    level_hashes: &'a [Hash],
+    term_hashes: &'a [Hash],
+    include_direct_axioms: bool,
+}
+
+// Shared by trusted certificate construction and producer token checking. Keep declaration
+// dependency, transitive axiom, and hash finalization here so the two paths cannot drift.
+fn finalize_canon_decl(
+    decl_index: usize,
+    canon_decl: &CanonDecl,
+    context: CanonDeclFinalizeContext<'_>,
+) -> Result<FinalizedCanonDecl> {
+    let payload = materialize_decl_payload(&canon_decl.decl, context.level_ids, context.term_ids);
+    let dependencies =
+        fill_local_dependency_hashes(&canon_decl.dependencies, context.interface_hashes)?;
+    let mut axiom_dependencies = axiom_dependencies_from_final_deps(
+        &dependencies,
+        context.previous_axioms,
+        context.imported_decls,
+        context.name_table,
+    )?;
+    let mut direct_axioms = if context.include_direct_axioms {
+        direct_axioms_from_final_deps(
+            &dependencies,
+            context.previous_axioms,
+            context.imported_decls,
+            context.name_table,
+        )?
+    } else {
+        Vec::new()
+    };
+
+    if let DeclPayload::Axiom { name, .. } = &payload {
+        let preliminary = compute_decl_hashes(
+            &payload,
+            &dependencies,
+            &[],
+            context.term_table,
+            context.level_hashes,
+            context.term_hashes,
+            context.name_table,
+        )?;
+        let self_ref = AxiomRef {
+            global_ref: GlobalRef::Local { decl_index },
+            name: *name,
+            decl_interface_hash: preliminary.decl_interface_hash,
+        };
+        axiom_dependencies = union_axioms(axiom_dependencies.into_iter().chain([self_ref.clone()]));
+        if context.include_direct_axioms {
+            direct_axioms = union_axioms(direct_axioms.into_iter().chain([self_ref]));
+        }
+    }
+
+    let hashes = compute_decl_hashes(
+        &payload,
+        &dependencies,
+        &axiom_dependencies,
+        context.term_table,
+        context.level_hashes,
+        context.term_hashes,
+        context.name_table,
+    )?;
+
+    Ok(FinalizedCanonDecl {
+        payload,
+        dependencies,
+        axiom_dependencies,
+        direct_axioms,
+        hashes,
+    })
 }
 
 pub(crate) fn canonical_declaration_order(declarations: Vec<Decl>) -> Result<Vec<Decl>> {
@@ -845,51 +847,6 @@ fn collect_dependencies(term: &CanonTerm, deps: &mut BTreeSet<DependencyEntry>) 
             collect_dependencies(body, deps);
         }
     }
-}
-
-fn axiom_dependencies_from_deps(
-    deps: &[DependencyEntry],
-    previous_axioms: &[Vec<AxiomRef>],
-    resolver: &Resolver<'_>,
-) -> Vec<AxiomRef> {
-    let mut axioms = BTreeSet::new();
-    for dep in deps {
-        match &dep.global_ref {
-            GlobalRef::Builtin {
-                name,
-                decl_interface_hash,
-            } => {
-                let is_builtin_axiom = resolver
-                    .name_index
-                    .iter()
-                    .any(|(candidate, index)| *index == *name && builtin_is_axiom(candidate));
-                if is_builtin_axiom {
-                    axioms.insert(AxiomRef {
-                        global_ref: dep.global_ref.clone(),
-                        name: *name,
-                        decl_interface_hash: *decl_interface_hash,
-                    });
-                }
-            }
-            GlobalRef::Local { decl_index } | GlobalRef::LocalGenerated { decl_index, .. } => {
-                if let Some(dep_axioms) = previous_axioms.get(*decl_index) {
-                    axioms.extend(dep_axioms.iter().cloned());
-                }
-            }
-            GlobalRef::Imported { name, .. } => {
-                let name = resolver
-                    .name_index
-                    .iter()
-                    .find_map(|(candidate, index)| (*index == *name).then(|| candidate.clone()));
-                if let Some(name) = name {
-                    if let Some(info) = resolver.imported_decls.get(&name) {
-                        axioms.extend(info.axiom_dependencies.iter().cloned());
-                    }
-                }
-            }
-        }
-    }
-    axioms.into_iter().collect()
 }
 
 pub(crate) fn fill_local_dependency_hashes(
