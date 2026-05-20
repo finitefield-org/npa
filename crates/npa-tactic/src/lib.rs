@@ -638,6 +638,10 @@ impl VerifiedImportRef {
     pub fn certified_env_decl_hashes(&self) -> &[Hash] {
         &self.certified_env_decl_hashes
     }
+
+    pub fn verified_module(&self) -> &VerifiedModule {
+        &self.verified_module
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

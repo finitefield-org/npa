@@ -9,11 +9,16 @@
 mod binary;
 mod canonical;
 mod hash;
+mod inductive;
 mod kernel;
 mod producer;
 mod types;
 mod verify;
 
+pub use inductive::{
+    classify_inductive_artifact_profile_v1, generate_inductive_artifacts_v1,
+    InductiveArtifactProfileCheckV1, UnsupportedMvpRecursorProfileV1,
+};
 pub use kernel::{builtin_decl_interface_hash, verified_module_to_kernel_decls};
 pub use producer::*;
 pub use types::*;

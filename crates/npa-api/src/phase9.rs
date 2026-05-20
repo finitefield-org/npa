@@ -2,8 +2,11 @@ use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::path::{Component, Path, PathBuf};
 
-use npa_cert::{Hash, ModuleName, Name};
-use npa_kernel::{Ctx, Env, Expr, Level};
+use npa_cert::{
+    AxiomPolicy, CoreModule, Hash, InductiveArtifactProfileCheckV1, ModuleName, Name,
+    VerifierSession,
+};
+use npa_kernel::{Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level};
 use npa_tactic::{machine_local_context_canonical_bytes, MachineLocalDecl, VerifiedImportRef};
 use sha2::{Digest, Sha256};
 
@@ -18,6 +21,9 @@ const UNIVERSE_CONSTRAINT_SET_HASH_TAG: &str = "npa.phase9_ai.universe.constrain
 
 const MAX_OPTIONS_BYTES: usize = 16_000_000;
 const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
+const MAX_PHASE9_INDUCTIVE_ITEMS: u64 = 65_536;
+const MAX_PHASE9_INDUCTIVE_EXPR_NODES: u64 = 1_000_000;
+const MAX_PHASE9_INDUCTIVE_LEVEL_NODES: u64 = 1_000_000;
 const MAX_PHASE9_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
 const MAX_NAME_COMPONENTS: u64 = 256;
 const MAX_STRING_BYTES: u64 = 1_048_576;
@@ -255,6 +261,34 @@ pub struct Phase9AiGlobalRef {
     pub certificate_hash: Hash,
     pub name: Name,
     pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineInductiveProposal {
+    pub block_name: Option<Name>,
+    pub expected_decl_hash: Option<Hash>,
+    pub universe_params: Vec<String>,
+    pub inductives: Vec<Phase9MachineInductiveFamilyProposal>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineInductiveFamilyProposal {
+    pub name: Name,
+    pub params: Vec<Phase9MachineTelescopeBinder>,
+    pub indices: Vec<Phase9MachineTelescopeBinder>,
+    pub result_sort: Level,
+    pub constructors: Vec<Phase9MachineConstructorProposal>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTelescopeBinder {
+    pub ty: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineConstructorProposal {
+    pub name: Name,
+    pub ty: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -603,6 +637,14 @@ pub fn phase9_ai_goal_canonical_bytes(
     Ok(out)
 }
 
+pub fn phase9_inductive_proposal_canonical_bytes(
+    proposal: &Phase9MachineInductiveProposal,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_inductive_proposal_to(&mut out, proposal)?;
+    Ok(out)
+}
+
 pub fn phase9_universe_repair_candidate_canonical_bytes(
     candidate: &Phase9UniverseRepairCandidate,
 ) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
@@ -709,12 +751,15 @@ pub fn run_phase9_inductive_check_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
+    match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
         Phase9AiTaskKind::AdvancedInductive,
-    )
+    ) {
+        Ok(validated) => run_phase9_inductive_validated(validated, verified_imports),
+        Err(response) => response,
+    }
 }
 
 pub fn run_phase9_universe_repair_check_request(
@@ -817,6 +862,345 @@ fn run_phase9_skeleton_request(
         ),
         Err(response) => response,
     }
+}
+
+fn run_phase9_inductive_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let proposal = match decode_inductive_proposal(&validated.envelope.payload) {
+        Ok(proposal) => proposal,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+
+    let [family] = proposal.inductives.as_slice() else {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    };
+
+    let family_public_name = phase9_family_public_name(proposal.block_name.as_ref(), &family.name);
+    let constructor_public_names = family
+        .constructors
+        .iter()
+        .map(|constructor| phase9_append_name(&family_public_name, &constructor.name))
+        .collect::<Vec<_>>();
+    let recursor_public_name = phase9_append_name(&family_public_name, &Name::from_dotted("rec"));
+    if phase9_inductive_names_collide(
+        family,
+        &family_public_name,
+        &constructor_public_names,
+        &recursor_public_name,
+    ) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::NameCollision,
+            )),
+        );
+    }
+
+    if !phase9_string_list_is_unique(&proposal.universe_params)
+        || !level_is_in_scope(&family.result_sort, &proposal.universe_params)
+        || !phase9_inductive_family_levels_are_in_scope(family, &proposal.universe_params)
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+
+    if phase9_telescope_contains_const_name(&family.params, &family_public_name.as_dotted())
+        || phase9_telescope_contains_const_name(&family.indices, &family_public_name.as_dotted())
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::TargetRefMismatch,
+            )),
+        );
+    }
+    if !phase9_telescope_imported_refs_are_resolved(
+        &family.params,
+        verified_imports,
+        &BTreeSet::new(),
+    ) || !phase9_telescope_imported_refs_are_resolved(
+        &family.indices,
+        verified_imports,
+        &BTreeSet::new(),
+    ) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        );
+    }
+
+    let env = match phase9_kernel_env_from_imports(verified_imports) {
+        Ok(env) => env,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+    };
+    if phase9_check_telescope_kernel(
+        &env,
+        &proposal.universe_params,
+        family.params.iter().chain(&family.indices),
+    )
+    .is_err()
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        );
+    }
+
+    let generated_names = constructor_public_names
+        .iter()
+        .chain(std::iter::once(&recursor_public_name))
+        .map(Name::as_dotted)
+        .collect::<BTreeSet<_>>();
+    if family.constructors.iter().any(|constructor| {
+        generated_names
+            .iter()
+            .any(|name| expr_contains_const_name(&constructor.ty, name))
+    }) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::TargetRefMismatch,
+            )),
+        );
+    }
+    let mut allowed_local_names = BTreeSet::new();
+    allowed_local_names.insert(family_public_name.as_dotted());
+    if !family.constructors.iter().all(|constructor| {
+        expr_imported_refs_are_resolved_with_allowed_locals(
+            &constructor.ty,
+            verified_imports,
+            &allowed_local_names,
+        )
+    }) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        );
+    }
+
+    let base_decl = phase9_base_inductive_decl(
+        &proposal,
+        family,
+        &family_public_name,
+        &constructor_public_names,
+    );
+    let mut constructor_env = env.clone();
+    if constructor_env
+        .add_axiom(
+            base_decl.name.clone(),
+            base_decl.universe_params.clone(),
+            phase9_inductive_type(&base_decl),
+        )
+        .is_err()
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::NameCollision,
+            )),
+        );
+    }
+    for constructor in &base_decl.constructors {
+        if expect_sort_public(
+            &constructor_env,
+            &Ctx::new(),
+            &proposal.universe_params,
+            &constructor.ty,
+        )
+        .is_err()
+        {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+    }
+
+    for constructor in &base_decl.constructors {
+        match phase9_check_constructor_result(&constructor_env, &base_decl, constructor) {
+            Ok(()) => {}
+            Err(Phase9InductiveCheckError::TargetRefMismatch) => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Some(Phase9AiFeatureError::AdvancedInductive(
+                        Phase9AdvancedInductiveError::TargetRefMismatch,
+                    )),
+                );
+            }
+            Err(Phase9InductiveCheckError::KernelRejected) => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::KernelRejected,
+                    None,
+                );
+            }
+            Err(Phase9InductiveCheckError::UnsupportedPositivity) => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::UnsupportedFeature,
+                    Some(Phase9AiFeatureError::AdvancedInductive(
+                        Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+                    )),
+                );
+            }
+        }
+    }
+
+    for constructor in &base_decl.constructors {
+        match phase9_check_constructor_positivity(&base_decl, constructor) {
+            Ok(()) => {}
+            Err(Phase9InductiveCheckError::TargetRefMismatch) => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Some(Phase9AiFeatureError::AdvancedInductive(
+                        Phase9AdvancedInductiveError::TargetRefMismatch,
+                    )),
+                );
+            }
+            Err(Phase9InductiveCheckError::UnsupportedPositivity) => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::UnsupportedFeature,
+                    Some(Phase9AiFeatureError::AdvancedInductive(
+                        Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+                    )),
+                );
+            }
+            Err(Phase9InductiveCheckError::KernelRejected) => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::KernelRejected,
+                    None,
+                );
+            }
+        }
+    }
+
+    if npa_cert::classify_inductive_artifact_profile_v1(&base_decl)
+        != InductiveArtifactProfileCheckV1::SupportedMvpRecursor
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    }
+    let final_decl = match npa_cert::generate_inductive_artifacts_v1(&base_decl) {
+        Ok(final_decl) => final_decl,
+        Err(_) => {
+            return Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            };
+        }
+    };
+    let cert_decl = Decl::Inductive {
+        name: final_decl.name.clone(),
+        universe_params: final_decl.universe_params.clone(),
+        ty: phase9_inductive_type(&final_decl),
+        data: Box::new(final_decl),
+    };
+    let import_modules = verified_imports
+        .iter()
+        .map(|import| import.verified_module().clone())
+        .collect::<Vec<_>>();
+    let cert = match npa_cert::build_module_cert(
+        CoreModule {
+            name: family_public_name.clone(),
+            declarations: vec![cert_decl],
+        },
+        &import_modules,
+    ) {
+        Ok(cert) => cert,
+        Err(npa_cert::CertError::Kernel(_)) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+        Err(_) => {
+            return Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            };
+        }
+    };
+    let cert_bytes = match npa_cert::encode_module_cert(&cert) {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            return Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            };
+        }
+    };
+    let mut verifier_session = VerifierSession::new();
+    for import in import_modules {
+        verifier_session.register_verified_module(import);
+    }
+    if npa_cert::verify_module_cert(&cert_bytes, &mut verifier_session, &AxiomPolicy::normal())
+        .is_err()
+    {
+        return Phase9AiEndpointResponse::Error {
+            error: Phase9AiEndpointError::InternalValidatorFailure,
+        };
+    }
+    let Some(decl) = cert.declarations.first() else {
+        return Phase9AiEndpointResponse::Error {
+            error: Phase9AiEndpointError::InternalValidatorFailure,
+        };
+    };
+    if proposal
+        .expected_decl_hash
+        .is_some_and(|expected| expected != decl.hashes.decl_certificate_hash)
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+    success_response(
+        candidate_hash,
+        Phase9AiSuccessPayload::AdvancedInductive {
+            decl_interface_hash: decl.hashes.decl_interface_hash,
+            decl_certificate_hash: decl.hashes.decl_certificate_hash,
+        },
+    )
 }
 
 struct Phase9UniverseRepairCandidateOuter {
@@ -1299,9 +1683,334 @@ fn validate_required_options(
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase9InductiveCheckError {
+    TargetRefMismatch,
+    KernelRejected,
+    UnsupportedPositivity,
+}
+
 struct ResolvedPhase9GlobalRef {
     const_name: String,
     universe_arity: usize,
+}
+
+fn phase9_family_public_name(block_name: Option<&Name>, family_name: &Name) -> Name {
+    match block_name {
+        Some(block_name) => phase9_append_name(block_name, family_name),
+        None => family_name.clone(),
+    }
+}
+
+fn phase9_append_name(prefix: &Name, suffix: &Name) -> Name {
+    let mut components = prefix.0.clone();
+    components.extend(suffix.0.iter().cloned());
+    Name(components)
+}
+
+fn phase9_inductive_names_collide(
+    family: &Phase9MachineInductiveFamilyProposal,
+    family_public_name: &Name,
+    constructor_public_names: &[Name],
+    recursor_public_name: &Name,
+) -> bool {
+    let mut local_names = BTreeSet::new();
+    if !local_names.insert(family.name.clone()) {
+        return true;
+    }
+    for constructor in &family.constructors {
+        if !local_names.insert(constructor.name.clone()) {
+            return true;
+        }
+    }
+
+    let mut public_names = BTreeSet::new();
+    if !public_names.insert(family_public_name.clone()) {
+        return true;
+    }
+    for constructor_name in constructor_public_names {
+        if !public_names.insert(constructor_name.clone()) {
+            return true;
+        }
+    }
+    !public_names.insert(recursor_public_name.clone())
+}
+
+fn phase9_inductive_family_levels_are_in_scope(
+    family: &Phase9MachineInductiveFamilyProposal,
+    params: &[String],
+) -> bool {
+    family
+        .params
+        .iter()
+        .chain(&family.indices)
+        .all(|binder| expr_levels_are_in_scope(&binder.ty, params))
+        && family
+            .constructors
+            .iter()
+            .all(|constructor| expr_levels_are_in_scope(&constructor.ty, params))
+}
+
+fn phase9_telescope_contains_const_name(
+    telescope: &[Phase9MachineTelescopeBinder],
+    name: &str,
+) -> bool {
+    telescope
+        .iter()
+        .any(|binder| expr_contains_const_name(&binder.ty, name))
+}
+
+fn expr_contains_const_name(expr: &Expr, needle: &str) -> bool {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => false,
+        Expr::Const { name, .. } => name == needle,
+        Expr::App(fun, arg) => {
+            expr_contains_const_name(fun, needle) || expr_contains_const_name(arg, needle)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_contains_const_name(ty, needle) || expr_contains_const_name(body, needle)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_contains_const_name(ty, needle)
+                || expr_contains_const_name(value, needle)
+                || expr_contains_const_name(body, needle)
+        }
+    }
+}
+
+fn phase9_telescope_imported_refs_are_resolved(
+    telescope: &[Phase9MachineTelescopeBinder],
+    imports: &[VerifiedImportRef],
+    allowed_local_names: &BTreeSet<String>,
+) -> bool {
+    telescope.iter().all(|binder| {
+        expr_imported_refs_are_resolved_with_allowed_locals(
+            &binder.ty,
+            imports,
+            allowed_local_names,
+        )
+    })
+}
+
+fn expr_imported_refs_are_resolved_with_allowed_locals(
+    expr: &Expr,
+    imports: &[VerifiedImportRef],
+    allowed_local_names: &BTreeSet<String>,
+) -> bool {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => true,
+        Expr::Const { name, .. } => {
+            allowed_local_names.contains(name) || const_name_is_exported_once(name, imports)
+        }
+        Expr::App(fun, arg) => {
+            expr_imported_refs_are_resolved_with_allowed_locals(fun, imports, allowed_local_names)
+                && expr_imported_refs_are_resolved_with_allowed_locals(
+                    arg,
+                    imports,
+                    allowed_local_names,
+                )
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_imported_refs_are_resolved_with_allowed_locals(ty, imports, allowed_local_names)
+                && expr_imported_refs_are_resolved_with_allowed_locals(
+                    body,
+                    imports,
+                    allowed_local_names,
+                )
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_imported_refs_are_resolved_with_allowed_locals(ty, imports, allowed_local_names)
+                && expr_imported_refs_are_resolved_with_allowed_locals(
+                    value,
+                    imports,
+                    allowed_local_names,
+                )
+                && expr_imported_refs_are_resolved_with_allowed_locals(
+                    body,
+                    imports,
+                    allowed_local_names,
+                )
+        }
+    }
+}
+
+fn phase9_check_telescope_kernel<'a>(
+    env: &Env,
+    delta: &[String],
+    telescope: impl Iterator<Item = &'a Phase9MachineTelescopeBinder>,
+) -> std::result::Result<(), ()> {
+    let mut ctx = Ctx::new();
+    for (index, binder) in telescope.enumerate() {
+        expect_sort_public(env, &ctx, delta, &binder.ty)?;
+        ctx.push_assumption(format!("x{index}"), binder.ty.clone());
+    }
+    Ok(())
+}
+
+fn phase9_base_inductive_decl(
+    proposal: &Phase9MachineInductiveProposal,
+    family: &Phase9MachineInductiveFamilyProposal,
+    family_public_name: &Name,
+    constructor_public_names: &[Name],
+) -> InductiveDecl {
+    InductiveDecl::new(
+        family_public_name.as_dotted(),
+        proposal.universe_params.clone(),
+        family
+            .params
+            .iter()
+            .enumerate()
+            .map(|(index, binder)| Binder::new(format!("p{index}"), binder.ty.clone()))
+            .collect(),
+        family
+            .indices
+            .iter()
+            .enumerate()
+            .map(|(index, binder)| Binder::new(format!("i{index}"), binder.ty.clone()))
+            .collect(),
+        family.result_sort.clone(),
+        family
+            .constructors
+            .iter()
+            .zip(constructor_public_names)
+            .map(|(constructor, public_name)| {
+                ConstructorDecl::new(public_name.as_dotted(), constructor.ty.clone())
+            })
+            .collect(),
+        None,
+    )
+}
+
+fn phase9_inductive_type(data: &InductiveDecl) -> Expr {
+    data.params
+        .iter()
+        .chain(&data.indices)
+        .rev()
+        .fold(Expr::sort(data.sort.clone()), |body, binder| {
+            Expr::pi(binder.name.clone(), binder.ty.clone(), body)
+        })
+}
+
+fn phase9_check_constructor_result(
+    env: &Env,
+    data: &InductiveDecl,
+    constructor: &ConstructorDecl,
+) -> std::result::Result<(), Phase9InductiveCheckError> {
+    let (domains, result) = phase9_peel_pi_domains(&constructor.ty);
+    let result = env
+        .whnf(&Ctx::new(), &data.universe_params, &result)
+        .map_err(|_| Phase9InductiveCheckError::KernelRejected)?;
+    let (head, args) = npa_kernel::expr::collect_apps(&result);
+    let levels = match head {
+        Expr::Const { name, levels } if name == data.name => levels,
+        _ => return Err(Phase9InductiveCheckError::TargetRefMismatch),
+    };
+    let expected_levels = data
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect::<Vec<_>>();
+    if !npa_kernel::level::levels_eq(&levels, &expected_levels)
+        || args.len() != data.params.len() + data.indices.len()
+        || domains.len() < data.params.len()
+    {
+        return Err(Phase9InductiveCheckError::TargetRefMismatch);
+    }
+    for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+        let expected = phase9_bvar_for_abs(domains.len(), param_index)
+            .ok_or(Phase9InductiveCheckError::TargetRefMismatch)?;
+        if arg != &expected {
+            return Err(Phase9InductiveCheckError::TargetRefMismatch);
+        }
+    }
+    Ok(())
+}
+
+fn phase9_check_constructor_positivity(
+    data: &InductiveDecl,
+    constructor: &ConstructorDecl,
+) -> std::result::Result<(), Phase9InductiveCheckError> {
+    let (domains, _) = phase9_peel_pi_domains(&constructor.ty);
+    for (domain_index, domain) in domains.iter().enumerate() {
+        if domain_index >= data.params.len() {
+            match phase9_direct_recursive_domain_status(data, domain, domain_index)? {
+                Phase9DirectRecursiveDomain::Direct => continue,
+                Phase9DirectRecursiveDomain::BadTarget => {
+                    return Err(Phase9InductiveCheckError::TargetRefMismatch)
+                }
+                Phase9DirectRecursiveDomain::NotRecursive => {}
+            }
+        }
+        if expr_contains_const_name(domain, &data.name) {
+            return Err(Phase9InductiveCheckError::UnsupportedPositivity);
+        }
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase9DirectRecursiveDomain {
+    Direct,
+    BadTarget,
+    NotRecursive,
+}
+
+fn phase9_direct_recursive_domain_status(
+    data: &InductiveDecl,
+    domain: &Expr,
+    ctx_len: usize,
+) -> std::result::Result<Phase9DirectRecursiveDomain, Phase9InductiveCheckError> {
+    let (head, args) = npa_kernel::expr::collect_apps(domain);
+    let levels = match head {
+        Expr::Const { name, levels } if name == data.name => levels,
+        _ => return Ok(Phase9DirectRecursiveDomain::NotRecursive),
+    };
+    let expected_levels = data
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect::<Vec<_>>();
+    if !npa_kernel::level::levels_eq(&levels, &expected_levels)
+        || args.len() != data.params.len() + data.indices.len()
+    {
+        return Ok(Phase9DirectRecursiveDomain::BadTarget);
+    }
+    for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+        let expected = phase9_bvar_for_abs(ctx_len, param_index)
+            .ok_or(Phase9InductiveCheckError::TargetRefMismatch)?;
+        if arg != &expected {
+            return Ok(Phase9DirectRecursiveDomain::BadTarget);
+        }
+    }
+    if args
+        .iter()
+        .skip(data.params.len())
+        .any(|arg| expr_contains_const_name(arg, &data.name))
+    {
+        return Err(Phase9InductiveCheckError::UnsupportedPositivity);
+    }
+    Ok(Phase9DirectRecursiveDomain::Direct)
+}
+
+fn phase9_peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
+    let mut domains = Vec::new();
+    let mut current = ty.clone();
+    while let Expr::Pi { ty, body, .. } = current {
+        domains.push(*ty);
+        current = *body;
+    }
+    (domains, current)
+}
+
+fn phase9_bvar_for_abs(ctx_len: usize, abs: usize) -> Option<Expr> {
+    if abs >= ctx_len {
+        return None;
+    }
+    Some(Expr::bvar((ctx_len - 1 - abs) as u32))
 }
 
 fn phase9_universe_constraint_set_hash(constraints: &[Phase9UniverseConstraint]) -> Hash {
@@ -1944,6 +2653,60 @@ fn encode_option_formalization_to(out: &mut Vec<u8>, options: Option<&Phase9Form
     }
 }
 
+fn encode_inductive_proposal_to(
+    out: &mut Vec<u8>,
+    proposal: &Phase9MachineInductiveProposal,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_option_name_to(out, proposal.block_name.as_ref())?;
+    encode_option_hash_to(out, proposal.expected_decl_hash.as_ref());
+    encode_len_to(out, proposal.universe_params.len());
+    for param in &proposal.universe_params {
+        encode_string_to(out, param);
+    }
+    encode_len_to(out, proposal.inductives.len());
+    for family in &proposal.inductives {
+        encode_inductive_family_to(out, family)?;
+    }
+    Ok(())
+}
+
+fn encode_option_name_to(
+    out: &mut Vec<u8>,
+    name: Option<&Name>,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match name {
+        Some(name) => {
+            out.push(1);
+            encode_name_to(out, name)?;
+        }
+        None => out.push(0),
+    }
+    Ok(())
+}
+
+fn encode_inductive_family_to(
+    out: &mut Vec<u8>,
+    family: &Phase9MachineInductiveFamilyProposal,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_name_to(out, &family.name)?;
+    encode_telescope_to(out, &family.params);
+    encode_telescope_to(out, &family.indices);
+    encode_level_to(out, &family.result_sort);
+    encode_len_to(out, family.constructors.len());
+    for constructor in &family.constructors {
+        encode_name_to(out, &constructor.name)?;
+        encode_expr_to(out, &constructor.ty);
+    }
+    Ok(())
+}
+
+fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[Phase9MachineTelescopeBinder]) {
+    encode_len_to(out, telescope.len());
+    for binder in telescope {
+        encode_expr_to(out, &binder.ty);
+    }
+}
+
 fn encode_universe_repair_candidate_to(
     out: &mut Vec<u8>,
     candidate: &Phase9UniverseRepairCandidate,
@@ -2225,6 +2988,73 @@ fn decode_options(input: &[u8]) -> std::result::Result<Phase9AiOptions, DecodeEr
     Ok(options)
 }
 
+struct Phase9InductiveDecodeBudget {
+    expr_nodes: u64,
+    level_nodes: u64,
+}
+
+impl Phase9InductiveDecodeBudget {
+    fn new() -> Self {
+        Self {
+            expr_nodes: 0,
+            level_nodes: 0,
+        }
+    }
+
+    fn spend_expr(&mut self) -> std::result::Result<(), DecodeError> {
+        self.expr_nodes = self
+            .expr_nodes
+            .checked_add(1)
+            .ok_or(DecodeError::Malformed)?;
+        if self.expr_nodes > MAX_PHASE9_INDUCTIVE_EXPR_NODES {
+            return Err(DecodeError::Malformed);
+        }
+        Ok(())
+    }
+
+    fn spend_level(&mut self) -> std::result::Result<(), DecodeError> {
+        self.level_nodes = self
+            .level_nodes
+            .checked_add(1)
+            .ok_or(DecodeError::Malformed)?;
+        if self.level_nodes > MAX_PHASE9_INDUCTIVE_LEVEL_NODES {
+            return Err(DecodeError::Malformed);
+        }
+        Ok(())
+    }
+}
+
+fn decode_inductive_proposal(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineInductiveProposal, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let mut budget = Phase9InductiveDecodeBudget::new();
+    let block_name = decoder.option_name()?;
+    let expected_decl_hash = decoder.option_hash()?;
+    let universe_params = decoder.string_list_with_cap(MAX_PHASE9_INDUCTIVE_ITEMS)?;
+    let inductive_len = decoder.u64()?;
+    if inductive_len > MAX_PHASE9_INDUCTIVE_ITEMS {
+        return Err(DecodeError::Malformed);
+    }
+    let mut inductives = Vec::new();
+    for _ in 0..inductive_len {
+        inductives.push(decoder.inductive_family(&mut budget)?);
+    }
+    decoder.done()?;
+    let proposal = Phase9MachineInductiveProposal {
+        block_name,
+        expected_decl_hash,
+        universe_params,
+        inductives,
+    };
+    let encoded =
+        phase9_inductive_proposal_canonical_bytes(&proposal).map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(proposal)
+}
+
 fn decode_universe_repair_candidate_outer(
     input: &[u8],
 ) -> std::result::Result<Phase9UniverseRepairCandidateOuter, DecodeError> {
@@ -2383,6 +3213,14 @@ impl<'a> Decoder<'a> {
         }
     }
 
+    fn option_name(&mut self) -> std::result::Result<Option<Name>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(self.name()?)),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
     fn target(&mut self) -> std::result::Result<Phase9AiTarget, DecodeError> {
         Ok(Phase9AiTarget {
             env_fingerprint: self.hash()?,
@@ -2397,6 +3235,19 @@ impl<'a> Decoder<'a> {
             1 => Ok(Some(self.hash()?)),
             _ => Err(DecodeError::Malformed),
         }
+    }
+
+    fn string_list_with_cap(&mut self, cap: u64) -> std::result::Result<Vec<String>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut values = Vec::new();
+        for _ in 0..len {
+            values.push(self.string()?);
+        }
+        Ok(values)
     }
 
     fn import_identities(&mut self) -> std::result::Result<Vec<Phase9ImportIdentity>, DecodeError> {
@@ -2625,6 +3476,137 @@ impl<'a> Decoder<'a> {
             name: self.name()?,
             decl_interface_hash: self.hash()?,
         })
+    }
+
+    fn inductive_family(
+        &mut self,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Phase9MachineInductiveFamilyProposal, DecodeError> {
+        let name = self.name()?;
+        let params = self.telescope_with_cap(MAX_PHASE9_INDUCTIVE_ITEMS, budget)?;
+        let indices = self.telescope_with_cap(MAX_PHASE9_INDUCTIVE_ITEMS, budget)?;
+        let result_sort = self.level_counted(budget)?;
+        let constructor_len = self.u64()?;
+        if constructor_len > MAX_PHASE9_INDUCTIVE_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let constructor_len =
+            usize::try_from(constructor_len).map_err(|_| DecodeError::Malformed)?;
+        let mut constructors = Vec::new();
+        for _ in 0..constructor_len {
+            constructors.push(Phase9MachineConstructorProposal {
+                name: self.name()?,
+                ty: self.expr_counted(budget)?,
+            });
+        }
+        Ok(Phase9MachineInductiveFamilyProposal {
+            name,
+            params,
+            indices,
+            result_sort,
+            constructors,
+        })
+    }
+
+    fn telescope_with_cap(
+        &mut self,
+        cap: u64,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Vec<Phase9MachineTelescopeBinder>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut telescope = Vec::new();
+        for _ in 0..len {
+            telescope.push(Phase9MachineTelescopeBinder {
+                ty: self.expr_counted(budget)?,
+            });
+        }
+        Ok(telescope)
+    }
+
+    fn expr_counted(
+        &mut self,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Expr, DecodeError> {
+        budget.spend_expr()?;
+        match self.u8()? {
+            0 => Ok(Expr::sort(self.level_counted(budget)?)),
+            1 => {
+                let index = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+                Ok(Expr::bvar(index))
+            }
+            2 => {
+                let name = self.string()?;
+                let levels =
+                    self.level_list_with_cap_counted(MAX_PHASE9_INDUCTIVE_ITEMS, budget)?;
+                Ok(Expr::konst(name, levels))
+            }
+            3 => {
+                let fun = self.expr_counted(budget)?;
+                let arg = self.expr_counted(budget)?;
+                Ok(Expr::app(fun, arg))
+            }
+            4 => {
+                let ty = self.expr_counted(budget)?;
+                let body = self.expr_counted(budget)?;
+                Ok(Expr::lam("_", ty, body))
+            }
+            5 => {
+                let ty = self.expr_counted(budget)?;
+                let body = self.expr_counted(budget)?;
+                Ok(Expr::pi("_", ty, body))
+            }
+            6 => {
+                let ty = self.expr_counted(budget)?;
+                let value = self.expr_counted(budget)?;
+                let body = self.expr_counted(budget)?;
+                Ok(Expr::let_in("_", ty, value, body))
+            }
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn level_counted(
+        &mut self,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Level, DecodeError> {
+        budget.spend_level()?;
+        match self.u8()? {
+            0 => Ok(Level::Zero),
+            1 => Ok(Level::succ(self.level_counted(budget)?)),
+            2 => {
+                let lhs = self.level_counted(budget)?;
+                let rhs = self.level_counted(budget)?;
+                Ok(Level::max(lhs, rhs))
+            }
+            3 => {
+                let lhs = self.level_counted(budget)?;
+                let rhs = self.level_counted(budget)?;
+                Ok(Level::imax(lhs, rhs))
+            }
+            4 => Ok(Level::param(self.string()?)),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn level_list_with_cap_counted(
+        &mut self,
+        cap: u64,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Vec<Level>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut levels = Vec::new();
+        for _ in 0..len {
+            levels.push(self.level_counted(budget)?);
+        }
+        Ok(levels)
     }
 
     fn option_quotient(
@@ -3019,6 +4001,72 @@ mod tests {
 
     fn universe_target_expr() -> Expr {
         Expr::konst("Lib.T", vec![Level::param("u")])
+    }
+
+    fn phase9_unary_expr() -> Expr {
+        Expr::konst("Unary", vec![])
+    }
+
+    fn valid_inductive_proposal() -> Phase9MachineInductiveProposal {
+        Phase9MachineInductiveProposal {
+            block_name: None,
+            expected_decl_hash: None,
+            universe_params: Vec::new(),
+            inductives: vec![Phase9MachineInductiveFamilyProposal {
+                name: Name::from_dotted("Unary"),
+                params: Vec::new(),
+                indices: Vec::new(),
+                result_sort: Level::succ(Level::zero()),
+                constructors: vec![
+                    Phase9MachineConstructorProposal {
+                        name: Name::from_dotted("zero"),
+                        ty: phase9_unary_expr(),
+                    },
+                    Phase9MachineConstructorProposal {
+                        name: Name::from_dotted("succ"),
+                        ty: Expr::pi("_", phase9_unary_expr(), phase9_unary_expr()),
+                    },
+                ],
+            }],
+        }
+    }
+
+    fn inductive_request(proposal: Phase9MachineInductiveProposal) -> Vec<u8> {
+        inductive_request_with_imports(proposal, Vec::new())
+    }
+
+    fn inductive_request_with_imports(
+        proposal: Phase9MachineInductiveProposal,
+        verified_imports: Vec<&VerifiedImportRef>,
+    ) -> Vec<u8> {
+        let options_bytes = empty_options_bytes();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = verified_imports
+            .iter()
+            .map(|import| Phase9ImportIdentity::from_verified_import(import))
+            .collect::<Vec<_>>();
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::AdvancedInductive,
+            target: Phase9AiTarget {
+                env_fingerprint: phase9_ai_env_fingerprint(
+                    Phase9AiProfileVersion::MvpV1,
+                    Phase9AiTaskKind::AdvancedInductive,
+                    &imports,
+                    options_hash,
+                )
+                .unwrap(),
+                target_decl_hash: None,
+                goal_fingerprint: None,
+            },
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_inductive_proposal_canonical_bytes(&proposal).unwrap(),
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn universe_goal(target: Expr) -> Phase9AiGoal {
@@ -3446,6 +4494,191 @@ mod tests {
     }
 
     #[test]
+    fn advanced_inductive_valid_candidate_returns_decl_hashes() {
+        let request = inductive_request(valid_inductive_proposal());
+        let expected_candidate_hash = phase9_ai_candidate_hash(&request);
+
+        let response = run_phase9_inductive_check_request(&request, &[], &workspace_root());
+
+        let Phase9AiEndpointResponse::Success {
+            candidate_hash,
+            validation_result_hash,
+            payload,
+        } = response
+        else {
+            panic!("expected success response");
+        };
+        assert_eq!(candidate_hash, expected_candidate_hash);
+        let Phase9AiSuccessPayload::AdvancedInductive {
+            decl_interface_hash,
+            decl_certificate_hash,
+        } = *payload
+        else {
+            panic!("expected advanced inductive payload");
+        };
+        assert_ne!(decl_interface_hash, [0; 32]);
+        assert_ne!(decl_certificate_hash, [0; 32]);
+        let expected_payload = Phase9AiSuccessPayload::AdvancedInductive {
+            decl_interface_hash,
+            decl_certificate_hash,
+        };
+        assert_eq!(
+            validation_result_hash,
+            phase9_ai_validation_result_hash_for_success(candidate_hash, &expected_payload)
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_expected_decl_hash_mismatch_is_target_mismatch() {
+        let mut proposal = valid_inductive_proposal();
+        proposal.expected_decl_hash = Some(hash(77));
+        let request = inductive_request(proposal);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_constructor_result_mismatch_is_target_ref_mismatch() {
+        let mut proposal = valid_inductive_proposal();
+        proposal.inductives[0].constructors[0].ty = Expr::sort(Level::zero());
+        let request = inductive_request(proposal);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::TargetRefMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_name_collision_is_feature_rejection() {
+        let mut proposal = valid_inductive_proposal();
+        proposal.inductives[0].constructors[0].name = Name::from_dotted("rec");
+        let request = inductive_request(proposal);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::NameCollision,
+            )),
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_bad_positivity_is_unsupported() {
+        let mut proposal = valid_inductive_proposal();
+        proposal.inductives[0]
+            .constructors
+            .push(Phase9MachineConstructorProposal {
+                name: Name::from_dotted("bad"),
+                ty: Expr::pi(
+                    "_",
+                    Expr::pi("_", phase9_unary_expr(), phase9_unary_expr()),
+                    phase9_unary_expr(),
+                ),
+            });
+        let request = inductive_request(proposal);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_nested_recursive_occurrence_is_unsupported() {
+        let import = verified_universe_import();
+        let mut proposal = valid_inductive_proposal();
+        proposal.inductives[0]
+            .constructors
+            .push(Phase9MachineConstructorProposal {
+                name: Name::from_dotted("boxed"),
+                ty: Expr::pi(
+                    "_",
+                    Expr::app(
+                        Expr::konst("Lib.F", vec![Level::succ(Level::zero())]),
+                        phase9_unary_expr(),
+                    ),
+                    phase9_unary_expr(),
+                ),
+            });
+        let request = inductive_request_with_imports(proposal, vec![&import]);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_mutual_block_is_unsupported_before_name_checks() {
+        let mut proposal = valid_inductive_proposal();
+        let mut second = proposal.inductives[0].clone();
+        second.name = Name::from_dotted("Unary");
+        proposal.inductives.push(second);
+        let request = inductive_request(proposal);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    }
+
+    #[test]
+    fn advanced_inductive_indexed_family_result_check_runs_before_generator_rejection() {
+        let proposal = Phase9MachineInductiveProposal {
+            block_name: None,
+            expected_decl_hash: None,
+            universe_params: Vec::new(),
+            inductives: vec![Phase9MachineInductiveFamilyProposal {
+                name: Name::from_dotted("Ix"),
+                params: Vec::new(),
+                indices: vec![Phase9MachineTelescopeBinder {
+                    ty: Expr::sort(Level::zero()),
+                }],
+                result_sort: Level::succ(Level::zero()),
+                constructors: vec![Phase9MachineConstructorProposal {
+                    name: Name::from_dotted("mk"),
+                    ty: Expr::pi(
+                        "_",
+                        Expr::sort(Level::zero()),
+                        Expr::app(Expr::konst("Ix", vec![]), Expr::bvar(0)),
+                    ),
+                }],
+            }],
+        };
+        let request = inductive_request(proposal);
+
+        assert_rejected(
+            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::AdvancedInductive(
+                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    }
+
+    #[test]
     fn universe_repair_valid_patch_returns_repaired_expr_and_constraint_hash() {
         let import = verified_universe_import();
         let request = valid_universe_request(&import);
@@ -3747,6 +4980,6 @@ mod tests {
         let second = run_phase9_inductive_check_request(&request, &[], &workspace_root());
 
         assert_eq!(first, second);
-        assert_rejected(first, Phase9AiValidationError::UnsupportedFeature, None);
+        assert_rejected(first, Phase9AiValidationError::EnvelopeMalformed, None);
     }
 }
