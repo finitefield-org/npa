@@ -10,10 +10,12 @@ mod binary;
 mod canonical;
 mod hash;
 mod kernel;
+mod producer;
 mod types;
 mod verify;
 
 pub use kernel::{builtin_decl_interface_hash, verified_module_to_kernel_decls};
+pub use producer::*;
 pub use types::*;
 
 pub(crate) use binary::*;
