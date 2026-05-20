@@ -1,9 +1,11 @@
 use npa_cert::{
-    build_module_cert, encode_module_cert, precheck_core_decl_candidate,
+    build_module_cert, encode_module_cert, precheck_core_decl_candidate, producer_env_fingerprint,
+    producer_env_fingerprint_canonical_bytes, producer_import_env_key,
     producer_limits_canonical_bytes, producer_limits_hash, stricter_or_equal,
-    validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, CandidateBatch,
+    validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, AxiomRef, CandidateBatch,
     CandidateBatchResult, CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate,
-    CoreDeclCandidate, CoreModule, Name, ProducerImportEnvKey, ProducerLimitKind, ProducerLimits,
+    CoreDeclCandidate, CoreModule, GlobalRef, Name, ProducerCheckedDeclInterface,
+    ProducerEnvFingerprintBytes, ProducerImportEnvKey, ProducerLimitKind, ProducerLimits,
     ProducerProfile, VerifiedModule, VerifierSession,
 };
 use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
@@ -27,11 +29,40 @@ fn generous_limits() -> ProducerLimits {
     }
 }
 
+fn hash(byte: u8) -> [u8; 32] {
+    [byte; 32]
+}
+
 fn verify_module(module: CoreModule) -> VerifiedModule {
     let cert = build_module_cert(module, &[]).unwrap();
     let bytes = encode_module_cert(&cert).unwrap();
     let mut session = VerifierSession::new();
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap()
+}
+
+fn producer_env(
+    direct_imports: Vec<ProducerImportEnvKey>,
+    checked_decls: Vec<ProducerCheckedDeclInterface>,
+) -> ProducerEnvFingerprintBytes {
+    ProducerEnvFingerprintBytes {
+        direct_imports,
+        checked_decls,
+    }
+}
+
+fn checked_decl_interface(byte: u8) -> ProducerCheckedDeclInterface {
+    ProducerCheckedDeclInterface {
+        decl_interface_hash: hash(byte),
+        axiom_dependencies: vec![],
+    }
+}
+
+fn local_axiom_ref(decl_index: usize, name: usize, byte: u8) -> AxiomRef {
+    AxiomRef {
+        global_ref: GlobalRef::Local { decl_index },
+        name,
+        decl_interface_hash: hash(byte),
+    }
 }
 
 fn empty_batch(imports: &[VerifiedModule]) -> CandidateBatch<'_> {
@@ -157,6 +188,103 @@ fn validate_candidate_batch_imports_rejects_duplicate_env_key_before_certificate
             module: import_a.module().clone(),
             export_hash: import_a.export_hash(),
         }
+    );
+}
+
+#[test]
+fn producer_env_fingerprint_canonical_bytes_fix_record_order() {
+    let env = producer_env(
+        vec![ProducerImportEnvKey {
+            module: Name::from_dotted("Lib.A"),
+            export_hash: hash(0x11),
+        }],
+        vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: hash(0x22),
+            axiom_dependencies: vec![],
+        }],
+    );
+
+    let mut expected = vec![0x01, 0x02, 0x03, b'L', b'i', b'b', 0x01, b'A'];
+    expected.extend(hash(0x11));
+    expected.push(0x01);
+    expected.extend(hash(0x22));
+    expected.push(0x00);
+
+    assert_eq!(producer_env_fingerprint_canonical_bytes(&env), expected);
+    assert_eq!(
+        producer_env_fingerprint(&env),
+        [
+            0x1c, 0xa5, 0xe5, 0xaa, 0xa4, 0x39, 0xec, 0x3e, 0x99, 0xc2, 0xc5, 0xe9, 0xff, 0x9d,
+            0xaa, 0xda, 0xfd, 0x73, 0xff, 0x9f, 0x43, 0x57, 0xf5, 0x4c, 0x83, 0xda, 0xf6, 0x74,
+            0x9e, 0x4a, 0xc4, 0x15,
+        ]
+    );
+}
+
+#[test]
+fn producer_env_fingerprint_ignores_import_certificate_hash() {
+    let import_a = verify_module(opaque_def_module(
+        "Lib.SameExportForEnv",
+        Expr::sort(Level::zero()),
+    ));
+    let import_b = verify_module(opaque_def_module(
+        "Lib.SameExportForEnv",
+        Expr::pi("x", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
+    ));
+
+    assert_eq!(import_a.export_hash(), import_b.export_hash());
+    assert_ne!(import_a.certificate_hash(), import_b.certificate_hash());
+
+    let env_a = producer_env(vec![producer_import_env_key(&import_a)], vec![]);
+    let env_b = producer_env(vec![producer_import_env_key(&import_b)], vec![]);
+
+    assert_eq!(
+        producer_env_fingerprint(&env_a),
+        producer_env_fingerprint(&env_b)
+    );
+}
+
+#[test]
+fn producer_env_fingerprint_preserves_checked_decl_order() {
+    let first = checked_decl_interface(0x31);
+    let second = checked_decl_interface(0x32);
+
+    let env_ab = producer_env(vec![], vec![first.clone(), second.clone()]);
+    let env_ba = producer_env(vec![], vec![second, first]);
+
+    assert_ne!(
+        producer_env_fingerprint(&env_ab),
+        producer_env_fingerprint(&env_ba)
+    );
+}
+
+#[test]
+fn producer_env_fingerprint_sorts_axiom_dependencies_canonically() {
+    let axiom_a = local_axiom_ref(0, 1, 0x41);
+    let axiom_b = local_axiom_ref(1, 0, 0x42);
+
+    let env_ab = producer_env(
+        vec![],
+        vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: hash(0x51),
+            axiom_dependencies: vec![axiom_a.clone(), axiom_b.clone()],
+        }],
+    );
+    let env_ba = producer_env(
+        vec![],
+        vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: hash(0x51),
+            axiom_dependencies: vec![axiom_b, axiom_a],
+        }],
+    );
+
+    assert_eq!(
+        producer_env_fingerprint_canonical_bytes(&env_ab),
+        producer_env_fingerprint_canonical_bytes(&env_ba)
+    );
+    assert_eq!(
+        producer_env_fingerprint(&env_ab),
+        producer_env_fingerprint(&env_ba)
     );
 }
 

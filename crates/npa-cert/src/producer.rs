@@ -3,8 +3,8 @@ use std::collections::BTreeSet;
 use npa_kernel::{Ctx, Decl, Env, Error, Expr, Level};
 
 use crate::{
-    encode_uvar_to, hash_with_domain, CertError, Hash, ModuleName, ProducerLimitKind,
-    VerifiedModule,
+    encode_axiom_refs_to, encode_name_to, encode_uvar_to, hash_with_domain, union_axioms, AxiomRef,
+    CertError, Hash, ModuleName, ProducerLimitKind, VerifiedModule,
 };
 
 /// Sidecar-only producer classification for audit and diagnostics.
@@ -129,6 +129,56 @@ pub fn canonical_import_env_keys(
     }
 
     Ok(keys)
+}
+
+/// Public checked declaration interface committed by the producer environment fingerprint.
+///
+/// Declaration identity is represented by `decl_interface_hash`; exact proof or opaque body
+/// identity belongs to checked candidate token hashes and prior-chain fingerprints, not to the
+/// producer public environment.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProducerCheckedDeclInterface {
+    /// Declaration interface hash.
+    pub decl_interface_hash: Hash,
+    /// Transitive axiom dependencies for this declaration.
+    pub axiom_dependencies: Vec<AxiomRef>,
+}
+
+/// Canonical producer public environment fingerprint input.
+///
+/// `direct_imports` must already be in canonical import order. `checked_decls` order is meaningful
+/// and follows accepted current-module declaration order.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ProducerEnvFingerprintBytes {
+    /// Direct import public-environment keys in canonical import order.
+    pub direct_imports: Vec<ProducerImportEnvKey>,
+    /// Checked current-module declaration interfaces in accepted order.
+    pub checked_decls: Vec<ProducerCheckedDeclInterface>,
+}
+
+/// Return canonical bytes for a producer public environment fingerprint input.
+pub fn producer_env_fingerprint_canonical_bytes(env: &ProducerEnvFingerprintBytes) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, env.direct_imports.len() as u64);
+    for import in &env.direct_imports {
+        encode_name_to(&mut out, &import.module);
+        out.extend(import.export_hash);
+    }
+    encode_uvar_to(&mut out, env.checked_decls.len() as u64);
+    for checked in &env.checked_decls {
+        out.extend(checked.decl_interface_hash);
+        let axioms = union_axioms(checked.axiom_dependencies.iter().cloned());
+        encode_axiom_refs_to(&mut out, &axioms);
+    }
+    out
+}
+
+/// Return the canonical producer public environment fingerprint.
+pub fn producer_env_fingerprint(env: &ProducerEnvFingerprintBytes) -> Hash {
+    hash_with_domain(
+        b"NPA-PRODUCER-ENV-0.1",
+        &producer_env_fingerprint_canonical_bytes(env),
+    )
 }
 
 /// Precheck a single producer candidate against an existing kernel environment under limits.
