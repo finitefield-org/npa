@@ -1,7 +1,8 @@
 use npa_cert::{
-    build_module_cert, canonical_import_env_keys, canonical_import_export_views,
-    check_core_decl_candidates, encode_module_cert, initial_env_fingerprint, post_env_fingerprint,
-    precheck_core_decl_candidate, prior_chain_fingerprint, prior_chain_fingerprint_canonical_bytes,
+    build_module_cert, build_module_cert_from_checked_candidates, canonical_import_env_keys,
+    canonical_import_export_views, check_core_decl_candidates, encode_module_cert,
+    initial_env_fingerprint, post_env_fingerprint, precheck_core_decl_candidate,
+    prior_chain_fingerprint, prior_chain_fingerprint_canonical_bytes,
     producer_checked_decl_interface, producer_env_fingerprint,
     producer_env_fingerprint_canonical_bytes, producer_import_env_key,
     producer_limits_canonical_bytes, producer_limits_hash, producer_lookup_env, stricter_or_equal,
@@ -10,7 +11,7 @@ use npa_cert::{
     CandidateStatus, CertError, CheckedDeclCandidate, CoreDeclCandidate, CoreModule, GlobalRef,
     Name, ProducerCheckedDeclInterface, ProducerEnvFingerprintBytes, ProducerImportEnvKey,
     ProducerLimitKind, ProducerLimits, ProducerPriorChainBytes, ProducerPriorChainEntry,
-    ProducerProfile, VerifiedModule, VerifierSession,
+    ProducerProfile, ProducerTokenHashField, VerifiedModule, VerifierSession,
 };
 use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
 
@@ -714,6 +715,128 @@ fn check_core_decl_candidates_reuses_prior_tokens_with_local_references() {
             ]
         })
     );
+}
+
+#[test]
+fn build_module_cert_from_checked_candidates_builds_verifiable_certificate() {
+    let import = verify_module(axiom_module("Lib.CheckedBuild", "CheckedBuildT"));
+    let imports = [import.clone()];
+    let declarations = [
+        axiom_over("UsesCheckedBuildT", "CheckedBuildT"),
+        trivial_axiom("LocalCheckedBuildT"),
+    ];
+    let tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &imports,
+            prior_current_decls: &[],
+            candidates: declarations
+                .iter()
+                .cloned()
+                .map(|declaration| CoreDeclCandidate { declaration })
+                .collect(),
+            limits: generous_limits_with_declarations(2),
+        })
+        .unwrap(),
+    );
+
+    let cert = build_module_cert_from_checked_candidates(
+        Name::from_dotted("Producer.CheckedBuild"),
+        &imports,
+        &tokens,
+    )
+    .unwrap();
+    assert_eq!(cert.declarations.len(), 2);
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    session.register_verified_module(import);
+    let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+    assert_eq!(
+        verified.module(),
+        &Name::from_dotted("Producer.CheckedBuild")
+    );
+}
+
+#[test]
+fn build_module_cert_from_checked_candidates_rejects_token_order_mismatch() {
+    let declarations = [
+        trivial_axiom("BuildOrderA"),
+        axiom_over("BuildOrderB", "BuildOrderA"),
+    ];
+    let mut tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &[],
+            prior_current_decls: &[],
+            candidates: declarations
+                .into_iter()
+                .map(|declaration| CoreDeclCandidate { declaration })
+                .collect(),
+            limits: generous_limits_with_declarations(2),
+        })
+        .unwrap(),
+    );
+    tokens.reverse();
+
+    assert!(matches!(
+        build_module_cert_from_checked_candidates(
+            Name::from_dotted("Producer.Order"),
+            &[],
+            &tokens
+        ),
+        Err(CertError::ProducerTokenHashMismatch {
+            token_index: 0,
+            field: ProducerTokenHashField::PreEnvFingerprint,
+            ..
+        })
+    ));
+}
+
+#[test]
+fn build_module_cert_from_checked_candidates_requires_explicit_verification_for_import_store() {
+    let tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &[],
+            prior_current_decls: &[],
+            candidates: vec![CoreDeclCandidate {
+                declaration: trivial_axiom("UncheckedBuildT"),
+            }],
+            limits: generous_limits(),
+        })
+        .unwrap(),
+    );
+    let cert = build_module_cert_from_checked_candidates(
+        Name::from_dotted("Producer.UncheckedBuild"),
+        &[],
+        &tokens,
+    )
+    .unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+
+    let mut producer_session = VerifierSession::new();
+    let verified =
+        verify_module_cert(&bytes, &mut producer_session, &AxiomPolicy::normal()).unwrap();
+    let downstream = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Producer.Downstream"),
+            declarations: vec![axiom_over("UsesUncheckedBuildT", "UncheckedBuildT")],
+        },
+        std::slice::from_ref(&verified),
+    )
+    .unwrap();
+    let downstream_bytes = encode_module_cert(&downstream).unwrap();
+
+    let mut empty_session = VerifierSession::new();
+    assert!(matches!(
+        verify_module_cert(&downstream_bytes, &mut empty_session, &AxiomPolicy::normal()),
+        Err(CertError::ImportHashMismatch { module })
+            if module == Name::from_dotted("Producer.UncheckedBuild")
+    ));
+    verify_module_cert(
+        &downstream_bytes,
+        &mut producer_session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
 }
 
 #[test]
