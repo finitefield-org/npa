@@ -1,9 +1,10 @@
 use npa_cert::{
     build_module_cert, encode_module_cert, precheck_core_decl_candidate,
-    producer_limits_canonical_bytes, producer_limits_hash, stricter_or_equal, verify_module_cert,
-    AxiomPolicy, CandidateBatch, CandidateBatchResult, CandidateHashPreview, CandidateStatus,
-    CertError, CheckedDeclCandidate, CoreDeclCandidate, CoreModule, Name, ProducerLimitKind,
-    ProducerLimits, ProducerProfile, VerifiedModule, VerifierSession,
+    producer_limits_canonical_bytes, producer_limits_hash, stricter_or_equal,
+    validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, CandidateBatch,
+    CandidateBatchResult, CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate,
+    CoreDeclCandidate, CoreModule, Name, ProducerImportEnvKey, ProducerLimitKind, ProducerLimits,
+    ProducerProfile, VerifiedModule, VerifierSession,
 };
 use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
 
@@ -23,6 +24,42 @@ fn generous_limits() -> ProducerLimits {
         max_name_components: 8,
         max_reduction_steps: 64,
         max_conversion_steps: 64,
+    }
+}
+
+fn verify_module(module: CoreModule) -> VerifiedModule {
+    let cert = build_module_cert(module, &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap()
+}
+
+fn empty_batch(imports: &[VerifiedModule]) -> CandidateBatch<'_> {
+    CandidateBatch {
+        imports,
+        prior_current_decls: &[],
+        candidates: vec![],
+        limits: generous_limits(),
+    }
+}
+
+fn axiom_module(module_name: &str, decl_name: &str) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted(module_name),
+        declarations: vec![trivial_axiom(decl_name)],
+    }
+}
+
+fn opaque_def_module(module_name: &str, value: Expr) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted(module_name),
+        declarations: vec![Decl::Def {
+            name: "carrier".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::succ(Level::zero())),
+            value,
+            reducibility: Reducibility::Opaque,
+        }],
     }
 }
 
@@ -69,6 +106,58 @@ fn producer_types_are_available_from_public_api() {
         result.statuses.as_slice(),
         [CandidateStatus::Rejected(CertError::DecodeError)]
     ));
+}
+
+#[test]
+fn validate_candidate_batch_imports_preserves_canonical_import_index_order() {
+    let import_a = verify_module(axiom_module("Lib.A", "A"));
+    let import_b = verify_module(axiom_module("Lib.B", "B"));
+
+    let imports = [import_a.clone(), import_b.clone()];
+    let keys = validate_candidate_batch_imports(&empty_batch(&imports)).unwrap();
+    assert_eq!(
+        keys,
+        vec![
+            ProducerImportEnvKey {
+                module: import_a.module().clone(),
+                export_hash: import_a.export_hash(),
+            },
+            ProducerImportEnvKey {
+                module: import_b.module().clone(),
+                export_hash: import_b.export_hash(),
+            },
+        ]
+    );
+
+    let reversed_imports = [import_b, import_a];
+    assert_eq!(
+        validate_candidate_batch_imports(&empty_batch(&reversed_imports)).unwrap_err(),
+        CertError::NonCanonicalEncoding { object: "Imports" }
+    );
+}
+
+#[test]
+fn validate_candidate_batch_imports_rejects_duplicate_env_key_before_certificate_hash() {
+    let import_a = verify_module(opaque_def_module(
+        "Lib.SameExport",
+        Expr::sort(Level::zero()),
+    ));
+    let import_b = verify_module(opaque_def_module(
+        "Lib.SameExport",
+        Expr::pi("x", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
+    ));
+
+    assert_eq!(import_a.export_hash(), import_b.export_hash());
+    assert_ne!(import_a.certificate_hash(), import_b.certificate_hash());
+
+    let imports = [import_a.clone(), import_b];
+    assert_eq!(
+        validate_candidate_batch_imports(&empty_batch(&imports)).unwrap_err(),
+        CertError::DuplicateImportEnvKey {
+            module: import_a.module().clone(),
+            export_hash: import_a.export_hash(),
+        }
+    );
 }
 
 #[test]

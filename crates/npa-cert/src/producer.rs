@@ -2,7 +2,10 @@ use std::collections::BTreeSet;
 
 use npa_kernel::{Ctx, Decl, Env, Error, Expr, Level};
 
-use crate::{encode_uvar_to, hash_with_domain, CertError, Hash, ProducerLimitKind, VerifiedModule};
+use crate::{
+    encode_uvar_to, hash_with_domain, CertError, Hash, ModuleName, ProducerLimitKind,
+    VerifiedModule,
+};
 
 /// Sidecar-only producer classification for audit and diagnostics.
 ///
@@ -66,6 +69,66 @@ pub fn stricter_or_equal(a: &ProducerLimits, b: &ProducerLimits) -> bool {
         && a.max_name_components <= b.max_name_components
         && a.max_reduction_steps <= b.max_reduction_steps
         && a.max_conversion_steps <= b.max_conversion_steps
+}
+
+/// Public-environment key for a producer direct import.
+///
+/// This key intentionally excludes the imported certificate hash. Two imports with the same module
+/// and export hash expose the same downstream kernel environment even if their proof bodies, and
+/// therefore full certificate hashes, differ.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ProducerImportEnvKey {
+    /// Imported module name.
+    pub module: ModuleName,
+    /// Imported module export hash.
+    pub export_hash: Hash,
+}
+
+/// Return the producer public-environment key for a verified import.
+pub fn producer_import_env_key(import: &VerifiedModule) -> ProducerImportEnvKey {
+    ProducerImportEnvKey {
+        module: import.module().clone(),
+        export_hash: import.export_hash(),
+    }
+}
+
+/// Validate `batch.imports` order and return import environment keys in import-index order.
+///
+/// The accepted order is the same canonical order used by module certificate imports:
+/// `(module, export_hash, Some(certificate_hash))`. The returned vector preserves the input order,
+/// so later `GlobalRef::Imported(import_index, ...)` lookups continue to point at
+/// `batch.imports[import_index]`.
+pub fn validate_candidate_batch_imports(
+    batch: &CandidateBatch<'_>,
+) -> Result<Vec<ProducerImportEnvKey>, CertError> {
+    canonical_import_env_keys(batch.imports)
+}
+
+/// Validate canonical direct-import order and return producer import keys in the same order.
+pub fn canonical_import_env_keys(
+    imports: &[VerifiedModule],
+) -> Result<Vec<ProducerImportEnvKey>, CertError> {
+    let mut seen = BTreeSet::new();
+    let mut keys = Vec::with_capacity(imports.len());
+    for import in imports {
+        let key = producer_import_env_key(import);
+        if !seen.insert(key.clone()) {
+            return Err(CertError::DuplicateImportEnvKey {
+                module: key.module,
+                export_hash: key.export_hash,
+            });
+        }
+        keys.push(key);
+    }
+
+    if !imports
+        .windows(2)
+        .all(|pair| verified_import_order_key(&pair[0]) < verified_import_order_key(&pair[1]))
+    {
+        return Err(CertError::NonCanonicalEncoding { object: "Imports" });
+    }
+
+    Ok(keys)
 }
 
 /// Precheck a single producer candidate against an existing kernel environment under limits.
@@ -255,6 +318,14 @@ pub struct CandidateBatchResult {
 
 fn fuel_to_usize(value: u64, limit: ProducerLimitKind) -> Result<usize, CertError> {
     usize::try_from(value).map_err(|_| CertError::ProducerLimitExceeded { limit })
+}
+
+fn verified_import_order_key(import: &VerifiedModule) -> (ModuleName, Hash, Option<Hash>) {
+    (
+        import.module().clone(),
+        import.export_hash(),
+        Some(import.certificate_hash()),
+    )
 }
 
 fn ensure_candidate_schema_limits(decl: &Decl, limits: &ProducerLimits) -> Result<(), CertError> {

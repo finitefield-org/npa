@@ -847,6 +847,13 @@ pub enum CertError {
         /// Imported module.
         module: ModuleName,
     },
+    /// Candidate producer imports contain duplicate public environment keys.
+    DuplicateImportEnvKey {
+        /// Duplicated imported module.
+        module: ModuleName,
+        /// Duplicated imported export hash.
+        export_hash: Hash,
+    },
     /// High-trust mode could not find the import in the current verifier session.
     ImportNotVerifiedInSession {
         /// Imported module.
