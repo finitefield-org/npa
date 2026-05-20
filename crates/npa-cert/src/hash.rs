@@ -298,12 +298,12 @@ fn decl_interface_payload(
             encode_name_id_to(&mut out, names, *name)?;
             encode_name_ids_to(&mut out, names, universe_params)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
-            if *reducibility == CertReducibility::Reducible {
-                out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
-            }
             encode_reducibility_to(&mut out, *reducibility);
             encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
+            if *reducibility == CertReducibility::Reducible {
+                out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
+            }
         }
         DeclPayload::Theorem {
             name,
