@@ -21,6 +21,7 @@ mod diagnostic;
 mod json;
 mod phase7;
 mod phase8;
+mod phase9;
 mod projection;
 mod prompt;
 mod renderer;
@@ -257,6 +258,29 @@ pub use phase8::{
     PHASE8_REQUEST_STORE_MANIFEST_SCHEMA, PHASE8_RUNNER_DYNAMIC_FLAGS,
     PHASE8_RUNNER_FIXED_ENVIRONMENT, PHASE8_RUNNER_POLICY_SCHEMA, PHASE8_TRAINING_EXAMPLE_SCHEMA,
     PHASE8_TRAINING_EXPORT_MANIFEST_SCHEMA,
+};
+pub use phase9::{
+    phase9_ai_candidate_envelope_canonical_bytes, phase9_ai_candidate_hash,
+    phase9_ai_env_fingerprint, phase9_ai_options_canonical_bytes, phase9_ai_options_hash,
+    phase9_ai_validation_result_hash_for_rejection, phase9_file_hash,
+    run_phase9_formalize_check_request, run_phase9_inductive_check_request,
+    run_phase9_quotient_check_request, run_phase9_smt_reconstruct_request,
+    run_phase9_theorem_graph_query_request, run_phase9_typeclass_resolve_request,
+    run_phase9_universe_repair_check_request, validate_phase9_ai_common_envelope,
+    Phase9AdvancedInductiveError, Phase9AdvancedInductiveOptions, Phase9AiCandidateEnvelope,
+    Phase9AiCanonicalError, Phase9AiEndpointError, Phase9AiEndpointResponse, Phase9AiFeatureError,
+    Phase9AiGlobalRef, Phase9AiOptions, Phase9AiOptionsRef, Phase9AiOptionsVersion,
+    Phase9AiProfileVersion, Phase9AiSuccessPayload, Phase9AiTarget, Phase9AiTaskKind,
+    Phase9AiValidationError, Phase9FormalizationError, Phase9FormalizationOptions,
+    Phase9FormalizationSuccessKind, Phase9ImportIdentity, Phase9IndependentCheckerOptions,
+    Phase9IndependentCheckerProfile, Phase9MachineTheoremGraphResult,
+    Phase9QuotientConstructionError, Phase9QuotientOptions, Phase9SmtCertificateError,
+    Phase9SmtOptions, Phase9TheoremGraphError, Phase9TypeclassOptions,
+    Phase9TypeclassResolutionError, Phase9UniverseRepairError, Phase9ValidatedCommonEnvelope,
+    PHASE9_FORMALIZE_CHECK_ENDPOINT, PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+    PHASE9_QUOTIENT_CHECK_ENDPOINT, PHASE9_SMT_RECONSTRUCT_ENDPOINT,
+    PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT, PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
+    PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,
