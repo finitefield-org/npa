@@ -46,6 +46,11 @@ pub const PHASE8_CHALLENGE_GENERATION_RESULT_SCHEMA: &str =
     "npa.phase8.challenge_generation_result.v1";
 pub const PHASE8_CHALLENGE_REQUEST_MATERIALIZATION_RESULT_SCHEMA: &str =
     "npa.phase8.challenge_request_materialization_result.v1";
+pub const PHASE8_CHALLENGE_REPLAY_RESULT_SCHEMA: &str = "npa.phase8.challenge_replay_result.v1";
+pub const PHASE8_CHALLENGE_REPLAY_STORE_MANIFEST_SCHEMA: &str =
+    "npa.phase8.challenge_replay_store_manifest.v1";
+pub const PHASE8_CHALLENGE_COVERAGE_SUMMARY_SCHEMA: &str =
+    "npa.phase8.challenge_coverage_summary.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
@@ -380,7 +385,6 @@ impl Phase8ArtifactKind {
                 | Self::NormalizeErrorResult
                 | Self::AuxiliaryResult
                 | Self::ChallengeReplayResult
-                | Self::ChallengeCoverageSummary
         )
     }
 }
@@ -2347,6 +2351,359 @@ pub struct Phase8ChallengeRequestMaterialization {
     pub request_store_rewrite_required: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeReplayCheckerResult {
+    pub result_id: String,
+    pub result_hash: Hash,
+    pub run_artifact_hash: Hash,
+    pub checker_profile: String,
+}
+
+impl Phase8ChallengeReplayCheckerResult {
+    fn canonical_json(&self) -> String {
+        let mut pairs = self.hash_projection_pairs();
+        pairs.push((
+            "result_id".to_owned(),
+            phase8_json_string_literal(&self.result_id),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn hash_projection_json(&self) -> String {
+        canonical_json_object_from_pairs(self.hash_projection_pairs())
+    }
+
+    fn hash_projection_pairs(&self) -> Vec<(String, String)> {
+        vec![
+            (
+                "checker_profile".to_owned(),
+                phase8_json_string_literal(&self.checker_profile),
+            ),
+            (
+                "result_hash".to_owned(),
+                phase8_hash_json_literal(&self.result_hash),
+            ),
+            (
+                "run_artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.run_artifact_hash),
+            ),
+        ]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeReplayResult {
+    pub result_id: String,
+    pub challenge_id: String,
+    pub manifest_hash: Hash,
+    pub mutated_file_hash: Hash,
+    pub mutated_claimed_certificate_hash: Option<Hash>,
+    pub checker_results: Vec<Phase8ChallengeReplayCheckerResult>,
+    pub missing_checker_profiles: Vec<String>,
+    pub normalized_result_hash: Option<Hash>,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub comparison_status: Option<Phase8NormalizedComparisonStatus>,
+    pub observed_error_kinds: Vec<String>,
+}
+
+impl Phase8ChallengeReplayResult {
+    pub fn result_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(self.hash_input_pairs())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = self.canonical_json_pairs_without_result_identity();
+        pairs.push((
+            "result_hash".to_owned(),
+            phase8_hash_json_literal(&self.result_hash()),
+        ));
+        pairs.push((
+            "result_id".to_owned(),
+            phase8_json_string_literal(&self.result_id),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn hash_input_pairs(&self) -> Vec<(String, String)> {
+        self.canonical_json_pairs(false)
+    }
+
+    fn canonical_json_pairs_without_result_identity(&self) -> Vec<(String, String)> {
+        self.canonical_json_pairs(true)
+    }
+
+    fn canonical_json_pairs(&self, include_checker_result_ids: bool) -> Vec<(String, String)> {
+        let mut pairs = vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "challenge_id".to_owned(),
+                phase8_json_string_literal(&self.challenge_id),
+            ),
+            (
+                "checker_results".to_owned(),
+                canonical_json_array(if include_checker_result_ids {
+                    self.checker_results
+                        .iter()
+                        .map(Phase8ChallengeReplayCheckerResult::canonical_json)
+                        .collect()
+                } else {
+                    self.checker_results
+                        .iter()
+                        .map(Phase8ChallengeReplayCheckerResult::hash_projection_json)
+                        .collect()
+                }),
+            ),
+            (
+                "manifest_hash".to_owned(),
+                phase8_hash_json_literal(&self.manifest_hash),
+            ),
+            (
+                "missing_checker_profiles".to_owned(),
+                phase8_json_string_array(&self.missing_checker_profiles),
+            ),
+            (
+                "mutated_file_hash".to_owned(),
+                phase8_hash_json_literal(&self.mutated_file_hash),
+            ),
+            (
+                "observed_error_kinds".to_owned(),
+                phase8_json_string_array(&self.observed_error_kinds),
+            ),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_CHALLENGE_REPLAY_RESULT_SCHEMA),
+            ),
+        ];
+        push_optional_hash_pair(
+            &mut pairs,
+            "mutated_claimed_certificate_hash",
+            self.mutated_claimed_certificate_hash,
+        );
+        push_optional_hash_pair(
+            &mut pairs,
+            "normalized_result_hash",
+            self.normalized_result_hash,
+        );
+        if let Some(status) = self.comparison_status {
+            pairs.push((
+                "comparison_status".to_owned(),
+                phase8_json_string_literal(status.as_str()),
+            ));
+        }
+        pairs
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeReplayStoreEntry {
+    pub challenge_id: String,
+    pub manifest_hash: Hash,
+    pub result_hash: Hash,
+    pub artifact_hash: Hash,
+    pub path: String,
+    pub file_hash: Hash,
+}
+
+impl Phase8ChallengeReplayStoreEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "challenge_id".to_owned(),
+                phase8_json_string_literal(&self.challenge_id),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            (
+                "manifest_hash".to_owned(),
+                phase8_hash_json_literal(&self.manifest_hash),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+            (
+                "result_hash".to_owned(),
+                phase8_hash_json_literal(&self.result_hash),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeReplayStoreManifest {
+    pub results: Vec<Phase8ChallengeReplayStoreEntry>,
+}
+
+impl Phase8ChallengeReplayStoreManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "results".to_owned(),
+                canonical_json_array(
+                    self.results
+                        .iter()
+                        .map(Phase8ChallengeReplayStoreEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_CHALLENGE_REPLAY_STORE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn file_hash(&self) -> Hash {
+        phase8_file_hash(self.canonical_json().as_bytes())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeReplayStoreUpdate {
+    pub manifest: Phase8ChallengeReplayStoreManifest,
+    pub rewrite_required: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeReplayAggregation {
+    pub result: Phase8ChallengeReplayResult,
+    pub replay_store: Phase8ChallengeReplayStoreManifest,
+    pub replay_store_rewrite_required: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeCoverageEntry {
+    pub challenge_id: String,
+    pub manifest_hash: Hash,
+    pub replay_result_hash: Hash,
+    pub comparison_status: Phase8NormalizedComparisonStatus,
+}
+
+impl Phase8ChallengeCoverageEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "challenge_id".to_owned(),
+                phase8_json_string_literal(&self.challenge_id),
+            ),
+            (
+                "comparison_status".to_owned(),
+                phase8_json_string_literal(self.comparison_status.as_str()),
+            ),
+            (
+                "manifest_hash".to_owned(),
+                phase8_hash_json_literal(&self.manifest_hash),
+            ),
+            (
+                "replay_result_hash".to_owned(),
+                phase8_hash_json_literal(&self.replay_result_hash),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ChallengeCoverageSummary {
+    pub summary_id: String,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub target_normalized_result_hash: Hash,
+    pub challenge_store_manifest_hash: Hash,
+    pub result_store_manifest_hash: Hash,
+    pub total_challenges: u64,
+    pub replayed_challenges: u64,
+    pub unexpected_acceptances: u64,
+    pub entries: Vec<Phase8ChallengeCoverageEntry>,
+}
+
+impl Phase8ChallengeCoverageSummary {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        policy_hash: Hash,
+        artifact_hash: Hash,
+        target_normalized_result_hash: Hash,
+        challenge_store_manifest_hash: Hash,
+        result_store_manifest_hash: Hash,
+        total_challenges: u64,
+        unexpected_acceptances: u64,
+        entries: Vec<Phase8ChallengeCoverageEntry>,
+    ) -> Self {
+        let replayed_challenges = entries.len() as u64;
+        let mut summary = Self {
+            summary_id: String::new(),
+            policy_hash,
+            artifact_hash,
+            target_normalized_result_hash,
+            challenge_store_manifest_hash,
+            result_store_manifest_hash,
+            total_challenges,
+            replayed_challenges,
+            unexpected_acceptances,
+            entries,
+        };
+        summary.summary_id = phase8_challenge_coverage_summary_id(summary.summary_hash());
+        summary
+    }
+
+    pub fn summary_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(self.hash_input_pairs())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = self.hash_input_pairs();
+        pairs.push((
+            "summary_hash".to_owned(),
+            phase8_hash_json_literal(&self.summary_hash()),
+        ));
+        pairs.push((
+            "summary_id".to_owned(),
+            phase8_json_string_literal(&self.summary_id),
+        ));
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    pub fn passes_release_coverage_condition(&self) -> bool {
+        self.replayed_challenges == self.total_challenges
+            && self.unexpected_acceptances == 0
+            && self.entries.iter().all(|entry| {
+                entry.comparison_status == Phase8NormalizedComparisonStatus::AllAgreeFailed
+            })
+    }
+
+    fn hash_input_pairs(&self) -> Vec<(String, String)> {
+        canonical_json_coverage_summary_pairs(
+            self.policy_hash,
+            self.artifact_hash,
+            self.target_normalized_result_hash,
+            self.challenge_store_manifest_hash,
+            self.result_store_manifest_hash,
+            self.total_challenges,
+            self.replayed_challenges,
+            self.unexpected_acceptances,
+            &self.entries,
+        )
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase8MachineCheckStatus {
     Checked,
@@ -3201,6 +3558,18 @@ impl Phase8NormalizedComparisonStatus {
             Self::MissingCheckerResult => "missing_checker_result",
             Self::PolicyFailure => "policy_failure",
             Self::Inconclusive => "inconclusive",
+        }
+    }
+
+    fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "all_agree_checked" => Some(Self::AllAgreeChecked),
+            "all_agree_failed" => Some(Self::AllAgreeFailed),
+            "disagreement" => Some(Self::Disagreement),
+            "missing_checker_result" => Some(Self::MissingCheckerResult),
+            "policy_failure" => Some(Self::PolicyFailure),
+            "inconclusive" => Some(Self::Inconclusive),
+            _ => None,
         }
     }
 }
@@ -5292,6 +5661,45 @@ pub fn parse_phase8_challenge_output_store_manifest(
     parse_phase8_challenge_output_store_manifest_value(document.root(), "challenge_output_store")
 }
 
+pub fn parse_phase8_challenge_replay_result(
+    source: &str,
+) -> Result<Phase8ChallengeReplayResult, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "challenge_replay_result",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_challenge_replay_result_value(document.root(), "$")
+}
+
+pub fn parse_phase8_challenge_replay_store_manifest(
+    source: &str,
+) -> Result<Phase8ChallengeReplayStoreManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "challenge_replay_store",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_challenge_replay_store_manifest_value(document.root(), "challenge_replay_store")
+}
+
+pub fn parse_phase8_challenge_coverage_summary(
+    source: &str,
+) -> Result<Phase8ChallengeCoverageSummary, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "challenge_coverage_summary",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_challenge_coverage_summary_value(document.root(), "$")
+}
+
 pub fn phase8_machine_check_request_hash(
     source: &str,
 ) -> Result<Hash, Phase8RequestValidationError> {
@@ -5302,6 +5710,18 @@ pub fn phase8_challenge_generation_request_hash(
     source: &str,
 ) -> Result<Hash, Phase8RequestValidationError> {
     Ok(parse_phase8_challenge_generation_request(source)?.request_hash())
+}
+
+pub fn phase8_challenge_replay_result_hash(
+    source: &str,
+) -> Result<Hash, Phase8RequestValidationError> {
+    Ok(parse_phase8_challenge_replay_result(source)?.result_hash())
+}
+
+pub fn phase8_challenge_coverage_summary_hash(
+    source: &str,
+) -> Result<Hash, Phase8RequestValidationError> {
+    Ok(parse_phase8_challenge_coverage_summary(source)?.summary_hash())
 }
 
 pub fn phase8_raw_certificate_claims(
@@ -5881,6 +6301,1021 @@ pub fn phase8_challenge_materialize_requests(
         request_store: store_update.manifest,
         request_store_rewrite_required: store_update.rewrite_required,
     })
+}
+
+pub fn phase8_challenge_replay_store_entry_for_result(
+    result: &Phase8ChallengeReplayResult,
+    path: impl Into<String>,
+) -> Result<Phase8ChallengeReplayStoreEntry, Phase8CommandError> {
+    let path = path.into();
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "input_reference_invalid",
+            "replay_result.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let bytes = result.canonical_json();
+    Ok(Phase8ChallengeReplayStoreEntry {
+        challenge_id: result.challenge_id.clone(),
+        manifest_hash: result.manifest_hash,
+        result_hash: result.result_hash(),
+        artifact_hash: result.artifact_hash,
+        path,
+        file_hash: phase8_file_hash(bytes.as_bytes()),
+    })
+}
+
+pub fn phase8_challenge_replay_store_with_entry(
+    existing_store: Option<&Phase8ChallengeReplayStoreManifest>,
+    generated_entry: Phase8ChallengeReplayStoreEntry,
+) -> Result<Phase8ChallengeReplayStoreUpdate, Phase8CommandError> {
+    let mut manifest = existing_store
+        .cloned()
+        .unwrap_or(Phase8ChallengeReplayStoreManifest {
+            results: Vec::new(),
+        });
+    for existing in &manifest.results {
+        let same_result_hash = existing.result_hash == generated_entry.result_hash;
+        let same_path = existing.path == generated_entry.path;
+        let same_challenge_manifest = existing.challenge_id == generated_entry.challenge_id
+            && existing.manifest_hash == generated_entry.manifest_hash;
+        let exact = same_result_hash
+            && same_path
+            && same_challenge_manifest
+            && existing.artifact_hash == generated_entry.artifact_hash
+            && existing.file_hash == generated_entry.file_hash;
+        if exact {
+            return Ok(Phase8ChallengeReplayStoreUpdate {
+                manifest,
+                rewrite_required: false,
+            });
+        }
+        if same_result_hash || same_path || same_challenge_manifest {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeReplay,
+                "replay_store_entry_conflict",
+                "replay_store.results[]",
+                generated_entry.canonical_json(),
+                existing.canonical_json(),
+            ));
+        }
+    }
+    manifest.results.push(generated_entry);
+    manifest
+        .results
+        .sort_by(|left, right| left.result_hash.cmp(&right.result_hash));
+    Ok(Phase8ChallengeReplayStoreUpdate {
+        manifest,
+        rewrite_required: true,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn phase8_challenge_replay_aggregate(
+    result_id: impl Into<String>,
+    manifest: &Phase8ChallengeManifest,
+    manifest_hash: Hash,
+    policy: &Phase8RunnerPolicy,
+    request_store: &Phase8RequestStoreManifest,
+    stored_requests: &[Phase8StoredMachineCheckRequest],
+    result_store: &Phase8MachineResultStoreManifest,
+    machine_results: &[Phase8MachineCheckResult],
+    normalized_store: Option<&Phase8NormalizedResultStoreManifest>,
+    normalized_results: &[Phase8NormalizedCheckResult],
+    coverage_required: bool,
+    replay_output_path: impl Into<String>,
+    existing_replay_store: Option<&Phase8ChallengeReplayStoreManifest>,
+) -> Result<Phase8ChallengeReplayAggregation, Phase8CommandError> {
+    let result_id = result_id.into();
+    if !phase8_valid_request_id(&result_id) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "input_reference_invalid",
+            "result_id",
+            "result_id",
+            if result_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+    let replay_output_path = replay_output_path.into();
+    if !phase8_valid_workspace_relative_path(&replay_output_path) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "input_reference_invalid",
+            "replay_output_path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    if manifest.manifest_hash() != manifest_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "manifest_hash_mismatch",
+            "challenge_manifest.manifest_hash",
+            manifest.manifest_hash(),
+            manifest_hash,
+        ));
+    }
+    let policy_hash = policy.policy_hash();
+    if manifest.policy_hash != policy_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "policy_hash_mismatch",
+            "challenge_manifest.policy_hash",
+            policy_hash,
+            manifest.policy_hash,
+        ));
+    }
+    validate_request_store_domain(&request_store.requests, "request_store").map_err(|error| {
+        phase8_command_error_from_request_validation(
+            Phase8CommandName::ChallengeReplay,
+            "request_store_manifest_invalid",
+            error.field.to_string(),
+            error,
+        )
+    })?;
+    validate_machine_result_store_domain(&result_store.results, "result_store").map_err(
+        |error| {
+            phase8_command_error_from_request_validation(
+                Phase8CommandName::ChallengeReplay,
+                "result_store_manifest_invalid",
+                error.field.to_string(),
+                error,
+            )
+        },
+    )?;
+    if let Some(store) = normalized_store {
+        validate_normalized_result_store_domain(&store.results, "normalized_store").map_err(
+            |error| {
+                phase8_command_error_from_request_validation(
+                    Phase8CommandName::ChallengeReplay,
+                    "normalized_store_manifest_invalid",
+                    error.field.to_string(),
+                    error,
+                )
+            },
+        )?;
+    } else if coverage_required {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "normalized_store_required",
+            "normalized_store",
+            "explicit_normalized_store",
+            "missing",
+        ));
+    }
+
+    let expected_requests =
+        phase8_expected_challenge_replay_requests(manifest, manifest_hash, policy)?;
+    let baseline_request = expected_requests.first().ok_or_else(|| {
+        phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "policy_reference_invalid",
+            "policy.required_checker_profiles",
+            "one_or_more_checker_profiles",
+            "empty",
+        )
+    })?;
+    let artifact_hash =
+        Phase8NormalizedArtifact::from_request(baseline_request, policy).artifact_hash();
+
+    let mut checker_results = Vec::new();
+    let mut included_machine_results = Vec::new();
+    let mut missing_checker_profiles = Vec::new();
+    for expected_request in &expected_requests {
+        let profile = &expected_request.checker_profile;
+        let required = policy.required_checker_profiles.contains(profile);
+        let request_hash = expected_request.request_hash();
+        let request_present = phase8_validate_challenge_replay_request_binding(
+            request_store,
+            stored_requests,
+            expected_request,
+        )?;
+        if !request_present {
+            if required {
+                missing_checker_profiles.push(profile.clone());
+            }
+            continue;
+        }
+        let candidates = result_store
+            .results
+            .iter()
+            .filter(|entry| entry.request_hash == request_hash && entry.checker_profile == *profile)
+            .collect::<Vec<_>>();
+        if candidates.len() > 1 {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeReplay,
+                "result_attempt_ambiguous",
+                "result_store.results[]",
+                "at_most_one_result_per_request_profile",
+                profile,
+            ));
+        }
+        let Some(entry) = candidates.first().copied() else {
+            if required {
+                missing_checker_profiles.push(profile.clone());
+            }
+            continue;
+        };
+        let machine_result =
+            phase8_resolve_replay_machine_result(entry, machine_results, policy_hash)?;
+        checker_results.push(Phase8ChallengeReplayCheckerResult {
+            result_id: machine_result.result_id.clone(),
+            result_hash: machine_result.result_hash(),
+            run_artifact_hash: machine_result.run_artifact_hash(),
+            checker_profile: machine_result.checker.profile.clone(),
+        });
+        included_machine_results.push(machine_result);
+    }
+
+    let mut observed_error_kinds = included_machine_results
+        .iter()
+        .filter_map(|result| result.error.as_ref().map(|error| error.kind.clone()))
+        .collect::<Vec<_>>();
+    observed_error_kinds.sort();
+    observed_error_kinds.dedup();
+
+    let normalized = phase8_resolve_challenge_replay_normalized_result(
+        policy_hash,
+        artifact_hash,
+        &checker_results,
+        normalized_store,
+        normalized_results,
+        coverage_required,
+    )?;
+    let (normalized_result_hash, comparison_status, artifact_hash) = match normalized {
+        Some(result) => (
+            Some(result.normalized_result_hash()),
+            Some(result.comparison.status),
+            result.artifact_hash(),
+        ),
+        None => (None, None, artifact_hash),
+    };
+
+    let result = Phase8ChallengeReplayResult {
+        result_id,
+        challenge_id: manifest.challenge_id.clone(),
+        manifest_hash,
+        mutated_file_hash: manifest.mutated_certificate.file_hash,
+        mutated_claimed_certificate_hash: manifest.mutated_certificate.claimed_certificate_hash,
+        checker_results,
+        missing_checker_profiles,
+        normalized_result_hash,
+        policy_hash,
+        artifact_hash,
+        comparison_status,
+        observed_error_kinds,
+    };
+    let entry = phase8_challenge_replay_store_entry_for_result(&result, replay_output_path)?;
+    let store_update = phase8_challenge_replay_store_with_entry(existing_replay_store, entry)?;
+    Ok(Phase8ChallengeReplayAggregation {
+        result,
+        replay_store: store_update.manifest,
+        replay_store_rewrite_required: store_update.rewrite_required,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn phase8_challenge_coverage_summary(
+    policy: &Phase8RunnerPolicy,
+    target_normalized_result: &Phase8NormalizedCheckResult,
+    challenge_store: &Phase8ChallengeOutputStoreManifest,
+    challenge_manifests: &[Phase8ChallengeManifest],
+    replay_store: &Phase8ChallengeReplayStoreManifest,
+    replay_results: &[Phase8ChallengeReplayResult],
+    result_store: &Phase8MachineResultStoreManifest,
+    machine_results: &[Phase8MachineCheckResult],
+) -> Result<Phase8ChallengeCoverageSummary, Phase8CommandError> {
+    validate_challenge_output_store_domain(&challenge_store.entries, "challenge_store").map_err(
+        |error| {
+            phase8_command_error_from_request_validation(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "challenge_store_manifest_invalid",
+                error.field.to_string(),
+                error,
+            )
+        },
+    )?;
+    validate_challenge_replay_store_domain(&replay_store.results, "replay_store").map_err(
+        |error| {
+            phase8_command_error_from_request_validation(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "replay_store_manifest_invalid",
+                error.field.to_string(),
+                error,
+            )
+        },
+    )?;
+    validate_machine_result_store_domain(&result_store.results, "result_store").map_err(
+        |error| {
+            phase8_command_error_from_request_validation(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "result_store_manifest_invalid",
+                error.field.to_string(),
+                error,
+            )
+        },
+    )?;
+    phase8_reject_duplicate_challenge_manifest_hashes(challenge_store)?;
+
+    let policy_hash = policy.policy_hash();
+    let target_artifact_hash = target_normalized_result.artifact_hash();
+    let target_normalized_result_hash = target_normalized_result.normalized_result_hash();
+    let mut entries = Vec::new();
+    let mut unexpected_acceptances = 0_u64;
+
+    for challenge_entry in &challenge_store.entries {
+        let manifest = phase8_find_challenge_manifest(
+            challenge_manifests,
+            &challenge_entry.challenge_id,
+            challenge_entry.manifest_hash,
+        )?;
+        phase8_validate_coverage_manifest_binding(
+            manifest,
+            challenge_entry,
+            policy_hash,
+            target_normalized_result,
+        )?;
+        let Some(replay_entry) = replay_store.results.iter().find(|entry| {
+            entry.challenge_id == challenge_entry.challenge_id
+                && entry.manifest_hash == challenge_entry.manifest_hash
+        }) else {
+            continue;
+        };
+        let replay_result = phase8_find_replay_result(replay_results, replay_entry.result_hash)?;
+        phase8_validate_coverage_replay_binding(
+            replay_result,
+            replay_entry,
+            manifest,
+            policy_hash,
+        )?;
+        if replay_result.normalized_result_hash.is_none() {
+            if replay_result.comparison_status.is_some() {
+                return Err(phase8_command_value_error(
+                    Phase8CommandName::ChallengeCoverageSummary,
+                    "coverage_summary_generation_failed",
+                    "replay_store.results[].comparison_status",
+                    "absent_without_normalized_result_hash",
+                    "present",
+                ));
+            }
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "replay_store.results[].normalized_result_hash",
+                "required_for_coverage_summary",
+                "missing",
+            ));
+        }
+        let Some(comparison_status) = replay_result.comparison_status else {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "replay_store.results[].comparison_status",
+                "NormalizedCheckResult.comparison.status",
+                "missing",
+            ));
+        };
+        let required_checker_acceptance = phase8_replay_has_required_checker_acceptance(
+            policy,
+            replay_result,
+            result_store,
+            machine_results,
+        )?;
+        if comparison_status == Phase8NormalizedComparisonStatus::AllAgreeChecked
+            || required_checker_acceptance
+        {
+            unexpected_acceptances += 1;
+        }
+        entries.push(Phase8ChallengeCoverageEntry {
+            challenge_id: challenge_entry.challenge_id.clone(),
+            manifest_hash: challenge_entry.manifest_hash,
+            replay_result_hash: replay_result.result_hash(),
+            comparison_status,
+        });
+    }
+    entries.sort_by(|left, right| {
+        left.challenge_id
+            .cmp(&right.challenge_id)
+            .then_with(|| left.manifest_hash.cmp(&right.manifest_hash))
+    });
+
+    Ok(Phase8ChallengeCoverageSummary::new(
+        policy_hash,
+        target_artifact_hash,
+        target_normalized_result_hash,
+        challenge_store.file_hash(),
+        result_store.file_hash(),
+        challenge_store.entries.len() as u64,
+        unexpected_acceptances,
+        entries,
+    ))
+}
+
+fn phase8_challenge_coverage_summary_id(summary_hash: Hash) -> String {
+    let wire = format_hash_string(&summary_hash);
+    format!(
+        "chcov_{}",
+        wire.strip_prefix("sha256:")
+            .expect("format_hash_string always prefixes sha256")
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn canonical_json_coverage_summary_pairs(
+    policy_hash: Hash,
+    artifact_hash: Hash,
+    target_normalized_result_hash: Hash,
+    challenge_store_manifest_hash: Hash,
+    result_store_manifest_hash: Hash,
+    total_challenges: u64,
+    replayed_challenges: u64,
+    unexpected_acceptances: u64,
+    entries: &[Phase8ChallengeCoverageEntry],
+) -> Vec<(String, String)> {
+    vec![
+        (
+            "artifact_hash".to_owned(),
+            phase8_hash_json_literal(&artifact_hash),
+        ),
+        (
+            "challenge_store_manifest_hash".to_owned(),
+            phase8_hash_json_literal(&challenge_store_manifest_hash),
+        ),
+        (
+            "entries".to_owned(),
+            canonical_json_array(
+                entries
+                    .iter()
+                    .map(Phase8ChallengeCoverageEntry::canonical_json)
+                    .collect(),
+            ),
+        ),
+        (
+            "policy_hash".to_owned(),
+            phase8_hash_json_literal(&policy_hash),
+        ),
+        (
+            "replayed_challenges".to_owned(),
+            replayed_challenges.to_string(),
+        ),
+        (
+            "result_store_manifest_hash".to_owned(),
+            phase8_hash_json_literal(&result_store_manifest_hash),
+        ),
+        (
+            "schema".to_owned(),
+            phase8_json_string_literal(PHASE8_CHALLENGE_COVERAGE_SUMMARY_SCHEMA),
+        ),
+        (
+            "target_normalized_result_hash".to_owned(),
+            phase8_hash_json_literal(&target_normalized_result_hash),
+        ),
+        ("total_challenges".to_owned(), total_challenges.to_string()),
+        (
+            "unexpected_acceptances".to_owned(),
+            unexpected_acceptances.to_string(),
+        ),
+    ]
+}
+
+fn phase8_expected_challenge_replay_requests(
+    manifest: &Phase8ChallengeManifest,
+    manifest_hash: Hash,
+    policy: &Phase8RunnerPolicy,
+) -> Result<Vec<Phase8MachineCheckRequest>, Phase8CommandError> {
+    Ok(phase8_challenge_materialize_requests(
+        manifest,
+        manifest_hash,
+        policy,
+        "build/challenge-replay-requests",
+        "build/challenge-replay-requests/manifest.json",
+        None,
+    )?
+    .requests)
+}
+
+fn phase8_validate_challenge_replay_request_binding(
+    request_store: &Phase8RequestStoreManifest,
+    stored_requests: &[Phase8StoredMachineCheckRequest],
+    expected_request: &Phase8MachineCheckRequest,
+) -> Result<bool, Phase8CommandError> {
+    let request_hash = expected_request.request_hash();
+    let Some(entry) = request_store
+        .requests
+        .iter()
+        .find(|entry| entry.request_hash == request_hash)
+    else {
+        return Ok(false);
+    };
+    let Some(stored) = stored_requests
+        .iter()
+        .find(|stored| stored.request.request_hash() == request_hash)
+    else {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "request_store_entry_unreadable",
+            "request_store.requests[].path",
+            "readable",
+            "unreadable",
+        ));
+    };
+    if stored.path != entry.path {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "request_store_entry_mismatch",
+            "request_store.requests[].path",
+            &entry.path,
+            &stored.path,
+        ));
+    }
+    if stored.file_hash != entry.file_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "request_file_hash_mismatch",
+            "request_store.requests[].file_hash",
+            entry.file_hash,
+            stored.file_hash,
+        ));
+    }
+    let canonical_file_hash = phase8_file_hash(stored.request.canonical_json().as_bytes());
+    if canonical_file_hash != stored.file_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "request_file_hash_mismatch",
+            "request_store.requests[].file_hash",
+            canonical_file_hash,
+            stored.file_hash,
+        ));
+    }
+    if stored.request.request_hash() != expected_request.request_hash() {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "request_hash_mismatch",
+            "request_hash",
+            expected_request.request_hash(),
+            stored.request.request_hash(),
+        ));
+    }
+    Ok(true)
+}
+
+fn phase8_resolve_replay_machine_result<'a>(
+    entry: &Phase8MachineResultStoreEntry,
+    machine_results: &'a [Phase8MachineCheckResult],
+    policy_hash: Hash,
+) -> Result<&'a Phase8MachineCheckResult, Phase8CommandError> {
+    let Some(result) = machine_results
+        .iter()
+        .find(|result| result.run_artifact_hash() == entry.run_artifact_hash)
+    else {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_not_found",
+            "result_store.results[].run_artifact_hash",
+            "loaded_machine_result",
+            "missing",
+        ));
+    };
+    if let Err((field, expected, actual)) = phase8_validate_machine_result_for_normalization(result)
+    {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_schema_invalid",
+            field,
+            expected,
+            actual,
+        ));
+    }
+    if result.result_hash() != entry.result_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_hash_mismatch",
+            "result_store.results[].result_hash",
+            entry.result_hash,
+            result.result_hash(),
+        ));
+    }
+    if result.request_hash != entry.request_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_request_hash_mismatch",
+            "result_store.results[].request_hash",
+            entry.request_hash,
+            result.request_hash,
+        ));
+    }
+    if result.checker.profile != entry.checker_profile {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_checker_profile_mismatch",
+            "result_store.results[].checker_profile",
+            &entry.checker_profile,
+            &result.checker.profile,
+        ));
+    }
+    if result.policy.hash != policy_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_policy_hash_mismatch",
+            "machine_results[].policy.hash",
+            policy_hash,
+            result.policy.hash,
+        ));
+    }
+    let canonical_file_hash = phase8_file_hash(result.canonical_json().as_bytes());
+    if canonical_file_hash != entry.file_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeReplay,
+            "machine_result_file_hash_mismatch",
+            "result_store.results[].file_hash",
+            entry.file_hash,
+            canonical_file_hash,
+        ));
+    }
+    Ok(result)
+}
+
+fn phase8_resolve_challenge_replay_normalized_result<'a>(
+    policy_hash: Hash,
+    artifact_hash: Hash,
+    checker_results: &[Phase8ChallengeReplayCheckerResult],
+    normalized_store: Option<&Phase8NormalizedResultStoreManifest>,
+    normalized_results: &'a [Phase8NormalizedCheckResult],
+    coverage_required: bool,
+) -> Result<Option<&'a Phase8NormalizedCheckResult>, Phase8CommandError> {
+    let Some(store) = normalized_store else {
+        return Ok(None);
+    };
+    let mut expected_hashes = checker_results
+        .iter()
+        .map(|result| result.result_hash)
+        .collect::<Vec<_>>();
+    expected_hashes.sort();
+    expected_hashes.dedup();
+    let mut matches = Vec::new();
+    for normalized in normalized_results {
+        let normalized_hash = normalized.normalized_result_hash();
+        let Some(entry) = store
+            .results
+            .iter()
+            .find(|entry| entry.normalized_result_hash == normalized_hash)
+        else {
+            continue;
+        };
+        if normalized.artifact_hash() != entry.artifact_hash {
+            return Err(phase8_command_hash_error(
+                Phase8CommandName::ChallengeReplay,
+                "normalized_store_entry_artifact_hash_mismatch",
+                "normalized_store.results[].artifact_hash",
+                entry.artifact_hash,
+                normalized.artifact_hash(),
+            ));
+        }
+        let canonical_file_hash = phase8_file_hash(normalized.canonical_json().as_bytes());
+        if canonical_file_hash != entry.file_hash {
+            return Err(phase8_command_hash_error(
+                Phase8CommandName::ChallengeReplay,
+                "normalized_store_entry_file_hash_mismatch",
+                "normalized_store.results[].file_hash",
+                entry.file_hash,
+                canonical_file_hash,
+            ));
+        }
+        if normalized.policy.hash != policy_hash || normalized.artifact_hash() != artifact_hash {
+            continue;
+        }
+        let mut actual_hashes = normalized
+            .results
+            .iter()
+            .map(|entry| entry.result_hash)
+            .collect::<Vec<_>>();
+        actual_hashes.sort();
+        actual_hashes.dedup();
+        if actual_hashes == expected_hashes {
+            matches.push(normalized);
+        }
+    }
+    match matches.len() {
+        0 if coverage_required => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "normalized_result_not_found",
+            "normalized_store.results[]",
+            "matching_normalized_result",
+            "missing",
+        )),
+        0 => Ok(None),
+        1 => Ok(Some(matches[0])),
+        _ => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeReplay,
+            "normalized_result_ambiguous",
+            "normalized_store.results[]",
+            "unique_matching_normalized_result",
+            "ambiguous",
+        )),
+    }
+}
+
+fn phase8_reject_duplicate_challenge_manifest_hashes(
+    challenge_store: &Phase8ChallengeOutputStoreManifest,
+) -> Result<(), Phase8CommandError> {
+    let mut seen = BTreeSet::new();
+    for (index, entry) in challenge_store.entries.iter().enumerate() {
+        if !seen.insert(entry.manifest_hash) {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                format!("challenge_store.entries[{index}].manifest_hash"),
+                "unique_manifest_hashes",
+                "duplicate_manifest_hash",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_find_challenge_manifest<'a>(
+    manifests: &'a [Phase8ChallengeManifest],
+    challenge_id: &str,
+    manifest_hash: Hash,
+) -> Result<&'a Phase8ChallengeManifest, Phase8CommandError> {
+    let matches = manifests
+        .iter()
+        .filter(|manifest| {
+            manifest.challenge_id == challenge_id && manifest.manifest_hash() == manifest_hash
+        })
+        .collect::<Vec<_>>();
+    match matches.len() {
+        1 => Ok(matches[0]),
+        0 => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_store.entries[].manifest_hash",
+            "loaded_challenge_manifest",
+            "missing",
+        )),
+        _ => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_store.entries[].manifest_hash",
+            "unique_loaded_challenge_manifest",
+            "ambiguous",
+        )),
+    }
+}
+
+fn phase8_validate_coverage_manifest_binding(
+    manifest: &Phase8ChallengeManifest,
+    challenge_entry: &Phase8ChallengeOutputStoreEntry,
+    policy_hash: Hash,
+    target_normalized_result: &Phase8NormalizedCheckResult,
+) -> Result<(), Phase8CommandError> {
+    if manifest.challenge_id != challenge_entry.challenge_id {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_store.entries[].challenge_id",
+            &manifest.challenge_id,
+            &challenge_entry.challenge_id,
+        ));
+    }
+    if manifest.policy_hash != policy_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_manifest.policy_hash",
+            policy_hash,
+            manifest.policy_hash,
+        ));
+    }
+    if !phase8_challenge_manifest_is_rejection_required(manifest) {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_manifest.mutation.kind",
+            "rejection_required_challenge",
+            &manifest.mutation.kind,
+        ));
+    }
+    if manifest.base_certificate.file_hash != target_normalized_result.artifact.input_file_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_manifest.base_certificate.file_hash",
+            target_normalized_result.artifact.input_file_hash,
+            manifest.base_certificate.file_hash,
+        ));
+    }
+    if manifest.base_certificate.claimed_certificate_hash
+        != target_normalized_result.artifact.expected_certificate_hash
+    {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "challenge_manifest.base_certificate.claimed_certificate_hash",
+            target_normalized_result.artifact.expected_certificate_hash,
+            manifest.base_certificate.claimed_certificate_hash,
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_find_replay_result(
+    replay_results: &[Phase8ChallengeReplayResult],
+    result_hash: Hash,
+) -> Result<&Phase8ChallengeReplayResult, Phase8CommandError> {
+    let matches = replay_results
+        .iter()
+        .filter(|result| result.result_hash() == result_hash)
+        .collect::<Vec<_>>();
+    match matches.len() {
+        1 => Ok(matches[0]),
+        0 => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_store.results[].result_hash",
+            "loaded_challenge_replay_result",
+            "missing",
+        )),
+        _ => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_store.results[].result_hash",
+            "unique_loaded_challenge_replay_result",
+            "ambiguous",
+        )),
+    }
+}
+
+fn phase8_validate_coverage_replay_binding(
+    replay_result: &Phase8ChallengeReplayResult,
+    replay_entry: &Phase8ChallengeReplayStoreEntry,
+    manifest: &Phase8ChallengeManifest,
+    policy_hash: Hash,
+) -> Result<(), Phase8CommandError> {
+    if replay_result.challenge_id != replay_entry.challenge_id {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_store.results[].challenge_id",
+            &replay_entry.challenge_id,
+            &replay_result.challenge_id,
+        ));
+    }
+    if replay_result.manifest_hash != replay_entry.manifest_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_store.results[].manifest_hash",
+            replay_entry.manifest_hash,
+            replay_result.manifest_hash,
+        ));
+    }
+    if replay_result.artifact_hash != replay_entry.artifact_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_store.results[].artifact_hash",
+            replay_entry.artifact_hash,
+            replay_result.artifact_hash,
+        ));
+    }
+    let canonical_file_hash = phase8_file_hash(replay_result.canonical_json().as_bytes());
+    if canonical_file_hash != replay_entry.file_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_store.results[].file_hash",
+            replay_entry.file_hash,
+            canonical_file_hash,
+        ));
+    }
+    if replay_result.policy_hash != policy_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_result.policy_hash",
+            policy_hash,
+            replay_result.policy_hash,
+        ));
+    }
+    if replay_result.mutated_file_hash != manifest.mutated_certificate.file_hash {
+        return Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_result.mutated_file_hash",
+            manifest.mutated_certificate.file_hash,
+            replay_result.mutated_file_hash,
+        ));
+    }
+    match (
+        manifest.mutated_certificate.claimed_certificate_hash,
+        replay_result.mutated_claimed_certificate_hash,
+    ) {
+        (Some(expected), Some(actual)) if expected != actual => Err(phase8_command_hash_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_result.mutated_claimed_certificate_hash",
+            expected,
+            actual,
+        )),
+        (Some(_), None) => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_result.mutated_claimed_certificate_hash",
+            "sha256:<lower-hex>",
+            "missing",
+        )),
+        (None, Some(_)) => Err(phase8_command_value_error(
+            Phase8CommandName::ChallengeCoverageSummary,
+            "coverage_summary_generation_failed",
+            "replay_result.mutated_claimed_certificate_hash",
+            "absent_when_manifest_omits_mutated_claimed_certificate_hash",
+            "present",
+        )),
+        _ => Ok(()),
+    }
+}
+
+fn phase8_replay_has_required_checker_acceptance(
+    policy: &Phase8RunnerPolicy,
+    replay_result: &Phase8ChallengeReplayResult,
+    result_store: &Phase8MachineResultStoreManifest,
+    machine_results: &[Phase8MachineCheckResult],
+) -> Result<bool, Phase8CommandError> {
+    for checker_result in &replay_result.checker_results {
+        if !policy
+            .required_checker_profiles
+            .contains(&checker_result.checker_profile)
+        {
+            continue;
+        }
+        let Some(store_entry) = result_store.results.iter().find(|entry| {
+            entry.run_artifact_hash == checker_result.run_artifact_hash
+                && entry.result_hash == checker_result.result_hash
+                && entry.checker_profile == checker_result.checker_profile
+        }) else {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "result_store.results[].run_artifact_hash",
+                "matching_machine_result_store_entry",
+                "missing",
+            ));
+        };
+        let Some(machine_result) = machine_results
+            .iter()
+            .find(|result| result.run_artifact_hash() == store_entry.run_artifact_hash)
+        else {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "machine_results[].run_artifact_hash",
+                "loaded_machine_result",
+                "missing",
+            ));
+        };
+        if machine_result.result_hash() != checker_result.result_hash
+            || machine_result.checker.profile != checker_result.checker_profile
+        {
+            return Err(phase8_command_value_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "machine_results[]",
+                "matching_replay_checker_result",
+                "mismatch",
+            ));
+        }
+        if machine_result.request_hash != store_entry.request_hash {
+            return Err(phase8_command_hash_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "result_store.results[].request_hash",
+                store_entry.request_hash,
+                machine_result.request_hash,
+            ));
+        }
+        let canonical_file_hash = phase8_file_hash(machine_result.canonical_json().as_bytes());
+        if canonical_file_hash != store_entry.file_hash {
+            return Err(phase8_command_hash_error(
+                Phase8CommandName::ChallengeCoverageSummary,
+                "coverage_summary_generation_failed",
+                "result_store.results[].file_hash",
+                store_entry.file_hash,
+                canonical_file_hash,
+            ));
+        }
+        if machine_result.status == Phase8MachineCheckStatus::Checked {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 pub fn parse_phase8_checker_raw_result(
@@ -12249,6 +13684,495 @@ fn parse_phase8_challenge_output_store_manifest_value(
     Ok(Phase8ChallengeOutputStoreManifest { entries })
 }
 
+fn parse_phase8_challenge_replay_result_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8ChallengeReplayResult, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &phase8_join_json_path(root_path, "schema"),
+        PHASE8_CHALLENGE_REPLAY_RESULT_SCHEMA,
+        PHASE8_CHALLENGE_REPLAY_RESULT_SCHEMA,
+    )?;
+    let result_id = required_string_field(
+        members,
+        "result_id",
+        &phase8_join_json_path(root_path, "result_id"),
+        "result_id",
+    )?;
+    if !phase8_valid_request_id(&result_id) {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "result_id"),
+            "result_id",
+            "invalid_string_format",
+        ));
+    }
+    let parsed_result_hash = required_hash_field(
+        members,
+        "result_hash",
+        &phase8_join_json_path(root_path, "result_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let challenge_id = required_string_field(
+        members,
+        "challenge_id",
+        &phase8_join_json_path(root_path, "challenge_id"),
+        "challenge_id",
+    )?;
+    if !phase8_valid_challenge_id(&challenge_id) {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "challenge_id"),
+            "challenge_id",
+            "invalid_name_format",
+        ));
+    }
+    let manifest_hash = required_hash_field(
+        members,
+        "manifest_hash",
+        &phase8_join_json_path(root_path, "manifest_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let mutated_file_hash = required_hash_field(
+        members,
+        "mutated_file_hash",
+        &phase8_join_json_path(root_path, "mutated_file_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let mutated_claimed_certificate_hash = optional_hash_field(
+        members,
+        "mutated_claimed_certificate_hash",
+        &phase8_join_json_path(root_path, "mutated_claimed_certificate_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let checker_results = parse_phase8_challenge_replay_checker_results(
+        members,
+        &phase8_join_json_path(root_path, "checker_results"),
+    )?;
+    let missing_checker_profiles = required_string_array_field(
+        members,
+        "missing_checker_profiles",
+        &phase8_join_json_path(root_path, "missing_checker_profiles"),
+        "checker_profile",
+    )?;
+    let normalized_result_hash = optional_hash_field(
+        members,
+        "normalized_result_hash",
+        &phase8_join_json_path(root_path, "normalized_result_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let policy_hash = required_hash_field(
+        members,
+        "policy_hash",
+        &phase8_join_json_path(root_path, "policy_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let artifact_hash = required_hash_field(
+        members,
+        "artifact_hash",
+        &phase8_join_json_path(root_path, "artifact_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let comparison_status = parse_optional_phase8_normalized_comparison_status_field(
+        members,
+        "comparison_status",
+        &phase8_join_json_path(root_path, "comparison_status"),
+    )?;
+    let observed_error_kinds = required_string_array_field(
+        members,
+        "observed_error_kinds",
+        &phase8_join_json_path(root_path, "observed_error_kinds"),
+        "error_kind",
+    )?;
+    reject_unknown_fields(members, CHALLENGE_REPLAY_RESULT_FIELDS, root_path)?;
+    if normalized_result_hash.is_some() != comparison_status.is_some() {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "comparison_status"),
+            if normalized_result_hash.is_some() {
+                "NormalizedCheckResult.comparison.status"
+            } else {
+                "absent_without_normalized_result_hash"
+            },
+            if comparison_status.is_some() {
+                "present"
+            } else {
+                "missing"
+            },
+        ));
+    }
+    validate_string_set_unique(
+        &missing_checker_profiles,
+        &phase8_join_json_path(root_path, "missing_checker_profiles"),
+        "duplicate_checker_profile",
+    )?;
+    validate_string_set_sorted_unique(
+        &observed_error_kinds,
+        &phase8_join_json_path(root_path, "observed_error_kinds"),
+        "error_kind_bytewise_ascending",
+        "duplicate_error_kind",
+    )?;
+    validate_challenge_replay_checker_results_domain(
+        &checker_results,
+        &phase8_join_json_path(root_path, "checker_results"),
+    )?;
+    let result = Phase8ChallengeReplayResult {
+        result_id,
+        challenge_id,
+        manifest_hash,
+        mutated_file_hash,
+        mutated_claimed_certificate_hash,
+        checker_results,
+        missing_checker_profiles,
+        normalized_result_hash,
+        policy_hash,
+        artifact_hash,
+        comparison_status,
+        observed_error_kinds,
+    };
+    let recomputed = result.result_hash();
+    if recomputed != parsed_result_hash {
+        return Err(Phase8RequestValidationError::hash_failure(
+            phase8_join_json_path(root_path, "result_hash"),
+            recomputed,
+            parsed_result_hash,
+        ));
+    }
+    Ok(result)
+}
+
+fn parse_phase8_challenge_replay_checker_results(
+    members: &[JsonMember<'_>],
+    field: &str,
+) -> Result<Vec<Phase8ChallengeReplayCheckerResult>, Phase8RequestValidationError> {
+    let value = required_field_value(members, last_json_path_component(field), field, "array")?;
+    let Some(elements) = value.array_elements() else {
+        return Err(wrong_type_error(field, "array", value.kind()).into());
+    };
+    let mut out = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let path = format!("{field}[{index}]");
+        let result_members = object_members_or_policy_error(element, &path, "object")?;
+        let result_id = required_string_field(
+            result_members,
+            "result_id",
+            &format!("{path}.result_id"),
+            "result_id",
+        )?;
+        if !phase8_valid_request_id(&result_id) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.result_id"),
+                "result_id",
+                "invalid_string_format",
+            ));
+        }
+        let result_hash = required_hash_field(
+            result_members,
+            "result_hash",
+            &format!("{path}.result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let run_artifact_hash = required_hash_field(
+            result_members,
+            "run_artifact_hash",
+            &format!("{path}.run_artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let checker_profile = required_string_field(
+            result_members,
+            "checker_profile",
+            &format!("{path}.checker_profile"),
+            "checker_profile",
+        )?;
+        if !phase8_visible_ascii_nonempty(&checker_profile) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.checker_profile"),
+                "checker_profile",
+                "invalid_string_format",
+            ));
+        }
+        reject_unknown_fields(
+            result_members,
+            CHALLENGE_REPLAY_CHECKER_RESULT_FIELDS,
+            &path,
+        )?;
+        out.push(Phase8ChallengeReplayCheckerResult {
+            result_id,
+            result_hash,
+            run_artifact_hash,
+            checker_profile,
+        });
+    }
+    Ok(out)
+}
+
+fn parse_phase8_challenge_replay_store_manifest_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8ChallengeReplayStoreManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{root_path}.schema"),
+        PHASE8_CHALLENGE_REPLAY_STORE_MANIFEST_SCHEMA,
+        PHASE8_CHALLENGE_REPLAY_STORE_MANIFEST_SCHEMA,
+    )?;
+    let results_value =
+        required_field_value(members, "results", &format!("{root_path}.results"), "array")?;
+    let Some(result_values) = results_value.array_elements() else {
+        return Err(wrong_type_error(
+            &format!("{root_path}.results"),
+            "array",
+            results_value.kind(),
+        )
+        .into());
+    };
+    let mut results = Vec::new();
+    for (index, result_value) in result_values.iter().enumerate() {
+        let path = format!("{root_path}.results[{index}]");
+        let result_members = object_members_or_policy_error(result_value, &path, "object")?;
+        let challenge_id = required_string_field(
+            result_members,
+            "challenge_id",
+            &format!("{path}.challenge_id"),
+            "challenge_id",
+        )?;
+        if !phase8_valid_challenge_id(&challenge_id) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.challenge_id"),
+                "challenge_id",
+                "invalid_name_format",
+            ));
+        }
+        let manifest_hash = required_hash_field(
+            result_members,
+            "manifest_hash",
+            &format!("{path}.manifest_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let result_hash = required_hash_field(
+            result_members,
+            "result_hash",
+            &format!("{path}.result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let artifact_hash = required_hash_field(
+            result_members,
+            "artifact_hash",
+            &format!("{path}.artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let result_path = required_string_field(
+            result_members,
+            "path",
+            &format!("{path}.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&result_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            result_members,
+            "file_hash",
+            &format!("{path}.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(result_members, CHALLENGE_REPLAY_STORE_ENTRY_FIELDS, &path)?;
+        results.push(Phase8ChallengeReplayStoreEntry {
+            challenge_id,
+            manifest_hash,
+            result_hash,
+            artifact_hash,
+            path: result_path,
+            file_hash,
+        });
+    }
+    reject_unknown_fields(members, CHALLENGE_REPLAY_STORE_MANIFEST_FIELDS, root_path)?;
+    validate_challenge_replay_store_domain(&results, root_path)?;
+    Ok(Phase8ChallengeReplayStoreManifest { results })
+}
+
+fn parse_phase8_challenge_coverage_summary_value(
+    value: &JsonValue<'_>,
+    root_path: &str,
+) -> Result<Phase8ChallengeCoverageSummary, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, root_path, "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &phase8_join_json_path(root_path, "schema"),
+        PHASE8_CHALLENGE_COVERAGE_SUMMARY_SCHEMA,
+        PHASE8_CHALLENGE_COVERAGE_SUMMARY_SCHEMA,
+    )?;
+    let summary_id = required_string_field(
+        members,
+        "summary_id",
+        &phase8_join_json_path(root_path, "summary_id"),
+        "chcov_<64-lower-hex>",
+    )?;
+    if !phase8_valid_challenge_coverage_summary_id(&summary_id) {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "summary_id"),
+            "chcov_<64-lower-hex>",
+            "invalid_name_format",
+        ));
+    }
+    let parsed_summary_hash = required_hash_field(
+        members,
+        "summary_hash",
+        &phase8_join_json_path(root_path, "summary_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let policy_hash = required_hash_field(
+        members,
+        "policy_hash",
+        &phase8_join_json_path(root_path, "policy_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let artifact_hash = required_hash_field(
+        members,
+        "artifact_hash",
+        &phase8_join_json_path(root_path, "artifact_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let target_normalized_result_hash = required_hash_field(
+        members,
+        "target_normalized_result_hash",
+        &phase8_join_json_path(root_path, "target_normalized_result_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let challenge_store_manifest_hash = required_hash_field(
+        members,
+        "challenge_store_manifest_hash",
+        &phase8_join_json_path(root_path, "challenge_store_manifest_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let result_store_manifest_hash = required_hash_field(
+        members,
+        "result_store_manifest_hash",
+        &phase8_join_json_path(root_path, "result_store_manifest_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let total_challenges = required_nonnegative_u64_field(
+        members,
+        "total_challenges",
+        &phase8_join_json_path(root_path, "total_challenges"),
+    )?;
+    let replayed_challenges = required_nonnegative_u64_field(
+        members,
+        "replayed_challenges",
+        &phase8_join_json_path(root_path, "replayed_challenges"),
+    )?;
+    let unexpected_acceptances = required_nonnegative_u64_field(
+        members,
+        "unexpected_acceptances",
+        &phase8_join_json_path(root_path, "unexpected_acceptances"),
+    )?;
+    let entries = parse_phase8_challenge_coverage_entries(
+        members,
+        &phase8_join_json_path(root_path, "entries"),
+    )?;
+    reject_unknown_fields(members, CHALLENGE_COVERAGE_SUMMARY_FIELDS, root_path)?;
+    validate_challenge_coverage_summary_domain(
+        &entries,
+        total_challenges,
+        replayed_challenges,
+        unexpected_acceptances,
+        root_path,
+    )?;
+    let summary = Phase8ChallengeCoverageSummary {
+        summary_id,
+        policy_hash,
+        artifact_hash,
+        target_normalized_result_hash,
+        challenge_store_manifest_hash,
+        result_store_manifest_hash,
+        total_challenges,
+        replayed_challenges,
+        unexpected_acceptances,
+        entries,
+    };
+    let recomputed = summary.summary_hash();
+    if recomputed != parsed_summary_hash {
+        return Err(Phase8RequestValidationError::hash_failure(
+            phase8_join_json_path(root_path, "summary_hash"),
+            recomputed,
+            parsed_summary_hash,
+        ));
+    }
+    let expected_summary_id = phase8_challenge_coverage_summary_id(parsed_summary_hash);
+    if summary.summary_id != expected_summary_id {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "summary_id"),
+            expected_summary_id,
+            summary.summary_id,
+        ));
+    }
+    Ok(summary)
+}
+
+fn parse_phase8_challenge_coverage_entries(
+    members: &[JsonMember<'_>],
+    field: &str,
+) -> Result<Vec<Phase8ChallengeCoverageEntry>, Phase8RequestValidationError> {
+    let value = required_field_value(members, last_json_path_component(field), field, "array")?;
+    let Some(elements) = value.array_elements() else {
+        return Err(wrong_type_error(field, "array", value.kind()).into());
+    };
+    let mut entries = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let path = format!("{field}[{index}]");
+        let entry_members = object_members_or_policy_error(element, &path, "object")?;
+        let challenge_id = required_string_field(
+            entry_members,
+            "challenge_id",
+            &format!("{path}.challenge_id"),
+            "challenge_id",
+        )?;
+        if !phase8_valid_challenge_id(&challenge_id) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.challenge_id"),
+                "challenge_id",
+                "invalid_name_format",
+            ));
+        }
+        let manifest_hash = required_hash_field(
+            entry_members,
+            "manifest_hash",
+            &format!("{path}.manifest_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let replay_result_hash = required_hash_field(
+            entry_members,
+            "replay_result_hash",
+            &format!("{path}.replay_result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let comparison_status = parse_required_phase8_normalized_comparison_status_field(
+            entry_members,
+            "comparison_status",
+            &format!("{path}.comparison_status"),
+        )?;
+        reject_unknown_fields(
+            entry_members,
+            CHALLENGE_COVERAGE_SUMMARY_ENTRY_FIELDS,
+            &path,
+        )?;
+        entries.push(Phase8ChallengeCoverageEntry {
+            challenge_id,
+            manifest_hash,
+            replay_result_hash,
+            comparison_status,
+        });
+    }
+    Ok(entries)
+}
+
 fn parse_phase8_challenge_imports_field(
     members: &[JsonMember<'_>],
     field: &str,
@@ -13284,6 +15208,57 @@ const CHALLENGE_REPLAY_FIELDS: &[&str] = &[
 const CHALLENGE_OUTPUT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "entries"];
 const CHALLENGE_OUTPUT_STORE_ENTRY_FIELDS: &[&str] =
     &["challenge_id", "manifest_path", "manifest_hash"];
+const CHALLENGE_REPLAY_RESULT_FIELDS: &[&str] = &[
+    "schema",
+    "result_id",
+    "result_hash",
+    "challenge_id",
+    "manifest_hash",
+    "mutated_file_hash",
+    "mutated_claimed_certificate_hash",
+    "checker_results",
+    "missing_checker_profiles",
+    "normalized_result_hash",
+    "policy_hash",
+    "artifact_hash",
+    "comparison_status",
+    "observed_error_kinds",
+];
+const CHALLENGE_REPLAY_CHECKER_RESULT_FIELDS: &[&str] = &[
+    "result_id",
+    "result_hash",
+    "run_artifact_hash",
+    "checker_profile",
+];
+const CHALLENGE_REPLAY_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "results"];
+const CHALLENGE_REPLAY_STORE_ENTRY_FIELDS: &[&str] = &[
+    "challenge_id",
+    "manifest_hash",
+    "result_hash",
+    "artifact_hash",
+    "path",
+    "file_hash",
+];
+const CHALLENGE_COVERAGE_SUMMARY_FIELDS: &[&str] = &[
+    "schema",
+    "summary_id",
+    "summary_hash",
+    "policy_hash",
+    "artifact_hash",
+    "target_normalized_result_hash",
+    "challenge_store_manifest_hash",
+    "result_store_manifest_hash",
+    "total_challenges",
+    "replayed_challenges",
+    "unexpected_acceptances",
+    "entries",
+];
+const CHALLENGE_COVERAGE_SUMMARY_ENTRY_FIELDS: &[&str] = &[
+    "challenge_id",
+    "manifest_hash",
+    "replay_result_hash",
+    "comparison_status",
+];
 const MACHINE_RESULT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "results"];
 const MACHINE_RESULT_STORE_ENTRY_FIELDS: &[&str] = &[
     "result_hash",
@@ -14452,6 +16427,176 @@ fn validate_challenge_output_store_domain(
                 format!("{root_path}.entries[{index}].manifest_path"),
                 "unique_manifest_paths",
                 "duplicate_manifest_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_challenge_replay_checker_results_domain(
+    results: &[Phase8ChallengeReplayCheckerResult],
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    let mut profiles = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !profiles.insert(&result.checker_profile) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}[{index}].checker_profile"),
+                "unique_checker_profiles",
+                "duplicate_checker_profile",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_challenge_replay_store_domain(
+    results: &[Phase8ChallengeReplayStoreEntry],
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..results.len() {
+        if results[index].result_hash < results[index - 1].result_hash {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}]"),
+                "result_hash_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut result_hashes = BTreeSet::new();
+    let mut paths = BTreeSet::new();
+    let mut challenge_manifests = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !result_hashes.insert(result.result_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].result_hash"),
+                "unique_result_hashes",
+                "duplicate_result_hash",
+            ));
+        }
+        if !paths.insert(&result.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].path"),
+                "unique_paths",
+                "duplicate_path",
+            ));
+        }
+        if !challenge_manifests.insert((&result.challenge_id, result.manifest_hash)) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.results[{index}].challenge_id"),
+                "unique_challenge_id_manifest_hash_pair",
+                "duplicate_challenge_manifest",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_challenge_coverage_summary_domain(
+    entries: &[Phase8ChallengeCoverageEntry],
+    total_challenges: u64,
+    replayed_challenges: u64,
+    unexpected_acceptances: u64,
+    root_path: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..entries.len() {
+        let left = (&entries[index].challenge_id, entries[index].manifest_hash);
+        let right = (
+            &entries[index - 1].challenge_id,
+            entries[index - 1].manifest_hash,
+        );
+        if left < right {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.entries[{index}]"),
+                "challenge_id_manifest_hash_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+
+    let mut challenge_manifests = BTreeSet::new();
+    let mut replay_result_hashes = BTreeSet::new();
+    for (index, entry) in entries.iter().enumerate() {
+        if !challenge_manifests.insert((&entry.challenge_id, entry.manifest_hash)) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.entries[{index}].challenge_id"),
+                "unique_challenge_id_manifest_hash_pair",
+                "duplicate_challenge_manifest",
+            ));
+        }
+        if !replay_result_hashes.insert(entry.replay_result_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{root_path}.entries[{index}].replay_result_hash"),
+                "unique_replay_result_hashes",
+                "duplicate_replay_result_hash",
+            ));
+        }
+    }
+    if replayed_challenges != entries.len() as u64 {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "replayed_challenges"),
+            "entries.length",
+            "count_mismatch",
+        ));
+    }
+    if replayed_challenges > total_challenges {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "replayed_challenges"),
+            "at_most_total_challenges",
+            "count_mismatch",
+        ));
+    }
+    if unexpected_acceptances > replayed_challenges {
+        return Err(Phase8RequestValidationError::value_failure(
+            phase8_join_json_path(root_path, "unexpected_acceptances"),
+            "at_most_replayed_challenges",
+            "count_mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_string_set_sorted_unique(
+    values: &[String],
+    field: &str,
+    order_expected: &str,
+    duplicate_actual: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..values.len() {
+        if values[index] < values[index - 1] {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{field}[{index}]"),
+                order_expected,
+                "order_violation",
+            ));
+        }
+    }
+    let mut seen = BTreeSet::new();
+    for (index, value) in values.iter().enumerate() {
+        if !seen.insert(value) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{field}[{index}]"),
+                "unique_values",
+                duplicate_actual,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_string_set_unique(
+    values: &[String],
+    field: &str,
+    duplicate_actual: &str,
+) -> Result<(), Phase8RequestValidationError> {
+    let mut seen = BTreeSet::new();
+    for (index, value) in values.iter().enumerate() {
+        if !seen.insert(value) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{field}[{index}]"),
+                "unique_values",
+                duplicate_actual,
             ));
         }
     }
@@ -16173,6 +18318,70 @@ fn optional_hash_field(
         .map_err(|_| Phase8PolicyValidationError::new(field, expected, "invalid_hash_format"))
 }
 
+fn required_nonnegative_u64_field(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<u64, Phase8PolicyValidationError> {
+    let raw = required_integer_raw_field(members, name, field, "non_negative_i64")?;
+    let value = raw.parse::<u64>().map_err(|_| {
+        Phase8PolicyValidationError::new(field, "non_negative_i64", "integer_out_of_range")
+    })?;
+    if value > i64::MAX as u64 {
+        return Err(Phase8PolicyValidationError::new(
+            field,
+            "non_negative_i64",
+            "integer_out_of_range",
+        ));
+    }
+    Ok(value)
+}
+
+fn parse_required_phase8_normalized_comparison_status_field(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<Phase8NormalizedComparisonStatus, Phase8PolicyValidationError> {
+    let raw = required_string_field(
+        members,
+        name,
+        field,
+        "NormalizedCheckResult.comparison.status",
+    )?;
+    Phase8NormalizedComparisonStatus::parse(&raw).ok_or_else(|| {
+        Phase8PolicyValidationError::new(
+            field,
+            "NormalizedCheckResult.comparison.status",
+            "invalid_enum",
+        )
+    })
+}
+
+fn parse_optional_phase8_normalized_comparison_status_field(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<Option<Phase8NormalizedComparisonStatus>, Phase8PolicyValidationError> {
+    let Some(raw) = optional_string_field(
+        members,
+        name,
+        field,
+        "NormalizedCheckResult.comparison.status",
+    )?
+    else {
+        return Ok(None);
+    };
+    Phase8NormalizedComparisonStatus::parse(&raw)
+        .map(Some)
+        .ok_or_else(|| {
+            Phase8PolicyValidationError::new(
+                field,
+                "NormalizedCheckResult.comparison.status",
+                "invalid_enum",
+            )
+        })
+}
+
 fn required_string_array_field(
     members: &[JsonMember<'_>],
     name: &str,
@@ -16328,6 +18537,16 @@ fn phase8_valid_challenge_id(value: &str) -> bool {
     bytes
         .iter()
         .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'_')
+}
+
+fn phase8_valid_challenge_coverage_summary_id(value: &str) -> bool {
+    let Some(hex) = value.strip_prefix("chcov_") else {
+        return false;
+    };
+    hex.len() == 64
+        && hex
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 fn phase8_valid_informational_challenge_kind(value: &str) -> bool {
@@ -20145,5 +22364,327 @@ mod tests {
             first.mutated_certificate_bytes,
             target_changed.mutated_certificate_bytes
         );
+    }
+
+    fn m9_stored_requests(
+        materialized: &Phase8ChallengeRequestMaterialization,
+    ) -> Vec<Phase8StoredMachineCheckRequest> {
+        materialized
+            .requests
+            .iter()
+            .map(|request| {
+                let entry = materialized
+                    .request_store
+                    .requests
+                    .iter()
+                    .find(|entry| entry.request_hash == request.request_hash())
+                    .unwrap();
+                Phase8StoredMachineCheckRequest {
+                    path: entry.path.clone(),
+                    file_hash: entry.file_hash,
+                    request: request.clone(),
+                }
+            })
+            .collect()
+    }
+
+    fn m9_result_store(
+        result: &Phase8MachineCheckResult,
+        path: &str,
+    ) -> Phase8MachineResultStoreManifest {
+        let entry = phase8_machine_result_store_entry_for_result(result, path).unwrap();
+        phase8_machine_result_store_with_entry(None, entry)
+            .unwrap()
+            .manifest
+    }
+
+    fn m9_normalized_store(
+        result: &Phase8NormalizedCheckResult,
+    ) -> Phase8NormalizedResultStoreManifest {
+        let entry = phase8_normalized_result_store_entry_for_result(
+            result,
+            "build/normalized/challenge-pch_001.json",
+        )
+        .unwrap();
+        phase8_normalized_result_store_with_entry(None, entry)
+            .unwrap()
+            .manifest
+    }
+
+    fn m9_target_normalized_result(policy: &Phase8RunnerPolicy) -> Phase8NormalizedCheckResult {
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let materialized = phase8_request_materialize(
+            policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            phase8_file_hash(imports_json.as_bytes()),
+            "reference",
+            "mchkreq_target",
+            "build/check-requests/Std.Nat.reference.json",
+            None,
+        )
+        .unwrap();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: materialized.request_file_hash,
+            request: materialized.request.clone(),
+        };
+        let result = m4_checked_result(&materialized.request, policy, "mchkres_target");
+        phase8_normalize_results(
+            "norm_Std.Nat_target",
+            "normerr_Std.Nat_target",
+            policy,
+            &materialized.request_store,
+            &[stored],
+            &[result],
+            None,
+        )
+        .unwrap()
+    }
+
+    fn m9_generated_challenge() -> (
+        Phase8RunnerPolicy,
+        Phase8ChallengeGeneration,
+        Phase8ChallengeRequestMaterialization,
+    ) {
+        let (request, policy, base_certificate_bytes, imports_json) = m8_generation_request(
+            Phase8ChallengeMutationKind::InsertUnsupportedSchemaVersion,
+            "$whole_certificate",
+            test_hash(248),
+        );
+        let generated = phase8_challenge_generate(
+            &request,
+            &policy,
+            &base_certificate_bytes,
+            imports_json.as_bytes(),
+            None,
+        )
+        .unwrap();
+        let materialized = phase8_challenge_materialize_requests(
+            &generated.manifest,
+            generated.manifest.manifest_hash(),
+            &policy,
+            "build/check-requests/challenges/pch_001",
+            "build/check-requests/challenges/manifest.json",
+            None,
+        )
+        .unwrap();
+        (policy, generated, materialized)
+    }
+
+    #[test]
+    fn m9_challenge_replay_result_binds_machine_and_normalized_oracles() {
+        let (policy, generated, materialized) = m9_generated_challenge();
+        let stored_requests = m9_stored_requests(&materialized);
+        let failed = m5_failed_result(
+            &materialized.requests[0],
+            &policy,
+            "mchkres_challenge_ref_001",
+            "Std.Nat",
+        );
+        let result_store = m9_result_store(&failed, "build/results/challenge-ref.json");
+        let normalized = phase8_normalize_results(
+            "norm_challenge_pch_001",
+            "normerr_challenge_pch_001",
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            std::slice::from_ref(&failed),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::AllAgreeFailed
+        );
+        let normalized_store = m9_normalized_store(&normalized);
+
+        let replay = phase8_challenge_replay_aggregate(
+            "chreplay_pch_001",
+            &generated.manifest,
+            generated.manifest.manifest_hash(),
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            &result_store,
+            std::slice::from_ref(&failed),
+            Some(&normalized_store),
+            std::slice::from_ref(&normalized),
+            true,
+            "build/challenge-replays/pch_001.json",
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(replay.result.challenge_id, generated.manifest.challenge_id);
+        assert_eq!(
+            replay.result.mutated_file_hash,
+            generated.manifest.mutated_certificate.file_hash
+        );
+        assert_eq!(
+            replay.result.mutated_claimed_certificate_hash,
+            generated
+                .manifest
+                .mutated_certificate
+                .claimed_certificate_hash
+        );
+        assert_eq!(
+            replay.result.checker_results[0].result_hash,
+            failed.result_hash()
+        );
+        assert_eq!(
+            replay.result.normalized_result_hash,
+            Some(normalized.normalized_result_hash())
+        );
+        assert_eq!(
+            replay.result.comparison_status,
+            Some(Phase8NormalizedComparisonStatus::AllAgreeFailed)
+        );
+        assert_eq!(
+            replay.result.observed_error_kinds,
+            vec!["type_mismatch".to_owned()]
+        );
+        assert!(!replay
+            .result
+            .hash_input_canonical_json()
+            .contains("mchkres_challenge_ref_001"));
+        assert!(replay
+            .result
+            .canonical_json()
+            .contains("mchkres_challenge_ref_001"));
+
+        let mut renamed = replay.result.clone();
+        renamed.result_id = "chreplay_pch_001_retry".to_owned();
+        renamed.checker_results[0].result_id = "mchkres_ref_retry".to_owned();
+        assert_eq!(renamed.result_hash(), replay.result.result_hash());
+        assert_eq!(
+            parse_phase8_challenge_replay_result(&replay.result.canonical_json()).unwrap(),
+            replay.result
+        );
+        assert_eq!(
+            parse_phase8_challenge_replay_store_manifest(&replay.replay_store.canonical_json())
+                .unwrap(),
+            replay.replay_store
+        );
+        let retry = phase8_challenge_replay_store_with_entry(
+            Some(&replay.replay_store),
+            phase8_challenge_replay_store_entry_for_result(
+                &replay.result,
+                "build/challenge-replays/pch_001.json",
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert!(!retry.rewrite_required);
+    }
+
+    #[test]
+    fn m9_coverage_summary_records_non_failing_rejection_and_unexpected_acceptance() {
+        let (policy, generated, materialized) = m9_generated_challenge();
+        let stored_requests = m9_stored_requests(&materialized);
+        let checked = m4_checked_result(
+            &materialized.requests[0],
+            &policy,
+            "mchkres_challenge_ref_checked",
+        );
+        let result_store = m9_result_store(&checked, "build/results/challenge-ref-checked.json");
+        let normalized = phase8_normalize_results(
+            "norm_challenge_pch_checked",
+            "normerr_challenge_pch_checked",
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            std::slice::from_ref(&checked),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::AllAgreeChecked
+        );
+        let normalized_store = m9_normalized_store(&normalized);
+        let replay = phase8_challenge_replay_aggregate(
+            "chreplay_pch_checked",
+            &generated.manifest,
+            generated.manifest.manifest_hash(),
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            &result_store,
+            std::slice::from_ref(&checked),
+            Some(&normalized_store),
+            std::slice::from_ref(&normalized),
+            true,
+            "build/challenge-replays/pch_001_checked.json",
+            None,
+        )
+        .unwrap();
+        let target_normalized = m9_target_normalized_result(&policy);
+        let summary = phase8_challenge_coverage_summary(
+            &policy,
+            &target_normalized,
+            &generated.challenge_store,
+            std::slice::from_ref(&generated.manifest),
+            &replay.replay_store,
+            std::slice::from_ref(&replay.result),
+            &result_store,
+            std::slice::from_ref(&checked),
+        )
+        .unwrap();
+
+        assert_eq!(summary.total_challenges, 1);
+        assert_eq!(summary.replayed_challenges, 1);
+        assert_eq!(summary.unexpected_acceptances, 1);
+        assert_eq!(
+            summary.entries[0].comparison_status,
+            Phase8NormalizedComparisonStatus::AllAgreeChecked
+        );
+        assert!(!summary.passes_release_coverage_condition());
+        assert_eq!(
+            parse_phase8_challenge_coverage_summary(&summary.canonical_json()).unwrap(),
+            summary
+        );
+        assert_eq!(
+            phase8_challenge_coverage_summary_hash(&summary.canonical_json()).unwrap(),
+            summary.summary_hash()
+        );
+    }
+
+    #[test]
+    fn m9_coverage_required_replay_requires_normalized_store_match() {
+        let (policy, generated, materialized) = m9_generated_challenge();
+        let stored_requests = m9_stored_requests(&materialized);
+        let failed = m5_failed_result(
+            &materialized.requests[0],
+            &policy,
+            "mchkres_challenge_ref_missing_norm",
+            "Std.Nat",
+        );
+        let result_store = m9_result_store(&failed, "build/results/challenge-ref-missing.json");
+        let empty_normalized_store = Phase8NormalizedResultStoreManifest {
+            results: Vec::new(),
+        };
+
+        let err = phase8_challenge_replay_aggregate(
+            "chreplay_pch_missing_norm",
+            &generated.manifest,
+            generated.manifest.manifest_hash(),
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            &result_store,
+            std::slice::from_ref(&failed),
+            Some(&empty_normalized_store),
+            &[],
+            true,
+            "build/challenge-replays/pch_001_missing_norm.json",
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err.reason_code.as_ref(), "normalized_result_not_found");
     }
 }
