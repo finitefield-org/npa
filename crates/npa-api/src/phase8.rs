@@ -28,6 +28,11 @@ pub const PHASE8_NORMALIZED_RESULT_STORE_MANIFEST_SCHEMA: &str =
 pub const PHASE8_NORMALIZATION_WRITE_RESULT_SCHEMA: &str =
     "npa.phase8.normalization_write_result.v1";
 pub const PHASE8_COMPARE_VALIDATION_RESULT_SCHEMA: &str = "npa.phase8.compare_validation_result.v1";
+pub const PHASE8_AI_AUDIT_INPUT_POLICY_SCHEMA: &str = "npa.phase8.ai_audit_input_policy.v1";
+pub const PHASE8_AI_AUDIT_SIDECAR_SCHEMA: &str = "npa.phase8.ai_audit_sidecar.v1";
+pub const PHASE8_AI_AUDIT_PROMPT_INPUT_SCHEMA: &str = "npa.phase8.ai_audit_prompt_input.v1";
+pub const PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA: &str =
+    "npa.phase8.audit_sidecar_validation_result.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
@@ -2727,6 +2732,625 @@ impl Phase8CompareValidationResult {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AiAuditSidecarSourceKind {
+    MachineResult,
+    NormalizedComparison,
+}
+
+impl Phase8AiAuditSidecarSourceKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::MachineResult => "machine_result",
+            Self::NormalizedComparison => "normalized_comparison",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AiAuditSidecarStatus {
+    Summarized,
+    Triaged,
+    SuggestedFix,
+    SuggestedChallenge,
+    Inconclusive,
+}
+
+impl Phase8AiAuditSidecarStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Summarized => "summarized",
+            Self::Triaged => "triaged",
+            Self::SuggestedFix => "suggested_fix",
+            Self::SuggestedChallenge => "suggested_challenge",
+            Self::Inconclusive => "inconclusive",
+        }
+    }
+
+    const fn requires_classification(self) -> bool {
+        matches!(
+            self,
+            Self::Triaged | Self::SuggestedFix | Self::SuggestedChallenge
+        )
+    }
+
+    const fn requires_next_actions(self) -> bool {
+        matches!(self, Self::SuggestedFix | Self::SuggestedChallenge)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditInputPolicy {
+    pub id: String,
+    pub version: u64,
+    pub included_fields: Vec<String>,
+    pub redaction: String,
+    pub allow_source_text: bool,
+    pub allow_tactic_trace: bool,
+}
+
+impl Phase8AiAuditInputPolicy {
+    pub fn input_policy_hash(&self) -> Hash {
+        phase8_sha256(self.canonical_json().as_bytes())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "allow_source_text".to_owned(),
+                self.allow_source_text.to_string(),
+            ),
+            (
+                "allow_tactic_trace".to_owned(),
+                self.allow_tactic_trace.to_string(),
+            ),
+            ("id".to_owned(), phase8_json_string_literal(&self.id)),
+            (
+                "included_fields".to_owned(),
+                phase8_json_string_array(&self.included_fields),
+            ),
+            (
+                "redaction".to_owned(),
+                phase8_json_string_literal(&self.redaction),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AI_AUDIT_INPUT_POLICY_SCHEMA),
+            ),
+            ("version".to_owned(), self.version.to_string()),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditSidecarSource {
+    pub kind: Phase8AiAuditSidecarSourceKind,
+    pub result_hash: Option<Hash>,
+    pub request_hash: Option<Hash>,
+    pub run_artifact_hash: Option<Hash>,
+    pub normalized_result_hash: Option<Hash>,
+    pub result_id: Option<String>,
+    pub normalized_result_id: Option<String>,
+}
+
+impl Phase8AiAuditSidecarSource {
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![(
+            "kind".to_owned(),
+            phase8_json_string_literal(self.kind.as_str()),
+        )];
+        push_optional_hash_pair(&mut pairs, "result_hash", self.result_hash);
+        push_optional_hash_pair(&mut pairs, "request_hash", self.request_hash);
+        push_optional_hash_pair(&mut pairs, "run_artifact_hash", self.run_artifact_hash);
+        push_optional_hash_pair(
+            &mut pairs,
+            "normalized_result_hash",
+            self.normalized_result_hash,
+        );
+        push_optional_string_pair(&mut pairs, "result_id", self.result_id.as_deref());
+        push_optional_string_pair(
+            &mut pairs,
+            "normalized_result_id",
+            self.normalized_result_id.as_deref(),
+        );
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditSidecarInputPolicy {
+    pub id: String,
+    pub version: u64,
+    pub hash: Hash,
+    pub included_fields: Vec<String>,
+    pub redaction: String,
+}
+
+impl Phase8AiAuditSidecarInputPolicy {
+    fn from_policy(policy: &Phase8AiAuditInputPolicy) -> Self {
+        Self {
+            id: policy.id.clone(),
+            version: policy.version,
+            hash: policy.input_policy_hash(),
+            included_fields: policy.included_fields.clone(),
+            redaction: policy.redaction.clone(),
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("hash".to_owned(), phase8_hash_json_literal(&self.hash)),
+            ("id".to_owned(), phase8_json_string_literal(&self.id)),
+            (
+                "included_fields".to_owned(),
+                phase8_json_string_array(&self.included_fields),
+            ),
+            (
+                "redaction".to_owned(),
+                phase8_json_string_literal(&self.redaction),
+            ),
+            ("version".to_owned(), self.version.to_string()),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditSidecarAi {
+    pub agent: String,
+    pub model: String,
+    pub prompt_hash: Hash,
+}
+
+impl Phase8AiAuditSidecarAi {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("agent".to_owned(), phase8_json_string_literal(&self.agent)),
+            ("model".to_owned(), phase8_json_string_literal(&self.model)),
+            (
+                "prompt_hash".to_owned(),
+                phase8_hash_json_literal(&self.prompt_hash),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditSidecarClassification {
+    pub category: String,
+    pub confidence: String,
+    pub checker_error_kind: Option<String>,
+}
+
+impl Phase8AiAuditSidecarClassification {
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "category".to_owned(),
+                phase8_json_string_literal(&self.category),
+            ),
+            (
+                "confidence".to_owned(),
+                phase8_json_string_literal(&self.confidence),
+            ),
+        ];
+        push_optional_string_pair(
+            &mut pairs,
+            "checker_error_kind",
+            self.checker_error_kind.as_deref(),
+        );
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Phase8AiAuditPolicyGatedFieldValue {
+    String(String),
+    Strings(Vec<String>),
+}
+
+impl Phase8AiAuditPolicyGatedFieldValue {
+    fn canonical_json(&self) -> String {
+        match self {
+            Self::String(value) => phase8_json_string_literal(value),
+            Self::Strings(values) => phase8_json_string_array(values),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditSidecar {
+    pub source: Phase8AiAuditSidecarSource,
+    pub input_policy: Phase8AiAuditSidecarInputPolicy,
+    pub ai: Phase8AiAuditSidecarAi,
+    pub status: Phase8AiAuditSidecarStatus,
+    pub classification: Option<Phase8AiAuditSidecarClassification>,
+    pub summary: String,
+    pub suggested_next_actions: Option<Vec<String>>,
+    policy_gated_fields: BTreeMap<String, Phase8AiAuditPolicyGatedFieldValue>,
+}
+
+impl Phase8AiAuditSidecar {
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            ("ai".to_owned(), self.ai.canonical_json()),
+            (
+                "input_policy".to_owned(),
+                self.input_policy.canonical_json(),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AI_AUDIT_SIDECAR_SCHEMA),
+            ),
+            ("source".to_owned(), self.source.canonical_json()),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+            (
+                "summary".to_owned(),
+                phase8_json_string_literal(&self.summary),
+            ),
+        ];
+        if let Some(classification) = &self.classification {
+            pairs.push(("classification".to_owned(), classification.canonical_json()));
+        }
+        if let Some(actions) = &self.suggested_next_actions {
+            pairs.push((
+                "suggested_next_actions".to_owned(),
+                phase8_json_string_array(actions),
+            ));
+        }
+        for (field, value) in &self.policy_gated_fields {
+            pairs.push((field.clone(), value.canonical_json()));
+        }
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AuditSidecarValidationMode {
+    SchemaOnly,
+    CrossArtifact,
+}
+
+impl Phase8AuditSidecarValidationMode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SchemaOnly => "schema_only",
+            Self::CrossArtifact => "cross_artifact",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AuditSidecarValidationStatus {
+    Valid,
+    Failed,
+}
+
+impl Phase8AuditSidecarValidationStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Valid => "valid",
+            Self::Failed => "failed",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AuditSidecarValidationReasonCode {
+    SidecarFileUnreadable,
+    SidecarJsonInvalid,
+    SidecarSchemaInvalid,
+    ForbiddenSidecarField,
+    ValidationReferenceMissing,
+    ValidationReferenceSchemaInvalid,
+    InputPolicyFileUnreadable,
+    InputPolicyJsonInvalid,
+    InputPolicySchemaInvalid,
+    InputPolicyHashMismatch,
+    InputPolicyFieldMismatch,
+    ResultStoreManifestHashMismatch,
+    ResultStoreManifestInvalid,
+    NormalizedStoreManifestHashMismatch,
+    NormalizedStoreManifestInvalid,
+    ReferencedFileHashMismatch,
+    ReferencedArtifactHashMismatch,
+    ReferencedArtifactValueMismatch,
+    SourceResultNotFound,
+    SourceNormalizedResultNotFound,
+    SourceHashMismatch,
+    SourceIdMismatch,
+    NormalizedResultMissingSource,
+    PromptHashMismatch,
+}
+
+impl Phase8AuditSidecarValidationReasonCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SidecarFileUnreadable => "sidecar_file_unreadable",
+            Self::SidecarJsonInvalid => "sidecar_json_invalid",
+            Self::SidecarSchemaInvalid => "sidecar_schema_invalid",
+            Self::ForbiddenSidecarField => "forbidden_sidecar_field",
+            Self::ValidationReferenceMissing => "validation_reference_missing",
+            Self::ValidationReferenceSchemaInvalid => "validation_reference_schema_invalid",
+            Self::InputPolicyFileUnreadable => "input_policy_file_unreadable",
+            Self::InputPolicyJsonInvalid => "input_policy_json_invalid",
+            Self::InputPolicySchemaInvalid => "input_policy_schema_invalid",
+            Self::InputPolicyHashMismatch => "input_policy_hash_mismatch",
+            Self::InputPolicyFieldMismatch => "input_policy_field_mismatch",
+            Self::ResultStoreManifestHashMismatch => "result_store_manifest_hash_mismatch",
+            Self::ResultStoreManifestInvalid => "result_store_manifest_invalid",
+            Self::NormalizedStoreManifestHashMismatch => "normalized_store_manifest_hash_mismatch",
+            Self::NormalizedStoreManifestInvalid => "normalized_store_manifest_invalid",
+            Self::ReferencedFileHashMismatch => "referenced_file_hash_mismatch",
+            Self::ReferencedArtifactHashMismatch => "referenced_artifact_hash_mismatch",
+            Self::ReferencedArtifactValueMismatch => "referenced_artifact_value_mismatch",
+            Self::SourceResultNotFound => "source_result_not_found",
+            Self::SourceNormalizedResultNotFound => "source_normalized_result_not_found",
+            Self::SourceHashMismatch => "source_hash_mismatch",
+            Self::SourceIdMismatch => "source_id_mismatch",
+            Self::NormalizedResultMissingSource => "normalized_result_missing_source",
+            Self::PromptHashMismatch => "prompt_hash_mismatch",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuditSidecarValidationError {
+    pub reason_code: Phase8AuditSidecarValidationReasonCode,
+    pub field: String,
+    pub expected_hash: Option<Box<Hash>>,
+    pub actual_hash: Option<Box<Hash>>,
+    pub expected_value: Option<Box<str>>,
+    pub actual_value: Option<Box<str>>,
+}
+
+impl Phase8AuditSidecarValidationError {
+    fn value(
+        reason_code: Phase8AuditSidecarValidationReasonCode,
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into().into_boxed_str()),
+            actual_value: Some(actual_value.into().into_boxed_str()),
+        }
+    }
+
+    fn actual_value(
+        reason_code: Phase8AuditSidecarValidationReasonCode,
+        field: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: None,
+            actual_value: Some(actual_value.into().into_boxed_str()),
+        }
+    }
+
+    fn expected_hash(
+        reason_code: Phase8AuditSidecarValidationReasonCode,
+        field: impl Into<String>,
+        expected_hash: Hash,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: Some(Box::new(expected_hash)),
+            actual_hash: None,
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    fn hash(
+        reason_code: Phase8AuditSidecarValidationReasonCode,
+        field: impl Into<String>,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: Some(Box::new(expected_hash)),
+            actual_hash: Some(Box::new(actual_hash)),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            ("field".to_owned(), phase8_json_string_literal(&self.field)),
+            (
+                "kind".to_owned(),
+                phase8_json_string_literal("audit_sidecar_validation_failure"),
+            ),
+            (
+                "reason_code".to_owned(),
+                phase8_json_string_literal(self.reason_code.as_str()),
+            ),
+        ];
+        push_optional_hash_pair(
+            &mut pairs,
+            "expected_hash",
+            self.expected_hash.as_deref().copied(),
+        );
+        push_optional_hash_pair(
+            &mut pairs,
+            "actual_hash",
+            self.actual_hash.as_deref().copied(),
+        );
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuditSidecarValidationResult {
+    pub mode: Phase8AuditSidecarValidationMode,
+    pub status: Phase8AuditSidecarValidationStatus,
+    pub sidecar_file_hash: Option<Hash>,
+    pub input_policy_hash: Option<Hash>,
+    pub source_kind: Option<Phase8AiAuditSidecarSourceKind>,
+    pub source_result_hash: Option<Hash>,
+    pub source_normalized_result_hash: Option<Hash>,
+    pub error: Option<Phase8AuditSidecarValidationError>,
+}
+
+impl Phase8AuditSidecarValidationResult {
+    fn valid(
+        mode: Phase8AuditSidecarValidationMode,
+        sidecar_file_hash: Hash,
+        input_policy_hash: Option<Hash>,
+        sidecar: Option<&Phase8AiAuditSidecar>,
+    ) -> Self {
+        Self {
+            mode,
+            status: Phase8AuditSidecarValidationStatus::Valid,
+            sidecar_file_hash: Some(sidecar_file_hash),
+            input_policy_hash,
+            source_kind: (mode == Phase8AuditSidecarValidationMode::CrossArtifact)
+                .then(|| sidecar.map(|sidecar| sidecar.source.kind))
+                .flatten(),
+            source_result_hash: (mode == Phase8AuditSidecarValidationMode::CrossArtifact)
+                .then(|| sidecar.and_then(|sidecar| sidecar.source.result_hash))
+                .flatten(),
+            source_normalized_result_hash: (mode
+                == Phase8AuditSidecarValidationMode::CrossArtifact)
+                .then(|| sidecar.and_then(|sidecar| sidecar.source.normalized_result_hash))
+                .flatten(),
+            error: None,
+        }
+    }
+
+    fn failed(
+        mode: Phase8AuditSidecarValidationMode,
+        sidecar_file_hash: Option<Hash>,
+        input_policy_hash: Option<Hash>,
+        sidecar: Option<&Phase8AiAuditSidecar>,
+        error: Phase8AuditSidecarValidationError,
+    ) -> Self {
+        Self {
+            mode,
+            status: Phase8AuditSidecarValidationStatus::Failed,
+            sidecar_file_hash,
+            input_policy_hash,
+            source_kind: (mode == Phase8AuditSidecarValidationMode::CrossArtifact)
+                .then(|| sidecar.map(|sidecar| sidecar.source.kind))
+                .flatten(),
+            source_result_hash: (mode == Phase8AuditSidecarValidationMode::CrossArtifact)
+                .then(|| sidecar.and_then(|sidecar| sidecar.source.result_hash))
+                .flatten(),
+            source_normalized_result_hash: (mode
+                == Phase8AuditSidecarValidationMode::CrossArtifact)
+                .then(|| sidecar.and_then(|sidecar| sidecar.source.normalized_result_hash))
+                .flatten(),
+            error: Some(error),
+        }
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "mode".to_owned(),
+                phase8_json_string_literal(self.mode.as_str()),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+        ];
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        push_optional_hash_pair(&mut pairs, "sidecar_file_hash", self.sidecar_file_hash);
+        push_optional_hash_pair(&mut pairs, "input_policy_hash", self.input_policy_hash);
+        if let Some(source_kind) = self.source_kind {
+            pairs.push((
+                "source_kind".to_owned(),
+                phase8_json_string_literal(source_kind.as_str()),
+            ));
+        }
+        push_optional_hash_pair(&mut pairs, "source_result_hash", self.source_result_hash);
+        push_optional_hash_pair(
+            &mut pairs,
+            "source_normalized_result_hash",
+            self.source_normalized_result_hash,
+        );
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiAuditPromptInput {
+    pub agent: String,
+    pub model: String,
+    pub source_kind: Phase8AiAuditSidecarSourceKind,
+    pub source_hash: Hash,
+    pub source_run_artifact_hash: Option<Hash>,
+    pub source_membership_hash: Option<Hash>,
+    pub input_policy: Phase8AiAuditSidecarInputPolicy,
+    pub fields: Vec<(String, String)>,
+}
+
+impl Phase8AiAuditPromptInput {
+    pub fn prompt_hash(&self) -> Hash {
+        phase8_sha256(self.canonical_json().as_bytes())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let fields = canonical_json_object_from_pairs(self.fields.clone());
+        let mut pairs = vec![
+            ("agent".to_owned(), phase8_json_string_literal(&self.agent)),
+            ("fields".to_owned(), fields),
+            (
+                "input_policy".to_owned(),
+                self.input_policy.canonical_json(),
+            ),
+            ("model".to_owned(), phase8_json_string_literal(&self.model)),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AI_AUDIT_PROMPT_INPUT_SCHEMA),
+            ),
+            (
+                "source_hash".to_owned(),
+                phase8_hash_json_literal(&self.source_hash),
+            ),
+            (
+                "source_kind".to_owned(),
+                phase8_json_string_literal(self.source_kind.as_str()),
+            ),
+        ];
+        push_optional_hash_pair(
+            &mut pairs,
+            "source_run_artifact_hash",
+            self.source_run_artifact_hash,
+        );
+        push_optional_hash_pair(
+            &mut pairs,
+            "source_membership_hash",
+            self.source_membership_hash,
+        );
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase8NormalizedComparison {
     pub status: Phase8NormalizedComparisonStatus,
@@ -4064,6 +4688,260 @@ pub fn phase8_compare_normalized_result(
     }
 }
 
+pub fn parse_phase8_ai_audit_input_policy(
+    source: &str,
+) -> Result<Phase8AiAuditInputPolicy, Phase8AuditSidecarValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8AuditSidecarValidationError::actual_value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicyJsonInvalid,
+            "input_policy.path",
+            "invalid_json",
+        )
+    })?;
+    phase8_parse_ai_audit_input_policy_value(document.root())
+}
+
+pub fn phase8_ai_audit_input_policy_hash(
+    source: &str,
+) -> Result<Hash, Phase8AuditSidecarValidationError> {
+    Ok(parse_phase8_ai_audit_input_policy(source)?.input_policy_hash())
+}
+
+pub fn parse_phase8_ai_audit_sidecar(
+    source: &str,
+) -> Result<Phase8AiAuditSidecar, Phase8AuditSidecarValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8AuditSidecarValidationError::actual_value(
+            Phase8AuditSidecarValidationReasonCode::SidecarJsonInvalid,
+            "sidecar.path",
+            "invalid_json",
+        )
+    })?;
+    phase8_parse_ai_audit_sidecar_value(document.root())
+}
+
+pub fn phase8_validate_ai_audit_sidecar_schema_only(
+    sidecar_source: &str,
+) -> Phase8AuditSidecarValidationResult {
+    let sidecar_file_hash = phase8_file_hash(sidecar_source.as_bytes());
+    let mode = Phase8AuditSidecarValidationMode::SchemaOnly;
+    let document = match JsonDocument::parse(sidecar_source) {
+        Ok(document) => document,
+        Err(_) => {
+            return Phase8AuditSidecarValidationResult::failed(
+                mode,
+                Some(sidecar_file_hash),
+                None,
+                None,
+                Phase8AuditSidecarValidationError::actual_value(
+                    Phase8AuditSidecarValidationReasonCode::SidecarJsonInvalid,
+                    "sidecar.path",
+                    "invalid_json",
+                ),
+            )
+        }
+    };
+    match phase8_parse_ai_audit_sidecar_value(document.root()) {
+        Ok(_) => Phase8AuditSidecarValidationResult::valid(mode, sidecar_file_hash, None, None),
+        Err(error) => Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            None,
+            None,
+            error,
+        ),
+    }
+}
+
+pub fn phase8_validate_ai_audit_sidecar_cross_artifact(
+    sidecar_source: &str,
+    input_policy_source: &str,
+    input_policy_reference_hash: Hash,
+    machine_results: &[Phase8MachineCheckResult],
+    normalized_results: &[Phase8NormalizedCheckResult],
+) -> Phase8AuditSidecarValidationResult {
+    let sidecar_file_hash = phase8_file_hash(sidecar_source.as_bytes());
+    let mode = Phase8AuditSidecarValidationMode::CrossArtifact;
+    let document = match JsonDocument::parse(sidecar_source) {
+        Ok(document) => document,
+        Err(_) => {
+            return Phase8AuditSidecarValidationResult::failed(
+                mode,
+                Some(sidecar_file_hash),
+                None,
+                None,
+                Phase8AuditSidecarValidationError::actual_value(
+                    Phase8AuditSidecarValidationReasonCode::SidecarJsonInvalid,
+                    "sidecar.path",
+                    "invalid_json",
+                ),
+            )
+        }
+    };
+    let sidecar = match phase8_parse_ai_audit_sidecar_value(document.root()) {
+        Ok(sidecar) => sidecar,
+        Err(error) => {
+            return Phase8AuditSidecarValidationResult::failed(
+                mode,
+                Some(sidecar_file_hash),
+                None,
+                None,
+                error,
+            )
+        }
+    };
+
+    let policy_document = match JsonDocument::parse(input_policy_source) {
+        Ok(document) => document,
+        Err(_) => {
+            return Phase8AuditSidecarValidationResult::failed(
+                mode,
+                Some(sidecar_file_hash),
+                Some(input_policy_reference_hash),
+                Some(&sidecar),
+                Phase8AuditSidecarValidationError::value(
+                    Phase8AuditSidecarValidationReasonCode::InputPolicyJsonInvalid,
+                    "input_policy.path",
+                    "valid_json",
+                    "invalid_json",
+                ),
+            )
+        }
+    };
+    let input_policy = match phase8_parse_ai_audit_input_policy_value(policy_document.root()) {
+        Ok(policy) => policy,
+        Err(error) => {
+            return Phase8AuditSidecarValidationResult::failed(
+                mode,
+                Some(sidecar_file_hash),
+                Some(input_policy_reference_hash),
+                Some(&sidecar),
+                error,
+            )
+        }
+    };
+    let input_policy_hash = input_policy.input_policy_hash();
+    if sidecar.input_policy.hash != input_policy_reference_hash {
+        return Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            Some(input_policy_reference_hash),
+            Some(&sidecar),
+            Phase8AuditSidecarValidationError::hash(
+                Phase8AuditSidecarValidationReasonCode::InputPolicyHashMismatch,
+                "input_policy.hash",
+                input_policy_reference_hash,
+                sidecar.input_policy.hash,
+            ),
+        );
+    }
+    if input_policy_hash != input_policy_reference_hash {
+        return Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            Some(input_policy_reference_hash),
+            Some(&sidecar),
+            Phase8AuditSidecarValidationError::hash(
+                Phase8AuditSidecarValidationReasonCode::InputPolicyHashMismatch,
+                "input_policy.hash",
+                input_policy_reference_hash,
+                input_policy_hash,
+            ),
+        );
+    }
+
+    if let Some(error) = phase8_ai_audit_copied_policy_mismatch(&sidecar, &input_policy) {
+        return Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            Some(input_policy_reference_hash),
+            Some(&sidecar),
+            error,
+        );
+    }
+    if let Some(error) = phase8_ai_audit_policy_gated_field_error(&sidecar, &input_policy) {
+        return Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            Some(input_policy_reference_hash),
+            Some(&sidecar),
+            error,
+        );
+    }
+
+    let source =
+        match phase8_resolve_ai_audit_sidecar_source(&sidecar, machine_results, normalized_results)
+        {
+            Ok(source) => source,
+            Err(error) => {
+                return Phase8AuditSidecarValidationResult::failed(
+                    mode,
+                    Some(sidecar_file_hash),
+                    Some(input_policy_reference_hash),
+                    Some(&sidecar),
+                    error,
+                )
+            }
+        };
+    if let Some(error) = phase8_validate_ai_audit_source_dependent_fields(&sidecar, &source) {
+        return Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            Some(input_policy_reference_hash),
+            Some(&sidecar),
+            error,
+        );
+    }
+    let prompt_input = phase8_ai_audit_prompt_input(&sidecar, &input_policy, &source);
+    let expected_prompt_hash = prompt_input.prompt_hash();
+    if expected_prompt_hash != sidecar.ai.prompt_hash {
+        return Phase8AuditSidecarValidationResult::failed(
+            mode,
+            Some(sidecar_file_hash),
+            Some(input_policy_reference_hash),
+            Some(&sidecar),
+            Phase8AuditSidecarValidationError::hash(
+                Phase8AuditSidecarValidationReasonCode::PromptHashMismatch,
+                "ai.prompt_hash",
+                expected_prompt_hash,
+                sidecar.ai.prompt_hash,
+            ),
+        );
+    }
+    Phase8AuditSidecarValidationResult::valid(
+        mode,
+        sidecar_file_hash,
+        Some(input_policy_reference_hash),
+        Some(&sidecar),
+    )
+}
+
+pub fn phase8_ai_audit_prompt_input_for_sidecar(
+    sidecar: &Phase8AiAuditSidecar,
+    input_policy: &Phase8AiAuditInputPolicy,
+    machine_result: Option<&Phase8MachineCheckResult>,
+    normalized_result: Option<&Phase8NormalizedCheckResult>,
+) -> Option<Phase8AiAuditPromptInput> {
+    let source = match sidecar.source.kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => {
+            Phase8ResolvedAiAuditSource::MachineResult {
+                machine_result: machine_result?,
+                normalized_result: if sidecar.source.normalized_result_hash.is_some() {
+                    Some(normalized_result?)
+                } else {
+                    normalized_result
+                },
+            }
+        }
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => {
+            Phase8ResolvedAiAuditSource::NormalizedComparison {
+                normalized_result: normalized_result?,
+            }
+        }
+    };
+    Some(phase8_ai_audit_prompt_input(sidecar, input_policy, &source))
+}
+
 pub fn parse_phase8_normalized_result_store_manifest(
     source: &str,
 ) -> Result<Phase8NormalizedResultStoreManifest, Phase8RequestValidationError> {
@@ -5255,6 +6133,1780 @@ fn phase8_push_hash_disagreement(
             actual_hash,
             actual_value: None,
         });
+    }
+}
+
+enum Phase8ResolvedAiAuditSource<'a> {
+    MachineResult {
+        machine_result: &'a Phase8MachineCheckResult,
+        normalized_result: Option<&'a Phase8NormalizedCheckResult>,
+    },
+    NormalizedComparison {
+        normalized_result: &'a Phase8NormalizedCheckResult,
+    },
+}
+
+fn phase8_parse_ai_audit_input_policy_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AiAuditInputPolicy, Phase8AuditSidecarValidationError> {
+    let members = phase8_ai_object_members(
+        value,
+        "input_policy",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    phase8_ai_required_fixed_string(
+        members,
+        "schema",
+        "input_policy.schema",
+        PHASE8_AI_AUDIT_INPUT_POLICY_SCHEMA,
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    let id = phase8_ai_required_string(
+        members,
+        "id",
+        "input_policy.id",
+        "phase8_policy_id",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    if id.is_empty() {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+            "input_policy.id",
+            "phase8_policy_id",
+            "empty_string",
+        ));
+    }
+    if !phase8_valid_runner_policy_id(&id) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+            "input_policy.id",
+            "phase8_policy_id",
+            "invalid_name_format",
+        ));
+    }
+    let version = phase8_ai_required_positive_i64(
+        members,
+        "version",
+        "input_policy.version",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    let included_fields = phase8_ai_required_included_fields(
+        members,
+        "included_fields",
+        "input_policy.included_fields",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    let redaction = phase8_ai_required_string(
+        members,
+        "redaction",
+        "input_policy.redaction",
+        "AiAuditInputPolicy.redaction",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    if !phase8_ai_audit_redaction_allowed(&redaction) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+            "input_policy.redaction",
+            "AiAuditInputPolicy.redaction",
+            "invalid_enum",
+        ));
+    }
+    let allow_source_text = phase8_ai_required_bool(
+        members,
+        "allow_source_text",
+        "input_policy.allow_source_text",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    let allow_tactic_trace = phase8_ai_required_bool(
+        members,
+        "allow_tactic_trace",
+        "input_policy.allow_tactic_trace",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    phase8_ai_reject_unknown_fields(
+        members,
+        &[
+            "schema",
+            "id",
+            "version",
+            "included_fields",
+            "redaction",
+            "allow_source_text",
+            "allow_tactic_trace",
+        ],
+        "input_policy",
+        Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid,
+    )?;
+    Ok(Phase8AiAuditInputPolicy {
+        id,
+        version,
+        included_fields,
+        redaction,
+        allow_source_text,
+        allow_tactic_trace,
+    })
+}
+
+fn phase8_parse_ai_audit_sidecar_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AiAuditSidecar, Phase8AuditSidecarValidationError> {
+    let members = phase8_ai_object_members(
+        value,
+        "$",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    phase8_ai_required_fixed_string(
+        members,
+        "schema",
+        "schema",
+        PHASE8_AI_AUDIT_SIDECAR_SCHEMA,
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if let Some(field) = phase8_find_static_forbidden_sidecar_field(value, "$") {
+        return Err(Phase8AuditSidecarValidationError::actual_value(
+            Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField,
+            field,
+            "present",
+        ));
+    }
+
+    let source_value = phase8_ai_required_value(
+        members,
+        "source",
+        "source",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let source = phase8_parse_ai_audit_sidecar_source(source_value)?;
+    let input_policy_value = phase8_ai_required_value(
+        members,
+        "input_policy",
+        "input_policy",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let input_policy = phase8_parse_ai_audit_sidecar_input_policy(input_policy_value)?;
+    if source.kind == Phase8AiAuditSidecarSourceKind::MachineResult
+        && source.normalized_result_hash.is_none()
+        && input_policy.included_fields.iter().any(|field| {
+            matches!(
+                field.as_str(),
+                "input_file_hash" | "expected_certificate_hash"
+            )
+        })
+    {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "source.normalized_result_hash",
+            "required_for_input_field",
+            "missing",
+        ));
+    }
+    let ai_value = phase8_ai_required_value(
+        members,
+        "ai",
+        "ai",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let ai = phase8_parse_ai_audit_sidecar_ai(ai_value)?;
+    let status = phase8_parse_ai_audit_sidecar_status(
+        &phase8_ai_required_string(
+            members,
+            "status",
+            "status",
+            "AiAuditSidecar.status",
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+        )?,
+        "status",
+    )?;
+
+    let classification_value = phase8_ai_optional_value(
+        members,
+        "classification",
+        "classification",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if source.kind == Phase8AiAuditSidecarSourceKind::NormalizedComparison
+        && classification_value
+            .and_then(JsonValue::object_members)
+            .is_some_and(|members| {
+                members
+                    .iter()
+                    .any(|member| member.key() == "checker_error_kind")
+            })
+    {
+        return Err(Phase8AuditSidecarValidationError::actual_value(
+            Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField,
+            "classification.checker_error_kind",
+            "present",
+        ));
+    }
+    let classification = match classification_value {
+        Some(value) => Some(phase8_parse_ai_audit_sidecar_classification(value)?),
+        None if status.requires_classification() => {
+            return Err(Phase8AuditSidecarValidationError::value(
+                Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                "classification",
+                format!("required_for_status:{}", status.as_str()),
+                "missing",
+            ))
+        }
+        None => None,
+    };
+
+    let summary = phase8_ai_required_text_string(members, "summary", "summary")?;
+    let suggested_next_actions = phase8_parse_ai_audit_suggested_next_actions(members, status)?;
+    let policy_gated_fields = phase8_parse_ai_audit_policy_gated_fields(members)?;
+
+    let mut allowed = vec![
+        "schema",
+        "source",
+        "input_policy",
+        "ai",
+        "status",
+        "classification",
+        "summary",
+        "suggested_next_actions",
+    ];
+    allowed.extend(PHASE8_AI_AUDIT_POLICY_GATED_FIELDS.iter().copied());
+    phase8_ai_reject_unknown_fields(
+        members,
+        &allowed,
+        "$",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+
+    Ok(Phase8AiAuditSidecar {
+        source,
+        input_policy,
+        ai,
+        status,
+        classification,
+        summary,
+        suggested_next_actions,
+        policy_gated_fields,
+    })
+}
+
+fn phase8_parse_ai_audit_sidecar_source(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AiAuditSidecarSource, Phase8AuditSidecarValidationError> {
+    let members = phase8_ai_object_members(
+        value,
+        "source",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let kind_raw = phase8_ai_required_string(
+        members,
+        "kind",
+        "source.kind",
+        "AiAuditSidecar.source.kind",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let kind = match kind_raw.as_str() {
+        "machine_result" => Phase8AiAuditSidecarSourceKind::MachineResult,
+        "normalized_comparison" => Phase8AiAuditSidecarSourceKind::NormalizedComparison,
+        _ => {
+            return Err(Phase8AuditSidecarValidationError::value(
+                Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                "source.kind",
+                "AiAuditSidecar.source.kind",
+                "invalid_enum",
+            ))
+        }
+    };
+    let result_hash = match kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => Some(phase8_ai_required_hash(
+            members,
+            "result_hash",
+            "source.result_hash",
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+        )?),
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => None,
+    };
+    let request_hash = match kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => Some(phase8_ai_required_hash(
+            members,
+            "request_hash",
+            "source.request_hash",
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+        )?),
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => None,
+    };
+    let run_artifact_hash = match kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => Some(phase8_ai_required_hash(
+            members,
+            "run_artifact_hash",
+            "source.run_artifact_hash",
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+        )?),
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => None,
+    };
+    let normalized_result_hash = match kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => phase8_ai_optional_hash(
+            members,
+            "normalized_result_hash",
+            "source.normalized_result_hash",
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+        )?,
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => Some(phase8_ai_required_hash(
+            members,
+            "normalized_result_hash",
+            "source.normalized_result_hash",
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+        )?),
+    };
+    let result_id = match kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => {
+            phase8_ai_optional_visible_ascii(members, "result_id", "source.result_id", "result_id")?
+        }
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => None,
+    };
+    let normalized_result_id = phase8_ai_optional_visible_ascii(
+        members,
+        "normalized_result_id",
+        "source.normalized_result_id",
+        "normalized_result_id",
+    )?;
+
+    if kind == Phase8AiAuditSidecarSourceKind::NormalizedComparison {
+        for field in [
+            "result_hash",
+            "request_hash",
+            "run_artifact_hash",
+            "result_id",
+        ] {
+            if members.iter().any(|member| member.key() == field) {
+                return Err(Phase8AuditSidecarValidationError::actual_value(
+                    Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField,
+                    format!("source.{field}"),
+                    "present",
+                ));
+            }
+        }
+    }
+    if kind == Phase8AiAuditSidecarSourceKind::MachineResult
+        && normalized_result_id.is_some()
+        && normalized_result_hash.is_none()
+    {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "source.normalized_result_hash",
+            "required_with_source.normalized_result_id",
+            "missing",
+        ));
+    }
+
+    phase8_ai_reject_unknown_fields(
+        members,
+        &[
+            "kind",
+            "result_hash",
+            "request_hash",
+            "run_artifact_hash",
+            "normalized_result_hash",
+            "result_id",
+            "normalized_result_id",
+        ],
+        "source",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+
+    Ok(Phase8AiAuditSidecarSource {
+        kind,
+        result_hash,
+        request_hash,
+        run_artifact_hash,
+        normalized_result_hash,
+        result_id,
+        normalized_result_id,
+    })
+}
+
+fn phase8_parse_ai_audit_sidecar_input_policy(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AiAuditSidecarInputPolicy, Phase8AuditSidecarValidationError> {
+    let members = phase8_ai_object_members(
+        value,
+        "input_policy",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let id = phase8_ai_required_string(
+        members,
+        "id",
+        "input_policy.id",
+        "phase8_policy_id",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if id.is_empty() || !phase8_valid_runner_policy_id(&id) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "input_policy.id",
+            "phase8_policy_id",
+            if id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_name_format"
+            },
+        ));
+    }
+    let version = phase8_ai_required_positive_i64(
+        members,
+        "version",
+        "input_policy.version",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let hash = phase8_ai_required_hash(
+        members,
+        "hash",
+        "input_policy.hash",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let included_fields = phase8_ai_required_included_fields(
+        members,
+        "included_fields",
+        "input_policy.included_fields",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let redaction = phase8_ai_required_string(
+        members,
+        "redaction",
+        "input_policy.redaction",
+        "AiAuditInputPolicy.redaction",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if !phase8_ai_audit_redaction_allowed(&redaction) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "input_policy.redaction",
+            "AiAuditInputPolicy.redaction",
+            "invalid_enum",
+        ));
+    }
+    phase8_ai_reject_unknown_fields(
+        members,
+        &["id", "version", "hash", "included_fields", "redaction"],
+        "input_policy",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    Ok(Phase8AiAuditSidecarInputPolicy {
+        id,
+        version,
+        hash,
+        included_fields,
+        redaction,
+    })
+}
+
+fn phase8_parse_ai_audit_sidecar_ai(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AiAuditSidecarAi, Phase8AuditSidecarValidationError> {
+    let members = phase8_ai_object_members(
+        value,
+        "ai",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let agent = phase8_ai_required_visible_ascii(
+        members,
+        "agent",
+        "ai.agent",
+        "non_empty_visible_ascii_string",
+    )?;
+    let model = phase8_ai_required_visible_ascii(
+        members,
+        "model",
+        "ai.model",
+        "non_empty_visible_ascii_string",
+    )?;
+    let prompt_hash = phase8_ai_required_hash(
+        members,
+        "prompt_hash",
+        "ai.prompt_hash",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    phase8_ai_reject_unknown_fields(
+        members,
+        &["agent", "model", "prompt_hash"],
+        "ai",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    Ok(Phase8AiAuditSidecarAi {
+        agent,
+        model,
+        prompt_hash,
+    })
+}
+
+fn phase8_parse_ai_audit_sidecar_classification(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AiAuditSidecarClassification, Phase8AuditSidecarValidationError> {
+    let members = phase8_ai_object_members(
+        value,
+        "classification",
+        "object",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    let category = phase8_ai_required_string(
+        members,
+        "category",
+        "classification.category",
+        "AiAuditSidecar.classification.category",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if !phase8_ai_audit_classification_category_allowed(&category) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "classification.category",
+            "AiAuditSidecar.classification.category",
+            "invalid_enum",
+        ));
+    }
+    let confidence = phase8_ai_required_string(
+        members,
+        "confidence",
+        "classification.confidence",
+        "AiAuditSidecar.classification.confidence",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if !matches!(confidence.as_str(), "low" | "medium" | "high" | "unknown") {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "classification.confidence",
+            "AiAuditSidecar.classification.confidence",
+            "invalid_enum",
+        ));
+    }
+    let checker_error_kind = phase8_ai_optional_string(
+        members,
+        "checker_error_kind",
+        "classification.checker_error_kind",
+        "MachineCheckResult.error.kind",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    if let Some(kind) = checker_error_kind.as_deref() {
+        if !phase8_raw_checker_error_kind_allowed(kind)
+            && !matches!(
+                kind,
+                "policy_failure" | "timeout" | "resource_exhausted" | "checker_internal_error"
+            )
+        {
+            return Err(Phase8AuditSidecarValidationError::value(
+                Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                "classification.checker_error_kind",
+                "MachineCheckResult.error.kind",
+                "invalid_enum",
+            ));
+        }
+    }
+    phase8_ai_reject_unknown_fields(
+        members,
+        &["category", "confidence", "checker_error_kind"],
+        "classification",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    Ok(Phase8AiAuditSidecarClassification {
+        category,
+        confidence,
+        checker_error_kind,
+    })
+}
+
+fn phase8_parse_ai_audit_suggested_next_actions(
+    members: &[JsonMember<'_>],
+    status: Phase8AiAuditSidecarStatus,
+) -> Result<Option<Vec<String>>, Phase8AuditSidecarValidationError> {
+    let Some(value) = phase8_ai_optional_value(
+        members,
+        "suggested_next_actions",
+        "suggested_next_actions",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?
+    else {
+        if status.requires_next_actions() {
+            return Err(Phase8AuditSidecarValidationError::value(
+                Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                "suggested_next_actions",
+                format!("non_empty_array_for_status:{}", status.as_str()),
+                "missing",
+            ));
+        }
+        return Ok(None);
+    };
+    let Some(elements) = value.array_elements() else {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "suggested_next_actions",
+            if status.requires_next_actions() {
+                format!("non_empty_array_for_status:{}", status.as_str())
+            } else {
+                "array".to_owned()
+            },
+            if value.kind() == JsonValueKind::Null {
+                "null_not_allowed"
+            } else {
+                "wrong_type"
+            },
+        ));
+    };
+    if elements.is_empty() && status.requires_next_actions() {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            "suggested_next_actions",
+            format!("non_empty_array_for_status:{}", status.as_str()),
+            "empty_array",
+        ));
+    }
+    let mut actions = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let path = format!("suggested_next_actions[{index}]");
+        let Some(action) = element.string_value() else {
+            return Err(Phase8AuditSidecarValidationError::value(
+                Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                path,
+                "non_empty_text_string",
+                if element.kind() == JsonValueKind::Null {
+                    "null_not_allowed"
+                } else {
+                    "wrong_type"
+                },
+            ));
+        };
+        phase8_validate_ai_text(action, &path)?;
+        actions.push(action.to_owned());
+    }
+    Ok(Some(actions))
+}
+
+fn phase8_parse_ai_audit_policy_gated_fields(
+    members: &[JsonMember<'_>],
+) -> Result<BTreeMap<String, Phase8AiAuditPolicyGatedFieldValue>, Phase8AuditSidecarValidationError>
+{
+    let mut fields = BTreeMap::new();
+    for member in members {
+        if !phase8_ai_policy_gated_field_name(member.key()) {
+            continue;
+        }
+        let value = member.value();
+        if let Some(text) = value.string_value() {
+            fields.insert(
+                member.key().to_owned(),
+                Phase8AiAuditPolicyGatedFieldValue::String(text.to_owned()),
+            );
+            continue;
+        }
+        let Some(elements) = value.array_elements() else {
+            return Err(Phase8AuditSidecarValidationError::value(
+                Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                member.key(),
+                "string_or_string_array",
+                if value.kind() == JsonValueKind::Null {
+                    "null_not_allowed"
+                } else {
+                    "wrong_type"
+                },
+            ));
+        };
+        let mut strings = Vec::new();
+        for (index, element) in elements.iter().enumerate() {
+            let Some(text) = element.string_value() else {
+                return Err(Phase8AuditSidecarValidationError::value(
+                    Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+                    format!("{}[{index}]", member.key()),
+                    "string",
+                    if element.kind() == JsonValueKind::Null {
+                        "null_not_allowed"
+                    } else {
+                        "wrong_type"
+                    },
+                ));
+            };
+            strings.push(text.to_owned());
+        }
+        fields.insert(
+            member.key().to_owned(),
+            Phase8AiAuditPolicyGatedFieldValue::Strings(strings),
+        );
+    }
+    Ok(fields)
+}
+
+fn phase8_ai_audit_copied_policy_mismatch(
+    sidecar: &Phase8AiAuditSidecar,
+    policy: &Phase8AiAuditInputPolicy,
+) -> Option<Phase8AuditSidecarValidationError> {
+    if sidecar.input_policy.id != policy.id {
+        return Some(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicyFieldMismatch,
+            "input_policy.id",
+            &policy.id,
+            &sidecar.input_policy.id,
+        ));
+    }
+    if sidecar.input_policy.version != policy.version {
+        return Some(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicyFieldMismatch,
+            "input_policy.version",
+            policy.version.to_string(),
+            sidecar.input_policy.version.to_string(),
+        ));
+    }
+    if sidecar.input_policy.included_fields != policy.included_fields {
+        return Some(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicyFieldMismatch,
+            "input_policy.included_fields",
+            phase8_json_string_array(&policy.included_fields),
+            phase8_json_string_array(&sidecar.input_policy.included_fields),
+        ));
+    }
+    if sidecar.input_policy.redaction != policy.redaction {
+        return Some(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::InputPolicyFieldMismatch,
+            "input_policy.redaction",
+            &policy.redaction,
+            &sidecar.input_policy.redaction,
+        ));
+    }
+    None
+}
+
+fn phase8_ai_audit_policy_gated_field_error(
+    sidecar: &Phase8AiAuditSidecar,
+    policy: &Phase8AiAuditInputPolicy,
+) -> Option<Phase8AuditSidecarValidationError> {
+    for field in [
+        "source_text",
+        "source_excerpt",
+        "theorem_statement",
+        "proof_script",
+    ] {
+        if !policy.allow_source_text && sidecar.policy_gated_fields.contains_key(field) {
+            return Some(Phase8AuditSidecarValidationError::actual_value(
+                Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField,
+                field,
+                "present",
+            ));
+        }
+    }
+    for field in [
+        "tactic_trace",
+        "tactic_script",
+        "elaboration_trace",
+        "ai_search_trace",
+    ] {
+        if !policy.allow_tactic_trace && sidecar.policy_gated_fields.contains_key(field) {
+            return Some(Phase8AuditSidecarValidationError::actual_value(
+                Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField,
+                field,
+                "present",
+            ));
+        }
+    }
+    None
+}
+
+fn phase8_resolve_ai_audit_sidecar_source<'a>(
+    sidecar: &Phase8AiAuditSidecar,
+    machine_results: &'a [Phase8MachineCheckResult],
+    normalized_results: &'a [Phase8NormalizedCheckResult],
+) -> Result<Phase8ResolvedAiAuditSource<'a>, Phase8AuditSidecarValidationError> {
+    match sidecar.source.kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => {
+            let run_artifact_hash = sidecar
+                .source
+                .run_artifact_hash
+                .expect("machine result source run hash is schema-valid");
+            let Some(machine_result) = machine_results
+                .iter()
+                .find(|result| result.run_artifact_hash() == run_artifact_hash)
+            else {
+                return Err(Phase8AuditSidecarValidationError::expected_hash(
+                    Phase8AuditSidecarValidationReasonCode::SourceResultNotFound,
+                    "source.run_artifact_hash",
+                    run_artifact_hash,
+                ));
+            };
+            let source_result_hash = sidecar
+                .source
+                .result_hash
+                .expect("machine result source result hash is schema-valid");
+            if source_result_hash != machine_result.result_hash() {
+                return Err(Phase8AuditSidecarValidationError::hash(
+                    Phase8AuditSidecarValidationReasonCode::SourceHashMismatch,
+                    "source.result_hash",
+                    source_result_hash,
+                    machine_result.result_hash(),
+                ));
+            }
+            let source_request_hash = sidecar
+                .source
+                .request_hash
+                .expect("machine result source request hash is schema-valid");
+            if source_request_hash != machine_result.request_hash {
+                return Err(Phase8AuditSidecarValidationError::hash(
+                    Phase8AuditSidecarValidationReasonCode::SourceHashMismatch,
+                    "source.request_hash",
+                    source_request_hash,
+                    machine_result.request_hash,
+                ));
+            }
+            if let Some(result_id) = &sidecar.source.result_id {
+                if result_id != &machine_result.result_id {
+                    return Err(Phase8AuditSidecarValidationError::value(
+                        Phase8AuditSidecarValidationReasonCode::SourceIdMismatch,
+                        "source.result_id",
+                        result_id,
+                        &machine_result.result_id,
+                    ));
+                }
+            }
+            let normalized_result =
+                if let Some(normalized_hash) = sidecar.source.normalized_result_hash {
+                    let Some(normalized) = normalized_results
+                        .iter()
+                        .find(|result| result.normalized_result_hash() == normalized_hash)
+                    else {
+                        return Err(Phase8AuditSidecarValidationError::expected_hash(
+                            Phase8AuditSidecarValidationReasonCode::SourceNormalizedResultNotFound,
+                            "source.normalized_result_hash",
+                            normalized_hash,
+                        ));
+                    };
+                    if !normalized
+                        .results
+                        .iter()
+                        .any(|entry| entry.result_hash == source_result_hash)
+                    {
+                        return Err(Phase8AuditSidecarValidationError::expected_hash(
+                            Phase8AuditSidecarValidationReasonCode::NormalizedResultMissingSource,
+                            "normalized_result.results[].result_hash",
+                            source_result_hash,
+                        ));
+                    }
+                    if let Some(normalized_id) = &sidecar.source.normalized_result_id {
+                        if normalized_id != &normalized.normalized_result_id {
+                            return Err(Phase8AuditSidecarValidationError::value(
+                                Phase8AuditSidecarValidationReasonCode::SourceIdMismatch,
+                                "source.normalized_result_id",
+                                normalized_id,
+                                &normalized.normalized_result_id,
+                            ));
+                        }
+                    }
+                    Some(normalized)
+                } else {
+                    None
+                };
+            Ok(Phase8ResolvedAiAuditSource::MachineResult {
+                machine_result,
+                normalized_result,
+            })
+        }
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => {
+            let normalized_hash = sidecar
+                .source
+                .normalized_result_hash
+                .expect("normalized comparison source hash is schema-valid");
+            let Some(normalized_result) = normalized_results
+                .iter()
+                .find(|result| result.normalized_result_hash() == normalized_hash)
+            else {
+                return Err(Phase8AuditSidecarValidationError::expected_hash(
+                    Phase8AuditSidecarValidationReasonCode::SourceNormalizedResultNotFound,
+                    "source.normalized_result_hash",
+                    normalized_hash,
+                ));
+            };
+            if let Some(normalized_id) = &sidecar.source.normalized_result_id {
+                if normalized_id != &normalized_result.normalized_result_id {
+                    return Err(Phase8AuditSidecarValidationError::value(
+                        Phase8AuditSidecarValidationReasonCode::SourceIdMismatch,
+                        "source.normalized_result_id",
+                        normalized_id,
+                        &normalized_result.normalized_result_id,
+                    ));
+                }
+            }
+            Ok(Phase8ResolvedAiAuditSource::NormalizedComparison { normalized_result })
+        }
+    }
+}
+
+fn phase8_validate_ai_audit_source_dependent_fields(
+    sidecar: &Phase8AiAuditSidecar,
+    source: &Phase8ResolvedAiAuditSource<'_>,
+) -> Option<Phase8AuditSidecarValidationError> {
+    match source {
+        Phase8ResolvedAiAuditSource::MachineResult { machine_result, .. } => {
+            if machine_result.status == Phase8MachineCheckStatus::Failed {
+                if let Some(classification) = &sidecar.classification {
+                    let expected = machine_result
+                        .error
+                        .as_ref()
+                        .map(|error| error.kind.as_str())
+                        .unwrap_or("missing");
+                    match classification.checker_error_kind.as_deref() {
+                        Some(actual) if actual == expected => {}
+                        Some(actual) => return Some(Phase8AuditSidecarValidationError::value(
+                            Phase8AuditSidecarValidationReasonCode::ReferencedArtifactValueMismatch,
+                            "classification.checker_error_kind",
+                            expected,
+                            actual,
+                        )),
+                        None => return Some(Phase8AuditSidecarValidationError::value(
+                            Phase8AuditSidecarValidationReasonCode::ReferencedArtifactValueMismatch,
+                            "classification.checker_error_kind",
+                            expected,
+                            "missing",
+                        )),
+                    }
+                }
+            } else if let Some(actual) = sidecar
+                .classification
+                .as_ref()
+                .and_then(|classification| classification.checker_error_kind.as_ref())
+            {
+                return Some(Phase8AuditSidecarValidationError::value(
+                    Phase8AuditSidecarValidationReasonCode::ReferencedArtifactValueMismatch,
+                    "classification.checker_error_kind",
+                    "absent",
+                    actual,
+                ));
+            }
+            if machine_result.status == Phase8MachineCheckStatus::Checked
+                && sidecar.status != Phase8AiAuditSidecarStatus::Summarized
+            {
+                return Some(Phase8AuditSidecarValidationError::value(
+                    Phase8AuditSidecarValidationReasonCode::ReferencedArtifactValueMismatch,
+                    "status",
+                    "sidecar_status:summarized_only",
+                    sidecar.status.as_str(),
+                ));
+            }
+        }
+        Phase8ResolvedAiAuditSource::NormalizedComparison { normalized_result } => {
+            if matches!(
+                normalized_result.comparison.status,
+                Phase8NormalizedComparisonStatus::AllAgreeChecked
+                    | Phase8NormalizedComparisonStatus::AllAgreeFailed
+            ) && sidecar.status != Phase8AiAuditSidecarStatus::Summarized
+            {
+                return Some(Phase8AuditSidecarValidationError::value(
+                    Phase8AuditSidecarValidationReasonCode::ReferencedArtifactValueMismatch,
+                    "status",
+                    "sidecar_status:summarized_only",
+                    sidecar.status.as_str(),
+                ));
+            }
+        }
+    }
+    None
+}
+
+fn phase8_ai_audit_prompt_input(
+    sidecar: &Phase8AiAuditSidecar,
+    input_policy: &Phase8AiAuditInputPolicy,
+    source: &Phase8ResolvedAiAuditSource<'_>,
+) -> Phase8AiAuditPromptInput {
+    let source_hash = match sidecar.source.kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => sidecar
+            .source
+            .result_hash
+            .expect("machine result source hash is schema-valid"),
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => sidecar
+            .source
+            .normalized_result_hash
+            .expect("normalized comparison source hash is schema-valid"),
+    };
+    let mut fields = Vec::new();
+    for field in &input_policy.included_fields {
+        if let Some(value) = phase8_ai_audit_resolve_prompt_field(field, source) {
+            fields.push((field.clone(), value));
+        }
+    }
+    fields.sort_by(|left, right| phase8_rfc8785_object_key_cmp(&left.0, &right.0));
+    Phase8AiAuditPromptInput {
+        agent: sidecar.ai.agent.clone(),
+        model: sidecar.ai.model.clone(),
+        source_kind: sidecar.source.kind,
+        source_hash,
+        source_run_artifact_hash: (sidecar.source.kind
+            == Phase8AiAuditSidecarSourceKind::MachineResult)
+            .then_some(
+                sidecar
+                    .source
+                    .run_artifact_hash
+                    .expect("machine result source run hash is schema-valid"),
+            ),
+        source_membership_hash: (sidecar.source.kind
+            == Phase8AiAuditSidecarSourceKind::MachineResult)
+            .then_some(sidecar.source.normalized_result_hash)
+            .flatten(),
+        input_policy: Phase8AiAuditSidecarInputPolicy::from_policy(input_policy),
+        fields,
+    }
+}
+
+fn phase8_ai_audit_resolve_prompt_field(
+    field: &str,
+    source: &Phase8ResolvedAiAuditSource<'_>,
+) -> Option<String> {
+    match source {
+        Phase8ResolvedAiAuditSource::MachineResult {
+            machine_result,
+            normalized_result,
+        } => phase8_ai_audit_machine_result_field(field, machine_result, *normalized_result),
+        Phase8ResolvedAiAuditSource::NormalizedComparison { normalized_result } => {
+            phase8_ai_audit_normalized_comparison_field(field, normalized_result)
+        }
+    }
+}
+
+fn phase8_ai_audit_machine_result_field(
+    field: &str,
+    result: &Phase8MachineCheckResult,
+    normalized_result: Option<&Phase8NormalizedCheckResult>,
+) -> Option<String> {
+    match field {
+        "module" => Some(phase8_json_string_literal(&result.module)),
+        "status" => Some(phase8_json_string_literal(result.status.as_str())),
+        "certificate_hash" => result
+            .certificate_hash
+            .map(|hash| phase8_hash_json_literal(&hash)),
+        "checker_binary_hash" => result
+            .checker
+            .binary_hash
+            .map(|hash| phase8_hash_json_literal(&hash)),
+        "checker_binary_id" => result
+            .checker
+            .binary_id
+            .as_deref()
+            .map(phase8_json_string_literal),
+        "checker_build_hash" => result
+            .checker
+            .build_hash
+            .map(|hash| phase8_hash_json_literal(&hash)),
+        "checker_id" => result.checker.id.as_deref().map(phase8_json_string_literal),
+        "checker_profile" => Some(phase8_json_string_literal(&result.checker.profile)),
+        "checker_version" => result
+            .checker
+            .version
+            .as_deref()
+            .map(phase8_json_string_literal),
+        "error.actual_hash" => result
+            .error
+            .as_ref()
+            .and_then(|error| error.actual_hash)
+            .map(|hash| phase8_hash_json_literal(&hash)),
+        "error.core_path" => result
+            .error
+            .as_ref()
+            .and_then(|error| error.core_path.as_ref())
+            .map(|path| phase8_json_string_array(path)),
+        "error.declaration" => result
+            .error
+            .as_ref()
+            .and_then(|error| error.declaration.as_deref())
+            .map(phase8_json_string_literal),
+        "error.expected_hash" => result
+            .error
+            .as_ref()
+            .and_then(|error| error.expected_hash)
+            .map(|hash| phase8_hash_json_literal(&hash)),
+        "error.kind" => result
+            .error
+            .as_ref()
+            .map(|error| phase8_json_string_literal(&error.kind)),
+        "error.reason_code" => result
+            .error
+            .as_ref()
+            .and_then(|error| error.reason_code.as_deref())
+            .map(phase8_json_string_literal),
+        "policy.hash" => Some(phase8_hash_json_literal(&result.policy.hash)),
+        "policy.id" => Some(phase8_json_string_literal(&result.policy.id)),
+        "policy.version" => Some(result.policy.version.to_string()),
+        "input_file_hash" => normalized_result
+            .map(|normalized| phase8_hash_json_literal(&normalized.artifact.input_file_hash)),
+        "expected_certificate_hash" => normalized_result.map(|normalized| {
+            phase8_hash_json_literal(&normalized.artifact.expected_certificate_hash)
+        }),
+        _ => None,
+    }
+}
+
+fn phase8_ai_audit_normalized_comparison_field(
+    field: &str,
+    result: &Phase8NormalizedCheckResult,
+) -> Option<String> {
+    match field {
+        "module" => Some(phase8_json_string_literal(&result.artifact.module)),
+        "input_file_hash" => Some(phase8_hash_json_literal(&result.artifact.input_file_hash)),
+        "expected_certificate_hash" => Some(phase8_hash_json_literal(
+            &result.artifact.expected_certificate_hash,
+        )),
+        "artifact_hash" => Some(phase8_hash_json_literal(&result.artifact_hash())),
+        "policy.hash" => Some(phase8_hash_json_literal(&result.policy.hash)),
+        "policy.id" => Some(phase8_json_string_literal(&result.policy.id)),
+        "policy.version" => Some(result.policy.version.to_string()),
+        "comparison.status" => Some(phase8_json_string_literal(
+            result.comparison.status.as_str(),
+        )),
+        "comparison.disagreements" => Some(canonical_json_array(
+            result
+                .comparison
+                .disagreements
+                .iter()
+                .map(Phase8NormalizedDisagreement::canonical_json)
+                .collect(),
+        )),
+        "comparison.matching_fields" => {
+            Some(phase8_json_string_array(&result.comparison.matching_fields))
+        }
+        "comparison.missing_checker_profiles" => Some(phase8_json_string_array(
+            &result.comparison.missing_checker_profiles,
+        )),
+        "comparison.status_reasons" => Some(canonical_json_array(
+            result
+                .comparison
+                .status_reasons
+                .iter()
+                .map(Phase8NormalizedStatusReason::canonical_json)
+                .collect(),
+        )),
+        _ => None,
+    }
+}
+
+const PHASE8_AI_AUDIT_POLICY_GATED_FIELDS: &[&str] = &[
+    "source_text",
+    "source_excerpt",
+    "theorem_statement",
+    "proof_script",
+    "tactic_trace",
+    "tactic_script",
+    "elaboration_trace",
+    "ai_search_trace",
+];
+
+const PHASE8_AI_AUDIT_MACHINE_FIELDS: &[&str] = &[
+    "certificate_hash",
+    "checker_binary_hash",
+    "checker_binary_id",
+    "checker_build_hash",
+    "checker_id",
+    "checker_profile",
+    "checker_version",
+    "error.actual_hash",
+    "error.core_path",
+    "error.declaration",
+    "error.expected_hash",
+    "error.kind",
+    "error.reason_code",
+    "expected_certificate_hash",
+    "input_file_hash",
+    "module",
+    "policy.hash",
+    "policy.id",
+    "policy.version",
+    "status",
+];
+
+const PHASE8_AI_AUDIT_NORMALIZED_COMPARISON_FIELDS: &[&str] = &[
+    "artifact_hash",
+    "comparison.disagreements",
+    "comparison.matching_fields",
+    "comparison.missing_checker_profiles",
+    "comparison.status",
+    "comparison.status_reasons",
+    "expected_certificate_hash",
+    "input_file_hash",
+    "module",
+    "policy.hash",
+    "policy.id",
+    "policy.version",
+];
+
+fn phase8_ai_included_field_allowed(field: &str) -> bool {
+    PHASE8_AI_AUDIT_MACHINE_FIELDS.contains(&field)
+        || PHASE8_AI_AUDIT_NORMALIZED_COMPARISON_FIELDS.contains(&field)
+}
+
+fn phase8_ai_policy_gated_field_name(field: &str) -> bool {
+    PHASE8_AI_AUDIT_POLICY_GATED_FIELDS.contains(&field)
+}
+
+fn phase8_ai_audit_redaction_allowed(value: &str) -> bool {
+    matches!(value, "default" | "strict" | "release")
+}
+
+fn phase8_ai_audit_classification_category_allowed(value: &str) -> bool {
+    matches!(
+        value,
+        "certificate_encoding_bug"
+            | "import_resolution_bug"
+            | "certificate_generator_bug"
+            | "kernel_checker_disagreement"
+            | "axiom_policy_violation"
+            | "source_to_certificate_staleness"
+            | "unsupported_feature"
+            | "checker_resource_limit"
+            | "checker_internal_bug"
+            | "unknown"
+    )
+}
+
+fn phase8_parse_ai_audit_sidecar_status(
+    value: &str,
+    field: &str,
+) -> Result<Phase8AiAuditSidecarStatus, Phase8AuditSidecarValidationError> {
+    match value {
+        "summarized" => Ok(Phase8AiAuditSidecarStatus::Summarized),
+        "triaged" => Ok(Phase8AiAuditSidecarStatus::Triaged),
+        "suggested_fix" => Ok(Phase8AiAuditSidecarStatus::SuggestedFix),
+        "suggested_challenge" => Ok(Phase8AiAuditSidecarStatus::SuggestedChallenge),
+        "inconclusive" => Ok(Phase8AiAuditSidecarStatus::Inconclusive),
+        _ => Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            field,
+            "AiAuditSidecar.status",
+            "invalid_enum",
+        )),
+    }
+}
+
+fn phase8_find_static_forbidden_sidecar_field(value: &JsonValue<'_>, path: &str) -> Option<String> {
+    if let Some(members) = value.object_members() {
+        for member in members {
+            let key = member.key();
+            let field_path = phase8_ai_join_path(path, key);
+            if phase8_ai_reserved_forbidden_field_name(key)
+                || phase8_ai_secret_forbidden_field_name(key)
+                || (phase8_ai_policy_gated_field_name(key) && path != "$")
+            {
+                return Some(field_path);
+            }
+            if let Some(nested) =
+                phase8_find_static_forbidden_sidecar_field(member.value(), &field_path)
+            {
+                return Some(nested);
+            }
+        }
+        return None;
+    }
+    if let Some(elements) = value.array_elements() {
+        for (index, element) in elements.iter().enumerate() {
+            if let Some(nested) =
+                phase8_find_static_forbidden_sidecar_field(element, &format!("{path}[{index}]"))
+            {
+                return Some(nested);
+            }
+        }
+    }
+    None
+}
+
+fn phase8_ai_reserved_forbidden_field_name(value: &str) -> bool {
+    matches!(
+        value,
+        "verdict"
+            | "accepted"
+            | "checked"
+            | "verified"
+            | "checker_status"
+            | "certificate_valid"
+            | "proof_valid"
+            | "generated_certificate"
+            | "generated_certificate_bytes"
+            | "certificate_bytes"
+            | "proof_term"
+            | "raw_certificate"
+            | "raw_proof"
+    )
+}
+
+fn phase8_ai_secret_forbidden_field_name(value: &str) -> bool {
+    matches!(
+        value,
+        "secret"
+            | "token"
+            | "access_token"
+            | "refresh_token"
+            | "api_key"
+            | "password"
+            | "authorization"
+            | "private_key"
+    )
+}
+
+fn phase8_ai_object_members<'value, 'src>(
+    value: &'value JsonValue<'src>,
+    field: &str,
+    expected: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<&'value [JsonMember<'src>], Phase8AuditSidecarValidationError> {
+    value.object_members().ok_or_else(|| {
+        Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            expected,
+            if value.kind() == JsonValueKind::Null {
+                "null_not_allowed"
+            } else {
+                "wrong_type"
+            },
+        )
+    })
+}
+
+fn phase8_ai_required_value<'value, 'src>(
+    members: &'value [JsonMember<'src>],
+    name: &str,
+    field: &str,
+    expected: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<&'value JsonValue<'src>, Phase8AuditSidecarValidationError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(member) = members.iter().find(|member| member.key() == name) else {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            expected,
+            "missing",
+        ));
+    };
+    if member.value().kind() == JsonValueKind::Null {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            expected,
+            "null_not_allowed",
+        ));
+    }
+    Ok(member.value())
+}
+
+fn phase8_ai_optional_value<'value, 'src>(
+    members: &'value [JsonMember<'src>],
+    name: &str,
+    field: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<Option<&'value JsonValue<'src>>, Phase8AuditSidecarValidationError> {
+    if duplicate_member(members, name) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    Ok(members
+        .iter()
+        .find(|member| member.key() == name)
+        .map(JsonMember::value))
+}
+
+fn phase8_ai_required_fixed_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    fixed: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<(), Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_string(members, name, field, fixed, reason_code)?;
+    if value != fixed {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            fixed,
+            "invalid_enum",
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_ai_required_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<String, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_value(members, name, field, expected, reason_code)?;
+    value.string_value().map(ToOwned::to_owned).ok_or_else(|| {
+        Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            expected,
+            if value.kind() == JsonValueKind::Null {
+                "null_not_allowed"
+            } else {
+                "wrong_type"
+            },
+        )
+    })
+}
+
+fn phase8_ai_optional_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<Option<String>, Phase8AuditSidecarValidationError> {
+    let Some(value) = phase8_ai_optional_value(members, name, field, reason_code)? else {
+        return Ok(None);
+    };
+    if value.kind() == JsonValueKind::Null {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            expected,
+            "null_not_allowed",
+        ));
+    }
+    value
+        .string_value()
+        .map(|value| Some(value.to_owned()))
+        .ok_or_else(|| {
+            Phase8AuditSidecarValidationError::value(reason_code, field, expected, "wrong_type")
+        })
+}
+
+fn phase8_ai_required_hash(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<Hash, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_string(members, name, field, "sha256:<lower-hex>", reason_code)?;
+    parse_hash_string(&value).map_err(|_| {
+        Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "sha256:<lower-hex>",
+            "invalid_hash_format",
+        )
+    })
+}
+
+fn phase8_ai_optional_hash(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<Option<Hash>, Phase8AuditSidecarValidationError> {
+    let Some(value) =
+        phase8_ai_optional_string(members, name, field, "sha256:<lower-hex>", reason_code)?
+    else {
+        return Ok(None);
+    };
+    parse_hash_string(&value).map(Some).map_err(|_| {
+        Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "sha256:<lower-hex>",
+            "invalid_hash_format",
+        )
+    })
+}
+
+fn phase8_ai_required_bool(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<bool, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_value(members, name, field, "bool", reason_code)?;
+    value.bool_value().ok_or_else(|| {
+        Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "bool",
+            if value.kind() == JsonValueKind::Null {
+                "null_not_allowed"
+            } else {
+                "wrong_type"
+            },
+        )
+    })
+}
+
+fn phase8_ai_required_positive_i64(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<u64, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_value(members, name, field, "positive_i64", reason_code)?;
+    let Some(raw) = value.number_raw() else {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "positive_i64",
+            "wrong_type",
+        ));
+    };
+    if raw.contains('.') || raw.contains('e') || raw.contains('E') {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "positive_i64",
+            "wrong_type",
+        ));
+    }
+    let value = raw.parse::<u64>().map_err(|_| {
+        Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "positive_i64",
+            "integer_out_of_range",
+        )
+    })?;
+    if value == 0 {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "positive_i64",
+            "non_positive_integer",
+        ));
+    }
+    if value > i64::MAX as u64 {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "positive_i64",
+            "integer_out_of_range",
+        ));
+    }
+    Ok(value)
+}
+
+fn phase8_ai_required_visible_ascii(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+) -> Result<String, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_string(
+        members,
+        name,
+        field,
+        expected,
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    phase8_validate_visible_ascii(&value, field, expected)?;
+    Ok(value)
+}
+
+fn phase8_ai_optional_visible_ascii(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+) -> Result<Option<String>, Phase8AuditSidecarValidationError> {
+    let Some(value) = phase8_ai_optional_string(
+        members,
+        name,
+        field,
+        expected,
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?
+    else {
+        return Ok(None);
+    };
+    phase8_validate_visible_ascii(&value, field, expected)?;
+    Ok(Some(value))
+}
+
+fn phase8_ai_required_text_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+) -> Result<String, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_string(
+        members,
+        name,
+        field,
+        "non_empty_text_string",
+        Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+    )?;
+    phase8_validate_ai_text(&value, field)?;
+    Ok(value)
+}
+
+fn phase8_ai_required_included_fields(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<Vec<String>, Phase8AuditSidecarValidationError> {
+    let value = phase8_ai_required_value(members, name, field, "array", reason_code)?;
+    let Some(elements) = value.array_elements() else {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            field,
+            "array",
+            "wrong_type",
+        ));
+    };
+    let mut fields = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let path = format!("{field}[{index}]");
+        let Some(field_path) = element.string_value() else {
+            return Err(Phase8AuditSidecarValidationError::value(
+                reason_code,
+                path,
+                "field_path_string",
+                if element.kind() == JsonValueKind::Null {
+                    "null_not_allowed"
+                } else {
+                    "wrong_type"
+                },
+            ));
+        };
+        fields.push(field_path.to_owned());
+    }
+    for (index, field_path) in fields.iter().enumerate() {
+        if !phase8_ai_included_field_allowed(field_path) {
+            return Err(Phase8AuditSidecarValidationError::value(
+                reason_code,
+                format!("{field}[{index}]"),
+                "allowed_input_policy_field",
+                "unknown_field",
+            ));
+        }
+    }
+    for index in 1..fields.len() {
+        if fields[index - 1] > fields[index] {
+            return Err(Phase8AuditSidecarValidationError::value(
+                reason_code,
+                format!("{field}[{index}]"),
+                "field_path_bytewise_ascending",
+                "order_violation",
+            ));
+        }
+    }
+    let mut seen = BTreeSet::new();
+    for (index, field_path) in fields.iter().enumerate() {
+        if !seen.insert(field_path) {
+            return Err(Phase8AuditSidecarValidationError::value(
+                reason_code,
+                format!("{field}[{index}]"),
+                "unique_included_fields",
+                "duplicate_field",
+            ));
+        }
+    }
+    Ok(fields)
+}
+
+fn phase8_ai_reject_unknown_fields(
+    members: &[JsonMember<'_>],
+    allowed: &[&str],
+    container_path: &str,
+    reason_code: Phase8AuditSidecarValidationReasonCode,
+) -> Result<(), Phase8AuditSidecarValidationError> {
+    let mut counts = BTreeMap::<String, usize>::new();
+    for member in members {
+        *counts.entry(member.key().to_owned()).or_default() += 1;
+    }
+    let mut duplicates = counts
+        .iter()
+        .filter_map(|(field, count)| (*count > 1).then_some(field.as_str()))
+        .collect::<Vec<_>>();
+    duplicates.sort_by(|left, right| phase8_rfc8785_object_key_cmp(left, right));
+    if let Some(field) = duplicates.first() {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            phase8_ai_join_path(container_path, field),
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let mut unknown = counts
+        .keys()
+        .filter(|field| !allowed.contains(&field.as_str()))
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    unknown.sort_by(|left, right| phase8_rfc8785_object_key_cmp(left, right));
+    if let Some(field) = unknown.first() {
+        return Err(Phase8AuditSidecarValidationError::value(
+            reason_code,
+            phase8_ai_join_path(container_path, field),
+            "absent",
+            "unknown_field",
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_validate_visible_ascii(
+    value: &str,
+    field: &str,
+    expected: &str,
+) -> Result<(), Phase8AuditSidecarValidationError> {
+    if value.is_empty() {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            field,
+            expected,
+            "empty_string",
+        ));
+    }
+    if !value.bytes().all(|byte| (0x21..=0x7e).contains(&byte)) {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            field,
+            expected,
+            "invalid_string_format",
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_validate_ai_text(
+    value: &str,
+    field: &str,
+) -> Result<(), Phase8AuditSidecarValidationError> {
+    if value.is_empty() {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            field,
+            "non_empty_text_string",
+            "empty_string",
+        ));
+    }
+    if value
+        .chars()
+        .any(|ch| matches!(ch, '\u{0000}'..='\u{001f}' | '\u{007f}'))
+    {
+        return Err(Phase8AuditSidecarValidationError::value(
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid,
+            field,
+            "non_empty_text_string",
+            "invalid_string_format",
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_ai_join_path(container: &str, field: &str) -> String {
+    if container == "$" {
+        field.to_owned()
+    } else {
+        format!("{container}.{field}")
     }
 }
 
@@ -11613,5 +14265,398 @@ mod tests {
             Some(Phase8NormalizedComparisonStatus::AllAgreeChecked)
         );
         assert!(!failed.canonical_json().contains("\"result_hash\":"));
+    }
+
+    fn m6_input_policy_json(
+        included_fields: &[&str],
+        allow_source_text: bool,
+        allow_tactic_trace: bool,
+    ) -> String {
+        let fields = included_fields
+            .iter()
+            .map(|field| (*field).to_owned())
+            .collect::<Vec<_>>();
+        format!(
+            r#"{{
+              "schema":"{}",
+              "id":"phase8-ai-audit",
+              "version":1,
+              "included_fields":{},
+              "redaction":"default",
+              "allow_source_text":{},
+              "allow_tactic_trace":{}
+            }}"#,
+            PHASE8_AI_AUDIT_INPUT_POLICY_SCHEMA,
+            phase8_json_string_array(&fields),
+            allow_source_text,
+            allow_tactic_trace
+        )
+    }
+
+    fn m6_machine_sidecar_json(
+        result: &Phase8MachineCheckResult,
+        input_policy: &Phase8AiAuditInputPolicy,
+        prompt_hash: Hash,
+        source_result_hash: Hash,
+        source_request_hash: Hash,
+        source_run_artifact_hash: Hash,
+        extra_top_level: &str,
+    ) -> String {
+        let extra = if extra_top_level.is_empty() {
+            String::new()
+        } else {
+            format!(",{extra_top_level}")
+        };
+        format!(
+            r#"{{
+              "schema":"{}",
+              "source":{{
+                "kind":"machine_result",
+                "result_hash":"{}",
+                "request_hash":"{}",
+                "run_artifact_hash":"{}",
+                "result_id":"{}"
+              }},
+              "input_policy":{{
+                "id":"{}",
+                "version":{},
+                "hash":"{}",
+                "included_fields":{},
+                "redaction":"{}"
+              }},
+              "ai":{{
+                "agent":"codex",
+                "model":"gpt-5",
+                "prompt_hash":"{}"
+              }},
+              "status":"summarized",
+              "summary":"Reviewed deterministic machine result metadata."{}
+            }}"#,
+            PHASE8_AI_AUDIT_SIDECAR_SCHEMA,
+            format_hash_string(&source_result_hash),
+            format_hash_string(&source_request_hash),
+            format_hash_string(&source_run_artifact_hash),
+            result.result_id,
+            input_policy.id,
+            input_policy.version,
+            format_hash_string(&input_policy.input_policy_hash()),
+            phase8_json_string_array(&input_policy.included_fields),
+            input_policy.redaction,
+            format_hash_string(&prompt_hash),
+            extra
+        )
+    }
+
+    fn m6_machine_sidecar_with_prompt_hash(
+        result: &Phase8MachineCheckResult,
+        input_policy: &Phase8AiAuditInputPolicy,
+        extra_top_level: &str,
+    ) -> String {
+        let placeholder = m6_machine_sidecar_json(
+            result,
+            input_policy,
+            test_hash(220),
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            extra_top_level,
+        );
+        let sidecar = parse_phase8_ai_audit_sidecar(&placeholder).unwrap();
+        let prompt_hash =
+            phase8_ai_audit_prompt_input_for_sidecar(&sidecar, input_policy, Some(result), None)
+                .unwrap()
+                .prompt_hash();
+        m6_machine_sidecar_json(
+            result,
+            input_policy,
+            prompt_hash,
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            extra_top_level,
+        )
+    }
+
+    fn m6_checked_result() -> Phase8MachineCheckResult {
+        let (request, policy) = m3_request_and_policy();
+        m4_checked_result(&request, &policy, "mchkres_ai_audit")
+    }
+
+    #[test]
+    fn m6_input_policy_rejects_source_text_and_tactic_trace_fields() {
+        let source_err = parse_phase8_ai_audit_input_policy(&m6_input_policy_json(
+            &["source_text"],
+            false,
+            false,
+        ))
+        .unwrap_err();
+        assert_eq!(
+            source_err.reason_code,
+            Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid
+        );
+        assert_eq!(source_err.field, "input_policy.included_fields[0]");
+        assert_eq!(source_err.actual_value.as_deref(), Some("unknown_field"));
+
+        let trace_err = parse_phase8_ai_audit_input_policy(&m6_input_policy_json(
+            &["tactic_trace"],
+            false,
+            false,
+        ))
+        .unwrap_err();
+        assert_eq!(
+            trace_err.reason_code,
+            Phase8AuditSidecarValidationReasonCode::InputPolicySchemaInvalid
+        );
+        assert_eq!(trace_err.field, "input_policy.included_fields[0]");
+        assert_eq!(trace_err.actual_value.as_deref(), Some("unknown_field"));
+    }
+
+    #[test]
+    fn m6_schema_only_rejects_verdict_fields_and_omits_cross_metadata() {
+        let result = m6_checked_result();
+        let policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let input_policy = parse_phase8_ai_audit_input_policy(&policy_json).unwrap();
+        let sidecar_json = m6_machine_sidecar_with_prompt_hash(&result, &input_policy, "");
+
+        let valid = phase8_validate_ai_audit_sidecar_schema_only(&sidecar_json);
+        assert_eq!(valid.status, Phase8AuditSidecarValidationStatus::Valid);
+        let valid_json = valid.canonical_json();
+        assert!(!valid_json.contains("input_policy_hash"));
+        assert!(!valid_json.contains("source_result_hash"));
+        assert!(!valid_json.contains("source_kind"));
+
+        let prompt_hash = parse_phase8_ai_audit_sidecar(&sidecar_json)
+            .unwrap()
+            .ai
+            .prompt_hash;
+        let verdict_sidecar = m6_machine_sidecar_json(
+            &result,
+            &input_policy,
+            prompt_hash,
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            r#""verdict":"checked""#,
+        );
+        let failed = phase8_validate_ai_audit_sidecar_schema_only(&verdict_sidecar);
+        assert_eq!(failed.status, Phase8AuditSidecarValidationStatus::Failed);
+        let error = failed.error.unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField
+        );
+        assert_eq!(error.field, "verdict");
+
+        let nested_secret_sidecar = m6_machine_sidecar_json(
+            &result,
+            &input_policy,
+            prompt_hash,
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            r#""notes":[{"token":"provider-token"}]"#,
+        );
+        let failed = phase8_validate_ai_audit_sidecar_schema_only(&nested_secret_sidecar);
+        assert_eq!(failed.status, Phase8AuditSidecarValidationStatus::Failed);
+        let error = failed.error.unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField
+        );
+        assert_eq!(error.field, "notes[0].token");
+    }
+
+    #[test]
+    fn m6_machine_result_prompt_membership_fields_require_normalized_source() {
+        let result = m6_checked_result();
+        let policy_json = m6_input_policy_json(&["input_file_hash", "module"], false, false);
+        let input_policy = parse_phase8_ai_audit_input_policy(&policy_json).unwrap();
+        let sidecar_json = m6_machine_sidecar_json(
+            &result,
+            &input_policy,
+            test_hash(221),
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            "",
+        );
+        let failed = phase8_validate_ai_audit_sidecar_schema_only(&sidecar_json);
+        assert_eq!(failed.status, Phase8AuditSidecarValidationStatus::Failed);
+        let error = failed.error.unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuditSidecarValidationReasonCode::SidecarSchemaInvalid
+        );
+        assert_eq!(error.field, "source.normalized_result_hash");
+        assert_eq!(
+            error.expected_value.as_deref(),
+            Some("required_for_input_field")
+        );
+    }
+
+    #[test]
+    fn m6_cross_artifact_rejects_source_policy_and_prompt_mismatches() {
+        let result = m6_checked_result();
+        let policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let input_policy = parse_phase8_ai_audit_input_policy(&policy_json).unwrap();
+        let policy_hash = input_policy.input_policy_hash();
+        let sidecar_json = m6_machine_sidecar_with_prompt_hash(&result, &input_policy, "");
+
+        let valid = phase8_validate_ai_audit_sidecar_cross_artifact(
+            &sidecar_json,
+            &policy_json,
+            policy_hash,
+            std::slice::from_ref(&result),
+            &[],
+        );
+        assert_eq!(valid.status, Phase8AuditSidecarValidationStatus::Valid);
+        assert_eq!(valid.input_policy_hash, Some(policy_hash));
+        assert_eq!(valid.source_result_hash, Some(result.result_hash()));
+        assert!(!valid.canonical_json().contains("\"result_hash\":"));
+
+        let source_mismatch_json = m6_machine_sidecar_json(
+            &result,
+            &input_policy,
+            parse_phase8_ai_audit_sidecar(&sidecar_json)
+                .unwrap()
+                .ai
+                .prompt_hash,
+            test_hash(222),
+            result.request_hash,
+            result.run_artifact_hash(),
+            "",
+        );
+        let source_mismatch = phase8_validate_ai_audit_sidecar_cross_artifact(
+            &source_mismatch_json,
+            &policy_json,
+            policy_hash,
+            std::slice::from_ref(&result),
+            &[],
+        );
+        assert_eq!(
+            source_mismatch.error.unwrap().reason_code,
+            Phase8AuditSidecarValidationReasonCode::SourceHashMismatch
+        );
+
+        let policy_mismatch = phase8_validate_ai_audit_sidecar_cross_artifact(
+            &sidecar_json,
+            &policy_json,
+            test_hash(223),
+            std::slice::from_ref(&result),
+            &[],
+        );
+        assert_eq!(
+            policy_mismatch.error.unwrap().reason_code,
+            Phase8AuditSidecarValidationReasonCode::InputPolicyHashMismatch
+        );
+
+        let prompt_mismatch_json = m6_machine_sidecar_json(
+            &result,
+            &input_policy,
+            test_hash(224),
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            "",
+        );
+        let prompt_mismatch = phase8_validate_ai_audit_sidecar_cross_artifact(
+            &prompt_mismatch_json,
+            &policy_json,
+            policy_hash,
+            std::slice::from_ref(&result),
+            &[],
+        );
+        assert_eq!(
+            prompt_mismatch.error.unwrap().reason_code,
+            Phase8AuditSidecarValidationReasonCode::PromptHashMismatch
+        );
+    }
+
+    #[test]
+    fn m6_prompt_projection_excludes_source_text_and_tactic_trace_payloads() {
+        let result = m6_checked_result();
+        let policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let input_policy = parse_phase8_ai_audit_input_policy(&policy_json).unwrap();
+        let sidecar_json = m6_machine_sidecar_with_prompt_hash(
+            &result,
+            &input_policy,
+            r#""source_text":"secret theorem text","tactic_trace":["intro","exact"]"#,
+        );
+        let sidecar = parse_phase8_ai_audit_sidecar(&sidecar_json).unwrap();
+        let prompt_input =
+            phase8_ai_audit_prompt_input_for_sidecar(&sidecar, &input_policy, Some(&result), None)
+                .unwrap();
+        let prompt_json = prompt_input.canonical_json();
+        assert!(prompt_json.contains("\"module\""));
+        assert!(prompt_json.contains("\"status\""));
+        assert!(!prompt_json.contains("source_text"));
+        assert!(!prompt_json.contains("tactic_trace"));
+        assert!(!prompt_json.contains("secret theorem text"));
+        assert!(!prompt_json.contains("intro"));
+
+        let validation = phase8_validate_ai_audit_sidecar_cross_artifact(
+            &sidecar_json,
+            &policy_json,
+            input_policy.input_policy_hash(),
+            std::slice::from_ref(&result),
+            &[],
+        );
+        assert_eq!(
+            validation.error.unwrap().reason_code,
+            Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField
+        );
+    }
+
+    #[test]
+    fn m6_normalized_comparison_schema_forbids_checker_error_kind() {
+        let policy_json = m6_input_policy_json(&["comparison.status", "module"], false, false);
+        let input_policy = parse_phase8_ai_audit_input_policy(&policy_json).unwrap();
+        let sidecar_json = format!(
+            r#"{{
+              "schema":"{}",
+              "source":{{
+                "kind":"normalized_comparison",
+                "normalized_result_hash":"{}"
+              }},
+              "input_policy":{{
+                "id":"{}",
+                "version":{},
+                "hash":"{}",
+                "included_fields":{},
+                "redaction":"{}"
+              }},
+              "ai":{{
+                "agent":"codex",
+                "model":"gpt-5",
+                "prompt_hash":"{}"
+              }},
+              "status":"triaged",
+              "classification":{{
+                "category":"unknown",
+                "confidence":"low",
+                "checker_error_kind":123
+              }},
+              "summary":"Reviewed normalized comparison metadata."
+            }}"#,
+            PHASE8_AI_AUDIT_SIDECAR_SCHEMA,
+            hash_wire(225),
+            input_policy.id,
+            input_policy.version,
+            format_hash_string(&input_policy.input_policy_hash()),
+            phase8_json_string_array(&input_policy.included_fields),
+            input_policy.redaction,
+            hash_wire(226)
+        );
+        let validation = phase8_validate_ai_audit_sidecar_schema_only(&sidecar_json);
+        assert_eq!(
+            validation.status,
+            Phase8AuditSidecarValidationStatus::Failed
+        );
+        let error = validation.error.unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField
+        );
+        assert_eq!(error.field, "classification.checker_error_kind");
     }
 }
