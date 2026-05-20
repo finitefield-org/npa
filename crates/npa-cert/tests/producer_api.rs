@@ -1,7 +1,8 @@
 use npa_cert::{
     build_module_cert, canonical_import_env_keys, canonical_import_export_views,
-    encode_module_cert, precheck_core_decl_candidate, producer_checked_decl_interface,
-    producer_env_fingerprint, producer_env_fingerprint_canonical_bytes, producer_import_env_key,
+    encode_module_cert, initial_env_fingerprint, post_env_fingerprint,
+    precheck_core_decl_candidate, producer_checked_decl_interface, producer_env_fingerprint,
+    producer_env_fingerprint_canonical_bytes, producer_import_env_key,
     producer_limits_canonical_bytes, producer_limits_hash, producer_lookup_env, stricter_or_equal,
     validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, AxiomRef, CandidateBatch,
     CandidateBatchResult, CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate,
@@ -386,6 +387,94 @@ fn producer_checked_decl_interface_matches_certificate_generation_for_imported_a
     assert_eq!(
         interface.axiom_dependencies,
         cert.declarations[0].axiom_dependencies
+    );
+}
+
+#[test]
+fn initial_env_fingerprint_matches_explicit_full_recompute() {
+    let import_a = verify_module(axiom_module("Lib.InitialA", "InitialA"));
+    let import_b = verify_module(axiom_module("Lib.InitialB", "InitialB"));
+    let imports = [import_a, import_b];
+
+    let expected = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: canonical_import_env_keys(&imports).unwrap(),
+        checked_decls: vec![],
+    });
+
+    assert_eq!(initial_env_fingerprint(&imports).unwrap(), expected);
+}
+
+#[test]
+fn post_env_fingerprint_matches_explicit_full_recompute() {
+    let import = verify_module(axiom_module("Lib.PostSource", "PostSource"));
+    let imports = [import];
+    let prior = vec![checked_decl_interface(0x61)];
+    let decl = imported_theorem("UsesPostSource", "PostSource");
+    let lookup = producer_lookup_env(&imports, &prior).unwrap();
+    let mut expected_checked = prior.clone();
+    expected_checked.push(producer_checked_decl_interface(&decl, &lookup).unwrap());
+    let expected = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: canonical_import_env_keys(&imports).unwrap(),
+        checked_decls: expected_checked,
+    });
+
+    assert_eq!(
+        post_env_fingerprint(&imports, &prior, &decl).unwrap(),
+        expected
+    );
+}
+
+#[test]
+fn post_env_fingerprint_is_deterministic_for_same_inputs() {
+    let import = verify_module(axiom_module("Lib.PostDeterministic", "PostDeterministic"));
+    let imports = [import];
+    let prior = vec![ProducerCheckedDeclInterface {
+        decl_interface_hash: hash(0x62),
+        axiom_dependencies: vec![local_axiom_ref(0, 0, 0x63)],
+    }];
+    let decl = imported_theorem("UsesPostDeterministic", "PostDeterministic");
+
+    assert_eq!(
+        post_env_fingerprint(&imports, &prior, &decl).unwrap(),
+        post_env_fingerprint(&imports, &prior, &decl).unwrap()
+    );
+}
+
+#[test]
+fn post_env_fingerprint_changes_when_checked_decl_sequence_changes() {
+    let import = verify_module(axiom_module("Lib.PostSequence", "PostSequence"));
+    let imports = [import];
+    let decl = imported_theorem("UsesPostSequence", "PostSequence");
+    let prior_a = vec![checked_decl_interface(0x71)];
+    let prior_b = vec![checked_decl_interface(0x72)];
+
+    assert_ne!(
+        post_env_fingerprint(&imports, &prior_a, &decl).unwrap(),
+        post_env_fingerprint(&imports, &prior_b, &decl).unwrap()
+    );
+}
+
+#[test]
+fn post_env_fingerprint_uses_import_public_environment_not_certificate_identity() {
+    let import_a = verify_module(opaque_def_module(
+        "Lib.SamePostExport",
+        Expr::sort(Level::zero()),
+    ));
+    let import_b = verify_module(opaque_def_module(
+        "Lib.SamePostExport",
+        Expr::pi("x", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
+    ));
+    let decl = Decl::Axiom {
+        name: "UsesSamePostExport".to_owned(),
+        universe_params: vec![],
+        ty: Expr::konst("carrier", vec![]),
+    };
+
+    assert_eq!(import_a.export_hash(), import_b.export_hash());
+    assert_ne!(import_a.certificate_hash(), import_b.certificate_hash());
+    assert_eq!(
+        post_env_fingerprint(&[import_a], &[], &decl).unwrap(),
+        post_env_fingerprint(&[import_b], &[], &decl).unwrap()
     );
 }
 

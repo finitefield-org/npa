@@ -245,6 +245,34 @@ pub fn producer_env_fingerprint(env: &ProducerEnvFingerprintBytes) -> Hash {
     )
 }
 
+/// Recompute the initial producer public environment fingerprint from canonical imports.
+pub fn initial_env_fingerprint(imports: &[VerifiedModule]) -> Result<Hash, CertError> {
+    Ok(producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: canonical_import_env_keys(imports)?,
+        checked_decls: vec![],
+    }))
+}
+
+/// Recompute the producer public environment fingerprint after accepting `decl`.
+///
+/// This intentionally rebuilds the complete fingerprint input from imports and checked declaration
+/// interfaces instead of appending to a previous fingerprint value.
+pub fn post_env_fingerprint(
+    imports: &[VerifiedModule],
+    checked_decls_before: &[ProducerCheckedDeclInterface],
+    decl: &Decl,
+) -> Result<Hash, CertError> {
+    let direct_imports = canonical_import_env_keys(imports)?;
+    let lookup_env = producer_lookup_env(imports, checked_decls_before)?;
+    let mut checked_decls = checked_decls_before.to_vec();
+    checked_decls.push(producer_checked_decl_interface(decl, &lookup_env)?);
+
+    Ok(producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports,
+        checked_decls,
+    }))
+}
+
 /// Precheck a single producer candidate against an existing kernel environment under limits.
 ///
 /// This fast path does not emit `.npcert` bytes or create a verified module. It only performs
