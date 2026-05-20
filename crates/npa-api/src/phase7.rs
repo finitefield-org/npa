@@ -7,8 +7,8 @@ use npa_frontend::{
 };
 use npa_kernel::Level;
 use npa_tactic::{
-    goal_id_canonical_bytes, CandidateApplyArg, CandidateRewriteRuleRef, GoalId,
-    MachineTacticBatchPolicy, MachineTacticCandidate, RawMachineTerm, RewriteDirection,
+    goal_id_canonical_bytes, tactic_budget_hash, CandidateApplyArg, CandidateRewriteRuleRef,
+    GoalId, MachineTacticBatchPolicy, MachineTacticCandidate, RawMachineTerm, RewriteDirection,
     RewriteSite, SimpRuleRef, TacticBudget, TacticHead,
 };
 use sha2::{Digest, Sha256};
@@ -20,9 +20,9 @@ use crate::renderer::MachineGlobalRefView;
 use crate::snapshot::{MachineSnapshotGetError, MachineSnapshotGetOk};
 use crate::tactic::parse_deterministic_budget_with_error_kind;
 use crate::types::{
-    format_goal_id_wire, format_hash_string, is_machine_local_name, MachineApiErrorWire,
-    MachineApiResponseEnvelope, MachineGoalView, MachineLocalView, MachineProofSession,
-    MachineProofSnapshot, SessionId, SnapshotId,
+    format_goal_id_wire, format_hash_string, is_machine_local_name, MachineApiCompactErrorWire,
+    MachineApiErrorWire, MachineApiResponseEnvelope, MachineApiResponseStatus, MachineGoalView,
+    MachineLocalView, MachineProofSession, MachineProofSnapshot, SessionId, SnapshotId,
 };
 use crate::validation::{
     parse_request_body, parse_strict_u64_token, validate_json_object, FieldSpec, JsonFieldType,
@@ -34,7 +34,8 @@ use crate::{
     parse_machine_theorem_search_request, parse_machine_verify_request, run_machine_replay_request,
     run_machine_tactic_batch_request, run_machine_verify_request, search_machine_theorems_for_goal,
     MachineApiTacticKind, MachineBatchSchedulerLimits, MachineReplayError, MachineReplayResponse,
-    MachineTacticBatchError, MachineTacticBatchResponse, MachineTheoremMode,
+    MachineTacticBatchError, MachineTacticBatchItemResponse, MachineTacticBatchOkFields,
+    MachineTacticBatchResponse, MachineTacticBatchSchedulerFields, MachineTheoremMode,
     MachineTheoremSearchError, MachineTheoremSearchOkFields, MachineTheoremSearchResponse,
     MachineTheoremSearchResult, MachineVerifyError, MachineVerifyResponse,
 };
@@ -317,6 +318,108 @@ pub struct Phase7RejectedCandidateEnvelope {
     pub forbidden_token: Phase7ForbiddenToken,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7AssignedCandidate {
+    pub candidate_id: String,
+    pub rank_index: u32,
+    pub envelope: Phase7CandidateEnvelope,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7TacticBatchRequest {
+    pub session_id: SessionId,
+    pub snapshot_id: SnapshotId,
+    pub state_fingerprint: Hash,
+    pub goal_id: GoalId,
+    pub candidates: Vec<Phase7AssignedCandidate>,
+    pub deterministic_budget: TacticBudget,
+    pub batch_policy: MachineTacticBatchPolicy,
+    pub scheduler_limits: Option<MachineBatchSchedulerLimits>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7ReplayStep {
+    pub previous_state_fingerprint: Hash,
+    pub goal_id: GoalId,
+    pub candidate: MachineTacticCandidate,
+    pub deterministic_budget: TacticBudget,
+    pub candidate_hash: Hash,
+    pub deterministic_budget_hash: Hash,
+    pub proof_delta_hash: Hash,
+    pub next_state_fingerprint: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7AcceptedCandidateFailure {
+    pub error_kind: FailedCandidateErrorKind,
+    pub phase: crate::MachineApiDiagnosticPhase,
+    pub goal_id: Option<GoalId>,
+    pub tactic_kind: Option<MachineApiTacticKind>,
+    pub candidate_hash: Hash,
+    pub deterministic_budget_hash: Hash,
+    pub diagnostic_hash: Hash,
+    pub retryable: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7NonAcceptedCandidateError {
+    pub candidate_id: String,
+    pub phase7_candidate_payload_hash: Hash,
+    pub error_kind: MachineApiErrorKind,
+    pub phase: crate::MachineApiDiagnosticPhase,
+    pub has_candidate_hash: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7DeferredCandidate {
+    pub candidate_id: String,
+    pub envelope: Phase7CandidateEnvelope,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Phase7SchedulerStop {
+    pub status: MachineApiResponseStatus,
+    pub completed_prefix_len: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7BatchEvaluation {
+    pub replay_steps: Vec<Phase7ReplayStep>,
+    pub accepted_failures: Vec<Phase7AcceptedCandidateFailure>,
+    pub non_accepted_errors: Vec<Phase7NonAcceptedCandidateError>,
+    pub evaluated_count: u32,
+    pub deferred_candidates: Vec<Phase7DeferredCandidate>,
+    pub scheduler_stop: Option<Phase7SchedulerStop>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7MachineControllerErrorKind {
+    TopLevelBatchError,
+    BatchResponseContractViolation,
+    SuggestedCandidateHashMismatch,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7MachineControllerError {
+    pub kind: Phase7MachineControllerErrorKind,
+    pub endpoint: Phase7MachineApiEndpointKind,
+    pub message: String,
+    pub candidate_id: Option<String>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub diagnostic_hash: Option<Hash>,
+    pub phase: Option<crate::MachineApiDiagnosticPhase>,
+    pub status: Option<MachineApiResponseStatus>,
+}
+
+pub type Phase7MachineControllerResult<T> = Result<T, Box<Phase7MachineControllerError>>;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase7TacticBatchRunError {
+    MachineApi(Phase7MachineApiError),
+    Controller(Box<Phase7MachineControllerError>),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase7MachineApiEndpointKind {
     SnapshotGet,
@@ -582,6 +685,518 @@ impl Phase7MachineApiClient for Phase7FakeMachineApiClient {
             },
         ))
     }
+}
+
+pub fn phase7_assign_candidate_ids(
+    candidates: Vec<Phase7CandidateEnvelope>,
+) -> Vec<Phase7AssignedCandidate> {
+    candidates
+        .into_iter()
+        .enumerate()
+        .map(|(index, envelope)| Phase7AssignedCandidate {
+            candidate_id: format!("c{index}"),
+            rank_index: usize_to_u32(index),
+            envelope,
+        })
+        .collect()
+}
+
+pub fn phase7_cap_batch_policy(
+    policy: MachineTacticBatchPolicy,
+    candidate_count: usize,
+) -> MachineTacticBatchPolicy {
+    let candidate_cap = usize_to_u32(candidate_count).max(1);
+    MachineTacticBatchPolicy {
+        max_evaluated_candidates: policy.max_evaluated_candidates.min(candidate_cap),
+        stop_after_successes: policy.stop_after_successes.min(candidate_cap),
+        stop_after_failures: policy.stop_after_failures.min(candidate_cap),
+    }
+}
+
+pub fn phase7_tactic_batch_request_json(request: &Phase7TacticBatchRequest) -> String {
+    let candidates = request
+        .candidates
+        .iter()
+        .map(|candidate| {
+            format!(
+                r#"{{"candidate_id":{},"candidate":{}}}"#,
+                json_string(&candidate.candidate_id),
+                phase7_candidate_payload_json(&candidate.envelope.candidate)
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let capped_policy = phase7_cap_batch_policy(request.batch_policy, request.candidates.len());
+    let mut source = format!(
+        r#"{{"session_id":"{}","snapshot_id":"{}","state_fingerprint":"{}","goal_id":"{}","candidates":[{}],"deterministic_budget":{},"batch_policy":{}"#,
+        request.session_id.wire(),
+        request.snapshot_id.wire(),
+        format_hash_string(&request.state_fingerprint),
+        format_goal_id_wire(request.goal_id),
+        candidates,
+        phase7_tactic_budget_json(request.deterministic_budget),
+        phase7_batch_policy_json(capped_policy)
+    );
+    if let Some(scheduler_limits) = request.scheduler_limits {
+        source.push_str(r#","scheduler_limits":"#);
+        source.push_str(&phase7_scheduler_limits_json(scheduler_limits));
+    }
+    source.push('}');
+    source
+}
+
+pub fn phase7_run_tactic_batch(
+    client: &mut impl Phase7MachineApiClient,
+    request: &Phase7TacticBatchRequest,
+) -> Result<Phase7BatchEvaluation, Phase7TacticBatchRunError> {
+    let source = phase7_tactic_batch_request_json(request);
+    let response = client
+        .run_tactic_batch(&source)
+        .map_err(Phase7TacticBatchRunError::MachineApi)?;
+    phase7_evaluate_tactic_batch_response(request, response)
+        .map_err(Phase7TacticBatchRunError::Controller)
+}
+
+pub fn phase7_candidate_hash_mismatch(
+    envelope: &Phase7CandidateEnvelope,
+    response_candidate_hash: Option<Hash>,
+) -> bool {
+    envelope
+        .candidate_hash
+        .is_some_and(|expected| response_candidate_hash != Some(expected))
+}
+
+pub fn phase7_evaluate_tactic_batch_response(
+    request: &Phase7TacticBatchRequest,
+    response: MachineTacticBatchResponse,
+) -> Phase7MachineControllerResult<Phase7BatchEvaluation> {
+    match response {
+        MachineApiResponseEnvelope::Ok(ok) => {
+            if ok.status != MachineApiResponseStatus::Ok {
+                return Err(phase7_batch_contract_violation(
+                    format!("batch ok envelope used status {}", ok.status.as_str()),
+                    Some(ok.status),
+                ));
+            }
+            let fields = ok.endpoint_fields;
+            phase7_validate_ok_batch_fields(request, &fields)?;
+            Ok(phase7_build_batch_evaluation(
+                request,
+                &fields.results,
+                fields.deterministic_budget_hash,
+                None,
+                fields.results.len(),
+            ))
+        }
+        MachineApiResponseEnvelope::SchedulerStopped(stop) => {
+            if !matches!(
+                stop.status,
+                MachineApiResponseStatus::PartialTimeout
+                    | MachineApiResponseStatus::PartialResourceLimit
+            ) {
+                return Err(phase7_batch_contract_violation(
+                    format!(
+                        "batch scheduler envelope used status {}",
+                        stop.status.as_str()
+                    ),
+                    Some(stop.status),
+                ));
+            }
+            let fields = stop.endpoint_fields;
+            phase7_validate_scheduler_batch_fields(request, &fields, stop.status)?;
+            let completed_prefix_len = fields.completed_prefix_len;
+            let deferred_start = (fields.results.len() + 1).min(request.candidates.len());
+            Ok(phase7_build_batch_evaluation(
+                request,
+                &fields.results,
+                fields.deterministic_budget_hash,
+                Some(Phase7SchedulerStop {
+                    status: stop.status,
+                    completed_prefix_len,
+                }),
+                deferred_start,
+            ))
+        }
+        MachineApiResponseEnvelope::Error(error) => Err(Box::new(Phase7MachineControllerError {
+            kind: Phase7MachineControllerErrorKind::TopLevelBatchError,
+            endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+            message: error.error.kind.as_str().to_owned(),
+            candidate_id: None,
+            expected_hash: None,
+            actual_hash: None,
+            diagnostic_hash: Some(error.error.diagnostic_hash),
+            phase: Some(error.error.phase),
+            status: Some(error.status),
+        })),
+    }
+}
+
+pub fn phase7_replay_step_json(step: &Phase7ReplayStep) -> String {
+    format!(
+        r#"{{"previous_state_fingerprint":{},"goal_id":{},"candidate":{},"deterministic_budget":{},"candidate_hash":{},"deterministic_budget_hash":{},"proof_delta_hash":{},"next_state_fingerprint":{}}}"#,
+        json_string(&format_hash_string(&step.previous_state_fingerprint)),
+        json_string(&format_goal_id_wire(step.goal_id)),
+        phase7_candidate_payload_json(&step.candidate),
+        phase7_tactic_budget_json(step.deterministic_budget),
+        json_string(&format_hash_string(&step.candidate_hash)),
+        json_string(&format_hash_string(&step.deterministic_budget_hash)),
+        json_string(&format_hash_string(&step.proof_delta_hash)),
+        json_string(&format_hash_string(&step.next_state_fingerprint)),
+    )
+}
+
+fn phase7_validate_ok_batch_fields(
+    request: &Phase7TacticBatchRequest,
+    fields: &MachineTacticBatchOkFields,
+) -> Phase7MachineControllerResult<()> {
+    phase7_validate_batch_common_fields(
+        request,
+        fields.previous_state_fingerprint,
+        fields.deterministic_budget_hash,
+        &fields.results,
+        fields.success_count,
+        fields.failure_count,
+    )
+}
+
+fn phase7_validate_scheduler_batch_fields(
+    request: &Phase7TacticBatchRequest,
+    fields: &MachineTacticBatchSchedulerFields,
+    status: MachineApiResponseStatus,
+) -> Phase7MachineControllerResult<()> {
+    phase7_validate_batch_common_fields(
+        request,
+        fields.previous_state_fingerprint,
+        fields.deterministic_budget_hash,
+        &fields.results,
+        fields.success_count,
+        fields.failure_count,
+    )?;
+    if fields.completed_prefix_len as usize != fields.results.len() {
+        return Err(phase7_batch_contract_violation(
+            format!(
+                "completed_prefix_len {} did not match result prefix length {}",
+                fields.completed_prefix_len,
+                fields.results.len()
+            ),
+            Some(status),
+        ));
+    }
+    if fields.results.len() == request.candidates.len() {
+        return Err(phase7_batch_contract_violation(
+            "scheduler partial response completed every candidate".to_owned(),
+            Some(status),
+        ));
+    }
+    Ok(())
+}
+
+fn phase7_validate_batch_common_fields(
+    request: &Phase7TacticBatchRequest,
+    previous_state_fingerprint: Hash,
+    deterministic_budget_hash: Hash,
+    results: &[MachineTacticBatchItemResponse],
+    success_count: u32,
+    failure_count: u32,
+) -> Phase7MachineControllerResult<()> {
+    if previous_state_fingerprint != request.state_fingerprint {
+        return Err(Box::new(Phase7MachineControllerError {
+            kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
+            endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+            message: "batch previous_state_fingerprint did not match request".to_owned(),
+            candidate_id: None,
+            expected_hash: Some(request.state_fingerprint),
+            actual_hash: Some(previous_state_fingerprint),
+            diagnostic_hash: None,
+            phase: None,
+            status: None,
+        }));
+    }
+
+    let expected_budget_hash = tactic_budget_hash(request.deterministic_budget);
+    if deterministic_budget_hash != expected_budget_hash {
+        return Err(Box::new(Phase7MachineControllerError {
+            kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
+            endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+            message: "batch deterministic_budget_hash did not match request budget".to_owned(),
+            candidate_id: None,
+            expected_hash: Some(expected_budget_hash),
+            actual_hash: Some(deterministic_budget_hash),
+            diagnostic_hash: None,
+            phase: None,
+            status: None,
+        }));
+    }
+
+    if results.len() > request.candidates.len() {
+        return Err(phase7_batch_contract_violation(
+            format!(
+                "batch returned {} results for {} candidates",
+                results.len(),
+                request.candidates.len()
+            ),
+            None,
+        ));
+    }
+
+    let mut seen_ids = BTreeSet::new();
+    let mut actual_success_count = 0u32;
+    let mut actual_failure_count = 0u32;
+    for (index, item) in results.iter().enumerate() {
+        let expected_id = &request.candidates[index].candidate_id;
+        let actual_id = phase7_batch_item_candidate_id(item);
+        if actual_id != expected_id {
+            return Err(Box::new(Phase7MachineControllerError {
+                kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
+                endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+                message: format!(
+                    "batch result at index {index} used candidate_id {actual_id}, expected {expected_id}"
+                ),
+                candidate_id: Some(actual_id.to_owned()),
+                expected_hash: None,
+                actual_hash: None,
+                diagnostic_hash: None,
+                phase: None,
+                status: None,
+            }));
+        }
+        if !seen_ids.insert(actual_id) {
+            return Err(phase7_batch_contract_violation(
+                format!("batch repeated candidate_id {actual_id}"),
+                None,
+            ));
+        }
+        if item.is_success() {
+            actual_success_count += 1;
+        } else {
+            actual_failure_count += 1;
+        }
+    }
+
+    if success_count != actual_success_count || failure_count != actual_failure_count {
+        return Err(phase7_batch_contract_violation(
+            format!(
+                "batch count fields reported {success_count} successes and {failure_count} failures, observed {actual_success_count} successes and {actual_failure_count} failures"
+            ),
+            None,
+        ));
+    }
+
+    phase7_validate_candidate_hashes(request, results)
+}
+
+fn phase7_validate_candidate_hashes(
+    request: &Phase7TacticBatchRequest,
+    results: &[MachineTacticBatchItemResponse],
+) -> Phase7MachineControllerResult<()> {
+    for (index, item) in results.iter().enumerate() {
+        let assigned = &request.candidates[index];
+        let actual_hash = phase7_batch_item_candidate_hash(item);
+        if phase7_candidate_hash_mismatch(&assigned.envelope, actual_hash) {
+            return Err(Box::new(Phase7MachineControllerError {
+                kind: Phase7MachineControllerErrorKind::SuggestedCandidateHashMismatch,
+                endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+                message: "batch candidate_hash did not match suggested candidate envelope"
+                    .to_owned(),
+                candidate_id: Some(assigned.candidate_id.clone()),
+                expected_hash: assigned.envelope.candidate_hash,
+                actual_hash,
+                diagnostic_hash: None,
+                phase: None,
+                status: None,
+            }));
+        }
+    }
+    Ok(())
+}
+
+fn phase7_build_batch_evaluation(
+    request: &Phase7TacticBatchRequest,
+    results: &[MachineTacticBatchItemResponse],
+    deterministic_budget_hash: Hash,
+    scheduler_stop: Option<Phase7SchedulerStop>,
+    deferred_start: usize,
+) -> Phase7BatchEvaluation {
+    let mut replay_steps = Vec::new();
+    let mut accepted_failures = Vec::new();
+    let mut non_accepted_errors = Vec::new();
+
+    for (index, item) in results.iter().enumerate() {
+        let assigned = &request.candidates[index];
+        match item {
+            MachineTacticBatchItemResponse::Success {
+                candidate_hash,
+                next_state_fingerprint,
+                proof_delta_hash,
+                ..
+            } => replay_steps.push(Phase7ReplayStep {
+                previous_state_fingerprint: request.state_fingerprint,
+                goal_id: request.goal_id,
+                candidate: assigned.envelope.candidate.clone(),
+                deterministic_budget: request.deterministic_budget,
+                candidate_hash: *candidate_hash,
+                deterministic_budget_hash,
+                proof_delta_hash: *proof_delta_hash,
+                next_state_fingerprint: *next_state_fingerprint,
+            }),
+            MachineTacticBatchItemResponse::Error {
+                candidate_hash,
+                diagnostic,
+                ..
+            } => {
+                if let Some(failure) = phase7_normalize_accepted_candidate_failure(
+                    diagnostic,
+                    *candidate_hash,
+                    deterministic_budget_hash,
+                ) {
+                    accepted_failures.push(failure);
+                } else {
+                    non_accepted_errors.push(Phase7NonAcceptedCandidateError {
+                        candidate_id: assigned.candidate_id.clone(),
+                        phase7_candidate_payload_hash: assigned
+                            .envelope
+                            .phase7_candidate_payload_hash,
+                        error_kind: diagnostic.error_kind,
+                        phase: diagnostic.phase,
+                        has_candidate_hash: candidate_hash.is_some(),
+                    });
+                }
+            }
+        }
+    }
+
+    Phase7BatchEvaluation {
+        replay_steps,
+        accepted_failures,
+        non_accepted_errors,
+        evaluated_count: usize_to_u32(results.len()),
+        deferred_candidates: phase7_deferred_candidates(request, deferred_start),
+        scheduler_stop,
+    }
+}
+
+fn phase7_normalize_accepted_candidate_failure(
+    diagnostic: &MachineApiCompactErrorWire,
+    candidate_hash: Option<Hash>,
+    deterministic_budget_hash: Hash,
+) -> Option<Phase7AcceptedCandidateFailure> {
+    Some(Phase7AcceptedCandidateFailure {
+        error_kind: phase7_failed_candidate_error_kind(diagnostic.error_kind)?,
+        phase: diagnostic.phase,
+        goal_id: diagnostic.goal_id,
+        tactic_kind: diagnostic.tactic_kind,
+        candidate_hash: candidate_hash?,
+        deterministic_budget_hash,
+        diagnostic_hash: diagnostic.diagnostic_hash,
+        retryable: diagnostic.retryable,
+    })
+}
+
+fn phase7_failed_candidate_error_kind(
+    kind: MachineApiErrorKind,
+) -> Option<FailedCandidateErrorKind> {
+    match kind {
+        MachineApiErrorKind::UnsupportedTactic => Some(FailedCandidateErrorKind::UnsupportedTactic),
+        MachineApiErrorKind::MachineTermElaborationError => {
+            Some(FailedCandidateErrorKind::MachineTermElaborationError)
+        }
+        MachineApiErrorKind::UnknownName => Some(FailedCandidateErrorKind::UnknownName),
+        MachineApiErrorKind::ImplicitArgumentRequired => {
+            Some(FailedCandidateErrorKind::ImplicitArgumentRequired)
+        }
+        MachineApiErrorKind::TypeMismatch => Some(FailedCandidateErrorKind::TypeMismatch),
+        MachineApiErrorKind::ExpectedPiType => Some(FailedCandidateErrorKind::ExpectedPiType),
+        MachineApiErrorKind::RewriteRuleInvalid => {
+            Some(FailedCandidateErrorKind::RewriteRuleInvalid)
+        }
+        MachineApiErrorKind::SimpNoProgress => Some(FailedCandidateErrorKind::SimpNoProgress),
+        MachineApiErrorKind::InductionTargetNotNat => {
+            Some(FailedCandidateErrorKind::InductionTargetNotNat)
+        }
+        MachineApiErrorKind::BudgetExceeded => Some(FailedCandidateErrorKind::BudgetExceeded),
+        MachineApiErrorKind::TooManyGoals => Some(FailedCandidateErrorKind::TooManyGoals),
+        MachineApiErrorKind::TooLargeTerm => Some(FailedCandidateErrorKind::TooLargeTerm),
+        _ => None,
+    }
+}
+
+fn phase7_batch_item_candidate_id(item: &MachineTacticBatchItemResponse) -> &str {
+    match item {
+        MachineTacticBatchItemResponse::Success { candidate_id, .. }
+        | MachineTacticBatchItemResponse::Error { candidate_id, .. } => candidate_id,
+    }
+}
+
+fn phase7_batch_item_candidate_hash(item: &MachineTacticBatchItemResponse) -> Option<Hash> {
+    match item {
+        MachineTacticBatchItemResponse::Success { candidate_hash, .. } => Some(*candidate_hash),
+        MachineTacticBatchItemResponse::Error { candidate_hash, .. } => *candidate_hash,
+    }
+}
+
+fn phase7_deferred_candidates(
+    request: &Phase7TacticBatchRequest,
+    start: usize,
+) -> Vec<Phase7DeferredCandidate> {
+    request
+        .candidates
+        .iter()
+        .skip(start)
+        .map(|assigned| Phase7DeferredCandidate {
+            candidate_id: assigned.candidate_id.clone(),
+            envelope: assigned.envelope.clone(),
+        })
+        .collect()
+}
+
+fn phase7_batch_contract_violation(
+    message: String,
+    status: Option<MachineApiResponseStatus>,
+) -> Box<Phase7MachineControllerError> {
+    Box::new(Phase7MachineControllerError {
+        kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
+        endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+        message,
+        candidate_id: None,
+        expected_hash: None,
+        actual_hash: None,
+        diagnostic_hash: None,
+        phase: None,
+        status,
+    })
+}
+
+fn phase7_tactic_budget_json(budget: TacticBudget) -> String {
+    format!(
+        r#"{{"max_tactic_steps":{},"max_whnf_steps":{},"max_conversion_steps":{},"max_rewrite_steps":{},"max_meta_allocations":{},"max_expr_nodes":{}}}"#,
+        budget.max_tactic_steps,
+        budget.max_whnf_steps,
+        budget.max_conversion_steps,
+        budget.max_rewrite_steps,
+        budget.max_meta_allocations,
+        budget.max_expr_nodes,
+    )
+}
+
+fn phase7_batch_policy_json(policy: MachineTacticBatchPolicy) -> String {
+    format!(
+        r#"{{"max_evaluated_candidates":{},"stop_after_successes":{},"stop_after_failures":{}}}"#,
+        policy.max_evaluated_candidates, policy.stop_after_successes, policy.stop_after_failures,
+    )
+}
+
+fn phase7_scheduler_limits_json(limits: MachineBatchSchedulerLimits) -> String {
+    let mut fields = Vec::new();
+    if let Some(value) = limits.per_candidate_timeout_ms {
+        fields.push(format!(r#""per_candidate_timeout_ms":{value}"#));
+    }
+    if let Some(value) = limits.batch_timeout_ms {
+        fields.push(format!(r#""batch_timeout_ms":{value}"#));
+    }
+    if let Some(value) = limits.max_memory_mb {
+        fields.push(format!(r#""max_memory_mb":{value}"#));
+    }
+    format!("{{{}}}", fields.join(","))
 }
 
 pub fn phase7_snapshot_get_request_json(request: &Phase7SnapshotGetRequest) -> String {
@@ -1952,8 +2567,10 @@ mod tests {
         parse_machine_snapshot_get_request, parse_machine_tactic_batch_request,
         parse_machine_theorem_search_request, JsonFieldType, LocalId, MachineAllowedModulesFilter,
         MachineApiOkResponse, MachineApiRequestErrorReason, MachineApiResponseEnvelope,
-        MachineApiResponseStatus, MachineExprView, MachineLocalView, MachineSuggestedCandidate,
-        MachineSuggestedCandidateStatus, MachineTheoremGlobalRef, MachineTheoremStatement,
+        MachineApiResponseStatus, MachineApiSchedulerResponse, MachineExprView, MachineLocalView,
+        MachineSchedulerArtifact, MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
+        MachineSuggestedCandidate, MachineSuggestedCandidateStatus, MachineTheoremGlobalRef,
+        MachineTheoremStatement,
     };
 
     fn hash(byte: u8) -> Hash {
@@ -2148,6 +2765,76 @@ mod tests {
             request.snapshot_id.wire(),
             format_hash_string(&request.state_fingerprint),
         )
+    }
+
+    fn mvp_config() -> Phase7MvpControllerConfig {
+        parse_phase7_mvp_controller_config(valid_config_json()).unwrap()
+    }
+
+    fn phase7_test_envelope(
+        source_index: u32,
+        candidate_hash: Option<Hash>,
+    ) -> Phase7CandidateEnvelope {
+        let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+        let metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::SimpLiteEmpty),
+            source_index,
+            Vec::new(),
+            Vec::new(),
+            &candidate,
+        );
+        phase7_candidate_envelope(candidate, candidate_hash, metadata)
+    }
+
+    fn phase7_test_batch_request(
+        candidates: Vec<Phase7CandidateEnvelope>,
+    ) -> Phase7TacticBatchRequest {
+        let snapshot = snapshot_request();
+        let config = mvp_config();
+        Phase7TacticBatchRequest {
+            session_id: snapshot.session_id,
+            snapshot_id: snapshot.snapshot_id,
+            state_fingerprint: snapshot.state_fingerprint,
+            goal_id: GoalId(0),
+            candidates: phase7_assign_candidate_ids(candidates),
+            deterministic_budget: config.per_tactic_deterministic_budget,
+            batch_policy: config.batch_policy,
+            scheduler_limits: None,
+        }
+    }
+
+    fn compact_error(kind: MachineApiErrorKind) -> MachineApiCompactErrorWire {
+        MachineApiCompactErrorWire {
+            error_kind: kind,
+            phase: crate::MachineApiDiagnosticPhase::TacticExecution,
+            diagnostic_hash: hash(55),
+            retryable: false,
+            goal_id: Some(GoalId(0)),
+            tactic_kind: Some(MachineApiTacticKind::SimpLite),
+            primary_name: None,
+            primary_axiom_ref: None,
+            expected_hash: None,
+            actual_hash: None,
+        }
+    }
+
+    fn ok_batch_response(
+        request: &Phase7TacticBatchRequest,
+        results: Vec<MachineTacticBatchItemResponse>,
+    ) -> MachineTacticBatchResponse {
+        let success_count = usize_to_u32(results.iter().filter(|item| item.is_success()).count());
+        let failure_count = usize_to_u32(results.len()) - success_count;
+        MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
+            status: MachineApiResponseStatus::Ok,
+            endpoint_fields: MachineTacticBatchOkFields {
+                previous_state_fingerprint: request.state_fingerprint,
+                deterministic_budget_hash: tactic_budget_hash(request.deterministic_budget),
+                results,
+                success_count,
+                failure_count,
+            },
+        })
     }
 
     #[test]
@@ -2782,6 +3469,214 @@ mod tests {
                 term: RawMachineTerm { ref source }
             } if source == "h1"
         ));
+    }
+
+    #[test]
+    fn batch_request_builder_assigns_ids_caps_policy_and_uses_batch_endpoint() {
+        let mut request = phase7_test_batch_request(vec![
+            phase7_test_envelope(0, None),
+            phase7_test_envelope(1, None),
+        ]);
+        request.scheduler_limits = Some(MachineBatchSchedulerLimits {
+            per_candidate_timeout_ms: Some(100),
+            batch_timeout_ms: Some(1000),
+            max_memory_mb: None,
+        });
+
+        let source = phase7_tactic_batch_request_json(&request);
+        let parsed = parse_machine_tactic_batch_request(&source).unwrap();
+
+        assert_eq!(parsed.candidates[0].candidate_id, "c0");
+        assert_eq!(parsed.candidates[1].candidate_id, "c1");
+        assert_eq!(parsed.batch_policy.max_evaluated_candidates, 2);
+        assert_eq!(parsed.batch_policy.stop_after_successes, 2);
+        assert_eq!(parsed.batch_policy.stop_after_failures, 2);
+        assert_eq!(parsed.scheduler_limits.per_candidate_timeout_ms, Some(100));
+        assert_eq!(parsed.scheduler_limits.batch_timeout_ms, Some(1000));
+
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_tactic_batch_response(Ok(ok_batch_response(&request, Vec::new())));
+        let evaluation = phase7_run_tactic_batch(&mut client, &request).unwrap();
+
+        assert_eq!(evaluation.replay_steps.len(), 0);
+        assert_eq!(evaluation.deferred_candidates.len(), 2);
+        assert_eq!(client.calls().len(), 1);
+        assert!(matches!(
+            &client.calls()[0],
+            Phase7MachineApiCall::TacticBatch { source: actual } if actual == &source
+        ));
+    }
+
+    #[test]
+    fn batch_success_items_build_replay_steps_and_errors_normalize_failures() {
+        let request = phase7_test_batch_request(vec![
+            phase7_test_envelope(0, None),
+            phase7_test_envelope(1, Some(hash(50))),
+        ]);
+        let response = ok_batch_response(
+            &request,
+            vec![
+                MachineTacticBatchItemResponse::Success {
+                    candidate_id: "c0".to_owned(),
+                    candidate_hash: hash(40),
+                    next_snapshot_id: SnapshotId::from_state_fingerprint(hash(41)),
+                    next_state_fingerprint: hash(42),
+                    proof_delta_hash: hash(43),
+                },
+                MachineTacticBatchItemResponse::Error {
+                    candidate_id: "c1".to_owned(),
+                    candidate_hash: Some(hash(50)),
+                    diagnostic: compact_error(MachineApiErrorKind::TypeMismatch),
+                },
+            ],
+        );
+
+        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+
+        assert_eq!(evaluation.replay_steps.len(), 1);
+        assert_eq!(evaluation.accepted_failures.len(), 1);
+        assert!(evaluation.non_accepted_errors.is_empty());
+        assert_eq!(evaluation.deferred_candidates.len(), 0);
+
+        let step = &evaluation.replay_steps[0];
+        assert_eq!(step.previous_state_fingerprint, request.state_fingerprint);
+        assert_eq!(step.goal_id, GoalId(0));
+        assert_eq!(step.candidate_hash, hash(40));
+        assert_eq!(step.proof_delta_hash, hash(43));
+        assert_eq!(step.next_state_fingerprint, hash(42));
+
+        let failure = &evaluation.accepted_failures[0];
+        assert_eq!(failure.error_kind, FailedCandidateErrorKind::TypeMismatch);
+        assert_eq!(failure.candidate_hash, hash(50));
+        assert_eq!(
+            failure.deterministic_budget_hash,
+            tactic_budget_hash(request.deterministic_budget)
+        );
+        assert_eq!(failure.diagnostic_hash, hash(55));
+
+        let step_json = phase7_replay_step_json(step);
+        assert!(!step_json.contains("candidate_id"));
+        assert!(!step_json.contains("display"));
+        let replay_source = format!(
+            r#"{{"session_id":"{}","plan":{{"protocol_version":{},"session_root_hash":{},"initial_state_fingerprint":{},"steps":[{}],"final_state_fingerprint":{}}}}}"#,
+            request.session_id.wire(),
+            json_string(crate::MachineApiVersion::V1.as_str()),
+            json_string(&format_hash_string(&hash(90))),
+            json_string(&format_hash_string(&request.state_fingerprint)),
+            step_json,
+            json_string(&format_hash_string(&hash(42))),
+        );
+        parse_machine_replay_request(&replay_source).unwrap();
+    }
+
+    #[test]
+    fn batch_candidate_hash_mismatch_is_controller_error_before_replay() {
+        let request = phase7_test_batch_request(vec![phase7_test_envelope(0, Some(hash(77)))]);
+        let response = ok_batch_response(
+            &request,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(78),
+                next_snapshot_id: SnapshotId::from_state_fingerprint(hash(41)),
+                next_state_fingerprint: hash(42),
+                proof_delta_hash: hash(43),
+            }],
+        );
+
+        let error = phase7_evaluate_tactic_batch_response(&request, response).unwrap_err();
+
+        assert_eq!(
+            error.kind,
+            Phase7MachineControllerErrorKind::SuggestedCandidateHashMismatch
+        );
+        assert_eq!(error.candidate_id.as_deref(), Some("c0"));
+        assert_eq!(error.expected_hash, Some(hash(77)));
+        assert_eq!(error.actual_hash, Some(hash(78)));
+    }
+
+    #[test]
+    fn scheduler_stop_is_not_a_candidate_failure() {
+        let request = phase7_test_batch_request(vec![
+            phase7_test_envelope(0, None),
+            phase7_test_envelope(1, None),
+        ]);
+        let response = MachineApiResponseEnvelope::SchedulerStopped(MachineApiSchedulerResponse {
+            status: MachineApiResponseStatus::PartialTimeout,
+            scheduler_artifact: MachineSchedulerArtifact {
+                kind: MachineSchedulerArtifactKind::Timeout,
+                scope: MachineSchedulerArtifactScope::Batch,
+                retryable: true,
+            },
+            endpoint_fields: MachineTacticBatchSchedulerFields {
+                previous_state_fingerprint: request.state_fingerprint,
+                deterministic_budget_hash: tactic_budget_hash(request.deterministic_budget),
+                completed_prefix_len: 0,
+                results: Vec::new(),
+                success_count: 0,
+                failure_count: 0,
+            },
+        });
+
+        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+
+        assert_eq!(evaluation.evaluated_count, 0);
+        assert!(evaluation.replay_steps.is_empty());
+        assert!(evaluation.accepted_failures.is_empty());
+        assert!(evaluation.non_accepted_errors.is_empty());
+        assert_eq!(
+            evaluation.scheduler_stop,
+            Some(Phase7SchedulerStop {
+                status: MachineApiResponseStatus::PartialTimeout,
+                completed_prefix_len: 0,
+            })
+        );
+        assert_eq!(evaluation.deferred_candidates.len(), 1);
+        assert_eq!(evaluation.deferred_candidates[0].candidate_id, "c1");
+    }
+
+    #[test]
+    fn batch_contract_violations_end_as_controller_errors() {
+        let request = phase7_test_batch_request(vec![
+            phase7_test_envelope(0, None),
+            phase7_test_envelope(1, None),
+        ]);
+        let bad_prefix = ok_batch_response(
+            &request,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c1".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: SnapshotId::from_state_fingerprint(hash(41)),
+                next_state_fingerprint: hash(42),
+                proof_delta_hash: hash(43),
+            }],
+        );
+
+        let error = phase7_evaluate_tactic_batch_response(&request, bad_prefix).unwrap_err();
+        assert_eq!(
+            error.kind,
+            Phase7MachineControllerErrorKind::BatchResponseContractViolation
+        );
+
+        let bad_budget = MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
+            status: MachineApiResponseStatus::Ok,
+            endpoint_fields: MachineTacticBatchOkFields {
+                previous_state_fingerprint: request.state_fingerprint,
+                deterministic_budget_hash: hash(99),
+                results: Vec::new(),
+                success_count: 0,
+                failure_count: 0,
+            },
+        });
+        let error = phase7_evaluate_tactic_batch_response(&request, bad_budget).unwrap_err();
+        assert_eq!(
+            error.kind,
+            Phase7MachineControllerErrorKind::BatchResponseContractViolation
+        );
+        assert_eq!(
+            error.expected_hash,
+            Some(tactic_budget_hash(request.deterministic_budget))
+        );
+        assert_eq!(error.actual_hash, Some(hash(99)));
     }
 
     #[test]
