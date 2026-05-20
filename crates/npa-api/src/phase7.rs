@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use npa_cert::{Hash, Name};
 use npa_frontend::{
@@ -385,6 +385,7 @@ pub struct Phase7SchedulerStop {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase7BatchEvaluation {
     pub successful_transitions: Vec<Phase7SuccessfulCandidateTransition>,
+    pub accepted_failure_records: Vec<Phase7AcceptedCandidateFailureRecord>,
     pub replay_steps: Vec<Phase7ReplayStep>,
     pub accepted_failures: Vec<Phase7AcceptedCandidateFailure>,
     pub non_accepted_errors: Vec<Phase7NonAcceptedCandidateError>,
@@ -399,6 +400,45 @@ pub struct Phase7SuccessfulCandidateTransition {
     pub envelope: Phase7CandidateEnvelope,
     pub next_snapshot_id: SnapshotId,
     pub replay_step: Phase7ReplayStep,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7AcceptedCandidateFailureRecord {
+    pub candidate_id: String,
+    pub envelope: Phase7CandidateEnvelope,
+    pub failure: Phase7AcceptedCandidateFailure,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PendingCandidate {
+    pub goal_id: GoalId,
+    pub candidate: Phase7CandidateEnvelope,
+    pub repair_depth: u32,
+    pub parent_candidate_hash: Hash,
+    pub error_kind: FailedCandidateErrorKind,
+    pub chain_tried_payload_hashes: Vec<Hash>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Phase7RepairCandidateOutput {
+    pub pending: Vec<Phase7PendingCandidate>,
+    pub repeated_candidate_payload_hashes: Vec<Hash>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Phase7RuleBasedRepair;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7RuleBasedRepairAction {
+    Noop,
+    TrySimpLite,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7RepairChainStopReason {
+    RepeatedError,
+    RepeatedCandidate,
+    MaxRepairDepth,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -553,6 +593,13 @@ pub enum Phase7SearchTraceEventKind {
     MachineControllerError {
         endpoint: String,
         error_kind: String,
+    },
+    RepairChainStopped {
+        parent_candidate_hash: Hash,
+        error_kind: FailedCandidateErrorKind,
+        repair_depth: u32,
+        reason: Phase7RepairChainStopReason,
+        repeated_candidate_payload_hash: Option<Hash>,
     },
     ClosedNodePendingReplay,
 }
@@ -1179,6 +1226,7 @@ fn phase7_build_batch_evaluation(
     deferred_start: usize,
 ) -> Phase7BatchEvaluation {
     let mut successful_transitions = Vec::new();
+    let mut accepted_failure_records = Vec::new();
     let mut replay_steps = Vec::new();
     let mut accepted_failures = Vec::new();
     let mut non_accepted_errors = Vec::new();
@@ -1221,6 +1269,11 @@ fn phase7_build_batch_evaluation(
                     *candidate_hash,
                     deterministic_budget_hash,
                 ) {
+                    accepted_failure_records.push(Phase7AcceptedCandidateFailureRecord {
+                        candidate_id: assigned.candidate_id.clone(),
+                        envelope: assigned.envelope.clone(),
+                        failure: failure.clone(),
+                    });
                     accepted_failures.push(failure);
                 } else {
                     non_accepted_errors.push(Phase7NonAcceptedCandidateError {
@@ -1239,6 +1292,7 @@ fn phase7_build_batch_evaluation(
 
     Phase7BatchEvaluation {
         successful_transitions,
+        accepted_failure_records,
         replay_steps,
         accepted_failures,
         non_accepted_errors,
@@ -1370,6 +1424,192 @@ fn phase7_scheduler_limits_json(limits: MachineBatchSchedulerLimits) -> String {
         fields.push(format!(r#""max_memory_mb":{value}"#));
     }
     format!("{{{}}}", fields.join(","))
+}
+
+impl Phase7RuleBasedRepair {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn repair_candidate(
+        self,
+        goal: &MachineGoalView,
+        failed_envelope: &Phase7CandidateEnvelope,
+        failure: &Phase7AcceptedCandidateFailure,
+        repair_depth: u32,
+    ) -> Phase7RepairCandidateOutput {
+        if repair_depth > 2 {
+            return Phase7RepairCandidateOutput::default();
+        }
+
+        match phase7_rule_based_repair_action(failure.error_kind) {
+            Phase7RuleBasedRepairAction::Noop => Phase7RepairCandidateOutput::default(),
+            Phase7RuleBasedRepairAction::TrySimpLite => {
+                phase7_simp_lite_repair_candidate(goal, failed_envelope, failure, repair_depth)
+            }
+        }
+    }
+}
+
+pub fn phase7_rule_based_repair_action(
+    kind: FailedCandidateErrorKind,
+) -> Phase7RuleBasedRepairAction {
+    match kind {
+        FailedCandidateErrorKind::UnsupportedTactic
+        | FailedCandidateErrorKind::MachineTermElaborationError
+        | FailedCandidateErrorKind::UnknownName
+        | FailedCandidateErrorKind::ImplicitArgumentRequired
+        | FailedCandidateErrorKind::InductionTargetNotNat
+        | FailedCandidateErrorKind::BudgetExceeded
+        | FailedCandidateErrorKind::TooLargeTerm => Phase7RuleBasedRepairAction::Noop,
+        FailedCandidateErrorKind::TypeMismatch
+        | FailedCandidateErrorKind::ExpectedPiType
+        | FailedCandidateErrorKind::RewriteRuleInvalid
+        | FailedCandidateErrorKind::SimpNoProgress
+        | FailedCandidateErrorKind::TooManyGoals => Phase7RuleBasedRepairAction::TrySimpLite,
+    }
+}
+
+pub fn phase7_repair_depth_of(envelope: &Phase7CandidateEnvelope) -> u32 {
+    envelope
+        .metadata
+        .repair
+        .as_ref()
+        .map_or(0, |repair| repair.repair_depth)
+}
+
+fn phase7_simp_lite_repair_candidate(
+    goal: &MachineGoalView,
+    failed_envelope: &Phase7CandidateEnvelope,
+    failure: &Phase7AcceptedCandidateFailure,
+    repair_depth: u32,
+) -> Phase7RepairCandidateOutput {
+    if !phase7_goal_allows_tactic(goal, MachineApiTacticKind::SimpLite) {
+        return Phase7RepairCandidateOutput::default();
+    }
+
+    let chain_tried_payload_hashes = phase7_repair_chain_tried_payload_hashes(failed_envelope);
+    let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+    let mut metadata = phase7_candidate_metadata(
+        Phase7CandidateSource::Repair,
+        None,
+        0,
+        Vec::new(),
+        Vec::new(),
+        &candidate,
+    );
+    metadata.display_text = Some("simp-lite".to_owned());
+    metadata.repair = Some(Phase7CandidateRepairMetadata {
+        parent_candidate_hash: failure.candidate_hash,
+        error_kind: failure.error_kind,
+        repair_depth,
+        chain_tried_payload_hashes: chain_tried_payload_hashes.clone(),
+    });
+    let envelope = phase7_candidate_envelope(candidate, None, metadata);
+
+    if chain_tried_payload_hashes.contains(&envelope.phase7_candidate_payload_hash) {
+        return Phase7RepairCandidateOutput {
+            pending: Vec::new(),
+            repeated_candidate_payload_hashes: vec![envelope.phase7_candidate_payload_hash],
+        };
+    }
+
+    Phase7RepairCandidateOutput {
+        pending: vec![Phase7PendingCandidate {
+            goal_id: goal.goal_id,
+            repair_depth,
+            parent_candidate_hash: failure.candidate_hash,
+            error_kind: failure.error_kind,
+            chain_tried_payload_hashes,
+            candidate: envelope,
+        }],
+        repeated_candidate_payload_hashes: Vec::new(),
+    }
+}
+
+fn phase7_repair_chain_tried_payload_hashes(envelope: &Phase7CandidateEnvelope) -> Vec<Hash> {
+    let mut chain = envelope
+        .metadata
+        .repair
+        .as_ref()
+        .map_or_else(Vec::new, |repair| repair.chain_tried_payload_hashes.clone());
+    chain.push(envelope.phase7_candidate_payload_hash);
+    chain
+}
+
+fn phase7_repeated_repair_error(
+    envelope: &Phase7CandidateEnvelope,
+    failure: &Phase7AcceptedCandidateFailure,
+) -> bool {
+    envelope
+        .metadata
+        .repair
+        .as_ref()
+        .is_some_and(|repair| repair.error_kind == failure.error_kind)
+}
+
+fn phase7_limit_repairs(
+    pending_repairs: Vec<Phase7PendingCandidate>,
+) -> Vec<Phase7PendingCandidate> {
+    let mut seen_payloads = BTreeSet::new();
+    let mut per_parent_counts: BTreeMap<(GoalId, Hash, FailedCandidateErrorKind), u32> =
+        BTreeMap::new();
+    let mut out = Vec::new();
+
+    for pending in pending_repairs {
+        if !seen_payloads.insert(pending.candidate.phase7_candidate_payload_hash) {
+            continue;
+        }
+
+        let key = (
+            pending.goal_id,
+            pending.parent_candidate_hash,
+            pending.error_kind,
+        );
+        let count = per_parent_counts.entry(key).or_insert(0);
+        if *count >= 3 {
+            continue;
+        }
+        *count += 1;
+        out.push(pending);
+    }
+
+    out
+}
+
+fn phase7_merge_node_candidates(
+    deferred_candidates: &mut Vec<Phase7DeferredCandidate>,
+    pending_repairs: &mut Vec<Phase7PendingCandidate>,
+    fresh_candidates: &mut Vec<Phase7CandidateEnvelope>,
+) -> Vec<Phase7CandidateEnvelope> {
+    let mut candidates = Vec::new();
+    candidates.extend(
+        deferred_candidates
+            .drain(..)
+            .map(|deferred| deferred.envelope),
+    );
+
+    let mut repairs = phase7_limit_repairs(std::mem::take(pending_repairs));
+    repairs.sort_by(phase7_pending_candidate_order);
+    candidates.extend(repairs.into_iter().map(|pending| pending.candidate));
+
+    candidates.extend(std::mem::take(fresh_candidates));
+    phase7_dedupe_candidate_envelopes(candidates)
+}
+
+fn phase7_pending_candidate_order(
+    left: &Phase7PendingCandidate,
+    right: &Phase7PendingCandidate,
+) -> Ordering {
+    left.repair_depth
+        .cmp(&right.repair_depth)
+        .then_with(|| left.parent_candidate_hash.cmp(&right.parent_candidate_hash))
+        .then_with(|| left.error_kind.as_str().cmp(right.error_kind.as_str()))
+        .then_with(|| {
+            left.candidate
+                .phase7_candidate_payload_hash
+                .cmp(&right.candidate.phase7_candidate_payload_hash)
+        })
 }
 
 pub fn phase7_search_node_priority_key(node: &Phase7SearchNode) -> Phase7SearchPriorityKey {
@@ -1519,17 +1759,16 @@ pub fn phase7_run_mvp_search(
 
         let mut fresh_candidates = phase7_mvp_candidate_generation(goal, &retrieval).accepted;
         let mut deferred_candidates = Vec::new();
+        let mut pending_repairs = Vec::new();
         let mut evaluated_for_node = 0u32;
+        let repair = Phase7RuleBasedRepair::new();
 
         loop {
-            let mut candidates = if deferred_candidates.is_empty() {
-                std::mem::take(&mut fresh_candidates)
-            } else {
-                deferred_candidates
-                    .drain(..)
-                    .map(|deferred: Phase7DeferredCandidate| deferred.envelope)
-                    .collect()
-            };
+            let mut candidates = phase7_merge_node_candidates(
+                &mut deferred_candidates,
+                &mut pending_repairs,
+                &mut fresh_candidates,
+            );
             let remaining_tactic_budget = input
                 .search_budget
                 .max_tactics_per_node
@@ -1679,8 +1918,61 @@ pub fn phase7_run_mvp_search(
                 queue.push(child);
             }
 
+            let mut next_repairs = Vec::new();
+            for record in evaluation.accepted_failure_records {
+                if phase7_repeated_repair_error(&record.envelope, &record.failure) {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::RepairChainStopped {
+                            parent_candidate_hash: record.failure.candidate_hash,
+                            error_kind: record.failure.error_kind,
+                            repair_depth: phase7_repair_depth_of(&record.envelope),
+                            reason: Phase7RepairChainStopReason::RepeatedError,
+                            repeated_candidate_payload_hash: None,
+                        },
+                    );
+                    continue;
+                }
+
+                let parent_repair_depth = phase7_repair_depth_of(&record.envelope);
+                if parent_repair_depth >= 2 {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::RepairChainStopped {
+                            parent_candidate_hash: record.failure.candidate_hash,
+                            error_kind: record.failure.error_kind,
+                            repair_depth: parent_repair_depth,
+                            reason: Phase7RepairChainStopReason::MaxRepairDepth,
+                            repeated_candidate_payload_hash: None,
+                        },
+                    );
+                    continue;
+                }
+
+                let repair_output = repair.repair_candidate(
+                    goal,
+                    &record.envelope,
+                    &record.failure,
+                    parent_repair_depth + 1,
+                );
+                for repeated_hash in repair_output.repeated_candidate_payload_hashes {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::RepairChainStopped {
+                            parent_candidate_hash: record.failure.candidate_hash,
+                            error_kind: record.failure.error_kind,
+                            repair_depth: parent_repair_depth,
+                            reason: Phase7RepairChainStopReason::RepeatedCandidate,
+                            repeated_candidate_payload_hash: Some(repeated_hash),
+                        },
+                    );
+                }
+                next_repairs.extend(repair_output.pending);
+            }
+            pending_repairs = phase7_limit_repairs(next_repairs);
+
             deferred_candidates = evaluation.deferred_candidates;
-            if deferred_candidates.is_empty() {
+            if deferred_candidates.is_empty() && pending_repairs.is_empty() {
                 if candidates_exceeded_remaining_tactic_budget
                     && evaluated_for_node >= input.search_budget.max_tactics_per_node
                 {
@@ -3669,6 +3961,25 @@ mod tests {
         phase7_candidate_envelope(candidate, candidate_hash, metadata)
     }
 
+    fn phase7_exact_test_envelope(
+        source_index: u32,
+        candidate_hash: Option<Hash>,
+        term: &str,
+    ) -> Phase7CandidateEnvelope {
+        let candidate = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new(term),
+        };
+        let metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::LocalExact),
+            source_index,
+            Vec::new(),
+            Vec::new(),
+            &candidate,
+        );
+        phase7_candidate_envelope(candidate, candidate_hash, metadata)
+    }
+
     fn phase7_test_batch_request(
         candidates: Vec<Phase7CandidateEnvelope>,
     ) -> Phase7TacticBatchRequest {
@@ -3707,6 +4018,24 @@ mod tests {
             status: MachineSuggestedCandidateStatus::Validated,
             candidate_hash,
             candidate,
+        }
+    }
+
+    fn accepted_failure(
+        error_kind: FailedCandidateErrorKind,
+        candidate_hash: Hash,
+    ) -> Phase7AcceptedCandidateFailure {
+        Phase7AcceptedCandidateFailure {
+            error_kind,
+            phase: crate::MachineApiDiagnosticPhase::TacticExecution,
+            goal_id: Some(GoalId(0)),
+            tactic_kind: Some(MachineApiTacticKind::Exact),
+            candidate_hash,
+            deterministic_budget_hash: tactic_budget_hash(
+                mvp_config().per_tactic_deterministic_budget,
+            ),
+            diagnostic_hash: hash(55),
+            retryable: false,
         }
     }
 
@@ -4453,6 +4782,7 @@ mod tests {
 
         assert_eq!(evaluation.successful_transitions.len(), 1);
         assert_eq!(evaluation.replay_steps.len(), 1);
+        assert_eq!(evaluation.accepted_failure_records.len(), 1);
         assert_eq!(evaluation.accepted_failures.len(), 1);
         assert!(evaluation.non_accepted_errors.is_empty());
         assert_eq!(evaluation.deferred_candidates.len(), 0);
@@ -4473,6 +4803,8 @@ mod tests {
         assert_eq!(step.next_state_fingerprint, hash(42));
 
         let failure = &evaluation.accepted_failures[0];
+        assert_eq!(evaluation.accepted_failure_records[0].candidate_id, "c1");
+        assert_eq!(&evaluation.accepted_failure_records[0].failure, failure);
         assert_eq!(failure.error_kind, FailedCandidateErrorKind::TypeMismatch);
         assert_eq!(failure.candidate_hash, hash(50));
         assert_eq!(
@@ -4651,6 +4983,336 @@ mod tests {
             Some(tactic_budget_hash(request.deterministic_budget))
         );
         assert_eq!(error.actual_hash, Some(hash(99)));
+    }
+
+    #[test]
+    fn m5_batch_error_without_candidate_hash_is_not_repair_accepted_failure() {
+        let request = phase7_test_batch_request(vec![phase7_test_envelope(0, None)]);
+        let response = ok_batch_response(
+            &request,
+            vec![MachineTacticBatchItemResponse::Error {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: None,
+                diagnostic: compact_error(MachineApiErrorKind::TypeMismatch),
+            }],
+        );
+
+        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+
+        assert!(evaluation.accepted_failures.is_empty());
+        assert!(evaluation.accepted_failure_records.is_empty());
+        assert_eq!(evaluation.non_accepted_errors.len(), 1);
+        assert_eq!(evaluation.non_accepted_errors[0].candidate_id, "c0");
+        assert_eq!(
+            evaluation.non_accepted_errors[0].error_kind,
+            MachineApiErrorKind::TypeMismatch
+        );
+        assert!(!evaluation.non_accepted_errors[0].has_candidate_hash);
+    }
+
+    #[test]
+    fn m5_rule_based_repair_classifies_all_failed_candidate_kinds() {
+        let cases = [
+            (
+                FailedCandidateErrorKind::UnsupportedTactic,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+            (
+                FailedCandidateErrorKind::MachineTermElaborationError,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+            (
+                FailedCandidateErrorKind::UnknownName,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+            (
+                FailedCandidateErrorKind::ImplicitArgumentRequired,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+            (
+                FailedCandidateErrorKind::TypeMismatch,
+                Phase7RuleBasedRepairAction::TrySimpLite,
+            ),
+            (
+                FailedCandidateErrorKind::ExpectedPiType,
+                Phase7RuleBasedRepairAction::TrySimpLite,
+            ),
+            (
+                FailedCandidateErrorKind::RewriteRuleInvalid,
+                Phase7RuleBasedRepairAction::TrySimpLite,
+            ),
+            (
+                FailedCandidateErrorKind::SimpNoProgress,
+                Phase7RuleBasedRepairAction::TrySimpLite,
+            ),
+            (
+                FailedCandidateErrorKind::InductionTargetNotNat,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+            (
+                FailedCandidateErrorKind::BudgetExceeded,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+            (
+                FailedCandidateErrorKind::TooManyGoals,
+                Phase7RuleBasedRepairAction::TrySimpLite,
+            ),
+            (
+                FailedCandidateErrorKind::TooLargeTerm,
+                Phase7RuleBasedRepairAction::Noop,
+            ),
+        ];
+
+        assert_eq!(cases.len(), 12);
+        for (kind, expected) in cases {
+            assert_eq!(phase7_rule_based_repair_action(kind), expected);
+        }
+    }
+
+    #[test]
+    fn m5_rule_based_repair_generates_limited_simp_lite_metadata() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let failed = phase7_exact_test_envelope(0, Some(hash(40)), "h");
+        let failure = accepted_failure(FailedCandidateErrorKind::TypeMismatch, hash(40));
+
+        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
+
+        assert!(output.repeated_candidate_payload_hashes.is_empty());
+        assert_eq!(output.pending.len(), 1);
+        let pending = &output.pending[0];
+        assert_eq!(pending.goal_id, GoalId(0));
+        assert_eq!(pending.repair_depth, 1);
+        assert_eq!(pending.parent_candidate_hash, hash(40));
+        assert_eq!(pending.error_kind, FailedCandidateErrorKind::TypeMismatch);
+        assert_eq!(
+            pending.chain_tried_payload_hashes,
+            vec![failed.phase7_candidate_payload_hash]
+        );
+        assert_eq!(phase7_repair_depth_of(&pending.candidate), 1);
+        assert_eq!(pending.candidate.candidate_hash, None);
+        assert!(matches!(
+            pending.candidate.candidate,
+            MachineTacticCandidate::SimpLite { ref rules } if rules.is_empty()
+        ));
+        assert_eq!(
+            pending.candidate.metadata.source,
+            Phase7CandidateSource::Repair
+        );
+        assert_eq!(pending.candidate.metadata.rank.source_rank, 4);
+        assert_eq!(pending.candidate.metadata.rank.source_index, 0);
+        assert_eq!(pending.candidate.metadata.rank.builtin_kind_rank, 255);
+        assert_eq!(
+            pending.candidate.metadata.expected_effect,
+            Phase7ExpectedEffect::Simplify
+        );
+        assert!(pending.candidate.metadata.premises_used.is_empty());
+        assert_eq!(
+            pending.candidate.metadata.repair,
+            Some(Phase7CandidateRepairMetadata {
+                parent_candidate_hash: hash(40),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                repair_depth: 1,
+                chain_tried_payload_hashes: vec![failed.phase7_candidate_payload_hash],
+            })
+        );
+    }
+
+    #[test]
+    fn m5_rule_based_repair_does_not_generate_without_allowed_simp_lite() {
+        let goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        let failed = phase7_exact_test_envelope(0, Some(hash(40)), "h");
+        let failure = accepted_failure(FailedCandidateErrorKind::TypeMismatch, hash(40));
+
+        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
+
+        assert!(output.pending.is_empty());
+        assert!(output.repeated_candidate_payload_hashes.is_empty());
+    }
+
+    #[test]
+    fn m5_rule_based_repair_refuses_depth_above_two() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let failed = phase7_exact_test_envelope(0, Some(hash(40)), "h");
+        let failure = accepted_failure(FailedCandidateErrorKind::TypeMismatch, hash(40));
+
+        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 3);
+
+        assert!(output.pending.is_empty());
+        assert!(output.repeated_candidate_payload_hashes.is_empty());
+    }
+
+    #[test]
+    fn m5_rule_based_repair_reports_chain_duplicate_payload() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let failed = phase7_test_envelope(0, Some(hash(40)));
+        let failure = accepted_failure(FailedCandidateErrorKind::SimpNoProgress, hash(40));
+
+        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
+
+        assert!(output.pending.is_empty());
+        assert_eq!(
+            output.repeated_candidate_payload_hashes,
+            vec![failed.phase7_candidate_payload_hash]
+        );
+    }
+
+    #[test]
+    fn m5_repair_limiter_preserves_first_three_per_parent_and_dedupes_payload() {
+        let pending = vec![
+            Phase7PendingCandidate {
+                goal_id: GoalId(0),
+                candidate: phase7_exact_test_envelope(0, None, "h0"),
+                repair_depth: 1,
+                parent_candidate_hash: hash(40),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                chain_tried_payload_hashes: vec![hash(90)],
+            },
+            Phase7PendingCandidate {
+                goal_id: GoalId(0),
+                candidate: phase7_exact_test_envelope(0, None, "h0"),
+                repair_depth: 1,
+                parent_candidate_hash: hash(40),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                chain_tried_payload_hashes: vec![hash(90)],
+            },
+            Phase7PendingCandidate {
+                goal_id: GoalId(0),
+                candidate: phase7_exact_test_envelope(1, None, "h1"),
+                repair_depth: 1,
+                parent_candidate_hash: hash(40),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                chain_tried_payload_hashes: vec![hash(90)],
+            },
+            Phase7PendingCandidate {
+                goal_id: GoalId(0),
+                candidate: phase7_exact_test_envelope(2, None, "h2"),
+                repair_depth: 1,
+                parent_candidate_hash: hash(40),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                chain_tried_payload_hashes: vec![hash(90)],
+            },
+            Phase7PendingCandidate {
+                goal_id: GoalId(0),
+                candidate: phase7_exact_test_envelope(3, None, "h3"),
+                repair_depth: 1,
+                parent_candidate_hash: hash(40),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                chain_tried_payload_hashes: vec![hash(90)],
+            },
+        ];
+
+        let limited = phase7_limit_repairs(pending);
+
+        assert_eq!(limited.len(), 3);
+        assert!(matches!(
+            limited[0].candidate.candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h0"
+        ));
+        assert!(matches!(
+            limited[1].candidate.candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h1"
+        ));
+        assert!(matches!(
+            limited[2].candidate.candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h2"
+        ));
+    }
+
+    #[test]
+    fn m5_search_runs_pending_repair_in_same_node_after_accepted_failure() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let root = snapshot_with_state(1, vec![goal]);
+        let closed_child = snapshot_with_state(2, Vec::new());
+        let config = mvp_config();
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![theorem_result(
+            "display",
+            vec![suggested_candidate(
+                hash(40),
+                MachineTacticCandidate::Exact {
+                    term: RawMachineTerm::new("h"),
+                },
+            )],
+        )])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![
+                MachineTacticBatchItemResponse::Error {
+                    candidate_id: "c0".to_owned(),
+                    candidate_hash: Some(hash(40)),
+                    diagnostic: compact_error(MachineApiErrorKind::TypeMismatch),
+                },
+                MachineTacticBatchItemResponse::Error {
+                    candidate_id: "c1".to_owned(),
+                    candidate_hash: Some(hash(41)),
+                    diagnostic: compact_error(MachineApiErrorKind::SimpNoProgress),
+                },
+            ],
+        )));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(42),
+                next_snapshot_id: closed_child.snapshot_id,
+                next_state_fingerprint: closed_child.state_fingerprint,
+                proof_delta_hash: hash(43),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed_child.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed_child,
+        }));
+
+        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root));
+
+        assert_eq!(failure.search_stats.candidates_evaluated, 3);
+        let batch_sources = client
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                Phase7MachineApiCall::TacticBatch { source } => Some(source),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(batch_sources.len(), 2);
+        let repair_batch = parse_machine_tactic_batch_request(batch_sources[1]).unwrap();
+        assert_eq!(repair_batch.candidates.len(), 1);
+        assert_eq!(repair_batch.candidates[0].candidate_id, "c0");
+        assert!(batch_sources[1].contains(r#""kind":"simp-lite""#));
+        assert!(batch_sources[1].contains(r#""rules":[]"#));
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::RepairChainStopped {
+                reason: Phase7RepairChainStopReason::RepeatedCandidate,
+                repeated_candidate_payload_hash: Some(_),
+                ..
+            }
+        )));
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::ChildQueued {
+                child_node_id: Phase7NodeId(1),
+                ..
+            }
+        )));
     }
 
     #[test]
