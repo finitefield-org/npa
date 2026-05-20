@@ -5460,21 +5460,403 @@ CI の pass/fail は Phase 8 の checker result と policy で決めます。
 
 # 13. MVP / Follow-up Milestones
 
-推奨実装順序:
+Phase 9 AI は、AI model や外部 solver を接続する前に、
+deterministic validator / replay surface を完成させる順序で分割します。
+各 milestone は次を共通条件にします。
 
 ```text
-M1  common envelope / candidate hash / error model
-M2  universe repair candidate validation
-M3  advanced inductive proposal validation
-M4  theorem graph query with certificate-bound node refs
-M5  typeclass resolution plan replay
-M6  quotient construction candidate validation
-M7a SMT canonical schema / command / proof-payload deterministic rejection validation
-M8  natural language formalization statement / proof bridge check
-M9  Phase 8 audit integration for all AI sidecars
+- AI output, score, trace, prompt は trusted input として扱わない
+- request / artifact bytes / imports / options から candidate_hash を決定できる
+- same replay input なら same validation result を返す
+- pretty message ではなく structured enum で拒否理由を返す
+- Phase 8 independent checker が必要な success path では、success 前に checker を実行する
+```
 
-Post-MVP:
-P1  SMT success profile with non-empty encoder table and solver-native rule registry
+MVP では quotient と SMT の endpoint も提供しますが、現行 `Phase8MvpReference` と
+`SmtRuleRegistryProfile::MvpEmptyRegistryV1` の範囲では certificate adoption の success path を持ちません。
+この2つは deterministic rejection surface を MVP の成果物とし、success は Post-MVP profile に分けます。
+
+## 13.1 M1 Common Validation Substrate
+
+目的:
+
+```text
+すべての Phase 9 AI endpoint が共有する canonical envelope、options、artifact、import、
+response、error、hash の土台を固定する。
+```
+
+範囲:
+
+```text
+- Phase9AiCandidateEnvelope wire decode
+- opaque payload byte range の確定と candidate_hash 計算
+- Inline / Artifact options bytes validation
+- ArtifactPath shape / symlink escape / file_hash / size_bytes 検査
+- imports canonical order / duplicate import / Phase 2 verified import adapter
+- env_fingerprint / target shape の共通検査
+- Phase9AiEndpointResponse と validation_result_hash
+- Phase9AiValidationError / Phase9AiFeatureError の canonical tag 固定
+- 7 endpoint の route skeleton
+```
+
+完了条件:
+
+```text
+- task-specific payload を full decode しなくても candidate_hash を計算できる
+- options_hash mismatch、artifact hash mismatch、import duplicate、env_fingerprint mismatch が deterministic に拒否される
+- top-level envelope decode 不能時だけ Error::NonCanonicalRequestBytes になる
+- nested payload / artifact decode failure は candidate_hash 付き Rejected になる
+- common validation fixtures が AI / network / random seed なしで再現できる
+```
+
+非対象:
+
+```text
+- feature-specific semantic validation
+- AI orchestrator / LLM / embedding / theorem search の接続
+```
+
+## 13.2 M2 Universe Repair MVP
+
+目的:
+
+```text
+AI が提案した universe level 修正を、goal-mode の deterministic patch として検査する。
+```
+
+範囲:
+
+```text
+- /machine/phase9/universe/repair/check
+- goal_fingerprint mode のみ
+- MachineUniverseRepairCandidate payload decode
+- occurrence.path による concrete CoreExpr traversal
+- explicit_level_args patch validation
+- constraint_hints duplicate / order / scope validation
+- repaired_expr と constraint_set_hash の validator-side 再計算
+- UniverseRepairError の到達可能 variant の固定
+```
+
+完了条件:
+
+```text
+- valid patch から repaired_expr と constraint_set_hash が一意に得られる
+- target_decl_hash = Some は MVP unsupported として deterministic に拒否される
+- invalid path、unknown universe param、arity mismatch、unsatisfied constraint の fixture がある
+- caller-provided solver score / explanation / free-form text を判定に使わない
+```
+
+非対象:
+
+```text
+- declaration repair mode
+- 外部 solver certificate の採用
+- ambiguous selector profile
+```
+
+## 13.3 M3 Advanced Inductive MVP
+
+目的:
+
+```text
+AI が出した advanced inductive 候補を、Phase 2 canonical inductive artifact generator と
+Phase 8 checker に戻せる範囲で検査する。
+```
+
+範囲:
+
+```text
+- /machine/phase9/inductive/check
+- singleton inductive block
+- indexed family の constructor result check
+- block-local GlobalRef::Local(0) の rewrite
+- conservative positivity traversal
+- nested / mutual / higher-order recursive occurrence / large elimination の deterministic rejection
+- Phase 2 generate_inductive_artifacts_v1 との binding
+- decl_interface_hash / decl_certificate_hash response
+```
+
+完了条件:
+
+```text
+- accepted candidate から single-declaration certificate package を生成できる
+- success 前に Phase8MvpReference checker を通す
+- constructor result mismatch、name collision、bad positivity、nested occurrence、mutual block の fixture がある
+- AI generated recursor / eliminator を payload から採用しない
+```
+
+非対象:
+
+```text
+- mutual inductive success
+- nested inductive success
+- large elimination success
+- AI supplied generated artifact の採用
+```
+
+## 13.4 M4 Theorem Graph Query MVP
+
+目的:
+
+```text
+theorem graph を certificate-bound sidecar として扱い、AI ranking ではなく
+snapshot 固定された deterministic query result を返す。
+```
+
+範囲:
+
+```text
+- /machine/phase9/theorem-graph/query
+- MachineTheoremGraphSnapshot artifact validation
+- query_features artifact validation
+- source_release_hash / extractor_version / feature_schema_version binding
+- certificate-bound eligible node filtering
+- decl_interface_hash / certificate_hash / export_hash による node resolution
+- MvpTupleOrder ranking
+```
+
+完了条件:
+
+```text
+- graph snapshot と query_features の bytes/hash/metadata mismatch が deterministic に拒否される
+- result node は imports から解決できる public export に限定される
+- score_microunits は MVP では 0 固定で、score による pass/fail をしない
+- missing node を外部 graph store から補完しない
+```
+
+非対象:
+
+```text
+- embedding retrieval
+- goal-aware neural ranking
+- graph store の online lookup
+```
+
+## 13.5 M5 Typeclass Resolution MVP
+
+目的:
+
+```text
+AI が並べた instance candidate list を、kernel 外の deterministic replay として検査し、
+一意な proof term だけを返す。
+```
+
+範囲:
+
+```text
+- /machine/phase9/typeclass/resolve
+- class_declarations option validation
+- ordered_candidates duplicate target check
+- first-order structural matching
+- max_depth / max_nodes budget
+- deterministic branch enumeration
+- ambiguity / no solution / budget exceeded の分類
+- final proof term の kernel check
+```
+
+完了条件:
+
+```text
+- success は探索空間を budget 内で尽くし、canonical proof term が1種類だけの場合に限る
+- 2つ目の異なる proof term は AmbiguousResolution になる
+- direct instance、recursive instance、no solution、ambiguous、budget exceeded の fixture がある
+- typeclass search を kernel / checker に入れない
+```
+
+非対象:
+
+```text
+- elaborator の implicit argument synthesis
+- priority score / ML ranker による ambiguity 解消
+- checked current declaration の instance candidate 化
+```
+
+## 13.6 M6 Quotient Construction Rejection MVP
+
+目的:
+
+```text
+quotient-capable profile を将来追加するため、primitive refs、setoid、proof obligation、
+operation validation の deterministic 境界を先に固定する。
+```
+
+範囲:
+
+```text
+- /machine/phase9/quotient/check
+- options.quotient の primitive public interface check
+- setoid relation / equivalence proof validation
+- quotient type / mk / sound / lift refs の interface validation
+- operation raw function / compatibility proof validation
+- expected_decl_hash binding
+- Phase8MvpReference では certificate adoption success を返さない support check
+```
+
+完了条件:
+
+```text
+- primitive interface mismatch、relation type mismatch、equivalence proof mismatch、
+  compatibility proof mismatch の fixture がある
+- operation validation result は request-bound validation result としてだけ追跡される
+- 現行 checker profile では success adoption が UnsupportedFeature として deterministic に拒否される
+- quotient primitive を core v0.1 / Phase8MvpReference に暗黙追加しない
+```
+
+非対象:
+
+```text
+- quotient-capable independent checker profile
+- quotient certificate adoption success
+- quotient primitive の trusted base 追加
+```
+
+## 13.7 M7 SMT Deterministic Rejection MVP
+
+目的:
+
+```text
+SMT solver を信用せず、encoded problem、proof payload、reconstruction plan を
+canonical schema として検査できる rejection surface を作る。
+```
+
+範囲:
+
+```text
+- /machine/phase9/smt/reconstruct
+- MachineSmtEncodedProblem validation
+- MvpNormalizedQf command profile validation
+- deterministic encoder binding / problem_hash / encoding_hash 検査
+- proof payload Inline / Artifact bytes validation
+- SmtProofNodeTable canonical decode / table shape validation
+- reconstruction plan pre-registry validation
+- LocalBookkeeping structural checks
+- MvpEmptyRegistryV1 による PayloadNode success rejection
+```
+
+完了条件:
+
+```text
+- encoded problem hash mismatch、unsupported logic/operator、proof payload malformed、
+  payload binding mismatch、reconstruction premise mismatch、empty registry rejection の fixture がある
+- SMT solver process を validator から起動しない
+- PayloadNode を含む valid pre-registry request は RuleRegistryMismatch で deterministic に拒否される
+- solver-native proof なしの success を返さない
+```
+
+非対象:
+
+```text
+- 非空 solver-native rule registry
+- SMT final_proof success
+- bitvector / datatype / non-linear arithmetic success
+```
+
+## 13.8 M8 Natural Language Formalization MVP
+
+目的:
+
+```text
+自然言語由来の候補を、intent record と Machine Surface statement に分けて検査し、
+必要な場合だけ Phase 4 proof bridge へ接続する。
+```
+
+範囲:
+
+```text
+- /machine/phase9/formalize/check
+- source_document / rejection_reason artifact validation
+- claim_span byte range / UTF-8 boundary validation
+- ReviewerId regex validation
+- FormalizationIntentRecord status validation
+- MachineSurfaceTerm canonical decode
+- Phase 3 AI complete mode による candidate statement check
+- optional_proof_candidate の Phase 4 single tactic bridge
+- CandidateStatementChecked / IntentRecordOnly / ProofBridgeChecked
+```
+
+完了条件:
+
+```text
+- Rejected intent with proof candidate は RejectedIntentHasProofCandidate で拒否される
+- Unreviewed / Reviewed / Rejected の intent record fixture がある
+- candidate statement elaboration failure と proof bridge failure が区別される
+- natural language explanation や confidence score を theorem statement と同一視しない
+```
+
+非対象:
+
+```text
+- Phase 7 search controller の自動起動
+- LLM candidate generation の品質評価
+- reviewer なし formalization を verified mathematical intent と呼ぶこと
+```
+
+## 13.9 M9 Phase 8 Audit Integration and Fixture Matrix
+
+目的:
+
+```text
+Phase 9 AI sidecar が certificate-first 境界を破っていないことを、Phase 8 checker、
+fixture、CI policy で継続的に検査する。
+```
+
+範囲:
+
+```text
+- 全 endpoint の success / rejected / error fixture matrix
+- validation_result_hash stability test
+- artifact replay test
+- independent checker support matrix test
+- AI sidecar が certificate hash に入らないことの regression test
+- axiom report が意図せず増えないことの regression test
+- API / error enum / profile version の compatibility test
+```
+
+完了条件:
+
+```text
+- AI モデルがなくても全 endpoint の deterministic fixtures が通る
+- accepted certificate candidate は Phase 8 checker 単独で pass/fail を決められる
+- rejected candidate は trusted env を変更しない
+- validation result に time / random seed / network result が混ざらないことを検査できる
+- docs と fixture 名が milestone / endpoint / error enum に対応している
+```
+
+非対象:
+
+```text
+- production AI orchestrator の最適化
+- graph index / RAG store の運用
+```
+
+## 13.10 Post-MVP Milestones
+
+MVP 後の拡張は、schema / profile / checker support を明示的に増やしてから有効化します。
+
+```text
+P1  SMT success profile
+    非空 solver-native rule registry、rule descriptor fingerprint、PayloadNode proof reconstruction、
+    final_proof の kernel / Phase 8 checker success を追加する。
+
+P2  Quotient-capable checker profile
+    quotient primitive の trusted boundary、canonical certificate schema、independent checker support、
+    quotient_v1 adoption success を追加する。
+
+P3  Advanced inductive expansion
+    mutual inductive、approved functor 越し nested inductive、large elimination、
+    generic positivity traversal、対応 recursor hash rule を追加する。
+
+P4  Theorem graph retrieval expansion
+    embedding / graph ranking / premise recommendation を sidecar として追加する。
+    ranking score は certificate hash と validation pass/fail には入れない。
+
+P5  Formalization orchestrator integration
+    LLM / RAG / theorem graph を caller として接続し、候補生成、逆翻訳、
+    human review workflow を実装する。
+
+P6  Typeclass scalability
+    memoization、priority profile、larger algebraic hierarchy support を追加する。
+    ambiguity を score だけで解消する profile は追加しない。
 ```
 
 MVP では、AI モデルがなくても deterministic fixtures で全 endpoint を検査できるようにします。
