@@ -9,9 +9,10 @@ use npa_cert::{
     validate_candidate_batch_imports, validate_prior_current_decls, verify_module_cert,
     AxiomPolicy, AxiomRef, CandidateBatch, CandidateBatchResult, CandidateHashPreview,
     CandidateStatus, CertError, CheckedDeclCandidate, CoreDeclCandidate, CoreModule, GlobalRef,
-    Name, ProducerCheckedDeclInterface, ProducerEnvFingerprintBytes, ProducerImportEnvKey,
-    ProducerLimitKind, ProducerLimits, ProducerPriorChainBytes, ProducerPriorChainEntry,
-    ProducerProfile, ProducerTokenHashField, VerifiedModule, VerifierSession,
+    ModuleCert, Name, ProducerCheckedDeclInterface, ProducerEnvFingerprintBytes,
+    ProducerImportEnvKey, ProducerLimitKind, ProducerLimits, ProducerPriorChainBytes,
+    ProducerPriorChainEntry, ProducerProfile, ProducerTokenHashField, VerifiedModule,
+    VerifierSession,
 };
 use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
 
@@ -334,6 +335,18 @@ fn producer_types_are_available_from_public_api() {
         result.statuses.as_slice(),
         [CandidateStatus::Rejected(CertError::DecodeError)]
     ));
+}
+
+#[test]
+fn public_certificate_api_signatures_exclude_producer_profile() {
+    let _: fn(CoreModule, &[VerifiedModule]) -> npa_cert::Result<ModuleCert> = build_module_cert;
+    let _: fn(&[u8], &mut VerifierSession, &AxiomPolicy) -> npa_cert::Result<VerifiedModule> =
+        verify_module_cert;
+    let _: fn(CandidateBatch<'_>) -> npa_cert::Result<CandidateBatchResult> =
+        check_core_decl_candidates;
+    let sidecar_only = ProducerProfile::AiCoreMvp;
+
+    assert_eq!(sidecar_only, ProducerProfile::AiCoreMvp);
 }
 
 #[test]

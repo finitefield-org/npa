@@ -11,6 +11,19 @@ use crate::{
 /// Sidecar-only producer classification for audit and diagnostics.
 ///
 /// This profile is intentionally not accepted by certificate construction or verification APIs.
+///
+/// ```compile_fail
+/// use npa_cert::{build_module_cert, ProducerProfile};
+///
+/// let _ = build_module_cert(ProducerProfile::AiCoreMvp, &[]);
+/// ```
+///
+/// ```compile_fail
+/// use npa_cert::{verify_module_cert, ProducerProfile, VerifierSession};
+///
+/// let mut session = VerifierSession::new();
+/// let _ = verify_module_cert(&[], &mut session, &ProducerProfile::AiCoreMvp);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProducerProfile {
     /// Human-facing surface-language producer.
@@ -520,6 +533,14 @@ pub struct CandidateBatch<'a> {
 ///     decl_certificate_hash: zero,
 /// };
 /// ```
+///
+/// ```compile_fail
+/// use npa_cert::CheckedDeclCandidate;
+///
+/// fn leak_raw_declaration(token: CheckedDeclCandidate) {
+///     let _ = token.declaration;
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CheckedDeclCandidate {
     declaration: Decl,
@@ -599,6 +620,19 @@ pub struct CandidateHashPreview {
 }
 
 /// Per-candidate status returned by producer batch checking.
+///
+/// Accepted candidates are producer-side checked tokens, not verified modules.
+///
+/// ```compile_fail
+/// use npa_cert::{CandidateStatus, VerifiedModule};
+///
+/// fn trust_accepted_candidate(status: CandidateStatus) -> VerifiedModule {
+///     let CandidateStatus::Accepted(token) = status else {
+///         panic!("candidate was rejected");
+///     };
+///     token
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 // Phase 2 specifies a by-value accepted token; do not box the public API boundary.
 #[allow(clippy::large_enum_variant)]
