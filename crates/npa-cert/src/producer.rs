@@ -52,11 +52,99 @@ pub struct CandidateBatch<'a> {
 
 /// Opaque token for a candidate declaration accepted by producer checking.
 ///
-/// The token has no public constructor. Later producer milestones fill in the private payload and
-/// are the only path that may construct accepted tokens.
+/// The token has no public constructor and exposes no raw declaration getter. Later producer
+/// milestones construct this token only after candidate checking has recomputed its private hashes
+/// and fingerprints.
+///
+/// ```compile_fail
+/// use npa_cert::{CandidateHashPreview, CheckedDeclCandidate, ProducerLimits};
+/// use npa_kernel::{Decl, Expr, Level};
+///
+/// let declaration = Decl::Axiom {
+///     name: "P".to_owned(),
+///     universe_params: vec![],
+///     ty: Expr::sort(Level::zero()),
+/// };
+/// let zero = [0_u8; 32];
+/// let limits = ProducerLimits {
+///     max_declarations: 1,
+///     max_expr_nodes: 1,
+///     max_level_nodes: 1,
+///     max_name_components: 1,
+///     max_reduction_steps: 1,
+///     max_conversion_steps: 1,
+/// };
+///
+/// let _token = CheckedDeclCandidate {
+///     declaration,
+///     preview_hashes: CandidateHashPreview {
+///         type_hash: None,
+///         body_hash: None,
+///         decl_interface_hash: None,
+///         decl_certificate_hash: None,
+///     },
+///     pre_env_fingerprint: zero,
+///     post_env_fingerprint: zero,
+///     prior_chain_fingerprint: zero,
+///     limits,
+///     limit_profile_hash: zero,
+///     decl_interface_hash: zero,
+///     decl_certificate_hash: zero,
+/// };
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CheckedDeclCandidate {
-    _private: (),
+    declaration: Decl,
+    preview_hashes: CandidateHashPreview,
+    pre_env_fingerprint: Hash,
+    post_env_fingerprint: Hash,
+    prior_chain_fingerprint: Hash,
+    limits: ProducerLimits,
+    limit_profile_hash: Hash,
+    decl_interface_hash: Hash,
+    decl_certificate_hash: Hash,
+}
+
+impl CheckedDeclCandidate {
+    /// Return non-authoritative preview hashes captured while checking this token.
+    pub fn preview_hashes(&self) -> CandidateHashPreview {
+        self.preview_hashes
+    }
+
+    /// Return the producer environment fingerprint before this declaration was accepted.
+    pub fn pre_env_fingerprint(&self) -> Hash {
+        self.pre_env_fingerprint
+    }
+
+    /// Return the producer environment fingerprint after this declaration was accepted.
+    pub fn post_env_fingerprint(&self) -> Hash {
+        self.post_env_fingerprint
+    }
+
+    /// Return the prior-chain fingerprint committed by this token.
+    pub fn prior_chain_fingerprint(&self) -> Hash {
+        self.prior_chain_fingerprint
+    }
+
+    /// Return the deterministic limits used when this token was created.
+    pub fn limits(&self) -> ProducerLimits {
+        self.limits
+    }
+
+    /// Return the diagnostic hash of the limits used when this token was created.
+    pub fn limit_profile_hash(&self) -> Hash {
+        self.limit_profile_hash
+    }
+
+    /// Return the token's diagnostic declaration interface hash.
+    pub fn decl_interface_hash(&self) -> Hash {
+        self.decl_interface_hash
+    }
+
+    /// Return the token's diagnostic declaration certificate hash.
+    pub fn decl_certificate_hash(&self) -> Hash {
+        self.decl_certificate_hash
+    }
 }
 
 /// Non-authoritative hash preview computed while checking a producer candidate.
@@ -74,6 +162,8 @@ pub struct CandidateHashPreview {
 
 /// Per-candidate status returned by producer batch checking.
 #[derive(Clone, Debug, PartialEq, Eq)]
+// Phase 2 specifies a by-value accepted token; do not box the public API boundary.
+#[allow(clippy::large_enum_variant)]
 pub enum CandidateStatus {
     /// Candidate passed producer precheck and became an opaque token.
     Accepted(CheckedDeclCandidate),
