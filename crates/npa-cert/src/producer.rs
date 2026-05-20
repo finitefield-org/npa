@@ -4,8 +4,8 @@ use npa_kernel::{Ctx, Decl, Env, Error, Expr, Level};
 
 use crate::{
     encode_axiom_refs_to, encode_name_to, encode_uvar_to, hash_with_domain, union_axioms, AxiomRef,
-    CertError, ExportEntry, Hash, ModuleName, ProducerLimitKind, ProducerTokenHashField,
-    VerifiedModule,
+    CertError, DeclHashes, ExportEntry, Hash, ModuleName, ProducerLimitKind,
+    ProducerTokenHashField, VerifiedModule,
 };
 
 /// Sidecar-only producer classification for audit and diagnostics.
@@ -365,26 +365,28 @@ pub fn validate_prior_current_decls(
             return Err(CertError::ProducerTokenLimitTooLoose { token_index });
         }
 
-        let lookup_env =
-            producer_lookup_env_for_sources(batch.imports, &checked_decls, &checked_decl_sources)?;
-        let (computed_interface, hashes) =
-            crate::canonical_producer_checked_decl_hashes(&token.declaration, &lookup_env)?;
+        let resolved = resolve_core_decl_candidate(
+            batch.imports,
+            &checked_decls,
+            &checked_decl_sources,
+            &token.declaration,
+        )?;
 
         ensure_token_hash(
             token_index,
             ProducerTokenHashField::DeclInterfaceHash,
-            hashes.decl_interface_hash,
+            resolved.hashes.decl_interface_hash,
             token.decl_interface_hash,
         )?;
         ensure_token_hash(
             token_index,
             ProducerTokenHashField::DeclCertificateHash,
-            hashes.decl_certificate_hash,
+            resolved.hashes.decl_certificate_hash,
             token.decl_certificate_hash,
         )?;
 
         let mut next_checked_decls = checked_decls.clone();
-        next_checked_decls.push(computed_interface.clone());
+        next_checked_decls.push(resolved.interface.clone());
         let expected_post_env_fingerprint =
             producer_env_fingerprint(&ProducerEnvFingerprintBytes {
                 direct_imports: direct_imports.clone(),
@@ -398,12 +400,12 @@ pub fn validate_prior_current_decls(
         )?;
 
         prior_chain_entries.push(ProducerPriorChainEntry {
-            decl_interface_hash: hashes.decl_interface_hash,
-            decl_certificate_hash: hashes.decl_certificate_hash,
+            decl_interface_hash: resolved.hashes.decl_interface_hash,
+            decl_certificate_hash: resolved.hashes.decl_certificate_hash,
             pre_env_fingerprint: expected_pre_env_fingerprint,
             post_env_fingerprint: expected_post_env_fingerprint,
         });
-        checked_decls.push(computed_interface);
+        checked_decls.push(resolved.interface);
         checked_decl_sources.push(token.declaration.clone());
         expected_pre_env_fingerprint = expected_post_env_fingerprint;
     }
@@ -678,6 +680,11 @@ struct AcceptedCandidate {
     env: Env,
 }
 
+struct ResolvedCoreDeclCandidate {
+    interface: ProducerCheckedDeclInterface,
+    hashes: DeclHashes,
+}
+
 struct CandidateCheckContext<'a> {
     env: &'a Env,
     imports: &'a [VerifiedModule],
@@ -697,13 +704,12 @@ fn check_candidate_in_batch(
     ensure_no_unresolved_metavariable(&declaration)?;
     ensure_candidate_schema_limits(&declaration, context.limits)?;
 
-    let lookup_env = producer_lookup_env_for_sources(
+    let resolved = resolve_core_decl_candidate(
         context.imports,
         context.checked_decls,
         context.checked_decl_sources,
+        &declaration,
     )?;
-    let (interface, hashes) =
-        crate::canonical_producer_checked_decl_hashes(&declaration, &lookup_env)?;
 
     let mut candidate_env = context.env.clone();
     add_referenced_builtins_for_decl(
@@ -731,7 +737,7 @@ fn check_candidate_in_batch(
     crate::add_decl_to_env(&mut next_env, declaration.clone())?;
 
     let mut next_checked_decls = context.checked_decls.to_vec();
-    next_checked_decls.push(interface.clone());
+    next_checked_decls.push(resolved.interface.clone());
     let post_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
         direct_imports: context.direct_imports.to_vec(),
         checked_decls: next_checked_decls,
@@ -745,32 +751,46 @@ fn check_candidate_in_batch(
         preview_hashes: CandidateHashPreview {
             type_hash: None,
             body_hash: None,
-            decl_interface_hash: Some(hashes.decl_interface_hash),
-            decl_certificate_hash: Some(hashes.decl_certificate_hash),
+            decl_interface_hash: Some(resolved.hashes.decl_interface_hash),
+            decl_certificate_hash: Some(resolved.hashes.decl_certificate_hash),
         },
         pre_env_fingerprint: context.pre_env_fingerprint,
         post_env_fingerprint,
         prior_chain_fingerprint,
         limits: *context.limits,
         limit_profile_hash,
-        decl_interface_hash: hashes.decl_interface_hash,
-        decl_certificate_hash: hashes.decl_certificate_hash,
+        decl_interface_hash: resolved.hashes.decl_interface_hash,
+        decl_certificate_hash: resolved.hashes.decl_certificate_hash,
     };
     let prior_chain_entry = ProducerPriorChainEntry {
-        decl_interface_hash: hashes.decl_interface_hash,
-        decl_certificate_hash: hashes.decl_certificate_hash,
+        decl_interface_hash: resolved.hashes.decl_interface_hash,
+        decl_certificate_hash: resolved.hashes.decl_certificate_hash,
         pre_env_fingerprint: context.pre_env_fingerprint,
         post_env_fingerprint,
     };
 
     Ok(AcceptedCandidate {
         token,
-        interface,
+        interface: resolved.interface,
         prior_chain_entry,
         post_env_fingerprint,
         declaration,
         env: next_env,
     })
+}
+
+fn resolve_core_decl_candidate(
+    imports: &[VerifiedModule],
+    checked_decls: &[ProducerCheckedDeclInterface],
+    checked_decl_sources: &[Decl],
+    declaration: &Decl,
+) -> Result<ResolvedCoreDeclCandidate, CertError> {
+    // This is the producer boundary where name-based kernel declarations become hash-bound
+    // certificate references for dependency and private token hashes.
+    let lookup_env = producer_lookup_env_for_sources(imports, checked_decls, checked_decl_sources)?;
+    let (interface, hashes) =
+        crate::canonical_producer_checked_decl_hashes(declaration, &lookup_env)?;
+    Ok(ResolvedCoreDeclCandidate { interface, hashes })
 }
 
 fn fuel_to_usize(value: u64, limit: ProducerLimitKind) -> Result<usize, CertError> {

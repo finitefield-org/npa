@@ -51,6 +51,16 @@ fn verify_module(module: CoreModule) -> VerifiedModule {
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap()
 }
 
+fn verify_module_with_imports(module: CoreModule, imports: &[VerifiedModule]) -> VerifiedModule {
+    let cert = build_module_cert(module, imports).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    for import in imports {
+        session.register_verified_module(import.clone());
+    }
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap()
+}
+
 fn producer_env(
     direct_imports: Vec<ProducerImportEnvKey>,
     checked_decls: Vec<ProducerCheckedDeclInterface>,
@@ -89,6 +99,17 @@ fn axiom_module(module_name: &str, decl_name: &str) -> CoreModule {
     CoreModule {
         name: Name::from_dotted(module_name),
         declarations: vec![trivial_axiom(decl_name)],
+    }
+}
+
+fn sort_axiom_module(module_name: &str, decl_name: &str, level: Level) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted(module_name),
+        declarations: vec![Decl::Axiom {
+            name: decl_name.to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(level),
+        }],
     }
 }
 
@@ -361,6 +382,165 @@ fn check_core_decl_candidates_accepts_import_and_builtin_references() {
     };
     let builtin_tokens = accepted_tokens(check_core_decl_candidates(builtin_batch).unwrap());
     assert!(builtin_tokens[0].limit_profile_hash_matches());
+}
+
+#[test]
+fn check_core_decl_candidates_rejects_pretty_only_import_name() {
+    let import = verify_module(axiom_module("Lib.PrettyOnly", "PrettyOnlyType"));
+    let imports = [import];
+    let batch = CandidateBatch {
+        imports: &imports,
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: axiom_over("UsesPrettyOnly", "Lib.PrettyOnly.PrettyOnlyType"),
+        }],
+        limits: generous_limits(),
+    };
+
+    let result = check_core_decl_candidates(batch).unwrap();
+    assert_eq!(result.statuses.len(), 1);
+    assert!(matches!(
+        &result.statuses[0],
+        CandidateStatus::Rejected(CertError::UnknownDependency { name })
+            if *name == Name::from_dotted("Lib.PrettyOnly.PrettyOnlyType")
+    ));
+}
+
+#[test]
+fn check_core_decl_candidates_hashes_depend_on_import_decl_interface_not_name_only() {
+    let import_a = verify_module(sort_axiom_module("Lib.IfaceA", "IfaceT", Level::zero()));
+    let import_b = verify_module(sort_axiom_module(
+        "Lib.IfaceB",
+        "IfaceT",
+        Level::succ(Level::zero()),
+    ));
+    let decl = axiom_over("UsesIfaceT", "IfaceT");
+
+    let tokens_a = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: std::slice::from_ref(&import_a),
+            prior_current_decls: &[],
+            candidates: vec![CoreDeclCandidate {
+                declaration: decl.clone(),
+            }],
+            limits: generous_limits(),
+        })
+        .unwrap(),
+    );
+    let tokens_b = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: std::slice::from_ref(&import_b),
+            prior_current_decls: &[],
+            candidates: vec![CoreDeclCandidate {
+                declaration: decl.clone(),
+            }],
+            limits: generous_limits(),
+        })
+        .unwrap(),
+    );
+
+    assert_ne!(
+        tokens_a[0].decl_interface_hash(),
+        tokens_b[0].decl_interface_hash()
+    );
+    assert_ne!(
+        tokens_a[0].decl_certificate_hash(),
+        tokens_b[0].decl_certificate_hash()
+    );
+    assert_eq!(
+        tokens_a[0].preview_hashes().decl_interface_hash,
+        Some(tokens_a[0].decl_interface_hash())
+    );
+    assert_eq!(
+        tokens_a[0].preview_hashes().decl_certificate_hash,
+        Some(tokens_a[0].decl_certificate_hash())
+    );
+    assert_eq!(
+        tokens_b[0].preview_hashes().decl_interface_hash,
+        Some(tokens_b[0].decl_interface_hash())
+    );
+    assert_eq!(
+        tokens_b[0].preview_hashes().decl_certificate_hash,
+        Some(tokens_b[0].decl_certificate_hash())
+    );
+
+    let lookup_a = producer_lookup_env(&[import_a], &[]).unwrap();
+    let interface_a = producer_checked_decl_interface(&decl, &lookup_a).unwrap();
+    let lookup_b = producer_lookup_env(&[import_b], &[]).unwrap();
+    let interface_b = producer_checked_decl_interface(&decl, &lookup_b).unwrap();
+    assert_eq!(
+        tokens_a[0].decl_interface_hash(),
+        interface_a.decl_interface_hash
+    );
+    assert_eq!(
+        tokens_b[0].decl_interface_hash(),
+        interface_b.decl_interface_hash
+    );
+}
+
+#[test]
+fn check_core_decl_candidates_rejects_import_decl_interface_hash_mismatch() {
+    let original = verify_module(sort_axiom_module(
+        "Lib.MismatchOriginal",
+        "MismatchT",
+        Level::zero(),
+    ));
+    let mismatched = verify_module(sort_axiom_module(
+        "Lib.MismatchReplacement",
+        "MismatchT",
+        Level::succ(Level::zero()),
+    ));
+    let dependent = verify_module_with_imports(
+        CoreModule {
+            name: Name::from_dotted("Lib.MismatchUser"),
+            declarations: vec![axiom_over("UsesOriginalMismatchT", "MismatchT")],
+        },
+        std::slice::from_ref(&original),
+    );
+    let imports = [mismatched, dependent];
+    let batch = CandidateBatch {
+        imports: &imports,
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: trivial_axiom("WillNotRun"),
+        }],
+        limits: generous_limits(),
+    };
+
+    assert!(matches!(
+        check_core_decl_candidates(batch),
+        Err(CertError::UnknownDependency { name })
+            if name == Name::from_dotted("MismatchT")
+    ));
+}
+
+#[test]
+fn check_core_decl_candidates_rejects_ambiguous_import_name_instead_of_guessing() {
+    let import_a = verify_module(sort_axiom_module(
+        "Lib.AmbiguousA",
+        "AmbiguousIfaceT",
+        Level::zero(),
+    ));
+    let import_b = verify_module(sort_axiom_module(
+        "Lib.AmbiguousB",
+        "AmbiguousIfaceT",
+        Level::succ(Level::zero()),
+    ));
+    let imports = [import_a, import_b];
+    let batch = CandidateBatch {
+        imports: &imports,
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: axiom_over("UsesAmbiguousIfaceT", "AmbiguousIfaceT"),
+        }],
+        limits: generous_limits(),
+    };
+
+    assert!(matches!(
+        check_core_decl_candidates(batch),
+        Err(CertError::Kernel(KernelError::DuplicateDecl(name)))
+            if name == "AmbiguousIfaceT"
+    ));
 }
 
 #[test]
