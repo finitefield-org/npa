@@ -454,16 +454,12 @@ fn decl_certificate_payload(
     out.extend(interface_hash);
     match decl {
         DeclPayload::Axiom { .. } => encode_axiom_refs_to(&mut out, axiom_dependencies),
-        DeclPayload::Def {
-            value,
-            reducibility: CertReducibility::Opaque,
-            ..
-        } => {
+        DeclPayload::Def { value, .. } => {
             out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
-        DeclPayload::Def { .. } | DeclPayload::Inductive { .. } => {
+        DeclPayload::Inductive { .. } => {
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
