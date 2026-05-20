@@ -1,17 +1,28 @@
 use std::cmp::Ordering;
-use std::collections::VecDeque;
+use std::collections::{BTreeSet, VecDeque};
 
 use npa_cert::{Hash, Name};
-use npa_tactic::{goal_id_canonical_bytes, GoalId, MachineTacticBatchPolicy, TacticBudget};
+use npa_frontend::{
+    lex_machine_surface_tokens, parse_machine_term, FileId, MachineSurfaceTokenKind, MachineTerm,
+};
+use npa_kernel::Level;
+use npa_tactic::{
+    goal_id_canonical_bytes, CandidateApplyArg, CandidateRewriteRuleRef, GoalId,
+    MachineTacticBatchPolicy, MachineTacticCandidate, RawMachineTerm, RewriteDirection,
+    RewriteSite, SimpRuleRef, TacticBudget, TacticHead,
+};
+use sha2::{Digest, Sha256};
 
 use crate::current::MachineAxiomRefWire;
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
+use crate::prompt::FailedCandidateErrorKind;
 use crate::renderer::MachineGlobalRefView;
 use crate::snapshot::{MachineSnapshotGetError, MachineSnapshotGetOk};
 use crate::tactic::parse_deterministic_budget_with_error_kind;
 use crate::types::{
-    format_goal_id_wire, format_hash_string, MachineApiErrorWire, MachineApiResponseEnvelope,
-    MachineGoalView, MachineProofSession, MachineProofSnapshot, SessionId, SnapshotId,
+    format_goal_id_wire, format_hash_string, is_machine_local_name, MachineApiErrorWire,
+    MachineApiResponseEnvelope, MachineGoalView, MachineLocalView, MachineProofSession,
+    MachineProofSnapshot, SessionId, SnapshotId,
 };
 use crate::validation::{
     parse_request_body, parse_strict_u64_token, validate_json_object, FieldSpec, JsonFieldType,
@@ -22,7 +33,7 @@ use crate::{
     get_machine_snapshot, parse_machine_replay_request, parse_machine_tactic_batch_request,
     parse_machine_theorem_search_request, parse_machine_verify_request, run_machine_replay_request,
     run_machine_tactic_batch_request, run_machine_verify_request, search_machine_theorems_for_goal,
-    MachineBatchSchedulerLimits, MachineReplayError, MachineReplayResponse,
+    MachineApiTacticKind, MachineBatchSchedulerLimits, MachineReplayError, MachineReplayResponse,
     MachineTacticBatchError, MachineTacticBatchResponse, MachineTheoremMode,
     MachineTheoremSearchError, MachineTheoremSearchOkFields, MachineTheoremSearchResponse,
     MachineTheoremSearchResult, MachineVerifyError, MachineVerifyResponse,
@@ -30,6 +41,7 @@ use crate::{
 
 const PHASE7_MVP_MAX_TACTICS_PER_NODE: u32 = 16;
 const PHASE7_MVP_PREMISE_QUERY_LIMIT: u32 = 32;
+const PHASE7_CANDIDATE_PAYLOAD_HASH_TAG: &str = "npa.phase7.candidate-payload.v1";
 
 const PHASE7_CONFIG_FIELDS: &[FieldSpec] = &[
     FieldSpec::required("search_budget", JsonFieldType::Object),
@@ -174,6 +186,135 @@ pub struct Phase7PremiseRetrieval {
     pub cache_key: Phase7RetrievalCacheKey,
     pub cache_entries: Vec<Phase7PremiseCacheEntry>,
     pub results: Vec<MachineTheoremSearchResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7CandidateEnvelope {
+    pub candidate: MachineTacticCandidate,
+    pub phase7_candidate_payload_hash: Hash,
+    pub candidate_hash: Option<Hash>,
+    pub metadata: Phase7CandidateMetadata,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7CandidateMetadata {
+    pub source: Phase7CandidateSource,
+    pub rank: Phase7CandidateRankMetadata,
+    pub score: Phase7Score,
+    pub display_text: Option<String>,
+    pub premises_used: Vec<Phase7PremiseUsage>,
+    pub expected_effect: Phase7ExpectedEffect,
+    pub cost_estimate: Phase7CandidateCostEstimate,
+    pub trust_flags: Phase7TrustFlags,
+    pub repair: Option<Phase7CandidateRepairMetadata>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7CandidateSource {
+    Phase5Suggested,
+    Builtin,
+    Model,
+    Exploration,
+    Repair,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Phase7CandidateRankMetadata {
+    pub source_rank: u8,
+    pub source_index: u32,
+    pub builtin_kind_rank: u8,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7BuiltinKind {
+    Intro,
+    LocalExact,
+    InductionNat,
+    SimpLiteEmpty,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7ExpectedEffect {
+    IntroBinder,
+    CloseGoal,
+    Rewrite,
+    Simplify,
+    InductionSplit,
+    Unknown,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Phase7CandidateCostEstimate {
+    pub estimated_timeout_ms: u32,
+    pub risk: Phase7CandidateCostRisk,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7CandidateCostRisk {
+    Low,
+    Medium,
+    High,
+}
+
+pub type Phase7Score = i64;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7TrustFlags {
+    pub uses_axioms: Vec<MachineAxiomRefWire>,
+    pub contains_forbidden_tokens: bool,
+    pub forbidden_token_class: Option<Phase7ForbiddenTokenClass>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7CandidateRepairMetadata {
+    pub parent_candidate_hash: Hash,
+    pub error_kind: FailedCandidateErrorKind,
+    pub repair_depth: u32,
+    pub chain_tried_payload_hashes: Vec<Hash>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7ForbiddenToken {
+    pub class: Phase7ForbiddenTokenClass,
+    pub spelling: String,
+    pub raw_term_index: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7ForbiddenTokenClass {
+    Sorry,
+    Admit,
+    Axiom,
+    Unsafe,
+    Import,
+    SetOptionUnsafe,
+    Declare,
+    Eval,
+    Shell,
+    ExternalCommand,
+    DisallowedTacticKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase7CandidateFilterError {
+    RawMachineTermLex {
+        raw_term_index: u32,
+        source: String,
+        message: String,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7CandidateFilterResult {
+    pub accepted: Vec<Phase7CandidateEnvelope>,
+    pub rejected: Vec<Phase7RejectedCandidateEnvelope>,
+    pub errors: Vec<Phase7CandidateFilterError>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7RejectedCandidateEnvelope {
+    pub envelope: Phase7CandidateEnvelope,
+    pub forbidden_token: Phase7ForbiddenToken,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -549,6 +690,327 @@ pub fn phase7_premise_usages(search: &MachineTheoremSearchOkFields) -> Vec<Phase
     search.results.iter().map(phase7_premise_usage).collect()
 }
 
+pub fn phase7_mvp_candidate_envelopes(
+    goal: &MachineGoalView,
+    retrieval: &Phase7PremiseRetrieval,
+) -> Vec<Phase7CandidateEnvelope> {
+    phase7_mvp_candidate_generation(goal, retrieval).accepted
+}
+
+pub fn phase7_mvp_candidate_generation(
+    goal: &MachineGoalView,
+    retrieval: &Phase7PremiseRetrieval,
+) -> Phase7CandidateFilterResult {
+    let mut candidates = phase7_suggested_candidate_envelopes(&retrieval.results);
+    candidates.extend(phase7_builtin_candidate_envelopes(goal));
+    phase7_rank_filter_and_dedupe_candidate_envelopes(candidates)
+}
+
+pub fn phase7_suggested_candidate_envelopes(
+    results: &[MachineTheoremSearchResult],
+) -> Vec<Phase7CandidateEnvelope> {
+    let mut out = Vec::new();
+    let mut source_index = 0u32;
+    for result in results {
+        let premise_usage = phase7_premise_usage(result);
+        for suggested in &result.suggested_candidates {
+            let candidate = suggested.candidate.clone();
+            let metadata = phase7_candidate_metadata(
+                Phase7CandidateSource::Phase5Suggested,
+                None,
+                source_index,
+                vec![premise_usage.clone()],
+                result.axioms_used.clone(),
+                &candidate,
+            );
+            let envelope =
+                phase7_candidate_envelope(candidate, Some(suggested.candidate_hash), metadata);
+            out.push(envelope);
+            source_index = source_index
+                .checked_add(1)
+                .expect("phase7 suggested candidate source_index fits in u32");
+        }
+    }
+    out
+}
+
+pub fn phase7_builtin_candidate_envelopes(goal: &MachineGoalView) -> Vec<Phase7CandidateEnvelope> {
+    let mut out = Vec::new();
+
+    if let Some(candidate) = phase7_builtin_intro_candidate(goal) {
+        push_phase7_builtin_candidate(&mut out, Phase7BuiltinKind::Intro, 0, candidate);
+    }
+
+    let mut local_exact_index = 0u32;
+    for local in &goal.context {
+        if phase7_local_exact_prefilter(goal, local) {
+            push_phase7_builtin_candidate(
+                &mut out,
+                Phase7BuiltinKind::LocalExact,
+                local_exact_index,
+                MachineTacticCandidate::Exact {
+                    term: RawMachineTerm::new(local.machine_name.clone()),
+                },
+            );
+            local_exact_index = local_exact_index
+                .checked_add(1)
+                .expect("phase7 local exact source_index fits in u32");
+        }
+    }
+
+    let mut induction_index = 0u32;
+    for (index, local) in goal.context.iter().enumerate() {
+        if phase7_induction_nat_prefilter(goal, index, local) {
+            push_phase7_builtin_candidate(
+                &mut out,
+                Phase7BuiltinKind::InductionNat,
+                induction_index,
+                MachineTacticCandidate::InductionNat {
+                    local_name: local.machine_name.clone(),
+                },
+            );
+            induction_index = induction_index
+                .checked_add(1)
+                .expect("phase7 induction source_index fits in u32");
+        }
+    }
+
+    if phase7_goal_allows_tactic(goal, MachineApiTacticKind::SimpLite) {
+        push_phase7_builtin_candidate(
+            &mut out,
+            Phase7BuiltinKind::SimpLiteEmpty,
+            0,
+            MachineTacticCandidate::SimpLite { rules: Vec::new() },
+        );
+    }
+
+    out
+}
+
+pub fn phase7_rank_filter_and_dedupe_candidate_envelopes(
+    mut candidates: Vec<Phase7CandidateEnvelope>,
+) -> Phase7CandidateFilterResult {
+    candidates.sort_by(phase7_candidate_envelope_order);
+    let mut filtered = filter_phase7_candidate_envelopes(candidates);
+    filtered.accepted = phase7_dedupe_candidate_envelopes(filtered.accepted);
+    filtered
+}
+
+pub fn phase7_rank_and_dedupe_candidate_envelopes(
+    mut candidates: Vec<Phase7CandidateEnvelope>,
+) -> Vec<Phase7CandidateEnvelope> {
+    candidates.sort_by(phase7_candidate_envelope_order);
+    phase7_dedupe_candidate_envelopes(candidates)
+}
+
+fn phase7_dedupe_candidate_envelopes(
+    candidates: Vec<Phase7CandidateEnvelope>,
+) -> Vec<Phase7CandidateEnvelope> {
+    let mut seen = BTreeSet::new();
+    let mut out = Vec::new();
+    for candidate in candidates {
+        if seen.insert(candidate.phase7_candidate_payload_hash) {
+            out.push(candidate);
+        }
+    }
+    out
+}
+
+pub fn filter_phase7_candidate_envelopes(
+    candidates: Vec<Phase7CandidateEnvelope>,
+) -> Phase7CandidateFilterResult {
+    let mut accepted = Vec::new();
+    let mut rejected = Vec::new();
+    let mut errors = Vec::new();
+    for mut envelope in candidates {
+        match phase7_candidate_forbidden_token(&envelope.candidate) {
+            Ok(Some(forbidden_token)) => {
+                envelope.metadata.trust_flags.contains_forbidden_tokens = true;
+                envelope.metadata.trust_flags.forbidden_token_class = Some(forbidden_token.class);
+                rejected.push(Phase7RejectedCandidateEnvelope {
+                    envelope,
+                    forbidden_token,
+                });
+            }
+            Ok(None) => accepted.push(envelope),
+            Err(error) => errors.push(error),
+        }
+    }
+    Phase7CandidateFilterResult {
+        accepted,
+        rejected,
+        errors,
+    }
+}
+
+pub fn phase7_candidate_envelope(
+    candidate: MachineTacticCandidate,
+    candidate_hash: Option<Hash>,
+    metadata: Phase7CandidateMetadata,
+) -> Phase7CandidateEnvelope {
+    Phase7CandidateEnvelope {
+        phase7_candidate_payload_hash: phase7_candidate_payload_hash(&candidate),
+        candidate,
+        candidate_hash,
+        metadata,
+    }
+}
+
+pub fn phase7_candidate_payload_hash(candidate: &MachineTacticCandidate) -> Hash {
+    let payload = phase7_candidate_payload_json(candidate);
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(PHASE7_CANDIDATE_PAYLOAD_HASH_TAG.as_bytes());
+    bytes.push(0);
+    bytes.extend_from_slice(payload.as_bytes());
+    sha256(&bytes)
+}
+
+pub fn phase7_candidate_payload_json(candidate: &MachineTacticCandidate) -> String {
+    match candidate {
+        MachineTacticCandidate::Exact { term } => {
+            format!(
+                r#"{{"kind":"exact","term":{}}}"#,
+                phase7_raw_machine_term_json(term)
+            )
+        }
+        MachineTacticCandidate::Intro { name } => {
+            format!(r#"{{"kind":"intro","name":{}}}"#, json_string(name))
+        }
+        MachineTacticCandidate::Apply {
+            head,
+            universe_args,
+            args,
+        } => format!(
+            r#"{{"args":{},"head":{},"kind":"apply","universe_args":{}}}"#,
+            phase7_apply_arg_array_json(args),
+            phase7_tactic_head_json(head),
+            phase7_level_array_json(universe_args),
+        ),
+        MachineTacticCandidate::Rewrite {
+            rule,
+            direction,
+            site,
+        } => format!(
+            r#"{{"direction":{},"kind":"rw","rule":{},"site":{}}}"#,
+            json_string(phase7_rewrite_direction_wire(*direction)),
+            phase7_rewrite_rule_json(rule),
+            json_string(phase7_rewrite_site_wire(*site)),
+        ),
+        MachineTacticCandidate::SimpLite { rules } => {
+            format!(
+                r#"{{"kind":"simp-lite","rules":{}}}"#,
+                phase7_simp_rule_array_json(rules)
+            )
+        }
+        MachineTacticCandidate::InductionNat { local_name } => format!(
+            r#"{{"kind":"induction-nat","local_name":{}}}"#,
+            json_string(local_name)
+        ),
+    }
+}
+
+pub fn phase7_candidate_forbidden_token(
+    candidate: &MachineTacticCandidate,
+) -> Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> {
+    let mut best_token = None;
+    for (raw_term_index, term) in phase7_candidate_raw_terms(candidate)
+        .into_iter()
+        .enumerate()
+    {
+        if let Some(token) = phase7_raw_term_forbidden_token(usize_to_u32(raw_term_index), term)? {
+            if phase7_forbidden_token_is_better(best_token.as_ref(), &token) {
+                best_token = Some(token);
+            }
+        }
+    }
+    Ok(best_token)
+}
+
+pub fn phase7_expected_effect(candidate: &MachineTacticCandidate) -> Phase7ExpectedEffect {
+    match candidate {
+        MachineTacticCandidate::Intro { .. } => Phase7ExpectedEffect::IntroBinder,
+        MachineTacticCandidate::Exact { .. } => Phase7ExpectedEffect::CloseGoal,
+        MachineTacticCandidate::Rewrite { .. } => Phase7ExpectedEffect::Rewrite,
+        MachineTacticCandidate::SimpLite { .. } => Phase7ExpectedEffect::Simplify,
+        MachineTacticCandidate::InductionNat { .. } => Phase7ExpectedEffect::InductionSplit,
+        MachineTacticCandidate::Apply { .. } => Phase7ExpectedEffect::Unknown,
+    }
+}
+
+pub fn phase7_candidate_cost_estimate(
+    candidate: &MachineTacticCandidate,
+) -> Phase7CandidateCostEstimate {
+    match candidate {
+        MachineTacticCandidate::Intro { .. } | MachineTacticCandidate::Exact { .. } => {
+            Phase7CandidateCostEstimate {
+                estimated_timeout_ms: 100,
+                risk: Phase7CandidateCostRisk::Low,
+            }
+        }
+        MachineTacticCandidate::Rewrite { .. } => Phase7CandidateCostEstimate {
+            estimated_timeout_ms: 200,
+            risk: Phase7CandidateCostRisk::Medium,
+        },
+        MachineTacticCandidate::SimpLite { rules } if rules.is_empty() => {
+            Phase7CandidateCostEstimate {
+                estimated_timeout_ms: 100,
+                risk: Phase7CandidateCostRisk::Low,
+            }
+        }
+        MachineTacticCandidate::SimpLite { .. } => Phase7CandidateCostEstimate {
+            estimated_timeout_ms: 200,
+            risk: Phase7CandidateCostRisk::Medium,
+        },
+        MachineTacticCandidate::InductionNat { .. } => Phase7CandidateCostEstimate {
+            estimated_timeout_ms: 500,
+            risk: Phase7CandidateCostRisk::Medium,
+        },
+        MachineTacticCandidate::Apply { .. } => Phase7CandidateCostEstimate {
+            estimated_timeout_ms: 500,
+            risk: Phase7CandidateCostRisk::High,
+        },
+    }
+}
+
+pub fn phase7_fresh_intro_name(
+    goal: &MachineGoalView,
+    outer_binder_name: Option<&str>,
+) -> Option<String> {
+    let forbidden = goal
+        .context
+        .iter()
+        .map(|local| local.machine_name.as_str())
+        .collect::<BTreeSet<_>>();
+    let mut bases = Vec::new();
+    if let Some(name) = outer_binder_name {
+        if is_machine_local_name(name) {
+            bases.push(name.to_owned());
+        }
+    }
+    bases.extend(["x".to_owned(), "h".to_owned(), "n".to_owned()]);
+
+    for base in bases {
+        let suffix_limit = forbidden.len().saturating_add(1);
+        for suffix in 0..=suffix_limit {
+            let candidate = if suffix == 0 {
+                base.clone()
+            } else {
+                format!("{base}{suffix}")
+            };
+            if !is_machine_local_name(&candidate) {
+                if suffix > 0 {
+                    break;
+                }
+                continue;
+            }
+            if !forbidden.contains(candidate.as_str()) {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
 fn phase7_goal_summary(goal: &MachineGoalView, open_goal_index: usize) -> Phase7GoalSummary {
     Phase7GoalSummary {
         goal_id: goal.goal_id,
@@ -607,6 +1069,423 @@ fn phase7_premise_ref(result: &MachineTheoremSearchResult) -> Phase7PremiseRef {
         export_hash: result.global_ref.export_hash,
         decl_interface_hash: result.global_ref.decl_interface_hash,
     }
+}
+
+fn push_phase7_builtin_candidate(
+    out: &mut Vec<Phase7CandidateEnvelope>,
+    builtin_kind: Phase7BuiltinKind,
+    source_index: u32,
+    candidate: MachineTacticCandidate,
+) {
+    let metadata = phase7_candidate_metadata(
+        Phase7CandidateSource::Builtin,
+        Some(builtin_kind),
+        source_index,
+        Vec::new(),
+        Vec::new(),
+        &candidate,
+    );
+    let envelope = phase7_candidate_envelope(candidate, None, metadata);
+    out.push(envelope);
+}
+
+fn phase7_candidate_metadata(
+    source: Phase7CandidateSource,
+    builtin_kind: Option<Phase7BuiltinKind>,
+    source_index: u32,
+    premises_used: Vec<Phase7PremiseUsage>,
+    uses_axioms: Vec<MachineAxiomRefWire>,
+    candidate: &MachineTacticCandidate,
+) -> Phase7CandidateMetadata {
+    Phase7CandidateMetadata {
+        source,
+        rank: Phase7CandidateRankMetadata {
+            source_rank: phase7_candidate_source_rank(source),
+            source_index,
+            builtin_kind_rank: phase7_builtin_kind_rank(builtin_kind),
+        },
+        score: 0,
+        display_text: None,
+        premises_used,
+        expected_effect: phase7_expected_effect(candidate),
+        cost_estimate: phase7_candidate_cost_estimate(candidate),
+        trust_flags: Phase7TrustFlags {
+            uses_axioms,
+            contains_forbidden_tokens: false,
+            forbidden_token_class: None,
+        },
+        repair: None,
+    }
+}
+
+fn phase7_candidate_source_rank(source: Phase7CandidateSource) -> u8 {
+    match source {
+        Phase7CandidateSource::Phase5Suggested => 0,
+        Phase7CandidateSource::Builtin => 1,
+        Phase7CandidateSource::Model => 2,
+        Phase7CandidateSource::Exploration => 3,
+        Phase7CandidateSource::Repair => 4,
+    }
+}
+
+fn phase7_builtin_kind_rank(kind: Option<Phase7BuiltinKind>) -> u8 {
+    match kind {
+        Some(Phase7BuiltinKind::Intro) => 0,
+        Some(Phase7BuiltinKind::LocalExact) => 1,
+        Some(Phase7BuiltinKind::InductionNat) => 2,
+        Some(Phase7BuiltinKind::SimpLiteEmpty) => 3,
+        None => 255,
+    }
+}
+
+fn phase7_candidate_envelope_order(
+    left: &Phase7CandidateEnvelope,
+    right: &Phase7CandidateEnvelope,
+) -> Ordering {
+    left.metadata
+        .rank
+        .source_rank
+        .cmp(&right.metadata.rank.source_rank)
+        .then_with(|| {
+            left.metadata
+                .rank
+                .builtin_kind_rank
+                .cmp(&right.metadata.rank.builtin_kind_rank)
+        })
+        .then_with(|| {
+            left.metadata
+                .rank
+                .source_index
+                .cmp(&right.metadata.rank.source_index)
+        })
+        .then_with(|| {
+            left.phase7_candidate_payload_hash
+                .cmp(&right.phase7_candidate_payload_hash)
+        })
+}
+
+fn phase7_builtin_intro_candidate(goal: &MachineGoalView) -> Option<MachineTacticCandidate> {
+    let term = parse_machine_term(FileId(0), &goal.target.machine).ok()?;
+    let MachineTerm::Pi { binders, .. } = term else {
+        return None;
+    };
+    let outer_binder_name = binders.first().map(|binder| binder.name.as_str());
+    Some(MachineTacticCandidate::Intro {
+        name: phase7_fresh_intro_name(goal, outer_binder_name)?,
+    })
+}
+
+fn phase7_local_exact_prefilter(goal: &MachineGoalView, local: &MachineLocalView) -> bool {
+    local.value.is_none()
+        && local.ty.core_hash == goal.target.core_hash
+        && phase7_machine_name_is_unique(goal, &local.machine_name)
+}
+
+fn phase7_induction_nat_prefilter(
+    goal: &MachineGoalView,
+    context_index: usize,
+    local: &MachineLocalView,
+) -> bool {
+    phase7_goal_allows_tactic(goal, MachineApiTacticKind::InductionNat)
+        && phase7_machine_name_is_unique(goal, &local.machine_name)
+        && local.value.is_none()
+        && context_index + 1 == goal.context.len()
+        && goal.target.free_locals.contains(&local.local_id)
+}
+
+fn phase7_goal_allows_tactic(goal: &MachineGoalView, tactic: MachineApiTacticKind) -> bool {
+    goal.allowed_tactics.contains(&tactic)
+}
+
+fn phase7_machine_name_is_unique(goal: &MachineGoalView, machine_name: &str) -> bool {
+    goal.context
+        .iter()
+        .filter(|local| local.machine_name == machine_name)
+        .count()
+        == 1
+}
+
+fn phase7_raw_term_forbidden_token(
+    raw_term_index: u32,
+    term: &RawMachineTerm,
+) -> Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> {
+    let tokens = lex_machine_surface_tokens(&term.source).map_err(|error| {
+        Phase7CandidateFilterError::RawMachineTermLex {
+            raw_term_index,
+            source: term.source.clone(),
+            message: error.message,
+        }
+    })?;
+    let semantic_tokens = tokens
+        .iter()
+        .filter(|token| {
+            !matches!(
+                token.kind,
+                MachineSurfaceTokenKind::Whitespace | MachineSurfaceTokenKind::Comment
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let mut best_token = None;
+    for (index, token) in semantic_tokens.iter().enumerate() {
+        if matches!(token.kind, MachineSurfaceTokenKind::ExternalCommand) {
+            let candidate = Phase7ForbiddenToken {
+                class: Phase7ForbiddenTokenClass::ExternalCommand,
+                spelling: token.spelling.clone(),
+                raw_term_index,
+            };
+            if phase7_forbidden_token_is_better(best_token.as_ref(), &candidate) {
+                best_token = Some(candidate);
+            }
+        }
+        if token.spelling == "set_option"
+            && semantic_tokens
+                .get(index + 1)
+                .is_some_and(|next| next.spelling == "unsafe")
+        {
+            let candidate = Phase7ForbiddenToken {
+                class: Phase7ForbiddenTokenClass::SetOptionUnsafe,
+                spelling: "set_option unsafe".to_owned(),
+                raw_term_index,
+            };
+            if phase7_forbidden_token_is_better(best_token.as_ref(), &candidate) {
+                best_token = Some(candidate);
+            }
+            continue;
+        }
+        if token.spelling == "unsafe"
+            && index > 0
+            && semantic_tokens[index - 1].spelling == "set_option"
+        {
+            continue;
+        }
+        if let Some(class) = phase7_forbidden_token_class_for_spelling(&token.spelling) {
+            let candidate = Phase7ForbiddenToken {
+                class,
+                spelling: token.spelling.clone(),
+                raw_term_index,
+            };
+            if phase7_forbidden_token_is_better(best_token.as_ref(), &candidate) {
+                best_token = Some(candidate);
+            }
+        }
+    }
+    Ok(best_token)
+}
+
+fn phase7_forbidden_token_is_better(
+    current: Option<&Phase7ForbiddenToken>,
+    candidate: &Phase7ForbiddenToken,
+) -> bool {
+    current.is_none_or(|current| {
+        phase7_forbidden_token_class_rank(candidate.class)
+            < phase7_forbidden_token_class_rank(current.class)
+    })
+}
+
+fn phase7_forbidden_token_class_rank(class: Phase7ForbiddenTokenClass) -> u8 {
+    match class {
+        Phase7ForbiddenTokenClass::Sorry => 0,
+        Phase7ForbiddenTokenClass::Admit => 1,
+        Phase7ForbiddenTokenClass::Axiom => 2,
+        Phase7ForbiddenTokenClass::Unsafe => 3,
+        Phase7ForbiddenTokenClass::Import => 4,
+        Phase7ForbiddenTokenClass::SetOptionUnsafe => 5,
+        Phase7ForbiddenTokenClass::Declare => 6,
+        Phase7ForbiddenTokenClass::Eval => 7,
+        Phase7ForbiddenTokenClass::Shell => 8,
+        Phase7ForbiddenTokenClass::ExternalCommand => 9,
+        Phase7ForbiddenTokenClass::DisallowedTacticKind => 10,
+    }
+}
+
+fn phase7_forbidden_token_class_for_spelling(spelling: &str) -> Option<Phase7ForbiddenTokenClass> {
+    match spelling {
+        "sorry" => Some(Phase7ForbiddenTokenClass::Sorry),
+        "admit" => Some(Phase7ForbiddenTokenClass::Admit),
+        "axiom" => Some(Phase7ForbiddenTokenClass::Axiom),
+        "unsafe" => Some(Phase7ForbiddenTokenClass::Unsafe),
+        "import" => Some(Phase7ForbiddenTokenClass::Import),
+        "declare" => Some(Phase7ForbiddenTokenClass::Declare),
+        "eval" => Some(Phase7ForbiddenTokenClass::Eval),
+        "shell" => Some(Phase7ForbiddenTokenClass::Shell),
+        _ => None,
+    }
+}
+
+fn phase7_candidate_raw_terms(candidate: &MachineTacticCandidate) -> Vec<&RawMachineTerm> {
+    let mut terms = Vec::new();
+    match candidate {
+        MachineTacticCandidate::Exact { term } => terms.push(term),
+        MachineTacticCandidate::Apply { args, .. } => {
+            for arg in args {
+                if let CandidateApplyArg::Term(term) = arg {
+                    terms.push(term);
+                }
+            }
+        }
+        MachineTacticCandidate::Rewrite { rule, .. } => {
+            for arg in &rule.args {
+                if let CandidateApplyArg::Term(term) = arg {
+                    terms.push(term);
+                }
+            }
+        }
+        MachineTacticCandidate::Intro { .. }
+        | MachineTacticCandidate::SimpLite { .. }
+        | MachineTacticCandidate::InductionNat { .. } => {}
+    }
+    terms
+}
+
+fn phase7_raw_machine_term_json(term: &RawMachineTerm) -> String {
+    format!(r#"{{"source":{}}}"#, json_string(&term.source))
+}
+
+fn phase7_tactic_head_json(head: &TacticHead) -> String {
+    match head {
+        TacticHead::Imported {
+            name,
+            decl_interface_hash,
+        } => format!(
+            r#"{{"imported":{{"decl_interface_hash":{},"name":{}}}}}"#,
+            json_string(&format_hash_string(decl_interface_hash)),
+            json_string(&name.as_dotted()),
+        ),
+        TacticHead::CurrentModule {
+            name,
+            decl_interface_hash,
+        } => format!(
+            r#"{{"current_module":{{"decl_interface_hash":{},"name":{}}}}}"#,
+            json_string(&format_hash_string(decl_interface_hash)),
+            json_string(&name.as_dotted()),
+        ),
+        TacticHead::Local { name } => {
+            format!(r#"{{"local":{{"name":{}}}}}"#, json_string(name))
+        }
+    }
+}
+
+fn phase7_rewrite_rule_json(rule: &CandidateRewriteRuleRef) -> String {
+    format!(
+        r#"{{"args":{},"head":{},"universe_args":{}}}"#,
+        phase7_apply_arg_array_json(&rule.args),
+        phase7_tactic_head_json(&rule.head),
+        phase7_level_array_json(&rule.universe_args),
+    )
+}
+
+fn phase7_apply_arg_array_json(args: &[CandidateApplyArg]) -> String {
+    let members = args.iter().map(phase7_apply_arg_json).collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_apply_arg_json(arg: &CandidateApplyArg) -> String {
+    match arg {
+        CandidateApplyArg::Term(term) => format!(
+            r#"{{"mode":"term","term":{}}}"#,
+            phase7_raw_machine_term_json(term)
+        ),
+        CandidateApplyArg::Subgoal { name_hint } => {
+            let name_hint = name_hint
+                .as_ref()
+                .map(|name| json_string(name))
+                .unwrap_or_else(|| "null".to_owned());
+            format!(r#"{{"mode":"subgoal","name_hint":{name_hint}}}"#)
+        }
+        CandidateApplyArg::InferFromTarget => r#"{"mode":"infer_from_target"}"#.to_owned(),
+    }
+}
+
+fn phase7_simp_rule_array_json(rules: &[SimpRuleRef]) -> String {
+    let members = rules.iter().map(phase7_simp_rule_json).collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_simp_rule_json(rule: &SimpRuleRef) -> String {
+    format!(
+        r#"{{"decl_interface_hash":{},"direction":{},"name":{}}}"#,
+        json_string(&format_hash_string(&rule.decl_interface_hash)),
+        json_string(phase7_rewrite_direction_wire(rule.direction)),
+        json_string(&rule.name.as_dotted()),
+    )
+}
+
+fn phase7_level_array_json(levels: &[Level]) -> String {
+    let members = levels
+        .iter()
+        .map(|level| json_string(&phase7_render_level_wire(level)))
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_render_level_wire(level: &Level) -> String {
+    if let Some(value) = phase7_level_as_nat(level) {
+        return value.to_string();
+    }
+    match level {
+        Level::Zero => "0".to_owned(),
+        Level::Succ(inner) => format!("succ {}", phase7_render_level_wire(inner)),
+        Level::Max(lhs, rhs) => {
+            format!(
+                "max {} {}",
+                phase7_render_level_wire(lhs),
+                phase7_render_level_wire(rhs)
+            )
+        }
+        Level::IMax(lhs, rhs) => {
+            format!(
+                "imax {} {}",
+                phase7_render_level_wire(lhs),
+                phase7_render_level_wire(rhs)
+            )
+        }
+        Level::Param(name) => name.clone(),
+    }
+}
+
+fn phase7_level_as_nat(level: &Level) -> Option<u64> {
+    match level {
+        Level::Zero => Some(0),
+        Level::Succ(inner) => Some(phase7_level_as_nat(inner)? + 1),
+        _ => None,
+    }
+}
+
+fn phase7_rewrite_direction_wire(direction: RewriteDirection) -> &'static str {
+    match direction {
+        RewriteDirection::Forward => "forward",
+        RewriteDirection::Backward => "backward",
+    }
+}
+
+fn phase7_rewrite_site_wire(site: RewriteSite) -> &'static str {
+    match site {
+        RewriteSite::EqTargetLeft => "eq_target_left",
+        RewriteSite::EqTargetRight => "eq_target_right",
+    }
+}
+
+fn json_string(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('"');
+    for ch in value.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            ch if ch <= '\u{1f}' => {
+                out.push_str("\\u");
+                out.push_str(&format!("{:04x}", ch as u32));
+            }
+            ch => out.push(ch),
+        }
+    }
+    out.push('"');
+    out
+}
+
+fn sha256(bytes: &[u8]) -> Hash {
+    Sha256::digest(bytes).into()
 }
 
 fn usize_to_u32(value: usize) -> u32 {
@@ -1064,14 +1943,17 @@ fn invalid_u64(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use npa_tactic::{MachineTacticCandidate, MetaVarId};
+    use npa_tactic::{
+        CandidateApplyArg, CandidateRewriteRuleRef, MachineTacticCandidate, MetaVarId,
+        RawMachineTerm, RewriteDirection, RewriteSite, TacticHead,
+    };
 
     use crate::{
-        parse_machine_snapshot_get_request, parse_machine_theorem_search_request, JsonFieldType,
-        LocalId, MachineAllowedModulesFilter, MachineApiOkResponse, MachineApiRequestErrorReason,
-        MachineApiResponseEnvelope, MachineApiResponseStatus, MachineExprView, MachineLocalView,
-        MachineSuggestedCandidate, MachineSuggestedCandidateStatus, MachineTheoremGlobalRef,
-        MachineTheoremStatement,
+        parse_machine_snapshot_get_request, parse_machine_tactic_batch_request,
+        parse_machine_theorem_search_request, JsonFieldType, LocalId, MachineAllowedModulesFilter,
+        MachineApiOkResponse, MachineApiRequestErrorReason, MachineApiResponseEnvelope,
+        MachineApiResponseStatus, MachineExprView, MachineLocalView, MachineSuggestedCandidate,
+        MachineSuggestedCandidateStatus, MachineTheoremGlobalRef, MachineTheoremStatement,
     };
 
     fn hash(byte: u8) -> Hash {
@@ -1203,6 +2085,18 @@ mod tests {
         }
     }
 
+    fn empty_retrieval() -> Phase7PremiseRetrieval {
+        Phase7PremiseRetrieval {
+            cache_key: Phase7RetrievalCacheKey {
+                session_root_hash: hash(90),
+                query_fingerprint: hash(91),
+                theorem_index_fingerprint: hash(92),
+            },
+            cache_entries: Vec::new(),
+            results: Vec::new(),
+        }
+    }
+
     fn valid_config_json() -> &'static str {
         r#"{
           "search_budget": {
@@ -1225,6 +2119,35 @@ mod tests {
             "stop_after_failures": 16
           }
         }"#
+    }
+
+    fn batch_request_with_candidate(candidate_json: &str) -> String {
+        let request = snapshot_request();
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidates":[{{"candidate_id":"c0","candidate":{candidate_json}}}],
+              "deterministic_budget":{{
+                "max_tactic_steps":64,
+                "max_whnf_steps":10000,
+                "max_conversion_steps":10000,
+                "max_rewrite_steps":100,
+                "max_meta_allocations":8,
+                "max_expr_nodes":20000
+              }},
+              "batch_policy":{{
+                "max_evaluated_candidates":16,
+                "stop_after_successes":8,
+                "stop_after_failures":16
+              }}
+            }}"#,
+            request.session_id.wire(),
+            request.snapshot_id.wire(),
+            format_hash_string(&request.state_fingerprint),
+        )
     }
 
     #[test]
@@ -1446,6 +2369,419 @@ mod tests {
                 theorem_index_fingerprint: hash(21),
             }
         );
+    }
+
+    #[test]
+    fn candidate_payload_json_is_phase5_candidate_shape_and_hash_is_payload_only() {
+        let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+        let payload = phase7_candidate_payload_json(&candidate);
+
+        assert_eq!(payload, r#"{"kind":"simp-lite","rules":[]}"#);
+        parse_machine_tactic_batch_request(&batch_request_with_candidate(&payload)).unwrap();
+
+        let mut metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::SimpLiteEmpty),
+            0,
+            Vec::new(),
+            Vec::new(),
+            &candidate,
+        );
+        metadata.score = 999;
+        metadata.display_text = Some("unsafe display is not payload".to_owned());
+        let first = phase7_candidate_envelope(candidate.clone(), None, metadata);
+        let second = phase7_candidate_envelope(
+            candidate,
+            Some(hash(77)),
+            phase7_candidate_metadata(
+                Phase7CandidateSource::Phase5Suggested,
+                None,
+                7,
+                Vec::new(),
+                Vec::new(),
+                &MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            ),
+        );
+
+        assert_eq!(
+            first.phase7_candidate_payload_hash,
+            second.phase7_candidate_payload_hash
+        );
+        assert!(!payload.contains("candidate_hash"));
+        assert!(!payload.contains("display"));
+        assert!(!payload.contains("premises"));
+    }
+
+    #[test]
+    fn candidate_payload_json_uses_canonical_object_key_order() {
+        let apply = MachineTacticCandidate::Apply {
+            head: TacticHead::Local {
+                name: "f".to_owned(),
+            },
+            universe_args: Vec::new(),
+            args: vec![
+                CandidateApplyArg::Term(RawMachineTerm::new("h\n")),
+                CandidateApplyArg::Subgoal { name_hint: None },
+                CandidateApplyArg::InferFromTarget,
+            ],
+        };
+        let apply_payload = phase7_candidate_payload_json(&apply);
+
+        assert_eq!(
+            apply_payload,
+            r#"{"args":[{"mode":"term","term":{"source":"h\u000a"}},{"mode":"subgoal","name_hint":null},{"mode":"infer_from_target"}],"head":{"local":{"name":"f"}},"kind":"apply","universe_args":[]}"#
+        );
+        parse_machine_tactic_batch_request(&batch_request_with_candidate(&apply_payload)).unwrap();
+
+        let rw = MachineTacticCandidate::Rewrite {
+            rule: CandidateRewriteRuleRef {
+                head: TacticHead::Imported {
+                    name: name("Nat.add_zero"),
+                    decl_interface_hash: hash(50),
+                },
+                universe_args: Vec::new(),
+                args: vec![CandidateApplyArg::InferFromTarget],
+            },
+            direction: RewriteDirection::Forward,
+            site: RewriteSite::EqTargetLeft,
+        };
+        let rw_payload = phase7_candidate_payload_json(&rw);
+
+        assert_eq!(
+            rw_payload,
+            format!(
+                r#"{{"direction":"forward","kind":"rw","rule":{{"args":[{{"mode":"infer_from_target"}}],"head":{{"imported":{{"decl_interface_hash":{},"name":"Nat.add_zero"}}}},"universe_args":[]}},"site":"eq_target_left"}}"#,
+                json_string(&format_hash_string(&hash(50)))
+            )
+        );
+        parse_machine_tactic_batch_request(&batch_request_with_candidate(&rw_payload)).unwrap();
+    }
+
+    #[test]
+    fn candidate_metadata_matches_phase7_score_and_repair_shape() {
+        let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+        let mut metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Repair,
+            None,
+            0,
+            Vec::new(),
+            Vec::new(),
+            &candidate,
+        );
+        metadata.score = -1;
+        metadata.repair = Some(Phase7CandidateRepairMetadata {
+            parent_candidate_hash: hash(60),
+            error_kind: FailedCandidateErrorKind::TypeMismatch,
+            repair_depth: 1,
+            chain_tried_payload_hashes: vec![hash(61)],
+        });
+
+        assert_eq!(metadata.score, -1);
+        assert_eq!(
+            metadata.repair,
+            Some(Phase7CandidateRepairMetadata {
+                parent_candidate_hash: hash(60),
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                repair_depth: 1,
+                chain_tried_payload_hashes: vec![hash(61)],
+            })
+        );
+    }
+
+    #[test]
+    fn suggested_candidate_envelopes_flatten_phase5_results_and_preserve_hashes() {
+        let suggested = MachineSuggestedCandidate {
+            status: MachineSuggestedCandidateStatus::Validated,
+            candidate_hash: hash(40),
+            candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+        };
+        let mut result = theorem_result("display", vec![suggested]);
+        result.score = 999;
+
+        let envelopes = phase7_suggested_candidate_envelopes(&[result.clone()]);
+
+        assert_eq!(envelopes.len(), 1);
+        assert_eq!(envelopes[0].candidate_hash, Some(hash(40)));
+        assert_eq!(
+            envelopes[0].metadata.source,
+            Phase7CandidateSource::Phase5Suggested
+        );
+        assert_eq!(
+            envelopes[0].metadata.rank,
+            Phase7CandidateRankMetadata {
+                source_rank: 0,
+                source_index: 0,
+                builtin_kind_rank: 255
+            }
+        );
+        assert_eq!(envelopes[0].metadata.score, 0);
+        assert_eq!(envelopes[0].metadata.premises_used.len(), 1);
+        assert_eq!(
+            envelopes[0].metadata.premises_used[0].premise_ref,
+            phase7_premise_ref(&result)
+        );
+        assert_eq!(
+            envelopes[0].metadata.trust_flags.uses_axioms,
+            result.axioms_used
+        );
+    }
+
+    #[test]
+    fn builtin_generator_emits_mvp_candidates_without_phase5_hashes() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 1, 1, None);
+        goal.target.machine = "forall (p : Prop), Prop".to_owned();
+        goal.context[0].machine_name = "n".to_owned();
+        goal.context[0].display_name = "n".to_owned();
+        goal.allowed_tactics = vec![
+            MachineApiTacticKind::InductionNat,
+            MachineApiTacticKind::SimpLite,
+        ];
+
+        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+
+        assert_eq!(envelopes.len(), 3);
+        assert!(envelopes
+            .iter()
+            .all(|envelope| envelope.candidate_hash.is_none()));
+        assert!(matches!(
+            envelopes[0].candidate,
+            MachineTacticCandidate::Intro { ref name } if name == "p"
+        ));
+        assert!(matches!(
+            envelopes[1].candidate,
+            MachineTacticCandidate::InductionNat { ref local_name } if local_name == "n"
+        ));
+        assert!(matches!(
+            envelopes[2].candidate,
+            MachineTacticCandidate::SimpLite { ref rules } if rules.is_empty()
+        ));
+        assert_eq!(envelopes[0].metadata.rank.builtin_kind_rank, 0);
+        assert_eq!(envelopes[1].metadata.rank.builtin_kind_rank, 2);
+        assert_eq!(envelopes[2].metadata.rank.builtin_kind_rank, 3);
+    }
+
+    #[test]
+    fn fresh_intro_name_skips_unbounded_suffix_scan_for_max_length_base() {
+        let max_length_name = "a".repeat(64);
+        assert!(is_machine_local_name(&max_length_name));
+        assert!(!is_machine_local_name(&format!("{max_length_name}1")));
+
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 1, None);
+        goal.context[0].machine_name = max_length_name.clone();
+
+        assert_eq!(
+            phase7_fresh_intro_name(&goal, Some(&max_length_name)),
+            Some("x".to_owned())
+        );
+    }
+
+    #[test]
+    fn builtin_local_exact_requires_unique_assumption_with_matching_target_hash() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        let mut local = local_view(0);
+        local.machine_name = "h".to_owned();
+        local.display_name = "h".to_owned();
+        local.ty = goal.target.clone();
+        goal.context = vec![local.clone()];
+
+        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+
+        assert_eq!(envelopes.len(), 1);
+        assert!(matches!(
+            envelopes[0].candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h"
+        ));
+
+        let mut duplicate_goal = goal;
+        duplicate_goal.context.push(local);
+        assert!(phase7_builtin_candidate_envelopes(&duplicate_goal).is_empty());
+    }
+
+    #[test]
+    fn induction_nat_prefilter_requires_last_context_assumption_used_by_target() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 1, 2, None);
+        goal.context[0].machine_name = "n".to_owned();
+        goal.context[1].machine_name = "m".to_owned();
+        goal.allowed_tactics = vec![MachineApiTacticKind::InductionNat];
+
+        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+
+        assert!(envelopes.is_empty());
+
+        goal.context.swap(0, 1);
+        goal.context[1].local_id = LocalId(0);
+        goal.context[1].machine_name = "n".to_owned();
+        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+
+        assert_eq!(envelopes.len(), 1);
+        assert!(matches!(
+            envelopes[0].candidate,
+            MachineTacticCandidate::InductionNat { ref local_name } if local_name == "n"
+        ));
+    }
+
+    #[test]
+    fn forbidden_token_filter_scans_only_raw_machine_term_tokens() {
+        let unsafe_candidate = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new("Std.unsafe.Type"),
+        };
+        let token = phase7_candidate_forbidden_token(&unsafe_candidate)
+            .unwrap()
+            .unwrap();
+        assert_eq!(token.class, Phase7ForbiddenTokenClass::Unsafe);
+        assert_eq!(token.spelling, "unsafe");
+
+        let set_option_candidate = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new("set_option -- comment\n unsafe"),
+        };
+        let token = phase7_candidate_forbidden_token(&set_option_candidate)
+            .unwrap()
+            .unwrap();
+        assert_eq!(token.class, Phase7ForbiddenTokenClass::SetOptionUnsafe);
+
+        let priority_candidate = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new("import unsafe"),
+        };
+        let token = phase7_candidate_forbidden_token(&priority_candidate)
+            .unwrap()
+            .unwrap();
+        assert_eq!(token.class, Phase7ForbiddenTokenClass::Unsafe);
+        assert_eq!(token.spelling, "unsafe");
+
+        let safe_candidate = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new("hunsafe"),
+        };
+        assert_eq!(
+            phase7_candidate_forbidden_token(&safe_candidate).unwrap(),
+            None
+        );
+
+        let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+        let mut metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::SimpLiteEmpty),
+            0,
+            Vec::new(),
+            Vec::new(),
+            &candidate,
+        );
+        metadata.display_text = Some("unsafe".to_owned());
+        let result = filter_phase7_candidate_envelopes(vec![phase7_candidate_envelope(
+            candidate, None, metadata,
+        )]);
+        assert_eq!(result.accepted.len(), 1);
+        assert!(result.rejected.is_empty());
+        assert!(result.errors.is_empty());
+    }
+
+    #[test]
+    fn mvp_candidate_generation_preserves_forbidden_rejections_before_dedupe() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        let mut local = local_view(0);
+        local.machine_name = "unsafe".to_owned();
+        local.display_name = "unsafe".to_owned();
+        local.ty = goal.target.clone();
+        goal.context = vec![local];
+
+        let builtin = phase7_builtin_candidate_envelopes(&goal);
+        assert_eq!(builtin.len(), 1);
+        assert!(matches!(
+            builtin[0].candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "unsafe"
+        ));
+
+        let result = phase7_mvp_candidate_generation(&goal, &empty_retrieval());
+
+        assert!(result.accepted.is_empty());
+        assert!(result.errors.is_empty());
+        assert_eq!(result.rejected.len(), 1);
+        assert_eq!(
+            result.rejected[0].forbidden_token.class,
+            Phase7ForbiddenTokenClass::Unsafe
+        );
+        assert!(
+            result.rejected[0]
+                .envelope
+                .metadata
+                .trust_flags
+                .contains_forbidden_tokens
+        );
+    }
+
+    #[test]
+    fn candidate_ordering_and_dedupe_use_rank_not_score_or_display_text() {
+        let candidate0 = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new("h0"),
+        };
+        let candidate1 = MachineTacticCandidate::Exact {
+            term: RawMachineTerm::new("h1"),
+        };
+        let duplicate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+
+        let mut later_metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::LocalExact),
+            1,
+            Vec::new(),
+            Vec::new(),
+            &candidate1,
+        );
+        later_metadata.score = 1000;
+        later_metadata.display_text = Some("aaa".to_owned());
+        let earlier_metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::LocalExact),
+            0,
+            Vec::new(),
+            Vec::new(),
+            &candidate0,
+        );
+        let builtin_duplicate_metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Builtin,
+            Some(Phase7BuiltinKind::SimpLiteEmpty),
+            0,
+            Vec::new(),
+            Vec::new(),
+            &duplicate,
+        );
+        let suggested_duplicate_metadata = phase7_candidate_metadata(
+            Phase7CandidateSource::Phase5Suggested,
+            None,
+            9,
+            Vec::new(),
+            Vec::new(),
+            &duplicate,
+        );
+
+        let ordered = phase7_rank_and_dedupe_candidate_envelopes(vec![
+            phase7_candidate_envelope(duplicate.clone(), None, builtin_duplicate_metadata),
+            phase7_candidate_envelope(candidate1, None, later_metadata),
+            phase7_candidate_envelope(candidate0, None, earlier_metadata),
+            phase7_candidate_envelope(duplicate, Some(hash(88)), suggested_duplicate_metadata),
+        ]);
+
+        assert_eq!(ordered.len(), 3);
+        assert!(matches!(
+            ordered[0].candidate,
+            MachineTacticCandidate::SimpLite { .. }
+        ));
+        assert_eq!(ordered[0].candidate_hash, Some(hash(88)));
+        assert!(matches!(
+            ordered[1].candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h0"
+        ));
+        assert!(matches!(
+            ordered[2].candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h1"
+        ));
     }
 
     #[test]
