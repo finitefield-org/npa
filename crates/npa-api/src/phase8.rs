@@ -33,6 +33,10 @@ pub const PHASE8_AI_AUDIT_SIDECAR_SCHEMA: &str = "npa.phase8.ai_audit_sidecar.v1
 pub const PHASE8_AI_AUDIT_PROMPT_INPUT_SCHEMA: &str = "npa.phase8.ai_audit_prompt_input.v1";
 pub const PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA: &str =
     "npa.phase8.audit_sidecar_validation_result.v1";
+pub const PHASE8_AI_SIDECAR_DIAGNOSTIC_RESULT_SCHEMA: &str =
+    "npa.phase8.ai_sidecar_diagnostic_result.v1";
+pub const PHASE8_AI_SIDECAR_DIAGNOSTIC_EVALUATION_FAILURE_SCHEMA: &str =
+    "npa.phase8.ai_sidecar_diagnostic_evaluation_failure.v1";
 pub const PHASE8_RELEASE_POLICY_SCHEMA: &str = "npa.phase8.release_policy.v1";
 pub const PHASE8_AUXILIARY_RESULT_SCHEMA: &str = "npa.phase8.auxiliary_result.v1";
 pub const PHASE8_AUXILIARY_RESULT_STORE_MANIFEST_SCHEMA: &str =
@@ -4968,6 +4972,488 @@ impl Phase8AuditSidecarValidationResult {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AiSidecarDiagnosticStatus {
+    Passed,
+    Failed,
+}
+
+impl Phase8AiSidecarDiagnosticStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Passed => "passed",
+            Self::Failed => "failed",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8RequiredAiSidecarDiagnosticTargetKind {
+    MachineResult,
+    NormalizedComparison,
+}
+
+impl Phase8RequiredAiSidecarDiagnosticTargetKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::MachineResult => "machine_result",
+            Self::NormalizedComparison => "normalized_comparison",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase8RequiredAiSidecarDiagnosticTarget {
+    MachineResult {
+        result_index: usize,
+        normalized_result_hash: Hash,
+        checker_profile: String,
+        request_hash: Hash,
+        result_hash: Hash,
+        policy_hash: Hash,
+    },
+    NormalizedComparison {
+        normalized_result_hash: Hash,
+    },
+}
+
+impl Phase8RequiredAiSidecarDiagnosticTarget {
+    pub const fn kind(&self) -> Phase8RequiredAiSidecarDiagnosticTargetKind {
+        match self {
+            Self::MachineResult { .. } => {
+                Phase8RequiredAiSidecarDiagnosticTargetKind::MachineResult
+            }
+            Self::NormalizedComparison { .. } => {
+                Phase8RequiredAiSidecarDiagnosticTargetKind::NormalizedComparison
+            }
+        }
+    }
+
+    pub const fn normalized_result_hash(&self) -> Hash {
+        match self {
+            Self::MachineResult {
+                normalized_result_hash,
+                ..
+            }
+            | Self::NormalizedComparison {
+                normalized_result_hash,
+            } => *normalized_result_hash,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AiSidecarDiagnosticFailureReasonCode {
+    RequiredAiSidecarSelectedRawMissing,
+    RequiredAiSidecarSelectedRawDuplicate,
+    RequiredAiSidecarMissing,
+    RequiredAiSidecarDuplicate,
+    RequiredAiSidecarInputPolicyMismatch,
+    RequiredAiSidecarValidationMissing,
+    RequiredAiSidecarValidationDuplicate,
+    RequiredAiSidecarValidationModeMismatch,
+    RequiredAiSidecarValidationFailed,
+    RequiredAiSidecarValidationInputPolicyMismatch,
+    RequiredAiSidecarValidationSourceMismatch,
+    RequiredAiSidecarSourceMismatch,
+}
+
+impl Phase8AiSidecarDiagnosticFailureReasonCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::RequiredAiSidecarSelectedRawMissing => "required_ai_sidecar_selected_raw_missing",
+            Self::RequiredAiSidecarSelectedRawDuplicate => {
+                "required_ai_sidecar_selected_raw_duplicate"
+            }
+            Self::RequiredAiSidecarMissing => "required_ai_sidecar_missing",
+            Self::RequiredAiSidecarDuplicate => "required_ai_sidecar_duplicate",
+            Self::RequiredAiSidecarInputPolicyMismatch => {
+                "required_ai_sidecar_input_policy_mismatch"
+            }
+            Self::RequiredAiSidecarValidationMissing => "required_ai_sidecar_validation_missing",
+            Self::RequiredAiSidecarValidationDuplicate => {
+                "required_ai_sidecar_validation_duplicate"
+            }
+            Self::RequiredAiSidecarValidationModeMismatch => {
+                "required_ai_sidecar_validation_mode_mismatch"
+            }
+            Self::RequiredAiSidecarValidationFailed => "required_ai_sidecar_validation_failed",
+            Self::RequiredAiSidecarValidationInputPolicyMismatch => {
+                "required_ai_sidecar_validation_input_policy_mismatch"
+            }
+            Self::RequiredAiSidecarValidationSourceMismatch => {
+                "required_ai_sidecar_validation_source_mismatch"
+            }
+            Self::RequiredAiSidecarSourceMismatch => "required_ai_sidecar_source_mismatch",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiSidecarDiagnosticError {
+    pub reason_code: Phase8AiSidecarDiagnosticFailureReasonCode,
+    pub field: String,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8AiSidecarDiagnosticError {
+    fn value(
+        reason_code: Phase8AiSidecarDiagnosticFailureReasonCode,
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into()),
+            actual_value: Some(actual_value.into()),
+        }
+    }
+
+    fn hash(
+        reason_code: Phase8AiSidecarDiagnosticFailureReasonCode,
+        field: impl Into<String>,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: Some(expected_hash),
+            actual_hash: Some(actual_hash),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            ("field".to_owned(), phase8_json_string_literal(&self.field)),
+            (
+                "kind".to_owned(),
+                phase8_json_string_literal("ai_sidecar_diagnostic_failure"),
+            ),
+            (
+                "reason_code".to_owned(),
+                phase8_json_string_literal(self.reason_code.as_str()),
+            ),
+        ];
+        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiSidecarDiagnosticResult {
+    pub policy_hash: Hash,
+    pub input_policy_hash: Hash,
+    pub normalized_result_hash: Hash,
+    pub status: Phase8AiSidecarDiagnosticStatus,
+    pub target_count: u64,
+    pub error: Option<Phase8AiSidecarDiagnosticError>,
+}
+
+impl Phase8AiSidecarDiagnosticResult {
+    fn passed(
+        policy_hash: Hash,
+        input_policy_hash: Hash,
+        normalized_result_hash: Hash,
+        target_count: u64,
+    ) -> Self {
+        Self {
+            policy_hash,
+            input_policy_hash,
+            normalized_result_hash,
+            status: Phase8AiSidecarDiagnosticStatus::Passed,
+            target_count,
+            error: None,
+        }
+    }
+
+    fn failed(
+        policy_hash: Hash,
+        input_policy_hash: Hash,
+        normalized_result_hash: Hash,
+        target_count: u64,
+        error: Phase8AiSidecarDiagnosticError,
+    ) -> Self {
+        Self {
+            policy_hash,
+            input_policy_hash,
+            normalized_result_hash,
+            status: Phase8AiSidecarDiagnosticStatus::Failed,
+            target_count,
+            error: Some(error),
+        }
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "input_policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.input_policy_hash),
+            ),
+            (
+                "normalized_result_hash".to_owned(),
+                phase8_hash_json_literal(&self.normalized_result_hash),
+            ),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AI_SIDECAR_DIAGNOSTIC_RESULT_SCHEMA),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+            ("target_count".to_owned(), self.target_count.to_string()),
+        ];
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AiSidecarDiagnosticEvaluationFailureReasonCode {
+    AiSidecarInputUnreadable,
+    AiSidecarInputHashMismatch,
+    AiSidecarInputJsonInvalid,
+    AiSidecarInputSchemaInvalid,
+    AuditSidecarValidationInputUnreadable,
+    AuditSidecarValidationInputHashMismatch,
+    AuditSidecarValidationInputJsonInvalid,
+    AuditSidecarValidationInputSchemaInvalid,
+    AiSidecarDiagnosticInputUnreadable,
+    AiSidecarDiagnosticInputHashMismatch,
+    AiSidecarDiagnosticInputJsonInvalid,
+    AiSidecarDiagnosticInputSchemaInvalid,
+    CiDiagnosticTargetDuplicate,
+    AiSidecarDiagnosticTargetCountMismatch,
+}
+
+impl Phase8AiSidecarDiagnosticEvaluationFailureReasonCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::AiSidecarInputUnreadable => "ai_sidecar_input_unreadable",
+            Self::AiSidecarInputHashMismatch => "ai_sidecar_input_hash_mismatch",
+            Self::AiSidecarInputJsonInvalid => "ai_sidecar_input_json_invalid",
+            Self::AiSidecarInputSchemaInvalid => "ai_sidecar_input_schema_invalid",
+            Self::AuditSidecarValidationInputUnreadable => {
+                "audit_sidecar_validation_input_unreadable"
+            }
+            Self::AuditSidecarValidationInputHashMismatch => {
+                "audit_sidecar_validation_input_hash_mismatch"
+            }
+            Self::AuditSidecarValidationInputJsonInvalid => {
+                "audit_sidecar_validation_input_json_invalid"
+            }
+            Self::AuditSidecarValidationInputSchemaInvalid => {
+                "audit_sidecar_validation_input_schema_invalid"
+            }
+            Self::AiSidecarDiagnosticInputUnreadable => "ai_sidecar_diagnostic_input_unreadable",
+            Self::AiSidecarDiagnosticInputHashMismatch => {
+                "ai_sidecar_diagnostic_input_hash_mismatch"
+            }
+            Self::AiSidecarDiagnosticInputJsonInvalid => "ai_sidecar_diagnostic_input_json_invalid",
+            Self::AiSidecarDiagnosticInputSchemaInvalid => {
+                "ai_sidecar_diagnostic_input_schema_invalid"
+            }
+            Self::CiDiagnosticTargetDuplicate => "ci_diagnostic_target_duplicate",
+            Self::AiSidecarDiagnosticTargetCountMismatch => {
+                "ai_sidecar_diagnostic_target_count_mismatch"
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiSidecarDiagnosticEvaluationFailure {
+    pub reason_code: Phase8AiSidecarDiagnosticEvaluationFailureReasonCode,
+    pub field: Box<str>,
+    pub expected_hash: Option<Box<Hash>>,
+    pub actual_hash: Option<Box<Hash>>,
+    pub expected_value: Option<Box<str>>,
+    pub actual_value: Option<Box<str>>,
+}
+
+impl Phase8AiSidecarDiagnosticEvaluationFailure {
+    fn value(
+        reason_code: Phase8AiSidecarDiagnosticEvaluationFailureReasonCode,
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into().into_boxed_str(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into().into_boxed_str()),
+            actual_value: Some(actual_value.into().into_boxed_str()),
+        }
+    }
+
+    pub fn hash(
+        reason_code: Phase8AiSidecarDiagnosticEvaluationFailureReasonCode,
+        field: impl Into<String>,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into().into_boxed_str(),
+            expected_hash: Some(Box::new(expected_hash)),
+            actual_hash: Some(Box::new(actual_hash)),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            ("field".to_owned(), phase8_json_string_literal(&self.field)),
+            (
+                "reason_code".to_owned(),
+                phase8_json_string_literal(self.reason_code.as_str()),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AI_SIDECAR_DIAGNOSTIC_EVALUATION_FAILURE_SCHEMA),
+            ),
+            ("status".to_owned(), phase8_json_string_literal("failed")),
+        ];
+        push_optional_hash_pair(
+            &mut pairs,
+            "expected_hash",
+            self.expected_hash.as_deref().copied(),
+        );
+        push_optional_hash_pair(
+            &mut pairs,
+            "actual_hash",
+            self.actual_hash.as_deref().copied(),
+        );
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AiSidecarDiagnosticPassFailureReasonCode {
+    RequiredAiSidecarDiagnosticMissing,
+    RequiredAiSidecarDiagnosticDuplicate,
+    RequiredAiSidecarDiagnosticNotPassed,
+    RequiredAiSidecarDiagnosticCanonicalMismatch,
+}
+
+impl Phase8AiSidecarDiagnosticPassFailureReasonCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::RequiredAiSidecarDiagnosticMissing => "required_ai_sidecar_diagnostic_missing",
+            Self::RequiredAiSidecarDiagnosticDuplicate => {
+                "required_ai_sidecar_diagnostic_duplicate"
+            }
+            Self::RequiredAiSidecarDiagnosticNotPassed => {
+                "required_ai_sidecar_diagnostic_not_passed"
+            }
+            Self::RequiredAiSidecarDiagnosticCanonicalMismatch => {
+                "required_ai_sidecar_diagnostic_canonical_mismatch"
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AiSidecarDiagnosticPassFailure {
+    pub reason_code: Phase8AiSidecarDiagnosticPassFailureReasonCode,
+    pub field: String,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8AiSidecarDiagnosticPassFailure {
+    fn value(
+        reason_code: Phase8AiSidecarDiagnosticPassFailureReasonCode,
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into()),
+            actual_value: Some(actual_value.into()),
+        }
+    }
+
+    fn hash(
+        reason_code: Phase8AiSidecarDiagnosticPassFailureReasonCode,
+        field: impl Into<String>,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: field.into(),
+            expected_hash: Some(expected_hash),
+            actual_hash: Some(actual_hash),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8CiDiagnosticTargetContext {
+    pub artifact: Phase8NormalizedCheckResult,
+    pub normalizer_machine_results: Vec<Phase8MachineCheckResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ResolvedAiAuditSidecarEntry {
+    pub path: String,
+    pub file_hash: Hash,
+    pub artifact: Phase8AiAuditSidecar,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ResolvedAuditSidecarValidationEntry {
+    pub path: String,
+    pub file_hash: Hash,
+    pub artifact: Phase8AuditSidecarValidationResult,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ResolvedAiSidecarDiagnosticResultEntry {
+    pub path: String,
+    pub file_hash: Hash,
+    pub artifact: Phase8AiSidecarDiagnosticResult,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8RequiredAiSidecarDiagnosticEvaluation {
+    pub recomputed_results: Vec<Phase8AiSidecarDiagnosticResult>,
+    pub pass_failure: Option<Phase8AiSidecarDiagnosticPassFailure>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase8AiAuditPromptInput {
     pub agent: String,
@@ -8757,6 +9243,628 @@ pub fn phase8_ai_audit_prompt_input_for_sidecar(
         }
     };
     Some(phase8_ai_audit_prompt_input(sidecar, input_policy, &source))
+}
+
+pub fn phase8_ai_sidecar_diagnostic_targets_from_normalized_result(
+    normalized_result: &Phase8NormalizedCheckResult,
+) -> Vec<Phase8RequiredAiSidecarDiagnosticTarget> {
+    let normalized_result_hash = normalized_result.normalized_result_hash();
+    let mut targets = Vec::new();
+    for (index, entry) in normalized_result.results.iter().enumerate() {
+        if entry.status == Phase8MachineCheckStatus::Failed {
+            targets.push(Phase8RequiredAiSidecarDiagnosticTarget::MachineResult {
+                result_index: index,
+                normalized_result_hash,
+                checker_profile: entry.checker_profile.clone(),
+                request_hash: entry.request_hash,
+                result_hash: entry.result_hash,
+                policy_hash: entry.policy_hash,
+            });
+        }
+    }
+    if phase8_normalized_comparison_requires_ai_diagnostic(normalized_result.comparison.status) {
+        targets.push(
+            Phase8RequiredAiSidecarDiagnosticTarget::NormalizedComparison {
+                normalized_result_hash,
+            },
+        );
+    }
+    targets
+}
+
+pub fn phase8_required_ai_sidecar_diagnostic_targets(
+    release_policy: &Phase8ReleasePolicy,
+    normalized_result: &Phase8NormalizedCheckResult,
+) -> Vec<Phase8RequiredAiSidecarDiagnosticTarget> {
+    if phase8_release_policy_required_ai_diagnostic_input_policy_hash(release_policy).is_none() {
+        return Vec::new();
+    }
+    phase8_ai_sidecar_diagnostic_targets_from_normalized_result(normalized_result)
+}
+
+pub fn phase8_release_target_has_required_ai_sidecar_diagnostic_targets(
+    release_policy: &Phase8ReleasePolicy,
+    normalized_result: &Phase8NormalizedCheckResult,
+) -> bool {
+    !phase8_required_ai_sidecar_diagnostic_targets(release_policy, normalized_result).is_empty()
+}
+
+pub fn evaluate_required_ai_sidecar_diagnostics(
+    release_policy: &Phase8ReleasePolicy,
+    ci_diagnostic_targets: &[Phase8CiDiagnosticTargetContext],
+    ai_sidecars: &[Phase8ResolvedAiAuditSidecarEntry],
+    audit_sidecar_validation_results: &[Phase8ResolvedAuditSidecarValidationEntry],
+    ai_sidecar_diagnostic_results: &[Phase8ResolvedAiSidecarDiagnosticResultEntry],
+) -> Result<Phase8RequiredAiSidecarDiagnosticEvaluation, Phase8AiSidecarDiagnosticEvaluationFailure>
+{
+    let Some(input_policy_hash) =
+        phase8_release_policy_required_ai_diagnostic_input_policy_hash(release_policy)
+    else {
+        return Ok(Phase8RequiredAiSidecarDiagnosticEvaluation {
+            recomputed_results: Vec::new(),
+            pass_failure: None,
+        });
+    };
+
+    phase8_validate_required_ai_sidecar_diagnostic_entry_metadata(
+        ai_sidecars,
+        audit_sidecar_validation_results,
+        ai_sidecar_diagnostic_results,
+    )?;
+    phase8_validate_ci_diagnostic_target_uniqueness(ci_diagnostic_targets)?;
+
+    let policy_hash = release_policy.policy_hash();
+    let target_sets = ci_diagnostic_targets
+        .iter()
+        .map(|target| phase8_ai_sidecar_diagnostic_targets_from_normalized_result(&target.artifact))
+        .collect::<Vec<_>>();
+    phase8_validate_saved_ai_sidecar_diagnostic_target_counts(
+        policy_hash,
+        input_policy_hash,
+        ci_diagnostic_targets,
+        &target_sets,
+        ai_sidecar_diagnostic_results,
+    )?;
+
+    let mut recomputed_results = Vec::new();
+    for (context_index, context) in ci_diagnostic_targets.iter().enumerate() {
+        let normalized_result_hash = context.artifact.normalized_result_hash();
+        let targets = &target_sets[context_index];
+        let target_count = targets.len() as u64;
+        let error = phase8_first_required_ai_sidecar_diagnostic_error(
+            context,
+            targets,
+            input_policy_hash,
+            ai_sidecars,
+            audit_sidecar_validation_results,
+        );
+        let result = match error {
+            Some(error) => Phase8AiSidecarDiagnosticResult::failed(
+                policy_hash,
+                input_policy_hash,
+                normalized_result_hash,
+                target_count,
+                error,
+            ),
+            None => Phase8AiSidecarDiagnosticResult::passed(
+                policy_hash,
+                input_policy_hash,
+                normalized_result_hash,
+                target_count,
+            ),
+        };
+        recomputed_results.push(result);
+    }
+
+    let pass_failure = phase8_first_required_ai_sidecar_diagnostic_pass_failure(
+        policy_hash,
+        input_policy_hash,
+        ci_diagnostic_targets,
+        &target_sets,
+        &recomputed_results,
+        ai_sidecar_diagnostic_results,
+    );
+    Ok(Phase8RequiredAiSidecarDiagnosticEvaluation {
+        recomputed_results,
+        pass_failure,
+    })
+}
+
+fn phase8_release_policy_required_ai_diagnostic_input_policy_hash(
+    release_policy: &Phase8ReleasePolicy,
+) -> Option<Hash> {
+    (release_policy.ai_triage.enabled && release_policy.ai_triage.required)
+        .then_some(release_policy.ai_triage.input_policy_hash)
+        .flatten()
+}
+
+const fn phase8_normalized_comparison_requires_ai_diagnostic(
+    status: Phase8NormalizedComparisonStatus,
+) -> bool {
+    matches!(
+        status,
+        Phase8NormalizedComparisonStatus::Disagreement
+            | Phase8NormalizedComparisonStatus::MissingCheckerResult
+            | Phase8NormalizedComparisonStatus::PolicyFailure
+            | Phase8NormalizedComparisonStatus::Inconclusive
+    )
+}
+
+fn phase8_validate_required_ai_sidecar_diagnostic_entry_metadata(
+    ai_sidecars: &[Phase8ResolvedAiAuditSidecarEntry],
+    audit_sidecar_validation_results: &[Phase8ResolvedAuditSidecarValidationEntry],
+    ai_sidecar_diagnostic_results: &[Phase8ResolvedAiSidecarDiagnosticResultEntry],
+) -> Result<(), Phase8AiSidecarDiagnosticEvaluationFailure> {
+    for (index, entry) in ai_sidecars.iter().enumerate() {
+        if !phase8_valid_workspace_relative_path(&entry.path) {
+            return Err(Phase8AiSidecarDiagnosticEvaluationFailure::value(
+                Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::AiSidecarInputSchemaInvalid,
+                format!("ai_sidecars[{index}].path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+    }
+    for (index, entry) in audit_sidecar_validation_results.iter().enumerate() {
+        if !phase8_valid_workspace_relative_path(&entry.path) {
+            return Err(Phase8AiSidecarDiagnosticEvaluationFailure::value(
+                Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::AuditSidecarValidationInputSchemaInvalid,
+                format!("audit_sidecar_validation_results[{index}].path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+    }
+    for (index, entry) in ai_sidecar_diagnostic_results.iter().enumerate() {
+        if !phase8_valid_workspace_relative_path(&entry.path) {
+            return Err(Phase8AiSidecarDiagnosticEvaluationFailure::value(
+                Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::AiSidecarDiagnosticInputSchemaInvalid,
+                format!("ai_sidecar_diagnostic_results[{index}].path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_validate_ci_diagnostic_target_uniqueness(
+    ci_diagnostic_targets: &[Phase8CiDiagnosticTargetContext],
+) -> Result<(), Phase8AiSidecarDiagnosticEvaluationFailure> {
+    let mut artifact_hashes = BTreeMap::<Hash, usize>::new();
+    let mut normalized_result_hashes = BTreeMap::<Hash, usize>::new();
+    for (index, target) in ci_diagnostic_targets.iter().enumerate() {
+        let artifact_hash = target.artifact.artifact_hash();
+        if artifact_hashes.insert(artifact_hash, index).is_some() {
+            return Err(Phase8AiSidecarDiagnosticEvaluationFailure::value(
+                Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::CiDiagnosticTargetDuplicate,
+                format!("ci_diagnostic_targets[{index}].artifact_hash"),
+                "unique_artifact_hash",
+                "duplicate",
+            ));
+        }
+        let normalized_result_hash = target.artifact.normalized_result_hash();
+        if normalized_result_hashes
+            .insert(normalized_result_hash, index)
+            .is_some()
+        {
+            return Err(Phase8AiSidecarDiagnosticEvaluationFailure::value(
+                Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::CiDiagnosticTargetDuplicate,
+                format!("ci_diagnostic_targets[{index}].normalized_result_hash"),
+                "unique_normalized_result_hash",
+                "duplicate",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_validate_saved_ai_sidecar_diagnostic_target_counts(
+    policy_hash: Hash,
+    input_policy_hash: Hash,
+    ci_diagnostic_targets: &[Phase8CiDiagnosticTargetContext],
+    target_sets: &[Vec<Phase8RequiredAiSidecarDiagnosticTarget>],
+    ai_sidecar_diagnostic_results: &[Phase8ResolvedAiSidecarDiagnosticResultEntry],
+) -> Result<(), Phase8AiSidecarDiagnosticEvaluationFailure> {
+    for (diagnostic_index, diagnostic) in ai_sidecar_diagnostic_results.iter().enumerate() {
+        for (context_index, context) in ci_diagnostic_targets.iter().enumerate() {
+            let target_count = target_sets[context_index].len() as u64;
+            if target_count == 0 {
+                continue;
+            }
+            let artifact = &diagnostic.artifact;
+            if artifact.policy_hash == policy_hash
+                && artifact.input_policy_hash == input_policy_hash
+                && artifact.normalized_result_hash == context.artifact.normalized_result_hash()
+                && artifact.target_count != target_count
+            {
+                return Err(Phase8AiSidecarDiagnosticEvaluationFailure::value(
+                    Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::AiSidecarDiagnosticTargetCountMismatch,
+                    format!("ai_sidecar_diagnostic[{diagnostic_index}].artifact.target_count"),
+                    target_count.to_string(),
+                    artifact.target_count.to_string(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn phase8_first_required_ai_sidecar_diagnostic_error(
+    context: &Phase8CiDiagnosticTargetContext,
+    targets: &[Phase8RequiredAiSidecarDiagnosticTarget],
+    input_policy_hash: Hash,
+    ai_sidecars: &[Phase8ResolvedAiAuditSidecarEntry],
+    audit_sidecar_validation_results: &[Phase8ResolvedAuditSidecarValidationEntry],
+) -> Option<Phase8AiSidecarDiagnosticError> {
+    for (target_index, target) in targets.iter().enumerate() {
+        let error = match target {
+            Phase8RequiredAiSidecarDiagnosticTarget::MachineResult { .. } => {
+                phase8_required_machine_result_ai_sidecar_diagnostic_error(
+                    target_index,
+                    target,
+                    context,
+                    input_policy_hash,
+                    ai_sidecars,
+                    audit_sidecar_validation_results,
+                )
+            }
+            Phase8RequiredAiSidecarDiagnosticTarget::NormalizedComparison {
+                normalized_result_hash,
+            } => phase8_required_normalized_comparison_ai_sidecar_diagnostic_error(
+                target_index,
+                *normalized_result_hash,
+                input_policy_hash,
+                ai_sidecars,
+                audit_sidecar_validation_results,
+            ),
+        };
+        if error.is_some() {
+            return error;
+        }
+    }
+    None
+}
+
+fn phase8_required_machine_result_ai_sidecar_diagnostic_error(
+    target_index: usize,
+    target: &Phase8RequiredAiSidecarDiagnosticTarget,
+    context: &Phase8CiDiagnosticTargetContext,
+    input_policy_hash: Hash,
+    ai_sidecars: &[Phase8ResolvedAiAuditSidecarEntry],
+    audit_sidecar_validation_results: &[Phase8ResolvedAuditSidecarValidationEntry],
+) -> Option<Phase8AiSidecarDiagnosticError> {
+    let Phase8RequiredAiSidecarDiagnosticTarget::MachineResult {
+        checker_profile,
+        request_hash,
+        result_hash,
+        policy_hash,
+        ..
+    } = target
+    else {
+        return None;
+    };
+    let selected_raw_results = context
+        .normalizer_machine_results
+        .iter()
+        .filter(|result| {
+            result.checker.profile == *checker_profile
+                && result.request_hash == *request_hash
+                && result.result_hash() == *result_hash
+                && result.policy.hash == *policy_hash
+        })
+        .collect::<Vec<_>>();
+    let selected_raw_result =
+        match selected_raw_results.as_slice() {
+            [] => {
+                return Some(Phase8AiSidecarDiagnosticError::value(
+                    Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarSelectedRawMissing,
+                    format!("required_ai_sidecar_targets[{target_index}].selected_raw_result"),
+                    "exactly_one_selected_raw_machine_check_result",
+                    "missing",
+                ))
+            }
+            [selected] => *selected,
+            _ => return Some(Phase8AiSidecarDiagnosticError::value(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarSelectedRawDuplicate,
+                format!("required_ai_sidecar_targets[{target_index}].selected_raw_result"),
+                "exactly_one_selected_raw_machine_check_result",
+                "duplicate",
+            )),
+        };
+    let normalized_result_hash = context.artifact.normalized_result_hash();
+    let candidates = ai_sidecars
+        .iter()
+        .enumerate()
+        .filter(|(_, sidecar)| {
+            phase8_machine_result_diagnostic_sidecar_matches(
+                &sidecar.artifact,
+                selected_raw_result,
+                normalized_result_hash,
+            )
+        })
+        .collect::<Vec<_>>();
+    let (sidecar_index, sidecar) = match candidates.as_slice() {
+        [] => {
+            return Some(Phase8AiSidecarDiagnosticError::value(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarMissing,
+                format!("required_ai_sidecar_targets[{target_index}].ai_sidecar"),
+                "exactly_one_ai_sidecar",
+                "missing",
+            ))
+        }
+        [(index, sidecar)] => (*index, *sidecar),
+        _ => {
+            return Some(Phase8AiSidecarDiagnosticError::value(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarDuplicate,
+                format!("required_ai_sidecar_targets[{target_index}].ai_sidecar"),
+                "exactly_one_ai_sidecar",
+                "duplicate",
+            ))
+        }
+    };
+    phase8_required_ai_sidecar_candidate_error(
+        sidecar_index,
+        sidecar,
+        Some(selected_raw_result.run_artifact_hash()),
+        input_policy_hash,
+        audit_sidecar_validation_results,
+    )
+}
+
+fn phase8_required_normalized_comparison_ai_sidecar_diagnostic_error(
+    target_index: usize,
+    normalized_result_hash: Hash,
+    input_policy_hash: Hash,
+    ai_sidecars: &[Phase8ResolvedAiAuditSidecarEntry],
+    audit_sidecar_validation_results: &[Phase8ResolvedAuditSidecarValidationEntry],
+) -> Option<Phase8AiSidecarDiagnosticError> {
+    let candidates = ai_sidecars
+        .iter()
+        .enumerate()
+        .filter(|(_, sidecar)| {
+            sidecar.artifact.source.kind == Phase8AiAuditSidecarSourceKind::NormalizedComparison
+                && sidecar.artifact.source.normalized_result_hash == Some(normalized_result_hash)
+        })
+        .collect::<Vec<_>>();
+    let (sidecar_index, sidecar) = match candidates.as_slice() {
+        [] => {
+            return Some(Phase8AiSidecarDiagnosticError::value(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarMissing,
+                format!("required_ai_sidecar_targets[{target_index}].ai_sidecar"),
+                "exactly_one_ai_sidecar",
+                "missing",
+            ))
+        }
+        [(index, sidecar)] => (*index, *sidecar),
+        _ => {
+            return Some(Phase8AiSidecarDiagnosticError::value(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarDuplicate,
+                format!("required_ai_sidecar_targets[{target_index}].ai_sidecar"),
+                "exactly_one_ai_sidecar",
+                "duplicate",
+            ))
+        }
+    };
+    phase8_required_ai_sidecar_candidate_error(
+        sidecar_index,
+        sidecar,
+        None,
+        input_policy_hash,
+        audit_sidecar_validation_results,
+    )
+}
+
+fn phase8_machine_result_diagnostic_sidecar_matches(
+    sidecar: &Phase8AiAuditSidecar,
+    selected_raw_result: &Phase8MachineCheckResult,
+    normalized_result_hash: Hash,
+) -> bool {
+    sidecar.source.kind == Phase8AiAuditSidecarSourceKind::MachineResult
+        && sidecar.source.request_hash == Some(selected_raw_result.request_hash)
+        && sidecar.source.result_hash == Some(selected_raw_result.result_hash())
+        && sidecar
+            .source
+            .normalized_result_hash
+            .is_none_or(|hash| hash == normalized_result_hash)
+}
+
+fn phase8_required_ai_sidecar_candidate_error(
+    sidecar_index: usize,
+    sidecar: &Phase8ResolvedAiAuditSidecarEntry,
+    selected_raw_run_artifact_hash: Option<Hash>,
+    input_policy_hash: Hash,
+    audit_sidecar_validation_results: &[Phase8ResolvedAuditSidecarValidationEntry],
+) -> Option<Phase8AiSidecarDiagnosticError> {
+    if sidecar.artifact.input_policy.hash != input_policy_hash {
+        return Some(Phase8AiSidecarDiagnosticError::hash(
+            Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarInputPolicyMismatch,
+            format!("ai_sidecar[{sidecar_index}].artifact.input_policy.hash"),
+            input_policy_hash,
+            sidecar.artifact.input_policy.hash,
+        ));
+    }
+    let validation_candidates = audit_sidecar_validation_results
+        .iter()
+        .enumerate()
+        .filter(|(_, validation)| validation.artifact.sidecar_file_hash == Some(sidecar.file_hash))
+        .collect::<Vec<_>>();
+    let (validation_index, validation) =
+        match validation_candidates.as_slice() {
+            [] => {
+                return Some(Phase8AiSidecarDiagnosticError::value(
+                    Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarValidationMissing,
+                    format!("ai_sidecar[{sidecar_index}].validation_response"),
+                    "exactly_one_audit_sidecar_validation_result",
+                    "missing",
+                ))
+            }
+            [(index, validation)] => (*index, *validation),
+            _ => return Some(Phase8AiSidecarDiagnosticError::value(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarValidationDuplicate,
+                format!("ai_sidecar[{sidecar_index}].validation_response"),
+                "exactly_one_audit_sidecar_validation_result",
+                "duplicate",
+            )),
+        };
+    if validation.artifact.mode != Phase8AuditSidecarValidationMode::CrossArtifact {
+        return Some(Phase8AiSidecarDiagnosticError::value(
+            Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarValidationModeMismatch,
+            format!("audit_sidecar_validation[{validation_index}].artifact.mode"),
+            Phase8AuditSidecarValidationMode::CrossArtifact.as_str(),
+            validation.artifact.mode.as_str(),
+        ));
+    }
+    if validation.artifact.status != Phase8AuditSidecarValidationStatus::Valid {
+        return Some(Phase8AiSidecarDiagnosticError::value(
+            Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarValidationFailed,
+            format!("audit_sidecar_validation[{validation_index}].artifact.status"),
+            Phase8AuditSidecarValidationStatus::Valid.as_str(),
+            validation.artifact.status.as_str(),
+        ));
+    }
+    if validation.artifact.input_policy_hash != Some(input_policy_hash) {
+        return Some(phase8_diagnostic_expected_hash_actual_optional_hash_error(
+            Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarValidationInputPolicyMismatch,
+            format!("audit_sidecar_validation[{validation_index}].artifact.input_policy_hash"),
+            input_policy_hash,
+            validation.artifact.input_policy_hash,
+        ));
+    }
+    if !phase8_audit_sidecar_validation_source_matches_sidecar(
+        &validation.artifact,
+        &sidecar.artifact,
+    ) {
+        return Some(Phase8AiSidecarDiagnosticError::value(
+            Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarValidationSourceMismatch,
+            format!("audit_sidecar_validation[{validation_index}].artifact"),
+            "source_kind_specific_matching_key",
+            "source_key_mismatch",
+        ));
+    }
+    if let Some(expected_run_artifact_hash) = selected_raw_run_artifact_hash {
+        let actual_run_artifact_hash = sidecar
+            .artifact
+            .source
+            .run_artifact_hash
+            .expect("machine-result AI sidecar source is schema-valid");
+        if actual_run_artifact_hash != expected_run_artifact_hash {
+            return Some(Phase8AiSidecarDiagnosticError::hash(
+                Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarSourceMismatch,
+                format!("ai_sidecar[{sidecar_index}].artifact.source.run_artifact_hash"),
+                expected_run_artifact_hash,
+                actual_run_artifact_hash,
+            ));
+        }
+    }
+    None
+}
+
+fn phase8_diagnostic_expected_hash_actual_optional_hash_error(
+    reason_code: Phase8AiSidecarDiagnosticFailureReasonCode,
+    field: impl Into<String>,
+    expected_hash: Hash,
+    actual_hash: Option<Hash>,
+) -> Phase8AiSidecarDiagnosticError {
+    match actual_hash {
+        Some(actual_hash) => {
+            Phase8AiSidecarDiagnosticError::hash(reason_code, field, expected_hash, actual_hash)
+        }
+        None => Phase8AiSidecarDiagnosticError {
+            reason_code,
+            field: field.into(),
+            expected_hash: Some(expected_hash),
+            actual_hash: None,
+            expected_value: None,
+            actual_value: Some("missing".to_owned()),
+        },
+    }
+}
+
+fn phase8_audit_sidecar_validation_source_matches_sidecar(
+    validation: &Phase8AuditSidecarValidationResult,
+    sidecar: &Phase8AiAuditSidecar,
+) -> bool {
+    if validation.source_kind != Some(sidecar.source.kind) {
+        return false;
+    }
+    match sidecar.source.kind {
+        Phase8AiAuditSidecarSourceKind::MachineResult => {
+            validation.source_result_hash == sidecar.source.result_hash
+                && match sidecar.source.normalized_result_hash {
+                    Some(hash) => validation.source_normalized_result_hash == Some(hash),
+                    None => validation.source_normalized_result_hash.is_none(),
+                }
+        }
+        Phase8AiAuditSidecarSourceKind::NormalizedComparison => {
+            validation.source_result_hash.is_none()
+                && validation.source_normalized_result_hash == sidecar.source.normalized_result_hash
+        }
+    }
+}
+
+fn phase8_first_required_ai_sidecar_diagnostic_pass_failure(
+    policy_hash: Hash,
+    input_policy_hash: Hash,
+    ci_diagnostic_targets: &[Phase8CiDiagnosticTargetContext],
+    target_sets: &[Vec<Phase8RequiredAiSidecarDiagnosticTarget>],
+    recomputed_results: &[Phase8AiSidecarDiagnosticResult],
+    saved_results: &[Phase8ResolvedAiSidecarDiagnosticResultEntry],
+) -> Option<Phase8AiSidecarDiagnosticPassFailure> {
+    for (context_index, context) in ci_diagnostic_targets.iter().enumerate() {
+        if target_sets[context_index].is_empty() {
+            continue;
+        }
+        let normalized_result_hash = context.artifact.normalized_result_hash();
+        let candidates = saved_results
+            .iter()
+            .enumerate()
+            .filter(|(_, saved)| {
+                let artifact = &saved.artifact;
+                artifact.policy_hash == policy_hash
+                    && artifact.input_policy_hash == input_policy_hash
+                    && artifact.normalized_result_hash == normalized_result_hash
+            })
+            .collect::<Vec<_>>();
+        let (saved_index, saved) = match candidates.as_slice() {
+            [] => {
+                return Some(Phase8AiSidecarDiagnosticPassFailure::value(
+                    Phase8AiSidecarDiagnosticPassFailureReasonCode::RequiredAiSidecarDiagnosticMissing,
+                    format!("ci_diagnostic_targets[{context_index}].ai_sidecar_diagnostic_result"),
+                    "exactly_one_saved_ai_sidecar_diagnostic_result",
+                    "missing",
+                ))
+            }
+            [(index, saved)] => (*index, *saved),
+            _ => {
+                return Some(Phase8AiSidecarDiagnosticPassFailure::value(
+                    Phase8AiSidecarDiagnosticPassFailureReasonCode::RequiredAiSidecarDiagnosticDuplicate,
+                    format!("ci_diagnostic_targets[{context_index}].ai_sidecar_diagnostic_result"),
+                    "exactly_one_saved_ai_sidecar_diagnostic_result",
+                    "duplicate",
+                ))
+            }
+        };
+        if saved.artifact.status != Phase8AiSidecarDiagnosticStatus::Passed {
+            return Some(Phase8AiSidecarDiagnosticPassFailure::value(
+                Phase8AiSidecarDiagnosticPassFailureReasonCode::RequiredAiSidecarDiagnosticNotPassed,
+                format!("ai_sidecar_diagnostic[{saved_index}].artifact.status"),
+                Phase8AiSidecarDiagnosticStatus::Passed.as_str(),
+                saved.artifact.status.as_str(),
+            ));
+        }
+        let expected_json = recomputed_results[context_index].canonical_json();
+        let actual_json = saved.artifact.canonical_json();
+        if expected_json != actual_json {
+            return Some(Phase8AiSidecarDiagnosticPassFailure::hash(
+                Phase8AiSidecarDiagnosticPassFailureReasonCode::RequiredAiSidecarDiagnosticCanonicalMismatch,
+                format!("ai_sidecar_diagnostic[{saved_index}].artifact"),
+                phase8_sha256(expected_json.as_bytes()),
+                phase8_sha256(actual_json.as_bytes()),
+            ));
+        }
+    }
+    None
 }
 
 pub fn parse_phase8_normalized_result_store_manifest(
@@ -22686,5 +23794,301 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err.reason_code.as_ref(), "normalized_result_not_found");
+    }
+
+    fn m10_single_failed_diagnostic_context() -> (
+        Phase8RunnerPolicy,
+        Phase8MachineCheckResult,
+        Phase8NormalizedCheckResult,
+        Phase8CiDiagnosticTargetContext,
+    ) {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let failed = m5_failed_result(&request, &policy, "mchkres_m10_failed", "Std.Nat");
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_m10_failed",
+            "normerr_Std.Nat_m10_failed",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&failed),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::AllAgreeFailed
+        );
+        let context = Phase8CiDiagnosticTargetContext {
+            artifact: normalized.clone(),
+            normalizer_machine_results: vec![failed.clone()],
+        };
+        (policy, failed, normalized, context)
+    }
+
+    fn m10_required_release_policy(
+        runner_policy: &Phase8RunnerPolicy,
+        input_policy: &Phase8AiAuditInputPolicy,
+    ) -> Phase8ReleasePolicy {
+        let mut release_policy = m7_release_policy(Phase8ReleaseMode::Release);
+        release_policy.runner_policy_hash = runner_policy.policy_hash();
+        release_policy.challenge_runner_policy_hash = runner_policy.policy_hash();
+        release_policy.ai_triage = Phase8ReleasePolicyAiTriage {
+            enabled: true,
+            required: true,
+            input_policy_hash: Some(input_policy.input_policy_hash()),
+        };
+        release_policy
+    }
+
+    fn m10_resolved_sidecar(path: &str, source_json: &str) -> Phase8ResolvedAiAuditSidecarEntry {
+        Phase8ResolvedAiAuditSidecarEntry {
+            path: path.to_owned(),
+            file_hash: phase8_file_hash(source_json.as_bytes()),
+            artifact: parse_phase8_ai_audit_sidecar(source_json).unwrap(),
+        }
+    }
+
+    fn m10_resolved_validation(
+        path: &str,
+        artifact: Phase8AuditSidecarValidationResult,
+    ) -> Phase8ResolvedAuditSidecarValidationEntry {
+        Phase8ResolvedAuditSidecarValidationEntry {
+            path: path.to_owned(),
+            file_hash: phase8_file_hash(artifact.canonical_json().as_bytes()),
+            artifact,
+        }
+    }
+
+    fn m10_resolved_diagnostic(
+        path: &str,
+        artifact: Phase8AiSidecarDiagnosticResult,
+    ) -> Phase8ResolvedAiSidecarDiagnosticResultEntry {
+        Phase8ResolvedAiSidecarDiagnosticResultEntry {
+            path: path.to_owned(),
+            file_hash: phase8_file_hash(artifact.canonical_json().as_bytes()),
+            artifact,
+        }
+    }
+
+    #[test]
+    fn m10_required_machine_diagnostic_matches_saved_canonical_result() {
+        let (runner_policy, failed, normalized, context) = m10_single_failed_diagnostic_context();
+        let input_policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let input_policy = parse_phase8_ai_audit_input_policy(&input_policy_json).unwrap();
+        let release_policy = m10_required_release_policy(&runner_policy, &input_policy);
+        let targets = phase8_required_ai_sidecar_diagnostic_targets(&release_policy, &normalized);
+        assert_eq!(targets.len(), 1);
+        assert!(matches!(
+            targets[0],
+            Phase8RequiredAiSidecarDiagnosticTarget::MachineResult { .. }
+        ));
+        assert!(
+            phase8_release_target_has_required_ai_sidecar_diagnostic_targets(
+                &release_policy,
+                &normalized
+            )
+        );
+
+        let sidecar_json = m6_machine_sidecar_with_prompt_hash(&failed, &input_policy, "");
+        let sidecar_entry =
+            m10_resolved_sidecar("build/ai-sidecars/Std.Nat.m10.failed.json", &sidecar_json);
+        let validation = phase8_validate_ai_audit_sidecar_cross_artifact(
+            &sidecar_json,
+            &input_policy_json,
+            input_policy.input_policy_hash(),
+            std::slice::from_ref(&failed),
+            &[],
+        );
+        assert_eq!(validation.status, Phase8AuditSidecarValidationStatus::Valid);
+        let validation_entry = m10_resolved_validation(
+            "build/ai-sidecars/Std.Nat.m10.failed.validation.json",
+            validation,
+        );
+
+        let without_saved = evaluate_required_ai_sidecar_diagnostics(
+            &release_policy,
+            std::slice::from_ref(&context),
+            std::slice::from_ref(&sidecar_entry),
+            std::slice::from_ref(&validation_entry),
+            &[],
+        )
+        .unwrap();
+        assert_eq!(
+            without_saved.recomputed_results[0].status,
+            Phase8AiSidecarDiagnosticStatus::Passed
+        );
+        assert_eq!(without_saved.recomputed_results[0].target_count, 1);
+        assert!(!without_saved.recomputed_results[0]
+            .canonical_json()
+            .contains("\"result_hash\""));
+        assert_eq!(
+            without_saved.pass_failure.as_ref().unwrap().reason_code,
+            Phase8AiSidecarDiagnosticPassFailureReasonCode::RequiredAiSidecarDiagnosticMissing
+        );
+
+        let saved_entry = m10_resolved_diagnostic(
+            "build/ai-sidecar-diagnostics/Std.Nat.m10.failed.json",
+            without_saved.recomputed_results[0].clone(),
+        );
+        let with_saved = evaluate_required_ai_sidecar_diagnostics(
+            &release_policy,
+            &[context],
+            &[sidecar_entry],
+            &[validation_entry],
+            &[saved_entry],
+        )
+        .unwrap();
+        assert_eq!(with_saved.pass_failure, None);
+    }
+
+    #[test]
+    fn m10_disagreement_targets_and_saved_target_count_mismatch_are_deterministic() {
+        let runner_policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&runner_policy, "fast-kernel", "mchkreq_fast");
+        let reference = m4_stored_request(&runner_policy, "reference", "mchkreq_ref");
+        let external = m4_stored_request(&runner_policy, "external", "mchkreq_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m4_checked_result(&fast.request, &runner_policy, "mchkres_fast");
+        let reference_result =
+            m5_failed_result(&reference.request, &runner_policy, "mchkres_ref", "Std.Nat");
+        let external_result = m4_checked_result(&external.request, &runner_policy, "mchkres_ext");
+        let machine_results = vec![
+            fast_result.clone(),
+            reference_result.clone(),
+            external_result.clone(),
+        ];
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_m10_disagreement",
+            "normerr_Std.Nat_m10_disagreement",
+            &runner_policy,
+            &request_store,
+            &stored_requests,
+            &machine_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::Disagreement
+        );
+        let input_policy = parse_phase8_ai_audit_input_policy(&m6_input_policy_json(
+            &["module", "status"],
+            false,
+            false,
+        ))
+        .unwrap();
+        let release_policy = m10_required_release_policy(&runner_policy, &input_policy);
+        let targets = phase8_ai_sidecar_diagnostic_targets_from_normalized_result(&normalized);
+        assert_eq!(targets.len(), 2);
+        assert!(matches!(
+            targets[0],
+            Phase8RequiredAiSidecarDiagnosticTarget::MachineResult { .. }
+        ));
+        assert!(matches!(
+            targets[1],
+            Phase8RequiredAiSidecarDiagnosticTarget::NormalizedComparison { .. }
+        ));
+
+        let saved_wrong_count = Phase8AiSidecarDiagnosticResult::passed(
+            release_policy.policy_hash(),
+            input_policy.input_policy_hash(),
+            normalized.normalized_result_hash(),
+            1,
+        );
+        let err = evaluate_required_ai_sidecar_diagnostics(
+            &release_policy,
+            &[Phase8CiDiagnosticTargetContext {
+                artifact: normalized,
+                normalizer_machine_results: machine_results,
+            }],
+            &[],
+            &[],
+            &[m10_resolved_diagnostic(
+                "build/ai-sidecar-diagnostics/Std.Nat.bad-count.json",
+                saved_wrong_count,
+            )],
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.reason_code,
+            Phase8AiSidecarDiagnosticEvaluationFailureReasonCode::AiSidecarDiagnosticTargetCountMismatch
+        );
+    }
+
+    #[test]
+    fn m10_wrong_retry_source_fails_before_saved_result_can_pass() {
+        let (runner_policy, failed, normalized, context) = m10_single_failed_diagnostic_context();
+        let input_policy = parse_phase8_ai_audit_input_policy(&m6_input_policy_json(
+            &["module", "status"],
+            false,
+            false,
+        ))
+        .unwrap();
+        let release_policy = m10_required_release_policy(&runner_policy, &input_policy);
+        let wrong_retry_sidecar_json = m6_machine_sidecar_json(
+            &failed,
+            &input_policy,
+            test_hash(250),
+            failed.result_hash(),
+            failed.request_hash,
+            test_hash(251),
+            "",
+        );
+        let sidecar_entry = m10_resolved_sidecar(
+            "build/ai-sidecars/Std.Nat.m10.wrong-retry.json",
+            &wrong_retry_sidecar_json,
+        );
+        let validation = Phase8AuditSidecarValidationResult::valid(
+            Phase8AuditSidecarValidationMode::CrossArtifact,
+            sidecar_entry.file_hash,
+            Some(input_policy.input_policy_hash()),
+            Some(&sidecar_entry.artifact),
+        );
+        let validation_entry = m10_resolved_validation(
+            "build/ai-sidecars/Std.Nat.m10.wrong-retry.validation.json",
+            validation,
+        );
+        let evaluation = evaluate_required_ai_sidecar_diagnostics(
+            &release_policy,
+            std::slice::from_ref(&context),
+            std::slice::from_ref(&sidecar_entry),
+            std::slice::from_ref(&validation_entry),
+            &[],
+        )
+        .unwrap();
+        let error = evaluation.recomputed_results[0].error.as_ref().unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AiSidecarDiagnosticFailureReasonCode::RequiredAiSidecarSourceMismatch
+        );
+
+        let saved_claiming_pass = Phase8AiSidecarDiagnosticResult::passed(
+            release_policy.policy_hash(),
+            input_policy.input_policy_hash(),
+            normalized.normalized_result_hash(),
+            1,
+        );
+        let with_saved = evaluate_required_ai_sidecar_diagnostics(
+            &release_policy,
+            &[context],
+            &[sidecar_entry],
+            &[validation_entry],
+            &[m10_resolved_diagnostic(
+                "build/ai-sidecar-diagnostics/Std.Nat.claimed-pass.json",
+                saved_claiming_pass,
+            )],
+        )
+        .unwrap();
+        assert_eq!(
+            with_saved.pass_failure.as_ref().unwrap().reason_code,
+            Phase8AiSidecarDiagnosticPassFailureReasonCode::RequiredAiSidecarDiagnosticCanonicalMismatch
+        );
     }
 }
