@@ -1,6 +1,6 @@
 use npa_kernel::Decl;
 
-use crate::{CertError, Hash, VerifiedModule};
+use crate::{encode_uvar_to, hash_with_domain, CertError, Hash, VerifiedModule};
 
 /// Sidecar-only producer classification for audit and diagnostics.
 ///
@@ -28,6 +28,42 @@ pub struct ProducerLimits {
     pub max_reduction_steps: u64,
     /// Maximum conversion steps available to candidate checking.
     pub max_conversion_steps: u64,
+}
+
+/// Return canonical bytes for a producer limit profile.
+///
+/// Fields are encoded in [`ProducerLimits`] declaration order, and each numeric field uses the
+/// same minimal ULEB128 encoding as certificate canonical binary.
+pub fn producer_limits_canonical_bytes(limits: &ProducerLimits) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, u64::from(limits.max_declarations));
+    encode_uvar_to(&mut out, u64::from(limits.max_expr_nodes));
+    encode_uvar_to(&mut out, u64::from(limits.max_level_nodes));
+    encode_uvar_to(&mut out, u64::from(limits.max_name_components));
+    encode_uvar_to(&mut out, limits.max_reduction_steps);
+    encode_uvar_to(&mut out, limits.max_conversion_steps);
+    out
+}
+
+/// Return the canonical hash for a producer limit profile.
+pub fn producer_limits_hash(limits: &ProducerLimits) -> Hash {
+    hash_with_domain(
+        b"NPA-PRODUCER-LIMITS-0.1",
+        &producer_limits_canonical_bytes(limits),
+    )
+}
+
+/// Return whether limit profile `a` is at least as strict as profile `b`.
+///
+/// A profile is stricter-or-equal only when every field is less than or equal to the corresponding
+/// field in `b`.
+pub fn stricter_or_equal(a: &ProducerLimits, b: &ProducerLimits) -> bool {
+    a.max_declarations <= b.max_declarations
+        && a.max_expr_nodes <= b.max_expr_nodes
+        && a.max_level_nodes <= b.max_level_nodes
+        && a.max_name_components <= b.max_name_components
+        && a.max_reduction_steps <= b.max_reduction_steps
+        && a.max_conversion_steps <= b.max_conversion_steps
 }
 
 /// Untrusted core declaration candidate submitted by a producer.
