@@ -490,6 +490,51 @@ fn check_core_decl_candidates_rejects_pretty_only_import_name() {
 }
 
 #[test]
+fn check_core_decl_candidates_rejects_placeholder_like_ai_candidates() {
+    let batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![
+            CoreDeclCandidate {
+                declaration: axiom_over("UsesPlaceholderName", "_"),
+            },
+            CoreDeclCandidate {
+                declaration: Decl::Axiom {
+                    name: "FreeBVarPlaceholder".to_owned(),
+                    universe_params: vec![],
+                    ty: Expr::bvar(0),
+                },
+            },
+            CoreDeclCandidate {
+                declaration: Decl::Axiom {
+                    name: "UnresolvedUniverseMetaLike".to_owned(),
+                    universe_params: vec![],
+                    ty: Expr::sort(Level::Param("?m".to_owned())),
+                },
+            },
+        ],
+        limits: generous_limits_with_declarations(3),
+    };
+
+    let result = check_core_decl_candidates(batch).unwrap();
+    assert_eq!(result.statuses.len(), 3);
+    assert!(matches!(
+        &result.statuses[0],
+        CandidateStatus::Rejected(CertError::UnknownDependency { name })
+            if *name == Name::from_dotted("_")
+    ));
+    assert!(matches!(
+        &result.statuses[1],
+        CandidateStatus::Rejected(CertError::Kernel(KernelError::InvalidBVar(0)))
+    ));
+    assert!(matches!(
+        &result.statuses[2],
+        CandidateStatus::Rejected(CertError::Kernel(KernelError::UnknownUniverseParam(param)))
+            if param == "?m"
+    ));
+}
+
+#[test]
 fn check_core_decl_candidates_hashes_depend_on_import_decl_interface_not_name_only() {
     let import_a = verify_module(sort_axiom_module("Lib.IfaceA", "IfaceT", Level::zero()));
     let import_b = verify_module(sort_axiom_module(
@@ -650,6 +695,68 @@ fn check_core_decl_candidates_keeps_candidate_rejections_in_input_order() {
             if *name == Name::from_dotted("MissingType")
     ));
     assert!(matches!(&result.statuses[1], CandidateStatus::Accepted(_)));
+}
+
+#[test]
+fn check_core_decl_candidates_rejections_do_not_perturb_later_accepted_tokens() {
+    let bad = CoreDeclCandidate {
+        declaration: axiom_over("BadMissing", "MissingType"),
+    };
+    let good = CoreDeclCandidate {
+        declaration: trivial_axiom("StableAccepted"),
+    };
+
+    let bad_first = check_core_decl_candidates(CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![bad.clone(), good.clone()],
+        limits: generous_limits_with_declarations(2),
+    })
+    .unwrap();
+    let good_first = check_core_decl_candidates(CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![good, bad],
+        limits: generous_limits_with_declarations(2),
+    })
+    .unwrap();
+
+    assert!(matches!(
+        &bad_first.statuses[0],
+        CandidateStatus::Rejected(CertError::UnknownDependency { name })
+            if *name == Name::from_dotted("MissingType")
+    ));
+    assert!(matches!(
+        &good_first.statuses[1],
+        CandidateStatus::Rejected(CertError::UnknownDependency { name })
+            if *name == Name::from_dotted("MissingType")
+    ));
+    let CandidateStatus::Accepted(after_rejection) = &bad_first.statuses[1] else {
+        panic!("expected accepted candidate after rejected candidate");
+    };
+    let CandidateStatus::Accepted(before_rejection) = &good_first.statuses[0] else {
+        panic!("expected accepted candidate before rejected candidate");
+    };
+    assert_eq!(
+        after_rejection.decl_interface_hash(),
+        before_rejection.decl_interface_hash()
+    );
+    assert_eq!(
+        after_rejection.decl_certificate_hash(),
+        before_rejection.decl_certificate_hash()
+    );
+    assert_eq!(
+        after_rejection.pre_env_fingerprint(),
+        before_rejection.pre_env_fingerprint()
+    );
+    assert_eq!(
+        after_rejection.post_env_fingerprint(),
+        before_rejection.post_env_fingerprint()
+    );
+    assert_eq!(
+        after_rejection.prior_chain_fingerprint(),
+        before_rejection.prior_chain_fingerprint()
+    );
 }
 
 #[test]
@@ -919,6 +1026,27 @@ fn build_module_cert_from_checked_candidates_requires_explicit_verification_for_
         &AxiomPolicy::normal(),
     )
     .unwrap();
+}
+
+#[test]
+fn accepted_candidate_token_type_is_distinct_from_verified_module() {
+    let tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &[],
+            prior_current_decls: &[],
+            candidates: vec![CoreDeclCandidate {
+                declaration: trivial_axiom("AcceptedTokenBoundary"),
+            }],
+            limits: generous_limits(),
+        })
+        .unwrap(),
+    );
+
+    assert_eq!(tokens.len(), 1);
+    assert_ne!(
+        std::any::TypeId::of::<CheckedDeclCandidate>(),
+        std::any::TypeId::of::<VerifiedModule>()
+    );
 }
 
 #[test]
@@ -1359,6 +1487,71 @@ fn prior_chain_fingerprint_changes_for_body_only_certificate_hash_change() {
 }
 
 #[test]
+fn prior_chain_fingerprint_changes_for_opaque_def_body_only_certificate_hash_change() {
+    let cert_a = build_module_cert(
+        opaque_def_module("Test.PriorOpaqueDefBodyOnly", Expr::sort(Level::zero())),
+        &[],
+    )
+    .unwrap();
+    let cert_b = build_module_cert(
+        opaque_def_module(
+            "Test.PriorOpaqueDefBodyOnly",
+            Expr::pi("x", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
+        ),
+        &[],
+    )
+    .unwrap();
+    let decl_a = &cert_a.declarations[0];
+    let decl_b = &cert_b.declarations[0];
+
+    assert_eq!(cert_a.hashes.export_hash, cert_b.hashes.export_hash);
+    assert_eq!(
+        decl_a.hashes.decl_interface_hash,
+        decl_b.hashes.decl_interface_hash
+    );
+    assert_ne!(
+        decl_a.hashes.decl_certificate_hash,
+        decl_b.hashes.decl_certificate_hash
+    );
+
+    let pre_env = initial_env_fingerprint(&[]).unwrap();
+    let post_env_a = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: vec![],
+        checked_decls: vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: decl_a.hashes.decl_interface_hash,
+            axiom_dependencies: decl_a.axiom_dependencies.clone(),
+        }],
+    });
+    let post_env_b = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: vec![],
+        checked_decls: vec![ProducerCheckedDeclInterface {
+            decl_interface_hash: decl_b.hashes.decl_interface_hash,
+            axiom_dependencies: decl_b.axiom_dependencies.clone(),
+        }],
+    });
+
+    assert_eq!(post_env_a, post_env_b);
+    assert_ne!(
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![prior_entry(
+                decl_a.hashes.decl_interface_hash,
+                decl_a.hashes.decl_certificate_hash,
+                pre_env,
+                post_env_a,
+            )],
+        }),
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![prior_entry(
+                decl_b.hashes.decl_interface_hash,
+                decl_b.hashes.decl_certificate_hash,
+                pre_env,
+                post_env_b,
+            )],
+        })
+    );
+}
+
+#[test]
 fn producer_sidecar_is_out_of_band_for_certificate_bytes_and_hashes() {
     let module_name = "Test.ProducerSidecarOutOfBand";
     let sidecar = TestProducerSidecar::ai(module_name);
@@ -1444,6 +1637,76 @@ fn human_and_ai_producer_sidecars_emit_same_certificate_for_same_core_declaratio
 
     let mut session = VerifierSession::new();
     verify_module_cert(&ai_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+}
+
+#[test]
+fn checked_candidate_certificate_is_independent_of_cache_sidecar_state() {
+    let module_name = "Test.ProducerCacheSidecar";
+    let declarations = [trivial_axiom("CacheT"), axiom_over("cache_value", "CacheT")];
+    let cache_hit_tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &[],
+            prior_current_decls: &[],
+            candidates: declarations
+                .iter()
+                .cloned()
+                .map(|declaration| CoreDeclCandidate { declaration })
+                .collect(),
+            limits: generous_limits_with_declarations(2),
+        })
+        .unwrap(),
+    );
+    let cache_miss_tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &[],
+            prior_current_decls: &[],
+            candidates: declarations
+                .iter()
+                .cloned()
+                .map(|declaration| CoreDeclCandidate { declaration })
+                .collect(),
+            limits: generous_limits_with_declarations(2),
+        })
+        .unwrap(),
+    );
+    let mut cache_hit_sidecar = TestProducerSidecar::ai(module_name);
+    cache_hit_sidecar.cache_hit = true;
+    let mut cache_miss_sidecar = cache_hit_sidecar.clone();
+    cache_miss_sidecar.producer_run_id = "ai-cache-miss-run".to_owned();
+    cache_miss_sidecar.cache_hit = false;
+    cache_miss_sidecar.diagnostics = vec!["cache miss".to_owned()];
+    assert_ne!(cache_hit_sidecar.marker(), cache_miss_sidecar.marker());
+
+    assert_eq!(
+        cache_hit_tokens
+            .iter()
+            .map(CheckedDeclCandidate::decl_interface_hash)
+            .collect::<Vec<_>>(),
+        cache_miss_tokens
+            .iter()
+            .map(CheckedDeclCandidate::decl_interface_hash)
+            .collect::<Vec<_>>()
+    );
+    let cache_hit_cert = build_module_cert_from_checked_candidates(
+        Name::from_dotted(module_name),
+        &[],
+        &cache_hit_tokens,
+    )
+    .unwrap();
+    let cache_miss_cert = build_module_cert_from_checked_candidates(
+        Name::from_dotted(module_name),
+        &[],
+        &cache_miss_tokens,
+    )
+    .unwrap();
+    let cache_hit_bytes = encode_module_cert(&cache_hit_cert).unwrap();
+    let cache_miss_bytes = encode_module_cert(&cache_miss_cert).unwrap();
+
+    assert_eq!(cache_hit_bytes, cache_miss_bytes);
+    assert_eq!(cache_hit_cert.hashes, cache_miss_cert.hashes);
+
+    let mut session = VerifierSession::new();
+    verify_module_cert(&cache_hit_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
 }
 
 #[test]
