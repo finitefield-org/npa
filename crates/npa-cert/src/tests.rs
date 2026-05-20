@@ -696,6 +696,85 @@ fn hash_hex(hash: Hash) -> String {
     hash.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
+fn test_hash(byte: u8) -> Hash {
+    [byte; 32]
+}
+
+struct HashContractDefFixture {
+    decl: DeclPayload,
+    dependencies: Vec<DependencyEntry>,
+    axiom_dependencies: Vec<AxiomRef>,
+    term_table: Vec<TermNode>,
+    term_hashes: Vec<Hash>,
+    names: Vec<Name>,
+}
+
+fn hash_contract_def_fixture() -> HashContractDefFixture {
+    let names = vec![
+        Name::from_dotted("f"),
+        Name::from_dotted("u"),
+        Name::from_dotted("Dep"),
+        Name::from_dotted("Ax"),
+    ];
+    let dependency_ref = GlobalRef::Imported {
+        import_index: 0,
+        name: 2,
+        decl_interface_hash: test_hash(0x31),
+    };
+    let axiom_ref = GlobalRef::Imported {
+        import_index: 0,
+        name: 3,
+        decl_interface_hash: test_hash(0x41),
+    };
+    let decl = DeclPayload::Def {
+        name: 0,
+        universe_params: vec![1],
+        ty: 0,
+        value: 1,
+        reducibility: CertReducibility::Reducible,
+    };
+    let dependencies = vec![DependencyEntry {
+        global_ref: dependency_ref.clone(),
+        decl_interface_hash: test_hash(0x31),
+    }];
+    let axiom_dependencies = vec![AxiomRef {
+        global_ref: axiom_ref.clone(),
+        name: 3,
+        decl_interface_hash: test_hash(0x41),
+    }];
+    let term_table = vec![
+        TermNode::Const {
+            global_ref: dependency_ref,
+            levels: vec![],
+        },
+        TermNode::Const {
+            global_ref: axiom_ref,
+            levels: vec![],
+        },
+    ];
+    let term_hashes = vec![test_hash(0x10), test_hash(0x20)];
+
+    HashContractDefFixture {
+        decl,
+        dependencies,
+        axiom_dependencies,
+        term_table,
+        term_hashes,
+        names,
+    }
+}
+
+fn append_name_id(out: &mut Vec<u8>, names: &[Name], id: NameId) {
+    encode_name_to(out, &names[id]);
+}
+
+fn append_name_ids(out: &mut Vec<u8>, names: &[Name], ids: &[NameId]) {
+    encode_uvar_to(out, ids.len() as u64);
+    for id in ids {
+        append_name_id(out, names, *id);
+    }
+}
+
 fn append_test_string(bytes: &mut Vec<u8>, value: &str) {
     encode_uvar_to(bytes, value.len() as u64);
     bytes.extend(value.as_bytes());
@@ -1783,6 +1862,117 @@ fn transparent_def_body_change_changes_interface_and_export_hashes() {
 }
 
 #[test]
+fn decl_interface_hash_def_payload_order_matches_phase2_contract() {
+    let fixture = hash_contract_def_fixture();
+    let hashes = compute_decl_hashes(
+        &fixture.decl,
+        &fixture.dependencies,
+        &fixture.axiom_dependencies,
+        &fixture.term_table,
+        &[],
+        &fixture.term_hashes,
+        &fixture.names,
+    )
+    .unwrap();
+    let DeclPayload::Def {
+        name,
+        universe_params,
+        ty,
+        value,
+        reducibility,
+    } = &fixture.decl
+    else {
+        panic!("expected def payload");
+    };
+
+    let mut expected = Vec::new();
+    expected.push(0x01);
+    append_name_id(&mut expected, &fixture.names, *name);
+    append_name_ids(&mut expected, &fixture.names, universe_params);
+    expected.extend_from_slice(&fixture.term_hashes[*ty]);
+    encode_reducibility_to(&mut expected, *reducibility);
+    encode_dependency_entries_to(&mut expected, &fixture.dependencies);
+    encode_axiom_refs_to(&mut expected, &fixture.axiom_dependencies);
+    expected.extend_from_slice(&fixture.term_hashes[*value]);
+    assert_eq!(
+        hashes.decl_interface_hash,
+        hash_with_domain(b"NPA-DECL-IFACE-0.1", &expected)
+    );
+
+    let mut legacy_value_before_reducibility = Vec::new();
+    legacy_value_before_reducibility.push(0x01);
+    append_name_id(&mut legacy_value_before_reducibility, &fixture.names, *name);
+    append_name_ids(
+        &mut legacy_value_before_reducibility,
+        &fixture.names,
+        universe_params,
+    );
+    legacy_value_before_reducibility.extend_from_slice(&fixture.term_hashes[*ty]);
+    legacy_value_before_reducibility.extend_from_slice(&fixture.term_hashes[*value]);
+    encode_reducibility_to(&mut legacy_value_before_reducibility, *reducibility);
+    encode_dependency_entries_to(&mut legacy_value_before_reducibility, &fixture.dependencies);
+    encode_axiom_refs_to(
+        &mut legacy_value_before_reducibility,
+        &fixture.axiom_dependencies,
+    );
+    assert_ne!(
+        hashes.decl_interface_hash,
+        hash_with_domain(b"NPA-DECL-IFACE-0.1", &legacy_value_before_reducibility)
+    );
+}
+
+#[test]
+fn reducible_def_decl_certificate_hash_includes_value_hash_directly() {
+    let fixture = hash_contract_def_fixture();
+    let hashes = compute_decl_hashes(
+        &fixture.decl,
+        &fixture.dependencies,
+        &fixture.axiom_dependencies,
+        &fixture.term_table,
+        &[],
+        &fixture.term_hashes,
+        &fixture.names,
+    )
+    .unwrap();
+    let DeclPayload::Def { value, .. } = &fixture.decl else {
+        panic!("expected def payload");
+    };
+    let value = *value;
+
+    let mut expected = Vec::new();
+    expected.extend_from_slice(&hashes.decl_interface_hash);
+    expected.extend_from_slice(&fixture.term_hashes[value]);
+    encode_dependency_entries_to(&mut expected, &fixture.dependencies);
+    encode_axiom_refs_to(&mut expected, &fixture.axiom_dependencies);
+    assert_eq!(
+        hashes.decl_certificate_hash,
+        hash_with_domain(b"NPA-DECL-CERT-0.1", &expected)
+    );
+
+    let mut changed_value_hash = Vec::new();
+    changed_value_hash.extend_from_slice(&hashes.decl_interface_hash);
+    changed_value_hash.extend_from_slice(&test_hash(0x21));
+    encode_dependency_entries_to(&mut changed_value_hash, &fixture.dependencies);
+    encode_axiom_refs_to(&mut changed_value_hash, &fixture.axiom_dependencies);
+    assert_ne!(
+        hashes.decl_certificate_hash,
+        hash_with_domain(b"NPA-DECL-CERT-0.1", &changed_value_hash)
+    );
+
+    let mut legacy_without_direct_value_hash = Vec::new();
+    legacy_without_direct_value_hash.extend_from_slice(&hashes.decl_interface_hash);
+    encode_dependency_entries_to(&mut legacy_without_direct_value_hash, &fixture.dependencies);
+    encode_axiom_refs_to(
+        &mut legacy_without_direct_value_hash,
+        &fixture.axiom_dependencies,
+    );
+    assert_ne!(
+        hashes.decl_certificate_hash,
+        hash_with_domain(b"NPA-DECL-CERT-0.1", &legacy_without_direct_value_hash)
+    );
+}
+
+#[test]
 fn local_transparent_dependency_change_propagates_to_dependents() {
     let cert_a =
         build_module_cert(local_transparent_alias_module(id_value("A", "x")), &[]).unwrap();
@@ -2059,6 +2249,65 @@ fn generated_recursor_artifact_hashes_are_stable_and_scoped() {
         recursor_artifact_hashes(&rules_changed);
     assert_eq!(signature_hash, rules_changed_signature_hash);
     assert_ne!(rule_hash, rules_changed_rule_hash);
+}
+
+#[test]
+fn inductive_decl_interface_hash_commits_generated_recursor_artifact_hashes() {
+    let cert = build_module_cert(unary_inductive_with_recursor_type_anchor_module(), &[]).unwrap();
+    let inductive_index = cert
+        .declarations
+        .iter()
+        .position(|decl| matches!(decl.decl, DeclPayload::Inductive { .. }))
+        .unwrap();
+    let original_interface_hash = cert.declarations[inductive_index]
+        .hashes
+        .decl_interface_hash;
+    let unary_term = cert
+        .term_table
+        .iter()
+        .position(|term| {
+            matches!(
+                term,
+                TermNode::Const {
+                    global_ref: GlobalRef::Local { decl_index },
+                    levels
+                } if *decl_index == inductive_index && levels.is_empty()
+            )
+        })
+        .unwrap();
+
+    let mut signature_changed = cert.clone();
+    match &mut signature_changed.declarations[inductive_index].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.ty = unary_term,
+        _ => panic!("expected inductive with recursor"),
+    }
+    rehash_cert_after_decl_change(&mut signature_changed);
+
+    let mut rules_changed = cert.clone();
+    match &mut rules_changed.declarations[inductive_index].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.rules.major_index += 1,
+        _ => panic!("expected inductive with recursor"),
+    }
+    rehash_cert_after_decl_change(&mut rules_changed);
+
+    let signature_changed_interface_hash = signature_changed.declarations[inductive_index]
+        .hashes
+        .decl_interface_hash;
+    let rules_changed_interface_hash = rules_changed.declarations[inductive_index]
+        .hashes
+        .decl_interface_hash;
+    assert_ne!(original_interface_hash, signature_changed_interface_hash);
+    assert_ne!(original_interface_hash, rules_changed_interface_hash);
+    assert_ne!(
+        signature_changed_interface_hash,
+        rules_changed_interface_hash
+    );
 }
 
 #[test]
