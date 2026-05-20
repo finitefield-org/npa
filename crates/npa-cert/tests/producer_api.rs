@@ -45,11 +45,93 @@ fn hash(byte: u8) -> [u8; 32] {
     [byte; 32]
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TestProducerSidecar {
+    module: Name,
+    producer_profile: ProducerProfile,
+    producer_run_id: String,
+    model_name: String,
+    prompt: String,
+    score: i32,
+    diagnostics: Vec<String>,
+    cache_hit: bool,
+    input_artifact_hashes: Vec<[u8; 32]>,
+}
+
+impl TestProducerSidecar {
+    fn human(module: &str) -> Self {
+        Self {
+            module: Name::from_dotted(module),
+            producer_profile: ProducerProfile::HumanSurface,
+            producer_run_id: "human-run-1".to_owned(),
+            model_name: "surface-elaborator".to_owned(),
+            prompt: "human surface source".to_owned(),
+            score: 100,
+            diagnostics: vec!["accepted by human producer".to_owned()],
+            cache_hit: false,
+            input_artifact_hashes: vec![hash(0x11)],
+        }
+    }
+
+    fn ai(module: &str) -> Self {
+        Self {
+            module: Name::from_dotted(module),
+            producer_profile: ProducerProfile::AiCoreMvp,
+            producer_run_id: "ai-run-1".to_owned(),
+            model_name: "proof-candidate-model".to_owned(),
+            prompt: "generate checked core declarations".to_owned(),
+            score: 80,
+            diagnostics: vec!["accepted by AI producer".to_owned()],
+            cache_hit: true,
+            input_artifact_hashes: vec![hash(0x22)],
+        }
+    }
+
+    fn marker(&self) -> String {
+        let input_artifact_marker = self
+            .input_artifact_hashes
+            .iter()
+            .flatten()
+            .map(|byte| u32::from(*byte))
+            .sum::<u32>();
+        format!(
+            "{}|{:?}|{}|{}|{}|{}|{}|{}|{}",
+            self.module.as_dotted(),
+            self.producer_profile,
+            self.producer_run_id,
+            self.model_name,
+            self.prompt,
+            self.score,
+            self.diagnostics.join(";"),
+            self.cache_hit,
+            input_artifact_marker
+        )
+    }
+}
+
 fn verify_module(module: CoreModule) -> VerifiedModule {
     let cert = build_module_cert(module, &[]).unwrap();
     let bytes = encode_module_cert(&cert).unwrap();
     let mut session = VerifierSession::new();
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap()
+}
+
+fn build_bytes_and_hashes_with_out_of_band_sidecar(
+    module: CoreModule,
+    sidecar: Option<&TestProducerSidecar>,
+) -> (Vec<u8>, [u8; 32], [u8; 32], [u8; 32]) {
+    if let Some(sidecar) = sidecar {
+        assert_eq!(&sidecar.module, &module.name);
+        assert!(!sidecar.marker().is_empty());
+    }
+    let cert = build_module_cert(module, &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    (
+        bytes,
+        cert.hashes.export_hash,
+        cert.hashes.axiom_report_hash,
+        cert.hashes.certificate_hash,
+    )
 }
 
 fn verify_module_with_imports(module: CoreModule, imports: &[VerifiedModule]) -> VerifiedModule {
@@ -1277,19 +1359,91 @@ fn prior_chain_fingerprint_changes_for_body_only_certificate_hash_change() {
 }
 
 #[test]
-fn producer_profile_is_not_part_of_certificate_build_path() {
-    let _profile = ProducerProfile::AiCoreMvp;
+fn producer_sidecar_is_out_of_band_for_certificate_bytes_and_hashes() {
+    let module_name = "Test.ProducerSidecarOutOfBand";
+    let sidecar = TestProducerSidecar::ai(module_name);
+    let mut changed_sidecar = sidecar.clone();
+    changed_sidecar.producer_profile = ProducerProfile::HumanSurface;
+    changed_sidecar.producer_run_id = "human-rerun-2".to_owned();
+    changed_sidecar.model_name = "different-audit-only-model".to_owned();
+    changed_sidecar.prompt = "different prompt kept outside certificate".to_owned();
+    changed_sidecar.score = 7;
+    changed_sidecar.diagnostics = vec![
+        "cache miss".to_owned(),
+        "diagnostic payload changed".to_owned(),
+    ];
+    changed_sidecar.cache_hit = false;
+    changed_sidecar.input_artifact_hashes = vec![hash(0x33), hash(0x44)];
+    assert_ne!(sidecar.marker(), changed_sidecar.marker());
+
     let module = CoreModule {
-        name: Name::from_dotted("Test.ProducerProfileOutOfBand"),
+        name: Name::from_dotted(module_name),
         declarations: vec![trivial_axiom("P")],
     };
 
-    let cert = build_module_cert(module, &[]).unwrap();
-    let bytes = encode_module_cert(&cert).unwrap();
-    assert!(!bytes.is_empty());
+    let with_sidecar =
+        build_bytes_and_hashes_with_out_of_band_sidecar(module.clone(), Some(&sidecar));
+    let with_changed_sidecar =
+        build_bytes_and_hashes_with_out_of_band_sidecar(module.clone(), Some(&changed_sidecar));
+    let without_sidecar = build_bytes_and_hashes_with_out_of_band_sidecar(module, None);
+    assert_eq!(with_sidecar, with_changed_sidecar);
+    assert_eq!(with_sidecar, without_sidecar);
 
     let mut session = VerifierSession::new();
-    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+    verify_module_cert(&with_sidecar.0, &mut session, &AxiomPolicy::normal()).unwrap();
+}
+
+#[test]
+fn human_and_ai_producer_sidecars_emit_same_certificate_for_same_core_declarations() {
+    let module_name = "Test.ProducerSidecarSameCore";
+    let declarations = vec![
+        trivial_axiom("SidecarT"),
+        axiom_over("sidecar_value", "SidecarT"),
+    ];
+    let human_sidecar = TestProducerSidecar::human(module_name);
+    let ai_sidecar = TestProducerSidecar::ai(module_name);
+    assert_ne!(human_sidecar.marker(), ai_sidecar.marker());
+
+    let human_cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted(module_name),
+            declarations: declarations.clone(),
+        },
+        &[],
+    )
+    .unwrap();
+    let tokens = accepted_tokens(
+        check_core_decl_candidates(CandidateBatch {
+            imports: &[],
+            prior_current_decls: &[],
+            candidates: declarations
+                .into_iter()
+                .map(|declaration| CoreDeclCandidate { declaration })
+                .collect(),
+            limits: generous_limits_with_declarations(2),
+        })
+        .unwrap(),
+    );
+    let ai_cert =
+        build_module_cert_from_checked_candidates(Name::from_dotted(module_name), &[], &tokens)
+            .unwrap();
+    let human_bytes = encode_module_cert(&human_cert).unwrap();
+    let ai_bytes = encode_module_cert(&ai_cert).unwrap();
+
+    assert_eq!(human_bytes, ai_bytes);
+    assert_eq!(human_cert.hashes, ai_cert.hashes);
+    assert_eq!(human_cert.hashes.export_hash, ai_cert.hashes.export_hash);
+    assert_eq!(
+        human_cert.hashes.axiom_report_hash,
+        ai_cert.hashes.axiom_report_hash
+    );
+    assert_eq!(
+        human_cert.hashes.certificate_hash,
+        ai_cert.hashes.certificate_hash
+    );
+
+    let mut session = VerifierSession::new();
+    verify_module_cert(&ai_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
 }
 
 #[test]
