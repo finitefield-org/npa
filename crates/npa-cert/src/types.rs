@@ -784,6 +784,23 @@ pub enum HashObject {
     ModuleCertificate,
 }
 
+/// Producer-side deterministic limit that rejected a candidate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProducerLimitKind {
+    /// Candidate count exceeded `ProducerLimits.max_declarations`.
+    MaxDeclarations,
+    /// Core expression node count exceeded `ProducerLimits.max_expr_nodes`.
+    MaxExprNodes,
+    /// Universe level node count exceeded `ProducerLimits.max_level_nodes`.
+    MaxLevelNodes,
+    /// Dotted name component count exceeded `ProducerLimits.max_name_components`.
+    MaxNameComponents,
+    /// Reduction step budget could not be represented for kernel fuel.
+    MaxReductionSteps,
+    /// Conversion step budget could not be represented for kernel fuel.
+    MaxConversionSteps,
+}
+
 /// Structured certificate construction, decoding, and verification error.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CertError {
@@ -881,6 +898,11 @@ pub enum CertError {
     InductiveWrapperMismatch {
         /// Inductive declaration name.
         name: ModuleName,
+    },
+    /// Producer candidate exceeded a deterministic schema limit.
+    ProducerLimitExceeded {
+        /// Limit that was exceeded.
+        limit: ProducerLimitKind,
     },
     /// Underlying Rust kernel rejected a declaration.
     Kernel(npa_kernel::Error),

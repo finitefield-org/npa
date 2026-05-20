@@ -1,16 +1,28 @@
 use npa_cert::{
-    build_module_cert, encode_module_cert, producer_limits_canonical_bytes, producer_limits_hash,
-    stricter_or_equal, verify_module_cert, AxiomPolicy, CandidateBatch, CandidateBatchResult,
-    CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate, CoreDeclCandidate,
-    CoreModule, Name, ProducerLimits, ProducerProfile, VerifiedModule, VerifierSession,
+    build_module_cert, encode_module_cert, precheck_core_decl_candidate,
+    producer_limits_canonical_bytes, producer_limits_hash, stricter_or_equal, verify_module_cert,
+    AxiomPolicy, CandidateBatch, CandidateBatchResult, CandidateHashPreview, CandidateStatus,
+    CertError, CheckedDeclCandidate, CoreDeclCandidate, CoreModule, Name, ProducerLimitKind,
+    ProducerLimits, ProducerProfile, VerifiedModule, VerifierSession,
 };
-use npa_kernel::{Decl, Expr, Level};
+use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
 
 fn trivial_axiom(name: &str) -> Decl {
     Decl::Axiom {
         name: name.to_owned(),
         universe_params: vec![],
         ty: Expr::sort(Level::zero()),
+    }
+}
+
+fn generous_limits() -> ProducerLimits {
+    ProducerLimits {
+        max_declarations: 1,
+        max_expr_nodes: 64,
+        max_level_nodes: 64,
+        max_name_components: 8,
+        max_reduction_steps: 64,
+        max_conversion_steps: 64,
     }
 }
 
@@ -175,4 +187,89 @@ fn stricter_or_equal_compares_every_limit_field() {
     for looser in looser_profiles {
         assert!(!stricter_or_equal(&looser, &baseline));
     }
+}
+
+#[test]
+fn precheck_core_decl_candidate_accepts_simple_axiom_under_limits() {
+    let candidate = CoreDeclCandidate {
+        declaration: trivial_axiom("P"),
+    };
+
+    precheck_core_decl_candidate(&Env::new(), &candidate, &generous_limits()).unwrap();
+}
+
+#[test]
+fn precheck_core_decl_candidate_rejects_schema_limit_excess_deterministically() {
+    let candidate = CoreDeclCandidate {
+        declaration: trivial_axiom("A.B"),
+    };
+
+    let mut limits = generous_limits();
+    limits.max_declarations = 0;
+    assert_eq!(
+        precheck_core_decl_candidate(&Env::new(), &candidate, &limits).unwrap_err(),
+        CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxDeclarations
+        }
+    );
+
+    let mut limits = generous_limits();
+    limits.max_expr_nodes = 0;
+    assert_eq!(
+        precheck_core_decl_candidate(&Env::new(), &candidate, &limits).unwrap_err(),
+        CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxExprNodes
+        }
+    );
+
+    let mut limits = generous_limits();
+    limits.max_level_nodes = 0;
+    assert_eq!(
+        precheck_core_decl_candidate(&Env::new(), &candidate, &limits).unwrap_err(),
+        CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxLevelNodes
+        }
+    );
+
+    let mut limits = generous_limits();
+    limits.max_name_components = 1;
+    assert_eq!(
+        precheck_core_decl_candidate(&Env::new(), &candidate, &limits).unwrap_err(),
+        CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxNameComponents
+        }
+    );
+}
+
+#[test]
+fn precheck_core_decl_candidate_maps_reduction_and_conversion_limits_to_kernel_fuel() {
+    let axiom = CoreDeclCandidate {
+        declaration: trivial_axiom("P"),
+    };
+    let mut limits = generous_limits();
+    limits.max_reduction_steps = 0;
+    assert_eq!(
+        precheck_core_decl_candidate(&Env::new(), &axiom, &limits).unwrap_err(),
+        CertError::Kernel(KernelError::ResourceLimit {
+            kind: ResourceLimitKind::Whnf
+        })
+    );
+
+    let definition = CoreDeclCandidate {
+        declaration: Decl::Def {
+            name: "P".to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::succ(Level::zero())),
+            value: Expr::sort(Level::zero()),
+            reducibility: Reducibility::Reducible,
+        },
+    };
+    let mut limits = generous_limits();
+    limits.max_conversion_steps = 0;
+    assert_eq!(
+        precheck_core_decl_candidate(&Env::new(), &definition, &limits).unwrap_err(),
+        CertError::Kernel(KernelError::ResourceLimit {
+            kind: ResourceLimitKind::Conversion
+        })
+    );
 }
