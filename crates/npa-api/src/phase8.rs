@@ -42,6 +42,8 @@ pub const PHASE8_RELEASE_BUNDLE_STAGING_PLAN_SCHEMA: &str =
     "npa.phase8.release_bundle_staging_plan.v1";
 pub const PHASE8_RELEASE_BUNDLE_STAGING_RESULT_SCHEMA: &str =
     "npa.phase8.release_bundle_staging_result.v1";
+pub const PHASE8_RELEASE_AUDIT_BUNDLE_MANIFEST_SCHEMA: &str =
+    "npa.phase8.release_audit_bundle_manifest.v1";
 pub const PHASE8_AUXILIARY_RESULT_SCHEMA: &str = "npa.phase8.auxiliary_result.v1";
 pub const PHASE8_AUXILIARY_RESULT_STORE_MANIFEST_SCHEMA: &str =
     "npa.phase8.auxiliary_result_store_manifest.v1";
@@ -4230,6 +4232,139 @@ impl Phase8ReleaseBundleStagingResult {
 pub struct Phase8ReleaseBundleStaging {
     pub result: Phase8ReleaseBundleStagingResult,
     pub files: Vec<Phase8ReleaseBundleStagedFile>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ReleaseAuditBundleArtifact {
+    pub kind: Phase8ReleaseBundleArtifactKind,
+    pub path: String,
+    pub file_hash: Hash,
+    pub hashes: BTreeMap<String, Hash>,
+}
+
+impl Phase8ReleaseAuditBundleArtifact {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            (
+                "hashes".to_owned(),
+                phase8_hashes_canonical_json(&self.hashes),
+            ),
+            (
+                "kind".to_owned(),
+                phase8_json_string_literal(self.kind.as_str()),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ReleaseAuditBundleManifest {
+    pub bundle_id: String,
+    pub bundle_hash: Hash,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub artifacts: Vec<Phase8ReleaseAuditBundleArtifact>,
+}
+
+impl Phase8ReleaseAuditBundleManifest {
+    pub fn new(
+        policy_hash: Hash,
+        artifact_hash: Hash,
+        artifacts: Vec<Phase8ReleaseAuditBundleArtifact>,
+    ) -> Self {
+        let mut manifest = Self {
+            bundle_id: String::new(),
+            bundle_hash: [0; 32],
+            policy_hash,
+            artifact_hash,
+            artifacts,
+        };
+        manifest.bundle_hash = manifest.hash_input_hash();
+        manifest.bundle_id = phase8_release_audit_bundle_id(manifest.bundle_hash);
+        manifest
+    }
+
+    pub fn hash_input_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "artifacts".to_owned(),
+                canonical_json_array(
+                    self.artifacts
+                        .iter()
+                        .map(Phase8ReleaseAuditBundleArtifact::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_RELEASE_AUDIT_BUNDLE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "artifacts".to_owned(),
+                canonical_json_array(
+                    self.artifacts
+                        .iter()
+                        .map(Phase8ReleaseAuditBundleArtifact::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "bundle_hash".to_owned(),
+                phase8_hash_json_literal(&self.bundle_hash),
+            ),
+            (
+                "bundle_id".to_owned(),
+                phase8_json_string_literal(&self.bundle_id),
+            ),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_RELEASE_AUDIT_BUNDLE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ReleaseBundleGeneration {
+    pub manifest: Phase8ReleaseAuditBundleManifest,
+    pub bytes: Vec<u8>,
+    pub out_rewrite_required: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ReleaseBundleValidation {
+    pub result: Phase8AuxiliaryResult,
+    pub out_rewrite_required: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -8933,6 +9068,165 @@ pub fn phase8_release_stage_bundle_inputs(
             store_manifests,
         },
         files,
+    })
+}
+
+pub fn parse_phase8_release_audit_bundle_manifest(
+    source: &str,
+) -> Result<Phase8ReleaseAuditBundleManifest, Phase8CommandError> {
+    let manifest = parse_phase8_release_audit_bundle_manifest_unchecked(source)?;
+    phase8_validate_release_audit_bundle_manifest_identity(&manifest).map_err(|error| {
+        phase8_release_validate_bundle_audit_error_to_command("input_schema_invalid", error)
+    })?;
+    phase8_validate_release_audit_bundle_artifact_order(&manifest.artifacts).map_err(|error| {
+        phase8_release_validate_bundle_audit_error_to_command("input_schema_invalid", error)
+    })?;
+    Ok(manifest)
+}
+
+pub fn phase8_release_bundle(
+    bundle_root: impl Into<String>,
+    out_path: impl Into<String>,
+    artifact_hash: Hash,
+    inputs: &[Phase8ReleaseAuditBundleArtifact],
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    existing_out: Option<&[u8]>,
+) -> Result<Phase8ReleaseBundleGeneration, Phase8CommandError> {
+    let bundle_root = bundle_root.into();
+    let out_path = out_path.into();
+    if !phase8_valid_workspace_relative_path(&bundle_root) {
+        return Err(phase8_release_bundle_value_error(
+            "input_reference_invalid",
+            "bundle_root",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    if !phase8_valid_workspace_relative_path(&out_path) {
+        return Err(phase8_release_bundle_value_error(
+            "input_reference_invalid",
+            "out",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let expected_out_path = format!("{bundle_root}/manifest.json");
+    if out_path != expected_out_path {
+        return Err(phase8_release_bundle_value_error(
+            "input_reference_invalid",
+            "out",
+            expected_out_path,
+            out_path,
+        ));
+    }
+
+    let mut artifacts = inputs.to_vec();
+    artifacts.sort_by(|left, right| {
+        (left.kind.as_str(), left.path.as_str()).cmp(&(right.kind.as_str(), right.path.as_str()))
+    });
+    phase8_validate_release_audit_bundle_artifact_order(&artifacts).map_err(|error| {
+        phase8_release_bundle_audit_error_to_command("release_bundle_generation_failed", error)
+    })?;
+    phase8_validate_release_audit_bundle_artifact_files(&artifacts, bundle_files).map_err(
+        |error| {
+            phase8_release_bundle_audit_error_to_command("release_bundle_generation_failed", error)
+        },
+    )?;
+
+    let policy_hash =
+        phase8_release_audit_bundle_policy_hash_from_inputs(&artifacts, bundle_files)?;
+    let manifest = Phase8ReleaseAuditBundleManifest::new(policy_hash, artifact_hash, artifacts);
+    phase8_validate_release_audit_bundle_closed_set(&manifest, bundle_files).map_err(|error| {
+        phase8_release_bundle_audit_error_to_command("release_bundle_generation_failed", error)
+    })?;
+
+    let bytes = manifest.canonical_json().into_bytes();
+    let out_rewrite_required = match existing_out {
+        Some(existing) if existing == bytes.as_slice() => false,
+        Some(_) => {
+            return Err(phase8_release_bundle_value_error(
+                "output_path_conflict",
+                "out",
+                "absent_or_exact_match",
+                "different_bytes",
+            ))
+        }
+        None => true,
+    };
+    Ok(Phase8ReleaseBundleGeneration {
+        manifest,
+        bytes,
+        out_rewrite_required,
+    })
+}
+
+pub fn phase8_release_validate_bundle(
+    manifest_path: impl Into<String>,
+    manifest_hash: Hash,
+    manifest_source: &str,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    existing_out: Option<&[u8]>,
+) -> Result<Phase8ReleaseBundleValidation, Phase8CommandError> {
+    let manifest_path = manifest_path.into();
+    if !phase8_valid_workspace_relative_path(&manifest_path) {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_reference_invalid",
+            "manifest.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let actual_manifest_hash = phase8_file_hash(manifest_source.as_bytes());
+    if actual_manifest_hash != manifest_hash {
+        return Err(phase8_release_validate_bundle_hash_error(
+            "input_hash_mismatch",
+            "manifest_hash",
+            manifest_hash,
+            actual_manifest_hash,
+        ));
+    }
+
+    let manifest = parse_phase8_release_audit_bundle_manifest_unchecked(manifest_source)?;
+    let validation = phase8_validate_release_audit_bundle_manifest_identity(&manifest)
+        .and_then(|_| phase8_validate_release_audit_bundle_artifact_order(&manifest.artifacts))
+        .and_then(|_| {
+            phase8_validate_release_audit_bundle_artifact_files(&manifest.artifacts, bundle_files)
+        })
+        .and_then(|_| phase8_validate_release_audit_bundle_closed_set(&manifest, bundle_files));
+
+    let result = match validation {
+        Ok(()) => Phase8AuxiliaryResult::passed(
+            phase8_release_audit_bundle_auxiliary_result_id(manifest.bundle_hash),
+            Phase8AuxiliaryResultKind::AuditBundle,
+            manifest.policy_hash,
+            manifest.bundle_hash,
+            None,
+        ),
+        Err(error) => Phase8AuxiliaryResult::failed(
+            phase8_release_audit_bundle_auxiliary_result_id(manifest.bundle_hash),
+            Phase8AuxiliaryResultKind::AuditBundle,
+            manifest.policy_hash,
+            manifest.bundle_hash,
+            None,
+            error.into_auxiliary_error(),
+        ),
+    };
+    let result_bytes = result.canonical_json().into_bytes();
+    let out_rewrite_required = match existing_out {
+        Some(existing) if existing == result_bytes.as_slice() => false,
+        Some(_) => {
+            return Err(phase8_release_validate_bundle_value_error(
+                "output_path_conflict",
+                "out",
+                "absent_or_exact_match",
+                "different_bytes",
+            ))
+        }
+        None => true,
+    };
+    Ok(Phase8ReleaseBundleValidation {
+        result,
+        out_rewrite_required,
     })
 }
 
@@ -16764,6 +17058,15 @@ const RELEASE_POLICY_FIELDS: &[&str] = &[
 const RELEASE_POLICY_AI_TRIAGE_FIELDS: &[&str] = &["enabled", "required", "input_policy_hash"];
 const RELEASE_BUNDLE_STAGING_PLAN_FIELDS: &[&str] = &["schema", "phase", "bundle_root", "inputs"];
 const RELEASE_BUNDLE_STAGING_INPUT_FIELDS: &[&str] = &["kind", "path", "file_hash", "hashes"];
+const RELEASE_AUDIT_BUNDLE_MANIFEST_FIELDS: &[&str] = &[
+    "schema",
+    "bundle_id",
+    "bundle_hash",
+    "policy_hash",
+    "artifact_hash",
+    "artifacts",
+];
+const RELEASE_AUDIT_BUNDLE_ARTIFACT_FIELDS: &[&str] = &["kind", "path", "file_hash", "hashes"];
 const AUXILIARY_RESULT_FIELDS: &[&str] = &[
     "schema",
     "kind",
@@ -18026,6 +18329,2616 @@ fn phase8_release_bundle_artifact_path(
         .strip_prefix("sha256:")
         .expect("hash formatter emits sha256 prefix");
     format!("artifacts/{}/{hash_hex}.json", kind.as_str())
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Phase8ReleaseAuditBundleError {
+    reason_code: Phase8AuxiliaryReasonCode,
+    field: Box<str>,
+    expected_hash: Option<Box<Hash>>,
+    actual_hash: Option<Box<Hash>>,
+    expected_value: Option<Box<str>>,
+    actual_value: Option<Box<str>>,
+}
+
+impl Phase8ReleaseAuditBundleError {
+    fn invalid_value(
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code: Phase8AuxiliaryReasonCode::AuditBundleInvalid,
+            field: field.into().into_boxed_str(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into().into_boxed_str()),
+            actual_value: Some(actual_value.into().into_boxed_str()),
+        }
+    }
+
+    fn missing_value(
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code: Phase8AuxiliaryReasonCode::AuditBundleMissing,
+            field: field.into().into_boxed_str(),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into().into_boxed_str()),
+            actual_value: Some(actual_value.into().into_boxed_str()),
+        }
+    }
+
+    fn invalid_hash(field: impl Into<String>, expected_hash: Hash, actual_hash: Hash) -> Self {
+        Self {
+            reason_code: Phase8AuxiliaryReasonCode::AuditBundleInvalid,
+            field: field.into().into_boxed_str(),
+            expected_hash: Some(Box::new(expected_hash)),
+            actual_hash: Some(Box::new(actual_hash)),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    fn into_auxiliary_error(self) -> Phase8AuxiliaryError {
+        Phase8AuxiliaryError {
+            reason_code: self.reason_code,
+            field: Some(self.field.into_string()),
+            expected_hash: self.expected_hash.map(|hash| *hash),
+            actual_hash: self.actual_hash.map(|hash| *hash),
+            expected_value: self.expected_value.map(|value| value.into_string()),
+            actual_value: self.actual_value.map(|value| value.into_string()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Phase8ReleaseBundleNormalizedEntryView {
+    result_hash: Hash,
+    request_hash: Hash,
+    policy_hash: Hash,
+    artifact_hash: Hash,
+    checker_profile: String,
+    status: Phase8MachineCheckStatus,
+    axiom_report_hash: Option<Hash>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct Phase8ReleaseBundleNormalizedResultView {
+    normalized_result_hash: Hash,
+    artifact_hash: Hash,
+    policy_hash: Hash,
+    import_lock_hash: Hash,
+    comparison_status: Phase8NormalizedComparisonStatus,
+    comparison_missing_checker_profiles: Vec<String>,
+    comparison_disagreements_len: usize,
+    comparison_status_reasons_len: usize,
+    results: Vec<Phase8ReleaseBundleNormalizedEntryView>,
+}
+
+fn phase8_release_audit_bundle_id(bundle_hash: Hash) -> String {
+    let formatted = format_hash_string(&bundle_hash);
+    let hash_hex = formatted
+        .strip_prefix("sha256:")
+        .expect("hash formatter emits sha256 prefix");
+    format!("release_{hash_hex}")
+}
+
+fn phase8_release_audit_bundle_auxiliary_result_id(bundle_hash: Hash) -> String {
+    let formatted = format_hash_string(&bundle_hash);
+    let hash_hex = formatted
+        .strip_prefix("sha256:")
+        .expect("hash formatter emits sha256 prefix");
+    format!("audit_bundle_{hash_hex}")
+}
+
+fn phase8_release_bundle_value_error(
+    reason_code: impl Into<String>,
+    field: impl Into<String>,
+    expected_value: impl Into<String>,
+    actual_value: impl Into<String>,
+) -> Phase8CommandError {
+    phase8_command_value_error(
+        Phase8CommandName::ReleaseBundle,
+        reason_code,
+        field,
+        expected_value,
+        actual_value,
+    )
+}
+
+fn phase8_release_validate_bundle_value_error(
+    reason_code: impl Into<String>,
+    field: impl Into<String>,
+    expected_value: impl Into<String>,
+    actual_value: impl Into<String>,
+) -> Phase8CommandError {
+    phase8_command_value_error(
+        Phase8CommandName::ReleaseValidateBundle,
+        reason_code,
+        field,
+        expected_value,
+        actual_value,
+    )
+}
+
+fn phase8_release_validate_bundle_hash_error(
+    reason_code: impl Into<String>,
+    field: impl Into<String>,
+    expected_hash: Hash,
+    actual_hash: Hash,
+) -> Phase8CommandError {
+    phase8_command_hash_error(
+        Phase8CommandName::ReleaseValidateBundle,
+        reason_code,
+        field,
+        expected_hash,
+        actual_hash,
+    )
+}
+
+fn phase8_release_bundle_audit_error_to_command(
+    reason_code: &str,
+    error: Phase8ReleaseAuditBundleError,
+) -> Phase8CommandError {
+    let mut command_error =
+        Phase8CommandError::new(Phase8CommandName::ReleaseBundle, reason_code.to_owned());
+    command_error.field = Some(error.field);
+    command_error.expected_hash = error.expected_hash;
+    command_error.actual_hash = error.actual_hash;
+    command_error.expected_value = error.expected_value;
+    command_error.actual_value = error.actual_value;
+    command_error
+}
+
+fn phase8_release_validate_bundle_audit_error_to_command(
+    reason_code: &str,
+    error: Phase8ReleaseAuditBundleError,
+) -> Phase8CommandError {
+    let mut command_error = Phase8CommandError::new(
+        Phase8CommandName::ReleaseValidateBundle,
+        reason_code.to_owned(),
+    );
+    command_error.field = Some(error.field);
+    command_error.expected_hash = error.expected_hash;
+    command_error.actual_hash = error.actual_hash;
+    command_error.expected_value = error.expected_value;
+    command_error.actual_value = error.actual_value;
+    command_error
+}
+
+fn parse_phase8_release_audit_bundle_manifest_unchecked(
+    source: &str,
+) -> Result<Phase8ReleaseAuditBundleManifest, Phase8CommandError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        phase8_release_validate_bundle_value_error(
+            "input_json_invalid",
+            "manifest.path",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    let members = phase8_release_validate_bundle_object_members(document.root(), "$", "object")?;
+    phase8_release_validate_bundle_required_fixed_string(
+        members,
+        "schema",
+        "schema",
+        PHASE8_RELEASE_AUDIT_BUNDLE_MANIFEST_SCHEMA,
+        PHASE8_RELEASE_AUDIT_BUNDLE_MANIFEST_SCHEMA,
+    )?;
+    let bundle_id = phase8_release_validate_bundle_required_string(
+        members,
+        "bundle_id",
+        "bundle_id",
+        "release_<sha256-lower-hex>",
+    )?;
+    let bundle_hash = phase8_release_validate_bundle_required_hash(
+        members,
+        "bundle_hash",
+        "bundle_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let policy_hash = phase8_release_validate_bundle_required_hash(
+        members,
+        "policy_hash",
+        "policy_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let artifact_hash = phase8_release_validate_bundle_required_hash(
+        members,
+        "artifact_hash",
+        "artifact_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let artifacts_value =
+        phase8_release_validate_bundle_required_value(members, "artifacts", "artifacts", "array")?;
+    let Some(artifact_values) = artifacts_value.array_elements() else {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            "artifacts",
+            "array",
+            "wrong_type",
+        ));
+    };
+    let mut artifacts = Vec::new();
+    for (index, artifact_value) in artifact_values.iter().enumerate() {
+        artifacts.push(parse_phase8_release_audit_bundle_artifact_value(
+            artifact_value,
+            index,
+        )?);
+    }
+    phase8_release_validate_bundle_reject_unknown_fields(
+        members,
+        RELEASE_AUDIT_BUNDLE_MANIFEST_FIELDS,
+        "$",
+    )?;
+    Ok(Phase8ReleaseAuditBundleManifest {
+        bundle_id,
+        bundle_hash,
+        policy_hash,
+        artifact_hash,
+        artifacts,
+    })
+}
+
+fn parse_phase8_release_audit_bundle_artifact_value(
+    value: &JsonValue<'_>,
+    index: usize,
+) -> Result<Phase8ReleaseAuditBundleArtifact, Phase8CommandError> {
+    let field = format!("artifacts[{index}]");
+    let members = phase8_release_validate_bundle_object_members(value, &field, "object")?;
+    let kind_raw = phase8_release_validate_bundle_required_string(
+        members,
+        "kind",
+        format!("{field}.kind"),
+        "release_bundle_artifact_kind",
+    )?;
+    let kind = Phase8ReleaseBundleArtifactKind::parse(&kind_raw).ok_or_else(|| {
+        phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            format!("{field}.kind"),
+            "release_bundle_artifact_kind",
+            "invalid_enum",
+        )
+    })?;
+    let path = phase8_release_validate_bundle_required_string(
+        members,
+        "path",
+        format!("{field}.path"),
+        "bundle_local_artifact_path",
+    )?;
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            format!("{field}.path"),
+            "bundle_local_artifact_path",
+            "invalid_path",
+        ));
+    }
+    let file_hash = phase8_release_validate_bundle_required_hash(
+        members,
+        "file_hash",
+        format!("{field}.file_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let hashes_value = phase8_release_validate_bundle_required_value(
+        members,
+        "hashes",
+        format!("{field}.hashes"),
+        "object",
+    )?;
+    let hashes = parse_phase8_release_audit_bundle_hashes_value(hashes_value, &field, kind)?;
+    phase8_release_validate_bundle_reject_unknown_fields(
+        members,
+        RELEASE_AUDIT_BUNDLE_ARTIFACT_FIELDS,
+        &field,
+    )?;
+    Ok(Phase8ReleaseAuditBundleArtifact {
+        kind,
+        path,
+        file_hash,
+        hashes,
+    })
+}
+
+fn parse_phase8_release_audit_bundle_hashes_value(
+    value: &JsonValue<'_>,
+    artifact_path: &str,
+    kind: Phase8ReleaseBundleArtifactKind,
+) -> Result<BTreeMap<String, Hash>, Phase8CommandError> {
+    let hashes_path = format!("{artifact_path}.hashes");
+    let members = phase8_release_validate_bundle_object_members(value, &hashes_path, "object")?;
+    let required = kind.required_hash_fields();
+    if required.is_empty() && !members.is_empty() {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            &hashes_path,
+            "empty_object",
+            "non_empty",
+        ));
+    }
+    let mut hashes = BTreeMap::new();
+    for member in members {
+        if hashes.contains_key(member.key()) {
+            return Err(phase8_release_validate_bundle_value_error(
+                "input_schema_invalid",
+                format!("{hashes_path}.{}", member.key()),
+                "unique_object_keys",
+                "duplicate_field",
+            ));
+        }
+        let Some(raw) = member.value().string_value() else {
+            return Err(phase8_release_validate_bundle_value_error(
+                "input_schema_invalid",
+                format!("{hashes_path}.{}", member.key()),
+                "sha256:<lower-hex>",
+                if member.value().kind() == JsonValueKind::Null {
+                    "null_not_allowed"
+                } else {
+                    "wrong_type"
+                },
+            ));
+        };
+        let hash = parse_hash_string(raw).map_err(|_| {
+            phase8_release_validate_bundle_value_error(
+                "input_schema_invalid",
+                format!("{hashes_path}.{}", member.key()),
+                "sha256:<lower-hex>",
+                "invalid_hash_format",
+            )
+        })?;
+        hashes.insert(member.key().to_owned(), hash);
+    }
+    for required_field in required {
+        if !hashes.contains_key(*required_field) {
+            return Err(phase8_release_validate_bundle_value_error(
+                "input_schema_invalid",
+                format!("{hashes_path}.{required_field}"),
+                "sha256:<lower-hex>",
+                "missing",
+            ));
+        }
+    }
+    for key in hashes.keys() {
+        if !required.contains(&key.as_str()) {
+            return Err(phase8_release_validate_bundle_value_error(
+                "input_schema_invalid",
+                format!("{hashes_path}.{key}"),
+                format!("hash_field_for_kind:{}", kind.as_str()),
+                "unknown_field",
+            ));
+        }
+    }
+    Ok(hashes)
+}
+
+fn phase8_validate_release_audit_bundle_manifest_identity(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let recomputed = manifest.hash_input_hash();
+    if recomputed != manifest.bundle_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "bundle_hash",
+            recomputed,
+            manifest.bundle_hash,
+        ));
+    }
+    let expected_id = phase8_release_audit_bundle_id(manifest.bundle_hash);
+    if manifest.bundle_id != expected_id {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "bundle_id",
+            expected_id,
+            &manifest.bundle_id,
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_validate_release_audit_bundle_artifact_order(
+    artifacts: &[Phase8ReleaseAuditBundleArtifact],
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    for index in 1..artifacts.len() {
+        let left = (
+            artifacts[index].kind.as_str(),
+            artifacts[index].path.as_str(),
+        );
+        let right = (
+            artifacts[index - 1].kind.as_str(),
+            artifacts[index - 1].path.as_str(),
+        );
+        if left < right {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}]"),
+                "artifacts_sorted_by_kind_path",
+                "order_violation",
+            ));
+        }
+    }
+    let mut kind_paths = BTreeSet::new();
+    let mut paths = BTreeSet::new();
+    for (index, artifact) in artifacts.iter().enumerate() {
+        if !kind_paths.insert((artifact.kind, artifact.path.as_str())) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}]"),
+                "unique_kind_path",
+                "duplicate_entry",
+            ));
+        }
+        if !paths.insert(artifact.path.as_str()) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].path"),
+                "unique_path",
+                "duplicate_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_validate_release_audit_bundle_artifact_files(
+    artifacts: &[Phase8ReleaseAuditBundleArtifact],
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    for (index, artifact) in artifacts.iter().enumerate() {
+        let expected_path = phase8_release_bundle_artifact_path(artifact.kind, artifact.file_hash);
+        if artifact.path != expected_path {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].path"),
+                expected_path,
+                &artifact.path,
+            ));
+        }
+        let Some(bytes) = bundle_files.get(&artifact.path) else {
+            return Err(Phase8ReleaseAuditBundleError::missing_value(
+                format!("artifacts[{index}].path"),
+                "readable_bundle_file",
+                "missing",
+            ));
+        };
+        let actual_file_hash = phase8_file_hash(bytes);
+        if actual_file_hash != artifact.file_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].file_hash"),
+                artifact.file_hash,
+                actual_file_hash,
+            ));
+        }
+        let source = phase8_release_bundle_utf8(bytes, format!("artifacts[{index}].path"))?;
+        let actual_hashes = phase8_release_bundle_artifact_hashes(artifact.kind, source, index)?;
+        if actual_hashes != artifact.hashes {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes"),
+                phase8_hashes_canonical_json(&actual_hashes),
+                phase8_hashes_canonical_json(&artifact.hashes),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_utf8(
+    bytes: &[u8],
+    field: impl Into<String>,
+) -> Result<&str, Phase8ReleaseAuditBundleError> {
+    std::str::from_utf8(bytes).map_err(|_| {
+        Phase8ReleaseAuditBundleError::invalid_value(field, "valid_json", "invalid_json")
+    })
+}
+
+fn phase8_release_bundle_artifact_hashes(
+    kind: Phase8ReleaseBundleArtifactKind,
+    source: &str,
+    index: usize,
+) -> Result<BTreeMap<String, Hash>, Phase8ReleaseAuditBundleError> {
+    let mut hashes = BTreeMap::new();
+    match kind {
+        Phase8ReleaseBundleArtifactKind::ReleasePolicy => {
+            let policy = parse_phase8_release_policy(source)
+                .map_err(|error| phase8_release_bundle_policy_error(index, kind, error))?;
+            hashes.insert("policy_hash".to_owned(), policy.policy_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::RunnerPolicy => {
+            let policy = parse_phase8_runner_policy(source)
+                .map_err(|error| phase8_release_bundle_policy_error(index, kind, error))?;
+            hashes.insert("policy_hash".to_owned(), policy.policy_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::CheckerIdentityManifest => {
+            parse_phase8_checker_identity_manifest(source)
+                .map_err(|error| phase8_release_bundle_policy_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::ImportLock => {
+            parse_phase8_import_lock_manifest(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::MachineCheckRequest => {
+            let request = parse_phase8_machine_check_request(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert("request_hash".to_owned(), request.request_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::MachineCheckResult => {
+            let summary = parse_phase8_machine_check_result_summary(source, "$")
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert("result_hash".to_owned(), summary.result_hash);
+            hashes.insert("run_artifact_hash".to_owned(), summary.run_artifact_hash);
+        }
+        Phase8ReleaseBundleArtifactKind::NormalizedCheckResult => {
+            let summary = parse_phase8_normalized_check_result_summary(source, "$")
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert("artifact_hash".to_owned(), summary.artifact_hash);
+            hashes.insert(
+                "normalized_result_hash".to_owned(),
+                summary.normalized_result_hash,
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::RequestStoreManifest => {
+            parse_phase8_request_store_manifest(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::MachineResultStoreManifest => {
+            parse_phase8_machine_result_store_manifest(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::NormalizedResultStoreManifest => {
+            parse_phase8_normalized_result_store_manifest(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::ChallengeManifest => {
+            parse_phase8_challenge_manifest(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::ChallengeOutputStoreManifest => {
+            parse_phase8_challenge_output_store_manifest(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert(
+                "manifest_hash".to_owned(),
+                phase8_file_hash(source.as_bytes()),
+            );
+        }
+        Phase8ReleaseBundleArtifactKind::ChallengeReplayResult => {
+            let result = parse_phase8_challenge_replay_result(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert("result_hash".to_owned(), result.result_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::ChallengeCoverageSummary => {
+            let summary = parse_phase8_challenge_coverage_summary(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert("summary_hash".to_owned(), summary.summary_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::AuxiliaryResult => {
+            let result = parse_phase8_auxiliary_result(source)
+                .map_err(|error| phase8_release_bundle_request_error(index, kind, error))?;
+            hashes.insert("result_hash".to_owned(), result.result_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::AiAuditInputPolicy => {
+            let policy = parse_phase8_ai_audit_input_policy(source)
+                .map_err(|error| phase8_release_bundle_audit_error(index, kind, error))?;
+            hashes.insert("input_policy_hash".to_owned(), policy.input_policy_hash());
+        }
+        Phase8ReleaseBundleArtifactKind::AiAuditSidecar => {
+            parse_phase8_ai_audit_sidecar(source)
+                .map_err(|error| phase8_release_bundle_audit_error(index, kind, error))?;
+        }
+        Phase8ReleaseBundleArtifactKind::CompareValidationResponse => {
+            phase8_release_bundle_schema_only_status(
+                source,
+                PHASE8_COMPARE_VALIDATION_RESULT_SCHEMA,
+                COMPARE_VALIDATION_RESULT_FIELDS,
+                "valid",
+                format!("artifacts[{index}].artifact"),
+            )?;
+        }
+        Phase8ReleaseBundleArtifactKind::AuditSidecarValidationResponse => {
+            phase8_release_bundle_schema_only_status(
+                source,
+                PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA,
+                AUDIT_SIDECAR_VALIDATION_RESULT_FIELDS,
+                "valid",
+                format!("artifacts[{index}].artifact"),
+            )?;
+        }
+    }
+    Ok(hashes)
+}
+
+fn phase8_release_bundle_policy_error(
+    index: usize,
+    kind: Phase8ReleaseBundleArtifactKind,
+    error: Phase8PolicyValidationError,
+) -> Phase8ReleaseAuditBundleError {
+    Phase8ReleaseAuditBundleError {
+        reason_code: Phase8AuxiliaryReasonCode::AuditBundleInvalid,
+        field: phase8_release_audit_bundle_artifact_field(index, kind, &error.field)
+            .into_boxed_str(),
+        expected_hash: None,
+        actual_hash: None,
+        expected_value: Some(error.expected_value.into_boxed_str()),
+        actual_value: Some(error.actual_value.into_boxed_str()),
+    }
+}
+
+fn phase8_release_bundle_request_error(
+    index: usize,
+    kind: Phase8ReleaseBundleArtifactKind,
+    error: Phase8RequestValidationError,
+) -> Phase8ReleaseAuditBundleError {
+    Phase8ReleaseAuditBundleError {
+        reason_code: Phase8AuxiliaryReasonCode::AuditBundleInvalid,
+        field: phase8_release_audit_bundle_artifact_field(index, kind, &error.field)
+            .into_boxed_str(),
+        expected_hash: error.expected_hash,
+        actual_hash: error.actual_hash,
+        expected_value: error.expected_value,
+        actual_value: error.actual_value,
+    }
+}
+
+fn phase8_release_bundle_audit_error(
+    index: usize,
+    kind: Phase8ReleaseBundleArtifactKind,
+    error: Phase8AuditSidecarValidationError,
+) -> Phase8ReleaseAuditBundleError {
+    Phase8ReleaseAuditBundleError {
+        reason_code: Phase8AuxiliaryReasonCode::AuditBundleInvalid,
+        field: phase8_release_audit_bundle_artifact_field(index, kind, &error.field)
+            .into_boxed_str(),
+        expected_hash: error.expected_hash,
+        actual_hash: error.actual_hash,
+        expected_value: error.expected_value,
+        actual_value: error.actual_value,
+    }
+}
+
+fn phase8_release_audit_bundle_artifact_field(
+    index: usize,
+    kind: Phase8ReleaseBundleArtifactKind,
+    field: &str,
+) -> String {
+    let prefix = format!("artifacts[{index}].artifact");
+    for root in phase8_release_stage_artifact_virtual_roots(kind) {
+        if field == *root || field == format!("{root}.$") {
+            return prefix;
+        }
+        if let Some(suffix) = field
+            .strip_prefix(*root)
+            .and_then(|rest| rest.strip_prefix('.'))
+        {
+            return format!("{prefix}.{suffix}");
+        }
+    }
+    phase8_prefixed_json_field(prefix, field)
+}
+
+fn phase8_release_bundle_schema_only_status(
+    source: &str,
+    schema: &str,
+    allowed_fields: &[&str],
+    required_status: &str,
+    field: String,
+) -> Result<String, Phase8ReleaseAuditBundleError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8ReleaseAuditBundleError::invalid_value(&field, "valid_json", "invalid_json")
+    })?;
+    let members = object_members_or_policy_error(document.root(), &field, "object")
+        .map_err(phase8_release_bundle_schema_error)?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{field}.schema"),
+        schema,
+        schema,
+    )
+    .map_err(phase8_release_bundle_schema_error)?;
+    let status = required_string_field(members, "status", &format!("{field}.status"), "status")
+        .map_err(phase8_release_bundle_schema_error)?;
+    if status != required_status {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("{field}.status"),
+            required_status,
+            status,
+        ));
+    }
+    reject_unknown_fields(members, allowed_fields, &field)
+        .map_err(phase8_release_bundle_schema_error)?;
+    Ok(status)
+}
+
+fn phase8_release_bundle_schema_error(
+    error: Phase8PolicyValidationError,
+) -> Phase8ReleaseAuditBundleError {
+    Phase8ReleaseAuditBundleError::invalid_value(
+        error.field,
+        error.expected_value,
+        error.actual_value,
+    )
+}
+
+fn phase8_release_validate_bundle_object_members<'value, 'src>(
+    value: &'value JsonValue<'src>,
+    field: impl Into<String>,
+    expected: impl Into<String>,
+) -> Result<&'value [JsonMember<'src>], Phase8CommandError> {
+    let field = field.into();
+    let expected = expected.into();
+    value.object_members().ok_or_else(|| {
+        phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            expected,
+            if value.kind() == JsonValueKind::Null {
+                "null_not_allowed"
+            } else {
+                "wrong_type"
+            },
+        )
+    })
+}
+
+fn phase8_release_validate_bundle_required_value<'value, 'src>(
+    members: &'value [JsonMember<'src>],
+    name: &str,
+    field: impl Into<String>,
+    expected: impl Into<String>,
+) -> Result<&'value JsonValue<'src>, Phase8CommandError> {
+    let field = field.into();
+    let expected = expected.into();
+    if duplicate_member(members, name) {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            "unique_object_keys",
+            "duplicate_field",
+        ));
+    }
+    let Some(member) = members.iter().find(|member| member.key() == name) else {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            expected,
+            "missing",
+        ));
+    };
+    if member.value().kind() == JsonValueKind::Null {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            expected,
+            "null_not_allowed",
+        ));
+    }
+    Ok(member.value())
+}
+
+fn phase8_release_validate_bundle_required_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: impl Into<String>,
+    expected: impl Into<String>,
+) -> Result<String, Phase8CommandError> {
+    let field = field.into();
+    let expected = expected.into();
+    let value = phase8_release_validate_bundle_required_value(
+        members,
+        name,
+        field.clone(),
+        expected.clone(),
+    )?;
+    value.string_value().map(ToOwned::to_owned).ok_or_else(|| {
+        phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            expected,
+            if value.kind() == JsonValueKind::Null {
+                "null_not_allowed"
+            } else {
+                "wrong_type"
+            },
+        )
+    })
+}
+
+fn phase8_release_validate_bundle_required_fixed_string(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: impl Into<String>,
+    expected: impl Into<String>,
+    fixed: &str,
+) -> Result<(), Phase8CommandError> {
+    let field = field.into();
+    let expected = expected.into();
+    let actual = phase8_release_validate_bundle_required_string(
+        members,
+        name,
+        field.clone(),
+        expected.clone(),
+    )?;
+    if actual != fixed {
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            expected,
+            actual,
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_validate_bundle_required_hash(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: impl Into<String>,
+    expected: impl Into<String>,
+) -> Result<Hash, Phase8CommandError> {
+    let field = field.into();
+    let expected = expected.into();
+    let raw = phase8_release_validate_bundle_required_string(
+        members,
+        name,
+        field.clone(),
+        expected.clone(),
+    )?;
+    parse_hash_string(&raw).map_err(|_| {
+        phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            field,
+            expected,
+            "invalid_hash_format",
+        )
+    })
+}
+
+fn phase8_release_validate_bundle_reject_unknown_fields(
+    members: &[JsonMember<'_>],
+    allowed: &[&str],
+    container_path: &str,
+) -> Result<(), Phase8CommandError> {
+    let mut counts = BTreeMap::<String, usize>::new();
+    for member in members {
+        *counts.entry(member.key().to_owned()).or_default() += 1;
+    }
+    let mut unknown = counts
+        .keys()
+        .filter(|field| !allowed.contains(&field.as_str()))
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    unknown.sort_by(|left, right| phase8_rfc8785_object_key_cmp(left, right));
+    if let Some(field) = unknown.first() {
+        let report_path = unknown_field_report_path(container_path, field);
+        let actual = if counts.get(*field).copied().unwrap_or(0) > 1 {
+            "duplicate_field"
+        } else {
+            "unknown_field"
+        };
+        let expected = if actual == "duplicate_field" {
+            "unique_object_keys"
+        } else {
+            "absent"
+        };
+        return Err(phase8_release_validate_bundle_value_error(
+            "input_schema_invalid",
+            report_path,
+            expected,
+            actual,
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_audit_bundle_policy_hash_from_inputs(
+    artifacts: &[Phase8ReleaseAuditBundleArtifact],
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+) -> Result<Hash, Phase8CommandError> {
+    let index = phase8_release_bundle_single_index(
+        artifacts,
+        Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+        "artifacts[release_policy]",
+    )
+    .map_err(|error| {
+        phase8_release_bundle_audit_error_to_command("release_bundle_generation_failed", error)
+    })?;
+    let source = phase8_release_bundle_artifact_source(&artifacts[index], bundle_files, index)
+        .map_err(|error| {
+            phase8_release_bundle_audit_error_to_command("release_bundle_generation_failed", error)
+        })?;
+    let policy = parse_phase8_release_policy(source).map_err(|error| {
+        phase8_release_bundle_audit_error_to_command(
+            "release_bundle_generation_failed",
+            phase8_release_bundle_policy_error(
+                index,
+                Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+                error,
+            ),
+        )
+    })?;
+    Ok(policy.policy_hash())
+}
+
+fn phase8_validate_release_audit_bundle_closed_set(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let release_policy_index = phase8_release_bundle_single_index(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+        "artifacts[release_policy]",
+    )?;
+    let release_policy_source = phase8_release_bundle_artifact_source(
+        &manifest.artifacts[release_policy_index],
+        bundle_files,
+        release_policy_index,
+    )?;
+    let release_policy = parse_phase8_release_policy(release_policy_source).map_err(|error| {
+        phase8_release_bundle_policy_error(
+            release_policy_index,
+            Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+            error,
+        )
+    })?;
+    if release_policy.policy_hash() != manifest.policy_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "policy_hash",
+            release_policy.policy_hash(),
+            manifest.policy_hash,
+        ));
+    }
+    if matches!(release_policy.mode, Phase8ReleaseMode::Nightly) {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "release_policy.artifact.mode",
+            "release|high-trust",
+            release_policy.mode.as_str(),
+        ));
+    }
+
+    let runner_policies = phase8_release_bundle_runner_policies(manifest, bundle_files)?;
+    let runner_policy = runner_policies
+        .get(&release_policy.runner_policy_hash)
+        .expect("runner policy closed-set validation inserts required hash");
+    let challenge_runner_policy = runner_policies
+        .get(&release_policy.challenge_runner_policy_hash)
+        .expect("runner policy closed-set validation inserts required hash");
+    phase8_validate_release_policy_runner_trust(
+        &release_policy,
+        runner_policy,
+        challenge_runner_policy,
+    )
+    .map_err(|error| {
+        Phase8ReleaseAuditBundleError::invalid_value(
+            error.field,
+            error.expected_value,
+            error.actual_value,
+        )
+    })?;
+
+    phase8_release_bundle_validate_checker_identities(manifest, bundle_files, &runner_policies)?;
+
+    let request_store = phase8_release_bundle_single_store::<Phase8RequestStoreManifest, _>(
+        manifest,
+        bundle_files,
+        Phase8ReleaseBundleArtifactKind::RequestStoreManifest,
+        "artifacts[request_store_manifest]",
+        parse_phase8_request_store_manifest,
+    )?;
+    let machine_store = phase8_release_bundle_single_store::<Phase8MachineResultStoreManifest, _>(
+        manifest,
+        bundle_files,
+        Phase8ReleaseBundleArtifactKind::MachineResultStoreManifest,
+        "artifacts[machine_result_store_manifest]",
+        parse_phase8_machine_result_store_manifest,
+    )?;
+    let normalized_store =
+        phase8_release_bundle_single_store::<Phase8NormalizedResultStoreManifest, _>(
+            manifest,
+            bundle_files,
+            Phase8ReleaseBundleArtifactKind::NormalizedResultStoreManifest,
+            "artifacts[normalized_result_store_manifest]",
+            parse_phase8_normalized_result_store_manifest,
+        )?;
+    let challenge_store =
+        phase8_release_bundle_single_store::<Phase8ChallengeOutputStoreManifest, _>(
+            manifest,
+            bundle_files,
+            Phase8ReleaseBundleArtifactKind::ChallengeOutputStoreManifest,
+            "artifacts[challenge_output_store_manifest]",
+            parse_phase8_challenge_output_store_manifest,
+        )?;
+
+    let requests = phase8_release_bundle_requests(manifest, bundle_files, &request_store)?;
+    let machine_results =
+        phase8_release_bundle_machine_results(manifest, bundle_files, &machine_store)?;
+    phase8_release_bundle_validate_request_set(&requests, &machine_results)?;
+    let normalized_results =
+        phase8_release_bundle_normalized_results(manifest, bundle_files, &normalized_store)?;
+    let target = normalized_results
+        .values()
+        .filter(|view| view.artifact_hash == manifest.artifact_hash)
+        .collect::<Vec<_>>();
+    let target = match target.as_slice() {
+        [target] => *target,
+        [] => {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "normalized_check_result[artifact_hash]",
+                "exactly_one_release_target",
+                "missing",
+            ))
+        }
+        _ => {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "normalized_check_result[artifact_hash]",
+                "exactly_one_release_target",
+                "duplicate",
+            ))
+        }
+    };
+    phase8_release_bundle_validate_target_normalized_result(target, runner_policy)?;
+    phase8_release_bundle_validate_import_locks(manifest, bundle_files, &requests, target)?;
+    phase8_release_bundle_validate_auxiliary_results(
+        manifest,
+        bundle_files,
+        &release_policy,
+        runner_policy,
+        target,
+        &machine_results,
+    )?;
+    phase8_release_bundle_validate_challenge_coverage(
+        manifest,
+        bundle_files,
+        &release_policy,
+        target,
+        &challenge_store,
+        &machine_store,
+    )?;
+    phase8_release_bundle_validate_ai_artifacts(manifest, bundle_files, &release_policy)?;
+    Ok(())
+}
+
+fn phase8_release_bundle_indices(
+    artifacts: &[Phase8ReleaseAuditBundleArtifact],
+    kind: Phase8ReleaseBundleArtifactKind,
+) -> Vec<usize> {
+    artifacts
+        .iter()
+        .enumerate()
+        .filter_map(|(index, artifact)| (artifact.kind == kind).then_some(index))
+        .collect()
+}
+
+fn phase8_release_bundle_single_index(
+    artifacts: &[Phase8ReleaseAuditBundleArtifact],
+    kind: Phase8ReleaseBundleArtifactKind,
+    field: &str,
+) -> Result<usize, Phase8ReleaseAuditBundleError> {
+    let indices = phase8_release_bundle_indices(artifacts, kind);
+    match indices.as_slice() {
+        [index] => Ok(*index),
+        [] => Err(Phase8ReleaseAuditBundleError::invalid_value(
+            field,
+            format!("exactly_one:{}", kind.as_str()),
+            "missing",
+        )),
+        _ => Err(Phase8ReleaseAuditBundleError::invalid_value(
+            field,
+            format!("exactly_one:{}", kind.as_str()),
+            format!("count:{}", indices.len()),
+        )),
+    }
+}
+
+fn phase8_release_bundle_artifact_source<'a>(
+    artifact: &Phase8ReleaseAuditBundleArtifact,
+    bundle_files: &'a BTreeMap<String, Vec<u8>>,
+    index: usize,
+) -> Result<&'a str, Phase8ReleaseAuditBundleError> {
+    let bytes = bundle_files.get(&artifact.path).ok_or_else(|| {
+        Phase8ReleaseAuditBundleError::missing_value(
+            format!("artifacts[{index}].path"),
+            "readable_bundle_file",
+            "missing",
+        )
+    })?;
+    phase8_release_bundle_utf8(bytes, format!("artifacts[{index}].path"))
+}
+
+fn phase8_release_bundle_hash(artifact: &Phase8ReleaseAuditBundleArtifact, field: &str) -> Hash {
+    *artifact
+        .hashes
+        .get(field)
+        .expect("release bundle artifact hash shape validates required field")
+}
+
+fn phase8_release_bundle_runner_policies(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+) -> Result<BTreeMap<Hash, Phase8RunnerPolicy>, Phase8ReleaseAuditBundleError> {
+    let release_policy_index = phase8_release_bundle_single_index(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+        "artifacts[release_policy]",
+    )?;
+    let release_policy_source = phase8_release_bundle_artifact_source(
+        &manifest.artifacts[release_policy_index],
+        bundle_files,
+        release_policy_index,
+    )?;
+    let release_policy = parse_phase8_release_policy(release_policy_source).map_err(|error| {
+        phase8_release_bundle_policy_error(
+            release_policy_index,
+            Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+            error,
+        )
+    })?;
+    let expected = BTreeSet::from([
+        release_policy.runner_policy_hash,
+        release_policy.challenge_runner_policy_hash,
+    ]);
+
+    let mut policies = BTreeMap::new();
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::RunnerPolicy,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let policy = parse_phase8_runner_policy(source)
+            .map_err(|error| phase8_release_bundle_policy_error(index, artifact.kind, error))?;
+        let policy_hash = policy.policy_hash();
+        if !expected.contains(&policy_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.policy_hash"),
+                "release_policy_runner_policy_hash",
+                format_hash_string(&policy_hash),
+            ));
+        }
+        if policies.insert(policy_hash, policy).is_some() {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.policy_hash"),
+                "unique_runner_policy_hash",
+                "duplicate",
+            ));
+        }
+    }
+    for expected_hash in &expected {
+        if !policies.contains_key(expected_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "artifacts[runner_policy]",
+                format!("runner_policy_hash:{}", format_hash_string(expected_hash)),
+                "missing",
+            ));
+        }
+    }
+    Ok(policies)
+}
+
+fn phase8_release_bundle_validate_checker_identities(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    runner_policies: &BTreeMap<Hash, Phase8RunnerPolicy>,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let mut expected = BTreeSet::new();
+    for policy in runner_policies.values() {
+        if let Some(reference) = &policy.checker_identity_manifest {
+            expected.insert(reference.manifest_hash);
+        }
+    }
+    let mut manifests = BTreeMap::new();
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::CheckerIdentityManifest,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let manifest_hash = phase8_release_bundle_hash(artifact, "manifest_hash");
+        if !expected.contains(&manifest_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.manifest_hash"),
+                "referenced_checker_identity_manifest_hash",
+                format_hash_string(&manifest_hash),
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let identity = parse_phase8_checker_identity_manifest(source)
+            .map_err(|error| phase8_release_bundle_policy_error(index, artifact.kind, error))?;
+        if manifests.insert(manifest_hash, identity).is_some() {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.manifest_hash"),
+                "unique_checker_identity_manifest_hash",
+                "duplicate",
+            ));
+        }
+    }
+    for expected_hash in &expected {
+        if !manifests.contains_key(expected_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "artifacts[checker_identity_manifest]",
+                format!("manifest_hash:{}", format_hash_string(expected_hash)),
+                "missing",
+            ));
+        }
+    }
+    for policy in runner_policies.values() {
+        let Some(reference) = &policy.checker_identity_manifest else {
+            continue;
+        };
+        let identity = manifests
+            .get(&reference.manifest_hash)
+            .expect("expected identity hash checked above");
+        for selected in &policy.checker_allowlist {
+            phase8_validate_selected_checker_identity_manifest(selected, identity).map_err(
+                |error| Phase8ReleaseAuditBundleError {
+                    reason_code: Phase8AuxiliaryReasonCode::AuditBundleInvalid,
+                    field: error.field,
+                    expected_hash: error.expected_hash.map(Box::new),
+                    actual_hash: error.actual_hash.map(Box::new),
+                    expected_value: error.expected_value,
+                    actual_value: error.actual_value,
+                },
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_single_store<T, F>(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    kind: Phase8ReleaseBundleArtifactKind,
+    field: &str,
+    parser: F,
+) -> Result<T, Phase8ReleaseAuditBundleError>
+where
+    F: Fn(&str) -> Result<T, Phase8RequestValidationError>,
+{
+    let index = phase8_release_bundle_single_index(&manifest.artifacts, kind, field)?;
+    let source =
+        phase8_release_bundle_artifact_source(&manifest.artifacts[index], bundle_files, index)?;
+    parser(source).map_err(|error| phase8_release_bundle_request_error(index, kind, error))
+}
+
+fn phase8_release_bundle_requests(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    store: &Phase8RequestStoreManifest,
+) -> Result<BTreeMap<Hash, Phase8MachineCheckRequest>, Phase8ReleaseAuditBundleError> {
+    let mut by_hash = BTreeMap::new();
+    let mut expected_paths = BTreeSet::new();
+    for entry in &store.requests {
+        expected_paths.insert(entry.path.clone());
+        let artifact_index = phase8_release_bundle_artifact_index_by_path(
+            manifest,
+            Phase8ReleaseBundleArtifactKind::MachineCheckRequest,
+            &entry.path,
+        )?;
+        let artifact = &manifest.artifacts[artifact_index];
+        if artifact.file_hash != entry.file_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "request_store.artifact.requests[].file_hash",
+                entry.file_hash,
+                artifact.file_hash,
+            ));
+        }
+        if phase8_release_bundle_hash(artifact, "request_hash") != entry.request_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "request_store.artifact.requests[].request_hash",
+                entry.request_hash,
+                phase8_release_bundle_hash(artifact, "request_hash"),
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, artifact_index)?;
+        let request = parse_phase8_machine_check_request(source).map_err(|error| {
+            phase8_release_bundle_request_error(artifact_index, artifact.kind, error)
+        })?;
+        by_hash.insert(entry.request_hash, request);
+    }
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::MachineCheckRequest,
+    ) {
+        if !expected_paths.contains(&manifest.artifacts[index].path) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].path"),
+                "referenced_by_request_store_manifest",
+                "extra",
+            ));
+        }
+    }
+    Ok(by_hash)
+}
+
+fn phase8_release_bundle_machine_results(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    store: &Phase8MachineResultStoreManifest,
+) -> Result<BTreeMap<Hash, Phase8ReleaseBundleMachineResultSummary>, Phase8ReleaseAuditBundleError>
+{
+    let mut by_run_hash = BTreeMap::new();
+    let mut expected_paths = BTreeSet::new();
+    for entry in &store.results {
+        expected_paths.insert(entry.path.clone());
+        let artifact_index = phase8_release_bundle_artifact_index_by_path(
+            manifest,
+            Phase8ReleaseBundleArtifactKind::MachineCheckResult,
+            &entry.path,
+        )?;
+        let artifact = &manifest.artifacts[artifact_index];
+        if artifact.file_hash != entry.file_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "machine_result_store.artifact.results[].file_hash",
+                entry.file_hash,
+                artifact.file_hash,
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, artifact_index)?;
+        let summary = parse_phase8_machine_check_result_summary(source, "$").map_err(|error| {
+            phase8_release_bundle_request_error(artifact_index, artifact.kind, error)
+        })?;
+        if summary.result_hash != entry.result_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "machine_result_store.artifact.results[].result_hash",
+                entry.result_hash,
+                summary.result_hash,
+            ));
+        }
+        if summary.request_hash != entry.request_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "machine_result_store.artifact.results[].request_hash",
+                entry.request_hash,
+                summary.request_hash,
+            ));
+        }
+        if summary.run_artifact_hash != entry.run_artifact_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "machine_result_store.artifact.results[].run_artifact_hash",
+                entry.run_artifact_hash,
+                summary.run_artifact_hash,
+            ));
+        }
+        if summary.checker_profile != entry.checker_profile {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "machine_result_store.artifact.results[].checker_profile",
+                &entry.checker_profile,
+                &summary.checker_profile,
+            ));
+        }
+        by_run_hash.insert(entry.run_artifact_hash, summary);
+    }
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::MachineCheckResult,
+    ) {
+        if !expected_paths.contains(&manifest.artifacts[index].path) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].path"),
+                "referenced_by_machine_result_store_manifest",
+                "extra",
+            ));
+        }
+    }
+    Ok(by_run_hash)
+}
+
+fn phase8_release_bundle_validate_request_set(
+    requests: &BTreeMap<Hash, Phase8MachineCheckRequest>,
+    machine_results: &BTreeMap<Hash, Phase8ReleaseBundleMachineResultSummary>,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let expected = machine_results
+        .values()
+        .map(|result| result.request_hash)
+        .collect::<BTreeSet<_>>();
+    let actual = requests.keys().copied().collect::<BTreeSet<_>>();
+    if let Some(missing) = expected.iter().find(|hash| !actual.contains(*hash)) {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[machine_check_request]",
+            format!("request_hash:{}", format_hash_string(missing)),
+            "missing",
+        ));
+    }
+    if let Some(extra) = actual.iter().find(|hash| !expected.contains(*hash)) {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[machine_check_request]",
+            "referenced_by_machine_check_result",
+            format_hash_string(extra),
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_normalized_results(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    store: &Phase8NormalizedResultStoreManifest,
+) -> Result<BTreeMap<Hash, Phase8ReleaseBundleNormalizedResultView>, Phase8ReleaseAuditBundleError>
+{
+    let mut by_hash = BTreeMap::new();
+    let mut expected_paths = BTreeSet::new();
+    for entry in &store.results {
+        expected_paths.insert(entry.path.clone());
+        let artifact_index = phase8_release_bundle_artifact_index_by_path(
+            manifest,
+            Phase8ReleaseBundleArtifactKind::NormalizedCheckResult,
+            &entry.path,
+        )?;
+        let artifact = &manifest.artifacts[artifact_index];
+        if artifact.file_hash != entry.file_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "normalized_store.artifact.results[].file_hash",
+                entry.file_hash,
+                artifact.file_hash,
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, artifact_index)?;
+        let view = parse_phase8_release_bundle_normalized_result_view(source).map_err(|error| {
+            phase8_release_bundle_request_error(artifact_index, artifact.kind, error)
+        })?;
+        if view.normalized_result_hash != entry.normalized_result_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "normalized_store.artifact.results[].normalized_result_hash",
+                entry.normalized_result_hash,
+                view.normalized_result_hash,
+            ));
+        }
+        if view.artifact_hash != entry.artifact_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                "normalized_store.artifact.results[].artifact_hash",
+                entry.artifact_hash,
+                view.artifact_hash,
+            ));
+        }
+        by_hash.insert(entry.normalized_result_hash, view);
+    }
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::NormalizedCheckResult,
+    ) {
+        if !expected_paths.contains(&manifest.artifacts[index].path) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].path"),
+                "referenced_by_normalized_result_store_manifest",
+                "extra",
+            ));
+        }
+    }
+    Ok(by_hash)
+}
+
+fn phase8_release_bundle_artifact_index_by_path(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    kind: Phase8ReleaseBundleArtifactKind,
+    path: &str,
+) -> Result<usize, Phase8ReleaseAuditBundleError> {
+    let indices = manifest
+        .artifacts
+        .iter()
+        .enumerate()
+        .filter_map(|(index, artifact)| {
+            (artifact.kind == kind && artifact.path == path).then_some(index)
+        })
+        .collect::<Vec<_>>();
+    match indices.as_slice() {
+        [index] => Ok(*index),
+        [] => Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{}]", kind.as_str()),
+            format!("path:{path}"),
+            "missing",
+        )),
+        _ => Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{}]", kind.as_str()),
+            format!("path:{path}"),
+            "duplicate",
+        )),
+    }
+}
+
+fn parse_phase8_release_bundle_normalized_result_view(
+    source: &str,
+) -> Result<Phase8ReleaseBundleNormalizedResultView, Phase8RequestValidationError> {
+    let summary = parse_phase8_normalized_check_result_summary(source, "$")?;
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure("$", "valid_json", "invalid_json")
+    })?;
+    let members = object_members_or_policy_error(document.root(), "$", "object")?;
+    let artifact_value = required_field_value(members, "artifact", "artifact", "object")?;
+    let artifact_members = object_members_or_policy_error(artifact_value, "artifact", "object")?;
+    let import_lock_hash = required_hash_field(
+        artifact_members,
+        "import_lock_hash",
+        "artifact.import_lock_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let policy_value = required_field_value(members, "policy", "policy", "object")?;
+    let policy_members = object_members_or_policy_error(policy_value, "policy", "object")?;
+    let policy_hash =
+        required_hash_field(policy_members, "hash", "policy.hash", "sha256:<lower-hex>")?;
+    let comparison_value = required_field_value(members, "comparison", "comparison", "object")?;
+    let comparison_members =
+        object_members_or_policy_error(comparison_value, "comparison", "object")?;
+    let comparison_status = parse_required_phase8_normalized_comparison_status_field(
+        comparison_members,
+        "status",
+        "comparison.status",
+    )?;
+    let comparison_missing_checker_profiles = required_string_array_field(
+        comparison_members,
+        "missing_checker_profiles",
+        "comparison.missing_checker_profiles",
+        "checker_profile_name",
+    )?;
+    let disagreements_value = required_field_value(
+        comparison_members,
+        "disagreements",
+        "comparison.disagreements",
+        "array",
+    )?;
+    let Some(disagreements) = disagreements_value.array_elements() else {
+        return Err(Phase8RequestValidationError::value_failure(
+            "comparison.disagreements",
+            "array",
+            "wrong_type",
+        ));
+    };
+    let status_reasons_value = required_field_value(
+        comparison_members,
+        "status_reasons",
+        "comparison.status_reasons",
+        "array",
+    )?;
+    let Some(status_reasons) = status_reasons_value.array_elements() else {
+        return Err(Phase8RequestValidationError::value_failure(
+            "comparison.status_reasons",
+            "array",
+            "wrong_type",
+        ));
+    };
+    let results_value = required_field_value(members, "results", "results", "array")?;
+    let Some(result_values) = results_value.array_elements() else {
+        return Err(Phase8RequestValidationError::value_failure(
+            "results",
+            "array",
+            "wrong_type",
+        ));
+    };
+    let mut results = Vec::new();
+    for (index, result_value) in result_values.iter().enumerate() {
+        let path = format!("results[{index}]");
+        let result_members = object_members_or_policy_error(result_value, &path, "object")?;
+        let result_hash = required_hash_field(
+            result_members,
+            "result_hash",
+            &format!("{path}.result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let request_hash = required_hash_field(
+            result_members,
+            "request_hash",
+            &format!("{path}.request_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let entry_policy_hash = required_hash_field(
+            result_members,
+            "policy_hash",
+            &format!("{path}.policy_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let entry_artifact_hash = required_hash_field(
+            result_members,
+            "artifact_hash",
+            &format!("{path}.artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let checker_profile = required_string_field(
+            result_members,
+            "checker_profile",
+            &format!("{path}.checker_profile"),
+            "checker_profile_name",
+        )?;
+        let status_raw = required_string_field(
+            result_members,
+            "status",
+            &format!("{path}.status"),
+            "status",
+        )?;
+        let status = match status_raw.as_str() {
+            "checked" => Phase8MachineCheckStatus::Checked,
+            "failed" => Phase8MachineCheckStatus::Failed,
+            _ => {
+                return Err(Phase8RequestValidationError::value_failure(
+                    format!("{path}.status"),
+                    "MachineCheckResult.status",
+                    "invalid_enum",
+                ))
+            }
+        };
+        let axiom_report_hash = optional_hash_field(
+            result_members,
+            "axiom_report_hash",
+            &format!("{path}.axiom_report_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        results.push(Phase8ReleaseBundleNormalizedEntryView {
+            result_hash,
+            request_hash,
+            policy_hash: entry_policy_hash,
+            artifact_hash: entry_artifact_hash,
+            checker_profile,
+            status,
+            axiom_report_hash,
+        });
+    }
+    Ok(Phase8ReleaseBundleNormalizedResultView {
+        normalized_result_hash: summary.normalized_result_hash,
+        artifact_hash: summary.artifact_hash,
+        policy_hash,
+        import_lock_hash,
+        comparison_status,
+        comparison_missing_checker_profiles,
+        comparison_disagreements_len: disagreements.len(),
+        comparison_status_reasons_len: status_reasons.len(),
+        results,
+    })
+}
+
+fn phase8_release_bundle_validate_target_normalized_result(
+    target: &Phase8ReleaseBundleNormalizedResultView,
+    runner_policy: &Phase8RunnerPolicy,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    if target.comparison_status != Phase8NormalizedComparisonStatus::AllAgreeChecked {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "normalized_check_result.artifact.comparison.status",
+            Phase8NormalizedComparisonStatus::AllAgreeChecked.as_str(),
+            target.comparison_status.as_str(),
+        ));
+    }
+    if !target.comparison_missing_checker_profiles.is_empty()
+        || target.comparison_disagreements_len != 0
+        || target.comparison_status_reasons_len != 0
+    {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "normalized_check_result.artifact.comparison",
+            "all_agree_checked_without_blocking_details",
+            "comparison_detail_mismatch",
+        ));
+    }
+    let runner_policy_hash = runner_policy.policy_hash();
+    if target.policy_hash != runner_policy_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "normalized_check_result.artifact.policy.hash",
+            runner_policy_hash,
+            target.policy_hash,
+        ));
+    }
+    for profile in &runner_policy.required_checker_profiles {
+        let entries = target
+            .results
+            .iter()
+            .filter(|entry| &entry.checker_profile == profile)
+            .collect::<Vec<_>>();
+        let entry = match entries.as_slice() {
+            [entry] => *entry,
+            [] => {
+                return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                    "normalized_check_result.artifact.results[].checker_profile",
+                    format!("required_profile:{profile}"),
+                    "missing",
+                ))
+            }
+            _ => {
+                return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                    "normalized_check_result.artifact.results[].checker_profile",
+                    format!("required_profile:{profile}"),
+                    "duplicate",
+                ))
+            }
+        };
+        if entry.status != Phase8MachineCheckStatus::Checked {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("normalized_check_result.artifact.results[{profile}].status"),
+                Phase8MachineCheckStatus::Checked.as_str(),
+                entry.status.as_str(),
+            ));
+        }
+        if entry.policy_hash != runner_policy_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                format!("normalized_check_result.artifact.results[{profile}].policy_hash"),
+                runner_policy_hash,
+                entry.policy_hash,
+            ));
+        }
+        if entry.artifact_hash != target.artifact_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                format!("normalized_check_result.artifact.results[{profile}].artifact_hash"),
+                target.artifact_hash,
+                entry.artifact_hash,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_validate_import_locks(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    requests: &BTreeMap<Hash, Phase8MachineCheckRequest>,
+    target: &Phase8ReleaseBundleNormalizedResultView,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let mut expected = BTreeSet::from([target.import_lock_hash]);
+    for request in requests.values() {
+        expected.insert(request.imports.manifest_hash);
+    }
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ChallengeManifest,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let challenge = parse_phase8_challenge_manifest(source)
+            .map_err(|error| phase8_release_bundle_request_error(index, artifact.kind, error))?;
+        if phase8_challenge_manifest_is_rejection_required(&challenge) {
+            expected.insert(challenge.imports.manifest_hash);
+        }
+    }
+    let mut actual = BTreeSet::new();
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ImportLock,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let manifest_hash = phase8_release_bundle_hash(artifact, "manifest_hash");
+        if !expected.contains(&manifest_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.manifest_hash"),
+                "referenced_import_lock_hash",
+                format_hash_string(&manifest_hash),
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        parse_phase8_import_lock_manifest(source)
+            .map_err(|error| phase8_release_bundle_request_error(index, artifact.kind, error))?;
+        if !actual.insert(manifest_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.manifest_hash"),
+                "unique_import_lock_hash",
+                "duplicate",
+            ));
+        }
+    }
+    for expected_hash in &expected {
+        if !actual.contains(expected_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "artifacts[import_lock]",
+                format!("manifest_hash:{}", format_hash_string(expected_hash)),
+                "missing",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_validate_auxiliary_results(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    release_policy: &Phase8ReleasePolicy,
+    runner_policy: &Phase8RunnerPolicy,
+    target: &Phase8ReleaseBundleNormalizedResultView,
+    machine_results: &BTreeMap<Hash, Phase8ReleaseBundleMachineResultSummary>,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let mut axiom_results = Vec::new();
+    let mut reproducibility_results = Vec::new();
+    let mut import_certificate_results = Vec::new();
+    for index in phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::AuxiliaryResult,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let result = parse_phase8_auxiliary_result(source)
+            .map_err(|error| phase8_release_bundle_request_error(index, artifact.kind, error))?;
+        match result.kind {
+            Phase8AuxiliaryResultKind::AxiomPolicy => axiom_results.push((index, result)),
+            Phase8AuxiliaryResultKind::Reproducibility => {
+                reproducibility_results.push((index, result))
+            }
+            Phase8AuxiliaryResultKind::ImportCertificateHash => {
+                import_certificate_results.push((index, result))
+            }
+            Phase8AuxiliaryResultKind::AuditBundle => {
+                return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                    format!("artifacts[{index}].kind"),
+                    "not:audit_bundle",
+                    "audit_bundle",
+                ))
+            }
+        }
+    }
+    let axiom = phase8_release_bundle_exactly_one_auxiliary(
+        &axiom_results,
+        Phase8AuxiliaryResultKind::AxiomPolicy,
+    )?;
+    phase8_release_bundle_validate_axiom_auxiliary(axiom.0, &axiom.1, runner_policy, target)?;
+    let reproducibility = phase8_release_bundle_exactly_one_auxiliary(
+        &reproducibility_results,
+        Phase8AuxiliaryResultKind::Reproducibility,
+    )?;
+    phase8_release_bundle_validate_reproducibility_auxiliary(
+        reproducibility.0,
+        &reproducibility.1,
+        runner_policy,
+        target,
+        machine_results,
+    )?;
+
+    match release_policy.mode {
+        Phase8ReleaseMode::Release => {
+            if let Some((index, _)) = import_certificate_results.first() {
+                return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                    format!("artifacts[{index}].kind"),
+                    "absent_for_release_mode",
+                    Phase8AuxiliaryResultKind::ImportCertificateHash.as_str(),
+                ));
+            }
+        }
+        Phase8ReleaseMode::HighTrust => {
+            let expected_import_lock_hashes = manifest
+                .artifacts
+                .iter()
+                .filter(|artifact| artifact.kind == Phase8ReleaseBundleArtifactKind::ImportLock)
+                .map(|artifact| phase8_release_bundle_hash(artifact, "manifest_hash"))
+                .collect::<BTreeSet<_>>();
+            let mut actual_import_lock_hashes = BTreeSet::new();
+            for (index, result) in &import_certificate_results {
+                if result.status != Phase8AuxiliaryStatus::Passed {
+                    return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                        format!("artifacts[{index}].artifact.status"),
+                        Phase8AuxiliaryStatus::Passed.as_str(),
+                        result.status.as_str(),
+                    ));
+                }
+                if result.policy_hash != release_policy.policy_hash() {
+                    return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                        format!("artifacts[{index}].artifact.policy_hash"),
+                        release_policy.policy_hash(),
+                        result.policy_hash,
+                    ));
+                }
+                if !expected_import_lock_hashes.contains(&result.artifact_hash) {
+                    return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                        format!("artifacts[{index}].artifact.artifact_hash"),
+                        "included_import_lock_manifest_hash",
+                        format_hash_string(&result.artifact_hash),
+                    ));
+                }
+                if !actual_import_lock_hashes.insert(result.artifact_hash) {
+                    return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                        format!("artifacts[{index}].artifact.artifact_hash"),
+                        "unique_import_certificate_hash_auxiliary",
+                        "duplicate",
+                    ));
+                }
+            }
+            for expected_hash in &expected_import_lock_hashes {
+                if !actual_import_lock_hashes.contains(expected_hash) {
+                    return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                        "artifacts[auxiliary_result]",
+                        format!(
+                            "import_certificate_hash:{}",
+                            format_hash_string(expected_hash)
+                        ),
+                        "missing",
+                    ));
+                }
+            }
+        }
+        Phase8ReleaseMode::Nightly => unreachable!("nightly rejected before auxiliary validation"),
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_exactly_one_auxiliary(
+    results: &[(usize, Phase8AuxiliaryResult)],
+    kind: Phase8AuxiliaryResultKind,
+) -> Result<(usize, Phase8AuxiliaryResult), Phase8ReleaseAuditBundleError> {
+    match results {
+        [(index, result)] => Ok((*index, result.clone())),
+        [] => Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[auxiliary_result]",
+            format!("exactly_one_passed:{}", kind.as_str()),
+            "missing",
+        )),
+        _ => Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[auxiliary_result]",
+            format!("exactly_one_passed:{}", kind.as_str()),
+            format!("count:{}", results.len()),
+        )),
+    }
+}
+
+fn phase8_release_bundle_validate_axiom_auxiliary(
+    index: usize,
+    result: &Phase8AuxiliaryResult,
+    runner_policy: &Phase8RunnerPolicy,
+    target: &Phase8ReleaseBundleNormalizedResultView,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let runner_policy_hash = runner_policy.policy_hash();
+    phase8_release_bundle_validate_required_auxiliary_common(
+        index,
+        result,
+        runner_policy_hash,
+        target.artifact_hash,
+    )?;
+    let Some(Phase8AuxiliarySelector::AxiomPolicy {
+        normalized_result_hash,
+        checker_profile,
+        result_hash,
+        axiom_report_hash,
+    }) = &result.selector
+    else {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector"),
+            "axiom_policy_selector",
+            "missing_or_wrong_type",
+        ));
+    };
+    let baseline_profile = phase8_release_bundle_baseline_profile(runner_policy)?;
+    if checker_profile != baseline_profile {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.checker_profile"),
+            baseline_profile,
+            checker_profile,
+        ));
+    }
+    if *normalized_result_hash != target.normalized_result_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.selector.normalized_result_hash"),
+            target.normalized_result_hash,
+            *normalized_result_hash,
+        ));
+    }
+    let Some(entry) = target
+        .results
+        .iter()
+        .find(|entry| entry.checker_profile == *checker_profile)
+    else {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.checker_profile"),
+            "target_normalized_result_entry",
+            "missing",
+        ));
+    };
+    if entry.result_hash != *result_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.selector.result_hash"),
+            entry.result_hash,
+            *result_hash,
+        ));
+    }
+    if entry.axiom_report_hash != Some(*axiom_report_hash) {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.axiom_report_hash"),
+            entry
+                .axiom_report_hash
+                .map(|hash| format_hash_string(&hash))
+                .unwrap_or_else(|| "present".to_owned()),
+            format_hash_string(axiom_report_hash),
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_validate_reproducibility_auxiliary(
+    index: usize,
+    result: &Phase8AuxiliaryResult,
+    runner_policy: &Phase8RunnerPolicy,
+    target: &Phase8ReleaseBundleNormalizedResultView,
+    machine_results: &BTreeMap<Hash, Phase8ReleaseBundleMachineResultSummary>,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let runner_policy_hash = runner_policy.policy_hash();
+    phase8_release_bundle_validate_required_auxiliary_common(
+        index,
+        result,
+        runner_policy_hash,
+        target.artifact_hash,
+    )?;
+    let Some(Phase8AuxiliarySelector::Reproducibility {
+        request_hash,
+        checker_profile,
+        baseline_run_artifact_hash,
+        repeated_run_artifact_hash,
+    }) = &result.selector
+    else {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector"),
+            "reproducibility_selector",
+            "missing_or_wrong_type",
+        ));
+    };
+    let baseline_profile = phase8_release_bundle_baseline_profile(runner_policy)?;
+    if checker_profile != baseline_profile {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.checker_profile"),
+            baseline_profile,
+            checker_profile,
+        ));
+    }
+    if baseline_run_artifact_hash == repeated_run_artifact_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.repeated_run_artifact_hash"),
+            "distinct_run_artifact_hash",
+            "duplicate",
+        ));
+    }
+    let Some(target_entry) = target
+        .results
+        .iter()
+        .find(|entry| entry.checker_profile == *checker_profile)
+    else {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.checker_profile"),
+            "target_normalized_result_entry",
+            "missing",
+        ));
+    };
+    if target_entry.request_hash != *request_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.selector.request_hash"),
+            target_entry.request_hash,
+            *request_hash,
+        ));
+    }
+    let Some(baseline) = machine_results.get(baseline_run_artifact_hash) else {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.baseline_run_artifact_hash"),
+            "included_machine_check_result",
+            "missing",
+        ));
+    };
+    let Some(repeated) = machine_results.get(repeated_run_artifact_hash) else {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.repeated_run_artifact_hash"),
+            "included_machine_check_result",
+            "missing",
+        ));
+    };
+    if baseline.request_hash != *request_hash || repeated.request_hash != *request_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.request_hash"),
+            "matching_machine_result_request_hash",
+            "mismatch",
+        ));
+    }
+    if baseline.checker_profile != *checker_profile || repeated.checker_profile != *checker_profile
+    {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.selector.checker_profile"),
+            "matching_machine_result_checker_profile",
+            "mismatch",
+        ));
+    }
+    if baseline.result_hash != target_entry.result_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.selector.baseline_run_artifact_hash"),
+            target_entry.result_hash,
+            baseline.result_hash,
+        ));
+    }
+    if repeated.result_hash != target_entry.result_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.selector.repeated_run_artifact_hash"),
+            target_entry.result_hash,
+            repeated.result_hash,
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_baseline_profile(
+    runner_policy: &Phase8RunnerPolicy,
+) -> Result<&str, Phase8ReleaseAuditBundleError> {
+    runner_policy
+        .required_checker_profiles
+        .first()
+        .map(String::as_str)
+        .ok_or_else(|| {
+            Phase8ReleaseAuditBundleError::invalid_value(
+                "runner_policy.artifact.required_checker_profiles",
+                "non_empty",
+                "empty",
+            )
+        })
+}
+
+fn phase8_release_bundle_validate_required_auxiliary_common(
+    index: usize,
+    result: &Phase8AuxiliaryResult,
+    policy_hash: Hash,
+    artifact_hash: Hash,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    if result.status != Phase8AuxiliaryStatus::Passed {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].artifact.status"),
+            Phase8AuxiliaryStatus::Passed.as_str(),
+            result.status.as_str(),
+        ));
+    }
+    if result.policy_hash != policy_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.policy_hash"),
+            policy_hash,
+            result.policy_hash,
+        ));
+    }
+    if result.artifact_hash != artifact_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            format!("artifacts[{index}].artifact.artifact_hash"),
+            artifact_hash,
+            result.artifact_hash,
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_validate_challenge_coverage(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    release_policy: &Phase8ReleasePolicy,
+    target: &Phase8ReleaseBundleNormalizedResultView,
+    challenge_store: &Phase8ChallengeOutputStoreManifest,
+    machine_store: &Phase8MachineResultStoreManifest,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let summary_index = phase8_release_bundle_single_index(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ChallengeCoverageSummary,
+        "artifacts[challenge_coverage_summary]",
+    )?;
+    let summary_source = phase8_release_bundle_artifact_source(
+        &manifest.artifacts[summary_index],
+        bundle_files,
+        summary_index,
+    )?;
+    let summary = parse_phase8_challenge_coverage_summary(summary_source).map_err(|error| {
+        phase8_release_bundle_request_error(
+            summary_index,
+            Phase8ReleaseBundleArtifactKind::ChallengeCoverageSummary,
+            error,
+        )
+    })?;
+    if summary.policy_hash != release_policy.challenge_runner_policy_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "challenge_coverage_summary.artifact.policy_hash",
+            release_policy.challenge_runner_policy_hash,
+            summary.policy_hash,
+        ));
+    }
+    if summary.artifact_hash != target.artifact_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "challenge_coverage_summary.artifact.artifact_hash",
+            target.artifact_hash,
+            summary.artifact_hash,
+        ));
+    }
+    if summary.target_normalized_result_hash != target.normalized_result_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "challenge_coverage_summary.artifact.target_normalized_result_hash",
+            target.normalized_result_hash,
+            summary.target_normalized_result_hash,
+        ));
+    }
+    let challenge_store_index = phase8_release_bundle_single_index(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ChallengeOutputStoreManifest,
+        "artifacts[challenge_output_store_manifest]",
+    )?;
+    let challenge_store_hash = manifest.artifacts[challenge_store_index].file_hash;
+    if summary.challenge_store_manifest_hash != challenge_store_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "challenge_coverage_summary.artifact.challenge_store_manifest_hash",
+            challenge_store_hash,
+            summary.challenge_store_manifest_hash,
+        ));
+    }
+    let machine_store_index = phase8_release_bundle_single_index(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::MachineResultStoreManifest,
+        "artifacts[machine_result_store_manifest]",
+    )?;
+    let machine_store_hash = manifest.artifacts[machine_store_index].file_hash;
+    if summary.result_store_manifest_hash != machine_store_hash {
+        return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+            "challenge_coverage_summary.artifact.result_store_manifest_hash",
+            machine_store_hash,
+            summary.result_store_manifest_hash,
+        ));
+    }
+    if summary.total_challenges != challenge_store.entries.len() as u64 {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "challenge_coverage_summary.artifact.total_challenges",
+            challenge_store.entries.len().to_string(),
+            summary.total_challenges.to_string(),
+        ));
+    }
+    if !summary.passes_release_coverage_condition() {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "challenge_coverage_summary.artifact",
+            "complete_rejection_required_all_agree_failed",
+            "coverage_not_passing",
+        ));
+    }
+    phase8_release_bundle_validate_challenge_artifacts(
+        manifest,
+        bundle_files,
+        release_policy.challenge_runner_policy_hash,
+        challenge_store,
+        &summary,
+        machine_store,
+    )
+}
+
+fn phase8_release_bundle_validate_challenge_artifacts(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    challenge_policy_hash: Hash,
+    challenge_store: &Phase8ChallengeOutputStoreManifest,
+    summary: &Phase8ChallengeCoverageSummary,
+    machine_store: &Phase8MachineResultStoreManifest,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let expected_manifest_hashes = challenge_store
+        .entries
+        .iter()
+        .map(|entry| entry.manifest_hash)
+        .collect::<BTreeSet<_>>();
+    let mut expected_entries_by_manifest_hash = BTreeMap::new();
+    let mut expected_pairs = BTreeSet::new();
+    for (index, entry) in challenge_store.entries.iter().enumerate() {
+        if expected_entries_by_manifest_hash
+            .insert(entry.manifest_hash, entry)
+            .is_some()
+        {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("challenge_store.artifact.entries[{index}].manifest_hash"),
+                "unique_manifest_hashes",
+                "duplicate_manifest_hash",
+            ));
+        }
+        expected_pairs.insert((entry.challenge_id.clone(), entry.manifest_hash));
+    }
+    let mut summary_manifest_hashes = BTreeSet::new();
+    let mut summary_pairs = BTreeSet::new();
+    let mut summary_entries_by_replay_hash = BTreeMap::new();
+    for (index, entry) in summary.entries.iter().enumerate() {
+        if !expected_manifest_hashes.contains(&entry.manifest_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("challenge_coverage_summary.artifact.entries[{index}].manifest_hash"),
+                "challenge_output_store_manifest_entry",
+                format_hash_string(&entry.manifest_hash),
+            ));
+        }
+        if !expected_pairs.contains(&(entry.challenge_id.clone(), entry.manifest_hash)) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("challenge_coverage_summary.artifact.entries[{index}].challenge_id"),
+                "challenge_output_store_manifest_challenge_manifest_pair",
+                &entry.challenge_id,
+            ));
+        }
+        if !summary_manifest_hashes.insert(entry.manifest_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("challenge_coverage_summary.artifact.entries[{index}].manifest_hash"),
+                "unique_coverage_manifest_hash",
+                "duplicate",
+            ));
+        }
+        if !summary_pairs.insert((entry.challenge_id.clone(), entry.manifest_hash)) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("challenge_coverage_summary.artifact.entries[{index}].challenge_id"),
+                "unique_coverage_challenge_manifest_pair",
+                "duplicate",
+            ));
+        }
+        summary_entries_by_replay_hash.insert(entry.replay_result_hash, entry);
+    }
+    let actual_manifest_indices = phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ChallengeManifest,
+    );
+    if expected_manifest_hashes.len() != actual_manifest_indices.len() {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[challenge_manifest]",
+            format!("count:{}", expected_manifest_hashes.len()),
+            format!("count:{}", actual_manifest_indices.len()),
+        ));
+    }
+    for index in actual_manifest_indices {
+        let artifact = &manifest.artifacts[index];
+        let manifest_hash = phase8_release_bundle_hash(artifact, "manifest_hash");
+        if !expected_manifest_hashes.contains(&manifest_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.manifest_hash"),
+                "challenge_output_store_manifest_entry",
+                format_hash_string(&manifest_hash),
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let challenge = parse_phase8_challenge_manifest(source)
+            .map_err(|error| phase8_release_bundle_request_error(index, artifact.kind, error))?;
+        let expected_entry = expected_entries_by_manifest_hash
+            .get(&manifest_hash)
+            .expect("manifest hash membership checked above");
+        if challenge.challenge_id != expected_entry.challenge_id {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.challenge_id"),
+                &expected_entry.challenge_id,
+                &challenge.challenge_id,
+            ));
+        }
+        if challenge.policy_hash != challenge_policy_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].artifact.policy_hash"),
+                challenge_policy_hash,
+                challenge.policy_hash,
+            ));
+        }
+        if !phase8_challenge_manifest_is_rejection_required(&challenge) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.mutation.kind"),
+                "rejection_required_challenge",
+                challenge.mutation.kind,
+            ));
+        }
+    }
+
+    let expected_replay_hashes = summary
+        .entries
+        .iter()
+        .map(|entry| entry.replay_result_hash)
+        .collect::<BTreeSet<_>>();
+    let actual_replay_indices = phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::ChallengeReplayResult,
+    );
+    if expected_replay_hashes.len() != actual_replay_indices.len() {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[challenge_replay_result]",
+            format!("count:{}", expected_replay_hashes.len()),
+            format!("count:{}", actual_replay_indices.len()),
+        ));
+    }
+    for index in actual_replay_indices {
+        let artifact = &manifest.artifacts[index];
+        let replay_hash = phase8_release_bundle_hash(artifact, "result_hash");
+        if !expected_replay_hashes.contains(&replay_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].hashes.result_hash"),
+                "challenge_coverage_summary_entry",
+                format_hash_string(&replay_hash),
+            ));
+        }
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let replay = parse_phase8_challenge_replay_result(source)
+            .map_err(|error| phase8_release_bundle_request_error(index, artifact.kind, error))?;
+        let expected_entry = summary_entries_by_replay_hash
+            .get(&replay_hash)
+            .expect("replay hash membership checked above");
+        if replay.challenge_id != expected_entry.challenge_id {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.challenge_id"),
+                &expected_entry.challenge_id,
+                &replay.challenge_id,
+            ));
+        }
+        if replay.manifest_hash != expected_entry.manifest_hash {
+            return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].artifact.manifest_hash"),
+                expected_entry.manifest_hash,
+                replay.manifest_hash,
+            ));
+        }
+        if replay.comparison_status != Some(expected_entry.comparison_status) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.comparison_status"),
+                expected_entry.comparison_status.as_str(),
+                replay
+                    .comparison_status
+                    .map(|status| status.as_str().to_owned())
+                    .unwrap_or_else(|| "missing".to_owned()),
+            ));
+        }
+        if replay.comparison_status != Some(Phase8NormalizedComparisonStatus::AllAgreeFailed) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.comparison_status"),
+                Phase8NormalizedComparisonStatus::AllAgreeFailed.as_str(),
+                replay
+                    .comparison_status
+                    .map(|status| status.as_str().to_owned())
+                    .unwrap_or_else(|| "missing".to_owned()),
+            ));
+        }
+        for checker in replay.checker_results {
+            let found = machine_store
+                .results
+                .iter()
+                .any(|entry| entry.result_hash == checker.result_hash);
+            if !found {
+                return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                    format!("artifacts[{index}].artifact.checker_results[].result_hash"),
+                    "machine_result_store_entry",
+                    "missing",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_validate_ai_artifacts(
+    manifest: &Phase8ReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    release_policy: &Phase8ReleasePolicy,
+) -> Result<(), Phase8ReleaseAuditBundleError> {
+    let ai_input_indices = phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::AiAuditInputPolicy,
+    );
+    let sidecar_indices = phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::AiAuditSidecar,
+    );
+    let validation_indices = phase8_release_bundle_indices(
+        &manifest.artifacts,
+        Phase8ReleaseBundleArtifactKind::AuditSidecarValidationResponse,
+    );
+    if !release_policy.ai_triage.enabled {
+        for (kind, indices) in [
+            (
+                Phase8ReleaseBundleArtifactKind::AiAuditInputPolicy,
+                ai_input_indices.as_slice(),
+            ),
+            (
+                Phase8ReleaseBundleArtifactKind::AiAuditSidecar,
+                sidecar_indices.as_slice(),
+            ),
+            (
+                Phase8ReleaseBundleArtifactKind::AuditSidecarValidationResponse,
+                validation_indices.as_slice(),
+            ),
+        ] {
+            if let Some(index) = indices.first() {
+                return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                    format!("artifacts[{index}].kind"),
+                    "absent_when_ai_triage_disabled",
+                    kind.as_str(),
+                ));
+            }
+        }
+        return Ok(());
+    }
+    let expected_input_policy_hash = release_policy
+        .ai_triage
+        .input_policy_hash
+        .expect("release policy parser requires input policy hash when AI triage is enabled");
+    match ai_input_indices.as_slice() {
+        [index] => {
+            let artifact = &manifest.artifacts[*index];
+            let actual = phase8_release_bundle_hash(artifact, "input_policy_hash");
+            if actual != expected_input_policy_hash {
+                return Err(Phase8ReleaseAuditBundleError::invalid_hash(
+                    format!("artifacts[{index}].hashes.input_policy_hash"),
+                    expected_input_policy_hash,
+                    actual,
+                ));
+            }
+            let source = phase8_release_bundle_artifact_source(artifact, bundle_files, *index)?;
+            parse_phase8_ai_audit_input_policy(source)
+                .map_err(|error| phase8_release_bundle_audit_error(*index, artifact.kind, error))?;
+        }
+        [] => {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "artifacts[ai_audit_input_policy]",
+                "exactly_one_when_ai_triage_enabled",
+                "missing",
+            ))
+        }
+        _ => {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                "artifacts[ai_audit_input_policy]",
+                "exactly_one_when_ai_triage_enabled",
+                format!("count:{}", ai_input_indices.len()),
+            ))
+        }
+    }
+    let mut sidecar_hashes = BTreeSet::new();
+    for index in sidecar_indices {
+        let artifact = &manifest.artifacts[index];
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        parse_phase8_ai_audit_sidecar(source)
+            .map_err(|error| phase8_release_bundle_audit_error(index, artifact.kind, error))?;
+        if !sidecar_hashes.insert(artifact.file_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].file_hash"),
+                "unique_ai_audit_sidecar_file_hash",
+                "duplicate",
+            ));
+        }
+    }
+    let mut validation_hashes = BTreeSet::new();
+    for index in validation_indices {
+        let artifact = &manifest.artifacts[index];
+        let source = phase8_release_bundle_artifact_source(artifact, bundle_files, index)?;
+        let sidecar_file_hash =
+            phase8_release_bundle_audit_sidecar_validation_sidecar_file_hash(source, index)?;
+        if !validation_hashes.insert(sidecar_file_hash) {
+            return Err(Phase8ReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.sidecar_file_hash"),
+                "unique_audit_sidecar_validation_sidecar_file_hash",
+                "duplicate",
+            ));
+        }
+    }
+    if sidecar_hashes != validation_hashes {
+        return Err(Phase8ReleaseAuditBundleError::invalid_value(
+            "artifacts[audit_sidecar_validation_response]",
+            "one_valid_response_per_ai_audit_sidecar",
+            "sidecar_validation_set_mismatch",
+        ));
+    }
+    Ok(())
+}
+
+fn phase8_release_bundle_audit_sidecar_validation_sidecar_file_hash(
+    source: &str,
+    index: usize,
+) -> Result<Hash, Phase8ReleaseAuditBundleError> {
+    let field = format!("artifacts[{index}].artifact");
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8ReleaseAuditBundleError::invalid_value(&field, "valid_json", "invalid_json")
+    })?;
+    let members = object_members_or_policy_error(document.root(), &field, "object")
+        .map_err(phase8_release_bundle_schema_error)?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        &format!("{field}.schema"),
+        PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA,
+        PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA,
+    )
+    .map_err(phase8_release_bundle_schema_error)?;
+    required_fixed_string_field(
+        members,
+        "status",
+        &format!("{field}.status"),
+        "valid",
+        "valid",
+    )
+    .map_err(phase8_release_bundle_schema_error)?;
+    let sidecar_file_hash = required_hash_field(
+        members,
+        "sidecar_file_hash",
+        &format!("{field}.sidecar_file_hash"),
+        "sha256:<lower-hex>",
+    )
+    .map_err(phase8_release_bundle_schema_error)?;
+    reject_unknown_fields(members, AUDIT_SIDECAR_VALIDATION_RESULT_FIELDS, &field)
+        .map_err(phase8_release_bundle_schema_error)?;
+    Ok(sidecar_file_hash)
 }
 
 fn phase8_release_merge_request_entry(
@@ -27019,5 +29932,543 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(err.reason_code.as_ref(), "output_path_conflict");
+    }
+
+    struct M12BundleFixture {
+        artifact_hash: Hash,
+        policy_hash: Hash,
+        artifacts: Vec<Phase8ReleaseAuditBundleArtifact>,
+        files: BTreeMap<String, Vec<u8>>,
+    }
+
+    fn m12_identity_manifest_json() -> String {
+        format!(
+            r#"{{
+              "schema":"npa.phase8.checker_identity_manifest.v1",
+              "generated_by":{{
+                "runner_id":"npa-check-runner",
+                "runner_version":"0.8.0",
+                "runner_build_hash":"{}"
+              }},
+              "checkers":[
+                {{
+                  "profile":"external",
+                  "checker_id":"npa-checker-ext",
+                  "checker_version":"0.8.0",
+                  "binary_id":"npa-checker-ext-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }},
+                {{
+                  "profile":"fast-kernel",
+                  "checker_id":"npa-fast-kernel",
+                  "checker_version":"0.8.0",
+                  "binary_id":"npa-fast-kernel-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }},
+                {{
+                  "profile":"reference",
+                  "checker_id":"npa-checker-ref",
+                  "checker_version":"0.8.0",
+                  "binary_id":"npa-checker-ref-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}"
+                }}
+              ]
+            }}"#,
+            hash_wire(20),
+            hash_wire(30),
+            hash_wire(31),
+            hash_wire(32),
+            hash_wire(33),
+            hash_wire(10),
+            hash_wire(11)
+        )
+    }
+
+    fn m12_add_artifact(
+        kind: Phase8ReleaseBundleArtifactKind,
+        json: String,
+        hashes: &[(&str, Hash)],
+        artifacts: &mut Vec<Phase8ReleaseAuditBundleArtifact>,
+        files: &mut BTreeMap<String, Vec<u8>>,
+    ) -> Phase8ReleaseAuditBundleArtifact {
+        let file_hash = phase8_file_hash(json.as_bytes());
+        let path = phase8_release_bundle_artifact_path(kind, file_hash);
+        files.insert(path.clone(), json.into_bytes());
+        let artifact = Phase8ReleaseAuditBundleArtifact {
+            kind,
+            path,
+            file_hash,
+            hashes: hashes
+                .iter()
+                .map(|(field, hash)| ((*field).to_owned(), *hash))
+                .collect(),
+        };
+        artifacts.push(artifact.clone());
+        artifact
+    }
+
+    fn m12_fixture(include_all_required_profiles: bool) -> M12BundleFixture {
+        let identity_json = m12_identity_manifest_json();
+        let identity_hash = phase8_file_hash(identity_json.as_bytes());
+        let mut runner_policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        runner_policy
+            .checker_identity_manifest
+            .as_mut()
+            .unwrap()
+            .manifest_hash = identity_hash;
+        let runner_policy_hash = runner_policy.policy_hash();
+        let mut release_policy = m7_release_policy(Phase8ReleaseMode::Release);
+        release_policy.runner_policy_hash = runner_policy_hash;
+        release_policy.challenge_runner_policy_hash = runner_policy_hash;
+
+        let profiles = if include_all_required_profiles {
+            vec!["fast-kernel", "reference", "external"]
+        } else {
+            vec!["fast-kernel"]
+        };
+        let stored_requests = profiles
+            .iter()
+            .map(|profile| {
+                m4_stored_request(
+                    &runner_policy,
+                    profile,
+                    &format!("mchkreq_m12_{}", profile.replace('-', "_")),
+                )
+            })
+            .collect::<Vec<_>>();
+        let source_request_store = m4_request_store_manifest(&stored_requests);
+        let mut machine_results = stored_requests
+            .iter()
+            .map(|stored| {
+                m4_checked_result(
+                    &stored.request,
+                    &runner_policy,
+                    &format!(
+                        "mchkres_m12_{}",
+                        stored.request.checker_profile.replace('-', "_")
+                    ),
+                )
+            })
+            .collect::<Vec<_>>();
+        let mut repeated = machine_results[0].clone();
+        repeated.result_id = "mchkres_m12_repro_repeated".to_owned();
+        repeated.attempt = 2;
+        machine_results.push(repeated.clone());
+
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_m12",
+            "normerr_Std.Nat_m12",
+            &runner_policy,
+            &source_request_store,
+            &stored_requests,
+            &machine_results[..machine_results.len() - 1],
+            None,
+        )
+        .unwrap();
+        let artifact_hash = normalized.artifact_hash();
+
+        let mut artifacts = Vec::new();
+        let mut files = BTreeMap::new();
+
+        let mut request_entries = Vec::new();
+        for stored in &stored_requests {
+            let artifact = m12_add_artifact(
+                Phase8ReleaseBundleArtifactKind::MachineCheckRequest,
+                stored.request.canonical_json(),
+                &[("request_hash", stored.request.request_hash())],
+                &mut artifacts,
+                &mut files,
+            );
+            request_entries.push(Phase8RequestStoreEntry {
+                request_hash: stored.request.request_hash(),
+                path: artifact.path,
+                file_hash: artifact.file_hash,
+            });
+        }
+        request_entries.sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+        let request_store = Phase8RequestStoreManifest {
+            requests: request_entries,
+        };
+
+        let mut machine_entries = Vec::new();
+        for result in &machine_results {
+            let artifact = m12_add_artifact(
+                Phase8ReleaseBundleArtifactKind::MachineCheckResult,
+                result.canonical_json(),
+                &[
+                    ("result_hash", result.result_hash()),
+                    ("run_artifact_hash", result.run_artifact_hash()),
+                ],
+                &mut artifacts,
+                &mut files,
+            );
+            machine_entries
+                .push(phase8_machine_result_store_entry_for_result(result, artifact.path).unwrap());
+        }
+        machine_entries.sort_by(|left, right| left.run_artifact_hash.cmp(&right.run_artifact_hash));
+        let machine_store = Phase8MachineResultStoreManifest {
+            results: machine_entries,
+        };
+
+        let normalized_artifact = m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::NormalizedCheckResult,
+            normalized.canonical_json(),
+            &[
+                ("artifact_hash", normalized.artifact_hash()),
+                (
+                    "normalized_result_hash",
+                    normalized.normalized_result_hash(),
+                ),
+            ],
+            &mut artifacts,
+            &mut files,
+        );
+        let normalized_store = Phase8NormalizedResultStoreManifest {
+            results: vec![Phase8NormalizedResultStoreEntry {
+                normalized_result_hash: normalized.normalized_result_hash(),
+                artifact_hash: normalized.artifact_hash(),
+                path: normalized_artifact.path,
+                file_hash: normalized_artifact.file_hash,
+            }],
+        };
+
+        let request_store_json = request_store.canonical_json();
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::RequestStoreManifest,
+            request_store_json.clone(),
+            &[(
+                "manifest_hash",
+                phase8_file_hash(request_store_json.as_bytes()),
+            )],
+            &mut artifacts,
+            &mut files,
+        );
+        let machine_store_json = machine_store.canonical_json();
+        let machine_store_artifact = m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::MachineResultStoreManifest,
+            machine_store_json.clone(),
+            &[(
+                "manifest_hash",
+                phase8_file_hash(machine_store_json.as_bytes()),
+            )],
+            &mut artifacts,
+            &mut files,
+        );
+        let normalized_store_json = normalized_store.canonical_json();
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::NormalizedResultStoreManifest,
+            normalized_store_json.clone(),
+            &[(
+                "manifest_hash",
+                phase8_file_hash(normalized_store_json.as_bytes()),
+            )],
+            &mut artifacts,
+            &mut files,
+        );
+        let challenge_store = Phase8ChallengeOutputStoreManifest { entries: vec![] };
+        let challenge_store_json = challenge_store.canonical_json();
+        let challenge_store_artifact = m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::ChallengeOutputStoreManifest,
+            challenge_store_json.clone(),
+            &[(
+                "manifest_hash",
+                phase8_file_hash(challenge_store_json.as_bytes()),
+            )],
+            &mut artifacts,
+            &mut files,
+        );
+
+        let release_policy_json = release_policy.canonical_json();
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::ReleasePolicy,
+            release_policy_json,
+            &[("policy_hash", release_policy.policy_hash())],
+            &mut artifacts,
+            &mut files,
+        );
+        let runner_policy_json = runner_policy.canonical_json();
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::RunnerPolicy,
+            runner_policy_json,
+            &[("policy_hash", runner_policy_hash)],
+            &mut artifacts,
+            &mut files,
+        );
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::CheckerIdentityManifest,
+            identity_json,
+            &[("manifest_hash", identity_hash)],
+            &mut artifacts,
+            &mut files,
+        );
+        let imports_json = valid_import_lock_manifest_json();
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::ImportLock,
+            imports_json.clone(),
+            &[("manifest_hash", phase8_file_hash(imports_json.as_bytes()))],
+            &mut artifacts,
+            &mut files,
+        );
+
+        let baseline_entry = normalized
+            .results
+            .iter()
+            .find(|entry| entry.checker_profile == "fast-kernel")
+            .unwrap();
+        let axiom_aux = Phase8AuxiliaryResult::passed(
+            "aux_m12_axiom",
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            runner_policy_hash,
+            artifact_hash,
+            Some(Phase8AuxiliarySelector::AxiomPolicy {
+                normalized_result_hash: normalized.normalized_result_hash(),
+                checker_profile: "fast-kernel".to_owned(),
+                result_hash: baseline_entry.result_hash,
+                axiom_report_hash: baseline_entry.axiom_report_hash.unwrap(),
+            }),
+        );
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::AuxiliaryResult,
+            axiom_aux.canonical_json(),
+            &[("result_hash", axiom_aux.result_hash())],
+            &mut artifacts,
+            &mut files,
+        );
+        let repro_aux = phase8_auxiliary_reproducibility_result(
+            "aux_m12_repro",
+            &runner_policy,
+            artifact_hash,
+            &machine_results[0],
+            &repeated,
+        )
+        .unwrap();
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::AuxiliaryResult,
+            repro_aux.canonical_json(),
+            &[("result_hash", repro_aux.result_hash())],
+            &mut artifacts,
+            &mut files,
+        );
+
+        let coverage = Phase8ChallengeCoverageSummary::new(
+            runner_policy_hash,
+            artifact_hash,
+            normalized.normalized_result_hash(),
+            challenge_store_artifact.file_hash,
+            machine_store_artifact.file_hash,
+            0,
+            0,
+            vec![],
+        );
+        m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::ChallengeCoverageSummary,
+            coverage.canonical_json(),
+            &[("summary_hash", coverage.summary_hash())],
+            &mut artifacts,
+            &mut files,
+        );
+
+        M12BundleFixture {
+            artifact_hash,
+            policy_hash: release_policy.policy_hash(),
+            artifacts,
+            files,
+        }
+    }
+
+    #[test]
+    fn m12_release_bundle_generates_manifest_and_validation_auxiliary_passes() {
+        let fixture = m12_fixture(true);
+        let generated = phase8_release_bundle(
+            "dist/release-bundle",
+            "dist/release-bundle/manifest.json",
+            fixture.artifact_hash,
+            &fixture.artifacts,
+            &fixture.files,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(generated.manifest.policy_hash, fixture.policy_hash);
+        assert_eq!(
+            generated.manifest.bundle_id,
+            phase8_release_audit_bundle_id(generated.manifest.bundle_hash)
+        );
+        assert!(generated.out_rewrite_required);
+        let parsed = parse_phase8_release_audit_bundle_manifest(
+            std::str::from_utf8(&generated.bytes).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(parsed, generated.manifest);
+        assert!(generated
+            .manifest
+            .artifacts
+            .iter()
+            .all(|artifact| artifact.kind != Phase8ReleaseBundleArtifactKind::AiAuditSidecar));
+
+        let adopted = phase8_release_bundle(
+            "dist/release-bundle",
+            "dist/release-bundle/manifest.json",
+            fixture.artifact_hash,
+            &fixture.artifacts,
+            &fixture.files,
+            Some(&generated.bytes),
+        )
+        .unwrap();
+        assert!(!adopted.out_rewrite_required);
+
+        let validation = phase8_release_validate_bundle(
+            "dist/release-bundle/manifest.json",
+            phase8_file_hash(&generated.bytes),
+            std::str::from_utf8(&generated.bytes).unwrap(),
+            &fixture.files,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            validation.result.kind,
+            Phase8AuxiliaryResultKind::AuditBundle
+        );
+        assert_eq!(validation.result.status, Phase8AuxiliaryStatus::Passed);
+        assert_eq!(
+            validation.result.artifact_hash,
+            generated.manifest.bundle_hash
+        );
+
+        let validation_bytes = validation.result.canonical_json().into_bytes();
+        let adopted_validation = phase8_release_validate_bundle(
+            "dist/release-bundle/manifest.json",
+            phase8_file_hash(&generated.bytes),
+            std::str::from_utf8(&generated.bytes).unwrap(),
+            &fixture.files,
+            Some(&validation_bytes),
+        )
+        .unwrap();
+        assert!(!adopted_validation.out_rewrite_required);
+    }
+
+    #[test]
+    fn m12_validate_bundle_reruns_closed_set_and_rejects_non_passing_target() {
+        let mut fixture = m12_fixture(false);
+        fixture.artifacts.sort_by(|left, right| {
+            (left.kind.as_str(), left.path.as_str())
+                .cmp(&(right.kind.as_str(), right.path.as_str()))
+        });
+        let generation_err = phase8_release_bundle(
+            "dist/release-bundle",
+            "dist/release-bundle/manifest.json",
+            fixture.artifact_hash,
+            &fixture.artifacts,
+            &fixture.files,
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(
+            generation_err.reason_code.as_ref(),
+            "release_bundle_generation_failed"
+        );
+        assert_eq!(
+            generation_err.field.as_deref(),
+            Some("normalized_check_result.artifact.comparison.status")
+        );
+
+        let manifest = Phase8ReleaseAuditBundleManifest::new(
+            fixture.policy_hash,
+            fixture.artifact_hash,
+            fixture.artifacts,
+        );
+        let manifest_json = manifest.canonical_json();
+        let validation = phase8_release_validate_bundle(
+            "dist/release-bundle/manifest.json",
+            phase8_file_hash(manifest_json.as_bytes()),
+            &manifest_json,
+            &fixture.files,
+            None,
+        )
+        .unwrap();
+        assert_eq!(validation.result.status, Phase8AuxiliaryStatus::Failed);
+        let error = validation.result.error.unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuxiliaryReasonCode::AuditBundleInvalid
+        );
+        assert_eq!(
+            error.field.as_deref(),
+            Some("normalized_check_result.artifact.comparison.status")
+        );
+    }
+
+    #[test]
+    fn m12_release_bundle_rejects_extra_request_not_referenced_by_machine_results() {
+        let mut fixture = m12_fixture(true);
+        let runner_policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let extra = m4_stored_request(&runner_policy, "fast-kernel", "mchkreq_m12_extra");
+        let extra_artifact = m12_add_artifact(
+            Phase8ReleaseBundleArtifactKind::MachineCheckRequest,
+            extra.request.canonical_json(),
+            &[("request_hash", extra.request.request_hash())],
+            &mut fixture.artifacts,
+            &mut fixture.files,
+        );
+
+        let request_store_index = fixture
+            .artifacts
+            .iter()
+            .position(|artifact| {
+                artifact.kind == Phase8ReleaseBundleArtifactKind::RequestStoreManifest
+            })
+            .unwrap();
+        let old_request_store_path = fixture.artifacts[request_store_index].path.clone();
+        let old_request_store_source =
+            std::str::from_utf8(fixture.files.get(&old_request_store_path).unwrap()).unwrap();
+        let mut request_store =
+            parse_phase8_request_store_manifest(old_request_store_source).unwrap();
+        request_store.requests.push(Phase8RequestStoreEntry {
+            request_hash: extra.request.request_hash(),
+            path: extra_artifact.path,
+            file_hash: extra_artifact.file_hash,
+        });
+        request_store
+            .requests
+            .sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+        fixture.files.remove(&old_request_store_path);
+
+        let request_store_json = request_store.canonical_json();
+        let request_store_file_hash = phase8_file_hash(request_store_json.as_bytes());
+        let request_store_path = phase8_release_bundle_artifact_path(
+            Phase8ReleaseBundleArtifactKind::RequestStoreManifest,
+            request_store_file_hash,
+        );
+        fixture
+            .files
+            .insert(request_store_path.clone(), request_store_json.into_bytes());
+        fixture.artifacts[request_store_index] = Phase8ReleaseAuditBundleArtifact {
+            kind: Phase8ReleaseBundleArtifactKind::RequestStoreManifest,
+            path: request_store_path,
+            file_hash: request_store_file_hash,
+            hashes: BTreeMap::from([("manifest_hash".to_owned(), request_store_file_hash)]),
+        };
+
+        let err = phase8_release_bundle(
+            "dist/release-bundle",
+            "dist/release-bundle/manifest.json",
+            fixture.artifact_hash,
+            &fixture.artifacts,
+            &fixture.files,
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err.reason_code.as_ref(), "release_bundle_generation_failed");
+        assert_eq!(
+            err.field.as_deref(),
+            Some("artifacts[machine_check_request]")
+        );
+        assert_eq!(
+            err.expected_value.as_deref(),
+            Some("referenced_by_machine_check_result")
+        );
     }
 }
