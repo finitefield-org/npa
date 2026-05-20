@@ -5,12 +5,12 @@ use npa_cert::{
     producer_checked_decl_interface, producer_env_fingerprint,
     producer_env_fingerprint_canonical_bytes, producer_import_env_key,
     producer_limits_canonical_bytes, producer_limits_hash, producer_lookup_env, stricter_or_equal,
-    validate_candidate_batch_imports, verify_module_cert, AxiomPolicy, AxiomRef, CandidateBatch,
-    CandidateBatchResult, CandidateHashPreview, CandidateStatus, CertError, CheckedDeclCandidate,
-    CoreDeclCandidate, CoreModule, GlobalRef, Name, ProducerCheckedDeclInterface,
-    ProducerEnvFingerprintBytes, ProducerImportEnvKey, ProducerLimitKind, ProducerLimits,
-    ProducerPriorChainBytes, ProducerPriorChainEntry, ProducerProfile, VerifiedModule,
-    VerifierSession,
+    validate_candidate_batch_imports, validate_prior_current_decls, verify_module_cert,
+    AxiomPolicy, AxiomRef, CandidateBatch, CandidateBatchResult, CandidateHashPreview,
+    CandidateStatus, CertError, CheckedDeclCandidate, CoreDeclCandidate, CoreModule, GlobalRef,
+    Name, ProducerCheckedDeclInterface, ProducerEnvFingerprintBytes, ProducerImportEnvKey,
+    ProducerLimitKind, ProducerLimits, ProducerPriorChainBytes, ProducerPriorChainEntry,
+    ProducerProfile, VerifiedModule, VerifierSession,
 };
 use npa_kernel::{Decl, Env, Error as KernelError, Expr, Level, Reducibility, ResourceLimitKind};
 
@@ -204,6 +204,17 @@ fn producer_types_are_available_from_public_api() {
         result.statuses.as_slice(),
         [CandidateStatus::Rejected(CertError::DecodeError)]
     ));
+}
+
+#[test]
+fn validate_prior_current_decls_public_api_accepts_empty_prior_chain() {
+    let imports: &[VerifiedModule] = &[];
+    let batch = empty_batch(imports);
+
+    assert_eq!(
+        validate_prior_current_decls(&batch).unwrap(),
+        Vec::<ProducerCheckedDeclInterface>::new()
+    );
 }
 
 #[test]

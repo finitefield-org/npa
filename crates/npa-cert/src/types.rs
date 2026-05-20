@@ -801,6 +801,23 @@ pub enum ProducerLimitKind {
     MaxConversionSteps,
 }
 
+/// Producer token hash field checked during prior-token validation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProducerTokenHashField {
+    /// Token `pre_env_fingerprint` field.
+    PreEnvFingerprint,
+    /// Token `post_env_fingerprint` field.
+    PostEnvFingerprint,
+    /// Token `prior_chain_fingerprint` field.
+    PriorChainFingerprint,
+    /// Token `limit_profile_hash` field.
+    LimitProfileHash,
+    /// Token private declaration interface hash.
+    DeclInterfaceHash,
+    /// Token private declaration certificate hash.
+    DeclCertificateHash,
+}
+
 /// Structured certificate construction, decoding, and verification error.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CertError {
@@ -910,6 +927,22 @@ pub enum CertError {
     ProducerLimitExceeded {
         /// Limit that was exceeded.
         limit: ProducerLimitKind,
+    },
+    /// Opaque producer prior token committed a stale or forged hash.
+    ProducerTokenHashMismatch {
+        /// Prior-token index in `CandidateBatch.prior_current_decls`.
+        token_index: usize,
+        /// Token hash field that mismatched.
+        field: ProducerTokenHashField,
+        /// Recomputed expected hash.
+        expected: Hash,
+        /// Hash stored in the token.
+        actual: Hash,
+    },
+    /// Opaque producer prior token was checked under looser limits than the current batch allows.
+    ProducerTokenLimitTooLoose {
+        /// Prior-token index in `CandidateBatch.prior_current_decls`.
+        token_index: usize,
     },
     /// Underlying Rust kernel rejected a declaration.
     Kernel(npa_kernel::Error),

@@ -4,7 +4,8 @@ use npa_kernel::{Ctx, Decl, Env, Error, Expr, Level};
 
 use crate::{
     encode_axiom_refs_to, encode_name_to, encode_uvar_to, hash_with_domain, union_axioms, AxiomRef,
-    CertError, ExportEntry, Hash, ModuleName, ProducerLimitKind, VerifiedModule,
+    CertError, ExportEntry, Hash, ModuleName, ProducerLimitKind, ProducerTokenHashField,
+    VerifiedModule,
 };
 
 /// Sidecar-only producer classification for audit and diagnostics.
@@ -316,6 +317,93 @@ pub fn post_env_fingerprint(
     }))
 }
 
+/// Validate reusable current-module declaration tokens for a producer batch.
+///
+/// Invalid prior tokens are rejected at the batch boundary because later candidates would otherwise
+/// be checked against a forged producer environment.
+pub fn validate_prior_current_decls(
+    batch: &CandidateBatch<'_>,
+) -> Result<Vec<ProducerCheckedDeclInterface>, CertError> {
+    let direct_imports = canonical_import_env_keys(batch.imports)?;
+    let mut checked_decls = Vec::with_capacity(batch.prior_current_decls.len());
+    let mut prior_chain_entries = Vec::with_capacity(batch.prior_current_decls.len());
+    let mut expected_pre_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: direct_imports.clone(),
+        checked_decls: vec![],
+    });
+
+    for (token_index, token) in batch.prior_current_decls.iter().enumerate() {
+        ensure_token_hash(
+            token_index,
+            ProducerTokenHashField::PreEnvFingerprint,
+            expected_pre_env_fingerprint,
+            token.pre_env_fingerprint,
+        )?;
+
+        let expected_prior_chain_fingerprint = prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: prior_chain_entries.clone(),
+        });
+        ensure_token_hash(
+            token_index,
+            ProducerTokenHashField::PriorChainFingerprint,
+            expected_prior_chain_fingerprint,
+            token.prior_chain_fingerprint,
+        )?;
+
+        ensure_token_hash(
+            token_index,
+            ProducerTokenHashField::LimitProfileHash,
+            producer_limits_hash(&token.limits),
+            token.limit_profile_hash,
+        )?;
+        if !token.limits_are_reusable_under(&batch.limits) {
+            return Err(CertError::ProducerTokenLimitTooLoose { token_index });
+        }
+
+        let lookup_env = producer_lookup_env(batch.imports, &checked_decls)?;
+        let (computed_interface, hashes) =
+            crate::canonical_producer_checked_decl_hashes(&token.declaration, &lookup_env)?;
+
+        ensure_token_hash(
+            token_index,
+            ProducerTokenHashField::DeclInterfaceHash,
+            hashes.decl_interface_hash,
+            token.decl_interface_hash,
+        )?;
+        ensure_token_hash(
+            token_index,
+            ProducerTokenHashField::DeclCertificateHash,
+            hashes.decl_certificate_hash,
+            token.decl_certificate_hash,
+        )?;
+
+        let mut next_checked_decls = checked_decls.clone();
+        next_checked_decls.push(computed_interface.clone());
+        let expected_post_env_fingerprint =
+            producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+                direct_imports: direct_imports.clone(),
+                checked_decls: next_checked_decls,
+            });
+        ensure_token_hash(
+            token_index,
+            ProducerTokenHashField::PostEnvFingerprint,
+            expected_post_env_fingerprint,
+            token.post_env_fingerprint,
+        )?;
+
+        prior_chain_entries.push(ProducerPriorChainEntry {
+            decl_interface_hash: hashes.decl_interface_hash,
+            decl_certificate_hash: hashes.decl_certificate_hash,
+            pre_env_fingerprint: expected_pre_env_fingerprint,
+            post_env_fingerprint: expected_post_env_fingerprint,
+        });
+        checked_decls.push(computed_interface);
+        expected_pre_env_fingerprint = expected_post_env_fingerprint;
+    }
+
+    Ok(checked_decls)
+}
+
 /// Precheck a single producer candidate against an existing kernel environment under limits.
 ///
 /// This fast path does not emit `.npcert` bytes or create a verified module. It only performs
@@ -503,6 +591,24 @@ pub struct CandidateBatchResult {
 
 fn fuel_to_usize(value: u64, limit: ProducerLimitKind) -> Result<usize, CertError> {
     usize::try_from(value).map_err(|_| CertError::ProducerLimitExceeded { limit })
+}
+
+fn ensure_token_hash(
+    token_index: usize,
+    field: ProducerTokenHashField,
+    expected: Hash,
+    actual: Hash,
+) -> Result<(), CertError> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(CertError::ProducerTokenHashMismatch {
+            token_index,
+            field,
+            expected,
+            actual,
+        })
+    }
 }
 
 fn verified_import_order_key(import: &VerifiedModule) -> (ModuleName, Hash, Option<Hash>) {
@@ -926,6 +1032,115 @@ mod tests {
         }
     }
 
+    fn hash(byte: u8) -> Hash {
+        [byte; 32]
+    }
+
+    fn looser_limits(limits: ProducerLimits) -> ProducerLimits {
+        ProducerLimits {
+            max_declarations: limits.max_declarations + 1,
+            max_expr_nodes: limits.max_expr_nodes + 1,
+            max_level_nodes: limits.max_level_nodes + 1,
+            max_name_components: limits.max_name_components + 1,
+            max_reduction_steps: limits.max_reduction_steps + 1,
+            max_conversion_steps: limits.max_conversion_steps + 1,
+        }
+    }
+
+    fn prior_axiom(name: &str) -> Decl {
+        Decl::Axiom {
+            name: name.to_owned(),
+            universe_params: vec![],
+            ty: Expr::sort(Level::zero()),
+        }
+    }
+
+    fn valid_prior_token(
+        declaration: Decl,
+        token_limits: ProducerLimits,
+        checked_before: &[ProducerCheckedDeclInterface],
+        prior_chain_before: &[ProducerPriorChainEntry],
+    ) -> (
+        CheckedDeclCandidate,
+        ProducerCheckedDeclInterface,
+        ProducerPriorChainEntry,
+    ) {
+        let imports: &[VerifiedModule] = &[];
+        let direct_imports = canonical_import_env_keys(imports).unwrap();
+        let pre_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+            direct_imports: direct_imports.clone(),
+            checked_decls: checked_before.to_vec(),
+        });
+        let lookup_env = producer_lookup_env(imports, checked_before).unwrap();
+        let (interface, hashes) =
+            crate::canonical_producer_checked_decl_hashes(&declaration, &lookup_env).unwrap();
+        let mut checked_after = checked_before.to_vec();
+        checked_after.push(interface.clone());
+        let post_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+            direct_imports,
+            checked_decls: checked_after,
+        });
+        let prior_chain_fingerprint = prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: prior_chain_before.to_vec(),
+        });
+        let token = CheckedDeclCandidate {
+            declaration,
+            preview_hashes: CandidateHashPreview {
+                type_hash: Some(hash(0x91)),
+                body_hash: Some(hash(0x92)),
+                decl_interface_hash: Some(hash(0x93)),
+                decl_certificate_hash: Some(hash(0x94)),
+            },
+            pre_env_fingerprint,
+            post_env_fingerprint,
+            prior_chain_fingerprint,
+            limits: token_limits,
+            limit_profile_hash: producer_limits_hash(&token_limits),
+            decl_interface_hash: hashes.decl_interface_hash,
+            decl_certificate_hash: hashes.decl_certificate_hash,
+        };
+        let entry = ProducerPriorChainEntry {
+            decl_interface_hash: hashes.decl_interface_hash,
+            decl_certificate_hash: hashes.decl_certificate_hash,
+            pre_env_fingerprint,
+            post_env_fingerprint,
+        };
+        (token, interface, entry)
+    }
+
+    fn empty_prior_batch<'a>(
+        prior_current_decls: &'a [CheckedDeclCandidate],
+        limits: ProducerLimits,
+    ) -> CandidateBatch<'a> {
+        CandidateBatch {
+            imports: &[],
+            prior_current_decls,
+            candidates: vec![],
+            limits,
+        }
+    }
+
+    fn assert_token_hash_mismatch(
+        err: CertError,
+        expected_token_index: usize,
+        expected_field: ProducerTokenHashField,
+        expected_actual: Hash,
+    ) {
+        match err {
+            CertError::ProducerTokenHashMismatch {
+                token_index,
+                field,
+                actual,
+                ..
+            } => {
+                assert_eq!(token_index, expected_token_index);
+                assert_eq!(field, expected_field);
+                assert_eq!(actual, expected_actual);
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
     #[test]
     fn checked_decl_candidate_limit_helpers_use_private_limits() {
         let limits = test_limits();
@@ -951,5 +1166,166 @@ mod tests {
 
         let mismatched_token = test_token(limits, [0_u8; 32]);
         assert!(!mismatched_token.limit_profile_hash_matches());
+    }
+
+    #[test]
+    fn validate_prior_current_decls_accepts_stricter_token_and_ignores_previews() {
+        let token_limits = test_limits();
+        let (token, interface, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let prior = [token];
+        let batch = empty_prior_batch(&prior, looser_limits(token_limits));
+
+        assert_eq!(
+            validate_prior_current_decls(&batch).unwrap(),
+            vec![interface]
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_looser_token_limits() {
+        let token_limits = test_limits();
+        let (token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let prior = [token];
+        let mut batch_limits = token_limits;
+        batch_limits.max_expr_nodes -= 1;
+        let batch = empty_prior_batch(&prior, batch_limits);
+
+        assert_eq!(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            CertError::ProducerTokenLimitTooLoose { token_index: 0 }
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_first_pre_env_mismatch() {
+        let token_limits = test_limits();
+        let (mut token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let forged = hash(0x51);
+        token.pre_env_fingerprint = forged;
+        let prior = [token];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            0,
+            ProducerTokenHashField::PreEnvFingerprint,
+            forged,
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_second_pre_env_mismatch() {
+        let token_limits = test_limits();
+        let (token1, interface1, entry1) =
+            valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let (mut token2, _, _) = valid_prior_token(
+            prior_axiom("Q"),
+            token_limits,
+            std::slice::from_ref(&interface1),
+            std::slice::from_ref(&entry1),
+        );
+        let forged = hash(0x52);
+        token2.pre_env_fingerprint = forged;
+        let prior = [token1, token2];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            1,
+            ProducerTokenHashField::PreEnvFingerprint,
+            forged,
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_prior_chain_mismatch() {
+        let token_limits = test_limits();
+        let (token1, interface1, entry1) =
+            valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let (mut token2, _, _) = valid_prior_token(
+            prior_axiom("Q"),
+            token_limits,
+            std::slice::from_ref(&interface1),
+            std::slice::from_ref(&entry1),
+        );
+        let forged = hash(0x53);
+        token2.prior_chain_fingerprint = forged;
+        let prior = [token1, token2];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            1,
+            ProducerTokenHashField::PriorChainFingerprint,
+            forged,
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_limit_profile_hash_mismatch() {
+        let token_limits = test_limits();
+        let (mut token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let forged = hash(0x54);
+        token.limit_profile_hash = forged;
+        let prior = [token];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            0,
+            ProducerTokenHashField::LimitProfileHash,
+            forged,
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_decl_interface_hash_mismatch() {
+        let token_limits = test_limits();
+        let (mut token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let forged = hash(0x55);
+        token.decl_interface_hash = forged;
+        let prior = [token];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            0,
+            ProducerTokenHashField::DeclInterfaceHash,
+            forged,
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_decl_certificate_hash_mismatch() {
+        let token_limits = test_limits();
+        let (mut token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let forged = hash(0x56);
+        token.decl_certificate_hash = forged;
+        let prior = [token];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            0,
+            ProducerTokenHashField::DeclCertificateHash,
+            forged,
+        );
+    }
+
+    #[test]
+    fn validate_prior_current_decls_rejects_post_env_mismatch() {
+        let token_limits = test_limits();
+        let (mut token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let forged = hash(0x57);
+        token.post_env_fingerprint = forged;
+        let prior = [token];
+        let batch = empty_prior_batch(&prior, token_limits);
+
+        assert_token_hash_mismatch(
+            validate_prior_current_decls(&batch).unwrap_err(),
+            0,
+            ProducerTokenHashField::PostEnvFingerprint,
+            forged,
+        );
     }
 }

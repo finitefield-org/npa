@@ -480,6 +480,13 @@ pub(crate) fn canonical_producer_checked_decl_interface(
     decl: &Decl,
     lookup_env: &ProducerLookupEnv,
 ) -> Result<ProducerCheckedDeclInterface> {
+    Ok(canonical_producer_checked_decl_hashes(decl, lookup_env)?.0)
+}
+
+pub(crate) fn canonical_producer_checked_decl_hashes(
+    decl: &Decl,
+    lookup_env: &ProducerLookupEnv,
+) -> Result<(ProducerCheckedDeclInterface, DeclHashes)> {
     let current_decl_index = lookup_env.checked_decls.len();
     let mut names = BTreeSet::new();
     for import in &lookup_env.import_exports {
@@ -575,10 +582,11 @@ pub(crate) fn canonical_producer_checked_decl_interface(
         &term_hashes,
         &name_table,
     )?;
-    Ok(ProducerCheckedDeclInterface {
+    let interface = ProducerCheckedDeclInterface {
         decl_interface_hash: hashes.decl_interface_hash,
         axiom_dependencies,
-    })
+    };
+    Ok((interface, hashes))
 }
 
 struct Resolver<'a> {
