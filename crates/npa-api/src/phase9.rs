@@ -1,9 +1,10 @@
 use std::cmp::Ordering;
+use std::collections::BTreeSet;
 use std::path::{Component, Path, PathBuf};
 
 use npa_cert::{Hash, ModuleName, Name};
-use npa_kernel::Expr;
-use npa_tactic::VerifiedImportRef;
+use npa_kernel::{Ctx, Env, Expr, Level};
+use npa_tactic::{machine_local_context_canonical_bytes, MachineLocalDecl, VerifiedImportRef};
 use sha2::{Digest, Sha256};
 
 use crate::types::phase5_name_canonical_bytes;
@@ -11,10 +12,13 @@ use crate::types::phase5_name_canonical_bytes;
 const CANDIDATE_HASH_TAG: &str = "npa.phase9_ai.candidate.v1";
 const OPTIONS_HASH_TAG: &str = "npa.phase9_ai.options.v1";
 const ENV_FINGERPRINT_TAG: &str = "npa.phase9_ai.env.v1";
+const GOAL_FINGERPRINT_TAG: &str = "npa.phase9_ai.goal.v1";
 const VALIDATION_RESULT_HASH_TAG: &str = "npa.phase9_ai.validation_result.v1";
+const UNIVERSE_CONSTRAINT_SET_HASH_TAG: &str = "npa.phase9_ai.universe.constraints.v1";
 
 const MAX_OPTIONS_BYTES: usize = 16_000_000;
 const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
+const MAX_PHASE9_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
 const MAX_NAME_COMPONENTS: u64 = 256;
 const MAX_STRING_BYTES: u64 = 1_048_576;
 
@@ -253,6 +257,80 @@ pub struct Phase9AiGlobalRef {
     pub decl_interface_hash: Hash,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9AiGoal {
+    pub universe_params: Vec<String>,
+    pub local_context: Vec<MachineLocalDecl>,
+    pub target: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9UniverseRepairCandidate {
+    pub goal: Option<Phase9AiGoal>,
+    pub target_expr: Expr,
+    pub instantiations: Vec<Phase9UniverseInstantiationPatch>,
+    pub constraint_hints: Vec<Phase9UniverseConstraintHint>,
+    pub minimization_hint: Option<Phase9UniverseMinimizationHint>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9UniverseInstantiationPatch {
+    pub occurrence: Phase9MachineExprOccurrence,
+    pub explicit_level_args: Vec<Level>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineExprOccurrence {
+    pub path: Vec<Phase9MachineExprPathStep>,
+    pub expected_ref: Phase9AiGlobalRef,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Phase9MachineExprPathStep {
+    AppFun,
+    AppArg,
+    LamType,
+    LamBody,
+    PiDomain,
+    PiCodomain,
+    LetType,
+    LetValue,
+    LetBody,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9UniverseConstraintHint {
+    pub constraint: Phase9UniverseConstraint,
+    pub reason: Phase9UniverseConstraintHintReason,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9UniverseConstraint {
+    pub lhs: Level,
+    pub relation: Phase9UniverseConstraintRelation,
+    pub rhs: Level,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9UniverseConstraintRelation {
+    Le,
+    Eq,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9UniverseConstraintHintReason {
+    KernelDiagnostic,
+    RepairCandidate,
+    MinimizationExplanation,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9UniverseMinimizationHint {
+    KernelDefault,
+    PreferLowerLevels,
+    PreferExistingExplicitArgs,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase9AiValidationError {
     EnvelopeMalformed,
@@ -482,6 +560,16 @@ pub fn phase9_ai_validation_result_hash_for_rejection(
     validation_result_hash(candidate_hash, &payload)
 }
 
+pub fn phase9_ai_validation_result_hash_for_success(
+    candidate_hash: Hash,
+    success: &Phase9AiSuccessPayload,
+) -> Hash {
+    let mut payload = Vec::new();
+    payload.push(0);
+    encode_success_payload_to(&mut payload, success);
+    validation_result_hash(candidate_hash, &payload)
+}
+
 pub fn phase9_ai_env_fingerprint(
     profile_version: Phase9AiProfileVersion,
     task_kind: Phase9AiTaskKind,
@@ -494,6 +582,33 @@ pub fn phase9_ai_env_fingerprint(
     encode_import_identities_to(&mut payload, imports)?;
     encode_hash_to(&mut payload, &options_hash);
     Ok(hash_with_domain(ENV_FINGERPRINT_TAG, &payload))
+}
+
+pub fn phase9_ai_goal_fingerprint(env_fingerprint: Hash, goal: &Phase9AiGoal) -> Hash {
+    let mut payload = Vec::new();
+    encode_hash_to(&mut payload, &env_fingerprint);
+    payload.extend_from_slice(&phase9_universe_params_canonical_bytes(
+        &goal.universe_params,
+    ));
+    payload.extend_from_slice(&machine_local_context_canonical_bytes(&goal.local_context));
+    payload.extend_from_slice(&npa_cert::core_expr_canonical_bytes(&goal.target));
+    hash_with_domain(GOAL_FINGERPRINT_TAG, &payload)
+}
+
+pub fn phase9_ai_goal_canonical_bytes(
+    goal: &Phase9AiGoal,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_goal_to(&mut out, goal)?;
+    Ok(out)
+}
+
+pub fn phase9_universe_repair_candidate_canonical_bytes(
+    candidate: &Phase9UniverseRepairCandidate,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_universe_repair_candidate_to(&mut out, candidate)?;
+    Ok(out)
 }
 
 pub fn phase9_ai_options_canonical_bytes(
@@ -607,12 +722,15 @@ pub fn run_phase9_universe_repair_check_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
+    match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
         Phase9AiTaskKind::UniverseRepair,
-    )
+    ) {
+        Ok(validated) => run_phase9_universe_repair_validated(validated, verified_imports),
+        Err(response) => response,
+    }
 }
 
 pub fn run_phase9_typeclass_resolve_request(
@@ -698,6 +816,281 @@ fn run_phase9_skeleton_request(
             None,
         ),
         Err(response) => response,
+    }
+}
+
+struct Phase9UniverseRepairCandidateOuter {
+    goal: Option<Phase9AiGoal>,
+    target_expr: Expr,
+    instantiation_items: Vec<Vec<u8>>,
+    constraint_hint_items: Vec<Vec<u8>>,
+    minimization_hint: Option<Phase9UniverseMinimizationHint>,
+}
+
+fn run_phase9_universe_repair_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let raw = match decode_universe_repair_candidate_outer(&validated.envelope.payload) {
+        Ok(raw) => raw,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+
+    if validated.envelope.target.target_decl_hash.is_some() {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        );
+    }
+
+    let goal = match raw.goal.as_ref() {
+        Some(goal) => goal,
+        None => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+    if !phase9_core_expr_bytes_eq(&goal.target, &raw.target_expr) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::TargetFingerprintMismatch,
+            )),
+        );
+    }
+    if validated.envelope.target.goal_fingerprint
+        != Some(phase9_ai_goal_fingerprint(validated.env_fingerprint, goal))
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::TargetFingerprintMismatch,
+            )),
+        );
+    }
+
+    if !phase9_string_list_is_unique(&goal.universe_params)
+        || !expr_levels_are_in_scope(&goal.target, &goal.universe_params)
+        || !goal
+            .local_context
+            .iter()
+            .all(|local| local_decl_levels_are_in_scope(local, &goal.universe_params))
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+    if !goal_imported_refs_are_resolved(goal, verified_imports) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        );
+    }
+    if validate_goal_kernel(goal, verified_imports).is_err() {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        );
+    }
+
+    let instantiations = match decode_universe_instantiation_items(&raw.instantiation_items) {
+        Ok(instantiations) => instantiations,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+    if !universe_instantiations_are_strictly_sorted(&instantiations) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+
+    let constraint_hints = match decode_universe_constraint_hint_items(&raw.constraint_hint_items) {
+        Ok(hints) => hints,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+    if !universe_constraint_hints_are_strictly_sorted(&constraint_hints) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+    for hint in &constraint_hints {
+        if !constraint_levels_are_in_scope(&hint.constraint, &goal.universe_params) {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::UnknownUniverseParam,
+                )),
+            );
+        }
+    }
+
+    let mut repaired_expr = raw.target_expr.clone();
+    for patch in &instantiations {
+        let reached = match expr_at_path(&raw.target_expr, &patch.occurrence.path) {
+            Some(reached) => reached,
+            None => {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Some(Phase9AiFeatureError::UniverseRepair(
+                        Phase9UniverseRepairError::InvalidOccurrencePath,
+                    )),
+                );
+            }
+        };
+        let Expr::Const { name, .. } = reached else {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::InvalidOccurrencePath,
+                )),
+            );
+        };
+        let resolved =
+            match resolve_phase9_global_ref(&patch.occurrence.expected_ref, verified_imports) {
+                Some(resolved) => resolved,
+                None => {
+                    return rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::ImportClosureMismatch,
+                        None,
+                    );
+                }
+            };
+        if name != &resolved.const_name {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::TargetRefMismatch,
+                )),
+            );
+        }
+        if patch.explicit_level_args.len() != resolved.universe_arity {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::IllFormedLevelExpr,
+                )),
+            );
+        }
+        for level in &patch.explicit_level_args {
+            if !level_is_in_scope(level, &goal.universe_params) {
+                return rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Some(Phase9AiFeatureError::UniverseRepair(
+                        Phase9UniverseRepairError::UnknownUniverseParam,
+                    )),
+                );
+            }
+        }
+        if replace_const_levels_at_path(
+            &mut repaired_expr,
+            &patch.occurrence.path,
+            patch.explicit_level_args.clone(),
+        )
+        .is_none()
+        {
+            return Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            };
+        }
+    }
+
+    let constraints = match derive_universe_constraints(goal, &repaired_expr, verified_imports) {
+        Ok(constraints) => constraints,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::NoSolution,
+                Some(Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::UnsatisfiedConstraint,
+                )),
+            );
+        }
+    };
+    let constraint_keys = constraints
+        .iter()
+        .map(phase9_universe_constraint_canonical_bytes)
+        .collect::<BTreeSet<_>>();
+    for hint in &constraint_hints {
+        let key = phase9_universe_constraint_canonical_bytes(&hint.constraint);
+        if !constraint_keys.contains(&key) {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::ConstraintHintMismatch,
+                )),
+            );
+        }
+    }
+    if constraints
+        .iter()
+        .any(|constraint| !universe_constraint_is_satisfiable(constraint))
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::NoSolution,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::UnsatisfiedConstraint,
+            )),
+        );
+    }
+    let constraint_set_hash = phase9_universe_constraint_set_hash(&constraints);
+    let success = Phase9AiSuccessPayload::UniverseRepair {
+        repaired_expr,
+        constraint_set_hash,
+    };
+    success_response(candidate_hash, success)
+}
+
+fn success_response(
+    candidate_hash: Hash,
+    payload: Phase9AiSuccessPayload,
+) -> Phase9AiEndpointResponse {
+    let validation_result_hash =
+        phase9_ai_validation_result_hash_for_success(candidate_hash, &payload);
+    Phase9AiEndpointResponse::Success {
+        candidate_hash,
+        validation_result_hash,
+        payload: Box::new(payload),
     }
 }
 
@@ -861,14 +1254,8 @@ fn validate_target_shape(
             target.target_decl_hash.is_none() && target.goal_fingerprint.is_none()
         }
         Phase9AiTaskKind::UniverseRepair => {
-            if target.target_decl_hash.is_some() && target.goal_fingerprint.is_none() {
-                return Err(rejected_response(
-                    candidate_hash,
-                    Phase9AiValidationError::UnsupportedFeature,
-                    None,
-                ));
-            }
-            target.target_decl_hash.is_none() && target.goal_fingerprint.is_some()
+            (target.target_decl_hash.is_none() && target.goal_fingerprint.is_some())
+                || (target.target_decl_hash.is_some() && target.goal_fingerprint.is_none())
         }
         Phase9AiTaskKind::TypeclassResolution
         | Phase9AiTaskKind::SmtCertificate
@@ -912,6 +1299,414 @@ fn validate_required_options(
     }
 }
 
+struct ResolvedPhase9GlobalRef {
+    const_name: String,
+    universe_arity: usize,
+}
+
+fn phase9_universe_constraint_set_hash(constraints: &[Phase9UniverseConstraint]) -> Hash {
+    let mut canonical = constraints.to_vec();
+    canonical.sort_by_key(phase9_universe_constraint_canonical_bytes);
+    let mut out = Vec::new();
+    encode_len_to(&mut out, canonical.len());
+    for constraint in &canonical {
+        encode_universe_constraint_to(&mut out, constraint);
+    }
+    hash_with_domain(UNIVERSE_CONSTRAINT_SET_HASH_TAG, &out)
+}
+
+fn phase9_universe_params_canonical_bytes(params: &[String]) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_len_to(&mut out, params.len());
+    for param in params {
+        encode_string_to(&mut out, param);
+    }
+    out
+}
+
+fn phase9_core_expr_bytes_eq(lhs: &Expr, rhs: &Expr) -> bool {
+    npa_cert::core_expr_canonical_bytes(lhs) == npa_cert::core_expr_canonical_bytes(rhs)
+}
+
+fn phase9_string_list_is_unique(values: &[String]) -> bool {
+    let mut seen = BTreeSet::new();
+    values.iter().all(|value| seen.insert(value))
+}
+
+fn local_decl_levels_are_in_scope(local: &MachineLocalDecl, params: &[String]) -> bool {
+    expr_levels_are_in_scope(&local.ty, params)
+        && local
+            .value
+            .as_ref()
+            .is_none_or(|value| expr_levels_are_in_scope(value, params))
+}
+
+fn expr_levels_are_in_scope(expr: &Expr, params: &[String]) -> bool {
+    match expr {
+        Expr::Sort(level) => level_is_in_scope(level, params),
+        Expr::BVar(_) => true,
+        Expr::Const { levels, .. } => levels.iter().all(|level| level_is_in_scope(level, params)),
+        Expr::App(fun, arg) => {
+            expr_levels_are_in_scope(fun, params) && expr_levels_are_in_scope(arg, params)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_levels_are_in_scope(ty, params) && expr_levels_are_in_scope(body, params)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_levels_are_in_scope(ty, params)
+                && expr_levels_are_in_scope(value, params)
+                && expr_levels_are_in_scope(body, params)
+        }
+    }
+}
+
+fn level_is_in_scope(level: &Level, params: &[String]) -> bool {
+    match level {
+        Level::Zero => true,
+        Level::Succ(inner) => level_is_in_scope(inner, params),
+        Level::Max(lhs, rhs) | Level::IMax(lhs, rhs) => {
+            level_is_in_scope(lhs, params) && level_is_in_scope(rhs, params)
+        }
+        Level::Param(name) => params.iter().any(|param| param == name),
+    }
+}
+
+fn constraint_levels_are_in_scope(
+    constraint: &Phase9UniverseConstraint,
+    params: &[String],
+) -> bool {
+    level_is_in_scope(&constraint.lhs, params) && level_is_in_scope(&constraint.rhs, params)
+}
+
+fn goal_imported_refs_are_resolved(goal: &Phase9AiGoal, imports: &[VerifiedImportRef]) -> bool {
+    goal.local_context.iter().all(|local| {
+        expr_imported_refs_are_resolved(&local.ty, imports)
+            && local
+                .value
+                .as_ref()
+                .is_none_or(|value| expr_imported_refs_are_resolved(value, imports))
+    }) && expr_imported_refs_are_resolved(&goal.target, imports)
+}
+
+fn expr_imported_refs_are_resolved(expr: &Expr, imports: &[VerifiedImportRef]) -> bool {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => true,
+        Expr::Const { name, .. } => const_name_is_exported_once(name, imports),
+        Expr::App(fun, arg) => {
+            expr_imported_refs_are_resolved(fun, imports)
+                && expr_imported_refs_are_resolved(arg, imports)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_imported_refs_are_resolved(ty, imports)
+                && expr_imported_refs_are_resolved(body, imports)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_imported_refs_are_resolved(ty, imports)
+                && expr_imported_refs_are_resolved(value, imports)
+                && expr_imported_refs_are_resolved(body, imports)
+        }
+    }
+}
+
+fn const_name_is_exported_once(name: &str, imports: &[VerifiedImportRef]) -> bool {
+    let mut matches = 0usize;
+    for import in imports {
+        for export in import.exports() {
+            if export.name.as_dotted() == name {
+                matches += 1;
+            }
+        }
+    }
+    matches == 1
+}
+
+fn validate_goal_kernel(
+    goal: &Phase9AiGoal,
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<(), ()> {
+    let env = phase9_kernel_env_from_imports(imports)?;
+    let mut ctx = Ctx::new();
+    for local in &goal.local_context {
+        expect_sort_public(&env, &ctx, &goal.universe_params, &local.ty)?;
+        if let Some(value) = &local.value {
+            env.check(&ctx, &goal.universe_params, value, &local.ty)
+                .map_err(|_| ())?;
+            ctx.push_definition(local.name.clone(), local.ty.clone(), value.clone());
+        } else {
+            ctx.push_assumption(local.name.clone(), local.ty.clone());
+        }
+    }
+    expect_sort_public(&env, &ctx, &goal.universe_params, &goal.target)
+}
+
+fn derive_universe_constraints(
+    goal: &Phase9AiGoal,
+    repaired_expr: &Expr,
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<Vec<Phase9UniverseConstraint>, ()> {
+    // The current kernel stores no declaration-local universe constraints, so
+    // rechecking the repaired goal is the deterministic solver boundary for M2.
+    let mut repaired_goal = goal.clone();
+    repaired_goal.target = repaired_expr.clone();
+    validate_goal_kernel(&repaired_goal, imports)?;
+    Ok(Vec::new())
+}
+
+fn phase9_kernel_env_from_imports(imports: &[VerifiedImportRef]) -> std::result::Result<Env, ()> {
+    let mut env = Env::new();
+    for import in imports {
+        for decl in import.certified_env_decls() {
+            if env.decl(decl.name()).is_some() {
+                continue;
+            }
+            match decl {
+                npa_kernel::Decl::Axiom {
+                    name,
+                    universe_params,
+                    ty,
+                } => env
+                    .add_axiom(name.clone(), universe_params.clone(), ty.clone())
+                    .map_err(|_| ())?,
+                npa_kernel::Decl::Def {
+                    name,
+                    universe_params,
+                    ty,
+                    value,
+                    reducibility,
+                } => env
+                    .add_def(
+                        name.clone(),
+                        universe_params.clone(),
+                        ty.clone(),
+                        value.clone(),
+                        reducibility.clone(),
+                    )
+                    .map_err(|_| ())?,
+                npa_kernel::Decl::Theorem {
+                    name,
+                    universe_params,
+                    ty,
+                    proof,
+                } => env
+                    .add_theorem(
+                        name.clone(),
+                        universe_params.clone(),
+                        ty.clone(),
+                        proof.clone(),
+                    )
+                    .map_err(|_| ())?,
+                npa_kernel::Decl::Inductive { data, .. } => {
+                    env.add_inductive((**data).clone()).map_err(|_| ())?
+                }
+                npa_kernel::Decl::Constructor { .. } | npa_kernel::Decl::Recursor { .. } => {}
+            }
+        }
+    }
+    Ok(env)
+}
+
+fn expect_sort_public(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    term: &Expr,
+) -> std::result::Result<(), ()> {
+    match env
+        .whnf(ctx, delta, &env.infer(ctx, delta, term).map_err(|_| ())?)
+        .map_err(|_| ())?
+    {
+        Expr::Sort(_) => Ok(()),
+        _ => Err(()),
+    }
+}
+
+fn resolve_phase9_global_ref(
+    global_ref: &Phase9AiGlobalRef,
+    imports: &[VerifiedImportRef],
+) -> Option<ResolvedPhase9GlobalRef> {
+    let mut matches = Vec::new();
+    for import in imports {
+        let identity = Phase9ImportIdentity::from_verified_import(import);
+        if identity.module != global_ref.module
+            || identity.export_hash != global_ref.export_hash
+            || identity.certificate_hash != global_ref.certificate_hash
+        {
+            continue;
+        }
+        for export in import.exports().iter().filter(|export| {
+            export.name == global_ref.name
+                && export.decl_interface_hash == global_ref.decl_interface_hash
+        }) {
+            let decl = import
+                .certified_env_decls()
+                .iter()
+                .find(|decl| decl.name() == export.name.as_dotted())?;
+            matches.push(ResolvedPhase9GlobalRef {
+                const_name: export.name.as_dotted(),
+                universe_arity: decl.universe_params().len(),
+            });
+        }
+    }
+    let [resolved] = matches.as_slice() else {
+        return None;
+    };
+    Some(ResolvedPhase9GlobalRef {
+        const_name: resolved.const_name.clone(),
+        universe_arity: resolved.universe_arity,
+    })
+}
+
+fn expr_at_path<'a>(expr: &'a Expr, path: &[Phase9MachineExprPathStep]) -> Option<&'a Expr> {
+    let mut current = expr;
+    for step in path {
+        current = match (current, step) {
+            (Expr::App(fun, _), Phase9MachineExprPathStep::AppFun) => fun,
+            (Expr::App(_, arg), Phase9MachineExprPathStep::AppArg) => arg,
+            (Expr::Lam { ty, .. }, Phase9MachineExprPathStep::LamType) => ty,
+            (Expr::Lam { body, .. }, Phase9MachineExprPathStep::LamBody) => body,
+            (Expr::Pi { ty, .. }, Phase9MachineExprPathStep::PiDomain) => ty,
+            (Expr::Pi { body, .. }, Phase9MachineExprPathStep::PiCodomain) => body,
+            (Expr::Let { ty, .. }, Phase9MachineExprPathStep::LetType) => ty,
+            (Expr::Let { value, .. }, Phase9MachineExprPathStep::LetValue) => value,
+            (Expr::Let { body, .. }, Phase9MachineExprPathStep::LetBody) => body,
+            _ => return None,
+        };
+    }
+    Some(current)
+}
+
+fn replace_const_levels_at_path(
+    expr: &mut Expr,
+    path: &[Phase9MachineExprPathStep],
+    explicit_level_args: Vec<Level>,
+) -> Option<()> {
+    let current = expr_at_path_mut(expr, path)?;
+    let Expr::Const { levels, .. } = current else {
+        return None;
+    };
+    *levels = explicit_level_args;
+    Some(())
+}
+
+fn expr_at_path_mut<'a>(
+    expr: &'a mut Expr,
+    path: &[Phase9MachineExprPathStep],
+) -> Option<&'a mut Expr> {
+    let mut current = expr;
+    for step in path {
+        current = match (current, step) {
+            (Expr::App(fun, _), Phase9MachineExprPathStep::AppFun) => fun,
+            (Expr::App(_, arg), Phase9MachineExprPathStep::AppArg) => arg,
+            (Expr::Lam { ty, .. }, Phase9MachineExprPathStep::LamType) => ty,
+            (Expr::Lam { body, .. }, Phase9MachineExprPathStep::LamBody) => body,
+            (Expr::Pi { ty, .. }, Phase9MachineExprPathStep::PiDomain) => ty,
+            (Expr::Pi { body, .. }, Phase9MachineExprPathStep::PiCodomain) => body,
+            (Expr::Let { ty, .. }, Phase9MachineExprPathStep::LetType) => ty,
+            (Expr::Let { value, .. }, Phase9MachineExprPathStep::LetValue) => value,
+            (Expr::Let { body, .. }, Phase9MachineExprPathStep::LetBody) => body,
+            _ => return None,
+        };
+    }
+    Some(current)
+}
+
+fn decode_universe_instantiation_items(
+    items: &[Vec<u8>],
+) -> std::result::Result<Vec<Phase9UniverseInstantiationPatch>, DecodeError> {
+    items
+        .iter()
+        .map(|item| decode_universe_instantiation_patch(item))
+        .collect()
+}
+
+fn decode_universe_constraint_hint_items(
+    items: &[Vec<u8>],
+) -> std::result::Result<Vec<Phase9UniverseConstraintHint>, DecodeError> {
+    items
+        .iter()
+        .map(|item| decode_universe_constraint_hint(item))
+        .collect()
+}
+
+fn universe_instantiations_are_strictly_sorted(
+    instantiations: &[Phase9UniverseInstantiationPatch],
+) -> bool {
+    let mut previous: Option<Vec<u8>> = None;
+    for patch in instantiations {
+        let key = universe_instantiation_key(patch);
+        if previous.as_ref().is_some_and(|previous| previous >= &key) {
+            return false;
+        }
+        previous = Some(key);
+    }
+    true
+}
+
+fn universe_instantiation_key(patch: &Phase9UniverseInstantiationPatch) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_path_steps_to(&mut out, &patch.occurrence.path);
+    encode_global_ref_to(&mut out, &patch.occurrence.expected_ref)
+        .expect("decoded global refs must be canonical");
+    out
+}
+
+fn universe_constraint_hints_are_strictly_sorted(hints: &[Phase9UniverseConstraintHint]) -> bool {
+    let mut previous: Option<Vec<u8>> = None;
+    for hint in hints {
+        let key = phase9_universe_constraint_canonical_bytes(&hint.constraint);
+        if previous.as_ref().is_some_and(|previous| previous >= &key) {
+            return false;
+        }
+        previous = Some(key);
+    }
+    true
+}
+
+fn phase9_universe_constraint_canonical_bytes(constraint: &Phase9UniverseConstraint) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_universe_constraint_to(&mut out, constraint);
+    out
+}
+
+fn universe_constraint_is_satisfiable(constraint: &Phase9UniverseConstraint) -> bool {
+    match constraint.relation {
+        Phase9UniverseConstraintRelation::Eq => {
+            normalized_levels_are_equal(&constraint.lhs, &constraint.rhs)
+        }
+        Phase9UniverseConstraintRelation::Le => {
+            level_leq_is_satisfiable(&constraint.lhs, &constraint.rhs)
+        }
+    }
+}
+
+fn normalized_levels_are_equal(lhs: &Level, rhs: &Level) -> bool {
+    npa_kernel::level::normalize_level(lhs.clone())
+        == npa_kernel::level::normalize_level(rhs.clone())
+}
+
+fn level_leq_is_satisfiable(lhs: &Level, rhs: &Level) -> bool {
+    let lhs = npa_kernel::level::normalize_level(lhs.clone());
+    let rhs = npa_kernel::level::normalize_level(rhs.clone());
+    if lhs == rhs || lhs == Level::Zero {
+        return true;
+    }
+    match (&lhs, &rhs) {
+        (Level::Succ(inner), _) if **inner == rhs => false,
+        (Level::Succ(lhs_inner), Level::Succ(rhs_inner)) => {
+            level_leq_is_satisfiable(lhs_inner, rhs_inner)
+        }
+        (Level::Param(_), Level::Succ(_)) => true,
+        (_, Level::Max(left, right)) => {
+            level_leq_is_satisfiable(&lhs, left) || level_leq_is_satisfiable(&lhs, right)
+        }
+        _ => true,
+    }
+}
+
 fn rejected_response(
     candidate_hash: Hash,
     error: Phase9AiValidationError,
@@ -934,6 +1729,59 @@ fn validation_result_hash(candidate_hash: Hash, payload: &[u8]) -> Hash {
     encode_hash_to(&mut bytes, &candidate_hash);
     bytes.extend_from_slice(payload);
     hash_with_domain(VALIDATION_RESULT_HASH_TAG, &bytes)
+}
+
+fn encode_success_payload_to(out: &mut Vec<u8>, success: &Phase9AiSuccessPayload) {
+    match success {
+        Phase9AiSuccessPayload::AdvancedInductive {
+            decl_interface_hash,
+            decl_certificate_hash,
+        } => {
+            out.push(0);
+            encode_hash_to(out, decl_interface_hash);
+            encode_hash_to(out, decl_certificate_hash);
+        }
+        Phase9AiSuccessPayload::UniverseRepair {
+            repaired_expr,
+            constraint_set_hash,
+        } => {
+            out.push(1);
+            encode_expr_to(out, repaired_expr);
+            encode_hash_to(out, constraint_set_hash);
+        }
+        Phase9AiSuccessPayload::TypeclassResolution { proof } => {
+            out.push(2);
+            encode_expr_to(out, proof);
+        }
+        Phase9AiSuccessPayload::QuotientConstruction {
+            decl_certificate_hash,
+        } => {
+            out.push(3);
+            encode_hash_to(out, decl_certificate_hash);
+        }
+        Phase9AiSuccessPayload::SmtCertificate { final_proof } => {
+            out.push(4);
+            encode_expr_to(out, final_proof);
+        }
+        Phase9AiSuccessPayload::TheoremGraphQuery { result } => {
+            out.push(5);
+            encode_hash_to(out, &result.result_hash);
+        }
+        Phase9AiSuccessPayload::NaturalLanguageFormalization {
+            kind,
+            accepted_statement_hash,
+            formalization_proof_root_hash,
+        } => {
+            out.push(6);
+            out.push(match kind {
+                Phase9FormalizationSuccessKind::CandidateStatementChecked => 0,
+                Phase9FormalizationSuccessKind::IntentRecordOnly => 1,
+                Phase9FormalizationSuccessKind::ProofBridgeChecked => 2,
+            });
+            encode_option_hash_to(out, accepted_statement_hash.as_ref());
+            encode_option_hash_to(out, formalization_proof_root_hash.as_ref());
+        }
+    }
 }
 
 fn encode_candidate_envelope_to(
@@ -1096,6 +1944,222 @@ fn encode_option_formalization_to(out: &mut Vec<u8>, options: Option<&Phase9Form
     }
 }
 
+fn encode_universe_repair_candidate_to(
+    out: &mut Vec<u8>,
+    candidate: &Phase9UniverseRepairCandidate,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_option_goal_to(out, candidate.goal.as_ref())?;
+    encode_expr_to(out, &candidate.target_expr);
+    encode_len_to(out, candidate.instantiations.len());
+    for patch in &candidate.instantiations {
+        let mut item = Vec::new();
+        encode_universe_instantiation_patch_to(&mut item, patch)?;
+        encode_bytes_to(out, &item);
+    }
+    encode_len_to(out, candidate.constraint_hints.len());
+    for hint in &candidate.constraint_hints {
+        let mut item = Vec::new();
+        encode_universe_constraint_hint_to(&mut item, hint);
+        encode_bytes_to(out, &item);
+    }
+    encode_option_minimization_hint_to(out, candidate.minimization_hint);
+    Ok(())
+}
+
+fn encode_universe_repair_candidate_outer_to(
+    out: &mut Vec<u8>,
+    candidate: &Phase9UniverseRepairCandidateOuter,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_option_goal_to(out, candidate.goal.as_ref())?;
+    encode_expr_to(out, &candidate.target_expr);
+    encode_raw_bytes_list_to(out, &candidate.instantiation_items);
+    encode_raw_bytes_list_to(out, &candidate.constraint_hint_items);
+    encode_option_minimization_hint_to(out, candidate.minimization_hint);
+    Ok(())
+}
+
+fn encode_option_goal_to(
+    out: &mut Vec<u8>,
+    goal: Option<&Phase9AiGoal>,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match goal {
+        Some(goal) => {
+            out.push(1);
+            encode_goal_to(out, goal)?;
+        }
+        None => out.push(0),
+    }
+    Ok(())
+}
+
+fn encode_goal_to(
+    out: &mut Vec<u8>,
+    goal: &Phase9AiGoal,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_len_to(out, goal.universe_params.len());
+    for param in &goal.universe_params {
+        encode_string_to(out, param);
+    }
+    encode_len_to(out, goal.local_context.len());
+    for local in &goal.local_context {
+        encode_machine_local_decl_to(out, local);
+    }
+    encode_expr_to(out, &goal.target);
+    Ok(())
+}
+
+fn encode_machine_local_decl_to(out: &mut Vec<u8>, local: &MachineLocalDecl) {
+    encode_string_to(out, &local.name);
+    encode_expr_to(out, &local.ty);
+    match &local.value {
+        Some(value) => {
+            out.push(1);
+            encode_expr_to(out, value);
+        }
+        None => out.push(0),
+    }
+}
+
+fn encode_universe_instantiation_patch_to(
+    out: &mut Vec<u8>,
+    patch: &Phase9UniverseInstantiationPatch,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_path_steps_to(out, &patch.occurrence.path);
+    encode_global_ref_to(out, &patch.occurrence.expected_ref)?;
+    encode_len_to(out, patch.explicit_level_args.len());
+    for level in &patch.explicit_level_args {
+        encode_level_to(out, level);
+    }
+    Ok(())
+}
+
+fn encode_universe_constraint_hint_to(out: &mut Vec<u8>, hint: &Phase9UniverseConstraintHint) {
+    encode_universe_constraint_to(out, &hint.constraint);
+    out.push(match hint.reason {
+        Phase9UniverseConstraintHintReason::KernelDiagnostic => 0,
+        Phase9UniverseConstraintHintReason::RepairCandidate => 1,
+        Phase9UniverseConstraintHintReason::MinimizationExplanation => 2,
+    });
+}
+
+fn encode_universe_constraint_to(out: &mut Vec<u8>, constraint: &Phase9UniverseConstraint) {
+    encode_level_to(out, &constraint.lhs);
+    out.push(match constraint.relation {
+        Phase9UniverseConstraintRelation::Le => 0,
+        Phase9UniverseConstraintRelation::Eq => 1,
+    });
+    encode_level_to(out, &constraint.rhs);
+}
+
+fn encode_option_minimization_hint_to(
+    out: &mut Vec<u8>,
+    hint: Option<Phase9UniverseMinimizationHint>,
+) {
+    match hint {
+        Some(hint) => {
+            out.push(1);
+            out.push(match hint {
+                Phase9UniverseMinimizationHint::KernelDefault => 0,
+                Phase9UniverseMinimizationHint::PreferLowerLevels => 1,
+                Phase9UniverseMinimizationHint::PreferExistingExplicitArgs => 2,
+            });
+        }
+        None => out.push(0),
+    }
+}
+
+fn encode_path_steps_to(out: &mut Vec<u8>, path: &[Phase9MachineExprPathStep]) {
+    encode_len_to(out, path.len());
+    for step in path {
+        out.push(match step {
+            Phase9MachineExprPathStep::AppFun => 0,
+            Phase9MachineExprPathStep::AppArg => 1,
+            Phase9MachineExprPathStep::LamType => 2,
+            Phase9MachineExprPathStep::LamBody => 3,
+            Phase9MachineExprPathStep::PiDomain => 4,
+            Phase9MachineExprPathStep::PiCodomain => 5,
+            Phase9MachineExprPathStep::LetType => 6,
+            Phase9MachineExprPathStep::LetValue => 7,
+            Phase9MachineExprPathStep::LetBody => 8,
+        });
+    }
+}
+
+fn encode_expr_to(out: &mut Vec<u8>, expr: &Expr) {
+    match expr {
+        Expr::Sort(level) => {
+            out.push(0);
+            encode_level_to(out, level);
+        }
+        Expr::BVar(index) => {
+            out.push(1);
+            encode_u64_to(out, u64::from(*index));
+        }
+        Expr::Const { name, levels } => {
+            out.push(2);
+            encode_string_to(out, name);
+            encode_len_to(out, levels.len());
+            for level in levels {
+                encode_level_to(out, level);
+            }
+        }
+        Expr::App(fun, arg) => {
+            out.push(3);
+            encode_expr_to(out, fun);
+            encode_expr_to(out, arg);
+        }
+        Expr::Lam { ty, body, .. } => {
+            out.push(4);
+            encode_expr_to(out, ty);
+            encode_expr_to(out, body);
+        }
+        Expr::Pi { ty, body, .. } => {
+            out.push(5);
+            encode_expr_to(out, ty);
+            encode_expr_to(out, body);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            out.push(6);
+            encode_expr_to(out, ty);
+            encode_expr_to(out, value);
+            encode_expr_to(out, body);
+        }
+    }
+}
+
+fn encode_level_to(out: &mut Vec<u8>, level: &Level) {
+    match npa_kernel::level::normalize_level(level.clone()) {
+        Level::Zero => out.push(0),
+        Level::Succ(inner) => {
+            out.push(1);
+            encode_level_to(out, &inner);
+        }
+        Level::Max(lhs, rhs) => {
+            out.push(2);
+            encode_level_to(out, &lhs);
+            encode_level_to(out, &rhs);
+        }
+        Level::IMax(lhs, rhs) => {
+            out.push(3);
+            encode_level_to(out, &lhs);
+            encode_level_to(out, &rhs);
+        }
+        Level::Param(name) => {
+            out.push(4);
+            encode_string_to(out, &name);
+        }
+    }
+}
+
+fn encode_raw_bytes_list_to(out: &mut Vec<u8>, items: &[Vec<u8>]) {
+    encode_len_to(out, items.len());
+    for item in items {
+        encode_bytes_to(out, item);
+    }
+}
+
 fn decode_candidate_envelope(
     input: &[u8],
 ) -> std::result::Result<Phase9AiCandidateEnvelope, DecodeError> {
@@ -1161,6 +2225,70 @@ fn decode_options(input: &[u8]) -> std::result::Result<Phase9AiOptions, DecodeEr
     Ok(options)
 }
 
+fn decode_universe_repair_candidate_outer(
+    input: &[u8],
+) -> std::result::Result<Phase9UniverseRepairCandidateOuter, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let goal = decoder.option_goal()?;
+    let target_expr = decoder.expr()?;
+    let instantiation_items = decoder.bytes_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+    let constraint_hint_items = decoder.bytes_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+    let minimization_hint = decoder.option_minimization_hint()?;
+    decoder.done()?;
+
+    let candidate = Phase9UniverseRepairCandidateOuter {
+        goal,
+        target_expr,
+        instantiation_items,
+        constraint_hint_items,
+        minimization_hint,
+    };
+    let mut encoded = Vec::new();
+    encode_universe_repair_candidate_outer_to(&mut encoded, &candidate)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(candidate)
+}
+
+fn decode_universe_instantiation_patch(
+    input: &[u8],
+) -> std::result::Result<Phase9UniverseInstantiationPatch, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let path = decoder.path_steps()?;
+    let expected_ref = decoder.global_ref()?;
+    let explicit_level_args = decoder.level_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+    decoder.done()?;
+    let patch = Phase9UniverseInstantiationPatch {
+        occurrence: Phase9MachineExprOccurrence { path, expected_ref },
+        explicit_level_args,
+    };
+    let mut encoded = Vec::new();
+    encode_universe_instantiation_patch_to(&mut encoded, &patch)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(patch)
+}
+
+fn decode_universe_constraint_hint(
+    input: &[u8],
+) -> std::result::Result<Phase9UniverseConstraintHint, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let constraint = decoder.universe_constraint()?;
+    let reason = decoder.constraint_hint_reason()?;
+    decoder.done()?;
+    let hint = Phase9UniverseConstraintHint { constraint, reason };
+    let mut encoded = Vec::new();
+    encode_universe_constraint_hint_to(&mut encoded, &hint);
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(hint)
+}
+
 struct Decoder<'a> {
     input: &'a [u8],
     pos: usize,
@@ -1214,6 +2342,19 @@ impl<'a> Decoder<'a> {
             .ok_or(DecodeError::Malformed)?;
         self.pos = end;
         Ok(bytes.to_vec())
+    }
+
+    fn bytes_list_with_cap(&mut self, cap: u64) -> std::result::Result<Vec<Vec<u8>>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut items = Vec::new();
+        for _ in 0..len {
+            items.push(self.bytes()?);
+        }
+        Ok(items)
     }
 
     fn string(&mut self) -> std::result::Result<String, DecodeError> {
@@ -1283,6 +2424,182 @@ impl<'a> Decoder<'a> {
                 options_hash: self.hash()?,
                 size_bytes: self.u64()?,
             }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn option_goal(&mut self) -> std::result::Result<Option<Phase9AiGoal>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(self.goal()?)),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn goal(&mut self) -> std::result::Result<Phase9AiGoal, DecodeError> {
+        let param_len = self.u64()?;
+        if param_len > MAX_NAME_COMPONENTS {
+            return Err(DecodeError::Malformed);
+        }
+        let mut universe_params = Vec::new();
+        for _ in 0..param_len {
+            universe_params.push(self.string()?);
+        }
+        let local_len = self.u64()?;
+        if local_len > MAX_PHASE9_UNIVERSE_REPAIR_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let mut local_context = Vec::new();
+        for _ in 0..local_len {
+            local_context.push(self.machine_local_decl()?);
+        }
+        let target = self.expr()?;
+        Ok(Phase9AiGoal {
+            universe_params,
+            local_context,
+            target,
+        })
+    }
+
+    fn machine_local_decl(&mut self) -> std::result::Result<MachineLocalDecl, DecodeError> {
+        let name = self.string()?;
+        let ty = self.expr()?;
+        let value = match self.u8()? {
+            0 => None,
+            1 => Some(self.expr()?),
+            _ => return Err(DecodeError::Malformed),
+        };
+        Ok(MachineLocalDecl { name, ty, value })
+    }
+
+    fn expr(&mut self) -> std::result::Result<Expr, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Expr::sort(self.level()?)),
+            1 => {
+                let index = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+                Ok(Expr::bvar(index))
+            }
+            2 => {
+                let name = self.string()?;
+                let levels = self.level_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+                Ok(Expr::konst(name, levels))
+            }
+            3 => {
+                let fun = self.expr()?;
+                let arg = self.expr()?;
+                Ok(Expr::app(fun, arg))
+            }
+            4 => {
+                let ty = self.expr()?;
+                let body = self.expr()?;
+                Ok(Expr::lam("_", ty, body))
+            }
+            5 => {
+                let ty = self.expr()?;
+                let body = self.expr()?;
+                Ok(Expr::pi("_", ty, body))
+            }
+            6 => {
+                let ty = self.expr()?;
+                let value = self.expr()?;
+                let body = self.expr()?;
+                Ok(Expr::let_in("_", ty, value, body))
+            }
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn level(&mut self) -> std::result::Result<Level, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Level::Zero),
+            1 => Ok(Level::succ(self.level()?)),
+            2 => {
+                let lhs = self.level()?;
+                let rhs = self.level()?;
+                Ok(Level::max(lhs, rhs))
+            }
+            3 => {
+                let lhs = self.level()?;
+                let rhs = self.level()?;
+                Ok(Level::imax(lhs, rhs))
+            }
+            4 => Ok(Level::param(self.string()?)),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn level_list_with_cap(&mut self, cap: u64) -> std::result::Result<Vec<Level>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut levels = Vec::new();
+        for _ in 0..len {
+            levels.push(self.level()?);
+        }
+        Ok(levels)
+    }
+
+    fn path_steps(&mut self) -> std::result::Result<Vec<Phase9MachineExprPathStep>, DecodeError> {
+        let len = self.u64()?;
+        if len > MAX_PHASE9_UNIVERSE_REPAIR_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut path = Vec::new();
+        for _ in 0..len {
+            path.push(match self.u8()? {
+                0 => Phase9MachineExprPathStep::AppFun,
+                1 => Phase9MachineExprPathStep::AppArg,
+                2 => Phase9MachineExprPathStep::LamType,
+                3 => Phase9MachineExprPathStep::LamBody,
+                4 => Phase9MachineExprPathStep::PiDomain,
+                5 => Phase9MachineExprPathStep::PiCodomain,
+                6 => Phase9MachineExprPathStep::LetType,
+                7 => Phase9MachineExprPathStep::LetValue,
+                8 => Phase9MachineExprPathStep::LetBody,
+                _ => return Err(DecodeError::Malformed),
+            });
+        }
+        Ok(path)
+    }
+
+    fn option_minimization_hint(
+        &mut self,
+    ) -> std::result::Result<Option<Phase9UniverseMinimizationHint>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(match self.u8()? {
+                0 => Phase9UniverseMinimizationHint::KernelDefault,
+                1 => Phase9UniverseMinimizationHint::PreferLowerLevels,
+                2 => Phase9UniverseMinimizationHint::PreferExistingExplicitArgs,
+                _ => return Err(DecodeError::Malformed),
+            })),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn universe_constraint(
+        &mut self,
+    ) -> std::result::Result<Phase9UniverseConstraint, DecodeError> {
+        let lhs = self.level()?;
+        let relation = match self.u8()? {
+            0 => Phase9UniverseConstraintRelation::Le,
+            1 => Phase9UniverseConstraintRelation::Eq,
+            _ => return Err(DecodeError::Malformed),
+        };
+        let rhs = self.level()?;
+        Ok(Phase9UniverseConstraint { lhs, relation, rhs })
+    }
+
+    fn constraint_hint_reason(
+        &mut self,
+    ) -> std::result::Result<Phase9UniverseConstraintHintReason, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9UniverseConstraintHintReason::KernelDiagnostic),
+            1 => Ok(Phase9UniverseConstraintHintReason::RepairCandidate),
+            2 => Ok(Phase9UniverseConstraintHintReason::MinimizationExplanation),
             _ => Err(DecodeError::Malformed),
         }
     }
@@ -1652,6 +2969,132 @@ mod tests {
         }
     }
 
+    fn verified_universe_import() -> VerifiedImportRef {
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("Lib"),
+            declarations: vec![
+                npa_kernel::Decl::Axiom {
+                    name: "Lib.T".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::sort(Level::succ(Level::param("u"))),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Lib.F".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "A",
+                        Expr::sort(Level::param("u")),
+                        Expr::sort(Level::param("u")),
+                    ),
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .unwrap();
+        VerifiedImportRef::from_verified_module(&verified).unwrap()
+    }
+
+    fn universe_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+        let export = import
+            .exports()
+            .iter()
+            .find(|export| export.name == Name::from_dotted(name))
+            .unwrap();
+        Phase9AiGlobalRef {
+            module: import.module().clone(),
+            export_hash: import.export_hash(),
+            certificate_hash: import.certificate_hash(),
+            name: export.name.clone(),
+            decl_interface_hash: export.decl_interface_hash,
+        }
+    }
+
+    fn universe_global_ref(import: &VerifiedImportRef) -> Phase9AiGlobalRef {
+        universe_global_ref_for(import, "Lib.T")
+    }
+
+    fn universe_target_expr() -> Expr {
+        Expr::konst("Lib.T", vec![Level::param("u")])
+    }
+
+    fn universe_goal(target: Expr) -> Phase9AiGoal {
+        Phase9AiGoal {
+            universe_params: vec!["u".to_owned()],
+            local_context: Vec::new(),
+            target,
+        }
+    }
+
+    fn valid_universe_candidate(import: &VerifiedImportRef) -> Phase9UniverseRepairCandidate {
+        let target = universe_target_expr();
+        Phase9UniverseRepairCandidate {
+            goal: Some(universe_goal(target.clone())),
+            target_expr: target,
+            instantiations: vec![Phase9UniverseInstantiationPatch {
+                occurrence: Phase9MachineExprOccurrence {
+                    path: Vec::new(),
+                    expected_ref: universe_global_ref(import),
+                },
+                explicit_level_args: vec![Level::succ(Level::param("u"))],
+            }],
+            constraint_hints: Vec::new(),
+            minimization_hint: None,
+        }
+    }
+
+    fn universe_request_with_target(
+        import: &VerifiedImportRef,
+        candidate: Phase9UniverseRepairCandidate,
+        target_decl_hash: Option<Hash>,
+        goal_fingerprint: Option<Hash>,
+    ) -> Vec<u8> {
+        let options_bytes = empty_options_bytes();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
+        let env_fingerprint = phase9_ai_env_fingerprint(
+            Phase9AiProfileVersion::MvpV1,
+            Phase9AiTaskKind::UniverseRepair,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let goal_fingerprint = if target_decl_hash.is_some() {
+            goal_fingerprint
+        } else {
+            goal_fingerprint.or_else(|| {
+                candidate
+                    .goal
+                    .as_ref()
+                    .map(|goal| phase9_ai_goal_fingerprint(env_fingerprint, goal))
+            })
+        };
+        let payload = phase9_universe_repair_candidate_canonical_bytes(&candidate).unwrap();
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::UniverseRepair,
+            target: Phase9AiTarget {
+                env_fingerprint,
+                target_decl_hash,
+                goal_fingerprint,
+            },
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload,
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
+    fn valid_universe_request(import: &VerifiedImportRef) -> Vec<u8> {
+        universe_request_with_target(import, valid_universe_candidate(import), None, None)
+    }
+
     fn target_for(
         task_kind: Phase9AiTaskKind,
         imports: &[Phase9ImportIdentity],
@@ -2003,6 +3446,212 @@ mod tests {
     }
 
     #[test]
+    fn universe_repair_valid_patch_returns_repaired_expr_and_constraint_hash() {
+        let import = verified_universe_import();
+        let request = valid_universe_request(&import);
+        let expected_candidate_hash = phase9_ai_candidate_hash(&request);
+
+        let response = run_phase9_universe_repair_check_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        );
+
+        let Phase9AiEndpointResponse::Success {
+            candidate_hash,
+            validation_result_hash,
+            payload,
+        } = response
+        else {
+            panic!("expected success response");
+        };
+        assert_eq!(candidate_hash, expected_candidate_hash);
+        let expected_payload = Phase9AiSuccessPayload::UniverseRepair {
+            repaired_expr: Expr::konst("Lib.T", vec![Level::succ(Level::param("u"))]),
+            constraint_set_hash: phase9_universe_constraint_set_hash(&[]),
+        };
+        assert_eq!(*payload, expected_payload);
+        assert_eq!(
+            validation_result_hash,
+            phase9_ai_validation_result_hash_for_success(candidate_hash, &expected_payload)
+        );
+    }
+
+    #[test]
+    fn universe_repair_target_decl_hash_mode_is_unsupported() {
+        let import = verified_universe_import();
+        let request = universe_request_with_target(
+            &import,
+            valid_universe_candidate(&import),
+            Some(hash(88)),
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_universe_repair_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        );
+    }
+
+    #[test]
+    fn universe_repair_invalid_path_is_feature_rejection() {
+        let import = verified_universe_import();
+        let mut candidate = valid_universe_candidate(&import);
+        candidate.instantiations[0].occurrence.path = vec![Phase9MachineExprPathStep::AppFun];
+        let request = universe_request_with_target(&import, candidate, None, None);
+
+        assert_rejected(
+            run_phase9_universe_repair_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::InvalidOccurrencePath,
+            )),
+        );
+    }
+
+    #[test]
+    fn universe_repair_unknown_universe_param_is_feature_rejection() {
+        let import = verified_universe_import();
+        let mut candidate = valid_universe_candidate(&import);
+        candidate.instantiations[0].explicit_level_args = vec![Level::param("v")];
+        let request = universe_request_with_target(&import, candidate, None, None);
+
+        assert_rejected(
+            run_phase9_universe_repair_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::UnknownUniverseParam,
+            )),
+        );
+    }
+
+    #[test]
+    fn universe_repair_arity_mismatch_is_ill_formed_level_expr() {
+        let import = verified_universe_import();
+        let mut candidate = valid_universe_candidate(&import);
+        candidate.instantiations[0].explicit_level_args = Vec::new();
+        let request = universe_request_with_target(&import, candidate, None, None);
+
+        assert_rejected(
+            run_phase9_universe_repair_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::IllFormedLevelExpr,
+            )),
+        );
+    }
+
+    #[test]
+    fn universe_repair_unsatisfied_constraint_is_no_solution() {
+        let import = verified_universe_import();
+        let target = Expr::app(
+            Expr::konst("Lib.F", vec![Level::succ(Level::param("u"))]),
+            universe_target_expr(),
+        );
+        let candidate = Phase9UniverseRepairCandidate {
+            goal: Some(universe_goal(target.clone())),
+            target_expr: target,
+            instantiations: vec![Phase9UniverseInstantiationPatch {
+                occurrence: Phase9MachineExprOccurrence {
+                    path: vec![Phase9MachineExprPathStep::AppFun],
+                    expected_ref: universe_global_ref_for(&import, "Lib.F"),
+                },
+                explicit_level_args: vec![Level::param("u")],
+            }],
+            constraint_hints: Vec::new(),
+            minimization_hint: None,
+        };
+        let request = universe_request_with_target(&import, candidate, None, None);
+
+        assert_rejected(
+            run_phase9_universe_repair_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::NoSolution,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::UnsatisfiedConstraint,
+            )),
+        );
+    }
+
+    #[test]
+    fn universe_repair_constraint_hint_cannot_add_solver_input() {
+        let import = verified_universe_import();
+        let mut candidate = valid_universe_candidate(&import);
+        candidate.constraint_hints = vec![Phase9UniverseConstraintHint {
+            constraint: Phase9UniverseConstraint {
+                lhs: Level::param("u"),
+                relation: Phase9UniverseConstraintRelation::Le,
+                rhs: Level::param("u"),
+            },
+            reason: Phase9UniverseConstraintHintReason::RepairCandidate,
+        }];
+        let request = universe_request_with_target(&import, candidate, None, None);
+
+        assert_rejected(
+            run_phase9_universe_repair_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::UniverseRepair(
+                Phase9UniverseRepairError::ConstraintHintMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn universe_repair_minimization_hint_does_not_change_result_payload() {
+        let import = verified_universe_import();
+        let mut first_candidate = valid_universe_candidate(&import);
+        first_candidate.minimization_hint = Some(Phase9UniverseMinimizationHint::KernelDefault);
+        let mut second_candidate = valid_universe_candidate(&import);
+        second_candidate.minimization_hint =
+            Some(Phase9UniverseMinimizationHint::PreferLowerLevels);
+        let first = run_phase9_universe_repair_check_request(
+            &universe_request_with_target(&import, first_candidate, None, None),
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        );
+        let second = run_phase9_universe_repair_check_request(
+            &universe_request_with_target(&import, second_candidate, None, None),
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        );
+
+        let Phase9AiEndpointResponse::Success { payload: first, .. } = first else {
+            panic!("expected first success");
+        };
+        let Phase9AiEndpointResponse::Success {
+            payload: second, ..
+        } = second
+        else {
+            panic!("expected second success");
+        };
+        assert_eq!(first, second);
+    }
+
+    #[test]
     fn approved_nested_type_constructor_is_common_unsupported_feature() {
         let mut options = Phase9AiOptions::default();
         options
@@ -2068,24 +3717,21 @@ mod tests {
         ];
         assert_eq!(routes.len(), 7);
 
-        let options_bytes = empty_options_bytes();
-        let goal = Some(hash(4));
-        let universe = inline_request(
-            Phase9AiTaskKind::UniverseRepair,
-            options_bytes,
-            Vec::new(),
-            goal,
-        );
+        let import = verified_universe_import();
+        let universe = valid_universe_request(&import);
         assert_rejected(
             run_phase9_inductive_check_request(&universe, &[], &workspace_root()),
             Phase9AiValidationError::EnvelopeMalformed,
             None,
         );
-        assert_rejected(
-            run_phase9_universe_repair_check_request(&universe, &[], &workspace_root()),
-            Phase9AiValidationError::UnsupportedFeature,
-            None,
-        );
+        assert!(matches!(
+            run_phase9_universe_repair_check_request(
+                &universe,
+                std::slice::from_ref(&import),
+                &workspace_root()
+            ),
+            Phase9AiEndpointResponse::Success { .. }
+        ));
     }
 
     #[test]
