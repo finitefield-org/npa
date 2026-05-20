@@ -45,6 +45,9 @@ use crate::{
 const PHASE7_MVP_MAX_TACTICS_PER_NODE: u32 = 16;
 const PHASE7_MVP_PREMISE_QUERY_LIMIT: u32 = 32;
 const PHASE7_CANDIDATE_PAYLOAD_HASH_TAG: &str = "npa.phase7.candidate-payload.v1";
+pub const PHASE7_TRAINING_TRACE_SCHEMA: &str = "npa.phase7.training-trace.v1";
+const PHASE7_POSITIVE_TRAINING_IDENTITY_HASH_TAG: &str = "npa.phase7.training-positive-identity.v1";
+const PHASE7_NEGATIVE_TRAINING_IDENTITY_HASH_TAG: &str = "npa.phase7.training-negative-identity.v1";
 
 const PHASE7_CONFIG_FIELDS: &[FieldSpec] = &[
     FieldSpec::required("search_budget", JsonFieldType::Object),
@@ -189,6 +192,64 @@ pub struct Phase7PremiseRetrieval {
     pub cache_key: Phase7RetrievalCacheKey,
     pub cache_entries: Vec<Phase7PremiseCacheEntry>,
     pub results: Vec<MachineTheoremSearchResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7PositiveTrainingIdentity {
+    pub state_fingerprint: Hash,
+    pub goal_id: GoalId,
+    pub candidate_hash: Hash,
+    pub proof_delta_hash: Hash,
+    pub next_state_fingerprint: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7NegativeTrainingIdentity {
+    pub state_fingerprint: Hash,
+    pub goal_id: GoalId,
+    pub candidate_hash: Hash,
+    pub error_kind: FailedCandidateErrorKind,
+    pub diagnostic_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7TrainingTraceRecord {
+    pub trace_schema: String,
+    pub session_root_hash: Hash,
+    pub snapshot_id: SnapshotId,
+    pub state_fingerprint: Hash,
+    pub node_id: Phase7NodeId,
+    pub batch_index: u32,
+    pub goal: Phase7GoalSummary,
+    pub retrieved_premises: Vec<Phase7PremiseCacheEntry>,
+    pub tactic_candidates: Vec<Phase7TrainingTraceCandidate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase7TrainingTraceCandidate {
+    Success {
+        rank_index: u32,
+        phase7_candidate_payload_hash: Hash,
+        candidate: MachineTacticCandidate,
+        candidate_hash: Hash,
+        deterministic_budget_hash: Hash,
+        proof_delta_hash: Hash,
+        next_snapshot_id: SnapshotId,
+        next_state_fingerprint: Hash,
+    },
+    Error {
+        rank_index: u32,
+        phase7_candidate_payload_hash: Hash,
+        candidate: MachineTacticCandidate,
+        candidate_hash: Hash,
+        error_kind: FailedCandidateErrorKind,
+        phase: crate::MachineApiDiagnosticPhase,
+        deterministic_budget_hash: Hash,
+        diagnostic_hash: Hash,
+        retryable: bool,
+        goal_id: Option<GoalId>,
+        tactic_kind: Option<MachineApiTacticKind>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -388,6 +449,13 @@ pub struct Phase7DeferredCandidate {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7DeferredCandidateDropReason {
+    SchedulerStoppedCandidate,
+    MaxTacticsPerNode,
+    WallClockBudgetExceeded,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Phase7SchedulerStop {
     pub status: MachineApiResponseStatus,
     pub completed_prefix_len: u32,
@@ -400,6 +468,7 @@ pub struct Phase7BatchEvaluation {
     pub replay_steps: Vec<Phase7ReplayStep>,
     pub accepted_failures: Vec<Phase7AcceptedCandidateFailure>,
     pub non_accepted_errors: Vec<Phase7NonAcceptedCandidateError>,
+    pub training_trace_candidates: Vec<Phase7TrainingTraceCandidate>,
     pub evaluated_count: u32,
     pub deferred_candidates: Vec<Phase7DeferredCandidate>,
     pub scheduler_stop: Option<Phase7SchedulerStop>,
@@ -566,6 +635,7 @@ pub struct Phase7SearchFailure {
     pub remaining_goals: Option<Vec<Phase7GoalSummary>>,
     pub search_stats: Phase7SearchStats,
     pub trace_events: Vec<Phase7SearchTraceEvent>,
+    pub training_trace_records: Vec<Phase7TrainingTraceRecord>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -602,6 +672,7 @@ pub struct Phase7VerifiedProof {
     pub search_stats: Phase7SearchStats,
     pub minimization_stats: Phase7MinimizationStats,
     pub trace_events: Vec<Phase7SearchTraceEvent>,
+    pub training_trace_records: Vec<Phase7TrainingTraceRecord>,
 }
 
 pub type Phase7SearchResult = Result<Phase7VerifiedProof, Box<Phase7SearchFailure>>;
@@ -612,6 +683,8 @@ pub struct Phase7SearchTraceEvent {
     pub node_id: Phase7NodeId,
     pub kind: Phase7SearchTraceEventKind,
 }
+
+pub type Phase7TraceEvent = Phase7SearchTraceEvent;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Phase7SearchTraceEventKind {
@@ -635,6 +708,23 @@ pub enum Phase7SearchTraceEventKind {
     },
     ZeroProgressSchedulerStopped {
         status: MachineApiResponseStatus,
+    },
+    NonAcceptedCandidateError {
+        candidate_id: String,
+        phase7_candidate_payload_hash: Hash,
+        error_kind: MachineApiErrorKind,
+        phase: crate::MachineApiDiagnosticPhase,
+        has_candidate_hash: bool,
+        has_diagnostic_hash: bool,
+    },
+    DeferredCandidateDropped {
+        candidate_id: String,
+        phase7_candidate_payload_hash: Hash,
+        reason: Phase7DeferredCandidateDropReason,
+    },
+    ForbiddenCandidateDiscarded {
+        phase7_candidate_payload_hash: Hash,
+        forbidden_token_class: Phase7ForbiddenTokenClass,
     },
     MaxTacticsPerNodeStopped {
         max_tactics_per_node: u32,
@@ -1017,6 +1107,54 @@ pub fn phase7_run_tactic_batch(
         .map_err(Phase7TacticBatchRunError::Controller)
 }
 
+pub fn phase7_positive_training_identity(
+    state_fingerprint: Hash,
+    goal_id: GoalId,
+    candidate_hash: Hash,
+    proof_delta_hash: Hash,
+    next_state_fingerprint: Hash,
+) -> Phase7PositiveTrainingIdentity {
+    Phase7PositiveTrainingIdentity {
+        state_fingerprint,
+        goal_id,
+        candidate_hash,
+        proof_delta_hash,
+        next_state_fingerprint,
+    }
+}
+
+pub fn phase7_negative_training_identity(
+    state_fingerprint: Hash,
+    goal_id: GoalId,
+    failure: &Phase7AcceptedCandidateFailure,
+) -> Phase7NegativeTrainingIdentity {
+    Phase7NegativeTrainingIdentity {
+        state_fingerprint,
+        goal_id,
+        candidate_hash: failure.candidate_hash,
+        error_kind: failure.error_kind,
+        diagnostic_hash: failure.diagnostic_hash,
+    }
+}
+
+pub fn phase7_positive_training_identity_hash(identity: &Phase7PositiveTrainingIdentity) -> Hash {
+    let payload = phase7_positive_training_identity_json(identity);
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(PHASE7_POSITIVE_TRAINING_IDENTITY_HASH_TAG.as_bytes());
+    bytes.push(0);
+    bytes.extend_from_slice(payload.as_bytes());
+    sha256(&bytes)
+}
+
+pub fn phase7_negative_training_identity_hash(identity: &Phase7NegativeTrainingIdentity) -> Hash {
+    let payload = phase7_negative_training_identity_json(identity);
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(PHASE7_NEGATIVE_TRAINING_IDENTITY_HASH_TAG.as_bytes());
+    bytes.push(0);
+    bytes.extend_from_slice(payload.as_bytes());
+    sha256(&bytes)
+}
+
 pub fn phase7_candidate_hash_mismatch(
     envelope: &Phase7CandidateEnvelope,
     response_candidate_hash: Option<Hash>,
@@ -1154,6 +1292,51 @@ pub fn phase7_verify_request_json(
         session_id.wire(),
         snapshot_id.wire(),
         format_hash_string(&state_fingerprint),
+    )
+}
+
+pub fn phase7_training_trace_records_json(records: &[Phase7TrainingTraceRecord]) -> String {
+    let members = records
+        .iter()
+        .map(phase7_training_trace_record_json)
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+pub fn phase7_training_trace_record_json(record: &Phase7TrainingTraceRecord) -> String {
+    format!(
+        r#"{{"trace_schema":{},"session_root_hash":{},"snapshot_id":{},"state_fingerprint":{},"node_id":{},"batch_index":{},"goal":{},"retrieved_premises":{},"tactic_candidates":{}}}"#,
+        json_string(&record.trace_schema),
+        json_string(&format_hash_string(&record.session_root_hash)),
+        json_string(&record.snapshot_id.wire()),
+        json_string(&format_hash_string(&record.state_fingerprint)),
+        record.node_id.0,
+        record.batch_index,
+        phase7_goal_summary_json(&record.goal),
+        phase7_premise_cache_entries_json(&record.retrieved_premises),
+        phase7_training_trace_candidates_json(&record.tactic_candidates),
+    )
+}
+
+pub fn phase7_positive_training_identity_json(identity: &Phase7PositiveTrainingIdentity) -> String {
+    format!(
+        r#"{{"state_fingerprint":{},"goal_id":{},"candidate_hash":{},"proof_delta_hash":{},"next_state_fingerprint":{}}}"#,
+        json_string(&format_hash_string(&identity.state_fingerprint)),
+        json_string(&format_goal_id_wire(identity.goal_id)),
+        json_string(&format_hash_string(&identity.candidate_hash)),
+        json_string(&format_hash_string(&identity.proof_delta_hash)),
+        json_string(&format_hash_string(&identity.next_state_fingerprint)),
+    )
+}
+
+pub fn phase7_negative_training_identity_json(identity: &Phase7NegativeTrainingIdentity) -> String {
+    format!(
+        r#"{{"state_fingerprint":{},"goal_id":{},"candidate_hash":{},"error_kind":{},"diagnostic_hash":{}}}"#,
+        json_string(&format_hash_string(&identity.state_fingerprint)),
+        json_string(&format_goal_id_wire(identity.goal_id)),
+        json_string(&format_hash_string(&identity.candidate_hash)),
+        json_string(identity.error_kind.as_str()),
+        json_string(&format_hash_string(&identity.diagnostic_hash)),
     )
 }
 
@@ -1686,6 +1869,7 @@ fn phase7_build_batch_evaluation(
     let mut replay_steps = Vec::new();
     let mut accepted_failures = Vec::new();
     let mut non_accepted_errors = Vec::new();
+    let mut training_trace_candidates = Vec::new();
 
     for (index, item) in results.iter().enumerate() {
         let assigned = &request.candidates[index];
@@ -1714,6 +1898,16 @@ fn phase7_build_batch_evaluation(
                     next_snapshot_id: *next_snapshot_id,
                     replay_step,
                 });
+                training_trace_candidates.push(Phase7TrainingTraceCandidate::Success {
+                    rank_index: assigned.rank_index,
+                    phase7_candidate_payload_hash: assigned.envelope.phase7_candidate_payload_hash,
+                    candidate: assigned.envelope.candidate.clone(),
+                    candidate_hash: *candidate_hash,
+                    deterministic_budget_hash,
+                    proof_delta_hash: *proof_delta_hash,
+                    next_snapshot_id: *next_snapshot_id,
+                    next_state_fingerprint: *next_state_fingerprint,
+                });
             }
             MachineTacticBatchItemResponse::Error {
                 candidate_hash,
@@ -1729,6 +1923,21 @@ fn phase7_build_batch_evaluation(
                         candidate_id: assigned.candidate_id.clone(),
                         envelope: assigned.envelope.clone(),
                         failure: failure.clone(),
+                    });
+                    training_trace_candidates.push(Phase7TrainingTraceCandidate::Error {
+                        rank_index: assigned.rank_index,
+                        phase7_candidate_payload_hash: assigned
+                            .envelope
+                            .phase7_candidate_payload_hash,
+                        candidate: assigned.envelope.candidate.clone(),
+                        candidate_hash: failure.candidate_hash,
+                        error_kind: failure.error_kind,
+                        phase: failure.phase,
+                        deterministic_budget_hash,
+                        diagnostic_hash: failure.diagnostic_hash,
+                        retryable: failure.retryable,
+                        goal_id: failure.goal_id,
+                        tactic_kind: failure.tactic_kind,
                     });
                     accepted_failures.push(failure);
                 } else {
@@ -1752,6 +1961,7 @@ fn phase7_build_batch_evaluation(
         replay_steps,
         accepted_failures,
         non_accepted_errors,
+        training_trace_candidates,
         evaluated_count: usize_to_u32(results.len()),
         deferred_candidates: phase7_deferred_candidates(request, deferred_start),
         scheduler_stop,
@@ -2099,6 +2309,7 @@ pub fn phase7_run_mvp_search(
     let mut discovered_states = BTreeSet::new();
     let mut stats = Phase7SearchStats::default();
     let mut trace = Phase7TraceBuilder::new();
+    let mut training_trace_records = Vec::new();
     let mut best_partial: Option<Phase7SearchNode> = None;
     let mut failure_reason = Phase7SearchFailureReason::QueueExhausted;
     let mut depth_budget_hit = false;
@@ -2133,6 +2344,7 @@ pub fn phase7_run_mvp_search(
                     best_partial,
                     stats,
                     trace.finish(),
+                    training_trace_records,
                 ));
             }
         };
@@ -2159,6 +2371,7 @@ pub fn phase7_run_mvp_search(
                         search_stats: stats,
                         minimization_stats: minimization.minimization_stats,
                         trace_events: trace.finish(),
+                        training_trace_records,
                     });
                 }
                 Phase7ClosedNodeOutcome::Rejected => continue,
@@ -2168,6 +2381,7 @@ pub fn phase7_run_mvp_search(
                         best_partial,
                         stats,
                         trace.finish(),
+                        training_trace_records,
                     ));
                 }
             }
@@ -2225,6 +2439,7 @@ pub fn phase7_run_mvp_search(
                 best_partial,
                 stats,
                 trace.finish(),
+                training_trace_records,
             ));
         };
 
@@ -2254,14 +2469,22 @@ pub fn phase7_run_mvp_search(
                     best_partial,
                     stats,
                     trace.finish(),
+                    training_trace_records,
                 ));
             }
         };
 
-        let mut fresh_candidates = phase7_mvp_candidate_generation(goal, &retrieval).accepted;
+        let candidate_generation = phase7_mvp_candidate_generation(goal, &retrieval);
+        phase7_record_forbidden_candidate_discards(
+            &mut trace,
+            &node,
+            &candidate_generation.rejected,
+        );
+        let mut fresh_candidates = candidate_generation.accepted;
         let mut deferred_candidates = Vec::new();
         let mut pending_repairs = Vec::new();
         let mut evaluated_for_node = 0u32;
+        let mut training_batch_index = 0u32;
         let repair = Phase7RuleBasedRepair::new();
 
         loop {
@@ -2326,6 +2549,7 @@ pub fn phase7_run_mvp_search(
                         best_partial,
                         stats,
                         trace.finish(),
+                        training_trace_records,
                     ));
                 }
             };
@@ -2349,6 +2573,12 @@ pub fn phase7_run_mvp_search(
                         },
                     );
                 }
+                phase7_record_scheduler_dropped_candidates(
+                    &mut trace,
+                    &node,
+                    &batch_request,
+                    &evaluation,
+                );
             }
 
             if evaluation.evaluated_count == 0
@@ -2370,8 +2600,23 @@ pub fn phase7_run_mvp_search(
                     best_partial,
                     stats,
                     trace.finish(),
+                    training_trace_records,
                 ));
             }
+
+            phase7_record_training_trace_batch(
+                &mut training_trace_records,
+                &node,
+                &mut training_batch_index,
+                &goal_summary,
+                &retrieval.cache_entries,
+                &evaluation,
+            );
+            phase7_record_non_accepted_candidate_errors(
+                &mut trace,
+                &node,
+                &evaluation.non_accepted_errors,
+            );
 
             evaluated_for_node = evaluated_for_node
                 .checked_add(evaluation.evaluated_count)
@@ -2412,6 +2657,7 @@ pub fn phase7_run_mvp_search(
                             best_partial,
                             stats,
                             trace.finish(),
+                            training_trace_records,
                         ));
                     }
                 };
@@ -2502,6 +2748,12 @@ pub fn phase7_run_mvp_search(
                 break;
             }
             if evaluated_for_node >= input.search_budget.max_tactics_per_node {
+                phase7_record_deferred_candidate_drops(
+                    &mut trace,
+                    &node,
+                    &deferred_candidates,
+                    Phase7DeferredCandidateDropReason::MaxTacticsPerNode,
+                );
                 trace.push(
                     &node,
                     Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
@@ -2532,6 +2784,7 @@ pub fn phase7_run_mvp_search(
         best_partial,
         stats,
         trace.finish(),
+        training_trace_records,
     ))
 }
 
@@ -2876,6 +3129,121 @@ fn phase7_append_unique_premises(
     out
 }
 
+fn phase7_record_training_trace_batch(
+    records: &mut Vec<Phase7TrainingTraceRecord>,
+    node: &Phase7SearchNode,
+    batch_index: &mut u32,
+    goal: &Phase7GoalSummary,
+    retrieved_premises: &[Phase7PremiseCacheEntry],
+    evaluation: &Phase7BatchEvaluation,
+) {
+    if evaluation.evaluated_count == 0 {
+        return;
+    }
+
+    records.push(Phase7TrainingTraceRecord {
+        trace_schema: PHASE7_TRAINING_TRACE_SCHEMA.to_owned(),
+        session_root_hash: node.session_root_hash,
+        snapshot_id: node.snapshot_id,
+        state_fingerprint: node.state_fingerprint,
+        node_id: node.node_id,
+        batch_index: *batch_index,
+        goal: goal.clone(),
+        retrieved_premises: retrieved_premises.to_vec(),
+        tactic_candidates: evaluation.training_trace_candidates.clone(),
+    });
+    *batch_index = batch_index
+        .checked_add(1)
+        .expect("phase7 training batch index fits in u32");
+}
+
+fn phase7_record_forbidden_candidate_discards(
+    trace: &mut Phase7TraceBuilder,
+    node: &Phase7SearchNode,
+    rejected: &[Phase7RejectedCandidateEnvelope],
+) {
+    for rejected in rejected {
+        trace.push(
+            node,
+            Phase7SearchTraceEventKind::ForbiddenCandidateDiscarded {
+                phase7_candidate_payload_hash: rejected.envelope.phase7_candidate_payload_hash,
+                forbidden_token_class: rejected.forbidden_token.class,
+            },
+        );
+    }
+}
+
+fn phase7_record_non_accepted_candidate_errors(
+    trace: &mut Phase7TraceBuilder,
+    node: &Phase7SearchNode,
+    errors: &[Phase7NonAcceptedCandidateError],
+) {
+    for error in errors {
+        trace.push(
+            node,
+            Phase7SearchTraceEventKind::NonAcceptedCandidateError {
+                candidate_id: error.candidate_id.clone(),
+                phase7_candidate_payload_hash: error.phase7_candidate_payload_hash,
+                error_kind: error.error_kind,
+                phase: error.phase,
+                has_candidate_hash: error.has_candidate_hash,
+                has_diagnostic_hash: true,
+            },
+        );
+    }
+}
+
+fn phase7_record_scheduler_dropped_candidates(
+    trace: &mut Phase7TraceBuilder,
+    node: &Phase7SearchNode,
+    request: &Phase7TacticBatchRequest,
+    evaluation: &Phase7BatchEvaluation,
+) {
+    if evaluation.scheduler_stop.is_none() {
+        return;
+    }
+    let deferred_ids = evaluation
+        .deferred_candidates
+        .iter()
+        .map(|candidate| candidate.candidate_id.as_str())
+        .collect::<BTreeSet<_>>();
+    for assigned in request
+        .candidates
+        .iter()
+        .skip(evaluation.evaluated_count as usize)
+    {
+        if deferred_ids.contains(assigned.candidate_id.as_str()) {
+            continue;
+        }
+        trace.push(
+            node,
+            Phase7SearchTraceEventKind::DeferredCandidateDropped {
+                candidate_id: assigned.candidate_id.clone(),
+                phase7_candidate_payload_hash: assigned.envelope.phase7_candidate_payload_hash,
+                reason: Phase7DeferredCandidateDropReason::SchedulerStoppedCandidate,
+            },
+        );
+    }
+}
+
+fn phase7_record_deferred_candidate_drops(
+    trace: &mut Phase7TraceBuilder,
+    node: &Phase7SearchNode,
+    deferred_candidates: &[Phase7DeferredCandidate],
+    reason: Phase7DeferredCandidateDropReason,
+) {
+    for candidate in deferred_candidates {
+        trace.push(
+            node,
+            Phase7SearchTraceEventKind::DeferredCandidateDropped {
+                candidate_id: candidate.candidate_id.clone(),
+                phase7_candidate_payload_hash: candidate.envelope.phase7_candidate_payload_hash,
+                reason,
+            },
+        );
+    }
+}
+
 fn phase7_take_remaining_node_tactic_budget(
     candidates: Vec<Phase7CandidateEnvelope>,
     remaining: u32,
@@ -2892,6 +3260,7 @@ fn phase7_search_failure(
     best_partial: Option<Phase7SearchNode>,
     search_stats: Phase7SearchStats,
     trace_events: Vec<Phase7SearchTraceEvent>,
+    training_trace_records: Vec<Phase7TrainingTraceRecord>,
 ) -> Box<Phase7SearchFailure> {
     let (best_partial_replay_prefix, best_snapshot_id, best_state_fingerprint, remaining_goals) =
         if let Some(node) = best_partial {
@@ -2912,6 +3281,7 @@ fn phase7_search_failure(
         remaining_goals,
         search_stats,
         trace_events,
+        training_trace_records,
     })
 }
 
@@ -3475,6 +3845,75 @@ pub fn phase7_candidate_payload_json(candidate: &MachineTacticCandidate) -> Stri
     }
 }
 
+fn phase7_training_trace_candidates_json(candidates: &[Phase7TrainingTraceCandidate]) -> String {
+    let members = candidates
+        .iter()
+        .map(phase7_training_trace_candidate_json)
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_training_trace_candidate_json(candidate: &Phase7TrainingTraceCandidate) -> String {
+    match candidate {
+        Phase7TrainingTraceCandidate::Success {
+            rank_index,
+            phase7_candidate_payload_hash,
+            candidate,
+            candidate_hash,
+            deterministic_budget_hash,
+            proof_delta_hash,
+            next_snapshot_id,
+            next_state_fingerprint,
+        } => format!(
+            r#"{{"rank_index":{},"phase7_candidate_payload_hash":{},"candidate":{},"candidate_hash":{},"result":"success","deterministic_budget_hash":{},"proof_delta_hash":{},"next_snapshot_id":{},"next_state_fingerprint":{}}}"#,
+            rank_index,
+            json_string(&format_hash_string(phase7_candidate_payload_hash)),
+            phase7_candidate_payload_json(candidate),
+            json_string(&format_hash_string(candidate_hash)),
+            json_string(&format_hash_string(deterministic_budget_hash)),
+            json_string(&format_hash_string(proof_delta_hash)),
+            json_string(&next_snapshot_id.wire()),
+            json_string(&format_hash_string(next_state_fingerprint)),
+        ),
+        Phase7TrainingTraceCandidate::Error {
+            rank_index,
+            phase7_candidate_payload_hash,
+            candidate,
+            candidate_hash,
+            error_kind,
+            phase,
+            deterministic_budget_hash,
+            diagnostic_hash,
+            retryable,
+            goal_id,
+            tactic_kind,
+        } => {
+            let mut source = format!(
+                r#"{{"rank_index":{},"phase7_candidate_payload_hash":{},"candidate":{},"candidate_hash":{},"result":"error","error_kind":{},"phase":{},"deterministic_budget_hash":{},"diagnostic_hash":{},"retryable":{}"#,
+                rank_index,
+                json_string(&format_hash_string(phase7_candidate_payload_hash)),
+                phase7_candidate_payload_json(candidate),
+                json_string(&format_hash_string(candidate_hash)),
+                json_string(error_kind.as_str()),
+                json_string(phase.as_str()),
+                json_string(&format_hash_string(deterministic_budget_hash)),
+                json_string(&format_hash_string(diagnostic_hash)),
+                bool_json(*retryable),
+            );
+            if let Some(goal_id) = goal_id {
+                source.push_str(r#","goal_id":"#);
+                source.push_str(&json_string(&format_goal_id_wire(*goal_id)));
+            }
+            if let Some(tactic_kind) = tactic_kind {
+                source.push_str(r#","tactic_kind":"#);
+                source.push_str(&json_string(tactic_kind.as_str()));
+            }
+            source.push('}');
+            source
+        }
+    }
+}
+
 pub fn phase7_candidate_forbidden_token(
     candidate: &MachineTacticCandidate,
 ) -> Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> {
@@ -3588,6 +4027,51 @@ fn phase7_goal_summary(goal: &MachineGoalView, open_goal_index: usize) -> Phase7
         context_size: usize_to_u32(goal.context.len()),
         expr_size: goal.target.size,
     }
+}
+
+fn phase7_goal_summary_json(goal: &Phase7GoalSummary) -> String {
+    format!(
+        r#"{{"goal_id":{},"open_goal_index":{},"goal_fingerprint":{},"target_hash":{},"target_head":{},"target_free_local_count":{},"context_size":{},"expr_size":{}}}"#,
+        json_string(&format_goal_id_wire(goal.goal_id)),
+        goal.open_goal_index,
+        json_string(&format_hash_string(&goal.goal_fingerprint)),
+        json_string(&format_hash_string(&goal.target_hash)),
+        phase7_optional_global_ref_view_json(goal.target_head.as_ref()),
+        goal.target_free_local_count,
+        goal.context_size,
+        goal.expr_size,
+    )
+}
+
+fn phase7_premise_cache_entries_json(entries: &[Phase7PremiseCacheEntry]) -> String {
+    let members = entries
+        .iter()
+        .map(phase7_premise_cache_entry_json)
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_premise_cache_entry_json(entry: &Phase7PremiseCacheEntry) -> String {
+    format!(
+        r#"{{"premise_ref":{},"universe_params":{},"statement_core_hash":{},"statement_head":{},"axioms_used":{},"modes":{},"response_index":{}}}"#,
+        phase7_premise_ref_json(&entry.premise_ref),
+        phase7_string_array_json(&entry.universe_params),
+        json_string(&format_hash_string(&entry.statement_core_hash)),
+        phase7_optional_global_ref_view_json(entry.statement_head.as_ref()),
+        phase7_axiom_refs_json(&entry.axioms_used),
+        phase7_theorem_modes_json(&entry.modes),
+        entry.response_index,
+    )
+}
+
+fn phase7_premise_ref_json(premise_ref: &Phase7PremiseRef) -> String {
+    format!(
+        r#"{{"module":{},"name":{},"export_hash":{},"decl_interface_hash":{}}}"#,
+        json_string(&premise_ref.module.as_dotted()),
+        json_string(&premise_ref.name.as_dotted()),
+        json_string(&format_hash_string(&premise_ref.export_hash)),
+        json_string(&format_hash_string(&premise_ref.decl_interface_hash)),
+    )
 }
 
 fn phase7_goal_selection_order(left: &Phase7GoalSummary, right: &Phase7GoalSummary) -> Ordering {
@@ -4029,6 +4513,135 @@ fn phase7_rewrite_site_wire(site: RewriteSite) -> &'static str {
     match site {
         RewriteSite::EqTargetLeft => "eq_target_left",
         RewriteSite::EqTargetRight => "eq_target_right",
+    }
+}
+
+fn phase7_optional_global_ref_view_json(view: Option<&MachineGlobalRefView>) -> String {
+    view.map(phase7_global_ref_view_json)
+        .unwrap_or_else(|| "null".to_owned())
+}
+
+fn phase7_global_ref_view_json(view: &MachineGlobalRefView) -> String {
+    match view {
+        MachineGlobalRefView::Imported {
+            module,
+            name,
+            export_hash,
+            decl_interface_hash,
+            public_export,
+            tactic_head_visible,
+        } => format!(
+            r#"{{"kind":"imported","module":{},"name":{},"export_hash":{},"decl_interface_hash":{},"public_export":{},"tactic_head_visible":{}}}"#,
+            json_string(&module.as_dotted()),
+            json_string(&name.as_dotted()),
+            json_string(&format_hash_string(export_hash)),
+            json_string(&format_hash_string(decl_interface_hash)),
+            bool_json(*public_export),
+            bool_json(*tactic_head_visible),
+        ),
+        MachineGlobalRefView::CurrentModule {
+            module,
+            name,
+            decl_interface_hash,
+            source_index,
+        } => format!(
+            r#"{{"kind":"current_module","module":{},"name":{},"decl_interface_hash":{},"source_index":{}}}"#,
+            json_string(&module.as_dotted()),
+            json_string(&name.as_dotted()),
+            json_string(&format_hash_string(decl_interface_hash)),
+            source_index,
+        ),
+        MachineGlobalRefView::LocalGenerated {
+            module,
+            export_hash,
+            parent_name,
+            name,
+            parent_decl_interface_hash,
+            decl_interface_hash,
+            public_export,
+            tactic_head_visible,
+        } => {
+            let export_hash = export_hash
+                .map(|hash| json_string(&format_hash_string(&hash)))
+                .unwrap_or_else(|| "null".to_owned());
+            format!(
+                r#"{{"kind":"local_generated","module":{},"export_hash":{},"parent_name":{},"name":{},"parent_decl_interface_hash":{},"decl_interface_hash":{},"public_export":{},"tactic_head_visible":{}}}"#,
+                json_string(&module.as_dotted()),
+                export_hash,
+                json_string(&parent_name.as_dotted()),
+                json_string(&name.as_dotted()),
+                json_string(&format_hash_string(parent_decl_interface_hash)),
+                json_string(&format_hash_string(decl_interface_hash)),
+                bool_json(*public_export),
+                bool_json(*tactic_head_visible),
+            )
+        }
+    }
+}
+
+fn phase7_axiom_refs_json(axioms: &[MachineAxiomRefWire]) -> String {
+    let members = axioms.iter().map(phase7_axiom_ref_json).collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_axiom_ref_json(axiom: &MachineAxiomRefWire) -> String {
+    match axiom {
+        MachineAxiomRefWire::Imported {
+            module,
+            name,
+            export_hash,
+            decl_interface_hash,
+        } => format!(
+            r#"{{"kind":"imported","module":{},"name":{},"export_hash":{},"decl_interface_hash":{}}}"#,
+            json_string(&module.as_dotted()),
+            json_string(&name.as_dotted()),
+            json_string(&format_hash_string(export_hash)),
+            json_string(&format_hash_string(decl_interface_hash)),
+        ),
+        MachineAxiomRefWire::CurrentModule {
+            module,
+            name,
+            source_index,
+            decl_interface_hash,
+        } => format!(
+            r#"{{"kind":"current_module","module":{},"name":{},"source_index":{},"decl_interface_hash":{}}}"#,
+            json_string(&module.as_dotted()),
+            json_string(&name.as_dotted()),
+            source_index,
+            json_string(&format_hash_string(decl_interface_hash)),
+        ),
+        MachineAxiomRefWire::Builtin {
+            name,
+            decl_interface_hash,
+        } => format!(
+            r#"{{"kind":"builtin","name":{},"decl_interface_hash":{}}}"#,
+            json_string(&name.as_dotted()),
+            json_string(&format_hash_string(decl_interface_hash)),
+        ),
+    }
+}
+
+fn phase7_theorem_modes_json(modes: &[MachineTheoremMode]) -> String {
+    let members = modes
+        .iter()
+        .map(|mode| json_string(mode.as_str()))
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn phase7_string_array_json(values: &[String]) -> String {
+    let members = values
+        .iter()
+        .map(|value| json_string(value))
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn bool_json(value: bool) -> &'static str {
+    if value {
+        "true"
+    } else {
+        "false"
     }
 }
 
@@ -5712,6 +6325,7 @@ mod tests {
         assert_eq!(evaluation.replay_steps.len(), 1);
         assert_eq!(evaluation.accepted_failure_records.len(), 1);
         assert_eq!(evaluation.accepted_failures.len(), 1);
+        assert_eq!(evaluation.training_trace_candidates.len(), 2);
         assert!(evaluation.non_accepted_errors.is_empty());
         assert_eq!(evaluation.deferred_candidates.len(), 0);
 
@@ -5741,6 +6355,29 @@ mod tests {
         );
         assert_eq!(failure.diagnostic_hash, hash(55));
 
+        assert!(matches!(
+            &evaluation.training_trace_candidates[0],
+            Phase7TrainingTraceCandidate::Success {
+                rank_index: 0,
+                candidate_hash,
+                proof_delta_hash,
+                next_state_fingerprint,
+                ..
+            } if *candidate_hash == hash(40)
+                && *proof_delta_hash == hash(43)
+                && *next_state_fingerprint == hash(42)
+        ));
+        assert!(matches!(
+            &evaluation.training_trace_candidates[1],
+            Phase7TrainingTraceCandidate::Error {
+                rank_index: 1,
+                candidate_hash,
+                error_kind: FailedCandidateErrorKind::TypeMismatch,
+                diagnostic_hash,
+                ..
+            } if *candidate_hash == hash(50) && *diagnostic_hash == hash(55)
+        ));
+
         let step_json = phase7_replay_step_json(step);
         assert!(!step_json.contains("candidate_id"));
         assert!(!step_json.contains("display"));
@@ -5754,6 +6391,53 @@ mod tests {
             json_string(&format_hash_string(&hash(42))),
         );
         parse_machine_replay_request(&replay_source).unwrap();
+    }
+
+    #[test]
+    fn m8_training_identity_hashes_exclude_phase7_payload_hash() {
+        let positive =
+            phase7_positive_training_identity(hash(1), GoalId(0), hash(40), hash(41), hash(42));
+        let same_positive =
+            phase7_positive_training_identity(hash(1), GoalId(0), hash(40), hash(41), hash(42));
+        let changed_positive =
+            phase7_positive_training_identity(hash(1), GoalId(0), hash(40), hash(99), hash(42));
+        assert_eq!(
+            phase7_positive_training_identity_hash(&positive),
+            phase7_positive_training_identity_hash(&same_positive)
+        );
+        assert_ne!(
+            phase7_positive_training_identity_hash(&positive),
+            phase7_positive_training_identity_hash(&changed_positive)
+        );
+        assert!(!phase7_positive_training_identity_json(&positive)
+            .contains("phase7_candidate_payload_hash"));
+
+        let failure = Phase7AcceptedCandidateFailure {
+            error_kind: FailedCandidateErrorKind::TypeMismatch,
+            phase: crate::MachineApiDiagnosticPhase::TacticExecution,
+            goal_id: Some(GoalId(0)),
+            tactic_kind: Some(MachineApiTacticKind::Exact),
+            candidate_hash: hash(50),
+            deterministic_budget_hash: hash(51),
+            diagnostic_hash: hash(52),
+            retryable: false,
+        };
+        let negative = phase7_negative_training_identity(hash(1), GoalId(0), &failure);
+        let changed_payload_sidecar =
+            phase7_candidate_payload_hash(&MachineTacticCandidate::Exact {
+                term: RawMachineTerm::new("different_payload"),
+            });
+        assert_ne!(changed_payload_sidecar, hash(50));
+        assert_eq!(
+            phase7_negative_training_identity_hash(&negative),
+            phase7_negative_training_identity_hash(&phase7_negative_training_identity(
+                hash(1),
+                GoalId(0),
+                &failure,
+            ))
+        );
+        assert!(!phase7_negative_training_identity_json(&negative)
+            .contains("phase7_candidate_payload_hash"));
     }
 
     #[test]
@@ -5809,6 +6493,7 @@ mod tests {
         assert_eq!(evaluation.evaluated_count, 0);
         assert!(evaluation.replay_steps.is_empty());
         assert!(evaluation.accepted_failures.is_empty());
+        assert!(evaluation.training_trace_candidates.is_empty());
         assert!(evaluation.non_accepted_errors.is_empty());
         assert_eq!(
             evaluation.scheduler_stop,
@@ -5818,6 +6503,102 @@ mod tests {
             })
         );
         assert!(evaluation.deferred_candidates.is_empty());
+    }
+
+    #[test]
+    fn m8_search_traces_non_accepted_errors_without_negative_training() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let root = snapshot_with_state(1, vec![goal]);
+        let config = mvp_config();
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Error {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: None,
+                diagnostic: compact_error(MachineApiErrorKind::TypeMismatch),
+            }],
+        )));
+
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert_eq!(failure.training_trace_records.len(), 1);
+        assert!(failure.training_trace_records[0]
+            .tactic_candidates
+            .is_empty());
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            &event.kind,
+            Phase7SearchTraceEventKind::NonAcceptedCandidateError {
+                candidate_id,
+                error_kind: MachineApiErrorKind::TypeMismatch,
+                has_candidate_hash: false,
+                has_diagnostic_hash: true,
+                ..
+            } if candidate_id == "c0"
+        )));
+    }
+
+    #[test]
+    fn m8_search_traces_zero_progress_scheduler_drop_without_training_record() {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let root = snapshot_with_state(1, vec![goal]);
+        let config = mvp_config();
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
+        client.push_tactic_batch_response(Ok(MachineApiResponseEnvelope::SchedulerStopped(
+            MachineApiSchedulerResponse {
+                status: MachineApiResponseStatus::PartialTimeout,
+                scheduler_artifact: MachineSchedulerArtifact {
+                    kind: MachineSchedulerArtifactKind::Timeout,
+                    scope: MachineSchedulerArtifactScope::Batch,
+                    retryable: true,
+                },
+                endpoint_fields: MachineTacticBatchSchedulerFields {
+                    previous_state_fingerprint: root.state_fingerprint,
+                    deterministic_budget_hash: tactic_budget_hash(
+                        config.per_tactic_deterministic_budget,
+                    ),
+                    completed_prefix_len: 0,
+                    results: Vec::new(),
+                    success_count: 0,
+                    failure_count: 0,
+                },
+            },
+        )));
+
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert!(failure.training_trace_records.is_empty());
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::ZeroProgressSchedulerStopped {
+                status: MachineApiResponseStatus::PartialTimeout
+            }
+        )));
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            &event.kind,
+            Phase7SearchTraceEventKind::DeferredCandidateDropped {
+                candidate_id,
+                reason: Phase7DeferredCandidateDropReason::SchedulerStoppedCandidate,
+                ..
+            } if candidate_id == "c0"
+        )));
     }
 
     #[test]
@@ -6307,6 +7088,31 @@ mod tests {
             proof.verify_response.status,
             MachineApiResponseStatus::Verified
         );
+        assert_eq!(proof.training_trace_records.len(), 1);
+        assert_eq!(
+            proof.training_trace_records[0].trace_schema,
+            PHASE7_TRAINING_TRACE_SCHEMA
+        );
+        assert_eq!(proof.training_trace_records[0].batch_index, 0);
+        assert_eq!(proof.training_trace_records[0].tactic_candidates.len(), 1);
+        assert!(matches!(
+            &proof.training_trace_records[0].tactic_candidates[0],
+            Phase7TrainingTraceCandidate::Success {
+                rank_index: 0,
+                phase7_candidate_payload_hash: _,
+                candidate_hash,
+                proof_delta_hash,
+                next_state_fingerprint,
+                ..
+            } if *candidate_hash == hash(40)
+                && *proof_delta_hash == hash(43)
+                && *next_state_fingerprint == closed_child.state_fingerprint
+        ));
+        let training_json = phase7_training_trace_records_json(&proof.training_trace_records);
+        assert!(training_json.starts_with(r#"[{"trace_schema":"npa.phase7.training-trace.v1""#));
+        assert!(training_json.contains(r#""result":"success""#));
+        assert!(training_json.contains(r#""phase7_candidate_payload_hash":"#));
+        assert!(!training_json.contains("chosen_candidate_hash"));
         assert_eq!(proof.search_stats.candidates_evaluated, 1);
         assert_eq!(proof.search_stats.closed_node_replay_rejections, 0);
         assert_eq!(proof.search_stats.closed_node_verify_rejections, 0);
