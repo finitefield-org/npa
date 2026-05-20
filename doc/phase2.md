@@ -542,16 +542,17 @@ debug metadata、source map、diagnostics、AI trace はどちらの hash にも
 `export_hash` には次を含めます。
 
 ```text
-- module名
-- certificate format version
-- core spec version
 - exported declaration interface hashes
 - exported inductive declarations
 - transparent/reducible definitions の body hash
 - opaque theorem の type hash
-- theoremごとの axiom dependency summary
+- exported declaration ごとの axiom dependency summary
 - universe declarations
 ```
+
+`export_hash` の hash 対象は 11.11 の `ExportBlockBytes(export_block)` だけです。
+module名、certificate format version、core spec version は `certificate_hash` 側の
+`ModuleCertBytesWithoutCertificateHash` に含めます。
 
 注意点：
 
@@ -642,10 +643,10 @@ decl_interface_hash(def)
       name,
       universe_params,
       type_hash,
-      value_hash,
       reducibility,
       public_dependency_entries,
-      axiom_dependencies
+      axiom_dependencies,
+      value_hash if reducibility = reducible
     )
 ```
 
@@ -654,12 +655,14 @@ decl_certificate_hash(def)
   = H(
       "NPA-DECL-CERT-0.1",
       decl_interface_hash,
-      dependency_hashes,
+      value_hash,
+      dependency_entries,
       axiom_dependencies
     )
 ```
 
-`DefDecl` では `value_hash` が interface に入ります。
+reducible な `DefDecl` では `value_hash` が interface に入ります。
+opaque def では `value_hash` は interface には入らず、`decl_certificate_hash` にだけ入ります。
 さらに、公開される type / reducible body に現れる `Const` の `DependencyEntry` も
 interface に入れます。これにより local declaration index だけではなく、参照先の
 `decl_interface_hash` 変更も downstream の `export_hash` に伝播します。
@@ -691,7 +694,7 @@ decl_certificate_hash(theorem)
       "NPA-DECL-CERT-0.1",
       decl_interface_hash,
       proof_hash,
-      dependency_hashes
+      dependency_entries
     )
 ```
 
@@ -757,8 +760,10 @@ decl_interface_hash(inductive)
       indices,
       sort,
       constructors,
-      generated_recursor_signature,
-      computation_rules
+      generated_recursor_signature_hash,
+      generated_computation_rule_hash,
+      public_dependency_entries,
+      axiom_dependencies
     )
 ```
 
@@ -982,6 +987,254 @@ fn build_certificate(module: CoreModule, imports: Vec<VerifiedImport>) -> Result
     })
 }
 ```
+
+## 7.1 producer 分離方針
+
+Phase 2 の trusted boundary は、producer を分けても変えません。
+ここでいう producer は、`.npcert` を作る前に `CoreModule` または core declaration 候補を
+生成する非信頼層です。
+
+```text
+Human producer:
+  human source / notation / display name / source map
+  ↓
+  CoreModule
+
+AI producer:
+  structured AI request / explicit core-like term / batch candidate
+  ↓
+  CoreModule or CoreDeclCandidate
+
+共通:
+  CoreModule
+  ↓
+  npa-cert build / verify
+  ↓
+  npa-kernel check
+```
+
+重要なのは、`npa-cert` と `npa-kernel` が producer 種別を信用しないことです。
+AI 由来か人間由来かは trusted payload に入りません。
+同じ `CoreModule` と同じ import set からは、同じ `.npcert` bytes と同じ hash が得られなければいけません。
+
+```text
+trusted payload に入れない:
+  producer kind
+  source text
+  source map
+  pretty/display name
+  elaborator trace
+  tactic trace
+  AI prompt / completion / score / trace
+  model name
+  search rank
+  cache hit / cache miss
+```
+
+producer metadata が必要な場合は、`.npcert` の外側の debug sidecar / audit sidecar として保存します。
+sidecar の追加・削除・内容変更で `term_hash`、`decl_interface_hash`、`export_hash`、
+`certificate_hash`、`axiom_report_hash` が変わってはいけません。
+
+### 7.1.1 Human producer
+
+Human producer は、Phase 3 以降の人間向け surface language から `CoreModule` を作ります。
+ここでは読みやすさを優先してよいです。
+
+```text
+許可される非信頼入力:
+  source text
+  namespace / open
+  notation
+  implicit arguments
+  holes before elaboration
+  display binder name
+  source location
+  diagnostics
+```
+
+ただし `.npcert` に渡す直前では、次を満たす必要があります。
+
+```text
+- unresolved metavariable / hole がない
+- notation / implicit argument / typeclass placeholder が残っていない
+- binder name に依存しない de Bruijn 表現に変換できる
+- universe level が明示されている
+- global constant 参照が import hash と decl_interface_hash で固定されている
+```
+
+Human producer が source map や display name を作る場合も、それは sidecar です。
+kernel check、certificate hash、export hash の入力にしてはいけません。
+
+### 7.1.2 AI producer
+
+AI producer は、多数の候補を高速に試すため、人間向け surface language を経由しません。
+入力はできるだけ canonical core に近い構造化形式にします。
+
+AI producer MVP は、次を使いません。
+
+```text
+- notation
+- open / namespace に依存する short name
+- overload resolution
+- implicit argument insertion
+- unresolved hole
+- tactic script text
+- source-level axiom declaration
+- source-level inductive syntax
+- typeclass search
+- numeric literal overload
+```
+
+AI producer MVP が生成してよいものは、次に限定します。
+
+```text
+- fully qualified global reference as lookup input only
+- explicit universe application
+- Sort / Pi / Lam / App / Let / Const / BVar
+- def / theorem の core declaration
+- verified import export_block に存在する GlobalRef
+- current module の prior declaration への Local ref
+```
+
+ここでいう fully qualified global reference は、AI producer の入力解決用です。
+`CoreDeclCandidate` の core term 内に保存される `Const` は、名前だけではなく
+`GlobalRef::Imported(import_index, name, decl_interface_hash)`、`GlobalRef::Local(decl_index)`、
+`GlobalRef::LocalGenerated(decl_index, name)`、`GlobalRef::Builtin(name, decl_interface_hash)` のような
+Phase 2 の hash-bound `GlobalRef` payload でなければいけません。
+pretty name / fully qualified name だけを certificate-facing core term として扱ってはいけません。
+
+AI producer の出力は、直接 trusted certificate ではありません。
+まず `CoreDeclCandidate` または `CoreModule` として受け取り、`npa-cert` が通常どおり
+canonicalization、hash 再計算、axiom dependency 計算、kernel check を行います。
+
+### 7.1.3 AI candidate fast path
+
+AI 探索では、候補ごとに完全な `.npcert` を作ると重いです。
+そのため Phase 2 の前段に、certificate を発行しない candidate fast path を置いてよいです。
+
+```text
+AI candidate batch
+  ↓
+schema / size limit check
+  ↓
+import ref validation
+  ↓
+kernel precheck
+  ↓
+candidate accepted?
+  ↓ yes
+CoreDeclCandidate / CheckedDeclCandidate
+  ↓
+採用候補だけ build_module_cert
+```
+
+fast path が返す成功は、「この候補は現在の verified import environment で kernel precheck に通った」
+という意味だけです。証明済み module ではありません。
+最終成果物にする場合は、必ず `build_module_cert` で `.npcert` を生成し、
+`verify_module_cert` で再検査します。
+
+fast path は次を省略してはいけません。
+
+```text
+- core AST の schema validation
+- unresolved metavariable / placeholder の拒否
+- import GlobalRef の decl_interface_hash 照合
+- declaration dependency の well-scoped 性確認
+- proof : theorem_type / value : def_type の kernel check
+- universe level の well-formedness
+```
+
+fast path で省略してよいものは、成果物化に必要な処理だけです。
+
+```text
+省略してよい:
+  .npcert byte emission
+  module certificate_hash 計算
+  export_block 全体の確定
+  sidecar 生成
+
+省略してはいけない:
+  kernel check
+  import interface check
+  unresolved hole rejection
+  resource limit enforcement
+```
+
+### 7.1.4 batch / cache
+
+AI producer は batch API を使ってよいです。
+batch は同じ import environment と同じ prior declarations に対する候補群をまとめて検査します。
+
+```text
+Batch input:
+  verified imports
+  checked prior current declarations
+  candidates[]
+  deterministic budget
+  resource limit
+
+Batch output:
+  per-candidate success / structured error
+  optional term_hash / decl hash preview
+  optional normalized core size
+  no trusted certificate
+```
+
+性能のために次の cache を使ってよいです。
+
+```text
+- import kernel environment cache keyed by import module + export_hash
+- import certificate / high-trust verification cache keyed by import module + export_hash + certificate_hash
+- name / level / term hash-consing cache
+- WHNF cache
+- conversion cache
+- declaration dependency cache
+```
+
+cache は検査結果の正しさの根拠ではありません。
+cache hit / miss は trusted payload、hash、axiom report、certificate identity に入れてはいけません。
+cache を無効化しても同じ入力から同じ成功/失敗と同じ certificate bytes が得られる必要があります。
+
+### 7.1.5 producer sidecar
+
+producer は、debug / audit / training 用に sidecar を出してよいです。
+
+```rust
+struct ProducerSidecar {
+    module: ModuleName,
+    producer_profile: ProducerProfile,
+    producer_run_id: String,
+    candidate_count: u64,
+    accepted_candidate_count: u64,
+    diagnostics: Vec<ProducerDiagnostic>,
+    input_artifact_hashes: Vec<Hash>,
+}
+
+enum ProducerProfile {
+    HumanSurface,
+    AiCoreMvp,
+}
+```
+
+この sidecar は `.npcert` とは別 artifact です。
+`ModuleCertBytes` の trusted payload には含めません。
+Phase 2 verifier は sidecar を読まなくても `.npcert` を検査できなければいけません。
+
+### 7.1.6 禁止する shortcut
+
+AI producer 分離で、次の shortcut は禁止します。
+
+```text
+- AI producer が計算した hash を trusted hash として採用する
+- AI producer が `verified` と言った宣言の kernel check を省く
+- candidate fast path の成功を `.npcert` verification success と同一視する
+- producer kind によって verifier の検査項目を減らす
+- pretty name / source span / model score から GlobalRef を補完する
+- import store を producer が暗黙に filesystem / network から補完する
+- unresolved metavariable を certificate schema に表現する
+```
+
+producer は速度のために分けますが、証明の正本は常に canonical certificate です。
 
 ---
 
@@ -1224,6 +1477,286 @@ import 解決、axiom policy、kernel check をまとめて行います。
 `npa-kernel` は path、filesystem、network、時計、乱数、環境変数を見ません。
 canonical bytes の生成では `HashMap` / `HashSet` の iteration order に依存してはいけません。
 順序が必要な場合は `BTreeMap` / `BTreeSet` または明示 sort 済み `Vec` を使います。
+
+### 11.1.1 producer API 境界
+
+Human producer と AI producer は `npa-cert` の外側に置きます。
+`npa-cert` は producer-specific な入力を直接 trusted artifact として受け取りません。
+`ProducerProfile` は sidecar / audit 用の分類であり、certificate build / verify API の引数にしてはいけません。
+
+```rust
+// sidecar / audit only
+pub enum ProducerProfile {
+    HumanSurface,
+    AiCoreMvp,
+}
+
+pub struct ProducerLimits {
+    pub max_declarations: u32,
+    pub max_expr_nodes: u32,
+    pub max_level_nodes: u32,
+    pub max_name_components: u32,
+    pub max_reduction_steps: u64,
+    pub max_conversion_steps: u64,
+}
+
+pub struct CoreDeclCandidate {
+    pub declaration: npa_kernel::Decl,
+}
+
+pub struct CandidateBatch<'a> {
+    pub imports: &'a [VerifiedModule],
+    pub prior_current_decls: &'a [CheckedDeclCandidate],
+    pub candidates: Vec<CoreDeclCandidate>,
+    pub limits: ProducerLimits,
+}
+
+pub struct CheckedDeclCandidate {
+    // private fields; construct only through check_core_decl_candidates
+    declaration: npa_kernel::Decl,
+    preview_hashes: CandidateHashPreview,
+    pre_env_fingerprint: Hash,
+    post_env_fingerprint: Hash,
+    prior_chain_fingerprint: Hash,
+    limits: ProducerLimits,
+    limit_profile_hash: Hash,
+    decl_interface_hash: Hash,
+    decl_certificate_hash: Hash,
+}
+
+pub struct CandidateHashPreview {
+    pub type_hash: Option<Hash>,
+    pub body_hash: Option<Hash>,
+    pub decl_interface_hash: Option<Hash>,
+    pub decl_certificate_hash: Option<Hash>,
+}
+
+pub enum CandidateStatus {
+    Accepted(CheckedDeclCandidate),
+    Rejected(CertError),
+}
+
+pub struct CandidateBatchResult {
+    // one status per input candidate, in the same order
+    pub statuses: Vec<CandidateStatus>,
+}
+
+pub fn check_core_decl_candidates(
+    batch: CandidateBatch<'_>,
+) -> Result<CandidateBatchResult, CertError>;
+
+pub fn build_module_cert_from_checked_candidates(
+    module_name: ModuleName,
+    imports: &[VerifiedModule],
+    checked_decls: &[CheckedDeclCandidate],
+) -> Result<ModuleCert, CertError>;
+```
+
+`check_core_decl_candidates` は AI 探索の fast path 用 API です。
+この API は `.npcert` を生成せず、`VerifiedModule` も返しません。
+`Accepted` は、候補が与えられた import/prior declaration 環境と limit の下で
+schema validation と kernel precheck に通ったことだけを意味します。
+`CandidateBatch.imports` は `ModuleCert.Imports` と同じ canonical import order で渡します。
+`CoreDeclCandidate` 内の `GlobalRef::Imported(import_index, ...)` は、この
+`batch.imports[import_index]` を参照します。
+`check_core_decl_candidates` は import order が canonical でない場合、または
+`ProducerImportEnvKey(module, export_hash)` が重複する場合、batch-level `Err(CertError)` で拒否します。
+同じ module / export_hash の異なる certificate hash は producer public environment として同一なので、
+candidate fast path の direct imports に同時に入れてはいけません。
+`Err(CertError)` は、`prior_current_decls` の token 検証失敗、batch schema 全体の不正、limit profile の不整合など、
+候補ごとの `Rejected` に分解できない batch-level failure を表します。
+`Ok(result)` の場合、`result.statuses.len() == batch.candidates.len()` であり、`statuses[i]` は
+`batch.candidates[i]` の結果です。この対応は入力順そのもので、score、hash、成功/失敗、cache 状態で
+並べ替えてはいけません。
+
+`CheckedDeclCandidate` は opaque な checked token です。
+caller が任意の `npa_kernel::Decl` から直接作れる型にしてはいけません。
+実装では field を private にし、`check_core_decl_candidates` だけが生成します。
+`prior_current_decls` に渡された各 token は、次の条件を満たす場合にだけ環境へ追加できます。
+
+```text
+- 最初の token の pre_env_fingerprint が batch.imports から再計算した initial env fingerprint と一致する
+- 2個目以降の token の pre_env_fingerprint が、直前 token の post_env_fingerprint と一致する
+- token の prior_chain_fingerprint が、それ以前の accepted prior declarations の chain と一致する
+- token の private `decl_interface_hash` / `decl_certificate_hash` が declaration から再計算した hash と一致する
+- token の declaration は同じ limit profile か、より厳しい deterministic limit profile で kernel precheck 済みである
+- token の post_env_fingerprint が、pre_env_fingerprint の producer public environment に token.declaration interface を追加して再計算した fingerprint と一致する
+```
+
+この検査に失敗した prior token がある場合、batch 全体を deterministic な structured error で拒否します。
+unchecked raw declaration を `prior_current_decls` として受け取る API を別に作る場合は、
+その API が先頭から順に全 prior declaration を再検査し、同じ `CheckedDeclCandidate` token に変換してから
+後続 candidate を検査します。
+
+`ProducerLimits` は canonical bytes を持ちます。
+field order は struct 定義順で、各 field は minimal ULEB128 として encode します。
+
+```text
+producer_limits_hash(limits) =
+  sha256("NPA-PRODUCER-LIMITS-0.1" || canonical_encode(limits))
+```
+
+`CheckedDeclCandidate.limit_profile_hash` は、この hash です。
+ある prior token を batch の `limits` で再利用できるのは、token を作った limit profile が現在の
+`batch.limits` と同一、または現在の `batch.limits` より厳しい場合だけです。
+厳しさは全 field の上限で比較します。
+
+```text
+stricter_or_equal(a, b) =
+  a.max_declarations      <= b.max_declarations
+  && a.max_expr_nodes     <= b.max_expr_nodes
+  && a.max_level_nodes    <= b.max_level_nodes
+  && a.max_name_components <= b.max_name_components
+  && a.max_reduction_steps <= b.max_reduction_steps
+  && a.max_conversion_steps <= b.max_conversion_steps
+```
+
+ここで `a` は token 作成時の limits、`b` は現在の batch limits です。
+この比較に必要な元の `ProducerLimits` は、token 内部の private field `limits` に保存します。
+`limit_profile_hash` は token の同一性・ログ・diagnostic 用であり、hash だけで厳しさを推測してはいけません。
+
+producer token 用の environment / chain fingerprint は Phase 2 が正本です。
+Phase 4 / Phase 5 の proof-state fingerprint と混同してはいけません。
+canonical bytes はすべて fixed record order で encode し、hash は次の domain separator を使います。
+
+```text
+producer_env_fingerprint(env) =
+  sha256("NPA-PRODUCER-ENV-0.1" || ProducerEnvFingerprintBytes(env))
+
+ProducerEnvFingerprintBytes(env):
+  direct_imports: vec<ProducerImportEnvKey>      -- canonical import order
+  checked_decls: vec<ProducerCheckedDeclInterface>
+
+ProducerImportEnvKey:
+  module: ModuleName
+  export_hash: hash
+
+ProducerCheckedDeclInterface:
+  decl_interface_hash: hash
+  axiom_dependencies: vec<AxiomRef>   -- canonical order
+```
+
+`producer_env_fingerprint` は pure kernel environment だけの fingerprint ではありません。
+AI producer の再利用単位として、import から再構成される kernel environment、current module の
+公開 declaration interface、下流の信頼性に影響する axiom trust summary をまとめた
+producer public environment fingerprint です。
+
+`ProducerImportEnvKey` は、この producer public environment の import 部分を表します。
+import から再構成される kernel environment の同一性だけを固定するため、`certificate_hash` は含めません。
+import 先 module の proof 本体だけが変わり、`export_hash` が同じ場合、下流の kernel environment は
+変わらないためです。
+import certificate identity、高信頼モードの検証済み状態、audit 用の exact import chain は、
+`ImportEntry.certificate_hash`、`VerifiedModule.certificate_hash`、または high-trust verification cache で扱います。
+
+`ProducerCheckedDeclInterface` は declaration name を別 field として持ちません。
+declaration identity は `decl_interface_hash` に含まれる name / kind / type / public dependency 情報で表します。
+また、`decl_certificate_hash` は含めません。
+opaque theorem の proof や opaque def の body だけが変わり、公開 interface と axiom dependencies が同じ場合、
+producer public environment は変わらないためです。
+証明本体・値本体まで含む exact token sequence の固定は、`CheckedDeclCandidate` の private hash と
+`ProducerPriorChainEntry.decl_certificate_hash` で行います。
+duplicate name、declaration order、module-level visibility の検査は、最終的に `build_module_cert` が
+`CoreModule` 全体に対して行います。producer env fingerprint は token chain の producer public environment 同一性を固定するための
+補助 hash であり、module validity check の代替ではありません。
+
+`ProducerCheckedDeclInterface.axiom_dependencies` は、certificate generation と同じ規則で計算します。
+ここでは fingerprint 用の canonical bytes と、dependency / axiom lookup に使う operational environment を分けます。
+fingerprint bytes は deterministic identity のための最小表現です。
+operational environment は、`VerifiedModule.export_block` と prior checked declaration interface から作る lookup view で、
+hash payload そのものではありません。
+
+```text
+ProducerLookupEnv:
+  import_exports: vec<ExportBlockView>          -- batch.imports と同じ canonical import order
+  checked_decls: vec<ProducerCheckedDeclInterface>
+
+producer_lookup_env(imports, checked_decls):
+  import_exports = canonical_import_export_views(imports)
+  checked_decls = checked_decls
+
+producer_checked_decl_interface(decl, lookup_env):
+  canonical = canonicalize_decl(decl)
+  deps = collect_dependencies(canonical)
+  axiom_dependencies = compute_axiom_deps(lookup_env, deps, canonical)
+  hashes = compute_decl_hashes(canonical, deps, axiom_dependencies)
+  return {
+    decl_interface_hash = hashes.decl_interface_hash,
+    axiom_dependencies = canonical_order(axiom_dependencies)
+  }
+```
+
+`ProducerEnvFingerprintBytes` と `ProducerLookupEnv` は同じ producer public environment を
+別目的で表したものです。前者は hash 用、後者は `compute_axiom_deps` / dependency lookup 用です。
+`canonical_import_env_keys(imports)` と `canonical_import_export_views(imports)` は、
+同じ canonical import order を保存しなければいけません。
+`GlobalRef::Imported(import_index, ...)` は、この順序の `imports[import_index]`、
+`direct_imports[import_index]`、`import_exports[import_index]` を同時に指します。
+`ProducerImportEnvKey(module, export_hash)` だけから import 内の axiom dependencies を lookup してはいけません。
+AI producer が渡した dependency report や preview hash を axiom dependency の根拠にしてはいけません。
+
+initial producer public environment は imports だけを含み、checked declarations は空です。
+
+```text
+initial_env_fingerprint(imports) =
+  producer_env_fingerprint({
+    direct_imports = canonical_import_env_keys(imports),
+    checked_decls = []
+  })
+```
+
+declaration を1つ追加した後の producer public environment fingerprint は、直前の environment bytes を再利用せず、
+imports と checked declaration interface sequence 全体から再計算します。
+これにより、実装ごとの incremental cache 差が fingerprint に入らないようにします。
+
+```text
+post_env_fingerprint(imports, checked_decls_before, decl) =
+  pre_env_bytes = {
+    direct_imports = canonical_import_env_keys(imports),
+    checked_decls = checked_decls_before
+  }
+  lookup_env = producer_lookup_env(imports, checked_decls_before)
+  producer_env_fingerprint({
+    direct_imports = pre_env_bytes.direct_imports,
+    checked_decls = pre_env_bytes.checked_decls ++ [producer_checked_decl_interface(decl, lookup_env)]
+  })
+```
+
+prior chain fingerprint は、current module 内の checked declarations の順序を固定するための hash です。
+imports は env fingerprint 側に含まれるため、chain fingerprint には含めません。
+
+```text
+prior_chain_fingerprint(chain) =
+  sha256("NPA-PRODUCER-CHAIN-0.1" || ProducerPriorChainBytes(chain))
+
+ProducerPriorChainBytes(chain):
+  checked_decls: vec<ProducerPriorChainEntry>
+
+ProducerPriorChainEntry:
+  decl_interface_hash: hash
+  decl_certificate_hash: hash
+  pre_env_fingerprint: hash
+  post_env_fingerprint: hash
+```
+
+最初の token の `prior_chain_fingerprint` は空 chain から計算します。
+2個目以降の token では、それ以前の accepted prior declarations の
+`ProducerPriorChainEntry` sequence から再計算した値と一致しなければいけません。
+
+`preview_hashes` はログ、dedupe、ranking の補助に使ってよいですが、token validation の根拠にしてはいけません。
+`CandidateHashPreview` の各 field は optional であり、存在していても non-authoritative です。
+accepted token の private `decl_interface_hash` / `decl_certificate_hash` と異なる preview hash がある場合は、
+実装は diagnostic として報告してよいですが、trusted hash として採用してはいけません。
+最終的な `decl_interface_hash`、`decl_certificate_hash`、`export_hash`、`certificate_hash` は
+`build_module_cert` と `verify_module_cert` が再計算した値だけを信用します。
+
+`build_module_cert_from_checked_candidates` は、accepted token だけから最終 `ModuleCert` を作る補助 API です。
+この API は各 token の `pre_env_fingerprint`、`post_env_fingerprint`、`prior_chain_fingerprint`、
+`producer_limits_hash(token.limits) == token.limit_profile_hash`、private decl hashes を再検証し、
+token chain が `imports` と `checked_decls` の順序に完全に一致する場合だけ、内部で `CoreModule` を構成して
+`build_module_cert` を呼びます。token から declaration を取り出す public getter を作って caller に
+raw `CoreModule` を組ませてはいけません。
+この API は新しい `ProducerLimits` との strictness 判定をしません。
+strictness 判定は `check_core_decl_candidates` が prior token を現在の `batch.limits` で再利用するときだけ行います。
 
 ## 11.2 canonical binary primitive
 
@@ -1713,7 +2246,7 @@ Axiom:
   decl_interface_hash, axiom_dependencies
 
 Def:
-  decl_interface_hash, dependency entries, axiom_dependencies
+  decl_interface_hash, value_hash, dependency entries, axiom_dependencies
 
 Theorem:
   decl_interface_hash, proof_hash, dependency entries
@@ -1790,6 +2323,7 @@ pub enum CertError {
     MissingImportCertificateHash { module: ModuleName },
     ImportCertificateHashMismatch { module: ModuleName },
     ImportNotVerifiedInSession { module: ModuleName },
+    DuplicateImportEnvKey { module: ModuleName, export_hash: Hash },
     DuplicateName { name: ModuleName },
     UnknownDependency { name: ModuleName },
     DependencyCycle { name: ModuleName },
@@ -1847,6 +2381,8 @@ byte列または各 hash を固定します。
 
 ```text
 - transparent def の body を変えると decl_interface_hash と export_hash が変わる
+- opaque def の body だけを変え、type・reducibility・axiom依存が同じなら export_hash は維持される
+- その場合でも decl_certificate_hash と certificate_hash は変わる
 - opaque theorem の proof だけを変え、type・opacity・axiom依存が同じなら export_hash は維持される
 - その場合でも decl_certificate_hash と certificate_hash は変わる
 - opaque theorem の proof 変更で axiom依存が変わると export_hash も変わる
@@ -1901,6 +2437,38 @@ Kernel(npa_kernel::Error)
 - source file を消した状態でも .npcert と import store だけで検査できる
 ```
 
+## 12.7 producer separation
+
+Human producer と AI producer の分離は、次のテストで確認します。
+
+```text
+- Human producer 由来の CoreModule と AI producer 由来の CoreModule が同じ core declaration を表す場合、
+  生成される .npcert bytes と各 hash が一致する
+- producer_profile / producer_run_id / model name / score / diagnostics を sidecar で変えても、
+  .npcert bytes と各 hash が変わらない
+- check_core_decl_candidates の Accepted をそのまま VerifiedModule として扱えない
+- Accepted candidate から build_module_cert した .npcert は verify_module_cert を通すまで trusted import store に入らない
+- invalid prior token は per-candidate rejection ではなく batch-level `Err(CertError)` になる
+- `CandidateBatch.imports` が canonical import order でない場合は batch-level `Err(CertError::NonCanonicalEncoding)` になる
+- batch 内に同じ `ProducerImportEnvKey(module, export_hash)` が複数ある場合は
+  `Err(CertError::DuplicateImportEnvKey)` になる
+- `CandidateBatchResult.statuses` は input candidates と同じ長さ・同じ順序で返る
+- `build_module_cert_from_checked_candidates` は token chain / pre_env_fingerprint / post_env_fingerprint 不一致を拒否する
+- `build_module_cert_from_checked_candidates` は token の `producer_limits_hash(token.limits)` 不一致を拒否する
+- producer public env / prior chain fingerprint が canonical bytes と domain separator から deterministic に再計算できる
+- `canonical_import_env_keys(imports)` と `canonical_import_export_views(imports)` は同じ順序を保持し、
+  `GlobalRef::Imported(import_index, ...)` が同じ import を参照する
+- import 先の proof 本体だけが変わり、module name と export_hash が同じ場合、producer public env fingerprint は維持される
+- producer public env fingerprint の axiom dependencies は certificate generation と同じ `compute_axiom_deps` から再計算する
+- opaque theorem の proof / opaque def の body だけが変わり、公開 interface と axiom dependencies が同じ場合、
+  producer public env fingerprint は維持され、prior chain fingerprint は `decl_certificate_hash` の差で変わる
+- `ProducerLimits` の canonical hash と stricter_or_equal 判定が deterministic である
+- AI producer が渡した preview hash が誤っていても、token validation / build_module_cert / verify_module_cert は再計算結果だけを採用する
+- AI producer 由来 candidate に unresolved metavariable / placeholder / pretty-only GlobalRef がある場合は拒否する
+- batch 内で1候補が失敗しても、他候補の結果が失敗順序や cache 状態に依存しない
+- cache を有効/無効にしても、同じ accepted module から同じ .npcert bytes が得られる
+```
+
 ---
 
 # 13. Phase 2 の完了条件
@@ -1915,6 +2483,8 @@ Phase 2が完了したと言える条件はこれです。
 - import entry は module name / export_hash / optional certificate_hash に限定し、宣言一覧は import の export_block から導出できる
 - def/theorem/axiom/inductiveにdeclaration hashを持たせられる
 - transparent def のbody変更でinterface hashが変わる
+- opaque def のbody変更だけで type・reducibility・axiom依存が変わらない場合、export_hashは維持される
+- opaque def のbody変更でdecl_certificate_hashとmodule certificate_hashが変わる
 - opaque theorem のproof変更でdecl_certificate_hashとmodule certificate_hashが変わる
 - opaque theorem のproof変更だけで type・opacity・axiom依存が変わらない場合、export_hashは維持される
 - opaque theorem のproof変更でaxiom依存が変わる場合、export_hashも変わる
@@ -1924,8 +2494,11 @@ Phase 2が完了したと言える条件はこれです。
 - checker が .npcert と import store 内の .npcert だけを使って再検査でき、kernel は decode 済み宣言だけを検査できる
 - Phase 2 の checker は同一 Rust kernel を使う certificate verifier として定義され、Phase 8 independent checker とは責務が分離されている
 - source code、source map、AI traceなしで検査が完結する
+- Human producer / AI producer は `CoreModule` または `CoreDeclCandidate` までの非信頼層として分離されている
+- AI candidate fast path の成功と `.npcert` verification success が型/API上も運用上も区別されている
+- producer metadata / sidecar が trusted payload と hash に入らないことをテストで確認している
 - 11章の実装契約に沿った API / byte schema / hash payload / error enum を実装している
-- 12章の golden / stability / mutation / high-trust / source-independence テストが自動テストで通る
+- 12章の golden / stability / mutation / high-trust / source-independence / producer separation テストが自動テストで通る
 ```
 
 ## 13.1 現在の実装ステータス
@@ -1963,6 +2536,14 @@ debug sidecar として扱います。
 
 Phase 8 の independent checker はこの `.npcert` schema を別実装または別プロセスで
 再検査する後続成果物であり、Phase 2 には含めません。
+
+7.1 / 11.1.1 / 12.7 で定義した Human producer / AI producer 分離、`CoreDeclCandidate` /
+`CheckedDeclCandidate` fast path、producer sidecar、producer separation テストは、現時点では詳細設計です。
+これらは `crates/npa-cert` の既存 trusted verifier 実装済み項目には含めません。
+実装完了とみなすには、opaque `CheckedDeclCandidate` token、producer public env fingerprint / prior chain 検査、
+`check_core_decl_candidates`、`build_module_cert_from_checked_candidates`、`ProducerLimits` canonical hash /
+strictness 判定、producer public env / prior chain fingerprint canonical bytes、および 12.7 の producer separation テストを
+追加する必要があります。
 
 ---
 
