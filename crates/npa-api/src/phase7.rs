@@ -805,7 +805,11 @@ pub fn phase7_evaluate_tactic_batch_response(
             let fields = stop.endpoint_fields;
             phase7_validate_scheduler_batch_fields(request, &fields, stop.status)?;
             let completed_prefix_len = fields.completed_prefix_len;
-            let deferred_start = (fields.results.len() + 1).min(request.candidates.len());
+            let deferred_start = if fields.results.is_empty() {
+                request.candidates.len()
+            } else {
+                (fields.results.len() + 1).min(request.candidates.len())
+            };
             Ok(phase7_build_batch_evaluation(
                 request,
                 &fields.results,
@@ -3595,7 +3599,7 @@ mod tests {
     }
 
     #[test]
-    fn scheduler_stop_is_not_a_candidate_failure() {
+    fn zero_progress_scheduler_stop_is_not_a_candidate_failure_or_deferred_suffix() {
         let request = phase7_test_batch_request(vec![
             phase7_test_envelope(0, None),
             phase7_test_envelope(1, None),
@@ -3630,8 +3634,55 @@ mod tests {
                 completed_prefix_len: 0,
             })
         );
-        assert_eq!(evaluation.deferred_candidates.len(), 1);
-        assert_eq!(evaluation.deferred_candidates[0].candidate_id, "c1");
+        assert!(evaluation.deferred_candidates.is_empty());
+    }
+
+    #[test]
+    fn scheduler_stop_after_prefix_defers_only_suffix_after_stopped_candidate() {
+        let request = phase7_test_batch_request(vec![
+            phase7_test_envelope(0, None),
+            phase7_test_envelope(1, None),
+            phase7_test_envelope(2, None),
+            phase7_test_envelope(3, None),
+        ]);
+        let response = MachineApiResponseEnvelope::SchedulerStopped(MachineApiSchedulerResponse {
+            status: MachineApiResponseStatus::PartialResourceLimit,
+            scheduler_artifact: MachineSchedulerArtifact {
+                kind: MachineSchedulerArtifactKind::ResourceLimitExceeded,
+                scope: MachineSchedulerArtifactScope::Batch,
+                retryable: true,
+            },
+            endpoint_fields: MachineTacticBatchSchedulerFields {
+                previous_state_fingerprint: request.state_fingerprint,
+                deterministic_budget_hash: tactic_budget_hash(request.deterministic_budget),
+                completed_prefix_len: 1,
+                results: vec![MachineTacticBatchItemResponse::Success {
+                    candidate_id: "c0".to_owned(),
+                    candidate_hash: hash(40),
+                    next_snapshot_id: SnapshotId::from_state_fingerprint(hash(41)),
+                    next_state_fingerprint: hash(42),
+                    proof_delta_hash: hash(43),
+                }],
+                success_count: 1,
+                failure_count: 0,
+            },
+        });
+
+        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+
+        assert_eq!(evaluation.replay_steps.len(), 1);
+        assert!(evaluation.accepted_failures.is_empty());
+        assert!(evaluation.non_accepted_errors.is_empty());
+        assert_eq!(
+            evaluation.scheduler_stop,
+            Some(Phase7SchedulerStop {
+                status: MachineApiResponseStatus::PartialResourceLimit,
+                completed_prefix_len: 1,
+            })
+        );
+        assert_eq!(evaluation.deferred_candidates.len(), 2);
+        assert_eq!(evaluation.deferred_candidates[0].candidate_id, "c2");
+        assert_eq!(evaluation.deferred_candidates[1].candidate_id, "c3");
     }
 
     #[test]
