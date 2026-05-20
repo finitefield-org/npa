@@ -27,6 +27,7 @@ pub const PHASE8_NORMALIZED_RESULT_STORE_MANIFEST_SCHEMA: &str =
     "npa.phase8.normalized_result_store_manifest.v1";
 pub const PHASE8_NORMALIZATION_WRITE_RESULT_SCHEMA: &str =
     "npa.phase8.normalization_write_result.v1";
+pub const PHASE8_COMPARE_VALIDATION_RESULT_SCHEMA: &str = "npa.phase8.compare_validation_result.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
@@ -2524,24 +2525,204 @@ impl Phase8NormalizedDisagreement {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase8NormalizedStatusReason {
-    pub checker_profile: String,
+    pub kind: String,
+    pub error_kind: String,
     pub reason_code: String,
+    pub checker_profile: Option<String>,
+    pub result_hash: Option<Hash>,
     pub field: Option<String>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
 }
 
 impl Phase8NormalizedStatusReason {
     fn canonical_json(&self) -> String {
         let mut pairs = vec![
             (
-                "checker_profile".to_owned(),
-                phase8_json_string_literal(&self.checker_profile),
+                "error_kind".to_owned(),
+                phase8_json_string_literal(&self.error_kind),
             ),
+            ("kind".to_owned(), phase8_json_string_literal(&self.kind)),
             (
                 "reason_code".to_owned(),
                 phase8_json_string_literal(&self.reason_code),
             ),
         ];
+        push_optional_string_pair(
+            &mut pairs,
+            "checker_profile",
+            self.checker_profile.as_deref(),
+        );
+        push_optional_hash_pair(&mut pairs, "result_hash", self.result_hash);
         push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
+        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8CompareValidationStatus {
+    Valid,
+    Failed,
+}
+
+impl Phase8CompareValidationStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Valid => "valid",
+            Self::Failed => "failed",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8CompareValidationErrorKind {
+    NormalizedResultFileUnreadable,
+    NormalizedResultJsonInvalid,
+    NormalizedResultSchemaInvalid,
+    NormalizedArtifactHashMismatch,
+    ComparisonMismatch,
+    NormalizedResultHashMismatch,
+    PolicyFailure,
+}
+
+impl Phase8CompareValidationErrorKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::NormalizedResultFileUnreadable => "normalized_result_file_unreadable",
+            Self::NormalizedResultJsonInvalid => "normalized_result_json_invalid",
+            Self::NormalizedResultSchemaInvalid => "normalized_result_schema_invalid",
+            Self::NormalizedArtifactHashMismatch => "normalized_artifact_hash_mismatch",
+            Self::ComparisonMismatch => "comparison_mismatch",
+            Self::NormalizedResultHashMismatch => "normalized_result_hash_mismatch",
+            Self::PolicyFailure => "policy_failure",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8CompareValidationError {
+    pub kind: Phase8CompareValidationErrorKind,
+    pub reason_code: Option<String>,
+    pub field: Option<String>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8CompareValidationError {
+    fn comparison_mismatch(expected_hash: Hash, actual_hash: Hash) -> Self {
+        Self {
+            kind: Phase8CompareValidationErrorKind::ComparisonMismatch,
+            reason_code: None,
+            field: Some("comparison".to_owned()),
+            expected_hash: Some(expected_hash),
+            actual_hash: Some(actual_hash),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![(
+            "kind".to_owned(),
+            phase8_json_string_literal(self.kind.as_str()),
+        )];
+        push_optional_string_pair(&mut pairs, "reason_code", self.reason_code.as_deref());
+        push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
+        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8CompareValidationResult {
+    pub status: Phase8CompareValidationStatus,
+    pub normalized_result_hash: Option<Hash>,
+    pub policy_hash: Option<Hash>,
+    pub embedded_comparison_status: Option<Phase8NormalizedComparisonStatus>,
+    pub recomputed_comparison_status: Option<Phase8NormalizedComparisonStatus>,
+    pub error: Option<Phase8CompareValidationError>,
+}
+
+impl Phase8CompareValidationResult {
+    fn valid(
+        normalized_result_hash: Hash,
+        policy_hash: Hash,
+        comparison_status: Phase8NormalizedComparisonStatus,
+    ) -> Self {
+        Self {
+            status: Phase8CompareValidationStatus::Valid,
+            normalized_result_hash: Some(normalized_result_hash),
+            policy_hash: Some(policy_hash),
+            embedded_comparison_status: Some(comparison_status),
+            recomputed_comparison_status: Some(comparison_status),
+            error: None,
+        }
+    }
+
+    fn comparison_mismatch(
+        normalized_result_hash: Hash,
+        policy_hash: Hash,
+        embedded_status: Phase8NormalizedComparisonStatus,
+        recomputed_status: Phase8NormalizedComparisonStatus,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        Self {
+            status: Phase8CompareValidationStatus::Failed,
+            normalized_result_hash: Some(normalized_result_hash),
+            policy_hash: Some(policy_hash),
+            embedded_comparison_status: Some(embedded_status),
+            recomputed_comparison_status: Some(recomputed_status),
+            error: Some(Phase8CompareValidationError::comparison_mismatch(
+                expected_hash,
+                actual_hash,
+            )),
+        }
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_COMPARE_VALIDATION_RESULT_SCHEMA),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+        ];
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        push_optional_hash_pair(
+            &mut pairs,
+            "normalized_result_hash",
+            self.normalized_result_hash,
+        );
+        push_optional_hash_pair(&mut pairs, "policy_hash", self.policy_hash);
+        if let Some(status) = self.embedded_comparison_status {
+            pairs.push((
+                "embedded_comparison_status".to_owned(),
+                phase8_json_string_literal(status.as_str()),
+            ));
+        }
+        if let Some(status) = self.recomputed_comparison_status {
+            pairs.push((
+                "recomputed_comparison_status".to_owned(),
+                phase8_json_string_literal(status.as_str()),
+            ));
+        }
         canonical_json_object_from_pairs(pairs)
     }
 }
@@ -3825,18 +4006,62 @@ pub fn phase8_normalize_results(
         entries.push(entry);
     }
 
-    let comparison = phase8_m4_normalized_comparison(policy, artifact.artifact_hash(), &entries);
+    let normalized_policy = Phase8MachineCheckRequestPolicy {
+        id: policy.id.clone(),
+        version: policy.version,
+        hash: policy_hash,
+    };
+    let comparison = phase8_build_normalized_comparison_parts(
+        policy,
+        normalized_policy.hash,
+        artifact.artifact_hash(),
+        &entries,
+    );
     Ok(Phase8NormalizedCheckResult {
         normalized_result_id,
         artifact,
-        policy: Phase8MachineCheckRequestPolicy {
-            id: policy.id.clone(),
-            version: policy.version,
-            hash: policy_hash,
-        },
+        policy: normalized_policy,
         results: entries,
         comparison,
     })
+}
+
+pub fn phase8_build_normalized_comparison(
+    policy: &Phase8RunnerPolicy,
+    normalized_result: &Phase8NormalizedCheckResult,
+) -> Phase8NormalizedComparison {
+    phase8_build_normalized_comparison_parts(
+        policy,
+        normalized_result.policy.hash,
+        normalized_result.artifact_hash(),
+        &normalized_result.results,
+    )
+}
+
+pub fn phase8_compare_normalized_result(
+    policy: &Phase8RunnerPolicy,
+    normalized_result: &Phase8NormalizedCheckResult,
+) -> Phase8CompareValidationResult {
+    let policy_hash = policy.policy_hash();
+    let recomputed = phase8_build_normalized_comparison(policy, normalized_result);
+    let embedded_json = normalized_result.comparison.canonical_json();
+    let recomputed_json = recomputed.canonical_json();
+    if embedded_json == recomputed_json {
+        Phase8CompareValidationResult::valid(
+            normalized_result.normalized_result_hash(),
+            policy_hash,
+            normalized_result.comparison.status,
+        )
+    } else {
+        Phase8CompareValidationResult::comparison_mismatch(
+            normalized_result.normalized_result_hash(),
+            policy_hash,
+            normalized_result.comparison.status,
+            recomputed.status,
+            phase8_sha256(recomputed_json.as_bytes()),
+            phase8_sha256(embedded_json.as_bytes()),
+        )
+    }
 }
 
 pub fn parse_phase8_normalized_result_store_manifest(
@@ -4309,11 +4534,64 @@ fn phase8_assert_normalized_entry_source_copy(
     debug_assert_eq!(entry.error, result.error);
 }
 
-fn phase8_m4_normalized_comparison(
+fn phase8_build_normalized_comparison_parts(
     policy: &Phase8RunnerPolicy,
+    normalized_policy_hash: Hash,
     artifact_hash: Hash,
     entries: &[Phase8NormalizedCheckResultEntry],
 ) -> Phase8NormalizedComparison {
+    let participating_entries = entries
+        .iter()
+        .filter(|entry| phase8_policy_has_checker_profile(policy, &entry.checker_profile))
+        .collect::<Vec<_>>();
+
+    let policy_reasons =
+        phase8_normalized_comparison_policy_reasons(policy, normalized_policy_hash, entries);
+    if !policy_reasons.is_empty() {
+        return phase8_normalized_comparison_with_reasons(
+            Phase8NormalizedComparisonStatus::PolicyFailure,
+            policy_reasons,
+        );
+    }
+
+    let copied_policy_reasons = entries
+        .iter()
+        .filter(|entry| !phase8_malformed_process_state(entry))
+        .filter_map(|entry| {
+            let error = entry.error.as_ref()?;
+            (error.kind == "policy_failure")
+                .then(|| phase8_status_reason_from_error(entry, "policy_failure"))
+        })
+        .collect::<Vec<_>>();
+    if !copied_policy_reasons.is_empty() {
+        return phase8_normalized_comparison_with_reasons(
+            Phase8NormalizedComparisonStatus::PolicyFailure,
+            copied_policy_reasons,
+        );
+    }
+
+    let identity_reasons =
+        phase8_normalized_comparison_identity_reasons(policy, &participating_entries);
+    if !identity_reasons.is_empty() {
+        return phase8_normalized_comparison_with_reasons(
+            Phase8NormalizedComparisonStatus::PolicyFailure,
+            identity_reasons,
+        );
+    }
+
+    let malformed_reasons = participating_entries
+        .iter()
+        .copied()
+        .filter(|entry| phase8_malformed_process_state(entry))
+        .map(phase8_malformed_process_state_reason)
+        .collect::<Vec<_>>();
+    if !malformed_reasons.is_empty() {
+        return phase8_normalized_comparison_with_reasons(
+            Phase8NormalizedComparisonStatus::Inconclusive,
+            malformed_reasons,
+        );
+    }
+
     let present_profiles = entries
         .iter()
         .map(|entry| entry.checker_profile.as_str())
@@ -4335,7 +4613,7 @@ fn phase8_m4_normalized_comparison(
     }
 
     let mut disagreements = Vec::new();
-    for entry in entries {
+    for entry in &participating_entries {
         if entry.artifact_hash != artifact_hash {
             disagreements.push(Phase8NormalizedDisagreement {
                 field: "artifact_hash".to_owned(),
@@ -4349,11 +4627,7 @@ fn phase8_m4_normalized_comparison(
         }
     }
     if !disagreements.is_empty() {
-        disagreements.sort_by(|left, right| {
-            left.field
-                .cmp(&right.field)
-                .then_with(|| left.checker_profile.cmp(&right.checker_profile))
-        });
+        phase8_sort_normalized_disagreements(&mut disagreements);
         return Phase8NormalizedComparison {
             status: Phase8NormalizedComparisonStatus::Disagreement,
             matching_fields: Vec::new(),
@@ -4363,7 +4637,20 @@ fn phase8_m4_normalized_comparison(
         };
     }
 
-    let Some(baseline) = entries.first() else {
+    let inconclusive_reasons = participating_entries
+        .iter()
+        .copied()
+        .filter(|entry| phase8_inconclusive_comparison_source(entry))
+        .map(|entry| phase8_status_reason_from_error(entry, "inconclusive"))
+        .collect::<Vec<_>>();
+    if !inconclusive_reasons.is_empty() {
+        return phase8_normalized_comparison_with_reasons(
+            Phase8NormalizedComparisonStatus::Inconclusive,
+            inconclusive_reasons,
+        );
+    }
+
+    let Some(baseline) = participating_entries.first().copied() else {
         return Phase8NormalizedComparison {
             status: Phase8NormalizedComparisonStatus::Inconclusive,
             matching_fields: Vec::new(),
@@ -4373,11 +4660,11 @@ fn phase8_m4_normalized_comparison(
         };
     };
 
-    if entries
+    if participating_entries
         .iter()
         .all(|entry| entry.status == Phase8MachineCheckStatus::Checked)
     {
-        for entry in entries.iter().skip(1) {
+        for entry in participating_entries.iter().skip(1).copied() {
             phase8_push_hash_disagreement(
                 &mut disagreements,
                 "certificate_hash",
@@ -4416,7 +4703,7 @@ fn phase8_m4_normalized_comparison(
                 status_reasons: Vec::new(),
             };
         }
-    } else if entries
+    } else if participating_entries
         .iter()
         .all(|entry| entry.status == Phase8MachineCheckStatus::Failed)
     {
@@ -4424,7 +4711,7 @@ fn phase8_m4_normalized_comparison(
             .failure_key
             .as_ref()
             .map(Phase8NormalizedFailureKey::failure_key_hash);
-        for entry in entries.iter().skip(1) {
+        for entry in participating_entries.iter().skip(1).copied() {
             let actual_hash = entry
                 .failure_key
                 .as_ref()
@@ -4448,32 +4735,505 @@ fn phase8_m4_normalized_comparison(
             };
         }
     } else {
-        for entry in entries.iter().skip(1) {
-            if entry.status != baseline.status {
-                disagreements.push(Phase8NormalizedDisagreement {
-                    field: "status".to_owned(),
-                    baseline_checker_profile: Some(baseline.checker_profile.clone()),
-                    baseline_hash: None,
-                    baseline_value: Some(baseline.status.as_str().to_owned()),
-                    checker_profile: entry.checker_profile.clone(),
-                    actual_hash: None,
-                    actual_value: Some(entry.status.as_str().to_owned()),
-                });
+        phase8_push_status_disagreements(&mut disagreements, baseline, &participating_entries);
+        for entry in participating_entries.iter().skip(1).copied() {
+            if baseline.status != entry.status {
+                continue;
+            }
+            match baseline.status {
+                Phase8MachineCheckStatus::Checked => {
+                    phase8_push_hash_disagreement(
+                        &mut disagreements,
+                        "certificate_hash",
+                        baseline,
+                        entry,
+                        baseline.certificate_hash,
+                        entry.certificate_hash,
+                    );
+                    phase8_push_hash_disagreement(
+                        &mut disagreements,
+                        "export_hash",
+                        baseline,
+                        entry,
+                        baseline.export_hash,
+                        entry.export_hash,
+                    );
+                    phase8_push_hash_disagreement(
+                        &mut disagreements,
+                        "axiom_report_hash",
+                        baseline,
+                        entry,
+                        baseline.axiom_report_hash,
+                        entry.axiom_report_hash,
+                    );
+                }
+                Phase8MachineCheckStatus::Failed => {
+                    let baseline_hash = baseline
+                        .failure_key
+                        .as_ref()
+                        .map(Phase8NormalizedFailureKey::failure_key_hash);
+                    let actual_hash = entry
+                        .failure_key
+                        .as_ref()
+                        .map(Phase8NormalizedFailureKey::failure_key_hash);
+                    phase8_push_hash_disagreement(
+                        &mut disagreements,
+                        "failure_key",
+                        baseline,
+                        entry,
+                        baseline_hash,
+                        actual_hash,
+                    );
+                }
             }
         }
     }
 
-    disagreements.sort_by(|left, right| {
-        left.field
-            .cmp(&right.field)
-            .then_with(|| left.checker_profile.cmp(&right.checker_profile))
-    });
+    phase8_sort_normalized_disagreements(&mut disagreements);
     Phase8NormalizedComparison {
         status: Phase8NormalizedComparisonStatus::Disagreement,
         matching_fields: Vec::new(),
         missing_checker_profiles: Vec::new(),
         disagreements,
         status_reasons: Vec::new(),
+    }
+}
+
+fn phase8_normalized_comparison_with_reasons(
+    status: Phase8NormalizedComparisonStatus,
+    mut status_reasons: Vec<Phase8NormalizedStatusReason>,
+) -> Phase8NormalizedComparison {
+    phase8_sort_normalized_status_reasons(&mut status_reasons);
+    Phase8NormalizedComparison {
+        status,
+        matching_fields: Vec::new(),
+        missing_checker_profiles: Vec::new(),
+        disagreements: Vec::new(),
+        status_reasons,
+    }
+}
+
+fn phase8_policy_has_checker_profile(policy: &Phase8RunnerPolicy, profile: &str) -> bool {
+    policy
+        .required_checker_profiles
+        .iter()
+        .chain(policy.optional_checker_profiles.iter())
+        .any(|allowed| allowed == profile)
+}
+
+fn phase8_normalized_comparison_policy_reasons(
+    policy: &Phase8RunnerPolicy,
+    normalized_policy_hash: Hash,
+    entries: &[Phase8NormalizedCheckResultEntry],
+) -> Vec<Phase8NormalizedStatusReason> {
+    let expected_policy_hash = policy.policy_hash();
+    let mut reasons = Vec::new();
+    if normalized_policy_hash != expected_policy_hash {
+        reasons.push(phase8_global_hash_status_reason(
+            "policy_failure",
+            "policy_failure",
+            "policy_hash_mismatch",
+            "policy.hash",
+            expected_policy_hash,
+            normalized_policy_hash,
+        ));
+    }
+    for entry in entries {
+        if entry.policy_hash != normalized_policy_hash {
+            reasons.push(phase8_entry_hash_status_reason(
+                entry,
+                "policy_failure",
+                "policy_failure",
+                "result_policy_hash_mismatch",
+                "results[].policy_hash",
+                normalized_policy_hash,
+                entry.policy_hash,
+            ));
+        }
+        if !phase8_policy_has_checker_profile(policy, &entry.checker_profile) {
+            reasons.push(phase8_entry_value_status_reason(
+                entry,
+                "policy_failure",
+                "policy_failure",
+                "checker_profile_not_allowed",
+                "results[].checker_profile",
+                "required_or_optional_checker_profile",
+                &entry.checker_profile,
+            ));
+        }
+    }
+    reasons
+}
+
+fn phase8_normalized_comparison_identity_reasons(
+    policy: &Phase8RunnerPolicy,
+    entries: &[&Phase8NormalizedCheckResultEntry],
+) -> Vec<Phase8NormalizedStatusReason> {
+    let mut reasons = Vec::new();
+    for entry in entries {
+        if !entry.process_launched {
+            continue;
+        }
+        let Some(selected) = policy.selected_checker_policy(&entry.checker_profile) else {
+            continue;
+        };
+        if let Some(binary_id) = entry.checker_binary_id.as_deref() {
+            if binary_id != selected.binary_id {
+                reasons.push(phase8_entry_value_status_reason(
+                    entry,
+                    "policy_failure",
+                    "policy_failure",
+                    "checker_binary_id_mismatch",
+                    "results[].checker_binary_id",
+                    &selected.binary_id,
+                    binary_id,
+                ));
+            }
+        }
+        if let Some(binary_hash) = entry.checker_binary_hash {
+            if binary_hash != selected.binary_hash {
+                reasons.push(phase8_entry_hash_status_reason(
+                    entry,
+                    "policy_failure",
+                    "policy_failure",
+                    "checker_binary_hash_mismatch",
+                    "results[].checker_binary_hash",
+                    selected.binary_hash,
+                    binary_hash,
+                ));
+            }
+        }
+        if let Some(checker_id) = entry.checker_id.as_deref() {
+            if checker_id != selected.checker_id {
+                reasons.push(phase8_entry_value_status_reason(
+                    entry,
+                    "policy_failure",
+                    "policy_failure",
+                    "checker_identity_mismatch",
+                    "results[].checker_id",
+                    &selected.checker_id,
+                    checker_id,
+                ));
+            }
+        }
+        if let Some(build_hash) = entry.checker_build_hash {
+            if build_hash != selected.build_hash {
+                reasons.push(phase8_entry_hash_status_reason(
+                    entry,
+                    "policy_failure",
+                    "policy_failure",
+                    "checker_build_hash_mismatch",
+                    "results[].checker_build_hash",
+                    selected.build_hash,
+                    build_hash,
+                ));
+            }
+        }
+        if !phase8_checker_identity_missing_exempt(entry) {
+            if entry.checker_id.is_none() {
+                reasons.push(phase8_entry_value_status_reason(
+                    entry,
+                    "policy_failure",
+                    "policy_failure",
+                    "checker_identity_missing",
+                    "results[].checker_id",
+                    "required_for_launched_non_inconclusive_result",
+                    "missing",
+                ));
+            }
+            if entry.checker_build_hash.is_none() {
+                reasons.push(phase8_entry_value_status_reason(
+                    entry,
+                    "policy_failure",
+                    "policy_failure",
+                    "checker_identity_missing",
+                    "results[].checker_build_hash",
+                    "required_for_launched_non_inconclusive_result",
+                    "missing",
+                ));
+            }
+        }
+    }
+    reasons
+}
+
+fn phase8_checker_identity_missing_exempt(entry: &Phase8NormalizedCheckResultEntry) -> bool {
+    matches!(
+        entry.error.as_ref().map(|error| error.kind.as_str()),
+        Some("checker_internal_error" | "resource_exhausted" | "timeout")
+    )
+}
+
+fn phase8_malformed_process_state(entry: &Phase8NormalizedCheckResultEntry) -> bool {
+    if !entry.process_launched && entry.status == Phase8MachineCheckStatus::Checked {
+        return true;
+    }
+    let error_kind = entry.error.as_ref().map(|error| error.kind.as_str());
+    let reason_code = entry
+        .error
+        .as_ref()
+        .and_then(|error| error.reason_code.as_deref());
+    if !entry.process_launched
+        && !matches!(
+            error_kind,
+            Some("policy_failure" | "timeout" | "resource_exhausted")
+        )
+    {
+        return true;
+    }
+    if entry.process_launched
+        && matches!(
+            reason_code,
+            Some("launch_timeout" | "launch_resource_exhausted")
+        )
+    {
+        return true;
+    }
+    !entry.process_launched
+        && matches!(
+            reason_code,
+            Some("checker_timeout" | "checker_resource_exhausted" | "process_exit_failure")
+        )
+}
+
+fn phase8_malformed_process_state_reason(
+    entry: &Phase8NormalizedCheckResultEntry,
+) -> Phase8NormalizedStatusReason {
+    phase8_entry_value_status_reason(
+        entry,
+        "inconclusive",
+        "checker_internal_error",
+        "malformed_process_state",
+        "results[].process_launched",
+        "process_state_consistent_with_error_kind",
+        "malformed_process_state",
+    )
+}
+
+fn phase8_inconclusive_comparison_source(entry: &Phase8NormalizedCheckResultEntry) -> bool {
+    let Some(error) = entry.error.as_ref() else {
+        return false;
+    };
+    matches!(
+        (
+            entry.process_launched,
+            error.kind.as_str(),
+            error.reason_code.as_deref(),
+        ),
+        (false, "timeout", Some("launch_timeout"))
+            | (
+                false,
+                "resource_exhausted",
+                Some("launch_resource_exhausted")
+            )
+            | (true, "timeout", Some("checker_timeout"))
+            | (
+                true,
+                "resource_exhausted",
+                Some("checker_resource_exhausted")
+            )
+            | (
+                true,
+                "checker_internal_error",
+                Some(
+                    "checker_reported_internal_error"
+                        | "malformed_success_output"
+                        | "success_exit_status_mismatch"
+                        | "missing_rejection_error"
+                        | "malformed_rejection_output"
+                        | "malformed_internal_error_output"
+                        | "checker_module_mismatch"
+                        | "process_exit_failure",
+                ),
+            )
+    )
+}
+
+fn phase8_status_reason_from_error(
+    entry: &Phase8NormalizedCheckResultEntry,
+    kind: &str,
+) -> Phase8NormalizedStatusReason {
+    let error = entry
+        .error
+        .as_ref()
+        .expect("status reason copied from an entry error");
+    Phase8NormalizedStatusReason {
+        kind: kind.to_owned(),
+        error_kind: error.kind.clone(),
+        reason_code: error
+            .reason_code
+            .clone()
+            .unwrap_or_else(|| error.kind.clone()),
+        checker_profile: Some(entry.checker_profile.clone()),
+        result_hash: Some(entry.result_hash),
+        field: error.field.clone(),
+        expected_hash: error.expected_hash,
+        actual_hash: error.actual_hash,
+        expected_value: error.expected_value.clone(),
+        actual_value: error.actual_value.clone(),
+    }
+}
+
+fn phase8_global_hash_status_reason(
+    kind: &str,
+    error_kind: &str,
+    reason_code: &str,
+    field: &str,
+    expected_hash: Hash,
+    actual_hash: Hash,
+) -> Phase8NormalizedStatusReason {
+    Phase8NormalizedStatusReason {
+        kind: kind.to_owned(),
+        error_kind: error_kind.to_owned(),
+        reason_code: reason_code.to_owned(),
+        checker_profile: None,
+        result_hash: None,
+        field: Some(field.to_owned()),
+        expected_hash: Some(expected_hash),
+        actual_hash: Some(actual_hash),
+        expected_value: None,
+        actual_value: None,
+    }
+}
+
+fn phase8_entry_hash_status_reason(
+    entry: &Phase8NormalizedCheckResultEntry,
+    kind: &str,
+    error_kind: &str,
+    reason_code: &str,
+    field: &str,
+    expected_hash: Hash,
+    actual_hash: Hash,
+) -> Phase8NormalizedStatusReason {
+    Phase8NormalizedStatusReason {
+        kind: kind.to_owned(),
+        error_kind: error_kind.to_owned(),
+        reason_code: reason_code.to_owned(),
+        checker_profile: Some(entry.checker_profile.clone()),
+        result_hash: Some(entry.result_hash),
+        field: Some(field.to_owned()),
+        expected_hash: Some(expected_hash),
+        actual_hash: Some(actual_hash),
+        expected_value: None,
+        actual_value: None,
+    }
+}
+
+fn phase8_entry_value_status_reason(
+    entry: &Phase8NormalizedCheckResultEntry,
+    kind: &str,
+    error_kind: &str,
+    reason_code: &str,
+    field: &str,
+    expected_value: impl Into<String>,
+    actual_value: impl Into<String>,
+) -> Phase8NormalizedStatusReason {
+    Phase8NormalizedStatusReason {
+        kind: kind.to_owned(),
+        error_kind: error_kind.to_owned(),
+        reason_code: reason_code.to_owned(),
+        checker_profile: Some(entry.checker_profile.clone()),
+        result_hash: Some(entry.result_hash),
+        field: Some(field.to_owned()),
+        expected_hash: None,
+        actual_hash: None,
+        expected_value: Some(expected_value.into()),
+        actual_value: Some(actual_value.into()),
+    }
+}
+
+fn phase8_push_status_disagreements(
+    disagreements: &mut Vec<Phase8NormalizedDisagreement>,
+    baseline: &Phase8NormalizedCheckResultEntry,
+    entries: &[&Phase8NormalizedCheckResultEntry],
+) {
+    for entry in entries.iter().skip(1).copied() {
+        if entry.status != baseline.status {
+            disagreements.push(Phase8NormalizedDisagreement {
+                field: "status".to_owned(),
+                baseline_checker_profile: Some(baseline.checker_profile.clone()),
+                baseline_hash: None,
+                baseline_value: Some(baseline.status.as_str().to_owned()),
+                checker_profile: entry.checker_profile.clone(),
+                actual_hash: None,
+                actual_value: Some(entry.status.as_str().to_owned()),
+            });
+        }
+    }
+}
+
+fn phase8_sort_normalized_disagreements(disagreements: &mut [Phase8NormalizedDisagreement]) {
+    disagreements.sort_by(|left, right| {
+        left.field
+            .cmp(&right.field)
+            .then_with(|| left.checker_profile.cmp(&right.checker_profile))
+            .then_with(|| {
+                left.baseline_checker_profile
+                    .cmp(&right.baseline_checker_profile)
+            })
+            .then_with(|| {
+                left.baseline_hash
+                    .map(|hash| format_hash_string(&hash))
+                    .cmp(&right.baseline_hash.map(|hash| format_hash_string(&hash)))
+            })
+            .then_with(|| {
+                left.actual_hash
+                    .map(|hash| format_hash_string(&hash))
+                    .cmp(&right.actual_hash.map(|hash| format_hash_string(&hash)))
+            })
+            .then_with(|| left.baseline_value.cmp(&right.baseline_value))
+            .then_with(|| left.actual_value.cmp(&right.actual_value))
+    });
+}
+
+fn phase8_sort_normalized_status_reasons(reasons: &mut [Phase8NormalizedStatusReason]) {
+    reasons.sort_by(|left, right| {
+        phase8_status_reason_sort_key(left).cmp(&phase8_status_reason_sort_key(right))
+    });
+}
+
+fn phase8_status_reason_sort_key(reason: &Phase8NormalizedStatusReason) -> Vec<String> {
+    vec![
+        reason.kind.clone(),
+        reason.checker_profile.clone().unwrap_or_default(),
+        reason.field.clone().unwrap_or_default(),
+        reason.reason_code.clone(),
+        reason
+            .result_hash
+            .map(|hash| format_hash_string(&hash))
+            .unwrap_or_default(),
+        reason.error_kind.clone(),
+        phase8_status_reason_payload_rank(reason).to_string(),
+        reason
+            .expected_hash
+            .map(|hash| format_hash_string(&hash))
+            .unwrap_or_default(),
+        reason
+            .actual_hash
+            .map(|hash| format_hash_string(&hash))
+            .unwrap_or_default(),
+        reason
+            .expected_value
+            .as_deref()
+            .map(phase8_json_string_literal)
+            .unwrap_or_default(),
+        reason
+            .actual_value
+            .as_deref()
+            .map(phase8_json_string_literal)
+            .unwrap_or_default(),
+    ]
+}
+
+fn phase8_status_reason_payload_rank(reason: &Phase8NormalizedStatusReason) -> u8 {
+    if reason.expected_hash.is_some() || reason.actual_hash.is_some() {
+        1
+    } else if reason.expected_value.is_some() {
+        2
+    } else if reason.actual_value.is_some() {
+        3
+    } else {
+        0
     }
 }
 
@@ -10476,5 +11236,382 @@ mod tests {
         .unwrap_err();
         assert_eq!(invalid.field.as_ref(), "request_store.path");
         assert_eq!(invalid.actual_value.as_deref(), Some("invalid_path"));
+    }
+
+    #[test]
+    fn m5_missing_required_profiles_are_recorded_and_compare_validates_integrity() {
+        let policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_fast");
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&fast));
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_fast");
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_missing",
+            "normerr_Std.Nat_missing",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&fast),
+            std::slice::from_ref(&fast_result),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::MissingCheckerResult
+        );
+        assert_eq!(
+            normalized.comparison.missing_checker_profiles,
+            vec!["reference".to_owned(), "external".to_owned()]
+        );
+        let validation = phase8_compare_normalized_result(&policy, &normalized);
+        assert_eq!(validation.status, Phase8CompareValidationStatus::Valid);
+        assert_eq!(
+            validation.embedded_comparison_status,
+            Some(Phase8NormalizedComparisonStatus::MissingCheckerResult)
+        );
+    }
+
+    #[test]
+    fn m5_policy_outside_profile_is_comparison_policy_failure_not_normalize_error() {
+        let policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_fast");
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&fast));
+        let mut outside_result = m4_checked_result(&fast.request, &policy, "mchkres_outside");
+        outside_result.checker.profile = "z-outside".to_owned();
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_outside",
+            "normerr_Std.Nat_outside",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&fast),
+            std::slice::from_ref(&outside_result),
+            Some(Phase8ArtifactSelector {
+                module: "Std.Nat".to_owned(),
+                request_hash: fast.request.request_hash(),
+            }),
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::PolicyFailure
+        );
+        assert_eq!(normalized.comparison.status_reasons.len(), 1);
+        let reason = &normalized.comparison.status_reasons[0];
+        assert_eq!(reason.kind, "policy_failure");
+        assert_eq!(reason.error_kind, "policy_failure");
+        assert_eq!(reason.reason_code, "checker_profile_not_allowed");
+        assert_eq!(reason.field.as_deref(), Some("results[].checker_profile"));
+        assert_eq!(reason.actual_value.as_deref(), Some("z-outside"));
+        assert!(normalized.comparison.disagreements.is_empty());
+    }
+
+    #[test]
+    fn m5_copied_policy_failure_reason_is_not_reclassified_as_inconclusive() {
+        let (request, policy) = m3_request_and_policy();
+        let mut bad_request = request.clone();
+        bad_request.budget.timeout_ms += 1;
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(bad_request.canonical_json().as_bytes()),
+            request: bad_request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = phase8_machine_check_run(
+            &bad_request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_policy_failure".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::not_launched(),
+                resource_usage: Phase8MachineCheckResourceUsage::zero(),
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_policy_failure",
+            "normerr_Std.Nat_policy_failure",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::PolicyFailure
+        );
+        let reason = &normalized.comparison.status_reasons[0];
+        assert_eq!(reason.kind, "policy_failure");
+        assert_eq!(reason.error_kind, "policy_failure");
+        assert_eq!(reason.reason_code, "request_budget_mismatch");
+        assert_eq!(reason.field.as_deref(), Some("budget.timeout_ms"));
+        assert!(normalized.comparison.disagreements.is_empty());
+    }
+
+    #[test]
+    fn m5_inconclusive_sources_are_limited_to_closed_infrastructure_reasons() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = phase8_machine_check_run(
+            &request,
+            &policy,
+            Phase8CheckerRunObservation {
+                result_id: "mchkres_malformed".to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(0),
+                resource_usage: m3_resource_usage(1),
+                stdout: b"not json".to_vec(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap();
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_inconclusive",
+            "normerr_Std.Nat_inconclusive",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::Inconclusive
+        );
+        let reason = &normalized.comparison.status_reasons[0];
+        assert_eq!(reason.kind, "inconclusive");
+        assert_eq!(reason.error_kind, "checker_internal_error");
+        assert_eq!(reason.reason_code, "malformed_success_output");
+    }
+
+    fn m5_failed_result(
+        request: &Phase8MachineCheckRequest,
+        policy: &Phase8RunnerPolicy,
+        result_id: &str,
+        declaration: &str,
+    ) -> Phase8MachineCheckResult {
+        let checker = policy
+            .selected_checker_policy(&request.checker_profile)
+            .unwrap();
+        let raw = format!(
+            r#"{{
+              "schema":"npa.phase8.checker_raw_result.v1",
+              "checker_id":"{}",
+              "checker_version":"0.8.0",
+              "checker_build_hash":"{}",
+              "status":"failed",
+              "module":"Std.Nat",
+              "certificate_hash":"{}",
+              "error":{{
+                "kind":"type_mismatch",
+                "declaration":"{}"
+              }}
+            }}"#,
+            checker.checker_id,
+            format_hash_string(&checker.build_hash),
+            hash_wire(70),
+            declaration
+        );
+        phase8_machine_check_run(
+            request,
+            policy,
+            Phase8CheckerRunObservation {
+                result_id: result_id.to_owned(),
+                attempt: 1,
+                runner: m3_runner(),
+                process: Phase8MachineCheckProcess::exited(1),
+                resource_usage: m3_resource_usage(100),
+                stdout: raw.into_bytes(),
+                stderr: Vec::new(),
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn m5_all_agree_failed_uses_full_failure_key_not_error_kind_only() {
+        let policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m5_failed_result(&fast.request, &policy, "mchkres_fast", "Std.Nat");
+        let reference_result =
+            m5_failed_result(&reference.request, &policy, "mchkres_ref", "Std.Nat.other");
+        let external_result =
+            m5_failed_result(&external.request, &policy, "mchkres_ext", "Std.Nat");
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_failed_mismatch",
+            "normerr_Std.Nat_failed_mismatch",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &[fast_result, reference_result, external_result],
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized.comparison.status,
+            Phase8NormalizedComparisonStatus::Disagreement
+        );
+        assert_eq!(normalized.comparison.disagreements.len(), 1);
+        assert_eq!(normalized.comparison.disagreements[0].field, "failure_key");
+        assert_eq!(
+            normalized.comparison.disagreements[0]
+                .baseline_checker_profile
+                .as_deref(),
+            Some("fast-kernel")
+        );
+        assert_eq!(
+            normalized.comparison.disagreements[0]
+                .checker_profile
+                .as_str(),
+            "reference"
+        );
+    }
+
+    #[test]
+    fn m5_disagreement_emits_status_and_same_status_hash_mismatches() {
+        let policy = parse_phase8_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_fast");
+        let reference_result =
+            m5_failed_result(&reference.request, &policy, "mchkres_ref", "Std.Nat");
+        let external_result = m4_checked_result(&external.request, &policy, "mchkres_ext");
+        let mut normalized = phase8_normalize_results(
+            "norm_Std.Nat_mixed_mismatch",
+            "normerr_Std.Nat_mixed_mismatch",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &[fast_result, reference_result, external_result],
+            None,
+        )
+        .unwrap();
+        normalized.results[2].certificate_hash = Some(test_hash(177));
+        let comparison = phase8_build_normalized_comparison(&policy, &normalized);
+
+        assert_eq!(
+            comparison.status,
+            Phase8NormalizedComparisonStatus::Disagreement
+        );
+        assert_eq!(
+            comparison
+                .disagreements
+                .iter()
+                .map(|disagreement| (
+                    disagreement.field.as_str(),
+                    disagreement.checker_profile.as_str()
+                ))
+                .collect::<Vec<_>>(),
+            vec![("certificate_hash", "external"), ("status", "reference")]
+        );
+    }
+
+    #[test]
+    fn m5_launched_checked_missing_checker_identity_is_policy_failure() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = m4_checked_result(&request, &policy, "mchkres_checked");
+        let mut normalized = phase8_normalize_results(
+            "norm_Std.Nat_checked",
+            "normerr_Std.Nat_checked",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+        normalized.results[0].checker_id = None;
+        normalized.results[0].checker_build_hash = None;
+        let comparison = phase8_build_normalized_comparison(&policy, &normalized);
+
+        assert_eq!(
+            comparison.status,
+            Phase8NormalizedComparisonStatus::PolicyFailure
+        );
+        assert_eq!(comparison.status_reasons.len(), 2);
+        assert!(comparison.status_reasons.iter().all(|reason| {
+            reason.kind == "policy_failure"
+                && reason.error_kind == "policy_failure"
+                && reason.reason_code == "checker_identity_missing"
+        }));
+        assert_eq!(
+            comparison
+                .status_reasons
+                .iter()
+                .map(|reason| reason.field.as_deref().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["results[].checker_build_hash", "results[].checker_id"]
+        );
+    }
+
+    #[test]
+    fn m5_compare_validation_result_is_transient_and_detects_mismatch() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = m4_checked_result(&request, &policy, "mchkres_checked");
+        let normalized = phase8_normalize_results(
+            "norm_Std.Nat_checked",
+            "normerr_Std.Nat_checked",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+        let valid = phase8_compare_normalized_result(&policy, &normalized);
+        assert_eq!(valid.status, Phase8CompareValidationStatus::Valid);
+        assert!(!valid.canonical_json().contains("\"result_hash\":"));
+
+        let mut tampered = normalized.clone();
+        tampered.comparison.status = Phase8NormalizedComparisonStatus::Inconclusive;
+        let failed = phase8_compare_normalized_result(&policy, &tampered);
+        assert_eq!(failed.status, Phase8CompareValidationStatus::Failed);
+        assert_eq!(
+            failed.error.as_ref().unwrap().kind,
+            Phase8CompareValidationErrorKind::ComparisonMismatch
+        );
+        assert_eq!(
+            failed.embedded_comparison_status,
+            Some(Phase8NormalizedComparisonStatus::Inconclusive)
+        );
+        assert_eq!(
+            failed.recomputed_comparison_status,
+            Some(Phase8NormalizedComparisonStatus::AllAgreeChecked)
+        );
+        assert!(!failed.canonical_json().contains("\"result_hash\":"));
     }
 }
