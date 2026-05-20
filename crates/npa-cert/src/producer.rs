@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use npa_kernel::{Ctx, Decl, Env, Error, Expr, Level};
 
@@ -222,6 +222,8 @@ pub struct ProducerLookupEnv {
     pub import_exports: Vec<ProducerImportExportView>,
     /// Checked current-module declaration interfaces in accepted order.
     pub checked_decls: Vec<ProducerCheckedDeclInterface>,
+    pub(crate) checked_decl_names: Vec<ModuleName>,
+    pub(crate) checked_generated_name_to_index: BTreeMap<ModuleName, usize>,
 }
 
 /// Build a producer lookup environment from canonical imports and checked declaration interfaces.
@@ -232,6 +234,8 @@ pub fn producer_lookup_env(
     Ok(ProducerLookupEnv {
         import_exports: canonical_import_export_views(imports)?,
         checked_decls: checked_decls.to_vec(),
+        checked_decl_names: vec![],
+        checked_generated_name_to_index: BTreeMap::new(),
     })
 }
 
@@ -326,6 +330,7 @@ pub fn validate_prior_current_decls(
 ) -> Result<Vec<ProducerCheckedDeclInterface>, CertError> {
     let direct_imports = canonical_import_env_keys(batch.imports)?;
     let mut checked_decls = Vec::with_capacity(batch.prior_current_decls.len());
+    let mut checked_decl_sources = Vec::with_capacity(batch.prior_current_decls.len());
     let mut prior_chain_entries = Vec::with_capacity(batch.prior_current_decls.len());
     let mut expected_pre_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
         direct_imports: direct_imports.clone(),
@@ -360,7 +365,8 @@ pub fn validate_prior_current_decls(
             return Err(CertError::ProducerTokenLimitTooLoose { token_index });
         }
 
-        let lookup_env = producer_lookup_env(batch.imports, &checked_decls)?;
+        let lookup_env =
+            producer_lookup_env_for_sources(batch.imports, &checked_decls, &checked_decl_sources)?;
         let (computed_interface, hashes) =
             crate::canonical_producer_checked_decl_hashes(&token.declaration, &lookup_env)?;
 
@@ -398,6 +404,7 @@ pub fn validate_prior_current_decls(
             post_env_fingerprint: expected_post_env_fingerprint,
         });
         checked_decls.push(computed_interface);
+        checked_decl_sources.push(token.declaration.clone());
         expected_pre_env_fingerprint = expected_post_env_fingerprint;
     }
 
@@ -429,6 +436,79 @@ pub fn precheck_core_decl_candidate(
         &mut whnf_fuel,
         &mut conversion_fuel,
     )
+}
+
+/// Check a batch of core declaration candidates without producing certificate bytes.
+///
+/// Batch-level structural failures return `Err(CertError)`. Candidate-local failures are reported
+/// as [`CandidateStatus::Rejected`] at the same input index.
+pub fn check_core_decl_candidates(
+    batch: CandidateBatch<'_>,
+) -> Result<CandidateBatchResult, CertError> {
+    ensure_candidate_batch_schema(&batch)?;
+    let direct_imports = validate_candidate_batch_imports(&batch)?;
+    let mut checked_decls = validate_prior_current_decls(&batch)?;
+    let prior_decl_sources: Vec<_> = batch
+        .prior_current_decls
+        .iter()
+        .map(|token| token.declaration.clone())
+        .collect();
+    let mut prior_chain_entries: Vec<_> = batch
+        .prior_current_decls
+        .iter()
+        .map(|token| ProducerPriorChainEntry {
+            decl_interface_hash: token.decl_interface_hash,
+            decl_certificate_hash: token.decl_certificate_hash,
+            pre_env_fingerprint: token.pre_env_fingerprint,
+            post_env_fingerprint: token.post_env_fingerprint,
+        })
+        .collect();
+    let mut current_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: direct_imports.clone(),
+        checked_decls: checked_decls.clone(),
+    });
+    let mut env = producer_base_env(batch.imports)?;
+    let mut added_prior_sources = Vec::with_capacity(batch.prior_current_decls.len());
+    for token in batch.prior_current_decls {
+        add_referenced_builtins_for_decl(
+            &mut env,
+            batch.imports,
+            &added_prior_sources,
+            &token.declaration,
+        )?;
+        crate::add_decl_to_env(&mut env, token.declaration.clone())?;
+        added_prior_sources.push(token.declaration.clone());
+    }
+    let mut checked_decl_sources = prior_decl_sources;
+
+    let mut statuses = Vec::with_capacity(batch.candidates.len());
+    for candidate in &batch.candidates {
+        match check_candidate_in_batch(
+            CandidateCheckContext {
+                env: &env,
+                imports: batch.imports,
+                direct_imports: &direct_imports,
+                checked_decls: &checked_decls,
+                checked_decl_sources: &checked_decl_sources,
+                prior_chain_entries: &prior_chain_entries,
+                pre_env_fingerprint: current_env_fingerprint,
+                limits: &batch.limits,
+            },
+            candidate,
+        ) {
+            Ok(accepted) => {
+                env = accepted.env;
+                checked_decls.push(accepted.interface);
+                checked_decl_sources.push(accepted.declaration);
+                prior_chain_entries.push(accepted.prior_chain_entry);
+                current_env_fingerprint = accepted.post_env_fingerprint;
+                statuses.push(CandidateStatus::Accepted(accepted.token));
+            }
+            Err(err) => statuses.push(CandidateStatus::Rejected(err)),
+        }
+    }
+
+    Ok(CandidateBatchResult { statuses })
 }
 
 /// Untrusted core declaration candidate submitted by a producer.
@@ -589,6 +669,110 @@ pub struct CandidateBatchResult {
     pub statuses: Vec<CandidateStatus>,
 }
 
+struct AcceptedCandidate {
+    token: CheckedDeclCandidate,
+    interface: ProducerCheckedDeclInterface,
+    prior_chain_entry: ProducerPriorChainEntry,
+    post_env_fingerprint: Hash,
+    declaration: Decl,
+    env: Env,
+}
+
+struct CandidateCheckContext<'a> {
+    env: &'a Env,
+    imports: &'a [VerifiedModule],
+    direct_imports: &'a [ProducerImportEnvKey],
+    checked_decls: &'a [ProducerCheckedDeclInterface],
+    checked_decl_sources: &'a [Decl],
+    prior_chain_entries: &'a [ProducerPriorChainEntry],
+    pre_env_fingerprint: Hash,
+    limits: &'a ProducerLimits,
+}
+
+fn check_candidate_in_batch(
+    context: CandidateCheckContext<'_>,
+    candidate: &CoreDeclCandidate,
+) -> Result<AcceptedCandidate, CertError> {
+    let declaration = candidate.declaration.clone();
+    ensure_no_unresolved_metavariable(&declaration)?;
+    ensure_candidate_schema_limits(&declaration, context.limits)?;
+
+    let lookup_env = producer_lookup_env_for_sources(
+        context.imports,
+        context.checked_decls,
+        context.checked_decl_sources,
+    )?;
+    let (interface, hashes) =
+        crate::canonical_producer_checked_decl_hashes(&declaration, &lookup_env)?;
+
+    let mut candidate_env = context.env.clone();
+    add_referenced_builtins_for_decl(
+        &mut candidate_env,
+        context.imports,
+        context.checked_decl_sources,
+        &declaration,
+    )?;
+    let mut whnf_fuel = fuel_to_usize(
+        context.limits.max_reduction_steps,
+        ProducerLimitKind::MaxReductionSteps,
+    )?;
+    let mut conversion_fuel = fuel_to_usize(
+        context.limits.max_conversion_steps,
+        ProducerLimitKind::MaxConversionSteps,
+    )?;
+    precheck_decl_with_fuel(
+        &candidate_env,
+        &declaration,
+        &mut whnf_fuel,
+        &mut conversion_fuel,
+    )?;
+
+    let mut next_env = candidate_env;
+    crate::add_decl_to_env(&mut next_env, declaration.clone())?;
+
+    let mut next_checked_decls = context.checked_decls.to_vec();
+    next_checked_decls.push(interface.clone());
+    let post_env_fingerprint = producer_env_fingerprint(&ProducerEnvFingerprintBytes {
+        direct_imports: context.direct_imports.to_vec(),
+        checked_decls: next_checked_decls,
+    });
+    let prior_chain_fingerprint = prior_chain_fingerprint(&ProducerPriorChainBytes {
+        checked_decls: context.prior_chain_entries.to_vec(),
+    });
+    let limit_profile_hash = producer_limits_hash(context.limits);
+    let token = CheckedDeclCandidate {
+        declaration: declaration.clone(),
+        preview_hashes: CandidateHashPreview {
+            type_hash: None,
+            body_hash: None,
+            decl_interface_hash: Some(hashes.decl_interface_hash),
+            decl_certificate_hash: Some(hashes.decl_certificate_hash),
+        },
+        pre_env_fingerprint: context.pre_env_fingerprint,
+        post_env_fingerprint,
+        prior_chain_fingerprint,
+        limits: *context.limits,
+        limit_profile_hash,
+        decl_interface_hash: hashes.decl_interface_hash,
+        decl_certificate_hash: hashes.decl_certificate_hash,
+    };
+    let prior_chain_entry = ProducerPriorChainEntry {
+        decl_interface_hash: hashes.decl_interface_hash,
+        decl_certificate_hash: hashes.decl_certificate_hash,
+        pre_env_fingerprint: context.pre_env_fingerprint,
+        post_env_fingerprint,
+    };
+
+    Ok(AcceptedCandidate {
+        token,
+        interface,
+        prior_chain_entry,
+        post_env_fingerprint,
+        declaration,
+        env: next_env,
+    })
+}
+
 fn fuel_to_usize(value: u64, limit: ProducerLimitKind) -> Result<usize, CertError> {
     usize::try_from(value).map_err(|_| CertError::ProducerLimitExceeded { limit })
 }
@@ -608,6 +792,220 @@ fn ensure_token_hash(
             expected,
             actual,
         })
+    }
+}
+
+fn ensure_candidate_batch_schema(batch: &CandidateBatch<'_>) -> Result<(), CertError> {
+    if batch.candidates.len() > batch.limits.max_declarations as usize {
+        return Err(CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxDeclarations,
+        });
+    }
+    Ok(())
+}
+
+fn producer_base_env(imports: &[VerifiedModule]) -> Result<Env, CertError> {
+    let mut env = Env::new();
+    let imports: Vec<_> = imports.iter().collect();
+    crate::add_imports_to_env(&mut env, &imports)?;
+    Ok(env)
+}
+
+fn producer_lookup_env_for_sources(
+    imports: &[VerifiedModule],
+    checked_decls: &[ProducerCheckedDeclInterface],
+    checked_decl_sources: &[Decl],
+) -> Result<ProducerLookupEnv, CertError> {
+    if checked_decls.len() != checked_decl_sources.len() {
+        return Err(CertError::DecodeError);
+    }
+    let mut lookup_env = producer_lookup_env(imports, checked_decls)?;
+    lookup_env.checked_decl_names = checked_decl_sources
+        .iter()
+        .map(|decl| crate::Name::from_dotted(decl.name()))
+        .collect();
+    lookup_env.checked_generated_name_to_index =
+        checked_generated_name_to_index(checked_decl_sources);
+    crate::ensure_unique_names(&checked_public_names(checked_decl_sources))?;
+    Ok(lookup_env)
+}
+
+fn checked_generated_name_to_index(decls: &[Decl]) -> BTreeMap<ModuleName, usize> {
+    let mut generated = BTreeMap::new();
+    for (decl_index, decl) in decls.iter().enumerate() {
+        if let Decl::Inductive { data, .. } = decl {
+            for constructor in &data.constructors {
+                generated.insert(crate::Name::from_dotted(&constructor.name), decl_index);
+            }
+            if let Some(recursor) = &data.recursor {
+                generated.insert(crate::Name::from_dotted(&recursor.name), decl_index);
+            }
+        }
+    }
+    generated
+}
+
+fn checked_public_names(decls: &[Decl]) -> Vec<ModuleName> {
+    let mut names = Vec::new();
+    for decl in decls {
+        names.push(crate::Name::from_dotted(decl.name()));
+        if let Decl::Inductive { data, .. } = decl {
+            for constructor in &data.constructors {
+                names.push(crate::Name::from_dotted(&constructor.name));
+            }
+            if let Some(recursor) = &data.recursor {
+                names.push(crate::Name::from_dotted(&recursor.name));
+            }
+        }
+    }
+    names
+}
+
+fn add_referenced_builtins_for_decl(
+    env: &mut Env,
+    imports: &[VerifiedModule],
+    checked_decl_sources: &[Decl],
+    decl: &Decl,
+) -> Result<(), CertError> {
+    let mut names = BTreeSet::new();
+    collect_const_names_from_decl(&mut names, decl);
+    let import_exports = import_export_names(imports)?;
+    let checked_public_names = checked_public_names(checked_decl_sources)
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+    names.retain(|name| {
+        !import_exports.contains(name)
+            && !checked_public_names.contains(name)
+            && crate::builtin_decl_interface_hash(name).is_some()
+    });
+    crate::add_referenced_builtins_to_env(env, &names)
+}
+
+fn import_export_names(imports: &[VerifiedModule]) -> Result<BTreeSet<ModuleName>, CertError> {
+    let mut names = BTreeSet::new();
+    for import in imports {
+        for entry in import.export_block() {
+            names.insert(
+                import
+                    .name_table()
+                    .get(entry.name)
+                    .cloned()
+                    .ok_or(CertError::DecodeError)?,
+            );
+        }
+    }
+    Ok(names)
+}
+
+fn ensure_no_unresolved_metavariable(decl: &Decl) -> Result<(), CertError> {
+    if decl_contains_unresolved_metavariable(decl) {
+        Err(CertError::UnresolvedMetavariable)
+    } else {
+        Ok(())
+    }
+}
+
+fn decl_contains_unresolved_metavariable(decl: &Decl) -> bool {
+    expr_contains_unresolved_metavariable(decl.ty())
+        || match decl {
+            Decl::Def { value, .. } => expr_contains_unresolved_metavariable(value),
+            Decl::Theorem { proof, .. } => expr_contains_unresolved_metavariable(proof),
+            Decl::Inductive { data, .. } => {
+                data.params
+                    .iter()
+                    .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
+                    || data
+                        .indices
+                        .iter()
+                        .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
+                    || data
+                        .constructors
+                        .iter()
+                        .any(|constructor| expr_contains_unresolved_metavariable(&constructor.ty))
+                    || data
+                        .recursor
+                        .iter()
+                        .any(|recursor| expr_contains_unresolved_metavariable(&recursor.ty))
+            }
+            Decl::Axiom { .. } | Decl::Constructor { .. } | Decl::Recursor { .. } => false,
+        }
+}
+
+fn expr_contains_unresolved_metavariable(expr: &Expr) -> bool {
+    match expr {
+        Expr::Sort(level) => level_contains_unresolved_metavariable(level),
+        Expr::BVar(_) | Expr::Const { .. } => false,
+        Expr::App(fun, arg) => {
+            expr_contains_unresolved_metavariable(fun) || expr_contains_unresolved_metavariable(arg)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_contains_unresolved_metavariable(ty) || expr_contains_unresolved_metavariable(body)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_contains_unresolved_metavariable(ty)
+                || expr_contains_unresolved_metavariable(value)
+                || expr_contains_unresolved_metavariable(body)
+        }
+    }
+}
+
+fn level_contains_unresolved_metavariable(level: &Level) -> bool {
+    match level {
+        Level::Zero | Level::Param(_) => false,
+        Level::Succ(level) => level_contains_unresolved_metavariable(level),
+        Level::Max(lhs, rhs) | Level::IMax(lhs, rhs) => {
+            level_contains_unresolved_metavariable(lhs)
+                || level_contains_unresolved_metavariable(rhs)
+        }
+    }
+}
+
+fn collect_const_names_from_decl(names: &mut BTreeSet<ModuleName>, decl: &Decl) {
+    collect_const_names_from_expr(names, decl.ty());
+    match decl {
+        Decl::Def { value, .. } => collect_const_names_from_expr(names, value),
+        Decl::Theorem { proof, .. } => collect_const_names_from_expr(names, proof),
+        Decl::Inductive { data, .. } => {
+            for param in &data.params {
+                collect_const_names_from_expr(names, &param.ty);
+            }
+            for index in &data.indices {
+                collect_const_names_from_expr(names, &index.ty);
+            }
+            for constructor in &data.constructors {
+                collect_const_names_from_expr(names, &constructor.ty);
+            }
+            if let Some(recursor) = &data.recursor {
+                collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::Axiom { .. } | Decl::Constructor { .. } | Decl::Recursor { .. } => {}
+    }
+}
+
+fn collect_const_names_from_expr(names: &mut BTreeSet<ModuleName>, expr: &Expr) {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => {}
+        Expr::Const { name, .. } => {
+            names.insert(crate::Name::from_dotted(name));
+        }
+        Expr::App(fun, arg) => {
+            collect_const_names_from_expr(names, fun);
+            collect_const_names_from_expr(names, arg);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, body);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_const_names_from_expr(names, ty);
+            collect_const_names_from_expr(names, value);
+            collect_const_names_from_expr(names, body);
+        }
     }
 }
 
@@ -1325,6 +1723,30 @@ mod tests {
             validate_prior_current_decls(&batch).unwrap_err(),
             0,
             ProducerTokenHashField::PostEnvFingerprint,
+            forged,
+        );
+    }
+
+    #[test]
+    fn check_core_decl_candidates_rejects_invalid_prior_token_at_batch_level() {
+        let token_limits = test_limits();
+        let (mut token, _, _) = valid_prior_token(prior_axiom("P"), token_limits, &[], &[]);
+        let forged = hash(0x58);
+        token.pre_env_fingerprint = forged;
+        let prior = [token];
+        let batch = CandidateBatch {
+            imports: &[],
+            prior_current_decls: &prior,
+            candidates: vec![CoreDeclCandidate {
+                declaration: prior_axiom("Q"),
+            }],
+            limits: token_limits,
+        };
+
+        assert_token_hash_mismatch(
+            check_core_decl_candidates(batch).unwrap_err(),
+            0,
+            ProducerTokenHashField::PreEnvFingerprint,
             forged,
         );
     }

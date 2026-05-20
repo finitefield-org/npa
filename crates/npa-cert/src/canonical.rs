@@ -510,13 +510,18 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         .collect();
     let imported_decls =
         producer_imported_decl_map(&lookup_env.import_exports, &name_index, &referenced_imports)?;
-    let local_name_to_index = BTreeMap::new();
-    let local_generated_name_to_index = BTreeMap::new();
+    let local_name_to_index: BTreeMap<_, _> = lookup_env
+        .checked_decl_names
+        .iter()
+        .cloned()
+        .enumerate()
+        .map(|(index, name)| (name, index))
+        .collect();
     let resolver = Resolver {
         current_decl_index,
         allow_self: matches!(decl, Decl::Inductive { .. } | Decl::Axiom { .. }),
         local_name_to_index: &local_name_to_index,
-        local_generated_name_to_index: &local_generated_name_to_index,
+        local_generated_name_to_index: &lookup_env.checked_generated_name_to_index,
         imported_decls: &imported_decls,
         name_index: &name_index,
     };

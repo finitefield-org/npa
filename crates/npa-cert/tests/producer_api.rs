@@ -1,6 +1,6 @@
 use npa_cert::{
     build_module_cert, canonical_import_env_keys, canonical_import_export_views,
-    encode_module_cert, initial_env_fingerprint, post_env_fingerprint,
+    check_core_decl_candidates, encode_module_cert, initial_env_fingerprint, post_env_fingerprint,
     precheck_core_decl_candidate, prior_chain_fingerprint, prior_chain_fingerprint_canonical_bytes,
     producer_checked_decl_interface, producer_env_fingerprint,
     producer_env_fingerprint_canonical_bytes, producer_import_env_key,
@@ -30,6 +30,13 @@ fn generous_limits() -> ProducerLimits {
         max_name_components: 8,
         max_reduction_steps: 64,
         max_conversion_steps: 64,
+    }
+}
+
+fn generous_limits_with_declarations(max_declarations: u32) -> ProducerLimits {
+    ProducerLimits {
+        max_declarations,
+        ..generous_limits()
     }
 }
 
@@ -147,6 +154,25 @@ fn imported_theorem(name: &str, imported_name: &str) -> Decl {
     }
 }
 
+fn axiom_over(name: &str, ty_name: &str) -> Decl {
+    Decl::Axiom {
+        name: name.to_owned(),
+        universe_params: vec![],
+        ty: Expr::konst(ty_name, vec![]),
+    }
+}
+
+fn accepted_tokens(result: CandidateBatchResult) -> Vec<CheckedDeclCandidate> {
+    result
+        .statuses
+        .into_iter()
+        .map(|status| match status {
+            CandidateStatus::Accepted(token) => token,
+            CandidateStatus::Rejected(err) => panic!("unexpected rejection: {err:?}"),
+        })
+        .collect()
+}
+
 fn prior_entry(
     decl_interface_hash: [u8; 32],
     decl_certificate_hash: [u8; 32],
@@ -214,6 +240,299 @@ fn validate_prior_current_decls_public_api_accepts_empty_prior_chain() {
     assert_eq!(
         validate_prior_current_decls(&batch).unwrap(),
         Vec::<ProducerCheckedDeclInterface>::new()
+    );
+}
+
+#[test]
+fn check_core_decl_candidates_accepts_in_input_order_and_extends_local_environment() {
+    let type_decl = trivial_axiom("LocalA");
+    let value_decl = axiom_over("local_a", "LocalA");
+    let batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![
+            CoreDeclCandidate {
+                declaration: type_decl.clone(),
+            },
+            CoreDeclCandidate {
+                declaration: value_decl.clone(),
+            },
+        ],
+        limits: generous_limits_with_declarations(2),
+    };
+
+    let result = check_core_decl_candidates(batch).unwrap();
+    assert_eq!(result.statuses.len(), 2);
+    let [CandidateStatus::Accepted(type_token), CandidateStatus::Accepted(value_token)] =
+        result.statuses.as_slice()
+    else {
+        panic!("expected both candidates to be accepted");
+    };
+
+    let cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Producer.Local"),
+            declarations: vec![type_decl, value_decl],
+        },
+        &[],
+    )
+    .unwrap();
+    assert_eq!(
+        type_token.decl_interface_hash(),
+        cert.declarations[0].hashes.decl_interface_hash
+    );
+    assert_eq!(
+        value_token.decl_interface_hash(),
+        cert.declarations[1].hashes.decl_interface_hash
+    );
+    assert_eq!(
+        type_token.pre_env_fingerprint(),
+        initial_env_fingerprint(&[]).unwrap()
+    );
+    assert_eq!(
+        value_token.pre_env_fingerprint(),
+        type_token.post_env_fingerprint()
+    );
+    assert_eq!(
+        type_token.prior_chain_fingerprint(),
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![]
+        })
+    );
+    assert_eq!(
+        value_token.prior_chain_fingerprint(),
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![prior_entry(
+                type_token.decl_interface_hash(),
+                type_token.decl_certificate_hash(),
+                type_token.pre_env_fingerprint(),
+                type_token.post_env_fingerprint(),
+            )]
+        })
+    );
+    assert!(type_token.limit_profile_hash_matches());
+    assert_eq!(
+        type_token.preview_hashes().decl_interface_hash,
+        Some(type_token.decl_interface_hash())
+    );
+}
+
+#[test]
+fn check_core_decl_candidates_accepts_import_and_builtin_references() {
+    let import = verify_module(axiom_module("Lib.FastPathImport", "FastPathImported"));
+    let imports = [import.clone()];
+    let imported_decl = axiom_over("UsesFastPathImport", "FastPathImported");
+    let import_batch = CandidateBatch {
+        imports: &imports,
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: imported_decl.clone(),
+        }],
+        limits: generous_limits(),
+    };
+
+    let imported_tokens = accepted_tokens(check_core_decl_candidates(import_batch).unwrap());
+    let imported_cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Producer.Imported"),
+            declarations: vec![imported_decl],
+        },
+        &imports,
+    )
+    .unwrap();
+    assert_eq!(
+        imported_tokens[0].decl_interface_hash(),
+        imported_cert.declarations[0].hashes.decl_interface_hash
+    );
+
+    let builtin_decl = Decl::Theorem {
+        name: "zero_is_nat".to_owned(),
+        universe_params: vec![],
+        ty: Expr::konst("Nat", vec![]),
+        proof: Expr::konst("Nat.zero", vec![]),
+    };
+    let builtin_batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: builtin_decl,
+        }],
+        limits: generous_limits(),
+    };
+    let builtin_tokens = accepted_tokens(check_core_decl_candidates(builtin_batch).unwrap());
+    assert!(builtin_tokens[0].limit_profile_hash_matches());
+}
+
+#[test]
+fn check_core_decl_candidates_keeps_candidate_rejections_in_input_order() {
+    let batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![
+            CoreDeclCandidate {
+                declaration: axiom_over("Bad", "MissingType"),
+            },
+            CoreDeclCandidate {
+                declaration: trivial_axiom("Good"),
+            },
+        ],
+        limits: generous_limits_with_declarations(2),
+    };
+
+    let result = check_core_decl_candidates(batch).unwrap();
+    assert_eq!(result.statuses.len(), 2);
+    assert!(matches!(
+        &result.statuses[0],
+        CandidateStatus::Rejected(CertError::UnknownDependency { name })
+            if *name == Name::from_dotted("MissingType")
+    ));
+    assert!(matches!(&result.statuses[1], CandidateStatus::Accepted(_)));
+}
+
+#[test]
+fn check_core_decl_candidates_reports_candidate_schema_limit_per_candidate() {
+    let mut limits = generous_limits();
+    limits.max_expr_nodes = 0;
+    let batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: trivial_axiom("TooLarge"),
+        }],
+        limits,
+    };
+
+    let result = check_core_decl_candidates(batch).unwrap();
+    assert_eq!(result.statuses.len(), 1);
+    assert_eq!(
+        result.statuses[0],
+        CandidateStatus::Rejected(CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxExprNodes
+        })
+    );
+}
+
+#[test]
+fn check_core_decl_candidates_reports_kernel_precheck_failure_per_candidate() {
+    let batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: Decl::Def {
+                name: "bad_value".to_owned(),
+                universe_params: vec![],
+                ty: Expr::sort(Level::zero()),
+                value: Expr::sort(Level::zero()),
+                reducibility: Reducibility::Reducible,
+            },
+        }],
+        limits: generous_limits(),
+    };
+
+    let result = check_core_decl_candidates(batch).unwrap();
+    assert_eq!(result.statuses.len(), 1);
+    assert!(matches!(
+        &result.statuses[0],
+        CandidateStatus::Rejected(CertError::Kernel(_))
+    ));
+}
+
+#[test]
+fn check_core_decl_candidates_rejects_batch_schema_before_statuses() {
+    let batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![
+            CoreDeclCandidate {
+                declaration: trivial_axiom("First"),
+            },
+            CoreDeclCandidate {
+                declaration: trivial_axiom("Second"),
+            },
+        ],
+        limits: generous_limits(),
+    };
+
+    assert_eq!(
+        check_core_decl_candidates(batch).unwrap_err(),
+        CertError::ProducerLimitExceeded {
+            limit: ProducerLimitKind::MaxDeclarations
+        }
+    );
+}
+
+#[test]
+fn check_core_decl_candidates_rejects_noncanonical_imports_batch_level() {
+    let import_a = verify_module(axiom_module("Lib.FastBatchA", "FastBatchA"));
+    let import_b = verify_module(axiom_module("Lib.FastBatchB", "FastBatchB"));
+    let reversed_imports = [import_b, import_a];
+    let batch = CandidateBatch {
+        imports: &reversed_imports,
+        prior_current_decls: &[],
+        candidates: vec![CoreDeclCandidate {
+            declaration: trivial_axiom("WillNotRun"),
+        }],
+        limits: generous_limits(),
+    };
+
+    assert_eq!(
+        check_core_decl_candidates(batch).unwrap_err(),
+        CertError::NonCanonicalEncoding { object: "Imports" }
+    );
+}
+
+#[test]
+fn check_core_decl_candidates_reuses_prior_tokens_with_local_references() {
+    let first_batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &[],
+        candidates: vec![
+            CoreDeclCandidate {
+                declaration: trivial_axiom("PriorA"),
+            },
+            CoreDeclCandidate {
+                declaration: axiom_over("prior_a", "PriorA"),
+            },
+        ],
+        limits: generous_limits_with_declarations(2),
+    };
+    let prior_tokens = accepted_tokens(check_core_decl_candidates(first_batch).unwrap());
+    let prior = prior_tokens.clone();
+    let second_batch = CandidateBatch {
+        imports: &[],
+        prior_current_decls: &prior,
+        candidates: vec![CoreDeclCandidate {
+            declaration: axiom_over("prior_b", "PriorA"),
+        }],
+        limits: generous_limits_with_declarations(3),
+    };
+
+    let result = check_core_decl_candidates(second_batch).unwrap();
+    let [CandidateStatus::Accepted(token)] = result.statuses.as_slice() else {
+        panic!("expected candidate after prior chain to be accepted");
+    };
+    assert_eq!(
+        token.pre_env_fingerprint(),
+        prior_tokens[1].post_env_fingerprint()
+    );
+    assert_eq!(
+        token.prior_chain_fingerprint(),
+        prior_chain_fingerprint(&ProducerPriorChainBytes {
+            checked_decls: vec![
+                prior_entry(
+                    prior_tokens[0].decl_interface_hash(),
+                    prior_tokens[0].decl_certificate_hash(),
+                    prior_tokens[0].pre_env_fingerprint(),
+                    prior_tokens[0].post_env_fingerprint(),
+                ),
+                prior_entry(
+                    prior_tokens[1].decl_interface_hash(),
+                    prior_tokens[1].decl_certificate_hash(),
+                    prior_tokens[1].pre_env_fingerprint(),
+                    prior_tokens[1].post_env_fingerprint(),
+                ),
+            ]
+        })
     );
 }
 
