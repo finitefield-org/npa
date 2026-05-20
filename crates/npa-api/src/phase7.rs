@@ -21,8 +21,9 @@ use crate::snapshot::{MachineSnapshotGetError, MachineSnapshotGetOk};
 use crate::tactic::parse_deterministic_budget_with_error_kind;
 use crate::types::{
     format_goal_id_wire, format_hash_string, is_machine_local_name, MachineApiCompactErrorWire,
-    MachineApiErrorWire, MachineApiResponseEnvelope, MachineApiResponseStatus, MachineGoalView,
-    MachineLocalView, MachineProofSession, MachineProofSnapshot, SessionId, SnapshotId,
+    MachineApiErrorWire, MachineApiOkResponse, MachineApiResponseEnvelope,
+    MachineApiResponseStatus, MachineApiVersion, MachineGoalView, MachineLocalView,
+    MachineProofSession, MachineProofSnapshot, SessionId, SnapshotId,
 };
 use crate::validation::{
     parse_request_body, parse_strict_u64_token, validate_json_object, FieldSpec, JsonFieldType,
@@ -33,11 +34,12 @@ use crate::{
     get_machine_snapshot, parse_machine_replay_request, parse_machine_tactic_batch_request,
     parse_machine_theorem_search_request, parse_machine_verify_request, run_machine_replay_request,
     run_machine_tactic_batch_request, run_machine_verify_request, search_machine_theorems_for_goal,
-    MachineApiTacticKind, MachineBatchSchedulerLimits, MachineReplayError, MachineReplayResponse,
-    MachineTacticBatchError, MachineTacticBatchItemResponse, MachineTacticBatchOkFields,
-    MachineTacticBatchResponse, MachineTacticBatchSchedulerFields, MachineTheoremMode,
-    MachineTheoremSearchError, MachineTheoremSearchOkFields, MachineTheoremSearchResponse,
-    MachineTheoremSearchResult, MachineVerifyError, MachineVerifyResponse,
+    MachineApiTacticKind, MachineBatchSchedulerLimits, MachineReplayError, MachineReplayOkFields,
+    MachineReplayResponse, MachineTacticBatchError, MachineTacticBatchItemResponse,
+    MachineTacticBatchOkFields, MachineTacticBatchResponse, MachineTacticBatchSchedulerFields,
+    MachineTheoremMode, MachineTheoremSearchError, MachineTheoremSearchOkFields,
+    MachineTheoremSearchResponse, MachineTheoremSearchResult, MachineVerifyError,
+    MachineVerifyOkFields, MachineVerifyResponse,
 };
 
 const PHASE7_MVP_MAX_TACTICS_PER_NODE: u32 = 16;
@@ -350,6 +352,15 @@ pub struct Phase7ReplayStep {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7ReplayPlan {
+    pub protocol_version: MachineApiVersion,
+    pub session_root_hash: Hash,
+    pub initial_state_fingerprint: Hash,
+    pub steps: Vec<Phase7ReplayStep>,
+    pub final_state_fingerprint: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase7AcceptedCandidateFailure {
     pub error_kind: FailedCandidateErrorKind,
     pub phase: crate::MachineApiDiagnosticPhase,
@@ -557,6 +568,28 @@ pub struct Phase7SearchFailure {
     pub trace_events: Vec<Phase7SearchTraceEvent>,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Phase7MinimizationStats {
+    pub pass_kinds_attempted: u64,
+    pub rebuilt_plans: u64,
+    pub replay_attempts: u64,
+    pub verify_attempts: u64,
+    pub accepted_proposals: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7VerifiedProof {
+    pub replay_plan: Phase7ReplayPlan,
+    pub final_snapshot_id: SnapshotId,
+    pub final_state_fingerprint: Hash,
+    pub verify_response: MachineApiOkResponse<MachineVerifyOkFields>,
+    pub search_stats: Phase7SearchStats,
+    pub minimization_stats: Phase7MinimizationStats,
+    pub trace_events: Vec<Phase7SearchTraceEvent>,
+}
+
+pub type Phase7SearchResult = Result<Phase7VerifiedProof, Box<Phase7SearchFailure>>;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase7SearchTraceEvent {
     pub event_index: u64,
@@ -601,7 +634,14 @@ pub enum Phase7SearchTraceEventKind {
         reason: Phase7RepairChainStopReason,
         repeated_candidate_payload_hash: Option<Hash>,
     },
-    ClosedNodePendingReplay,
+    ClosedNodeReplayRejected {
+        endpoint: String,
+        status: MachineApiResponseStatus,
+    },
+    ClosedNodeVerifyRejected {
+        endpoint: String,
+        status: MachineApiResponseStatus,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -1050,6 +1090,54 @@ pub fn phase7_replay_step_json(step: &Phase7ReplayStep) -> String {
         json_string(&format_hash_string(&step.deterministic_budget_hash)),
         json_string(&format_hash_string(&step.proof_delta_hash)),
         json_string(&format_hash_string(&step.next_state_fingerprint)),
+    )
+}
+
+pub fn phase7_build_replay_plan(node: &Phase7SearchNode) -> Phase7ReplayPlan {
+    Phase7ReplayPlan {
+        protocol_version: MachineApiVersion::V1,
+        session_root_hash: node.session_root_hash,
+        initial_state_fingerprint: node.initial_state_fingerprint,
+        steps: node.replay_steps.clone(),
+        final_state_fingerprint: node.state_fingerprint,
+    }
+}
+
+pub fn phase7_replay_plan_json(plan: &Phase7ReplayPlan) -> String {
+    let steps = plan
+        .steps
+        .iter()
+        .map(phase7_replay_step_json)
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        r#"{{"protocol_version":{},"session_root_hash":{},"initial_state_fingerprint":{},"steps":[{}],"final_state_fingerprint":{}}}"#,
+        json_string(plan.protocol_version.as_str()),
+        json_string(&format_hash_string(&plan.session_root_hash)),
+        json_string(&format_hash_string(&plan.initial_state_fingerprint)),
+        steps,
+        json_string(&format_hash_string(&plan.final_state_fingerprint)),
+    )
+}
+
+pub fn phase7_replay_request_json(session_id: SessionId, plan: &Phase7ReplayPlan) -> String {
+    format!(
+        r#"{{"session_id":"{}","plan":{}}}"#,
+        session_id.wire(),
+        phase7_replay_plan_json(plan)
+    )
+}
+
+pub fn phase7_verify_request_json(
+    session_id: SessionId,
+    snapshot_id: SnapshotId,
+    state_fingerprint: Hash,
+) -> String {
+    format!(
+        r#"{{"session_id":"{}","snapshot_id":"{}","state_fingerprint":"{}","mode":"certificate"}}"#,
+        session_id.wire(),
+        snapshot_id.wire(),
+        format_hash_string(&state_fingerprint),
     )
 }
 
@@ -1637,7 +1725,7 @@ pub fn phase7_search_node_best_partial_key(node: &Phase7SearchNode) -> Phase7Bes
 pub fn phase7_run_mvp_search(
     client: &mut impl Phase7MachineApiClient,
     input: Phase7SearchInput,
-) -> Phase7SearchFailure {
+) -> Phase7SearchResult {
     let mut node_ids = Phase7NodeIdAllocator::new();
     let mut queue = Phase7SearchPriorityQueue::new();
     let mut discovered_states = BTreeSet::new();
@@ -1672,14 +1760,39 @@ pub fn phase7_run_mvp_search(
                     &node,
                     phase7_machine_controller_trace_kind_from_reason(&reason),
                 );
-                return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                return Err(phase7_search_failure(
+                    reason,
+                    best_partial,
+                    stats,
+                    trace.finish(),
+                ));
             }
         };
         node.goals = phase7_goal_summaries(&snapshot);
 
         if node.goals.is_empty() {
-            trace.push(&node, Phase7SearchTraceEventKind::ClosedNodePendingReplay);
-            continue;
+            match phase7_attempt_closed_node(client, &node, &mut stats, &mut trace) {
+                Phase7ClosedNodeOutcome::Verified(verified) => {
+                    return Ok(Phase7VerifiedProof {
+                        replay_plan: verified.replay_plan,
+                        final_snapshot_id: verified.replay_response.final_snapshot_id,
+                        final_state_fingerprint: verified.replay_response.final_state_fingerprint,
+                        verify_response: verified.verify_response,
+                        search_stats: stats,
+                        minimization_stats: Phase7MinimizationStats::default(),
+                        trace_events: trace.finish(),
+                    });
+                }
+                Phase7ClosedNodeOutcome::Rejected => continue,
+                Phase7ClosedNodeOutcome::ControllerError { reason } => {
+                    return Err(phase7_search_failure(
+                        reason,
+                        best_partial,
+                        stats,
+                        trace.finish(),
+                    ));
+                }
+            }
         }
 
         if best_partial.as_ref().is_none_or(|best| {
@@ -1729,7 +1842,12 @@ pub fn phase7_run_mvp_search(
                 &node,
                 phase7_machine_controller_trace_kind_from_reason(&reason),
             );
-            return phase7_search_failure(reason, best_partial, stats, trace.finish());
+            return Err(phase7_search_failure(
+                reason,
+                best_partial,
+                stats,
+                trace.finish(),
+            ));
         };
 
         let retrieval = match retrieve_phase7_premises(
@@ -1753,7 +1871,12 @@ pub fn phase7_run_mvp_search(
                     &node,
                     phase7_machine_controller_trace_kind_from_reason(&reason),
                 );
-                return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                return Err(phase7_search_failure(
+                    reason,
+                    best_partial,
+                    stats,
+                    trace.finish(),
+                ));
             }
         };
 
@@ -1820,7 +1943,12 @@ pub fn phase7_run_mvp_search(
                         &node,
                         phase7_machine_controller_trace_kind_from_reason(&reason),
                     );
-                    return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                    return Err(phase7_search_failure(
+                        reason,
+                        best_partial,
+                        stats,
+                        trace.finish(),
+                    ));
                 }
             };
 
@@ -1859,7 +1987,12 @@ pub fn phase7_run_mvp_search(
                     &node,
                     phase7_machine_controller_trace_kind_from_reason(&reason),
                 );
-                return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                return Err(phase7_search_failure(
+                    reason,
+                    best_partial,
+                    stats,
+                    trace.finish(),
+                ));
             }
 
             evaluated_for_node = evaluated_for_node
@@ -1896,7 +2029,12 @@ pub fn phase7_run_mvp_search(
                             &node,
                             phase7_machine_controller_trace_kind_from_reason(&reason),
                         );
-                        return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                        return Err(phase7_search_failure(
+                            reason,
+                            best_partial,
+                            stats,
+                            trace.finish(),
+                        ));
                     }
                 };
 
@@ -2011,7 +2149,287 @@ pub fn phase7_run_mvp_search(
         };
     }
 
-    phase7_search_failure(failure_reason, best_partial, stats, trace.finish())
+    Err(phase7_search_failure(
+        failure_reason,
+        best_partial,
+        stats,
+        trace.finish(),
+    ))
+}
+
+struct Phase7ClosedNodeVerified {
+    replay_plan: Phase7ReplayPlan,
+    replay_response: MachineReplayOkFields,
+    verify_response: MachineApiOkResponse<MachineVerifyOkFields>,
+}
+
+enum Phase7ClosedNodeOutcome {
+    Verified(Box<Phase7ClosedNodeVerified>),
+    Rejected,
+    ControllerError { reason: Phase7SearchFailureReason },
+}
+
+fn phase7_attempt_closed_node(
+    client: &mut impl Phase7MachineApiClient,
+    node: &Phase7SearchNode,
+    stats: &mut Phase7SearchStats,
+    trace: &mut Phase7TraceBuilder,
+) -> Phase7ClosedNodeOutcome {
+    let replay_plan = phase7_build_replay_plan(node);
+    let replay_source = phase7_replay_request_json(node.session_id.clone(), &replay_plan);
+    let replay_response = match client.replay(&replay_source) {
+        Ok(response) => match response {
+            MachineApiResponseEnvelope::Ok(ok) => {
+                if ok.status == MachineApiResponseStatus::Ok {
+                    ok.endpoint_fields
+                } else {
+                    phase7_record_closed_node_replay_rejection(node, stats, trace, ok.status);
+                    return Phase7ClosedNodeOutcome::Rejected;
+                }
+            }
+            MachineApiResponseEnvelope::SchedulerStopped(stop) => {
+                phase7_record_closed_node_replay_rejection(node, stats, trace, stop.status);
+                return Phase7ClosedNodeOutcome::Rejected;
+            }
+            MachineApiResponseEnvelope::Error(error) => {
+                if phase7_is_replay_controller_error_wire(&error.error) {
+                    return phase7_closed_node_controller_error(
+                        node,
+                        stats,
+                        trace,
+                        phase7_machine_controller_error_reason_from_wire(
+                            Phase7MachineApiEndpointKind::Replay,
+                            error.error.kind.as_str(),
+                            Some(error.error.phase.as_str()),
+                            Some(error.error.diagnostic_hash),
+                        ),
+                    );
+                }
+                phase7_record_closed_node_replay_rejection(node, stats, trace, error.status);
+                return Phase7ClosedNodeOutcome::Rejected;
+            }
+        },
+        Err(error) => {
+            if phase7_is_replay_controller_error(&error) {
+                return phase7_closed_node_controller_error(
+                    node,
+                    stats,
+                    trace,
+                    phase7_search_failure_reason_from_machine_api_error(
+                        Phase7MachineApiEndpointKind::Replay,
+                        &error,
+                    ),
+                );
+            }
+            phase7_record_closed_node_replay_rejection(
+                node,
+                stats,
+                trace,
+                phase7_replay_error_status(&error),
+            );
+            return Phase7ClosedNodeOutcome::Rejected;
+        }
+    };
+
+    let verify_source = phase7_verify_request_json(
+        node.session_id.clone(),
+        replay_response.final_snapshot_id,
+        replay_response.final_state_fingerprint,
+    );
+    let verify_response = match client.verify(&verify_source) {
+        Ok(response) => match response {
+            MachineApiResponseEnvelope::Ok(ok) => {
+                if ok.status == MachineApiResponseStatus::Verified {
+                    ok
+                } else {
+                    phase7_record_closed_node_verify_rejection(node, stats, trace, ok.status);
+                    return Phase7ClosedNodeOutcome::Rejected;
+                }
+            }
+            MachineApiResponseEnvelope::SchedulerStopped(stop) => {
+                phase7_record_closed_node_verify_rejection(node, stats, trace, stop.status);
+                return Phase7ClosedNodeOutcome::Rejected;
+            }
+            MachineApiResponseEnvelope::Error(error) => {
+                if phase7_is_verify_controller_error_wire(&error.error) {
+                    return phase7_closed_node_controller_error(
+                        node,
+                        stats,
+                        trace,
+                        phase7_machine_controller_error_reason_from_wire(
+                            Phase7MachineApiEndpointKind::Verify,
+                            error.error.kind.as_str(),
+                            Some(error.error.phase.as_str()),
+                            Some(error.error.diagnostic_hash),
+                        ),
+                    );
+                }
+                phase7_record_closed_node_verify_rejection(node, stats, trace, error.status);
+                return Phase7ClosedNodeOutcome::Rejected;
+            }
+        },
+        Err(error) => {
+            if phase7_is_verify_controller_error(&error) {
+                return phase7_closed_node_controller_error(
+                    node,
+                    stats,
+                    trace,
+                    phase7_search_failure_reason_from_machine_api_error(
+                        Phase7MachineApiEndpointKind::Verify,
+                        &error,
+                    ),
+                );
+            }
+            phase7_record_closed_node_verify_rejection(
+                node,
+                stats,
+                trace,
+                phase7_verify_error_status(&error),
+            );
+            return Phase7ClosedNodeOutcome::Rejected;
+        }
+    };
+
+    Phase7ClosedNodeOutcome::Verified(Box::new(Phase7ClosedNodeVerified {
+        replay_plan,
+        replay_response,
+        verify_response,
+    }))
+}
+
+fn phase7_closed_node_controller_error(
+    node: &Phase7SearchNode,
+    stats: &mut Phase7SearchStats,
+    trace: &mut Phase7TraceBuilder,
+    reason: Phase7SearchFailureReason,
+) -> Phase7ClosedNodeOutcome {
+    stats.controller_errors += 1;
+    trace.push(
+        node,
+        phase7_machine_controller_trace_kind_from_reason(&reason),
+    );
+    Phase7ClosedNodeOutcome::ControllerError { reason }
+}
+
+fn phase7_record_closed_node_replay_rejection(
+    node: &Phase7SearchNode,
+    stats: &mut Phase7SearchStats,
+    trace: &mut Phase7TraceBuilder,
+    status: MachineApiResponseStatus,
+) {
+    stats.closed_node_replay_rejections += 1;
+    trace.push(
+        node,
+        Phase7SearchTraceEventKind::ClosedNodeReplayRejected {
+            endpoint: phase7_machine_api_endpoint_wire(Phase7MachineApiEndpointKind::Replay)
+                .to_owned(),
+            status,
+        },
+    );
+}
+
+fn phase7_record_closed_node_verify_rejection(
+    node: &Phase7SearchNode,
+    stats: &mut Phase7SearchStats,
+    trace: &mut Phase7TraceBuilder,
+    status: MachineApiResponseStatus,
+) {
+    stats.closed_node_verify_rejections += 1;
+    trace.push(
+        node,
+        Phase7SearchTraceEventKind::ClosedNodeVerifyRejected {
+            endpoint: phase7_machine_api_endpoint_wire(Phase7MachineApiEndpointKind::Verify)
+                .to_owned(),
+            status,
+        },
+    );
+}
+
+fn phase7_is_replay_controller_error(error: &Phase7MachineApiError) -> bool {
+    match error {
+        Phase7MachineApiError::Replay(error) => {
+            phase7_is_replay_controller_error_kind(error.diagnostic.kind)
+        }
+        _ => true,
+    }
+}
+
+fn phase7_is_replay_controller_error_wire(error: &MachineApiErrorWire) -> bool {
+    phase7_is_replay_controller_error_kind(error.kind)
+}
+
+fn phase7_is_replay_controller_error_kind(kind: MachineApiErrorKind) -> bool {
+    matches!(
+        kind,
+        MachineApiErrorKind::InvalidReplayPlan
+            | MachineApiErrorKind::UnknownSession
+            | MachineApiErrorKind::SessionRootHashMismatch
+            | MachineApiErrorKind::StateFingerprintMismatch
+            | MachineApiErrorKind::ReplayHashMismatch
+            | MachineApiErrorKind::InvalidMachineProofState
+    )
+}
+
+fn phase7_is_verify_controller_error(error: &Phase7MachineApiError) -> bool {
+    match error {
+        Phase7MachineApiError::Verify(error) => {
+            phase7_is_verify_controller_error_kind(error.diagnostic.kind, error.diagnostic.phase)
+        }
+        _ => true,
+    }
+}
+
+fn phase7_is_verify_controller_error_wire(error: &MachineApiErrorWire) -> bool {
+    phase7_is_verify_controller_error_kind(error.kind, error.phase)
+}
+
+fn phase7_is_verify_controller_error_kind(
+    kind: MachineApiErrorKind,
+    phase: crate::MachineApiDiagnosticPhase,
+) -> bool {
+    matches!(
+        (kind, phase),
+        (
+            MachineApiErrorKind::InvalidVerifyRequest,
+            crate::MachineApiDiagnosticPhase::RequestValidation
+        )
+    ) || matches!(
+        kind,
+        MachineApiErrorKind::UnknownSession
+            | MachineApiErrorKind::UnknownSnapshot
+            | MachineApiErrorKind::StateFingerprintMismatch
+            | MachineApiErrorKind::InvalidMachineProofState
+    )
+}
+
+fn phase7_replay_error_status(error: &Phase7MachineApiError) -> MachineApiResponseStatus {
+    match error {
+        Phase7MachineApiError::Replay(error) => phase7_replay_response_status(&error.response),
+        _ => MachineApiResponseStatus::Error,
+    }
+}
+
+fn phase7_verify_error_status(error: &Phase7MachineApiError) -> MachineApiResponseStatus {
+    match error {
+        Phase7MachineApiError::Verify(error) => phase7_verify_response_status(&error.response),
+        _ => MachineApiResponseStatus::Error,
+    }
+}
+
+fn phase7_replay_response_status(response: &MachineReplayResponse) -> MachineApiResponseStatus {
+    match response {
+        MachineApiResponseEnvelope::Ok(ok) => ok.status,
+        MachineApiResponseEnvelope::Error(error) => error.status,
+        MachineApiResponseEnvelope::SchedulerStopped(stop) => stop.status,
+    }
+}
+
+fn phase7_verify_response_status(response: &MachineVerifyResponse) -> MachineApiResponseStatus {
+    match response {
+        MachineApiResponseEnvelope::Ok(ok) => ok.status,
+        MachineApiResponseEnvelope::Error(error) => error.status,
+        MachineApiResponseEnvelope::SchedulerStopped(stop) => stop.status,
+    }
 }
 
 fn phase7_root_search_node(input: &Phase7SearchInput, node_id: Phase7NodeId) -> Phase7SearchNode {
@@ -2096,7 +2514,7 @@ fn phase7_search_failure(
     best_partial: Option<Phase7SearchNode>,
     search_stats: Phase7SearchStats,
     trace_events: Vec<Phase7SearchTraceEvent>,
-) -> Phase7SearchFailure {
+) -> Box<Phase7SearchFailure> {
     let (best_partial_replay_prefix, best_snapshot_id, best_state_fingerprint, remaining_goals) =
         if let Some(node) = best_partial {
             (
@@ -2108,7 +2526,7 @@ fn phase7_search_failure(
         } else {
             (None, None, None, None)
         };
-    Phase7SearchFailure {
+    Box::new(Phase7SearchFailure {
         reason,
         best_partial_replay_prefix,
         best_snapshot_id,
@@ -2116,7 +2534,7 @@ fn phase7_search_failure(
         remaining_goals,
         search_stats,
         trace_events,
-    }
+    })
 }
 
 fn phase7_search_failure_reason_from_tactic_batch_run_error(
@@ -3721,15 +4139,30 @@ mod tests {
     use crate::{
         parse_machine_snapshot_get_request, parse_machine_tactic_batch_request,
         parse_machine_theorem_search_request, JsonFieldType, LocalId, MachineAllowedModulesFilter,
-        MachineApiOkResponse, MachineApiRequestErrorReason, MachineApiResponseEnvelope,
-        MachineApiResponseStatus, MachineApiSchedulerResponse, MachineExprView, MachineLocalView,
-        MachineSchedulerArtifact, MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
-        MachineSuggestedCandidate, MachineSuggestedCandidateStatus, MachineTheoremGlobalRef,
-        MachineTheoremStatement,
+        MachineApiErrorResponse, MachineApiOkResponse, MachineApiRequestErrorReason,
+        MachineApiResponseEnvelope, MachineApiResponseStatus, MachineApiSchedulerResponse,
+        MachineCertificateWirePayload, MachineExprView, MachineLocalView, MachineSchedulerArtifact,
+        MachineSchedulerArtifactKind, MachineSchedulerArtifactScope, MachineSuggestedCandidate,
+        MachineSuggestedCandidateStatus, MachineTheoremGlobalRef, MachineTheoremStatement,
+        MachineVerifiedModuleCertificatePayload,
     };
 
     fn hash(byte: u8) -> Hash {
         [byte; 32]
+    }
+
+    fn unwrap_search_failure(result: Phase7SearchResult) -> Phase7SearchFailure {
+        match result {
+            Ok(proof) => panic!("expected search failure, got verified proof {proof:?}"),
+            Err(failure) => *failure,
+        }
+    }
+
+    fn unwrap_verified_proof(result: Phase7SearchResult) -> Phase7VerifiedProof {
+        match result {
+            Ok(proof) => proof,
+            Err(failure) => panic!("expected verified proof, got search failure {failure:?}"),
+        }
     }
 
     fn name(value: &str) -> Name {
@@ -4082,6 +4515,104 @@ mod tests {
                 failure_count,
             },
         })
+    }
+
+    fn replay_ok_response(
+        final_snapshot_id: SnapshotId,
+        final_state_fingerprint: Hash,
+    ) -> MachineReplayResponse {
+        MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
+            status: MachineApiResponseStatus::Ok,
+            endpoint_fields: MachineReplayOkFields {
+                final_snapshot_id,
+                final_state_fingerprint,
+            },
+        })
+    }
+
+    fn replay_scheduler_stopped_response() -> MachineReplayResponse {
+        MachineApiResponseEnvelope::SchedulerStopped(MachineApiSchedulerResponse {
+            status: MachineApiResponseStatus::SchedulerStopped,
+            scheduler_artifact: MachineSchedulerArtifact {
+                kind: MachineSchedulerArtifactKind::Timeout,
+                scope: MachineSchedulerArtifactScope::Replay,
+                retryable: true,
+            },
+            endpoint_fields: (),
+        })
+    }
+
+    fn verify_ok_response() -> MachineVerifyResponse {
+        MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
+            status: MachineApiResponseStatus::Verified,
+            endpoint_fields: MachineVerifyOkFields {
+                root_decl_interface_hash: hash(80),
+                root_decl_certificate_hash: hash(81),
+                root_axioms_used: Vec::new(),
+                module_export_hash: hash(82),
+                module_certificate_hash: hash(83),
+                module_axioms_used: Vec::new(),
+                certificate: certificate_payload(84),
+                dependency_import_closure: Vec::new(),
+                import_payload: verified_module_certificate_payload(85),
+            },
+        })
+    }
+
+    fn replay_error_response(
+        kind: MachineApiErrorKind,
+        phase: crate::MachineApiDiagnosticPhase,
+    ) -> MachineReplayResponse {
+        MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
+            status: MachineApiResponseStatus::Error,
+            error: error_wire(kind, phase),
+            endpoint_fields: (),
+        }))
+    }
+
+    fn verify_error_response(
+        kind: MachineApiErrorKind,
+        phase: crate::MachineApiDiagnosticPhase,
+    ) -> MachineVerifyResponse {
+        MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
+            status: MachineApiResponseStatus::Error,
+            error: error_wire(kind, phase),
+            endpoint_fields: (),
+        }))
+    }
+
+    fn error_wire(
+        kind: MachineApiErrorKind,
+        phase: crate::MachineApiDiagnosticPhase,
+    ) -> MachineApiErrorWire {
+        MachineApiErrorWire {
+            kind,
+            phase,
+            diagnostic_hash: hash(79),
+            retryable: false,
+            goal_id: None,
+            tactic_kind: None,
+            primary_name: None,
+            primary_axiom_ref: None,
+            expected_hash: None,
+            actual_hash: None,
+        }
+    }
+
+    fn certificate_payload(byte: u8) -> MachineCertificateWirePayload {
+        MachineCertificateWirePayload {
+            encoding: "npa.certificate.canonical.v0.1.hex",
+            bytes: format!("{byte:02x}"),
+        }
+    }
+
+    fn verified_module_certificate_payload(byte: u8) -> MachineVerifiedModuleCertificatePayload {
+        MachineVerifiedModuleCertificatePayload {
+            module: name("Test.Module"),
+            expected_export_hash: hash(byte),
+            expected_certificate_hash: hash(byte + 1),
+            certificate: certificate_payload(byte + 2),
+        }
     }
 
     #[test]
@@ -5280,8 +5811,12 @@ mod tests {
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: closed_child,
         }));
+        client.push_replay_response(Ok(replay_scheduler_stopped_response()));
 
-        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root));
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
 
         assert_eq!(failure.search_stats.candidates_evaluated, 3);
         let batch_sources = client
@@ -5313,6 +5848,202 @@ mod tests {
                 ..
             }
         )));
+    }
+
+    #[test]
+    fn m6_closed_node_replays_and_verifies_before_success() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let closed_child = snapshot_with_state(2, Vec::new());
+        let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
+        let replay_final_state_fingerprint = hash(90);
+        let config = mvp_config();
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![theorem_result(
+            "display",
+            vec![suggested_candidate(
+                hash(40),
+                MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            )],
+        )])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: closed_child.snapshot_id,
+                next_state_fingerprint: closed_child.state_fingerprint,
+                proof_delta_hash: hash(43),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed_child.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed_child.clone(),
+        }));
+        client.push_replay_response(Ok(replay_ok_response(
+            replay_final_snapshot_id,
+            replay_final_state_fingerprint,
+        )));
+        client.push_verify_response(Ok(verify_ok_response()));
+
+        let proof = unwrap_verified_proof(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert_eq!(proof.replay_plan.steps.len(), 1);
+        assert_eq!(
+            proof.replay_plan.final_state_fingerprint,
+            closed_child.state_fingerprint
+        );
+        assert_eq!(proof.final_snapshot_id, replay_final_snapshot_id);
+        assert_eq!(
+            proof.final_state_fingerprint,
+            replay_final_state_fingerprint
+        );
+        assert_eq!(
+            proof.verify_response.status,
+            MachineApiResponseStatus::Verified
+        );
+        assert_eq!(proof.search_stats.candidates_evaluated, 1);
+        assert_eq!(proof.search_stats.closed_node_replay_rejections, 0);
+        assert_eq!(proof.search_stats.closed_node_verify_rejections, 0);
+
+        let replay_source = client.calls().iter().find_map(|call| match call {
+            Phase7MachineApiCall::Replay { source } => Some(source),
+            _ => None,
+        });
+        let replay_source = replay_source.expect("expected replay call");
+        assert!(replay_source.contains(r#""steps":[{"#));
+        assert!(replay_source.contains(&format!(
+            r#""final_state_fingerprint":"{}""#,
+            format_hash_string(&closed_child.state_fingerprint)
+        )));
+
+        let verify_source = client.calls().iter().find_map(|call| match call {
+            Phase7MachineApiCall::Verify { source } => Some(source),
+            _ => None,
+        });
+        let verify_source = verify_source.expect("expected verify call");
+        assert!(verify_source.contains(&format!(
+            r#""snapshot_id":"{}""#,
+            replay_final_snapshot_id.wire()
+        )));
+        assert!(verify_source.contains(&format!(
+            r#""state_fingerprint":"{}""#,
+            format_hash_string(&replay_final_state_fingerprint)
+        )));
+        assert!(verify_source.contains(r#""mode":"certificate""#));
+    }
+
+    #[test]
+    fn m6_replay_success_without_verify_is_not_verified_proof() {
+        let root = snapshot_with_state(1, Vec::new());
+        let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
+        let replay_final_state_fingerprint = hash(90);
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_replay_response(Ok(replay_ok_response(
+            replay_final_snapshot_id,
+            replay_final_state_fingerprint,
+        )));
+        client.push_verify_response(Ok(verify_error_response(
+            MachineApiErrorKind::VerifyFailed,
+            crate::MachineApiDiagnosticPhase::CertificateVerify,
+        )));
+
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert_eq!(failure.reason, Phase7SearchFailureReason::QueueExhausted);
+        assert_eq!(failure.best_partial_replay_prefix, None);
+        assert_eq!(failure.best_snapshot_id, None);
+        assert_eq!(failure.search_stats.closed_node_verify_rejections, 1);
+        assert_eq!(failure.search_stats.closed_node_replay_rejections, 0);
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            &event.kind,
+            Phase7SearchTraceEventKind::ClosedNodeVerifyRejected { endpoint, status }
+                if endpoint == "/machine/verify" && *status == MachineApiResponseStatus::Error
+        )));
+    }
+
+    #[test]
+    fn m6_replay_controller_error_preserves_phase_in_failure_reason() {
+        let root = snapshot_with_state(1, Vec::new());
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_replay_response(Ok(replay_error_response(
+            MachineApiErrorKind::ReplayHashMismatch,
+            crate::MachineApiDiagnosticPhase::ReplayExecution,
+        )));
+
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert_eq!(
+            failure.reason,
+            Phase7SearchFailureReason::MachineControllerError {
+                endpoint: "/machine/replay".to_owned(),
+                error_kind: "replay_hash_mismatch".to_owned(),
+                error_phase: Some("replay_execution".to_owned()),
+                diagnostic_hash: Some(hash(79)),
+            }
+        );
+        assert_eq!(failure.search_stats.controller_errors, 1);
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            &event.kind,
+            Phase7SearchTraceEventKind::MachineControllerError { endpoint, error_kind }
+                if endpoint == "/machine/replay" && error_kind == "replay_hash_mismatch"
+        )));
+    }
+
+    #[test]
+    fn m6_verify_controller_error_preserves_phase_in_failure_reason() {
+        let root = snapshot_with_state(1, Vec::new());
+        let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
+        let replay_final_state_fingerprint = hash(90);
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_replay_response(Ok(replay_ok_response(
+            replay_final_snapshot_id,
+            replay_final_state_fingerprint,
+        )));
+        client.push_verify_response(Ok(verify_error_response(
+            MachineApiErrorKind::InvalidVerifyRequest,
+            crate::MachineApiDiagnosticPhase::RequestValidation,
+        )));
+
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert_eq!(
+            failure.reason,
+            Phase7SearchFailureReason::MachineControllerError {
+                endpoint: "/machine/verify".to_owned(),
+                error_kind: "invalid_verify_request".to_owned(),
+                error_phase: Some("request_validation".to_owned()),
+                diagnostic_hash: Some(hash(79)),
+            }
+        );
+        assert_eq!(failure.search_stats.controller_errors, 1);
+        assert_eq!(failure.search_stats.closed_node_verify_rejections, 0);
     }
 
     #[test]
@@ -5354,7 +6085,7 @@ mod tests {
             snapshot: root.clone(),
         }));
 
-        let failure = phase7_run_mvp_search(&mut client, input);
+        let failure = unwrap_search_failure(phase7_run_mvp_search(&mut client, input));
 
         assert_eq!(
             failure.reason,
@@ -5381,7 +6112,10 @@ mod tests {
         }));
         client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
 
-        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root));
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
 
         assert_eq!(
             failure.reason,
@@ -5430,7 +6164,7 @@ mod tests {
             }],
         )));
 
-        let failure = phase7_run_mvp_search(&mut client, input);
+        let failure = unwrap_search_failure(phase7_run_mvp_search(&mut client, input));
 
         assert_eq!(failure.search_stats.candidates_evaluated, 1);
         assert!(failure.trace_events.iter().any(|event| matches!(
@@ -5469,7 +6203,10 @@ mod tests {
             Vec::new(),
         )));
 
-        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root));
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
 
         assert_eq!(
             failure.reason,
@@ -5517,7 +6254,10 @@ mod tests {
             }],
         )));
 
-        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root.clone()));
+        let failure = unwrap_search_failure(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root.clone()),
+        ));
 
         assert_eq!(failure.search_stats.candidates_evaluated, 1);
         assert!(failure.trace_events.iter().any(|event| matches!(
@@ -5586,7 +6326,7 @@ mod tests {
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: child1 }));
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: child0 }));
 
-        let failure = phase7_run_mvp_search(&mut client, input);
+        let failure = unwrap_search_failure(phase7_run_mvp_search(&mut client, input));
 
         assert_eq!(
             failure.reason,
