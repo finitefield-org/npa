@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
 
 use npa_cert::{
@@ -26,6 +26,9 @@ const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
 const MAX_PHASE9_INDUCTIVE_ITEMS: u64 = 65_536;
 const MAX_PHASE9_INDUCTIVE_EXPR_NODES: u64 = 1_000_000;
 const MAX_PHASE9_INDUCTIVE_LEVEL_NODES: u64 = 1_000_000;
+const MAX_PHASE9_TYPECLASS_CANDIDATES: u64 = 65_536;
+const MAX_PHASE9_TYPECLASS_DEPTH: u32 = 1_024;
+const MAX_PHASE9_TYPECLASS_NODES: u32 = 1_000_000;
 const MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES: usize = 128_000_000;
 const MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES: usize = 16_000_000;
 const MAX_PHASE9_THEOREM_GRAPH_NODES: u64 = 1_000_000;
@@ -203,6 +206,25 @@ pub struct Phase9AdvancedInductiveOptions {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase9TypeclassOptions {
     pub class_declarations: Vec<Phase9AiGlobalRef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineTypeclassResolutionPlan {
+    pub goal: Phase9AiGoal,
+    pub ordered_candidates: Vec<Phase9MachineInstanceCandidateRef>,
+    pub max_depth: u32,
+    pub max_nodes: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineInstanceCandidateRef {
+    pub target: Phase9MachineInstanceTargetRef,
+    pub priority_hint: Option<i32>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineInstanceTargetRef {
+    Imported { global_ref: Phase9AiGlobalRef },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -851,6 +873,14 @@ pub fn phase9_inductive_proposal_canonical_bytes(
     Ok(out)
 }
 
+pub fn phase9_typeclass_resolution_plan_canonical_bytes(
+    plan: &Phase9MachineTypeclassResolutionPlan,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_typeclass_resolution_plan_to(&mut out, plan)?;
+    Ok(out)
+}
+
 pub fn phase9_theorem_graph_query_canonical_bytes(
     query: &Phase9MachineTheoremGraphQuery,
 ) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
@@ -1035,12 +1065,15 @@ pub fn run_phase9_typeclass_resolve_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
+    match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
         Phase9AiTaskKind::TypeclassResolution,
-    )
+    ) {
+        Ok(validated) => run_phase9_typeclass_resolve_validated(validated, verified_imports),
+        Err(response) => response,
+    }
 }
 
 pub fn run_phase9_quotient_check_request(
@@ -1460,6 +1493,185 @@ fn run_phase9_inductive_validated(
     )
 }
 
+fn run_phase9_typeclass_resolve_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let plan = match decode_typeclass_resolution_plan(&validated.envelope.payload) {
+        Ok(plan) => plan,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+    if !phase9_typeclass_candidate_targets_are_unique(&plan.ordered_candidates) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+
+    if validated.envelope.target.goal_fingerprint
+        != Some(phase9_ai_goal_fingerprint(
+            validated.env_fingerprint,
+            &plan.goal,
+        ))
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+
+    match validate_phase9_ai_goal(&plan.goal, verified_imports) {
+        Ok(()) => {}
+        Err(Phase9GoalValidationError::EnvelopeMalformed) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+        Err(Phase9GoalValidationError::ImportClosureMismatch) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            );
+        }
+        Err(Phase9GoalValidationError::KernelRejected) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+    }
+
+    let env = match phase9_kernel_env_from_imports(verified_imports) {
+        Ok(env) => env,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            );
+        }
+    };
+    let goal_ctx = phase9_goal_ctx(&plan.goal);
+
+    let class_declarations = match phase9_resolve_typeclass_class_declarations(
+        candidate_hash,
+        &env,
+        &validated.options.typeclass.class_declarations,
+        verified_imports,
+    ) {
+        Ok(class_declarations) => class_declarations,
+        Err(response) => return response,
+    };
+
+    let candidates = match phase9_resolve_typeclass_candidates(
+        candidate_hash,
+        &env,
+        &class_declarations,
+        &plan.ordered_candidates,
+        verified_imports,
+    ) {
+        Ok(candidates) => candidates,
+        Err(response) => return response,
+    };
+
+    if phase9_typeclass_head_name(
+        &env,
+        &goal_ctx,
+        &plan.goal.universe_params,
+        &plan.goal.target,
+        &class_declarations,
+    )
+    .is_none()
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::TypeclassResolution(
+                Phase9TypeclassResolutionError::ClassHeadUnsupported,
+            )),
+        );
+    }
+
+    let proof = match phase9_typeclass_search(
+        &env,
+        &goal_ctx,
+        &plan.goal.universe_params,
+        &plan.goal.target,
+        &class_declarations,
+        &candidates,
+        plan.max_depth,
+        plan.max_nodes,
+    ) {
+        Phase9TypeclassSearchOutcome::Success(proof) => proof,
+        Phase9TypeclassSearchOutcome::NoSolution => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::NoSolution,
+                Some(Phase9AiFeatureError::TypeclassResolution(
+                    Phase9TypeclassResolutionError::NoSolution,
+                )),
+            );
+        }
+        Phase9TypeclassSearchOutcome::BudgetExceeded => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::BudgetExceeded,
+                None,
+            );
+        }
+        Phase9TypeclassSearchOutcome::AmbiguousResolution => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::AmbiguousResolution,
+                None,
+            );
+        }
+        Phase9TypeclassSearchOutcome::CandidateInterfaceInvalid => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::TypeclassResolution(
+                    Phase9TypeclassResolutionError::CandidateInterfaceInvalid,
+                )),
+            );
+        }
+    };
+
+    if env
+        .check(
+            &goal_ctx,
+            &plan.goal.universe_params,
+            &proof,
+            &plan.goal.target,
+        )
+        .is_err()
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        );
+    }
+
+    success_response(
+        candidate_hash,
+        Phase9AiSuccessPayload::TypeclassResolution { proof },
+    )
+}
+
 fn run_phase9_theorem_graph_query_validated(
     validated: Phase9ValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
@@ -1503,7 +1715,7 @@ fn run_phase9_theorem_graph_query_validated(
         );
     }
 
-    match validate_phase9_theorem_graph_goal(&query.goal, verified_imports) {
+    match validate_phase9_ai_goal(&query.goal, verified_imports) {
         Ok(()) => {}
         Err(Phase9GoalValidationError::EnvelopeMalformed) => {
             return rejected_response(
@@ -2117,6 +2329,938 @@ fn validate_required_options(
     }
 }
 
+#[derive(Clone)]
+struct Phase9ResolvedTypeclassGlobalRef {
+    const_name: String,
+    universe_params: Vec<String>,
+    ty: Expr,
+}
+
+#[derive(Clone)]
+struct Phase9ResolvedTypeclassCandidate {
+    target_key: Vec<u8>,
+    const_name: String,
+    universe_params: Vec<String>,
+    telescope: Vec<Expr>,
+    result: Expr,
+    class_head: Option<String>,
+}
+
+struct Phase9TypeclassCandidateApplication {
+    levels: Vec<Level>,
+    args: Vec<Option<Expr>>,
+    recursive_obligations: Vec<(usize, Expr)>,
+    fingerprint: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase9TypeclassSearchStop {
+    AmbiguousResolution,
+    BudgetExceeded,
+    CandidateInterfaceInvalid,
+}
+
+enum Phase9TypeclassSearchOutcome {
+    Success(Expr),
+    NoSolution,
+    BudgetExceeded,
+    AmbiguousResolution,
+    CandidateInterfaceInvalid,
+}
+
+fn phase9_typeclass_candidate_targets_are_unique(
+    candidates: &[Phase9MachineInstanceCandidateRef],
+) -> bool {
+    let mut seen = BTreeSet::new();
+    for candidate in candidates {
+        let Ok(key) = phase9_instance_target_canonical_bytes(&candidate.target) else {
+            return false;
+        };
+        if !seen.insert(key) {
+            return false;
+        }
+    }
+    true
+}
+
+fn phase9_goal_ctx(goal: &Phase9AiGoal) -> Ctx {
+    let mut ctx = Ctx::new();
+    for local in &goal.local_context {
+        if let Some(value) = &local.value {
+            ctx.push_definition(local.name.clone(), local.ty.clone(), value.clone());
+        } else {
+            ctx.push_assumption(local.name.clone(), local.ty.clone());
+        }
+    }
+    ctx
+}
+
+fn phase9_resolve_typeclass_class_declarations(
+    candidate_hash: Hash,
+    env: &Env,
+    class_declarations: &[Phase9AiGlobalRef],
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<BTreeSet<String>, Phase9AiEndpointResponse> {
+    let mut resolved_classes = BTreeSet::new();
+    for class_ref in class_declarations {
+        let Some(resolved) = phase9_resolve_typeclass_global_ref(class_ref, imports) else {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            ));
+        };
+        if !phase9_typeclass_class_declaration_is_valid(env, &resolved) {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::TypeclassResolution(
+                    Phase9TypeclassResolutionError::ClassDeclarationMismatch,
+                )),
+            ));
+        }
+        resolved_classes.insert(resolved.const_name);
+    }
+    Ok(resolved_classes)
+}
+
+fn phase9_resolve_typeclass_candidates(
+    candidate_hash: Hash,
+    env: &Env,
+    class_declarations: &BTreeSet<String>,
+    candidates: &[Phase9MachineInstanceCandidateRef],
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<Vec<Phase9ResolvedTypeclassCandidate>, Phase9AiEndpointResponse> {
+    let mut resolved = Vec::new();
+    for candidate in candidates {
+        let target_key =
+            phase9_instance_target_canonical_bytes(&candidate.target).map_err(|_| {
+                rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    None,
+                )
+            })?;
+        let Phase9MachineInstanceTargetRef::Imported { global_ref } = &candidate.target;
+        let Some(resolved_ref) = phase9_resolve_typeclass_global_ref(global_ref, imports) else {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            ));
+        };
+        let Some((telescope, result)) =
+            phase9_decompose_typeclass_candidate_type(env, &resolved_ref)
+        else {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::TypeclassResolution(
+                    Phase9TypeclassResolutionError::CandidateInterfaceInvalid,
+                )),
+            ));
+        };
+        if !phase9_candidate_expr_has_only_telescope_bvars(&result, telescope.len(), 0) {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Some(Phase9AiFeatureError::TypeclassResolution(
+                    Phase9TypeclassResolutionError::CandidateInterfaceInvalid,
+                )),
+            ));
+        }
+        let class_head = phase9_typeclass_head_name(
+            env,
+            &phase9_telescope_ctx(&telescope),
+            &resolved_ref.universe_params,
+            &result,
+            class_declarations,
+        );
+        resolved.push(Phase9ResolvedTypeclassCandidate {
+            target_key,
+            const_name: resolved_ref.const_name,
+            universe_params: resolved_ref.universe_params,
+            telescope,
+            result,
+            class_head,
+        });
+    }
+    Ok(resolved)
+}
+
+fn phase9_resolve_typeclass_global_ref(
+    global_ref: &Phase9AiGlobalRef,
+    imports: &[VerifiedImportRef],
+) -> Option<Phase9ResolvedTypeclassGlobalRef> {
+    let mut matches = Vec::new();
+    for import in imports {
+        let identity = Phase9ImportIdentity::from_verified_import(import);
+        if identity.module != global_ref.module
+            || identity.export_hash != global_ref.export_hash
+            || identity.certificate_hash != global_ref.certificate_hash
+        {
+            continue;
+        }
+        for export in import.exports().iter().filter(|export| {
+            export.name == global_ref.name
+                && export.decl_interface_hash == global_ref.decl_interface_hash
+        }) {
+            let decl = import
+                .certified_env_decls()
+                .iter()
+                .find(|decl| decl.name() == export.name.as_dotted())?;
+            matches.push(Phase9ResolvedTypeclassGlobalRef {
+                const_name: export.name.as_dotted(),
+                universe_params: decl.universe_params().to_vec(),
+                ty: decl.ty().clone(),
+            });
+        }
+    }
+    let [resolved] = matches.as_slice() else {
+        return None;
+    };
+    Some(resolved.clone())
+}
+
+fn phase9_typeclass_class_declaration_is_valid(
+    env: &Env,
+    class_decl: &Phase9ResolvedTypeclassGlobalRef,
+) -> bool {
+    let mut ctx = Ctx::new();
+    let mut current = class_decl.ty.clone();
+    loop {
+        let Ok(whnf) = env.whnf(&ctx, &class_decl.universe_params, &current) else {
+            return false;
+        };
+        match whnf {
+            Expr::Sort(_) => return true,
+            Expr::Pi { binder, ty, body } => {
+                if expect_sort_public(env, &ctx, &class_decl.universe_params, &ty).is_err() {
+                    return false;
+                }
+                ctx.push_assumption(binder, (*ty).clone());
+                current = *body;
+            }
+            _ => return false,
+        }
+    }
+}
+
+fn phase9_decompose_typeclass_candidate_type(
+    env: &Env,
+    candidate: &Phase9ResolvedTypeclassGlobalRef,
+) -> Option<(Vec<Expr>, Expr)> {
+    let mut ctx = Ctx::new();
+    let mut telescope = Vec::new();
+    let mut current = candidate.ty.clone();
+    loop {
+        let whnf = env.whnf(&ctx, &candidate.universe_params, &current).ok()?;
+        match whnf {
+            Expr::Pi { binder, ty, body } => {
+                let domain = (*ty).clone();
+                ctx.push_assumption(binder, domain.clone());
+                telescope.push(domain);
+                current = *body;
+            }
+            result => return Some((telescope, result)),
+        }
+    }
+}
+
+fn phase9_telescope_ctx(telescope: &[Expr]) -> Ctx {
+    let mut ctx = Ctx::new();
+    for ty in telescope {
+        ctx.push_assumption("_", ty.clone());
+    }
+    ctx
+}
+
+fn phase9_typeclass_head_name(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    target: &Expr,
+    class_declarations: &BTreeSet<String>,
+) -> Option<String> {
+    let whnf = env.whnf(ctx, delta, target).ok()?;
+    let (head, _) = npa_kernel::expr::collect_apps(&whnf);
+    let Expr::Const { name, .. } = head else {
+        return None;
+    };
+    if class_declarations.contains(&name) {
+        Some(name)
+    } else {
+        None
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase9_typeclass_search(
+    env: &Env,
+    goal_ctx: &Ctx,
+    goal_universe_params: &[String],
+    goal_target: &Expr,
+    class_declarations: &BTreeSet<String>,
+    candidates: &[Phase9ResolvedTypeclassCandidate],
+    max_depth: u32,
+    max_nodes: u32,
+) -> Phase9TypeclassSearchOutcome {
+    let mut node_count = 0u32;
+    let mut successes = BTreeMap::<Vec<u8>, Expr>::new();
+    match phase9_collect_typeclass_solutions(
+        env,
+        goal_ctx,
+        goal_universe_params,
+        goal_target,
+        class_declarations,
+        candidates,
+        max_depth,
+        max_nodes,
+        0,
+        &mut node_count,
+        &[],
+    ) {
+        Ok(proofs) => {
+            for proof in proofs {
+                let key = phase9_expr_canonical_bytes(&proof);
+                successes.entry(key).or_insert(proof);
+                if successes.len() > 1 {
+                    return Phase9TypeclassSearchOutcome::AmbiguousResolution;
+                }
+            }
+        }
+        Err(Phase9TypeclassSearchStop::AmbiguousResolution) => {
+            return Phase9TypeclassSearchOutcome::AmbiguousResolution;
+        }
+        Err(Phase9TypeclassSearchStop::BudgetExceeded) => {
+            return Phase9TypeclassSearchOutcome::BudgetExceeded;
+        }
+        Err(Phase9TypeclassSearchStop::CandidateInterfaceInvalid) => {
+            return Phase9TypeclassSearchOutcome::CandidateInterfaceInvalid;
+        }
+    }
+    match successes.into_values().next() {
+        Some(proof) => Phase9TypeclassSearchOutcome::Success(proof),
+        None => Phase9TypeclassSearchOutcome::NoSolution,
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase9_collect_typeclass_solutions(
+    env: &Env,
+    goal_ctx: &Ctx,
+    goal_universe_params: &[String],
+    obligation: &Expr,
+    class_declarations: &BTreeSet<String>,
+    candidates: &[Phase9ResolvedTypeclassCandidate],
+    max_depth: u32,
+    max_nodes: u32,
+    current_depth: u32,
+    node_count: &mut u32,
+    visited: &[(Vec<u8>, Vec<u8>)],
+) -> std::result::Result<Vec<Expr>, Phase9TypeclassSearchStop> {
+    let Some(obligation_head) = phase9_typeclass_head_name(
+        env,
+        goal_ctx,
+        goal_universe_params,
+        obligation,
+        class_declarations,
+    ) else {
+        return Ok(Vec::new());
+    };
+    let mut solutions = BTreeMap::<Vec<u8>, Expr>::new();
+    for candidate in candidates {
+        if *node_count >= max_nodes {
+            return Err(Phase9TypeclassSearchStop::BudgetExceeded);
+        }
+        *node_count += 1;
+        if candidate.class_head.as_ref() != Some(&obligation_head) {
+            continue;
+        }
+        let Some(application) = phase9_try_typeclass_candidate(
+            env,
+            goal_ctx,
+            goal_universe_params,
+            obligation,
+            class_declarations,
+            candidate,
+        )?
+        else {
+            continue;
+        };
+        if current_depth >= max_depth {
+            return Err(Phase9TypeclassSearchStop::BudgetExceeded);
+        }
+        let cycle_entry = (
+            application.fingerprint.clone(),
+            candidate.target_key.clone(),
+        );
+        if visited.iter().any(|entry| entry == &cycle_entry) {
+            continue;
+        }
+        let mut child_visited = visited.to_owned();
+        child_visited.push(cycle_entry);
+        let recursive_sets = phase9_collect_recursive_typeclass_solutions(
+            env,
+            goal_ctx,
+            goal_universe_params,
+            class_declarations,
+            candidates,
+            max_depth,
+            max_nodes,
+            current_depth + 1,
+            node_count,
+            &child_visited,
+            &application.recursive_obligations,
+        )?;
+        if recursive_sets.len() != application.recursive_obligations.len() {
+            continue;
+        }
+        let mut candidate_solutions = Vec::new();
+        phase9_build_typeclass_proofs(
+            candidate,
+            &application,
+            &recursive_sets,
+            0,
+            &mut application.args.clone(),
+            &mut candidate_solutions,
+        );
+        for proof in candidate_solutions {
+            if env
+                .check(goal_ctx, goal_universe_params, &proof, obligation)
+                .is_err()
+            {
+                continue;
+            }
+            let key = phase9_expr_canonical_bytes(&proof);
+            solutions.entry(key).or_insert(proof);
+            if solutions.len() > 1 {
+                return Err(Phase9TypeclassSearchStop::AmbiguousResolution);
+            }
+        }
+    }
+    Ok(solutions.into_values().collect())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase9_collect_recursive_typeclass_solutions(
+    env: &Env,
+    goal_ctx: &Ctx,
+    goal_universe_params: &[String],
+    class_declarations: &BTreeSet<String>,
+    candidates: &[Phase9ResolvedTypeclassCandidate],
+    max_depth: u32,
+    max_nodes: u32,
+    current_depth: u32,
+    node_count: &mut u32,
+    visited: &[(Vec<u8>, Vec<u8>)],
+    obligations: &[(usize, Expr)],
+) -> std::result::Result<Vec<(usize, Vec<Expr>)>, Phase9TypeclassSearchStop> {
+    let mut recursive_sets = Vec::new();
+    for (arg_index, obligation) in obligations {
+        let proofs = phase9_collect_typeclass_solutions(
+            env,
+            goal_ctx,
+            goal_universe_params,
+            obligation,
+            class_declarations,
+            candidates,
+            max_depth,
+            max_nodes,
+            current_depth,
+            node_count,
+            visited,
+        )?;
+        if proofs.is_empty() {
+            return Ok(Vec::new());
+        }
+        recursive_sets.push((*arg_index, proofs));
+    }
+    Ok(recursive_sets)
+}
+
+fn phase9_build_typeclass_proofs(
+    candidate: &Phase9ResolvedTypeclassCandidate,
+    application: &Phase9TypeclassCandidateApplication,
+    recursive_sets: &[(usize, Vec<Expr>)],
+    index: usize,
+    args: &mut [Option<Expr>],
+    proofs: &mut Vec<Expr>,
+) {
+    if index == recursive_sets.len() {
+        let Some(final_args) = args.iter().cloned().collect::<Option<Vec<_>>>() else {
+            return;
+        };
+        proofs.push(Expr::apps(
+            Expr::konst(candidate.const_name.clone(), application.levels.clone()),
+            final_args,
+        ));
+        return;
+    }
+    let (arg_index, choices) = &recursive_sets[index];
+    for proof in choices {
+        args[*arg_index] = Some(proof.clone());
+        phase9_build_typeclass_proofs(
+            candidate,
+            application,
+            recursive_sets,
+            index + 1,
+            args,
+            proofs,
+        );
+    }
+    args[*arg_index] = None;
+}
+
+fn phase9_try_typeclass_candidate(
+    env: &Env,
+    goal_ctx: &Ctx,
+    goal_universe_params: &[String],
+    obligation: &Expr,
+    class_declarations: &BTreeSet<String>,
+    candidate: &Phase9ResolvedTypeclassCandidate,
+) -> std::result::Result<Option<Phase9TypeclassCandidateApplication>, Phase9TypeclassSearchStop> {
+    let obligation = env
+        .whnf(goal_ctx, goal_universe_params, obligation)
+        .map_err(|_| Phase9TypeclassSearchStop::CandidateInterfaceInvalid)?;
+    let mut universe_assignments = vec![None; candidate.universe_params.len()];
+    let mut term_assignments = vec![None; candidate.telescope.len()];
+    if !phase9_match_typeclass_expr(
+        &candidate.result,
+        &obligation,
+        candidate.telescope.len(),
+        0,
+        &candidate.universe_params,
+        &mut universe_assignments,
+        &mut term_assignments,
+    )? {
+        return Ok(None);
+    }
+    let Some(levels) = universe_assignments.into_iter().collect::<Option<Vec<_>>>() else {
+        return Ok(None);
+    };
+
+    let mut args = vec![None; candidate.telescope.len()];
+    let mut recursive_obligations = Vec::new();
+    for index in 0..candidate.telescope.len() {
+        let Some(binder_ty) = phase9_instantiate_candidate_expr(
+            &candidate.telescope[index],
+            index,
+            &candidate.universe_params,
+            &levels,
+            &term_assignments,
+        )?
+        else {
+            return Ok(None);
+        };
+        if let Some(term) = &term_assignments[index] {
+            if env
+                .check(goal_ctx, goal_universe_params, term, &binder_ty)
+                .is_err()
+            {
+                return Ok(None);
+            }
+            args[index] = Some(term.clone());
+        } else if phase9_typeclass_head_name(
+            env,
+            goal_ctx,
+            goal_universe_params,
+            &binder_ty,
+            class_declarations,
+        )
+        .is_some()
+        {
+            recursive_obligations.push((index, binder_ty));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    Ok(Some(Phase9TypeclassCandidateApplication {
+        levels,
+        args,
+        recursive_obligations,
+        fingerprint: phase9_expr_canonical_bytes(&obligation),
+    }))
+}
+
+fn phase9_match_typeclass_expr(
+    pattern: &Expr,
+    target: &Expr,
+    telescope_len: usize,
+    local_depth: u32,
+    universe_params: &[String],
+    universe_assignments: &mut [Option<Level>],
+    term_assignments: &mut [Option<Expr>],
+) -> std::result::Result<bool, Phase9TypeclassSearchStop> {
+    match pattern {
+        Expr::Sort(level) => match target {
+            Expr::Sort(target_level) => phase9_match_typeclass_level(
+                level,
+                target_level,
+                universe_params,
+                universe_assignments,
+            ),
+            _ => Ok(false),
+        },
+        Expr::BVar(index) => {
+            let Some(pattern_index) =
+                phase9_candidate_bvar_to_pattern_index(*index, telescope_len, local_depth)
+            else {
+                return Err(Phase9TypeclassSearchStop::CandidateInterfaceInvalid);
+            };
+            let assigned = &mut term_assignments[pattern_index];
+            let target = if local_depth == 0 {
+                target.clone()
+            } else {
+                npa_kernel::subst::shift(target, -(local_depth as i32), 0)
+                    .map_err(|_| Phase9TypeclassSearchStop::CandidateInterfaceInvalid)?
+            };
+            if let Some(existing) = assigned {
+                Ok(phase9_expr_canonical_bytes(existing) == phase9_expr_canonical_bytes(&target))
+            } else {
+                *assigned = Some(target);
+                Ok(true)
+            }
+        }
+        Expr::Const { name, levels } => match target {
+            Expr::Const {
+                name: target_name,
+                levels: target_levels,
+            } if name == target_name && levels.len() == target_levels.len() => {
+                for (level, target_level) in levels.iter().zip(target_levels) {
+                    if !phase9_match_typeclass_level(
+                        level,
+                        target_level,
+                        universe_params,
+                        universe_assignments,
+                    )? {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
+            }
+            _ => Ok(false),
+        },
+        Expr::App(fun, arg) => match target {
+            Expr::App(target_fun, target_arg) => Ok(phase9_match_typeclass_expr(
+                fun,
+                target_fun,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )? && phase9_match_typeclass_expr(
+                arg,
+                target_arg,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )?),
+            _ => Ok(false),
+        },
+        Expr::Lam { ty, body, .. } => match target {
+            Expr::Lam {
+                ty: target_ty,
+                body: target_body,
+                ..
+            } => Ok(phase9_match_typeclass_expr(
+                ty,
+                target_ty,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )? && phase9_match_typeclass_expr(
+                body,
+                target_body,
+                telescope_len,
+                local_depth + 1,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )?),
+            _ => Ok(false),
+        },
+        Expr::Pi { ty, body, .. } => match target {
+            Expr::Pi {
+                ty: target_ty,
+                body: target_body,
+                ..
+            } => Ok(phase9_match_typeclass_expr(
+                ty,
+                target_ty,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )? && phase9_match_typeclass_expr(
+                body,
+                target_body,
+                telescope_len,
+                local_depth + 1,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )?),
+            _ => Ok(false),
+        },
+        Expr::Let { .. } => Ok(false),
+    }
+}
+
+fn phase9_match_typeclass_level(
+    pattern: &Level,
+    target: &Level,
+    universe_params: &[String],
+    universe_assignments: &mut [Option<Level>],
+) -> std::result::Result<bool, Phase9TypeclassSearchStop> {
+    if let Level::Param(name) = pattern {
+        if let Some(index) = universe_params.iter().position(|param| param == name) {
+            if let Some(existing) = &universe_assignments[index] {
+                return Ok(
+                    phase9_level_canonical_bytes(existing) == phase9_level_canonical_bytes(target)
+                );
+            }
+            universe_assignments[index] = Some(target.clone());
+            return Ok(true);
+        }
+    }
+    match (pattern, target) {
+        (Level::Zero, Level::Zero) => Ok(true),
+        (Level::Succ(pattern), Level::Succ(target)) => {
+            phase9_match_typeclass_level(pattern, target, universe_params, universe_assignments)
+        }
+        (Level::Max(pattern_left, pattern_right), Level::Max(target_left, target_right))
+        | (Level::IMax(pattern_left, pattern_right), Level::IMax(target_left, target_right)) => {
+            Ok(phase9_match_typeclass_level(
+                pattern_left,
+                target_left,
+                universe_params,
+                universe_assignments,
+            )? && phase9_match_typeclass_level(
+                pattern_right,
+                target_right,
+                universe_params,
+                universe_assignments,
+            )?)
+        }
+        (Level::Param(lhs), Level::Param(rhs)) => Ok(lhs == rhs),
+        _ => Ok(false),
+    }
+}
+
+fn phase9_instantiate_candidate_expr(
+    expr: &Expr,
+    candidate_context_len: usize,
+    universe_params: &[String],
+    levels: &[Level],
+    term_assignments: &[Option<Expr>],
+) -> std::result::Result<Option<Expr>, Phase9TypeclassSearchStop> {
+    let expr = npa_kernel::subst::subst_levels_expr(expr, universe_params, levels);
+    phase9_replace_candidate_bvars(&expr, candidate_context_len, 0, term_assignments)
+}
+
+fn phase9_replace_candidate_bvars(
+    expr: &Expr,
+    candidate_context_len: usize,
+    local_depth: u32,
+    term_assignments: &[Option<Expr>],
+) -> std::result::Result<Option<Expr>, Phase9TypeclassSearchStop> {
+    Ok(Some(match expr {
+        Expr::Sort(level) => Expr::sort(level.clone()),
+        Expr::BVar(index) if *index < local_depth => Expr::bvar(*index),
+        Expr::BVar(index) => {
+            let Some(pattern_index) =
+                phase9_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
+            else {
+                return Err(Phase9TypeclassSearchStop::CandidateInterfaceInvalid);
+            };
+            let Some(term) = &term_assignments[pattern_index] else {
+                return Ok(None);
+            };
+            npa_kernel::subst::shift(term, local_depth as i32, 0)
+                .map_err(|_| Phase9TypeclassSearchStop::CandidateInterfaceInvalid)?
+        }
+        Expr::Const { name, levels } => Expr::konst(name.clone(), levels.clone()),
+        Expr::App(fun, arg) => Expr::app(
+            match phase9_replace_candidate_bvars(
+                fun,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(fun) => fun,
+                None => return Ok(None),
+            },
+            match phase9_replace_candidate_bvars(
+                arg,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(arg) => arg,
+                None => return Ok(None),
+            },
+        ),
+        Expr::Lam { binder, ty, body } => Expr::lam(
+            binder.clone(),
+            match phase9_replace_candidate_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(ty) => ty,
+                None => return Ok(None),
+            },
+            match phase9_replace_candidate_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+                term_assignments,
+            )? {
+                Some(body) => body,
+                None => return Ok(None),
+            },
+        ),
+        Expr::Pi { binder, ty, body } => Expr::pi(
+            binder.clone(),
+            match phase9_replace_candidate_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(ty) => ty,
+                None => return Ok(None),
+            },
+            match phase9_replace_candidate_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+                term_assignments,
+            )? {
+                Some(body) => body,
+                None => return Ok(None),
+            },
+        ),
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => Expr::let_in(
+            binder.clone(),
+            match phase9_replace_candidate_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(ty) => ty,
+                None => return Ok(None),
+            },
+            match phase9_replace_candidate_bvars(
+                value,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(value) => value,
+                None => return Ok(None),
+            },
+            match phase9_replace_candidate_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+                term_assignments,
+            )? {
+                Some(body) => body,
+                None => return Ok(None),
+            },
+        ),
+    }))
+}
+
+fn phase9_candidate_expr_has_only_telescope_bvars(
+    expr: &Expr,
+    candidate_context_len: usize,
+    local_depth: u32,
+) -> bool {
+    match expr {
+        Expr::Sort(_) | Expr::Const { .. } => true,
+        Expr::BVar(index) if *index < local_depth => true,
+        Expr::BVar(index) => {
+            phase9_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
+                .is_some()
+        }
+        Expr::App(fun, arg) => {
+            phase9_candidate_expr_has_only_telescope_bvars(fun, candidate_context_len, local_depth)
+                && phase9_candidate_expr_has_only_telescope_bvars(
+                    arg,
+                    candidate_context_len,
+                    local_depth,
+                )
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            phase9_candidate_expr_has_only_telescope_bvars(ty, candidate_context_len, local_depth)
+                && phase9_candidate_expr_has_only_telescope_bvars(
+                    body,
+                    candidate_context_len,
+                    local_depth + 1,
+                )
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            phase9_candidate_expr_has_only_telescope_bvars(ty, candidate_context_len, local_depth)
+                && phase9_candidate_expr_has_only_telescope_bvars(
+                    value,
+                    candidate_context_len,
+                    local_depth,
+                )
+                && phase9_candidate_expr_has_only_telescope_bvars(
+                    body,
+                    candidate_context_len,
+                    local_depth + 1,
+                )
+        }
+    }
+}
+
+fn phase9_candidate_bvar_to_pattern_index(
+    index: u32,
+    candidate_context_len: usize,
+    local_depth: u32,
+) -> Option<usize> {
+    if index < local_depth {
+        return None;
+    }
+    let candidate_index_from_recent = usize::try_from(index - local_depth).ok()?;
+    if candidate_index_from_recent >= candidate_context_len {
+        return None;
+    }
+    Some(candidate_context_len - 1 - candidate_index_from_recent)
+}
+
+fn phase9_expr_canonical_bytes(expr: &Expr) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_expr_to(&mut out, expr);
+    out
+}
+
+fn phase9_level_canonical_bytes(level: &Level) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_level_to(&mut out, level);
+    out
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Phase9GoalValidationError {
     EnvelopeMalformed,
@@ -2124,7 +3268,7 @@ enum Phase9GoalValidationError {
     KernelRejected,
 }
 
-fn validate_phase9_theorem_graph_goal(
+fn validate_phase9_ai_goal(
     goal: &Phase9AiGoal,
     verified_imports: &[VerifiedImportRef],
 ) -> std::result::Result<(), Phase9GoalValidationError> {
@@ -3579,6 +4723,50 @@ fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[Phase9MachineTelescopeBin
     }
 }
 
+fn encode_typeclass_resolution_plan_to(
+    out: &mut Vec<u8>,
+    plan: &Phase9MachineTypeclassResolutionPlan,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_goal_to(out, &plan.goal)?;
+    encode_len_to(out, plan.ordered_candidates.len());
+    for candidate in &plan.ordered_candidates {
+        encode_instance_candidate_to(out, candidate)?;
+    }
+    encode_u64_to(out, u64::from(plan.max_depth));
+    encode_u64_to(out, u64::from(plan.max_nodes));
+    Ok(())
+}
+
+fn encode_instance_candidate_to(
+    out: &mut Vec<u8>,
+    candidate: &Phase9MachineInstanceCandidateRef,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_instance_target_to(out, &candidate.target)?;
+    encode_option_i32_to(out, candidate.priority_hint);
+    Ok(())
+}
+
+fn encode_instance_target_to(
+    out: &mut Vec<u8>,
+    target: &Phase9MachineInstanceTargetRef,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match target {
+        Phase9MachineInstanceTargetRef::Imported { global_ref } => {
+            out.push(0);
+            encode_global_ref_to(out, global_ref)?;
+        }
+    }
+    Ok(())
+}
+
+fn phase9_instance_target_canonical_bytes(
+    target: &Phase9MachineInstanceTargetRef,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_instance_target_to(&mut out, target)?;
+    Ok(out)
+}
+
 fn encode_theorem_graph_query_to(
     out: &mut Vec<u8>,
     query: &Phase9MachineTheoremGraphQuery,
@@ -4091,6 +5279,20 @@ fn decode_inductive_proposal(
     Ok(proposal)
 }
 
+fn decode_typeclass_resolution_plan(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineTypeclassResolutionPlan, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let plan = decoder.typeclass_resolution_plan()?;
+    decoder.done()?;
+    let encoded = phase9_typeclass_resolution_plan_canonical_bytes(&plan)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(plan)
+}
+
 fn decode_theorem_graph_query(
     input: &[u8],
 ) -> std::result::Result<Phase9MachineTheoremGraphQuery, DecodeError> {
@@ -4229,6 +5431,16 @@ impl<'a> Decoder<'a> {
             .ok_or(DecodeError::Malformed)?;
         self.pos = end;
         Ok(u64::from_be_bytes(bytes.try_into().unwrap()))
+    }
+
+    fn i32(&mut self) -> std::result::Result<i32, DecodeError> {
+        let end = self.pos.checked_add(4).ok_or(DecodeError::Malformed)?;
+        let bytes = self
+            .input
+            .get(self.pos..end)
+            .ok_or(DecodeError::Malformed)?;
+        self.pos = end;
+        Ok(i32::from_be_bytes(bytes.try_into().unwrap()))
     }
 
     fn i64(&mut self) -> std::result::Result<i64, DecodeError> {
@@ -4738,6 +5950,63 @@ impl<'a> Decoder<'a> {
         Ok(levels)
     }
 
+    fn typeclass_resolution_plan(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineTypeclassResolutionPlan, DecodeError> {
+        let goal = self.goal()?;
+        let candidate_len = self.u64()?;
+        if candidate_len > MAX_PHASE9_TYPECLASS_CANDIDATES {
+            return Err(DecodeError::Malformed);
+        }
+        let candidate_len = usize::try_from(candidate_len).map_err(|_| DecodeError::Malformed)?;
+        let mut ordered_candidates = Vec::new();
+        for _ in 0..candidate_len {
+            ordered_candidates.push(self.instance_candidate()?);
+        }
+        let max_depth = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+        if max_depth > MAX_PHASE9_TYPECLASS_DEPTH {
+            return Err(DecodeError::Malformed);
+        }
+        let max_nodes = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
+        if max_nodes > MAX_PHASE9_TYPECLASS_NODES {
+            return Err(DecodeError::Malformed);
+        }
+        Ok(Phase9MachineTypeclassResolutionPlan {
+            goal,
+            ordered_candidates,
+            max_depth,
+            max_nodes,
+        })
+    }
+
+    fn instance_candidate(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineInstanceCandidateRef, DecodeError> {
+        Ok(Phase9MachineInstanceCandidateRef {
+            target: self.instance_target()?,
+            priority_hint: self.option_i32()?,
+        })
+    }
+
+    fn instance_target(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineInstanceTargetRef, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9MachineInstanceTargetRef::Imported {
+                global_ref: self.global_ref()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn option_i32(&mut self) -> std::result::Result<Option<i32>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(self.i32()?)),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
     fn theorem_graph_query(
         &mut self,
     ) -> std::result::Result<Phase9MachineTheoremGraphQuery, DecodeError> {
@@ -5183,6 +6452,16 @@ fn encode_option_hash_to(out: &mut Vec<u8>, hash: Option<&Hash>) {
     }
 }
 
+fn encode_option_i32_to(out: &mut Vec<u8>, value: Option<i32>) {
+    match value {
+        Some(value) => {
+            out.push(1);
+            encode_i32_to(out, value);
+        }
+        None => out.push(0),
+    }
+}
+
 fn encode_hash_to(out: &mut Vec<u8>, hash: &Hash) {
     out.extend_from_slice(hash);
 }
@@ -5201,6 +6480,10 @@ fn encode_len_to(out: &mut Vec<u8>, len: usize) {
 }
 
 fn encode_u64_to(out: &mut Vec<u8>, value: u64) {
+    out.extend_from_slice(&value.to_be_bytes());
+}
+
+fn encode_i32_to(out: &mut Vec<u8>, value: i32) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
@@ -5537,6 +6820,158 @@ mod tests {
             payload: phase9_theorem_graph_query_canonical_bytes(&query).unwrap(),
         };
         phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
+    fn verified_typeclass_import() -> VerifiedImportRef {
+        let obj = Expr::konst("TC.Obj", vec![]);
+        let cls = |arg: Expr| Expr::app(Expr::konst("TC.Cls", vec![]), arg);
+        let wrap = |arg: Expr| Expr::app(Expr::konst("TC.Wrap", vec![]), arg);
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("TC"),
+            declarations: vec![
+                npa_kernel::Decl::Axiom {
+                    name: "TC.Obj".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::succ(Level::zero())),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "TC.Cls".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("_", obj.clone(), Expr::sort(Level::succ(Level::zero()))),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "TC.Base".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: obj.clone(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "TC.Wrap".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("_", obj.clone(), obj.clone()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "TC.instBase".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: cls(Expr::konst("TC.Base", vec![])),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "TC.instAlt".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: cls(Expr::konst("TC.Base", vec![])),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "TC.instWrap".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi(
+                        "_",
+                        obj,
+                        Expr::pi("_", cls(Expr::bvar(0)), cls(wrap(Expr::bvar(1)))),
+                    ),
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .unwrap();
+        VerifiedImportRef::from_verified_module(&verified).unwrap()
+    }
+
+    fn typeclass_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+        let export = import
+            .exports()
+            .iter()
+            .find(|export| export.name == Name::from_dotted(name))
+            .unwrap();
+        Phase9AiGlobalRef {
+            module: import.module().clone(),
+            export_hash: import.export_hash(),
+            certificate_hash: import.certificate_hash(),
+            name: export.name.clone(),
+            decl_interface_hash: export.decl_interface_hash,
+        }
+    }
+
+    fn typeclass_candidate(
+        import: &VerifiedImportRef,
+        name: &str,
+        priority_hint: Option<i32>,
+    ) -> Phase9MachineInstanceCandidateRef {
+        Phase9MachineInstanceCandidateRef {
+            target: Phase9MachineInstanceTargetRef::Imported {
+                global_ref: typeclass_global_ref_for(import, name),
+            },
+            priority_hint,
+        }
+    }
+
+    fn typeclass_goal(target: Expr) -> Phase9AiGoal {
+        Phase9AiGoal {
+            universe_params: Vec::new(),
+            local_context: Vec::new(),
+            target,
+        }
+    }
+
+    fn typeclass_request(
+        import: &VerifiedImportRef,
+        goal: Phase9AiGoal,
+        ordered_candidates: Vec<Phase9MachineInstanceCandidateRef>,
+        max_depth: u32,
+        max_nodes: u32,
+        options_override: Option<Phase9AiOptions>,
+    ) -> Vec<u8> {
+        let mut options = options_override.unwrap_or_default();
+        if options.typeclass.class_declarations.is_empty() {
+            options.typeclass.class_declarations = vec![typeclass_global_ref_for(import, "TC.Cls")];
+        }
+        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
+        let env_fingerprint = phase9_ai_env_fingerprint(
+            Phase9AiProfileVersion::MvpV1,
+            Phase9AiTaskKind::TypeclassResolution,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let goal_fingerprint = phase9_ai_goal_fingerprint(env_fingerprint, &goal);
+        let plan = Phase9MachineTypeclassResolutionPlan {
+            goal,
+            ordered_candidates,
+            max_depth,
+            max_nodes,
+        };
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::TypeclassResolution,
+            target: Phase9AiTarget {
+                env_fingerprint,
+                target_decl_hash: None,
+                goal_fingerprint: Some(goal_fingerprint),
+            },
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_typeclass_resolution_plan_canonical_bytes(&plan).unwrap(),
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
+    fn typeclass_cls(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("TC.Cls", vec![]), arg)
+    }
+
+    fn typeclass_base() -> Expr {
+        Expr::konst("TC.Base", vec![])
+    }
+
+    fn typeclass_wrap(arg: Expr) -> Expr {
+        Expr::app(Expr::konst("TC.Wrap", vec![]), arg)
     }
 
     fn phase9_unary_expr() -> Expr {
@@ -6211,6 +7646,249 @@ mod tests {
             Some(Phase9AiFeatureError::AdvancedInductive(
                 Phase9AdvancedInductiveError::PositivityProfileUnsupported,
             )),
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_direct_instance_returns_unique_proof() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![typeclass_candidate(&import, "TC.instBase", Some(10))],
+            1,
+            1,
+            None,
+        );
+
+        let response = run_phase9_typeclass_resolve_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        );
+
+        let Phase9AiEndpointResponse::Success { payload, .. } = response else {
+            panic!("expected typeclass success");
+        };
+        let Phase9AiSuccessPayload::TypeclassResolution { proof } = *payload else {
+            panic!("expected typeclass payload");
+        };
+        assert_eq!(proof, Expr::konst("TC.instBase", vec![]));
+    }
+
+    #[test]
+    fn typeclass_resolution_recursive_instance_returns_unique_proof() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_wrap(typeclass_base()))),
+            vec![
+                typeclass_candidate(&import, "TC.instWrap", None),
+                typeclass_candidate(&import, "TC.instBase", None),
+            ],
+            2,
+            8,
+            None,
+        );
+
+        let response = run_phase9_typeclass_resolve_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        );
+
+        let Phase9AiEndpointResponse::Success { payload, .. } = response else {
+            panic!("expected typeclass success");
+        };
+        let Phase9AiSuccessPayload::TypeclassResolution { proof } = *payload else {
+            panic!("expected typeclass payload");
+        };
+        assert_eq!(
+            proof,
+            Expr::apps(
+                Expr::konst("TC.instWrap", vec![]),
+                vec![typeclass_base(), Expr::konst("TC.instBase", vec![])]
+            )
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_no_solution_when_allowlist_cannot_solve_goal() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_wrap(typeclass_base()))),
+            vec![typeclass_candidate(&import, "TC.instBase", None)],
+            2,
+            2,
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::NoSolution,
+            Some(Phase9AiFeatureError::TypeclassResolution(
+                Phase9TypeclassResolutionError::NoSolution,
+            )),
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_ambiguous_when_two_distinct_proofs_exist() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![
+                typeclass_candidate(&import, "TC.instBase", None),
+                typeclass_candidate(&import, "TC.instAlt", None),
+            ],
+            1,
+            2,
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::AmbiguousResolution,
+            None,
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_ambiguity_precedes_later_budget_exhaustion() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![
+                typeclass_candidate(&import, "TC.instBase", None),
+                typeclass_candidate(&import, "TC.instAlt", None),
+                typeclass_candidate(&import, "TC.instWrap", None),
+            ],
+            1,
+            2,
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::AmbiguousResolution,
+            None,
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_budget_exceeded_for_depth_zero_direct_instance() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![typeclass_candidate(&import, "TC.instBase", None)],
+            0,
+            1,
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::BudgetExceeded,
+            None,
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_rejects_invalid_class_declaration() {
+        let import = verified_typeclass_import();
+        let mut options = Phase9AiOptions::default();
+        options.typeclass.class_declarations =
+            vec![typeclass_global_ref_for(&import, "TC.instBase")];
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![typeclass_candidate(&import, "TC.instBase", None)],
+            1,
+            1,
+            Some(options),
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::TypeclassResolution(
+                Phase9TypeclassResolutionError::ClassDeclarationMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_rejects_unsupported_goal_head() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(Expr::konst("TC.Obj", vec![])),
+            vec![typeclass_candidate(&import, "TC.instBase", None)],
+            1,
+            1,
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::TypeclassResolution(
+                Phase9TypeclassResolutionError::ClassHeadUnsupported,
+            )),
+        );
+    }
+
+    #[test]
+    fn typeclass_resolution_duplicate_candidate_target_is_envelope_malformed() {
+        let import = verified_typeclass_import();
+        let request = typeclass_request(
+            &import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![
+                typeclass_candidate(&import, "TC.instBase", Some(1)),
+                typeclass_candidate(&import, "TC.instBase", Some(2)),
+            ],
+            1,
+            2,
+            None,
+        );
+
+        assert_rejected(
+            run_phase9_typeclass_resolve_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
         );
     }
 
