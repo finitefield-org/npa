@@ -5283,6 +5283,33 @@ mod tests {
         }
     }
 
+    fn theorem_result_in_module(
+        module: &str,
+        theorem: &str,
+        byte: u8,
+        machine: &str,
+    ) -> MachineTheoremSearchResult {
+        MachineTheoremSearchResult {
+            premise_id: format!("prem_{byte}"),
+            global_ref: MachineTheoremGlobalRef {
+                module: name(module),
+                name: name(theorem),
+                export_hash: hash(byte),
+                decl_interface_hash: hash(byte + 1),
+            },
+            universe_params: vec!["u".to_owned()],
+            statement: MachineTheoremStatement {
+                core_hash: hash(byte + 2),
+                head: Some(imported_ref("Eq", byte + 3)),
+                machine: machine.to_owned(),
+            },
+            modes: vec![MachineTheoremMode::Exact, MachineTheoremMode::Simp],
+            suggested_candidates: Vec::new(),
+            score: 0,
+            axioms_used: Vec::new(),
+        }
+    }
+
     fn search_ok_fields(result: MachineTheoremSearchResult) -> MachineTheoremSearchOkFields {
         MachineTheoremSearchOkFields {
             query_fingerprint: hash(20),
@@ -7830,6 +7857,264 @@ mod tests {
             })
             .collect::<Vec<_>>();
         assert_eq!(child_ids, vec![Phase7NodeId(1), Phase7NodeId(2)]);
+    }
+
+    #[test]
+    fn m9_exact_retrieval_fixture_returns_simp_lite_through_replay_and_verify() {
+        let mut root_goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        root_goal.target.machine = "forall (n : Nat), Eq n n".to_owned();
+        let root = snapshot_with_state(1, vec![root_goal]);
+
+        let mut child_goal = goal_view(GoalId(0), 31, 5, 1, 1, Some(imported_ref("Eq", 40)));
+        child_goal.context[0].machine_name = "n".to_owned();
+        child_goal.context[0].display_name = "n".to_owned();
+        child_goal.target.machine = "Eq n n".to_owned();
+        child_goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
+        let child = snapshot_with_state(2, vec![child_goal]);
+        let closed = snapshot_with_state(3, Vec::new());
+        let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
+        let replay_final_state_fingerprint = hash(90);
+        let config = mvp_config();
+
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: child.snapshot_id,
+                next_state_fingerprint: child.state_fingerprint,
+                proof_delta_hash: hash(41),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: child.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: child.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![
+            theorem_result_in_module(
+                "Std.Nat.Basic",
+                "Nat.add_zero",
+                50,
+                "forall (n : Nat), Eq (Nat.add n Nat.zero) n",
+            ),
+            theorem_result_in_module(
+                "Std.List.Basic",
+                "List.append_nil",
+                60,
+                "forall (A : Type) (xs : List A), Eq (List.append xs (List.nil A)) xs",
+            ),
+        ])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            child.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(42),
+                next_snapshot_id: closed.snapshot_id,
+                next_state_fingerprint: closed.state_fingerprint,
+                proof_delta_hash: hash(43),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: closed }));
+        client.push_replay_response(Ok(replay_ok_response(
+            replay_final_snapshot_id,
+            replay_final_state_fingerprint,
+        )));
+        client.push_verify_response(Ok(verify_ok_response()));
+
+        let proof = unwrap_verified_proof(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+
+        assert_eq!(proof.replay_plan.steps.len(), 2);
+        assert!(matches!(
+            proof.replay_plan.steps[0].candidate,
+            MachineTacticCandidate::Intro { ref name } if name == "n"
+        ));
+        assert!(matches!(
+            proof.replay_plan.steps[1].candidate,
+            MachineTacticCandidate::SimpLite { ref rules } if rules.is_empty()
+        ));
+        assert_eq!(proof.final_snapshot_id, replay_final_snapshot_id);
+        assert_eq!(
+            proof.final_state_fingerprint,
+            replay_final_state_fingerprint
+        );
+        assert_eq!(proof.training_trace_records.len(), 2);
+        assert!(proof.training_trace_records[0]
+            .retrieved_premises
+            .is_empty());
+        let retrieved_names = proof.training_trace_records[1]
+            .retrieved_premises
+            .iter()
+            .map(|premise| premise.premise_ref.name.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            retrieved_names,
+            vec![name("Nat.add_zero"), name("List.append_nil")]
+        );
+
+        let batch_sources = client
+            .calls()
+            .iter()
+            .filter_map(|call| match call {
+                Phase7MachineApiCall::TacticBatch { source } => Some(source),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(batch_sources.len(), 2);
+        assert!(batch_sources[0].contains(r#""kind":"intro""#));
+        assert!(batch_sources[1].contains(r#""kind":"simp-lite""#));
+        assert!(batch_sources[1].contains(r#""rules":[]"#));
+        assert!(!batch_sources[1].contains(r#""kind":"exact""#));
+        assert!(!batch_sources[1].contains("Nat.add_zero"));
+        assert!(client
+            .calls()
+            .iter()
+            .any(|call| matches!(call, Phase7MachineApiCall::Replay { .. })));
+        assert!(client
+            .calls()
+            .iter()
+            .any(|call| matches!(call, Phase7MachineApiCall::Verify { .. })));
+    }
+
+    fn run_m9_local_exact_fixture() -> (Phase7VerifiedProof, Vec<Phase7MachineApiCall>) {
+        let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+        let mut local = local_view(0);
+        local.machine_name = "h".to_owned();
+        local.display_name = "h".to_owned();
+        local.ty = goal.target.clone();
+        goal.context = vec![local];
+        let root = snapshot_with_state(1, vec![goal]);
+        let closed = snapshot_with_state(2, Vec::new());
+        let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(91));
+        let replay_final_state_fingerprint = hash(91);
+        let config = mvp_config();
+
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(44),
+                next_snapshot_id: closed.snapshot_id,
+                next_state_fingerprint: closed.state_fingerprint,
+                proof_delta_hash: hash(45),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: closed }));
+        client.push_replay_response(Ok(replay_ok_response(
+            replay_final_snapshot_id,
+            replay_final_state_fingerprint,
+        )));
+        client.push_verify_response(Ok(verify_ok_response()));
+
+        let proof = unwrap_verified_proof(phase7_run_mvp_search(
+            &mut client,
+            phase7_test_search_input(root),
+        ));
+        let calls = client.calls().to_vec();
+        (proof, calls)
+    }
+
+    #[test]
+    fn m9_local_exact_fixture_uses_only_mvp_success_condition() {
+        let (proof, calls) = run_m9_local_exact_fixture();
+
+        assert_eq!(proof.replay_plan.steps.len(), 1);
+        assert!(matches!(
+            proof.replay_plan.steps[0].candidate,
+            MachineTacticCandidate::Exact {
+                term: RawMachineTerm { ref source }
+            } if source == "h"
+        ));
+        assert_eq!(proof.search_stats.candidates_evaluated, 1);
+
+        let batch_source = calls.iter().find_map(|call| match call {
+            Phase7MachineApiCall::TacticBatch { source } => Some(source),
+            _ => None,
+        });
+        let batch_source = batch_source.expect("expected local Exact batch call");
+        assert!(batch_source.contains(r#""kind":"exact""#));
+        assert!(batch_source.contains(r#""source":"h""#));
+
+        let replay_source = calls.iter().find_map(|call| match call {
+            Phase7MachineApiCall::Replay { source } => Some(source),
+            _ => None,
+        });
+        let replay_source = replay_source.expect("expected replay call");
+        for source in [batch_source.as_str(), replay_source.as_str()] {
+            assert!(!source.contains(r#""kind":"apply""#));
+            assert!(!source.contains(r#""kind":"rw""#));
+            assert!(!source.contains("constructor"));
+            assert!(!source.contains("cases"));
+            assert!(!source.contains("refine"));
+        }
+        assert!(calls
+            .iter()
+            .any(|call| matches!(call, Phase7MachineApiCall::Verify { .. })));
+    }
+
+    #[test]
+    fn m9_same_input_budget_and_phase5_responses_are_deterministic() {
+        let (first_proof, first_calls) = run_m9_local_exact_fixture();
+        let (second_proof, second_calls) = run_m9_local_exact_fixture();
+
+        assert_eq!(first_proof.replay_plan, second_proof.replay_plan);
+        assert_eq!(first_proof.trace_events, second_proof.trace_events);
+        assert_eq!(
+            first_proof.training_trace_records,
+            second_proof.training_trace_records
+        );
+        assert_eq!(first_calls, second_calls);
+    }
+
+    #[test]
+    fn m9_no_model_mvp_profile_rejects_model_sidecar_fields() {
+        let disallowed_fields = ["model", "embedding", "value_model", "parallel_search"];
+
+        for field in disallowed_fields {
+            let source = valid_config_json().replace(
+                r#""batch_policy""#,
+                &format!(r#""{field}":true,"batch_policy""#),
+            );
+
+            let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+
+            assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
+            assert_eq!(
+                err.reason,
+                MachineApiRequestErrorReason::UnknownField {
+                    field: field.to_owned()
+                }
+            );
+        }
+
+        let (proof, _) = run_m9_local_exact_fixture();
+        assert_eq!(
+            proof.verify_response.status,
+            MachineApiResponseStatus::Verified
+        );
     }
 
     #[test]
