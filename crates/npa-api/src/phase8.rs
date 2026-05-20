@@ -33,11 +33,16 @@ pub const PHASE8_AI_AUDIT_SIDECAR_SCHEMA: &str = "npa.phase8.ai_audit_sidecar.v1
 pub const PHASE8_AI_AUDIT_PROMPT_INPUT_SCHEMA: &str = "npa.phase8.ai_audit_prompt_input.v1";
 pub const PHASE8_AUDIT_SIDECAR_VALIDATION_RESULT_SCHEMA: &str =
     "npa.phase8.audit_sidecar_validation_result.v1";
+pub const PHASE8_RELEASE_POLICY_SCHEMA: &str = "npa.phase8.release_policy.v1";
+pub const PHASE8_AUXILIARY_RESULT_SCHEMA: &str = "npa.phase8.auxiliary_result.v1";
+pub const PHASE8_AUXILIARY_RESULT_STORE_MANIFEST_SCHEMA: &str =
+    "npa.phase8.auxiliary_result_store_manifest.v1";
 pub const PHASE8_MACHINE_CHECK_REQUEST_ERROR_RESULT_SCHEMA: &str =
     "npa.phase8.machine_check_request_error_result.v1";
 pub const PHASE8_NORMALIZE_ERROR_RESULT_SCHEMA: &str = "npa.phase8.normalize_error_result.v1";
 pub const PHASE8_COMMAND_ERROR_SCHEMA: &str = "npa.phase8.command_error.v1";
 pub const PHASE8_API_ERROR_SCHEMA: &str = "npa.phase8.api_error.v1";
+pub const PHASE8_AXIOM_POLICY_TOML_FORMAT: &str = "npa.phase8.axiom_policy.v1";
 
 pub const PHASE8_FORBIDDEN_VERIFICATION_INPUT_FIELDS: &[&str] = &[
     "source",
@@ -77,6 +82,7 @@ const MACHINE_CHECK_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &[
     "declarations_checked",
 ];
 const ERROR_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &["result_id", "result_hash"];
+const AUXILIARY_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &["result_id", "result_hash", "diagnostics"];
 const RUN_ARTIFACT_HASH_EXCLUDED_FIELDS: &[&str] = &["run_artifact_hash"];
 const NORMALIZED_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &[
     "normalized_result_id",
@@ -186,6 +192,7 @@ pub enum Phase8HashUsageKind {
     RequestHash,
     MachineCheckResultHash,
     ErrorResultHash,
+    AuxiliaryResultHash,
     RunArtifactHash,
     NormalizedResultHash,
     ArtifactHash,
@@ -197,6 +204,7 @@ impl Phase8HashUsageKind {
         match self {
             Self::RequestHash => "request_hash",
             Self::MachineCheckResultHash | Self::ErrorResultHash => "result_hash",
+            Self::AuxiliaryResultHash => "result_hash",
             Self::RunArtifactHash => "run_artifact_hash",
             Self::NormalizedResultHash => "normalized_result_hash",
             Self::ArtifactHash => "artifact_hash",
@@ -239,6 +247,15 @@ pub fn phase8_hash_usage_rule(kind: Phase8HashUsageKind) -> Phase8HashUsageRule 
             input_kind: Phase8HashInputKind::CanonicalJsonProjection,
             purpose: "pipeline error artifact identity after result_id/result_hash removal",
             excluded_fields: ERROR_RESULT_HASH_EXCLUDED_FIELDS,
+            excludes_self_field: true,
+        },
+        Phase8HashUsageKind::AuxiliaryResultHash => Phase8HashUsageRule {
+            kind,
+            field_name: kind.field_name(),
+            input_kind: Phase8HashInputKind::CanonicalJsonProjection,
+            purpose:
+                "AuxiliaryResult oracle outcome identity after local id and diagnostics removal",
+            excluded_fields: AUXILIARY_RESULT_HASH_EXCLUDED_FIELDS,
             excludes_self_field: true,
         },
         Phase8HashUsageKind::RunArtifactHash => Phase8HashUsageRule {
@@ -2733,6 +2750,598 @@ impl Phase8CompareValidationResult {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8ReleaseMode {
+    Nightly,
+    Release,
+    HighTrust,
+}
+
+impl Phase8ReleaseMode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Nightly => "nightly",
+            Self::Release => "release",
+            Self::HighTrust => "high-trust",
+        }
+    }
+
+    pub const fn trust_mode(self) -> Phase8TrustMode {
+        match self {
+            Self::Nightly => Phase8TrustMode::Nightly,
+            Self::Release => Phase8TrustMode::Release,
+            Self::HighTrust => Phase8TrustMode::HighTrust,
+        }
+    }
+
+    fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "nightly" => Some(Self::Nightly),
+            "release" => Some(Self::Release),
+            "high-trust" => Some(Self::HighTrust),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ReleasePolicyAiTriage {
+    pub enabled: bool,
+    pub required: bool,
+    pub input_policy_hash: Option<Hash>,
+}
+
+impl Phase8ReleasePolicyAiTriage {
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            ("enabled".to_owned(), self.enabled.to_string()),
+            ("required".to_owned(), self.required.to_string()),
+        ];
+        push_optional_hash_pair(&mut pairs, "input_policy_hash", self.input_policy_hash);
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8ReleasePolicy {
+    pub id: String,
+    pub version: u64,
+    pub mode: Phase8ReleaseMode,
+    pub runner_policy_hash: Hash,
+    pub challenge_runner_policy_hash: Hash,
+    pub ai_triage: Phase8ReleasePolicyAiTriage,
+}
+
+impl Phase8ReleasePolicy {
+    pub fn policy_hash(&self) -> Hash {
+        phase8_sha256(self.canonical_json().as_bytes())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            ("ai_triage".to_owned(), self.ai_triage.canonical_json()),
+            (
+                "challenge_runner_policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.challenge_runner_policy_hash),
+            ),
+            ("id".to_owned(), phase8_json_string_literal(&self.id)),
+            (
+                "mode".to_owned(),
+                phase8_json_string_literal(self.mode.as_str()),
+            ),
+            (
+                "runner_policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.runner_policy_hash),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_RELEASE_POLICY_SCHEMA),
+            ),
+            ("version".to_owned(), self.version.to_string()),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AxiomPolicy {
+    pub allowed_axioms: Vec<String>,
+}
+
+impl Phase8AxiomPolicy {
+    pub fn allows(&self, axiom: &str) -> bool {
+        self.allowed_axioms
+            .iter()
+            .any(|candidate| candidate == axiom)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AuxiliaryResultKind {
+    AxiomPolicy,
+    Reproducibility,
+    ImportCertificateHash,
+    AuditBundle,
+}
+
+impl Phase8AuxiliaryResultKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::AxiomPolicy => "axiom_policy",
+            Self::Reproducibility => "reproducibility",
+            Self::ImportCertificateHash => "import_certificate_hash",
+            Self::AuditBundle => "audit_bundle",
+        }
+    }
+
+    fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "axiom_policy" => Some(Self::AxiomPolicy),
+            "reproducibility" => Some(Self::Reproducibility),
+            "import_certificate_hash" => Some(Self::ImportCertificateHash),
+            "audit_bundle" => Some(Self::AuditBundle),
+            _ => None,
+        }
+    }
+
+    const fn requires_selector(self) -> bool {
+        matches!(self, Self::AxiomPolicy | Self::Reproducibility)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AuxiliaryStatus {
+    Passed,
+    Failed,
+    Inconclusive,
+}
+
+impl Phase8AuxiliaryStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Passed => "passed",
+            Self::Failed => "failed",
+            Self::Inconclusive => "inconclusive",
+        }
+    }
+
+    fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "passed" => Some(Self::Passed),
+            "failed" => Some(Self::Failed),
+            "inconclusive" => Some(Self::Inconclusive),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase8AuxiliaryReasonCode {
+    AxiomPolicyFailed,
+    AxiomPolicyInconclusive,
+    ReproducibilityMismatch,
+    ReproducibilityInconclusive,
+    ImportCertificateHashMismatch,
+    ImportCertificateHashInconclusive,
+    AuditBundleMissing,
+    AuditBundleInvalid,
+}
+
+impl Phase8AuxiliaryReasonCode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::AxiomPolicyFailed => "axiom_policy_failed",
+            Self::AxiomPolicyInconclusive => "axiom_policy_inconclusive",
+            Self::ReproducibilityMismatch => "reproducibility_mismatch",
+            Self::ReproducibilityInconclusive => "reproducibility_inconclusive",
+            Self::ImportCertificateHashMismatch => "import_certificate_hash_mismatch",
+            Self::ImportCertificateHashInconclusive => "import_certificate_hash_inconclusive",
+            Self::AuditBundleMissing => "audit_bundle_missing",
+            Self::AuditBundleInvalid => "audit_bundle_invalid",
+        }
+    }
+
+    fn parse(raw: &str) -> Option<Self> {
+        match raw {
+            "axiom_policy_failed" => Some(Self::AxiomPolicyFailed),
+            "axiom_policy_inconclusive" => Some(Self::AxiomPolicyInconclusive),
+            "reproducibility_mismatch" => Some(Self::ReproducibilityMismatch),
+            "reproducibility_inconclusive" => Some(Self::ReproducibilityInconclusive),
+            "import_certificate_hash_mismatch" => Some(Self::ImportCertificateHashMismatch),
+            "import_certificate_hash_inconclusive" => Some(Self::ImportCertificateHashInconclusive),
+            "audit_bundle_missing" => Some(Self::AuditBundleMissing),
+            "audit_bundle_invalid" => Some(Self::AuditBundleInvalid),
+            _ => None,
+        }
+    }
+
+    const fn is_compatible(
+        self,
+        kind: Phase8AuxiliaryResultKind,
+        status: Phase8AuxiliaryStatus,
+    ) -> bool {
+        matches!(
+            (kind, status, self),
+            (
+                Phase8AuxiliaryResultKind::AxiomPolicy,
+                Phase8AuxiliaryStatus::Failed,
+                Self::AxiomPolicyFailed
+            ) | (
+                Phase8AuxiliaryResultKind::AxiomPolicy,
+                Phase8AuxiliaryStatus::Inconclusive,
+                Self::AxiomPolicyInconclusive
+            ) | (
+                Phase8AuxiliaryResultKind::Reproducibility,
+                Phase8AuxiliaryStatus::Failed,
+                Self::ReproducibilityMismatch
+            ) | (
+                Phase8AuxiliaryResultKind::Reproducibility,
+                Phase8AuxiliaryStatus::Inconclusive,
+                Self::ReproducibilityInconclusive
+            ) | (
+                Phase8AuxiliaryResultKind::ImportCertificateHash,
+                Phase8AuxiliaryStatus::Failed,
+                Self::ImportCertificateHashMismatch
+            ) | (
+                Phase8AuxiliaryResultKind::ImportCertificateHash,
+                Phase8AuxiliaryStatus::Inconclusive,
+                Self::ImportCertificateHashInconclusive
+            ) | (
+                Phase8AuxiliaryResultKind::AuditBundle,
+                Phase8AuxiliaryStatus::Failed,
+                Self::AuditBundleMissing
+            ) | (
+                Phase8AuxiliaryResultKind::AuditBundle,
+                Phase8AuxiliaryStatus::Failed,
+                Self::AuditBundleInvalid
+            )
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuxiliaryError {
+    pub reason_code: Phase8AuxiliaryReasonCode,
+    pub field: Option<String>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+}
+
+impl Phase8AuxiliaryError {
+    pub fn value(
+        reason_code: Phase8AuxiliaryReasonCode,
+        field: impl Into<String>,
+        expected_value: impl Into<String>,
+        actual_value: impl Into<String>,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: Some(field.into()),
+            expected_hash: None,
+            actual_hash: None,
+            expected_value: Some(expected_value.into()),
+            actual_value: Some(actual_value.into()),
+        }
+    }
+
+    pub fn hash(
+        reason_code: Phase8AuxiliaryReasonCode,
+        field: impl Into<String>,
+        expected_hash: Hash,
+        actual_hash: Hash,
+    ) -> Self {
+        Self {
+            reason_code,
+            field: Some(field.into()),
+            expected_hash: Some(expected_hash),
+            actual_hash: Some(actual_hash),
+            expected_value: None,
+            actual_value: None,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        let mut pairs = vec![
+            (
+                "kind".to_owned(),
+                phase8_json_string_literal("auxiliary_failure"),
+            ),
+            (
+                "reason_code".to_owned(),
+                phase8_json_string_literal(self.reason_code.as_str()),
+            ),
+        ];
+        push_optional_string_pair(&mut pairs, "field", self.field.as_deref());
+        push_optional_hash_pair(&mut pairs, "expected_hash", self.expected_hash);
+        push_optional_hash_pair(&mut pairs, "actual_hash", self.actual_hash);
+        push_optional_string_pair(&mut pairs, "expected_value", self.expected_value.as_deref());
+        push_optional_string_pair(&mut pairs, "actual_value", self.actual_value.as_deref());
+        canonical_json_object_from_pairs(pairs)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase8AuxiliarySelector {
+    AxiomPolicy {
+        normalized_result_hash: Hash,
+        checker_profile: String,
+        result_hash: Hash,
+        axiom_report_hash: Hash,
+    },
+    Reproducibility {
+        request_hash: Hash,
+        checker_profile: String,
+        baseline_run_artifact_hash: Hash,
+        repeated_run_artifact_hash: Hash,
+    },
+}
+
+impl Phase8AuxiliarySelector {
+    pub const fn kind(&self) -> Phase8AuxiliaryResultKind {
+        match self {
+            Self::AxiomPolicy { .. } => Phase8AuxiliaryResultKind::AxiomPolicy,
+            Self::Reproducibility { .. } => Phase8AuxiliaryResultKind::Reproducibility,
+        }
+    }
+
+    fn canonical_json(&self) -> String {
+        match self {
+            Self::AxiomPolicy {
+                normalized_result_hash,
+                checker_profile,
+                result_hash,
+                axiom_report_hash,
+            } => canonical_json_object_from_pairs(vec![
+                (
+                    "axiom_report_hash".to_owned(),
+                    phase8_hash_json_literal(axiom_report_hash),
+                ),
+                (
+                    "checker_profile".to_owned(),
+                    phase8_json_string_literal(checker_profile),
+                ),
+                (
+                    "normalized_result_hash".to_owned(),
+                    phase8_hash_json_literal(normalized_result_hash),
+                ),
+                (
+                    "result_hash".to_owned(),
+                    phase8_hash_json_literal(result_hash),
+                ),
+            ]),
+            Self::Reproducibility {
+                request_hash,
+                checker_profile,
+                baseline_run_artifact_hash,
+                repeated_run_artifact_hash,
+            } => canonical_json_object_from_pairs(vec![
+                (
+                    "baseline_run_artifact_hash".to_owned(),
+                    phase8_hash_json_literal(baseline_run_artifact_hash),
+                ),
+                (
+                    "checker_profile".to_owned(),
+                    phase8_json_string_literal(checker_profile),
+                ),
+                (
+                    "repeated_run_artifact_hash".to_owned(),
+                    phase8_hash_json_literal(repeated_run_artifact_hash),
+                ),
+                (
+                    "request_hash".to_owned(),
+                    phase8_hash_json_literal(request_hash),
+                ),
+            ]),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuxiliaryResult {
+    pub kind: Phase8AuxiliaryResultKind,
+    pub result_id: String,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub selector: Option<Phase8AuxiliarySelector>,
+    pub status: Phase8AuxiliaryStatus,
+    pub error: Option<Phase8AuxiliaryError>,
+    pub diagnostics: Vec<String>,
+}
+
+impl Phase8AuxiliaryResult {
+    pub fn passed(
+        result_id: impl Into<String>,
+        kind: Phase8AuxiliaryResultKind,
+        policy_hash: Hash,
+        artifact_hash: Hash,
+        selector: Option<Phase8AuxiliarySelector>,
+    ) -> Self {
+        Self {
+            kind,
+            result_id: result_id.into(),
+            policy_hash,
+            artifact_hash,
+            selector,
+            status: Phase8AuxiliaryStatus::Passed,
+            error: None,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    pub fn failed(
+        result_id: impl Into<String>,
+        kind: Phase8AuxiliaryResultKind,
+        policy_hash: Hash,
+        artifact_hash: Hash,
+        selector: Option<Phase8AuxiliarySelector>,
+        error: Phase8AuxiliaryError,
+    ) -> Self {
+        Self {
+            kind,
+            result_id: result_id.into(),
+            policy_hash,
+            artifact_hash,
+            selector,
+            status: Phase8AuxiliaryStatus::Failed,
+            error: Some(error),
+            diagnostics: Vec::new(),
+        }
+    }
+
+    pub fn inconclusive(
+        result_id: impl Into<String>,
+        kind: Phase8AuxiliaryResultKind,
+        policy_hash: Hash,
+        artifact_hash: Hash,
+        selector: Option<Phase8AuxiliarySelector>,
+        error: Phase8AuxiliaryError,
+    ) -> Self {
+        Self {
+            kind,
+            result_id: result_id.into(),
+            policy_hash,
+            artifact_hash,
+            selector,
+            status: Phase8AuxiliaryStatus::Inconclusive,
+            error: Some(error),
+            diagnostics: Vec::new(),
+        }
+    }
+
+    pub fn result_hash(&self) -> Hash {
+        phase8_sha256(self.hash_input_canonical_json().as_bytes())
+    }
+
+    pub fn hash_input_canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(self.canonical_json_pairs_without_local_identity())
+    }
+
+    pub fn canonical_json(&self) -> String {
+        let mut pairs = self.canonical_json_pairs_without_local_identity();
+        pairs.push((
+            "result_hash".to_owned(),
+            phase8_hash_json_literal(&self.result_hash()),
+        ));
+        pairs.push((
+            "result_id".to_owned(),
+            phase8_json_string_literal(&self.result_id),
+        ));
+        if !self.diagnostics.is_empty() {
+            pairs.push((
+                "diagnostics".to_owned(),
+                phase8_json_string_array(&self.diagnostics),
+            ));
+        }
+        canonical_json_object_from_pairs(pairs)
+    }
+
+    fn canonical_json_pairs_without_local_identity(&self) -> Vec<(String, String)> {
+        let mut pairs = vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "kind".to_owned(),
+                phase8_json_string_literal(self.kind.as_str()),
+            ),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AUXILIARY_RESULT_SCHEMA),
+            ),
+            (
+                "status".to_owned(),
+                phase8_json_string_literal(self.status.as_str()),
+            ),
+        ];
+        if let Some(selector) = &self.selector {
+            pairs.push(("selector".to_owned(), selector.canonical_json()));
+        }
+        if let Some(error) = &self.error {
+            pairs.push(("error".to_owned(), error.canonical_json()));
+        }
+        pairs
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuxiliaryResultStoreEntry {
+    pub result_hash: Hash,
+    pub kind: Phase8AuxiliaryResultKind,
+    pub policy_hash: Hash,
+    pub artifact_hash: Hash,
+    pub path: String,
+    pub file_hash: Hash,
+}
+
+impl Phase8AuxiliaryResultStoreEntry {
+    fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "artifact_hash".to_owned(),
+                phase8_hash_json_literal(&self.artifact_hash),
+            ),
+            (
+                "file_hash".to_owned(),
+                phase8_hash_json_literal(&self.file_hash),
+            ),
+            (
+                "kind".to_owned(),
+                phase8_json_string_literal(self.kind.as_str()),
+            ),
+            ("path".to_owned(), phase8_json_string_literal(&self.path)),
+            (
+                "policy_hash".to_owned(),
+                phase8_hash_json_literal(&self.policy_hash),
+            ),
+            (
+                "result_hash".to_owned(),
+                phase8_hash_json_literal(&self.result_hash),
+            ),
+        ])
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuxiliaryResultStoreManifest {
+    pub results: Vec<Phase8AuxiliaryResultStoreEntry>,
+}
+
+impl Phase8AuxiliaryResultStoreManifest {
+    pub fn canonical_json(&self) -> String {
+        canonical_json_object_from_pairs(vec![
+            (
+                "results".to_owned(),
+                canonical_json_array(
+                    self.results
+                        .iter()
+                        .map(Phase8AuxiliaryResultStoreEntry::canonical_json)
+                        .collect(),
+                ),
+            ),
+            (
+                "schema".to_owned(),
+                phase8_json_string_literal(PHASE8_AUXILIARY_RESULT_STORE_MANIFEST_SCHEMA),
+            ),
+        ])
+    }
+
+    pub fn file_hash(&self) -> Hash {
+        phase8_file_hash(self.canonical_json().as_bytes())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase8AuxiliaryResultStoreUpdate {
+    pub manifest: Phase8AuxiliaryResultStoreManifest,
+    pub rewrite_required: bool,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase8AiAuditSidecarSourceKind {
     MachineResult,
     NormalizedComparison,
@@ -4686,6 +5295,662 @@ pub fn phase8_compare_normalized_result(
             phase8_sha256(embedded_json.as_bytes()),
         )
     }
+}
+
+pub fn parse_phase8_release_policy(
+    source: &str,
+) -> Result<Phase8ReleasePolicy, Phase8PolicyValidationError> {
+    let document = JsonDocument::parse(source)
+        .map_err(|_| Phase8PolicyValidationError::new("$", "valid_json", "invalid_json"))?;
+    parse_phase8_release_policy_value(document.root())
+}
+
+pub fn phase8_release_policy_hash(source: &str) -> Result<Hash, Phase8PolicyValidationError> {
+    Ok(parse_phase8_release_policy(source)?.policy_hash())
+}
+
+pub fn phase8_validate_release_policy_runner_trust(
+    policy: &Phase8ReleasePolicy,
+    runner_policy: &Phase8RunnerPolicy,
+    challenge_runner_policy: &Phase8RunnerPolicy,
+) -> Result<(), Phase8PolicyValidationError> {
+    let expected = policy.mode.trust_mode();
+    if runner_policy.trust_mode != expected {
+        return Err(Phase8PolicyValidationError::new(
+            "runner_policy_hash",
+            format!("RunnerPolicy.trust_mode:{}", policy.mode.as_str()),
+            format!(
+                "RunnerPolicy.trust_mode:{}",
+                runner_policy.trust_mode.as_str()
+            ),
+        ));
+    }
+    if challenge_runner_policy.trust_mode != expected {
+        return Err(Phase8PolicyValidationError::new(
+            "challenge_runner_policy_hash",
+            format!("RunnerPolicy.trust_mode:{}", policy.mode.as_str()),
+            format!(
+                "RunnerPolicy.trust_mode:{}",
+                challenge_runner_policy.trust_mode.as_str()
+            ),
+        ));
+    }
+    Ok(())
+}
+
+pub fn parse_phase8_axiom_policy_toml(
+    source: &str,
+) -> Result<Phase8AxiomPolicy, Phase8PolicyValidationError> {
+    phase8_parse_axiom_policy_toml(source)
+}
+
+pub fn parse_phase8_auxiliary_result(
+    source: &str,
+) -> Result<Phase8AuxiliaryResult, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "auxiliary_result",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_auxiliary_result_value(document.root())
+}
+
+pub fn parse_phase8_auxiliary_result_store_manifest(
+    source: &str,
+) -> Result<Phase8AuxiliaryResultStoreManifest, Phase8RequestValidationError> {
+    let document = JsonDocument::parse(source).map_err(|_| {
+        Phase8RequestValidationError::value_failure(
+            "auxiliary_result_store",
+            "valid_json",
+            "invalid_json",
+        )
+    })?;
+    parse_phase8_auxiliary_result_store_manifest_value(document.root())
+}
+
+pub fn phase8_auxiliary_result_store_entry_for_result(
+    result: &Phase8AuxiliaryResult,
+    path: impl Into<String>,
+) -> Result<Phase8AuxiliaryResultStoreEntry, Phase8CommandError> {
+    let path = path.into();
+    if !phase8_valid_workspace_relative_path(&path) {
+        return Err(phase8_command_value_error(
+            phase8_command_for_auxiliary_kind(result.kind),
+            "input_reference_invalid",
+            "auxiliary_result.path",
+            "workspace_relative_path",
+            "invalid_path",
+        ));
+    }
+    let bytes = result.canonical_json();
+    Ok(Phase8AuxiliaryResultStoreEntry {
+        result_hash: result.result_hash(),
+        kind: result.kind,
+        policy_hash: result.policy_hash,
+        artifact_hash: result.artifact_hash,
+        path,
+        file_hash: phase8_file_hash(bytes.as_bytes()),
+    })
+}
+
+pub fn phase8_auxiliary_result_store_with_entry(
+    existing_store: Option<&Phase8AuxiliaryResultStoreManifest>,
+    generated_entry: Phase8AuxiliaryResultStoreEntry,
+) -> Result<Phase8AuxiliaryResultStoreUpdate, Phase8CommandError> {
+    let mut manifest = existing_store
+        .cloned()
+        .unwrap_or(Phase8AuxiliaryResultStoreManifest {
+            results: Vec::new(),
+        });
+
+    for existing in &manifest.results {
+        let same_result_hash = existing.result_hash == generated_entry.result_hash;
+        let same_path = existing.path == generated_entry.path;
+        let exact = same_result_hash
+            && same_path
+            && existing.kind == generated_entry.kind
+            && existing.policy_hash == generated_entry.policy_hash
+            && existing.artifact_hash == generated_entry.artifact_hash
+            && existing.file_hash == generated_entry.file_hash;
+        if exact {
+            return Ok(Phase8AuxiliaryResultStoreUpdate {
+                manifest,
+                rewrite_required: false,
+            });
+        }
+        if same_result_hash || same_path {
+            return Err(phase8_command_value_error(
+                phase8_command_for_auxiliary_kind(generated_entry.kind),
+                "auxiliary_store_entry_conflict",
+                "auxiliary_result_store.results[]",
+                generated_entry.canonical_json(),
+                existing.canonical_json(),
+            ));
+        }
+    }
+
+    manifest.results.push(generated_entry);
+    manifest.results.sort_by(|left, right| {
+        left.result_hash
+            .cmp(&right.result_hash)
+            .then_with(|| left.kind.as_str().cmp(right.kind.as_str()))
+            .then_with(|| left.policy_hash.cmp(&right.policy_hash))
+            .then_with(|| left.artifact_hash.cmp(&right.artifact_hash))
+    });
+    Ok(Phase8AuxiliaryResultStoreUpdate {
+        manifest,
+        rewrite_required: true,
+    })
+}
+
+pub fn phase8_auxiliary_axiom_policy_result(
+    result_id: impl Into<String>,
+    policy: &Phase8RunnerPolicy,
+    axiom_policy: &Phase8AxiomPolicy,
+    normalized_result: &Phase8NormalizedCheckResult,
+    axiom_report: &Phase8AxiomReport,
+) -> Result<Phase8AuxiliaryResult, Phase8CommandError> {
+    let Some(checker_profile) = policy.required_checker_profiles.first() else {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::AuxiliaryAxiomPolicy,
+            "policy_reference_invalid",
+            "policy.required_checker_profiles",
+            "baseline_required_checker_profile",
+            "missing",
+        ));
+    };
+    let selected = normalized_result
+        .results
+        .iter()
+        .find(|entry| &entry.checker_profile == checker_profile);
+    let selector = selected.map(|entry| Phase8AuxiliarySelector::AxiomPolicy {
+        normalized_result_hash: normalized_result.normalized_result_hash(),
+        checker_profile: checker_profile.clone(),
+        result_hash: entry.result_hash,
+        axiom_report_hash: entry.axiom_report_hash.unwrap_or([0; 32]),
+    });
+    phase8_auxiliary_axiom_policy_result_with_selector(
+        result_id,
+        policy,
+        axiom_policy,
+        normalized_result,
+        axiom_report,
+        selector,
+    )
+}
+
+pub fn phase8_auxiliary_axiom_policy_result_with_selector(
+    result_id: impl Into<String>,
+    policy: &Phase8RunnerPolicy,
+    axiom_policy: &Phase8AxiomPolicy,
+    normalized_result: &Phase8NormalizedCheckResult,
+    axiom_report: &Phase8AxiomReport,
+    selector: Option<Phase8AuxiliarySelector>,
+) -> Result<Phase8AuxiliaryResult, Phase8CommandError> {
+    let result_id = result_id.into();
+    validate_auxiliary_result_id(&result_id, Phase8CommandName::AuxiliaryAxiomPolicy)?;
+    let policy_hash = policy.policy_hash();
+    let artifact_hash = normalized_result.artifact_hash();
+    let selector = match selector {
+        Some(Phase8AuxiliarySelector::AxiomPolicy { .. }) => selector,
+        Some(_) | None => {
+            return Ok(Phase8AuxiliaryResult::inconclusive(
+                result_id,
+                Phase8AuxiliaryResultKind::AxiomPolicy,
+                policy_hash,
+                artifact_hash,
+                selector,
+                Phase8AuxiliaryError::value(
+                    Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                    "selector",
+                    "axiom_policy_selector",
+                    "missing",
+                ),
+            ))
+        }
+    };
+    let Phase8AuxiliarySelector::AxiomPolicy {
+        normalized_result_hash,
+        checker_profile,
+        result_hash,
+        axiom_report_hash,
+    } = selector
+        .clone()
+        .expect("selector is Some and checked as axiom_policy")
+    else {
+        unreachable!("selector kind checked above")
+    };
+    let actual_normalized_hash = normalized_result.normalized_result_hash();
+    if normalized_result_hash != actual_normalized_hash {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "selector.normalized_result_hash",
+                actual_normalized_hash,
+                normalized_result_hash,
+            ),
+        ));
+    }
+    let selected = normalized_result
+        .results
+        .iter()
+        .find(|entry| entry.checker_profile == checker_profile);
+    let Some(selected) = selected else {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::value(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "selector.checker_profile",
+                "checked_normalized_result_entry",
+                "missing",
+            ),
+        ));
+    };
+    if selected.status != Phase8MachineCheckStatus::Checked {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::value(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "selector.checker_profile",
+                "checked_normalized_result_entry",
+                "not_checked",
+            ),
+        ));
+    }
+    if selected.result_hash != result_hash {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "selector.result_hash",
+                selected.result_hash,
+                result_hash,
+            ),
+        ));
+    }
+    let Some(selected_axiom_report_hash) = selected.axiom_report_hash else {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::value(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "selector.checker_profile",
+                "checked_normalized_result_entry",
+                "missing_axiom_report_hash",
+            ),
+        ));
+    };
+    if selected_axiom_report_hash != axiom_report_hash {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "selector.axiom_report_hash",
+                selected_axiom_report_hash,
+                axiom_report_hash,
+            ),
+        ));
+    }
+    let parsed_report_hash = axiom_report.axiom_report_hash();
+    if parsed_report_hash != axiom_report_hash {
+        return Ok(Phase8AuxiliaryResult::failed(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::AxiomPolicyFailed,
+                "selector.axiom_report_hash",
+                axiom_report_hash,
+                parsed_report_hash,
+            ),
+        ));
+    }
+    if axiom_report.module != normalized_result.artifact.module {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::AxiomPolicy,
+            policy_hash,
+            artifact_hash,
+            selector,
+            Phase8AuxiliaryError::value(
+                Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                "axiom_report.module",
+                &normalized_result.artifact.module,
+                &axiom_report.module,
+            ),
+        ));
+    }
+    match selected.certificate_hash {
+        Some(certificate_hash) if certificate_hash == axiom_report.certificate_hash => {}
+        Some(certificate_hash) => {
+            return Ok(Phase8AuxiliaryResult::inconclusive(
+                result_id,
+                Phase8AuxiliaryResultKind::AxiomPolicy,
+                policy_hash,
+                artifact_hash,
+                selector,
+                Phase8AuxiliaryError::hash(
+                    Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                    "axiom_report.certificate_hash",
+                    certificate_hash,
+                    axiom_report.certificate_hash,
+                ),
+            ))
+        }
+        None => {
+            return Ok(Phase8AuxiliaryResult::inconclusive(
+                result_id,
+                Phase8AuxiliaryResultKind::AxiomPolicy,
+                policy_hash,
+                artifact_hash,
+                selector,
+                Phase8AuxiliaryError::value(
+                    Phase8AuxiliaryReasonCode::AxiomPolicyInconclusive,
+                    "axiom_report.certificate_hash",
+                    "present",
+                    "missing",
+                ),
+            ))
+        }
+    }
+    for (index, axiom) in axiom_report.axioms.iter().enumerate() {
+        if !axiom_policy.allows(&axiom.name) {
+            return Ok(Phase8AuxiliaryResult::failed(
+                result_id,
+                Phase8AuxiliaryResultKind::AxiomPolicy,
+                policy_hash,
+                artifact_hash,
+                selector,
+                Phase8AuxiliaryError::value(
+                    Phase8AuxiliaryReasonCode::AxiomPolicyFailed,
+                    format!("axiom_report.axioms[{index}].name"),
+                    "allowed_axiom",
+                    &axiom.name,
+                ),
+            ));
+        }
+    }
+    Ok(Phase8AuxiliaryResult::passed(
+        result_id,
+        Phase8AuxiliaryResultKind::AxiomPolicy,
+        policy_hash,
+        artifact_hash,
+        selector,
+    ))
+}
+
+pub fn phase8_auxiliary_reproducibility_result(
+    result_id: impl Into<String>,
+    policy: &Phase8RunnerPolicy,
+    artifact_hash: Hash,
+    baseline: &Phase8MachineCheckResult,
+    repeated: &Phase8MachineCheckResult,
+) -> Result<Phase8AuxiliaryResult, Phase8CommandError> {
+    let selector = Phase8AuxiliarySelector::Reproducibility {
+        request_hash: baseline.request_hash,
+        checker_profile: baseline.checker.profile.clone(),
+        baseline_run_artifact_hash: baseline.run_artifact_hash(),
+        repeated_run_artifact_hash: repeated.run_artifact_hash(),
+    };
+    phase8_auxiliary_reproducibility_result_with_selector(
+        result_id,
+        policy,
+        artifact_hash,
+        baseline,
+        repeated,
+        selector,
+    )
+}
+
+pub fn phase8_auxiliary_reproducibility_result_with_selector(
+    result_id: impl Into<String>,
+    policy: &Phase8RunnerPolicy,
+    artifact_hash: Hash,
+    baseline: &Phase8MachineCheckResult,
+    repeated: &Phase8MachineCheckResult,
+    selector: Phase8AuxiliarySelector,
+) -> Result<Phase8AuxiliaryResult, Phase8CommandError> {
+    let result_id = result_id.into();
+    validate_auxiliary_result_id(&result_id, Phase8CommandName::AuxiliaryReproducibility)?;
+    let policy_hash = policy.policy_hash();
+    let Phase8AuxiliarySelector::Reproducibility {
+        request_hash,
+        checker_profile,
+        baseline_run_artifact_hash,
+        repeated_run_artifact_hash,
+    } = selector.clone()
+    else {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::Reproducibility,
+            policy_hash,
+            artifact_hash,
+            Some(selector),
+            Phase8AuxiliaryError::value(
+                Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+                "selector",
+                "reproducibility_selector",
+                "wrong_type",
+            ),
+        ));
+    };
+    if baseline_run_artifact_hash == repeated_run_artifact_hash {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::AuxiliaryReproducibility,
+            "input_reference_invalid",
+            "selector.repeated_run_artifact_hash",
+            "distinct_run_artifact_hash",
+            "duplicate",
+        ));
+    }
+    let selector = Some(selector);
+    for (label, result, expected_run_hash) in [
+        ("baseline", baseline, baseline_run_artifact_hash),
+        ("repeated", repeated, repeated_run_artifact_hash),
+    ] {
+        if result.run_artifact_hash() != expected_run_hash {
+            return Ok(Phase8AuxiliaryResult::inconclusive(
+                result_id,
+                Phase8AuxiliaryResultKind::Reproducibility,
+                policy_hash,
+                artifact_hash,
+                selector,
+                Phase8AuxiliaryError::hash(
+                    Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+                    format!("selector.{label}_run_artifact_hash"),
+                    expected_run_hash,
+                    result.run_artifact_hash(),
+                ),
+            ));
+        }
+    }
+    if let Some(error) = phase8_reproducibility_comparability_mismatch(
+        policy,
+        request_hash,
+        &checker_profile,
+        baseline,
+        repeated,
+    ) {
+        return Ok(Phase8AuxiliaryResult::inconclusive(
+            result_id,
+            Phase8AuxiliaryResultKind::Reproducibility,
+            policy_hash,
+            artifact_hash,
+            selector,
+            error,
+        ));
+    }
+    if let Some(error) = phase8_reproducibility_identity_mismatch(baseline, repeated) {
+        return Ok(Phase8AuxiliaryResult::failed(
+            result_id,
+            Phase8AuxiliaryResultKind::Reproducibility,
+            policy_hash,
+            artifact_hash,
+            selector,
+            error,
+        ));
+    }
+    Ok(Phase8AuxiliaryResult::passed(
+        result_id,
+        Phase8AuxiliaryResultKind::Reproducibility,
+        policy_hash,
+        artifact_hash,
+        selector,
+    ))
+}
+
+pub fn phase8_auxiliary_import_certificate_hash_result(
+    result_id: impl Into<String>,
+    release_policy: &Phase8ReleasePolicy,
+    import_lock_manifest_hash: Hash,
+    import_lock: &Phase8ImportLockManifest,
+    certificate_files: &BTreeMap<String, Vec<u8>>,
+) -> Result<Phase8AuxiliaryResult, Phase8CommandError> {
+    let result_id = result_id.into();
+    validate_auxiliary_result_id(
+        &result_id,
+        Phase8CommandName::AuxiliaryImportCertificateHash,
+    )?;
+    if release_policy.mode != Phase8ReleaseMode::HighTrust {
+        return Err(phase8_command_value_error(
+            Phase8CommandName::AuxiliaryImportCertificateHash,
+            "policy_reference_invalid",
+            "release_policy.mode",
+            "high-trust",
+            release_policy.mode.as_str(),
+        ));
+    }
+    let policy_hash = release_policy.policy_hash();
+    for (index, import) in import_lock.imports.iter().enumerate() {
+        let Some(bytes) = certificate_files.get(&import.certificate.path) else {
+            return Ok(Phase8AuxiliaryResult::inconclusive(
+                result_id,
+                Phase8AuxiliaryResultKind::ImportCertificateHash,
+                policy_hash,
+                import_lock_manifest_hash,
+                None,
+                Phase8AuxiliaryError::value(
+                    Phase8AuxiliaryReasonCode::ImportCertificateHashInconclusive,
+                    format!("import_lock.imports[{index}].certificate.path"),
+                    "readable_file",
+                    "missing",
+                ),
+            ));
+        };
+        let actual_file_hash = phase8_file_hash(bytes);
+        if actual_file_hash != import.certificate.file_hash {
+            return Ok(Phase8AuxiliaryResult::failed(
+                result_id,
+                Phase8AuxiliaryResultKind::ImportCertificateHash,
+                policy_hash,
+                import_lock_manifest_hash,
+                None,
+                Phase8AuxiliaryError::hash(
+                    Phase8AuxiliaryReasonCode::ImportCertificateHashMismatch,
+                    format!("import_lock.imports[{index}].certificate.file_hash"),
+                    import.certificate.file_hash,
+                    actual_file_hash,
+                ),
+            ));
+        }
+        let actual_certificate_hash = match phase8_raw_claimed_certificate_hash(bytes) {
+            Ok(hash) => hash,
+            Err(_) => {
+                return Ok(Phase8AuxiliaryResult::failed(
+                    result_id,
+                    Phase8AuxiliaryResultKind::ImportCertificateHash,
+                    policy_hash,
+                    import_lock_manifest_hash,
+                    None,
+                    Phase8AuxiliaryError::value(
+                        Phase8AuxiliaryReasonCode::ImportCertificateHashMismatch,
+                        format!("import_lock.imports[{index}].certificate.path"),
+                        "canonical_certificate",
+                        "invalid_certificate_encoding",
+                    ),
+                ))
+            }
+        };
+        if actual_certificate_hash != import.certificate.certificate_hash {
+            return Ok(Phase8AuxiliaryResult::failed(
+                result_id,
+                Phase8AuxiliaryResultKind::ImportCertificateHash,
+                policy_hash,
+                import_lock_manifest_hash,
+                None,
+                Phase8AuxiliaryError::hash(
+                    Phase8AuxiliaryReasonCode::ImportCertificateHashMismatch,
+                    format!("import_lock.imports[{index}].certificate.certificate_hash"),
+                    import.certificate.certificate_hash,
+                    actual_certificate_hash,
+                ),
+            ));
+        }
+    }
+    Ok(Phase8AuxiliaryResult::passed(
+        result_id,
+        Phase8AuxiliaryResultKind::ImportCertificateHash,
+        policy_hash,
+        import_lock_manifest_hash,
+        None,
+    ))
+}
+
+pub fn phase8_auxiliary_command_exit_success(
+    result: &Result<Phase8AuxiliaryResult, Phase8CommandError>,
+) -> bool {
+    result.is_ok()
+}
+
+pub fn phase8_auxiliary_result_passes_release_condition(result: &Phase8AuxiliaryResult) -> bool {
+    result.status == Phase8AuxiliaryStatus::Passed
+}
+
+pub fn phase8_auxiliary_results_all_passed(results: &[Phase8AuxiliaryResult]) -> bool {
+    results
+        .iter()
+        .all(phase8_auxiliary_result_passes_release_condition)
+}
+
+pub fn phase8_auxiliary_output_write_failure(
+    command: Phase8CommandName,
+    field: impl Into<String>,
+) -> Phase8CommandError {
+    phase8_command_value_error(
+        command,
+        "output_write_failure",
+        field,
+        "write_success",
+        "write_failed",
+    )
 }
 
 pub fn parse_phase8_ai_audit_input_policy(
@@ -9728,6 +10993,424 @@ fn parse_phase8_runner_policy_value(
     })
 }
 
+fn parse_phase8_release_policy_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8ReleasePolicy, Phase8PolicyValidationError> {
+    let members = object_members_or_policy_error(value, "$", "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        "schema",
+        PHASE8_RELEASE_POLICY_SCHEMA,
+        PHASE8_RELEASE_POLICY_SCHEMA,
+    )?;
+    let id = required_string_field(members, "id", "id", "phase8_policy_id")?;
+    let version_raw = required_integer_raw_field(members, "version", "version", "positive_i64")?;
+    let mode_raw = required_string_field(members, "mode", "mode", "release_policy_mode")?;
+    let mode = Phase8ReleaseMode::parse(&mode_raw).ok_or_else(|| {
+        Phase8PolicyValidationError::new("mode", "release_policy_mode", "invalid_enum")
+    })?;
+    let runner_policy_hash = required_hash_field(
+        members,
+        "runner_policy_hash",
+        "runner_policy_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let challenge_runner_policy_hash = required_hash_field(
+        members,
+        "challenge_runner_policy_hash",
+        "challenge_runner_policy_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let ai_triage_value = required_field_value(members, "ai_triage", "ai_triage", "object")?;
+    let ai_triage_members = object_members_or_policy_error(ai_triage_value, "ai_triage", "object")?;
+    let enabled =
+        required_bool_field(ai_triage_members, "enabled", "ai_triage.enabled", "boolean")?;
+    let required = required_bool_field(
+        ai_triage_members,
+        "required",
+        "ai_triage.required",
+        "boolean",
+    )?;
+    let input_policy_hash = optional_hash_field(
+        ai_triage_members,
+        "input_policy_hash",
+        "ai_triage.input_policy_hash",
+        "sha256:<lower-hex>",
+    )?;
+    reject_unknown_fields(
+        ai_triage_members,
+        RELEASE_POLICY_AI_TRIAGE_FIELDS,
+        "ai_triage",
+    )?;
+    reject_unknown_fields(members, RELEASE_POLICY_FIELDS, "$")?;
+
+    if !phase8_valid_runner_policy_id(&id) {
+        return Err(Phase8PolicyValidationError::new(
+            "id",
+            "phase8_policy_id",
+            if id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_name_format"
+            },
+        ));
+    }
+    let version = parse_positive_i64_domain(&version_raw, "version")?;
+    if enabled && input_policy_hash.is_none() {
+        return Err(Phase8PolicyValidationError::new(
+            "ai_triage.input_policy_hash",
+            "sha256:<lower-hex>",
+            "missing",
+        ));
+    }
+    if !enabled && input_policy_hash.is_some() {
+        return Err(Phase8PolicyValidationError::new(
+            "ai_triage.input_policy_hash",
+            "absent",
+            "present",
+        ));
+    }
+    if !enabled && required {
+        return Err(Phase8PolicyValidationError::new(
+            "ai_triage.required",
+            "false_when_ai_triage_disabled",
+            "true",
+        ));
+    }
+
+    Ok(Phase8ReleasePolicy {
+        id,
+        version,
+        mode,
+        runner_policy_hash,
+        challenge_runner_policy_hash,
+        ai_triage: Phase8ReleasePolicyAiTriage {
+            enabled,
+            required,
+            input_policy_hash,
+        },
+    })
+}
+
+fn parse_phase8_auxiliary_result_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AuxiliaryResult, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "$", "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        "schema",
+        PHASE8_AUXILIARY_RESULT_SCHEMA,
+        PHASE8_AUXILIARY_RESULT_SCHEMA,
+    )?;
+    let kind_raw = required_string_field(members, "kind", "kind", "auxiliary_result_kind")?;
+    let kind = Phase8AuxiliaryResultKind::parse(&kind_raw).ok_or_else(|| {
+        Phase8RequestValidationError::value_failure("kind", "auxiliary_result_kind", "invalid_enum")
+    })?;
+    let result_id = required_string_field(members, "result_id", "result_id", "result_id")?;
+    let parsed_result_hash =
+        required_hash_field(members, "result_hash", "result_hash", "sha256:<lower-hex>")?;
+    let policy_hash =
+        required_hash_field(members, "policy_hash", "policy_hash", "sha256:<lower-hex>")?;
+    let artifact_hash = required_hash_field(
+        members,
+        "artifact_hash",
+        "artifact_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let selector = match unique_optional_field_value(members, "selector", "selector", "object")? {
+        Some(selector_value) => Some(parse_phase8_auxiliary_selector_value(kind, selector_value)?),
+        None => None,
+    };
+    let status_raw = required_string_field(members, "status", "status", "auxiliary_status")?;
+    let status = Phase8AuxiliaryStatus::parse(&status_raw).ok_or_else(|| {
+        Phase8RequestValidationError::value_failure("status", "auxiliary_status", "invalid_enum")
+    })?;
+    let error = match unique_optional_field_value(members, "error", "error", "object")? {
+        Some(error_value) => Some(parse_phase8_auxiliary_error_value(error_value)?),
+        None => None,
+    };
+    let diagnostics =
+        optional_string_array_field(members, "diagnostics", "diagnostics", "diagnostic_token")?;
+    reject_unknown_fields(members, AUXILIARY_RESULT_FIELDS, "$")?;
+
+    let result = Phase8AuxiliaryResult {
+        kind,
+        result_id,
+        policy_hash,
+        artifact_hash,
+        selector,
+        status,
+        error,
+        diagnostics,
+    };
+    validate_phase8_auxiliary_result_envelope(&result)?;
+    let recomputed = result.result_hash();
+    if recomputed != parsed_result_hash {
+        return Err(Phase8RequestValidationError::hash_failure(
+            "result_hash",
+            recomputed,
+            parsed_result_hash,
+        ));
+    }
+    Ok(result)
+}
+
+fn parse_phase8_auxiliary_selector_value(
+    kind: Phase8AuxiliaryResultKind,
+    value: &JsonValue<'_>,
+) -> Result<Phase8AuxiliarySelector, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "selector", "object")?;
+    match kind {
+        Phase8AuxiliaryResultKind::AxiomPolicy => {
+            let normalized_result_hash = required_hash_field(
+                members,
+                "normalized_result_hash",
+                "selector.normalized_result_hash",
+                "sha256:<lower-hex>",
+            )?;
+            let checker_profile = required_string_field(
+                members,
+                "checker_profile",
+                "selector.checker_profile",
+                "checker_profile_name",
+            )?;
+            if !phase8_valid_checker_profile_name(&checker_profile) {
+                return Err(Phase8RequestValidationError::value_failure(
+                    "selector.checker_profile",
+                    "checker_profile_name",
+                    "invalid_name_format",
+                ));
+            }
+            let result_hash = required_hash_field(
+                members,
+                "result_hash",
+                "selector.result_hash",
+                "sha256:<lower-hex>",
+            )?;
+            let axiom_report_hash = required_hash_field(
+                members,
+                "axiom_report_hash",
+                "selector.axiom_report_hash",
+                "sha256:<lower-hex>",
+            )?;
+            reject_unknown_fields(members, AUXILIARY_AXIOM_SELECTOR_FIELDS, "selector")?;
+            Ok(Phase8AuxiliarySelector::AxiomPolicy {
+                normalized_result_hash,
+                checker_profile,
+                result_hash,
+                axiom_report_hash,
+            })
+        }
+        Phase8AuxiliaryResultKind::Reproducibility => {
+            let request_hash = required_hash_field(
+                members,
+                "request_hash",
+                "selector.request_hash",
+                "sha256:<lower-hex>",
+            )?;
+            let checker_profile = required_string_field(
+                members,
+                "checker_profile",
+                "selector.checker_profile",
+                "checker_profile_name",
+            )?;
+            if !phase8_valid_checker_profile_name(&checker_profile) {
+                return Err(Phase8RequestValidationError::value_failure(
+                    "selector.checker_profile",
+                    "checker_profile_name",
+                    "invalid_name_format",
+                ));
+            }
+            let baseline_run_artifact_hash = required_hash_field(
+                members,
+                "baseline_run_artifact_hash",
+                "selector.baseline_run_artifact_hash",
+                "sha256:<lower-hex>",
+            )?;
+            let repeated_run_artifact_hash = required_hash_field(
+                members,
+                "repeated_run_artifact_hash",
+                "selector.repeated_run_artifact_hash",
+                "sha256:<lower-hex>",
+            )?;
+            reject_unknown_fields(
+                members,
+                AUXILIARY_REPRODUCIBILITY_SELECTOR_FIELDS,
+                "selector",
+            )?;
+            if baseline_run_artifact_hash == repeated_run_artifact_hash {
+                return Err(Phase8RequestValidationError::value_failure(
+                    "selector.repeated_run_artifact_hash",
+                    "distinct_run_artifact_hash",
+                    "duplicate",
+                ));
+            }
+            Ok(Phase8AuxiliarySelector::Reproducibility {
+                request_hash,
+                checker_profile,
+                baseline_run_artifact_hash,
+                repeated_run_artifact_hash,
+            })
+        }
+        Phase8AuxiliaryResultKind::ImportCertificateHash
+        | Phase8AuxiliaryResultKind::AuditBundle => Err(
+            Phase8RequestValidationError::value_failure("selector", "absent", "present"),
+        ),
+    }
+}
+
+fn parse_phase8_auxiliary_error_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AuxiliaryError, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "error", "object")?;
+    required_fixed_string_field(
+        members,
+        "kind",
+        "error.kind",
+        "auxiliary_failure",
+        "auxiliary_failure",
+    )?;
+    let reason_raw = required_string_field(
+        members,
+        "reason_code",
+        "error.reason_code",
+        "auxiliary_reason_code",
+    )?;
+    let reason_code = Phase8AuxiliaryReasonCode::parse(&reason_raw).ok_or_else(|| {
+        Phase8RequestValidationError::value_failure(
+            "error.reason_code",
+            "auxiliary_reason_code",
+            "invalid_enum",
+        )
+    })?;
+    let field = optional_string_field(members, "field", "error.field", "json_path")?;
+    let expected_hash = optional_hash_field(
+        members,
+        "expected_hash",
+        "error.expected_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let actual_hash = optional_hash_field(
+        members,
+        "actual_hash",
+        "error.actual_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let expected_value =
+        optional_string_field(members, "expected_value", "error.expected_value", "string")?;
+    let actual_value =
+        optional_string_field(members, "actual_value", "error.actual_value", "string")?;
+    reject_unknown_fields(members, AUXILIARY_ERROR_FIELDS, "error")?;
+    Ok(Phase8AuxiliaryError {
+        reason_code,
+        field,
+        expected_hash,
+        actual_hash,
+        expected_value,
+        actual_value,
+    })
+}
+
+fn parse_phase8_auxiliary_result_store_manifest_value(
+    value: &JsonValue<'_>,
+) -> Result<Phase8AuxiliaryResultStoreManifest, Phase8RequestValidationError> {
+    let members = object_members_or_policy_error(value, "auxiliary_result_store", "object")?;
+    required_fixed_string_field(
+        members,
+        "schema",
+        "auxiliary_result_store.schema",
+        PHASE8_AUXILIARY_RESULT_STORE_MANIFEST_SCHEMA,
+        PHASE8_AUXILIARY_RESULT_STORE_MANIFEST_SCHEMA,
+    )?;
+    let results_value = required_field_value(
+        members,
+        "results",
+        "auxiliary_result_store.results",
+        "array",
+    )?;
+    let Some(result_values) = results_value.array_elements() else {
+        return Err(wrong_type_error(
+            "auxiliary_result_store.results",
+            "array",
+            results_value.kind(),
+        )
+        .into());
+    };
+    let mut results = Vec::new();
+    for (index, result_value) in result_values.iter().enumerate() {
+        let path = format!("auxiliary_result_store.results[{index}]");
+        let result_members = object_members_or_policy_error(result_value, &path, "object")?;
+        let result_hash = required_hash_field(
+            result_members,
+            "result_hash",
+            &format!("{path}.result_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let kind_raw = required_string_field(
+            result_members,
+            "kind",
+            &format!("{path}.kind"),
+            "auxiliary_result_kind",
+        )?;
+        let kind = Phase8AuxiliaryResultKind::parse(&kind_raw).ok_or_else(|| {
+            Phase8RequestValidationError::value_failure(
+                format!("{path}.kind"),
+                "auxiliary_result_kind",
+                "invalid_enum",
+            )
+        })?;
+        let policy_hash = required_hash_field(
+            result_members,
+            "policy_hash",
+            &format!("{path}.policy_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let artifact_hash = required_hash_field(
+            result_members,
+            "artifact_hash",
+            &format!("{path}.artifact_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        let result_path = required_string_field(
+            result_members,
+            "path",
+            &format!("{path}.path"),
+            "workspace_relative_path",
+        )?;
+        if !phase8_valid_workspace_relative_path(&result_path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("{path}.path"),
+                "workspace_relative_path",
+                "invalid_path",
+            ));
+        }
+        let file_hash = required_hash_field(
+            result_members,
+            "file_hash",
+            &format!("{path}.file_hash"),
+            "sha256:<lower-hex>",
+        )?;
+        reject_unknown_fields(result_members, AUXILIARY_RESULT_STORE_ENTRY_FIELDS, &path)?;
+        results.push(Phase8AuxiliaryResultStoreEntry {
+            result_hash,
+            kind,
+            policy_hash,
+            artifact_hash,
+            path: result_path,
+            file_hash,
+        });
+    }
+    reject_unknown_fields(
+        members,
+        AUXILIARY_RESULT_STORE_MANIFEST_FIELDS,
+        "auxiliary_result_store",
+    )?;
+    validate_auxiliary_result_store_domain(&results)?;
+    Ok(Phase8AuxiliaryResultStoreManifest { results })
+}
+
 const RUNNER_POLICY_FIELDS: &[&str] = &[
     "schema",
     "id",
@@ -9743,6 +11426,58 @@ const RUNNER_POLICY_FIELDS: &[&str] = &[
     "on_resource_exhausted",
     "on_missing_required_checker",
     "on_profile_requested_by_ai",
+];
+const RELEASE_POLICY_FIELDS: &[&str] = &[
+    "schema",
+    "id",
+    "version",
+    "mode",
+    "runner_policy_hash",
+    "challenge_runner_policy_hash",
+    "ai_triage",
+];
+const RELEASE_POLICY_AI_TRIAGE_FIELDS: &[&str] = &["enabled", "required", "input_policy_hash"];
+const AUXILIARY_RESULT_FIELDS: &[&str] = &[
+    "schema",
+    "kind",
+    "result_id",
+    "result_hash",
+    "policy_hash",
+    "artifact_hash",
+    "selector",
+    "status",
+    "error",
+    "diagnostics",
+];
+const AUXILIARY_AXIOM_SELECTOR_FIELDS: &[&str] = &[
+    "normalized_result_hash",
+    "checker_profile",
+    "result_hash",
+    "axiom_report_hash",
+];
+const AUXILIARY_REPRODUCIBILITY_SELECTOR_FIELDS: &[&str] = &[
+    "request_hash",
+    "checker_profile",
+    "baseline_run_artifact_hash",
+    "repeated_run_artifact_hash",
+];
+const AUXILIARY_ERROR_FIELDS: &[&str] = &[
+    "kind",
+    "reason_code",
+    "field",
+    "expected_hash",
+    "actual_hash",
+    "expected_value",
+    "actual_value",
+];
+const AUXILIARY_RESULT_STORE_MANIFEST_FIELDS: &[&str] = &["schema", "results"];
+const AUXILIARY_RESULT_STORE_ENTRY_FIELDS: &[&str] = &[
+    "result_hash",
+    "kind",
+    "policy_hash",
+    "artifact_hash",
+    "path",
+    "file_hash",
 ];
 
 const IMPORT_LOCK_MANIFEST_FIELDS: &[&str] = &["schema", "imports"];
@@ -10072,6 +11807,7 @@ fn optional_checker_identity_manifest_reference(
         members,
         "checker_identity_manifest",
         "checker_identity_manifest",
+        "object",
     )?
     else {
         return Ok(None);
@@ -11042,6 +12778,460 @@ fn validate_normalized_result_store_domain(
     Ok(())
 }
 
+fn validate_phase8_auxiliary_result_envelope(
+    result: &Phase8AuxiliaryResult,
+) -> Result<(), Phase8RequestValidationError> {
+    if !phase8_visible_ascii_nonempty(&result.result_id) {
+        return Err(Phase8RequestValidationError::value_failure(
+            "result_id",
+            "result_id",
+            if result.result_id.is_empty() {
+                "empty_string"
+            } else {
+                "invalid_string_format"
+            },
+        ));
+    }
+    match (&result.selector, result.kind.requires_selector()) {
+        (None, true) => {
+            return Err(Phase8RequestValidationError::value_failure(
+                "selector", "object", "missing",
+            ))
+        }
+        (Some(_), false) => {
+            return Err(Phase8RequestValidationError::value_failure(
+                "selector", "absent", "present",
+            ))
+        }
+        (Some(selector), true) if selector.kind() != result.kind => {
+            return Err(Phase8RequestValidationError::value_failure(
+                "selector",
+                format!("selector_for_kind:{}", result.kind.as_str()),
+                format!("selector_for_kind:{}", selector.kind().as_str()),
+            ))
+        }
+        _ => {}
+    }
+    match (result.status, &result.error) {
+        (Phase8AuxiliaryStatus::Passed, Some(_)) => {
+            return Err(Phase8RequestValidationError::value_failure(
+                "error", "absent", "present",
+            ))
+        }
+        (Phase8AuxiliaryStatus::Failed | Phase8AuxiliaryStatus::Inconclusive, None) => {
+            return Err(Phase8RequestValidationError::value_failure(
+                "error",
+                "auxiliary_failure",
+                "missing",
+            ))
+        }
+        _ => {}
+    }
+    if let Some(error) = &result.error {
+        if !error.reason_code.is_compatible(result.kind, result.status) {
+            return Err(Phase8RequestValidationError::value_failure(
+                "error.reason_code",
+                format!(
+                    "auxiliary_reason_code:{}:{}",
+                    result.kind.as_str(),
+                    result.status.as_str()
+                ),
+                "invalid_enum",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_auxiliary_result_store_domain(
+    results: &[Phase8AuxiliaryResultStoreEntry],
+) -> Result<(), Phase8RequestValidationError> {
+    for index in 1..results.len() {
+        if auxiliary_result_store_key(&results[index])
+            < auxiliary_result_store_key(&results[index - 1])
+        {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("auxiliary_result_store.results[{index}]"),
+                "result_hash_kind_policy_hash_artifact_hash_ascending",
+                "order_violation",
+            ));
+        }
+    }
+    let mut hashes = BTreeSet::new();
+    let mut paths = BTreeSet::new();
+    for (index, result) in results.iter().enumerate() {
+        if !hashes.insert(result.result_hash) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("auxiliary_result_store.results[{index}].result_hash"),
+                "unique_result_hashes",
+                "duplicate_result_hash",
+            ));
+        }
+        if !paths.insert(&result.path) {
+            return Err(Phase8RequestValidationError::value_failure(
+                format!("auxiliary_result_store.results[{index}].path"),
+                "unique_paths",
+                "duplicate_path",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn auxiliary_result_store_key(
+    result: &Phase8AuxiliaryResultStoreEntry,
+) -> (Hash, &'static str, Hash, Hash) {
+    (
+        result.result_hash,
+        result.kind.as_str(),
+        result.policy_hash,
+        result.artifact_hash,
+    )
+}
+
+fn validate_auxiliary_result_id(
+    result_id: &str,
+    command: Phase8CommandName,
+) -> Result<(), Phase8CommandError> {
+    if phase8_visible_ascii_nonempty(result_id) {
+        return Ok(());
+    }
+    Err(phase8_command_value_error(
+        command,
+        "input_reference_invalid",
+        "result_id",
+        "result_id",
+        if result_id.is_empty() {
+            "empty_string"
+        } else {
+            "invalid_string_format"
+        },
+    ))
+}
+
+fn phase8_command_for_auxiliary_kind(kind: Phase8AuxiliaryResultKind) -> Phase8CommandName {
+    match kind {
+        Phase8AuxiliaryResultKind::AxiomPolicy => Phase8CommandName::AuxiliaryAxiomPolicy,
+        Phase8AuxiliaryResultKind::Reproducibility => Phase8CommandName::AuxiliaryReproducibility,
+        Phase8AuxiliaryResultKind::ImportCertificateHash => {
+            Phase8CommandName::AuxiliaryImportCertificateHash
+        }
+        Phase8AuxiliaryResultKind::AuditBundle => Phase8CommandName::ReleaseValidateBundle,
+    }
+}
+
+fn phase8_reproducibility_identity_mismatch(
+    baseline: &Phase8MachineCheckResult,
+    repeated: &Phase8MachineCheckResult,
+) -> Option<Phase8AuxiliaryError> {
+    if baseline.status != repeated.status {
+        return Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+            "repeated.status",
+            baseline.status.as_str(),
+            repeated.status.as_str(),
+        ));
+    }
+    if baseline.status == Phase8MachineCheckStatus::Failed {
+        let baseline_key = baseline
+            .error
+            .as_ref()
+            .map(Phase8NormalizedFailureKey::from_error);
+        let repeated_key = repeated
+            .error
+            .as_ref()
+            .map(Phase8NormalizedFailureKey::from_error);
+        match (baseline_key, repeated_key) {
+            (Some(left), Some(right)) if left.failure_key_hash() != right.failure_key_hash() => {
+                return Some(Phase8AuxiliaryError::hash(
+                    Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+                    "repeated.derived_failure_key",
+                    left.failure_key_hash(),
+                    right.failure_key_hash(),
+                ));
+            }
+            (Some(_), None) => {
+                return Some(Phase8AuxiliaryError::value(
+                    Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+                    "repeated.derived_failure_key",
+                    "present",
+                    "missing",
+                ));
+            }
+            (None, Some(_)) => {
+                return Some(Phase8AuxiliaryError::value(
+                    Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+                    "repeated.derived_failure_key",
+                    "absent",
+                    "present",
+                ));
+            }
+            _ => {}
+        }
+    }
+    for (field, baseline_hash, repeated_hash) in [
+        (
+            "certificate_hash",
+            baseline.certificate_hash,
+            repeated.certificate_hash,
+        ),
+        ("export_hash", baseline.export_hash, repeated.export_hash),
+        (
+            "axiom_report_hash",
+            baseline.axiom_report_hash,
+            repeated.axiom_report_hash,
+        ),
+    ] {
+        if let Some(error) =
+            phase8_optional_hash_reproducibility_mismatch(field, baseline_hash, repeated_hash)
+        {
+            return Some(error);
+        }
+    }
+    let baseline_result_hash = baseline.result_hash();
+    let repeated_result_hash = repeated.result_hash();
+    if baseline_result_hash != repeated_result_hash {
+        return Some(Phase8AuxiliaryError::hash(
+            Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+            "repeated.result_hash",
+            baseline_result_hash,
+            repeated_result_hash,
+        ));
+    }
+    None
+}
+
+fn phase8_reproducibility_comparability_mismatch(
+    policy: &Phase8RunnerPolicy,
+    request_hash: Hash,
+    checker_profile: &str,
+    baseline: &Phase8MachineCheckResult,
+    repeated: &Phase8MachineCheckResult,
+) -> Option<Phase8AuxiliaryError> {
+    let policy_hash = policy.policy_hash();
+    for (label, result) in [("baseline", baseline), ("repeated", repeated)] {
+        if result.request_hash != request_hash {
+            return Some(Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+                format!("{label}.request_hash"),
+                request_hash,
+                result.request_hash,
+            ));
+        }
+    }
+    for (label, result) in [("baseline", baseline), ("repeated", repeated)] {
+        if result.checker.profile != checker_profile {
+            return Some(Phase8AuxiliaryError::value(
+                Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+                format!("{label}.checker.profile"),
+                checker_profile,
+                &result.checker.profile,
+            ));
+        }
+    }
+    for (label, result) in [("baseline", baseline), ("repeated", repeated)] {
+        if result.policy.hash != policy_hash {
+            return Some(Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+                format!("{label}.policy.hash"),
+                policy_hash,
+                result.policy.hash,
+            ));
+        }
+    }
+
+    let Some(selected) = policy.selected_checker_policy(checker_profile) else {
+        return Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            "selector.checker_profile",
+            "allowed_checker_profile",
+            checker_profile,
+        ));
+    };
+    if let Some(error) = phase8_required_string_reproducibility_inconclusive(
+        "baseline.checker.binary_id",
+        &selected.binary_id,
+        baseline.checker.binary_id.as_deref(),
+    ) {
+        return Some(error);
+    }
+    if let Some(error) = phase8_optional_string_reproducibility_inconclusive(
+        "repeated.checker.binary_id",
+        baseline.checker.binary_id.as_deref(),
+        repeated.checker.binary_id.as_deref(),
+    ) {
+        return Some(error);
+    }
+    if let Some(error) = phase8_required_hash_reproducibility_inconclusive(
+        "baseline.checker.binary_hash",
+        selected.binary_hash,
+        baseline.checker.binary_hash,
+    ) {
+        return Some(error);
+    }
+    if let Some(error) = phase8_optional_hash_reproducibility_inconclusive(
+        "repeated.checker.binary_hash",
+        baseline.checker.binary_hash,
+        repeated.checker.binary_hash,
+    ) {
+        return Some(error);
+    }
+    if let Some(error) = phase8_required_string_reproducibility_inconclusive(
+        "baseline.checker.id",
+        &selected.checker_id,
+        baseline.checker.id.as_deref(),
+    ) {
+        return Some(error);
+    }
+    if let Some(error) = phase8_optional_string_reproducibility_inconclusive(
+        "repeated.checker.id",
+        baseline.checker.id.as_deref(),
+        repeated.checker.id.as_deref(),
+    ) {
+        return Some(error);
+    }
+    if let Some(error) = phase8_required_hash_reproducibility_inconclusive(
+        "baseline.checker.build_hash",
+        selected.build_hash,
+        baseline.checker.build_hash,
+    ) {
+        return Some(error);
+    }
+    phase8_optional_hash_reproducibility_inconclusive(
+        "repeated.checker.build_hash",
+        baseline.checker.build_hash,
+        repeated.checker.build_hash,
+    )
+}
+
+fn phase8_optional_hash_reproducibility_mismatch(
+    field: &str,
+    baseline: Option<Hash>,
+    repeated: Option<Hash>,
+) -> Option<Phase8AuxiliaryError> {
+    match (baseline, repeated) {
+        (Some(expected), Some(actual)) if expected != actual => Some(Phase8AuxiliaryError::hash(
+            Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+            format!("repeated.{field}"),
+            expected,
+            actual,
+        )),
+        (Some(_), None) => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+            format!("repeated.{field}"),
+            "present",
+            "missing",
+        )),
+        (None, Some(_)) => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityMismatch,
+            format!("repeated.{field}"),
+            "absent",
+            "present",
+        )),
+        _ => None,
+    }
+}
+
+fn phase8_required_string_reproducibility_inconclusive(
+    field: &str,
+    expected: &str,
+    actual: Option<&str>,
+) -> Option<Phase8AuxiliaryError> {
+    match actual {
+        Some(actual) if actual != expected => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            expected,
+            actual,
+        )),
+        Some(_) => None,
+        None => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            "present",
+            "missing",
+        )),
+    }
+}
+
+fn phase8_optional_string_reproducibility_inconclusive(
+    field: &str,
+    expected: Option<&str>,
+    actual: Option<&str>,
+) -> Option<Phase8AuxiliaryError> {
+    match (expected, actual) {
+        (Some(expected), Some(actual)) if expected != actual => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            expected,
+            actual,
+        )),
+        (Some(_), None) => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            "present",
+            "missing",
+        )),
+        (None, Some(_)) => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            "absent",
+            "present",
+        )),
+        _ => None,
+    }
+}
+
+fn phase8_required_hash_reproducibility_inconclusive(
+    field: &str,
+    expected: Hash,
+    actual: Option<Hash>,
+) -> Option<Phase8AuxiliaryError> {
+    match actual {
+        Some(actual) if actual != expected => Some(Phase8AuxiliaryError::hash(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            expected,
+            actual,
+        )),
+        Some(_) => None,
+        None => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            "present",
+            "missing",
+        )),
+    }
+}
+
+fn phase8_optional_hash_reproducibility_inconclusive(
+    field: &str,
+    expected: Option<Hash>,
+    actual: Option<Hash>,
+) -> Option<Phase8AuxiliaryError> {
+    match (expected, actual) {
+        (Some(expected), Some(actual)) if expected != actual => Some(Phase8AuxiliaryError::hash(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            expected,
+            actual,
+        )),
+        (Some(_), None) => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            "present",
+            "missing",
+        )),
+        (None, Some(_)) => Some(Phase8AuxiliaryError::value(
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive,
+            field,
+            "absent",
+            "present",
+        )),
+        _ => None,
+    }
+}
+
 fn validate_request_materialize_input_shape(
     module: &str,
     checker_profile: &str,
@@ -11152,6 +13342,387 @@ fn phase8_command_hash_error(
     error.expected_hash = Some(Box::new(expected_hash));
     error.actual_hash = Some(Box::new(actual_hash));
     error
+}
+
+#[derive(Clone, Debug)]
+struct Phase8AxiomPolicyTomlAssignment {
+    key: String,
+    value: String,
+}
+
+fn phase8_parse_axiom_policy_toml(
+    source: &str,
+) -> Result<Phase8AxiomPolicy, Phase8PolicyValidationError> {
+    if source.as_bytes().starts_with(&[0xef, 0xbb, 0xbf]) {
+        return Err(Phase8PolicyValidationError::new(
+            "axiom_policy",
+            "valid_toml",
+            "invalid_toml",
+        ));
+    }
+    let assignments = phase8_collect_axiom_policy_toml_assignments(source)?;
+    let mut seen = BTreeSet::new();
+    for assignment in &assignments {
+        if !seen.insert(assignment.key.clone()) {
+            return Err(Phase8PolicyValidationError::new(
+                phase8_axiom_policy_toml_field(&assignment.key),
+                "unique_object_keys",
+                "duplicate_field",
+            ));
+        }
+    }
+
+    let format_assignment = assignments
+        .iter()
+        .find(|assignment| assignment.key == "format");
+    let Some(format_assignment) = format_assignment else {
+        return Err(Phase8PolicyValidationError::new(
+            "axiom_policy.format",
+            PHASE8_AXIOM_POLICY_TOML_FORMAT,
+            "missing",
+        ));
+    };
+    let format_value =
+        phase8_toml_parse_string_value(&format_assignment.value)?.ok_or_else(|| {
+            Phase8PolicyValidationError::new(
+                "axiom_policy.format",
+                PHASE8_AXIOM_POLICY_TOML_FORMAT,
+                "wrong_type",
+            )
+        })?;
+    if format_value != PHASE8_AXIOM_POLICY_TOML_FORMAT {
+        return Err(Phase8PolicyValidationError::new(
+            "axiom_policy.format",
+            PHASE8_AXIOM_POLICY_TOML_FORMAT,
+            "invalid_fixed_value",
+        ));
+    }
+
+    let allowed_assignment = assignments
+        .iter()
+        .find(|assignment| assignment.key == "allowed_axioms");
+    let Some(allowed_assignment) = allowed_assignment else {
+        return Err(Phase8PolicyValidationError::new(
+            "axiom_policy.allowed_axioms",
+            "array",
+            "missing",
+        ));
+    };
+    let allowed_entries = phase8_toml_parse_string_array_value(&allowed_assignment.value)?
+        .ok_or_else(|| {
+            Phase8PolicyValidationError::new("axiom_policy.allowed_axioms", "array", "wrong_type")
+        })?;
+    let mut allowed_axioms = Vec::new();
+    for (index, entry) in allowed_entries.into_iter().enumerate() {
+        let axiom = entry.map_err(|()| {
+            Phase8PolicyValidationError::new(
+                format!("axiom_policy.allowed_axioms[{index}]"),
+                "axiom_name",
+                "wrong_type",
+            )
+        })?;
+        if !phase8_valid_dotted_name(&axiom) {
+            return Err(Phase8PolicyValidationError::new(
+                format!("axiom_policy.allowed_axioms[{index}]"),
+                "axiom_name",
+                "invalid_name_format",
+            ));
+        }
+        allowed_axioms.push(axiom);
+    }
+    for index in 1..allowed_axioms.len() {
+        let ordering = phase8_dotted_name_cmp(&allowed_axioms[index], &allowed_axioms[index - 1]);
+        if ordering == Ordering::Less {
+            return Err(Phase8PolicyValidationError::new(
+                format!("axiom_policy.allowed_axioms[{index}]"),
+                "axiom_name_canonical_order",
+                "order_violation",
+            ));
+        }
+    }
+    let mut axiom_names = BTreeSet::new();
+    for (index, axiom) in allowed_axioms.iter().enumerate() {
+        if !axiom_names.insert(axiom) {
+            return Err(Phase8PolicyValidationError::new(
+                format!("axiom_policy.allowed_axioms[{index}]"),
+                "unique_axiom_name",
+                "duplicate_axiom_name",
+            ));
+        }
+    }
+
+    let mut unknown = assignments
+        .iter()
+        .map(|assignment| assignment.key.as_str())
+        .filter(|key| !matches!(*key, "format" | "allowed_axioms"))
+        .collect::<Vec<_>>();
+    unknown.sort_by(|left, right| phase8_rfc8785_object_key_cmp(left, right));
+    if let Some(key) = unknown.first() {
+        return Err(Phase8PolicyValidationError::new(
+            phase8_axiom_policy_toml_field(key),
+            "absent",
+            "unknown_field",
+        ));
+    }
+
+    Ok(Phase8AxiomPolicy { allowed_axioms })
+}
+
+fn phase8_collect_axiom_policy_toml_assignments(
+    source: &str,
+) -> Result<Vec<Phase8AxiomPolicyTomlAssignment>, Phase8PolicyValidationError> {
+    let lines = source.lines().collect::<Vec<_>>();
+    let mut assignments = Vec::new();
+    let mut index = 0;
+    while index < lines.len() {
+        let line = phase8_toml_strip_comment(lines[index])?;
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            index += 1;
+            continue;
+        }
+        if trimmed.starts_with('[') {
+            let Some(end) = trimmed.find(']') else {
+                return Err(phase8_axiom_policy_invalid_toml());
+            };
+            if !trimmed[end + 1..].trim().is_empty() {
+                return Err(phase8_axiom_policy_invalid_toml());
+            }
+            let key = trimmed[1..end].trim();
+            if key.is_empty() {
+                return Err(phase8_axiom_policy_invalid_toml());
+            }
+            assignments.push(Phase8AxiomPolicyTomlAssignment {
+                key: key.to_owned(),
+                value: "{table}".to_owned(),
+            });
+            index += 1;
+            continue;
+        }
+        let Some(eq_index) = trimmed.find('=') else {
+            return Err(phase8_axiom_policy_invalid_toml());
+        };
+        let key = trimmed[..eq_index].trim();
+        if key.is_empty() || !key.split('.').all(phase8_budget_key_path_component) {
+            return Err(phase8_axiom_policy_invalid_toml());
+        }
+        let mut value = trimmed[eq_index + 1..].trim().to_owned();
+        while value.trim_start().starts_with('[') && !phase8_toml_array_closed(&value)? {
+            index += 1;
+            if index >= lines.len() {
+                return Err(phase8_axiom_policy_invalid_toml());
+            }
+            value.push('\n');
+            value.push_str(phase8_toml_strip_comment(lines[index])?.trim());
+        }
+        assignments.push(Phase8AxiomPolicyTomlAssignment {
+            key: key.to_owned(),
+            value,
+        });
+        index += 1;
+    }
+    Ok(assignments)
+}
+
+fn phase8_toml_strip_comment(line: &str) -> Result<&str, Phase8PolicyValidationError> {
+    let mut in_string = false;
+    let mut escaped = false;
+    for (index, ch) in line.char_indices() {
+        if in_string {
+            if escaped {
+                escaped = false;
+                continue;
+            }
+            match ch {
+                '\\' => escaped = true,
+                '"' => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_string = true,
+            '#' => return Ok(&line[..index]),
+            _ => {}
+        }
+    }
+    if in_string || escaped {
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+    Ok(line)
+}
+
+fn phase8_toml_array_closed(value: &str) -> Result<bool, Phase8PolicyValidationError> {
+    let mut depth = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for ch in value.chars() {
+        if in_string {
+            if escaped {
+                escaped = false;
+                continue;
+            }
+            match ch {
+                '\\' => escaped = true,
+                '"' => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match ch {
+            '"' => in_string = true,
+            '[' => depth = depth.saturating_add(1),
+            ']' => {
+                if depth == 0 {
+                    return Err(phase8_axiom_policy_invalid_toml());
+                }
+                depth -= 1;
+                if depth == 0 {
+                    return Ok(true);
+                }
+            }
+            _ => {}
+        }
+    }
+    if in_string || escaped {
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+    Ok(false)
+}
+
+fn phase8_toml_parse_string_value(
+    value: &str,
+) -> Result<Option<String>, Phase8PolicyValidationError> {
+    let trimmed = value.trim();
+    if trimmed == "null" {
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+    if !trimmed.starts_with('"') {
+        return Ok(None);
+    }
+    let (string, next) = phase8_toml_parse_basic_string_at(trimmed, 0)?;
+    if !trimmed[next..].trim().is_empty() {
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+    Ok(Some(string))
+}
+
+fn phase8_toml_parse_string_array_value(
+    value: &str,
+) -> Result<Option<Vec<Result<String, ()>>>, Phase8PolicyValidationError> {
+    let trimmed = value.trim();
+    if trimmed == "null" {
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+    if !trimmed.starts_with('[') {
+        return Ok(None);
+    }
+    let mut out = Vec::new();
+    let mut index = 1usize;
+    loop {
+        index = phase8_toml_skip_ws(trimmed, index);
+        if index >= trimmed.len() {
+            return Err(phase8_axiom_policy_invalid_toml());
+        }
+        if trimmed[index..].starts_with(']') {
+            index += 1;
+            if !trimmed[index..].trim().is_empty() {
+                return Err(phase8_axiom_policy_invalid_toml());
+            }
+            return Ok(Some(out));
+        }
+        if trimmed[index..].starts_with('"') {
+            let (string, next) = phase8_toml_parse_basic_string_at(trimmed, index)?;
+            out.push(Ok(string));
+            index = phase8_toml_skip_ws(trimmed, next);
+        } else {
+            let start = index;
+            while index < trimmed.len() && !matches!(trimmed.as_bytes()[index], b',' | b']') {
+                index += 1;
+            }
+            if trimmed[start..index].trim() == "null" {
+                return Err(phase8_axiom_policy_invalid_toml());
+            }
+            out.push(Err(()));
+            index = phase8_toml_skip_ws(trimmed, index);
+        }
+        if index >= trimmed.len() {
+            return Err(phase8_axiom_policy_invalid_toml());
+        }
+        if trimmed[index..].starts_with(',') {
+            index += 1;
+            continue;
+        }
+        if trimmed[index..].starts_with(']') {
+            continue;
+        }
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+}
+
+fn phase8_toml_parse_basic_string_at(
+    value: &str,
+    mut index: usize,
+) -> Result<(String, usize), Phase8PolicyValidationError> {
+    if !value[index..].starts_with('"') {
+        return Err(phase8_axiom_policy_invalid_toml());
+    }
+    index += 1;
+    let mut out = String::new();
+    while index < value.len() {
+        let ch = value[index..]
+            .chars()
+            .next()
+            .ok_or_else(phase8_axiom_policy_invalid_toml)?;
+        index += ch.len_utf8();
+        match ch {
+            '"' => return Ok((out, index)),
+            '\\' => {
+                let escaped = value[index..]
+                    .chars()
+                    .next()
+                    .ok_or_else(phase8_axiom_policy_invalid_toml)?;
+                index += escaped.len_utf8();
+                match escaped {
+                    '"' => out.push('"'),
+                    '\\' => out.push('\\'),
+                    'b' => out.push('\u{0008}'),
+                    't' => out.push('\t'),
+                    'n' => out.push('\n'),
+                    'f' => out.push('\u{000c}'),
+                    'r' => out.push('\r'),
+                    _ => return Err(phase8_axiom_policy_invalid_toml()),
+                }
+            }
+            '\u{0000}'..='\u{001f}' => return Err(phase8_axiom_policy_invalid_toml()),
+            _ => out.push(ch),
+        }
+    }
+    Err(phase8_axiom_policy_invalid_toml())
+}
+
+fn phase8_toml_skip_ws(value: &str, mut index: usize) -> usize {
+    while index < value.len() {
+        let ch = value[index..].chars().next().expect("index is in bounds");
+        if ch.is_whitespace() {
+            index += ch.len_utf8();
+        } else {
+            break;
+        }
+    }
+    index
+}
+
+fn phase8_axiom_policy_invalid_toml() -> Phase8PolicyValidationError {
+    Phase8PolicyValidationError::new("axiom_policy", "valid_toml", "invalid_toml")
+}
+
+fn phase8_axiom_policy_toml_field(key: &str) -> String {
+    if key.split('.').all(phase8_budget_key_path_component) {
+        format!("axiom_policy.{key}")
+    } else {
+        "axiom_policy".to_owned()
+    }
 }
 
 fn phase8_raw_certificate_header_module(
@@ -11296,6 +13867,7 @@ fn unique_optional_field_value<'value, 'src>(
     members: &'value [JsonMember<'src>],
     name: &str,
     field: &str,
+    expected: &str,
 ) -> Result<Option<&'value JsonValue<'src>>, Phase8PolicyValidationError> {
     if duplicate_member(members, name) {
         return Err(Phase8PolicyValidationError::new(
@@ -11310,7 +13882,7 @@ fn unique_optional_field_value<'value, 'src>(
     if member.value().kind() == JsonValueKind::Null {
         return Err(Phase8PolicyValidationError::new(
             field,
-            "object",
+            expected,
             "null_not_allowed",
         ));
     }
@@ -11336,13 +13908,36 @@ fn optional_string_field(
     field: &str,
     expected: &str,
 ) -> Result<Option<String>, Phase8PolicyValidationError> {
-    let Some(value) = unique_optional_field_value(members, name, field)? else {
+    let Some(value) = unique_optional_field_value(members, name, field, expected)? else {
         return Ok(None);
     };
     value
         .string_value()
         .map(|value| Some(value.to_owned()))
         .ok_or_else(|| wrong_type_error(field, expected, value.kind()))
+}
+
+fn optional_string_array_field(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected_entry: &str,
+) -> Result<Vec<String>, Phase8PolicyValidationError> {
+    let Some(value) = unique_optional_field_value(members, name, field, "array")? else {
+        return Ok(Vec::new());
+    };
+    let Some(elements) = value.array_elements() else {
+        return Err(wrong_type_error(field, "array", value.kind()));
+    };
+    let mut out = Vec::new();
+    for (index, element) in elements.iter().enumerate() {
+        let path = format!("{field}[{index}]");
+        let Some(value) = element.string_value() else {
+            return Err(wrong_type_error(&path, expected_entry, element.kind()));
+        };
+        out.push(value.to_owned());
+    }
+    Ok(out)
 }
 
 fn required_fixed_string_field(
@@ -11405,6 +14000,23 @@ fn required_hash_field(
 ) -> Result<Hash, Phase8PolicyValidationError> {
     let raw = required_string_field(members, name, field, expected)?;
     parse_hash_string(&raw)
+        .map_err(|_| Phase8PolicyValidationError::new(field, expected, "invalid_hash_format"))
+}
+
+fn optional_hash_field(
+    members: &[JsonMember<'_>],
+    name: &str,
+    field: &str,
+    expected: &str,
+) -> Result<Option<Hash>, Phase8PolicyValidationError> {
+    let Some(value) = unique_optional_field_value(members, name, field, expected)? else {
+        return Ok(None);
+    };
+    let Some(raw) = value.string_value() else {
+        return Err(wrong_type_error(field, expected, value.kind()));
+    };
+    parse_hash_string(raw)
+        .map(Some)
         .map_err(|_| Phase8PolicyValidationError::new(field, expected, "invalid_hash_format"))
 }
 
@@ -12291,6 +14903,13 @@ mod tests {
 
         let run_artifact_hash = phase8_hash_usage_rule(Phase8HashUsageKind::RunArtifactHash);
         assert_eq!(run_artifact_hash.excluded_fields, ["run_artifact_hash"]);
+
+        let auxiliary_hash = phase8_hash_usage_rule(Phase8HashUsageKind::AuxiliaryResultHash);
+        assert_eq!(
+            auxiliary_hash.excluded_fields,
+            ["result_id", "result_hash", "diagnostics"]
+        );
+        assert!(auxiliary_hash.excludes_self_field);
 
         let file_hash = phase8_hash_usage_rule(Phase8HashUsageKind::FileHash);
         assert_eq!(file_hash.input_kind, Phase8HashInputKind::ExactFileBytes);
@@ -14658,5 +17277,284 @@ mod tests {
             Phase8AuditSidecarValidationReasonCode::ForbiddenSidecarField
         );
         assert_eq!(error.field, "classification.checker_error_kind");
+    }
+
+    fn m7_release_policy(mode: Phase8ReleaseMode) -> Phase8ReleasePolicy {
+        Phase8ReleasePolicy {
+            id: "phase8-release".to_owned(),
+            version: 1,
+            mode,
+            runner_policy_hash: test_hash(1),
+            challenge_runner_policy_hash: test_hash(2),
+            ai_triage: Phase8ReleasePolicyAiTriage {
+                enabled: false,
+                required: false,
+                input_policy_hash: None,
+            },
+        }
+    }
+
+    #[test]
+    fn m7_axiom_policy_toml_validator_is_deterministic() {
+        let policy = parse_phase8_axiom_policy_toml(
+            r#"
+            format = "npa.phase8.axiom_policy.v1"
+            allowed_axioms = [
+              "Std.Logic.choice",
+              "Std.Logic.propExt",
+            ]
+            "#,
+        )
+        .unwrap();
+        assert!(policy.allows("Std.Logic.choice"));
+        assert!(!policy.allows("Std.Logic.em"));
+
+        let duplicate = parse_phase8_axiom_policy_toml(
+            r#"
+            format = "npa.phase8.axiom_policy.v1"
+            format = "npa.phase8.axiom_policy.v1"
+            allowed_axioms = []
+            "#,
+        )
+        .unwrap_err();
+        assert_eq!(duplicate.field, "axiom_policy.format");
+        assert_eq!(duplicate.actual_value, "duplicate_field");
+
+        let order = parse_phase8_axiom_policy_toml(
+            r#"
+            format = "npa.phase8.axiom_policy.v1"
+            allowed_axioms = ["Std.Logic.propExt", "Std.Logic.choice"]
+            "#,
+        )
+        .unwrap_err();
+        assert_eq!(order.field, "axiom_policy.allowed_axioms[1]");
+        assert_eq!(order.actual_value, "order_violation");
+    }
+
+    #[test]
+    fn m7_axiom_policy_auxiliary_checks_axiom_report_only() {
+        let (request, policy) = m3_request_and_policy();
+        let stored = Phase8StoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: phase8_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = m4_checked_result(&request, &policy, "mchkres_axiom_policy");
+        let mut normalized = phase8_normalize_results(
+            "norm_Std.Nat_axiom_policy",
+            "normerr_Std.Nat_axiom_policy",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+        let report = Phase8AxiomReport {
+            module: "Std.Nat".to_owned(),
+            certificate_hash: test_hash(70),
+            axioms: vec![Phase8AxiomReportEntry {
+                name: "Std.Logic.choice".to_owned(),
+            }],
+        };
+        normalized.results[0].axiom_report_hash = Some(report.axiom_report_hash());
+        let axiom_policy = Phase8AxiomPolicy {
+            allowed_axioms: vec!["Std.Logic.choice".to_owned()],
+        };
+
+        let passed = phase8_auxiliary_axiom_policy_result(
+            "aux_axiom_001",
+            &policy,
+            &axiom_policy,
+            &normalized,
+            &report,
+        )
+        .unwrap();
+        assert_eq!(passed.status, Phase8AuxiliaryStatus::Passed);
+        assert_eq!(passed.kind, Phase8AuxiliaryResultKind::AxiomPolicy);
+
+        let rejecting_policy = Phase8AxiomPolicy {
+            allowed_axioms: Vec::new(),
+        };
+        let failed = phase8_auxiliary_axiom_policy_result(
+            "aux_axiom_002",
+            &policy,
+            &rejecting_policy,
+            &normalized,
+            &report,
+        )
+        .unwrap();
+        assert_eq!(failed.status, Phase8AuxiliaryStatus::Failed);
+        let error = failed.error.as_ref().unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuxiliaryReasonCode::AxiomPolicyFailed
+        );
+        assert_eq!(error.field.as_deref(), Some("axiom_report.axioms[0].name"));
+    }
+
+    #[test]
+    fn m7_reproducibility_uses_run_artifact_hash_and_deterministic_equality() {
+        let (request, policy) = m3_request_and_policy();
+        let baseline = m4_checked_result(&request, &policy, "mchkres_repro_base");
+        let mut repeated = baseline.clone();
+        repeated.result_id = "mchkres_repro_repeated".to_owned();
+        repeated.attempt = 2;
+        assert_eq!(baseline.result_hash(), repeated.result_hash());
+        assert_ne!(baseline.run_artifact_hash(), repeated.run_artifact_hash());
+
+        let passed = phase8_auxiliary_reproducibility_result(
+            "aux_repro_001",
+            &policy,
+            test_hash(201),
+            &baseline,
+            &repeated,
+        )
+        .unwrap();
+        assert_eq!(passed.status, Phase8AuxiliaryStatus::Passed);
+
+        repeated.certificate_hash = Some(test_hash(202));
+        let failed = phase8_auxiliary_reproducibility_result(
+            "aux_repro_002",
+            &policy,
+            test_hash(201),
+            &baseline,
+            &repeated,
+        )
+        .unwrap();
+        assert_eq!(failed.status, Phase8AuxiliaryStatus::Failed);
+        let error = failed.error.as_ref().unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuxiliaryReasonCode::ReproducibilityMismatch
+        );
+        assert_eq!(error.field.as_deref(), Some("repeated.certificate_hash"));
+    }
+
+    #[test]
+    fn m7_reproducibility_checker_identity_drift_is_inconclusive() {
+        let (request, policy) = m3_request_and_policy();
+        let baseline = m4_checked_result(&request, &policy, "mchkres_repro_identity_base");
+        let mut repeated = baseline.clone();
+        repeated.result_id = "mchkres_repro_identity_repeated".to_owned();
+        repeated.attempt = 2;
+        repeated.checker.build_hash = Some(test_hash(203));
+
+        let inconclusive = phase8_auxiliary_reproducibility_result(
+            "aux_repro_identity",
+            &policy,
+            test_hash(201),
+            &baseline,
+            &repeated,
+        )
+        .unwrap();
+        assert_eq!(inconclusive.status, Phase8AuxiliaryStatus::Inconclusive);
+        let error = inconclusive.error.as_ref().unwrap();
+        assert_eq!(
+            error.reason_code,
+            Phase8AuxiliaryReasonCode::ReproducibilityInconclusive
+        );
+        assert_eq!(error.field.as_deref(), Some("repeated.checker.build_hash"));
+    }
+
+    #[test]
+    fn m7_import_certificate_hash_requires_high_trust_release_policy() {
+        let certificate_hash = test_hash(70);
+        let certificate_bytes = test_raw_certificate_bytes("Std.Nat", certificate_hash);
+        let certificate_path = "build/certs/Std/Nat.npcert".to_owned();
+        let import_lock = Phase8ImportLockManifest {
+            imports: vec![Phase8ImportLockEntry {
+                module: "Std.Nat".to_owned(),
+                export_hash: test_hash(71),
+                certificate: Phase8ImportLockCertificate {
+                    path: certificate_path.clone(),
+                    file_hash: phase8_file_hash(&certificate_bytes),
+                    certificate_hash,
+                },
+            }],
+        };
+        let mut files = BTreeMap::new();
+        files.insert(certificate_path, certificate_bytes);
+
+        let release_policy = m7_release_policy(Phase8ReleaseMode::Release);
+        let err = phase8_auxiliary_import_certificate_hash_result(
+            "aux_import_001",
+            &release_policy,
+            phase8_file_hash(import_lock.canonical_json().as_bytes()),
+            &import_lock,
+            &files,
+        )
+        .unwrap_err();
+        assert_eq!(err.reason_code.as_ref(), "policy_reference_invalid");
+        assert_eq!(err.field.as_deref(), Some("release_policy.mode"));
+
+        let high_trust = m7_release_policy(Phase8ReleaseMode::HighTrust);
+        let passed = phase8_auxiliary_import_certificate_hash_result(
+            "aux_import_002",
+            &high_trust,
+            phase8_file_hash(import_lock.canonical_json().as_bytes()),
+            &import_lock,
+            &files,
+        )
+        .unwrap();
+        assert_eq!(passed.status, Phase8AuxiliaryStatus::Passed);
+        assert!(passed.selector.is_none());
+    }
+
+    #[test]
+    fn m7_auxiliary_result_envelope_store_and_pass_condition_are_closed() {
+        let passed = Phase8AuxiliaryResult::passed(
+            "aux_import_passed",
+            Phase8AuxiliaryResultKind::ImportCertificateHash,
+            test_hash(1),
+            test_hash(2),
+            None,
+        );
+        let parsed = parse_phase8_auxiliary_result(&passed.canonical_json()).unwrap();
+        assert_eq!(parsed, passed);
+
+        let mut diagnostic_retry = passed.clone();
+        diagnostic_retry
+            .diagnostics
+            .push("local-note-not-in-result-hash".to_owned());
+        assert_eq!(passed.result_hash(), diagnostic_retry.result_hash());
+        assert_ne!(passed.canonical_json(), diagnostic_retry.canonical_json());
+
+        let entry =
+            phase8_auxiliary_result_store_entry_for_result(&passed, "build/aux/import.json")
+                .unwrap();
+        let update = phase8_auxiliary_result_store_with_entry(None, entry).unwrap();
+        let parsed_store =
+            parse_phase8_auxiliary_result_store_manifest(&update.manifest.canonical_json())
+                .unwrap();
+        assert_eq!(parsed_store, update.manifest);
+
+        let failed = Phase8AuxiliaryResult::failed(
+            "aux_import_failed",
+            Phase8AuxiliaryResultKind::ImportCertificateHash,
+            test_hash(1),
+            test_hash(2),
+            None,
+            Phase8AuxiliaryError::hash(
+                Phase8AuxiliaryReasonCode::ImportCertificateHashMismatch,
+                "import_lock.imports[0].certificate.certificate_hash",
+                test_hash(3),
+                test_hash(4),
+            ),
+        );
+        let failed_command: Result<Phase8AuxiliaryResult, Phase8CommandError> = Ok(failed.clone());
+        assert!(phase8_auxiliary_command_exit_success(&failed_command));
+        assert!(phase8_auxiliary_result_passes_release_condition(&passed));
+        assert!(!phase8_auxiliary_result_passes_release_condition(&failed));
+        assert!(!phase8_auxiliary_results_all_passed(&[passed, failed]));
+
+        let write_failure = phase8_auxiliary_output_write_failure(
+            Phase8CommandName::AuxiliaryAxiomPolicy,
+            "out.path",
+        );
+        assert_eq!(write_failure.reason_code.as_ref(), "output_write_failure");
+        let failed_write: Result<Phase8AuxiliaryResult, Phase8CommandError> = Err(write_failure);
+        assert!(!phase8_auxiliary_command_exit_success(&failed_write));
     }
 }
