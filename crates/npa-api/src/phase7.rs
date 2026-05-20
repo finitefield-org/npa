@@ -578,6 +578,22 @@ pub struct Phase7MinimizationStats {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7MinimizationResult {
+    pub replay_plan: Phase7ReplayPlan,
+    pub replay_response: MachineReplayOkFields,
+    pub verify_response: MachineApiOkResponse<MachineVerifyOkFields>,
+    pub minimization_stats: Phase7MinimizationStats,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7ReplayStepEdit {
+    pub original_goal_id: GoalId,
+    pub original_open_goal_index: u32,
+    pub candidate: MachineTacticCandidate,
+    pub deterministic_budget: TacticBudget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase7VerifiedProof {
     pub replay_plan: Phase7ReplayPlan,
     pub final_snapshot_id: SnapshotId,
@@ -1139,6 +1155,358 @@ pub fn phase7_verify_request_json(
         snapshot_id.wire(),
         format_hash_string(&state_fingerprint),
     )
+}
+
+pub fn phase7_minimize_replay_plan(
+    client: &mut impl Phase7MachineApiClient,
+    session_id: SessionId,
+    initial_snapshot: &MachineProofSnapshot,
+    verified_replay_plan: Phase7ReplayPlan,
+    verified_replay: MachineReplayOkFields,
+    verified_response: MachineApiOkResponse<MachineVerifyOkFields>,
+) -> Phase7MinimizationResult {
+    let mut current_plan = verified_replay_plan;
+    let mut current_replay = verified_replay;
+    let mut current_verify = verified_response;
+    let mut minimization_stats = Phase7MinimizationStats::default();
+
+    for pass in Phase7MinimizationPassKind::ALL {
+        minimization_stats.pass_kinds_attempted += 1;
+        let mut changed = true;
+
+        while changed {
+            changed = false;
+            let Some(step_edits) = phase7_make_step_edits_with_goal_indices(
+                client,
+                session_id.clone(),
+                initial_snapshot,
+                &current_plan,
+            ) else {
+                break;
+            };
+
+            for proposed_steps in phase7_minimization_proposals(pass, &step_edits) {
+                let Some(rebuilt) = phase7_rebuild_replay_plan_from_step_edits(
+                    client,
+                    session_id.clone(),
+                    initial_snapshot,
+                    &current_plan,
+                    &proposed_steps,
+                ) else {
+                    continue;
+                };
+                minimization_stats.rebuilt_plans += 1;
+
+                minimization_stats.replay_attempts += 1;
+                let replay_source = phase7_replay_request_json(session_id.clone(), &rebuilt);
+                let Ok(MachineApiResponseEnvelope::Ok(replayed)) = client.replay(&replay_source)
+                else {
+                    continue;
+                };
+                if replayed.status != MachineApiResponseStatus::Ok {
+                    continue;
+                }
+
+                minimization_stats.verify_attempts += 1;
+                let verify_source = phase7_verify_request_json(
+                    session_id.clone(),
+                    replayed.endpoint_fields.final_snapshot_id,
+                    replayed.endpoint_fields.final_state_fingerprint,
+                );
+                let Ok(MachineApiResponseEnvelope::Ok(verified)) = client.verify(&verify_source)
+                else {
+                    continue;
+                };
+                if verified.status != MachineApiResponseStatus::Verified {
+                    continue;
+                }
+
+                current_plan = rebuilt;
+                current_replay = replayed.endpoint_fields;
+                current_verify = verified;
+                minimization_stats.accepted_proposals += 1;
+                changed = true;
+                break;
+            }
+        }
+    }
+
+    Phase7MinimizationResult {
+        replay_plan: current_plan,
+        replay_response: current_replay,
+        verify_response: current_verify,
+        minimization_stats,
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase7MinimizationPassKind {
+    DeleteRedundantSteps,
+    ReplaceBlocksWithSimpLiteEmpty,
+    MinimizeExistingSimpLiteRules,
+}
+
+impl Phase7MinimizationPassKind {
+    const ALL: [Self; 3] = [
+        Self::DeleteRedundantSteps,
+        Self::ReplaceBlocksWithSimpLiteEmpty,
+        Self::MinimizeExistingSimpLiteRules,
+    ];
+}
+
+fn phase7_minimization_proposals(
+    pass: Phase7MinimizationPassKind,
+    step_edits: &[Phase7ReplayStepEdit],
+) -> Vec<Vec<Phase7ReplayStepEdit>> {
+    match pass {
+        Phase7MinimizationPassKind::DeleteRedundantSteps => {
+            phase7_delete_redundant_steps_proposals(step_edits)
+        }
+        Phase7MinimizationPassKind::ReplaceBlocksWithSimpLiteEmpty => {
+            phase7_replace_blocks_with_simp_lite_empty_proposals(step_edits)
+        }
+        Phase7MinimizationPassKind::MinimizeExistingSimpLiteRules => {
+            phase7_minimize_existing_simp_lite_rules_proposals(step_edits)
+        }
+    }
+}
+
+fn phase7_delete_redundant_steps_proposals(
+    step_edits: &[Phase7ReplayStepEdit],
+) -> Vec<Vec<Phase7ReplayStepEdit>> {
+    let mut proposals = Vec::new();
+    for index in 0..step_edits.len() {
+        let mut proposal = step_edits.to_vec();
+        proposal.remove(index);
+        if proposal != step_edits {
+            proposals.push(proposal);
+        }
+    }
+    proposals
+}
+
+fn phase7_replace_blocks_with_simp_lite_empty_proposals(
+    step_edits: &[Phase7ReplayStepEdit],
+) -> Vec<Vec<Phase7ReplayStepEdit>> {
+    let mut proposals = Vec::new();
+    for block_len in (1..=step_edits.len()).rev() {
+        for start_index in 0..=step_edits.len() - block_len {
+            let replacement_source = &step_edits[start_index];
+            let mut proposal = Vec::new();
+            proposal.extend_from_slice(&step_edits[..start_index]);
+            proposal.push(Phase7ReplayStepEdit {
+                original_goal_id: replacement_source.original_goal_id,
+                original_open_goal_index: replacement_source.original_open_goal_index,
+                candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+                deterministic_budget: replacement_source.deterministic_budget,
+            });
+            proposal.extend_from_slice(&step_edits[start_index + block_len..]);
+            if proposal != step_edits {
+                proposals.push(proposal);
+            }
+        }
+    }
+    proposals
+}
+
+fn phase7_minimize_existing_simp_lite_rules_proposals(
+    step_edits: &[Phase7ReplayStepEdit],
+) -> Vec<Vec<Phase7ReplayStepEdit>> {
+    let mut proposals = Vec::new();
+    for step_index in 0..step_edits.len() {
+        let MachineTacticCandidate::SimpLite { rules } = &step_edits[step_index].candidate else {
+            continue;
+        };
+        for rule_index in 0..rules.len() {
+            let mut reduced_rules = rules.clone();
+            reduced_rules.remove(rule_index);
+            let mut proposal = step_edits.to_vec();
+            proposal[step_index].candidate = MachineTacticCandidate::SimpLite {
+                rules: reduced_rules,
+            };
+            if proposal != step_edits {
+                proposals.push(proposal);
+            }
+        }
+    }
+    proposals
+}
+
+fn phase7_make_step_edits_with_goal_indices(
+    client: &mut impl Phase7MachineApiClient,
+    session_id: SessionId,
+    initial_snapshot: &MachineProofSnapshot,
+    current_plan: &Phase7ReplayPlan,
+) -> Option<Vec<Phase7ReplayStepEdit>> {
+    let mut snapshot = phase7_minimization_initial_snapshot(
+        client,
+        session_id.clone(),
+        initial_snapshot,
+        current_plan,
+    )?;
+    let mut edits = Vec::new();
+
+    for step in &current_plan.steps {
+        let open_goal_index = snapshot
+            .open_goals
+            .iter()
+            .position(|goal_id| *goal_id == step.goal_id)?;
+        edits.push(Phase7ReplayStepEdit {
+            original_goal_id: step.goal_id,
+            original_open_goal_index: usize_to_u32(open_goal_index),
+            candidate: step.candidate.clone(),
+            deterministic_budget: step.deterministic_budget,
+        });
+
+        let (replayed_step, next_snapshot) = phase7_minimization_reexecute_step(
+            client,
+            session_id.clone(),
+            &snapshot,
+            step.goal_id,
+            step.candidate.clone(),
+            step.deterministic_budget,
+        )?;
+        if replayed_step.candidate_hash != step.candidate_hash
+            || replayed_step.deterministic_budget_hash != step.deterministic_budget_hash
+            || replayed_step.proof_delta_hash != step.proof_delta_hash
+            || replayed_step.next_state_fingerprint != step.next_state_fingerprint
+        {
+            return None;
+        }
+        snapshot = next_snapshot;
+    }
+
+    Some(edits)
+}
+
+fn phase7_rebuild_replay_plan_from_step_edits(
+    client: &mut impl Phase7MachineApiClient,
+    session_id: SessionId,
+    initial_snapshot: &MachineProofSnapshot,
+    current_plan: &Phase7ReplayPlan,
+    proposed_steps: &[Phase7ReplayStepEdit],
+) -> Option<Phase7ReplayPlan> {
+    let mut snapshot = phase7_minimization_initial_snapshot(
+        client,
+        session_id.clone(),
+        initial_snapshot,
+        current_plan,
+    )?;
+    let mut replay_steps = Vec::new();
+
+    for edit in proposed_steps {
+        let execution_goal_id = phase7_minimization_execution_goal_id(&snapshot, edit)?;
+        let (step, next_snapshot) = phase7_minimization_reexecute_step(
+            client,
+            session_id.clone(),
+            &snapshot,
+            execution_goal_id,
+            edit.candidate.clone(),
+            edit.deterministic_budget,
+        )?;
+        replay_steps.push(step);
+        snapshot = next_snapshot;
+    }
+
+    Some(Phase7ReplayPlan {
+        protocol_version: current_plan.protocol_version,
+        session_root_hash: current_plan.session_root_hash,
+        initial_state_fingerprint: current_plan.initial_state_fingerprint,
+        steps: replay_steps,
+        final_state_fingerprint: snapshot.state_fingerprint,
+    })
+}
+
+fn phase7_minimization_initial_snapshot(
+    client: &mut impl Phase7MachineApiClient,
+    session_id: SessionId,
+    initial_snapshot: &MachineProofSnapshot,
+    current_plan: &Phase7ReplayPlan,
+) -> Option<MachineProofSnapshot> {
+    if initial_snapshot.state_fingerprint != current_plan.initial_state_fingerprint {
+        return None;
+    }
+    client
+        .get_snapshot(Phase7SnapshotGetRequest {
+            session_id,
+            snapshot_id: initial_snapshot.snapshot_id,
+            state_fingerprint: current_plan.initial_state_fingerprint,
+        })
+        .ok()
+        .map(|ok| ok.snapshot)
+}
+
+fn phase7_minimization_execution_goal_id(
+    snapshot: &MachineProofSnapshot,
+    edit: &Phase7ReplayStepEdit,
+) -> Option<GoalId> {
+    if snapshot.open_goals.contains(&edit.original_goal_id) {
+        return Some(edit.original_goal_id);
+    }
+    snapshot
+        .open_goals
+        .get(edit.original_open_goal_index as usize)
+        .copied()
+}
+
+fn phase7_minimization_reexecute_step(
+    client: &mut impl Phase7MachineApiClient,
+    session_id: SessionId,
+    snapshot: &MachineProofSnapshot,
+    goal_id: GoalId,
+    candidate: MachineTacticCandidate,
+    deterministic_budget: TacticBudget,
+) -> Option<(Phase7ReplayStep, MachineProofSnapshot)> {
+    let request = Phase7TacticBatchRequest {
+        session_id: session_id.clone(),
+        snapshot_id: snapshot.snapshot_id,
+        state_fingerprint: snapshot.state_fingerprint,
+        goal_id,
+        candidates: vec![Phase7AssignedCandidate {
+            candidate_id: "c0".to_owned(),
+            rank_index: 0,
+            envelope: phase7_minimization_candidate_envelope(candidate),
+        }],
+        deterministic_budget,
+        batch_policy: MachineTacticBatchPolicy {
+            max_evaluated_candidates: 1,
+            stop_after_successes: 1,
+            stop_after_failures: 1,
+        },
+        scheduler_limits: None,
+    };
+    let evaluation = phase7_run_tactic_batch(client, &request).ok()?;
+    if evaluation.scheduler_stop.is_some()
+        || evaluation.evaluated_count != 1
+        || !evaluation.accepted_failure_records.is_empty()
+        || !evaluation.non_accepted_errors.is_empty()
+    {
+        return None;
+    }
+    let transition = evaluation.successful_transitions.into_iter().next()?;
+    let next_snapshot = client
+        .get_snapshot(Phase7SnapshotGetRequest {
+            session_id,
+            snapshot_id: transition.next_snapshot_id,
+            state_fingerprint: transition.replay_step.next_state_fingerprint,
+        })
+        .ok()?
+        .snapshot;
+    Some((transition.replay_step, next_snapshot))
+}
+
+fn phase7_minimization_candidate_envelope(
+    candidate: MachineTacticCandidate,
+) -> Phase7CandidateEnvelope {
+    let metadata = phase7_candidate_metadata(
+        Phase7CandidateSource::Builtin,
+        None,
+        0,
+        Vec::new(),
+        Vec::new(),
+        &candidate,
+    );
+    phase7_candidate_envelope(candidate, None, metadata)
 }
 
 fn phase7_validate_ok_batch_fields(
@@ -1773,13 +2141,23 @@ pub fn phase7_run_mvp_search(
         if node.goals.is_empty() {
             match phase7_attempt_closed_node(client, &node, &mut stats, &mut trace) {
                 Phase7ClosedNodeOutcome::Verified(verified) => {
+                    let minimization = phase7_minimize_replay_plan(
+                        client,
+                        node.session_id.clone(),
+                        &input.initial_snapshot,
+                        verified.replay_plan,
+                        verified.replay_response,
+                        verified.verify_response,
+                    );
                     return Ok(Phase7VerifiedProof {
-                        replay_plan: verified.replay_plan,
-                        final_snapshot_id: verified.replay_response.final_snapshot_id,
-                        final_state_fingerprint: verified.replay_response.final_state_fingerprint,
-                        verify_response: verified.verify_response,
+                        replay_plan: minimization.replay_plan,
+                        final_snapshot_id: minimization.replay_response.final_snapshot_id,
+                        final_state_fingerprint: minimization
+                            .replay_response
+                            .final_state_fingerprint,
+                        verify_response: minimization.verify_response,
                         search_stats: stats,
-                        minimization_stats: Phase7MinimizationStats::default(),
+                        minimization_stats: minimization.minimization_stats,
                         trace_events: trace.finish(),
                     });
                 }
@@ -4169,6 +4547,14 @@ mod tests {
         Name::from_dotted(value)
     }
 
+    fn simp_rule(name_suffix: &str, byte: u8) -> SimpRuleRef {
+        SimpRuleRef {
+            name: name(&format!("Nat.{name_suffix}")),
+            decl_interface_hash: hash(byte),
+            direction: RewriteDirection::Forward,
+        }
+    }
+
     fn snapshot_request() -> Phase7SnapshotGetRequest {
         Phase7SnapshotGetRequest {
             session_id: SessionId::parse("msess_001").unwrap(),
@@ -4545,18 +4931,29 @@ mod tests {
     fn verify_ok_response() -> MachineVerifyResponse {
         MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
             status: MachineApiResponseStatus::Verified,
-            endpoint_fields: MachineVerifyOkFields {
-                root_decl_interface_hash: hash(80),
-                root_decl_certificate_hash: hash(81),
-                root_axioms_used: Vec::new(),
-                module_export_hash: hash(82),
-                module_certificate_hash: hash(83),
-                module_axioms_used: Vec::new(),
-                certificate: certificate_payload(84),
-                dependency_import_closure: Vec::new(),
-                import_payload: verified_module_certificate_payload(85),
-            },
+            endpoint_fields: verify_ok_fields(),
         })
+    }
+
+    fn verify_ok_fields() -> MachineVerifyOkFields {
+        MachineVerifyOkFields {
+            root_decl_interface_hash: hash(80),
+            root_decl_certificate_hash: hash(81),
+            root_axioms_used: Vec::new(),
+            module_export_hash: hash(82),
+            module_certificate_hash: hash(83),
+            module_axioms_used: Vec::new(),
+            certificate: certificate_payload(84),
+            dependency_import_closure: Vec::new(),
+            import_payload: verified_module_certificate_payload(85),
+        }
+    }
+
+    fn verify_ok_envelope() -> MachineApiOkResponse<MachineVerifyOkFields> {
+        MachineApiOkResponse {
+            status: MachineApiResponseStatus::Verified,
+            endpoint_fields: verify_ok_fields(),
+        }
     }
 
     fn replay_error_response(
@@ -6044,6 +6441,288 @@ mod tests {
         );
         assert_eq!(failure.search_stats.controller_errors, 1);
         assert_eq!(failure.search_stats.closed_node_verify_rejections, 0);
+    }
+
+    #[test]
+    fn m7_minimization_proposal_order_is_fixed() {
+        let budget = mvp_config().per_tactic_deterministic_budget;
+        let edits = vec![
+            Phase7ReplayStepEdit {
+                original_goal_id: GoalId(0),
+                original_open_goal_index: 0,
+                candidate: MachineTacticCandidate::Exact {
+                    term: RawMachineTerm::new("h0"),
+                },
+                deterministic_budget: budget,
+            },
+            Phase7ReplayStepEdit {
+                original_goal_id: GoalId(1),
+                original_open_goal_index: 0,
+                candidate: MachineTacticCandidate::Exact {
+                    term: RawMachineTerm::new("h1"),
+                },
+                deterministic_budget: budget,
+            },
+            Phase7ReplayStepEdit {
+                original_goal_id: GoalId(2),
+                original_open_goal_index: 0,
+                candidate: MachineTacticCandidate::SimpLite {
+                    rules: vec![simp_rule("add_zero", 40), simp_rule("zero_add", 41)],
+                },
+                deterministic_budget: budget,
+            },
+        ];
+
+        assert_eq!(
+            Phase7MinimizationPassKind::ALL,
+            [
+                Phase7MinimizationPassKind::DeleteRedundantSteps,
+                Phase7MinimizationPassKind::ReplaceBlocksWithSimpLiteEmpty,
+                Phase7MinimizationPassKind::MinimizeExistingSimpLiteRules,
+            ]
+        );
+
+        let delete = phase7_delete_redundant_steps_proposals(&edits);
+        assert_eq!(delete.len(), 3);
+        assert_eq!(delete[0][0].original_goal_id, GoalId(1));
+        assert_eq!(delete[1][0].original_goal_id, GoalId(0));
+        assert_eq!(delete[1][1].original_goal_id, GoalId(2));
+
+        let replace = phase7_replace_blocks_with_simp_lite_empty_proposals(&edits);
+        assert_eq!(replace.len(), 6);
+        assert_eq!(replace[0].len(), 1);
+        assert!(matches!(
+            replace[0][0].candidate,
+            MachineTacticCandidate::SimpLite { ref rules } if rules.is_empty()
+        ));
+        assert_eq!(replace[0][0].original_goal_id, GoalId(0));
+        assert_eq!(replace[1].len(), 2);
+        assert_eq!(replace[1][0].original_goal_id, GoalId(0));
+        assert_eq!(replace[2].len(), 2);
+        assert_eq!(replace[2][0].original_goal_id, GoalId(0));
+        assert_eq!(replace[2][1].original_goal_id, GoalId(1));
+
+        let simp_rules = phase7_minimize_existing_simp_lite_rules_proposals(&edits);
+        assert_eq!(simp_rules.len(), 2);
+        assert!(matches!(
+            simp_rules[0][2].candidate,
+            MachineTacticCandidate::SimpLite { ref rules }
+                if rules == &vec![simp_rule("zero_add", 41)]
+        ));
+        assert!(matches!(
+            simp_rules[1][2].candidate,
+            MachineTacticCandidate::SimpLite { ref rules }
+                if rules == &vec![simp_rule("add_zero", 40)]
+        ));
+    }
+
+    #[test]
+    fn m7_rebuild_uses_open_goal_index_fallback_and_fresh_step_fields() {
+        let initial = snapshot_with_state(1, vec![goal_view(GoalId(2), 30, 5, 0, 0, None)]);
+        let closed = snapshot_with_state(2, Vec::new());
+        let budget = mvp_config().per_tactic_deterministic_budget;
+        let current_plan = Phase7ReplayPlan {
+            protocol_version: MachineApiVersion::V1,
+            session_root_hash: hash(90),
+            initial_state_fingerprint: initial.state_fingerprint,
+            steps: Vec::new(),
+            final_state_fingerprint: initial.state_fingerprint,
+        };
+        let edit = Phase7ReplayStepEdit {
+            original_goal_id: GoalId(99),
+            original_open_goal_index: 0,
+            candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            deterministic_budget: budget,
+        };
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: initial.clone(),
+        }));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            initial.state_fingerprint,
+            budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(70),
+                next_snapshot_id: closed.snapshot_id,
+                next_state_fingerprint: closed.state_fingerprint,
+                proof_delta_hash: hash(71),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed.clone(),
+        }));
+
+        let rebuilt = phase7_rebuild_replay_plan_from_step_edits(
+            &mut client,
+            initial.session_id.clone(),
+            &initial,
+            &current_plan,
+            &[edit],
+        )
+        .unwrap();
+
+        assert_eq!(rebuilt.steps.len(), 1);
+        assert_eq!(rebuilt.steps[0].goal_id, GoalId(2));
+        assert_eq!(rebuilt.steps[0].candidate_hash, hash(70));
+        assert_eq!(rebuilt.steps[0].proof_delta_hash, hash(71));
+        assert_eq!(
+            rebuilt.steps[0].deterministic_budget_hash,
+            tactic_budget_hash(budget)
+        );
+        assert_eq!(rebuilt.final_state_fingerprint, closed.state_fingerprint);
+    }
+
+    #[test]
+    fn m7_minimizer_accepts_delete_only_after_replay_and_verify() {
+        let initial = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let closed = snapshot_with_state(2, Vec::new());
+        let budget = mvp_config().per_tactic_deterministic_budget;
+        let step = Phase7ReplayStep {
+            previous_state_fingerprint: initial.state_fingerprint,
+            goal_id: GoalId(0),
+            candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            deterministic_budget: budget,
+            candidate_hash: hash(40),
+            deterministic_budget_hash: tactic_budget_hash(budget),
+            proof_delta_hash: hash(41),
+            next_state_fingerprint: closed.state_fingerprint,
+        };
+        let plan = Phase7ReplayPlan {
+            protocol_version: MachineApiVersion::V1,
+            session_root_hash: hash(90),
+            initial_state_fingerprint: initial.state_fingerprint,
+            steps: vec![step],
+            final_state_fingerprint: closed.state_fingerprint,
+        };
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: initial.clone(),
+        }));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            initial.state_fingerprint,
+            budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: closed.snapshot_id,
+                next_state_fingerprint: closed.state_fingerprint,
+                proof_delta_hash: hash(41),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: closed }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: initial.clone(),
+        }));
+        client.push_replay_response(Ok(replay_ok_response(
+            initial.snapshot_id,
+            initial.state_fingerprint,
+        )));
+        client.push_verify_response(Ok(verify_ok_response()));
+
+        let result = phase7_minimize_replay_plan(
+            &mut client,
+            initial.session_id.clone(),
+            &initial,
+            plan,
+            MachineReplayOkFields {
+                final_snapshot_id: SnapshotId::from_state_fingerprint(hash(90)),
+                final_state_fingerprint: hash(90),
+            },
+            verify_ok_envelope(),
+        );
+
+        assert!(result.replay_plan.steps.is_empty());
+        assert_eq!(
+            result.replay_plan.final_state_fingerprint,
+            initial.state_fingerprint
+        );
+        assert_eq!(
+            result.replay_response.final_snapshot_id,
+            initial.snapshot_id
+        );
+        assert_eq!(
+            result.replay_response.final_state_fingerprint,
+            initial.state_fingerprint
+        );
+        assert_eq!(result.minimization_stats.pass_kinds_attempted, 3);
+        assert_eq!(result.minimization_stats.rebuilt_plans, 1);
+        assert_eq!(result.minimization_stats.replay_attempts, 1);
+        assert_eq!(result.minimization_stats.verify_attempts, 1);
+        assert_eq!(result.minimization_stats.accepted_proposals, 1);
+    }
+
+    #[test]
+    fn m7_minimizer_keeps_verified_plan_when_verify_rejects_proposal() {
+        let initial = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let closed = snapshot_with_state(2, Vec::new());
+        let budget = mvp_config().per_tactic_deterministic_budget;
+        let step = Phase7ReplayStep {
+            previous_state_fingerprint: initial.state_fingerprint,
+            goal_id: GoalId(0),
+            candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            deterministic_budget: budget,
+            candidate_hash: hash(40),
+            deterministic_budget_hash: tactic_budget_hash(budget),
+            proof_delta_hash: hash(41),
+            next_state_fingerprint: closed.state_fingerprint,
+        };
+        let plan = Phase7ReplayPlan {
+            protocol_version: MachineApiVersion::V1,
+            session_root_hash: hash(90),
+            initial_state_fingerprint: initial.state_fingerprint,
+            steps: vec![step],
+            final_state_fingerprint: closed.state_fingerprint,
+        };
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: initial.clone(),
+        }));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            initial.state_fingerprint,
+            budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: closed.snapshot_id,
+                next_state_fingerprint: closed.state_fingerprint,
+                proof_delta_hash: hash(41),
+            }],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: closed.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: initial }));
+        client.push_replay_response(Ok(replay_ok_response(
+            SnapshotId::from_state_fingerprint(hash(91)),
+            hash(91),
+        )));
+        client.push_verify_response(Ok(verify_error_response(
+            MachineApiErrorKind::VerifyFailed,
+            crate::MachineApiDiagnosticPhase::CertificateVerify,
+        )));
+
+        let result = phase7_minimize_replay_plan(
+            &mut client,
+            closed.session_id.clone(),
+            &snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]),
+            plan,
+            MachineReplayOkFields {
+                final_snapshot_id: closed.snapshot_id,
+                final_state_fingerprint: closed.state_fingerprint,
+            },
+            verify_ok_envelope(),
+        );
+
+        assert_eq!(result.replay_plan.steps.len(), 1);
+        assert_eq!(
+            result.replay_plan.final_state_fingerprint,
+            closed.state_fingerprint
+        );
+        assert_eq!(result.replay_response.final_snapshot_id, closed.snapshot_id);
+        assert_eq!(result.minimization_stats.replay_attempts, 1);
+        assert_eq!(result.minimization_stats.verify_attempts, 1);
+        assert_eq!(result.minimization_stats.accepted_proposals, 0);
     }
 
     #[test]
