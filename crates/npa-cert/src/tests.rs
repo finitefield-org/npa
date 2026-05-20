@@ -788,6 +788,27 @@ fn verify_cert(cert: &ModuleCert, session: &mut VerifierSession) -> VerifiedModu
     .unwrap()
 }
 
+fn recursor_artifact_hashes(cert: &ModuleCert) -> (Hash, Hash) {
+    let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table).unwrap();
+    let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes).unwrap();
+    let recursor = cert
+        .declarations
+        .iter()
+        .find_map(|decl| match &decl.decl {
+            DeclPayload::Inductive {
+                recursor: Some(recursor),
+                ..
+            } => Some(recursor),
+            _ => None,
+        })
+        .unwrap();
+
+    (
+        generated_recursor_signature_hash(Some(recursor), &term_hashes, &cert.name_table).unwrap(),
+        generated_computation_rule_hash(Some(recursor)),
+    )
+}
+
 fn remap_swapped_term_id(term: &mut TermId, lhs: TermId, rhs: TermId) {
     if *term == lhs {
         *term = rhs;
@@ -1982,6 +2003,62 @@ fn imported_recursor_can_be_referenced_from_downstream_certificate() {
         &AxiomPolicy::normal(),
     )
     .unwrap();
+}
+
+#[test]
+fn generated_recursor_artifact_hashes_are_stable_and_scoped() {
+    let cert = build_module_cert(unary_inductive_with_recursor_module(), &[]).unwrap();
+    let decoded = decode_module_cert(&encode_module_cert(&cert).unwrap()).unwrap();
+    let (signature_hash, rule_hash) = recursor_artifact_hashes(&cert);
+    assert_eq!(
+        (signature_hash, rule_hash),
+        recursor_artifact_hashes(&decoded)
+    );
+
+    let inductive_index = cert
+        .declarations
+        .iter()
+        .position(|decl| matches!(decl.decl, DeclPayload::Inductive { .. }))
+        .unwrap();
+    let unary_term = cert
+        .term_table
+        .iter()
+        .position(|term| {
+            matches!(
+                term,
+                TermNode::Const {
+                    global_ref: GlobalRef::Local { decl_index },
+                    levels
+                } if *decl_index == inductive_index && levels.is_empty()
+            )
+        })
+        .unwrap();
+
+    let mut type_changed = cert.clone();
+    match &mut type_changed.declarations[inductive_index].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.ty = unary_term,
+        _ => panic!("expected inductive with recursor"),
+    }
+    let (type_changed_signature_hash, type_changed_rule_hash) =
+        recursor_artifact_hashes(&type_changed);
+    assert_ne!(signature_hash, type_changed_signature_hash);
+    assert_eq!(rule_hash, type_changed_rule_hash);
+
+    let mut rules_changed = cert.clone();
+    match &mut rules_changed.declarations[inductive_index].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.rules.major_index += 1,
+        _ => panic!("expected inductive with recursor"),
+    }
+    let (rules_changed_signature_hash, rules_changed_rule_hash) =
+        recursor_artifact_hashes(&rules_changed);
+    assert_eq!(signature_hash, rules_changed_signature_hash);
+    assert_ne!(rule_hash, rules_changed_rule_hash);
 }
 
 #[test]

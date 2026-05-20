@@ -768,6 +768,8 @@ decl_interface_hash(inductive)
 ```
 
 InductiveDecl は downstream の型検査・ι-reductionに影響するため、構造全体を interface hash に含めます。
+`constructors` は constructor name と constructor type hash を直接入れます。
+recursor の signature と computation rule は直接展開せず、それぞれ専用の generated artifact hash に分離します。
 
 ---
 
@@ -2254,6 +2256,35 @@ Theorem:
 Inductive:
   decl_interface_hash, dependency entries, axiom_dependencies
 ```
+
+`generated_recursor_signature_hash` と `generated_computation_rule_hash` は、
+inductive declaration payload 内の generated artifact を固定する補助 hash です。
+どちらも recursor が存在しない場合も absence marker を hash し、field の有無で
+`DeclInterfacePayload` の形を変えません。
+
+```text
+generated_recursor_signature_hash =
+  sha256("NPA-GEN-REC-SIG-0.1" || GeneratedRecursorSignaturePayload)
+
+GeneratedRecursorSignaturePayload =
+  None:
+    0x00
+  Some:
+    0x01 recursor_name recursor_universe_params recursor_type_hash
+
+generated_computation_rule_hash =
+  sha256("NPA-GEN-COMP-RULE-0.1" || GeneratedComputationRulePayload)
+
+GeneratedComputationRulePayload =
+  None:
+    0x00
+  Some:
+    0x01 minor_start major_index
+```
+
+`recursor_type_hash` は `TermHashPayload` から計算した recursor type の term hash です。
+`minor_start` / `major_index` は verifier が生成規則から再計算して照合する
+`RecursorRulesSpec` と同じ canonical uvar encoding で入れます。
 
 ## 11.12 import store / high-trust semantics
 

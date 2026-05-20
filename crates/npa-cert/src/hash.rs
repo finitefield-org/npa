@@ -341,31 +341,89 @@ fn decl_interface_payload(
                 out.extend(term_hashes.get(index.ty).ok_or(CertError::DecodeError)?);
             }
             out.extend(level_hashes.get(*sort).ok_or(CertError::DecodeError)?);
-            encode_uvar_to(&mut out, constructors.len() as u64);
-            for constructor in constructors {
-                encode_name_id_to(&mut out, names, constructor.name)?;
-                out.extend(
-                    term_hashes
-                        .get(constructor.ty)
-                        .ok_or(CertError::DecodeError)?,
-                );
-            }
-            match recursor {
-                Some(recursor) => {
-                    out.push(0x01);
-                    encode_name_id_to(&mut out, names, recursor.name)?;
-                    encode_name_ids_to(&mut out, names, &recursor.universe_params)?;
-                    out.extend(term_hashes.get(recursor.ty).ok_or(CertError::DecodeError)?);
-                    encode_uvar_to(&mut out, recursor.rules.minor_start as u64);
-                    encode_uvar_to(&mut out, recursor.rules.major_index as u64);
-                }
-                None => out.push(0x00),
-            }
+            encode_constructor_specs_to(&mut out, constructors, term_hashes, names)?;
+            out.extend(generated_recursor_signature_hash(
+                recursor.as_ref(),
+                term_hashes,
+                names,
+            )?);
+            out.extend(generated_computation_rule_hash(recursor.as_ref()));
             encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
     }
     Ok(out)
+}
+
+fn encode_constructor_specs_to(
+    out: &mut Vec<u8>,
+    constructors: &[ConstructorSpec],
+    term_hashes: &[Hash],
+    names: &[Name],
+) -> Result<()> {
+    encode_uvar_to(out, constructors.len() as u64);
+    for constructor in constructors {
+        encode_name_id_to(out, names, constructor.name)?;
+        out.extend(
+            term_hashes
+                .get(constructor.ty)
+                .ok_or(CertError::DecodeError)?,
+        );
+    }
+    Ok(())
+}
+
+pub(crate) fn generated_recursor_signature_hash(
+    recursor: Option<&RecursorSpec>,
+    term_hashes: &[Hash],
+    names: &[Name],
+) -> Result<Hash> {
+    Ok(hash_with_domain(
+        b"NPA-GEN-REC-SIG-0.1",
+        &generated_recursor_signature_payload(recursor, term_hashes, names)?,
+    ))
+}
+
+fn generated_recursor_signature_payload(
+    recursor: Option<&RecursorSpec>,
+    term_hashes: &[Hash],
+    names: &[Name],
+) -> Result<Vec<u8>> {
+    let mut out = Vec::new();
+    match recursor {
+        Some(recursor) => {
+            out.push(0x01);
+            encode_name_id_to(&mut out, names, recursor.name)?;
+            encode_name_ids_to(&mut out, names, &recursor.universe_params)?;
+            out.extend(term_hashes.get(recursor.ty).ok_or(CertError::DecodeError)?);
+        }
+        None => out.push(0x00),
+    }
+    Ok(out)
+}
+
+pub(crate) fn generated_computation_rule_hash(recursor: Option<&RecursorSpec>) -> Hash {
+    hash_with_domain(
+        b"NPA-GEN-COMP-RULE-0.1",
+        &generated_computation_rule_payload(recursor),
+    )
+}
+
+fn generated_computation_rule_payload(recursor: Option<&RecursorSpec>) -> Vec<u8> {
+    let mut out = Vec::new();
+    match recursor {
+        Some(recursor) => {
+            out.push(0x01);
+            encode_recursor_rules_to(&mut out, &recursor.rules);
+        }
+        None => out.push(0x00),
+    }
+    out
+}
+
+fn encode_recursor_rules_to(out: &mut Vec<u8>, rules: &RecursorRulesSpec) {
+    encode_uvar_to(out, rules.minor_start as u64);
+    encode_uvar_to(out, rules.major_index as u64);
 }
 
 fn interface_dependencies_for_decl(
