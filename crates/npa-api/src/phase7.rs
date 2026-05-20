@@ -384,12 +384,21 @@ pub struct Phase7SchedulerStop {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase7BatchEvaluation {
+    pub successful_transitions: Vec<Phase7SuccessfulCandidateTransition>,
     pub replay_steps: Vec<Phase7ReplayStep>,
     pub accepted_failures: Vec<Phase7AcceptedCandidateFailure>,
     pub non_accepted_errors: Vec<Phase7NonAcceptedCandidateError>,
     pub evaluated_count: u32,
     pub deferred_candidates: Vec<Phase7DeferredCandidate>,
     pub scheduler_stop: Option<Phase7SchedulerStop>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7SuccessfulCandidateTransition {
+    pub candidate_id: String,
+    pub envelope: Phase7CandidateEnvelope,
+    pub next_snapshot_id: SnapshotId,
+    pub replay_step: Phase7ReplayStep,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -418,6 +427,154 @@ pub type Phase7MachineControllerResult<T> = Result<T, Box<Phase7MachineControlle
 pub enum Phase7TacticBatchRunError {
     MachineApi(Phase7MachineApiError),
     Controller(Box<Phase7MachineControllerError>),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Phase7NodeId(pub u64);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7NodeStatus {
+    Queued,
+    Expanded,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7SearchNode {
+    pub node_id: Phase7NodeId,
+    pub session_id: SessionId,
+    pub session_root_hash: Hash,
+    pub initial_state_fingerprint: Hash,
+    pub snapshot_id: SnapshotId,
+    pub state_fingerprint: Hash,
+    pub goals: Vec<Phase7GoalSummary>,
+    pub replay_steps: Vec<Phase7ReplayStep>,
+    pub depth: u32,
+    pub cumulative_score: Phase7Score,
+    pub last_candidate: Option<MachineTacticCandidate>,
+    pub last_candidate_hash: Option<Hash>,
+    pub used_premises: Vec<Phase7PremiseUsage>,
+    pub parent: Option<Phase7NodeId>,
+    pub status: Phase7NodeStatus,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7SearchInput {
+    pub session_id: SessionId,
+    pub session_root_hash: Hash,
+    pub initial_snapshot: MachineProofSnapshot,
+    pub search_budget: Phase7SearchBudget,
+    pub per_tactic_deterministic_budget: TacticBudget,
+    pub scheduler_limits: Option<MachineBatchSchedulerLimits>,
+    pub batch_policy: MachineTacticBatchPolicy,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Phase7SearchStats {
+    pub nodes_expanded: u64,
+    pub candidates_evaluated: u64,
+    pub scheduler_stops: u64,
+    pub zero_progress_scheduler_stops: u64,
+    pub closed_node_replay_rejections: u64,
+    pub closed_node_verify_rejections: u64,
+    pub controller_errors: u64,
+    pub no_candidate_stops: u64,
+    pub max_depth_stops: u64,
+    pub best_partial_updates: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase7SearchBudgetLimit {
+    WallClock,
+    MaxNodes,
+    MaxDepth,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase7SearchFailureReason {
+    QueueExhausted,
+    SearchBudgetExceeded {
+        limit: Phase7SearchBudgetLimit,
+    },
+    MachineControllerError {
+        endpoint: String,
+        error_kind: String,
+        error_phase: Option<String>,
+        diagnostic_hash: Option<Hash>,
+    },
+    NoCandidateForSelectedGoal {
+        goal_id: GoalId,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7SearchFailure {
+    pub reason: Phase7SearchFailureReason,
+    pub best_partial_replay_prefix: Option<Vec<Phase7ReplayStep>>,
+    pub best_snapshot_id: Option<SnapshotId>,
+    pub best_state_fingerprint: Option<Hash>,
+    pub remaining_goals: Option<Vec<Phase7GoalSummary>>,
+    pub search_stats: Phase7SearchStats,
+    pub trace_events: Vec<Phase7SearchTraceEvent>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase7SearchTraceEvent {
+    pub event_index: u64,
+    pub node_id: Phase7NodeId,
+    pub kind: Phase7SearchTraceEventKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase7SearchTraceEventKind {
+    NodeExpanded,
+    DuplicateStateSkipped {
+        duplicate_state_fingerprint: Hash,
+    },
+    ChildQueued {
+        child_node_id: Phase7NodeId,
+        state_fingerprint: Hash,
+    },
+    NoCandidateForSelectedGoal {
+        goal_id: GoalId,
+    },
+    MaxDepthStopped {
+        max_depth: u32,
+    },
+    SchedulerStopped {
+        status: MachineApiResponseStatus,
+        completed_prefix_len: u32,
+    },
+    ZeroProgressSchedulerStopped {
+        status: MachineApiResponseStatus,
+    },
+    MaxTacticsPerNodeStopped {
+        max_tactics_per_node: u32,
+    },
+    MachineControllerError {
+        endpoint: String,
+        error_kind: String,
+    },
+    ClosedNodePendingReplay,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Phase7SearchPriorityKey {
+    pub open_goal_count: u32,
+    pub depth: u32,
+    pub replay_step_count: u32,
+    pub total_open_goal_target_size: u64,
+    pub state_fingerprint: Hash,
+    pub node_id: Phase7NodeId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Phase7BestPartialKey {
+    pub open_goal_count: u32,
+    pub total_open_goal_target_size: u64,
+    pub replay_step_count: u32,
+    pub depth: u32,
+    pub state_fingerprint: Hash,
+    pub node_id: Phase7NodeId,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1021,6 +1178,7 @@ fn phase7_build_batch_evaluation(
     scheduler_stop: Option<Phase7SchedulerStop>,
     deferred_start: usize,
 ) -> Phase7BatchEvaluation {
+    let mut successful_transitions = Vec::new();
     let mut replay_steps = Vec::new();
     let mut accepted_failures = Vec::new();
     let mut non_accepted_errors = Vec::new();
@@ -1029,20 +1187,30 @@ fn phase7_build_batch_evaluation(
         let assigned = &request.candidates[index];
         match item {
             MachineTacticBatchItemResponse::Success {
+                candidate_id,
                 candidate_hash,
+                next_snapshot_id,
                 next_state_fingerprint,
                 proof_delta_hash,
-                ..
-            } => replay_steps.push(Phase7ReplayStep {
-                previous_state_fingerprint: request.state_fingerprint,
-                goal_id: request.goal_id,
-                candidate: assigned.envelope.candidate.clone(),
-                deterministic_budget: request.deterministic_budget,
-                candidate_hash: *candidate_hash,
-                deterministic_budget_hash,
-                proof_delta_hash: *proof_delta_hash,
-                next_state_fingerprint: *next_state_fingerprint,
-            }),
+            } => {
+                let replay_step = Phase7ReplayStep {
+                    previous_state_fingerprint: request.state_fingerprint,
+                    goal_id: request.goal_id,
+                    candidate: assigned.envelope.candidate.clone(),
+                    deterministic_budget: request.deterministic_budget,
+                    candidate_hash: *candidate_hash,
+                    deterministic_budget_hash,
+                    proof_delta_hash: *proof_delta_hash,
+                    next_state_fingerprint: *next_state_fingerprint,
+                };
+                replay_steps.push(replay_step.clone());
+                successful_transitions.push(Phase7SuccessfulCandidateTransition {
+                    candidate_id: candidate_id.clone(),
+                    envelope: assigned.envelope.clone(),
+                    next_snapshot_id: *next_snapshot_id,
+                    replay_step,
+                });
+            }
             MachineTacticBatchItemResponse::Error {
                 candidate_hash,
                 diagnostic,
@@ -1070,6 +1238,7 @@ fn phase7_build_batch_evaluation(
     }
 
     Phase7BatchEvaluation {
+        successful_transitions,
         replay_steps,
         accepted_failures,
         non_accepted_errors,
@@ -1201,6 +1370,696 @@ fn phase7_scheduler_limits_json(limits: MachineBatchSchedulerLimits) -> String {
         fields.push(format!(r#""max_memory_mb":{value}"#));
     }
     format!("{{{}}}", fields.join(","))
+}
+
+pub fn phase7_search_node_priority_key(node: &Phase7SearchNode) -> Phase7SearchPriorityKey {
+    Phase7SearchPriorityKey {
+        open_goal_count: usize_to_u32(node.goals.len()),
+        depth: node.depth,
+        replay_step_count: usize_to_u32(node.replay_steps.len()),
+        total_open_goal_target_size: phase7_total_open_goal_target_size(&node.goals),
+        state_fingerprint: node.state_fingerprint,
+        node_id: node.node_id,
+    }
+}
+
+pub fn phase7_search_node_best_partial_key(node: &Phase7SearchNode) -> Phase7BestPartialKey {
+    Phase7BestPartialKey {
+        open_goal_count: usize_to_u32(node.goals.len()),
+        total_open_goal_target_size: phase7_total_open_goal_target_size(&node.goals),
+        replay_step_count: usize_to_u32(node.replay_steps.len()),
+        depth: node.depth,
+        state_fingerprint: node.state_fingerprint,
+        node_id: node.node_id,
+    }
+}
+
+pub fn phase7_run_mvp_search(
+    client: &mut impl Phase7MachineApiClient,
+    input: Phase7SearchInput,
+) -> Phase7SearchFailure {
+    let mut node_ids = Phase7NodeIdAllocator::new();
+    let mut queue = Phase7SearchPriorityQueue::new();
+    let mut discovered_states = BTreeSet::new();
+    let mut stats = Phase7SearchStats::default();
+    let mut trace = Phase7TraceBuilder::new();
+    let mut best_partial: Option<Phase7SearchNode> = None;
+    let mut failure_reason = Phase7SearchFailureReason::QueueExhausted;
+    let mut depth_budget_hit = false;
+    let mut initial_no_candidate_goal = None;
+
+    let root = phase7_root_search_node(&input, node_ids.allocate());
+    discovered_states.insert(root.state_fingerprint);
+    queue.push(root);
+
+    while let Some(mut node) = queue.pop_best() {
+        node.status = Phase7NodeStatus::Expanded;
+        trace.push(&node, Phase7SearchTraceEventKind::NodeExpanded);
+
+        let snapshot = match client.get_snapshot(Phase7SnapshotGetRequest {
+            session_id: node.session_id.clone(),
+            snapshot_id: node.snapshot_id,
+            state_fingerprint: node.state_fingerprint,
+        }) {
+            Ok(ok) => ok.snapshot,
+            Err(error) => {
+                stats.controller_errors += 1;
+                let reason = phase7_search_failure_reason_from_machine_api_error(
+                    Phase7MachineApiEndpointKind::SnapshotGet,
+                    &error,
+                );
+                trace.push(
+                    &node,
+                    phase7_machine_controller_trace_kind_from_reason(&reason),
+                );
+                return phase7_search_failure(reason, best_partial, stats, trace.finish());
+            }
+        };
+        node.goals = phase7_goal_summaries(&snapshot);
+
+        if node.goals.is_empty() {
+            trace.push(&node, Phase7SearchTraceEventKind::ClosedNodePendingReplay);
+            continue;
+        }
+
+        if best_partial.as_ref().is_none_or(|best| {
+            phase7_search_node_best_partial_key(&node) < phase7_search_node_best_partial_key(best)
+        }) {
+            best_partial = Some(node.clone());
+            stats.best_partial_updates += 1;
+        }
+
+        if node.depth >= input.search_budget.max_depth {
+            depth_budget_hit = true;
+            stats.max_depth_stops += 1;
+            trace.push(
+                &node,
+                Phase7SearchTraceEventKind::MaxDepthStopped {
+                    max_depth: input.search_budget.max_depth,
+                },
+            );
+            continue;
+        }
+
+        if stats.nodes_expanded >= input.search_budget.max_nodes {
+            failure_reason = Phase7SearchFailureReason::SearchBudgetExceeded {
+                limit: Phase7SearchBudgetLimit::MaxNodes,
+            };
+            break;
+        }
+        stats.nodes_expanded += 1;
+
+        let Some(goal_summary) = select_phase7_goal(&snapshot) else {
+            stats.no_candidate_stops += 1;
+            continue;
+        };
+        let goal_id = goal_summary.goal_id;
+        let Some(goal) = snapshot.goals.iter().find(|goal| goal.goal_id == goal_id) else {
+            stats.controller_errors += 1;
+            let reason = Phase7SearchFailureReason::MachineControllerError {
+                endpoint: phase7_machine_api_endpoint_wire(
+                    Phase7MachineApiEndpointKind::SnapshotGet,
+                )
+                .to_owned(),
+                error_kind: "invalid_machine_proof_state".to_owned(),
+                error_phase: None,
+                diagnostic_hash: None,
+            };
+            trace.push(
+                &node,
+                phase7_machine_controller_trace_kind_from_reason(&reason),
+            );
+            return phase7_search_failure(reason, best_partial, stats, trace.finish());
+        };
+
+        let retrieval = match retrieve_phase7_premises(
+            client,
+            &Phase7PremiseQueryRequest {
+                session_id: node.session_id.clone(),
+                snapshot_id: node.snapshot_id,
+                state_fingerprint: node.state_fingerprint,
+                goal_id,
+            },
+            node.session_root_hash,
+        ) {
+            Ok(retrieval) => retrieval,
+            Err(error) => {
+                stats.controller_errors += 1;
+                let reason = phase7_search_failure_reason_from_machine_api_error(
+                    Phase7MachineApiEndpointKind::SearchForGoal,
+                    &error,
+                );
+                trace.push(
+                    &node,
+                    phase7_machine_controller_trace_kind_from_reason(&reason),
+                );
+                return phase7_search_failure(reason, best_partial, stats, trace.finish());
+            }
+        };
+
+        let mut fresh_candidates = phase7_mvp_candidate_generation(goal, &retrieval).accepted;
+        let mut deferred_candidates = Vec::new();
+        let mut evaluated_for_node = 0u32;
+
+        loop {
+            let mut candidates = if deferred_candidates.is_empty() {
+                std::mem::take(&mut fresh_candidates)
+            } else {
+                deferred_candidates
+                    .drain(..)
+                    .map(|deferred: Phase7DeferredCandidate| deferred.envelope)
+                    .collect()
+            };
+            let remaining_tactic_budget = input
+                .search_budget
+                .max_tactics_per_node
+                .saturating_sub(evaluated_for_node);
+            let max_tactics_budget_reached_before_batch =
+                remaining_tactic_budget == 0 && !candidates.is_empty();
+            let candidates_exceeded_remaining_tactic_budget =
+                candidates.len() > remaining_tactic_budget as usize;
+            candidates =
+                phase7_take_remaining_node_tactic_budget(candidates, remaining_tactic_budget);
+
+            if candidates.is_empty() {
+                if max_tactics_budget_reached_before_batch {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                            max_tactics_per_node: input.search_budget.max_tactics_per_node,
+                        },
+                    );
+                } else if evaluated_for_node == 0 {
+                    stats.no_candidate_stops += 1;
+                    if node.parent.is_none() {
+                        initial_no_candidate_goal = Some(goal_id);
+                    }
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::NoCandidateForSelectedGoal { goal_id },
+                    );
+                }
+                break;
+            }
+
+            let batch_request = Phase7TacticBatchRequest {
+                session_id: node.session_id.clone(),
+                snapshot_id: node.snapshot_id,
+                state_fingerprint: node.state_fingerprint,
+                goal_id,
+                candidates: phase7_assign_candidate_ids(candidates),
+                deterministic_budget: input.per_tactic_deterministic_budget,
+                batch_policy: input.batch_policy,
+                scheduler_limits: input.scheduler_limits,
+            };
+            let evaluation = match phase7_run_tactic_batch(client, &batch_request) {
+                Ok(evaluation) => evaluation,
+                Err(error) => {
+                    stats.controller_errors += 1;
+                    let reason = phase7_search_failure_reason_from_tactic_batch_run_error(&error);
+                    trace.push(
+                        &node,
+                        phase7_machine_controller_trace_kind_from_reason(&reason),
+                    );
+                    return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                }
+            };
+
+            if let Some(scheduler_stop) = evaluation.scheduler_stop {
+                stats.scheduler_stops += 1;
+                if evaluation.evaluated_count == 0 {
+                    stats.zero_progress_scheduler_stops += 1;
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::ZeroProgressSchedulerStopped {
+                            status: scheduler_stop.status,
+                        },
+                    );
+                } else {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::SchedulerStopped {
+                            status: scheduler_stop.status,
+                            completed_prefix_len: scheduler_stop.completed_prefix_len,
+                        },
+                    );
+                }
+            }
+
+            if evaluation.evaluated_count == 0
+                && evaluation.scheduler_stop.is_none()
+                && !evaluation.deferred_candidates.is_empty()
+            {
+                stats.controller_errors += 1;
+                let error = phase7_batch_contract_violation(
+                    "batch ok response did not evaluate any candidate".to_owned(),
+                    None,
+                );
+                let reason = phase7_search_failure_reason_from_controller_error(&error);
+                trace.push(
+                    &node,
+                    phase7_machine_controller_trace_kind_from_reason(&reason),
+                );
+                return phase7_search_failure(reason, best_partial, stats, trace.finish());
+            }
+
+            evaluated_for_node = evaluated_for_node
+                .checked_add(evaluation.evaluated_count)
+                .expect("phase7 evaluated candidates for node fits in u32");
+            stats.candidates_evaluated += u64::from(evaluation.evaluated_count);
+
+            for transition in evaluation.successful_transitions {
+                if discovered_states.contains(&transition.replay_step.next_state_fingerprint) {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::DuplicateStateSkipped {
+                            duplicate_state_fingerprint: transition
+                                .replay_step
+                                .next_state_fingerprint,
+                        },
+                    );
+                    continue;
+                }
+
+                let child_snapshot = match client.get_snapshot(Phase7SnapshotGetRequest {
+                    session_id: node.session_id.clone(),
+                    snapshot_id: transition.next_snapshot_id,
+                    state_fingerprint: transition.replay_step.next_state_fingerprint,
+                }) {
+                    Ok(ok) => ok.snapshot,
+                    Err(error) => {
+                        stats.controller_errors += 1;
+                        let reason = phase7_search_failure_reason_from_machine_api_error(
+                            Phase7MachineApiEndpointKind::SnapshotGet,
+                            &error,
+                        );
+                        trace.push(
+                            &node,
+                            phase7_machine_controller_trace_kind_from_reason(&reason),
+                        );
+                        return phase7_search_failure(reason, best_partial, stats, trace.finish());
+                    }
+                };
+
+                let child_node_id = node_ids.allocate();
+                let child = phase7_make_child_search_node(
+                    &node,
+                    child_node_id,
+                    transition,
+                    &child_snapshot,
+                );
+                discovered_states.insert(child.state_fingerprint);
+                trace.push(
+                    &node,
+                    Phase7SearchTraceEventKind::ChildQueued {
+                        child_node_id,
+                        state_fingerprint: child.state_fingerprint,
+                    },
+                );
+                queue.push(child);
+            }
+
+            deferred_candidates = evaluation.deferred_candidates;
+            if deferred_candidates.is_empty() {
+                if candidates_exceeded_remaining_tactic_budget
+                    && evaluated_for_node >= input.search_budget.max_tactics_per_node
+                {
+                    trace.push(
+                        &node,
+                        Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                            max_tactics_per_node: input.search_budget.max_tactics_per_node,
+                        },
+                    );
+                }
+                break;
+            }
+            if evaluated_for_node >= input.search_budget.max_tactics_per_node {
+                trace.push(
+                    &node,
+                    Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                        max_tactics_per_node: input.search_budget.max_tactics_per_node,
+                    },
+                );
+                break;
+            }
+        }
+    }
+
+    if let Some(goal_id) = initial_no_candidate_goal.filter(|_| {
+        best_partial
+            .as_ref()
+            .is_some_and(|partial| partial.parent.is_none())
+    }) {
+        failure_reason = Phase7SearchFailureReason::NoCandidateForSelectedGoal { goal_id };
+    } else if matches!(failure_reason, Phase7SearchFailureReason::QueueExhausted)
+        && depth_budget_hit
+    {
+        failure_reason = Phase7SearchFailureReason::SearchBudgetExceeded {
+            limit: Phase7SearchBudgetLimit::MaxDepth,
+        };
+    }
+
+    phase7_search_failure(failure_reason, best_partial, stats, trace.finish())
+}
+
+fn phase7_root_search_node(input: &Phase7SearchInput, node_id: Phase7NodeId) -> Phase7SearchNode {
+    Phase7SearchNode {
+        node_id,
+        session_id: input.session_id.clone(),
+        session_root_hash: input.session_root_hash,
+        initial_state_fingerprint: input.initial_snapshot.state_fingerprint,
+        snapshot_id: input.initial_snapshot.snapshot_id,
+        state_fingerprint: input.initial_snapshot.state_fingerprint,
+        goals: phase7_goal_summaries(&input.initial_snapshot),
+        replay_steps: Vec::new(),
+        depth: 0,
+        cumulative_score: 0,
+        last_candidate: None,
+        last_candidate_hash: None,
+        used_premises: Vec::new(),
+        parent: None,
+        status: Phase7NodeStatus::Queued,
+    }
+}
+
+fn phase7_make_child_search_node(
+    parent: &Phase7SearchNode,
+    node_id: Phase7NodeId,
+    transition: Phase7SuccessfulCandidateTransition,
+    child_snapshot: &MachineProofSnapshot,
+) -> Phase7SearchNode {
+    let mut replay_steps = parent.replay_steps.clone();
+    replay_steps.push(transition.replay_step.clone());
+    Phase7SearchNode {
+        node_id,
+        session_id: parent.session_id.clone(),
+        session_root_hash: parent.session_root_hash,
+        initial_state_fingerprint: parent.initial_state_fingerprint,
+        snapshot_id: transition.next_snapshot_id,
+        state_fingerprint: transition.replay_step.next_state_fingerprint,
+        goals: phase7_goal_summaries(child_snapshot),
+        replay_steps,
+        depth: parent
+            .depth
+            .checked_add(1)
+            .expect("phase7 search depth fits in u32"),
+        cumulative_score: parent.cumulative_score,
+        last_candidate: Some(transition.envelope.candidate.clone()),
+        last_candidate_hash: Some(transition.replay_step.candidate_hash),
+        used_premises: phase7_append_unique_premises(
+            &parent.used_premises,
+            &transition.envelope.metadata.premises_used,
+        ),
+        parent: Some(parent.node_id),
+        status: Phase7NodeStatus::Queued,
+    }
+}
+
+fn phase7_append_unique_premises(
+    current: &[Phase7PremiseUsage],
+    next: &[Phase7PremiseUsage],
+) -> Vec<Phase7PremiseUsage> {
+    let mut out = current.to_vec();
+    for premise in next {
+        if !out.contains(premise) {
+            out.push(premise.clone());
+        }
+    }
+    out
+}
+
+fn phase7_take_remaining_node_tactic_budget(
+    candidates: Vec<Phase7CandidateEnvelope>,
+    remaining: u32,
+) -> Vec<Phase7CandidateEnvelope> {
+    candidates.into_iter().take(remaining as usize).collect()
+}
+
+fn phase7_total_open_goal_target_size(goals: &[Phase7GoalSummary]) -> u64 {
+    goals.iter().map(|goal| u64::from(goal.expr_size)).sum()
+}
+
+fn phase7_search_failure(
+    reason: Phase7SearchFailureReason,
+    best_partial: Option<Phase7SearchNode>,
+    search_stats: Phase7SearchStats,
+    trace_events: Vec<Phase7SearchTraceEvent>,
+) -> Phase7SearchFailure {
+    let (best_partial_replay_prefix, best_snapshot_id, best_state_fingerprint, remaining_goals) =
+        if let Some(node) = best_partial {
+            (
+                Some(node.replay_steps),
+                Some(node.snapshot_id),
+                Some(node.state_fingerprint),
+                Some(node.goals),
+            )
+        } else {
+            (None, None, None, None)
+        };
+    Phase7SearchFailure {
+        reason,
+        best_partial_replay_prefix,
+        best_snapshot_id,
+        best_state_fingerprint,
+        remaining_goals,
+        search_stats,
+        trace_events,
+    }
+}
+
+fn phase7_search_failure_reason_from_tactic_batch_run_error(
+    error: &Phase7TacticBatchRunError,
+) -> Phase7SearchFailureReason {
+    match error {
+        Phase7TacticBatchRunError::MachineApi(error) => {
+            phase7_search_failure_reason_from_machine_api_error(
+                Phase7MachineApiEndpointKind::TacticBatch,
+                error,
+            )
+        }
+        Phase7TacticBatchRunError::Controller(error) => {
+            phase7_search_failure_reason_from_controller_error(error)
+        }
+    }
+}
+
+fn phase7_search_failure_reason_from_controller_error(
+    error: &Phase7MachineControllerError,
+) -> Phase7SearchFailureReason {
+    Phase7SearchFailureReason::MachineControllerError {
+        endpoint: phase7_machine_api_endpoint_wire(error.endpoint).to_owned(),
+        error_kind: phase7_machine_controller_error_kind_wire(error),
+        error_phase: error.phase.map(|phase| phase.as_str().to_owned()),
+        diagnostic_hash: error.diagnostic_hash,
+    }
+}
+
+fn phase7_machine_controller_error_kind_wire(error: &Phase7MachineControllerError) -> String {
+    match error.kind {
+        Phase7MachineControllerErrorKind::TopLevelBatchError => error.message.clone(),
+        Phase7MachineControllerErrorKind::BatchResponseContractViolation => {
+            "batch_response_contract_violation".to_owned()
+        }
+        Phase7MachineControllerErrorKind::SuggestedCandidateHashMismatch => {
+            "suggested_candidate_hash_mismatch".to_owned()
+        }
+    }
+}
+
+fn phase7_search_failure_reason_from_machine_api_error(
+    fallback_endpoint: Phase7MachineApiEndpointKind,
+    error: &Phase7MachineApiError,
+) -> Phase7SearchFailureReason {
+    match error {
+        Phase7MachineApiError::SnapshotGet(error) => {
+            phase7_machine_controller_error_reason_from_wire(
+                fallback_endpoint,
+                error.error.kind.as_str(),
+                Some(error.error.phase.as_str()),
+                Some(error.error.diagnostic_hash),
+            )
+        }
+        Phase7MachineApiError::SearchForGoal(error) => {
+            phase7_machine_controller_error_reason_from_diagnostic(
+                fallback_endpoint,
+                &error.diagnostic,
+            )
+        }
+        Phase7MachineApiError::TacticBatch(error) => {
+            phase7_machine_controller_error_reason_from_diagnostic(
+                fallback_endpoint,
+                &error.diagnostic,
+            )
+        }
+        Phase7MachineApiError::Replay(error) => {
+            phase7_machine_controller_error_reason_from_diagnostic(
+                fallback_endpoint,
+                &error.diagnostic,
+            )
+        }
+        Phase7MachineApiError::Verify(error) => {
+            phase7_machine_controller_error_reason_from_diagnostic(
+                fallback_endpoint,
+                &error.diagnostic,
+            )
+        }
+        Phase7MachineApiError::SearchForGoalResponse(error) => {
+            phase7_machine_controller_error_reason_from_wire(
+                fallback_endpoint,
+                error.kind.as_str(),
+                Some(error.phase.as_str()),
+                Some(error.diagnostic_hash),
+            )
+        }
+        Phase7MachineApiError::UnexpectedSchedulerStop { endpoint } => {
+            phase7_machine_controller_error_reason_from_wire(
+                *endpoint,
+                "scheduler_stopped",
+                None,
+                None,
+            )
+        }
+        Phase7MachineApiError::FakeRequestValidation { endpoint, error } => {
+            phase7_machine_controller_error_reason_from_wire(
+                *endpoint,
+                error.kind.as_str(),
+                Some(crate::MachineApiDiagnosticPhase::RequestValidation.as_str()),
+                None,
+            )
+        }
+        Phase7MachineApiError::FakeResponseExhausted { endpoint } => {
+            phase7_machine_controller_error_reason_from_wire(
+                *endpoint,
+                "transport_error",
+                None,
+                None,
+            )
+        }
+    }
+}
+
+fn phase7_machine_controller_error_reason_from_diagnostic(
+    endpoint: Phase7MachineApiEndpointKind,
+    diagnostic: &crate::MachineApiDiagnosticProjection,
+) -> Phase7SearchFailureReason {
+    phase7_machine_controller_error_reason_from_wire(
+        endpoint,
+        diagnostic.kind.as_str(),
+        Some(diagnostic.phase.as_str()),
+        diagnostic.diagnostic_hash().ok(),
+    )
+}
+
+fn phase7_machine_controller_error_reason_from_wire(
+    endpoint: Phase7MachineApiEndpointKind,
+    error_kind: &str,
+    error_phase: Option<&str>,
+    diagnostic_hash: Option<Hash>,
+) -> Phase7SearchFailureReason {
+    Phase7SearchFailureReason::MachineControllerError {
+        endpoint: phase7_machine_api_endpoint_wire(endpoint).to_owned(),
+        error_kind: error_kind.to_owned(),
+        error_phase: error_phase.map(str::to_owned),
+        diagnostic_hash,
+    }
+}
+
+fn phase7_machine_controller_trace_kind_from_reason(
+    reason: &Phase7SearchFailureReason,
+) -> Phase7SearchTraceEventKind {
+    match reason {
+        Phase7SearchFailureReason::MachineControllerError {
+            endpoint,
+            error_kind,
+            ..
+        } => Phase7SearchTraceEventKind::MachineControllerError {
+            endpoint: endpoint.clone(),
+            error_kind: error_kind.clone(),
+        },
+        _ => Phase7SearchTraceEventKind::MachineControllerError {
+            endpoint: "phase7".to_owned(),
+            error_kind: "controller_error".to_owned(),
+        },
+    }
+}
+
+fn phase7_machine_api_endpoint_wire(endpoint: Phase7MachineApiEndpointKind) -> &'static str {
+    match endpoint {
+        Phase7MachineApiEndpointKind::SnapshotGet => "/machine/snapshots/get",
+        Phase7MachineApiEndpointKind::SearchForGoal => "/machine/search/for_goal",
+        Phase7MachineApiEndpointKind::TacticBatch => "/machine/tactics/batch",
+        Phase7MachineApiEndpointKind::Replay => "/machine/replay",
+        Phase7MachineApiEndpointKind::Verify => "/machine/verify",
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct Phase7NodeIdAllocator {
+    next: u64,
+}
+
+impl Phase7NodeIdAllocator {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn allocate(&mut self) -> Phase7NodeId {
+        let node_id = Phase7NodeId(self.next);
+        self.next = self
+            .next
+            .checked_add(1)
+            .expect("phase7 node id fits in u64");
+        node_id
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct Phase7SearchPriorityQueue {
+    nodes: Vec<Phase7SearchNode>,
+}
+
+impl Phase7SearchPriorityQueue {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn push(&mut self, node: Phase7SearchNode) {
+        self.nodes.push(node);
+    }
+
+    fn pop_best(&mut self) -> Option<Phase7SearchNode> {
+        let best_index = self
+            .nodes
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, node)| phase7_search_node_priority_key(node))
+            .map(|(index, _)| index)?;
+        Some(self.nodes.remove(best_index))
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct Phase7TraceBuilder {
+    events: Vec<Phase7SearchTraceEvent>,
+}
+
+impl Phase7TraceBuilder {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn push(&mut self, node: &Phase7SearchNode, kind: Phase7SearchTraceEventKind) {
+        self.events.push(Phase7SearchTraceEvent {
+            event_index: u64::try_from(self.events.len())
+                .expect("phase7 trace event count fits in u64"),
+            node_id: node.node_id,
+            kind,
+        });
+    }
+
+    fn finish(self) -> Vec<Phase7SearchTraceEvent> {
+        self.events
+    }
 }
 
 pub fn phase7_snapshot_get_request_json(request: &Phase7SnapshotGetRequest) -> String {
@@ -2655,14 +3514,18 @@ mod tests {
     }
 
     fn snapshot_with_goals(goals: Vec<MachineGoalView>) -> MachineProofSnapshot {
+        snapshot_with_state(1, goals)
+    }
+
+    fn snapshot_with_state(byte: u8, goals: Vec<MachineGoalView>) -> MachineProofSnapshot {
         MachineProofSnapshot {
-            snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
+            snapshot_id: SnapshotId::from_state_fingerprint(hash(byte)),
             session_id: SessionId::parse("msess_001").unwrap(),
-            state_fingerprint: hash(1),
-            tactic_options_fingerprint: hash(2),
+            state_fingerprint: hash(byte),
+            tactic_options_fingerprint: hash(byte + 1),
             open_goals: goals.iter().map(|goal| goal.goal_id).collect(),
             goals,
-            proof_skeleton_hash: hash(3),
+            proof_skeleton_hash: hash(byte + 2),
         }
     }
 
@@ -2704,6 +3567,21 @@ mod tests {
             suggestion_profile_version: "mvp-suggested-candidates-v1",
             results: vec![result],
         }
+    }
+
+    fn search_ok_response(
+        results: Vec<MachineTheoremSearchResult>,
+    ) -> MachineTheoremSearchResponse {
+        MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
+            status: MachineApiResponseStatus::Ok,
+            endpoint_fields: MachineTheoremSearchOkFields {
+                query_fingerprint: hash(20),
+                theorem_index_fingerprint: hash(21),
+                search_profile_version: "mvp-zero-score-v1",
+                suggestion_profile_version: "mvp-suggested-candidates-v1",
+                results,
+            },
+        })
     }
 
     fn empty_retrieval() -> Phase7PremiseRetrieval {
@@ -2808,6 +3686,30 @@ mod tests {
         }
     }
 
+    fn phase7_test_search_input(initial_snapshot: MachineProofSnapshot) -> Phase7SearchInput {
+        let config = mvp_config();
+        Phase7SearchInput {
+            session_id: initial_snapshot.session_id.clone(),
+            session_root_hash: hash(90),
+            initial_snapshot,
+            search_budget: config.search_budget,
+            per_tactic_deterministic_budget: config.per_tactic_deterministic_budget,
+            scheduler_limits: config.scheduler_limits,
+            batch_policy: config.batch_policy,
+        }
+    }
+
+    fn suggested_candidate(
+        candidate_hash: Hash,
+        candidate: MachineTacticCandidate,
+    ) -> MachineSuggestedCandidate {
+        MachineSuggestedCandidate {
+            status: MachineSuggestedCandidateStatus::Validated,
+            candidate_hash,
+            candidate,
+        }
+    }
+
     fn compact_error(kind: MachineApiErrorKind) -> MachineApiCompactErrorWire {
         MachineApiCompactErrorWire {
             error_kind: kind,
@@ -2827,13 +3729,25 @@ mod tests {
         request: &Phase7TacticBatchRequest,
         results: Vec<MachineTacticBatchItemResponse>,
     ) -> MachineTacticBatchResponse {
+        ok_batch_response_for(
+            request.state_fingerprint,
+            request.deterministic_budget,
+            results,
+        )
+    }
+
+    fn ok_batch_response_for(
+        previous_state_fingerprint: Hash,
+        deterministic_budget: TacticBudget,
+        results: Vec<MachineTacticBatchItemResponse>,
+    ) -> MachineTacticBatchResponse {
         let success_count = usize_to_u32(results.iter().filter(|item| item.is_success()).count());
         let failure_count = usize_to_u32(results.len()) - success_count;
         MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
             status: MachineApiResponseStatus::Ok,
             endpoint_fields: MachineTacticBatchOkFields {
-                previous_state_fingerprint: request.state_fingerprint,
-                deterministic_budget_hash: tactic_budget_hash(request.deterministic_budget),
+                previous_state_fingerprint,
+                deterministic_budget_hash: tactic_budget_hash(deterministic_budget),
                 results,
                 success_count,
                 failure_count,
@@ -3537,12 +4451,21 @@ mod tests {
 
         let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
 
+        assert_eq!(evaluation.successful_transitions.len(), 1);
         assert_eq!(evaluation.replay_steps.len(), 1);
         assert_eq!(evaluation.accepted_failures.len(), 1);
         assert!(evaluation.non_accepted_errors.is_empty());
         assert_eq!(evaluation.deferred_candidates.len(), 0);
 
+        let transition = &evaluation.successful_transitions[0];
+        assert_eq!(transition.candidate_id, "c0");
+        assert_eq!(
+            transition.next_snapshot_id,
+            SnapshotId::from_state_fingerprint(hash(41))
+        );
+
         let step = &evaluation.replay_steps[0];
+        assert_eq!(&transition.replay_step, step);
         assert_eq!(step.previous_state_fingerprint, request.state_fingerprint);
         assert_eq!(step.goal_id, GoalId(0));
         assert_eq!(step.candidate_hash, hash(40));
@@ -3728,6 +4651,298 @@ mod tests {
             Some(tactic_budget_hash(request.deterministic_budget))
         );
         assert_eq!(error.actual_hash, Some(hash(99)));
+    }
+
+    #[test]
+    fn m4_search_priority_and_best_partial_keys_are_deterministic() {
+        let one_goal = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 9, 0, 0, None)]);
+        let two_goals = snapshot_with_state(
+            2,
+            vec![
+                goal_view(GoalId(0), 31, 4, 0, 0, None),
+                goal_view(GoalId(1), 32, 5, 0, 0, None),
+            ],
+        );
+        let mut one_goal_node =
+            phase7_root_search_node(&phase7_test_search_input(one_goal), Phase7NodeId(1));
+        let mut two_goal_node =
+            phase7_root_search_node(&phase7_test_search_input(two_goals), Phase7NodeId(2));
+        one_goal_node.depth = 1;
+        two_goal_node.depth = 0;
+
+        let one_goal_priority = phase7_search_node_priority_key(&one_goal_node);
+        assert_eq!(one_goal_priority.open_goal_count, 1);
+        assert_eq!(one_goal_priority.depth, 1);
+        assert_eq!(one_goal_priority.total_open_goal_target_size, 9);
+        assert!(one_goal_priority < phase7_search_node_priority_key(&two_goal_node));
+
+        let two_goal_partial = phase7_search_node_best_partial_key(&two_goal_node);
+        assert_eq!(two_goal_partial.open_goal_count, 2);
+        assert_eq!(two_goal_partial.total_open_goal_target_size, 9);
+        assert!(phase7_search_node_best_partial_key(&one_goal_node) < two_goal_partial);
+    }
+
+    #[test]
+    fn m4_search_respects_max_depth_without_expanding_node() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let mut input = phase7_test_search_input(root.clone());
+        input.search_budget.max_depth = 0;
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+
+        let failure = phase7_run_mvp_search(&mut client, input);
+
+        assert_eq!(
+            failure.reason,
+            Phase7SearchFailureReason::SearchBudgetExceeded {
+                limit: Phase7SearchBudgetLimit::MaxDepth
+            }
+        );
+        assert_eq!(failure.search_stats.nodes_expanded, 0);
+        assert_eq!(failure.search_stats.max_depth_stops, 1);
+        assert_eq!(failure.best_snapshot_id, Some(root.snapshot_id));
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::MaxDepthStopped { max_depth: 0 }
+        )));
+        assert_eq!(client.calls().len(), 1);
+    }
+
+    #[test]
+    fn m4_search_no_candidate_initial_goal_returns_no_candidate_failure() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
+
+        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root));
+
+        assert_eq!(
+            failure.reason,
+            Phase7SearchFailureReason::NoCandidateForSelectedGoal { goal_id: GoalId(0) }
+        );
+        assert_eq!(failure.search_stats.nodes_expanded, 1);
+        assert_eq!(failure.search_stats.no_candidate_stops, 1);
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::NoCandidateForSelectedGoal { goal_id: GoalId(0) }
+        )));
+    }
+
+    #[test]
+    fn m4_search_caps_batch_to_max_tactics_per_node() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let config = mvp_config();
+        let mut input = phase7_test_search_input(root.clone());
+        input.search_budget.max_tactics_per_node = 1;
+        let suggested = vec![
+            suggested_candidate(
+                hash(40),
+                MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            ),
+            suggested_candidate(
+                hash(41),
+                MachineTacticCandidate::Exact {
+                    term: RawMachineTerm::new("h"),
+                },
+            ),
+        ];
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![theorem_result(
+            "display", suggested,
+        )])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Error {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: Some(hash(40)),
+                diagnostic: compact_error(MachineApiErrorKind::TypeMismatch),
+            }],
+        )));
+
+        let failure = phase7_run_mvp_search(&mut client, input);
+
+        assert_eq!(failure.search_stats.candidates_evaluated, 1);
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                max_tactics_per_node: 1
+            }
+        )));
+        let batch_source = client.calls().iter().find_map(|call| match call {
+            Phase7MachineApiCall::TacticBatch { source } => Some(source),
+            _ => None,
+        });
+        let parsed = parse_machine_tactic_batch_request(batch_source.unwrap()).unwrap();
+        assert_eq!(parsed.candidates.len(), 1);
+        assert_eq!(parsed.candidates[0].candidate_id, "c0");
+    }
+
+    #[test]
+    fn m4_search_rejects_no_progress_ok_batch_as_controller_error() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let config = mvp_config();
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![theorem_result(
+            "display",
+            vec![suggested_candidate(
+                hash(40),
+                MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            )],
+        )])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            Vec::new(),
+        )));
+
+        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root));
+
+        assert_eq!(
+            failure.reason,
+            Phase7SearchFailureReason::MachineControllerError {
+                endpoint: "/machine/tactics/batch".to_owned(),
+                error_kind: "batch_response_contract_violation".to_owned(),
+                error_phase: None,
+                diagnostic_hash: None,
+            }
+        );
+        assert_eq!(failure.search_stats.controller_errors, 1);
+        assert_eq!(failure.search_stats.candidates_evaluated, 0);
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            &event.kind,
+            Phase7SearchTraceEventKind::MachineControllerError { endpoint, error_kind }
+                if endpoint == "/machine/tactics/batch"
+                    && error_kind == "batch_response_contract_violation"
+        )));
+    }
+
+    #[test]
+    fn m4_search_records_duplicate_state_without_queueing_it() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let config = mvp_config();
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![theorem_result(
+            "display",
+            vec![suggested_candidate(
+                hash(40),
+                MachineTacticCandidate::SimpLite { rules: Vec::new() },
+            )],
+        )])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: root.snapshot_id,
+                next_state_fingerprint: root.state_fingerprint,
+                proof_delta_hash: hash(43),
+            }],
+        )));
+
+        let failure = phase7_run_mvp_search(&mut client, phase7_test_search_input(root.clone()));
+
+        assert_eq!(failure.search_stats.candidates_evaluated, 1);
+        assert!(failure.trace_events.iter().any(|event| matches!(
+            event.kind,
+            Phase7SearchTraceEventKind::DuplicateStateSkipped {
+                duplicate_state_fingerprint
+            } if duplicate_state_fingerprint == root.state_fingerprint
+        )));
+        assert!(!failure
+            .trace_events
+            .iter()
+            .any(|event| { matches!(event.kind, Phase7SearchTraceEventKind::ChildQueued { .. }) }));
+        assert_eq!(client.calls().len(), 3);
+    }
+
+    #[test]
+    fn m4_search_allocates_child_node_ids_in_batch_success_order() {
+        let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
+        let child0 = snapshot_with_state(2, vec![goal_view(GoalId(1), 31, 5, 0, 0, None)]);
+        let child1 = snapshot_with_state(3, vec![goal_view(GoalId(2), 32, 5, 0, 0, None)]);
+        let config = mvp_config();
+        let mut input = phase7_test_search_input(root.clone());
+        input.search_budget.max_nodes = 1;
+        let mut client = Phase7FakeMachineApiClient::new();
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: root.clone(),
+        }));
+        client.push_search_for_goal_response(Ok(search_ok_response(vec![theorem_result(
+            "display",
+            vec![
+                suggested_candidate(
+                    hash(40),
+                    MachineTacticCandidate::SimpLite { rules: Vec::new() },
+                ),
+                suggested_candidate(
+                    hash(41),
+                    MachineTacticCandidate::Exact {
+                        term: RawMachineTerm::new("h"),
+                    },
+                ),
+            ],
+        )])));
+        client.push_tactic_batch_response(Ok(ok_batch_response_for(
+            root.state_fingerprint,
+            config.per_tactic_deterministic_budget,
+            vec![
+                MachineTacticBatchItemResponse::Success {
+                    candidate_id: "c0".to_owned(),
+                    candidate_hash: hash(40),
+                    next_snapshot_id: child0.snapshot_id,
+                    next_state_fingerprint: child0.state_fingerprint,
+                    proof_delta_hash: hash(43),
+                },
+                MachineTacticBatchItemResponse::Success {
+                    candidate_id: "c1".to_owned(),
+                    candidate_hash: hash(41),
+                    next_snapshot_id: child1.snapshot_id,
+                    next_state_fingerprint: child1.state_fingerprint,
+                    proof_delta_hash: hash(44),
+                },
+            ],
+        )));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
+            snapshot: child0.clone(),
+        }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: child1 }));
+        client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: child0 }));
+
+        let failure = phase7_run_mvp_search(&mut client, input);
+
+        assert_eq!(
+            failure.reason,
+            Phase7SearchFailureReason::SearchBudgetExceeded {
+                limit: Phase7SearchBudgetLimit::MaxNodes
+            }
+        );
+        let child_ids = failure
+            .trace_events
+            .iter()
+            .filter_map(|event| match event.kind {
+                Phase7SearchTraceEventKind::ChildQueued { child_node_id, .. } => {
+                    Some(child_node_id)
+                }
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(child_ids, vec![Phase7NodeId(1), Phase7NodeId(2)]);
     }
 
     #[test]
