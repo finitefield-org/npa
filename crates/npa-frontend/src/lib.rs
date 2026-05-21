@@ -54,16 +54,20 @@ pub use human_diagnostic::{
     HumanUnsolvedMetaKind,
 };
 pub use human_elaborator::{
-    compile_human_source_to_certificate,
+    certificate_imports_for_human_core_module,
+    collect_human_by_proof_targets_with_source_interfaces, compile_human_source_to_certificate,
     compile_human_source_to_certificate_output_with_source_interfaces,
     compile_human_source_to_certificate_with_source_interfaces, compile_human_source_to_core,
     compile_human_source_to_core_output_with_source_interfaces,
+    compile_human_source_to_core_output_with_source_interfaces_and_by_proofs,
     compile_human_source_to_core_with_source_interfaces, elaborate_human_module,
     elaborate_human_tactic_term_check, elaborate_human_tactic_term_infer,
-    prepare_human_proof_start_core_with_source_interfaces, HumanCertificateCompileOutput,
+    prepare_human_proof_start_core_with_source_interfaces,
+    prepare_human_proof_start_core_with_source_interfaces_and_by_proofs, HumanByProofCore,
+    HumanByProofTarget, HumanByProofTargetsOutput, HumanCertificateCompileOutput,
     HumanCoreCompileOutput, HumanProofStartCore, HumanProofStartCoreOutput,
-    HumanTacticTermCheckOutput, HumanTacticTermElabContext, HumanTacticTermElabContextRequest,
-    HumanTacticTermInferOutput,
+    HumanProofStartCoreWithProofsRequest, HumanTacticTermCheckOutput, HumanTacticTermElabContext,
+    HumanTacticTermElabContextRequest, HumanTacticTermInferOutput,
 };
 pub use human_parser::{
     parse_human_module, parse_human_module_with_source_interfaces, parse_human_term,

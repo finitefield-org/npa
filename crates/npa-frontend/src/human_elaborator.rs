@@ -10,10 +10,10 @@ use crate::{
     HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName, HumanResolvedName,
     HumanResolvedNameUse, HumanResolvedNotationEntry, HumanResolvedNotationUse, HumanResult,
     HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
-    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
-    MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel,
-    MachineLocalDecl, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span,
-    VerifiedImport,
+    HumanTacticScript, HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder,
+    MachineCallableBinderVisibility, MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl,
+    MachineDecl, MachineLevel, MachineLocalDecl, MachineName, MachineTerm, MachineUniverseParam,
+    ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{
     subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level,
@@ -49,6 +49,38 @@ pub struct HumanProofStartCoreOutput {
     pub proof: HumanProofStartCore,
     pub source_interface: HumanSourceInterface,
     pub active_imports: Vec<HumanImportedSourceInterface>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanByProofCore {
+    pub source_index: u64,
+    pub proof: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanByProofTarget {
+    pub source_index: u64,
+    pub theorem_name: npa_cert::Name,
+    pub script: HumanTacticScript,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanByProofTargetsOutput {
+    pub targets: Vec<HumanByProofTarget>,
+    pub source_interface: HumanSourceInterface,
+    pub active_imports: Vec<HumanImportedSourceInterface>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanProofStartCoreWithProofsRequest<'a> {
+    pub file_id: crate::FileId,
+    pub module_name: npa_cert::ModuleName,
+    pub theorem_name: npa_cert::Name,
+    pub source: &'a str,
+    pub verified_imports: &'a [VerifiedImport],
+    pub imported_source_interfaces: &'a [HumanImportedSourceInterface],
+    pub prior_by_proofs: &'a [HumanByProofCore],
+    pub options: &'a HumanCompileOptions,
 }
 
 #[derive(Clone, Debug)]
@@ -196,6 +228,64 @@ fn elaborate_human_proof_start_core(
     }
 }
 
+fn elaborate_human_proof_start_core_with_by_proofs(
+    module_name: npa_cert::ModuleName,
+    theorem_name: npa_cert::Name,
+    module: &ResolvedHumanModule,
+    verified_imports: &[VerifiedImport],
+    by_proofs: &BTreeMap<u64, Expr>,
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanProofStartCore> {
+    let span = module.module.span;
+    let notation_use_count =
+        human_proof_start_notation_use_count(&module_name, &theorem_name, module)?;
+    let plans = notation_candidate_plans_for_count(
+        module,
+        options.max_notation_candidates,
+        notation_use_count,
+    )
+    .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    let mut first_error = None;
+    let mut success = None;
+
+    for plan in plans {
+        match prepare_human_proof_start_core_with_notation_plan_and_by_proofs(
+            module_name.clone(),
+            &theorem_name,
+            module,
+            verified_imports,
+            &plan,
+            by_proofs,
+        ) {
+            Ok(core) if success.is_none() => success = Some(core),
+            Ok(_) => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::AmbiguousNotation,
+                    span,
+                    "multiple notation candidates elaborated successfully",
+                )
+                .with_default_phase(HumanDiagnosticPhase::Elaborator));
+            }
+            Err(err) => {
+                first_error.get_or_insert(err);
+            }
+        }
+    }
+
+    if let Some(core) = success {
+        Ok(core)
+    } else if let Some(err) = first_error {
+        Err(err.with_default_phase(HumanDiagnosticPhase::Elaborator))
+    } else {
+        Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousNotation,
+            span,
+            "no notation candidate plan was available",
+        )
+        .with_default_phase(HumanDiagnosticPhase::Elaborator))
+    }
+}
+
 fn prepare_human_proof_start_core_with_notation_plan(
     module_name: npa_cert::ModuleName,
     theorem_name: &npa_cert::Name,
@@ -206,6 +296,30 @@ fn prepare_human_proof_start_core_with_notation_plan(
     let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)?
         .with_current_module_prefix(module_name.clone());
     let lowered = lowering.lower_proof_start(&module_name, theorem_name, module)?;
+    let elaborator = HumanBidirectionalElaborator::new(module, verified_imports)?;
+    let proof = elaborator.elaborate_proof_start_core(module_name.clone(), lowered)?;
+    Ok(prefix_human_current_decl_identities_for_machine_bridge(
+        &module_name,
+        proof,
+    ))
+}
+
+fn prepare_human_proof_start_core_with_notation_plan_and_by_proofs(
+    module_name: npa_cert::ModuleName,
+    theorem_name: &npa_cert::Name,
+    module: &ResolvedHumanModule,
+    verified_imports: &[VerifiedImport],
+    notation_plan: &[usize],
+    by_proofs: &BTreeMap<u64, Expr>,
+) -> HumanResult<HumanProofStartCore> {
+    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)?
+        .with_current_module_prefix(module_name.clone());
+    let lowered = lowering.lower_proof_start_with_core_proofs(
+        &module_name,
+        theorem_name,
+        module,
+        by_proofs,
+    )?;
     let elaborator = HumanBidirectionalElaborator::new(module, verified_imports)?;
     let proof = elaborator.elaborate_proof_start_core(module_name.clone(), lowered)?;
     Ok(prefix_human_current_decl_identities_for_machine_bridge(
@@ -367,6 +481,121 @@ pub fn compile_human_source_to_core_output_with_source_interfaces(
     })
 }
 
+pub fn collect_human_by_proof_targets_with_source_interfaces(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_imports: &[VerifiedImport],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanByProofTargetsOutput> {
+    let parsed =
+        parse_human_module_with_source_interfaces(file_id, source, imported_source_interfaces)?;
+    let resolved = resolve_human_module_with_source_interfaces(
+        module_name.clone(),
+        parsed,
+        verified_imports,
+        imported_source_interfaces,
+        options,
+    )?;
+    let source_interface = resolved.state.source_interfaces.current.clone();
+    let active_imports = resolved.state.source_interfaces.imports.clone();
+    let targets = human_by_proof_targets(&module_name, &resolved)?;
+
+    Ok(HumanByProofTargetsOutput {
+        targets,
+        source_interface,
+        active_imports,
+    })
+}
+
+pub fn prepare_human_proof_start_core_with_source_interfaces_and_by_proofs(
+    request: HumanProofStartCoreWithProofsRequest<'_>,
+) -> HumanResult<HumanProofStartCoreOutput> {
+    let parsed = parse_human_module_with_source_interfaces(
+        request.file_id,
+        request.source,
+        request.imported_source_interfaces,
+    )?;
+    let resolved = resolve_human_module_with_source_interfaces(
+        request.module_name.clone(),
+        parsed,
+        request.verified_imports,
+        request.imported_source_interfaces,
+        request.options,
+    )?;
+    let source_interface = resolved.state.source_interfaces.current.clone();
+    let active_imports = resolved.state.source_interfaces.imports.clone();
+    let by_proofs = by_proof_map(request.prior_by_proofs, resolved.module.span)?;
+    let by_targets = human_by_proof_targets(&request.module_name, &resolved)?;
+    if let Some(target) = by_targets
+        .iter()
+        .find(|target| target.theorem_name == request.theorem_name)
+    {
+        let expected_prior = by_targets
+            .iter()
+            .filter(|prior| prior.source_index < target.source_index)
+            .map(|prior| prior.source_index)
+            .collect::<BTreeSet<_>>();
+        validate_by_proof_map_indices(&by_proofs, &expected_prior, resolved.module.span)?;
+    }
+    let proof = elaborate_human_proof_start_core_with_by_proofs(
+        request.module_name,
+        request.theorem_name,
+        &resolved,
+        request.verified_imports,
+        &by_proofs,
+        request.options,
+    )
+    .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+
+    Ok(HumanProofStartCoreOutput {
+        proof,
+        source_interface,
+        active_imports,
+    })
+}
+
+pub fn compile_human_source_to_core_output_with_source_interfaces_and_by_proofs(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_imports: &[VerifiedImport],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    by_proofs: &[HumanByProofCore],
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanCoreCompileOutput> {
+    let module =
+        parse_human_module_with_source_interfaces(file_id, source, imported_source_interfaces)?;
+    let resolved = resolve_human_module_with_source_interfaces(
+        module_name.clone(),
+        module,
+        verified_imports,
+        imported_source_interfaces,
+        options,
+    )?;
+    let source_interface = resolved.state.source_interfaces.current.clone();
+    let by_proofs = by_proof_map(by_proofs, resolved.module.span)?;
+    let expected_by_proofs = human_by_proof_targets(&module_name, &resolved)?
+        .into_iter()
+        .map(|target| target.source_index)
+        .collect::<BTreeSet<_>>();
+    validate_by_proof_map_indices(&by_proofs, &expected_by_proofs, resolved.module.span)?;
+    let core_module = elaborate_human_module_with_by_proofs(
+        module_name,
+        resolved,
+        verified_imports,
+        &by_proofs,
+        options,
+    )
+    .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+
+    Ok(HumanCoreCompileOutput {
+        core_module,
+        source_interface,
+    })
+}
+
 pub fn prepare_human_proof_start_core_with_source_interfaces(
     file_id: crate::FileId,
     module_name: npa_cert::ModuleName,
@@ -401,6 +630,25 @@ pub fn prepare_human_proof_start_core_with_source_interfaces(
         source_interface,
         active_imports,
     })
+}
+
+pub fn certificate_imports_for_human_core_module(
+    core: &npa_cert::CoreModule,
+    active_imports: &[HumanImportedSourceInterface],
+    verified_modules: &[npa_cert::VerifiedModule],
+    file_id: crate::FileId,
+) -> HumanResult<Vec<npa_cert::VerifiedModule>> {
+    let active_import_indices = active_human_import_indices_from_source_interfaces(
+        active_imports,
+        verified_modules,
+        file_id,
+    )?;
+    certificate_imports_for_module(core, &active_import_indices, verified_modules, file_id).map_err(
+        |diagnostic| {
+            human_certificate_import_diagnostic(Span::empty(file_id), diagnostic)
+                .with_phase(HumanDiagnosticPhase::CertificateHandoff)
+        },
+    )
 }
 
 pub fn compile_human_source_to_certificate(
@@ -513,6 +761,7 @@ fn source_interface_with_certificate_hashes(
     mut source_interface: HumanSourceInterface,
     cert: &npa_cert::ModuleCert,
 ) -> HumanSourceInterface {
+    let module_name = source_interface.module.clone();
     let export_hashes: BTreeMap<_, _> = cert
         .export_block
         .iter()
@@ -525,13 +774,21 @@ fn source_interface_with_certificate_hashes(
         .collect();
 
     for decl in &mut source_interface.declarations {
-        if let Some(hash) = export_hashes.get(&npa_cert::Name(decl.name.parts.clone())) {
+        let name = npa_cert::Name(decl.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&prefixed_human_current_name(&module_name, &name)))
+        {
             decl.decl_interface_hash = Some(*hash);
         }
     }
 
     for generated in &mut source_interface.generated_declarations {
-        if let Some(hash) = export_hashes.get(&npa_cert::Name(generated.name.parts.clone())) {
+        let name = npa_cert::Name(generated.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&prefixed_human_current_name(&module_name, &name)))
+        {
             generated.decl_interface_hash = Some(*hash);
         }
     }
@@ -1548,6 +1805,83 @@ fn elaborate_human_module_with_notation_plan(
         })
 }
 
+fn elaborate_human_module_with_by_proofs(
+    module_name: npa_cert::ModuleName,
+    module: ResolvedHumanModule,
+    verified_imports: &[VerifiedImport],
+    by_proofs: &BTreeMap<u64, Expr>,
+    options: &HumanCompileOptions,
+) -> HumanResult<npa_cert::CoreModule> {
+    let span = module.module.span;
+    let plans = notation_candidate_plans(&module, options.max_notation_candidates)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    let mut first_error = None;
+    let mut success = None;
+
+    for plan in plans {
+        match elaborate_human_module_with_notation_plan_and_by_proofs(
+            module_name.clone(),
+            &module,
+            verified_imports,
+            &plan,
+            by_proofs,
+        ) {
+            Ok(core) if success.is_none() => success = Some(core),
+            Ok(_) => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::AmbiguousNotation,
+                    span,
+                    "multiple notation candidates elaborated successfully",
+                )
+                .with_default_phase(HumanDiagnosticPhase::Elaborator));
+            }
+            Err(err) => {
+                first_error.get_or_insert(err);
+            }
+        }
+    }
+
+    if let Some(core) = success {
+        Ok(core)
+    } else if let Some(err) = first_error {
+        Err(err.with_default_phase(HumanDiagnosticPhase::Elaborator))
+    } else {
+        Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousNotation,
+            span,
+            "no notation candidate plan was available",
+        )
+        .with_default_phase(HumanDiagnosticPhase::Elaborator))
+    }
+}
+
+fn elaborate_human_module_with_notation_plan_and_by_proofs(
+    module_name: npa_cert::ModuleName,
+    module: &ResolvedHumanModule,
+    verified_imports: &[VerifiedImport],
+    notation_plan: &[usize],
+    by_proofs: &BTreeMap<u64, Expr>,
+) -> HumanResult<npa_cert::CoreModule> {
+    let span = module.module.span;
+    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
+        .with_current_module_prefix(module_name.clone());
+    let machine_module = lowering
+        .lower_module_with_core_proofs(module, by_proofs)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    HumanBidirectionalElaborator::new(module, verified_imports)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
+        .elaborate_module(module_name, machine_module)
+        .map_err(|diagnostic| {
+            if diagnostic.primary_span == Span::empty(crate::FileId(0)) {
+                HumanDiagnostic::error(diagnostic.kind, span, diagnostic.message)
+                    .with_default_phase(HumanDiagnosticPhase::Elaborator)
+            } else {
+                diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator)
+            }
+        })
+}
+
 fn notation_candidate_plans(
     module: &ResolvedHumanModule,
     max_plans: usize,
@@ -1747,6 +2081,7 @@ enum HumanLoweredItem {
     Import,
     Def(MachineDecl),
     Theorem(MachineDecl),
+    TheoremCoreProof { decl: Decl, span: Span },
     Axiom(HumanLoweredAxiomDecl),
     Inductive(HumanLoweredInductiveDecl),
 }
@@ -2701,6 +3036,10 @@ impl HumanBidirectionalElaborator {
                     self.add_kernel_decl(decl.clone(), span)?;
                     declarations.push(decl);
                 }
+                HumanLoweredItem::TheoremCoreProof { decl, span } => {
+                    self.add_kernel_decl(decl.clone(), span)?;
+                    declarations.push(decl);
+                }
                 HumanLoweredItem::Axiom(decl) => {
                     let span = decl.span;
                     let decl = self.elaborate_axiom_decl(decl)?;
@@ -2741,6 +3080,10 @@ impl HumanBidirectionalElaborator {
                 HumanLoweredItem::Theorem(decl) => {
                     let span = decl.span;
                     let decl = self.elaborate_decl(decl, HumanLoweredDeclKind::Theorem)?;
+                    self.add_kernel_decl(decl.clone(), span)?;
+                    prior_declarations.push(decl);
+                }
+                HumanLoweredItem::TheoremCoreProof { decl, span } => {
                     self.add_kernel_decl(decl.clone(), span)?;
                     prior_declarations.push(decl);
                 }
@@ -3552,6 +3895,54 @@ impl HumanImplicitInserter {
         Ok(decl)
     }
 
+    fn insert_core_theorem_decl(
+        &mut self,
+        decl: HumanLoweredDeclSignature,
+        metadata: &HumanSourceDeclarationMetadata,
+        proof: Expr,
+        span: Span,
+    ) -> HumanResult<Decl> {
+        let decl = self.insert_decl_signature(decl)?;
+        let delta: Vec<_> = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.clone())
+            .collect();
+        let mut locals = HumanLocalContext::default();
+        let mut elaborated_binders = Vec::with_capacity(decl.binders.len());
+
+        for binder in &decl.binders {
+            let ty = self.elaborate_machine_term(&binder.ty, &locals, &delta)?;
+            let ty_type = self.infer_core_expr_type(&ty, &locals, &delta, binder.ty.span())?;
+            self.expect_core_sort(&ty_type, &locals, &delta, binder.ty.span())?;
+            locals.push_assumption(binder.name.clone(), ty.clone());
+            elaborated_binders.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty,
+            });
+        }
+
+        let ty = self.elaborate_machine_term(&decl.ty, &locals, &delta)?;
+        let ty_type = self.infer_core_expr_type(&ty, &locals, &delta, decl.ty.span())?;
+        self.expect_core_sort(&ty_type, &locals, &delta, decl.ty.span())?;
+        let core_decl = Decl::Theorem {
+            name: decl.name.as_dotted(),
+            universe_params: delta.clone(),
+            ty: human_close_pi(&elaborated_binders, ty),
+            proof,
+        };
+        self.add_kernel_decl(core_decl.clone(), span)?;
+        self.signatures.insert(
+            decl.name.as_dotted(),
+            HumanCallableSignature {
+                universe_params: delta,
+                implicit_profile: machine_callable_profile_from_human_binders(&metadata.binders),
+            },
+        );
+
+        Ok(core_decl)
+    }
+
     fn insert_axiom_decl(
         &mut self,
         mut decl: HumanLoweredAxiomDecl,
@@ -4146,6 +4537,28 @@ impl HumanImplicitInserter {
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human implicit inference"))
     }
 
+    fn expect_core_sort(
+        &self,
+        inferred_type: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<()> {
+        let whnf = self
+            .env
+            .whnf(&locals.to_kernel_ctx(), delta, inferred_type)
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human implicit type"))?;
+        if matches!(whnf, Expr::Sort(_)) {
+            Ok(())
+        } else {
+            Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::ExpectedSort,
+                span,
+                format!("expected a type, got {whnf:?}"),
+            ))
+        }
+    }
+
     fn add_kernel_decl(&mut self, decl: Decl, span: Span) -> HumanResult<()> {
         if let Some(existing) = self.env.decl(decl.name()) {
             if existing == &decl {
@@ -4309,6 +4722,119 @@ fn active_human_import_indices(
         )?);
     }
     Ok(imports)
+}
+
+fn active_human_import_indices_from_source_interfaces(
+    active_imports: &[HumanImportedSourceInterface],
+    verified_modules: &[npa_cert::VerifiedModule],
+    file_id: crate::FileId,
+) -> HumanResult<Vec<usize>> {
+    active_imports
+        .iter()
+        .map(|active| {
+            verified_modules
+                .iter()
+                .position(|module| {
+                    let import = VerifiedImport::from(module);
+                    import.module == active.module
+                        && import.export_hash == active.export_hash
+                        && import.certificate_hash == active.certificate_hash
+                })
+                .ok_or_else(|| {
+                    HumanDiagnostic::error(
+                        HumanDiagnosticKind::MissingVerifiedImport,
+                        Span::empty(file_id),
+                        format!(
+                            "missing verified import for active Human import {}",
+                            active.module.as_dotted()
+                        ),
+                    )
+                })
+        })
+        .collect()
+}
+
+fn human_by_proof_targets(
+    module_name: &npa_cert::ModuleName,
+    module: &ResolvedHumanModule,
+) -> HumanResult<Vec<HumanByProofTarget>> {
+    let mut declarations = module.state.source_interfaces.current.declarations.iter();
+    let mut source_index = 0_u64;
+    let mut targets = Vec::new();
+
+    for item in &module.module.items {
+        match item {
+            HumanItem::Def(_) | HumanItem::Axiom(_) | HumanItem::Inductive(_) => {
+                declarations.next().ok_or_else(|| {
+                    HumanDiagnostic::not_implemented(item.span(), "Human declaration metadata")
+                })?;
+                source_index += 1;
+            }
+            HumanItem::Theorem(decl) => {
+                let metadata = declarations.next().ok_or_else(|| {
+                    HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                })?;
+                if let HumanDeclValue::ProofBlock(block) = &decl.value {
+                    let current_name = npa_cert::Name(metadata.name.parts.clone());
+                    targets.push(HumanByProofTarget {
+                        source_index,
+                        theorem_name: prefixed_human_current_name(module_name, &current_name),
+                        script: block.script.clone(),
+                    });
+                }
+                source_index += 1;
+            }
+            HumanItem::Import { .. }
+            | HumanItem::Open { .. }
+            | HumanItem::NamespaceStart { .. }
+            | HumanItem::NamespaceEnd { .. }
+            | HumanItem::Notation(_) => {}
+        }
+    }
+
+    Ok(targets)
+}
+
+fn by_proof_map(by_proofs: &[HumanByProofCore], span: Span) -> HumanResult<BTreeMap<u64, Expr>> {
+    let mut map = BTreeMap::new();
+    for by_proof in by_proofs {
+        if map
+            .insert(by_proof.source_index, by_proof.proof.clone())
+            .is_some()
+        {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::UnsupportedTactic,
+                span,
+                format!(
+                    "duplicate Human by proof core for source index {}",
+                    by_proof.source_index
+                ),
+            )
+            .with_phase(HumanDiagnosticPhase::Elaborator));
+        }
+    }
+    Ok(map)
+}
+
+fn validate_by_proof_map_indices(
+    by_proofs: &BTreeMap<u64, Expr>,
+    expected: &BTreeSet<u64>,
+    span: Span,
+) -> HumanResult<()> {
+    let actual = by_proofs.keys().copied().collect::<BTreeSet<_>>();
+    if &actual == expected {
+        return Ok(());
+    }
+
+    Err(HumanDiagnostic::error(
+        HumanDiagnosticKind::UnsupportedTactic,
+        span,
+        format!(
+            "Human by proof core source indices must match by theorem indices exactly: expected {:?}, got {:?}",
+            expected, actual
+        ),
+    )
+    .with_phase(HumanDiagnosticPhase::Elaborator))
 }
 
 fn find_human_verified_import_index(
@@ -4891,8 +5417,17 @@ impl<'a> HumanToMachineLowering<'a> {
     }
 
     fn lower_module(&mut self, module: &ResolvedHumanModule) -> HumanResult<HumanLoweredModule> {
+        self.lower_module_with_core_proofs(module, &BTreeMap::new())
+    }
+
+    fn lower_module_with_core_proofs(
+        &mut self,
+        module: &ResolvedHumanModule,
+        by_proofs: &BTreeMap<u64, Expr>,
+    ) -> HumanResult<HumanLoweredModule> {
         let mut lowered_items = Vec::new();
         let mut declarations = module.state.source_interfaces.current.declarations.iter();
+        let mut source_index = 0_u64;
 
         for item in &module.module.items {
             match item {
@@ -4911,18 +5446,42 @@ impl<'a> HumanToMachineLowering<'a> {
                         HumanLoweredDeclKind::Def,
                     )?;
                     lowered_items.push(HumanLoweredItem::Def(lowered));
+                    source_index += 1;
                 }
                 HumanItem::Theorem(decl) => {
                     let metadata = declarations.next().ok_or_else(|| {
                         HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
                     })?;
-                    let lowered = self.lower_decl(decl.clone(), metadata)?;
-                    let lowered = self.implicit_inserter.insert_decl(
-                        lowered,
-                        metadata,
-                        HumanLoweredDeclKind::Theorem,
-                    )?;
-                    lowered_items.push(HumanLoweredItem::Theorem(lowered));
+                    if let HumanDeclValue::ProofBlock(block) = &decl.value {
+                        let Some(proof) = by_proofs.get(&source_index) else {
+                            return Err(HumanDiagnostic::unsupported_tactic(
+                                block.span,
+                                "by proof block elaboration is reserved for the Phase 4 Human tactic bridge",
+                            )
+                            .with_phase(HumanDiagnosticPhase::Elaborator));
+                        };
+                        let lowered = self.lower_decl_signature(decl.clone(), metadata)?;
+                        let span = decl.span;
+                        let core_decl = self.implicit_inserter.insert_core_theorem_decl(
+                            lowered,
+                            metadata,
+                            proof.clone(),
+                            span,
+                        )?;
+                        lowered_items.push(HumanLoweredItem::TheoremCoreProof {
+                            decl: core_decl,
+                            span,
+                        });
+                    } else {
+                        let lowered = self.lower_decl(decl.clone(), metadata)?;
+                        let lowered = self.implicit_inserter.insert_decl(
+                            lowered,
+                            metadata,
+                            HumanLoweredDeclKind::Theorem,
+                        )?;
+                        lowered_items.push(HumanLoweredItem::Theorem(lowered));
+                    }
+                    source_index += 1;
                 }
                 HumanItem::Axiom(decl) => {
                     let metadata = declarations.next().ok_or_else(|| {
@@ -4933,6 +5492,7 @@ impl<'a> HumanToMachineLowering<'a> {
                         .implicit_inserter
                         .insert_axiom_decl(lowered, metadata)?;
                     lowered_items.push(HumanLoweredItem::Axiom(lowered));
+                    source_index += 1;
                 }
                 HumanItem::Inductive(decl) => {
                     let metadata = declarations.next().ok_or_else(|| {
@@ -4943,6 +5503,7 @@ impl<'a> HumanToMachineLowering<'a> {
                         .implicit_inserter
                         .insert_inductive_decl(lowered, metadata)?;
                     lowered_items.push(HumanLoweredItem::Inductive(lowered));
+                    source_index += 1;
                 }
                 HumanItem::Open { .. }
                 | HumanItem::NamespaceStart { .. }
@@ -4961,6 +5522,16 @@ impl<'a> HumanToMachineLowering<'a> {
         module_name: &npa_cert::ModuleName,
         theorem_name: &npa_cert::Name,
         module: &ResolvedHumanModule,
+    ) -> HumanResult<HumanLoweredProofStart> {
+        self.lower_proof_start_with_core_proofs(module_name, theorem_name, module, &BTreeMap::new())
+    }
+
+    fn lower_proof_start_with_core_proofs(
+        &mut self,
+        module_name: &npa_cert::ModuleName,
+        theorem_name: &npa_cert::Name,
+        module: &ResolvedHumanModule,
+        by_proofs: &BTreeMap<u64, Expr>,
     ) -> HumanResult<HumanLoweredProofStart> {
         let mut prior_items = Vec::new();
         let mut declarations = module.state.source_interfaces.current.declarations.iter();
@@ -5013,13 +5584,35 @@ impl<'a> HumanToMachineLowering<'a> {
                         });
                     }
 
-                    let lowered = self.lower_decl(decl.clone(), metadata)?;
-                    let lowered = self.implicit_inserter.insert_decl(
-                        lowered,
-                        metadata,
-                        HumanLoweredDeclKind::Theorem,
-                    )?;
-                    prior_items.push(HumanLoweredItem::Theorem(lowered));
+                    if let HumanDeclValue::ProofBlock(block) = &decl.value {
+                        let Some(proof) = by_proofs.get(&source_index) else {
+                            return Err(HumanDiagnostic::unsupported_tactic(
+                                block.span,
+                                "prior Human by proof has not been elaborated yet",
+                            )
+                            .with_phase(HumanDiagnosticPhase::Elaborator));
+                        };
+                        let lowered = self.lower_decl_signature(decl.clone(), metadata)?;
+                        let span = decl.span;
+                        let core_decl = self.implicit_inserter.insert_core_theorem_decl(
+                            lowered,
+                            metadata,
+                            proof.clone(),
+                            span,
+                        )?;
+                        prior_items.push(HumanLoweredItem::TheoremCoreProof {
+                            decl: core_decl,
+                            span,
+                        });
+                    } else {
+                        let lowered = self.lower_decl(decl.clone(), metadata)?;
+                        let lowered = self.implicit_inserter.insert_decl(
+                            lowered,
+                            metadata,
+                            HumanLoweredDeclKind::Theorem,
+                        )?;
+                        prior_items.push(HumanLoweredItem::Theorem(lowered));
+                    }
                     source_index += 1;
                 }
                 HumanItem::Axiom(decl) => {
@@ -6553,6 +7146,28 @@ def later (A : Type) (x : A) : A := x ** x",
         assert_eq!(prepared.proof.prior_declarations.len(), 0);
         assert_eq!(prepared.proof.source_index, 0);
         assert_eq!(prepared.source_interface.declarations.len(), 4);
+    }
+
+    #[test]
+    fn human_by_proof_core_indices_must_match_by_theorems() {
+        let err = compile_human_source_to_core_output_with_source_interfaces_and_by_proofs(
+            FileId(0),
+            npa_cert::Name::from_dotted("Api.Target"),
+            "def x : Prop := Prop",
+            &[],
+            &[],
+            &[HumanByProofCore {
+                source_index: 0,
+                proof: Expr::sort(Level::zero()),
+            }],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("unused by proof core must not be silently ignored");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsupportedTactic);
+        assert!(err
+            .message
+            .contains("must match by theorem indices exactly"));
     }
 
     #[test]

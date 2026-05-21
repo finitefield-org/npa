@@ -65,7 +65,7 @@ pub struct HumanCurrentModuleSource<'src> {
 pub struct HumanCompileCoreRequest<'src, 'imports> {
     pub current_module: ModuleName,
     pub current_source: HumanCurrentModuleSource<'src>,
-    pub verified_imports: &'imports [npa_frontend::VerifiedImport],
+    pub verified_modules: &'imports [VerifiedModule],
     pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
     pub options: HumanApiCompileOptions,
 }

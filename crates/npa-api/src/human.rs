@@ -3,30 +3,28 @@ use std::collections::BTreeMap;
 use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
-    HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk, HumanExactTacticRequest,
-    HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
-    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanRewriteTacticError,
-    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSimpLiteTacticError,
-    HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk,
-    HumanStartProofRequest, HumanTacticScriptError, HumanTacticScriptRunOk,
-    HumanTacticScriptRunRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
-    HumanTacticTermError,
+    HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource, HumanExactTacticOk,
+    HumanExactTacticRequest, HumanInductionTacticError, HumanInductionTacticOk,
+    HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
+    HumanIntroTacticRequest, HumanRewriteTacticError, HumanRewriteTacticOk,
+    HumanRewriteTacticRequest, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
+    HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
+    HumanTacticScriptError, HumanTacticScriptRunOk, HumanTacticScriptRunRequest,
+    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
 pub fn compile_human_source_to_core(
     request: HumanCompileCoreRequest<'_, '_>,
 ) -> Result<HumanCompileCoreOk, HumanCompileError> {
-    let options = npa_frontend::HumanCompileOptions::from(&request.options);
-    let output = npa_frontend::compile_human_source_to_core_output_with_source_interfaces(
-        request.current_source.file_id,
+    compile_human_source_to_core_with_tactic_proofs(
         request.current_module,
-        request.current_source.source,
-        request.verified_imports,
+        request.current_source,
+        request.verified_modules,
         request.imported_source_interfaces,
-        &options,
-    )?;
-    Ok(HumanCompileCoreOk {
+        request.options,
+    )
+    .map(|output| HumanCompileCoreOk {
         core_module: output.core_module,
         source_interface: output.source_interface,
     })
@@ -36,6 +34,47 @@ pub fn compile_human_source_to_certificate(
     request: HumanCompileCertificateRequest<'_, '_>,
 ) -> Result<HumanCompileCertificateOk, HumanCompileError> {
     let options = npa_frontend::HumanCompileOptions::from(&request.options);
+    let verified_imports: Vec<_> = request
+        .verified_modules
+        .iter()
+        .map(npa_frontend::VerifiedImport::from)
+        .collect();
+    let by_targets = npa_frontend::collect_human_by_proof_targets_with_source_interfaces(
+        request.current_source.file_id,
+        request.current_module.clone(),
+        request.current_source.source,
+        &verified_imports,
+        request.imported_source_interfaces,
+        &options,
+    )?;
+
+    if !by_targets.targets.is_empty() {
+        let core = compile_human_source_to_core_with_tactic_proofs(
+            request.current_module,
+            request.current_source,
+            request.verified_modules,
+            request.imported_source_interfaces,
+            request.options,
+        )?;
+        let certificate_imports = npa_frontend::certificate_imports_for_human_core_module(
+            &core.core_module,
+            &core.active_imports,
+            request.verified_modules,
+            request.current_source.file_id,
+        )?;
+        let certificate = human_build_and_verify_certificate(
+            core.core_module,
+            &certificate_imports,
+            request.current_source,
+        )?;
+        let source_interface =
+            human_source_interface_with_certificate_hashes(core.source_interface, &certificate);
+        return Ok(HumanCompileCertificateOk {
+            certificate,
+            source_interface,
+        });
+    }
+
     let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces(
         request.current_source.file_id,
         request.current_module,
@@ -68,8 +107,110 @@ pub fn start_human_proof(
         request.imported_source_interfaces,
         &frontend_options,
     )?;
+    start_human_proof_from_prepared(prepared, request.verified_modules, request.options)
+}
+
+#[derive(Clone, Debug)]
+struct HumanCompileCoreWithTacticProofsOk {
+    core_module: npa_cert::CoreModule,
+    source_interface: npa_frontend::HumanSourceInterface,
+    active_imports: Vec<npa_frontend::HumanImportedSourceInterface>,
+}
+
+fn compile_human_source_to_core_with_tactic_proofs(
+    current_module: npa_cert::ModuleName,
+    current_source: HumanCurrentModuleSource<'_>,
+    verified_modules: &[npa_cert::VerifiedModule],
+    imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+    options: HumanApiCompileOptions,
+) -> Result<HumanCompileCoreWithTacticProofsOk, HumanCompileError> {
+    let frontend_options = npa_frontend::HumanCompileOptions::from(&options);
+    let verified_imports: Vec<_> = verified_modules
+        .iter()
+        .map(npa_frontend::VerifiedImport::from)
+        .collect();
+    let by_targets = npa_frontend::collect_human_by_proof_targets_with_source_interfaces(
+        current_source.file_id,
+        current_module.clone(),
+        current_source.source,
+        &verified_imports,
+        imported_source_interfaces,
+        &frontend_options,
+    )?;
+
+    if by_targets.targets.is_empty() {
+        let output = npa_frontend::compile_human_source_to_core_output_with_source_interfaces(
+            current_source.file_id,
+            current_module,
+            current_source.source,
+            &verified_imports,
+            imported_source_interfaces,
+            &frontend_options,
+        )?;
+        return Ok(HumanCompileCoreWithTacticProofsOk {
+            core_module: output.core_module,
+            source_interface: output.source_interface,
+            active_imports: Vec::new(),
+        });
+    }
+
+    let mut by_proofs = Vec::with_capacity(by_targets.targets.len());
+    for target in &by_targets.targets {
+        let prepared =
+            npa_frontend::prepare_human_proof_start_core_with_source_interfaces_and_by_proofs(
+                npa_frontend::HumanProofStartCoreWithProofsRequest {
+                    file_id: current_source.file_id,
+                    module_name: current_module.clone(),
+                    theorem_name: target.theorem_name.clone(),
+                    source: current_source.source,
+                    verified_imports: &verified_imports,
+                    imported_source_interfaces,
+                    prior_by_proofs: &by_proofs,
+                    options: &frontend_options,
+                },
+            )?;
+        let started = start_human_proof_from_prepared(prepared, verified_modules, options.clone())
+            .map_err(human_compile_start_error)?;
+        let run = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &target.script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces,
+            options: options.clone(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .map_err(|error| human_compile_script_error(error, target.script.span))?;
+        by_proofs.push(npa_frontend::HumanByProofCore {
+            source_index: target.source_index,
+            proof: run.proof,
+        });
+    }
+
+    let output =
+        npa_frontend::compile_human_source_to_core_output_with_source_interfaces_and_by_proofs(
+            current_source.file_id,
+            current_module,
+            current_source.source,
+            &verified_imports,
+            imported_source_interfaces,
+            &by_proofs,
+            &frontend_options,
+        )?;
+
+    Ok(HumanCompileCoreWithTacticProofsOk {
+        core_module: output.core_module,
+        source_interface: output.source_interface,
+        active_imports: by_targets.active_imports,
+    })
+}
+
+fn start_human_proof_from_prepared(
+    prepared: npa_frontend::HumanProofStartCoreOutput,
+    verified_modules: &[npa_cert::VerifiedModule],
+    options: HumanApiCompileOptions,
+) -> Result<HumanStartProofOk, HumanStartProofError> {
     let phase4_imports =
-        active_human_verified_import_refs(request.verified_modules, &prepared.active_imports)?;
+        active_human_verified_import_refs(verified_modules, &prepared.active_imports)?;
     let mut checked_current_decls = Vec::with_capacity(prepared.proof.prior_declarations.len());
     for (source_index, decl) in prepared
         .proof
@@ -97,7 +238,7 @@ pub fn start_human_proof(
         },
         phase4_imports,
         checked_current_decls,
-        request.options.tactic_options.clone(),
+        options.tactic_options.clone(),
     )?;
     npa_tactic::validate_machine_proof_state(&state)?;
 
@@ -105,6 +246,139 @@ pub fn start_human_proof(
         state,
         source_interface: prepared.source_interface,
     })
+}
+
+fn human_build_and_verify_certificate(
+    core_module: npa_cert::CoreModule,
+    certificate_imports: &[npa_cert::VerifiedModule],
+    source: HumanCurrentModuleSource<'_>,
+) -> Result<npa_cert::ModuleCert, HumanCompileError> {
+    let certificate =
+        npa_cert::build_module_cert(core_module, certificate_imports).map_err(|err| {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::KernelRejected,
+                human_source_span(source),
+                format!("Phase 2 certificate handoff rejected Human by proof source: {err:?}"),
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
+        })?;
+    let bytes = npa_cert::encode_module_cert(&certificate).map_err(|err| {
+        npa_frontend::HumanDiagnostic::error(
+            npa_frontend::HumanDiagnosticKind::KernelRejected,
+            human_source_span(source),
+            format!("Phase 2 certificate encoding rejected Human by proof source: {err:?}"),
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
+    })?;
+    let mut session = npa_cert::VerifierSession::new();
+    for import in certificate_imports {
+        session.register_verified_module(import.clone());
+    }
+    npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal()).map_err(
+        |err| {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::KernelRejected,
+                human_source_span(source),
+                format!("Phase 2 certificate verification rejected Human by proof source: {err:?}"),
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
+        },
+    )?;
+    Ok(certificate)
+}
+
+fn human_compile_start_error(error: HumanStartProofError) -> HumanCompileError {
+    match error {
+        HumanStartProofError::Human(error) => error,
+        HumanStartProofError::Machine(diagnostic) => human_compile_machine_tactic_diagnostic(
+            diagnostic,
+            npa_frontend::Span::empty(npa_frontend::FileId(0)),
+        ),
+    }
+}
+
+fn human_compile_script_error(
+    error: HumanTacticScriptError,
+    span: npa_frontend::Span,
+) -> HumanCompileError {
+    match error {
+        HumanTacticScriptError::Human(error) => error,
+        HumanTacticScriptError::Machine(diagnostic) => {
+            human_compile_machine_tactic_diagnostic(diagnostic, span)
+        }
+    }
+}
+
+fn human_compile_machine_tactic_diagnostic(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    span: npa_frontend::Span,
+) -> HumanCompileError {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+        span,
+        format!(
+            "Human by proof tactic execution failed before certificate handoff: {:?}: {}",
+            diagnostic.kind, diagnostic.message
+        ),
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .into()
+}
+
+fn human_source_span(source: HumanCurrentModuleSource<'_>) -> npa_frontend::Span {
+    npa_frontend::Span::new(source.file_id, 0, source.source.len() as u32)
+}
+
+fn human_source_interface_with_certificate_hashes(
+    mut source_interface: npa_frontend::HumanSourceInterface,
+    cert: &npa_cert::ModuleCert,
+) -> npa_frontend::HumanSourceInterface {
+    let module_name = source_interface.module.clone();
+    let export_hashes: BTreeMap<_, _> = cert
+        .export_block
+        .iter()
+        .map(|entry| {
+            (
+                cert.name_table[entry.name].clone(),
+                entry.decl_interface_hash,
+            )
+        })
+        .collect();
+
+    for decl in &mut source_interface.declarations {
+        let name = npa_cert::Name(decl.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&human_prefixed_current_name(&module_name, &name)))
+        {
+            decl.decl_interface_hash = Some(*hash);
+        }
+    }
+
+    for generated in &mut source_interface.generated_declarations {
+        let name = npa_cert::Name(generated.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&human_prefixed_current_name(&module_name, &name)))
+        {
+            generated.decl_interface_hash = Some(*hash);
+        }
+    }
+
+    source_interface
+}
+
+fn human_prefixed_current_name(
+    module_name: &npa_cert::ModuleName,
+    name: &npa_cert::Name,
+) -> npa_cert::Name {
+    if name.0.len() > module_name.0.len() && name.0.starts_with(&module_name.0) {
+        return name.clone();
+    }
+
+    let mut parts = module_name.0.clone();
+    parts.extend(name.0.iter().cloned());
+    npa_cert::Name(parts)
 }
 
 pub fn check_human_tactic_term(
@@ -1756,14 +2030,14 @@ mod tests {
     }
 
     #[test]
-    fn human_api_core_request_uses_explicit_verified_imports_and_current_source() {
+    fn human_api_core_request_uses_explicit_verified_modules_and_current_source() {
         let request = HumanCompileCoreRequest {
             current_module: npa_cert::Name::from_dotted("Api.HumanCore"),
             current_source: HumanCurrentModuleSource {
                 file_id: npa_frontend::FileId(7),
                 source: "def id : forall (A : Type), Type := fun A => A",
             },
-            verified_imports: &[],
+            verified_modules: &[],
             imported_source_interfaces: &[],
             options: HumanApiCompileOptions {
                 max_notation_candidates: 4,
@@ -1824,13 +2098,194 @@ import Api.Lib
 axiom a : A
 def use : A := a ++ a",
             },
-            verified_imports: &[import],
+            verified_modules: std::slice::from_ref(&verified),
             imported_source_interfaces: &[source_interface],
             options: human_api_default_compile_options(),
         })
         .expect("consumer Human API request should use imported source metadata");
 
         assert_eq!(consumer.core_module.declarations.len(), 2);
+    }
+
+    #[test]
+    fn human_api_compile_core_handoffs_by_proof_expr_before_later_decl() {
+        let ok = compile_human_source_to_core(HumanCompileCoreRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanByCore"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+theorem id_prop : forall (P : Prop), Prop := by
+  intro P
+  exact P
+def use (P : Prop) : Prop := id_prop P",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human API core path should replace by proof with extracted proof Expr");
+
+        assert_eq!(ok.core_module.declarations.len(), 2);
+        let Decl::Theorem {
+            name, ty, proof, ..
+        } = &ok.core_module.declarations[0]
+        else {
+            panic!("first declaration should be the by theorem");
+        };
+        assert_eq!(name, "Api.HumanByCore.id_prop");
+        assert_eq!(
+            ty,
+            &Expr::pi(
+                "P",
+                Expr::sort(npa_kernel::Level::zero()),
+                Expr::sort(npa_kernel::Level::zero())
+            )
+        );
+        assert_eq!(
+            proof,
+            &Expr::lam("P", Expr::sort(npa_kernel::Level::zero()), Expr::bvar(0))
+        );
+        let Decl::Def { name, value, .. } = &ok.core_module.declarations[1] else {
+            panic!("second declaration should use the by theorem");
+        };
+        assert_eq!(name, "Api.HumanByCore.use");
+        assert_eq!(
+            value,
+            &Expr::lam(
+                "P",
+                Expr::sort(npa_kernel::Level::zero()),
+                Expr::app(
+                    Expr::konst("Api.HumanByCore.id_prop", Vec::new()),
+                    Expr::bvar(0)
+                )
+            )
+        );
+        let cert = npa_cert::build_module_cert(ok.core_module, &[])
+            .expect("by core module should certify");
+        let bytes = npa_cert::encode_module_cert(&cert).expect("by core cert should encode");
+        npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("by core cert should verify");
+    }
+
+    #[test]
+    fn human_api_compile_certificate_verifies_by_proof_and_hashes_interface() {
+        let ok = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanByCert"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+theorem id_type : forall (A : Type), Type := by
+  intro A
+  exact A",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human API certificate path should certify by proof theorem");
+
+        assert!(ok
+            .source_interface
+            .declarations
+            .iter()
+            .all(|decl| decl.decl_interface_hash.is_some()));
+        let bytes =
+            npa_cert::encode_module_cert(&ok.certificate).expect("by proof cert should encode");
+        let verified = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("by proof certificate should verify");
+        assert_eq!(
+            verified.module(),
+            &npa_cert::Name::from_dotted("Api.HumanByCert")
+        );
+    }
+
+    #[test]
+    fn human_api_compile_certificate_rejects_unresolved_by_goal_before_certificate() {
+        let err = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanByOpenGoal"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+theorem open_goal : forall (A : Type), Type := by
+  intro A",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect_err("unresolved Human by proof goal should stop before certificate construction");
+
+        assert_eq!(
+            err.diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal
+        );
+        assert_eq!(
+            err.diagnostic
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.phase),
+            Some(npa_frontend::HumanDiagnosticPhase::Elaborator)
+        );
+    }
+
+    #[test]
+    fn human_api_by_proof_certificate_uses_verified_imports() {
+        let producer = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.ByImportLib"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+axiom ImportedP : Prop
+axiom imported_p : ImportedP",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("producer Human API request should compile");
+        let bytes =
+            npa_cert::encode_module_cert(&producer.certificate).expect("producer cert encodes");
+        let verified = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("producer cert verifies");
+        let import = npa_frontend::VerifiedImport::from(&verified);
+        let source_interface = npa_frontend::HumanImportedSourceInterface {
+            module: import.module.clone(),
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            source_interface: producer.source_interface,
+        };
+
+        let ok = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.ByImportUser"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(1),
+                source: "\
+import Api.ByImportLib
+theorem target : ImportedP := by
+  exact imported_p",
+            },
+            verified_modules: std::slice::from_ref(&verified),
+            imported_source_interfaces: &[source_interface],
+            options: human_api_default_compile_options(),
+        })
+        .expect("by proof certificate path should use verified imports");
+        let bytes = npa_cert::encode_module_cert(&ok.certificate).expect("consumer cert encodes");
+        let mut session = npa_cert::VerifierSession::new();
+        session.register_verified_module(verified);
+        npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+            .expect("consumer by proof cert verifies with import");
     }
 
     #[test]
