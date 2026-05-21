@@ -7119,9 +7119,7 @@ fn phase8_request_store_with_materialized_entries(
         rewrite_required = true;
     }
 
-    manifest
-        .requests
-        .sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+    manifest.requests.sort_by_key(|entry| entry.request_hash);
     Ok(Phase8RequestStoreUpdate {
         manifest,
         rewrite_required,
@@ -7364,7 +7362,7 @@ pub fn phase8_challenge_output_store_with_entry(
     manifest.entries.push(generated_entry);
     manifest
         .entries
-        .sort_by(|left, right| left.challenge_id.cmp(&right.challenge_id));
+        .sort_by_key(|entry| entry.challenge_id.clone());
     Ok(Phase8ChallengeOutputStoreUpdate {
         manifest,
         rewrite_required: true,
@@ -7550,9 +7548,7 @@ pub fn phase8_challenge_replay_store_with_entry(
         }
     }
     manifest.results.push(generated_entry);
-    manifest
-        .results
-        .sort_by(|left, right| left.result_hash.cmp(&right.result_hash));
+    manifest.results.sort_by_key(|entry| entry.result_hash);
     Ok(Phase8ChallengeReplayStoreUpdate {
         manifest,
         rewrite_required: true,
@@ -8762,7 +8758,7 @@ pub fn phase8_machine_result_store_with_entry(
     manifest.results.push(generated_entry);
     manifest
         .results
-        .sort_by(|left, right| left.run_artifact_hash.cmp(&right.run_artifact_hash));
+        .sort_by_key(|entry| entry.run_artifact_hash);
     Ok(Phase8MachineResultStoreUpdate {
         manifest,
         rewrite_required: true,
@@ -11387,7 +11383,7 @@ fn phase8_order_machine_results_for_normalization<'a>(
         .iter()
         .filter(|result| !known.contains(&result.checker.profile))
         .collect::<Vec<_>>();
-    outside_policy.sort_by(|left, right| left.checker.profile.cmp(&right.checker.profile));
+    outside_policy.sort_by_key(|result| result.checker.profile.clone());
     out.extend(outside_policy);
     out
 }
@@ -28011,7 +28007,7 @@ mod tests {
                 file_hash: stored.file_hash,
             })
             .collect::<Vec<_>>();
-        entries.sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+        entries.sort_by_key(|entry| entry.request_hash);
         Phase8RequestStoreManifest { requests: entries }
     }
 
@@ -31027,7 +31023,7 @@ mod tests {
                 file_hash: artifact.file_hash,
             });
         }
-        request_entries.sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+        request_entries.sort_by_key(|entry| entry.request_hash);
         let request_store = Phase8RequestStoreManifest {
             requests: request_entries,
         };
@@ -31047,7 +31043,7 @@ mod tests {
             machine_entries
                 .push(phase8_machine_result_store_entry_for_result(result, artifact.path).unwrap());
         }
-        machine_entries.sort_by(|left, right| left.run_artifact_hash.cmp(&right.run_artifact_hash));
+        machine_entries.sort_by_key(|entry| entry.run_artifact_hash);
         let machine_store = Phase8MachineResultStoreManifest {
             results: machine_entries,
         };
@@ -31372,7 +31368,7 @@ mod tests {
         });
         request_store
             .requests
-            .sort_by(|left, right| left.request_hash.cmp(&right.request_hash));
+            .sort_by_key(|entry| entry.request_hash);
         fixture.files.remove(&old_request_store_path);
 
         let request_store_json = request_store.canonical_json();
@@ -31462,7 +31458,7 @@ mod tests {
             result_entries
                 .push(phase8_machine_result_store_entry_for_result(result, path).unwrap());
         }
-        result_entries.sort_by(|left, right| left.run_artifact_hash.cmp(&right.run_artifact_hash));
+        result_entries.sort_by_key(|entry| entry.run_artifact_hash);
         let result_store = Phase8MachineResultStoreManifest {
             results: result_entries,
         };
@@ -31527,7 +31523,7 @@ mod tests {
         });
         result_store
             .results
-            .sort_by(|left, right| left.run_artifact_hash.cmp(&right.run_artifact_hash));
+            .sort_by_key(|entry| entry.run_artifact_hash);
         let normalized_store_json = normalized_store.canonical_json();
         let result_store_json = result_store.canonical_json();
 

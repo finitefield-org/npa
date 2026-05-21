@@ -2937,7 +2937,7 @@ pub fn generate_machine_std_mvp_theorem_index(
             ))
         })
         .collect::<Result<Vec<_>, MachineStdTheoremIndexError>>()?;
-    keyed_entries.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    keyed_entries.sort_by_cached_key(|(key, _)| key.clone());
 
     Ok(MachineStdTheoremIndex {
         index_profile_id: STD_THEOREM_INDEX_PROFILE_ID.to_owned(),
@@ -3185,7 +3185,7 @@ fn validate_prompt_metadata_entries(
     }
 
     let mut expected_pairs = actual_pairs.clone();
-    expected_pairs.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    expected_pairs.sort_by_cached_key(|(key, _)| key.clone());
     let actual_refs = actual_pairs
         .iter()
         .map(|(_, global_ref)| global_ref.clone())
@@ -3500,8 +3500,8 @@ fn validate_theorem_entry_membership(
         }
     }
     let mut expected_pairs = theorem_entry_global_ref_pairs(expected)?;
-    actual_pairs.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
-    expected_pairs.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    actual_pairs.sort_by_cached_key(|(key, _)| key.clone());
+    expected_pairs.sort_by_cached_key(|(key, _)| key.clone());
     let actual_sorted_refs = actual_pairs
         .iter()
         .map(|(_, global_ref)| global_ref.clone())
@@ -4909,7 +4909,7 @@ fn sort_rewrite_descriptors(
             ))
         })
         .collect::<Result<Vec<_>, MachineStdRewriteProfileError>>()?;
-    keyed.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    keyed.sort_by_cached_key(|(key, _)| key.clone());
     *descriptors = keyed
         .into_iter()
         .map(|(_, descriptor)| descriptor)
@@ -4928,7 +4928,7 @@ fn sort_simp_rules(rules: &mut Vec<SimpRuleRef>) -> Result<(), MachineStdSimpPro
             ))
         })
         .collect::<Result<Vec<_>, MachineStdSimpProfileError>>()?;
-    keyed.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0));
+    keyed.sort_by_cached_key(|(key, _)| key.clone());
     keyed.dedup_by(|lhs, rhs| lhs.0 == rhs.0);
     *rules = keyed.into_iter().map(|(_, rule)| rule).collect();
     Ok(())

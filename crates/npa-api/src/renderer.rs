@@ -128,8 +128,7 @@ impl MachineDisplayRenderScope {
         }
         self.entries_by_name.insert(dotted, entry.clone());
         self.entries.push(entry);
-        self.entries
-            .sort_by(|lhs, rhs| lhs.name.as_dotted().cmp(&rhs.name.as_dotted()));
+        self.entries.sort_by_key(|entry| entry.name.as_dotted());
         Ok(())
     }
 }

@@ -779,7 +779,7 @@ fn dependency_import_closure_payloads(
         .verified_modules()
         .iter()
         .collect::<Vec<_>>();
-    entries.sort_by(|lhs, rhs| lhs.key.cmp(&rhs.key));
+    entries.sort_by_key(|entry| entry.key.clone());
     entries
         .into_iter()
         .map(import_entry_payload)

@@ -1116,7 +1116,7 @@ pub(crate) fn build_level_table(
             ))
         })
         .collect::<Result<_>>()?;
-    keyed_levels.sort_by(|(lhs_key, _), (rhs_key, _)| lhs_key.cmp(rhs_key));
+    keyed_levels.sort_by_cached_key(|(key, _)| key.clone());
     let levels: Vec<_> = keyed_levels.into_iter().map(|(_, level)| level).collect();
     let ids: BTreeMap<_, _> = levels
         .iter()
@@ -1140,7 +1140,7 @@ pub(crate) fn build_term_table(
         .into_iter()
         .map(|term| Ok(((term_height(&term), canon_term_key(&term, names)?), term)))
         .collect::<Result<_>>()?;
-    keyed_terms.sort_by(|(lhs_key, _), (rhs_key, _)| lhs_key.cmp(rhs_key));
+    keyed_terms.sort_by_cached_key(|(key, _)| key.clone());
     let terms: Vec<_> = keyed_terms.into_iter().map(|(_, term)| term).collect();
     let ids: BTreeMap<_, _> = terms
         .iter()

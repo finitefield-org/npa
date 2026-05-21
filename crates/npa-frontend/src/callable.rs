@@ -85,7 +85,7 @@ impl MachineSurfaceCallableInterfaceTable {
         entries: impl IntoIterator<Item = MachineSurfaceCallableInterfaceEntry>,
     ) -> Result<Self, MachineSurfaceCallableInterfaceError> {
         let mut entries: Vec<_> = entries.into_iter().collect();
-        entries.sort_by(|lhs, rhs| lhs.canonical_bytes.cmp(&rhs.canonical_bytes));
+        entries.sort_by_cached_key(|entry| entry.canonical_bytes.clone());
 
         let mut seen_refs = BTreeSet::new();
         for entry in &entries {
