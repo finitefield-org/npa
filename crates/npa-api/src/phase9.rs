@@ -14120,6 +14120,78 @@ mod tests {
         }
     }
 
+    fn assert_success(response: Phase9AiEndpointResponse) -> (Hash, Phase9AiSuccessPayload) {
+        match response {
+            Phase9AiEndpointResponse::Success {
+                candidate_hash,
+                validation_result_hash,
+                payload,
+            } => {
+                let payload = *payload;
+                assert_eq!(
+                    validation_result_hash,
+                    phase9_ai_validation_result_hash_for_success(candidate_hash, &payload)
+                );
+                (candidate_hash, payload)
+            }
+            other => panic!("expected success response, got {other:?}"),
+        }
+    }
+
+    fn phase9_m9_endpoint_token(endpoint: &str) -> &'static str {
+        match endpoint {
+            PHASE9_INDUCTIVE_CHECK_ENDPOINT => "inductive_check",
+            PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT => "universe_repair_check",
+            PHASE9_TYPECLASS_RESOLVE_ENDPOINT => "typeclass_resolve",
+            PHASE9_QUOTIENT_CHECK_ENDPOINT => "quotient_check",
+            PHASE9_SMT_RECONSTRUCT_ENDPOINT => "smt_reconstruct",
+            PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT => "theorem_graph_query",
+            PHASE9_FORMALIZE_CHECK_ENDPOINT => "formalize_check",
+            _ => panic!("unknown Phase 9 endpoint {endpoint}"),
+        }
+    }
+
+    fn assert_phase9_m9_fixture_name(name: &str, endpoint: &str, outcome: &str) {
+        assert!(name.starts_with("phase9_m9_"), "{name}");
+        assert!(name.contains(phase9_m9_endpoint_token(endpoint)), "{name}");
+        assert!(name.contains(outcome), "{name}");
+    }
+
+    fn assert_phase9_m9_success_fixture(
+        name: &str,
+        endpoint: &str,
+        response: Phase9AiEndpointResponse,
+    ) -> (Hash, Phase9AiSuccessPayload) {
+        assert_phase9_m9_fixture_name(name, endpoint, "success");
+        assert_success(response)
+    }
+
+    fn assert_phase9_m9_rejected_fixture(
+        name: &str,
+        endpoint: &str,
+        response: Phase9AiEndpointResponse,
+        expected_error: Phase9AiValidationError,
+        expected_feature_error: Option<Phase9AiFeatureError>,
+    ) -> Hash {
+        assert_phase9_m9_fixture_name(name, endpoint, "rejected");
+        assert_rejected(response, expected_error, expected_feature_error)
+    }
+
+    fn assert_phase9_m9_error_fixture(
+        name: &str,
+        endpoint: &str,
+        response: Phase9AiEndpointResponse,
+        expected_error: Phase9AiEndpointError,
+    ) {
+        assert_phase9_m9_fixture_name(name, endpoint, "error");
+        assert_eq!(
+            response,
+            Phase9AiEndpointResponse::Error {
+                error: expected_error
+            }
+        );
+    }
+
     #[test]
     fn common_candidate_hash_is_available_when_options_decode_fails() {
         let request = inline_request(
@@ -16300,6 +16372,612 @@ mod tests {
             Phase9AiValidationError::EnvelopeMalformed,
             None,
         );
+    }
+
+    #[test]
+    fn phase9_m9_endpoint_fixture_matrix_is_deterministic_without_ai() {
+        type Phase9Route = fn(&[u8], &[VerifiedImportRef], &Path) -> Phase9AiEndpointResponse;
+        let routes: [(&str, Phase9Route); 7] = [
+            (
+                PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+                run_phase9_inductive_check_request,
+            ),
+            (
+                PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+                run_phase9_universe_repair_check_request,
+            ),
+            (
+                PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
+                run_phase9_typeclass_resolve_request,
+            ),
+            (
+                PHASE9_QUOTIENT_CHECK_ENDPOINT,
+                run_phase9_quotient_check_request,
+            ),
+            (
+                PHASE9_SMT_RECONSTRUCT_ENDPOINT,
+                run_phase9_smt_reconstruct_request,
+            ),
+            (
+                PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
+                run_phase9_theorem_graph_query_request,
+            ),
+            (
+                PHASE9_FORMALIZE_CHECK_ENDPOINT,
+                run_phase9_formalize_check_request,
+            ),
+        ];
+
+        for (endpoint, route) in routes {
+            let fixture = format!(
+                "phase9_m9_{}_error_noncanonical_request",
+                phase9_m9_endpoint_token(endpoint)
+            );
+            assert_phase9_m9_error_fixture(
+                &fixture,
+                endpoint,
+                route(b"not-an-envelope", &[], &workspace_root()),
+                Phase9AiEndpointError::NonCanonicalRequestBytes,
+            );
+        }
+
+        let inductive_request = inductive_request(valid_inductive_proposal());
+        let inductive_first =
+            run_phase9_inductive_check_request(&inductive_request, &[], &workspace_root());
+        let inductive_second =
+            run_phase9_inductive_check_request(&inductive_request, &[], &workspace_root());
+        assert_eq!(inductive_first, inductive_second);
+        let (_, inductive_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_inductive_check_success_advanced_inductive",
+            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+            inductive_first,
+        );
+        assert!(matches!(
+            inductive_payload,
+            Phase9AiSuccessPayload::AdvancedInductive { .. }
+        ));
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_inductive_check_rejected_envelope_malformed_payload",
+            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+            run_phase9_inductive_check_request(
+                &inline_request(
+                    Phase9AiTaskKind::AdvancedInductive,
+                    empty_options_bytes(),
+                    Vec::new(),
+                    None,
+                ),
+                &[],
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+
+        let universe_import = verified_universe_import();
+        let universe_request = valid_universe_request(&universe_import);
+        let universe_first = run_phase9_universe_repair_check_request(
+            &universe_request,
+            std::slice::from_ref(&universe_import),
+            &workspace_root(),
+        );
+        let universe_second = run_phase9_universe_repair_check_request(
+            &universe_request,
+            std::slice::from_ref(&universe_import),
+            &workspace_root(),
+        );
+        assert_eq!(universe_first, universe_second);
+        let (_, universe_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_universe_repair_check_success_repaired_expr",
+            PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+            universe_first,
+        );
+        assert!(matches!(
+            universe_payload,
+            Phase9AiSuccessPayload::UniverseRepair { .. }
+        ));
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_universe_repair_check_rejected_envelope_malformed_payload",
+            PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+            run_phase9_universe_repair_check_request(
+                &inline_request(
+                    Phase9AiTaskKind::UniverseRepair,
+                    empty_options_bytes(),
+                    Vec::new(),
+                    Some(hash(11)),
+                ),
+                &[],
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+
+        let typeclass_import = verified_typeclass_import();
+        let typeclass_request = typeclass_request(
+            &typeclass_import,
+            typeclass_goal(typeclass_cls(typeclass_base())),
+            vec![typeclass_candidate(
+                &typeclass_import,
+                "TC.instBase",
+                Some(10),
+            )],
+            1,
+            1,
+            None,
+        );
+        let typeclass_first = run_phase9_typeclass_resolve_request(
+            &typeclass_request,
+            std::slice::from_ref(&typeclass_import),
+            &workspace_root(),
+        );
+        let typeclass_second = run_phase9_typeclass_resolve_request(
+            &typeclass_request,
+            std::slice::from_ref(&typeclass_import),
+            &workspace_root(),
+        );
+        assert_eq!(typeclass_first, typeclass_second);
+        let (_, typeclass_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_typeclass_resolve_success_direct_instance",
+            PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
+            typeclass_first,
+        );
+        assert!(matches!(
+            typeclass_payload,
+            Phase9AiSuccessPayload::TypeclassResolution { .. }
+        ));
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_typeclass_resolve_rejected_envelope_malformed_payload",
+            PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
+            run_phase9_typeclass_resolve_request(
+                &inline_request(
+                    Phase9AiTaskKind::TypeclassResolution,
+                    empty_options_bytes(),
+                    Vec::new(),
+                    Some(hash(12)),
+                ),
+                &[],
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+
+        let quotient_import = verified_quotient_import();
+        let quotient_before = (
+            quotient_import.export_hash(),
+            quotient_import.certificate_hash(),
+            quotient_import.verified_module().axiom_report().clone(),
+        );
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_quotient_check_rejected_phase8_mvp_unsupported",
+            PHASE9_QUOTIENT_CHECK_ENDPOINT,
+            run_phase9_quotient_check_request(
+                &quotient_request(&quotient_import, quotient_candidate(), None),
+                std::slice::from_ref(&quotient_import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        );
+        assert_eq!(
+            quotient_before,
+            (
+                quotient_import.export_hash(),
+                quotient_import.certificate_hash(),
+                quotient_import.verified_module().axiom_report().clone()
+            )
+        );
+
+        let smt_import = verified_smt_import();
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_smt_reconstruct_rejected_empty_registry",
+            PHASE9_SMT_RECONSTRUCT_ENDPOINT,
+            run_phase9_smt_reconstruct_request(
+                &smt_request(&smt_import, |_| {}),
+                std::slice::from_ref(&smt_import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::SmtCertificate(
+                Phase9SmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+
+        let graph_import = verified_theorem_graph_import();
+        let graph_snapshot = theorem_graph_snapshot(
+            hash(41),
+            vec![theorem_graph_node(&graph_import, "GraphLib.P")],
+        );
+        let graph_request =
+            theorem_graph_inline_query_request(&graph_import, None, None, graph_snapshot, None, 16);
+        let graph_first = run_phase9_theorem_graph_query_request(
+            &graph_request,
+            std::slice::from_ref(&graph_import),
+            &workspace_root(),
+        );
+        let graph_second = run_phase9_theorem_graph_query_request(
+            &graph_request,
+            std::slice::from_ref(&graph_import),
+            &workspace_root(),
+        );
+        assert_eq!(graph_first, graph_second);
+        let (_, graph_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_theorem_graph_query_success_public_axiom_node",
+            PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
+            graph_first,
+        );
+        assert!(matches!(
+            graph_payload,
+            Phase9AiSuccessPayload::TheoremGraphQuery { .. }
+        ));
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_theorem_graph_query_rejected_envelope_malformed_payload",
+            PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
+            run_phase9_theorem_graph_query_request(
+                &inline_request(
+                    Phase9AiTaskKind::TheoremGraphQuery,
+                    empty_options_bytes(),
+                    Vec::new(),
+                    Some(hash(13)),
+                ),
+                &[],
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+
+        let formalization_statement = formalization_statement("Type");
+        let formalization_success_request = formalization_request(
+            formalization_payload_with(
+                "claim: Type",
+                "Type",
+                None,
+                Some(exact_proof_candidate(&formalization_statement, "Prop")),
+            ),
+            formalization_options_bytes(),
+        );
+        let formalization_first = run_phase9_formalize_check_request(
+            &formalization_success_request,
+            &[],
+            &workspace_root(),
+        );
+        let formalization_second = run_phase9_formalize_check_request(
+            &formalization_success_request,
+            &[],
+            &workspace_root(),
+        );
+        assert_eq!(formalization_first, formalization_second);
+        let (_, formalization_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_formalize_check_success_proof_bridge_checked",
+            PHASE9_FORMALIZE_CHECK_ENDPOINT,
+            formalization_first,
+        );
+        assert!(matches!(
+            formalization_payload,
+            Phase9AiSuccessPayload::NaturalLanguageFormalization {
+                kind: Phase9FormalizationSuccessKind::ProofBridgeChecked,
+                ..
+            }
+        ));
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_formalize_check_rejected_statement_elaboration_failed",
+            PHASE9_FORMALIZE_CHECK_ENDPOINT,
+            run_phase9_formalize_check_request(
+                &formalization_request(
+                    formalization_payload_with(
+                        "claim: unknown",
+                        "UnknownFormalizationName",
+                        None,
+                        None,
+                    ),
+                    formalization_options_bytes(),
+                ),
+                &[],
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::Formalization(
+                Phase9FormalizationError::CandidateStatementElaborationFailed,
+            )),
+        );
+    }
+
+    #[test]
+    fn phase9_m9_artifact_replay_uses_exact_bytes_and_stable_hashes() {
+        let root = std::env::temp_dir().join(format!(
+            "npa-phase9-m9-artifact-replay-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+
+        let options_bytes = empty_options_bytes();
+        fs::write(root.join("options.bin"), &options_bytes).unwrap();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let proposal = valid_inductive_proposal();
+        let artifact_envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::AdvancedInductive,
+            target: Phase9AiTarget {
+                env_fingerprint: phase9_ai_env_fingerprint(
+                    Phase9AiProfileVersion::MvpV1,
+                    Phase9AiTaskKind::AdvancedInductive,
+                    &[],
+                    options_hash,
+                )
+                .unwrap(),
+                target_decl_hash: None,
+                goal_fingerprint: None,
+            },
+            imports: Vec::new(),
+            options: Phase9AiOptionsRef::Artifact {
+                path: "options.bin".to_owned(),
+                file_hash: phase9_file_hash(&options_bytes),
+                options_hash,
+                size_bytes: options_bytes.len() as u64,
+            },
+            payload: phase9_inductive_proposal_canonical_bytes(&proposal).unwrap(),
+        };
+        let artifact_request =
+            phase9_ai_candidate_envelope_canonical_bytes(&artifact_envelope).unwrap();
+        let inline_request = inductive_request(proposal);
+
+        let artifact_first = run_phase9_inductive_check_request(&artifact_request, &[], &root);
+        let artifact_second = run_phase9_inductive_check_request(&artifact_request, &[], &root);
+        assert_eq!(artifact_first, artifact_second);
+        let (_, artifact_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_inductive_check_success_artifact_options_replay",
+            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+            artifact_first,
+        );
+        let (_, inline_payload) = assert_success(run_phase9_inductive_check_request(
+            &inline_request,
+            &[],
+            &workspace_root(),
+        ));
+        assert_eq!(artifact_payload, inline_payload);
+
+        fs::write(root.join("options.bin"), b"corrupt-options").unwrap();
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_inductive_check_rejected_artifact_payload_hash_mismatch",
+            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+            run_phase9_inductive_check_request(&artifact_request, &[], &root),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn phase9_m9_phase8_support_matrix_and_sidecar_boundaries_are_pinned() {
+        let inductive_request = inductive_request(valid_inductive_proposal());
+        let (_, inductive_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_inductive_check_success_phase8_mvp_supported_certificate",
+            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+            run_phase9_inductive_check_request(&inductive_request, &[], &workspace_root()),
+        );
+        assert!(matches!(
+            inductive_payload,
+            Phase9AiSuccessPayload::AdvancedInductive { .. }
+        ));
+
+        let quotient_import = verified_quotient_import();
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_quotient_check_rejected_phase8_mvp_support_matrix",
+            PHASE9_QUOTIENT_CHECK_ENDPOINT,
+            run_phase9_quotient_check_request(
+                &quotient_request(&quotient_import, quotient_candidate(), None),
+                std::slice::from_ref(&quotient_import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        );
+
+        let smt_import = verified_smt_import();
+        assert_phase9_m9_rejected_fixture(
+            "phase9_m9_smt_reconstruct_rejected_phase8_mvp_empty_registry",
+            PHASE9_SMT_RECONSTRUCT_ENDPOINT,
+            run_phase9_smt_reconstruct_request(
+                &smt_request(&smt_import, |_| {}),
+                std::slice::from_ref(&smt_import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::SmtCertificate(
+                Phase9SmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+
+        let statement = formalization_statement("Type");
+        let first = formalization_request(
+            formalization_payload_with(
+                "natural language explanation, confidence 10%",
+                "Type",
+                None,
+                Some(exact_proof_candidate(&statement, "Prop")),
+            ),
+            formalization_options_bytes(),
+        );
+        let second = formalization_request(
+            formalization_payload_with(
+                "different AI sidecar text, confidence 99%",
+                "Type",
+                None,
+                Some(exact_proof_candidate(&statement, "Prop")),
+            ),
+            formalization_options_bytes(),
+        );
+        let (first_candidate_hash, first_payload) = assert_phase9_m9_success_fixture(
+            "phase9_m9_formalize_check_success_phase8_mvp_proof_bridge",
+            PHASE9_FORMALIZE_CHECK_ENDPOINT,
+            run_phase9_formalize_check_request(&first, &[], &workspace_root()),
+        );
+        let (second_candidate_hash, second_payload) = assert_success(
+            run_phase9_formalize_check_request(&second, &[], &workspace_root()),
+        );
+        assert_ne!(first_candidate_hash, second_candidate_hash);
+
+        let Phase9AiSuccessPayload::NaturalLanguageFormalization {
+            kind: first_kind,
+            accepted_statement_hash: first_accepted,
+            formalization_proof_root_hash: first_root,
+        } = first_payload
+        else {
+            panic!("expected formalization payload");
+        };
+        let Phase9AiSuccessPayload::NaturalLanguageFormalization {
+            kind: second_kind,
+            accepted_statement_hash: second_accepted,
+            formalization_proof_root_hash: second_root,
+        } = second_payload
+        else {
+            panic!("expected formalization payload");
+        };
+        assert_eq!(
+            first_kind,
+            Phase9FormalizationSuccessKind::ProofBridgeChecked
+        );
+        assert_eq!(
+            second_kind,
+            Phase9FormalizationSuccessKind::ProofBridgeChecked
+        );
+        assert_eq!(first_accepted, second_accepted);
+        assert_eq!(first_root, second_root);
+
+        let proof_root = first_root.unwrap();
+        let theorem_cert = npa_cert::build_module_cert(
+            CoreModule {
+                name: formalization_scratch_module(proof_root),
+                declarations: vec![Decl::Theorem {
+                    name: formalization_scratch_theorem(proof_root).as_dotted(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::succ(Level::zero())),
+                    proof: Expr::sort(Level::zero()),
+                }],
+            },
+            &[],
+        )
+        .unwrap();
+        let theorem_bytes = npa_cert::encode_module_cert(&theorem_cert).unwrap();
+        let mut verifier_session = VerifierSession::new();
+        let verified = npa_cert::verify_module_cert(
+            &theorem_bytes,
+            &mut verifier_session,
+            &AxiomPolicy::normal(),
+        )
+        .unwrap();
+        assert_eq!(
+            theorem_cert.hashes.certificate_hash,
+            verified.certificate_hash()
+        );
+        assert!(verified.axiom_report().module_axioms.is_empty());
+        assert!(verified
+            .axiom_report()
+            .per_declaration
+            .iter()
+            .all(|entry| { entry.direct_axioms.is_empty() && entry.transitive_axioms.is_empty() }));
+    }
+
+    #[test]
+    fn phase9_m9_api_profile_and_error_tags_are_compatibility_pinned() {
+        assert_eq!(Phase9AiProfileVersion::MvpV1.tag(), 0);
+        assert_eq!(
+            Phase9AiProfileVersion::from_tag(0),
+            Some(Phase9AiProfileVersion::MvpV1)
+        );
+        assert_eq!(Phase9AiProfileVersion::from_tag(1), None);
+        assert_eq!(Phase9AiOptionsVersion::MvpV1.tag(), 0);
+        assert_eq!(
+            Phase9AiOptionsVersion::from_tag(0),
+            Some(Phase9AiOptionsVersion::MvpV1)
+        );
+        assert_eq!(Phase9AiOptionsVersion::from_tag(1), None);
+        assert_eq!(Phase9IndependentCheckerProfile::Phase8MvpReference.tag(), 0);
+        assert_eq!(
+            Phase9IndependentCheckerProfile::from_tag(0),
+            Some(Phase9IndependentCheckerProfile::Phase8MvpReference)
+        );
+        assert_eq!(Phase9IndependentCheckerProfile::from_tag(1), None);
+
+        let task_kinds = [
+            Phase9AiTaskKind::AdvancedInductive,
+            Phase9AiTaskKind::UniverseRepair,
+            Phase9AiTaskKind::TypeclassResolution,
+            Phase9AiTaskKind::QuotientConstruction,
+            Phase9AiTaskKind::SmtCertificate,
+            Phase9AiTaskKind::TheoremGraphQuery,
+            Phase9AiTaskKind::NaturalLanguageFormalization,
+        ];
+        for (expected_tag, task_kind) in (0u8..).zip(task_kinds) {
+            assert_eq!(task_kind.tag(), expected_tag);
+            assert_eq!(Phase9AiTaskKind::from_tag(expected_tag), Some(task_kind));
+        }
+        assert_eq!(Phase9AiTaskKind::from_tag(7), None);
+
+        let validation_errors = [
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            Phase9AiValidationError::ImportClosureMismatch,
+            Phase9AiValidationError::PayloadHashMismatch,
+            Phase9AiValidationError::KernelRejected,
+            Phase9AiValidationError::IndependentCheckerRejected,
+            Phase9AiValidationError::NonDeterministicResult,
+            Phase9AiValidationError::BudgetExceeded,
+            Phase9AiValidationError::AmbiguousResolution,
+            Phase9AiValidationError::NoSolution,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9AiValidationError::UnsupportedFeature,
+        ];
+        for (expected_tag, error) in (0u8..).zip(validation_errors) {
+            assert_eq!(error.tag(), expected_tag);
+        }
+
+        let feature_error_tags = [
+            (
+                Phase9AiFeatureError::AdvancedInductive(
+                    Phase9AdvancedInductiveError::TargetRefMismatch,
+                ),
+                vec![0, 0],
+            ),
+            (
+                Phase9AiFeatureError::UniverseRepair(
+                    Phase9UniverseRepairError::UnknownUniverseParam,
+                ),
+                vec![1, 0],
+            ),
+            (
+                Phase9AiFeatureError::TypeclassResolution(
+                    Phase9TypeclassResolutionError::ClassDeclarationMismatch,
+                ),
+                vec![2, 0],
+            ),
+            (
+                Phase9AiFeatureError::QuotientConstruction(
+                    Phase9QuotientConstructionError::TargetRefMismatch,
+                ),
+                vec![3, 0],
+            ),
+            (
+                Phase9AiFeatureError::SmtCertificate(Phase9SmtCertificateError::EncodingMismatch),
+                vec![4, 0],
+            ),
+            (
+                Phase9AiFeatureError::TheoremGraphQuery(Phase9TheoremGraphError::SnapshotMalformed),
+                vec![5, 0],
+            ),
+            (
+                Phase9AiFeatureError::Formalization(Phase9FormalizationError::IntentRecordMismatch),
+                vec![6, 0],
+            ),
+        ];
+        for (feature_error, expected) in feature_error_tags {
+            let mut encoded = Vec::new();
+            encode_feature_error_to(&mut encoded, feature_error);
+            assert_eq!(encoded, expected);
+        }
     }
 
     #[test]
