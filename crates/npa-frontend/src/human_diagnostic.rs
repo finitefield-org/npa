@@ -11,6 +11,9 @@ pub enum HumanDiagnosticSeverity {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HumanDiagnosticKind {
     NotImplemented,
+    ParseError,
+    ImportAfterItem,
+    UnsupportedSyntax,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -40,6 +43,18 @@ impl HumanDiagnostic {
             HumanDiagnosticKind::NotImplemented,
             primary_span,
             format!("{operation} is reserved for the Phase 3 Human frontend"),
+        )
+    }
+
+    pub fn parse(primary_span: Span, message: impl Into<String>) -> Self {
+        Self::error(HumanDiagnosticKind::ParseError, primary_span, message)
+    }
+
+    pub fn unsupported_syntax(primary_span: Span, syntax: impl Into<String>) -> Self {
+        Self::error(
+            HumanDiagnosticKind::UnsupportedSyntax,
+            primary_span,
+            format!("unsupported Human Surface syntax: {}", syntax.into()),
         )
     }
 }

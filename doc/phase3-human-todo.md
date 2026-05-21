@@ -266,29 +266,30 @@ crates/npa-frontend/src/span.rs
 
 実装タスク:
 
-- [ ] `parse_human_module(file_id, source)` を追加する。
-- [ ] `parse_human_term(file_id, source)` を追加する。
-- [ ] `import` は module 先頭に限定し、途中 import は `ImportAfterItem` にする。
-- [ ] `open` / `namespace` / `end` を parse する。
-- [ ] `def` / `theorem` / `axiom` / simple `inductive` を parse する。
-- [ ] `fun` / `forall` / `let` / annotation / application / parenthesized term を parse する。
-- [ ] `->` / `→` を右結合の anonymous Pi に desugar する。
-- [ ] grouped binder `(x y : A)` / `{x y : A}` を扱う。
-- [ ] `_` / `?m` を Human hole として扱う。
-- [ ] `@f` を explicit implicit argument mode として扱う。
-- [ ] `notation` / `infix` / `infixl` / `infixr` declaration を parse する。
+- [x] `parse_human_module(file_id, source)` を追加する。
+- [x] `parse_human_term(file_id, source)` を追加する。
+- [x] `import` は module 先頭に限定し、途中 import は `ImportAfterItem` にする。
+- [x] `open` / `namespace` / `end` を parse する。
+- [x] `def` / `theorem` / `axiom` / simple `inductive` を parse する。
+- [x] `fun` / `forall` / `let` / annotation / application / parenthesized term を parse する。
+- [x] `->` / `→` を右結合の anonymous Pi に desugar する。
+- [x] grouped binder `(x y : A)` / `{x y : A}` を扱う。
+- [x] `_` / `?m` を Human hole として扱う。
+- [x] `@f` を explicit implicit argument mode として扱う。
+- [x] `notation` / `infix` / `infixl` / `infixr` declaration を parse する。
 
 AI 速度ガード:
 
-- [ ] Human parser は `parse_machine_*` から呼ばれない。
-- [ ] Machine lexer/parser に notation parser state を追加しない。
-- [ ] Machine parser の unsupported syntax rejection tests を残す。
+- [x] Human parser は `parse_machine_*` から呼ばれない。
+- [x] Machine lexer/parser に notation parser state を追加しない。
+- [x] Machine parser の unsupported syntax rejection tests を残す。
 
 影響ファイル:
 
 ```text
 crates/npa-frontend/src/human_parser.rs
 crates/npa-frontend/src/human_diagnostic.rs
+crates/npa-frontend/src/human.rs
 crates/npa-frontend/src/lib.rs
 ```
 

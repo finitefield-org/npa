@@ -92,6 +92,7 @@ pub struct HumanNotationDecl {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HumanNotationKind {
+    Notation,
     Prefix,
     Postfix,
     Infix,
