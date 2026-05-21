@@ -50,8 +50,8 @@ canonical certificate を検査します。
 | 0 | core calculus、typing、conversion、universe、inductive、certificate の仕様固定 |
 | 1 | Rust kernel による core term / simple inductive / reduction の検査 |
 | 2 | `.npcert` 形式、canonical core AST、hash、axiom report |
-| 3 | 表層言語、parser、name resolution、notation、simple inductive declaration、elaboration |
-| 3 AI | AI 向け Machine Surface: 高速で明示的な Phase 3 実装計画 |
+| 3 Human | 人間向け Human Surface: parser、name resolution、notation、simple inductive declaration、elaboration |
+| 3 AI | AI 向け Machine Surface: 高速で明示的な Phase 3 fast path |
 | 4 | tactic 層: `intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` |
 | 5 | IDE / API: proof state、tactic execution、theorem search、goal display |
 | 6 | 小さく堅い標準ライブラリ: `Std.Logic`, `Std.Nat`, `Std.List`, `Std.Algebra.Basic` |
@@ -92,7 +92,13 @@ canonical certificate を検査します。
 現時点では Rust kernel と Phase 2 の certificate verifier は実装済みです。
 `crates/npa-cert` は `.npcert` の canonical encode/decode、hash 再計算、import 検査、
 axiom report 検査、Rust kernel への再検査ハンドオフを担当します。
-surface language / frontend は `crates/npa-frontend` で最小実装が進んでおり、
+Phase 3 は `crates/npa-frontend` で Human Surface と Machine Surface を分けて実装しています。
+Phase 3 Human は、`parse_human_*` / `compile_human_source_to_*` から使う人間向け convenience layer です。
+`open` / `namespace` / notation / implicit argument / hole / simple inductive などを扱えますが、
+parser、resolver、elaborator、metadata は trusted base に入りません。
+Phase 3 AI は、`parse_machine_*` / Machine Surface term API から使う explicit fast path です。
+AI 候補生成と tactic / search / replay / verify は Human Surface を経由せず、notation table、
+open scope、overload transaction、hole を持たない Machine Surface request を検査します。
 AI 向け Phase 4 M1/M2/M3/M4/M5/M6/M7 の tactic proof-state core と `exact` /
 `intro` / `apply` / `rw` / `simp-lite` / `induction-nat` は `crates/npa-tactic`
 で実装されています。closed proof state から canonical certificate へ渡す handoff API と、

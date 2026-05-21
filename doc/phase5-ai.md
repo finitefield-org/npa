@@ -65,14 +65,17 @@ AI 向け API は信用しません。
   cache hit / cache miss
 
 信頼する:
-  canonical core AST
-  Phase 1 Rust kernel
-  Phase 2 certificate verifier
-  Phase 8 independent checker
+  Phase 1 Rust kernel が fully explicit core / proof term を検査した deterministic result
+  canonical certificate bytes / hash と Phase 2 certificate verifier result
+  Phase 8 independent checker result
 ```
 
 Machine IDE/API が `success` を返しても、それは「state transition が非信頼層で成功した」という意味だけです。
-証明として採用できるのは、閉じた proof term を kernel check し、certificate checker に通した後だけです。
+証明として採用できるのは、閉じた proof term を kernel check し、canonical certificate verifier と、
+必要な release / audit profile では independent checker に通した後だけです。
+AI 向け API の既定入力は Human Surface source ではありません。candidate 内の term は Phase 3 AI
+Machine Surface として canonicalize / elaborate / check し、pretty text や Human notation は候補 identity、
+ranking、replay、verify の根拠にしません。
 
 ---
 

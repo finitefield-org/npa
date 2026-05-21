@@ -1,5 +1,5 @@
 以下は **Phase 7: AI探索** の詳細設計です。
-Phase 7 の目的は、Phase 1〜6 で作った kernel・certificate・tactic・IDE/API・標準ライブラリを使って、**AIが証明候補を探索し、kernel が正しいものだけ採用する仕組み**を作ることです。
+Phase 7 の目的は、Phase 1〜6 で作った kernel・certificate・tactic・IDE/API・標準ライブラリを使って、**AIが証明候補を探索し、kernel / canonical certificate / independent checker が検査できるものだけを採用する仕組み**を作ることです。
 
 対象はこの5つです。
 
@@ -19,6 +19,8 @@ Phase 7 の目的は、Phase 1〜6 で作った kernel・certificate・tactic・
   training trace identity、M9 integration fixtures は同 crate の unit tests で固定している
 - crates/npa-api の Phase 7 controller は非信頼 producer / orchestrator であり、
   replay / verify と canonical certificate check を通るまで証明の受理根拠ではない
+- Phase 7 MVP の候補生成は Phase 5 Machine API と Phase 3 AI Machine Surface を使い、
+  Human Surface source、notation、open scope、pretty text を candidate identity / ranking / replay / verify の根拠にしない
 - M10-M13 は Phase 7.5 / later profile であり、現行 MVP の成功条件ではない
 ```
 
@@ -28,7 +30,7 @@ Phase 7 の目的は、Phase 1〜6 で作った kernel・certificate・tactic・
 AIは信用しない。
 AIは候補を出す。
 tactic engine が試す。
-kernel と certificate checker が検証する。
+kernel、canonical certificate verifier、independent checker が検証する。
 検証済みでないものは証明ではない。
 ```
 
@@ -96,7 +98,7 @@ verified proof
 └───────────────┬──────────────┘
                 ↓
 ┌──────────────────────────────┐
-│ Kernel / Certificate Checker  │
+│ Kernel / Cert / Indep Checker │
 │ final verification            │
 └───────────────┬──────────────┘
                 ↓

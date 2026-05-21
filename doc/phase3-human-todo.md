@@ -686,15 +686,15 @@ scripts/phase9-regression.sh
 
 実装タスク:
 
-- [ ] `README.md` に Phase 3 Human と Phase 3 AI の実装状態を分けて記載する。
-- [ ] `doc/phase3-human.md` の設計と実装済み範囲がずれた場合は更新する。
-- [ ] `doc/phase3-ai.md` に Machine Surface 高速経路の非回帰条件を維持する。
-- [ ] Phase 4 以降の docs が Human Surface を AI path の前提にしていないか確認する。
+- [x] `README.md` に Phase 3 Human と Phase 3 AI の実装状態を分けて記載する。
+- [x] `doc/phase3-human.md` の設計と実装済み範囲がずれた場合は更新する。
+- [x] `doc/phase3-ai.md` に Machine Surface 高速経路の非回帰条件を維持する。
+- [x] Phase 4 以降の docs が Human Surface を AI path の前提にしていないか確認する。
 
 AI 速度ガード:
 
-- [ ] docs で AI 向け候補生成に Human Surface を使うような記述を入れない。
-- [ ] trusted boundary は README / docs で kernel / canonical certificate / independent checker に限定する。
+- [x] docs で AI 向け候補生成に Human Surface を使うような記述を入れない。
+- [x] trusted boundary は README / docs で kernel / canonical certificate / independent checker に限定する。
 
 影響ファイル:
 

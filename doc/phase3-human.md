@@ -1,5 +1,13 @@
-以下は **Phase 3: 表層言語** の詳細設計です。
+以下は **Phase 3 Human Profile: Human Surface Language** の詳細設計です。
 Phase 1/2 で作った kernel / certificate は「完全に明示化された core AST」だけを扱います。Phase 3 では、人間が書きやすい構文を導入し、それを **canonical core AST** に落とします。
+
+実装状態（2026-05-21）:
+
+```text
+- Human Surface MVP は crates/npa-frontend の human parser / resolver / elaborator / certificate handoff として実装済み
+- AI 向け経路は doc/phase3-ai.md の Machine Surface fast path に分離済み
+- Human Surface の parser / resolver / elaborator / metadata は convenience layer であり、trusted base ではない
+```
 
 重要な前提はこれです。
 
@@ -8,7 +16,9 @@ parser / names / notation / implicit args / holes / elaborator
 は便利な非信頼層。
 
 最終的な正しさは、
-Phase 1 の kernel と Phase 2 の certificate checker が確認する。
+canonical certificate と、
+Phase 1 の Rust kernel、Phase 2 certificate verifier、
+Phase 8 independent checker が確認する。
 ```
 
 ---
@@ -2367,91 +2377,94 @@ Phase 2 certificate verifier が検査済みの export interface を指します
 
 ---
 
-# 11. Phase 3 の実装マイルストーン
+# 11. Phase 3 Human の実装マイルストーン
 
-Phase 3 は一度に実装せず、次の小さな milestone に分けます。各 milestone は
+Phase 3 Human は一度に実装せず、次の小さな milestone に分けます。各 milestone は
 「構造化 diagnostic を返す」「テストを追加する」「未解決 hole / meta を certificate に入れない」
 ところまでを完了条件にします。
 
+実装状態（2026-05-21）: この節の MVP milestone は実装済みです。将来の非 MVP 機能は
+Section 13 の対象外リストとして残します。
+
 ## 11.1 M1: Parser / Surface AST
 
-- [ ] Lexer を実装する
-- [ ] `Span` を全 token / AST node に保存する
-- [ ] `import` / `open` / `namespace` / `end` を parse する
-- [ ] `def` / `theorem` / `axiom` / simple `inductive` を parse する
-- [ ] `fun` / `forall` / `let` / annotation / application / parenthesized term を parse する
-- [ ] `->` / `→` を右結合の anonymous Pi に desugar する
-- [ ] grouped binder `(x y : A)` / `{x y : A}` を `SurfaceBinder` list に展開する
-- [ ] `_` / `?m` を surface hole として保持する
-- [ ] `@f` を `ImplicitMode::Explicit` として保持する
-- [ ] `Prop` / `Type` / `Type u` を `SurfaceExpr::Sort` に正規化する
-- [ ] `import` が module 先頭以外に出た場合は `ImportAfterItem` を返す
+- [x] Lexer を実装する
+- [x] `Span` を全 token / AST node に保存する
+- [x] `import` / `open` / `namespace` / `end` を parse する
+- [x] `def` / `theorem` / `axiom` / simple `inductive` を parse する
+- [x] `fun` / `forall` / `let` / annotation / application / parenthesized term を parse する
+- [x] `->` / `→` を右結合の anonymous Pi に desugar する
+- [x] grouped binder `(x y : A)` / `{x y : A}` を `SurfaceBinder` list に展開する
+- [x] `_` / `?m` を surface hole として保持する
+- [x] `@f` を `ImplicitMode::Explicit` として保持する
+- [x] `Prop` / `Type` / `Type u` を `SurfaceExpr::Sort` に正規化する
+- [x] `import` が module 先頭以外に出た場合は `ImportAfterItem` を返す
 
 ## 11.2 M2: FrontendState / Name Resolution
 
-- [ ] `FrontendState` に current module / namespace stack / open scopes を持たせる
-- [ ] `verified_imports` から import interface を読み、source 内 import と照合する
-- [ ] duplicate import を決定的に扱う
-- [ ] namespace / open の lexical scope を実装する
-- [ ] local context と global declaration table を分離する
-- [ ] current module declaration と imported declaration の優先順位を固定する
-- [ ] qualified / unqualified name resolution を実装する
-- [ ] ambiguous name を `AmbiguousName` として保持または拒否する
-- [ ] forward reference を `ForwardReference` として拒否する
+- [x] `FrontendState` に current module / namespace stack / open scopes を持たせる
+- [x] `verified_imports` から import interface を読み、source 内 import と照合する
+- [x] duplicate import を決定的に扱う
+- [x] namespace / open の lexical scope を実装する
+- [x] local context と global declaration table を分離する
+- [x] current module declaration と imported declaration の優先順位を固定する
+- [x] qualified / unqualified name resolution を実装する
+- [x] ambiguous name を `AmbiguousName` として保持または拒否する
+- [x] forward reference を `ForwardReference` として拒否する
 
 ## 11.3 M3: Minimal Elaboration / Kernel Handoff
 
-- [ ] `infer` / `check` の bidirectional elaboration skeleton を実装する
-- [ ] local / global / app / lambda / Pi / let / annotation を core term に落とす
-- [ ] explicit binder だけで書かれた `def` / `theorem` を elaboration する
-- [ ] declaration elaboration 中は自分自身を global env に入れない
-- [ ] elaborated core declaration を Phase 1 kernel に渡す
-- [ ] kernel が拒否した場合は `KernelRejected` を返す
-- [ ] well-typed / ill-typed の最小テストを追加する
+- [x] `infer` / `check` の bidirectional elaboration skeleton を実装する
+- [x] local / global / app / lambda / Pi / let / annotation を core term に落とす
+- [x] explicit binder だけで書かれた `def` / `theorem` を elaboration する
+- [x] declaration elaboration 中は自分自身を global env に入れない
+- [x] elaborated core declaration を Phase 1 kernel に渡す
+- [x] kernel が拒否した場合は `KernelRejected` を返す
+- [x] well-typed / ill-typed の最小テストを追加する
 
 ## 11.4 M4: Metavariables / Implicit Args / Universe Meta
 
-- [ ] term metavariable と universe metavariable の store を分けて管理する
-- [ ] implicit binder に対して `SyntheticImplicit` meta を挿入する
-- [ ] `@` mode では implicit term args を自動挿入しない
-- [ ] `_` と `?m` を `UserHole` meta に変換する
-- [ ] named hole の context snapshot を比較し、違う場合は `NamedHoleContextMismatch` を返す
-- [ ] constraint store に `TypeEq` / `TermEq` / `LevelEq` / `LevelLe` を入れる
-- [ ] simple unification と occurs check を実装する
-- [ ] 未解決 implicit / universe meta / hole が残る declaration は certificate 化を拒否する
+- [x] term metavariable と universe metavariable の store を分けて管理する
+- [x] implicit binder に対して `SyntheticImplicit` meta を挿入する
+- [x] `@` mode では implicit term args を自動挿入しない
+- [x] `_` と `?m` を `UserHole` meta に変換する
+- [x] named hole の context snapshot を比較し、違う場合は `NamedHoleContextMismatch` を返す
+- [x] constraint store に `TypeEq` / `TermEq` / `LevelEq` / `LevelLe` を入れる
+- [x] simple unification と occurs check を実装する
+- [x] 未解決 implicit / universe meta / hole が残る declaration は certificate 化を拒否する
 
 ## 11.5 M5: Notation / Overload Resolution
 
-- [ ] notation declaration を namespace / open scope と連動させる
-- [ ] notation target を declaration 処理時に `ElabGlobalRef` へ解決する
-- [ ] prefix / postfix / infix / infixl / infixr を parser binding power に反映する
-- [ ] notation conflict を `NotationConflict` として拒否する
-- [ ] non-associative infix chain を `ParserError` として拒否する
-- [ ] overloaded notation candidates を決定的順序で保持する
-- [ ] elaboration 中に transaction / rollback で候補を試す
-- [ ] 解決不能な notation は `AmbiguousNotation` として返す
+- [x] notation declaration を namespace / open scope と連動させる
+- [x] notation target を declaration 処理時に `ElabGlobalRef` へ解決する
+- [x] prefix / postfix / infix / infixl / infixr を parser binding power に反映する
+- [x] notation conflict を `NotationConflict` として拒否する
+- [x] non-associative infix chain を `ParserError` として拒否する
+- [x] overloaded notation candidates を決定的順序で保持する
+- [x] elaboration 中に transaction / rollback で候補を試す
+- [x] 解決不能な notation は `AmbiguousNotation` として返す
 
 ## 11.6 M6: Declaration Coverage / Simple Inductive
 
-- [ ] `def` / `theorem` / `axiom` の certificate handoff を実装する
-- [ ] axiom の使用が axiom report に反映されることを確認する
-- [ ] simple inductive の temporary global を作る
-- [ ] constructor type を temporary global 付き context で elaboration する
-- [ ] core-spec v0.1 の `InductiveDecl` に変換する
-- [ ] constructor / recursor などの generated declaration を `LocalGenerated` で参照する
-- [ ] inductive 全体を kernel に渡し、成功後だけ通常の global env に登録する
+- [x] `def` / `theorem` / `axiom` の certificate handoff を実装する
+- [x] axiom の使用が axiom report に反映されることを確認する
+- [x] simple inductive の temporary global を作る
+- [x] constructor type を temporary global 付き context で elaboration する
+- [x] core-spec v0.1 の `InductiveDecl` に変換する
+- [x] constructor / recursor などの generated declaration を `LocalGenerated` で参照する
+- [x] inductive 全体を kernel に渡し、成功後だけ通常の global env に登録する
 
 ## 11.7 M7: Phase 2 Certificate / API / Regression Tests
 
-- [ ] fully solved core declaration を Phase 2 certificate builder に渡す
-- [ ] imported declaration を `decl_interface_hash` 付き参照として certificate に入れる
-- [ ] certificate hash / import hash が決定的であることをテストする
-- [ ] axiom report が意図せず増えないことをテストする
-- [ ] `parse` / `resolve` / `elaborate` API を安定させる
-- [ ] diagnostic の severity と `DiagnosticKind` を API から返す
-- [ ] `cargo fmt --all` を通す
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` を通す
-- [ ] `cargo test --workspace` を通す
+- [x] fully solved core declaration を Phase 2 certificate builder に渡す
+- [x] imported declaration を `decl_interface_hash` 付き参照として certificate に入れる
+- [x] certificate hash / import hash が決定的であることをテストする
+- [x] axiom report が意図せず増えないことをテストする
+- [x] `parse` / `resolve` / `elaborate` API を安定させる
+- [x] diagnostic の severity と `DiagnosticKind` を API から返す
+- [x] `cargo fmt --all` を通す
+- [x] `cargo clippy --workspace --all-targets -- -D warnings` を通す
+- [x] `cargo test --workspace` を通す
 
 ---
 

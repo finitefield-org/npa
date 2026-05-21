@@ -13,6 +13,14 @@ Machine Surface は trusted language ではありません。parser / resolver /
 すべて非信頼層です。最終的な正しさは、Phase 1 kernel と Phase 2 certificate verifier が
 fully explicit core declaration / proof term を検査することで確認します。
 
+実装状態（2026-05-21）:
+
+```text
+- Machine Surface M0-M9 は crates/npa-frontend / crates/npa-api / crates/npa-tactic の AI fast path として実装済み
+- Human Surface は doc/phase3-human.md の別 profile であり、AI 候補生成、tactic execution、search、replay、verify の既定経路に入れない
+- 非回帰条件は Machine Surface accepted/rejected syntax、term-source canonical hash、Phase 7/9 fixtures、scripts/phase9-regression.sh で固定する
+```
+
 ---
 
 # 1. 目的
@@ -77,10 +85,9 @@ Machine Surface の入力は信用しません。
   source span
 
 信頼する:
-  canonical core AST
-  Phase 1 Rust kernel
-  Phase 2 certificate verifier
-  Phase 8 independent checker
+  Phase 1 Rust kernel が fully explicit core を検査した deterministic result
+  canonical certificate bytes / hash と Phase 2 certificate verifier result
+  Phase 8 independent checker result
 ```
 
 Machine Surface 固有の情報は certificate に残しません。
@@ -1013,30 +1020,31 @@ Phase 5 の tactic execution API は、term 部分を Machine Surface Complete m
 
 # 11. 実装計画
 
-現在の方針は、人間向け Phase 3 実装をいったん戻し、AI-first Phase 3 を最初から実装することです。
-以下の milestone は、`4d9438192c9b7f520e29f3fd682350710897b56c` 相当の状態を再出発点にする前提です。
+現在の方針は、Human Surface と Machine Surface を別 profile として併存させ、AI 向け候補検査は
+Machine Surface fast path に固定することです。以下の milestone は AI-first baseline から
+Machine Surface M9 gate までの実装履歴として扱います。
 
 ## M0: Restart baseline
 
 目的:
 
 ```text
-人間向け frontend 実装を持たない clean baseline を作る。
+Machine Surface 専用の clean baseline を作る。
 ```
 
 作業:
 
 ```text
-- main を revert 済み状態にする
-- doc/phase3-ai.md を追加する
-- README から AI-first Phase 3 を参照できるようにする
+- Machine Surface API を Human Surface API と分ける
+- doc/phase3-ai.md に AI fast path の境界を固定する
+- README から Phase 3 AI / Phase 3 Human を別々に参照できるようにする
 - cargo test --workspace を通す
 ```
 
 完了条件:
 
 ```text
-- crates/npa-frontend が存在しない、または空の AI-first skeleton のみ
+- crates/npa-frontend の Machine Surface API が Human Surface API と分離されている
 - Phase 1 / Phase 2 の tests が通る
 - Phase 3 の実装仕様が Machine Surface に固定されている
 ```
@@ -1329,10 +1337,11 @@ trusted output として扱いません。
 
 # 12. MVP Scope
 
-最初の MVP は M0 から M6 までです。
+core frontend MVP は M0 から M6 までです。現行の AI fast path は、Phase 4/5/7 連携に必要な
+M7 term-level API、M8 repair payload、M9 determinism / regression gate まで含めて実装済みです。
 
 ```text
-MVP includes:
+core M0-M6 includes:
   import
   def
   theorem
@@ -1342,7 +1351,7 @@ MVP includes:
   kernel handoff
   certificate generation / verification
 
-MVP excludes:
+core M0-M6 excludes:
   axiom source syntax
   inductive source syntax
   notation
@@ -1350,6 +1359,11 @@ MVP excludes:
   holes
   tactic blocks
   repair suggestions
+
+M7-M9 adds:
+  term-level Machine Surface API for tactics
+  non-trusted repair payload / suggestions
+  same-input same-output and resource-guard regressions
 ```
 
 Nat / Eq / standard theorem は、AI が source で定義するのではなく、Phase 2 済み verified import として

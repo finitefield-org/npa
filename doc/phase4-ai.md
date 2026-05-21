@@ -56,14 +56,15 @@ Machine Tactic は信用しません。
   tactic execution log
 
 信頼する:
-  canonical core proof term
-  Phase 1 Rust kernel
-  Phase 2 certificate verifier
-  Phase 8 independent checker
+  Phase 1 Rust kernel が fully explicit proof term を検査した deterministic result
+  canonical certificate bytes / hash と Phase 2 certificate verifier result
+  Phase 8 independent checker result
 ```
 
 AI tactic が成功したように見えても、それは証明ではありません。最終的な proof term が kernel check と
-certificate verify に通った場合だけ採用します。
+canonical certificate verify、必要な release / audit profile では independent checker に通った場合だけ採用します。
+Human Surface の tactic syntax、notation、open scope は AI 向け Machine Tactic の既定入力にしません。
+term payload は Phase 3 AI Machine Surface の明示的な term-level API で検査します。
 
 ---
 
@@ -131,8 +132,9 @@ required before Phase 4 AI M2:
 ```
 
 `exact`, `apply`, `rw`, `simp-lite` はいずれも term の型検査や rule interface の検査を必要とします。
-そのため Phase 3 AI M7 が未実装の状態では、Phase 4 AI は MachineProofState skeleton と parser /
-validator までに留め、proof-producing tactic は始めません。
+現行実装では Phase 3 AI M7 の term-level API を前提に proof-producing tactic を実行します。
+将来 profile でこの依存 API がない場合は、MachineProofState skeleton と parser / validator までに留め、
+proof-producing tactic は fail closed にします。
 
 ---
 
