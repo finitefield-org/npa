@@ -1010,6 +1010,8 @@ mod tests {
             "def Test.x : Prop := Prop",
             "notation \"x\" => Nat.zero",
             "n + Nat.zero",
+            "rw [h]",
+            "simp-lite",
             "_",
             "?m",
         ] {

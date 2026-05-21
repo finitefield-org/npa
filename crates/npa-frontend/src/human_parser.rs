@@ -2211,25 +2211,53 @@ theorem t : Prop := by
 
     #[test]
     fn rejects_unsupported_and_future_tactic_syntax() {
-        let unsupported = parse_diagnostic("theorem t : Prop := by constructor");
-        assert_eq!(unsupported.kind, HumanDiagnosticKind::UnsupportedTactic);
-        assert_eq!(
-            unsupported
-                .payload
-                .as_ref()
-                .and_then(|payload| payload.phase),
-            Some(HumanDiagnosticPhase::TacticParse)
-        );
+        let unsupported = [
+            ("constructor", "theorem t : Prop := by constructor"),
+            ("cases", "theorem t : Prop := by cases h"),
+            ("refine", "theorem t : Prop := by refine h"),
+            ("have", "theorem t : Prop := by have h : Prop := Prop"),
+            ("specialize", "theorem t : Prop := by specialize h x"),
+            ("assumption", "theorem t : Prop := by assumption"),
+            ("contradiction", "theorem t : Prop := by contradiction"),
+            ("calc", "theorem t : Prop := by calc Prop"),
+            (
+                "case syntax",
+                "theorem t : Prop := by case zero => exact zero",
+            ),
+            (
+                "rewrite in hypotheses",
+                "theorem t : Prop := by rw [h] at hp",
+            ),
+            (
+                "occurrence selection",
+                "theorem t : Prop := by rw [h] (occs := [1])",
+            ),
+            (
+                "dependent induction modifiers",
+                "theorem t : Prop := by induction n generalizing h",
+            ),
+            ("full simp", "theorem t : Prop := by simp"),
+            ("ring", "theorem t : Prop := by ring"),
+            ("omega", "theorem t : Prop := by omega"),
+            ("linarith", "theorem t : Prop := by linarith"),
+        ];
 
-        let future_case = parse_diagnostic("theorem t : Prop := by case zero => exact zero");
-        assert_eq!(future_case.kind, HumanDiagnosticKind::UnsupportedTactic);
-        assert_eq!(
-            future_case
-                .payload
-                .as_ref()
-                .and_then(|payload| payload.phase),
-            Some(HumanDiagnosticPhase::TacticParse)
-        );
+        for (feature, source) in unsupported {
+            let diagnostic = parse_diagnostic(source);
+            assert_eq!(
+                diagnostic.kind,
+                HumanDiagnosticKind::UnsupportedTactic,
+                "{feature}"
+            );
+            assert_eq!(
+                diagnostic
+                    .payload
+                    .as_ref()
+                    .and_then(|payload| payload.phase),
+                Some(HumanDiagnosticPhase::TacticParse),
+                "{feature}"
+            );
+        }
     }
 
     #[test]

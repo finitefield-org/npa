@@ -2624,6 +2624,146 @@ theorem self_eq : Eq.{1} n n := by
     }
 
     #[test]
+    fn phase4_human_section13_minimal_certificate_fixtures_compile() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let default_options = human_api_default_compile_options();
+
+        assert_human_fixture_certificate_verifies(
+            "Api.Phase4HumanIntroExactFixture",
+            "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by
+  intro n
+  exact n",
+            &verified_modules,
+            &imported_source_interfaces,
+            default_options.clone(),
+        );
+        assert_human_fixture_certificate_verifies(
+            "Api.Phase4HumanEqReflFixture",
+            "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+def n : Nat := Nat.zero
+theorem self_eq : Eq.{1} n n := by
+  exact Eq.refl n",
+            &verified_modules,
+            &imported_source_interfaces,
+            default_options.clone(),
+        );
+        assert_human_fixture_certificate_verifies(
+            "Api.Phase4HumanApplyFixture",
+            "\
+theorem id_prop {q : Prop} (hq : q) : q := hq
+theorem use_id (q : Prop) (hq : q) : q := by
+  intro q
+  intro hq
+  apply id_prop
+  exact hq",
+            &[],
+            &[],
+            default_options.clone(),
+        );
+        assert_human_fixture_certificate_verifies(
+            "Api.Phase4HumanSimpLiteFixture",
+            "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem self_eq (n : Nat) : Eq.{1} n n := by
+  intro n
+  simp-lite",
+            &verified_modules,
+            &imported_source_interfaces,
+            default_options,
+        );
+    }
+
+    #[test]
+    fn phase4_human_section13_rw_and_induction_fixtures_close_kernel_proofs() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+
+        assert_human_fixture_script_closes(
+            "Api.Phase4HumanRwFixture",
+            "Api.Phase4HumanRwFixture.rw_local",
+            "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
+  intro a
+  intro b
+  intro h
+  rw [h]
+  exact Eq.refl b",
+            &verified_modules,
+            &imported_source_interfaces,
+            human_api_default_compile_options(),
+        );
+        assert_human_fixture_script_closes(
+            "Api.Phase4HumanInductionFixture",
+            "Api.Phase4HumanInductionFixture.ind_self",
+            "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem ind_self (n : Nat) : Eq.{1} n n := by
+  intro n
+  induction n
+  exact Eq.refl Nat.zero
+  simp-lite",
+            &verified_modules,
+            &imported_source_interfaces,
+            human_nat_compile_options(&verified_modules[0]),
+        );
+    }
+
+    #[test]
+    fn phase4_human_section14_typeclass_driven_apply_is_rejected_by_diagnostic() {
+        let source = "\
+theorem no_typeclass_apply (p : Prop) : p := by
+  intro p
+  apply inferInstance";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.Phase4HumanUnsupportedTypeclassApply"),
+            theorem_name: npa_cert::Name::from_dotted(
+                "Api.Phase4HumanUnsupportedTypeclassApply.no_typeclass_apply",
+            ),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("unsupported typeclass apply fixture should still start proof state");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("typeclass-driven apply is outside Phase 4 Human MVP");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("typeclass-driven apply should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnknownIdentifier
+        );
+        assert!(diagnostic.message.contains("unknown apply head"));
+    }
+
+    #[test]
     fn human_api_compile_certificate_rejects_unresolved_by_goal_before_certificate() {
         let err = compile_human_source_to_certificate(HumanCompileCertificateRequest {
             current_module: npa_cert::Name::from_dotted("Api.HumanByOpenGoal"),
@@ -4322,6 +4462,78 @@ theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
 
     fn first_theorem_script(source: &str) -> npa_frontend::HumanTacticScript {
         nth_theorem_script(source, 0)
+    }
+
+    fn assert_human_fixture_certificate_verifies(
+        module: &str,
+        source: &str,
+        verified_modules: &[npa_cert::VerifiedModule],
+        imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+        options: HumanApiCompileOptions,
+    ) {
+        let ok = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted(module),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules,
+            imported_source_interfaces,
+            options,
+        })
+        .expect("Phase 4 Human fixture should compile to a certificate");
+        assert!(ok
+            .source_interface
+            .declarations
+            .iter()
+            .all(|decl| decl.decl_interface_hash.is_some()));
+        let bytes =
+            npa_cert::encode_module_cert(&ok.certificate).expect("fixture certificate encodes");
+        let mut session = npa_cert::VerifierSession::new();
+        for verified in verified_modules {
+            session.register_verified_module(verified.clone());
+        }
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .expect("fixture certificate verifies");
+        assert_eq!(verified.module(), &npa_cert::Name::from_dotted(module));
+    }
+
+    fn assert_human_fixture_script_closes(
+        module: &str,
+        theorem_name: &str,
+        source: &str,
+        verified_modules: &[npa_cert::VerifiedModule],
+        imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+        options: HumanApiCompileOptions,
+    ) {
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted(module),
+            theorem_name: npa_cert::Name::from_dotted(theorem_name),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules,
+            imported_source_interfaces,
+            options: options.clone(),
+        })
+        .expect("Phase 4 Human fixture proof should start");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces,
+            options,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Phase 4 Human fixture script should close");
+
+        assert!(ok.state.open_goals.is_empty());
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Phase 4 Human fixture proof should pass kernel check");
     }
 
     fn nth_theorem_script(source: &str, theorem_index: usize) -> npa_frontend::HumanTacticScript {

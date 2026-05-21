@@ -750,7 +750,7 @@ AI 速度ガード:
 
 ### P4H-15: 最小 examples と regression fixture を固定する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-14
 
