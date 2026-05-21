@@ -17,6 +17,16 @@ const EXPECTED_THEOREMS: &[&str] = &[
     "prop_id",
     "modus_ponens",
     "imp_trans",
+    "compose_assoc",
+    "apply_twice",
+    "ignore_middle",
+    "select_middle",
+    "select_last",
+    "imp_swap",
+    "imp_compose",
+    "imp_ignore",
+    "imp_duplicate",
+    "higher_apply",
 ];
 
 #[test]

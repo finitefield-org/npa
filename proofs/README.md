@@ -51,10 +51,10 @@ Implemented:
 
 Module: `Proofs.Ai.Basic`
 
-Add these before introducing imports. They give AI search more variation while staying in the same
-trusted boundary and proof style.
+These extend `Proofs.Ai.Basic` before introducing imports. They give AI search more variation while
+staying in the same trusted boundary and proof style.
 
-Planned:
+Implemented:
 
 | Theorem | Shape |
 | --- | --- |

@@ -72,6 +72,65 @@ const THEOREMS: &[TheoremArtifact] = &[
             "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (pq : forall (p : P), Q), forall (qr : forall (q : Q), R), forall (p : P), R",
         proof: "fun P => fun Q => fun R => fun pq => fun qr => fun p => qr (pq p)",
     },
+    TheoremArtifact {
+        name: "compose_assoc",
+        statement:
+            "forall (A : Type), forall (B : Type), forall (C : Type), forall (D : Type), forall (h : forall (x : C), D), forall (g : forall (x : B), C), forall (f : forall (x : A), B), forall (x : A), D",
+        proof: "fun A => fun B => fun C => fun D => fun h => fun g => fun f => fun x => h (g (f x))",
+    },
+    TheoremArtifact {
+        name: "apply_twice",
+        statement:
+            "forall (A : Type), forall (f : forall (x : A), A), forall (x : A), A",
+        proof: "fun A => fun f => fun x => f (f x)",
+    },
+    TheoremArtifact {
+        name: "ignore_middle",
+        statement:
+            "forall (A : Type), forall (B : Type), forall (C : Type), forall (x : A), forall (y : B), forall (z : C), A",
+        proof: "fun A => fun B => fun C => fun x => fun y => fun z => x",
+    },
+    TheoremArtifact {
+        name: "select_middle",
+        statement:
+            "forall (A : Type), forall (B : Type), forall (C : Type), forall (x : A), forall (y : B), forall (z : C), B",
+        proof: "fun A => fun B => fun C => fun x => fun y => fun z => y",
+    },
+    TheoremArtifact {
+        name: "select_last",
+        statement:
+            "forall (A : Type), forall (B : Type), forall (C : Type), forall (x : A), forall (y : B), forall (z : C), C",
+        proof: "fun A => fun B => fun C => fun x => fun y => fun z => z",
+    },
+    TheoremArtifact {
+        name: "imp_swap",
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (h : forall (p : P), forall (q : Q), R), forall (q : Q), forall (p : P), R",
+        proof: "fun P => fun Q => fun R => fun h => fun q => fun p => h p q",
+    },
+    TheoremArtifact {
+        name: "imp_compose",
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (qr : forall (q : Q), R), forall (pq : forall (p : P), Q), forall (p : P), R",
+        proof: "fun P => fun Q => fun R => fun qr => fun pq => fun p => qr (pq p)",
+    },
+    TheoremArtifact {
+        name: "imp_ignore",
+        statement: "forall (P : Prop), forall (Q : Prop), forall (p : P), forall (q : Q), P",
+        proof: "fun P => fun Q => fun p => fun q => p",
+    },
+    TheoremArtifact {
+        name: "imp_duplicate",
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (h : forall (p1 : P), forall (p2 : P), Q), forall (p : P), Q",
+        proof: "fun P => fun Q => fun h => fun p => h p p",
+    },
+    TheoremArtifact {
+        name: "higher_apply",
+        statement:
+            "forall (A : Type), forall (B : Type), forall (C : Type), forall (h : forall (f : forall (x : A), B), C), forall (f : forall (x : A), B), C",
+        proof: "fun A => fun B => fun C => fun h => fun f => h f",
+    },
 ];
 
 fn main() {
