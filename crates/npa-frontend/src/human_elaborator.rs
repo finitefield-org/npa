@@ -4,13 +4,14 @@ use crate::{
     builtin_machine_callable_profile, elaborator::certificate_imports_for_module,
     machine_callable_profile_from_human_binders, parse_human_module_with_source_interfaces,
     resolve_human_module_with_source_interfaces, HumanBinder, HumanBinderKind, HumanCompileOptions,
-    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
-    HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal, HumanImplicitMode,
-    HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName, HumanResolvedName,
-    HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationKind,
-    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanUnsolvedMeta, HumanUnsolvedMetaKind,
-    MachineBinder, MachineCallableBinderVisibility, MachineDecl, MachineLevel, MachineName,
-    MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
+    HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload,
+    HumanDiagnosticPhase, HumanExpr, HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal,
+    HumanImplicitMode, HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName,
+    HumanResolvedName, HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult,
+    HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
+    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
+    MachineDecl, MachineLevel, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule,
+    Span, VerifiedImport,
 };
 use npa_kernel::{
     subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level, Reducibility,
@@ -3317,7 +3318,16 @@ impl<'a> HumanToMachineLowering<'a> {
         let mut local_context = HumanLoweringLocalContext::default();
         let binders = self.lower_binders(decl.binders, &mut local_context)?;
         let ty = self.lower_expr(decl.ty, &mut local_context, None)?;
-        let value = self.lower_expr(decl.value, &mut local_context, Some(&ty))?;
+        let value = match decl.value {
+            HumanDeclValue::Term(value) => self.lower_expr(value, &mut local_context, Some(&ty))?,
+            HumanDeclValue::ProofBlock(block) => {
+                return Err(HumanDiagnostic::unsupported_tactic(
+                    block.span,
+                    "by proof block elaboration is reserved for the Phase 4 Human tactic bridge",
+                )
+                .with_phase(HumanDiagnosticPhase::Elaborator));
+            }
+        };
         self.meta_store.reject_unsolved_for_decl(decl.span)?;
 
         Ok(MachineDecl {

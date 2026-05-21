@@ -5,8 +5,8 @@ use crate::resolver::{
     VerifiedImportLookupError,
 };
 use crate::{
-    HumanAxiomDecl, HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDecl, HumanDiagnostic,
-    HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
+    HumanAxiomDecl, HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDecl, HumanDeclValue,
+    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
     HumanFrontendState, HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata,
     HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanModule, HumanName,
     HumanNotationAssociativity, HumanNotationHead, HumanNotationKind, HumanOpenScope,
@@ -300,7 +300,14 @@ impl<'a> HumanResolver<'a> {
         let mut locals = HumanLocalScope::default();
         self.resolve_binders(&decl.binders, &mut locals)?;
         self.resolve_expr(&decl.ty, &mut locals)?;
-        self.resolve_expr(&decl.value, &mut locals)
+        match &decl.value {
+            HumanDeclValue::Term(value) => self.resolve_expr(value, &mut locals),
+            HumanDeclValue::ProofBlock(block) => Err(HumanDiagnostic::unsupported_tactic(
+                block.span,
+                "by proof block resolution is reserved for the Phase 4 Human tactic bridge",
+            )
+            .with_phase(HumanDiagnosticPhase::Resolver)),
+        }
     }
 
     fn resolve_axiom_terms(&mut self, decl: &HumanAxiomDecl) -> HumanResult<()> {
@@ -1818,6 +1825,46 @@ mod tests {
             imports,
             options,
         )
+    }
+
+    #[test]
+    fn proof_block_decl_value_is_rejected_until_tactic_bridge_exists() {
+        let span = Span::new(crate::FileId(0), 0, 30);
+        let module = crate::HumanModule {
+            file_id: crate::FileId(0),
+            items: vec![crate::HumanItem::Theorem(crate::HumanDecl {
+                name: crate::HumanName::new(vec!["t".to_owned()], span),
+                universe_params: Vec::new(),
+                binders: Vec::new(),
+                ty: crate::HumanExpr::Sort {
+                    level: crate::HumanLevel::Nat { value: 0, span },
+                    span,
+                },
+                value: crate::HumanDeclValue::ProofBlock(crate::HumanProofBlock {
+                    script: crate::HumanTacticScript {
+                        tactics: vec![crate::HumanTacticSyntax::SimpLite { span }],
+                        span,
+                    },
+                    span,
+                }),
+                span,
+            })],
+            span,
+        };
+
+        let err = resolve_human_module(
+            npa_cert::Name::from_dotted("Current.Module"),
+            module,
+            &[],
+            &crate::HumanCompileOptions::default(),
+        )
+        .expect_err("P4H-01 only models proof blocks; execution starts in later milestones");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsupportedTactic);
+        assert_eq!(
+            err.payload.as_ref().and_then(|payload| payload.phase),
+            Some(HumanDiagnosticPhase::Resolver)
+        );
     }
 
     #[test]

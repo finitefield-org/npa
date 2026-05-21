@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 
 use crate::{
     FileId, HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanConstructorDecl, HumanDecl,
-    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPhase, HumanExpr, HumanImplicitMode,
-    HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel, HumanModule,
-    HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead, HumanNotationKind,
-    HumanResult, HumanSourceNotationMetadata, HumanUniverseParam, Span,
+    HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPhase, HumanExpr,
+    HumanImplicitMode, HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel,
+    HumanModule, HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead,
+    HumanNotationKind, HumanResult, HumanSourceNotationMetadata, HumanUniverseParam, Span,
 };
 
 pub fn parse_human_module(file_id: FileId, source: &str) -> HumanResult<HumanModule> {
@@ -753,7 +753,7 @@ impl Parser {
             universe_params,
             binders,
             ty,
-            value,
+            value: HumanDeclValue::Term(value),
             span,
         })
     }
@@ -1977,7 +1977,9 @@ def t (n : Nat) : Prop := n + Nat.zero = n",
         let HumanItem::Def(decl) = &module.items[2] else {
             panic!("expected def");
         };
-        let term = &decl.value;
+        let HumanDeclValue::Term(term) = &decl.value else {
+            panic!("expected term value");
+        };
         let HumanExpr::NotationApp { head, args, .. } = term else {
             panic!("expected outer notation app");
         };

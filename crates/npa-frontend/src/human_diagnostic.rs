@@ -25,6 +25,7 @@ pub enum HumanDiagnosticKind {
     NotationConflict,
     AmbiguousNotation,
     TooManyNotationCandidates,
+    UnsupportedTactic,
     UnsolvedImplicit,
     UnsolvedMeta,
     UnsolvedUniverseMeta,
@@ -142,6 +143,14 @@ impl HumanDiagnostic {
             HumanDiagnosticKind::UnsupportedSyntax,
             primary_span,
             format!("unsupported Human Surface syntax: {}", syntax.into()),
+        )
+    }
+
+    pub fn unsupported_tactic(primary_span: Span, tactic: impl Into<String>) -> Self {
+        Self::error(
+            HumanDiagnosticKind::UnsupportedTactic,
+            primary_span,
+            format!("unsupported Human tactic syntax: {}", tactic.into()),
         )
     }
 
@@ -269,6 +278,7 @@ fn human_diagnostic_kind_label(kind: &HumanDiagnosticKind) -> &'static str {
         HumanDiagnosticKind::NotationConflict => "notation conflict",
         HumanDiagnosticKind::AmbiguousNotation => "ambiguous notation",
         HumanDiagnosticKind::TooManyNotationCandidates => "too many notation candidates",
+        HumanDiagnosticKind::UnsupportedTactic => "unsupported tactic",
         HumanDiagnosticKind::UnsolvedImplicit => "unsolved implicit",
         HumanDiagnosticKind::UnsolvedMeta => "unsolved metavariable",
         HumanDiagnosticKind::UnsolvedUniverseMeta => "unsolved universe metavariable",
@@ -326,6 +336,15 @@ mod tests {
             diagnostic.message,
             "ambiguous name add\ncandidates:\n  Nat.add\n  Int.add"
         );
+    }
+
+    #[test]
+    fn unsupported_tactic_diagnostic_is_distinct_from_generic_parse_error() {
+        let diagnostic = HumanDiagnostic::unsupported_tactic(Span::empty(FileId(4)), "constructor");
+
+        assert_eq!(diagnostic.kind, HumanDiagnosticKind::UnsupportedTactic);
+        assert_eq!(diagnostic.severity, HumanDiagnosticSeverity::Error);
+        assert!(diagnostic.message.contains("unsupported Human tactic"));
     }
 
     #[test]

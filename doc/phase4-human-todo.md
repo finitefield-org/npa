@@ -264,7 +264,7 @@ AI 速度ガード:
 
 ### P4H-01: Human tactic AST を追加する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-00
 
@@ -295,6 +295,13 @@ AI 速度ガード:
 - Human tactic script を typed AST として表現できる。
 - Human AST と Machine tactic AST が型レベルで分離されている。
 - unsupported tactic は parse/diagnostic 上で明確に拒否できる。
+
+完了確認:
+
+- `npa-frontend` に `HumanDeclValue::{Term, ProofBlock}`、`HumanProofBlock`、`HumanTacticScript`、`HumanTacticSyntax` を追加し、`by` block を通常 term value と型レベルで分離した。
+- tactic AST は `intro` / `exact` / `apply` / `rw` / `simp-lite` / `induction` の MVP 6種類だけを表し、`rw` rule は forward / backward direction と rule term span を保持する。
+- `HumanDiagnosticKind::UnsupportedTactic` を追加し、P4H-01 時点では proof block resolver が tactic bridge 未実装を構造化 diagnostic として拒否する。
+- `MachineTacticCandidate` / `MachineTactic` と `npa-tactic` は変更していない。
 
 ### P4H-02: `by` proof block parser を実装する
 

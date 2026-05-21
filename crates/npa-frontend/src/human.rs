@@ -51,8 +51,109 @@ pub struct HumanDecl {
     pub universe_params: Vec<HumanUniverseParam>,
     pub binders: Vec<HumanBinder>,
     pub ty: HumanExpr,
-    pub value: HumanExpr,
+    pub value: HumanDeclValue,
     pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanDeclValue {
+    Term(HumanExpr),
+    ProofBlock(HumanProofBlock),
+}
+
+impl HumanDeclValue {
+    pub fn span(&self) -> Span {
+        match self {
+            Self::Term(expr) => expr.span(),
+            Self::ProofBlock(block) => block.span,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanProofBlock {
+    pub script: HumanTacticScript,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticScript {
+    pub tactics: Vec<HumanTacticSyntax>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTacticSyntax {
+    Intro {
+        name: HumanName,
+        span: Span,
+    },
+    Exact {
+        term: HumanExpr,
+        span: Span,
+    },
+    Apply {
+        term: HumanExpr,
+        span: Span,
+    },
+    Rewrite {
+        rules: Vec<HumanRewriteRuleSyntax>,
+        span: Span,
+    },
+    SimpLite {
+        span: Span,
+    },
+    Induction {
+        name: HumanName,
+        span: Span,
+    },
+}
+
+impl HumanTacticSyntax {
+    pub fn span(&self) -> Span {
+        match self {
+            Self::Intro { span, .. }
+            | Self::Exact { span, .. }
+            | Self::Apply { span, .. }
+            | Self::Rewrite { span, .. }
+            | Self::SimpLite { span }
+            | Self::Induction { span, .. } => *span,
+        }
+    }
+
+    pub fn kind(&self) -> HumanTacticKind {
+        match self {
+            Self::Intro { .. } => HumanTacticKind::Intro,
+            Self::Exact { .. } => HumanTacticKind::Exact,
+            Self::Apply { .. } => HumanTacticKind::Apply,
+            Self::Rewrite { .. } => HumanTacticKind::Rewrite,
+            Self::SimpLite { .. } => HumanTacticKind::SimpLite,
+            Self::Induction { .. } => HumanTacticKind::Induction,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTacticKind {
+    Intro,
+    Exact,
+    Apply,
+    Rewrite,
+    SimpLite,
+    Induction,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanRewriteRuleSyntax {
+    pub direction: HumanRewriteDirection,
+    pub term: HumanExpr,
+    pub span: Span,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanRewriteDirection {
+    Forward,
+    Backward,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -496,7 +597,7 @@ mod tests {
             universe_params: Vec::new(),
             binders: vec![binder_a, binder_x],
             ty: ident("A", 26, 27),
-            value: ident("x", 31, 32),
+            value: HumanDeclValue::Term(ident("x", 31, 32)),
             span: span(0, 32),
         };
         let item = HumanItem::Def(decl);
@@ -513,6 +614,88 @@ mod tests {
             .all(|binder| binder.binder_info == HumanBinderInfo::Explicit));
         assert_eq!(decl.ty.span(), span(26, 27));
         assert_eq!(decl.value.span(), span(31, 32));
+    }
+
+    #[test]
+    fn human_decl_value_distinguishes_term_and_proof_block() {
+        let term = HumanDeclValue::Term(ident("x", 10, 11));
+        let proof_block = HumanDeclValue::ProofBlock(HumanProofBlock {
+            script: HumanTacticScript {
+                tactics: vec![HumanTacticSyntax::Exact {
+                    term: ident("x", 18, 19),
+                    span: span(12, 19),
+                }],
+                span: span(12, 19),
+            },
+            span: span(9, 19),
+        });
+
+        assert_eq!(term.span(), span(10, 11));
+        assert_eq!(proof_block.span(), span(9, 19));
+        assert!(matches!(term, HumanDeclValue::Term(_)));
+        assert!(matches!(proof_block, HumanDeclValue::ProofBlock(_)));
+    }
+
+    #[test]
+    fn human_tactic_ast_models_only_phase4_mvp_variants() {
+        let forward_rule = HumanRewriteRuleSyntax {
+            direction: HumanRewriteDirection::Forward,
+            term: ident("h", 28, 29),
+            span: span(28, 29),
+        };
+        let backward_rule = HumanRewriteRuleSyntax {
+            direction: HumanRewriteDirection::Backward,
+            term: ident("h", 32, 33),
+            span: span(29, 33),
+        };
+        let tactics = [
+            HumanTacticSyntax::Intro {
+                name: name("n", 6, 7),
+                span: span(0, 7),
+            },
+            HumanTacticSyntax::Exact {
+                term: ident("n", 14, 15),
+                span: span(8, 15),
+            },
+            HumanTacticSyntax::Apply {
+                term: ident("f", 22, 23),
+                span: span(16, 23),
+            },
+            HumanTacticSyntax::Rewrite {
+                rules: vec![forward_rule.clone(), backward_rule.clone()],
+                span: span(24, 34),
+            },
+            HumanTacticSyntax::SimpLite { span: span(35, 44) },
+            HumanTacticSyntax::Induction {
+                name: name("n", 55, 56),
+                span: span(45, 56),
+            },
+        ];
+
+        let kinds: Vec<_> = tactics.iter().map(HumanTacticSyntax::kind).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                HumanTacticKind::Intro,
+                HumanTacticKind::Exact,
+                HumanTacticKind::Apply,
+                HumanTacticKind::Rewrite,
+                HumanTacticKind::SimpLite,
+                HumanTacticKind::Induction,
+            ]
+        );
+        assert_eq!(tactics[0].span(), span(0, 7));
+        assert_eq!(tactics[3].span(), span(24, 34));
+        let HumanTacticSyntax::Rewrite { rules, .. } = &tactics[3] else {
+            panic!("expected rw tactic");
+        };
+        assert_eq!(rules.len(), 2);
+        assert_eq!(rules[0].direction, HumanRewriteDirection::Forward);
+        assert_eq!(rules[1].direction, HumanRewriteDirection::Backward);
+        assert_eq!(forward_rule.direction, HumanRewriteDirection::Forward);
+        assert_eq!(forward_rule.span, span(28, 29));
+        assert_eq!(backward_rule.direction, HumanRewriteDirection::Backward);
+        assert_eq!(backward_rule.span, span(29, 33));
     }
 
     #[test]

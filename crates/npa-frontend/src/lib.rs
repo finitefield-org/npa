@@ -38,12 +38,14 @@ pub use elaborator::{
 };
 pub use human::{
     HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanCompileOptions,
-    HumanConstructorDecl, HumanDecl, HumanExpr, HumanFrontendState, HumanGeneratedDeclarationKind,
-    HumanGeneratedDeclarationMetadata, HumanImplicitMode, HumanImportedSourceInterface,
-    HumanInductiveDecl, HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationAssociativity,
-    HumanNotationDecl, HumanNotationHead, HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame,
-    HumanSourceBinderMetadata, HumanSourceDeclarationKind, HumanSourceDeclarationMetadata,
-    HumanSourceInterface, HumanSourceInterfaceStore, HumanSourceNotationMetadata,
+    HumanConstructorDecl, HumanDecl, HumanDeclValue, HumanExpr, HumanFrontendState,
+    HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata, HumanImplicitMode,
+    HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel, HumanModule,
+    HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead, HumanNotationKind,
+    HumanOpenScope, HumanOpenScopeFrame, HumanProofBlock, HumanRewriteDirection,
+    HumanRewriteRuleSyntax, HumanSourceBinderMetadata, HumanSourceDeclarationKind,
+    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceInterfaceStore,
+    HumanSourceNotationMetadata, HumanTacticKind, HumanTacticScript, HumanTacticSyntax,
     HumanUniverseParam,
 };
 pub use human_diagnostic::{
