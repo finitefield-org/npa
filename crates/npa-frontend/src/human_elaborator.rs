@@ -10,7 +10,9 @@ use crate::{
     MachineCallableBinderVisibility, MachineDecl, MachineLevel, MachineName, MachineTerm,
     MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
 };
-use npa_kernel::{subst, Ctx, Decl, Env, Error, Expr, Level, Reducibility};
+use npa_kernel::{
+    subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level, Reducibility,
+};
 
 const MAX_HUMAN_IMPLICIT_INSERTION_STEPS: usize = 64;
 
@@ -197,6 +199,7 @@ enum HumanLoweredItem {
     Def(MachineDecl),
     Theorem(MachineDecl),
     Axiom(HumanLoweredAxiomDecl),
+    Inductive(HumanLoweredInductiveDecl),
 }
 
 #[derive(Clone, Debug)]
@@ -204,6 +207,23 @@ struct HumanLoweredAxiomDecl {
     name: MachineName,
     universe_params: Vec<MachineUniverseParam>,
     binders: Vec<MachineBinder>,
+    ty: MachineTerm,
+    span: Span,
+}
+
+#[derive(Clone, Debug)]
+struct HumanLoweredInductiveDecl {
+    name: MachineName,
+    universe_params: Vec<MachineUniverseParam>,
+    binders: Vec<MachineBinder>,
+    ty: MachineTerm,
+    constructors: Vec<HumanLoweredConstructorDecl>,
+    span: Span,
+}
+
+#[derive(Clone, Debug)]
+struct HumanLoweredConstructorDecl {
+    name: MachineName,
     ty: MachineTerm,
     span: Span,
 }
@@ -1086,6 +1106,12 @@ impl HumanBidirectionalElaborator {
                     self.add_kernel_decl(decl.clone(), span)?;
                     declarations.push(decl);
                 }
+                HumanLoweredItem::Inductive(decl) => {
+                    let span = decl.span;
+                    let decl = self.elaborate_inductive_decl(decl)?;
+                    self.add_kernel_decl(decl.clone(), span)?;
+                    declarations.push(decl);
+                }
             }
         }
 
@@ -1121,6 +1147,71 @@ impl HumanBidirectionalElaborator {
             name: decl.name.as_dotted(),
             universe_params: delta,
             ty: human_close_pi(&elaborated_binders, ty),
+        })
+    }
+
+    fn elaborate_inductive_decl(&self, decl: HumanLoweredInductiveDecl) -> HumanResult<Decl> {
+        let delta: Vec<_> = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.clone())
+            .collect();
+        let mut locals = HumanLocalContext::default();
+        let mut params = Vec::with_capacity(decl.binders.len());
+
+        for binder in &decl.binders {
+            let (ty, ty_type) = self.infer_human_expr(&binder.ty, &locals, &delta)?;
+            self.expect_human_sort(&ty_type, &locals, &delta, binder.ty.span())?;
+            locals.push_assumption(binder.name.clone(), ty.clone());
+            params.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty,
+            });
+        }
+
+        let (result_ty, result_ty_type) = self.infer_human_expr(&decl.ty, &locals, &delta)?;
+        self.expect_human_sort(&result_ty_type, &locals, &delta, decl.ty.span())?;
+        let (indices, sort) =
+            split_inductive_result_type(&self.env, result_ty, &locals, &delta, decl.ty.span())?;
+        let head_ty = human_inductive_head_type(&params, &indices, sort.clone());
+        let name = decl.name.as_dotted();
+
+        let mut temporary = Self {
+            env: self.env.clone(),
+        };
+        temporary.add_kernel_decl(
+            Decl::Axiom {
+                name: name.clone(),
+                universe_params: delta.clone(),
+                ty: head_ty.clone(),
+            },
+            decl.span,
+        )?;
+
+        let mut constructors = Vec::with_capacity(decl.constructors.len());
+        for constructor in &decl.constructors {
+            let (ty, ty_type) = temporary.infer_human_expr(&constructor.ty, &locals, &delta)?;
+            temporary.expect_human_sort(&ty_type, &locals, &delta, constructor.ty.span())?;
+            constructors.push(ConstructorDecl::new(
+                constructor.name.as_dotted(),
+                human_close_pi(&params, ty),
+            ));
+        }
+
+        let data = finalize_human_inductive_data(
+            name.clone(),
+            delta.clone(),
+            params.iter().map(kernel_binder_from_human).collect(),
+            indices.iter().map(kernel_binder_from_human).collect(),
+            sort,
+            constructors,
+        );
+
+        Ok(Decl::Inductive {
+            name,
+            universe_params: delta,
+            ty: head_ty,
+            data: Box::new(data),
         })
     }
 
@@ -1570,6 +1661,7 @@ impl HumanLoweringLocalContext {
     }
 }
 
+#[derive(Clone)]
 struct HumanImplicitInserter {
     env: Env,
     signatures: BTreeMap<String, HumanCallableSignature>,
@@ -1730,6 +1822,135 @@ impl HumanImplicitInserter {
         );
 
         Ok(decl)
+    }
+
+    fn insert_inductive_decl(
+        &mut self,
+        mut decl: HumanLoweredInductiveDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+    ) -> HumanResult<HumanLoweredInductiveDecl> {
+        let delta: Vec<_> = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.clone())
+            .collect();
+        let mut locals = HumanLocalContext::default();
+        let mut params = Vec::with_capacity(decl.binders.len());
+        let mut transformed_binders = Vec::with_capacity(decl.binders.len());
+
+        for binder in decl.binders {
+            let ty = self.insert_term(binder.ty, &mut locals, &delta)?;
+            let ty_expr = self.elaborate_machine_term(&ty, &locals, &delta)?;
+            locals.push_assumption(binder.name.clone(), ty_expr.clone());
+            params.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty: ty_expr,
+            });
+            transformed_binders.push(MachineBinder {
+                name: binder.name,
+                ty,
+                span: binder.span,
+            });
+        }
+        decl.binders = transformed_binders;
+
+        decl.ty = self.insert_term(decl.ty, &mut locals, &delta)?;
+        let result_ty = self.elaborate_machine_term(&decl.ty, &locals, &delta)?;
+        let (indices, sort) =
+            split_inductive_result_type(&self.env, result_ty, &locals, &delta, decl.ty.span())?;
+        let head_ty = human_inductive_head_type(&params, &indices, sort.clone());
+        let name = decl.name.as_dotted();
+        let head_signature = HumanCallableSignature {
+            universe_params: delta.clone(),
+            implicit_profile: inductive_head_profile(metadata, indices.len()),
+        };
+
+        let mut constructor_inserter = self.clone();
+        constructor_inserter.add_kernel_decl(
+            Decl::Axiom {
+                name: name.clone(),
+                universe_params: delta.clone(),
+                ty: head_ty.clone(),
+            },
+            decl.span,
+        )?;
+        constructor_inserter
+            .signatures
+            .insert(name.clone(), head_signature.clone());
+
+        let mut constructors = Vec::with_capacity(decl.constructors.len());
+        let mut transformed_constructors = Vec::with_capacity(decl.constructors.len());
+        for constructor in decl.constructors {
+            let mut constructor_locals = locals.clone();
+            let ty = constructor_inserter.insert_term(
+                constructor.ty,
+                &mut constructor_locals,
+                &delta,
+            )?;
+            let ty_expr = constructor_inserter.elaborate_machine_term(&ty, &locals, &delta)?;
+            constructors.push(ConstructorDecl::new(
+                constructor.name.as_dotted(),
+                human_close_pi(&params, ty_expr),
+            ));
+            transformed_constructors.push(HumanLoweredConstructorDecl {
+                name: constructor.name,
+                ty,
+                span: constructor.span,
+            });
+        }
+        self.insertion_steps = constructor_inserter.insertion_steps;
+        decl.constructors = transformed_constructors;
+
+        let data = finalize_human_inductive_data(
+            name.clone(),
+            delta.clone(),
+            params.iter().map(kernel_binder_from_human).collect(),
+            indices.iter().map(kernel_binder_from_human).collect(),
+            sort,
+            constructors,
+        );
+        self.add_kernel_decl(
+            Decl::Inductive {
+                name: name.clone(),
+                universe_params: delta.clone(),
+                ty: head_ty,
+                data: Box::new(data.clone()),
+            },
+            decl.span,
+        )?;
+        self.signatures.insert(name, head_signature);
+        self.add_inductive_generated_signatures(&data, metadata);
+
+        Ok(decl)
+    }
+
+    fn add_inductive_generated_signatures(
+        &mut self,
+        data: &InductiveDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+    ) {
+        let param_profile = machine_callable_profile_from_human_binders(&metadata.binders);
+        for constructor in &data.constructors {
+            self.signatures.insert(
+                constructor.name.clone(),
+                HumanCallableSignature {
+                    universe_params: data.universe_params.clone(),
+                    implicit_profile: generated_constructor_profile(
+                        &constructor.ty,
+                        param_profile.as_slice(),
+                    ),
+                },
+            );
+        }
+        if let Some(recursor) = &data.recursor {
+            self.signatures.insert(
+                recursor.name.clone(),
+                HumanCallableSignature {
+                    universe_params: recursor.universe_params.clone(),
+                    implicit_profile: all_explicit_profile(pi_domain_count(&recursor.ty)),
+                },
+            );
+        }
     }
 
     fn insert_term(
@@ -2558,6 +2779,113 @@ fn human_close_pi(binders: &[HumanElaboratedBinder], mut body: Expr) -> Expr {
     body
 }
 
+fn human_inductive_head_type(
+    params: &[HumanElaboratedBinder],
+    indices: &[HumanElaboratedBinder],
+    sort: Level,
+) -> Expr {
+    let mut binders = Vec::with_capacity(params.len() + indices.len());
+    binders.extend_from_slice(params);
+    binders.extend_from_slice(indices);
+    human_close_pi(&binders, Expr::sort(sort))
+}
+
+fn split_inductive_result_type(
+    env: &Env,
+    result_ty: Expr,
+    locals: &HumanLocalContext,
+    delta: &[String],
+    span: Span,
+) -> HumanResult<(Vec<HumanElaboratedBinder>, Level)> {
+    let mut nested = locals.clone();
+    let mut indices = Vec::new();
+    let mut current = result_ty;
+
+    loop {
+        let whnf = env
+            .whnf(&nested.to_kernel_ctx(), delta, &current)
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human inductive type"))?;
+        match whnf {
+            Expr::Pi { binder, ty, body } => {
+                let ty = *ty;
+                nested.push_assumption(binder.clone(), ty.clone());
+                indices.push(HumanElaboratedBinder { name: binder, ty });
+                current = *body;
+            }
+            Expr::Sort(level) => return Ok((indices, level)),
+            actual => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::ExpectedSort,
+                    span,
+                    format!(
+                        "Human inductive type: expected telescope ending in Sort, got {actual:?}"
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+fn kernel_binder_from_human(binder: &HumanElaboratedBinder) -> Binder {
+    Binder::new(binder.name.clone(), binder.ty.clone())
+}
+
+fn finalize_human_inductive_data(
+    name: String,
+    universe_params: Vec<String>,
+    params: Vec<Binder>,
+    indices: Vec<Binder>,
+    sort: Level,
+    constructors: Vec<ConstructorDecl>,
+) -> InductiveDecl {
+    let base = InductiveDecl::new(
+        name,
+        universe_params,
+        params,
+        indices,
+        sort,
+        constructors,
+        None,
+    );
+    npa_cert::generate_inductive_artifacts_v1(&base).unwrap_or(base)
+}
+
+fn inductive_head_profile(
+    metadata: &HumanSourceDeclarationMetadata,
+    index_count: usize,
+) -> Vec<MachineCallableBinderVisibility> {
+    let mut profile = machine_callable_profile_from_human_binders(&metadata.binders);
+    profile.extend(all_explicit_profile(index_count));
+    profile
+}
+
+fn generated_constructor_profile(
+    ty: &Expr,
+    param_profile: &[MachineCallableBinderVisibility],
+) -> Vec<MachineCallableBinderVisibility> {
+    let domain_count = pi_domain_count(ty);
+    let mut profile = Vec::with_capacity(domain_count);
+    profile.extend(param_profile.iter().copied().take(domain_count));
+    if domain_count > profile.len() {
+        profile.extend(all_explicit_profile(domain_count - profile.len()));
+    }
+    profile
+}
+
+fn all_explicit_profile(count: usize) -> Vec<MachineCallableBinderVisibility> {
+    vec![MachineCallableBinderVisibility::Explicit; count]
+}
+
+fn pi_domain_count(ty: &Expr) -> usize {
+    let mut count = 0;
+    let mut current = ty;
+    while let Expr::Pi { body, .. } = current {
+        count += 1;
+        current = body;
+    }
+    count
+}
+
 fn elaborate_machine_level(level: MachineLevel) -> HumanResult<Level> {
     Ok(match level {
         MachineLevel::Nat { value, .. } => level_from_nat(value),
@@ -2727,10 +3055,14 @@ impl<'a> HumanToMachineLowering<'a> {
                     lowered_items.push(HumanLoweredItem::Axiom(lowered));
                 }
                 HumanItem::Inductive(decl) => {
-                    return Err(HumanDiagnostic::not_implemented(
-                        decl.span,
-                        "Human source-level inductive elaboration",
-                    ));
+                    let metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                    })?;
+                    let lowered = self.lower_inductive_decl(decl.clone(), metadata)?;
+                    let lowered = self
+                        .implicit_inserter
+                        .insert_inductive_decl(lowered, metadata)?;
+                    lowered_items.push(HumanLoweredItem::Inductive(lowered));
                 }
                 HumanItem::Open { .. }
                 | HumanItem::NamespaceStart { .. }
@@ -2796,6 +3128,46 @@ impl<'a> HumanToMachineLowering<'a> {
                 .collect(),
             binders,
             ty,
+            span: decl.span,
+        })
+    }
+
+    fn lower_inductive_decl(
+        &mut self,
+        decl: crate::HumanInductiveDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+    ) -> HumanResult<HumanLoweredInductiveDecl> {
+        self.meta_store.begin_declaration();
+        let mut local_context = HumanLoweringLocalContext::default();
+        let binders = self.lower_binders(decl.binders, &mut local_context)?;
+        let ty = self.lower_expr(decl.ty, &mut local_context, None)?;
+        let constructors = decl
+            .constructors
+            .into_iter()
+            .map(|constructor| {
+                let ty = self.lower_expr(constructor.ty, &mut local_context, None)?;
+                Ok(HumanLoweredConstructorDecl {
+                    name: machine_child_name(&metadata.name, constructor.name),
+                    ty,
+                    span: constructor.span,
+                })
+            })
+            .collect::<HumanResult<Vec<_>>>()?;
+        self.meta_store.reject_unsolved_for_decl(decl.span)?;
+
+        Ok(HumanLoweredInductiveDecl {
+            name: machine_name(metadata.name.clone()),
+            universe_params: decl
+                .universe_params
+                .into_iter()
+                .map(|param| MachineUniverseParam {
+                    name: param.name,
+                    span: param.span,
+                })
+                .collect(),
+            binders,
+            ty,
+            constructors,
             span: decl.span,
         })
     }
@@ -3097,6 +3469,15 @@ fn machine_name(name: crate::HumanName) -> MachineName {
     }
 }
 
+fn machine_child_name(parent: &HumanName, child: HumanName) -> MachineName {
+    let mut parts = parent.parts.clone();
+    parts.extend(child.parts);
+    MachineName {
+        parts,
+        span: child.span,
+    }
+}
+
 fn machine_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> MachineName {
     match reference {
         HumanGlobalRef::Imported { name, .. }
@@ -3326,6 +3707,168 @@ theorem use : P := p",
 
         assert!(cert.imports.is_empty());
         assert_eq!(cert.axiom_report.module_axioms.len(), 1);
+    }
+
+    #[test]
+    fn human_simple_inductive_elaborates_to_core_inductive_declaration() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human simple inductive should elaborate to a core inductive");
+
+        assert_eq!(module.declarations.len(), 1);
+        let Decl::Inductive {
+            name,
+            universe_params,
+            ty,
+            data,
+        } = &module.declarations[0]
+        else {
+            panic!("expected inductive declaration");
+        };
+        assert_eq!(name, "Nat");
+        assert_eq!(universe_params, &Vec::<String>::new());
+        assert_eq!(ty, &Expr::sort(type0()));
+        assert_eq!(data.name, "Nat");
+        assert!(data.params.is_empty());
+        assert!(data.indices.is_empty());
+        assert_eq!(data.sort, type0());
+        assert_eq!(
+            data.constructors,
+            vec![
+                ConstructorDecl::new("Nat.zero", Expr::konst("Nat", vec![])),
+                ConstructorDecl::new(
+                    "Nat.succ",
+                    Expr::pi("n", Expr::konst("Nat", vec![]), Expr::konst("Nat", vec![]))
+                ),
+            ]
+        );
+        assert_eq!(
+            data.recursor
+                .as_ref()
+                .map(|recursor| recursor.name.as_str()),
+            Some("Nat.rec")
+        );
+    }
+
+    #[test]
+    fn human_simple_inductive_generated_constructor_is_available_later() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat
+def z : Nat := Nat.zero
+def one : Nat := Nat.succ Nat.zero",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human generated constructor should enter global scope after kernel acceptance");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Def { value, .. } = &module.declarations[1] else {
+            panic!("expected z definition");
+        };
+        assert_eq!(value, &Expr::konst("Nat.zero", vec![]));
+        let Decl::Def { value, .. } = &module.declarations[2] else {
+            panic!("expected one definition");
+        };
+        assert_eq!(
+            value,
+            &Expr::app(
+                Expr::konst("Nat.succ", vec![]),
+                Expr::konst("Nat.zero", vec![])
+            )
+        );
+    }
+
+    #[test]
+    fn human_simple_inductive_certificate_exports_generated_artifacts() {
+        let cert = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human simple inductive should build a Phase 2 certificate");
+
+        assert!(cert.export_block.iter().any(|entry| {
+            entry.kind == npa_cert::ExportKind::Constructor
+                && cert.name_table[entry.name] == npa_cert::Name::from_dotted("Nat.zero")
+        }));
+        assert!(cert.export_block.iter().any(|entry| {
+            entry.kind == npa_cert::ExportKind::Constructor
+                && cert.name_table[entry.name] == npa_cert::Name::from_dotted("Nat.succ")
+        }));
+        assert!(cert.export_block.iter().any(|entry| {
+            entry.kind == npa_cert::ExportKind::Recursor
+                && cert.name_table[entry.name] == npa_cert::Name::from_dotted("Nat.rec")
+        }));
+    }
+
+    #[test]
+    fn human_indexed_inductive_constructor_uses_temporary_head_implicit_profile() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq.{u} a a",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human indexed inductive should insert implicit params for constructor result");
+
+        let Decl::Inductive { data, .. } = &module.declarations[0] else {
+            panic!("expected inductive declaration");
+        };
+        assert_eq!(data.params.len(), 2);
+        assert_eq!(data.indices.len(), 1);
+        assert_eq!(data.constructors[0].name, "Eq.refl");
+        assert_eq!(
+            data.constructors[0].ty,
+            Expr::pi(
+                "A",
+                Expr::sort(Level::param("u")),
+                Expr::pi(
+                    "a",
+                    Expr::bvar(0),
+                    Expr::apps(
+                        Expr::konst("Eq", vec![Level::param("u")]),
+                        vec![Expr::bvar(1), Expr::bvar(0), Expr::bvar(0)]
+                    )
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn human_bad_inductive_constructor_type_is_kernel_rejected() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Bad : Type where
+| bad : Type",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("bad constructor result should be rejected by kernel handoff");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::KernelRejected);
     }
 
     #[test]

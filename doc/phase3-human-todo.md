@@ -549,18 +549,18 @@ crates/npa-frontend/src/human_elaborator.rs
 
 実装タスク:
 
-- [ ] simple `inductive` syntax を Human AST にする。
-- [ ] self reference / forward reference の禁止範囲を固定する。
-- [ ] temporary global を使って constructor type を elaboration する。
-- [ ] constructor type から core-spec v0.1 の `InductiveDecl` を作る。
-- [ ] generated constructor / recursor を source interface に `LocalGenerated` として登録する。
-- [ ] inductive 全体を kernel に渡し、成功後だけ global env に登録する。
+- [x] simple `inductive` syntax を Human AST にする。
+- [x] self reference / forward reference の禁止範囲を固定する。
+- [x] temporary global を使って constructor type を elaboration する。
+- [x] constructor type から core-spec v0.1 の `InductiveDecl` を作る。
+- [x] generated constructor / recursor を source interface に `LocalGenerated` として登録する。
+- [x] inductive 全体を kernel に渡し、成功後だけ global env に登録する。
 
 AI 速度ガード:
 
-- [ ] Machine parser は source-level `inductive` を引き続き拒否する。
-- [ ] generated display metadata は certificate hash に入れない。
-- [ ] Phase 9 advanced inductive automation とは別経路として保つ。
+- [x] Machine parser は source-level `inductive` を引き続き拒否する。
+- [x] generated display metadata は certificate hash に入れない。
+- [x] Phase 9 advanced inductive automation とは別経路として保つ。
 
 影響ファイル:
 
