@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Nat",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "nat_zero_self_eq",
+      "source_kind": "explicit_term",
+      "term": "@Eq.refl.{1} Nat Nat.zero"
+    },
+    {
+      "declaration": "nat_succ_zero_self_eq",
+      "source_kind": "explicit_term",
+      "term": "@Eq.refl.{1} Nat (Nat.succ Nat.zero)"
+    },
+    {
+      "declaration": "nat_id",
+      "source_kind": "explicit_term",
+      "term": "fun n => n"
+    },
+    {
+      "declaration": "nat_const_zero",
+      "source_kind": "explicit_term",
+      "term": "fun n => Nat.zero"
+    },
+    {
+      "declaration": "nat_apply_fn",
+      "source_kind": "explicit_term",
+      "term": "fun f => fun n => f n"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Nat/certificate.npcert"
+  }
+}

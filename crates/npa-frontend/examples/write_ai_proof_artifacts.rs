@@ -50,6 +50,16 @@ const EQ_MODULE: ModuleArtifact = ModuleArtifact {
     theorems: EQ_THEOREMS,
 };
 
+const NAT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Nat",
+    source_path: "Proofs/Ai/Nat/source.npa",
+    certificate_path: "Proofs/Ai/Nat/certificate.npcert",
+    meta_path: "Proofs/Ai/Nat/meta.json",
+    replay_path: "Proofs/Ai/Nat/replay.json",
+    imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+    theorems: NAT_THEOREMS,
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -224,9 +234,48 @@ const EQ_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const NAT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "nat_zero_self_eq",
+        universe_params: &[],
+        statement: "@Eq.{1} Nat Nat.zero Nat.zero",
+        proof: "@Eq.refl.{1} Nat Nat.zero",
+    },
+    TheoremArtifact {
+        name: "nat_succ_zero_self_eq",
+        universe_params: &[],
+        statement: "@Eq.{1} Nat (Nat.succ Nat.zero) (Nat.succ Nat.zero)",
+        proof: "@Eq.refl.{1} Nat (Nat.succ Nat.zero)",
+    },
+    TheoremArtifact {
+        name: "nat_id",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "fun n => n",
+    },
+    TheoremArtifact {
+        name: "nat_const_zero",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "fun n => Nat.zero",
+    },
+    TheoremArtifact {
+        name: "nat_apply_fn",
+        universe_params: &[],
+        statement: "forall (f : forall (n : Nat), Nat), forall (n : Nat), Nat",
+        proof: "fun f => fun n => f n",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
+";
+
+const NAT_IMPORT_SOURCE: &str = "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat
 ";
 
 fn main() {
@@ -243,15 +292,25 @@ fn run() -> Result<(), String> {
         .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
 
     let (eq_import, eq_source_interface) = verified_human_import("Std.Logic.Eq", EQ_IMPORT_SOURCE)?;
-    let eq_imports = vec![eq_import];
-    let eq_source_interfaces = vec![eq_source_interface];
+    let (nat_import, nat_source_interface) =
+        verified_human_import("Std.Nat.Basic", NAT_IMPORT_SOURCE)?;
+    let eq_imports = vec![eq_import.clone()];
+    let eq_source_interfaces = vec![eq_source_interface.clone()];
+    let nat_imports = vec![eq_import, nat_import];
+    let nat_source_interfaces = vec![eq_source_interface, nat_source_interface];
 
     let basic = build_and_write_module(&proof_root, &BASIC_MODULE, &[], &[])?;
     let eq = build_and_write_module(&proof_root, &EQ_MODULE, &eq_imports, &eq_source_interfaces)?;
+    let nat = build_and_write_module(
+        &proof_root,
+        &NAT_MODULE,
+        &nat_imports,
+        &nat_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq]).as_bytes(),
+        manifest_toml(&[basic, eq, nat]).as_bytes(),
     )?;
 
     Ok(())

@@ -48,6 +48,14 @@ const EQ_THEOREMS: &[&str] = &[
     "eq_refl_prop",
 ];
 
+const NAT_THEOREMS: &[&str] = &[
+    "nat_zero_self_eq",
+    "nat_succ_zero_self_eq",
+    "nat_id",
+    "nat_const_zero",
+    "nat_apply_fn",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -67,6 +75,15 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &["Std.Logic.Eq"],
         theorems: EQ_THEOREMS,
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Nat",
+        source: "Proofs/Ai/Nat/source.npa",
+        certificate: "Proofs/Ai/Nat/certificate.npcert",
+        meta: "Proofs/Ai/Nat/meta.json",
+        replay: "Proofs/Ai/Nat/replay.json",
+        imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+        theorems: NAT_THEOREMS,
+    },
 ];
 
 #[test]
@@ -78,6 +95,7 @@ fn ai_certificates_match_manifest_and_verify() {
         "npa-ai-proof-corpus-v0.1"
     );
     let eq_import = verified_eq_import_module();
+    let nat_import = verified_nat_import_module();
 
     for expected in EXPECTED_MODULES {
         let block = manifest_block(&manifest, expected.module);
@@ -121,9 +139,7 @@ fn ai_certificates_match_manifest_and_verify() {
         assert_imports(&decoded, expected.imports);
 
         let mut session = VerifierSession::new();
-        if expected.imports.contains(&"Std.Logic.Eq") {
-            session.register_verified_module(eq_import.clone());
-        }
+        register_expected_imports(&mut session, expected.imports, &eq_import, &nat_import);
         let verified = verify_module_cert(&certificate_bytes, &mut session, &AxiomPolicy::normal())
             .expect("AI corpus certificate verifies");
         assert_eq!(verified.module(), &Name::from_dotted(expected.module));
@@ -154,6 +170,21 @@ fn ai_certificates_match_manifest_and_verify() {
     }
 }
 
+fn register_expected_imports(
+    session: &mut VerifierSession,
+    imports: &[&str],
+    eq_import: &VerifiedModule,
+    nat_import: &VerifiedModule,
+) {
+    for import in imports {
+        match *import {
+            "Std.Logic.Eq" => session.register_verified_module(eq_import.clone()),
+            "Std.Nat.Basic" => session.register_verified_module(nat_import.clone()),
+            other => panic!("unexpected AI proof corpus import {other}"),
+        }
+    }
+}
+
 fn verified_eq_import_module() -> VerifiedModule {
     verified_core_module(CoreModule {
         name: Name::from_dotted("Std.Logic.Eq"),
@@ -162,6 +193,18 @@ fn verified_eq_import_module() -> VerifiedModule {
             universe_params: vec!["u".to_owned()],
             ty: npa_kernel::eq_type(Level::param("u")),
             data: Box::new(npa_kernel::eq_inductive()),
+        }],
+    })
+}
+
+fn verified_nat_import_module() -> VerifiedModule {
+    verified_core_module(CoreModule {
+        name: Name::from_dotted("Std.Nat.Basic"),
+        declarations: vec![Decl::Inductive {
+            name: "Nat".to_owned(),
+            universe_params: Vec::new(),
+            ty: npa_kernel::Expr::sort(npa_kernel::type0()),
+            data: Box::new(npa_kernel::nat_inductive()),
         }],
     })
 }

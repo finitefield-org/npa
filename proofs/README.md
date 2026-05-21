@@ -14,6 +14,7 @@ Current bundles:
 
 - `Proofs/Ai/Basic/`: small no-import, no-axiom combinator and implication theorem module.
 - `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq`.
+- `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -88,17 +89,18 @@ Implemented:
 
 Module: `Proofs.Ai.Nat`
 
-Introduce `Std.Nat.Basic` only after P1 and P2 are stable. Start with proofs closed by locals or
-refl/reduction so failures are easy to attribute to import or kernel behavior.
+This module imports `Std.Nat.Basic` after P1 and P2 are stable. It also imports `Std.Logic.Eq`
+for the refl-only equality smoke tests. Proofs stay closed by locals or refl/reduction so failures
+are easy to attribute to import or kernel behavior.
 
-Planned:
+Implemented:
 
 | Theorem | Shape |
 | --- | --- |
 | `nat_zero_self_eq` | `Nat.zero = Nat.zero` |
 | `nat_succ_zero_self_eq` | `Nat.succ Nat.zero = Nat.succ Nat.zero` |
 | `nat_id` | `Nat -> Nat` |
-| `nat_const_zero` | `Nat -> Nat.zero` |
+| `nat_const_zero` | `Nat -> Nat`, with proof `Nat.zero` |
 | `nat_apply_fn` | `(Nat -> Nat) -> Nat -> Nat` |
 
 Regenerate the corpus:
