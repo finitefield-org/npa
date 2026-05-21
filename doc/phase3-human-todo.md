@@ -341,24 +341,25 @@ crates/npa-frontend/src/resolver.rs
 
 実装タスク:
 
-- [ ] local context と global declaration table を分離する。
-- [ ] current module declaration と imported declaration の優先順位を固定する。
-- [ ] namespace stack から fully qualified declaration name を生成する。
-- [ ] `open` の lexical scope を実装する。
-- [ ] qualified name / unqualified name resolution を実装する。
-- [ ] ambiguous name を `AmbiguousName` として決定的 payload で返す。
-- [ ] forward reference を `ForwardReference` として拒否する。
+- [x] local context と global declaration table を分離する。
+- [x] current module declaration と imported declaration の優先順位を固定する。
+- [x] namespace stack から fully qualified declaration name を生成する。
+- [x] `open` の lexical scope を実装する。
+- [x] qualified name / unqualified name resolution を実装する。
+- [x] ambiguous name を `AmbiguousName` として決定的 payload で返す。
+- [x] forward reference を `ForwardReference` として拒否する。
 
 AI 速度ガード:
 
-- [ ] Machine resolver は suffix lookup / open scope lookup を持たないままにする。
-- [ ] Human resolver の candidate collection は bounded vector で、決定的 sort key を持つ。
+- [x] Machine resolver は suffix lookup / open scope lookup を持たないままにする。
+- [x] Human resolver の candidate collection は bounded vector で、決定的 sort key を持つ。
 
 影響ファイル:
 
 ```text
 crates/npa-frontend/src/human_resolver.rs
 crates/npa-frontend/src/human_diagnostic.rs
+crates/npa-frontend/src/lib.rs
 ```
 
 完了条件:

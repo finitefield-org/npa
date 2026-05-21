@@ -16,6 +16,17 @@ pub enum HumanDiagnosticKind {
     UnsupportedSyntax,
     ImportResolutionError,
     MissingVerifiedImport,
+    NamespaceMismatch,
+    UnknownNamespace,
+    DuplicateDeclaration,
+    UnknownIdentifier,
+    AmbiguousName,
+    ForwardReference,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct HumanDiagnosticPayload {
+    pub candidates: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -24,6 +35,7 @@ pub struct HumanDiagnostic {
     pub severity: HumanDiagnosticSeverity,
     pub primary_span: Span,
     pub message: String,
+    pub payload: Option<Box<HumanDiagnosticPayload>>,
 }
 
 impl HumanDiagnostic {
@@ -37,6 +49,7 @@ impl HumanDiagnostic {
             severity: HumanDiagnosticSeverity::Error,
             primary_span,
             message: message.into(),
+            payload: None,
         }
     }
 
@@ -58,6 +71,11 @@ impl HumanDiagnostic {
             primary_span,
             format!("unsupported Human Surface syntax: {}", syntax.into()),
         )
+    }
+
+    pub fn with_payload(mut self, payload: HumanDiagnosticPayload) -> Self {
+        self.payload = Some(Box::new(payload));
+        self
     }
 }
 
