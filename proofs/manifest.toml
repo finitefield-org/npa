@@ -1,0 +1,17 @@
+schema = "npa-ai-proof-corpus-v0.1"
+
+[[proof_modules]]
+module = "Proofs.Ai.Basic"
+source = "Proofs/Ai/Basic/source.npa"
+certificate = "Proofs/Ai/Basic/certificate.npcert"
+meta = "Proofs/Ai/Basic/meta.json"
+replay = "Proofs/Ai/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_phase2_certificate"
+source_sha256 = "sha256:b36629ca9fa2313e61aaeab38f0fcddca227336c0c22a43fbcc151e4c92053d8"
+certificate_file_sha256 = "sha256:907b1770664e9c0f3cc93bf533a0a450df1317e0461616a0a4743f366927c123"
+export_hash = "sha256:817ba7fbba8046b3383055685f5d22f00236cc3f6effa78a7b365dcbff3fd916"
+axiom_report_hash = "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522"
+certificate_hash = "sha256:bf354a4801caba9a2c9afed553a8c798323a2dfc0d4f3b285744f48d4502f7b6"
+theorems = ["id", "const_left", "const_right", "apply_fn", "compose", "flip", "duplicate", "prop_id", "modus_ponens", "imp_trans"]
+axioms = []

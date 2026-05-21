@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Basic",
+  "source": "Proofs/Ai/Basic/source.npa",
+  "certificate": "Proofs/Ai/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_phase2_certificate",
+  "source_sha256": "sha256:b36629ca9fa2313e61aaeab38f0fcddca227336c0c22a43fbcc151e4c92053d8",
+  "certificate_file_sha256": "sha256:907b1770664e9c0f3cc93bf533a0a450df1317e0461616a0a4743f366927c123",
+  "export_hash": "sha256:817ba7fbba8046b3383055685f5d22f00236cc3f6effa78a7b365dcbff3fd916",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:bf354a4801caba9a2c9afed553a8c798323a2dfc0d4f3b285744f48d4502f7b6",
+  "axioms": [],
+  "declarations": [
+    { "name": "id", "kind": "theorem" },
+    { "name": "const_left", "kind": "theorem" },
+    { "name": "const_right", "kind": "theorem" },
+    { "name": "apply_fn", "kind": "theorem" },
+    { "name": "compose", "kind": "theorem" },
+    { "name": "flip", "kind": "theorem" },
+    { "name": "duplicate", "kind": "theorem" },
+    { "name": "prop_id", "kind": "theorem" },
+    { "name": "modus_ponens", "kind": "theorem" },
+    { "name": "imp_trans", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

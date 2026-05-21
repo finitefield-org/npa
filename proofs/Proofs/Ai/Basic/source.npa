@@ -1,0 +1,40 @@
+theorem id :
+  forall (A : Type), forall (x : A), A :=
+  fun A => fun x => x
+
+theorem const_left :
+  forall (A : Type), forall (B : Type), forall (x : A), forall (y : B), A :=
+  fun A => fun B => fun x => fun y => x
+
+theorem const_right :
+  forall (A : Type), forall (B : Type), forall (x : A), forall (y : B), B :=
+  fun A => fun B => fun x => fun y => y
+
+theorem apply_fn :
+  forall (A : Type), forall (B : Type), forall (f : forall (x : A), B), forall (x : A), B :=
+  fun A => fun B => fun f => fun x => f x
+
+theorem compose :
+  forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (x : B), C), forall (g : forall (x : A), B), forall (x : A), C :=
+  fun A => fun B => fun C => fun f => fun g => fun x => f (g x)
+
+theorem flip :
+  forall (A : Type), forall (B : Type), forall (C : Type), forall (f : forall (x : A), forall (y : B), C), forall (y : B), forall (x : A), C :=
+  fun A => fun B => fun C => fun f => fun y => fun x => f x y
+
+theorem duplicate :
+  forall (A : Type), forall (B : Type), forall (f : forall (x : A), forall (y : A), B), forall (x : A), B :=
+  fun A => fun B => fun f => fun x => f x x
+
+theorem prop_id :
+  forall (P : Prop), forall (p : P), P :=
+  fun P => fun p => p
+
+theorem modus_ponens :
+  forall (P : Prop), forall (Q : Prop), forall (h : forall (p : P), Q), forall (p : P), Q :=
+  fun P => fun Q => fun h => fun p => h p
+
+theorem imp_trans :
+  forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (pq : forall (p : P), Q), forall (qr : forall (q : Q), R), forall (p : P), R :=
+  fun P => fun Q => fun R => fun pq => fun qr => fun p => qr (pq p)
+
