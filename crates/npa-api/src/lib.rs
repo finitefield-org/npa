@@ -18,6 +18,7 @@ mod adapter;
 mod callable;
 mod current;
 mod diagnostic;
+mod human;
 mod json;
 mod phase7;
 mod phase8;
@@ -59,6 +60,10 @@ pub use current::{
 pub use diagnostic::{
     machine_api_diagnostic_canonical_bytes, machine_api_diagnostic_hash,
     MachineApiDiagnosticCanonicalizationError,
+};
+pub use human::{
+    compile_human_source_to_certificate, compile_human_source_to_core,
+    human_api_default_compile_options,
 };
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
@@ -441,16 +446,18 @@ pub use types::{
     parse_hash_string, parse_local_id_wire, parse_machine_surface_renderable_name_wire,
     parse_machine_universe_param_name, parse_meta_var_id_wire, parse_module_name_wire,
     parse_phase5_name, phase5_name_canonical_bytes, validate_delete_session_request,
-    validate_machine_endpoint_envelope, CheckedMachineProofRoot, HashString, KernelCheckProfileId,
-    MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
-    MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope, MachineApiResponseStatus,
-    MachineApiSchedulerResponse, MachineApiVersion, MachineEndpointEnvelopeSpec,
-    MachineEndpointFieldSpec, MachineEndpointFieldType, MachineGoalView, MachineLocalView,
-    MachineProofSession, MachineProofSnapshot, MachineRootTermSource, MachineSchedulerArtifact,
-    MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
-    MachineTacticOptionsConversionError, MachineTacticOptionsRequest,
-    MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
-    SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
+    validate_machine_endpoint_envelope, CheckedMachineProofRoot, HashString,
+    HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
+    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
+    KernelCheckProfileId, MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse,
+    MachineApiErrorWire, MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope,
+    MachineApiResponseStatus, MachineApiSchedulerResponse, MachineApiVersion,
+    MachineEndpointEnvelopeSpec, MachineEndpointFieldSpec, MachineEndpointFieldType,
+    MachineGoalView, MachineLocalView, MachineProofSession, MachineProofSnapshot,
+    MachineRootTermSource, MachineSchedulerArtifact, MachineSchedulerArtifactKind,
+    MachineSchedulerArtifactScope, MachineTacticOptionsConversionError,
+    MachineTacticOptionsRequest, MachineValidatedEndpointEnvelope, MachineWireGrammarError,
+    MachineWireGrammarErrorKind, SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
     KERNEL_CHECK_PROFILE_BUILTIN_NONE, MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID,
     MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
 };

@@ -1,7 +1,9 @@
 use std::collections::BTreeSet;
 
-use npa_cert::{Hash, ModuleName, Name};
-use npa_frontend::MachineSurfaceCallableInterfaceTable;
+use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
+use npa_frontend::{
+    FileId, HumanCompileOptions, HumanDiagnostic, MachineSurfaceCallableInterfaceTable,
+};
 use npa_tactic::{GoalId, MetaVarId};
 
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
@@ -23,6 +25,71 @@ pub const MACHINE_DISPLAY_PROFILE_ID: &str = "npa.phase5.display.v1";
 pub const MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA: &str = "npa.machine_tactic_candidate.v1";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.builtin-nat-eq-rec";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanApiCompileOptions {
+    pub max_notation_candidates: usize,
+}
+
+impl Default for HumanApiCompileOptions {
+    fn default() -> Self {
+        let frontend = HumanCompileOptions::default();
+        Self {
+            max_notation_candidates: frontend.max_notation_candidates,
+        }
+    }
+}
+
+impl From<&HumanApiCompileOptions> for HumanCompileOptions {
+    fn from(value: &HumanApiCompileOptions) -> Self {
+        Self {
+            max_notation_candidates: value.max_notation_candidates,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HumanCurrentModuleSource<'src> {
+    pub file_id: FileId,
+    pub source: &'src str,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanCompileCoreRequest<'src, 'imports> {
+    pub current_module: ModuleName,
+    pub current_source: HumanCurrentModuleSource<'src>,
+    pub verified_imports: &'imports [npa_frontend::VerifiedImport],
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanCompileCertificateRequest<'src, 'imports> {
+    pub current_module: ModuleName,
+    pub current_source: HumanCurrentModuleSource<'src>,
+    pub verified_modules: &'imports [VerifiedModule],
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCompileCoreOk {
+    pub core_module: CoreModule,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCompileCertificateOk {
+    pub certificate: ModuleCert,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCompileError {
+    pub diagnostic: HumanDiagnostic,
+}
+
+impl From<HumanDiagnostic> for HumanCompileError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self { diagnostic }
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MachineApiVersion {

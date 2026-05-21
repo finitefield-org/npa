@@ -615,18 +615,18 @@ crates/npa-api/src/adapter.rs
 
 実装タスク:
 
-- [ ] `parse_human_module` / `resolve_human_module` / `elaborate_human_module` /
+- [x] `parse_human_module` / `resolve_human_module` / `elaborate_human_module` /
   `compile_human_source_to_core` / `compile_human_source_to_certificate` を公開する。
-- [ ] API 名に `human` を含め、Machine API と呼び分けしやすくする。
-- [ ] `npa-api` に Human compile endpoint / library API を追加する場合、Machine endpoints とは別型にする。
-- [ ] Human API は verified import / current module input を明示的に受け取る。
-- [ ] hidden global state を作らない。
+- [x] API 名に `human` を含め、Machine API と呼び分けしやすくする。
+- [x] `npa-api` に Human compile endpoint / library API を追加する場合、Machine endpoints とは別型にする。
+- [x] Human API は verified import / current module input を明示的に受け取る。
+- [x] hidden global state を作らない。
 
 AI 速度ガード:
 
-- [ ] `/machine/*` 相当 API は Human compile path を呼ばない。
-- [ ] AI automation の default profile は Machine Surface のままにする。
-- [ ] Human compile options に expensive search を有効化する flag を追加しない。
+- [x] `/machine/*` 相当 API は Human compile path を呼ばない。
+- [x] AI automation の default profile は Machine Surface のままにする。
+- [x] Human compile options に expensive search を有効化する flag を追加しない。
 
 影響ファイル:
 
