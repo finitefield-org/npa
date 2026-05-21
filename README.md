@@ -75,8 +75,12 @@ canonical certificate を検査します。
 │   │   └── tests/
 │   ├── npa-frontend/
 │   │   └── src/
-│   └── npa-tactic/
+│   ├── npa-tactic/
+│   │   └── src/
+│   └── npa-api/
 │       └── src/
+├── scripts/
+│   └── phase9-regression.sh
 └── doc/
     ├── core-spec-v0.1.md
     ├── overall-design.md
@@ -100,7 +104,8 @@ owner-aware MachineExprRenderer v1 / renderer QA substrate、MachineApiDiagnosti
 と、M5 `/machine/snapshots/get`、M6 `/machine/tactics/run`、M7 `/machine/tactics/batch`、
 M8 `/machine/search/for_goal`、M9 `/machine/replay`、M10 `/machine/verify`、
 M11 `/machine/prompt_payload` の library API を含みます。
-独立 checker は Phase 8 の後続成果物として扱います。
+同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
+Phase 9 advanced automation endpoint substrate も実装されています。
 
 ## 開発メモ
 
