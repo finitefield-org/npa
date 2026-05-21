@@ -112,6 +112,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
+Phase 9 完了後の回帰確認は次の固定ゲートで行います。
+
+```sh
+./scripts/phase9-regression.sh
+```
+
+このゲートは Phase 9 M9 fixture matrix を先に実行し、その後 `fmt --check`、
+`clippy -D warnings`、workspace 全体の test を通します。
+
 ## 参考資料
 
 - [NPA Core Specification v0.1](doc/core-spec-v0.1.md)

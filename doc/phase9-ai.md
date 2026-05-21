@@ -5820,6 +5820,7 @@ fixture、CI policy で継続的に検査する。
 - rejected candidate は trusted env を変更しない
 - validation result に time / random seed / network result が混ざらないことを検査できる
 - docs と fixture 名が milestone / endpoint / error enum に対応している
+- Phase 9 完了後は `./scripts/phase9-regression.sh` を固定ゲートとして実行する
 ```
 
 非対象:

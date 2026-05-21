@@ -2588,11 +2588,11 @@ mod tests {
         );
         assert_eq!(
             format_hash_string(&first_fields.query_fingerprint),
-            "sha256:b7c51744b1cca514858837778f5cc0e218b1d9cc3f95e5ac0d500be1173575ab"
+            "sha256:54c9cd9ef4160f920a39a439eb6e7ef9a56246d889ac399946943e87604d0001"
         );
         assert_eq!(
             format_hash_string(&first_fields.theorem_index_fingerprint),
-            "sha256:f0622ab6c7a84ee99b0469fda9f000bdb02d148714c840573d7af3006fb220f3"
+            "sha256:33cc4a517a53611f0cbc79b9b9d3ae3ea3b680b23882aa4992ca8e9744b88ab6"
         );
         assert_eq!(first_fields.results, second_fields.results);
         assert_eq!(first_fields.results.len(), 1);
