@@ -69,6 +69,15 @@ const NAT_THEOREMS: &[&str] = &[
     "nat_succ_self_eq",
 ];
 
+const PROP_THEOREMS: &[&str] = &[
+    "imp_chain4",
+    "imp_permute3",
+    "imp_apply_twice",
+    "imp_const3",
+    "imp_flip_chain",
+    "imp_higher_apply",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -96,6 +105,15 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         replay: "Proofs/Ai/Nat/replay.json",
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
         theorems: NAT_THEOREMS,
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Prop",
+        source: "Proofs/Ai/Prop/source.npa",
+        certificate: "Proofs/Ai/Prop/certificate.npcert",
+        meta: "Proofs/Ai/Prop/meta.json",
+        replay: "Proofs/Ai/Prop/replay.json",
+        imports: &[],
+        theorems: PROP_THEOREMS,
     },
 ];
 

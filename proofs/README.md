@@ -15,6 +15,7 @@ Current bundles:
 - `Proofs/Ai/Basic/`: small no-import, no-axiom combinator and implication theorem module.
 - `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
+- `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -149,7 +150,7 @@ Split proposition-only implication patterns out of `Proofs.Ai.Basic` once the Ba
 large. These remain import-free and should exercise binder ordering, argument permutation, and
 higher-order implication search.
 
-Planned:
+Implemented:
 
 | Theorem | Shape |
 | --- | --- |

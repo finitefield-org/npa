@@ -50,3 +50,20 @@ certificate_hash = "sha256:2b54ef5d31aa8b7723af87184ebd3cc37f0263a36728fe4d4b9bd
 imports = ["Std.Logic.Eq", "Std.Nat.Basic"]
 theorems = ["nat_zero_self_eq", "nat_succ_zero_self_eq", "nat_id", "nat_const_zero", "nat_apply_fn", "nat_const_succ_zero", "nat_apply_twice", "nat_compose", "nat_ignore_middle", "nat_select_middle", "nat_select_last", "nat_succ_self_eq"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Prop"
+source = "Proofs/Ai/Prop/source.npa"
+certificate = "Proofs/Ai/Prop/certificate.npcert"
+meta = "Proofs/Ai/Prop/meta.json"
+replay = "Proofs/Ai/Prop/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_phase2_certificate"
+source_sha256 = "sha256:2bb38eccd3ea91ac08ebf4d666c25a4543f8f5fba20081004bb0793afcc4d5ae"
+certificate_file_sha256 = "sha256:2329dde6bd60cfa6b42abfdf776cd5d876582f8e26332c7f2fdf8b1395e96e6e"
+export_hash = "sha256:2be3062e9adb565d319e67b416e96dd6c5f5ec6bb4fa9fd1902c256bf06c8613"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:8f6914e6d85bd0113fba91ac8fb67824f7fd0a770424a41044686428252fe442"
+imports = []
+theorems = ["imp_chain4", "imp_permute3", "imp_apply_twice", "imp_const3", "imp_flip_chain", "imp_higher_apply"]
+axioms = []

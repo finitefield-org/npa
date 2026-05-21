@@ -60,6 +60,16 @@ const NAT_MODULE: ModuleArtifact = ModuleArtifact {
     theorems: NAT_THEOREMS,
 };
 
+const PROP_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Prop",
+    source_path: "Proofs/Ai/Prop/source.npa",
+    certificate_path: "Proofs/Ai/Prop/certificate.npcert",
+    meta_path: "Proofs/Ai/Prop/meta.json",
+    replay_path: "Proofs/Ai/Prop/replay.json",
+    imports: &[],
+    theorems: PROP_THEOREMS,
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -352,6 +362,51 @@ const NAT_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const PROP_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "imp_chain4",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (S : Prop), forall (pq : forall (p : P), Q), forall (qr : forall (q : Q), R), forall (rs : forall (r : R), S), forall (p : P), S",
+        proof: "fun P => fun Q => fun R => fun S => fun pq => fun qr => fun rs => fun p => rs (qr (pq p))",
+    },
+    TheoremArtifact {
+        name: "imp_permute3",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (S : Prop), forall (h : forall (p : P), forall (q : Q), forall (r : R), S), forall (r : R), forall (p : P), forall (q : Q), S",
+        proof: "fun P => fun Q => fun R => fun S => fun h => fun r => fun p => fun q => h p q r",
+    },
+    TheoremArtifact {
+        name: "imp_apply_twice",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (h : forall (p : P), P), forall (p : P), P",
+        proof: "fun P => fun h => fun p => h (h p)",
+    },
+    TheoremArtifact {
+        name: "imp_const3",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (p : P), forall (q : Q), forall (r : R), P",
+        proof: "fun P => fun Q => fun R => fun p => fun q => fun r => p",
+    },
+    TheoremArtifact {
+        name: "imp_flip_chain",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (qr : forall (q : Q), R), forall (pq : forall (p : P), Q), forall (p : P), R",
+        proof: "fun P => fun Q => fun R => fun qr => fun pq => fun p => qr (pq p)",
+    },
+    TheoremArtifact {
+        name: "imp_higher_apply",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (h : forall (f : forall (p : P), Q), R), forall (f : forall (p : P), Q), R",
+        proof: "fun P => fun Q => fun R => fun h => fun f => h f",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -392,10 +447,11 @@ fn run() -> Result<(), String> {
         &nat_imports,
         &nat_source_interfaces,
     )?;
+    let prop = build_and_write_module(&proof_root, &PROP_MODULE, &[], &[])?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq, nat]).as_bytes(),
+        manifest_toml(&[basic, eq, nat, prop]).as_bytes(),
     )?;
 
     Ok(())
