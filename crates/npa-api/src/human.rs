@@ -4,8 +4,9 @@ use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
     HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk, HumanExactTacticRequest,
-    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanStartProofError,
-    HumanStartProofOk, HumanStartProofRequest, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanRewriteTacticError,
+    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanStartProofError, HumanStartProofOk,
+    HumanStartProofRequest, HumanTacticScriptError, HumanTacticScriptRunOk,
     HumanTacticScriptRunRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
     HumanTacticTermError,
 };
@@ -245,6 +246,91 @@ pub fn run_human_apply_tactic(
     Ok(HumanApplyTacticOk { state, delta })
 }
 
+pub fn run_human_rewrite_tactic(
+    request: HumanRewriteTacticRequest<'_, '_>,
+) -> Result<HumanRewriteTacticOk, HumanRewriteTacticError> {
+    if request.rules.is_empty() {
+        return Err(human_rewrite_unsupported_diagnostic(
+            request.span,
+            "rw requires at least one rewrite rule",
+        )
+        .into());
+    }
+
+    let mut state = request.state.clone();
+    let mut deltas = Vec::new();
+    let mut current_goal_id = request.goal_id;
+
+    for rule in request.rules {
+        let resolved = human_rewrite_resolve_rule(
+            &state,
+            current_goal_id,
+            rule,
+            request.current_source_interface,
+            request.imported_source_interfaces,
+        )?;
+        let mut rule_rewrote = false;
+        let mut last_error = None;
+
+        for site in [
+            npa_tactic::RewriteSite::EqTargetLeft,
+            npa_tactic::RewriteSite::EqTargetRight,
+        ] {
+            let before_goal = state.goal(current_goal_id)?;
+            match npa_tactic::run_machine_tactic_with_budget(
+                &state,
+                npa_tactic::MachineTactic::Rewrite {
+                    goal_id: current_goal_id,
+                    rule: npa_tactic::RewriteRuleRef {
+                        head: resolved.head.clone(),
+                        universe_args: resolved.universe_args.clone(),
+                        args: resolved.args.clone(),
+                    },
+                    direction: resolved.direction,
+                    site,
+                },
+                request.budget,
+            ) {
+                Ok((next_state, delta)) => {
+                    state = next_state;
+                    current_goal_id = *delta.added_goals.last().ok_or_else(|| {
+                        human_rewrite_unsupported_diagnostic(
+                            resolved.span,
+                            "Human rw expected Machine rewrite to create a rewritten target goal",
+                        )
+                    })?;
+                    deltas.push(delta);
+                    rule_rewrote = true;
+                    npa_tactic::validate_machine_proof_state(&state)?;
+                }
+                Err(diagnostic) => {
+                    last_error = Some(human_rewrite_machine_error(
+                        diagnostic,
+                        &before_goal,
+                        &resolved,
+                        site,
+                    ));
+                }
+            }
+        }
+
+        if !rule_rewrote {
+            return Err(last_error.unwrap_or_else(|| {
+                human_rewrite_unsupported_diagnostic(
+                    resolved.span,
+                    format!(
+                        "rewrite rule `{}` did not match the target",
+                        resolved.head_label
+                    ),
+                )
+                .into()
+            }));
+        }
+    }
+
+    Ok(HumanRewriteTacticOk { state, deltas })
+}
+
 pub fn run_human_tactic_script(
     request: HumanTacticScriptRunRequest<'_, '_>,
 ) -> Result<HumanTacticScriptRunOk, HumanTacticScriptError> {
@@ -293,6 +379,20 @@ pub fn run_human_tactic_script(
                 .map_err(human_script_apply_error)?;
                 state = ok.state;
                 deltas.push(ok.delta);
+            }
+            npa_frontend::HumanTacticSyntax::Rewrite { rules, span } => {
+                let ok = run_human_rewrite_tactic(HumanRewriteTacticRequest {
+                    state: &state,
+                    goal_id,
+                    rules,
+                    span: *span,
+                    current_source_interface: request.current_source_interface,
+                    imported_source_interfaces: request.imported_source_interfaces,
+                    budget: request.budget,
+                })
+                .map_err(human_script_rewrite_error)?;
+                state = ok.state;
+                deltas.extend(ok.deltas);
             }
             other => {
                 return Err(
@@ -374,6 +474,17 @@ struct HumanApplyResolved {
     head: npa_tactic::TacticHead,
     universe_args: Vec<Level>,
     args: Vec<npa_tactic::ApplyArg>,
+    head_label: String,
+    head_type: Expr,
+    span: npa_frontend::Span,
+}
+
+#[derive(Clone, Debug)]
+struct HumanRewriteResolved {
+    head: npa_tactic::TacticHead,
+    universe_args: Vec<Level>,
+    args: Vec<npa_tactic::ApplyArg>,
+    direction: npa_tactic::RewriteDirection,
     head_label: String,
     head_type: Expr,
     span: npa_frontend::Span,
@@ -578,6 +689,184 @@ fn human_apply_resolve(
         head_type,
         span: *span,
     })
+}
+
+fn human_rewrite_resolve_rule(
+    state: &npa_tactic::MachineProofState,
+    goal_id: npa_tactic::GoalId,
+    rule: &npa_frontend::HumanRewriteRuleSyntax,
+    _current_source_interface: &npa_frontend::HumanSourceInterface,
+    _imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+) -> Result<HumanRewriteResolved, HumanRewriteTacticError> {
+    let goal = state.goal(goal_id)?;
+    let npa_frontend::HumanExpr::Ident {
+        name,
+        universe_args,
+        span,
+        ..
+    } = &rule.term
+    else {
+        return Err(human_rewrite_unsupported_head_diagnostic(rule.term.span()).into());
+    };
+
+    let explicit_universe_args = human_apply_universe_args(universe_args.as_deref());
+    if let Some(local_name) =
+        human_apply_local_head(&goal, name, *span).map_err(human_rewrite_from_apply_error)?
+    {
+        if !explicit_universe_args.is_empty() {
+            return Err(human_rewrite_unsupported_diagnostic(
+                *span,
+                "local rw rule heads do not accept universe arguments",
+            )
+            .into());
+        }
+        let local_index = goal
+            .context
+            .iter()
+            .position(|local| local.name == local_name)
+            .expect("resolved local rewrite head should exist");
+        let local = &goal.context[local_index];
+        let ctx =
+            human_apply_goal_ctx(state, &goal, *span).map_err(human_rewrite_from_apply_error)?;
+        let head_bvar = Expr::bvar((goal.context.len() - 1 - local_index) as u32);
+        let head_type = state
+            .env
+            .kernel_env()
+            .infer(&ctx, &state.root.universe_params, &head_bvar)
+            .map_err(|err| {
+                human_rewrite_unsupported_diagnostic(
+                    *span,
+                    format!("cannot infer local rw rule {} type: {err:?}", local.name),
+                )
+            })?;
+        let args = human_rewrite_args_for_type(state, &goal, &head_type, *span, &local.name)?;
+        return Ok(HumanRewriteResolved {
+            head: npa_tactic::TacticHead::Local {
+                name: local.name.clone(),
+            },
+            universe_args: Vec::new(),
+            args,
+            direction: human_rewrite_direction(rule.direction),
+            head_label: local.name.clone(),
+            head_type,
+            span: *span,
+        });
+    }
+
+    let candidate =
+        human_apply_global_head(state, name, *span).map_err(human_rewrite_from_apply_error)?;
+    let decl = state
+        .env
+        .kernel_env()
+        .decl(&candidate.name().as_dotted())
+        .ok_or_else(|| {
+            human_rewrite_unsupported_diagnostic(
+                *span,
+                format!(
+                    "rw rule {} is not present in the kernel environment",
+                    candidate.name().as_dotted()
+                ),
+            )
+        })?;
+    let universe_params = decl.universe_params();
+    let universe_args = if let Some(args) = universe_args {
+        let args = human_apply_universe_args(Some(args));
+        if args.len() != universe_params.len() {
+            return Err(human_rewrite_unsupported_diagnostic(
+                *span,
+                format!(
+                    "rw rule {} expects {} universe argument(s), got {}",
+                    candidate.name().as_dotted(),
+                    universe_params.len(),
+                    args.len()
+                ),
+            )
+            .into());
+        }
+        args
+    } else if universe_params.is_empty() {
+        Vec::new()
+    } else {
+        return Err(human_rewrite_unsupported_diagnostic(
+            *span,
+            format!(
+                "rw rule {} requires explicit universe arguments in the Human rw MVP",
+                candidate.name().as_dotted()
+            ),
+        )
+        .into());
+    };
+    let head_type =
+        npa_kernel::subst::subst_levels_expr(decl.ty(), universe_params, &universe_args);
+    let args = human_rewrite_args_for_type(
+        state,
+        &goal,
+        &head_type,
+        *span,
+        &candidate.name().as_dotted(),
+    )?;
+    Ok(HumanRewriteResolved {
+        head: candidate.tactic_head(),
+        universe_args,
+        args,
+        direction: human_rewrite_direction(rule.direction),
+        head_label: candidate.name().as_dotted(),
+        head_type,
+        span: *span,
+    })
+}
+
+fn human_rewrite_args_for_type(
+    state: &npa_tactic::MachineProofState,
+    goal: &npa_tactic::MachineGoal,
+    head_type: &Expr,
+    span: npa_frontend::Span,
+    head_label: &str,
+) -> Result<Vec<npa_tactic::ApplyArg>, HumanRewriteTacticError> {
+    let ctx = human_apply_goal_ctx(state, goal, span).map_err(human_rewrite_from_apply_error)?;
+    let env = state.env.kernel_env();
+    let delta = &state.root.universe_params;
+    let mut current = head_type.clone();
+    let mut args = Vec::new();
+
+    loop {
+        let whnf = env.whnf(&ctx, delta, &current).map_err(|err| {
+            human_rewrite_unsupported_diagnostic(
+                span,
+                format!("cannot inspect rw rule {head_label} type: {err:?}"),
+            )
+        })?;
+        let Expr::Pi { body, .. } = whnf else {
+            break;
+        };
+        let arg = npa_tactic::ApplyArg::InferFromTarget;
+        let placeholder = human_apply_placeholder(&arg, goal);
+        current = instantiate(&body, &placeholder).map_err(|err| {
+            human_rewrite_unsupported_diagnostic(
+                span,
+                format!("cannot instantiate rw rule {head_label} type: {err:?}"),
+            )
+        })?;
+        args.push(arg);
+    }
+
+    Ok(args)
+}
+
+fn human_rewrite_direction(
+    direction: npa_frontend::HumanRewriteDirection,
+) -> npa_tactic::RewriteDirection {
+    match direction {
+        npa_frontend::HumanRewriteDirection::Forward => npa_tactic::RewriteDirection::Forward,
+        npa_frontend::HumanRewriteDirection::Backward => npa_tactic::RewriteDirection::Backward,
+    }
+}
+
+fn human_rewrite_from_apply_error(error: HumanApplyTacticError) -> HumanRewriteTacticError {
+    match error {
+        HumanApplyTacticError::Human(error) => HumanRewriteTacticError::Human(error),
+        HumanApplyTacticError::Machine(diagnostic) => HumanRewriteTacticError::Machine(diagnostic),
+    }
 }
 
 fn human_apply_local_head(
@@ -1010,6 +1299,61 @@ fn human_apply_machine_error(
     }
 }
 
+fn human_rewrite_machine_error(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    goal: &npa_tactic::MachineGoal,
+    resolved: &HumanRewriteResolved,
+    site: npa_tactic::RewriteSite,
+) -> HumanRewriteTacticError {
+    match diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::AmbiguousRewriteRule
+        | npa_tactic::MachineTacticDiagnosticKind::ExpectedEqTarget
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidMetaDependency
+        | npa_tactic::MachineTacticDiagnosticKind::MissingExplicitArgument
+        | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
+        | npa_tactic::MachineTacticDiagnosticKind::TooManyApplyArguments
+        | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch => {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::TypeMismatch,
+                resolved.span,
+                format!(
+                    "cannot rewrite with `{}`\n\ndirection:\n  {:?}\n\nsite:\n  {:?}\n\ntarget:\n  {:?}\n\nrule type:\n  {:?}\n\n{}",
+                    resolved.head_label,
+                    resolved.direction,
+                    site,
+                    goal.target,
+                    resolved.head_type,
+                    diagnostic.message
+                ),
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            .into()
+        }
+        _ => diagnostic.into(),
+    }
+}
+
+fn human_rewrite_unsupported_head_diagnostic(
+    span: npa_frontend::Span,
+) -> npa_frontend::HumanDiagnostic {
+    human_rewrite_unsupported_diagnostic(
+        span,
+        "Human rw MVP only supports a resolved local or global name as the rule head",
+    )
+}
+
+fn human_rewrite_unsupported_diagnostic(
+    span: npa_frontend::Span,
+    message: impl Into<String>,
+) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+        span,
+        message,
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
 fn human_apply_unsupported_head_diagnostic(
     span: npa_frontend::Span,
 ) -> npa_frontend::HumanDiagnostic {
@@ -1078,6 +1422,13 @@ fn human_script_apply_error(error: HumanApplyTacticError) -> HumanTacticScriptEr
     match error {
         HumanApplyTacticError::Human(error) => HumanTacticScriptError::Human(error),
         HumanApplyTacticError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
+    }
+}
+
+fn human_script_rewrite_error(error: HumanRewriteTacticError) -> HumanTacticScriptError {
+    match error {
+        HumanRewriteTacticError::Human(error) => HumanTacticScriptError::Human(error),
+        HumanRewriteTacticError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
     }
 }
 
@@ -2174,6 +2525,237 @@ theorem bad_apply (p q : Prop) (hp : p) : q := by
         assert!(diagnostic.message.contains("cannot apply `hp`"));
         assert!(diagnostic.message.contains("target:"));
         assert!(diagnostic.message.contains("head type:"));
+    }
+
+    #[test]
+    fn human_rw_local_forward_rewrites_eq_sides_and_exact_closes() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
+  intro a
+  intro b
+  intro h
+  rw [h]
+  exact Eq.refl b";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanRewriteLocal"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanRewriteLocal.rw_local"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start rw_local");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human rw local script should close");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 6);
+        assert_eq!(ok.deltas[3].added_goals.len(), 1);
+        assert_eq!(ok.deltas[4].added_goals.len(), 1);
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human rw local proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_rw_local_backward_rewrites_deterministically() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem rw_backward (a b : Nat) (h : Eq.{1} a b) : Eq.{1} b b := by
+  intro a
+  intro b
+  intro h
+  rw [<- h]
+  exact Eq.refl a";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanRewriteBackward"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanRewriteBackward.rw_backward"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start rw_backward");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human reverse rw local script should close");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 6);
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human reverse rw proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_rw_checked_current_theorem_rule_runs_through_machine_rewrite() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem refl_rule (x : Nat) : Eq.{1} x x := Eq.refl x
+theorem use_refl_rule (a : Nat) : Eq.{1} a a := by
+  intro a
+  rw [refl_rule]
+  exact Eq.refl a";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanRewriteCurrent"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanRewriteCurrent.use_refl_rule"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start use_refl_rule");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human rw checked current theorem script should close");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 4);
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human rw checked current proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_rw_rejects_complex_rule_head_as_unsupported() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem bad_rw (a : Nat) : Eq.{1} a a := by
+  intro a
+  rw [Eq.refl a]";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanRewriteUnsupported"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanRewriteUnsupported.bad_rw"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start bad_rw");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("complex rw rule head should be rejected");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("complex rw rule should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        );
+        assert!(diagnostic.message.contains("Human rw MVP"));
+    }
+
+    #[test]
+    fn human_rw_conditional_rule_fails_as_human_diagnostic() {
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![eq];
+        let imported_source_interfaces = vec![eq_interface];
+        let source = "\
+import Std.Logic.Eq
+theorem bad_conditional_rw (p q : Prop) (h : forall (hp : p), Eq.{1} p q) : Eq.{1} p p := by
+  intro p
+  intro q
+  intro h
+  rw [h]";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanRewriteConditional"),
+            theorem_name: npa_cert::Name::from_dotted(
+                "Api.HumanRewriteConditional.bad_conditional_rw",
+            ),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start bad_conditional_rw");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("conditional rw should fail deterministically");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("conditional rw should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::TypeMismatch
+        );
+        assert!(diagnostic.message.contains("cannot rewrite with `h`"));
+        assert!(diagnostic.message.contains("rule type:"));
     }
 
     #[test]

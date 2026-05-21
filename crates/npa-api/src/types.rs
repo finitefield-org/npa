@@ -3,7 +3,8 @@ use std::collections::BTreeSet;
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
     FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr, HumanImportedSourceInterface,
-    HumanName, HumanSourceInterface, HumanTacticScript, MachineSurfaceCallableInterfaceTable,
+    HumanName, HumanRewriteRuleSyntax, HumanSourceInterface, HumanTacticScript,
+    MachineSurfaceCallableInterfaceTable,
 };
 use npa_kernel::Expr;
 use npa_tactic::{
@@ -169,6 +170,23 @@ pub struct HumanApplyTacticOk {
 }
 
 #[derive(Clone, Debug)]
+pub struct HumanRewriteTacticRequest<'rules, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub rules: &'rules [HumanRewriteRuleSyntax],
+    pub span: npa_frontend::Span,
+    pub current_source_interface: &'ctx HumanSourceInterface,
+    pub imported_source_interfaces: &'ctx [HumanImportedSourceInterface],
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanRewriteTacticOk {
+    pub state: MachineProofState,
+    pub deltas: Vec<MachineProofDelta>,
+}
+
+#[derive(Clone, Debug)]
 pub struct HumanTacticScriptRunRequest<'script, 'ctx> {
     pub state: &'ctx MachineProofState,
     pub script: &'script HumanTacticScript,
@@ -263,6 +281,24 @@ impl From<HumanDiagnostic> for HumanApplyTacticError {
 }
 
 impl From<MachineTacticDiagnostic> for HumanApplyTacticError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanRewriteTacticError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanRewriteTacticError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanRewriteTacticError {
     fn from(diagnostic: MachineTacticDiagnostic) -> Self {
         Self::Machine(diagnostic)
     }
