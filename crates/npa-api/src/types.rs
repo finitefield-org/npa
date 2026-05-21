@@ -203,6 +203,21 @@ pub struct HumanSimpLiteTacticOk {
 }
 
 #[derive(Clone, Debug)]
+pub struct HumanInductionTacticRequest<'name, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub name: &'name HumanName,
+    pub span: npa_frontend::Span,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanInductionTacticOk {
+    pub state: MachineProofState,
+    pub delta: MachineProofDelta,
+}
+
+#[derive(Clone, Debug)]
 pub struct HumanTacticScriptRunRequest<'script, 'ctx> {
     pub state: &'ctx MachineProofState,
     pub script: &'script HumanTacticScript,
@@ -333,6 +348,24 @@ impl From<HumanDiagnostic> for HumanSimpLiteTacticError {
 }
 
 impl From<MachineTacticDiagnostic> for HumanSimpLiteTacticError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanInductionTacticError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanInductionTacticError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanInductionTacticError {
     fn from(diagnostic: MachineTacticDiagnostic) -> Self {
         Self::Machine(diagnostic)
     }

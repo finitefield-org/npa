@@ -4,6 +4,7 @@ use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
     HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk, HumanExactTacticRequest,
+    HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
     HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanRewriteTacticError,
     HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSimpLiteTacticError,
     HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk,
@@ -364,6 +365,24 @@ pub fn run_human_simp_lite_tactic(
     Ok(HumanSimpLiteTacticOk { state, delta })
 }
 
+pub fn run_human_induction_tactic(
+    request: HumanInductionTacticRequest<'_, '_>,
+) -> Result<HumanInductionTacticOk, HumanInductionTacticError> {
+    let local_name = human_induction_name(request.name)?;
+    let before_goal = request.state.goal(request.goal_id)?;
+    let (state, delta) = npa_tactic::run_machine_tactic_with_budget(
+        request.state,
+        npa_tactic::MachineTactic::InductionNat {
+            goal_id: request.goal_id,
+            local_name,
+        },
+        request.budget,
+    )
+    .map_err(|diagnostic| human_induction_machine_error(diagnostic, &before_goal, request.span))?;
+    npa_tactic::validate_machine_proof_state(&state)?;
+    Ok(HumanInductionTacticOk { state, delta })
+}
+
 pub fn run_human_tactic_script(
     request: HumanTacticScriptRunRequest<'_, '_>,
 ) -> Result<HumanTacticScriptRunOk, HumanTacticScriptError> {
@@ -438,10 +457,17 @@ pub fn run_human_tactic_script(
                 state = ok.state;
                 deltas.push(ok.delta);
             }
-            other => {
-                return Err(
-                    human_script_unsupported_tactic_diagnostic(other.span(), other.kind()).into(),
-                );
+            npa_frontend::HumanTacticSyntax::Induction { name, span } => {
+                let ok = run_human_induction_tactic(HumanInductionTacticRequest {
+                    state: &state,
+                    goal_id,
+                    name,
+                    span: *span,
+                    budget: request.budget,
+                })
+                .map_err(human_script_induction_error)?;
+                state = ok.state;
+                deltas.push(ok.delta);
             }
         }
     }
@@ -511,6 +537,22 @@ fn human_intro_invalid_diagnostic(
         message,
     )
     .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
+fn human_induction_name(
+    name: &npa_frontend::HumanName,
+) -> Result<String, HumanInductionTacticError> {
+    if name.parts.len() != 1 {
+        return Err(human_induction_unsupported_diagnostic(
+            name.span,
+            format!(
+                "induction target name must be a single local identifier, got {}",
+                name.as_dotted()
+            ),
+        )
+        .into());
+    }
+    Ok(name.parts[0].clone())
 }
 
 #[derive(Clone, Debug)]
@@ -1426,6 +1468,45 @@ fn human_simp_lite_not_closed_diagnostic(
     .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
 }
 
+fn human_induction_machine_error(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> HumanInductionTacticError {
+    match diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::AmbiguousLocalName
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidInductionTarget
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidMachineTactic
+        | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
+        | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
+        | npa_tactic::MachineTacticDiagnosticKind::UnknownLocalName => {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+                span,
+                format!(
+                    "cannot perform simple induction in the Human MVP\n\ntarget:\n  {:?}\n\n{}",
+                    goal.target, diagnostic.message
+                ),
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            .into()
+        }
+        _ => diagnostic.into(),
+    }
+}
+
+fn human_induction_unsupported_diagnostic(
+    span: npa_frontend::Span,
+    message: impl Into<String>,
+) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+        span,
+        message,
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
 fn human_rewrite_unsupported_head_diagnostic(
     span: npa_frontend::Span,
 ) -> npa_frontend::HumanDiagnostic {
@@ -1534,6 +1615,15 @@ fn human_script_simp_lite_error(error: HumanSimpLiteTacticError) -> HumanTacticS
     }
 }
 
+fn human_script_induction_error(error: HumanInductionTacticError) -> HumanTacticScriptError {
+    match error {
+        HumanInductionTacticError::Human(error) => HumanTacticScriptError::Human(error),
+        HumanInductionTacticError::Machine(diagnostic) => {
+            HumanTacticScriptError::Machine(diagnostic)
+        }
+    }
+}
+
 fn human_script_term_error(error: HumanTacticTermError) -> HumanTacticScriptError {
     match error {
         HumanTacticTermError::Human(error) => HumanTacticScriptError::Human(error),
@@ -1558,17 +1648,6 @@ fn human_script_unresolved_goal_diagnostic(
         npa_frontend::HumanDiagnosticKind::UnresolvedGoal,
         span,
         format!("Human tactic script finished with {open_goal_count} open goal(s)"),
-    )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
-}
-
-fn human_script_unsupported_tactic_diagnostic(
-    span: npa_frontend::Span,
-    kind: npa_frontend::HumanTacticKind,
-) -> npa_frontend::HumanDiagnostic {
-    npa_frontend::HumanDiagnostic::unsupported_tactic(
-        span,
-        format!("{kind:?} is not implemented by the Human script executor yet"),
     )
     .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
 }
@@ -3033,24 +3112,80 @@ theorem self_eq (n : Nat) : Eq.{1} n n := by
     }
 
     #[test]
-    fn human_tactic_script_executor_rejects_unimplemented_tactic_without_machine_batch() {
-        let verified_modules = Vec::new();
-        let imported_source_interfaces = Vec::new();
+    fn human_induction_nat_creates_base_step_and_closes_with_exact_simp() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let options = human_nat_compile_options(&nat);
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
         let source = "\
-theorem target : Prop := by
-  induction n";
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem ind_self (n : Nat) : Eq.{1} n n := by
+  intro n
+  induction n
+  exact Eq.refl Nat.zero
+  simp-lite";
         let started = start_human_proof(HumanStartProofRequest {
-            current_module: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported"),
-            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported.target"),
+            current_module: npa_cert::Name::from_dotted("Api.HumanInductionNat"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanInductionNat.ind_self"),
             current_source: HumanCurrentModuleSource {
                 file_id: npa_frontend::FileId(0),
                 source,
             },
             verified_modules: &verified_modules,
             imported_source_interfaces: &imported_source_interfaces,
-            options: human_api_default_compile_options(),
+            options: options.clone(),
         })
-        .expect("Human proof bridge should start id_nat");
+        .expect("Human proof bridge should start ind_self");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human induction script should close base and step goals");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 4);
+        assert_eq!(
+            ok.deltas[1].added_goals,
+            vec![npa_tactic::GoalId(2), npa_tactic::GoalId(3)]
+        );
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human induction proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_induction_rejects_dependent_later_hypothesis_as_human_diagnostic() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let options = human_nat_compile_options(&nat);
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
+  intro n
+  intro h
+  induction n";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanInductionBad"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanInductionBad.bad_induction"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: options.clone(),
+        })
+        .expect("Human proof bridge should start bad_induction");
         let script = first_theorem_script(source);
 
         let err = run_human_tactic_script(HumanTacticScriptRunRequest {
@@ -3058,18 +3193,21 @@ theorem target : Prop := by
             script: &script,
             current_source_interface: &started.source_interface,
             imported_source_interfaces: &imported_source_interfaces,
-            options: human_api_default_compile_options(),
+            options,
             budget: npa_tactic::TacticBudget::default(),
         })
-        .expect_err("unsupported tactic should be rejected by Human script executor");
+        .expect_err("dependent later hypothesis should be rejected by Human induction");
 
         let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
-            panic!("unsupported tactic should map to a Human diagnostic");
+            panic!("dependent induction rejection should map to a Human diagnostic");
         };
         assert_eq!(
             diagnostic.kind,
             npa_frontend::HumanDiagnosticKind::UnsupportedTactic
         );
+        assert!(diagnostic
+            .message
+            .contains("cannot perform simple induction"));
     }
 
     fn workspace_manifest(crate_name: &str) -> String {
@@ -3368,6 +3506,33 @@ inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
             .find(|export| export.name == npa_cert::Name::from_dotted(name))
             .expect("test export should exist")
             .decl_interface_hash
+    }
+
+    fn human_nat_compile_options(
+        verified_nat: &npa_cert::VerifiedModule,
+    ) -> HumanApiCompileOptions {
+        let nat_import = npa_tactic::VerifiedImportRef::from_verified_module(verified_nat)
+            .expect("verified Nat module should become a tactic import");
+        HumanApiCompileOptions {
+            tactic_options: npa_tactic::MachineTacticOptions {
+                nat_family: Some(nat_family_ref(&nat_import)),
+                ..npa_tactic::MachineTacticOptions::default()
+            },
+            ..human_api_default_compile_options()
+        }
+    }
+
+    fn nat_family_ref(import: &npa_tactic::VerifiedImportRef) -> npa_tactic::NatFamilyRef {
+        npa_tactic::NatFamilyRef {
+            nat_name: npa_cert::Name::from_dotted("Nat"),
+            nat_interface_hash: export_interface_hash(import, "Nat"),
+            zero_name: npa_cert::Name::from_dotted("Nat.zero"),
+            zero_interface_hash: export_interface_hash(import, "Nat.zero"),
+            succ_name: npa_cert::Name::from_dotted("Nat.succ"),
+            succ_interface_hash: export_interface_hash(import, "Nat.succ"),
+            rec_name: npa_cert::Name::from_dotted("Nat.rec"),
+            rec_interface_hash: export_interface_hash(import, "Nat.rec"),
+        }
     }
 
     fn human_simp_machine_spec(theorem_type: Expr) -> npa_tactic::MachineProofSpec {
