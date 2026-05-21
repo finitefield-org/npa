@@ -6,7 +6,10 @@ use npa_cert::{
     AxiomPolicy, CoreModule, ExportKind, Hash, InductiveArtifactProfileCheckV1, ModuleName, Name,
     VerifierSession,
 };
-use npa_kernel::{Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level};
+use npa_kernel::{
+    level::normalize_level, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level,
+    Reducibility,
+};
 use npa_tactic::{machine_local_context_canonical_bytes, MachineLocalDecl, VerifiedImportRef};
 use sha2::{Digest, Sha256};
 
@@ -26,6 +29,7 @@ const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
 const MAX_PHASE9_INDUCTIVE_ITEMS: u64 = 65_536;
 const MAX_PHASE9_INDUCTIVE_EXPR_NODES: u64 = 1_000_000;
 const MAX_PHASE9_INDUCTIVE_LEVEL_NODES: u64 = 1_000_000;
+const MAX_PHASE9_QUOTIENT_ITEMS: u64 = 65_536;
 const MAX_PHASE9_TYPECLASS_CANDIDATES: u64 = 65_536;
 const MAX_PHASE9_TYPECLASS_DEPTH: u32 = 1_024;
 const MAX_PHASE9_TYPECLASS_NODES: u32 = 1_000_000;
@@ -319,6 +323,26 @@ pub struct Phase9MachineTelescopeBinder {
 pub struct Phase9MachineConstructorProposal {
     pub name: Name,
     pub ty: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineQuotientConstructionCandidate {
+    pub expected_decl_hash: Option<Hash>,
+    pub decl_name: Name,
+    pub universe_params: Vec<String>,
+    pub params: Vec<Phase9MachineTelescopeBinder>,
+    pub quotient_type: Expr,
+    pub carrier: Expr,
+    pub relation: Expr,
+    pub equivalence_proof: Expr,
+    pub operations: Vec<Phase9MachineQuotientOperationCandidate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineQuotientOperationCandidate {
+    pub name: Name,
+    pub raw_function: Expr,
+    pub compatibility_proof: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -873,6 +897,14 @@ pub fn phase9_inductive_proposal_canonical_bytes(
     Ok(out)
 }
 
+pub fn phase9_quotient_candidate_canonical_bytes(
+    candidate: &Phase9MachineQuotientConstructionCandidate,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_quotient_candidate_to(&mut out, candidate)?;
+    Ok(out)
+}
+
 pub fn phase9_typeclass_resolution_plan_canonical_bytes(
     plan: &Phase9MachineTypeclassResolutionPlan,
 ) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
@@ -1081,12 +1113,15 @@ pub fn run_phase9_quotient_check_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
+    match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
         Phase9AiTaskKind::QuotientConstruction,
-    )
+    ) {
+        Ok(validated) => run_phase9_quotient_check_validated(validated, verified_imports),
+        Err(response) => response,
+    }
 }
 
 pub fn run_phase9_smt_reconstruct_request(
@@ -1490,6 +1525,199 @@ fn run_phase9_inductive_validated(
             decl_interface_hash: decl.hashes.decl_interface_hash,
             decl_certificate_hash: decl.hashes.decl_certificate_hash,
         },
+    )
+}
+
+fn run_phase9_quotient_check_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let candidate = match decode_quotient_candidate(&validated.envelope.payload) {
+        Ok(candidate) => candidate,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+    if !phase9_quotient_operations_are_sorted_unique(&candidate.operations) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+    if !phase9_string_list_is_unique(&candidate.universe_params)
+        || !phase9_quotient_levels_are_in_scope(&candidate)
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+    if !phase9_quotient_payload_imported_refs_are_resolved(&candidate, verified_imports) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        );
+    }
+
+    let env = match phase9_kernel_env_from_imports(verified_imports) {
+        Ok(env) => env,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            );
+        }
+    };
+    let Some(quotient_options) = validated.options.quotient.as_ref() else {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    };
+    let primitives = match phase9_resolve_quotient_primitives(
+        candidate_hash,
+        &env,
+        quotient_options,
+        verified_imports,
+    ) {
+        Ok(primitives) => primitives,
+        Err(response) => return response,
+    };
+
+    if phase9_check_telescope_kernel(&env, &candidate.universe_params, candidate.params.iter())
+        .is_err()
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        );
+    }
+    let params_ctx = phase9_quotient_params_ctx(&candidate.params);
+    let carrier = match phase9_quotient_carrier_info(
+        candidate_hash,
+        &env,
+        &params_ctx,
+        &candidate.universe_params,
+        &candidate.carrier,
+    ) {
+        Ok(carrier) => carrier,
+        Err(response) => return response,
+    };
+    if let Err(response) = phase9_validate_quotient_relation(
+        candidate_hash,
+        &env,
+        &params_ctx,
+        &candidate.universe_params,
+        &candidate.relation,
+        &carrier.expr,
+    ) {
+        return response;
+    }
+
+    let setoid_expr = phase9_quotient_setoid_mk_app(
+        &primitives,
+        &carrier.universe,
+        candidate.carrier.clone(),
+        candidate.relation.clone(),
+        candidate.equivalence_proof.clone(),
+    );
+    let rel_equiv_type = phase9_quotient_rel_equiv_type(
+        &primitives,
+        &carrier.universe,
+        candidate.carrier.clone(),
+        candidate.relation.clone(),
+    );
+    if env
+        .check(
+            &params_ctx,
+            &candidate.universe_params,
+            &candidate.equivalence_proof,
+            &rel_equiv_type,
+        )
+        .is_err()
+    {
+        return quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            Phase9QuotientConstructionError::EquivalenceProofMismatch,
+        );
+    }
+
+    let expected_quotient_type =
+        phase9_quotient_type_app(&primitives, &carrier.universe, setoid_expr.clone());
+    if let Err(response) = phase9_validate_quotient_type(
+        candidate_hash,
+        &env,
+        &params_ctx,
+        &candidate.universe_params,
+        &candidate.quotient_type,
+        &expected_quotient_type,
+        &carrier.type_level,
+    ) {
+        return response;
+    }
+
+    let decl_hash = match phase9_reconstruct_quotient_decl_hash(
+        &candidate,
+        &expected_quotient_type,
+        &carrier.type_level,
+        verified_imports,
+    ) {
+        Ok(decl_hash) => decl_hash,
+        Err(Phase9QuotientDeclBuildError::KernelRejected) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+        Err(Phase9QuotientDeclBuildError::Internal) => {
+            return Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            };
+        }
+    };
+    if candidate
+        .expected_decl_hash
+        .is_some_and(|expected| expected != decl_hash)
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+
+    for operation in &candidate.operations {
+        if let Err(response) = phase9_validate_quotient_operation(
+            candidate_hash,
+            &env,
+            &params_ctx,
+            &candidate.universe_params,
+            &primitives,
+            &carrier,
+            &setoid_expr,
+            operation,
+        ) {
+            return response;
+        }
+    }
+
+    rejected_response(
+        candidate_hash,
+        Phase9AiValidationError::UnsupportedFeature,
+        None,
     )
 }
 
@@ -2327,6 +2555,1126 @@ fn validate_required_options(
             None,
         ))
     }
+}
+
+#[derive(Clone)]
+struct Phase9ResolvedGlobalDecl {
+    const_name: String,
+    universe_params: Vec<String>,
+    ty: Expr,
+}
+
+struct Phase9ResolvedQuotientInterface {
+    setoid: Phase9ResolvedGlobalDecl,
+    setoid_mk: Phase9ResolvedGlobalDecl,
+    setoid_relation: Phase9ResolvedGlobalDecl,
+    rel_equiv: Phase9ResolvedGlobalDecl,
+    quotient: Phase9ResolvedGlobalDecl,
+    quotient_mk: Phase9ResolvedGlobalDecl,
+    quotient_sound: Phase9ResolvedGlobalDecl,
+    quotient_lift: Phase9ResolvedGlobalDecl,
+    eq: Phase9ResolvedGlobalDecl,
+}
+
+struct Phase9ResolvedQuotientPrimitives {
+    setoid_mk: String,
+    setoid_relation: String,
+    rel_equiv: String,
+    quotient: String,
+    eq: String,
+}
+
+struct Phase9QuotientCarrierInfo {
+    expr: Expr,
+    type_level: Level,
+    universe: Level,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Phase9QuotientDeclBuildError {
+    KernelRejected,
+    Internal,
+}
+
+fn quotient_rejected_response(
+    candidate_hash: Hash,
+    error: Phase9AiValidationError,
+    quotient_error: Phase9QuotientConstructionError,
+) -> Phase9AiEndpointResponse {
+    rejected_response(
+        candidate_hash,
+        error,
+        Some(Phase9AiFeatureError::QuotientConstruction(quotient_error)),
+    )
+}
+
+fn phase9_quotient_operations_are_sorted_unique(
+    operations: &[Phase9MachineQuotientOperationCandidate],
+) -> bool {
+    let mut previous: Option<Vec<u8>> = None;
+    for operation in operations {
+        let Ok(key) = phase5_name_canonical_bytes(&operation.name) else {
+            return false;
+        };
+        if previous.as_ref().is_some_and(|previous| previous >= &key) {
+            return false;
+        }
+        previous = Some(key);
+    }
+    true
+}
+
+fn phase9_quotient_levels_are_in_scope(
+    candidate: &Phase9MachineQuotientConstructionCandidate,
+) -> bool {
+    candidate
+        .params
+        .iter()
+        .all(|binder| expr_levels_are_in_scope(&binder.ty, &candidate.universe_params))
+        && expr_levels_are_in_scope(&candidate.quotient_type, &candidate.universe_params)
+        && expr_levels_are_in_scope(&candidate.carrier, &candidate.universe_params)
+        && expr_levels_are_in_scope(&candidate.relation, &candidate.universe_params)
+        && expr_levels_are_in_scope(&candidate.equivalence_proof, &candidate.universe_params)
+        && candidate.operations.iter().all(|operation| {
+            expr_levels_are_in_scope(&operation.raw_function, &candidate.universe_params)
+                && expr_levels_are_in_scope(
+                    &operation.compatibility_proof,
+                    &candidate.universe_params,
+                )
+        })
+}
+
+fn phase9_quotient_payload_imported_refs_are_resolved(
+    candidate: &Phase9MachineQuotientConstructionCandidate,
+    imports: &[VerifiedImportRef],
+) -> bool {
+    phase9_telescope_imported_refs_are_resolved(&candidate.params, imports, &BTreeSet::new())
+        && expr_imported_refs_are_resolved(&candidate.quotient_type, imports)
+        && expr_imported_refs_are_resolved(&candidate.carrier, imports)
+        && expr_imported_refs_are_resolved(&candidate.relation, imports)
+        && expr_imported_refs_are_resolved(&candidate.equivalence_proof, imports)
+        && candidate.operations.iter().all(|operation| {
+            expr_imported_refs_are_resolved(&operation.raw_function, imports)
+                && expr_imported_refs_are_resolved(&operation.compatibility_proof, imports)
+        })
+}
+
+fn phase9_resolve_quotient_primitives(
+    candidate_hash: Hash,
+    env: &Env,
+    options: &Phase9QuotientOptions,
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<Phase9ResolvedQuotientPrimitives, Phase9AiEndpointResponse> {
+    let resolved = Phase9ResolvedQuotientInterface {
+        setoid: phase9_resolve_quotient_primitive_ref(candidate_hash, &options.setoid, imports)?,
+        setoid_mk: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.setoid_mk,
+            imports,
+        )?,
+        setoid_relation: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.setoid_relation,
+            imports,
+        )?,
+        rel_equiv: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.rel_equiv,
+            imports,
+        )?,
+        quotient: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.quotient,
+            imports,
+        )?,
+        quotient_mk: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.quotient_mk,
+            imports,
+        )?,
+        quotient_sound: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.quotient_sound,
+            imports,
+        )?,
+        quotient_lift: phase9_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.quotient_lift,
+            imports,
+        )?,
+        eq: phase9_resolve_quotient_primitive_ref(candidate_hash, &options.eq, imports)?,
+    };
+    if !phase9_quotient_public_interface_is_valid(env, &resolved) {
+        return Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::PrimitiveInterfaceMismatch,
+        ));
+    }
+    Ok(Phase9ResolvedQuotientPrimitives {
+        setoid_mk: resolved.setoid_mk.const_name,
+        setoid_relation: resolved.setoid_relation.const_name,
+        rel_equiv: resolved.rel_equiv.const_name,
+        quotient: resolved.quotient.const_name,
+        eq: resolved.eq.const_name,
+    })
+}
+
+fn phase9_resolve_quotient_primitive_ref(
+    candidate_hash: Hash,
+    global_ref: &Phase9AiGlobalRef,
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<Phase9ResolvedGlobalDecl, Phase9AiEndpointResponse> {
+    let Some(resolved) = phase9_resolve_global_decl(global_ref, imports) else {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        ));
+    };
+    Ok(resolved)
+}
+
+fn phase9_resolve_global_decl(
+    global_ref: &Phase9AiGlobalRef,
+    imports: &[VerifiedImportRef],
+) -> Option<Phase9ResolvedGlobalDecl> {
+    let mut matches = Vec::new();
+    for import in imports {
+        let identity = Phase9ImportIdentity::from_verified_import(import);
+        if identity.module != global_ref.module
+            || identity.export_hash != global_ref.export_hash
+            || identity.certificate_hash != global_ref.certificate_hash
+        {
+            continue;
+        }
+        for export in import.exports().iter().filter(|export| {
+            export.name == global_ref.name
+                && export.decl_interface_hash == global_ref.decl_interface_hash
+        }) {
+            let decl = import
+                .certified_env_decls()
+                .iter()
+                .find(|decl| decl.name() == export.name.as_dotted())?;
+            matches.push(Phase9ResolvedGlobalDecl {
+                const_name: export.name.as_dotted(),
+                universe_params: decl.universe_params().to_vec(),
+                ty: decl.ty().clone(),
+            });
+        }
+    }
+    let [resolved] = matches.as_slice() else {
+        return None;
+    };
+    Some(resolved.clone())
+}
+
+fn phase9_quotient_public_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    phase9_quotient_setoid_interface_is_valid(env, resolved)
+        && phase9_quotient_rel_equiv_interface_is_valid(env, resolved)
+        && phase9_quotient_setoid_mk_interface_is_valid(env, resolved)
+        && phase9_quotient_setoid_relation_interface_is_valid(env, resolved)
+        && phase9_quotient_quotient_interface_is_valid(env, resolved)
+        && phase9_quotient_mk_interface_is_valid(env, resolved)
+        && phase9_quotient_sound_interface_is_valid(env, resolved)
+        && phase9_quotient_lift_interface_is_valid(env, resolved)
+        && phase9_quotient_eq_interface_is_valid(env, resolved)
+}
+
+fn phase9_quotient_setoid_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.setoid) else {
+        return false;
+    };
+    let type_level = Level::succ(u.clone());
+    let expected = Expr::pi("_", Expr::sort(type_level.clone()), Expr::sort(type_level));
+    phase9_quotient_public_type_defeq(env, &resolved.setoid, &expected)
+}
+
+fn phase9_quotient_rel_equiv_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.rel_equiv) else {
+        return false;
+    };
+    let relation_ty = match phase9_quotient_relation_expected_type(&Expr::bvar(0)) {
+        Ok(ty) => ty,
+        Err(_) => return false,
+    };
+    let expected = Expr::pi(
+        "_",
+        Expr::sort(Level::succ(u)),
+        Expr::pi("_", relation_ty, Expr::sort(Level::zero())),
+    );
+    phase9_quotient_public_type_defeq(env, &resolved.rel_equiv, &expected)
+}
+
+fn phase9_quotient_setoid_mk_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.setoid_mk) else {
+        return false;
+    };
+    let relation_ty = match phase9_quotient_relation_expected_type(&Expr::bvar(0)) {
+        Ok(ty) => ty,
+        Err(_) => return false,
+    };
+    let equiv_ty = Expr::apps(
+        phase9_quotient_const(&resolved.rel_equiv.const_name, vec![u.clone()]),
+        vec![Expr::bvar(1), Expr::bvar(0)],
+    );
+    let setoid_ty = Expr::app(
+        phase9_quotient_const(&resolved.setoid.const_name, vec![u.clone()]),
+        Expr::bvar(2),
+    );
+    let expected = Expr::pi(
+        "_",
+        Expr::sort(Level::succ(u)),
+        Expr::pi("_", relation_ty, Expr::pi("_", equiv_ty, setoid_ty)),
+    );
+    phase9_quotient_public_type_defeq(env, &resolved.setoid_mk, &expected)
+}
+
+fn phase9_quotient_setoid_relation_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.setoid_relation) else {
+        return false;
+    };
+    let mut ctx = Ctx::new();
+    let delta = &resolved.setoid_relation.universe_params;
+    let mut current = resolved.setoid_relation.ty.clone();
+    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let Some(carrier) =
+        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+    else {
+        return false;
+    };
+    ctx.push_assumption("s", setoid_domain);
+    current = body;
+
+    let Some((lhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+        return false;
+    };
+    let Some(carrier_lhs) = phase9_shift_public_expr(&carrier, 1) else {
+        return false;
+    };
+    if !phase9_quotient_defeq(env, &ctx, delta, &lhs_domain, &carrier_lhs) {
+        return false;
+    }
+    ctx.push_assumption("a", lhs_domain);
+    current = body;
+
+    let Some((rhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+        return false;
+    };
+    let Some(carrier_rhs) = phase9_shift_public_expr(&carrier, 2) else {
+        return false;
+    };
+    if !phase9_quotient_defeq(env, &ctx, delta, &rhs_domain, &carrier_rhs) {
+        return false;
+    }
+    ctx.push_assumption("b", rhs_domain);
+    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::sort(Level::zero()))
+}
+
+fn phase9_quotient_quotient_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.quotient) else {
+        return false;
+    };
+    let mut ctx = Ctx::new();
+    let delta = &resolved.quotient.universe_params;
+    let current = resolved.quotient.ty.clone();
+    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    if phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+        .is_none()
+    {
+        return false;
+    }
+    ctx.push_assumption("s", setoid_domain);
+    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::sort(Level::succ(u)))
+}
+
+fn phase9_quotient_mk_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.quotient_mk) else {
+        return false;
+    };
+    let mut ctx = Ctx::new();
+    let delta = &resolved.quotient_mk.universe_params;
+    let mut current = resolved.quotient_mk.ty.clone();
+    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let Some(carrier) =
+        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+    else {
+        return false;
+    };
+    ctx.push_assumption("s", setoid_domain);
+    current = body;
+
+    let Some((value_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let Some(carrier_value) = phase9_shift_public_expr(&carrier, 1) else {
+        return false;
+    };
+    if !phase9_quotient_defeq(env, &ctx, delta, &value_domain, &carrier_value) {
+        return false;
+    }
+    ctx.push_assumption("a", value_domain);
+    let expected = Expr::app(
+        phase9_quotient_const(&resolved.quotient.const_name, vec![u]),
+        Expr::bvar(1),
+    );
+    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, expected)
+}
+
+fn phase9_quotient_sound_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.quotient_sound) else {
+        return false;
+    };
+    let type_level = Level::succ(u.clone());
+    let primitives = Phase9ResolvedQuotientPrimitives {
+        setoid_mk: resolved.setoid_mk.const_name.clone(),
+        setoid_relation: resolved.setoid_relation.const_name.clone(),
+        rel_equiv: resolved.rel_equiv.const_name.clone(),
+        quotient: resolved.quotient.const_name.clone(),
+        eq: resolved.eq.const_name.clone(),
+    };
+    let mut ctx = Ctx::new();
+    let delta = &resolved.quotient_sound.universe_params;
+    let mut current = resolved.quotient_sound.ty.clone();
+    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let Some(carrier) =
+        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+    else {
+        return false;
+    };
+    ctx.push_assumption("s", setoid_domain);
+    current = body;
+
+    let Some((lhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+        return false;
+    };
+    let Some(carrier_lhs) = phase9_shift_public_expr(&carrier, 1) else {
+        return false;
+    };
+    if !phase9_quotient_defeq(env, &ctx, delta, &lhs_domain, &carrier_lhs) {
+        return false;
+    }
+    ctx.push_assumption("a", lhs_domain);
+    current = body;
+
+    let Some((rhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+        return false;
+    };
+    let Some(carrier_rhs) = phase9_shift_public_expr(&carrier, 2) else {
+        return false;
+    };
+    if !phase9_quotient_defeq(env, &ctx, delta, &rhs_domain, &carrier_rhs) {
+        return false;
+    }
+    ctx.push_assumption("b", rhs_domain);
+    current = body;
+
+    let Some((relation_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let expected_relation = phase9_quotient_setoid_relation_app(
+        &primitives,
+        &u,
+        Expr::bvar(2),
+        Expr::bvar(1),
+        Expr::bvar(0),
+    );
+    if !phase9_quotient_defeq(env, &ctx, delta, &relation_domain, &expected_relation) {
+        return false;
+    }
+    ctx.push_assumption("p", relation_domain);
+    let quotient_for_s = Expr::app(
+        phase9_quotient_const(&resolved.quotient.const_name, vec![u.clone()]),
+        Expr::bvar(3),
+    );
+    let lhs = Expr::apps(
+        phase9_quotient_const(&resolved.quotient_mk.const_name, vec![u.clone()]),
+        vec![Expr::bvar(3), Expr::bvar(2)],
+    );
+    let rhs = Expr::apps(
+        phase9_quotient_const(&resolved.quotient_mk.const_name, vec![u]),
+        vec![Expr::bvar(3), Expr::bvar(1)],
+    );
+    let expected = Expr::apps(
+        phase9_quotient_const(&resolved.eq.const_name, vec![type_level]),
+        vec![quotient_for_s, lhs, rhs],
+    );
+    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, expected)
+}
+
+fn phase9_quotient_lift_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    if resolved.quotient_lift.universe_params.len() != 2 {
+        return false;
+    }
+    let u = Level::param(resolved.quotient_lift.universe_params[0].clone());
+    let v = Level::param(resolved.quotient_lift.universe_params[1].clone());
+    let result_type_level = Level::succ(v);
+    let primitives = Phase9ResolvedQuotientPrimitives {
+        setoid_mk: resolved.setoid_mk.const_name.clone(),
+        setoid_relation: resolved.setoid_relation.const_name.clone(),
+        rel_equiv: resolved.rel_equiv.const_name.clone(),
+        quotient: resolved.quotient.const_name.clone(),
+        eq: resolved.eq.const_name.clone(),
+    };
+    let mut ctx = Ctx::new();
+    let delta = &resolved.quotient_lift.universe_params;
+    let mut current = resolved.quotient_lift.ty.clone();
+    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let Some(carrier) =
+        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+    else {
+        return false;
+    };
+    ctx.push_assumption("s", setoid_domain);
+    current = body;
+
+    let Some((result_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    if !phase9_quotient_defeq(
+        env,
+        &ctx,
+        delta,
+        &result_domain,
+        &Expr::sort(result_type_level.clone()),
+    ) {
+        return false;
+    }
+    ctx.push_assumption("result", result_domain);
+    current = body;
+
+    let Some((raw_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+        return false;
+    };
+    let Some(raw_carrier) = phase9_shift_public_expr(&carrier, 2) else {
+        return false;
+    };
+    let expected_raw = Expr::pi("_", raw_carrier, Expr::bvar(1));
+    if !phase9_quotient_defeq(env, &ctx, delta, &raw_domain, &expected_raw) {
+        return false;
+    }
+    ctx.push_assumption("f", raw_domain);
+    current = body;
+
+    let Some((compat_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let expected_compat = match phase9_quotient_compatibility_type(
+        &primitives,
+        &u,
+        &result_type_level,
+        &carrier,
+        &Expr::bvar(2),
+        &Expr::bvar(1),
+        &Expr::bvar(0),
+    ) {
+        Ok(ty) => ty,
+        Err(_) => return false,
+    };
+    if !phase9_quotient_defeq(env, &ctx, delta, &compat_domain, &expected_compat) {
+        return false;
+    }
+    ctx.push_assumption("h", compat_domain);
+    current = body;
+
+    let Some((quotient_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
+        return false;
+    };
+    let expected_quotient = Expr::app(
+        phase9_quotient_const(&resolved.quotient.const_name, vec![u]),
+        Expr::bvar(3),
+    );
+    if !phase9_quotient_defeq(env, &ctx, delta, &quotient_domain, &expected_quotient) {
+        return false;
+    }
+    ctx.push_assumption("q", quotient_domain);
+    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::bvar(3))
+}
+
+fn phase9_quotient_eq_interface_is_valid(
+    env: &Env,
+    resolved: &Phase9ResolvedQuotientInterface,
+) -> bool {
+    let Some(u) = phase9_quotient_single_universe(&resolved.eq) else {
+        return false;
+    };
+    let expected = Expr::pi(
+        "_",
+        Expr::sort(u),
+        Expr::pi(
+            "_",
+            Expr::bvar(0),
+            Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
+        ),
+    );
+    phase9_quotient_public_type_defeq(env, &resolved.eq, &expected)
+}
+
+fn phase9_quotient_single_universe(resolved: &Phase9ResolvedGlobalDecl) -> Option<Level> {
+    let [param] = resolved.universe_params.as_slice() else {
+        return None;
+    };
+    Some(Level::param(param.clone()))
+}
+
+fn phase9_quotient_public_type_defeq(
+    env: &Env,
+    resolved: &Phase9ResolvedGlobalDecl,
+    expected: &Expr,
+) -> bool {
+    phase9_quotient_defeq(
+        env,
+        &Ctx::new(),
+        &resolved.universe_params,
+        &resolved.ty,
+        expected,
+    )
+}
+
+fn phase9_quotient_public_peel_pi(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    current: Expr,
+) -> Option<(Expr, Expr)> {
+    let whnf = env.whnf(ctx, delta, &current).ok()?;
+    let Expr::Pi { ty, body, .. } = whnf else {
+        return None;
+    };
+    Some((*ty, *body))
+}
+
+fn phase9_quotient_public_setoid_carrier(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    resolved: &Phase9ResolvedQuotientInterface,
+    universe: &Level,
+    domain: &Expr,
+) -> Option<Expr> {
+    let whnf = env.whnf(ctx, delta, domain).ok()?;
+    let Expr::App(fun, carrier) = whnf else {
+        return None;
+    };
+    let Expr::Const { name, levels } = *fun else {
+        return None;
+    };
+    if name != resolved.setoid.const_name
+        || levels.len() != 1
+        || normalize_level(levels[0].clone()) != normalize_level(universe.clone())
+    {
+        return None;
+    }
+    let expected_carrier_sort = Expr::sort(Level::succ(universe.clone()));
+    if env
+        .check(ctx, delta, &carrier, &expected_carrier_sort)
+        .is_err()
+    {
+        return None;
+    }
+    Some(*carrier)
+}
+
+fn phase9_quotient_public_tail_defeq(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    actual: Expr,
+    expected: Expr,
+) -> bool {
+    phase9_quotient_defeq(env, ctx, delta, &actual, &expected)
+}
+
+fn phase9_quotient_defeq(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    actual: &Expr,
+    expected: &Expr,
+) -> bool {
+    matches!(env.is_defeq(ctx, delta, actual, expected), Ok(true))
+}
+
+fn phase9_shift_public_expr(expr: &Expr, amount: i32) -> Option<Expr> {
+    npa_kernel::subst::shift(expr, amount, 0).ok()
+}
+
+fn phase9_quotient_params_ctx(params: &[Phase9MachineTelescopeBinder]) -> Ctx {
+    let mut ctx = Ctx::new();
+    for (index, binder) in params.iter().enumerate() {
+        ctx.push_assumption(format!("p{index}"), binder.ty.clone());
+    }
+    ctx
+}
+
+fn phase9_quotient_carrier_info(
+    candidate_hash: Hash,
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    carrier: &Expr,
+) -> std::result::Result<Phase9QuotientCarrierInfo, Phase9AiEndpointResponse> {
+    let carrier_ty = env.infer(ctx, delta, carrier).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let carrier_ty = env.whnf(ctx, delta, &carrier_ty).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let Expr::Sort(level) = carrier_ty else {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        ));
+    };
+    let Some((type_level, universe)) = phase9_quotient_successor_level(&level, delta) else {
+        return Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::UniverseLevelMismatch,
+        ));
+    };
+    Ok(Phase9QuotientCarrierInfo {
+        expr: carrier.clone(),
+        type_level,
+        universe,
+    })
+}
+
+fn phase9_quotient_successor_level(level: &Level, params: &[String]) -> Option<(Level, Level)> {
+    let normalized = normalize_level(level.clone());
+    let Level::Succ(inner) = normalized else {
+        return None;
+    };
+    if !level_is_in_scope(&inner, params) {
+        return None;
+    }
+    Some((Level::succ((*inner).clone()), *inner))
+}
+
+fn phase9_validate_quotient_relation(
+    candidate_hash: Hash,
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    relation: &Expr,
+    carrier: &Expr,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    let relation_ty = env.infer(ctx, delta, relation).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let expected = phase9_quotient_relation_expected_type(carrier).map_err(|_| {
+        Phase9AiEndpointResponse::Error {
+            error: Phase9AiEndpointError::InternalValidatorFailure,
+        }
+    })?;
+    match env.is_defeq(ctx, delta, &relation_ty, &expected) {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::RelationTypeMismatch,
+        )),
+        Err(_) => Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )),
+    }
+}
+
+fn phase9_validate_quotient_type(
+    candidate_hash: Hash,
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    quotient_type: &Expr,
+    expected_quotient_type: &Expr,
+    type_level: &Level,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    let quotient_type_ty = env.infer(ctx, delta, quotient_type).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let expected_sort = Expr::sort(type_level.clone());
+    match env.is_defeq(ctx, delta, &quotient_type_ty, &expected_sort) {
+        Ok(true) => {}
+        Ok(false) => {
+            return Err(quotient_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Phase9QuotientConstructionError::QuotientTypeMismatch,
+            ));
+        }
+        Err(_) => {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            ));
+        }
+    }
+    match env.is_defeq(ctx, delta, quotient_type, expected_quotient_type) {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::QuotientTypeMismatch,
+        )),
+        Err(_) => Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )),
+    }
+}
+
+fn phase9_reconstruct_quotient_decl_hash(
+    candidate: &Phase9MachineQuotientConstructionCandidate,
+    quotient_body: &Expr,
+    type_level: &Level,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<Hash, Phase9QuotientDeclBuildError> {
+    let decl = Decl::Def {
+        name: candidate.decl_name.as_dotted(),
+        universe_params: candidate.universe_params.clone(),
+        ty: phase9_close_params_type(&candidate.params, Expr::sort(type_level.clone())),
+        value: phase9_close_params_value(&candidate.params, quotient_body.clone()),
+        reducibility: Reducibility::Reducible,
+    };
+    let import_modules = verified_imports
+        .iter()
+        .map(|import| import.verified_module().clone())
+        .collect::<Vec<_>>();
+    let cert = npa_cert::build_module_cert(
+        CoreModule {
+            name: candidate.decl_name.clone(),
+            declarations: vec![decl],
+        },
+        &import_modules,
+    )
+    .map_err(|err| match err {
+        npa_cert::CertError::Kernel(_) => Phase9QuotientDeclBuildError::KernelRejected,
+        _ => Phase9QuotientDeclBuildError::Internal,
+    })?;
+    cert.declarations
+        .first()
+        .map(|decl| decl.hashes.decl_certificate_hash)
+        .ok_or(Phase9QuotientDeclBuildError::Internal)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase9_validate_quotient_operation(
+    candidate_hash: Hash,
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    carrier: &Phase9QuotientCarrierInfo,
+    setoid_expr: &Expr,
+    operation: &Phase9MachineQuotientOperationCandidate,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    let raw_ty = env
+        .infer(ctx, delta, &operation.raw_function)
+        .map_err(|_| {
+            rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            )
+        })?;
+    let raw_ty = env.whnf(ctx, delta, &raw_ty).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let Expr::Pi {
+        ty: raw_domain,
+        body: raw_body,
+        ..
+    } = raw_ty
+    else {
+        return Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+        ));
+    };
+    match env.is_defeq(ctx, delta, &raw_domain, &carrier.expr) {
+        Ok(true) => {}
+        Ok(false) => {
+            return Err(quotient_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+            ));
+        }
+        Err(_) => {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            ));
+        }
+    }
+    let result_type = npa_kernel::subst::shift(&raw_body, -1, 0).map_err(|_| {
+        quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+        )
+    })?;
+    if matches!(env.whnf(ctx, delta, &result_type), Ok(Expr::Pi { .. })) {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        ));
+    }
+    let result_type_ty = env.infer(ctx, delta, &result_type).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let result_type_ty = env.whnf(ctx, delta, &result_type_ty).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        )
+    })?;
+    let Expr::Sort(result_sort_level) = result_type_ty else {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            None,
+        ));
+    };
+    let Some((result_type_level, _result_universe)) =
+        phase9_quotient_successor_level(&result_sort_level, delta)
+    else {
+        return Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9QuotientConstructionError::UniverseLevelMismatch,
+        ));
+    };
+    let expected = phase9_quotient_compatibility_type(
+        primitives,
+        &carrier.universe,
+        &result_type_level,
+        &carrier.expr,
+        setoid_expr,
+        &result_type,
+        &operation.raw_function,
+    )
+    .map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::InternalValidatorFailure,
+    })?;
+    if env
+        .check(ctx, delta, &operation.compatibility_proof, &expected)
+        .is_err()
+    {
+        return Err(quotient_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::KernelRejected,
+            Phase9QuotientConstructionError::CompatibilityProofMismatch,
+        ));
+    }
+    Ok(())
+}
+
+fn phase9_quotient_relation_expected_type(carrier: &Expr) -> std::result::Result<Expr, ()> {
+    Ok(Expr::pi(
+        "_",
+        carrier.clone(),
+        Expr::pi(
+            "_",
+            npa_kernel::subst::shift(carrier, 1, 0).map_err(|_| ())?,
+            Expr::sort(Level::zero()),
+        ),
+    ))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn phase9_quotient_compatibility_type(
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    carrier_universe: &Level,
+    result_type_level: &Level,
+    carrier: &Expr,
+    setoid_expr: &Expr,
+    result_type: &Expr,
+    raw_function: &Expr,
+) -> std::result::Result<Expr, ()> {
+    let carrier_after_a = npa_kernel::subst::shift(carrier, 1, 0).map_err(|_| ())?;
+    let setoid_after_ab = npa_kernel::subst::shift(setoid_expr, 2, 0).map_err(|_| ())?;
+    let relation_proof_ty = phase9_quotient_setoid_relation_app(
+        primitives,
+        carrier_universe,
+        setoid_after_ab,
+        Expr::bvar(1),
+        Expr::bvar(0),
+    );
+    let result_after_abp = npa_kernel::subst::shift(result_type, 3, 0).map_err(|_| ())?;
+    let raw_after_abp = npa_kernel::subst::shift(raw_function, 3, 0).map_err(|_| ())?;
+    let lhs = Expr::app(raw_after_abp.clone(), Expr::bvar(2));
+    let rhs = Expr::app(raw_after_abp, Expr::bvar(1));
+    let eq_body = phase9_quotient_eq_app(primitives, result_type_level, result_after_abp, lhs, rhs);
+    Ok(Expr::pi(
+        "_",
+        carrier.clone(),
+        Expr::pi(
+            "_",
+            carrier_after_a,
+            Expr::pi("_", relation_proof_ty, eq_body),
+        ),
+    ))
+}
+
+fn phase9_close_params_type(params: &[Phase9MachineTelescopeBinder], body: Expr) -> Expr {
+    params
+        .iter()
+        .rev()
+        .fold(body, |body, binder| Expr::pi("_", binder.ty.clone(), body))
+}
+
+fn phase9_close_params_value(params: &[Phase9MachineTelescopeBinder], body: Expr) -> Expr {
+    params
+        .iter()
+        .rev()
+        .fold(body, |body, binder| Expr::lam("_", binder.ty.clone(), body))
+}
+
+fn phase9_quotient_const(name: &str, levels: Vec<Level>) -> Expr {
+    Expr::konst(name.to_owned(), levels)
+}
+
+fn phase9_quotient_rel_equiv_type(
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    carrier_universe: &Level,
+    carrier: Expr,
+    relation: Expr,
+) -> Expr {
+    Expr::apps(
+        phase9_quotient_const(&primitives.rel_equiv, vec![carrier_universe.clone()]),
+        vec![carrier, relation],
+    )
+}
+
+fn phase9_quotient_setoid_mk_app(
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    carrier_universe: &Level,
+    carrier: Expr,
+    relation: Expr,
+    equivalence_proof: Expr,
+) -> Expr {
+    Expr::apps(
+        phase9_quotient_const(&primitives.setoid_mk, vec![carrier_universe.clone()]),
+        vec![carrier, relation, equivalence_proof],
+    )
+}
+
+fn phase9_quotient_setoid_relation_app(
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    carrier_universe: &Level,
+    setoid_expr: Expr,
+    lhs: Expr,
+    rhs: Expr,
+) -> Expr {
+    Expr::apps(
+        phase9_quotient_const(&primitives.setoid_relation, vec![carrier_universe.clone()]),
+        vec![setoid_expr, lhs, rhs],
+    )
+}
+
+fn phase9_quotient_type_app(
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    carrier_universe: &Level,
+    setoid_expr: Expr,
+) -> Expr {
+    Expr::app(
+        phase9_quotient_const(&primitives.quotient, vec![carrier_universe.clone()]),
+        setoid_expr,
+    )
+}
+
+fn phase9_quotient_eq_app(
+    primitives: &Phase9ResolvedQuotientPrimitives,
+    sort_level: &Level,
+    result_type: Expr,
+    lhs: Expr,
+    rhs: Expr,
+) -> Expr {
+    Expr::apps(
+        phase9_quotient_const(&primitives.eq, vec![sort_level.clone()]),
+        vec![result_type, lhs, rhs],
+    )
 }
 
 #[derive(Clone)]
@@ -4723,6 +6071,38 @@ fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[Phase9MachineTelescopeBin
     }
 }
 
+fn encode_quotient_candidate_to(
+    out: &mut Vec<u8>,
+    candidate: &Phase9MachineQuotientConstructionCandidate,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_option_hash_to(out, candidate.expected_decl_hash.as_ref());
+    encode_name_to(out, &candidate.decl_name)?;
+    encode_len_to(out, candidate.universe_params.len());
+    for param in &candidate.universe_params {
+        encode_string_to(out, param);
+    }
+    encode_telescope_to(out, &candidate.params);
+    encode_expr_to(out, &candidate.quotient_type);
+    encode_expr_to(out, &candidate.carrier);
+    encode_expr_to(out, &candidate.relation);
+    encode_expr_to(out, &candidate.equivalence_proof);
+    encode_len_to(out, candidate.operations.len());
+    for operation in &candidate.operations {
+        encode_quotient_operation_to(out, operation)?;
+    }
+    Ok(())
+}
+
+fn encode_quotient_operation_to(
+    out: &mut Vec<u8>,
+    operation: &Phase9MachineQuotientOperationCandidate,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_name_to(out, &operation.name)?;
+    encode_expr_to(out, &operation.raw_function);
+    encode_expr_to(out, &operation.compatibility_proof);
+    Ok(())
+}
+
 fn encode_typeclass_resolution_plan_to(
     out: &mut Vec<u8>,
     plan: &Phase9MachineTypeclassResolutionPlan,
@@ -5277,6 +6657,21 @@ fn decode_inductive_proposal(
         return Err(DecodeError::Malformed);
     }
     Ok(proposal)
+}
+
+fn decode_quotient_candidate(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineQuotientConstructionCandidate, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let mut budget = Phase9InductiveDecodeBudget::new();
+    let candidate = decoder.quotient_candidate(&mut budget)?;
+    decoder.done()?;
+    let encoded = phase9_quotient_candidate_canonical_bytes(&candidate)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(candidate)
 }
 
 fn decode_typeclass_resolution_plan(
@@ -5866,6 +7261,51 @@ impl<'a> Decoder<'a> {
             });
         }
         Ok(telescope)
+    }
+
+    fn quotient_candidate(
+        &mut self,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Phase9MachineQuotientConstructionCandidate, DecodeError> {
+        let expected_decl_hash = self.option_hash()?;
+        let decl_name = self.name()?;
+        let universe_params = self.string_list_with_cap(MAX_PHASE9_QUOTIENT_ITEMS)?;
+        let params = self.telescope_with_cap(MAX_PHASE9_QUOTIENT_ITEMS, budget)?;
+        let quotient_type = self.expr_counted(budget)?;
+        let carrier = self.expr_counted(budget)?;
+        let relation = self.expr_counted(budget)?;
+        let equivalence_proof = self.expr_counted(budget)?;
+        let operation_len = self.u64()?;
+        if operation_len > MAX_PHASE9_QUOTIENT_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let operation_len = usize::try_from(operation_len).map_err(|_| DecodeError::Malformed)?;
+        let mut operations = Vec::new();
+        for _ in 0..operation_len {
+            operations.push(self.quotient_operation(budget)?);
+        }
+        Ok(Phase9MachineQuotientConstructionCandidate {
+            expected_decl_hash,
+            decl_name,
+            universe_params,
+            params,
+            quotient_type,
+            carrier,
+            relation,
+            equivalence_proof,
+            operations,
+        })
+    }
+
+    fn quotient_operation(
+        &mut self,
+        budget: &mut Phase9InductiveDecodeBudget,
+    ) -> std::result::Result<Phase9MachineQuotientOperationCandidate, DecodeError> {
+        Ok(Phase9MachineQuotientOperationCandidate {
+            name: self.name()?,
+            raw_function: self.expr_counted(budget)?,
+            compatibility_proof: self.expr_counted(budget)?,
+        })
     }
 
     fn expr_counted(
@@ -6822,6 +8262,463 @@ mod tests {
         phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
+    fn quotient_u() -> Level {
+        Level::param("u")
+    }
+
+    fn quotient_v() -> Level {
+        Level::param("v")
+    }
+
+    fn quotient_type_level() -> Level {
+        Level::succ(quotient_u())
+    }
+
+    fn quotient_carrier_with(level: Level) -> Expr {
+        Expr::konst("Q.Carrier", vec![level])
+    }
+
+    fn quotient_carrier() -> Expr {
+        quotient_carrier_with(quotient_u())
+    }
+
+    fn quotient_result() -> Expr {
+        Expr::konst("Q.Result", vec![])
+    }
+
+    fn quotient_rel() -> Expr {
+        Expr::konst("Q.rel", vec![quotient_u()])
+    }
+
+    fn quotient_equiv() -> Expr {
+        Expr::konst("Q.equiv", vec![quotient_u()])
+    }
+
+    fn quotient_to_result() -> Expr {
+        Expr::konst("Q.toResult", vec![quotient_u()])
+    }
+
+    fn quotient_primitives_for_tests() -> Phase9ResolvedQuotientPrimitives {
+        Phase9ResolvedQuotientPrimitives {
+            setoid_mk: "Q.SetoidMk".to_owned(),
+            setoid_relation: "Q.SetoidRelation".to_owned(),
+            rel_equiv: "Q.RelEquiv".to_owned(),
+            quotient: "Q.Quotient".to_owned(),
+            eq: "Q.Eq".to_owned(),
+        }
+    }
+
+    fn quotient_setoid_carrier(level: Level) -> Expr {
+        Expr::app(
+            Expr::konst("Q.Setoid", vec![level.clone()]),
+            quotient_carrier_with(level),
+        )
+    }
+
+    fn quotient_setoid_expr() -> Expr {
+        phase9_quotient_setoid_mk_app(
+            &quotient_primitives_for_tests(),
+            &quotient_u(),
+            quotient_carrier(),
+            quotient_rel(),
+            quotient_equiv(),
+        )
+    }
+
+    fn quotient_type_expr() -> Expr {
+        phase9_quotient_type_app(
+            &quotient_primitives_for_tests(),
+            &quotient_u(),
+            quotient_setoid_expr(),
+        )
+    }
+
+    fn quotient_relation_type_for_carrier(carrier: Expr) -> Expr {
+        Expr::pi(
+            "_",
+            carrier.clone(),
+            Expr::pi(
+                "_",
+                npa_kernel::subst::shift(&carrier, 1, 0).unwrap(),
+                Expr::sort(Level::zero()),
+            ),
+        )
+    }
+
+    fn quotient_generic_relation_type() -> Expr {
+        Expr::pi(
+            "_",
+            Expr::bvar(0),
+            Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
+        )
+    }
+
+    fn quotient_eq_type() -> Expr {
+        Expr::pi(
+            "_",
+            Expr::sort(Level::param("w")),
+            Expr::pi(
+                "_",
+                Expr::bvar(0),
+                Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
+            ),
+        )
+    }
+
+    fn quotient_bad_eq_type() -> Expr {
+        Expr::pi(
+            "_",
+            Expr::sort(Level::param("w")),
+            Expr::pi(
+                "_",
+                Expr::bvar(0),
+                Expr::pi("_", Expr::bvar(1), Expr::sort(Level::succ(Level::zero()))),
+            ),
+        )
+    }
+
+    fn quotient_mk_app(setoid: Expr, value: Expr) -> Expr {
+        Expr::apps(
+            Expr::konst("Q.QuotientMk", vec![quotient_u()]),
+            vec![setoid, value],
+        )
+    }
+
+    fn quotient_sound_type() -> Expr {
+        let relation_premise = phase9_quotient_setoid_relation_app(
+            &quotient_primitives_for_tests(),
+            &quotient_u(),
+            Expr::bvar(2),
+            Expr::bvar(1),
+            Expr::bvar(0),
+        );
+        let quotient_for_s =
+            Expr::app(Expr::konst("Q.Quotient", vec![quotient_u()]), Expr::bvar(3));
+        let lhs = quotient_mk_app(Expr::bvar(3), Expr::bvar(2));
+        let rhs = quotient_mk_app(Expr::bvar(3), Expr::bvar(1));
+        let equality = phase9_quotient_eq_app(
+            &quotient_primitives_for_tests(),
+            &quotient_type_level(),
+            quotient_for_s,
+            lhs,
+            rhs,
+        );
+        Expr::pi(
+            "_",
+            quotient_setoid_carrier(quotient_u()),
+            Expr::pi(
+                "_",
+                quotient_carrier(),
+                Expr::pi(
+                    "_",
+                    quotient_carrier(),
+                    Expr::pi("_", relation_premise, equality),
+                ),
+            ),
+        )
+    }
+
+    fn quotient_lift_type() -> Expr {
+        let result_sort = Expr::sort(Level::succ(quotient_v()));
+        let raw_function_ty = Expr::pi("_", quotient_carrier(), Expr::bvar(1));
+        let compatibility_ty = phase9_quotient_compatibility_type(
+            &quotient_primitives_for_tests(),
+            &quotient_u(),
+            &Level::succ(quotient_v()),
+            &quotient_carrier(),
+            &Expr::bvar(2),
+            &Expr::bvar(1),
+            &Expr::bvar(0),
+        )
+        .unwrap();
+        let quotient_arg_ty =
+            Expr::app(Expr::konst("Q.Quotient", vec![quotient_u()]), Expr::bvar(3));
+        Expr::pi(
+            "_",
+            quotient_setoid_carrier(quotient_u()),
+            Expr::pi(
+                "_",
+                result_sort,
+                Expr::pi(
+                    "_",
+                    raw_function_ty,
+                    Expr::pi(
+                        "_",
+                        compatibility_ty,
+                        Expr::pi("_", quotient_arg_ty, Expr::bvar(3)),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn quotient_compatibility_type() -> Expr {
+        phase9_quotient_compatibility_type(
+            &quotient_primitives_for_tests(),
+            &quotient_u(),
+            &Level::succ(Level::zero()),
+            &quotient_carrier(),
+            &quotient_setoid_expr(),
+            &quotient_result(),
+            &quotient_to_result(),
+        )
+        .unwrap()
+    }
+
+    fn verified_quotient_import() -> VerifiedImportRef {
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("Q"),
+            declarations: vec![
+                npa_kernel::Decl::Axiom {
+                    name: "Q.Carrier".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::sort(quotient_type_level()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.Result".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::succ(Level::zero())),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.Setoid".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "_",
+                        Expr::sort(quotient_type_level()),
+                        Expr::sort(quotient_type_level()),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.RelEquiv".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "_",
+                        Expr::sort(quotient_type_level()),
+                        Expr::pi(
+                            "_",
+                            quotient_generic_relation_type(),
+                            Expr::sort(Level::zero()),
+                        ),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.SetoidMk".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "_",
+                        Expr::sort(quotient_type_level()),
+                        Expr::pi(
+                            "_",
+                            quotient_generic_relation_type(),
+                            Expr::pi(
+                                "_",
+                                Expr::apps(
+                                    Expr::konst("Q.RelEquiv", vec![quotient_u()]),
+                                    vec![Expr::bvar(1), Expr::bvar(0)],
+                                ),
+                                Expr::app(
+                                    Expr::konst("Q.Setoid", vec![quotient_u()]),
+                                    Expr::bvar(2),
+                                ),
+                            ),
+                        ),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.SetoidRelation".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "_",
+                        quotient_setoid_carrier(quotient_u()),
+                        Expr::pi(
+                            "_",
+                            quotient_carrier(),
+                            Expr::pi("_", quotient_carrier(), Expr::sort(Level::zero())),
+                        ),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.Quotient".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "_",
+                        quotient_setoid_carrier(quotient_u()),
+                        Expr::sort(quotient_type_level()),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.QuotientMk".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi(
+                        "_",
+                        quotient_setoid_carrier(quotient_u()),
+                        Expr::pi(
+                            "_",
+                            quotient_carrier(),
+                            Expr::app(Expr::konst("Q.Quotient", vec![quotient_u()]), Expr::bvar(1)),
+                        ),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.Eq".to_owned(),
+                    universe_params: vec!["w".to_owned()],
+                    ty: quotient_eq_type(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.QuotientSound".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: quotient_sound_type(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.QuotientLift".to_owned(),
+                    universe_params: vec!["u".to_owned(), "v".to_owned()],
+                    ty: quotient_lift_type(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.rel".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: quotient_relation_type_for_carrier(quotient_carrier()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.equiv".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: phase9_quotient_rel_equiv_type(
+                        &quotient_primitives_for_tests(),
+                        &quotient_u(),
+                        quotient_carrier(),
+                        quotient_rel(),
+                    ),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.toResult".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi("_", quotient_carrier(), quotient_result()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.compat".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: quotient_compatibility_type(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.BadPrimitive".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.BadEq".to_owned(),
+                    universe_params: vec!["w".to_owned()],
+                    ty: quotient_bad_eq_type(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.badRel".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::pi("_", quotient_carrier(), Expr::sort(Level::zero())),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.badEquiv".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::sort(Level::zero()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "Q.badCompat".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: Expr::sort(Level::zero()),
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .unwrap();
+        VerifiedImportRef::from_verified_module(&verified).unwrap()
+    }
+
+    fn quotient_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+        let export = import
+            .exports()
+            .iter()
+            .find(|export| export.name == Name::from_dotted(name))
+            .unwrap();
+        Phase9AiGlobalRef {
+            module: import.module().clone(),
+            export_hash: import.export_hash(),
+            certificate_hash: import.certificate_hash(),
+            name: export.name.clone(),
+            decl_interface_hash: export.decl_interface_hash,
+        }
+    }
+
+    fn quotient_options(import: &VerifiedImportRef) -> Phase9QuotientOptions {
+        Phase9QuotientOptions {
+            setoid: quotient_global_ref_for(import, "Q.Setoid"),
+            setoid_mk: quotient_global_ref_for(import, "Q.SetoidMk"),
+            setoid_relation: quotient_global_ref_for(import, "Q.SetoidRelation"),
+            rel_equiv: quotient_global_ref_for(import, "Q.RelEquiv"),
+            quotient: quotient_global_ref_for(import, "Q.Quotient"),
+            quotient_mk: quotient_global_ref_for(import, "Q.QuotientMk"),
+            quotient_sound: quotient_global_ref_for(import, "Q.QuotientSound"),
+            quotient_lift: quotient_global_ref_for(import, "Q.QuotientLift"),
+            eq: quotient_global_ref_for(import, "Q.Eq"),
+        }
+    }
+
+    fn quotient_candidate() -> Phase9MachineQuotientConstructionCandidate {
+        Phase9MachineQuotientConstructionCandidate {
+            expected_decl_hash: None,
+            decl_name: Name::from_dotted("Q.GeneratedQuotient"),
+            universe_params: vec!["u".to_owned()],
+            params: Vec::new(),
+            quotient_type: quotient_type_expr(),
+            carrier: quotient_carrier(),
+            relation: quotient_rel(),
+            equivalence_proof: quotient_equiv(),
+            operations: vec![Phase9MachineQuotientOperationCandidate {
+                name: Name::from_dotted("op"),
+                raw_function: quotient_to_result(),
+                compatibility_proof: Expr::konst("Q.compat", vec![quotient_u()]),
+            }],
+        }
+    }
+
+    fn quotient_request(
+        import: &VerifiedImportRef,
+        candidate: Phase9MachineQuotientConstructionCandidate,
+        options_override: Option<Phase9AiOptions>,
+    ) -> Vec<u8> {
+        let mut options = options_override.unwrap_or_default();
+        if options.quotient.is_none() {
+            options.quotient = Some(quotient_options(import));
+        }
+        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
+        let env_fingerprint = phase9_ai_env_fingerprint(
+            Phase9AiProfileVersion::MvpV1,
+            Phase9AiTaskKind::QuotientConstruction,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::QuotientConstruction,
+            target: Phase9AiTarget {
+                env_fingerprint,
+                target_decl_hash: None,
+                goal_fingerprint: None,
+            },
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_quotient_candidate_canonical_bytes(&candidate).unwrap(),
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
     fn verified_typeclass_import() -> VerifiedImportRef {
         let obj = Expr::konst("TC.Obj", vec![]);
         let cls = |arg: Expr| Expr::app(Expr::konst("TC.Cls", vec![]), arg);
@@ -7645,6 +9542,167 @@ mod tests {
             Phase9AiValidationError::UnsupportedFeature,
             Some(Phase9AiFeatureError::AdvancedInductive(
                 Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            )),
+        );
+    }
+
+    #[test]
+    fn quotient_valid_request_is_unsupported_before_phase8_adoption() {
+        let import = verified_quotient_import();
+        let request = quotient_request(&import, quotient_candidate(), None);
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        );
+    }
+
+    #[test]
+    fn quotient_primitive_interface_mismatch_is_feature_rejected() {
+        let import = verified_quotient_import();
+        let mut options = Phase9AiOptions::default();
+        let mut quotient = quotient_options(&import);
+        quotient.setoid = quotient_global_ref_for(&import, "Q.BadPrimitive");
+        options.quotient = Some(quotient);
+        let request = quotient_request(&import, quotient_candidate(), Some(options));
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::QuotientConstruction(
+                Phase9QuotientConstructionError::PrimitiveInterfaceMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn quotient_same_arity_eq_interface_mismatch_is_feature_rejected() {
+        let import = verified_quotient_import();
+        let mut options = Phase9AiOptions::default();
+        let mut quotient = quotient_options(&import);
+        quotient.eq = quotient_global_ref_for(&import, "Q.BadEq");
+        options.quotient = Some(quotient);
+        let request = quotient_request(&import, quotient_candidate(), Some(options));
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::QuotientConstruction(
+                Phase9QuotientConstructionError::PrimitiveInterfaceMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn quotient_relation_type_mismatch_is_feature_rejected() {
+        let import = verified_quotient_import();
+        let mut candidate = quotient_candidate();
+        candidate.relation = Expr::konst("Q.badRel", vec![quotient_u()]);
+        let request = quotient_request(&import, candidate, None);
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::QuotientConstruction(
+                Phase9QuotientConstructionError::RelationTypeMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn quotient_equivalence_proof_mismatch_is_kernel_rejected_with_feature_error() {
+        let import = verified_quotient_import();
+        let mut candidate = quotient_candidate();
+        candidate.equivalence_proof = Expr::konst("Q.badEquiv", vec![quotient_u()]);
+        let request = quotient_request(&import, candidate, None);
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::KernelRejected,
+            Some(Phase9AiFeatureError::QuotientConstruction(
+                Phase9QuotientConstructionError::EquivalenceProofMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn quotient_expected_decl_hash_mismatch_precedes_operation_validation() {
+        let import = verified_quotient_import();
+        let mut candidate = quotient_candidate();
+        candidate.expected_decl_hash = Some(hash(201));
+        candidate.operations[0].compatibility_proof =
+            Expr::konst("Q.badCompat", vec![quotient_u()]);
+        let request = quotient_request(&import, candidate, None);
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+
+    #[test]
+    fn quotient_raw_function_type_mismatch_is_feature_rejected() {
+        let import = verified_quotient_import();
+        let mut candidate = quotient_candidate();
+        candidate.operations[0].raw_function = Expr::konst("Q.badEquiv", vec![quotient_u()]);
+        let request = quotient_request(&import, candidate, None);
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::QuotientConstruction(
+                Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn quotient_compatibility_proof_mismatch_is_kernel_rejected_with_feature_error() {
+        let import = verified_quotient_import();
+        let mut candidate = quotient_candidate();
+        candidate.operations[0].compatibility_proof =
+            Expr::konst("Q.badCompat", vec![quotient_u()]);
+        let request = quotient_request(&import, candidate, None);
+
+        assert_rejected(
+            run_phase9_quotient_check_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::KernelRejected,
+            Some(Phase9AiFeatureError::QuotientConstruction(
+                Phase9QuotientConstructionError::CompatibilityProofMismatch,
             )),
         );
     }
