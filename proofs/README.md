@@ -103,6 +103,80 @@ Implemented:
 | `nat_const_zero` | `Nat -> Nat`, with proof `Nat.zero` |
 | `nat_apply_fn` | `(Nat -> Nat) -> Nat -> Nat` |
 
+### P4: More Nat Search Targets
+
+Module: `Proofs.Ai.Nat`
+
+Extend the Nat corpus with closed local/application patterns before introducing recursion or
+arithmetic lemmas. These should remain no-axiom proofs over `Std.Nat.Basic` and `Std.Logic.Eq`.
+
+Implemented:
+
+| Theorem | Shape |
+| --- | --- |
+| `nat_const_succ_zero` | `Nat -> Nat`, with proof `Nat.succ Nat.zero` |
+| `nat_apply_twice` | `(Nat -> Nat) -> Nat -> Nat`, with proof `f (f n)` |
+| `nat_compose` | `(Nat -> Nat) -> (Nat -> Nat) -> Nat -> Nat` |
+| `nat_ignore_middle` | `Nat -> Nat -> Nat -> Nat`, selecting the first argument |
+| `nat_select_middle` | `Nat -> Nat -> Nat -> Nat`, selecting the second argument |
+| `nat_select_last` | `Nat -> Nat -> Nat -> Nat`, selecting the third argument |
+| `nat_succ_self_eq` | `forall (n : Nat), Nat.succ n = Nat.succ n` |
+
+### P5: Equality Shape Expansion
+
+Module: `Proofs.Ai.Eq`
+
+Add more refl-only equality targets with deeper application spines. The goal is to teach producers
+to preserve the exact head, universe, and argument structure without relying on rewrite search.
+
+Planned:
+
+| Theorem | Shape |
+| --- | --- |
+| `eq_refl_apply_twice` | `f (f x) = f (f x)` |
+| `eq_refl_higher_apply` | `h f = h f` |
+| `eq_refl_nested_compose` | `f (g (h x)) = f (g (h x))` |
+| `eq_refl_prop_apply` | `h p = h p` for proposition-valued functions |
+| `eq_local_passthrough` | `(h : x = x) -> x = x` |
+| `eq_refl_nat_function` | `f n = f n` specialized to Nat |
+
+### P6: Proposition Search Expansion
+
+Module: `Proofs.Ai.Prop`
+
+Split proposition-only implication patterns out of `Proofs.Ai.Basic` once the Basic module becomes
+large. These remain import-free and should exercise binder ordering, argument permutation, and
+higher-order implication search.
+
+Planned:
+
+| Theorem | Shape |
+| --- | --- |
+| `imp_chain4` | `(P -> Q) -> (Q -> R) -> (R -> S) -> P -> S` |
+| `imp_permute3` | `(P -> Q -> R -> S) -> R -> P -> Q -> S` |
+| `imp_apply_twice` | `(P -> P) -> P -> P`, with proof `h (h p)` |
+| `imp_const3` | `P -> Q -> R -> P` |
+| `imp_flip_chain` | `(Q -> R) -> (P -> Q) -> P -> R` |
+| `imp_higher_apply` | `((P -> Q) -> R) -> (P -> Q) -> R` |
+
+### P7: Reduction Smoke Corpus
+
+Module: `Proofs.Ai.Reduction`
+
+Introduce small beta/zeta/delta-shaped examples only after the non-reduction corpora are stable.
+Items involving named helper definitions may require extending the artifact generator beyond
+theorem-only modules.
+
+Planned:
+
+| Theorem | Shape |
+| --- | --- |
+| `beta_id_nat` | `Nat -> Nat`, with proof `(fun x => x) n` |
+| `beta_const_nat` | `Nat -> Nat -> Nat`, with proof `(fun x => fun _ => x) n m` |
+| `let_id_nat` | `Nat -> Nat`, with proof `let x : Nat := n in x` |
+| `let_const_nat` | `Nat -> Nat`, with proof `let z : Nat := Nat.zero in z` |
+| `delta_id_nat` | `Nat -> Nat` through a local named identity definition |
+
 Regenerate the corpus:
 
 ```sh

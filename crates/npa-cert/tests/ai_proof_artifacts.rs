@@ -54,6 +54,13 @@ const NAT_THEOREMS: &[&str] = &[
     "nat_id",
     "nat_const_zero",
     "nat_apply_fn",
+    "nat_const_succ_zero",
+    "nat_apply_twice",
+    "nat_compose",
+    "nat_ignore_middle",
+    "nat_select_middle",
+    "nat_select_last",
+    "nat_succ_self_eq",
 ];
 
 const EXPECTED_MODULES: &[ExpectedModule] = &[

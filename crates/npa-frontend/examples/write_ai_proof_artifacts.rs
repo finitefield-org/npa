@@ -265,6 +265,49 @@ const NAT_THEOREMS: &[TheoremArtifact] = &[
         statement: "forall (f : forall (n : Nat), Nat), forall (n : Nat), Nat",
         proof: "fun f => fun n => f n",
     },
+    TheoremArtifact {
+        name: "nat_const_succ_zero",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "fun n => Nat.succ Nat.zero",
+    },
+    TheoremArtifact {
+        name: "nat_apply_twice",
+        universe_params: &[],
+        statement: "forall (f : forall (n : Nat), Nat), forall (n : Nat), Nat",
+        proof: "fun f => fun n => f (f n)",
+    },
+    TheoremArtifact {
+        name: "nat_compose",
+        universe_params: &[],
+        statement:
+            "forall (f : forall (n : Nat), Nat), forall (g : forall (n : Nat), Nat), forall (n : Nat), Nat",
+        proof: "fun f => fun g => fun n => f (g n)",
+    },
+    TheoremArtifact {
+        name: "nat_ignore_middle",
+        universe_params: &[],
+        statement: "forall (x : Nat), forall (y : Nat), forall (z : Nat), Nat",
+        proof: "fun x => fun y => fun z => x",
+    },
+    TheoremArtifact {
+        name: "nat_select_middle",
+        universe_params: &[],
+        statement: "forall (x : Nat), forall (y : Nat), forall (z : Nat), Nat",
+        proof: "fun x => fun y => fun z => y",
+    },
+    TheoremArtifact {
+        name: "nat_select_last",
+        universe_params: &[],
+        statement: "forall (x : Nat), forall (y : Nat), forall (z : Nat), Nat",
+        proof: "fun x => fun y => fun z => z",
+    },
+    TheoremArtifact {
+        name: "nat_succ_self_eq",
+        universe_params: &[],
+        statement: "forall (n : Nat), @Eq.{1} Nat (Nat.succ n) (Nat.succ n)",
+        proof: "fun n => @Eq.refl.{1} Nat (Nat.succ n)",
+    },
 ];
 
 const EQ_IMPORT_SOURCE: &str = "\
