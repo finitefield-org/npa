@@ -3,11 +3,11 @@ use std::collections::BTreeSet;
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
     FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr, HumanImportedSourceInterface,
-    HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
+    HumanName, HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
 };
 use npa_kernel::Expr;
 use npa_tactic::{
-    GoalId, MachineProofDelta, MachineProofState, MachineTacticDiagnostic, MetaVarId,
+    GoalId, MachineProofDelta, MachineProofState, MachineTacticDiagnostic, MetaVarId, TacticBudget,
 };
 
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
@@ -138,6 +138,20 @@ pub struct HumanExactTacticOk {
     pub inferred_type: Expr,
 }
 
+#[derive(Clone, Debug)]
+pub struct HumanIntroTacticRequest<'name, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub name: &'name HumanName,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanIntroTacticOk {
+    pub state: MachineProofState,
+    pub delta: MachineProofDelta,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileError {
     pub diagnostic: HumanDiagnostic,
@@ -180,6 +194,24 @@ impl From<HumanDiagnostic> for HumanTacticTermError {
 }
 
 impl From<MachineTacticDiagnostic> for HumanTacticTermError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanIntroTacticError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanIntroTacticError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanIntroTacticError {
     fn from(diagnostic: MachineTacticDiagnostic) -> Self {
         Self::Machine(diagnostic)
     }

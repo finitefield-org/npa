@@ -458,7 +458,7 @@ AI 速度ガード:
 
 ### P4H-06: `intro` を実装する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-03
 

@@ -1,8 +1,9 @@
 use crate::{
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk,
-    HumanExactTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
-    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanExactTacticRequest, HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest,
+    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanTacticTermCheckOk,
+    HumanTacticTermCheckRequest, HumanTacticTermError,
 };
 use npa_kernel::Decl;
 
@@ -195,8 +196,73 @@ pub fn run_human_exact_tactic(
     })
 }
 
+pub fn run_human_intro_tactic(
+    request: HumanIntroTacticRequest<'_, '_>,
+) -> Result<HumanIntroTacticOk, HumanIntroTacticError> {
+    let name = human_intro_name(request.name)?;
+    let (state, delta) = npa_tactic::run_machine_tactic_with_budget(
+        request.state,
+        npa_tactic::MachineTactic::Intro {
+            goal_id: request.goal_id,
+            name,
+        },
+        request.budget,
+    )
+    .map_err(|diagnostic| human_intro_machine_error(diagnostic, request.name.span))?;
+    npa_tactic::validate_machine_proof_state(&state)?;
+
+    Ok(HumanIntroTacticOk { state, delta })
+}
+
 pub fn human_api_default_compile_options() -> HumanApiCompileOptions {
     HumanApiCompileOptions::default()
+}
+
+fn human_intro_name(name: &npa_frontend::HumanName) -> Result<String, HumanIntroTacticError> {
+    if name.parts.len() != 1 {
+        return Err(human_intro_invalid_diagnostic(
+            name.span,
+            format!(
+                "intro binder name must be a single identifier, got {}",
+                name.as_dotted()
+            ),
+        )
+        .into());
+    }
+    Ok(name.parts[0].clone())
+}
+
+fn human_intro_machine_error(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    span: npa_frontend::Span,
+) -> HumanIntroTacticError {
+    match diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::TypeMismatch => {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::ExpectedFunctionType,
+                span,
+                "`intro` can only be used when the target is a function type or forall.",
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            .into()
+        }
+        npa_tactic::MachineTacticDiagnosticKind::InvalidMachineTactic => {
+            human_intro_invalid_diagnostic(span, diagnostic.message.to_string()).into()
+        }
+        _ => diagnostic.into(),
+    }
+}
+
+fn human_intro_invalid_diagnostic(
+    span: npa_frontend::Span,
+    message: impl Into<String>,
+) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+        span,
+        message,
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
 }
 
 fn frontend_import_from_tactic_ref(
@@ -690,6 +756,237 @@ theorem id_nat : forall (n : Nat), Nat := by simp-lite",
         );
     }
 
+    #[test]
+    fn human_intro_creates_nat_body_goal_via_machine_intro() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanIntroNat"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanIntroNat.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let name = human_name("n", 0, 1);
+        let budget = npa_tactic::TacticBudget::default();
+
+        let human = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &started.state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &name,
+            budget,
+        })
+        .expect("Human intro should create a Nat body goal");
+        let direct_machine = npa_tactic::run_machine_tactic_with_budget(
+            &started.state,
+            npa_tactic::MachineTactic::Intro {
+                goal_id: npa_tactic::GoalId(0),
+                name: "n".to_owned(),
+            },
+            budget,
+        )
+        .expect("direct Machine intro should match Human intro");
+
+        assert_eq!(human.delta, direct_machine.1);
+        assert_eq!(human.state.fingerprint, direct_machine.0.fingerprint);
+        assert_eq!(human.state.open_goals, vec![npa_tactic::GoalId(1)]);
+        let goal = human
+            .state
+            .goal(npa_tactic::GoalId(1))
+            .expect("intro should create goal 1");
+        assert_eq!(goal.context.len(), 1);
+        assert_eq!(goal.context[0].name, "n");
+        assert_eq!(goal.context[0].ty, npa_kernel::nat());
+        assert_eq!(goal.target, npa_kernel::nat());
+    }
+
+    #[test]
+    fn human_intro_non_pi_returns_human_expected_function_diagnostic() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanIntroNonPi"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanIntroNonPi.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem target : Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start a non-Pi theorem");
+        let name = human_name("n", 0, 1);
+
+        let err = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &started.state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &name,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("intro should reject non-Pi targets as a Human diagnostic");
+
+        let HumanIntroTacticError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("non-Pi intro should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::ExpectedFunctionType
+        );
+        assert_eq!(
+            diagnostic
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.phase),
+            Some(npa_frontend::HumanDiagnosticPhase::Elaborator)
+        );
+        assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
+    }
+
+    #[test]
+    fn human_intro_rejects_shadowing_name_deterministically() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanIntroShadow"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanIntroShadow.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem target : forall (n : Nat), forall (m : Nat), Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start a two-argument theorem");
+        let name = human_name("n", 0, 1);
+        let first = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &started.state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &name,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("first intro should succeed");
+
+        let err = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &first.state,
+            goal_id: npa_tactic::GoalId(1),
+            name: &name,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("second intro should reject local shadowing deterministically");
+
+        let HumanIntroTacticError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("intro shadowing should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        );
+        assert_eq!(first.state.open_goals, vec![npa_tactic::GoalId(1)]);
+    }
+
+    #[test]
+    fn human_intro_rejects_invalid_binder_name_deterministically() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanIntroInvalidName"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanIntroInvalidName.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let name = human_name_parts(&["Nat", "x"], 0, 5);
+
+        let err = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &started.state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &name,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("intro should reject non-local binder names deterministically");
+
+        let HumanIntroTacticError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("invalid intro binder should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        );
+        assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
+    }
+
+    #[test]
+    fn human_intro_then_exact_closes_id_nat() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanIntroExact"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanIntroExact.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let name = human_name("n", 0, 1);
+        let intro = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &started.state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &name,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human intro should create the body goal");
+        let term = npa_frontend::parse_human_term(npa_frontend::FileId(0), "n")
+            .expect("Human exact local should parse");
+        let exact = run_human_exact_tactic(HumanExactTacticRequest {
+            state: &intro.state,
+            goal_id: npa_tactic::GoalId(1),
+            term: &term,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human exact should close the body goal after intro");
+
+        assert!(exact.state.open_goals.is_empty());
+        let proof = npa_tactic::extract_closed_machine_proof(&exact.state)
+            .expect("intro + exact proof should extract");
+        assert_eq!(
+            proof,
+            npa_kernel::Expr::lam("n", npa_kernel::nat(), npa_kernel::Expr::bvar(0))
+        );
+    }
+
     fn workspace_manifest(crate_name: &str) -> String {
         let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -793,6 +1090,17 @@ theorem id_nat : forall (n : Nat), Nat := by simp-lite",
             err.diagnostic.kind,
             crate::MachineApiErrorKind::MachineTermParseError
         );
+    }
+
+    fn human_name(value: &str, start: u32, end: u32) -> npa_frontend::HumanName {
+        human_name_parts(&[value], start, end)
+    }
+
+    fn human_name_parts(parts: &[&str], start: u32, end: u32) -> npa_frontend::HumanName {
+        npa_frontend::HumanName::new(
+            parts.iter().map(|part| (*part).to_owned()).collect(),
+            npa_frontend::Span::new(npa_frontend::FileId(0), start, end),
+        )
     }
 
     fn verified_human_import(
