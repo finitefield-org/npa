@@ -20,6 +20,72 @@ tactic は proof term を組み立てるだけ。
 最後に kernel が proof term を検査する。
 ```
 
+# 0. AI 向け Machine tactic fast path を遅くしない制約
+
+Phase 4 Human は、人間向けの `by` block と tactic script を追加する層です。
+これは AI 向けの Machine tactic / Machine API の実行速度を損なわない仕方で実装します。
+Human syntax は便利な入力形式にすぎず、AI が大量候補を投げる経路の hot path には入れません。
+
+AI 向け経路は、引き続き次の Machine 表現だけを通ります。
+
+```text
+Phase 7 / Phase 9 / Machine API
+  → MachineTacticCandidate JSON
+  → validate_machine_tactic_candidate
+  → run_machine_tactic_with_budget / run_machine_tactic_candidates_batch
+  → MachineTermSource / parse_machine_* / canonicalize_machine_term_source
+  → kernel / certificate
+```
+
+人間向け経路は、Human syntax を一度だけ解釈し、既存の Machine tactic または core proof term に落としてから
+検査へ進みます。
+
+```text
+Human source
+  → parse_human_* / `by` tactic script parser
+  → resolve_human_*
+  → MachineTactic または checked core proof term へ変換
+  → run_machine_tactic_* / extract proof
+  → kernel / certificate
+```
+
+したがって、実装では次の制約を守ります。
+
+```text
+- Human tactic parser を `crates/npa-tactic` の Machine tactic hot path に入れない。
+- `MachineTacticCandidate`, `MachineTactic`, `MachineTermSource` に Human notation / namespace / implicit 補助情報を混ぜない。
+- `run_machine_tactic_with_budget` と `run_machine_tactic_candidates_batch` で Human syntax の fallback parse を行わない。
+- `parse_machine_*` と `canonicalize_machine_term_source` は Human syntax を受け付けるように拡張しない。
+- Phase 7 / Phase 9 の automation は Machine JSON と Machine term canonicalization を使い続ける。
+- Human convenience は untrusted な前処理であり、certificate 化前に core proof term として kernel に検査される。
+- Human tactic bridge に I/O、network、plugin loading、AI 呼び出し、探索用 import lookup を入れない。
+- Machine tactic の budget、hash、cache key は Machine payload / proof state fingerprint / deterministic budget だけに依存させる。
+```
+
+これにより、人間向けの構文が増えても、AI 向けの大量候補検証は Human parser や名前解決を経由しません。
+Phase 4 Human の実装レビューでは、この分離が維持されていることを必ず確認します。
+
+確認方法は次の通りです。
+
+```sh
+rg -n "parse_human|compile_human|Human" \
+  crates/npa-tactic/src/lib.rs crates/npa-api/src/tactic.rs crates/npa-api/src/adapter.rs
+
+rg -n "parse_machine|canonicalize_machine_term_source|MachineTacticCandidate" \
+  crates/npa-api/src/phase7.rs crates/npa-api/src/phase9.rs
+```
+
+前者は Machine hot path に Human parser が混入していないこと、後者は Phase 7 / Phase 9 が
+Machine API を使い続けていることを確認するための静的検査です。
+実装変更時は、少なくとも Machine surface / Phase 7 / Phase 9 / tactic crate の回帰テストを通します。
+
+```sh
+cargo test -p npa-frontend --lib machine_surface
+cargo test -p npa-api phase7
+cargo test -p npa-api phase9
+cargo test -p npa-tactic
+```
+
 この Phase 4 文書内の tactic script 例では、読みやすさのため `0` を使うことがあります。
 Phase 3 MVP の実入力では、数値リテラルを入れるまでは `Nat.zero` か開いた namespace 内の
 `zero` と書ければ十分です。tactic が組み立てる core proof term には `Nat.zero` への
@@ -1121,6 +1187,9 @@ Hint:
 # 10. tactic parser
 
 Phase 4 では、簡単な tactic script parser も必要です。
+この parser は Human source 専用です。
+AI 向けの `MachineTacticCandidate` JSON parser や Machine term canonicalizer とは別物として実装し、
+Machine tactic の batch 実行時には呼びません。
 
 ```npa
 by
@@ -1378,6 +1447,9 @@ Phase 4 が完了したと言える条件はこれです。
 - `induction` が Nat.rec による base/step goal を作れる
 - tactic 後の proof term を kernel が検査できる
 - unresolved goal が残った場合は certificate 化を拒否できる
+- Human tactic parser / bridge が AI 向け Machine tactic API の hot path に入っていない
+- Phase 7 / Phase 9 が Human source を経由せず Machine API を使い続ける regression を通せる
+- Machine tactic canonical hash / cache key / budget の入力が Human syntax の追加で変わらない
 ```
 
 ---
