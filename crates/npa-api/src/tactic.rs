@@ -3003,6 +3003,25 @@ mod tests {
         }"#
     }
 
+    #[test]
+    fn machine_tactic_api_source_has_no_untrusted_text_fallback() {
+        let source = include_str!("tactic.rs");
+        let forbidden = [
+            ["parse_", "human"].concat(),
+            ["compile_", "human"].concat(),
+            ["human", "_parser"].concat(),
+            ["human", "_elaborator"].concat(),
+            ["Hu", "man"].concat(),
+        ];
+
+        for needle in forbidden {
+            assert!(
+                !source.contains(&needle),
+                "machine tactic api must not contain fallback marker {needle:?}"
+            );
+        }
+    }
+
     fn run_json(session: &MachineProofSession, state_fingerprint: Hash, candidate: &str) -> String {
         format!(
             r#"{{

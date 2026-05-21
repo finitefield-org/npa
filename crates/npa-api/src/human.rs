@@ -153,6 +153,71 @@ def use : A := a ++ a",
         assert_eq!(consumer.core_module.declarations.len(), 2);
     }
 
+    fn workspace_manifest(crate_name: &str) -> String {
+        let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|path| path.parent())
+            .expect("npa-api should live under crates/");
+        let manifest_path = workspace_root
+            .join("crates")
+            .join(crate_name)
+            .join("Cargo.toml");
+        std::fs::read_to_string(&manifest_path).unwrap_or_else(|err| {
+            panic!("failed to read {}: {err}", manifest_path.display());
+        })
+    }
+
+    fn manifest_declares_dependency(manifest: &str, dependency: &str) -> bool {
+        let prefix = format!("{dependency} = ");
+        let dotted_prefix = format!("{dependency}.");
+        let quoted_prefix = format!("\"{dependency}\" = ");
+        let quoted_dotted_prefix = format!("\"{dependency}\".");
+        let dependency_tables = [
+            format!("[dependencies.{dependency}]"),
+            format!("[dev-dependencies.{dependency}]"),
+            format!("[build-dependencies.{dependency}]"),
+        ];
+        let target_dependency_kinds = [
+            ".dependencies.",
+            ".dev-dependencies.",
+            ".build-dependencies.",
+        ];
+        let dependency_table_suffix = format!(".{dependency}]");
+        manifest.lines().map(str::trim_start).any(|line| {
+            line.starts_with(&prefix)
+                || line.starts_with(&dotted_prefix)
+                || line.starts_with(&quoted_prefix)
+                || line.starts_with(&quoted_dotted_prefix)
+                || dependency_tables.iter().any(|table| line == table)
+                || (line.starts_with("[target.")
+                    && target_dependency_kinds
+                        .iter()
+                        .any(|dependency_kind| line.contains(dependency_kind))
+                    && line.ends_with(&dependency_table_suffix))
+        })
+    }
+
+    #[test]
+    fn human_tactic_bridge_boundary_avoids_frontend_tactic_cycle() {
+        let frontend_manifest = workspace_manifest("npa-frontend");
+        let tactic_manifest = workspace_manifest("npa-tactic");
+        let api_manifest = workspace_manifest("npa-api");
+
+        assert!(
+            !manifest_declares_dependency(&frontend_manifest, "npa-tactic"),
+            "Human tactic bridge must not live in npa-frontend; use npa-api or another adapter crate"
+        );
+        assert!(
+            manifest_declares_dependency(&tactic_manifest, "npa-frontend"),
+            "npa-tactic may consume Machine Surface helpers from npa-frontend"
+        );
+        assert!(
+            manifest_declares_dependency(&api_manifest, "npa-frontend")
+                && manifest_declares_dependency(&api_manifest, "npa-tactic"),
+            "npa-api is the current adapter layer that can bridge Human frontend data to tactic execution"
+        );
+    }
+
     #[test]
     fn machine_session_api_stays_machine_surface_only() {
         let body = r#"{

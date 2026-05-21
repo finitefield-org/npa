@@ -10012,6 +10012,25 @@ mod tests {
             .unwrap()
     }
 
+    #[test]
+    fn machine_tactic_crate_has_no_untrusted_text_dependency() {
+        let source = include_str!("lib.rs");
+        let forbidden = [
+            ["parse_", "human"].concat(),
+            ["compile_", "human"].concat(),
+            ["human", "_parser"].concat(),
+            ["human", "_elaborator"].concat(),
+            ["Hu", "man"].concat(),
+        ];
+
+        for needle in forbidden {
+            assert!(
+                !source.contains(&needle),
+                "machine tactic crate must not contain parser fallback marker {needle:?}"
+            );
+        }
+    }
+
     fn verified_nat_builtin_module() -> npa_cert::VerifiedModule {
         verified_core_module(CoreModule {
             name: Name::from_dotted("Std.Nat.Basic"),

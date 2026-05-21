@@ -220,7 +220,7 @@ cargo test --workspace
 
 ### P4H-00: Human / Machine tactic 境界を固定する
 
-Status: Pending
+Status: Done
 
 Depends on: None
 
@@ -255,6 +255,12 @@ AI 速度ガード:
 - Human tactic bridge の実装場所と Machine API 非依存境界がコード上で明確である。
 - Machine candidate validation / batch 実行に Human parser fallback が存在しない。
 - Machine Surface canonical bytes / hash の golden behavior が変わっていない。
+
+完了確認:
+
+- `npa-api` の Human API test で、Human tactic bridge は `npa-api` または新規 adapter crate に置き、`npa-frontend -> npa-tactic` 依存を追加しない境界を固定した。
+- `npa-api` の Machine tactic API test と `npa-tactic` test で、Machine hot path に Human parser / compiler fallback marker が混入していないことを固定した。
+- 既存の Machine Surface rejected syntax snapshot と Phase 7 / Phase 9 regression を維持する。
 
 ### P4H-01: Human tactic AST を追加する
 
