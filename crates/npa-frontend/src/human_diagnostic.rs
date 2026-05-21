@@ -30,6 +30,10 @@ pub enum HumanDiagnosticKind {
     UnsolvedHole,
     NamedHoleContextMismatch,
     OccursCheckFailed,
+    ExpectedFunctionType,
+    ExpectedSort,
+    TypeMismatch,
+    KernelRejected,
     MachineElaborationError,
 }
 

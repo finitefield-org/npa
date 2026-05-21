@@ -1,21 +1,17 @@
 use std::collections::{BTreeMap, VecDeque};
 
 use crate::{
-    builtin_machine_callable_profile,
-    elaborator::elaborate_machine_module,
-    machine_callable_profile_from_human_binders, parse_human_module, resolve_human_module,
-    resolver::{
-        find_unique_verified_import_by_module, resolve_machine_module_with_options,
-        VerifiedImportLookupError,
-    },
+    builtin_machine_callable_profile, machine_callable_profile_from_human_binders,
+    parse_human_module, resolve_human_module,
+    resolver::{find_unique_verified_import_by_module, VerifiedImportLookupError},
     HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDiagnostic, HumanDiagnosticKind,
     HumanDiagnosticPayload, HumanExpr, HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal,
     HumanImplicitMode, HumanItem, HumanLevel, HumanName, HumanResolvedName, HumanResolvedNameUse,
     HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata, MachineBinder,
-    MachineCallableBinderVisibility, MachineCompileOptions, MachineDecl, MachineItem, MachineLevel,
-    MachineModule, MachineName, MachineTerm, ResolvedHumanModule, Span, VerifiedImport,
+    MachineCallableBinderVisibility, MachineDecl, MachineItem, MachineLevel, MachineModule,
+    MachineName, MachineTerm, ResolvedHumanModule, Span, VerifiedImport,
 };
-use npa_kernel::{Ctx, Decl, Env, Expr, Level, Reducibility};
+use npa_kernel::{subst, Ctx, Decl, Env, Error, Expr, Level, Reducibility};
 
 const MAX_HUMAN_IMPLICIT_INSERTION_STEPS: usize = 64;
 
@@ -105,12 +101,8 @@ fn elaborate_human_module_with_notation_plan(
     let span = module.module.span;
     let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)?;
     let machine_module = lowering.lower_module(module)?;
-    let machine_options = MachineCompileOptions::default();
-    let resolved =
-        resolve_machine_module_with_options(machine_module, verified_imports, &machine_options)
-            .map_err(machine_diagnostic_to_human)?;
-    elaborate_machine_module(module_name, resolved, verified_imports, &machine_options)
-        .map_err(machine_diagnostic_to_human)
+    HumanBidirectionalElaborator::new(module, verified_imports)?
+        .elaborate_module(module_name, machine_module)
         .map_err(|diagnostic| {
             if diagnostic.primary_span == Span::empty(crate::FileId(0)) {
                 HumanDiagnostic::error(diagnostic.kind, span, diagnostic.message)
@@ -955,6 +947,26 @@ impl HumanLocalContext {
             .map(|index| index as u32)
     }
 
+    fn lookup(&self, name: &str, span: Span) -> HumanResult<(u32, Expr)> {
+        let Some((index, local)) = self
+            .locals
+            .iter()
+            .rev()
+            .enumerate()
+            .find(|(_, local)| local.name == name)
+        else {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::UnknownIdentifier,
+                span,
+                format!("unknown local name {name}"),
+            ));
+        };
+        let index = index as u32;
+        let ty = subst::shift(&local.ty, index as i32 + 1, 0)
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "local type lookup"))?;
+        Ok((index, ty))
+    }
+
     fn name_for_bvar(&self, index: u32) -> Option<&str> {
         let index = usize::try_from(index).ok()?;
         self.locals
@@ -975,6 +987,442 @@ impl HumanLocalContext {
             }
         }
         ctx
+    }
+}
+
+struct HumanBidirectionalElaborator {
+    env: Env,
+}
+
+impl HumanBidirectionalElaborator {
+    fn new(module: &ResolvedHumanModule, verified_imports: &[VerifiedImport]) -> HumanResult<Self> {
+        let mut elaborator = Self { env: Env::new() };
+
+        let active_imports = active_human_imports(module, verified_imports)?;
+        for import in active_imports {
+            elaborator.add_import(import, module.module.span)?;
+        }
+
+        Ok(elaborator)
+    }
+
+    fn elaborate_module(
+        mut self,
+        module_name: npa_cert::ModuleName,
+        module: MachineModule,
+    ) -> HumanResult<npa_cert::CoreModule> {
+        let mut declarations = Vec::new();
+
+        for item in module.items {
+            match item {
+                MachineItem::Import { .. } => {}
+                MachineItem::Def(decl) => {
+                    let span = decl.span;
+                    let decl = self.elaborate_decl(decl, HumanLoweredDeclKind::Def)?;
+                    self.add_kernel_decl(decl.clone(), span)?;
+                    declarations.push(decl);
+                }
+                MachineItem::Theorem(decl) => {
+                    let span = decl.span;
+                    let decl = self.elaborate_decl(decl, HumanLoweredDeclKind::Theorem)?;
+                    self.add_kernel_decl(decl.clone(), span)?;
+                    declarations.push(decl);
+                }
+            }
+        }
+
+        Ok(npa_cert::CoreModule {
+            name: module_name,
+            declarations,
+        })
+    }
+
+    fn add_import(&mut self, import: &VerifiedImport, span: Span) -> HumanResult<()> {
+        for decl in kernel_decls_for_human_import(import) {
+            self.add_kernel_decl(decl, span)?;
+        }
+        Ok(())
+    }
+
+    fn elaborate_decl(&self, decl: MachineDecl, kind: HumanLoweredDeclKind) -> HumanResult<Decl> {
+        let delta: Vec<_> = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.clone())
+            .collect();
+        let mut locals = HumanLocalContext::default();
+        let mut elaborated_binders = Vec::with_capacity(decl.binders.len());
+
+        for binder in &decl.binders {
+            let (ty, ty_type) = self.infer_human_expr(&binder.ty, &locals, &delta)?;
+            self.expect_human_sort(&ty_type, &locals, &delta, binder.ty.span())?;
+            locals.push_assumption(binder.name.clone(), ty.clone());
+            elaborated_binders.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty,
+            });
+        }
+
+        let (ty, ty_type) = self.infer_human_expr(&decl.ty, &locals, &delta)?;
+        self.expect_human_sort(&ty_type, &locals, &delta, decl.ty.span())?;
+        let value = self.check_human_expr(&decl.value, &ty, &locals, &delta)?;
+
+        let name = decl.name.as_dotted();
+        let closed_ty = human_close_pi(&elaborated_binders, ty);
+        let closed_value = human_close_lam(&elaborated_binders, value);
+        let universe_params = delta;
+
+        Ok(match kind {
+            HumanLoweredDeclKind::Def => Decl::Def {
+                name,
+                universe_params,
+                ty: closed_ty,
+                value: closed_value,
+                reducibility: Reducibility::Reducible,
+            },
+            HumanLoweredDeclKind::Theorem => Decl::Theorem {
+                name,
+                universe_params,
+                ty: closed_ty,
+                proof: closed_value,
+            },
+        })
+    }
+
+    fn infer_human_expr(
+        &self,
+        term: &MachineTerm,
+        locals: &HumanLocalContext,
+        delta: &[String],
+    ) -> HumanResult<(Expr, Expr)> {
+        Ok(match term {
+            MachineTerm::Ident {
+                name,
+                universe_args,
+                span,
+                ..
+            } => {
+                let expr = self.elaborate_human_global(name, universe_args.as_deref(), *span)?;
+                let ty = self.infer_core_expr_type(&expr, locals, delta, *span)?;
+                (expr, ty)
+            }
+            MachineTerm::Local { name, span } => {
+                let (index, ty) = locals.lookup(name, *span)?;
+                (Expr::bvar(index), ty)
+            }
+            MachineTerm::Prop { .. } => (
+                Expr::sort(Level::zero()),
+                Expr::sort(Level::succ(Level::zero())),
+            ),
+            MachineTerm::Type { level, .. } => {
+                let level = elaborate_machine_level(level.clone())?;
+                let sort = Level::succ(level);
+                (Expr::sort(sort.clone()), Expr::sort(Level::succ(sort)))
+            }
+            MachineTerm::Sort { level, .. } => {
+                let level = elaborate_machine_level(level.clone())?;
+                (Expr::sort(level.clone()), Expr::sort(Level::succ(level)))
+            }
+            MachineTerm::App { func, arg, span } => {
+                let (func_expr, func_ty) = self.infer_human_expr(func, locals, delta)?;
+                let func_ty = self.whnf_human_expr(&func_ty, locals, delta, *span)?;
+                let Expr::Pi { ty, body, .. } = func_ty else {
+                    return Err(HumanDiagnostic::error(
+                        HumanDiagnosticKind::ExpectedFunctionType,
+                        *span,
+                        format!("application head is not a function: {func_ty:?}"),
+                    ));
+                };
+                let arg_expr = self.check_human_expr(arg, &ty, locals, delta)?;
+                let result_ty = subst::instantiate(&body, &arg_expr).map_err(|err| {
+                    human_kernel_expr_diagnostic(*span, err, "Human application result type")
+                })?;
+                (Expr::app(func_expr, arg_expr), result_ty)
+            }
+            MachineTerm::Lam {
+                binders,
+                body,
+                span: _,
+            } => {
+                let mut nested = locals.clone();
+                let mut elaborated_binders = Vec::with_capacity(binders.len());
+                for binder in binders {
+                    let (ty, ty_type) = self.infer_human_expr(&binder.ty, &nested, delta)?;
+                    self.expect_human_sort(&ty_type, &nested, delta, binder.ty.span())?;
+                    nested.push_assumption(binder.name.clone(), ty.clone());
+                    elaborated_binders.push(HumanElaboratedBinder {
+                        name: binder.name.clone(),
+                        ty,
+                    });
+                }
+                let (body, body_ty) = self.infer_human_expr(body, &nested, delta)?;
+                (
+                    human_close_lam(&elaborated_binders, body),
+                    human_close_pi(&elaborated_binders, body_ty),
+                )
+            }
+            MachineTerm::Pi {
+                binders,
+                body,
+                span,
+            } => {
+                let mut nested = locals.clone();
+                let mut elaborated_binders = Vec::with_capacity(binders.len());
+                for binder in binders {
+                    let (ty, ty_type) = self.infer_human_expr(&binder.ty, &nested, delta)?;
+                    self.expect_human_sort(&ty_type, &nested, delta, binder.ty.span())?;
+                    nested.push_assumption(binder.name.clone(), ty.clone());
+                    elaborated_binders.push(HumanElaboratedBinder {
+                        name: binder.name.clone(),
+                        ty,
+                    });
+                }
+                let body_span = body.span();
+                let (body_expr, body_type) = self.infer_human_expr(body, &nested, delta)?;
+                self.expect_human_sort(&body_type, &nested, delta, body_span)?;
+                let pi = human_close_pi(&elaborated_binders, body_expr);
+                let pi_ty = self.infer_core_expr_type(&pi, locals, delta, *span)?;
+                (pi, pi_ty)
+            }
+            MachineTerm::Let {
+                name,
+                ty,
+                value,
+                body,
+                span,
+            } => {
+                let (ty_expr, ty_type) = self.infer_human_expr(ty, locals, delta)?;
+                self.expect_human_sort(&ty_type, locals, delta, ty.span())?;
+                let value_expr = self.check_human_expr(value, &ty_expr, locals, delta)?;
+                let mut nested = locals.clone();
+                nested.push_definition(name.clone(), ty_expr.clone(), value_expr.clone());
+                let (body_expr, body_ty) = self.infer_human_expr(body, &nested, delta)?;
+                let result_ty = subst::instantiate(&body_ty, &value_expr).map_err(|err| {
+                    human_kernel_expr_diagnostic(*span, err, "Human let result type")
+                })?;
+                (
+                    Expr::let_in(name.clone(), ty_expr, value_expr, body_expr),
+                    result_ty,
+                )
+            }
+            MachineTerm::Annot { expr, ty, span: _ } => {
+                let (ty_expr, ty_type) = self.infer_human_expr(ty, locals, delta)?;
+                self.expect_human_sort(&ty_type, locals, delta, ty.span())?;
+                let expr = self.check_human_expr(expr, &ty_expr, locals, delta)?;
+                (expr, ty_expr)
+            }
+        })
+    }
+
+    fn check_human_expr(
+        &self,
+        term: &MachineTerm,
+        expected: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+    ) -> HumanResult<Expr> {
+        if let MachineTerm::Lam {
+            binders,
+            body,
+            span: _,
+        } = term
+        {
+            return self.check_human_lambda(binders, body, expected, locals, delta);
+        }
+
+        let (expr, actual) = self.infer_human_expr(term, locals, delta)?;
+        if self.is_human_defeq(&actual, expected, locals, delta, term.span())? {
+            Ok(expr)
+        } else {
+            Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::TypeMismatch,
+                term.span(),
+                format!("type mismatch: expected {expected:?}, got {actual:?}"),
+            ))
+        }
+    }
+
+    fn check_human_lambda(
+        &self,
+        binders: &[MachineBinder],
+        body: &MachineTerm,
+        expected: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+    ) -> HumanResult<Expr> {
+        let mut nested = locals.clone();
+        let mut expected = expected.clone();
+        let mut elaborated_binders = Vec::with_capacity(binders.len());
+
+        for binder in binders {
+            let expected_whnf = self.whnf_human_expr(&expected, &nested, delta, binder.span)?;
+            let Expr::Pi { ty, body, .. } = expected_whnf else {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::ExpectedFunctionType,
+                    binder.span,
+                    format!("lambda is checked against a non-function type: {expected_whnf:?}"),
+                ));
+            };
+            let (binder_ty, binder_ty_type) = self.infer_human_expr(&binder.ty, &nested, delta)?;
+            self.expect_human_sort(&binder_ty_type, &nested, delta, binder.ty.span())?;
+            if !self.is_human_defeq(&binder_ty, &ty, &nested, delta, binder.ty.span())? {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::TypeMismatch,
+                    binder.ty.span(),
+                    format!("lambda binder type mismatch: expected {ty:?}, got {binder_ty:?}"),
+                ));
+            }
+            nested.push_assumption(binder.name.clone(), (*ty).clone());
+            elaborated_binders.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty: (*ty).clone(),
+            });
+            expected = *body;
+        }
+
+        let body = self.check_human_expr(body, &expected, &nested, delta)?;
+        Ok(human_close_lam(&elaborated_binders, body))
+    }
+
+    fn elaborate_human_global(
+        &self,
+        name: &MachineName,
+        universe_args: Option<&[MachineLevel]>,
+        span: Span,
+    ) -> HumanResult<Expr> {
+        let name = name.as_dotted();
+        let Some(decl) = self.env.decl(&name) else {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::UnknownIdentifier,
+                span,
+                format!("unknown global name {name}"),
+            ));
+        };
+        let expected = decl.universe_params().len();
+        let levels = match universe_args {
+            Some(args) if args.len() == expected => args
+                .iter()
+                .cloned()
+                .map(elaborate_machine_level)
+                .collect::<HumanResult<Vec<_>>>()?,
+            Some(args) => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnsolvedUniverseMeta,
+                    span,
+                    format!(
+                        "global name {name} expects {expected} universe arguments, got {}",
+                        args.len()
+                    ),
+                ));
+            }
+            None if expected == 0 => Vec::new(),
+            None => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnsolvedUniverseMeta,
+                    span,
+                    format!("global name {name} still has unresolved universe arguments"),
+                ));
+            }
+        };
+        Ok(Expr::konst(name, levels))
+    }
+
+    fn infer_core_expr_type(
+        &self,
+        expr: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<Expr> {
+        self.env
+            .infer(&locals.to_kernel_ctx(), delta, expr)
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human expression inference"))
+    }
+
+    fn expect_human_sort(
+        &self,
+        inferred_type: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<()> {
+        let whnf = self.whnf_human_expr(inferred_type, locals, delta, span)?;
+        if matches!(whnf, Expr::Sort(_)) {
+            Ok(())
+        } else {
+            Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::ExpectedSort,
+                span,
+                format!("expected a type, got {whnf:?}"),
+            ))
+        }
+    }
+
+    fn whnf_human_expr(
+        &self,
+        expr: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<Expr> {
+        self.env
+            .whnf(&locals.to_kernel_ctx(), delta, expr)
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human weak-head reduction"))
+    }
+
+    fn is_human_defeq(
+        &self,
+        lhs: &Expr,
+        rhs: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<bool> {
+        self.env
+            .is_defeq(&locals.to_kernel_ctx(), delta, lhs, rhs)
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human definitional equality"))
+    }
+
+    fn add_kernel_decl(&mut self, decl: Decl, span: Span) -> HumanResult<()> {
+        if let Some(existing) = self.env.decl(decl.name()) {
+            if existing == &decl {
+                return Ok(());
+            }
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::KernelRejected,
+                span,
+                format!(
+                    "kernel declaration {} conflicts with an existing declaration",
+                    decl.name()
+                ),
+            ));
+        }
+
+        match decl {
+            Decl::Axiom {
+                name,
+                universe_params,
+                ty,
+            } => self.env.add_axiom(name, universe_params, ty),
+            Decl::Def {
+                name,
+                universe_params,
+                ty,
+                value,
+                reducibility,
+            } => self
+                .env
+                .add_def(name, universe_params, ty, value, reducibility),
+            Decl::Theorem {
+                name,
+                universe_params,
+                ty,
+                proof,
+            } => self.env.add_theorem(name, universe_params, ty, proof),
+            Decl::Inductive { data, .. } => self.env.add_inductive(*data),
+            Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
+        }
+        .map_err(|err| human_kernel_decl_diagnostic(span, err, "Human declaration handoff"))
     }
 }
 
@@ -1480,7 +1928,7 @@ impl HumanImplicitInserter {
             MachineTerm::Local { name, span } => {
                 locals.lookup_bvar(name).map(Expr::bvar).ok_or_else(|| {
                     HumanDiagnostic::error(
-                        HumanDiagnosticKind::MachineElaborationError,
+                        HumanDiagnosticKind::UnknownIdentifier,
                         *span,
                         format!("unknown local name {name}"),
                     )
@@ -1559,13 +2007,7 @@ impl HumanImplicitInserter {
     ) -> HumanResult<Expr> {
         self.env
             .infer(&locals.to_kernel_ctx(), delta, expr)
-            .map_err(|err| {
-                HumanDiagnostic::error(
-                    HumanDiagnosticKind::MachineElaborationError,
-                    span,
-                    format!("kernel rejected Human implicit inference: {err:?}"),
-                )
-            })
+            .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human implicit inference"))
     }
 
     fn add_kernel_decl(&mut self, decl: Decl, span: Span) -> HumanResult<()> {
@@ -1574,7 +2016,7 @@ impl HumanImplicitInserter {
                 return Ok(());
             }
             return Err(HumanDiagnostic::error(
-                HumanDiagnosticKind::MachineElaborationError,
+                HumanDiagnosticKind::KernelRejected,
                 span,
                 format!(
                     "kernel declaration {} conflicts with an existing declaration",
@@ -1607,13 +2049,7 @@ impl HumanImplicitInserter {
             Decl::Inductive { data, .. } => self.env.add_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
-        .map_err(|err| {
-            HumanDiagnostic::error(
-                HumanDiagnosticKind::MachineElaborationError,
-                span,
-                format!("kernel rejected Human implicit environment: {err:?}"),
-            )
-        })
+        .map_err(|err| human_kernel_decl_diagnostic(span, err, "Human implicit environment"))
     }
 
     fn bump_insertion_step(&mut self, span: Span) -> HumanResult<()> {
@@ -1629,6 +2065,61 @@ impl HumanImplicitInserter {
 
     fn unsolved_implicit(&self, span: Span, message: String) -> HumanDiagnostic {
         HumanDiagnostic::error(HumanDiagnosticKind::UnsolvedImplicit, span, message)
+    }
+}
+
+fn human_kernel_expr_diagnostic(span: Span, err: Error, context: &str) -> HumanDiagnostic {
+    match err {
+        Error::ExpectedPi { actual } => HumanDiagnostic::error(
+            HumanDiagnosticKind::ExpectedFunctionType,
+            span,
+            format!("{context}: expected a function type, got {actual:?}"),
+        ),
+        Error::ExpectedSort { actual } => HumanDiagnostic::error(
+            HumanDiagnosticKind::ExpectedSort,
+            span,
+            format!("{context}: expected a type, got {actual:?}"),
+        ),
+        Error::TypeMismatch { expected, actual } => HumanDiagnostic::error(
+            HumanDiagnosticKind::TypeMismatch,
+            span,
+            format!("{context}: expected {expected:?}, got {actual:?}"),
+        ),
+        Error::UnknownConstant(name) => HumanDiagnostic::error(
+            HumanDiagnosticKind::UnknownIdentifier,
+            span,
+            format!("{context}: unknown global name {name}"),
+        ),
+        err => HumanDiagnostic::error(
+            HumanDiagnosticKind::KernelRejected,
+            span,
+            format!("{context}: kernel rejected elaborated Human expression: {err:?}"),
+        ),
+    }
+}
+
+fn human_kernel_decl_diagnostic(span: Span, err: Error, context: &str) -> HumanDiagnostic {
+    match err {
+        Error::ExpectedPi { actual } => HumanDiagnostic::error(
+            HumanDiagnosticKind::ExpectedFunctionType,
+            span,
+            format!("{context}: expected a function type, got {actual:?}"),
+        ),
+        Error::ExpectedSort { actual } => HumanDiagnostic::error(
+            HumanDiagnosticKind::ExpectedSort,
+            span,
+            format!("{context}: expected a declaration type, got {actual:?}"),
+        ),
+        Error::TypeMismatch { expected, actual } => HumanDiagnostic::error(
+            HumanDiagnosticKind::TypeMismatch,
+            span,
+            format!("{context}: declaration value has type {actual:?}, expected {expected:?}"),
+        ),
+        err => HumanDiagnostic::error(
+            HumanDiagnosticKind::KernelRejected,
+            span,
+            format!("{context}: kernel rejected elaborated Human declaration: {err:?}"),
+        ),
     }
 }
 
@@ -1717,6 +2208,141 @@ fn rebuild_machine_apps(head: MachineTerm, args: Vec<MachineTerm>, span: Span) -
         let _ = span;
         term
     }
+}
+
+fn take_expected_pi_binder(expected: MachineTerm) -> Option<(MachineBinder, MachineTerm)> {
+    let MachineTerm::Pi {
+        mut binders,
+        body,
+        span,
+    } = expected
+    else {
+        return None;
+    };
+    if binders.is_empty() {
+        return None;
+    }
+    let binder = binders.remove(0);
+    let rest = if binders.is_empty() {
+        *body
+    } else {
+        MachineTerm::Pi {
+            binders,
+            body,
+            span,
+        }
+    };
+    Some((binder, rest))
+}
+
+fn rename_machine_local(term: MachineTerm, from: &str, to: &str) -> MachineTerm {
+    rename_machine_local_scoped(term, from, to, false)
+}
+
+fn rename_machine_local_scoped(
+    term: MachineTerm,
+    from: &str,
+    to: &str,
+    shadowed: bool,
+) -> MachineTerm {
+    match term {
+        MachineTerm::Ident {
+            name,
+            universe_args,
+            explicit_mode,
+            span,
+        } => MachineTerm::Ident {
+            name,
+            universe_args,
+            explicit_mode,
+            span,
+        },
+        MachineTerm::Local { name, span } if !shadowed && name == from => MachineTerm::Local {
+            name: to.to_owned(),
+            span,
+        },
+        MachineTerm::Local { name, span } => MachineTerm::Local { name, span },
+        MachineTerm::Prop { span } => MachineTerm::Prop { span },
+        MachineTerm::Type { level, span } => MachineTerm::Type { level, span },
+        MachineTerm::Sort { level, span } => MachineTerm::Sort { level, span },
+        MachineTerm::App { func, arg, span } => MachineTerm::App {
+            func: Box::new(rename_machine_local_scoped(*func, from, to, shadowed)),
+            arg: Box::new(rename_machine_local_scoped(*arg, from, to, shadowed)),
+            span,
+        },
+        MachineTerm::Lam {
+            binders,
+            body,
+            span,
+        } => {
+            let (binders, body_shadowed) =
+                rename_machine_binders_scoped(binders, from, to, shadowed);
+            MachineTerm::Lam {
+                binders,
+                body: Box::new(rename_machine_local_scoped(*body, from, to, body_shadowed)),
+                span,
+            }
+        }
+        MachineTerm::Pi {
+            binders,
+            body,
+            span,
+        } => {
+            let (binders, body_shadowed) =
+                rename_machine_binders_scoped(binders, from, to, shadowed);
+            MachineTerm::Pi {
+                binders,
+                body: Box::new(rename_machine_local_scoped(*body, from, to, body_shadowed)),
+                span,
+            }
+        }
+        MachineTerm::Let {
+            name,
+            ty,
+            value,
+            body,
+            span,
+        } => MachineTerm::Let {
+            body: Box::new(rename_machine_local_scoped(
+                *body,
+                from,
+                to,
+                shadowed || name == from,
+            )),
+            name,
+            ty: Box::new(rename_machine_local_scoped(*ty, from, to, shadowed)),
+            value: Box::new(rename_machine_local_scoped(*value, from, to, shadowed)),
+            span,
+        },
+        MachineTerm::Annot { expr, ty, span } => MachineTerm::Annot {
+            expr: Box::new(rename_machine_local_scoped(*expr, from, to, shadowed)),
+            ty: Box::new(rename_machine_local_scoped(*ty, from, to, shadowed)),
+            span,
+        },
+    }
+}
+
+fn rename_machine_binders_scoped(
+    binders: Vec<MachineBinder>,
+    from: &str,
+    to: &str,
+    mut shadowed: bool,
+) -> (Vec<MachineBinder>, bool) {
+    let binders = binders
+        .into_iter()
+        .map(|binder| {
+            let ty = rename_machine_local_scoped(binder.ty, from, to, shadowed);
+            if binder.name == from {
+                shadowed = true;
+            }
+            MachineBinder {
+                name: binder.name,
+                ty,
+                span: binder.span,
+            }
+        })
+        .collect();
+    (binders, shadowed)
 }
 
 fn human_close_lam(binders: &[HumanElaboratedBinder], mut body: Expr) -> Expr {
@@ -1980,6 +2606,58 @@ impl<'a> HumanToMachineLowering<'a> {
             .collect()
     }
 
+    fn lower_lambda_binders(
+        &mut self,
+        binders: Vec<HumanBinder>,
+        context: &mut HumanLoweringLocalContext,
+        expected: Option<&MachineTerm>,
+    ) -> HumanResult<(Vec<MachineBinder>, Option<MachineTerm>)> {
+        let mut expected = expected.cloned();
+        let mut lowered = Vec::with_capacity(binders.len());
+
+        for binder in binders {
+            let name = match binder.kind {
+                HumanBinderKind::Named(name) => name.as_dotted(),
+                HumanBinderKind::Anonymous => "_".to_owned(),
+            };
+            let (expected_binder, expected_body) = match expected.take() {
+                Some(expected_term) => take_expected_pi_binder(expected_term),
+                None => None,
+            }
+            .map_or((None, None), |(binder, body)| (Some(binder), Some(body)));
+
+            let ty = match binder.ty {
+                Some(ty) => self.lower_expr(*ty, context, None)?,
+                None => {
+                    let Some(expected_binder) = &expected_binder else {
+                        return Err(HumanDiagnostic::error(
+                            HumanDiagnosticKind::ExpectedFunctionType,
+                            binder.span,
+                            "unannotated Human lambda binder requires an expected function type",
+                        ));
+                    };
+                    expected_binder.ty.clone()
+                }
+            };
+
+            expected = match (expected_binder, expected_body) {
+                (Some(expected_binder), Some(body)) => {
+                    Some(rename_machine_local(body, &expected_binder.name, &name))
+                }
+                _ => None,
+            };
+
+            context.push_assumption(name.clone(), ty.clone());
+            lowered.push(MachineBinder {
+                name,
+                ty,
+                span: binder.span,
+            });
+        }
+
+        Ok((lowered, expected))
+    }
+
     fn lower_expr(
         &mut self,
         expr: HumanExpr,
@@ -2027,9 +2705,11 @@ impl<'a> HumanToMachineLowering<'a> {
                 span,
             } => {
                 let mut nested = context.clone();
+                let (binders, body_expected) =
+                    self.lower_lambda_binders(binders, &mut nested, expected)?;
                 MachineTerm::Lam {
-                    binders: self.lower_binders(binders, &mut nested)?,
-                    body: Box::new(self.lower_expr(*body, &mut nested, None)?),
+                    binders,
+                    body: Box::new(self.lower_expr(*body, &mut nested, body_expected.as_ref())?),
                     span,
                 }
             }
@@ -2200,14 +2880,6 @@ fn machine_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> Machi
             span,
         },
     }
-}
-
-fn machine_diagnostic_to_human(diagnostic: crate::MachineDiagnostic) -> HumanDiagnostic {
-    HumanDiagnostic::error(
-        HumanDiagnosticKind::MachineElaborationError,
-        diagnostic.primary_span,
-        diagnostic.message,
-    )
 }
 
 #[cfg(test)]
@@ -2416,7 +3088,7 @@ theorem bad (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} n",
         )
         .expect_err("@ mode should not insert the implicit type argument");
 
-        assert_eq!(err.kind, HumanDiagnosticKind::MachineElaborationError);
+        assert_eq!(err.kind, HumanDiagnosticKind::TypeMismatch);
     }
 
     #[test]
@@ -2433,6 +3105,63 @@ theorem self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n",
             &HumanCompileOptions::default(),
         )
         .expect("explicit @ mode should accept an explicitly supplied implicit argument");
+    }
+
+    #[test]
+    fn human_expected_type_elaborates_unannotated_lambda_to_core_declaration() {
+        let imports = [nat_import()];
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+def id : forall (x : Nat), Nat := fun x => x",
+            &imports,
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human checker should use the expected Pi type for lambda binders");
+
+        assert_eq!(
+            module.declarations,
+            vec![Decl::Def {
+                name: "id".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi("x", nat(), nat()),
+                value: Expr::lam("x", nat(), Expr::bvar(0)),
+                reducibility: Reducibility::Reducible,
+            }]
+        );
+    }
+
+    #[test]
+    fn human_ill_typed_term_returns_structured_type_mismatch() {
+        let imports = [nat_import()];
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+def bad : Nat := Type",
+            &imports,
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("ill-typed Human value should be rejected as a structured diagnostic");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::TypeMismatch);
+    }
+
+    #[test]
+    fn human_unannotated_lambda_requires_expected_function_type() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "def bad : Type := fun x => x",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("unannotated lambda should not trigger open-ended search");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::ExpectedFunctionType);
     }
 
     #[test]

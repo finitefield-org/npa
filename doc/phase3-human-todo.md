@@ -486,23 +486,24 @@ crates/npa-frontend/src/lib.rs
 
 実装タスク:
 
-- [ ] `infer_human_expr` / `check_human_expr` の skeleton を作る。
-- [ ] local / global / app / lambda / Pi / let / annotation を core term に落とす。
-- [ ] expected type を使って lambda / hole / notation candidate を処理する。
-- [ ] declaration elaboration 中は自分自身を global env に入れない。
-- [ ] elaborated core declaration を Phase 1 kernel に渡す。
-- [ ] kernel が拒否した場合は Human diagnostic に包む。
+- [x] `infer_human_expr` / `check_human_expr` の skeleton を作る。
+- [x] local / global / app / lambda / Pi / let / annotation を core term に落とす。
+- [x] expected type を使って lambda / hole / notation candidate を処理する。
+- [x] declaration elaboration 中は自分自身を global env に入れない。
+- [x] elaborated core declaration を Phase 1 kernel に渡す。
+- [x] kernel が拒否した場合は Human diagnostic に包む。
 
 AI 速度ガード:
 
-- [ ] Machine elaborator に Human expected-type candidate search を追加しない。
-- [ ] Human elaboration の backtracking は notation / overload candidate 単位で bounded にする。
-- [ ] Phase 7 candidate check は引き続き Machine term check を使う。
+- [x] Machine elaborator に Human expected-type candidate search を追加しない。
+- [x] Human elaboration の backtracking は notation / overload candidate 単位で bounded にする。
+- [x] Phase 7 candidate check は引き続き Machine term check を使う。
 
 影響ファイル:
 
 ```text
 crates/npa-frontend/src/human_elaborator.rs
+crates/npa-frontend/src/human_diagnostic.rs
 crates/npa-frontend/src/elaborator.rs
 ```
 
