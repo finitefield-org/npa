@@ -64,7 +64,7 @@ pub use diagnostic::{
 pub use human::{
     check_human_tactic_term, compile_human_source_to_certificate, compile_human_source_to_core,
     human_api_default_compile_options, run_human_exact_tactic, run_human_intro_tactic,
-    start_human_proof,
+    run_human_tactic_script, start_human_proof,
 };
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
@@ -452,6 +452,7 @@ pub use types::{
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
     HumanExactTacticOk, HumanExactTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
     HumanIntroTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
+    HumanTacticScriptError, HumanTacticScriptRunOk, HumanTacticScriptRunRequest,
     HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
     KernelCheckProfileId, MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse,
     MachineApiErrorWire, MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope,

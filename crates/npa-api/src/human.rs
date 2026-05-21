@@ -2,7 +2,8 @@ use crate::{
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk,
     HumanExactTacticRequest, HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest,
-    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanTacticTermCheckOk,
+    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanTacticScriptError,
+    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticTermCheckOk,
     HumanTacticTermCheckRequest, HumanTacticTermError,
 };
 use npa_kernel::Decl;
@@ -214,6 +215,66 @@ pub fn run_human_intro_tactic(
     Ok(HumanIntroTacticOk { state, delta })
 }
 
+pub fn run_human_tactic_script(
+    request: HumanTacticScriptRunRequest<'_, '_>,
+) -> Result<HumanTacticScriptRunOk, HumanTacticScriptError> {
+    let mut state = request.state.clone();
+    let mut deltas = Vec::with_capacity(request.script.tactics.len());
+
+    for tactic in &request.script.tactics {
+        let Some(goal_id) = state.open_goals.first().copied() else {
+            return Err(human_script_no_goals_diagnostic(tactic.span()).into());
+        };
+
+        match tactic {
+            npa_frontend::HumanTacticSyntax::Intro { name, .. } => {
+                let ok = run_human_intro_tactic(HumanIntroTacticRequest {
+                    state: &state,
+                    goal_id,
+                    name,
+                    budget: request.budget,
+                })
+                .map_err(human_script_intro_error)?;
+                state = ok.state;
+                deltas.push(ok.delta);
+            }
+            npa_frontend::HumanTacticSyntax::Exact { term, .. } => {
+                let ok = run_human_exact_tactic(HumanExactTacticRequest {
+                    state: &state,
+                    goal_id,
+                    term,
+                    current_source_interface: request.current_source_interface,
+                    imported_source_interfaces: request.imported_source_interfaces,
+                    options: request.options.clone(),
+                })
+                .map_err(human_script_term_error)?;
+                state = ok.state;
+                deltas.push(ok.delta);
+            }
+            other => {
+                return Err(
+                    human_script_unsupported_tactic_diagnostic(other.span(), other.kind()).into(),
+                );
+            }
+        }
+    }
+
+    if !state.open_goals.is_empty() {
+        return Err(human_script_unresolved_goal_diagnostic(
+            request.script.span,
+            state.open_goals.len(),
+        )
+        .into());
+    }
+
+    let proof = npa_tactic::extract_closed_machine_proof(&state)?;
+    Ok(HumanTacticScriptRunOk {
+        state,
+        deltas,
+        proof,
+    })
+}
+
 pub fn human_api_default_compile_options() -> HumanApiCompileOptions {
     HumanApiCompileOptions::default()
 }
@@ -261,6 +322,52 @@ fn human_intro_invalid_diagnostic(
         npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
         span,
         message,
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
+fn human_script_intro_error(error: HumanIntroTacticError) -> HumanTacticScriptError {
+    match error {
+        HumanIntroTacticError::Human(error) => HumanTacticScriptError::Human(error),
+        HumanIntroTacticError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
+    }
+}
+
+fn human_script_term_error(error: HumanTacticTermError) -> HumanTacticScriptError {
+    match error {
+        HumanTacticTermError::Human(error) => HumanTacticScriptError::Human(error),
+        HumanTacticTermError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
+    }
+}
+
+fn human_script_no_goals_diagnostic(span: npa_frontend::Span) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::NoGoalsButTacticRemaining,
+        span,
+        "Human tactic script has a remaining tactic after all goals were closed",
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
+fn human_script_unresolved_goal_diagnostic(
+    span: npa_frontend::Span,
+    open_goal_count: usize,
+) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnresolvedGoal,
+        span,
+        format!("Human tactic script finished with {open_goal_count} open goal(s)"),
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
+fn human_script_unsupported_tactic_diagnostic(
+    span: npa_frontend::Span,
+    kind: npa_frontend::HumanTacticKind,
+) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::unsupported_tactic(
+        span,
+        format!("{kind:?} is not implemented by the Human script executor yet"),
     )
     .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
 }
@@ -987,6 +1094,251 @@ theorem id_nat : forall (n : Nat), Nat := by simp-lite",
         );
     }
 
+    #[test]
+    fn human_tactic_script_executor_closes_intro_exact_script() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let source = "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by
+  intro n
+  exact n";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanScriptIntroExact"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptIntroExact.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human script executor should close intro + exact");
+
+        assert_eq!(ok.deltas.len(), 2);
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(
+            ok.proof,
+            npa_kernel::Expr::lam("n", npa_kernel::nat(), npa_kernel::Expr::bvar(0))
+        );
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("extracted script proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_tactic_script_executor_rejects_extra_tactic_after_close() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let source = "\
+import Std.Nat.Basic
+theorem zero : Nat := by
+  exact Nat.zero
+  exact Nat.zero";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanScriptExtra"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptExtra.zero"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start zero");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("extra tactic after closed goal should be rejected");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("extra tactic should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::NoGoalsButTacticRemaining
+        );
+        assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
+    }
+
+    #[test]
+    fn human_tactic_script_executor_applies_tactic_to_first_open_goal() {
+        let verified_modules = Vec::new();
+        let imported_source_interfaces = Vec::new();
+        let source = "\
+theorem target : Prop := by
+  exact fun (p : Prop) => p";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanScriptFirstGoal"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptFirstGoal.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start target");
+        let budget = npa_tactic::TacticBudget::default();
+        let (state, _) = npa_tactic::assign_goal(
+            &started.state,
+            npa_tactic::GoalId(0),
+            npa_tactic::ProofExpr::app(
+                npa_tactic::ProofExpr::meta(npa_tactic::MetaVarId(1)),
+                npa_tactic::ProofExpr::meta(npa_tactic::MetaVarId(2)),
+            ),
+            vec![
+                npa_tactic::MachineNewGoalSpec::new(
+                    Vec::new(),
+                    npa_kernel::Expr::pi(
+                        "p",
+                        npa_kernel::Expr::sort(npa_kernel::prop()),
+                        npa_kernel::Expr::sort(npa_kernel::prop()),
+                    ),
+                ),
+                npa_tactic::MachineNewGoalSpec::new(
+                    Vec::new(),
+                    npa_kernel::Expr::sort(npa_kernel::prop()),
+                ),
+            ],
+        )
+        .expect("Machine setup should split root into two goals");
+        assert_eq!(
+            state.open_goals,
+            vec![npa_tactic::GoalId(1), npa_tactic::GoalId(2)]
+        );
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget,
+        })
+        .expect_err("one exact should close the first goal and leave the step goal open");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("remaining second goal should be a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal
+        );
+    }
+
+    #[test]
+    fn human_tactic_script_executor_reports_unresolved_goal_at_end() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let source = "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by
+  intro n";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanScriptUnresolved"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptUnresolved.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("script with remaining body goal should be rejected");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("unresolved goal should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal
+        );
+        assert_ne!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::NoGoalsButTacticRemaining
+        );
+        assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
+    }
+
+    #[test]
+    fn human_tactic_script_executor_rejects_unimplemented_tactic_without_machine_batch() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let source = "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by
+  apply Nat.zero";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("unsupported tactic should be rejected by Human script executor");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("unsupported tactic should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        );
+    }
+
     fn workspace_manifest(crate_name: &str) -> String {
         let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -1101,6 +1453,24 @@ theorem id_nat : forall (n : Nat), Nat := by simp-lite",
             parts.iter().map(|part| (*part).to_owned()).collect(),
             npa_frontend::Span::new(npa_frontend::FileId(0), start, end),
         )
+    }
+
+    fn first_theorem_script(source: &str) -> npa_frontend::HumanTacticScript {
+        let module = npa_frontend::parse_human_module(npa_frontend::FileId(0), source)
+            .expect("Human source should parse");
+        module
+            .items
+            .into_iter()
+            .find_map(|item| {
+                let npa_frontend::HumanItem::Theorem(decl) = item else {
+                    return None;
+                };
+                let npa_frontend::HumanDeclValue::ProofBlock(block) = decl.value else {
+                    return None;
+                };
+                Some(block.script)
+            })
+            .expect("source should contain a theorem proof block")
     }
 
     fn verified_human_import(

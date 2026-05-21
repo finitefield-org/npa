@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
     FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr, HumanImportedSourceInterface,
-    HumanName, HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
+    HumanName, HumanSourceInterface, HumanTacticScript, MachineSurfaceCallableInterfaceTable,
 };
 use npa_kernel::Expr;
 use npa_tactic::{
@@ -152,6 +152,23 @@ pub struct HumanIntroTacticOk {
     pub delta: MachineProofDelta,
 }
 
+#[derive(Clone, Debug)]
+pub struct HumanTacticScriptRunRequest<'script, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub script: &'script HumanTacticScript,
+    pub current_source_interface: &'ctx HumanSourceInterface,
+    pub imported_source_interfaces: &'ctx [HumanImportedSourceInterface],
+    pub options: HumanApiCompileOptions,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanTacticScriptRunOk {
+    pub state: MachineProofState,
+    pub deltas: Vec<MachineProofDelta>,
+    pub proof: Expr,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileError {
     pub diagnostic: HumanDiagnostic,
@@ -212,6 +229,24 @@ impl From<HumanDiagnostic> for HumanIntroTacticError {
 }
 
 impl From<MachineTacticDiagnostic> for HumanIntroTacticError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTacticScriptError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanTacticScriptError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanTacticScriptError {
     fn from(diagnostic: MachineTacticDiagnostic) -> Self {
         Self::Machine(diagnostic)
     }

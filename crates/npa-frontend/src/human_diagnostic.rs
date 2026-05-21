@@ -35,6 +35,8 @@ pub enum HumanDiagnosticKind {
     ExpectedFunctionType,
     ExpectedSort,
     TypeMismatch,
+    NoGoalsButTacticRemaining,
+    UnresolvedGoal,
     KernelRejected,
     MachineElaborationError,
 }
@@ -288,6 +290,8 @@ fn human_diagnostic_kind_label(kind: &HumanDiagnosticKind) -> &'static str {
         HumanDiagnosticKind::ExpectedFunctionType => "expected function type",
         HumanDiagnosticKind::ExpectedSort => "expected sort",
         HumanDiagnosticKind::TypeMismatch => "type mismatch",
+        HumanDiagnosticKind::NoGoalsButTacticRemaining => "no goals but tactic remaining",
+        HumanDiagnosticKind::UnresolvedGoal => "unresolved goal",
         HumanDiagnosticKind::KernelRejected => "kernel rejected",
         HumanDiagnosticKind::MachineElaborationError => "machine elaboration error",
     }
