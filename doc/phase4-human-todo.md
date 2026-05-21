@@ -684,7 +684,7 @@ AI 速度ガード:
 
 ### P4H-13: Human tactic diagnostics と goal display を整える
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-07
 

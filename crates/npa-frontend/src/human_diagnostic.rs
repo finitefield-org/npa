@@ -46,6 +46,10 @@ pub enum HumanDiagnosticPhase {
     Parser,
     Resolver,
     Elaborator,
+    TacticParse,
+    TacticValidation,
+    TacticExecution,
+    TacticUnresolvedGoal,
     KernelHandoff,
     CertificateHandoff,
 }
@@ -56,6 +60,10 @@ impl HumanDiagnosticPhase {
             Self::Parser => "parser",
             Self::Resolver => "resolver",
             Self::Elaborator => "elaborator",
+            Self::TacticParse => "tactic_parse",
+            Self::TacticValidation => "tactic_validation",
+            Self::TacticExecution => "tactic_execution",
+            Self::TacticUnresolvedGoal => "tactic_unresolved_goal",
             Self::KernelHandoff => "kernel_handoff",
             Self::CertificateHandoff => "certificate_handoff",
         }

@@ -313,15 +313,16 @@ fn human_compile_machine_tactic_diagnostic(
     diagnostic: npa_tactic::MachineTacticDiagnostic,
     span: npa_frontend::Span,
 ) -> HumanCompileError {
-    npa_frontend::HumanDiagnostic::error(
-        npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+    human_tactic_machine_diagnostic(
+        &diagnostic,
         span,
+        None,
+        None,
         format!(
             "Human by proof tactic execution failed before certificate handoff: {:?}: {}",
-            diagnostic.kind, diagnostic.message
+            &diagnostic.kind, diagnostic.message
         ),
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
     .into()
 }
 
@@ -379,6 +380,261 @@ fn human_prefixed_current_name(
     let mut parts = module_name.0.clone();
     parts.extend(name.0.iter().cloned());
     npa_cert::Name(parts)
+}
+
+fn human_tactic_goal_payload(
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> npa_frontend::HumanDiagnosticPayload {
+    npa_frontend::HumanDiagnosticPayload {
+        hole_goals: vec![human_tactic_goal_display(goal, span)],
+        ..npa_frontend::HumanDiagnosticPayload::default()
+    }
+}
+
+fn human_tactic_goal_display(
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> npa_frontend::HumanHoleGoal {
+    let mut local_names = Vec::with_capacity(goal.context.len());
+    let mut context = Vec::with_capacity(goal.context.len());
+    for local in &goal.context {
+        let ty = human_render_core_expr(&local.ty, &local_names);
+        let value = local
+            .value
+            .as_ref()
+            .map(|value| human_render_core_expr(value, &local_names));
+        context.push(npa_frontend::HumanHoleGoalLocal {
+            name: local.name.clone(),
+            ty,
+            value,
+        });
+        local_names.push(local.name.clone());
+    }
+
+    npa_frontend::HumanHoleGoal {
+        hole: Some(format!("g{}", goal.id.0)),
+        context,
+        target: Some(human_render_core_expr(&goal.target, &local_names)),
+        source_span: span,
+    }
+}
+
+fn human_render_core_expr(expr: &Expr, local_names: &[String]) -> String {
+    let mut names = local_names.to_vec();
+    human_render_core_expr_with_names(expr, &mut names, 0)
+}
+
+fn human_render_core_expr_with_names(
+    expr: &Expr,
+    local_names: &mut Vec<String>,
+    parent_prec: u8,
+) -> String {
+    const PREC_BINDER: u8 = 10;
+    const PREC_APP: u8 = 80;
+    const PREC_ATOM: u8 = 100;
+
+    let (rendered, prec) = match expr {
+        Expr::Sort(level) => (human_render_sort(level), PREC_ATOM),
+        Expr::BVar(index) => {
+            let index = *index as usize;
+            let name = local_names
+                .len()
+                .checked_sub(index + 1)
+                .and_then(|local_index| local_names.get(local_index))
+                .cloned()
+                .unwrap_or_else(|| format!("#{index}"));
+            (name, PREC_ATOM)
+        }
+        Expr::Const { name, levels } => {
+            let rendered = if levels.is_empty() {
+                name.clone()
+            } else {
+                format!(
+                    "{}.{{{}}}",
+                    name,
+                    levels
+                        .iter()
+                        .map(human_render_level)
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            };
+            (rendered, PREC_ATOM)
+        }
+        Expr::App(_, _) => {
+            let mut parts = Vec::new();
+            human_collect_app_parts(expr, local_names, &mut parts);
+            (parts.join(" "), PREC_APP)
+        }
+        Expr::Lam { binder, ty, body } => {
+            let binder = human_fresh_binder_name(binder, local_names);
+            let ty = human_render_core_expr_with_names(ty, local_names, 0);
+            local_names.push(binder.clone());
+            let body = human_render_core_expr_with_names(body, local_names, 0);
+            local_names.pop();
+            (format!("fun ({binder} : {ty}) => {body}"), PREC_BINDER)
+        }
+        Expr::Pi { binder, ty, body } => {
+            let binder = human_fresh_binder_name(binder, local_names);
+            let ty = human_render_core_expr_with_names(ty, local_names, 0);
+            local_names.push(binder.clone());
+            let body = human_render_core_expr_with_names(body, local_names, 0);
+            local_names.pop();
+            (format!("forall ({binder} : {ty}), {body}"), PREC_BINDER)
+        }
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => {
+            let binder = human_fresh_binder_name(binder, local_names);
+            let ty = human_render_core_expr_with_names(ty, local_names, 0);
+            let value = human_render_core_expr_with_names(value, local_names, 0);
+            local_names.push(binder.clone());
+            let body = human_render_core_expr_with_names(body, local_names, 0);
+            local_names.pop();
+            (
+                format!("let {binder} : {ty} := {value} in {body}"),
+                PREC_BINDER,
+            )
+        }
+    };
+
+    if prec < parent_prec {
+        format!("({rendered})")
+    } else {
+        rendered
+    }
+}
+
+fn human_collect_app_parts(expr: &Expr, local_names: &mut Vec<String>, parts: &mut Vec<String>) {
+    match expr {
+        Expr::App(func, arg) => {
+            human_collect_app_parts(func, local_names, parts);
+            parts.push(human_render_core_expr_with_names(arg, local_names, 100));
+        }
+        _ => parts.push(human_render_core_expr_with_names(expr, local_names, 80)),
+    }
+}
+
+fn human_fresh_binder_name(base: &str, local_names: &[String]) -> String {
+    let candidate = if base.is_empty() || base == "_" {
+        "x".to_owned()
+    } else {
+        base.to_owned()
+    };
+    if !local_names.iter().any(|name| name == &candidate) {
+        return candidate;
+    }
+    for index in 1.. {
+        let fresh = format!("{candidate}{index}");
+        if !local_names.iter().any(|name| name == &fresh) {
+            return fresh;
+        }
+    }
+    unreachable!("unbounded fresh-name search should return");
+}
+
+fn human_render_sort(level: &Level) -> String {
+    match level {
+        Level::Zero => "Prop".to_owned(),
+        Level::Succ(inner) if matches!(inner.as_ref(), Level::Zero) => "Type".to_owned(),
+        Level::Succ(inner) => format!("Type {}", human_render_level(inner)),
+        _ => format!("Sort {}", human_render_level(level)),
+    }
+}
+
+fn human_render_level(level: &Level) -> String {
+    match level {
+        Level::Zero => "0".to_owned(),
+        Level::Succ(inner) => format!("succ {}", human_render_level(inner)),
+        Level::Max(lhs, rhs) => {
+            format!(
+                "max {} {}",
+                human_render_level(lhs),
+                human_render_level(rhs)
+            )
+        }
+        Level::IMax(lhs, rhs) => {
+            format!(
+                "imax {} {}",
+                human_render_level(lhs),
+                human_render_level(rhs)
+            )
+        }
+        Level::Param(name) => name.clone(),
+    }
+}
+
+fn human_tactic_machine_kind(
+    diagnostic: &npa_tactic::MachineTacticDiagnostic,
+) -> npa_frontend::HumanDiagnosticKind {
+    match &diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::AmbiguousApplyArgument
+        | npa_tactic::MachineTacticDiagnosticKind::AmbiguousRewriteRule
+        | npa_tactic::MachineTacticDiagnosticKind::ExpectedEqTarget
+        | npa_tactic::MachineTacticDiagnosticKind::ExpectedFunctionType
+        | npa_tactic::MachineTacticDiagnosticKind::ExpectedPiTarget
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidMetaDependency
+        | npa_tactic::MachineTacticDiagnosticKind::MissingExplicitArgument
+        | npa_tactic::MachineTacticDiagnosticKind::ProofExprTypeMismatch
+        | npa_tactic::MachineTacticDiagnosticKind::SubgoalDataArgument
+        | npa_tactic::MachineTacticDiagnosticKind::TooFewApplyArguments
+        | npa_tactic::MachineTacticDiagnosticKind::TooManyApplyArguments
+        | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch => {
+            npa_frontend::HumanDiagnosticKind::TypeMismatch
+        }
+        npa_tactic::MachineTacticDiagnosticKind::AmbiguousLocalName
+        | npa_tactic::MachineTacticDiagnosticKind::AmbiguousTacticHead => {
+            npa_frontend::HumanDiagnosticKind::AmbiguousName
+        }
+        npa_tactic::MachineTacticDiagnosticKind::UnknownLocalName
+        | npa_tactic::MachineTacticDiagnosticKind::UnknownName
+        | npa_tactic::MachineTacticDiagnosticKind::UnknownTacticHead => {
+            npa_frontend::HumanDiagnosticKind::UnknownIdentifier
+        }
+        npa_tactic::MachineTacticDiagnosticKind::InvalidInductionTarget
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidLocalHead
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidMachineTactic
+        | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
+        | npa_tactic::MachineTacticDiagnosticKind::UnsupportedMachineTactic => {
+            npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        }
+        npa_tactic::MachineTacticDiagnosticKind::UnresolvedGoal => {
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal
+        }
+        npa_tactic::MachineTacticDiagnosticKind::KernelRejected => {
+            npa_frontend::HumanDiagnosticKind::KernelRejected
+        }
+        _ => npa_frontend::HumanDiagnosticKind::MachineElaborationError,
+    }
+}
+
+fn human_tactic_machine_diagnostic(
+    diagnostic: &npa_tactic::MachineTacticDiagnostic,
+    span: npa_frontend::Span,
+    goal: Option<&npa_tactic::MachineGoal>,
+    kind: Option<npa_frontend::HumanDiagnosticKind>,
+    message: impl Into<String>,
+) -> npa_frontend::HumanDiagnostic {
+    let kind = kind.unwrap_or_else(|| human_tactic_machine_kind(diagnostic));
+    let mut human = npa_frontend::HumanDiagnostic::error(kind, span, message)
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticExecution);
+    if let Some(goal) = goal {
+        human = human.with_payload(human_tactic_goal_payload(goal, span));
+    }
+    human
+}
+
+fn human_tactic_validation_diagnostic_with_goal(
+    mut diagnostic: npa_frontend::HumanDiagnostic,
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> npa_frontend::HumanDiagnostic {
+    diagnostic = diagnostic.with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation);
+    diagnostic.with_payload(human_tactic_goal_payload(goal, span))
 }
 
 pub fn check_human_tactic_term(
@@ -453,6 +709,7 @@ pub fn check_human_tactic_term(
 pub fn run_human_exact_tactic(
     request: HumanExactTacticRequest<'_, '_>,
 ) -> Result<HumanExactTacticOk, HumanTacticTermError> {
+    let goal = request.state.goal(request.goal_id)?;
     let checked = check_human_tactic_term(HumanTacticTermCheckRequest {
         state: request.state,
         goal_id: request.goal_id,
@@ -460,13 +717,26 @@ pub fn run_human_exact_tactic(
         current_source_interface: request.current_source_interface,
         imported_source_interfaces: request.imported_source_interfaces,
         options: request.options,
-    })?;
+    })
+    .map_err(|error| human_exact_check_error(error, &goal, request.term.span()))?;
     let (state, delta) = npa_tactic::assign_goal(
         request.state,
         request.goal_id,
         npa_tactic::ProofExpr::Core(checked.expr.clone()),
         Vec::new(),
-    )?;
+    )
+    .map_err(|diagnostic| {
+        human_tactic_machine_diagnostic(
+            &diagnostic,
+            request.term.span(),
+            Some(&goal),
+            Some(npa_frontend::HumanDiagnosticKind::TypeMismatch),
+            format!(
+                "`exact` could not assign the proof term: {}",
+                diagnostic.message
+            ),
+        )
+    })?;
     npa_tactic::validate_machine_proof_state(&state)?;
 
     Ok(HumanExactTacticOk {
@@ -481,6 +751,7 @@ pub fn run_human_intro_tactic(
     request: HumanIntroTacticRequest<'_, '_>,
 ) -> Result<HumanIntroTacticOk, HumanIntroTacticError> {
     let name = human_intro_name(request.name)?;
+    let before_goal = request.state.goal(request.goal_id)?;
     let (state, delta) = npa_tactic::run_machine_tactic_with_budget(
         request.state,
         npa_tactic::MachineTactic::Intro {
@@ -489,7 +760,7 @@ pub fn run_human_intro_tactic(
         },
         request.budget,
     )
-    .map_err(|diagnostic| human_intro_machine_error(diagnostic, request.name.span))?;
+    .map_err(|diagnostic| human_intro_machine_error(diagnostic, &before_goal, request.name.span))?;
     npa_tactic::validate_machine_proof_state(&state)?;
 
     Ok(HumanIntroTacticOk { state, delta })
@@ -629,7 +900,7 @@ pub fn run_human_simp_lite_tactic(
             .map(|goal| goal.target);
         return Err(human_simp_lite_not_closed_diagnostic(
             request.span,
-            &before_goal.target,
+            &before_goal,
             residual_target.as_ref(),
         )
         .into());
@@ -747,11 +1018,7 @@ pub fn run_human_tactic_script(
     }
 
     if !state.open_goals.is_empty() {
-        return Err(human_script_unresolved_goal_diagnostic(
-            request.script.span,
-            state.open_goals.len(),
-        )
-        .into());
+        return Err(human_script_unresolved_goal_diagnostic(request.script.span, &state).into());
     }
 
     let proof = npa_tactic::extract_closed_machine_proof(&state)?;
@@ -780,20 +1047,41 @@ fn human_intro_name(name: &npa_frontend::HumanName) -> Result<String, HumanIntro
     Ok(name.parts[0].clone())
 }
 
+fn human_exact_check_error(
+    error: HumanTacticTermError,
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> HumanTacticTermError {
+    match error {
+        HumanTacticTermError::Human(HumanCompileError { diagnostic }) => {
+            human_tactic_validation_diagnostic_with_goal(diagnostic, goal, span).into()
+        }
+        HumanTacticTermError::Machine(diagnostic) => human_tactic_machine_diagnostic(
+            &diagnostic,
+            span,
+            Some(goal),
+            Some(npa_frontend::HumanDiagnosticKind::MachineElaborationError),
+            format!("`exact` term validation failed: {}", diagnostic.message),
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
+        .into(),
+    }
+}
+
 fn human_intro_machine_error(
     diagnostic: npa_tactic::MachineTacticDiagnostic,
+    goal: &npa_tactic::MachineGoal,
     span: npa_frontend::Span,
 ) -> HumanIntroTacticError {
-    match diagnostic.kind {
-        npa_tactic::MachineTacticDiagnosticKind::TypeMismatch => {
-            npa_frontend::HumanDiagnostic::error(
-                npa_frontend::HumanDiagnosticKind::ExpectedFunctionType,
-                span,
-                "`intro` can only be used when the target is a function type or forall.",
-            )
-            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
-            .into()
-        }
+    match &diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::TypeMismatch => human_tactic_machine_diagnostic(
+            &diagnostic,
+            span,
+            Some(goal),
+            Some(npa_frontend::HumanDiagnosticKind::ExpectedFunctionType),
+            "`intro` can only be used when the target is a function type or forall.",
+        )
+        .into(),
         npa_tactic::MachineTacticDiagnosticKind::InvalidMachineTactic => {
             human_intro_invalid_diagnostic(span, diagnostic.message.to_string()).into()
         }
@@ -810,7 +1098,7 @@ fn human_intro_invalid_diagnostic(
         span,
         message,
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
 }
 
 fn human_induction_name(
@@ -984,7 +1272,7 @@ fn human_apply_resolve(
         });
     }
 
-    let candidate = human_apply_global_head(state, name, *span)?;
+    let candidate = human_apply_global_head(state, goal, name, *span)?;
     let decl = state
         .env
         .kernel_env()
@@ -1113,8 +1401,8 @@ fn human_rewrite_resolve_rule(
         });
     }
 
-    let candidate =
-        human_apply_global_head(state, name, *span).map_err(human_rewrite_from_apply_error)?;
+    let candidate = human_apply_global_head(state, &goal, name, *span)
+        .map_err(human_rewrite_from_apply_error)?;
     let decl = state
         .env
         .kernel_env()
@@ -1250,13 +1538,15 @@ fn human_apply_local_head(
             span,
             format!("ambiguous local apply head {}", name.as_dotted()),
         )
-        .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
+        .with_payload(human_tactic_goal_payload(goal, span))
         .into()),
     }
 }
 
 fn human_apply_global_head(
     state: &npa_tactic::MachineProofState,
+    goal: &npa_tactic::MachineGoal,
     name: &npa_frontend::HumanName,
     span: npa_frontend::Span,
 ) -> Result<HumanApplyGlobalCandidate, HumanApplyTacticError> {
@@ -1278,9 +1568,10 @@ fn human_apply_global_head(
                 .into_iter()
                 .map(|candidate| candidate.sort_key())
                 .collect(),
+            hole_goals: vec![human_tactic_goal_display(goal, span)],
             ..npa_frontend::HumanDiagnosticPayload::default()
         })
-        .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
         .into());
     }
 
@@ -1289,7 +1580,8 @@ fn human_apply_global_head(
         span,
         format!("unknown apply head {}", name.as_dotted()),
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
+    .with_payload(human_tactic_goal_payload(goal, span))
     .into())
 }
 
@@ -1638,21 +1930,22 @@ fn human_apply_machine_error(
     goal: &npa_tactic::MachineGoal,
     resolved: &HumanApplyResolved,
 ) -> HumanApplyTacticError {
-    match diagnostic.kind {
+    match &diagnostic.kind {
         npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
         | npa_tactic::MachineTacticDiagnosticKind::TooFewApplyArguments
         | npa_tactic::MachineTacticDiagnosticKind::AmbiguousApplyArgument
         | npa_tactic::MachineTacticDiagnosticKind::MissingExplicitArgument
         | npa_tactic::MachineTacticDiagnosticKind::SubgoalDataArgument => {
-            npa_frontend::HumanDiagnostic::error(
-                npa_frontend::HumanDiagnosticKind::TypeMismatch,
+            human_tactic_machine_diagnostic(
+                &diagnostic,
                 resolved.span,
+                Some(goal),
+                Some(npa_frontend::HumanDiagnosticKind::TypeMismatch),
                 format!(
                     "cannot apply `{}`\n\ntarget:\n  {:?}\n\nhead type:\n  {:?}\n\n{}",
                     resolved.head_label, goal.target, resolved.head_type, diagnostic.message
                 ),
             )
-            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
             .into()
         }
         _ => diagnostic.into(),
@@ -1665,7 +1958,7 @@ fn human_rewrite_machine_error(
     resolved: &HumanRewriteResolved,
     site: npa_tactic::RewriteSite,
 ) -> HumanRewriteTacticError {
-    match diagnostic.kind {
+    match &diagnostic.kind {
         npa_tactic::MachineTacticDiagnosticKind::AmbiguousRewriteRule
         | npa_tactic::MachineTacticDiagnosticKind::ExpectedEqTarget
         | npa_tactic::MachineTacticDiagnosticKind::InvalidMetaDependency
@@ -1673,9 +1966,11 @@ fn human_rewrite_machine_error(
         | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
         | npa_tactic::MachineTacticDiagnosticKind::TooManyApplyArguments
         | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch => {
-            npa_frontend::HumanDiagnostic::error(
-                npa_frontend::HumanDiagnosticKind::TypeMismatch,
+            human_tactic_machine_diagnostic(
+                &diagnostic,
                 resolved.span,
+                Some(goal),
+                Some(npa_frontend::HumanDiagnosticKind::TypeMismatch),
                 format!(
                     "cannot rewrite with `{}`\n\ndirection:\n  {:?}\n\nsite:\n  {:?}\n\ntarget:\n  {:?}\n\nrule type:\n  {:?}\n\n{}",
                     resolved.head_label,
@@ -1686,7 +1981,6 @@ fn human_rewrite_machine_error(
                     diagnostic.message
                 ),
             )
-            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
             .into()
         }
         _ => diagnostic.into(),
@@ -1698,7 +1992,7 @@ fn human_simp_lite_machine_error(
     goal: &npa_tactic::MachineGoal,
     span: npa_frontend::Span,
 ) -> HumanSimpLiteTacticError {
-    match diagnostic.kind {
+    match &diagnostic.kind {
         npa_tactic::MachineTacticDiagnosticKind::AmbiguousRewriteRule
         | npa_tactic::MachineTacticDiagnosticKind::AmbiguousSimpRule
         | npa_tactic::MachineTacticDiagnosticKind::ExpectedEqTarget
@@ -1707,15 +2001,16 @@ fn human_simp_lite_machine_error(
         | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
         | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
         | npa_tactic::MachineTacticDiagnosticKind::UnknownSimpRule => {
-            npa_frontend::HumanDiagnostic::error(
-                npa_frontend::HumanDiagnosticKind::TypeMismatch,
+            human_tactic_machine_diagnostic(
+                &diagnostic,
                 span,
+                Some(goal),
+                Some(npa_frontend::HumanDiagnosticKind::TypeMismatch),
                 format!(
                     "simp-lite could not close the target\n\ntarget:\n  {:?}\n\n{}",
                     goal.target, diagnostic.message
                 ),
             )
-            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
             .into()
         }
         _ => diagnostic.into(),
@@ -1724,12 +2019,12 @@ fn human_simp_lite_machine_error(
 
 fn human_simp_lite_not_closed_diagnostic(
     span: npa_frontend::Span,
-    original_target: &Expr,
+    goal: &npa_tactic::MachineGoal,
     residual_target: Option<&Expr>,
 ) -> npa_frontend::HumanDiagnostic {
     let mut message = format!(
         "simp-lite simplified the target but did not close it in the Human MVP\n\noriginal target:\n  {:?}",
-        original_target
+        goal.target
     );
     if let Some(target) = residual_target {
         message.push_str(&format!("\n\nresidual target:\n  {target:?}"));
@@ -1739,7 +2034,8 @@ fn human_simp_lite_not_closed_diagnostic(
         span,
         message,
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticExecution)
+    .with_payload(human_tactic_goal_payload(goal, span))
 }
 
 fn human_induction_machine_error(
@@ -1747,22 +2043,23 @@ fn human_induction_machine_error(
     goal: &npa_tactic::MachineGoal,
     span: npa_frontend::Span,
 ) -> HumanInductionTacticError {
-    match diagnostic.kind {
+    match &diagnostic.kind {
         npa_tactic::MachineTacticDiagnosticKind::AmbiguousLocalName
         | npa_tactic::MachineTacticDiagnosticKind::InvalidInductionTarget
         | npa_tactic::MachineTacticDiagnosticKind::InvalidMachineTactic
         | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
         | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
         | npa_tactic::MachineTacticDiagnosticKind::UnknownLocalName => {
-            npa_frontend::HumanDiagnostic::error(
-                npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+            human_tactic_machine_diagnostic(
+                &diagnostic,
                 span,
+                Some(goal),
+                Some(npa_frontend::HumanDiagnosticKind::UnsupportedTactic),
                 format!(
                     "cannot perform simple induction in the Human MVP\n\ntarget:\n  {:?}\n\n{}",
                     goal.target, diagnostic.message
                 ),
             )
-            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
             .into()
         }
         _ => diagnostic.into(),
@@ -1778,7 +2075,7 @@ fn human_induction_unsupported_diagnostic(
         span,
         message,
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
 }
 
 fn human_rewrite_unsupported_head_diagnostic(
@@ -1799,7 +2096,7 @@ fn human_rewrite_unsupported_diagnostic(
         span,
         message,
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
 }
 
 fn human_apply_unsupported_head_diagnostic(
@@ -1820,7 +2117,7 @@ fn human_apply_unsupported_diagnostic(
         span,
         message,
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticValidation)
 }
 
 fn human_apply_universe_args(levels: Option<&[npa_frontend::HumanLevel]>) -> Vec<Level> {
@@ -1911,19 +2208,31 @@ fn human_script_no_goals_diagnostic(span: npa_frontend::Span) -> npa_frontend::H
         span,
         "Human tactic script has a remaining tactic after all goals were closed",
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticExecution)
 }
 
 fn human_script_unresolved_goal_diagnostic(
     span: npa_frontend::Span,
-    open_goal_count: usize,
+    state: &npa_tactic::MachineProofState,
 ) -> npa_frontend::HumanDiagnostic {
+    let open_goal_count = state.open_goals.len();
+    let hole_goals = state
+        .open_goals
+        .iter()
+        .filter_map(|goal_id| state.goal(*goal_id).ok())
+        .map(|goal| human_tactic_goal_display(&goal, span))
+        .collect::<Vec<_>>();
+
     npa_frontend::HumanDiagnostic::error(
         npa_frontend::HumanDiagnosticKind::UnresolvedGoal,
         span,
         format!("Human tactic script finished with {open_goal_count} open goal(s)"),
     )
-    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .with_phase(npa_frontend::HumanDiagnosticPhase::TacticUnresolvedGoal)
+    .with_payload(npa_frontend::HumanDiagnosticPayload {
+        hole_goals,
+        ..npa_frontend::HumanDiagnosticPayload::default()
+    })
 }
 
 fn frontend_import_from_tactic_ref(
@@ -2000,6 +2309,15 @@ fn active_human_verified_import_refs(
 mod tests {
     use super::*;
     use crate::{create_machine_session, HumanCurrentModuleSource};
+
+    fn human_payload(
+        diagnostic: &npa_frontend::HumanDiagnostic,
+    ) -> &npa_frontend::HumanDiagnosticPayload {
+        diagnostic
+            .payload
+            .as_deref()
+            .expect("Human diagnostic should carry a structured payload")
+    }
 
     #[test]
     fn human_api_compiles_source_to_certificate_without_machine_session() {
@@ -2232,8 +2550,12 @@ theorem open_goal : forall (A : Type), Type := by
                 .payload
                 .as_ref()
                 .and_then(|payload| payload.phase),
-            Some(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            Some(npa_frontend::HumanDiagnosticPhase::TacticUnresolvedGoal)
         );
+        let payload = human_payload(&err.diagnostic);
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(payload.hole_goals[0].context[0].name, "A");
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("Type"));
     }
 
     #[test]
@@ -2600,6 +2922,56 @@ theorem id_nat : forall (n : Nat), Nat := by simp-lite",
     }
 
     #[test]
+    fn human_exact_type_mismatch_returns_goal_payload() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanExactMismatch"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanExactMismatch.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem target : Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start Nat target");
+        let original_fingerprint = started.state.fingerprint;
+        let term = npa_frontend::parse_human_term(npa_frontend::FileId(0), "Prop")
+            .expect("Prop should parse as a Human term");
+
+        let err = run_human_exact_tactic(HumanExactTacticRequest {
+            state: &started.state,
+            goal_id: npa_tactic::GoalId(0),
+            term: &term,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect_err("exact Prop should not prove Nat");
+
+        let HumanTacticTermError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("exact mismatch should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::TypeMismatch
+        );
+        let payload = human_payload(&diagnostic);
+        assert_eq!(
+            payload.phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticValidation)
+        );
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("Nat"));
+        assert_eq!(started.state.fingerprint, original_fingerprint);
+    }
+
+    #[test]
     fn human_intro_creates_nat_body_goal_via_machine_intro() {
         let (nat, nat_interface) = verified_nat_human_import();
         let verified_modules = vec![nat];
@@ -2671,12 +3043,20 @@ theorem target : Nat := by simp-lite",
         })
         .expect("Human proof bridge should start a non-Pi theorem");
         let name = human_name("n", 0, 1);
+        let budget = npa_tactic::TacticBudget::default();
+        let intro_tactic = npa_tactic::MachineTactic::Intro {
+            goal_id: npa_tactic::GoalId(0),
+            name: "n".to_owned(),
+        };
+        let cache_key_before = npa_tactic::machine_tactic_cache_key_hash(
+            &npa_tactic::machine_tactic_cache_key(&started.state, &intro_tactic, budget),
+        );
 
         let err = run_human_intro_tactic(HumanIntroTacticRequest {
             state: &started.state,
             goal_id: npa_tactic::GoalId(0),
             name: &name,
-            budget: npa_tactic::TacticBudget::default(),
+            budget,
         })
         .expect_err("intro should reject non-Pi targets as a Human diagnostic");
 
@@ -2692,8 +3072,17 @@ theorem target : Nat := by simp-lite",
                 .payload
                 .as_ref()
                 .and_then(|payload| payload.phase),
-            Some(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            Some(npa_frontend::HumanDiagnosticPhase::TacticExecution)
         );
+        let payload = human_payload(&diagnostic);
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(payload.hole_goals[0].hole.as_deref(), Some("g0"));
+        assert!(payload.hole_goals[0].context.is_empty());
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("Nat"));
+        let cache_key_after = npa_tactic::machine_tactic_cache_key_hash(
+            &npa_tactic::machine_tactic_cache_key(&started.state, &intro_tactic, budget),
+        );
+        assert_eq!(cache_key_after, cache_key_before);
         assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
     }
 
@@ -2915,6 +3304,10 @@ theorem zero : Nat := by
             diagnostic.kind,
             npa_frontend::HumanDiagnosticKind::NoGoalsButTacticRemaining
         );
+        assert_eq!(
+            human_payload(&diagnostic).phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticExecution)
+        );
         assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
     }
 
@@ -2984,6 +3377,14 @@ theorem target : Prop := by
             diagnostic.kind,
             npa_frontend::HumanDiagnosticKind::UnresolvedGoal
         );
+        let payload = human_payload(&diagnostic);
+        assert_eq!(
+            payload.phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticUnresolvedGoal)
+        );
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(payload.hole_goals[0].hole.as_deref(), Some("g2"));
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("Prop"));
     }
 
     #[test]
@@ -3030,6 +3431,15 @@ theorem id_nat : forall (n : Nat), Nat := by
             diagnostic.kind,
             npa_frontend::HumanDiagnosticKind::NoGoalsButTacticRemaining
         );
+        let payload = human_payload(&diagnostic);
+        assert_eq!(
+            payload.phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticUnresolvedGoal)
+        );
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(payload.hole_goals[0].context[0].name, "n");
+        assert_eq!(payload.hole_goals[0].context[0].ty, "Nat");
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("Nat"));
         assert_eq!(started.state.open_goals, vec![npa_tactic::GoalId(0)]);
     }
 
@@ -3141,6 +3551,7 @@ theorem bad_apply (p q : Prop) (hp : p) : q := by
         })
         .expect("Human proof bridge should start bad_apply");
         let script = first_theorem_script(source);
+        let original_fingerprint = started.state.fingerprint;
 
         let err = run_human_tactic_script(HumanTacticScriptRunRequest {
             state: &started.state,
@@ -3162,6 +3573,22 @@ theorem bad_apply (p q : Prop) (hp : p) : q := by
         assert!(diagnostic.message.contains("cannot apply `hp`"));
         assert!(diagnostic.message.contains("target:"));
         assert!(diagnostic.message.contains("head type:"));
+        let payload = human_payload(&diagnostic);
+        assert_eq!(
+            payload.phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticExecution)
+        );
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(
+            payload.hole_goals[0]
+                .context
+                .iter()
+                .map(|local| local.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["p", "q", "hp"]
+        );
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("q"));
+        assert_eq!(started.state.fingerprint, original_fingerprint);
     }
 
     #[test]
@@ -3659,6 +4086,20 @@ theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
         assert_eq!(
             diagnostic.kind,
             npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        );
+        let payload = human_payload(&diagnostic);
+        assert_eq!(
+            payload.phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticExecution)
+        );
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(
+            payload.hole_goals[0]
+                .context
+                .iter()
+                .map(|local| local.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["n", "h"]
         );
         assert!(diagnostic
             .message

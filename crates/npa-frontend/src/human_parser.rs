@@ -827,10 +827,10 @@ impl Parser {
         }
 
         if tactics.is_empty() {
-            return Err(HumanDiagnostic::parse(
-                start,
-                "expected Human tactic after by",
-            ));
+            return Err(
+                HumanDiagnostic::parse(start, "expected Human tactic after by")
+                    .with_phase(HumanDiagnosticPhase::TacticParse),
+            );
         }
 
         let script_span = start.join(
@@ -849,7 +849,7 @@ impl Parser {
     }
 
     fn parse_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
-        match self.peek_kind() {
+        let parsed = match self.peek_kind() {
             TokenKind::Intro => self.parse_intro_tactic(),
             TokenKind::Exact => self.parse_exact_tactic(),
             TokenKind::Apply => self.parse_apply_tactic(),
@@ -868,7 +868,9 @@ impl Parser {
                 self.peek_span(),
                 "unexpected token in Human tactic script",
             )),
-        }
+        };
+        parsed
+            .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::TacticParse))
     }
 
     fn parse_intro_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
@@ -2216,11 +2218,18 @@ theorem t : Prop := by
                 .payload
                 .as_ref()
                 .and_then(|payload| payload.phase),
-            Some(HumanDiagnosticPhase::Parser)
+            Some(HumanDiagnosticPhase::TacticParse)
         );
 
         let future_case = parse_diagnostic("theorem t : Prop := by case zero => exact zero");
         assert_eq!(future_case.kind, HumanDiagnosticKind::UnsupportedTactic);
+        assert_eq!(
+            future_case
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.phase),
+            Some(HumanDiagnosticPhase::TacticParse)
+        );
     }
 
     #[test]
