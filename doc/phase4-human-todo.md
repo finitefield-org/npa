@@ -717,7 +717,7 @@ AI 速度ガード:
 
 ### P4H-14: Human API から by proof を使えるようにする
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-12, P4H-13
 

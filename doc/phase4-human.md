@@ -1266,6 +1266,24 @@ case succ n ih =>
 AI / Machine 経路は、構造化済み `MachineTacticCandidate` の validation 後に同じ proof-state primitive を使いますが、
 Human tactic parser と Human name resolution は経由しません。
 
+実装上の責務分担は次の通りです。
+
+```text
+npa-frontend plain compile wrapper
+  - Human term / notation / implicit / source interface を core に落とす。
+  - `by` proof block を自力では tactic 実行しない。
+  - `by` proof を含む theorem は、npa-api adapter から渡された checked core proof がある場合だけ core 化する。
+
+npa-api Human API wrapper
+  - current module / current source / verified imports / imported Human source interfaces / options を明示入力として受ける。
+  - `by` proof target を収集し、Human tactic bridge で Machine proof state primitive を実行する。
+  - 抽出した core proof term を npa-frontend に戻して core module / certificate を作る。
+  - `/machine/*` endpoint や `create_machine_session` を暗黙作成しない。
+```
+
+この分離により、Human API では `by` proof を含む source を certificate まで通せますが、
+Machine API の request grammar は Human tactic text を受け付けるようには広げません。
+
 ```text
 1. theorem の右辺が `by ...` なら proof mode に入る
 2. theorem type から初期 goal ?g を作る

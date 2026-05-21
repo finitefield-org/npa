@@ -14,6 +14,13 @@ use crate::{
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
+/// Compile Human source through the Phase 4 Human API adapter.
+///
+/// Unlike the plain `npa_frontend::compile_human_source_to_core*` helpers, this
+/// wrapper executes Human `by` proof blocks through the `npa-api` tactic bridge
+/// and substitutes the extracted core proof terms before returning the core
+/// module. The request keeps the current module/source/imports/options explicit
+/// and does not create a Machine API session.
 pub fn compile_human_source_to_core(
     request: HumanCompileCoreRequest<'_, '_>,
 ) -> Result<HumanCompileCoreOk, HumanCompileError> {
@@ -30,6 +37,13 @@ pub fn compile_human_source_to_core(
     })
 }
 
+/// Compile Human source to a Phase 2 certificate through the Human API adapter.
+///
+/// Plain frontend certificate compilation remains responsible for already-core
+/// Human terms only. This API wrapper is the layer that runs Human `by` proof
+/// blocks, verifies the resulting core module, and hashes the returned source
+/// interface for downstream Human imports. It does not widen `/machine/*`
+/// request grammar or implicitly allocate a Machine session.
 pub fn compile_human_source_to_certificate(
     request: HumanCompileCertificateRequest<'_, '_>,
 ) -> Result<HumanCompileCertificateOk, HumanCompileError> {
@@ -2526,6 +2540,90 @@ theorem id_type : forall (A : Type), Type := by
     }
 
     #[test]
+    fn human_api_by_intro_exact_nat_certificate_verifies() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+
+        let ok = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanByIntroExactNat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by
+  intro n
+  exact n",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human API should certify by intro n / exact n");
+
+        assert!(ok
+            .source_interface
+            .declarations
+            .iter()
+            .all(|decl| decl.decl_interface_hash.is_some()));
+        let bytes = npa_cert::encode_module_cert(&ok.certificate)
+            .expect("intro/exact by proof cert should encode");
+        let mut session = npa_cert::VerifierSession::new();
+        session.register_verified_module(verified_modules[0].clone());
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .expect("intro/exact by proof cert should verify with Nat import");
+        assert_eq!(
+            verified.module(),
+            &npa_cert::Name::from_dotted("Api.HumanByIntroExactNat")
+        );
+    }
+
+    #[test]
+    fn human_api_by_exact_eq_refl_uses_imported_source_interfaces() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+
+        let ok = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanByExactEqRefl"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+def n : Nat := Nat.zero
+theorem self_eq : Eq.{1} n n := by
+  exact Eq.refl n",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human API should certify by exact Eq.refl n");
+
+        assert!(ok
+            .source_interface
+            .declarations
+            .iter()
+            .all(|decl| decl.decl_interface_hash.is_some()));
+        let bytes =
+            npa_cert::encode_module_cert(&ok.certificate).expect("Eq.refl by cert should encode");
+        let mut session = npa_cert::VerifierSession::new();
+        for module in verified_modules {
+            session.register_verified_module(module);
+        }
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .expect("Eq.refl by proof cert should verify with Nat and Eq imports");
+        assert_eq!(
+            verified.module(),
+            &npa_cert::Name::from_dotted("Api.HumanByExactEqRefl")
+        );
+    }
+
+    #[test]
     fn human_api_compile_certificate_rejects_unresolved_by_goal_before_certificate() {
         let err = compile_human_source_to_certificate(HumanCompileCertificateRequest {
             current_module: npa_cert::Name::from_dotted("Api.HumanByOpenGoal"),
@@ -4182,7 +4280,7 @@ theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
                 "universe_params": [],
                 "theorem_type": {
                     "format": "machine_surface_v1",
-                    "source": "def human : Type := Type"
+                    "source": "by exact ("
                 }
             },
             "import_closure": [],

@@ -63,19 +63,29 @@ pub struct HumanCurrentModuleSource<'src> {
 
 #[derive(Clone, Debug)]
 pub struct HumanCompileCoreRequest<'src, 'imports> {
+    /// Current module identity supplied by the Human API caller.
     pub current_module: ModuleName,
+    /// Full Human source for the current module, including any `by` blocks.
     pub current_source: HumanCurrentModuleSource<'src>,
+    /// Explicit verified imports available to this Human compile request.
     pub verified_modules: &'imports [VerifiedModule],
+    /// Human source metadata for the verified imports above.
     pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
+    /// Frontend and tactic options for this request; no Machine session state is implied.
     pub options: HumanApiCompileOptions,
 }
 
 #[derive(Clone, Debug)]
 pub struct HumanCompileCertificateRequest<'src, 'imports> {
+    /// Current module identity supplied by the Human API caller.
     pub current_module: ModuleName,
+    /// Full Human source for the current module, including any `by` blocks.
     pub current_source: HumanCurrentModuleSource<'src>,
+    /// Explicit verified imports available to this Human compile request.
     pub verified_modules: &'imports [VerifiedModule],
+    /// Human source metadata for the verified imports above.
     pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
+    /// Frontend and tactic options for this request; no Machine session state is implied.
     pub options: HumanApiCompileOptions,
 }
 
