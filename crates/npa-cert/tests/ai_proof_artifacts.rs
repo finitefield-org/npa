@@ -46,6 +46,12 @@ const EQ_THEOREMS: &[&str] = &[
     "eq_refl_compose",
     "eq_self_imp",
     "eq_refl_prop",
+    "eq_refl_apply_twice",
+    "eq_refl_higher_apply",
+    "eq_refl_nested_compose",
+    "eq_refl_prop_apply",
+    "eq_local_passthrough",
+    "eq_refl_nat_function",
 ];
 
 const NAT_THEOREMS: &[&str] = &[
@@ -79,7 +85,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         certificate: "Proofs/Ai/Eq/certificate.npcert",
         meta: "Proofs/Ai/Eq/meta.json",
         replay: "Proofs/Ai/Eq/replay.json",
-        imports: &["Std.Logic.Eq"],
+        imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
         theorems: EQ_THEOREMS,
     },
     ExpectedModule {

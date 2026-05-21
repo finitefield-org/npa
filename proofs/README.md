@@ -13,7 +13,7 @@ The trust boundary follows the repository-wide certificate-first policy:
 Current bundles:
 
 - `Proofs/Ai/Basic/`: small no-import, no-axiom combinator and implication theorem module.
-- `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq`.
+- `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
@@ -73,7 +73,8 @@ Implemented:
 Module: `Proofs.Ai.Eq`
 
 This module imports `Std.Logic.Eq` and keeps the first equality examples refl-only. It checks import
-interfaces and builtin equality references without adding rewrite search as a dependency.
+interfaces and builtin equality references without adding rewrite search as a dependency. Later
+Eq layers also import `Std.Nat.Basic` for Nat-specialized equality targets.
 
 Implemented:
 
@@ -129,7 +130,7 @@ Module: `Proofs.Ai.Eq`
 Add more refl-only equality targets with deeper application spines. The goal is to teach producers
 to preserve the exact head, universe, and argument structure without relying on rewrite search.
 
-Planned:
+Implemented:
 
 | Theorem | Shape |
 | --- | --- |

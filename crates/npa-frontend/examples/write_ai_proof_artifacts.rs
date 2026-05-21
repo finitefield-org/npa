@@ -46,7 +46,7 @@ const EQ_MODULE: ModuleArtifact = ModuleArtifact {
     certificate_path: "Proofs/Ai/Eq/certificate.npcert",
     meta_path: "Proofs/Ai/Eq/meta.json",
     replay_path: "Proofs/Ai/Eq/replay.json",
-    imports: &["Std.Logic.Eq"],
+    imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
     theorems: EQ_THEOREMS,
 };
 
@@ -232,6 +232,48 @@ const EQ_THEOREMS: &[TheoremArtifact] = &[
         statement: "forall (P : Prop), forall (p : P), @Eq.{0} P p p",
         proof: "fun P => fun p => @Eq.refl.{0} P p",
     },
+    TheoremArtifact {
+        name: "eq_refl_apply_twice",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (f : forall (x : A), A), forall (x : A), @Eq.{u} A (f (f x)) (f (f x))",
+        proof: "fun A => fun f => fun x => @Eq.refl.{u} A (f (f x))",
+    },
+    TheoremArtifact {
+        name: "eq_refl_higher_apply",
+        universe_params: &["u", "v", "w"],
+        statement:
+            "forall (A : Sort u), forall (B : Sort v), forall (C : Sort w), forall (h : forall (f : forall (x : A), B), C), forall (f : forall (x : A), B), @Eq.{w} C (h f) (h f)",
+        proof: "fun A => fun B => fun C => fun h => fun f => @Eq.refl.{w} C (h f)",
+    },
+    TheoremArtifact {
+        name: "eq_refl_nested_compose",
+        universe_params: &["u", "v", "w", "z"],
+        statement:
+            "forall (A : Sort u), forall (B : Sort v), forall (C : Sort w), forall (D : Sort z), forall (f : forall (x : C), D), forall (g : forall (x : B), C), forall (h : forall (x : A), B), forall (x : A), @Eq.{z} D (f (g (h x))) (f (g (h x)))",
+        proof: "fun A => fun B => fun C => fun D => fun f => fun g => fun h => fun x => @Eq.refl.{z} D (f (g (h x)))",
+    },
+    TheoremArtifact {
+        name: "eq_refl_prop_apply",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (h : forall (p : P), Q), forall (p : P), @Eq.{0} Q (h p) (h p)",
+        proof: "fun P => fun Q => fun h => fun p => @Eq.refl.{0} Q (h p)",
+    },
+    TheoremArtifact {
+        name: "eq_local_passthrough",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (x : A), forall (h : @Eq.{u} A x x), @Eq.{u} A x x",
+        proof: "fun A => fun x => fun h => h",
+    },
+    TheoremArtifact {
+        name: "eq_refl_nat_function",
+        universe_params: &[],
+        statement:
+            "forall (f : forall (n : Nat), Nat), forall (n : Nat), @Eq.{1} Nat (f n) (f n)",
+        proof: "fun f => fun n => @Eq.refl.{1} Nat (f n)",
+    },
 ];
 
 const NAT_THEOREMS: &[TheoremArtifact] = &[
@@ -337,8 +379,8 @@ fn run() -> Result<(), String> {
     let (eq_import, eq_source_interface) = verified_human_import("Std.Logic.Eq", EQ_IMPORT_SOURCE)?;
     let (nat_import, nat_source_interface) =
         verified_human_import("Std.Nat.Basic", NAT_IMPORT_SOURCE)?;
-    let eq_imports = vec![eq_import.clone()];
-    let eq_source_interfaces = vec![eq_source_interface.clone()];
+    let eq_imports = vec![eq_import.clone(), nat_import.clone()];
+    let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let nat_imports = vec![eq_import, nat_import];
     let nat_source_interfaces = vec![eq_source_interface, nat_source_interface];
 

@@ -5,19 +5,25 @@
   "certificate": "Proofs/Ai/Eq/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_phase2_certificate",
-  "source_sha256": "sha256:73b73ef4bf25400dcad2ef662d4247a26dfaee223e3cc91e7b87aab9a8544f4c",
-  "certificate_file_sha256": "sha256:5a5725cacc277558e55f2d78ffe2274dcca48b92af0810fea1229386972d33ed",
-  "export_hash": "sha256:ac7eb80f3cb0469ad09e6ad8834b8e8115e692896856ad7ad3aa036d1d8ebba2",
-  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
-  "certificate_hash": "sha256:7cb0f79be2f1c096729ab3e3ec3329643694bca0ff8dcd3dcfafcb21dfd04b5b",
-  "imports": ["Std.Logic.Eq"],
+  "source_sha256": "sha256:14e178062e8df0a03db3f53d28f9315b16fe1f9cdc0a83bcdb5b08155c9ad087",
+  "certificate_file_sha256": "sha256:4b7afc156ec23739738393b0237d9a69792b0410fd96b877e6dada217274cd01",
+  "export_hash": "sha256:80b826d1aa6c9877b2e551521e781fcfdd3777cd8aec6cd27f4000d132eb64ef",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:7e350cb254c1051cb59b9268ef85947a6b618f24607ce71d7fe912ab48019b45",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic"],
   "axioms": [],
   "declarations": [
     { "name": "eq_refl_self", "kind": "theorem" },
     { "name": "eq_refl_fn_app", "kind": "theorem" },
     { "name": "eq_refl_compose", "kind": "theorem" },
     { "name": "eq_self_imp", "kind": "theorem" },
-    { "name": "eq_refl_prop", "kind": "theorem" }
+    { "name": "eq_refl_prop", "kind": "theorem" },
+    { "name": "eq_refl_apply_twice", "kind": "theorem" },
+    { "name": "eq_refl_higher_apply", "kind": "theorem" },
+    { "name": "eq_refl_nested_compose", "kind": "theorem" },
+    { "name": "eq_refl_prop_apply", "kind": "theorem" },
+    { "name": "eq_local_passthrough", "kind": "theorem" },
+    { "name": "eq_refl_nat_function", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

@@ -28,6 +28,36 @@
       "declaration": "eq_refl_prop",
       "source_kind": "explicit_term",
       "term": "fun P => fun p => @Eq.refl.{0} P p"
+    },
+    {
+      "declaration": "eq_refl_apply_twice",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun f => fun x => @Eq.refl.{u} A (f (f x))"
+    },
+    {
+      "declaration": "eq_refl_higher_apply",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun h => fun f => @Eq.refl.{w} C (h f)"
+    },
+    {
+      "declaration": "eq_refl_nested_compose",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun f => fun g => fun h => fun x => @Eq.refl.{z} D (f (g (h x)))"
+    },
+    {
+      "declaration": "eq_refl_prop_apply",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => fun p => @Eq.refl.{0} Q (h p)"
+    },
+    {
+      "declaration": "eq_local_passthrough",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun x => fun h => h"
+    },
+    {
+      "declaration": "eq_refl_nat_function",
+      "source_kind": "explicit_term",
+      "term": "fun f => fun n => @Eq.refl.{1} Nat (f n)"
     }
   ],
   "acceptance": {
