@@ -63,7 +63,7 @@ pub use diagnostic::{
 };
 pub use human::{
     compile_human_source_to_certificate, compile_human_source_to_core,
-    human_api_default_compile_options,
+    human_api_default_compile_options, start_human_proof,
 };
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
@@ -449,15 +449,16 @@ pub use types::{
     validate_machine_endpoint_envelope, CheckedMachineProofRoot, HashString,
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
-    KernelCheckProfileId, MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse,
-    MachineApiErrorWire, MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope,
-    MachineApiResponseStatus, MachineApiSchedulerResponse, MachineApiVersion,
-    MachineEndpointEnvelopeSpec, MachineEndpointFieldSpec, MachineEndpointFieldType,
-    MachineGoalView, MachineLocalView, MachineProofSession, MachineProofSnapshot,
-    MachineRootTermSource, MachineSchedulerArtifact, MachineSchedulerArtifactKind,
-    MachineSchedulerArtifactScope, MachineTacticOptionsConversionError,
-    MachineTacticOptionsRequest, MachineValidatedEndpointEnvelope, MachineWireGrammarError,
-    MachineWireGrammarErrorKind, SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
+    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, KernelCheckProfileId,
+    MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
+    MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope, MachineApiResponseStatus,
+    MachineApiSchedulerResponse, MachineApiVersion, MachineEndpointEnvelopeSpec,
+    MachineEndpointFieldSpec, MachineEndpointFieldType, MachineGoalView, MachineLocalView,
+    MachineProofSession, MachineProofSnapshot, MachineRootTermSource, MachineSchedulerArtifact,
+    MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
+    MachineTacticOptionsConversionError, MachineTacticOptionsRequest,
+    MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
+    SessionId, SnapshotId, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
     KERNEL_CHECK_PROFILE_BUILTIN_NONE, MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID,
     MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
 };

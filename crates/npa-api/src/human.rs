@@ -1,6 +1,7 @@
 use crate::{
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
-    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError,
+    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanStartProofError,
+    HumanStartProofOk, HumanStartProofRequest,
 };
 
 pub fn compile_human_source_to_core(
@@ -39,8 +40,95 @@ pub fn compile_human_source_to_certificate(
     })
 }
 
+pub fn start_human_proof(
+    request: HumanStartProofRequest<'_, '_>,
+) -> Result<HumanStartProofOk, HumanStartProofError> {
+    let frontend_options = npa_frontend::HumanCompileOptions::from(&request.options);
+    let frontend_imports: Vec<_> = request
+        .verified_modules
+        .iter()
+        .map(npa_frontend::VerifiedImport::from)
+        .collect();
+    let prepared = npa_frontend::prepare_human_proof_start_core_with_source_interfaces(
+        request.current_source.file_id,
+        request.current_module.clone(),
+        request.theorem_name,
+        request.current_source.source,
+        &frontend_imports,
+        request.imported_source_interfaces,
+        &frontend_options,
+    )?;
+    let phase4_imports =
+        active_human_verified_import_refs(request.verified_modules, &prepared.active_imports)?;
+    let mut checked_current_decls = Vec::with_capacity(prepared.proof.prior_declarations.len());
+    for (source_index, decl) in prepared
+        .proof
+        .prior_declarations
+        .iter()
+        .cloned()
+        .enumerate()
+    {
+        let checked = npa_tactic::check_current_decl_for_machine_tactic_from_verified_imports(
+            &phase4_imports,
+            &checked_current_decls,
+            source_index as u64,
+            decl,
+        )?;
+        checked_current_decls.push(checked);
+    }
+
+    let state = npa_tactic::start_machine_proof(
+        npa_tactic::MachineProofSpec {
+            module: prepared.proof.module,
+            theorem_name: prepared.proof.theorem_name,
+            source_index: prepared.proof.source_index,
+            universe_params: prepared.proof.universe_params,
+            theorem_type: prepared.proof.theorem_type,
+        },
+        phase4_imports,
+        checked_current_decls,
+        npa_tactic::MachineTacticOptions::default(),
+    )?;
+    npa_tactic::validate_machine_proof_state(&state)?;
+
+    Ok(HumanStartProofOk {
+        state,
+        source_interface: prepared.source_interface,
+    })
+}
+
 pub fn human_api_default_compile_options() -> HumanApiCompileOptions {
     HumanApiCompileOptions::default()
+}
+
+fn active_human_verified_import_refs(
+    verified_modules: &[npa_cert::VerifiedModule],
+    active_imports: &[npa_frontend::HumanImportedSourceInterface],
+) -> Result<Vec<npa_tactic::VerifiedImportRef>, HumanStartProofError> {
+    active_imports
+        .iter()
+        .map(|active| {
+            let verified = verified_modules
+                .iter()
+                .find(|module| {
+                    let import = npa_frontend::VerifiedImport::from(*module);
+                    import.module == active.module
+                        && import.export_hash == active.export_hash
+                        && import.certificate_hash == active.certificate_hash
+                })
+                .ok_or_else(|| {
+                    npa_tactic::MachineTacticDiagnostic::new(
+                        npa_tactic::MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                        format!(
+                            "active Human import {} is not present in verified modules",
+                            active.module.as_dotted()
+                        ),
+                    )
+                })?;
+            npa_tactic::VerifiedImportRef::from_verified_module(verified)
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(HumanStartProofError::from)
 }
 
 #[cfg(test)]
@@ -151,6 +239,94 @@ def use : A := a ++ a",
         .expect("consumer Human API request should use imported source metadata");
 
         assert_eq!(consumer.core_module.declarations.len(), 2);
+    }
+
+    #[test]
+    fn human_proof_bridge_starts_machine_state_for_by_theorem() {
+        let ok = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanProof"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanProof.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+def choose {A : Type} (x y : A) : A := x
+infixl:65 \" ++ \" => choose
+def use (A : Type) (x : A) : A := x ++ x
+theorem target : Prop := by simp-lite",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human bridge should start a deterministic Machine proof state");
+
+        assert_eq!(
+            ok.state.root.module,
+            npa_cert::Name::from_dotted("Api.HumanProof")
+        );
+        assert_eq!(
+            ok.state.root.theorem_name,
+            npa_cert::Name::from_dotted("Api.HumanProof.target")
+        );
+        assert_eq!(ok.state.root.source_index, 2);
+        assert_eq!(ok.state.env.checked_current_decls.len(), 2);
+        assert_eq!(ok.state.open_goals.len(), 1);
+        assert_eq!(
+            ok.state.root.theorem_type,
+            npa_kernel::Expr::sort(npa_kernel::Level::zero())
+        );
+        npa_tactic::validate_machine_proof_state(&ok.state)
+            .expect("Human-started state must pass Machine state validation");
+    }
+
+    #[test]
+    fn human_proof_bridge_uses_verified_imports_and_source_interfaces() {
+        let producer = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.ProofLib"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "axiom ImportedP : Prop",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("producer Human API request should compile");
+        let bytes =
+            npa_cert::encode_module_cert(&producer.certificate).expect("producer cert encodes");
+        let verified = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("producer cert verifies");
+        let import = npa_frontend::VerifiedImport::from(&verified);
+        let source_interface = npa_frontend::HumanImportedSourceInterface {
+            module: import.module.clone(),
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            source_interface: producer.source_interface,
+        };
+
+        let ok = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanImportProof"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanImportProof.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(1),
+                source: "\
+import Api.ProofLib
+theorem target : ImportedP := by simp-lite",
+            },
+            verified_modules: &[verified],
+            imported_source_interfaces: &[source_interface],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human bridge should start a state with active verified imports");
+
+        assert_eq!(ok.state.env.imports.len(), 1);
+        assert_eq!(ok.state.root.source_index, 0);
+        npa_tactic::validate_machine_proof_state(&ok.state)
+            .expect("import-backed Human-started state must validate");
     }
 
     fn workspace_manifest(crate_name: &str) -> String {

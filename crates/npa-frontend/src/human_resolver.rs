@@ -302,11 +302,7 @@ impl<'a> HumanResolver<'a> {
         self.resolve_expr(&decl.ty, &mut locals)?;
         match &decl.value {
             HumanDeclValue::Term(value) => self.resolve_expr(value, &mut locals),
-            HumanDeclValue::ProofBlock(block) => Err(HumanDiagnostic::unsupported_tactic(
-                block.span,
-                "by proof block resolution is reserved for the Phase 4 Human tactic bridge",
-            )
-            .with_phase(HumanDiagnosticPhase::Resolver)),
+            HumanDeclValue::ProofBlock(_) => Ok(()),
         }
     }
 
@@ -1828,7 +1824,7 @@ mod tests {
     }
 
     #[test]
-    fn proof_block_decl_value_is_rejected_until_tactic_bridge_exists() {
+    fn proof_block_decl_value_resolves_theorem_type_for_tactic_bridge() {
         let span = Span::new(crate::FileId(0), 0, 30);
         let module = crate::HumanModule {
             file_id: crate::FileId(0),
@@ -1852,19 +1848,21 @@ mod tests {
             span,
         };
 
-        let err = resolve_human_module(
+        let resolved = resolve_human_module(
             npa_cert::Name::from_dotted("Current.Module"),
             module,
             &[],
             &crate::HumanCompileOptions::default(),
         )
-        .expect_err("P4H-01 only models proof blocks; execution starts in later milestones");
+        .expect("P4H-03 resolves by theorem signatures before the tactic bridge starts state");
 
-        assert_eq!(err.kind, HumanDiagnosticKind::UnsupportedTactic);
         assert_eq!(
-            err.payload.as_ref().and_then(|payload| payload.phase),
-            Some(HumanDiagnosticPhase::Resolver)
+            resolved.state.source_interfaces.current.declarations[0]
+                .name
+                .as_dotted(),
+            "t"
         );
+        assert!(resolved.resolved_names.is_empty());
     }
 
     #[test]

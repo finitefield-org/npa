@@ -345,7 +345,7 @@ AI 速度ガード:
 
 ### P4H-03: Human proof-state bridge skeleton を作る
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-02
 
@@ -382,6 +382,15 @@ AI 速度ガード:
 - root goal の theorem type が kernel で Sort として検査される。
 - Human bridge が作った state fingerprint は Machine state validation を通る。
 - `cargo metadata` または `Cargo.toml` inspection で循環依存がない。
+
+完了確認:
+
+- bridge は `crates/npa-api/src/human.rs` の Human-only API `start_human_proof` として配置し、`crates/npa-frontend` には `npa-tactic` dependency を追加していない。
+- `npa-frontend` には `prepare_human_proof_start_core_with_source_interfaces` だけを追加し、Human source の target theorem type と prior current declarations を core 化する。tactic 実行や `npa-tactic` 呼び出しは行わない。
+- Human current declaration names は bridge 境界で Machine proof state 用に current module prefix 付きへ射影し、imported names と Machine Surface canonicalizer は変更していない。
+- `start_human_proof` は active Human imports / source interfaces から `VerifiedImportRef` を組み立て、prior current declarations を `check_current_decl_for_machine_tactic_from_verified_imports` で checked chain にしてから `start_machine_proof` を呼ぶ。
+- 生成された proof state は `validate_machine_proof_state` を通し、root goal theorem type は既存 `start_machine_proof` の kernel Sort check に任せる。
+- AI 速度ガードとして、`start_machine_proof` の signature / validation order、Machine batch API、`npa-tactic` hot path、Machine Surface parser は変更していない。
 
 ### P4H-04: Human tactic term elaboration context を実装する
 

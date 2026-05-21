@@ -5,7 +5,7 @@ use npa_frontend::{
     FileId, HumanCompileOptions, HumanDiagnostic, HumanImportedSourceInterface,
     HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
 };
-use npa_tactic::{GoalId, MetaVarId};
+use npa_tactic::{GoalId, MachineProofState, MachineTacticDiagnostic, MetaVarId};
 
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
@@ -73,6 +73,16 @@ pub struct HumanCompileCertificateRequest<'src, 'imports> {
     pub options: HumanApiCompileOptions,
 }
 
+#[derive(Clone, Debug)]
+pub struct HumanStartProofRequest<'src, 'imports> {
+    pub current_module: ModuleName,
+    pub theorem_name: Name,
+    pub current_source: HumanCurrentModuleSource<'src>,
+    pub verified_modules: &'imports [VerifiedModule],
+    pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
+    pub options: HumanApiCompileOptions,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileCoreOk {
     pub core_module: CoreModule,
@@ -85,6 +95,12 @@ pub struct HumanCompileCertificateOk {
     pub source_interface: HumanSourceInterface,
 }
 
+#[derive(Clone, Debug)]
+pub struct HumanStartProofOk {
+    pub state: MachineProofState,
+    pub source_interface: HumanSourceInterface,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileError {
     pub diagnostic: HumanDiagnostic,
@@ -93,6 +109,24 @@ pub struct HumanCompileError {
 impl From<HumanDiagnostic> for HumanCompileError {
     fn from(diagnostic: HumanDiagnostic) -> Self {
         Self { diagnostic }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanStartProofError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanStartProofError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanStartProofError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
     }
 }
 

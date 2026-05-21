@@ -59,7 +59,8 @@ pub use human_elaborator::{
     compile_human_source_to_certificate_with_source_interfaces, compile_human_source_to_core,
     compile_human_source_to_core_output_with_source_interfaces,
     compile_human_source_to_core_with_source_interfaces, elaborate_human_module,
-    HumanCertificateCompileOutput, HumanCoreCompileOutput,
+    prepare_human_proof_start_core_with_source_interfaces, HumanCertificateCompileOutput,
+    HumanCoreCompileOutput, HumanProofStartCore, HumanProofStartCoreOutput,
 };
 pub use human_parser::{
     parse_human_module, parse_human_module_with_source_interfaces, parse_human_term,
