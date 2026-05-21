@@ -8,10 +8,10 @@ use crate::{
     HumanAxiomDecl, HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDecl, HumanDiagnostic,
     HumanDiagnosticKind, HumanDiagnosticPayload, HumanExpr, HumanFrontendState,
     HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata, HumanImportedSourceInterface,
-    HumanInductiveDecl, HumanItem, HumanModule, HumanName, HumanOpenScope, HumanOpenScopeFrame,
-    HumanResult, HumanSourceBinderMetadata, HumanSourceDeclarationKind,
-    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceNotationMetadata, Span,
-    VerifiedImport,
+    HumanInductiveDecl, HumanItem, HumanModule, HumanName, HumanNotationAssociativity,
+    HumanNotationHead, HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame, HumanResult,
+    HumanSourceBinderMetadata, HumanSourceDeclarationKind, HumanSourceDeclarationMetadata,
+    HumanSourceInterface, HumanSourceNotationMetadata, Span, VerifiedImport,
 };
 
 const MAX_HUMAN_NAME_CANDIDATES: usize = 32;
@@ -22,6 +22,8 @@ pub struct ResolvedHumanModule {
     pub state: HumanFrontendState,
     pub global_scope: HumanGlobalScope,
     pub resolved_names: Vec<HumanResolvedNameUse>,
+    pub notation_table: Vec<HumanResolvedNotationEntry>,
+    pub resolved_notations: Vec<HumanResolvedNotationUse>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -69,32 +71,63 @@ pub enum HumanResolvedName {
     Global(HumanGlobalRef),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanResolvedNotationEntry {
+    pub kind: HumanNotationKind,
+    pub associativity: HumanNotationAssociativity,
+    pub precedence: u16,
+    pub token: String,
+    pub target: HumanGlobalRef,
+    pub namespace: Vec<String>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanResolvedNotationUse {
+    pub head: HumanNotationHead,
+    pub candidates: Vec<HumanGlobalRef>,
+}
+
 pub fn resolve_human_module(
     module_name: npa_cert::ModuleName,
     module: HumanModule,
     verified_imports: &[VerifiedImport],
-    _options: &HumanCompileOptions,
+    options: &HumanCompileOptions,
 ) -> HumanResult<ResolvedHumanModule> {
-    HumanResolver::new(module_name, verified_imports).resolve_module(module)
+    HumanResolver::new(module_name, verified_imports, options).resolve_module(module)
 }
 
 struct HumanResolver<'a> {
     verified_imports: &'a [VerifiedImport],
+    max_notation_candidates: usize,
     state: HumanFrontendState,
     global_scope: HumanGlobalScope,
     resolved_names: Vec<HumanResolvedNameUse>,
+    notation_table: Vec<HumanResolvedNotationEntry>,
+    resolved_notations: Vec<HumanResolvedNotationUse>,
+    notation_scopes: Vec<HumanNotationScope>,
+    namespace_notations: BTreeMap<Vec<String>, Vec<HumanResolvedNotationEntry>>,
     seen_imports: BTreeSet<VerifiedImportIdentity>,
     pending_current_names: BTreeSet<npa_cert::Name>,
     temporary_globals: Vec<HumanGlobalScopeEntry>,
 }
 
 impl<'a> HumanResolver<'a> {
-    fn new(module_name: npa_cert::ModuleName, verified_imports: &'a [VerifiedImport]) -> Self {
+    fn new(
+        module_name: npa_cert::ModuleName,
+        verified_imports: &'a [VerifiedImport],
+        options: &HumanCompileOptions,
+    ) -> Self {
         Self {
             verified_imports,
+            max_notation_candidates: options.max_notation_candidates,
             state: HumanFrontendState::new(module_name),
             global_scope: HumanGlobalScope::default(),
             resolved_names: Vec::new(),
+            notation_table: Vec::new(),
+            resolved_notations: Vec::new(),
+            notation_scopes: vec![HumanNotationScope::default()],
+            namespace_notations: BTreeMap::new(),
             seen_imports: BTreeSet::new(),
             pending_current_names: BTreeSet::new(),
             temporary_globals: Vec::new(),
@@ -119,6 +152,8 @@ impl<'a> HumanResolver<'a> {
             state: self.state,
             global_scope: self.global_scope,
             resolved_names: self.resolved_names,
+            notation_table: self.notation_table,
+            resolved_notations: self.resolved_notations,
         })
     }
 
@@ -291,10 +326,15 @@ impl<'a> HumanResolver<'a> {
                 self.resolve_expr(domain, locals)?;
                 self.resolve_expr(codomain, locals)?;
             }
-            HumanExpr::NotationApp { args, .. } => {
+            HumanExpr::NotationApp { head, args, .. } => {
                 for arg in args {
                     self.resolve_expr(arg, locals)?;
                 }
+                let candidates = self.resolve_notation_candidates(head)?;
+                self.resolved_notations.push(HumanResolvedNotationUse {
+                    head: head.clone(),
+                    candidates,
+                });
             }
         }
 
@@ -384,6 +424,93 @@ impl<'a> HumanResolver<'a> {
         }
 
         Ok(None)
+    }
+
+    fn resolve_notation_candidates(
+        &self,
+        head: &HumanNotationHead,
+    ) -> HumanResult<Vec<HumanGlobalRef>> {
+        let mut candidates = BTreeMap::new();
+        for entry in self
+            .notation_scopes
+            .iter()
+            .flat_map(|scope| scope.entries.iter())
+            .filter(|entry| {
+                entry.token == head.token
+                    && entry.kind == head.kind
+                    && entry.precedence == head.precedence
+                    && entry.associativity == head.associativity
+            })
+        {
+            candidates.insert(global_ref_sort_key(&entry.target), entry.target.clone());
+            if candidates.len() > self.max_notation_candidates {
+                if let Some(last_key) = candidates.keys().next_back().cloned() {
+                    candidates.remove(&last_key);
+                }
+            }
+        }
+
+        let active_candidate_count = self.active_notation_candidate_count(head);
+        if active_candidate_count > self.max_notation_candidates {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::TooManyNotationCandidates,
+                head.span,
+                format!("notation {} has too many candidates", head.token),
+            )
+            .with_payload(candidate_payload(self.active_notation_candidate_keys(head))));
+        }
+        if candidates.is_empty() {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::AmbiguousNotation,
+                head.span,
+                format!("notation {} has no resolved candidates", head.token),
+            ));
+        }
+
+        Ok(candidates.into_values().collect())
+    }
+
+    fn active_notation_candidate_count(&self, head: &HumanNotationHead) -> usize {
+        let mut seen = BTreeSet::new();
+        for entry in self
+            .notation_scopes
+            .iter()
+            .flat_map(|scope| scope.entries.iter())
+        {
+            if entry.token == head.token
+                && entry.kind == head.kind
+                && entry.precedence == head.precedence
+                && entry.associativity == head.associativity
+            {
+                seen.insert(global_ref_sort_key(&entry.target));
+                if seen.len() > self.max_notation_candidates {
+                    break;
+                }
+            }
+        }
+        seen.len()
+    }
+    fn active_notation_candidate_keys(&self, head: &HumanNotationHead) -> Vec<String> {
+        let mut keys = BTreeSet::new();
+        for entry in self
+            .notation_scopes
+            .iter()
+            .flat_map(|scope| scope.entries.iter())
+        {
+            if entry.token == head.token
+                && entry.kind == head.kind
+                && entry.precedence == head.precedence
+                && entry.associativity == head.associativity
+            {
+                keys.insert(global_ref_sort_key(&entry.target));
+                if keys.len() > self.max_notation_candidates {
+                    if let Some(last) = keys.iter().next_back().cloned() {
+                        keys.remove(&last);
+                    }
+                }
+            }
+        }
+        keys.into_iter().collect()
     }
 
     fn global_candidate_levels(&self, name: &HumanName) -> Vec<Vec<HumanNameCandidate>> {
@@ -724,16 +851,123 @@ impl<'a> HumanResolver<'a> {
             .collect()
     }
 
+    fn resolve_notation_target(
+        &self,
+        decl: &crate::HumanNotationDecl,
+    ) -> HumanResult<HumanGlobalRef> {
+        match self.resolve_global_name(&decl.target)? {
+            Some(target) => Ok(target),
+            None => {
+                let forward_candidates = self.forward_reference_candidates(&decl.target);
+                if !forward_candidates.is_empty() {
+                    return Err(HumanDiagnostic::error(
+                        HumanDiagnosticKind::ForwardReference,
+                        decl.target.span,
+                        format!(
+                            "notation target {} refers to a later declaration",
+                            decl.target.as_dotted()
+                        ),
+                    )
+                    .with_payload(candidate_payload(forward_candidates)));
+                }
+                Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnknownIdentifier,
+                    decl.target.span,
+                    format!("unknown notation target {}", decl.target.as_dotted()),
+                ))
+            }
+        }
+    }
+
+    fn register_notation_entry(
+        &mut self,
+        decl: &crate::HumanNotationDecl,
+        target: HumanGlobalRef,
+        metadata: &HumanSourceNotationMetadata,
+    ) -> HumanResult<()> {
+        if notation_fixity(decl.kind).is_none() {
+            return Ok(());
+        }
+        let entry = HumanResolvedNotationEntry {
+            kind: decl.kind,
+            associativity: metadata.associativity,
+            precedence: decl.precedence,
+            token: decl.token.clone(),
+            target,
+            namespace: metadata.namespace.clone(),
+            span: decl.span,
+        };
+        self.ensure_notation_compatible(&entry)?;
+        self.current_notation_scope().entries.push(entry.clone());
+        self.namespace_notations
+            .entry(entry.namespace.clone())
+            .or_default()
+            .push(entry.clone());
+        self.notation_table.push(entry);
+        Ok(())
+    }
+
+    fn ensure_notation_compatible(&self, entry: &HumanResolvedNotationEntry) -> HumanResult<()> {
+        let Some(fixity) = notation_fixity(entry.kind) else {
+            return Ok(());
+        };
+        for existing in self.active_notation_entries(&entry.token, fixity) {
+            if existing.precedence != entry.precedence
+                || existing.associativity != entry.associativity
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::NotationConflict,
+                    entry.span,
+                    format!("conflicting notation declaration for {}", entry.token),
+                )
+                .with_payload(candidate_payload(vec![
+                    resolved_notation_sort_key(&existing),
+                    resolved_notation_sort_key(entry),
+                ])));
+            }
+        }
+
+        Ok(())
+    }
+
+    fn activate_open_notations(&mut self, namespace: &HumanName) -> HumanResult<()> {
+        if let Some(entries) = self.namespace_notations.get(&namespace.parts).cloned() {
+            for entry in &entries {
+                self.ensure_notation_compatible(entry)?;
+            }
+            self.current_notation_scope().entries.extend(entries);
+        }
+        Ok(())
+    }
+
+    fn active_notation_entries(
+        &self,
+        token: &str,
+        fixity: HumanNotationFixity,
+    ) -> Vec<HumanResolvedNotationEntry> {
+        let mut entries: Vec<_> = self
+            .notation_scopes
+            .iter()
+            .flat_map(|scope| scope.entries.iter())
+            .filter(|entry| entry.token == token && notation_fixity(entry.kind) == Some(fixity))
+            .cloned()
+            .collect();
+        entries.sort_by_key(resolved_notation_sort_key);
+        entries.dedup_by_key(|entry| resolved_notation_sort_key(entry));
+        entries
+    }
+
     fn resolve_item(&mut self, item: &HumanItem) -> HumanResult<()> {
         match item {
             HumanItem::Import { .. } => {}
             HumanItem::Open { namespace, span } => {
                 let namespace = self.resolve_namespace(namespace)?;
                 let open = HumanOpenScope {
-                    namespace,
+                    namespace: namespace.clone(),
                     span: *span,
                 };
                 self.current_open_frame().opens.push(open);
+                self.activate_open_notations(&namespace)?;
             }
             HumanItem::NamespaceStart { name, .. } => {
                 let namespace = self.qualify_name(name);
@@ -742,9 +976,13 @@ impl<'a> HumanResolver<'a> {
                     namespace: Some(namespace),
                     opens: Vec::new(),
                 });
+                self.notation_scopes.push(HumanNotationScope::default());
             }
             HumanItem::NamespaceEnd { name, span } => {
                 self.close_namespace(name.as_ref(), *span)?;
+                if self.notation_scopes.len() > 1 {
+                    self.notation_scopes.pop();
+                }
             }
             HumanItem::Def(decl) => {
                 let name = self.qualify_name(&decl.name);
@@ -820,14 +1058,17 @@ impl<'a> HumanResolver<'a> {
                 self.record_generated_inductive_metadata(decl);
             }
             HumanItem::Notation(decl) => {
+                let target = self.resolve_notation_target(decl)?;
                 let metadata = HumanSourceNotationMetadata {
                     kind: decl.kind,
+                    associativity: notation_associativity(decl.kind),
                     precedence: decl.precedence,
                     token: decl.token.clone(),
                     target: decl.target.clone(),
                     namespace: self.current_namespace_parts(),
                     span: decl.span,
                 };
+                self.register_notation_entry(decl, target, &metadata)?;
                 self.state.notation_table.push(metadata.clone());
                 self.state
                     .source_interfaces
@@ -918,6 +1159,15 @@ impl<'a> HumanResolver<'a> {
             .expect("open scope stack has a top-level frame")
     }
 
+    fn current_notation_scope(&mut self) -> &mut HumanNotationScope {
+        if self.notation_scopes.is_empty() {
+            self.notation_scopes.push(HumanNotationScope::default());
+        }
+        self.notation_scopes
+            .last_mut()
+            .expect("notation scope stack has a top-level frame")
+    }
+
     fn qualify_name(&self, name: &HumanName) -> HumanName {
         let mut parts = self.current_namespace_parts();
         parts.extend(name.parts.iter().cloned());
@@ -951,6 +1201,18 @@ impl HumanLocalScope {
             .find(|(_, local)| local.parts.len() == 1 && local.parts[0] == name)
             .map(|(index, local)| (local.clone(), index))
     }
+}
+
+#[derive(Clone, Debug, Default)]
+struct HumanNotationScope {
+    entries: Vec<HumanResolvedNotationEntry>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HumanNotationFixity {
+    Prefix,
+    Postfix,
+    Infix,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1115,6 +1377,58 @@ fn global_ref_sort_key(reference: &HumanGlobalRef) -> String {
     }
 }
 
+fn notation_fixity(kind: HumanNotationKind) -> Option<HumanNotationFixity> {
+    match kind {
+        HumanNotationKind::Notation => None,
+        HumanNotationKind::Prefix => Some(HumanNotationFixity::Prefix),
+        HumanNotationKind::Postfix => Some(HumanNotationFixity::Postfix),
+        HumanNotationKind::Infix | HumanNotationKind::Infixl | HumanNotationKind::Infixr => {
+            Some(HumanNotationFixity::Infix)
+        }
+    }
+}
+
+fn notation_associativity(kind: HumanNotationKind) -> HumanNotationAssociativity {
+    match kind {
+        HumanNotationKind::Infixl => HumanNotationAssociativity::Left,
+        HumanNotationKind::Infixr => HumanNotationAssociativity::Right,
+        HumanNotationKind::Notation
+        | HumanNotationKind::Prefix
+        | HumanNotationKind::Postfix
+        | HumanNotationKind::Infix => HumanNotationAssociativity::NonAssoc,
+    }
+}
+
+fn resolved_notation_sort_key(entry: &HumanResolvedNotationEntry) -> String {
+    format!(
+        "{}:{}:{}:{}:{}",
+        entry.token,
+        notation_kind_sort_key(entry.kind),
+        entry.precedence,
+        notation_associativity_sort_key(entry.associativity),
+        global_ref_sort_key(&entry.target)
+    )
+}
+
+fn notation_kind_sort_key(kind: HumanNotationKind) -> u8 {
+    match kind {
+        HumanNotationKind::Notation => 0,
+        HumanNotationKind::Prefix => 1,
+        HumanNotationKind::Postfix => 2,
+        HumanNotationKind::Infix => 3,
+        HumanNotationKind::Infixl => 4,
+        HumanNotationKind::Infixr => 5,
+    }
+}
+
+fn notation_associativity_sort_key(associativity: HumanNotationAssociativity) -> u8 {
+    match associativity {
+        HumanNotationAssociativity::NonAssoc => 0,
+        HumanNotationAssociativity::Left => 1,
+        HumanNotationAssociativity::Right => 2,
+    }
+}
+
 fn hash_hex(hash: &npa_cert::Hash) -> String {
     hash.iter().map(|byte| format!("{byte:02x}")).collect()
 }
@@ -1241,7 +1555,10 @@ mod tests {
     use std::collections::{BTreeMap, BTreeSet};
 
     use super::*;
-    use crate::{parse_human_module, HumanBinderInfo, HumanDiagnosticKind, HumanNotationKind};
+    use crate::{
+        parse_human_module, HumanBinderInfo, HumanDiagnosticKind, HumanNotationAssociativity,
+        HumanNotationKind,
+    };
 
     fn hash(seed: u8) -> npa_cert::Hash {
         [seed; 32]
@@ -1285,12 +1602,20 @@ mod tests {
         source: &str,
         imports: &[VerifiedImport],
     ) -> HumanResult<ResolvedHumanModule> {
+        resolve_source_with_options(source, imports, &crate::HumanCompileOptions::default())
+    }
+
+    fn resolve_source_with_options(
+        source: &str,
+        imports: &[VerifiedImport],
+        options: &crate::HumanCompileOptions,
+    ) -> HumanResult<ResolvedHumanModule> {
         let module = parse_human_module(crate::FileId(0), source).expect("source should parse");
         resolve_human_module(
             npa_cert::Name::from_dotted("Current.Module"),
             module,
             imports,
-            &crate::HumanCompileOptions::default(),
+            options,
         )
     }
 
@@ -1379,6 +1704,7 @@ import Std.Nat.Basic",
         let resolved = resolve_source(
             "\
 namespace Nat
+def zero : Type := Type
 notation \"zero\" => Nat.zero
 inductive List : Type where
 | nil : List
@@ -1512,6 +1838,150 @@ def use_zero : Type := zero",
         };
         assert_eq!(module, &npa_cert::Name::from_dotted("Std.Nat.Basic"));
         assert_eq!(name, &npa_cert::Name::from_dotted("Std.Nat.zero"));
+    }
+
+    #[test]
+    fn notation_target_resolves_to_global_ref_and_use_records_candidate() {
+        let resolved = resolve_source(
+            "\
+def add (n m : Type) : Type := n
+infixl:65 \" + \" => add
+def use (n : Type) : Type := n + Type",
+            &[],
+        )
+        .expect("notation target and use should resolve");
+
+        assert_eq!(resolved.notation_table.len(), 1);
+        let HumanGlobalRef::Local { name, .. } = &resolved.notation_table[0].target else {
+            panic!("notation target should resolve to current local declaration");
+        };
+        assert_eq!(name, &npa_cert::Name::from_dotted("add"));
+        assert_eq!(resolved.resolved_notations.len(), 1);
+        assert_eq!(resolved.resolved_notations[0].head.token, "+");
+        assert_eq!(resolved.resolved_notations[0].candidates.len(), 1);
+        assert_eq!(
+            resolved.resolved_notations[0].candidates[0],
+            resolved.notation_table[0].target
+        );
+    }
+
+    #[test]
+    fn open_namespace_activates_namespaced_notation() {
+        let resolved = resolve_source(
+            "\
+namespace Nat
+def add (n m : Type) : Type := n
+infixl:65 \" + \" => add
+end Nat
+open Nat
+def use (n : Type) : Type := n + Type",
+            &[],
+        )
+        .expect("open should activate namespace notation");
+
+        assert_eq!(resolved.resolved_notations.len(), 1);
+        let HumanGlobalRef::Local { name, .. } = &resolved.resolved_notations[0].candidates[0]
+        else {
+            panic!("notation candidate should resolve to current local declaration");
+        };
+        assert_eq!(name, &npa_cert::Name::from_dotted("Nat.add"));
+    }
+
+    #[test]
+    fn resolver_rejects_open_namespace_notation_conflict() {
+        let imports: Vec<VerifiedImport> = Vec::new();
+        let mut resolver = HumanResolver::new(
+            npa_cert::Name::from_dotted("Current.Module"),
+            &imports,
+            &crate::HumanCompileOptions::default(),
+        );
+        let left = HumanResolvedNotationEntry {
+            kind: HumanNotationKind::Infixl,
+            associativity: HumanNotationAssociativity::Left,
+            precedence: 65,
+            token: "+".to_owned(),
+            target: HumanGlobalRef::Local {
+                index: 0,
+                name: npa_cert::Name::from_dotted("A.add"),
+            },
+            namespace: vec!["A".to_owned()],
+            span: Span::empty(crate::FileId(0)),
+        };
+        let right = HumanResolvedNotationEntry {
+            kind: HumanNotationKind::Infixr,
+            associativity: HumanNotationAssociativity::Right,
+            precedence: 70,
+            token: "+".to_owned(),
+            target: HumanGlobalRef::Local {
+                index: 1,
+                name: npa_cert::Name::from_dotted("B.add"),
+            },
+            namespace: vec!["B".to_owned()],
+            span: Span::empty(crate::FileId(0)),
+        };
+
+        resolver.current_notation_scope().entries.push(left);
+        resolver
+            .namespace_notations
+            .insert(vec!["B".to_owned()], vec![right]);
+        let err = resolver
+            .activate_open_notations(&HumanName::new(
+                vec!["B".to_owned()],
+                Span::empty(crate::FileId(0)),
+            ))
+            .expect_err("open should reject active notation conflicts");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::NotationConflict);
+    }
+
+    #[test]
+    fn overloaded_notation_candidates_are_deterministically_sorted() {
+        let resolved = resolve_source(
+            "\
+def add_a (n m : Type) : Type := n
+def add_b (n m : Type) : Type := m
+infixl:65 \" + \" => add_b
+infixl:65 \" + \" => add_a
+def use (n : Type) : Type := n + Type",
+            &[],
+        )
+        .expect("overloaded notation should resolve to a bounded candidate set");
+
+        assert_eq!(resolved.resolved_notations.len(), 1);
+        assert_eq!(resolved.resolved_notations[0].candidates.len(), 2);
+        let names: Vec<_> = resolved.resolved_notations[0]
+            .candidates
+            .iter()
+            .map(|candidate| match candidate {
+                HumanGlobalRef::Local { name, .. } => name.as_dotted(),
+                other => panic!("unexpected notation candidate: {other:?}"),
+            })
+            .collect();
+        assert_eq!(names, vec!["add_a".to_owned(), "add_b".to_owned()]);
+    }
+
+    #[test]
+    fn too_many_notation_candidates_is_rejected() {
+        let options = crate::HumanCompileOptions {
+            max_notation_candidates: 1,
+        };
+        let err = resolve_source_with_options(
+            "\
+def add_a (n m : Type) : Type := n
+def add_b (n m : Type) : Type := m
+infixl:65 \" + \" => add_a
+infixl:65 \" + \" => add_b
+def use (n : Type) : Type := n + Type",
+            &[],
+            &options,
+        )
+        .expect_err("candidate count above the configured limit should fail");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::TooManyNotationCandidates);
+        let payload = err
+            .payload
+            .expect("too many candidates should carry a bounded payload");
+        assert_eq!(payload.candidates.len(), 1);
     }
 
     #[test]

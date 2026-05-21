@@ -38,8 +38,8 @@ pub use human::{
     HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanCompileOptions,
     HumanConstructorDecl, HumanDecl, HumanExpr, HumanFrontendState, HumanGeneratedDeclarationKind,
     HumanGeneratedDeclarationMetadata, HumanImplicitMode, HumanImportedSourceInterface,
-    HumanInductiveDecl, HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationDecl,
-    HumanNotationHead, HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame,
+    HumanInductiveDecl, HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationAssociativity,
+    HumanNotationDecl, HumanNotationHead, HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame,
     HumanSourceBinderMetadata, HumanSourceDeclarationKind, HumanSourceDeclarationMetadata,
     HumanSourceInterface, HumanSourceInterfaceStore, HumanSourceNotationMetadata,
     HumanUniverseParam,
@@ -54,7 +54,8 @@ pub use human_elaborator::{
 pub use human_parser::{parse_human_module, parse_human_term};
 pub use human_resolver::{
     resolve_human_module, HumanGlobalRef, HumanGlobalScope, HumanGlobalScopeEntry,
-    HumanResolvedName, HumanResolvedNameUse, ResolvedHumanModule,
+    HumanResolvedName, HumanResolvedNameUse, HumanResolvedNotationEntry, HumanResolvedNotationUse,
+    ResolvedHumanModule,
 };
 pub use lexer::{lex, Token, TokenKind};
 pub use machine::{

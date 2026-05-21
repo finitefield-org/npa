@@ -22,6 +22,10 @@ pub enum HumanDiagnosticKind {
     UnknownIdentifier,
     AmbiguousName,
     ForwardReference,
+    NotationConflict,
+    AmbiguousNotation,
+    TooManyNotationCandidates,
+    MachineElaborationError,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

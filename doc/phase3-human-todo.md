@@ -375,20 +375,20 @@ crates/npa-frontend/src/lib.rs
 
 実装タスク:
 
-- [ ] notation declaration を namespace / open scope と連動させる。
-- [ ] notation target を declaration 処理時に global ref へ解決する。
-- [ ] prefix / postfix / infix / infixl / infixr のうち Phase 3 MVP 対象を固定する。
-- [ ] infix precedence / associativity を parser binding power に反映する。
-- [ ] notation conflict を `NotationConflict` として拒否する。
-- [ ] non-associative infix chain を parse error にする。
-- [ ] overloaded notation candidates を決定的順序で保持する。
-- [ ] elaboration 中に candidate transaction / rollback を bounded に実装する。
+- [x] notation declaration を namespace / open scope と連動させる。
+- [x] notation target を declaration 処理時に global ref へ解決する。
+- [x] prefix / postfix / infix / infixl / infixr のうち Phase 3 MVP 対象を固定する。
+- [x] infix precedence / associativity を parser binding power に反映する。
+- [x] notation conflict を `NotationConflict` として拒否する。
+- [x] non-associative infix chain を parse error にする。
+- [x] overloaded notation candidates を決定的順序で保持する。
+- [x] elaboration 中に candidate transaction / rollback を bounded に実装する。
 
 AI 速度ガード:
 
-- [ ] Machine parser に active notation table を持たせない。
-- [ ] Human notation resolution は typeclass search に接続しない。
-- [ ] 候補数上限を option として持ち、超過時は `TooManyNotationCandidates` で拒否する。
+- [x] Machine parser に active notation table を持たせない。
+- [x] Human notation resolution は typeclass search に接続しない。
+- [x] 候補数上限を option として持ち、超過時は `TooManyNotationCandidates` で拒否する。
 
 影響ファイル:
 
@@ -397,6 +397,8 @@ crates/npa-frontend/src/human_parser.rs
 crates/npa-frontend/src/human_resolver.rs
 crates/npa-frontend/src/human_elaborator.rs
 crates/npa-frontend/src/human_diagnostic.rs
+crates/npa-frontend/src/human.rs
+crates/npa-frontend/src/lib.rs
 ```
 
 完了条件:

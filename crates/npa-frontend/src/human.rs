@@ -100,6 +100,13 @@ pub enum HumanNotationKind {
     Infixr,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanNotationAssociativity {
+    Left,
+    Right,
+    NonAssoc,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanName {
     pub parts: Vec<String>,
@@ -286,6 +293,9 @@ impl HumanExpr {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanNotationHead {
     pub token: String,
+    pub kind: HumanNotationKind,
+    pub precedence: u16,
+    pub associativity: HumanNotationAssociativity,
     pub span: Span,
 }
 
@@ -390,6 +400,7 @@ pub struct HumanSourceBinderMetadata {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanSourceNotationMetadata {
     pub kind: HumanNotationKind,
+    pub associativity: HumanNotationAssociativity,
     pub precedence: u16,
     pub token: String,
     pub target: HumanName,
@@ -412,8 +423,18 @@ pub enum HumanGeneratedDeclarationKind {
     Recursor,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct HumanCompileOptions {}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCompileOptions {
+    pub max_notation_candidates: usize,
+}
+
+impl Default for HumanCompileOptions {
+    fn default() -> Self {
+        Self {
+            max_notation_candidates: 32,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

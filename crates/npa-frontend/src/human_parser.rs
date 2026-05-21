@@ -1,8 +1,10 @@
+use std::collections::BTreeMap;
+
 use crate::{
     FileId, HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanConstructorDecl, HumanDecl,
     HumanDiagnostic, HumanDiagnosticKind, HumanExpr, HumanImplicitMode, HumanInductiveDecl,
-    HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationDecl, HumanNotationHead,
-    HumanNotationKind, HumanResult, HumanUniverseParam, Span,
+    HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationAssociativity, HumanNotationDecl,
+    HumanNotationHead, HumanNotationKind, HumanResult, HumanUniverseParam, Span,
 };
 
 pub fn parse_human_module(file_id: FileId, source: &str) -> HumanResult<HumanModule> {
@@ -429,14 +431,149 @@ fn reserved_name_component_spelling(kind: &TokenKind) -> Option<&'static str> {
     })
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ParserNotationEntry {
+    token: String,
+    kind: HumanNotationKind,
+    precedence: u16,
+    associativity: HumanNotationAssociativity,
+    namespace: Vec<String>,
+    span: Span,
+}
+
+#[derive(Clone, Debug, Default)]
+struct ParserNotationScope {
+    entries: Vec<ParserNotationEntry>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ParserNotationFixity {
+    Prefix,
+    Postfix,
+    Infix,
+}
+
+fn notation_fixity(kind: HumanNotationKind) -> Option<ParserNotationFixity> {
+    match kind {
+        HumanNotationKind::Notation => None,
+        HumanNotationKind::Prefix => Some(ParserNotationFixity::Prefix),
+        HumanNotationKind::Postfix => Some(ParserNotationFixity::Postfix),
+        HumanNotationKind::Infix | HumanNotationKind::Infixl | HumanNotationKind::Infixr => {
+            Some(ParserNotationFixity::Infix)
+        }
+    }
+}
+
+fn notation_associativity(kind: HumanNotationKind) -> HumanNotationAssociativity {
+    match kind {
+        HumanNotationKind::Infixl => HumanNotationAssociativity::Left,
+        HumanNotationKind::Infixr => HumanNotationAssociativity::Right,
+        HumanNotationKind::Notation
+        | HumanNotationKind::Prefix
+        | HumanNotationKind::Postfix
+        | HumanNotationKind::Infix => HumanNotationAssociativity::NonAssoc,
+    }
+}
+
+fn notation_head(entry: &ParserNotationEntry, span: Span) -> HumanNotationHead {
+    HumanNotationHead {
+        token: entry.token.clone(),
+        kind: entry.kind,
+        precedence: entry.precedence,
+        associativity: entry.associativity,
+        span,
+    }
+}
+
+fn notation_entry_sort_key(entry: &ParserNotationEntry) -> (String, u8, u16, u8, Vec<String>) {
+    (
+        entry.token.clone(),
+        notation_kind_sort_key(entry.kind),
+        entry.precedence,
+        notation_associativity_sort_key(entry.associativity),
+        entry.namespace.clone(),
+    )
+}
+
+fn notation_kind_sort_key(kind: HumanNotationKind) -> u8 {
+    match kind {
+        HumanNotationKind::Notation => 0,
+        HumanNotationKind::Prefix => 1,
+        HumanNotationKind::Postfix => 2,
+        HumanNotationKind::Infix => 3,
+        HumanNotationKind::Infixl => 4,
+        HumanNotationKind::Infixr => 5,
+    }
+}
+
+fn notation_associativity_sort_key(associativity: HumanNotationAssociativity) -> u8 {
+    match associativity {
+        HumanNotationAssociativity::NonAssoc => 0,
+        HumanNotationAssociativity::Left => 1,
+        HumanNotationAssociativity::Right => 2,
+    }
+}
+
+fn validate_mvp_notation_token(token: &str, span: Span) -> HumanResult<()> {
+    if token.is_empty() {
+        return Err(HumanDiagnostic::parse(
+            span,
+            "notation token must not be empty",
+        ));
+    }
+    if token.chars().any(char::is_whitespace) {
+        return Err(HumanDiagnostic::parse(
+            span,
+            "multi-token notation is not part of the Phase 3 MVP",
+        ));
+    }
+    if reserved_notation_token(token) || !token.chars().all(is_operator_char) {
+        return Err(HumanDiagnostic::parse(
+            span,
+            format!("notation token {token} is not a Phase 3 MVP operator"),
+        ));
+    }
+    Ok(())
+}
+
+fn reserved_notation_token(token: &str) -> bool {
+    matches!(
+        token,
+        "->" | "→"
+            | ":"
+            | ":="
+            | "=>"
+            | ","
+            | "."
+            | ".{"
+            | "("
+            | ")"
+            | "{"
+            | "}"
+            | "|"
+            | "@"
+            | "_"
+            | "?"
+    )
+}
+
 struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    namespace_stack: Vec<HumanName>,
+    notation_scopes: Vec<ParserNotationScope>,
+    namespace_notations: BTreeMap<Vec<String>, Vec<ParserNotationEntry>>,
 }
 
 impl Parser {
     fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0 }
+        Self {
+            tokens,
+            pos: 0,
+            namespace_stack: Vec::new(),
+            notation_scopes: vec![ParserNotationScope::default()],
+            namespace_notations: BTreeMap::new(),
+        }
     }
 
     fn parse_module(&mut self, file_id: FileId, source_len: u32) -> HumanResult<HumanModule> {
@@ -457,15 +594,29 @@ impl Parser {
                 }
                 TokenKind::Open => {
                     saw_non_import = true;
-                    self.parse_open()?
+                    let item = self.parse_open()?;
+                    if let HumanItem::Open { namespace, .. } = &item {
+                        self.activate_open_notations(namespace)?;
+                    }
+                    item
                 }
                 TokenKind::Namespace => {
                     saw_non_import = true;
-                    self.parse_namespace_start()?
+                    let item = self.parse_namespace_start()?;
+                    if let HumanItem::NamespaceStart { name, .. } = &item {
+                        self.namespace_stack.push(name.clone());
+                        self.notation_scopes.push(ParserNotationScope::default());
+                    }
+                    item
                 }
                 TokenKind::End => {
                     saw_non_import = true;
-                    self.parse_namespace_end()?
+                    let item = self.parse_namespace_end()?;
+                    self.namespace_stack.pop();
+                    if self.notation_scopes.len() > 1 {
+                        self.notation_scopes.pop();
+                    }
+                    item
                 }
                 TokenKind::Def => {
                     saw_non_import = true;
@@ -490,7 +641,9 @@ impl Parser {
                 | TokenKind::Infixl
                 | TokenKind::Infixr => {
                     saw_non_import = true;
-                    HumanItem::Notation(self.parse_notation_decl()?)
+                    let decl = self.parse_notation_decl()?;
+                    self.register_notation_decl(&decl)?;
+                    HumanItem::Notation(decl)
                 }
                 _ => {
                     return Err(HumanDiagnostic::parse(
@@ -659,6 +812,127 @@ impl Parser {
             target,
             span: span.join(token_span),
         })
+    }
+
+    fn register_notation_decl(&mut self, decl: &HumanNotationDecl) -> HumanResult<()> {
+        let Some(fixity) = notation_fixity(decl.kind) else {
+            return Ok(());
+        };
+        validate_mvp_notation_token(&decl.token, decl.span)?;
+        let entry = ParserNotationEntry {
+            token: decl.token.clone(),
+            kind: decl.kind,
+            precedence: decl.precedence,
+            associativity: notation_associativity(decl.kind),
+            namespace: self.current_namespace_parts(),
+            span: decl.span,
+        };
+        self.ensure_notation_compatible(&entry, fixity)?;
+        self.current_notation_scope().entries.push(entry.clone());
+        self.namespace_notations
+            .entry(entry.namespace.clone())
+            .or_default()
+            .push(entry);
+        Ok(())
+    }
+
+    fn ensure_notation_compatible(
+        &self,
+        entry: &ParserNotationEntry,
+        fixity: ParserNotationFixity,
+    ) -> HumanResult<()> {
+        for existing in self.active_notation_entries(&entry.token, fixity) {
+            if existing.precedence != entry.precedence
+                || existing.associativity != entry.associativity
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::NotationConflict,
+                    entry.span,
+                    format!("conflicting notation declaration for {}", entry.token),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    fn activate_open_notations(&mut self, namespace: &HumanName) -> HumanResult<()> {
+        for candidate in self.open_notation_namespaces(namespace) {
+            if let Some(entries) = self.namespace_notations.get(&candidate.0).cloned() {
+                for entry in &entries {
+                    if let Some(fixity) = notation_fixity(entry.kind) {
+                        self.ensure_notation_compatible(entry, fixity)?;
+                    }
+                }
+                self.current_notation_scope().entries.extend(entries);
+                return Ok(());
+            }
+        }
+        Ok(())
+    }
+
+    fn open_notation_namespaces(&self, namespace: &HumanName) -> Vec<npa_cert::Name> {
+        let exact = npa_cert::Name(namespace.parts.clone());
+        let mut current_relative = self.current_namespace_parts();
+        current_relative.extend(namespace.parts.iter().cloned());
+        if current_relative == exact.0 {
+            vec![exact]
+        } else {
+            vec![exact, npa_cert::Name(current_relative)]
+        }
+    }
+
+    fn active_notation_entry(
+        &self,
+        token: &str,
+        fixity: ParserNotationFixity,
+    ) -> Option<ParserNotationEntry> {
+        self.active_notation_entries(token, fixity)
+            .into_iter()
+            .next()
+    }
+
+    fn active_notation_entries(
+        &self,
+        token: &str,
+        fixity: ParserNotationFixity,
+    ) -> Vec<ParserNotationEntry> {
+        let mut entries: Vec<_> = self
+            .notation_scopes
+            .iter()
+            .flat_map(|scope| scope.entries.iter())
+            .filter(|entry| entry.token == token && notation_fixity(entry.kind) == Some(fixity))
+            .cloned()
+            .collect();
+        entries.sort_by(|lhs, rhs| {
+            notation_entry_sort_key(lhs)
+                .cmp(&notation_entry_sort_key(rhs))
+                .then_with(|| lhs.span.start.cmp(&rhs.span.start))
+        });
+        entries.dedup_by(|lhs, rhs| {
+            lhs.token == rhs.token
+                && lhs.kind == rhs.kind
+                && lhs.precedence == rhs.precedence
+                && lhs.associativity == rhs.associativity
+                && lhs.namespace == rhs.namespace
+        });
+        entries
+    }
+
+    fn current_notation_scope(&mut self) -> &mut ParserNotationScope {
+        if self.notation_scopes.is_empty() {
+            self.notation_scopes.push(ParserNotationScope::default());
+        }
+        self.notation_scopes
+            .last_mut()
+            .expect("notation scope stack has a top-level frame")
+    }
+
+    fn current_namespace_parts(&self) -> Vec<String> {
+        self.namespace_stack
+            .iter()
+            .flat_map(|name| name.parts.iter().cloned())
+            .collect()
     }
 
     fn parse_decl_binders(&mut self) -> HumanResult<Vec<HumanBinder>> {
@@ -844,20 +1118,82 @@ impl Parser {
     }
 
     fn parse_infix(&mut self) -> HumanResult<HumanExpr> {
-        let mut expr = self.parse_app()?;
+        self.parse_notation_expr(0)
+    }
+
+    fn parse_notation_expr(&mut self, min_precedence: u16) -> HumanResult<HumanExpr> {
+        let mut expr = if let TokenKind::Operator(token) = self.peek_kind().clone() {
+            if let Some(entry) = self.active_notation_entry(&token, ParserNotationFixity::Prefix) {
+                let op_span = self.advance().span;
+                let rhs = self.parse_notation_expr(entry.precedence)?;
+                let span = op_span.join(rhs.span());
+                HumanExpr::NotationApp {
+                    head: notation_head(&entry, op_span),
+                    args: vec![rhs],
+                    span,
+                }
+            } else {
+                self.parse_app()?
+            }
+        } else {
+            self.parse_app()?
+        };
+        let mut consumed_nonassoc_precedence = None;
 
         while let TokenKind::Operator(token) = self.peek_kind().clone() {
+            if let Some(entry) = self.active_notation_entry(&token, ParserNotationFixity::Postfix) {
+                if entry.precedence < min_precedence {
+                    break;
+                }
+                let op_span = self.advance().span;
+                let span = expr.span().join(op_span);
+                expr = HumanExpr::NotationApp {
+                    head: notation_head(&entry, op_span),
+                    args: vec![expr],
+                    span,
+                };
+                consumed_nonassoc_precedence = None;
+                continue;
+            }
+
+            let Some(entry) = self.active_notation_entry(&token, ParserNotationFixity::Infix)
+            else {
+                return Err(HumanDiagnostic::parse(
+                    self.peek_span(),
+                    format!("unknown infix notation {token}"),
+                ));
+            };
+            if entry.precedence < min_precedence {
+                break;
+            }
+            if entry.associativity == HumanNotationAssociativity::NonAssoc
+                && consumed_nonassoc_precedence == Some(entry.precedence)
+            {
+                return Err(HumanDiagnostic::parse(
+                    self.peek_span(),
+                    format!(
+                        "non-associative infix notation {} cannot be chained",
+                        entry.token
+                    ),
+                ));
+            }
             let op_span = self.advance().span;
-            let rhs = self.parse_app()?;
+            let rhs_min_precedence = match entry.associativity {
+                HumanNotationAssociativity::Right => entry.precedence,
+                HumanNotationAssociativity::Left | HumanNotationAssociativity::NonAssoc => {
+                    entry.precedence.saturating_add(1)
+                }
+            };
+            let rhs = self.parse_notation_expr(rhs_min_precedence)?;
             let span = expr.span().join(rhs.span());
             expr = HumanExpr::NotationApp {
-                head: HumanNotationHead {
-                    token,
-                    span: op_span,
-                },
+                head: notation_head(&entry, op_span),
                 args: vec![expr, rhs],
                 span,
             };
+            consumed_nonassoc_precedence = (entry.associativity
+                == HumanNotationAssociativity::NonAssoc)
+                .then_some(entry.precedence);
         }
 
         Ok(expr)
@@ -1542,13 +1878,62 @@ infixr:70 \" :: \" => List.cons",
 
     #[test]
     fn parses_operator_terms_as_notation_applications() {
-        let term = parse_term("n + Nat.zero = n");
+        let module = parse_module(
+            "\
+infixl:65 \" + \" => Nat.add
+infix:50 \" = \" => Eq
+def t (n : Nat) : Prop := n + Nat.zero = n",
+        );
+        let HumanItem::Def(decl) = &module.items[2] else {
+            panic!("expected def");
+        };
+        let term = &decl.value;
         let HumanExpr::NotationApp { head, args, .. } = term else {
             panic!("expected outer notation app");
         };
 
         assert_eq!(head.token, "=");
+        assert_eq!(head.associativity, HumanNotationAssociativity::NonAssoc);
         assert_eq!(args.len(), 2);
         assert!(matches!(args[0], HumanExpr::NotationApp { .. }));
+    }
+
+    #[test]
+    fn non_associative_infix_chain_is_parse_error() {
+        let err = parse_err(
+            "\
+infix:50 \" = \" => Eq
+def bad (a : Nat) (b : Nat) (c : Nat) : Prop := a = b = c",
+        );
+
+        assert_eq!(err, HumanDiagnosticKind::ParseError);
+    }
+
+    #[test]
+    fn notation_conflict_is_deterministic_diagnostic() {
+        let err = parse_err(
+            "\
+infixl:65 \" + \" => Nat.add
+infixr:70 \" + \" => Other.add",
+        );
+
+        assert_eq!(err, HumanDiagnosticKind::NotationConflict);
+    }
+
+    #[test]
+    fn open_namespace_notation_conflict_is_deterministic_diagnostic() {
+        let err = parse_err(
+            "\
+namespace A
+infixl:65 \" + \" => Nat.add
+end A
+namespace B
+infixr:70 \" + \" => Other.add
+end B
+open A
+open B",
+        );
+
+        assert_eq!(err, HumanDiagnosticKind::NotationConflict);
     }
 }
