@@ -289,6 +289,129 @@ pub struct HumanNotationHead {
     pub span: Span,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanFrontendState {
+    pub current_module: npa_cert::ModuleName,
+    pub namespace_stack: Vec<HumanName>,
+    pub open_scopes: Vec<HumanOpenScopeFrame>,
+    pub notation_table: Vec<HumanSourceNotationMetadata>,
+    pub source_interfaces: HumanSourceInterfaceStore,
+}
+
+impl HumanFrontendState {
+    pub fn new(current_module: npa_cert::ModuleName) -> Self {
+        Self {
+            source_interfaces: HumanSourceInterfaceStore {
+                current: HumanSourceInterface::new(current_module.clone()),
+                imports: Vec::new(),
+            },
+            current_module,
+            namespace_stack: Vec::new(),
+            open_scopes: vec![HumanOpenScopeFrame {
+                namespace: None,
+                opens: Vec::new(),
+            }],
+            notation_table: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanOpenScopeFrame {
+    pub namespace: Option<HumanName>,
+    pub opens: Vec<HumanOpenScope>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanOpenScope {
+    pub namespace: HumanName,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSourceInterfaceStore {
+    pub current: HumanSourceInterface,
+    pub imports: Vec<HumanImportedSourceInterface>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSourceInterface {
+    pub module: npa_cert::ModuleName,
+    pub declarations: Vec<HumanSourceDeclarationMetadata>,
+    pub notations: Vec<HumanSourceNotationMetadata>,
+    pub generated_declarations: Vec<HumanGeneratedDeclarationMetadata>,
+}
+
+impl HumanSourceInterface {
+    pub fn new(module: npa_cert::ModuleName) -> Self {
+        Self {
+            module,
+            declarations: Vec::new(),
+            notations: Vec::new(),
+            generated_declarations: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanImportedSourceInterface {
+    pub module: npa_cert::ModuleName,
+    pub export_hash: npa_cert::Hash,
+    pub certificate_hash: Option<npa_cert::Hash>,
+    pub source_interface: HumanSourceInterface,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSourceDeclarationMetadata {
+    pub kind: HumanSourceDeclarationKind,
+    pub name: HumanName,
+    pub universe_params: Vec<HumanUniverseParam>,
+    pub binders: Vec<HumanSourceBinderMetadata>,
+    pub decl_interface_hash: Option<npa_cert::Hash>,
+    pub span: Span,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanSourceDeclarationKind {
+    Def,
+    Theorem,
+    Axiom,
+    Inductive,
+    Imported,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSourceBinderMetadata {
+    pub name: Option<HumanName>,
+    pub binder_info: HumanBinderInfo,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSourceNotationMetadata {
+    pub kind: HumanNotationKind,
+    pub precedence: u16,
+    pub token: String,
+    pub target: HumanName,
+    pub namespace: Vec<String>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanGeneratedDeclarationMetadata {
+    pub kind: HumanGeneratedDeclarationKind,
+    pub parent: HumanName,
+    pub name: HumanName,
+    pub decl_interface_hash: Option<npa_cert::Hash>,
+    pub span: Span,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanGeneratedDeclarationKind {
+    Constructor,
+    Recursor,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HumanCompileOptions {}
 

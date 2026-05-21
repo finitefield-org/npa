@@ -305,26 +305,27 @@ crates/npa-frontend/src/lib.rs
 
 実装タスク:
 
-- [ ] `HumanFrontendState` を追加する。
-- [ ] current module name / namespace stack / lexical open scopes を持たせる。
-- [ ] verified imports の source interface と source 内 import を照合する。
-- [ ] import interface に Human metadata を追加する場合、trusted certificate payload とは分離する。
-- [ ] notation table / binder metadata / generated declaration display info を source interface に入れる。
-- [ ] Human metadata は `npa-frontend` 側の source interface として扱い、`npa-cert`
+- [x] `HumanFrontendState` を追加する。
+- [x] current module name / namespace stack / lexical open scopes を持たせる。
+- [x] verified imports の source interface と source 内 import を照合する。
+- [x] import interface に Human metadata を追加する場合、trusted certificate payload とは分離する。
+- [x] notation table / binder metadata / generated declaration display info を source interface に入れる。
+- [x] Human metadata は `npa-frontend` 側の source interface として扱い、`npa-cert`
   の canonical certificate 型には追加しない。
-- [ ] duplicate import の扱いを決定的にする。
+- [x] duplicate import の扱いを決定的にする。
 
 AI 速度ガード:
 
-- [ ] `VerifiedImport` / `MachineGlobalScopeEntry` の AI path lookup に Human metadata lookup を足さない。
-- [ ] Human source interface metadata は certificate hash に入れない。
-- [ ] Human import resolution でも filesystem / network lookup を行わない。
+- [x] `VerifiedImport` / `MachineGlobalScopeEntry` の AI path lookup に Human metadata lookup を足さない。
+- [x] Human source interface metadata は certificate hash に入れない。
+- [x] Human import resolution でも filesystem / network lookup を行わない。
 
 影響ファイル:
 
 ```text
 crates/npa-frontend/src/human.rs
 crates/npa-frontend/src/human_resolver.rs
+crates/npa-frontend/src/human_elaborator.rs
 crates/npa-frontend/src/resolver.rs
 ```
 

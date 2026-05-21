@@ -79,6 +79,45 @@ impl From<&npa_cert::VerifiedModule> for VerifiedImport {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct VerifiedImportIdentity {
+    pub module: npa_cert::ModuleName,
+    pub export_hash: npa_cert::Hash,
+    pub certificate_hash: Option<npa_cert::Hash>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum VerifiedImportLookupError {
+    Missing,
+    Ambiguous,
+}
+
+pub(crate) fn verified_import_identity(import: &VerifiedImport) -> VerifiedImportIdentity {
+    VerifiedImportIdentity {
+        module: import.module.clone(),
+        export_hash: import.export_hash,
+        certificate_hash: import.certificate_hash,
+    }
+}
+
+pub(crate) fn find_unique_verified_import_by_module<'a>(
+    verified_imports: &'a [VerifiedImport],
+    import_module: &npa_cert::ModuleName,
+) -> std::result::Result<&'a VerifiedImport, VerifiedImportLookupError> {
+    let mut matches = verified_imports
+        .iter()
+        .filter(|import| &import.module == import_module);
+    let Some(first) = matches.next() else {
+        return Err(VerifiedImportLookupError::Missing);
+    };
+
+    if matches.any(|import| import != first) {
+        return Err(VerifiedImportLookupError::Ambiguous);
+    }
+
+    Ok(first)
+}
+
 fn decl_payload_name(decl: &npa_cert::DeclPayload) -> npa_cert::NameId {
     match decl {
         npa_cert::DeclPayload::Axiom { name, .. }
@@ -196,33 +235,25 @@ impl<'a> Resolver<'a> {
         span: Span,
     ) -> Result<&'a VerifiedImport> {
         let import_module = name_from_machine(import_name);
-        let mut matches = self
-            .verified_imports
-            .iter()
-            .filter(|import| import.module == import_module);
-        let Some(first) = matches.next() else {
-            return Err(MachineDiagnostic::error(
+        match find_unique_verified_import_by_module(self.verified_imports, &import_module) {
+            Ok(import) => Ok(import),
+            Err(VerifiedImportLookupError::Missing) => Err(MachineDiagnostic::error(
                 MachineDiagnosticKind::MissingVerifiedImport,
                 span,
                 format!(
                     "import {} is not present in the verified import set",
                     import_name.as_dotted()
                 ),
-            ));
-        };
-
-        if matches.any(|import| import != first) {
-            return Err(MachineDiagnostic::error(
+            )),
+            Err(VerifiedImportLookupError::Ambiguous) => Err(MachineDiagnostic::error(
                 MachineDiagnosticKind::ImportResolutionError,
                 span,
                 format!(
                     "import {} has multiple verified interfaces",
                     import_name.as_dotted()
                 ),
-            ));
+            )),
         }
-
-        Ok(first)
     }
 
     fn resolve_decl(&self, decl: MachineDecl) -> Result<MachineDecl> {

@@ -14,6 +14,8 @@ pub enum HumanDiagnosticKind {
     ParseError,
     ImportAfterItem,
     UnsupportedSyntax,
+    ImportResolutionError,
+    MissingVerifiedImport,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

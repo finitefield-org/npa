@@ -36,8 +36,12 @@ pub use elaborator::{
 };
 pub use human::{
     HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanCompileOptions,
-    HumanConstructorDecl, HumanDecl, HumanExpr, HumanImplicitMode, HumanInductiveDecl, HumanItem,
-    HumanLevel, HumanModule, HumanName, HumanNotationDecl, HumanNotationHead, HumanNotationKind,
+    HumanConstructorDecl, HumanDecl, HumanExpr, HumanFrontendState, HumanGeneratedDeclarationKind,
+    HumanGeneratedDeclarationMetadata, HumanImplicitMode, HumanImportedSourceInterface,
+    HumanInductiveDecl, HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationDecl,
+    HumanNotationHead, HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame,
+    HumanSourceBinderMetadata, HumanSourceDeclarationKind, HumanSourceDeclarationMetadata,
+    HumanSourceInterface, HumanSourceInterfaceStore, HumanSourceNotationMetadata,
     HumanUniverseParam,
 };
 pub use human_diagnostic::{
