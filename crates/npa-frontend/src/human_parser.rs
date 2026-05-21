@@ -3,14 +3,23 @@ use std::collections::BTreeMap;
 use crate::{
     FileId, HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanConstructorDecl, HumanDecl,
     HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPhase, HumanExpr, HumanImplicitMode,
-    HumanInductiveDecl, HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationAssociativity,
-    HumanNotationDecl, HumanNotationHead, HumanNotationKind, HumanResult, HumanUniverseParam, Span,
+    HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel, HumanModule,
+    HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead, HumanNotationKind,
+    HumanResult, HumanSourceNotationMetadata, HumanUniverseParam, Span,
 };
 
 pub fn parse_human_module(file_id: FileId, source: &str) -> HumanResult<HumanModule> {
+    parse_human_module_with_source_interfaces(file_id, source, &[])
+}
+
+pub fn parse_human_module_with_source_interfaces(
+    file_id: FileId,
+    source: &str,
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+) -> HumanResult<HumanModule> {
     let tokens = lex_human(file_id, source)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
-    Parser::new(tokens)
+    Parser::new(tokens, imported_source_interfaces)
         .parse_module(file_id, source.len() as u32)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))
 }
@@ -18,7 +27,7 @@ pub fn parse_human_module(file_id: FileId, source: &str) -> HumanResult<HumanMod
 pub fn parse_human_term(file_id: FileId, source: &str) -> HumanResult<HumanExpr> {
     let tokens = lex_human(file_id, source)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(tokens, &[]);
     let term = parser
         .parse_term()
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
@@ -492,6 +501,19 @@ fn notation_head(entry: &ParserNotationEntry, span: Span) -> HumanNotationHead {
     }
 }
 
+fn parser_notation_entry_from_metadata(
+    metadata: &HumanSourceNotationMetadata,
+) -> ParserNotationEntry {
+    ParserNotationEntry {
+        token: metadata.token.clone(),
+        kind: metadata.kind,
+        precedence: metadata.precedence,
+        associativity: metadata.associativity,
+        namespace: metadata.namespace.clone(),
+        span: metadata.span,
+    }
+}
+
 fn notation_entry_sort_key(entry: &ParserNotationEntry) -> (String, u8, u16, u8, Vec<String>) {
     (
         entry.token.clone(),
@@ -567,16 +589,21 @@ fn reserved_notation_token(token: &str) -> bool {
 struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    imported_source_interfaces: Vec<HumanImportedSourceInterface>,
     namespace_stack: Vec<HumanName>,
     notation_scopes: Vec<ParserNotationScope>,
     namespace_notations: BTreeMap<Vec<String>, Vec<ParserNotationEntry>>,
 }
 
 impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+    fn new(
+        tokens: Vec<Token>,
+        imported_source_interfaces: &[HumanImportedSourceInterface],
+    ) -> Self {
         Self {
             tokens,
             pos: 0,
+            imported_source_interfaces: imported_source_interfaces.to_vec(),
             namespace_stack: Vec::new(),
             notation_scopes: vec![ParserNotationScope::default()],
             namespace_notations: BTreeMap::new(),
@@ -597,7 +624,11 @@ impl Parser {
                             "import items must appear before other Human Surface items",
                         ));
                     }
-                    self.parse_import()?
+                    let item = self.parse_import()?;
+                    if let HumanItem::Import { module, span: _ } = &item {
+                        self.activate_import_notations(module)?;
+                    }
+                    item
                 }
                 TokenKind::Open => {
                     saw_non_import = true;
@@ -841,6 +872,58 @@ impl Parser {
             .or_default()
             .push(entry);
         Ok(())
+    }
+
+    fn activate_import_notations(&mut self, module: &HumanName) -> HumanResult<()> {
+        let source_interface = self.imported_source_interface(module)?;
+        let Some(source_interface) = source_interface else {
+            return Ok(());
+        };
+
+        for metadata in &source_interface.notations {
+            let Some(fixity) = notation_fixity(metadata.kind) else {
+                continue;
+            };
+            validate_mvp_notation_token(&metadata.token, metadata.span)?;
+            let entry = parser_notation_entry_from_metadata(metadata);
+            self.namespace_notations
+                .entry(entry.namespace.clone())
+                .or_default()
+                .push(entry.clone());
+            if entry.namespace.is_empty() {
+                self.ensure_notation_compatible(&entry, fixity)?;
+                self.current_notation_scope().entries.push(entry);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn imported_source_interface(
+        &self,
+        module: &HumanName,
+    ) -> HumanResult<Option<crate::HumanSourceInterface>> {
+        let module_name = npa_cert::Name(module.parts.clone());
+        let mut matches = self
+            .imported_source_interfaces
+            .iter()
+            .filter(|import| import.module == module_name);
+        let Some(first) = matches.next() else {
+            return Ok(None);
+        };
+
+        if matches.any(|import| import.source_interface != first.source_interface) {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::ImportResolutionError,
+                module.span,
+                format!(
+                    "import {} has multiple Human source interfaces",
+                    module.as_dotted()
+                ),
+            ));
+        }
+
+        Ok(Some(first.source_interface.clone()))
     }
 
     fn ensure_notation_compatible(

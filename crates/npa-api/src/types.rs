@@ -2,7 +2,8 @@ use std::collections::BTreeSet;
 
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
-    FileId, HumanCompileOptions, HumanDiagnostic, MachineSurfaceCallableInterfaceTable,
+    FileId, HumanCompileOptions, HumanDiagnostic, HumanImportedSourceInterface,
+    HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
 };
 use npa_tactic::{GoalId, MetaVarId};
 
@@ -59,6 +60,7 @@ pub struct HumanCompileCoreRequest<'src, 'imports> {
     pub current_module: ModuleName,
     pub current_source: HumanCurrentModuleSource<'src>,
     pub verified_imports: &'imports [npa_frontend::VerifiedImport],
+    pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
     pub options: HumanApiCompileOptions,
 }
 
@@ -67,17 +69,20 @@ pub struct HumanCompileCertificateRequest<'src, 'imports> {
     pub current_module: ModuleName,
     pub current_source: HumanCurrentModuleSource<'src>,
     pub verified_modules: &'imports [VerifiedModule],
+    pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
     pub options: HumanApiCompileOptions,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileCoreOk {
     pub core_module: CoreModule,
+    pub source_interface: HumanSourceInterface,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileCertificateOk {
     pub certificate: ModuleCert,
+    pub source_interface: HumanSourceInterface,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

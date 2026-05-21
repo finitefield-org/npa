@@ -95,13 +95,25 @@ pub fn resolve_human_module(
     verified_imports: &[VerifiedImport],
     options: &HumanCompileOptions,
 ) -> HumanResult<ResolvedHumanModule> {
+    resolve_human_module_with_source_interfaces(module_name, module, verified_imports, &[], options)
+}
+
+pub fn resolve_human_module_with_source_interfaces(
+    module_name: npa_cert::ModuleName,
+    module: HumanModule,
+    verified_imports: &[VerifiedImport],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<ResolvedHumanModule> {
     HumanResolver::new(module_name, verified_imports, options)
+        .with_imported_source_interfaces(imported_source_interfaces)
         .resolve_module(module)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Resolver))
 }
 
 struct HumanResolver<'a> {
     verified_imports: &'a [VerifiedImport],
+    imported_source_interfaces: &'a [HumanImportedSourceInterface],
     max_notation_candidates: usize,
     state: HumanFrontendState,
     global_scope: HumanGlobalScope,
@@ -123,6 +135,7 @@ impl<'a> HumanResolver<'a> {
     ) -> Self {
         Self {
             verified_imports,
+            imported_source_interfaces: &[],
             max_notation_candidates: options.max_notation_candidates,
             state: HumanFrontendState::new(module_name),
             global_scope: HumanGlobalScope::default(),
@@ -135,6 +148,14 @@ impl<'a> HumanResolver<'a> {
             pending_current_names: BTreeSet::new(),
             temporary_globals: Vec::new(),
         }
+    }
+
+    fn with_imported_source_interfaces(
+        mut self,
+        imported_source_interfaces: &'a [HumanImportedSourceInterface],
+    ) -> Self {
+        self.imported_source_interfaces = imported_source_interfaces;
+        self
     }
 
     fn resolve_module(mut self, module: HumanModule) -> HumanResult<ResolvedHumanModule> {
@@ -188,14 +209,61 @@ impl<'a> HumanResolver<'a> {
             };
 
         if self.seen_imports.insert(verified_import_identity(import)) {
-            self.state
-                .source_interfaces
-                .imports
-                .push(imported_source_interface(import));
+            let source_interface = self.reconciled_imported_source_interface(import, span)?;
             self.add_imported_globals(import);
+            self.add_imported_notations(&source_interface.source_interface)?;
+            self.state.source_interfaces.imports.push(source_interface);
         }
 
         Ok(())
+    }
+
+    fn reconciled_imported_source_interface(
+        &self,
+        import: &VerifiedImport,
+        span: Span,
+    ) -> HumanResult<HumanImportedSourceInterface> {
+        let source_interface = self
+            .matching_imported_source_interface(import, span)?
+            .map(|interface| interface.source_interface.clone())
+            .unwrap_or_else(|| fallback_imported_source_interface(import).source_interface);
+        let source_interface =
+            reconcile_source_interface_with_verified_import(source_interface, import, span)?;
+
+        Ok(HumanImportedSourceInterface {
+            module: import.module.clone(),
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            source_interface,
+        })
+    }
+
+    fn matching_imported_source_interface(
+        &self,
+        import: &VerifiedImport,
+        span: Span,
+    ) -> HumanResult<Option<&HumanImportedSourceInterface>> {
+        let mut matches = self.imported_source_interfaces.iter().filter(|interface| {
+            interface.module == import.module
+                && interface.export_hash == import.export_hash
+                && interface.certificate_hash == import.certificate_hash
+        });
+        let Some(first) = matches.next() else {
+            return Ok(None);
+        };
+
+        if matches.any(|interface| interface.source_interface != first.source_interface) {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::ImportResolutionError,
+                span,
+                format!(
+                    "import {} has multiple Human source interfaces",
+                    import.module.as_dotted()
+                ),
+            ));
+        }
+
+        Ok(Some(first))
     }
 
     fn close_namespace(&mut self, name: Option<&HumanName>, span: Span) -> HumanResult<()> {
@@ -273,13 +341,20 @@ impl<'a> HumanResolver<'a> {
         binders: &[HumanBinder],
         locals: &mut HumanLocalScope,
     ) -> HumanResult<()> {
-        for binder in binders {
-            if let Some(ty) = &binder.ty {
-                self.resolve_expr(ty, locals)?;
+        let mut index = 0;
+        while index < binders.len() {
+            let group_end = human_binder_group_end(binders, index);
+            for binder in &binders[index..group_end] {
+                if let Some(ty) = &binder.ty {
+                    self.resolve_expr(ty, locals)?;
+                }
             }
-            if let HumanBinderKind::Named(name) = &binder.kind {
-                locals.push(name.clone());
+            for binder in &binders[index..group_end] {
+                if let HumanBinderKind::Named(name) = &binder.kind {
+                    locals.push(name.clone());
+                }
             }
+            index = group_end;
         }
 
         Ok(())
@@ -943,6 +1018,43 @@ impl<'a> HumanResolver<'a> {
         Ok(())
     }
 
+    fn add_imported_notations(&mut self, interface: &HumanSourceInterface) -> HumanResult<()> {
+        for metadata in &interface.notations {
+            if notation_fixity(metadata.kind).is_none() {
+                continue;
+            }
+            let target = self.resolve_global_name(&metadata.target)?.ok_or_else(|| {
+                HumanDiagnostic::error(
+                    HumanDiagnosticKind::ImportResolutionError,
+                    metadata.span,
+                    format!(
+                        "imported notation target {} is not present in verified exports",
+                        metadata.target.as_dotted()
+                    ),
+                )
+            })?;
+            let entry = HumanResolvedNotationEntry {
+                kind: metadata.kind,
+                associativity: metadata.associativity,
+                precedence: metadata.precedence,
+                token: metadata.token.clone(),
+                target,
+                namespace: metadata.namespace.clone(),
+                span: metadata.span,
+            };
+            self.namespace_notations
+                .entry(entry.namespace.clone())
+                .or_default()
+                .push(entry.clone());
+            self.notation_table.push(entry.clone());
+            if entry.namespace.is_empty() {
+                self.ensure_notation_compatible(&entry)?;
+                self.current_notation_scope().entries.push(entry);
+            }
+        }
+        Ok(())
+    }
+
     fn active_notation_entries(
         &self,
         token: &str,
@@ -1067,7 +1179,7 @@ impl<'a> HumanResolver<'a> {
                     associativity: notation_associativity(decl.kind),
                     precedence: decl.precedence,
                     token: decl.token.clone(),
-                    target: decl.target.clone(),
+                    target: human_name_from_global_ref(&target, decl.target.span),
                     namespace: self.current_namespace_parts(),
                     span: decl.span,
                 };
@@ -1507,7 +1619,24 @@ fn binder_metadata(binders: &[HumanBinder]) -> Vec<HumanSourceBinderMetadata> {
         .collect()
 }
 
-fn imported_source_interface(import: &VerifiedImport) -> HumanImportedSourceInterface {
+fn human_binder_group_end(binders: &[HumanBinder], start: usize) -> usize {
+    let first = &binders[start];
+    if first.ty.is_none() {
+        return start + 1;
+    }
+
+    let mut end = start + 1;
+    while end < binders.len()
+        && binders[end].span == first.span
+        && binders[end].binder_info == first.binder_info
+        && binders[end].ty == first.ty
+    {
+        end += 1;
+    }
+    end
+}
+
+fn fallback_imported_source_interface(import: &VerifiedImport) -> HumanImportedSourceInterface {
     let mut source_interface = HumanSourceInterface::new(import.module.clone());
     source_interface.declarations = import
         .exports
@@ -1538,6 +1667,66 @@ fn imported_source_interface(import: &VerifiedImport) -> HumanImportedSourceInte
     }
 }
 
+fn reconcile_source_interface_with_verified_import(
+    mut source_interface: HumanSourceInterface,
+    import: &VerifiedImport,
+    span: Span,
+) -> HumanResult<HumanSourceInterface> {
+    if source_interface.module != import.module {
+        return Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::ImportResolutionError,
+            span,
+            format!(
+                "Human source interface module {} does not match verified import {}",
+                source_interface.module.as_dotted(),
+                import.module.as_dotted()
+            ),
+        ));
+    }
+
+    for decl in &mut source_interface.declarations {
+        let name = name_from_human(&decl.name);
+        if let Some(export) = import.exports.iter().find(|export| export.name == name) {
+            if decl
+                .decl_interface_hash
+                .is_some_and(|hash| hash != export.decl_interface_hash)
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::ImportResolutionError,
+                    decl.span,
+                    format!(
+                        "Human source interface hash for {} does not match verified import",
+                        decl.name.as_dotted()
+                    ),
+                ));
+            }
+            decl.decl_interface_hash = Some(export.decl_interface_hash);
+        }
+    }
+
+    for generated in &mut source_interface.generated_declarations {
+        let name = name_from_human(&generated.name);
+        if let Some(export) = import.exports.iter().find(|export| export.name == name) {
+            if generated
+                .decl_interface_hash
+                .is_some_and(|hash| hash != export.decl_interface_hash)
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::ImportResolutionError,
+                    generated.span,
+                    format!(
+                        "Human generated source interface hash for {} does not match verified import",
+                        generated.name.as_dotted()
+                    ),
+                ));
+            }
+            generated.decl_interface_hash = Some(export.decl_interface_hash);
+        }
+    }
+
+    Ok(source_interface)
+}
+
 fn relative_child_name(parent: &HumanName, child: &HumanName) -> HumanName {
     let mut parts = parent.parts.clone();
     parts.extend(child.parts.iter().cloned());
@@ -1552,6 +1741,14 @@ fn generated_recursor_name(parent: &HumanName) -> HumanName {
 
 fn name_from_human(name: &HumanName) -> npa_cert::Name {
     npa_cert::Name(name.parts.clone())
+}
+
+fn human_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> HumanName {
+    match reference {
+        HumanGlobalRef::Imported { name, .. }
+        | HumanGlobalRef::Local { name, .. }
+        | HumanGlobalRef::LocalGenerated { name, .. } => HumanName::new(name.0.clone(), span),
+    }
 }
 
 #[cfg(test)]

@@ -52,13 +52,20 @@ pub use human_diagnostic::{
     HumanUnsolvedMetaKind,
 };
 pub use human_elaborator::{
-    compile_human_source_to_certificate, compile_human_source_to_core, elaborate_human_module,
+    compile_human_source_to_certificate,
+    compile_human_source_to_certificate_output_with_source_interfaces,
+    compile_human_source_to_certificate_with_source_interfaces, compile_human_source_to_core,
+    compile_human_source_to_core_output_with_source_interfaces,
+    compile_human_source_to_core_with_source_interfaces, elaborate_human_module,
+    HumanCertificateCompileOutput, HumanCoreCompileOutput,
 };
-pub use human_parser::{parse_human_module, parse_human_term};
+pub use human_parser::{
+    parse_human_module, parse_human_module_with_source_interfaces, parse_human_term,
+};
 pub use human_resolver::{
-    resolve_human_module, HumanGlobalRef, HumanGlobalScope, HumanGlobalScopeEntry,
-    HumanResolvedName, HumanResolvedNameUse, HumanResolvedNotationEntry, HumanResolvedNotationUse,
-    ResolvedHumanModule,
+    resolve_human_module, resolve_human_module_with_source_interfaces, HumanGlobalRef,
+    HumanGlobalScope, HumanGlobalScopeEntry, HumanResolvedName, HumanResolvedNameUse,
+    HumanResolvedNotationEntry, HumanResolvedNotationUse, ResolvedHumanModule,
 };
 pub use lexer::{lex, Token, TokenKind};
 pub use machine::{

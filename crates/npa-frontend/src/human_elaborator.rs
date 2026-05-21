@@ -2,20 +2,33 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::{
     builtin_machine_callable_profile, elaborator::certificate_imports_for_module,
-    machine_callable_profile_from_human_binders, parse_human_module, resolve_human_module,
-    HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDiagnostic, HumanDiagnosticKind,
-    HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr, HumanGlobalRef, HumanHoleGoal,
-    HumanHoleGoalLocal, HumanImplicitMode, HumanItem, HumanLevel, HumanName, HumanResolvedName,
-    HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata,
-    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
-    MachineDecl, MachineLevel, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule,
-    Span, VerifiedImport,
+    machine_callable_profile_from_human_binders, parse_human_module_with_source_interfaces,
+    resolve_human_module_with_source_interfaces, HumanBinder, HumanBinderKind, HumanCompileOptions,
+    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
+    HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal, HumanImplicitMode,
+    HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName, HumanResolvedName,
+    HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationKind,
+    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanUnsolvedMeta, HumanUnsolvedMetaKind,
+    MachineBinder, MachineCallableBinderVisibility, MachineDecl, MachineLevel, MachineName,
+    MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{
     subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level, Reducibility,
 };
 
 const MAX_HUMAN_IMPLICIT_INSERTION_STEPS: usize = 64;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCoreCompileOutput {
+    pub core_module: npa_cert::CoreModule,
+    pub source_interface: HumanSourceInterface,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCertificateCompileOutput {
+    pub certificate: npa_cert::ModuleCert,
+    pub source_interface: HumanSourceInterface,
+}
 
 pub fn elaborate_human_module(
     module_name: npa_cert::ModuleName,
@@ -72,10 +85,59 @@ pub fn compile_human_source_to_core(
     verified_imports: &[VerifiedImport],
     options: &HumanCompileOptions,
 ) -> HumanResult<npa_cert::CoreModule> {
-    let module = parse_human_module(file_id, source)?;
-    let resolved = resolve_human_module(module_name.clone(), module, verified_imports, options)?;
-    elaborate_human_module(module_name, resolved, verified_imports, options)
-        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))
+    compile_human_source_to_core_with_source_interfaces(
+        file_id,
+        module_name,
+        source,
+        verified_imports,
+        &[],
+        options,
+    )
+}
+
+pub fn compile_human_source_to_core_with_source_interfaces(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_imports: &[VerifiedImport],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<npa_cert::CoreModule> {
+    compile_human_source_to_core_output_with_source_interfaces(
+        file_id,
+        module_name,
+        source,
+        verified_imports,
+        imported_source_interfaces,
+        options,
+    )
+    .map(|output| output.core_module)
+}
+
+pub fn compile_human_source_to_core_output_with_source_interfaces(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_imports: &[VerifiedImport],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanCoreCompileOutput> {
+    let module =
+        parse_human_module_with_source_interfaces(file_id, source, imported_source_interfaces)?;
+    let resolved = resolve_human_module_with_source_interfaces(
+        module_name.clone(),
+        module,
+        verified_imports,
+        imported_source_interfaces,
+        options,
+    )?;
+    let source_interface = resolved.state.source_interfaces.current.clone();
+    let core_module = elaborate_human_module(module_name, resolved, verified_imports, options)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    Ok(HumanCoreCompileOutput {
+        core_module,
+        source_interface,
+    })
 }
 
 pub fn compile_human_source_to_certificate(
@@ -85,9 +147,54 @@ pub fn compile_human_source_to_certificate(
     verified_modules: &[npa_cert::VerifiedModule],
     options: &HumanCompileOptions,
 ) -> HumanResult<npa_cert::ModuleCert> {
+    compile_human_source_to_certificate_with_source_interfaces(
+        file_id,
+        module_name,
+        source,
+        verified_modules,
+        &[],
+        options,
+    )
+}
+
+pub fn compile_human_source_to_certificate_with_source_interfaces(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_modules: &[npa_cert::VerifiedModule],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<npa_cert::ModuleCert> {
+    compile_human_source_to_certificate_output_with_source_interfaces(
+        file_id,
+        module_name,
+        source,
+        verified_modules,
+        imported_source_interfaces,
+        options,
+    )
+    .map(|output| output.certificate)
+}
+
+pub fn compile_human_source_to_certificate_output_with_source_interfaces(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    verified_modules: &[npa_cert::VerifiedModule],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanCertificateCompileOutput> {
     let verified_imports: Vec<_> = verified_modules.iter().map(VerifiedImport::from).collect();
-    let parsed = parse_human_module(file_id, source)?;
-    let resolved = resolve_human_module(module_name.clone(), parsed, &verified_imports, options)?;
+    let parsed =
+        parse_human_module_with_source_interfaces(file_id, source, imported_source_interfaces)?;
+    let resolved = resolve_human_module_with_source_interfaces(
+        module_name.clone(),
+        parsed,
+        &verified_imports,
+        imported_source_interfaces,
+        options,
+    )?;
+    let source_interface = resolved.state.source_interfaces.current.clone();
     let active_import_indices = active_human_import_indices(&resolved, &verified_imports)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Resolver))?;
     let core = elaborate_human_module(module_name, resolved, &verified_imports, options)
@@ -128,11 +235,45 @@ pub fn compile_human_source_to_certificate(
             .with_phase(HumanDiagnosticPhase::CertificateHandoff)
         },
     )?;
-    Ok(cert)
+    let source_interface = source_interface_with_certificate_hashes(source_interface, &cert);
+    Ok(HumanCertificateCompileOutput {
+        certificate: cert,
+        source_interface,
+    })
 }
 
 fn source_span(file_id: crate::FileId, source: &str) -> Span {
     Span::new(file_id, 0, source.len() as u32)
+}
+
+fn source_interface_with_certificate_hashes(
+    mut source_interface: HumanSourceInterface,
+    cert: &npa_cert::ModuleCert,
+) -> HumanSourceInterface {
+    let export_hashes: BTreeMap<_, _> = cert
+        .export_block
+        .iter()
+        .map(|entry| {
+            (
+                cert.name_table[entry.name].clone(),
+                entry.decl_interface_hash,
+            )
+        })
+        .collect();
+
+    for decl in &mut source_interface.declarations {
+        if let Some(hash) = export_hashes.get(&npa_cert::Name(decl.name.parts.clone())) {
+            decl.decl_interface_hash = Some(*hash);
+        }
+    }
+
+    for generated in &mut source_interface.generated_declarations {
+        if let Some(hash) = export_hashes.get(&npa_cert::Name(generated.name.parts.clone())) {
+            generated.decl_interface_hash = Some(*hash);
+        }
+    }
+
+    source_interface
 }
 
 fn elaborate_human_module_with_notation_plan(
@@ -1717,6 +1858,7 @@ impl HumanLoweringLocalContext {
 struct HumanImplicitInserter {
     env: Env,
     signatures: BTreeMap<String, HumanCallableSignature>,
+    imported_source_interfaces: Vec<HumanImportedSourceInterface>,
     insertion_steps: usize,
 }
 
@@ -1725,6 +1867,7 @@ impl HumanImplicitInserter {
         let mut inserter = Self {
             env: Env::new(),
             signatures: BTreeMap::new(),
+            imported_source_interfaces: module.state.source_interfaces.imports.clone(),
             insertion_steps: 0,
         };
 
@@ -1741,13 +1884,17 @@ impl HumanImplicitInserter {
             self.add_kernel_decl(decl, span)?;
         }
         for export in &import.exports {
-            let implicit_profile = if npa_cert::builtin_decl_interface_hash(&export.name)
-                == Some(export.decl_interface_hash)
-            {
-                builtin_machine_callable_profile(&export.name).unwrap_or_default()
-            } else {
-                Vec::new()
-            };
+            let implicit_profile = self
+                .imported_source_interface_profile(import, export)
+                .unwrap_or_else(|| {
+                    if npa_cert::builtin_decl_interface_hash(&export.name)
+                        == Some(export.decl_interface_hash)
+                    {
+                        builtin_machine_callable_profile(&export.name).unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    }
+                });
             self.signatures.insert(
                 export.name.as_dotted(),
                 HumanCallableSignature {
@@ -1757,6 +1904,27 @@ impl HumanImplicitInserter {
             );
         }
         Ok(())
+    }
+
+    fn imported_source_interface_profile(
+        &self,
+        import: &VerifiedImport,
+        export: &crate::VerifiedExport,
+    ) -> Option<Vec<MachineCallableBinderVisibility>> {
+        self.imported_source_interfaces
+            .iter()
+            .filter(|interface| {
+                interface.module == import.module
+                    && interface.export_hash == import.export_hash
+                    && interface.certificate_hash == import.certificate_hash
+            })
+            .flat_map(|interface| interface.source_interface.declarations.iter())
+            .find(|decl| {
+                decl.kind != HumanSourceDeclarationKind::Imported
+                    && npa_cert::Name(decl.name.parts.clone()) == export.name
+                    && decl.decl_interface_hash == Some(export.decl_interface_hash)
+            })
+            .map(|decl| machine_callable_profile_from_human_binders(&decl.binders))
     }
 
     fn insert_decl(
@@ -3241,9 +3409,20 @@ impl<'a> HumanToMachineLowering<'a> {
         binders: Vec<HumanBinder>,
         context: &mut HumanLoweringLocalContext,
     ) -> HumanResult<Vec<MachineBinder>> {
-        binders
-            .into_iter()
-            .map(|binder| {
+        let mut lowered = Vec::with_capacity(binders.len());
+        let mut binders = binders.into_iter().peekable();
+
+        while let Some(first) = binders.next() {
+            let mut group = vec![first];
+            while binders
+                .peek()
+                .is_some_and(|next| same_human_binder_group(&group[0], next))
+            {
+                group.push(binders.next().expect("peeked binder must exist"));
+            }
+
+            let mut group_lowered = Vec::with_capacity(group.len());
+            for binder in group {
                 let HumanBinderKind::Named(name) = binder.kind else {
                     return Err(HumanDiagnostic::not_implemented(
                         binder.span,
@@ -3258,14 +3437,20 @@ impl<'a> HumanToMachineLowering<'a> {
                 };
                 let machine_name = name.as_dotted();
                 let ty = self.lower_expr(*ty, context, None)?;
-                context.push_assumption(machine_name.clone(), ty.clone());
-                Ok(MachineBinder {
+                group_lowered.push(MachineBinder {
                     name: machine_name,
                     ty,
                     span: binder.span,
-                })
-            })
-            .collect()
+                });
+            }
+
+            for binder in &group_lowered {
+                context.push_assumption(binder.name.clone(), binder.ty.clone());
+            }
+            lowered.extend(group_lowered);
+        }
+
+        Ok(lowered)
     }
 
     fn lower_lambda_binders(
@@ -3276,45 +3461,61 @@ impl<'a> HumanToMachineLowering<'a> {
     ) -> HumanResult<(Vec<MachineBinder>, Option<MachineTerm>)> {
         let mut expected = expected.cloned();
         let mut lowered = Vec::with_capacity(binders.len());
+        let mut binders = binders.into_iter().peekable();
 
-        for binder in binders {
-            let name = match binder.kind {
-                HumanBinderKind::Named(name) => name.as_dotted(),
-                HumanBinderKind::Anonymous => "_".to_owned(),
-            };
-            let (expected_binder, expected_body) = match expected.take() {
-                Some(expected_term) => take_expected_pi_binder(expected_term),
-                None => None,
+        while let Some(first) = binders.next() {
+            let mut group = vec![first];
+            while binders
+                .peek()
+                .is_some_and(|next| same_human_binder_group(&group[0], next))
+            {
+                group.push(binders.next().expect("peeked binder must exist"));
             }
-            .map_or((None, None), |(binder, body)| (Some(binder), Some(body)));
 
-            let ty = match binder.ty {
-                Some(ty) => self.lower_expr(*ty, context, None)?,
-                None => {
-                    let Some(expected_binder) = &expected_binder else {
-                        return Err(HumanDiagnostic::error(
-                            HumanDiagnosticKind::ExpectedFunctionType,
-                            binder.span,
-                            "unannotated Human lambda binder requires an expected function type",
-                        ));
-                    };
-                    expected_binder.ty.clone()
+            let mut group_lowered = Vec::with_capacity(group.len());
+            for binder in group {
+                let name = match binder.kind {
+                    HumanBinderKind::Named(name) => name.as_dotted(),
+                    HumanBinderKind::Anonymous => "_".to_owned(),
+                };
+                let (expected_binder, expected_body) = match expected.take() {
+                    Some(expected_term) => take_expected_pi_binder(expected_term),
+                    None => None,
                 }
-            };
+                .map_or((None, None), |(binder, body)| (Some(binder), Some(body)));
 
-            expected = match (expected_binder, expected_body) {
-                (Some(expected_binder), Some(body)) => {
-                    Some(rename_machine_local(body, &expected_binder.name, &name))
-                }
-                _ => None,
-            };
+                let ty = match binder.ty {
+                    Some(ty) => self.lower_expr(*ty, context, None)?,
+                    None => {
+                        let Some(expected_binder) = &expected_binder else {
+                            return Err(HumanDiagnostic::error(
+                                HumanDiagnosticKind::ExpectedFunctionType,
+                                binder.span,
+                                "unannotated Human lambda binder requires an expected function type",
+                            ));
+                        };
+                        expected_binder.ty.clone()
+                    }
+                };
 
-            context.push_assumption(name.clone(), ty.clone());
-            lowered.push(MachineBinder {
-                name,
-                ty,
-                span: binder.span,
-            });
+                expected = match (expected_binder, expected_body) {
+                    (Some(expected_binder), Some(body)) => {
+                        Some(rename_machine_local(body, &expected_binder.name, &name))
+                    }
+                    _ => None,
+                };
+
+                group_lowered.push(MachineBinder {
+                    name,
+                    ty,
+                    span: binder.span,
+                });
+            }
+
+            for binder in &group_lowered {
+                context.push_assumption(binder.name.clone(), binder.ty.clone());
+            }
+            lowered.extend(group_lowered);
         }
 
         Ok((lowered, expected))
@@ -3526,6 +3727,13 @@ fn lower_level(level: HumanLevel) -> MachineLevel {
     }
 }
 
+fn same_human_binder_group(first: &HumanBinder, next: &HumanBinder) -> bool {
+    first.ty.is_some()
+        && next.span == first.span
+        && next.binder_info == first.binder_info
+        && next.ty == first.ty
+}
+
 fn machine_name(name: crate::HumanName) -> MachineName {
     MachineName {
         parts: name.parts,
@@ -3650,6 +3858,43 @@ mod tests {
             .map(|export| (export.name.clone(), export.decl_interface_hash))
             .collect();
         import
+    }
+
+    fn verified_human_import(
+        module: &str,
+        source: &str,
+    ) -> (
+        VerifiedImport,
+        HumanImportedSourceInterface,
+        npa_cert::VerifiedModule,
+    ) {
+        let module_name = npa_cert::Name::from_dotted(module);
+        let output = compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            module_name.clone(),
+            source,
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("producer Human source should build a certificate");
+        let bytes =
+            npa_cert::encode_module_cert(&output.certificate).expect("producer cert should encode");
+        let verified = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("producer cert should verify");
+        let import = VerifiedImport::from(&verified);
+        let source_interface = HumanImportedSourceInterface {
+            module: import.module.clone(),
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            source_interface: output.source_interface,
+        };
+
+        (import, source_interface, verified)
     }
 
     fn export_ty(name: &str) -> Expr {
@@ -3881,6 +4126,49 @@ inductive Nat : Type where
             entry.kind == npa_cert::ExportKind::Recursor
                 && cert.name_table[entry.name] == npa_cert::Name::from_dotted("Nat.rec")
         }));
+    }
+
+    #[test]
+    fn human_certificate_output_hashes_source_interface_exports() {
+        let output = compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human certificate output should include source interface metadata");
+        let cert = output.certificate;
+        let source_interface = output.source_interface;
+        let export_hash = |name: &str| {
+            cert.export_block
+                .iter()
+                .find(|entry| cert.name_table[entry.name] == npa_cert::Name::from_dotted(name))
+                .map(|entry| entry.decl_interface_hash)
+                .expect("expected source interface name to be exported")
+        };
+
+        assert_eq!(
+            source_interface.declarations[0].decl_interface_hash,
+            Some(export_hash("Nat"))
+        );
+        assert_eq!(source_interface.generated_declarations.len(), 3);
+        assert_eq!(
+            source_interface.generated_declarations[0].decl_interface_hash,
+            Some(export_hash("Nat.zero"))
+        );
+        assert_eq!(
+            source_interface.generated_declarations[1].decl_interface_hash,
+            Some(export_hash("Nat.succ"))
+        );
+        assert_eq!(
+            source_interface.generated_declarations[2].decl_interface_hash,
+            Some(export_hash("Nat.rec"))
+        );
     }
 
     #[test]
@@ -4193,6 +4481,143 @@ def use (n : Nat) : Nat := id n",
                 Expr::app(Expr::app(Expr::konst("id", vec![]), nat()), Expr::bvar(0))
             )
         );
+    }
+
+    #[test]
+    fn human_imported_source_interface_supplies_user_implicit_binder_metadata() {
+        let source = "\
+axiom A : Type
+def id {B : Type} (x : B) : B := x";
+        let (import, source_interface, _) = verified_human_import("Lib", source);
+        let consumer = "\
+import Lib
+def use (a : A) : A := id a";
+
+        compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Consumer"),
+            consumer,
+            std::slice::from_ref(&import),
+            &HumanCompileOptions::default(),
+        )
+        .expect_err(
+            "without Human source metadata, imported user implicit binders are not inferred",
+        );
+
+        let module = compile_human_source_to_core_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Consumer"),
+            consumer,
+            &[import],
+            &[source_interface],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human source metadata should supply imported user implicit binder profiles");
+
+        let Decl::Def { value, .. } = &module.declarations[0] else {
+            panic!("expected use definition");
+        };
+        assert_eq!(
+            value,
+            &Expr::lam(
+                "a",
+                Expr::konst("A", vec![]),
+                Expr::app(
+                    Expr::app(Expr::konst("id", vec![]), Expr::konst("A", vec![])),
+                    Expr::bvar(0)
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn human_imported_source_interface_supplies_imported_notation_to_parser_and_resolver() {
+        let source = "\
+axiom A : Type
+def choose (x y : A) : A := x
+infixl:65 \" ++ \" => choose";
+        let (import, source_interface, _) = verified_human_import("Lib", source);
+        let consumer = "\
+import Lib
+axiom a : A
+def use : A := a ++ a";
+
+        compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Consumer"),
+            consumer,
+            std::slice::from_ref(&import),
+            &HumanCompileOptions::default(),
+        )
+        .expect_err(
+            "without Human source metadata, imported notation is unavailable at parse time",
+        );
+
+        let module = compile_human_source_to_core_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Consumer"),
+            consumer,
+            &[import],
+            &[source_interface],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human source metadata should supply imported notation");
+
+        let Decl::Def { value, .. } = &module.declarations[1] else {
+            panic!("expected use definition");
+        };
+        assert_eq!(
+            value,
+            &Expr::app(
+                Expr::app(Expr::konst("choose", vec![]), Expr::konst("a", vec![])),
+                Expr::konst("a", vec![])
+            )
+        );
+    }
+
+    #[test]
+    fn grouped_binder_annotation_is_lowered_before_group_locals_enter_scope() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "def ok (A x : Type) : Type := x",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("grouped binder annotation should be shared from the outer context");
+
+        assert_eq!(
+            module.declarations,
+            vec![Decl::Def {
+                name: "ok".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(type0()),
+                    Expr::pi("x", Expr::sort(type0()), Expr::sort(type0()))
+                ),
+                value: Expr::lam(
+                    "A",
+                    Expr::sort(type0()),
+                    Expr::lam("x", Expr::sort(type0()), Expr::bvar(0))
+                ),
+                reducibility: Reducibility::Reducible,
+            }]
+        );
+    }
+
+    #[test]
+    fn grouped_binder_annotation_does_not_let_later_group_members_depend_on_earlier_ones() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "def bad (A x : Type) : A := x",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("x should have type Type, not the earlier grouped binder A");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::TypeMismatch);
     }
 
     #[test]
