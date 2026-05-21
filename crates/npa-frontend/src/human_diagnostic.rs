@@ -26,12 +26,32 @@ pub enum HumanDiagnosticKind {
     AmbiguousNotation,
     TooManyNotationCandidates,
     UnsolvedImplicit,
+    UnsolvedUniverseMeta,
+    UnsolvedHole,
+    NamedHoleContextMismatch,
+    OccursCheckFailed,
     MachineElaborationError,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HumanDiagnosticPayload {
     pub candidates: Vec<String>,
+    pub hole_goals: Vec<HumanHoleGoal>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanHoleGoal {
+    pub hole: Option<String>,
+    pub context: Vec<HumanHoleGoalLocal>,
+    pub target: Option<String>,
+    pub source_span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanHoleGoalLocal {
+    pub name: String,
+    pub ty: String,
+    pub value: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

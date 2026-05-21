@@ -449,26 +449,28 @@ crates/npa-frontend/src/lib.rs
 
 実装タスク:
 
-- [ ] term metavariable store と universe metavariable store を分ける。
-- [ ] `_` と `?m` を `UserHole` meta に変換する。
-- [ ] named hole の context snapshot を保存する。
-- [ ] named hole reuse の context mismatch を `NamedHoleContextMismatch` にする。
-- [ ] `TypeEq` / `TermEq` / `LevelEq` / `LevelLe` constraints を表現する。
-- [ ] simple unification と occurs check を実装する。
-- [ ] unsolved meta / hole が残る declaration は incomplete として扱い、certificate 化を拒否する。
-- [ ] hole goal を人間向け diagnostic payload として返す。
+- [x] term metavariable store と universe metavariable store を分ける。
+- [x] `_` と `?m` を `UserHole` meta に変換する。
+- [x] named hole の context snapshot を保存する。
+- [x] named hole reuse の context mismatch を `NamedHoleContextMismatch` にする。
+- [x] `TypeEq` / `TermEq` / `LevelEq` / `LevelLe` constraints を表現する。
+- [x] simple unification と occurs check を実装する。
+- [x] unsolved meta / hole が残る declaration は incomplete として扱い、certificate 化を拒否する。
+- [x] hole goal を人間向け diagnostic payload として返す。
 
 AI 速度ガード:
 
-- [ ] Machine Surface Complete mode では hole を AST に入れない。
-- [ ] Repair mode の suggestion は trusted payload に入れない。
-- [ ] Human meta store を MachineTermElabContext に持ち込まない。
+- [x] Machine Surface Complete mode では hole を AST に入れない。
+- [x] Repair mode の suggestion は trusted payload に入れない。
+- [x] Human meta store を MachineTermElabContext に持ち込まない。
 
 影響ファイル:
 
 ```text
 crates/npa-frontend/src/human_elaborator.rs
 crates/npa-frontend/src/human_diagnostic.rs
+crates/npa-frontend/src/human_resolver.rs
+crates/npa-frontend/src/lib.rs
 ```
 
 完了条件:

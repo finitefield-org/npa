@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 
 use crate::{
     builtin_machine_callable_profile,
@@ -9,11 +9,11 @@ use crate::{
         VerifiedImportLookupError,
     },
     HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDiagnostic, HumanDiagnosticKind,
-    HumanExpr, HumanGlobalRef, HumanImplicitMode, HumanItem, HumanLevel, HumanResolvedName,
-    HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata,
-    MachineBinder, MachineCallableBinderVisibility, MachineCompileOptions, MachineDecl,
-    MachineItem, MachineLevel, MachineModule, MachineName, MachineTerm, ResolvedHumanModule, Span,
-    VerifiedImport,
+    HumanDiagnosticPayload, HumanExpr, HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal,
+    HumanImplicitMode, HumanItem, HumanLevel, HumanName, HumanResolvedName, HumanResolvedNameUse,
+    HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata, MachineBinder,
+    MachineCallableBinderVisibility, MachineCompileOptions, MachineDecl, MachineItem, MachineLevel,
+    MachineModule, MachineName, MachineTerm, ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{Ctx, Decl, Env, Expr, Level, Reducibility};
 
@@ -175,6 +175,743 @@ struct SyntheticImplicitMeta {
     value: Expr,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct HumanTermMetaId(u32);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct HumanUniverseMetaId(u32);
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+enum HumanTermMetaKind {
+    UserHole,
+    SyntheticImplicit,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HumanTermMeta {
+    id: HumanTermMetaId,
+    name: Option<String>,
+    context: HumanMetaContextSnapshot,
+    goal_context: Vec<HumanHoleGoalLocal>,
+    target: Option<String>,
+    assignment: Option<HumanMetaExpr>,
+    kind: HumanTermMetaKind,
+    span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HumanUniverseMeta {
+    id: HumanUniverseMetaId,
+    assignment: Option<HumanMetaLevel>,
+    span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HumanMetaContextSnapshot {
+    locals: Vec<HumanMetaLocalSnapshot>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HumanMetaLocalSnapshot {
+    ty: MachineTerm,
+    value: Option<MachineTerm>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+enum HumanMetaExpr {
+    Core(Expr),
+    Meta(HumanTermMetaId),
+    App(Box<HumanMetaExpr>, Box<HumanMetaExpr>),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+enum HumanMetaLevel {
+    Core(Level),
+    Meta(HumanUniverseMetaId),
+    Succ(Box<HumanMetaLevel>),
+    Max(Box<HumanMetaLevel>, Box<HumanMetaLevel>),
+    IMax(Box<HumanMetaLevel>, Box<HumanMetaLevel>),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HumanTermConstraintKind {
+    TypeEq,
+    TermEq,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
+enum HumanConstraint {
+    TypeEq {
+        lhs: HumanMetaExpr,
+        rhs: HumanMetaExpr,
+        span: Span,
+    },
+    TermEq {
+        lhs: HumanMetaExpr,
+        rhs: HumanMetaExpr,
+        span: Span,
+    },
+    LevelEq {
+        lhs: HumanMetaLevel,
+        rhs: HumanMetaLevel,
+        span: Span,
+    },
+    LevelLe {
+        lhs: HumanMetaLevel,
+        rhs: HumanMetaLevel,
+        span: Span,
+    },
+}
+
+#[derive(Clone, Debug, Default)]
+struct HumanMetaStore {
+    term_metas: Vec<HumanTermMeta>,
+    universe_metas: Vec<HumanUniverseMeta>,
+    constraints: VecDeque<HumanConstraint>,
+    named_holes: BTreeMap<String, HumanTermMetaId>,
+}
+
+impl HumanMetaStore {
+    fn begin_declaration(&mut self) {
+        self.term_metas.clear();
+        self.universe_metas.clear();
+        self.constraints.clear();
+        self.named_holes.clear();
+    }
+
+    fn fresh_user_hole(
+        &mut self,
+        name: Option<&HumanName>,
+        context: &HumanLoweringLocalContext,
+        expected: Option<&MachineTerm>,
+        span: Span,
+    ) -> HumanResult<HumanTermMetaId> {
+        let snapshot = context.meta_snapshot();
+        let hole_name = name.map(|name| format!("?{}", name.as_dotted()));
+
+        if let Some(hole_name) = &hole_name {
+            if let Some(existing) = self.named_holes.get(hole_name).copied() {
+                let existing_meta = self.term_meta(existing);
+                if existing_meta.context != snapshot {
+                    return Err(HumanDiagnostic::error(
+                        HumanDiagnosticKind::NamedHoleContextMismatch,
+                        span,
+                        format!("named hole {hole_name} was reused with a different context"),
+                    )
+                    .with_payload(HumanDiagnosticPayload {
+                        hole_goals: vec![
+                            self.hole_goal(existing_meta),
+                            HumanHoleGoal {
+                                hole: Some(hole_name.clone()),
+                                context: context.hole_goal_context(),
+                                target: expected.map(render_machine_term),
+                                source_span: span,
+                            },
+                        ],
+                        ..HumanDiagnosticPayload::default()
+                    }));
+                }
+                return Ok(existing);
+            }
+        }
+
+        let id = HumanTermMetaId(self.term_metas.len() as u32);
+        let meta = HumanTermMeta {
+            id,
+            name: hole_name.clone(),
+            context: snapshot,
+            goal_context: context.hole_goal_context(),
+            target: expected.map(render_machine_term),
+            assignment: None,
+            kind: HumanTermMetaKind::UserHole,
+            span,
+        };
+        self.term_metas.push(meta);
+        if let Some(hole_name) = hole_name {
+            self.named_holes.insert(hole_name, id);
+        }
+        Ok(id)
+    }
+
+    #[allow(dead_code)]
+    fn fresh_synthetic_implicit(
+        &mut self,
+        context: &HumanLoweringLocalContext,
+        expected: Option<&MachineTerm>,
+        span: Span,
+    ) -> HumanTermMetaId {
+        let id = HumanTermMetaId(self.term_metas.len() as u32);
+        self.term_metas.push(HumanTermMeta {
+            id,
+            name: None,
+            context: context.meta_snapshot(),
+            goal_context: context.hole_goal_context(),
+            target: expected.map(render_machine_term),
+            assignment: None,
+            kind: HumanTermMetaKind::SyntheticImplicit,
+            span,
+        });
+        id
+    }
+
+    #[allow(dead_code)]
+    fn fresh_universe_meta(&mut self, span: Span) -> HumanUniverseMetaId {
+        let id = HumanUniverseMetaId(self.universe_metas.len() as u32);
+        self.universe_metas.push(HumanUniverseMeta {
+            id,
+            assignment: None,
+            span,
+        });
+        id
+    }
+
+    fn add_constraint(&mut self, constraint: HumanConstraint) {
+        self.constraints.push_back(constraint);
+    }
+
+    fn solve_constraints(&mut self) -> HumanResult<()> {
+        while let Some(constraint) = self.constraints.pop_front() {
+            match constraint {
+                HumanConstraint::TypeEq { lhs, rhs, span } => {
+                    self.solve_term_eq(HumanTermConstraintKind::TypeEq, lhs, rhs, span)?;
+                }
+                HumanConstraint::TermEq { lhs, rhs, span } => {
+                    self.solve_term_eq(HumanTermConstraintKind::TermEq, lhs, rhs, span)?;
+                }
+                HumanConstraint::LevelEq { lhs, rhs, span } => {
+                    self.solve_level_eq(lhs, rhs, span)?;
+                }
+                HumanConstraint::LevelLe { lhs, rhs, span } => {
+                    self.solve_level_le(lhs, rhs, span)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn reject_unsolved_for_decl(&mut self, span: Span) -> HumanResult<()> {
+        self.solve_constraints()?;
+
+        if let Some(meta) = self
+            .term_metas
+            .iter()
+            .find(|meta| meta.assignment.is_none())
+        {
+            return match meta.kind {
+                HumanTermMetaKind::UserHole => Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnsolvedHole,
+                    meta.span,
+                    match &meta.name {
+                        Some(name) => format!("unsolved hole {name}"),
+                        None => "unsolved anonymous hole".to_owned(),
+                    },
+                )
+                .with_payload(HumanDiagnosticPayload {
+                    hole_goals: vec![self.hole_goal(meta)],
+                    ..HumanDiagnosticPayload::default()
+                })),
+                HumanTermMetaKind::SyntheticImplicit => Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnsolvedImplicit,
+                    meta.span,
+                    "unsolved synthetic implicit argument",
+                )),
+            };
+        }
+
+        if let Some(meta) = self
+            .universe_metas
+            .iter()
+            .find(|meta| meta.assignment.is_none())
+        {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::UnsolvedUniverseMeta,
+                meta.span,
+                "unsolved universe metavariable",
+            ));
+        }
+
+        let _ = span;
+        Ok(())
+    }
+
+    fn solve_term_eq(
+        &mut self,
+        kind: HumanTermConstraintKind,
+        lhs: HumanMetaExpr,
+        rhs: HumanMetaExpr,
+        span: Span,
+    ) -> HumanResult<()> {
+        let lhs = self.resolve_meta_expr(lhs);
+        let rhs = self.resolve_meta_expr(rhs);
+        match (lhs, rhs) {
+            (lhs, rhs) if lhs == rhs => Ok(()),
+            (HumanMetaExpr::Meta(id), value) | (value, HumanMetaExpr::Meta(id)) => {
+                self.assign_term_meta(id, value, span)
+            }
+            (HumanMetaExpr::App(lhs_fun, lhs_arg), HumanMetaExpr::App(rhs_fun, rhs_arg)) => {
+                self.add_constraint(term_constraint(kind, *lhs_fun, *rhs_fun, span));
+                self.add_constraint(term_constraint(kind, *lhs_arg, *rhs_arg, span));
+                Ok(())
+            }
+            (HumanMetaExpr::Core(lhs), HumanMetaExpr::Core(rhs)) if lhs == rhs => Ok(()),
+            _ => Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::MachineElaborationError,
+                span,
+                "Human metavariable constraint could not be unified",
+            )),
+        }
+    }
+
+    fn solve_level_eq(
+        &mut self,
+        lhs: HumanMetaLevel,
+        rhs: HumanMetaLevel,
+        span: Span,
+    ) -> HumanResult<()> {
+        let lhs = self.resolve_meta_level(lhs);
+        let rhs = self.resolve_meta_level(rhs);
+        match (lhs, rhs) {
+            (lhs, rhs) if lhs == rhs => Ok(()),
+            (HumanMetaLevel::Meta(id), value) | (value, HumanMetaLevel::Meta(id)) => {
+                self.assign_universe_meta(id, value, span)
+            }
+            (HumanMetaLevel::Succ(lhs), HumanMetaLevel::Succ(rhs)) => {
+                self.add_constraint(HumanConstraint::LevelEq {
+                    lhs: *lhs,
+                    rhs: *rhs,
+                    span,
+                });
+                Ok(())
+            }
+            (HumanMetaLevel::Max(lhs_a, lhs_b), HumanMetaLevel::Max(rhs_a, rhs_b)) => {
+                self.add_constraint(HumanConstraint::LevelEq {
+                    lhs: *lhs_a,
+                    rhs: *rhs_a,
+                    span,
+                });
+                self.add_constraint(HumanConstraint::LevelEq {
+                    lhs: *lhs_b,
+                    rhs: *rhs_b,
+                    span,
+                });
+                Ok(())
+            }
+            (HumanMetaLevel::IMax(lhs_a, lhs_b), HumanMetaLevel::IMax(rhs_a, rhs_b)) => {
+                self.add_constraint(HumanConstraint::LevelEq {
+                    lhs: *lhs_a,
+                    rhs: *rhs_a,
+                    span,
+                });
+                self.add_constraint(HumanConstraint::LevelEq {
+                    lhs: *lhs_b,
+                    rhs: *rhs_b,
+                    span,
+                });
+                Ok(())
+            }
+            (HumanMetaLevel::Core(lhs), HumanMetaLevel::Core(rhs)) if lhs == rhs => Ok(()),
+            _ => Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::MachineElaborationError,
+                span,
+                "Human universe metavariable constraint could not be unified",
+            )),
+        }
+    }
+
+    fn solve_level_le(
+        &mut self,
+        lhs: HumanMetaLevel,
+        rhs: HumanMetaLevel,
+        span: Span,
+    ) -> HumanResult<()> {
+        let lhs = self.resolve_meta_level(lhs);
+        let rhs = self.resolve_meta_level(rhs);
+        match (lhs, rhs) {
+            (lhs, rhs) if lhs == rhs => Ok(()),
+            (HumanMetaLevel::Meta(id), value) => self.assign_universe_meta(id, value, span),
+            (HumanMetaLevel::Core(lhs), HumanMetaLevel::Core(rhs))
+                if human_level_leq(&lhs, &rhs) =>
+            {
+                Ok(())
+            }
+            _ => Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::MachineElaborationError,
+                span,
+                "Human universe inequality constraint could not be solved",
+            )),
+        }
+    }
+
+    fn assign_term_meta(
+        &mut self,
+        id: HumanTermMetaId,
+        value: HumanMetaExpr,
+        span: Span,
+    ) -> HumanResult<()> {
+        if meta_expr_occurs(id, &value) {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::OccursCheckFailed,
+                span,
+                "Human metavariable assignment failed the occurs check",
+            ));
+        }
+
+        let index = id.0 as usize;
+        if let Some(existing) = self.term_metas[index].assignment.clone() {
+            self.add_constraint(HumanConstraint::TermEq {
+                lhs: existing,
+                rhs: value,
+                span,
+            });
+        } else {
+            self.term_metas[index].assignment = Some(value);
+        }
+        Ok(())
+    }
+
+    fn assign_universe_meta(
+        &mut self,
+        id: HumanUniverseMetaId,
+        value: HumanMetaLevel,
+        span: Span,
+    ) -> HumanResult<()> {
+        if meta_level_occurs(id, &value) {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::OccursCheckFailed,
+                span,
+                "Human universe metavariable assignment failed the occurs check",
+            ));
+        }
+
+        let index = id.0 as usize;
+        if let Some(existing) = self.universe_metas[index].assignment.clone() {
+            self.add_constraint(HumanConstraint::LevelEq {
+                lhs: existing,
+                rhs: value,
+                span,
+            });
+        } else {
+            self.universe_metas[index].assignment = Some(value);
+        }
+        Ok(())
+    }
+
+    fn resolve_meta_expr(&self, value: HumanMetaExpr) -> HumanMetaExpr {
+        match value {
+            HumanMetaExpr::Meta(id) => self.term_metas[id.0 as usize]
+                .assignment
+                .clone()
+                .map(|assignment| self.resolve_meta_expr(assignment))
+                .unwrap_or(HumanMetaExpr::Meta(id)),
+            HumanMetaExpr::App(func, arg) => HumanMetaExpr::App(
+                Box::new(self.resolve_meta_expr(*func)),
+                Box::new(self.resolve_meta_expr(*arg)),
+            ),
+            HumanMetaExpr::Core(expr) => HumanMetaExpr::Core(expr),
+        }
+    }
+
+    fn resolve_meta_level(&self, value: HumanMetaLevel) -> HumanMetaLevel {
+        match value {
+            HumanMetaLevel::Meta(id) => self.universe_metas[id.0 as usize]
+                .assignment
+                .clone()
+                .map(|assignment| self.resolve_meta_level(assignment))
+                .unwrap_or(HumanMetaLevel::Meta(id)),
+            HumanMetaLevel::Succ(level) => {
+                HumanMetaLevel::Succ(Box::new(self.resolve_meta_level(*level)))
+            }
+            HumanMetaLevel::Max(lhs, rhs) => HumanMetaLevel::Max(
+                Box::new(self.resolve_meta_level(*lhs)),
+                Box::new(self.resolve_meta_level(*rhs)),
+            ),
+            HumanMetaLevel::IMax(lhs, rhs) => HumanMetaLevel::IMax(
+                Box::new(self.resolve_meta_level(*lhs)),
+                Box::new(self.resolve_meta_level(*rhs)),
+            ),
+            HumanMetaLevel::Core(level) => HumanMetaLevel::Core(level),
+        }
+    }
+
+    fn term_meta(&self, id: HumanTermMetaId) -> &HumanTermMeta {
+        &self.term_metas[id.0 as usize]
+    }
+
+    fn hole_goal(&self, meta: &HumanTermMeta) -> HumanHoleGoal {
+        HumanHoleGoal {
+            hole: meta.name.clone(),
+            context: meta.goal_context.clone(),
+            target: meta.target.clone(),
+            source_span: meta.span,
+        }
+    }
+}
+
+fn term_constraint(
+    kind: HumanTermConstraintKind,
+    lhs: HumanMetaExpr,
+    rhs: HumanMetaExpr,
+    span: Span,
+) -> HumanConstraint {
+    match kind {
+        HumanTermConstraintKind::TypeEq => HumanConstraint::TypeEq { lhs, rhs, span },
+        HumanTermConstraintKind::TermEq => HumanConstraint::TermEq { lhs, rhs, span },
+    }
+}
+
+fn meta_expr_occurs(id: HumanTermMetaId, value: &HumanMetaExpr) -> bool {
+    match value {
+        HumanMetaExpr::Core(_) => false,
+        HumanMetaExpr::Meta(value_id) => *value_id == id,
+        HumanMetaExpr::App(func, arg) => meta_expr_occurs(id, func) || meta_expr_occurs(id, arg),
+    }
+}
+
+fn meta_level_occurs(id: HumanUniverseMetaId, value: &HumanMetaLevel) -> bool {
+    match value {
+        HumanMetaLevel::Core(_) => false,
+        HumanMetaLevel::Meta(value_id) => *value_id == id,
+        HumanMetaLevel::Succ(level) => meta_level_occurs(id, level),
+        HumanMetaLevel::Max(lhs, rhs) | HumanMetaLevel::IMax(lhs, rhs) => {
+            meta_level_occurs(id, lhs) || meta_level_occurs(id, rhs)
+        }
+    }
+}
+
+fn human_meta_placeholder(id: HumanTermMetaId, span: Span) -> MachineTerm {
+    MachineTerm::Local {
+        name: format!("__human_meta_{}", id.0),
+        span,
+    }
+}
+
+fn canonicalize_machine_term_for_meta_context(term: &MachineTerm) -> MachineTerm {
+    let span = meta_context_span();
+    match term {
+        MachineTerm::Ident {
+            name,
+            universe_args,
+            explicit_mode,
+            ..
+        } => MachineTerm::Ident {
+            name: MachineName {
+                parts: name.parts.clone(),
+                span,
+            },
+            universe_args: universe_args.as_ref().map(|args| {
+                args.iter()
+                    .map(canonicalize_machine_level_for_meta_context)
+                    .collect()
+            }),
+            explicit_mode: *explicit_mode,
+            span,
+        },
+        MachineTerm::Local { name, .. } => MachineTerm::Local {
+            name: name.clone(),
+            span,
+        },
+        MachineTerm::Prop { .. } => MachineTerm::Prop { span },
+        MachineTerm::Type { level, .. } => MachineTerm::Type {
+            level: canonicalize_machine_level_for_meta_context(level),
+            span,
+        },
+        MachineTerm::Sort { level, .. } => MachineTerm::Sort {
+            level: canonicalize_machine_level_for_meta_context(level),
+            span,
+        },
+        MachineTerm::App { func, arg, .. } => MachineTerm::App {
+            func: Box::new(canonicalize_machine_term_for_meta_context(func)),
+            arg: Box::new(canonicalize_machine_term_for_meta_context(arg)),
+            span,
+        },
+        MachineTerm::Lam { binders, body, .. } => MachineTerm::Lam {
+            binders: canonicalize_machine_binders_for_meta_context(binders),
+            body: Box::new(canonicalize_machine_term_for_meta_context(body)),
+            span,
+        },
+        MachineTerm::Pi { binders, body, .. } => MachineTerm::Pi {
+            binders: canonicalize_machine_binders_for_meta_context(binders),
+            body: Box::new(canonicalize_machine_term_for_meta_context(body)),
+            span,
+        },
+        MachineTerm::Let {
+            name,
+            ty,
+            value,
+            body,
+            ..
+        } => MachineTerm::Let {
+            name: name.clone(),
+            ty: Box::new(canonicalize_machine_term_for_meta_context(ty)),
+            value: Box::new(canonicalize_machine_term_for_meta_context(value)),
+            body: Box::new(canonicalize_machine_term_for_meta_context(body)),
+            span,
+        },
+        MachineTerm::Annot { expr, ty, .. } => MachineTerm::Annot {
+            expr: Box::new(canonicalize_machine_term_for_meta_context(expr)),
+            ty: Box::new(canonicalize_machine_term_for_meta_context(ty)),
+            span,
+        },
+    }
+}
+
+fn canonicalize_machine_binders_for_meta_context(binders: &[MachineBinder]) -> Vec<MachineBinder> {
+    let span = meta_context_span();
+    binders
+        .iter()
+        .map(|binder| MachineBinder {
+            name: binder.name.clone(),
+            ty: canonicalize_machine_term_for_meta_context(&binder.ty),
+            span,
+        })
+        .collect()
+}
+
+fn canonicalize_machine_level_for_meta_context(level: &MachineLevel) -> MachineLevel {
+    let span = meta_context_span();
+    match level {
+        MachineLevel::Nat { value, .. } => MachineLevel::Nat {
+            value: *value,
+            span,
+        },
+        MachineLevel::Param { name, .. } => MachineLevel::Param {
+            name: name.clone(),
+            span,
+        },
+        MachineLevel::Succ { level, .. } => MachineLevel::Succ {
+            level: Box::new(canonicalize_machine_level_for_meta_context(level)),
+            span,
+        },
+        MachineLevel::Max { lhs, rhs, .. } => MachineLevel::Max {
+            lhs: Box::new(canonicalize_machine_level_for_meta_context(lhs)),
+            rhs: Box::new(canonicalize_machine_level_for_meta_context(rhs)),
+            span,
+        },
+        MachineLevel::IMax { lhs, rhs, .. } => MachineLevel::IMax {
+            lhs: Box::new(canonicalize_machine_level_for_meta_context(lhs)),
+            rhs: Box::new(canonicalize_machine_level_for_meta_context(rhs)),
+            span,
+        },
+    }
+}
+
+fn meta_context_span() -> Span {
+    Span::empty(crate::FileId(0))
+}
+
+fn render_machine_term(term: &MachineTerm) -> String {
+    match term {
+        MachineTerm::Ident {
+            name,
+            universe_args,
+            explicit_mode,
+            ..
+        } => {
+            let mut rendered = if *explicit_mode {
+                format!("@{}", name.as_dotted())
+            } else {
+                name.as_dotted()
+            };
+            if let Some(args) = universe_args {
+                rendered.push_str(".{");
+                rendered.push_str(
+                    &args
+                        .iter()
+                        .map(render_machine_level)
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                );
+                rendered.push('}');
+            }
+            rendered
+        }
+        MachineTerm::Local { name, .. } => name.clone(),
+        MachineTerm::Prop { .. } => "Prop".to_owned(),
+        MachineTerm::Type { level, .. } => format!("Type {}", render_machine_level(level)),
+        MachineTerm::Sort { level, .. } => format!("Sort {}", render_machine_level(level)),
+        MachineTerm::App { func, arg, .. } => {
+            format!(
+                "({} {})",
+                render_machine_term(func),
+                render_machine_term(arg)
+            )
+        }
+        MachineTerm::Lam { binders, body, .. } => format!(
+            "(fun {} => {})",
+            render_machine_binders(binders),
+            render_machine_term(body)
+        ),
+        MachineTerm::Pi { binders, body, .. } => format!(
+            "(forall {}, {})",
+            render_machine_binders(binders),
+            render_machine_term(body)
+        ),
+        MachineTerm::Let {
+            name,
+            ty,
+            value,
+            body,
+            ..
+        } => format!(
+            "(let {name} : {} := {} in {})",
+            render_machine_term(ty),
+            render_machine_term(value),
+            render_machine_term(body)
+        ),
+        MachineTerm::Annot { expr, ty, .. } => {
+            format!(
+                "({} : {})",
+                render_machine_term(expr),
+                render_machine_term(ty)
+            )
+        }
+    }
+}
+
+fn render_machine_binders(binders: &[MachineBinder]) -> String {
+    binders
+        .iter()
+        .map(|binder| format!("({} : {})", binder.name, render_machine_term(&binder.ty)))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn render_machine_level(level: &MachineLevel) -> String {
+    match level {
+        MachineLevel::Nat { value, .. } => value.to_string(),
+        MachineLevel::Param { name, .. } => name.clone(),
+        MachineLevel::Succ { level, .. } => format!("succ {}", render_machine_level(level)),
+        MachineLevel::Max { lhs, rhs, .. } => {
+            format!(
+                "max {} {}",
+                render_machine_level(lhs),
+                render_machine_level(rhs)
+            )
+        }
+        MachineLevel::IMax { lhs, rhs, .. } => {
+            format!(
+                "imax {} {}",
+                render_machine_level(lhs),
+                render_machine_level(rhs)
+            )
+        }
+    }
+}
+
+fn human_level_leq(lhs: &Level, rhs: &Level) -> bool {
+    match (
+        core_level_as_u64(&npa_kernel::level::normalize_level(lhs.clone())),
+        core_level_as_u64(&npa_kernel::level::normalize_level(rhs.clone())),
+    ) {
+        (Some(lhs), Some(rhs)) => lhs <= rhs,
+        _ => lhs == rhs,
+    }
+}
+
 #[derive(Clone, Debug)]
 struct HumanElaboratedBinder {
     name: String,
@@ -238,6 +975,63 @@ impl HumanLocalContext {
             }
         }
         ctx
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+struct HumanLoweringLocalContext {
+    locals: Vec<HumanLoweringLocalDecl>,
+}
+
+#[derive(Clone, Debug)]
+struct HumanLoweringLocalDecl {
+    name: String,
+    ty: MachineTerm,
+    value: Option<MachineTerm>,
+}
+
+impl HumanLoweringLocalContext {
+    fn push_assumption(&mut self, name: String, ty: MachineTerm) {
+        self.locals.push(HumanLoweringLocalDecl {
+            name,
+            ty,
+            value: None,
+        });
+    }
+
+    fn push_definition(&mut self, name: String, ty: MachineTerm, value: MachineTerm) {
+        self.locals.push(HumanLoweringLocalDecl {
+            name,
+            ty,
+            value: Some(value),
+        });
+    }
+
+    fn meta_snapshot(&self) -> HumanMetaContextSnapshot {
+        HumanMetaContextSnapshot {
+            locals: self
+                .locals
+                .iter()
+                .map(|local| HumanMetaLocalSnapshot {
+                    ty: canonicalize_machine_term_for_meta_context(&local.ty),
+                    value: local
+                        .value
+                        .as_ref()
+                        .map(canonicalize_machine_term_for_meta_context),
+                })
+                .collect(),
+        }
+    }
+
+    fn hole_goal_context(&self) -> Vec<HumanHoleGoalLocal> {
+        self.locals
+            .iter()
+            .map(|local| HumanHoleGoalLocal {
+                name: local.name.clone(),
+                ty: render_machine_term(&local.ty),
+                value: local.value.as_ref().map(render_machine_term),
+            })
+            .collect()
     }
 }
 
@@ -1045,6 +1839,7 @@ struct HumanToMachineLowering<'a> {
     notation_uses: std::slice::Iter<'a, HumanResolvedNotationUse>,
     notation_choices: std::slice::Iter<'a, usize>,
     implicit_inserter: HumanImplicitInserter,
+    meta_store: HumanMetaStore,
 }
 
 impl<'a> HumanToMachineLowering<'a> {
@@ -1058,6 +1853,7 @@ impl<'a> HumanToMachineLowering<'a> {
             notation_uses: module.resolved_notations.iter(),
             notation_choices: notation_plan.iter(),
             implicit_inserter: HumanImplicitInserter::new(module, verified_imports)?,
+            meta_store: HumanMetaStore::default(),
         })
     }
 
@@ -1128,6 +1924,13 @@ impl<'a> HumanToMachineLowering<'a> {
         decl: crate::HumanDecl,
         metadata: &HumanSourceDeclarationMetadata,
     ) -> HumanResult<MachineDecl> {
+        self.meta_store.begin_declaration();
+        let mut local_context = HumanLoweringLocalContext::default();
+        let binders = self.lower_binders(decl.binders, &mut local_context)?;
+        let ty = self.lower_expr(decl.ty, &mut local_context, None)?;
+        let value = self.lower_expr(decl.value, &mut local_context, Some(&ty))?;
+        self.meta_store.reject_unsolved_for_decl(decl.span)?;
+
         Ok(MachineDecl {
             name: machine_name(metadata.name.clone()),
             universe_params: decl
@@ -1138,14 +1941,18 @@ impl<'a> HumanToMachineLowering<'a> {
                     span: param.span,
                 })
                 .collect(),
-            binders: self.lower_binders(decl.binders)?,
-            ty: self.lower_expr(decl.ty)?,
-            value: self.lower_expr(decl.value)?,
+            binders,
+            ty,
+            value,
             span: decl.span,
         })
     }
 
-    fn lower_binders(&mut self, binders: Vec<HumanBinder>) -> HumanResult<Vec<MachineBinder>> {
+    fn lower_binders(
+        &mut self,
+        binders: Vec<HumanBinder>,
+        context: &mut HumanLoweringLocalContext,
+    ) -> HumanResult<Vec<MachineBinder>> {
         binders
             .into_iter()
             .map(|binder| {
@@ -1161,16 +1968,24 @@ impl<'a> HumanToMachineLowering<'a> {
                         "unannotated Human binder lowering",
                     ));
                 };
+                let machine_name = name.as_dotted();
+                let ty = self.lower_expr(*ty, context, None)?;
+                context.push_assumption(machine_name.clone(), ty.clone());
                 Ok(MachineBinder {
-                    name: name.as_dotted(),
-                    ty: self.lower_expr(*ty)?,
+                    name: machine_name,
+                    ty,
                     span: binder.span,
                 })
             })
             .collect()
     }
 
-    fn lower_expr(&mut self, expr: HumanExpr) -> HumanResult<MachineTerm> {
+    fn lower_expr(
+        &mut self,
+        expr: HumanExpr,
+        context: &mut HumanLoweringLocalContext,
+        expected: Option<&MachineTerm>,
+    ) -> HumanResult<MachineTerm> {
         Ok(match expr {
             HumanExpr::Ident {
                 name,
@@ -1202,28 +2017,34 @@ impl<'a> HumanToMachineLowering<'a> {
                 span,
             },
             HumanExpr::App { func, arg, span } => MachineTerm::App {
-                func: Box::new(self.lower_expr(*func)?),
-                arg: Box::new(self.lower_expr(*arg)?),
+                func: Box::new(self.lower_expr(*func, context, None)?),
+                arg: Box::new(self.lower_expr(*arg, context, None)?),
                 span,
             },
             HumanExpr::Lam {
                 binders,
                 body,
                 span,
-            } => MachineTerm::Lam {
-                binders: self.lower_binders(binders)?,
-                body: Box::new(self.lower_expr(*body)?),
-                span,
-            },
+            } => {
+                let mut nested = context.clone();
+                MachineTerm::Lam {
+                    binders: self.lower_binders(binders, &mut nested)?,
+                    body: Box::new(self.lower_expr(*body, &mut nested, None)?),
+                    span,
+                }
+            }
             HumanExpr::Pi {
                 binders,
                 body,
                 span,
-            } => MachineTerm::Pi {
-                binders: self.lower_binders(binders)?,
-                body: Box::new(self.lower_expr(*body)?),
-                span,
-            },
+            } => {
+                let mut nested = context.clone();
+                MachineTerm::Pi {
+                    binders: self.lower_binders(binders, &mut nested)?,
+                    body: Box::new(self.lower_expr(*body, &mut nested, None)?),
+                    span,
+                }
+            }
             HumanExpr::Let {
                 name,
                 ty,
@@ -1237,19 +2058,26 @@ impl<'a> HumanToMachineLowering<'a> {
                         "unannotated Human let lowering",
                     ));
                 };
+                let ty = self.lower_expr(*ty, context, None)?;
+                let value = self.lower_expr(*value, context, Some(&ty))?;
+                let mut nested = context.clone();
+                nested.push_definition(name.as_dotted(), ty.clone(), value.clone());
                 MachineTerm::Let {
                     name: name.as_dotted(),
-                    ty: Box::new(self.lower_expr(*ty)?),
-                    value: Box::new(self.lower_expr(*value)?),
-                    body: Box::new(self.lower_expr(*body)?),
+                    ty: Box::new(ty),
+                    value: Box::new(value),
+                    body: Box::new(self.lower_expr(*body, &mut nested, expected)?),
                     span,
                 }
             }
-            HumanExpr::Annot { expr, ty, span } => MachineTerm::Annot {
-                expr: Box::new(self.lower_expr(*expr)?),
-                ty: Box::new(self.lower_expr(*ty)?),
-                span,
-            },
+            HumanExpr::Annot { expr, ty, span } => {
+                let ty = self.lower_expr(*ty, context, None)?;
+                MachineTerm::Annot {
+                    expr: Box::new(self.lower_expr(*expr, context, Some(&ty))?),
+                    ty: Box::new(ty),
+                    span,
+                }
+            }
             HumanExpr::Arrow {
                 domain,
                 codomain,
@@ -1257,22 +2085,22 @@ impl<'a> HumanToMachineLowering<'a> {
             } => MachineTerm::Pi {
                 binders: vec![MachineBinder {
                     name: "_".to_owned(),
-                    ty: self.lower_expr(*domain)?,
+                    ty: self.lower_expr(*domain, context, None)?,
                     span,
                 }],
-                body: Box::new(self.lower_expr(*codomain)?),
+                body: Box::new(self.lower_expr(*codomain, context, None)?),
                 span,
             },
-            HumanExpr::Hole { span, .. } => {
-                return Err(HumanDiagnostic::not_implemented(
-                    span,
-                    "Human hole elaboration",
-                ));
+            HumanExpr::Hole { name, span } => {
+                let id = self
+                    .meta_store
+                    .fresh_user_hole(name.as_ref(), context, expected, span)?;
+                human_meta_placeholder(id, span)
             }
             HumanExpr::NotationApp { head, args, span } => {
                 let lowered_args = args
                     .into_iter()
-                    .map(|arg| self.lower_expr(arg))
+                    .map(|arg| self.lower_expr(arg, context, None))
                     .collect::<HumanResult<Vec<_>>>()?;
                 let notation = self.next_notation_use(&head)?;
                 let choice = self.next_notation_choice(&head)?;
@@ -1387,7 +2215,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use super::*;
-    use crate::{FileId, HumanDiagnosticKind};
+    use crate::{FileId, HumanDiagnosticKind, MachineDiagnosticKind};
     use npa_kernel::{eq_refl, eq_refl_type, eq_type, nat, type0, Decl, Expr, Level, Reducibility};
 
     fn hash(seed: u8) -> npa_cert::Hash {
@@ -1670,5 +2498,162 @@ def bad : Type := Eq.refl",
         .expect_err("unresolved implicit should reject the declaration");
 
         assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedImplicit);
+    }
+
+    #[test]
+    fn human_anonymous_hole_returns_goal_diagnostic_payload() {
+        let imports = [nat_import()];
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+def bad (n : Nat) : Nat := _",
+            &imports,
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("unresolved Human hole should stop before Machine elaboration");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedHole);
+        let payload = err.payload.expect("hole diagnostic should carry a payload");
+        assert_eq!(payload.hole_goals.len(), 1);
+        let goal = &payload.hole_goals[0];
+        assert_eq!(goal.hole, None);
+        assert_eq!(goal.target.as_deref(), Some("Nat"));
+        assert_eq!(goal.context.len(), 1);
+        assert_eq!(goal.context[0].name, "n");
+        assert_eq!(goal.context[0].ty, "Nat");
+    }
+
+    #[test]
+    fn human_unresolved_hole_rejects_certificate_path_before_certificate_output() {
+        let err = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "def bad : Type := _",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("unresolved Human hole should not reach certificate construction");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedHole);
+    }
+
+    #[test]
+    fn human_named_hole_reuse_requires_same_context_snapshot() {
+        let imports = [nat_import()];
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Nat.Basic
+def bad_named_hole : Nat := let x : Nat := ?m in ?m",
+            &imports,
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("same named hole under a different context should be rejected");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::NamedHoleContextMismatch);
+        let payload = err
+            .payload
+            .expect("context mismatch should carry both hole contexts");
+        assert_eq!(payload.hole_goals.len(), 2);
+        assert_eq!(payload.hole_goals[0].hole.as_deref(), Some("?m"));
+        assert_eq!(payload.hole_goals[0].context.len(), 0);
+        assert_eq!(payload.hole_goals[1].hole.as_deref(), Some("?m"));
+        assert_eq!(payload.hole_goals[1].context.len(), 1);
+        assert_eq!(payload.hole_goals[1].context[0].name, "x");
+    }
+
+    #[test]
+    fn machine_path_still_rejects_holes_before_ast_elaboration() {
+        let err = crate::parse_machine_module(FileId(0), "def Test.bad : Prop := _")
+            .expect_err("Machine Surface Complete path should reject holes");
+
+        assert_eq!(err.kind, MachineDiagnosticKind::HoleNotAllowed);
+    }
+
+    #[test]
+    fn human_meta_store_solves_simple_term_and_universe_constraints() {
+        let span = Span::empty(FileId(0));
+        let mut store = HumanMetaStore::default();
+        let context = HumanLoweringLocalContext::default();
+        let term_meta = store
+            .fresh_user_hole(None, &context, None, span)
+            .expect("hole meta should allocate");
+        let universe_meta = store.fresh_universe_meta(span);
+
+        store.add_constraint(HumanConstraint::TermEq {
+            lhs: HumanMetaExpr::Meta(term_meta),
+            rhs: HumanMetaExpr::Core(nat()),
+            span,
+        });
+        store.add_constraint(HumanConstraint::TypeEq {
+            lhs: HumanMetaExpr::App(
+                Box::new(HumanMetaExpr::Core(Expr::konst("F", vec![]))),
+                Box::new(HumanMetaExpr::Meta(term_meta)),
+            ),
+            rhs: HumanMetaExpr::App(
+                Box::new(HumanMetaExpr::Core(Expr::konst("F", vec![]))),
+                Box::new(HumanMetaExpr::Core(nat())),
+            ),
+            span,
+        });
+        store.add_constraint(HumanConstraint::LevelEq {
+            lhs: HumanMetaLevel::Succ(Box::new(HumanMetaLevel::Meta(universe_meta))),
+            rhs: HumanMetaLevel::Succ(Box::new(HumanMetaLevel::Core(Level::zero()))),
+            span,
+        });
+        store.add_constraint(HumanConstraint::LevelEq {
+            lhs: HumanMetaLevel::Max(
+                Box::new(HumanMetaLevel::Core(Level::zero())),
+                Box::new(HumanMetaLevel::Core(Level::zero())),
+            ),
+            rhs: HumanMetaLevel::Max(
+                Box::new(HumanMetaLevel::Core(Level::zero())),
+                Box::new(HumanMetaLevel::Core(Level::zero())),
+            ),
+            span,
+        });
+        store.add_constraint(HumanConstraint::LevelLe {
+            lhs: HumanMetaLevel::Core(Level::zero()),
+            rhs: HumanMetaLevel::Core(type0()),
+            span,
+        });
+
+        store
+            .solve_constraints()
+            .expect("simple constraints should solve");
+        assert_eq!(
+            store.term_metas[term_meta.0 as usize].assignment,
+            Some(HumanMetaExpr::Core(nat()))
+        );
+        assert_eq!(
+            store.universe_metas[universe_meta.0 as usize].assignment,
+            Some(HumanMetaLevel::Core(Level::zero()))
+        );
+    }
+
+    #[test]
+    fn human_meta_store_rejects_occurs_check_cycles() {
+        let span = Span::empty(FileId(0));
+        let mut store = HumanMetaStore::default();
+        let context = HumanLoweringLocalContext::default();
+        let term_meta = store
+            .fresh_user_hole(None, &context, None, span)
+            .expect("hole meta should allocate");
+        store.add_constraint(HumanConstraint::TermEq {
+            lhs: HumanMetaExpr::Meta(term_meta),
+            rhs: HumanMetaExpr::App(
+                Box::new(HumanMetaExpr::Meta(term_meta)),
+                Box::new(HumanMetaExpr::Core(nat())),
+            ),
+            span,
+        });
+
+        let err = store
+            .solve_constraints()
+            .expect_err("cyclic assignment should fail occurs check");
+        assert_eq!(err.kind, HumanDiagnosticKind::OccursCheckFailed);
     }
 }

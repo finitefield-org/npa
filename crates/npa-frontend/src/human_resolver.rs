@@ -1353,6 +1353,7 @@ fn candidate_payload(mut candidates: Vec<String>) -> HumanDiagnosticPayload {
     }
     HumanDiagnosticPayload {
         candidates: bounded.into_vec(),
+        ..HumanDiagnosticPayload::default()
     }
 }
 
