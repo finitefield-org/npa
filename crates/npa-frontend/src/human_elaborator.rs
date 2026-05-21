@@ -5,14 +5,15 @@ use crate::{
     machine_callable_profile_from_human_binders, parse_human_module_with_source_interfaces,
     resolve_human_module_with_source_interfaces, HumanBinder, HumanBinderKind, HumanCompileOptions,
     HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload,
-    HumanDiagnosticPhase, HumanExpr, HumanGlobalRef, HumanGlobalScopeEntry, HumanHoleGoal,
-    HumanHoleGoalLocal, HumanImplicitMode, HumanImportedSourceInterface, HumanItem, HumanLevel,
-    HumanName, HumanResolvedName, HumanResolvedNameUse, HumanResolvedNotationEntry,
-    HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationKind,
-    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanUnsolvedMeta, HumanUnsolvedMetaKind,
-    MachineBinder, MachineCallableBinderVisibility, MachineCheckedCurrentDecl,
-    MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel, MachineLocalDecl, MachineName,
-    MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
+    HumanDiagnosticPhase, HumanExpr, HumanGeneratedDeclarationKind, HumanGlobalRef,
+    HumanGlobalScopeEntry, HumanHoleGoal, HumanHoleGoalLocal, HumanImplicitMode,
+    HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName, HumanResolvedName,
+    HumanResolvedNameUse, HumanResolvedNotationEntry, HumanResolvedNotationUse, HumanResult,
+    HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
+    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
+    MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel,
+    MachineLocalDecl, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span,
+    VerifiedImport,
 };
 use npa_kernel::{
     subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level,
@@ -926,20 +927,58 @@ fn human_imported_source_interface_profile(
     import: &VerifiedImport,
     export: &crate::VerifiedExport,
 ) -> Option<Vec<MachineCallableBinderVisibility>> {
-    imported_source_interfaces
-        .iter()
-        .filter(|interface| {
-            interface.module == import.module
-                && interface.export_hash == import.export_hash
-                && interface.certificate_hash == import.certificate_hash
-        })
-        .flat_map(|interface| interface.source_interface.declarations.iter())
-        .find(|decl| {
+    human_source_interface_profile_for_export(imported_source_interfaces, import, export)
+}
+
+fn human_source_interface_profile_for_export(
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> Option<Vec<MachineCallableBinderVisibility>> {
+    for interface in imported_source_interfaces.iter().filter(|interface| {
+        interface.module == import.module
+            && interface.export_hash == import.export_hash
+            && interface.certificate_hash == import.certificate_hash
+    }) {
+        if let Some(decl) = interface.source_interface.declarations.iter().find(|decl| {
             decl.kind != HumanSourceDeclarationKind::Imported
                 && npa_cert::Name(decl.name.parts.clone()) == export.name
                 && decl.decl_interface_hash == Some(export.decl_interface_hash)
-        })
-        .map(|decl| machine_callable_profile_from_human_binders(&decl.binders))
+        }) {
+            return Some(machine_callable_profile_from_human_binders(&decl.binders));
+        }
+
+        let Some(generated) = interface
+            .source_interface
+            .generated_declarations
+            .iter()
+            .find(|decl| {
+                npa_cert::Name(decl.name.parts.clone()) == export.name
+                    && decl.decl_interface_hash == Some(export.decl_interface_hash)
+            })
+        else {
+            continue;
+        };
+        match generated.kind {
+            HumanGeneratedDeclarationKind::Constructor => {
+                let parent_profile = interface
+                    .source_interface
+                    .declarations
+                    .iter()
+                    .find(|decl| {
+                        decl.kind == HumanSourceDeclarationKind::Inductive
+                            && decl.name.parts == generated.parent.parts
+                    })
+                    .map(|decl| machine_callable_profile_from_human_binders(&decl.binders))
+                    .unwrap_or_default();
+                return Some(generated_constructor_profile(&export.ty, &parent_profile));
+            }
+            HumanGeneratedDeclarationKind::Recursor => {
+                return Some(all_explicit_profile(pi_domain_count(&export.ty)));
+            }
+        }
+    }
+    None
 }
 
 fn human_current_source_interface_profile(
@@ -3413,20 +3452,7 @@ impl HumanImplicitInserter {
         import: &VerifiedImport,
         export: &crate::VerifiedExport,
     ) -> Option<Vec<MachineCallableBinderVisibility>> {
-        self.imported_source_interfaces
-            .iter()
-            .filter(|interface| {
-                interface.module == import.module
-                    && interface.export_hash == import.export_hash
-                    && interface.certificate_hash == import.certificate_hash
-            })
-            .flat_map(|interface| interface.source_interface.declarations.iter())
-            .find(|decl| {
-                decl.kind != HumanSourceDeclarationKind::Imported
-                    && npa_cert::Name(decl.name.parts.clone()) == export.name
-                    && decl.decl_interface_hash == Some(export.decl_interface_hash)
-            })
-            .map(|decl| machine_callable_profile_from_human_binders(&decl.binders))
+        human_source_interface_profile_for_export(&self.imported_source_interfaces, import, export)
     }
 
     fn insert_decl(

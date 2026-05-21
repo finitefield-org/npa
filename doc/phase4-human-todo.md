@@ -427,7 +427,7 @@ AI 速度ガード:
 
 ### P4H-05: `exact` を実装する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-04
 

@@ -1,8 +1,8 @@
 use crate::{
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
-    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanStartProofError,
-    HumanStartProofOk, HumanStartProofRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
-    HumanTacticTermError,
+    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk,
+    HumanExactTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
+    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
 };
 use npa_kernel::Decl;
 
@@ -165,6 +165,33 @@ pub fn check_human_tactic_term(
     Ok(HumanTacticTermCheckOk {
         expr: output.expr,
         inferred_type: output.inferred_type,
+    })
+}
+
+pub fn run_human_exact_tactic(
+    request: HumanExactTacticRequest<'_, '_>,
+) -> Result<HumanExactTacticOk, HumanTacticTermError> {
+    let checked = check_human_tactic_term(HumanTacticTermCheckRequest {
+        state: request.state,
+        goal_id: request.goal_id,
+        term: request.term,
+        current_source_interface: request.current_source_interface,
+        imported_source_interfaces: request.imported_source_interfaces,
+        options: request.options,
+    })?;
+    let (state, delta) = npa_tactic::assign_goal(
+        request.state,
+        request.goal_id,
+        npa_tactic::ProofExpr::Core(checked.expr.clone()),
+        Vec::new(),
+    )?;
+    npa_tactic::validate_machine_proof_state(&state)?;
+
+    Ok(HumanExactTacticOk {
+        state,
+        delta,
+        expr: checked.expr,
+        inferred_type: checked.inferred_type,
     })
 }
 
@@ -481,6 +508,188 @@ theorem target : ImportedP := by simp-lite",
         );
     }
 
+    #[test]
+    fn human_exact_closes_nat_identity_goal_with_local() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanExactNat"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanExactNat.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let (state, _) = npa_tactic::run_machine_tactic(
+            &started.state,
+            npa_tactic::MachineTactic::Intro {
+                goal_id: npa_tactic::GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .expect("intro should expose the Nat local");
+        let term = npa_frontend::parse_human_term(npa_frontend::FileId(0), "n")
+            .expect("Human exact term should parse");
+
+        let ok = run_human_exact_tactic(HumanExactTacticRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(1),
+            term: &term,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human exact should check the local and close the goal");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert!(ok.delta.added_goals.is_empty());
+        assert_eq!(ok.expr, npa_kernel::Expr::bvar(0));
+        assert_eq!(ok.inferred_type, npa_kernel::nat());
+        let proof = npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("closed Human exact proof should extract");
+        assert_eq!(
+            proof,
+            npa_kernel::Expr::lam("n", npa_kernel::nat(), npa_kernel::Expr::bvar(0))
+        );
+    }
+
+    #[test]
+    fn human_exact_inserts_eq_refl_implicit_and_closes_goal() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanExactEq"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanExactEq.self_eq"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem self_eq (n : Nat) : Eq.{1} n n := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start self_eq");
+        let (state, _) = npa_tactic::run_machine_tactic(
+            &started.state,
+            npa_tactic::MachineTactic::Intro {
+                goal_id: npa_tactic::GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .expect("intro should expose the Nat local");
+        let term = npa_frontend::parse_human_term(npa_frontend::FileId(0), "Eq.refl n")
+            .expect("Human exact term should parse");
+        let expected = npa_kernel::eq(
+            npa_kernel::type0(),
+            npa_kernel::nat(),
+            npa_kernel::Expr::bvar(0),
+            npa_kernel::Expr::bvar(0),
+        );
+
+        let ok = run_human_exact_tactic(HumanExactTacticRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(1),
+            term: &term,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human exact should elaborate Eq.refl n and close the goal");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(
+            ok.expr,
+            npa_kernel::eq_refl(
+                npa_kernel::type0(),
+                npa_kernel::nat(),
+                npa_kernel::Expr::bvar(0)
+            )
+        );
+        assert_eq!(ok.inferred_type, expected);
+        let proof = npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("closed Human exact proof should extract");
+        assert_eq!(
+            proof,
+            npa_kernel::Expr::lam(
+                "n",
+                npa_kernel::nat(),
+                npa_kernel::eq_refl(
+                    npa_kernel::type0(),
+                    npa_kernel::nat(),
+                    npa_kernel::Expr::bvar(0)
+                )
+            )
+        );
+    }
+
+    #[test]
+    fn human_exact_rejects_unresolved_hole_without_mutating_state() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let verified_modules = vec![nat];
+        let imported_source_interfaces = vec![nat_interface];
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanExactHole"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanExactHole.id_nat"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+import Std.Nat.Basic
+theorem id_nat : forall (n : Nat), Nat := by simp-lite",
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start id_nat");
+        let (state, _) = npa_tactic::run_machine_tactic(
+            &started.state,
+            npa_tactic::MachineTactic::Intro {
+                goal_id: npa_tactic::GoalId(0),
+                name: "n".to_owned(),
+            },
+        )
+        .expect("intro should expose the Nat local");
+        let term = npa_frontend::parse_human_term(npa_frontend::FileId(0), "_")
+            .expect("Human hole should parse");
+
+        let err = run_human_exact_tactic(HumanExactTacticRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(1),
+            term: &term,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect_err("Human exact must reject unresolved holes conservatively");
+
+        assert!(matches!(
+            err,
+            HumanTacticTermError::Human(HumanCompileError {
+                diagnostic: npa_frontend::HumanDiagnostic {
+                    kind: npa_frontend::HumanDiagnosticKind::UnsolvedHole,
+                    ..
+                }
+            })
+        ));
+        assert_eq!(state.open_goals, vec![npa_tactic::GoalId(1)]);
+        assert!(
+            npa_tactic::extract_closed_machine_proof(&state).is_err(),
+            "rejected Human exact must leave the original goal open"
+        );
+    }
+
     fn workspace_manifest(crate_name: &str) -> String {
         let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -584,5 +793,67 @@ theorem target : ImportedP := by simp-lite",
             err.diagnostic.kind,
             crate::MachineApiErrorKind::MachineTermParseError
         );
+    }
+
+    fn verified_human_import(
+        module: &str,
+        source: &str,
+    ) -> (
+        npa_cert::VerifiedModule,
+        npa_frontend::HumanImportedSourceInterface,
+    ) {
+        let producer = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted(module),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("producer Human import source should compile");
+        let bytes =
+            npa_cert::encode_module_cert(&producer.certificate).expect("certificate should encode");
+        let verified = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("certificate should verify");
+        let import = npa_frontend::VerifiedImport::from(&verified);
+        let source_interface = npa_frontend::HumanImportedSourceInterface {
+            module: import.module,
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            source_interface: producer.source_interface,
+        };
+
+        (verified, source_interface)
+    }
+
+    fn verified_nat_human_import() -> (
+        npa_cert::VerifiedModule,
+        npa_frontend::HumanImportedSourceInterface,
+    ) {
+        verified_human_import(
+            "Std.Nat.Basic",
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat",
+        )
+    }
+
+    fn verified_eq_human_import() -> (
+        npa_cert::VerifiedModule,
+        npa_frontend::HumanImportedSourceInterface,
+    ) {
+        verified_human_import(
+            "Std.Logic.Eq",
+            "\
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq.{u} a a",
+        )
     }
 }

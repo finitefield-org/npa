@@ -6,7 +6,9 @@ use npa_frontend::{
     HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
 };
 use npa_kernel::Expr;
-use npa_tactic::{GoalId, MachineProofState, MachineTacticDiagnostic, MetaVarId};
+use npa_tactic::{
+    GoalId, MachineProofDelta, MachineProofState, MachineTacticDiagnostic, MetaVarId,
+};
 
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
@@ -114,6 +116,24 @@ pub struct HumanTacticTermCheckRequest<'term, 'ctx> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanTacticTermCheckOk {
+    pub expr: Expr,
+    pub inferred_type: Expr,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanExactTacticRequest<'term, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub term: &'term HumanExpr,
+    pub current_source_interface: &'ctx HumanSourceInterface,
+    pub imported_source_interfaces: &'ctx [HumanImportedSourceInterface],
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanExactTacticOk {
+    pub state: MachineProofState,
+    pub delta: MachineProofDelta,
     pub expr: Expr,
     pub inferred_type: Expr,
 }

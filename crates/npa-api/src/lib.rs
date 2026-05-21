@@ -63,7 +63,7 @@ pub use diagnostic::{
 };
 pub use human::{
     check_human_tactic_term, compile_human_source_to_certificate, compile_human_source_to_core,
-    human_api_default_compile_options, start_human_proof,
+    human_api_default_compile_options, run_human_exact_tactic, start_human_proof,
 };
 pub use json::{
     JsonDocument, JsonMember, JsonParseError, JsonParseErrorKind, JsonParseLimits, JsonSpan,
@@ -449,13 +449,14 @@ pub use types::{
     validate_machine_endpoint_envelope, CheckedMachineProofRoot, HashString,
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
-    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanTacticTermCheckOk,
-    HumanTacticTermCheckRequest, HumanTacticTermError, KernelCheckProfileId,
-    MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
-    MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope, MachineApiResponseStatus,
-    MachineApiSchedulerResponse, MachineApiVersion, MachineEndpointEnvelopeSpec,
-    MachineEndpointFieldSpec, MachineEndpointFieldType, MachineGoalView, MachineLocalView,
-    MachineProofSession, MachineProofSnapshot, MachineRootTermSource, MachineSchedulerArtifact,
+    HumanExactTacticOk, HumanExactTacticRequest, HumanStartProofError, HumanStartProofOk,
+    HumanStartProofRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
+    HumanTacticTermError, KernelCheckProfileId, MachineApiCompactErrorWire, MachineApiEndpoint,
+    MachineApiErrorResponse, MachineApiErrorWire, MachineApiOkResponse, MachineApiOptions,
+    MachineApiResponseEnvelope, MachineApiResponseStatus, MachineApiSchedulerResponse,
+    MachineApiVersion, MachineEndpointEnvelopeSpec, MachineEndpointFieldSpec,
+    MachineEndpointFieldType, MachineGoalView, MachineLocalView, MachineProofSession,
+    MachineProofSnapshot, MachineRootTermSource, MachineSchedulerArtifact,
     MachineSchedulerArtifactKind, MachineSchedulerArtifactScope,
     MachineTacticOptionsConversionError, MachineTacticOptionsRequest,
     MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
