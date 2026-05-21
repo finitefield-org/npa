@@ -34,6 +34,7 @@ pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-non
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanApiCompileOptions {
     pub max_notation_candidates: usize,
+    pub tactic_options: npa_tactic::MachineTacticOptions,
 }
 
 impl Default for HumanApiCompileOptions {
@@ -41,6 +42,7 @@ impl Default for HumanApiCompileOptions {
         let frontend = HumanCompileOptions::default();
         Self {
             max_notation_candidates: frontend.max_notation_candidates,
+            tactic_options: npa_tactic::MachineTacticOptions::default(),
         }
     }
 }
@@ -187,6 +189,20 @@ pub struct HumanRewriteTacticOk {
 }
 
 #[derive(Clone, Debug)]
+pub struct HumanSimpLiteTacticRequest<'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub span: npa_frontend::Span,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanSimpLiteTacticOk {
+    pub state: MachineProofState,
+    pub delta: MachineProofDelta,
+}
+
+#[derive(Clone, Debug)]
 pub struct HumanTacticScriptRunRequest<'script, 'ctx> {
     pub state: &'ctx MachineProofState,
     pub script: &'script HumanTacticScript,
@@ -299,6 +315,24 @@ impl From<HumanDiagnostic> for HumanRewriteTacticError {
 }
 
 impl From<MachineTacticDiagnostic> for HumanRewriteTacticError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanSimpLiteTacticError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanSimpLiteTacticError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanSimpLiteTacticError {
     fn from(diagnostic: MachineTacticDiagnostic) -> Self {
         Self::Machine(diagnostic)
     }

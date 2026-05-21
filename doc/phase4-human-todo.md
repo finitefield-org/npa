@@ -585,7 +585,7 @@ AI 速度ガード:
 
 ### P4H-10: `simp-lite` を実装する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-07
 

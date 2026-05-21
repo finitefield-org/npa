@@ -5,7 +5,8 @@ use crate::{
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
     HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk, HumanExactTacticRequest,
     HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanRewriteTacticError,
-    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanStartProofError, HumanStartProofOk,
+    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSimpLiteTacticError,
+    HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk,
     HumanStartProofRequest, HumanTacticScriptError, HumanTacticScriptRunOk,
     HumanTacticScriptRunRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
     HumanTacticTermError,
@@ -95,7 +96,7 @@ pub fn start_human_proof(
         },
         phase4_imports,
         checked_current_decls,
-        npa_tactic::MachineTacticOptions::default(),
+        request.options.tactic_options.clone(),
     )?;
     npa_tactic::validate_machine_proof_state(&state)?;
 
@@ -331,6 +332,38 @@ pub fn run_human_rewrite_tactic(
     Ok(HumanRewriteTacticOk { state, deltas })
 }
 
+pub fn run_human_simp_lite_tactic(
+    request: HumanSimpLiteTacticRequest<'_>,
+) -> Result<HumanSimpLiteTacticOk, HumanSimpLiteTacticError> {
+    let before_goal = request.state.goal(request.goal_id)?;
+    let (state, delta) = npa_tactic::run_machine_tactic_with_budget(
+        request.state,
+        npa_tactic::MachineTactic::SimpLite {
+            goal_id: request.goal_id,
+            rules: Vec::new(),
+        },
+        request.budget,
+    )
+    .map_err(|diagnostic| human_simp_lite_machine_error(diagnostic, &before_goal, request.span))?;
+
+    if !delta.added_goals.is_empty() || state.open_goals.contains(&request.goal_id) {
+        let residual_target = delta
+            .added_goals
+            .last()
+            .and_then(|goal_id| state.goal(*goal_id).ok())
+            .map(|goal| goal.target);
+        return Err(human_simp_lite_not_closed_diagnostic(
+            request.span,
+            &before_goal.target,
+            residual_target.as_ref(),
+        )
+        .into());
+    }
+
+    npa_tactic::validate_machine_proof_state(&state)?;
+    Ok(HumanSimpLiteTacticOk { state, delta })
+}
+
 pub fn run_human_tactic_script(
     request: HumanTacticScriptRunRequest<'_, '_>,
 ) -> Result<HumanTacticScriptRunOk, HumanTacticScriptError> {
@@ -393,6 +426,17 @@ pub fn run_human_tactic_script(
                 .map_err(human_script_rewrite_error)?;
                 state = ok.state;
                 deltas.extend(ok.deltas);
+            }
+            npa_frontend::HumanTacticSyntax::SimpLite { span } => {
+                let ok = run_human_simp_lite_tactic(HumanSimpLiteTacticRequest {
+                    state: &state,
+                    goal_id,
+                    span: *span,
+                    budget: request.budget,
+                })
+                .map_err(human_script_simp_lite_error)?;
+                state = ok.state;
+                deltas.push(ok.delta);
             }
             other => {
                 return Err(
@@ -1333,6 +1377,55 @@ fn human_rewrite_machine_error(
     }
 }
 
+fn human_simp_lite_machine_error(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> HumanSimpLiteTacticError {
+    match diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::AmbiguousRewriteRule
+        | npa_tactic::MachineTacticDiagnosticKind::AmbiguousSimpRule
+        | npa_tactic::MachineTacticDiagnosticKind::ExpectedEqTarget
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidSimpRule
+        | npa_tactic::MachineTacticDiagnosticKind::SimpNoProgress
+        | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
+        | npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
+        | npa_tactic::MachineTacticDiagnosticKind::UnknownSimpRule => {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::TypeMismatch,
+                span,
+                format!(
+                    "simp-lite could not close the target\n\ntarget:\n  {:?}\n\n{}",
+                    goal.target, diagnostic.message
+                ),
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            .into()
+        }
+        _ => diagnostic.into(),
+    }
+}
+
+fn human_simp_lite_not_closed_diagnostic(
+    span: npa_frontend::Span,
+    original_target: &Expr,
+    residual_target: Option<&Expr>,
+) -> npa_frontend::HumanDiagnostic {
+    let mut message = format!(
+        "simp-lite simplified the target but did not close it in the Human MVP\n\noriginal target:\n  {:?}",
+        original_target
+    );
+    if let Some(target) = residual_target {
+        message.push_str(&format!("\n\nresidual target:\n  {target:?}"));
+    }
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::TypeMismatch,
+        span,
+        message,
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
 fn human_rewrite_unsupported_head_diagnostic(
     span: npa_frontend::Span,
 ) -> npa_frontend::HumanDiagnostic {
@@ -1429,6 +1522,15 @@ fn human_script_rewrite_error(error: HumanRewriteTacticError) -> HumanTacticScri
     match error {
         HumanRewriteTacticError::Human(error) => HumanTacticScriptError::Human(error),
         HumanRewriteTacticError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
+    }
+}
+
+fn human_script_simp_lite_error(error: HumanSimpLiteTacticError) -> HumanTacticScriptError {
+    match error {
+        HumanSimpLiteTacticError::Human(error) => HumanTacticScriptError::Human(error),
+        HumanSimpLiteTacticError::Machine(diagnostic) => {
+            HumanTacticScriptError::Machine(diagnostic)
+        }
     }
 }
 
@@ -1586,6 +1688,7 @@ mod tests {
             imported_source_interfaces: &[],
             options: HumanApiCompileOptions {
                 max_notation_candidates: 4,
+                ..human_api_default_compile_options()
             },
         };
 
@@ -2759,12 +2862,183 @@ theorem bad_conditional_rw (p q : Prop) (h : forall (hp : p), Eq.{1} p q) : Eq.{
     }
 
     #[test]
+    fn human_simp_lite_closes_reflexive_eq_target() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem self_eq (n : Nat) : Eq.{1} n n := by
+  intro n
+  simp-lite";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanSimpRefl"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanSimpRefl.self_eq"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start self_eq");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human simp-lite should close reflexive Eq target");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 2);
+        assert!(ok.deltas[1].added_goals.is_empty());
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human simp-lite proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_simp_lite_uses_registered_rule_and_closes() {
+        let import = npa_tactic::VerifiedImportRef::from_verified_module(
+            &verified_axiom_simp_close_module(),
+        )
+        .expect("simp close module should become a tactic import");
+        let rule_hash = export_interface_hash(&import, "Lib.succ_zero");
+        let state = npa_tactic::start_machine_proof(
+            human_simp_machine_spec(eq_nat(nat_succ(nat_zero()), nat_zero())),
+            vec![import],
+            Vec::new(),
+            npa_tactic::MachineTacticOptions {
+                simp_rules: vec![npa_tactic::SimpRuleRef {
+                    name: npa_cert::Name::from_dotted("Lib.succ_zero"),
+                    decl_interface_hash: rule_hash,
+                    direction: npa_tactic::RewriteDirection::Forward,
+                }],
+                ..npa_tactic::MachineTacticOptions::default()
+            },
+        )
+        .expect("Machine proof with registered simp rule should start");
+
+        let ok = run_human_simp_lite_tactic(HumanSimpLiteTacticRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(0),
+            span: npa_frontend::Span::empty(npa_frontend::FileId(0)),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human simp-lite should reuse the registered Machine simp rule");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert!(ok.delta.added_goals.is_empty());
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("registered-rule simp-lite proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_simp_lite_rejects_residual_goal_after_progress() {
+        let import =
+            npa_tactic::VerifiedImportRef::from_verified_module(&verified_one_unfold_simp_module())
+                .expect("one_unfold module should become a tactic import");
+        let rule_hash = export_interface_hash(&import, "Lib.one_unfold");
+        let state = npa_tactic::start_machine_proof(
+            human_simp_machine_spec(eq_nat(
+                npa_kernel::Expr::konst("Lib.one", Vec::new()),
+                nat_zero(),
+            )),
+            vec![import],
+            Vec::new(),
+            npa_tactic::MachineTacticOptions {
+                simp_rules: vec![npa_tactic::SimpRuleRef {
+                    name: npa_cert::Name::from_dotted("Lib.one_unfold"),
+                    decl_interface_hash: rule_hash,
+                    direction: npa_tactic::RewriteDirection::Forward,
+                }],
+                ..npa_tactic::MachineTacticOptions::default()
+            },
+        )
+        .expect("Machine proof with registered simp rule should start");
+
+        let err = run_human_simp_lite_tactic(HumanSimpLiteTacticRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(0),
+            span: npa_frontend::Span::empty(npa_frontend::FileId(0)),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("Human simp-lite MVP should reject residual goals");
+
+        let HumanSimpLiteTacticError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("residual simp-lite goal should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::TypeMismatch
+        );
+        assert!(diagnostic.message.contains("did not close"));
+        assert_eq!(state.open_goals, vec![npa_tactic::GoalId(0)]);
+    }
+
+    #[test]
+    fn human_simp_lite_preserves_machine_step_limit_failure() {
+        let import = npa_tactic::VerifiedImportRef::from_verified_module(
+            &verified_axiom_simp_chain_module(),
+        )
+        .expect("simp chain module should become a tactic import");
+        let first_rule_hash = export_interface_hash(&import, "Lib.a_two_one");
+        let second_rule_hash = export_interface_hash(&import, "Lib.b_one_zero");
+        let state = npa_tactic::start_machine_proof(
+            human_simp_machine_spec(eq_nat(nat_succ(nat_succ(nat_zero())), nat_zero())),
+            vec![import],
+            Vec::new(),
+            npa_tactic::MachineTacticOptions {
+                simp_rules: vec![
+                    npa_tactic::SimpRuleRef {
+                        name: npa_cert::Name::from_dotted("Lib.a_two_one"),
+                        decl_interface_hash: first_rule_hash,
+                        direction: npa_tactic::RewriteDirection::Forward,
+                    },
+                    npa_tactic::SimpRuleRef {
+                        name: npa_cert::Name::from_dotted("Lib.b_one_zero"),
+                        decl_interface_hash: second_rule_hash,
+                        direction: npa_tactic::RewriteDirection::Forward,
+                    },
+                ],
+                max_simp_rewrite_steps: 1,
+                ..npa_tactic::MachineTacticOptions::default()
+            },
+        )
+        .expect("Machine proof with registered simp rule should start");
+
+        let err = run_human_simp_lite_tactic(HumanSimpLiteTacticRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(0),
+            span: npa_frontend::Span::empty(npa_frontend::FileId(0)),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("Human simp-lite should preserve Machine step-limit failures");
+
+        let HumanSimpLiteTacticError::Machine(diagnostic) = err else {
+            panic!("max_simp_rewrite_steps failure should stay a Machine diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_tactic::MachineTacticDiagnosticKind::SimpStepLimitExceeded
+        );
+        assert_eq!(state.open_goals, vec![npa_tactic::GoalId(0)]);
+    }
+
+    #[test]
     fn human_tactic_script_executor_rejects_unimplemented_tactic_without_machine_batch() {
         let verified_modules = Vec::new();
         let imported_source_interfaces = Vec::new();
         let source = "\
 theorem target : Prop := by
-  simp-lite";
+  induction n";
         let started = start_human_proof(HumanStartProofRequest {
             current_module: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported"),
             theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported.target"),
@@ -2997,5 +3271,132 @@ inductive Nat : Type where
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a",
         )
+    }
+
+    fn verified_core_module(module: npa_cert::CoreModule) -> npa_cert::VerifiedModule {
+        let cert = npa_cert::build_module_cert(module, &[]).expect("core module cert builds");
+        let bytes = npa_cert::encode_module_cert(&cert).expect("core module cert encodes");
+        npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("core module cert verifies")
+    }
+
+    fn verified_one_unfold_simp_module() -> npa_cert::VerifiedModule {
+        let one = npa_kernel::Expr::konst("Lib.one", Vec::new());
+        verified_core_module(npa_cert::CoreModule {
+            name: npa_cert::Name::from_dotted("Lib.Simp"),
+            declarations: vec![
+                Decl::Def {
+                    name: "Lib.one".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: nat(),
+                    value: nat_succ(nat_zero()),
+                    reducibility: npa_kernel::Reducibility::Reducible,
+                },
+                Decl::Theorem {
+                    name: "Lib.one_unfold".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: eq_nat(one, nat_succ(nat_zero())),
+                    proof: eq_refl_nat(nat_succ(nat_zero())),
+                },
+            ],
+        })
+    }
+
+    fn verified_axiom_simp_close_module() -> npa_cert::VerifiedModule {
+        let ty = eq_nat(nat_succ(nat_zero()), nat_zero());
+        verified_core_module(npa_cert::CoreModule {
+            name: npa_cert::Name::from_dotted("Lib.SimpClose"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "Lib.succ_zero_axiom".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: ty.clone(),
+                },
+                Decl::Theorem {
+                    name: "Lib.succ_zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty,
+                    proof: npa_kernel::Expr::konst("Lib.succ_zero_axiom", Vec::new()),
+                },
+            ],
+        })
+    }
+
+    fn verified_axiom_simp_chain_module() -> npa_cert::VerifiedModule {
+        let two = nat_succ(nat_succ(nat_zero()));
+        let one = nat_succ(nat_zero());
+        let zero = nat_zero();
+        let first_ty = eq_nat(two, one.clone());
+        let second_ty = eq_nat(one, zero);
+        verified_core_module(npa_cert::CoreModule {
+            name: npa_cert::Name::from_dotted("Lib.SimpChain"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "Lib.a_two_one_axiom".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: first_ty.clone(),
+                },
+                Decl::Theorem {
+                    name: "Lib.a_two_one".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: first_ty,
+                    proof: npa_kernel::Expr::konst("Lib.a_two_one_axiom", Vec::new()),
+                },
+                Decl::Axiom {
+                    name: "Lib.b_one_zero_axiom".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: second_ty.clone(),
+                },
+                Decl::Theorem {
+                    name: "Lib.b_one_zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: second_ty,
+                    proof: npa_kernel::Expr::konst("Lib.b_one_zero_axiom", Vec::new()),
+                },
+            ],
+        })
+    }
+
+    fn export_interface_hash(import: &npa_tactic::VerifiedImportRef, name: &str) -> npa_cert::Hash {
+        import
+            .exports()
+            .iter()
+            .find(|export| export.name == npa_cert::Name::from_dotted(name))
+            .expect("test export should exist")
+            .decl_interface_hash
+    }
+
+    fn human_simp_machine_spec(theorem_type: Expr) -> npa_tactic::MachineProofSpec {
+        npa_tactic::MachineProofSpec {
+            module: npa_cert::Name::from_dotted("Api.HumanSimpMachine"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanSimpMachine.target"),
+            source_index: 0,
+            universe_params: Vec::new(),
+            theorem_type,
+        }
+    }
+
+    fn nat() -> Expr {
+        npa_kernel::nat()
+    }
+
+    fn nat_zero() -> Expr {
+        npa_kernel::nat_zero()
+    }
+
+    fn nat_succ(arg: Expr) -> Expr {
+        npa_kernel::nat_succ(arg)
+    }
+
+    fn eq_nat(lhs: Expr, rhs: Expr) -> Expr {
+        npa_kernel::eq(npa_kernel::type0(), nat(), lhs, rhs)
+    }
+
+    fn eq_refl_nat(value: Expr) -> Expr {
+        npa_kernel::eq_refl(npa_kernel::type0(), nat(), value)
     }
 }
