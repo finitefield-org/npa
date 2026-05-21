@@ -1085,6 +1085,22 @@ def Test.f : forall (A : Sort 1), A := fun (A : Sort 1) => let x : A := (x : A) 
                 "def Test.x : Prop := \"x\"",
                 MachineDiagnosticKind::ParseError,
             ),
+            (
+                "theorem Test.id : Nat -> Nat := by intro n exact n",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
+            (
+                "theorem Test.rw : Prop := by rw [h]",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
+            (
+                "theorem Test.simp : Prop := by simp-lite",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
+            (
+                "theorem Test.induction : Prop := by induction n simp-lite",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
         ];
 
         for (source, expected) in cases {

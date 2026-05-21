@@ -5,7 +5,8 @@ use crate::{
     HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPhase, HumanExpr,
     HumanImplicitMode, HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel,
     HumanModule, HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead,
-    HumanNotationKind, HumanResult, HumanSourceNotationMetadata, HumanUniverseParam, Span,
+    HumanNotationKind, HumanProofBlock, HumanResult, HumanRewriteDirection, HumanRewriteRuleSyntax,
+    HumanSourceNotationMetadata, HumanTacticScript, HumanTacticSyntax, HumanUniverseParam, Span,
 };
 
 pub fn parse_human_module(file_id: FileId, source: &str) -> HumanResult<HumanModule> {
@@ -68,6 +69,13 @@ enum TokenKind {
     Infix,
     Infixl,
     Infixr,
+    By,
+    Intro,
+    Exact,
+    Apply,
+    Rw,
+    SimpLite,
+    Induction,
     Fun,
     Forall,
     Let,
@@ -79,6 +87,8 @@ enum TokenKind {
     Max,
     IMax,
     Dot,
+    LBracket,
+    RBracket,
     LBrace,
     RBrace,
     LParen,
@@ -124,6 +134,14 @@ fn lex_human(file_id: FileId, source: &str) -> HumanResult<Vec<Token>> {
             '"' => lex_string(file_id, source, start, &mut chars)?,
             '.' => Token {
                 kind: TokenKind::Dot,
+                span: Span::new(file_id, start, start + 1),
+            },
+            '[' => Token {
+                kind: TokenKind::LBracket,
+                span: Span::new(file_id, start, start + 1),
+            },
+            ']' => Token {
+                kind: TokenKind::RBracket,
                 span: Span::new(file_id, start, start + 1),
             },
             '{' => Token {
@@ -296,12 +314,30 @@ fn lex_ident(
         end = offset;
     }
 
-    let end = end
+    let mut end = end
         + source[end..]
             .chars()
             .next()
             .expect("identifier has a character")
             .len_utf8();
+    if &source[start as usize..end] == "simp" {
+        let suffix = "-lite";
+        let suffix_end = end + suffix.len();
+        let suffix_is_complete = source
+            .get(end..)
+            .is_some_and(|remaining| remaining.starts_with(suffix))
+            && source
+                .get(suffix_end..)
+                .and_then(|remaining| remaining.chars().next())
+                .is_none_or(|next| !is_ident_continue(next));
+        if suffix_is_complete {
+            while matches!(chars.peek(), Some((offset, _)) if *offset < suffix_end) {
+                chars.next();
+            }
+            end = suffix_end;
+        }
+    }
+
     let text = &source[start as usize..end];
     let kind = match text {
         "import" => TokenKind::Import,
@@ -319,6 +355,13 @@ fn lex_ident(
         "infix" => TokenKind::Infix,
         "infixl" => TokenKind::Infixl,
         "infixr" => TokenKind::Infixr,
+        "by" => TokenKind::By,
+        "intro" => TokenKind::Intro,
+        "exact" => TokenKind::Exact,
+        "apply" => TokenKind::Apply,
+        "rw" => TokenKind::Rw,
+        "simp-lite" => TokenKind::SimpLite,
+        "induction" => TokenKind::Induction,
         "fun" => TokenKind::Fun,
         "forall" => TokenKind::Forall,
         "let" => TokenKind::Let,
@@ -433,6 +476,13 @@ fn reserved_name_component_spelling(kind: &TokenKind) -> Option<&'static str> {
         TokenKind::Infix => "infix",
         TokenKind::Infixl => "infixl",
         TokenKind::Infixr => "infixr",
+        TokenKind::By => "by",
+        TokenKind::Intro => "intro",
+        TokenKind::Exact => "exact",
+        TokenKind::Apply => "apply",
+        TokenKind::Rw => "rw",
+        TokenKind::SimpLite => "simp-lite",
+        TokenKind::Induction => "induction",
         TokenKind::Fun => "fun",
         TokenKind::Forall => "forall",
         TokenKind::Let => "let",
@@ -577,6 +627,8 @@ fn reserved_notation_token(token: &str) -> bool {
             | ".{"
             | "("
             | ")"
+            | "["
+            | "]"
             | "{"
             | "}"
             | "|"
@@ -745,7 +797,7 @@ impl Parser {
         self.expect_colon()?;
         let ty = self.parse_term()?;
         self.expect_colon_eq()?;
-        let value = self.parse_term()?;
+        let value = self.parse_decl_value(!is_def)?;
         let span = start.join(value.span());
 
         Ok(HumanDecl {
@@ -753,9 +805,149 @@ impl Parser {
             universe_params,
             binders,
             ty,
-            value: HumanDeclValue::Term(value),
+            value,
             span,
         })
+    }
+
+    fn parse_decl_value(&mut self, allow_proof_block: bool) -> HumanResult<HumanDeclValue> {
+        if allow_proof_block && matches!(self.peek_kind(), TokenKind::By) {
+            Ok(HumanDeclValue::ProofBlock(self.parse_proof_block()?))
+        } else {
+            Ok(HumanDeclValue::Term(self.parse_term()?))
+        }
+    }
+
+    fn parse_proof_block(&mut self) -> HumanResult<HumanProofBlock> {
+        let start = self.expect_by()?;
+        let mut tactics = Vec::new();
+
+        while !self.at_eof() && !self.at_top_level_item_start() {
+            tactics.push(self.parse_tactic()?);
+        }
+
+        if tactics.is_empty() {
+            return Err(HumanDiagnostic::parse(
+                start,
+                "expected Human tactic after by",
+            ));
+        }
+
+        let script_span = start.join(
+            tactics
+                .last()
+                .expect("checked non-empty tactic script")
+                .span(),
+        );
+        Ok(HumanProofBlock {
+            script: HumanTacticScript {
+                tactics,
+                span: script_span,
+            },
+            span: script_span,
+        })
+    }
+
+    fn parse_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        match self.peek_kind() {
+            TokenKind::Intro => self.parse_intro_tactic(),
+            TokenKind::Exact => self.parse_exact_tactic(),
+            TokenKind::Apply => self.parse_apply_tactic(),
+            TokenKind::Rw => self.parse_rw_tactic(),
+            TokenKind::SimpLite => self.parse_simp_lite_tactic(),
+            TokenKind::Induction => self.parse_induction_tactic(),
+            TokenKind::Ident(name) if name == "case" => Err(HumanDiagnostic::unsupported_tactic(
+                self.peek_span(),
+                "case",
+            )),
+            TokenKind::Ident(name) => Err(HumanDiagnostic::unsupported_tactic(
+                self.peek_span(),
+                name.clone(),
+            )),
+            _ => Err(HumanDiagnostic::unsupported_tactic(
+                self.peek_span(),
+                "unexpected token in Human tactic script",
+            )),
+        }
+    }
+
+    fn parse_intro_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let start = self.expect_intro()?;
+        let (name, name_span) = self.expect_ident("expected intro binder name")?;
+        let name = HumanName::new(vec![name], name_span);
+        let span = start.join(name.span);
+        Ok(HumanTacticSyntax::Intro { name, span })
+    }
+
+    fn parse_exact_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let start = self.expect_exact()?;
+        let term = self.parse_term()?;
+        let span = start.join(term.span());
+        Ok(HumanTacticSyntax::Exact { term, span })
+    }
+
+    fn parse_apply_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let start = self.expect_apply()?;
+        let term = self.parse_term()?;
+        let span = start.join(term.span());
+        Ok(HumanTacticSyntax::Apply { term, span })
+    }
+
+    fn parse_rw_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let start = self.expect_rw()?;
+        self.expect_lbracket()?;
+        if matches!(self.peek_kind(), TokenKind::RBracket) {
+            return Err(HumanDiagnostic::parse(
+                self.peek_span(),
+                "expected rw rewrite rule",
+            ));
+        }
+
+        let mut rules = Vec::new();
+        loop {
+            rules.push(self.parse_rw_rule()?);
+            if matches!(self.peek_kind(), TokenKind::Comma) {
+                self.advance();
+                continue;
+            }
+            break;
+        }
+
+        let end = self.expect_rbracket()?;
+        Ok(HumanTacticSyntax::Rewrite {
+            rules,
+            span: start.join(end),
+        })
+    }
+
+    fn parse_rw_rule(&mut self) -> HumanResult<HumanRewriteRuleSyntax> {
+        let (direction, direction_span) = match self.peek_kind() {
+            TokenKind::Operator(token) if token == "<-" => {
+                (HumanRewriteDirection::Backward, Some(self.advance().span))
+            }
+            _ => (HumanRewriteDirection::Forward, None),
+        };
+        let term = self.parse_term()?;
+        let span = direction_span.map_or_else(|| term.span(), |span| span.join(term.span()));
+
+        Ok(HumanRewriteRuleSyntax {
+            direction,
+            term,
+            span,
+        })
+    }
+
+    fn parse_simp_lite_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let span = self.expect_simp_lite()?;
+        Ok(HumanTacticSyntax::SimpLite { span })
+    }
+
+    fn parse_induction_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let start = self.expect_induction()?;
+        let (name, name_span) = self.expect_ident("expected induction target name")?;
+        let name = HumanName::new(vec![name], name_span);
+        let span = start.join(name.span);
+        Ok(HumanTacticSyntax::Induction { name, span })
     }
 
     fn parse_axiom_decl(&mut self) -> HumanResult<HumanAxiomDecl> {
@@ -1546,6 +1738,26 @@ impl Parser {
             && matches!(self.peek_next_kind(), Some(TokenKind::LBrace))
     }
 
+    fn at_top_level_item_start(&self) -> bool {
+        matches!(
+            self.peek_kind(),
+            TokenKind::Import
+                | TokenKind::Open
+                | TokenKind::Namespace
+                | TokenKind::End
+                | TokenKind::Def
+                | TokenKind::Theorem
+                | TokenKind::Axiom
+                | TokenKind::Inductive
+                | TokenKind::Notation
+                | TokenKind::Prefix
+                | TokenKind::Postfix
+                | TokenKind::Infix
+                | TokenKind::Infixl
+                | TokenKind::Infixr
+        )
+    }
+
     fn is_atom_start(&self) -> bool {
         matches!(
             self.peek_kind(),
@@ -1701,6 +1913,40 @@ impl Parser {
         )
     }
 
+    fn expect_by(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::By), "expected by")
+    }
+
+    fn expect_intro(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::Intro), "expected intro")
+    }
+
+    fn expect_exact(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::Exact), "expected exact")
+    }
+
+    fn expect_apply(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::Apply), "expected apply")
+    }
+
+    fn expect_rw(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::Rw), "expected rw")
+    }
+
+    fn expect_simp_lite(&mut self) -> HumanResult<Span> {
+        self.expect_simple(
+            |kind| matches!(kind, TokenKind::SimpLite),
+            "expected simp-lite",
+        )
+    }
+
+    fn expect_induction(&mut self) -> HumanResult<Span> {
+        self.expect_simple(
+            |kind| matches!(kind, TokenKind::Induction),
+            "expected induction",
+        )
+    }
+
     fn expect_fun(&mut self) -> HumanResult<Span> {
         self.expect_simple(|kind| matches!(kind, TokenKind::Fun), "expected fun")
     }
@@ -1719,6 +1965,14 @@ impl Parser {
 
     fn expect_dot(&mut self) -> HumanResult<Span> {
         self.expect_simple(|kind| matches!(kind, TokenKind::Dot), "expected '.'")
+    }
+
+    fn expect_lbracket(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::LBracket), "expected '['")
+    }
+
+    fn expect_rbracket(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::RBracket), "expected ']'")
     }
 
     fn expect_lbrace(&mut self) -> HumanResult<Span> {
@@ -1816,6 +2070,10 @@ mod tests {
             .kind
     }
 
+    fn parse_diagnostic(source: &str) -> HumanDiagnostic {
+        parse_human_module(FileId(0), source).expect_err("Human source should be rejected")
+    }
+
     #[test]
     fn parses_empty_human_module() {
         let module = parse_human_module(FileId(2), " \n\t ").expect("empty module should parse");
@@ -1872,6 +2130,113 @@ theorem p : Prop := excluded_middle",
 
         assert!(matches!(module.items[0], HumanItem::Axiom(_)));
         assert!(matches!(module.items[1], HumanItem::Theorem(_)));
+    }
+
+    #[test]
+    fn parses_theorem_by_block_with_intro_exact() {
+        let module = parse_module("theorem id_nat : Nat -> Nat := by intro n exact n");
+        let HumanItem::Theorem(decl) = &module.items[0] else {
+            panic!("expected theorem");
+        };
+        let HumanDeclValue::ProofBlock(block) = &decl.value else {
+            panic!("expected by proof block");
+        };
+
+        assert_eq!(block.script.tactics.len(), 2);
+        let HumanTacticSyntax::Intro { name, .. } = &block.script.tactics[0] else {
+            panic!("expected intro tactic");
+        };
+        assert_eq!(name.as_dotted(), "n");
+        let HumanTacticSyntax::Exact { term, .. } = &block.script.tactics[1] else {
+            panic!("expected exact tactic");
+        };
+        let HumanExpr::Ident { name, .. } = term else {
+            panic!("expected exact term");
+        };
+        assert_eq!(name.as_dotted(), "n");
+    }
+
+    #[test]
+    fn parses_multiline_by_block_and_preserves_tactic_order() {
+        let module = parse_module(
+            "\
+theorem t : Prop := by
+  intro n
+  exact n
+  apply f
+  rw [h, <- Nat.add_zero]
+  simp-lite
+  induction n",
+        );
+        let HumanItem::Theorem(decl) = &module.items[0] else {
+            panic!("expected theorem");
+        };
+        let HumanDeclValue::ProofBlock(block) = &decl.value else {
+            panic!("expected by proof block");
+        };
+
+        assert!(matches!(
+            block.script.tactics[0],
+            HumanTacticSyntax::Intro { .. }
+        ));
+        assert!(matches!(
+            block.script.tactics[1],
+            HumanTacticSyntax::Exact { .. }
+        ));
+        assert!(matches!(
+            block.script.tactics[2],
+            HumanTacticSyntax::Apply { .. }
+        ));
+        let HumanTacticSyntax::Rewrite { rules, .. } = &block.script.tactics[3] else {
+            panic!("expected rw tactic");
+        };
+        assert_eq!(rules.len(), 2);
+        assert_eq!(rules[0].direction, HumanRewriteDirection::Forward);
+        assert_eq!(rules[1].direction, HumanRewriteDirection::Backward);
+        let HumanExpr::Ident { name, .. } = &rules[1].term else {
+            panic!("expected backward rw rule term");
+        };
+        assert_eq!(name.as_dotted(), "Nat.add_zero");
+        assert!(matches!(
+            block.script.tactics[4],
+            HumanTacticSyntax::SimpLite { .. }
+        ));
+        assert!(matches!(
+            block.script.tactics[5],
+            HumanTacticSyntax::Induction { .. }
+        ));
+    }
+
+    #[test]
+    fn rejects_unsupported_and_future_tactic_syntax() {
+        let unsupported = parse_diagnostic("theorem t : Prop := by constructor");
+        assert_eq!(unsupported.kind, HumanDiagnosticKind::UnsupportedTactic);
+        assert_eq!(
+            unsupported
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.phase),
+            Some(HumanDiagnosticPhase::Parser)
+        );
+
+        let future_case = parse_diagnostic("theorem t : Prop := by case zero => exact zero");
+        assert_eq!(future_case.kind, HumanDiagnosticKind::UnsupportedTactic);
+    }
+
+    #[test]
+    fn rejects_malformed_rw_and_trailing_tactic_tokens() {
+        assert_eq!(
+            parse_err("theorem t : Prop := by rw []"),
+            HumanDiagnosticKind::ParseError
+        );
+        assert_eq!(
+            parse_err("theorem t : Prop := by rw [<- h"),
+            HumanDiagnosticKind::ParseError
+        );
+        assert_eq!(
+            parse_err("theorem t : Prop := by exact n ]"),
+            HumanDiagnosticKind::UnsupportedTactic
+        );
     }
 
     #[test]

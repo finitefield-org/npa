@@ -305,7 +305,7 @@ AI 速度ガード:
 
 ### P4H-02: `by` proof block parser を実装する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-01
 
@@ -335,6 +335,13 @@ AI 速度ガード:
 - `theorem id_nat : Nat -> Nat := by intro n exact n` を Human AST に parse できる。
 - unsupported tactic / malformed `rw` / trailing tactic token は Human parse diagnostic になる。
 - Machine parser は同じ入力を拒否し続ける。
+
+完了確認:
+
+- Human parser に `by` proof block parser を追加し、theorem の `:=` 右辺で `HumanDeclValue::ProofBlock` を生成する。
+- `intro ident` / `exact term` / `apply term` / `rw [rule]` / `rw [<- rule]` / `simp-lite` / `induction ident` を source order の `HumanTacticScript` として parse する。
+- MVP では indentation を semantic に扱わず、`case` / unsupported tactic / malformed `rw` / trailing token を parser-phase diagnostic として拒否する。
+- Machine Surface rejected syntax fixture に `by intro ... exact ...`、`rw [h]`、`simp-lite`、`induction n` を含め、Machine parser 側へ tactic keyword は追加していない。
 
 ### P4H-03: Human proof-state bridge skeleton を作る
 
