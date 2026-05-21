@@ -4,11 +4,12 @@ use crate::{
     builtin_machine_callable_profile, elaborator::certificate_imports_for_module,
     machine_callable_profile_from_human_binders, parse_human_module, resolve_human_module,
     HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDiagnostic, HumanDiagnosticKind,
-    HumanDiagnosticPayload, HumanExpr, HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal,
-    HumanImplicitMode, HumanItem, HumanLevel, HumanName, HumanResolvedName, HumanResolvedNameUse,
-    HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata, MachineBinder,
-    MachineCallableBinderVisibility, MachineDecl, MachineLevel, MachineName, MachineTerm,
-    MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
+    HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr, HumanGlobalRef, HumanHoleGoal,
+    HumanHoleGoalLocal, HumanImplicitMode, HumanItem, HumanLevel, HumanName, HumanResolvedName,
+    HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata,
+    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
+    MachineDecl, MachineLevel, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule,
+    Span, VerifiedImport,
 };
 use npa_kernel::{
     subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level, Reducibility,
@@ -23,7 +24,8 @@ pub fn elaborate_human_module(
     options: &HumanCompileOptions,
 ) -> HumanResult<npa_cert::CoreModule> {
     let span = module.module.span;
-    let plans = notation_candidate_plans(&module, options.max_notation_candidates)?;
+    let plans = notation_candidate_plans(&module, options.max_notation_candidates)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
     let mut first_error = None;
     let mut success = None;
 
@@ -40,7 +42,8 @@ pub fn elaborate_human_module(
                     HumanDiagnosticKind::AmbiguousNotation,
                     span,
                     "multiple notation candidates elaborated successfully",
-                ));
+                )
+                .with_default_phase(HumanDiagnosticPhase::Elaborator));
             }
             Err(err) => {
                 first_error.get_or_insert(err);
@@ -51,13 +54,14 @@ pub fn elaborate_human_module(
     if let Some(core) = success {
         Ok(core)
     } else if let Some(err) = first_error {
-        Err(err)
+        Err(err.with_default_phase(HumanDiagnosticPhase::Elaborator))
     } else {
         Err(HumanDiagnostic::error(
             HumanDiagnosticKind::AmbiguousNotation,
             span,
             "no notation candidate plan was available",
-        ))
+        )
+        .with_default_phase(HumanDiagnosticPhase::Elaborator))
     }
 }
 
@@ -71,6 +75,7 @@ pub fn compile_human_source_to_core(
     let module = parse_human_module(file_id, source)?;
     let resolved = resolve_human_module(module_name.clone(), module, verified_imports, options)?;
     elaborate_human_module(module_name, resolved, verified_imports, options)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))
 }
 
 pub fn compile_human_source_to_certificate(
@@ -83,12 +88,15 @@ pub fn compile_human_source_to_certificate(
     let verified_imports: Vec<_> = verified_modules.iter().map(VerifiedImport::from).collect();
     let parsed = parse_human_module(file_id, source)?;
     let resolved = resolve_human_module(module_name.clone(), parsed, &verified_imports, options)?;
-    let active_import_indices = active_human_import_indices(&resolved, &verified_imports)?;
-    let core = elaborate_human_module(module_name, resolved, &verified_imports, options)?;
+    let active_import_indices = active_human_import_indices(&resolved, &verified_imports)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Resolver))?;
+    let core = elaborate_human_module(module_name, resolved, &verified_imports, options)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
     let certificate_imports =
         certificate_imports_for_module(&core, &active_import_indices, verified_modules, file_id)
             .map_err(|err| {
                 human_certificate_import_diagnostic(source_span(file_id, source), err)
+                    .with_phase(HumanDiagnosticPhase::CertificateHandoff)
             })?;
     let cert = npa_cert::build_module_cert(core, &certificate_imports).map_err(|err| {
         HumanDiagnostic::error(
@@ -96,6 +104,7 @@ pub fn compile_human_source_to_certificate(
             source_span(file_id, source),
             format!("Phase 2 certificate handoff rejected Human source: {err:?}"),
         )
+        .with_phase(HumanDiagnosticPhase::CertificateHandoff)
     })?;
     let bytes = npa_cert::encode_module_cert(&cert).map_err(|err| {
         HumanDiagnostic::error(
@@ -103,6 +112,7 @@ pub fn compile_human_source_to_certificate(
             source_span(file_id, source),
             format!("Phase 2 certificate encoding rejected Human source: {err:?}"),
         )
+        .with_phase(HumanDiagnosticPhase::CertificateHandoff)
     })?;
     let mut session = npa_cert::VerifierSession::new();
     for import in &certificate_imports {
@@ -115,6 +125,7 @@ pub fn compile_human_source_to_certificate(
                 source_span(file_id, source),
                 format!("Phase 2 certificate verification rejected Human source: {err:?}"),
             )
+            .with_phase(HumanDiagnosticPhase::CertificateHandoff)
         },
     )?;
     Ok(cert)
@@ -131,15 +142,20 @@ fn elaborate_human_module_with_notation_plan(
     notation_plan: &[usize],
 ) -> HumanResult<npa_cert::CoreModule> {
     let span = module.module.span;
-    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)?;
-    let machine_module = lowering.lower_module(module)?;
-    HumanBidirectionalElaborator::new(module, verified_imports)?
+    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    let machine_module = lowering
+        .lower_module(module)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    HumanBidirectionalElaborator::new(module, verified_imports)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
         .elaborate_module(module_name, machine_module)
         .map_err(|diagnostic| {
             if diagnostic.primary_span == Span::empty(crate::FileId(0)) {
                 HumanDiagnostic::error(diagnostic.kind, span, diagnostic.message)
+                    .with_default_phase(HumanDiagnosticPhase::Elaborator)
             } else {
-                diagnostic
+                diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator)
             }
         })
 }
@@ -476,13 +492,24 @@ impl HumanMetaStore {
                 )
                 .with_payload(HumanDiagnosticPayload {
                     hole_goals: vec![self.hole_goal(meta)],
+                    unsolved_meta: Some(HumanUnsolvedMeta {
+                        kind: HumanUnsolvedMetaKind::Hole,
+                        name: meta.name.clone(),
+                    }),
                     ..HumanDiagnosticPayload::default()
                 })),
                 HumanTermMetaKind::SyntheticImplicit => Err(HumanDiagnostic::error(
                     HumanDiagnosticKind::UnsolvedImplicit,
                     meta.span,
                     "unsolved synthetic implicit argument",
-                )),
+                )
+                .with_payload(HumanDiagnosticPayload {
+                    unsolved_meta: Some(HumanUnsolvedMeta {
+                        kind: HumanUnsolvedMetaKind::SyntheticImplicit,
+                        name: None,
+                    }),
+                    ..HumanDiagnosticPayload::default()
+                })),
             };
         }
 
@@ -495,7 +522,14 @@ impl HumanMetaStore {
                 HumanDiagnosticKind::UnsolvedUniverseMeta,
                 meta.span,
                 "unsolved universe metavariable",
-            ));
+            )
+            .with_payload(HumanDiagnosticPayload {
+                unsolved_meta: Some(HumanUnsolvedMeta {
+                    kind: HumanUnsolvedMetaKind::Universe,
+                    name: None,
+                }),
+                ..HumanDiagnosticPayload::default()
+            }));
         }
 
         let _ = span;
@@ -1491,7 +1525,14 @@ impl HumanBidirectionalElaborator {
                         "global name {name} expects {expected} universe arguments, got {}",
                         args.len()
                     ),
-                ));
+                )
+                .with_payload(HumanDiagnosticPayload {
+                    unsolved_meta: Some(HumanUnsolvedMeta {
+                        kind: HumanUnsolvedMetaKind::Universe,
+                        name: Some(name.clone()),
+                    }),
+                    ..HumanDiagnosticPayload::default()
+                }));
             }
             None if expected == 0 => Vec::new(),
             None => {
@@ -1499,7 +1540,14 @@ impl HumanBidirectionalElaborator {
                     HumanDiagnosticKind::UnsolvedUniverseMeta,
                     span,
                     format!("global name {name} still has unresolved universe arguments"),
-                ));
+                )
+                .with_payload(HumanDiagnosticPayload {
+                    unsolved_meta: Some(HumanUnsolvedMeta {
+                        kind: HumanUnsolvedMetaKind::Universe,
+                        name: Some(name.clone()),
+                    }),
+                    ..HumanDiagnosticPayload::default()
+                }));
             }
         };
         Ok(Expr::konst(name, levels))
@@ -1573,7 +1621,8 @@ impl HumanBidirectionalElaborator {
                     "kernel declaration {} conflicts with an existing declaration",
                     decl.name()
                 ),
-            ));
+            )
+            .with_phase(HumanDiagnosticPhase::KernelHandoff));
         }
 
         match decl {
@@ -1600,7 +1649,10 @@ impl HumanBidirectionalElaborator {
             Decl::Inductive { data, .. } => self.env.add_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
-        .map_err(|err| human_kernel_decl_diagnostic(span, err, "Human declaration handoff"))
+        .map_err(|err| {
+            human_kernel_decl_diagnostic(span, err, "Human declaration handoff")
+                .with_phase(HumanDiagnosticPhase::KernelHandoff)
+        })
     }
 }
 
@@ -2380,7 +2432,8 @@ impl HumanImplicitInserter {
                     "kernel declaration {} conflicts with an existing declaration",
                     decl.name()
                 ),
-            ));
+            )
+            .with_phase(HumanDiagnosticPhase::KernelHandoff));
         }
 
         match decl {
@@ -2407,7 +2460,10 @@ impl HumanImplicitInserter {
             Decl::Inductive { data, .. } => self.env.add_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
-        .map_err(|err| human_kernel_decl_diagnostic(span, err, "Human implicit environment"))
+        .map_err(|err| {
+            human_kernel_decl_diagnostic(span, err, "Human implicit environment")
+                .with_phase(HumanDiagnosticPhase::KernelHandoff)
+        })
     }
 
     fn bump_insertion_step(&mut self, span: Span) -> HumanResult<()> {
@@ -2422,7 +2478,15 @@ impl HumanImplicitInserter {
     }
 
     fn unsolved_implicit(&self, span: Span, message: String) -> HumanDiagnostic {
-        HumanDiagnostic::error(HumanDiagnosticKind::UnsolvedImplicit, span, message)
+        HumanDiagnostic::error(HumanDiagnosticKind::UnsolvedImplicit, span, message).with_payload(
+            HumanDiagnosticPayload {
+                unsolved_meta: Some(HumanUnsolvedMeta {
+                    kind: HumanUnsolvedMetaKind::SyntheticImplicit,
+                    name: None,
+                }),
+                ..HumanDiagnosticPayload::default()
+            },
+        )
     }
 }
 
@@ -3869,6 +3933,10 @@ inductive Bad : Type where
         .expect_err("bad constructor result should be rejected by kernel handoff");
 
         assert_eq!(err.kind, HumanDiagnosticKind::KernelRejected);
+        assert_eq!(
+            err.payload.as_ref().and_then(|payload| payload.phase),
+            Some(HumanDiagnosticPhase::KernelHandoff)
+        );
     }
 
     #[test]
@@ -4134,6 +4202,11 @@ def bad (n : Nat) : Nat := _",
 
         assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedHole);
         let payload = err.payload.expect("hole diagnostic should carry a payload");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Elaborator));
+        assert_eq!(
+            payload.unsolved_meta.as_ref().map(|meta| meta.kind),
+            Some(HumanUnsolvedMetaKind::Hole)
+        );
         assert_eq!(payload.hole_goals.len(), 1);
         let goal = &payload.hole_goals[0];
         assert_eq!(goal.hole, None);
@@ -4175,6 +4248,7 @@ def bad_named_hole : Nat := let x : Nat := ?m in ?m",
         let payload = err
             .payload
             .expect("context mismatch should carry both hole contexts");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Elaborator));
         assert_eq!(payload.hole_goals.len(), 2);
         assert_eq!(payload.hole_goals[0].hole.as_deref(), Some("?m"));
         assert_eq!(payload.hole_goals[0].context.len(), 0);

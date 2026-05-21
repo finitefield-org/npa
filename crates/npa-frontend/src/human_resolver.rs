@@ -6,12 +6,13 @@ use crate::resolver::{
 };
 use crate::{
     HumanAxiomDecl, HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDecl, HumanDiagnostic,
-    HumanDiagnosticKind, HumanDiagnosticPayload, HumanExpr, HumanFrontendState,
-    HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata, HumanImportedSourceInterface,
-    HumanInductiveDecl, HumanItem, HumanModule, HumanName, HumanNotationAssociativity,
-    HumanNotationHead, HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame, HumanResult,
-    HumanSourceBinderMetadata, HumanSourceDeclarationKind, HumanSourceDeclarationMetadata,
-    HumanSourceInterface, HumanSourceNotationMetadata, Span, VerifiedImport,
+    HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
+    HumanFrontendState, HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata,
+    HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanModule, HumanName,
+    HumanNotationAssociativity, HumanNotationHead, HumanNotationKind, HumanOpenScope,
+    HumanOpenScopeFrame, HumanResult, HumanSourceBinderMetadata, HumanSourceDeclarationKind,
+    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceNotationMetadata, Span,
+    VerifiedImport,
 };
 
 const MAX_HUMAN_NAME_CANDIDATES: usize = 32;
@@ -94,7 +95,9 @@ pub fn resolve_human_module(
     verified_imports: &[VerifiedImport],
     options: &HumanCompileOptions,
 ) -> HumanResult<ResolvedHumanModule> {
-    HumanResolver::new(module_name, verified_imports, options).resolve_module(module)
+    HumanResolver::new(module_name, verified_imports, options)
+        .resolve_module(module)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Resolver))
 }
 
 struct HumanResolver<'a> {
@@ -2000,6 +2003,7 @@ def use_zero : Type := zero",
 
         assert_eq!(err.kind, HumanDiagnosticKind::AmbiguousName);
         let payload = err.payload.expect("ambiguous name should carry candidates");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Resolver));
         assert_eq!(payload.candidates.len(), 2);
         assert!(payload.candidates[0].contains("Other.Nat.zero"));
         assert!(payload.candidates[1].contains("Std.Nat.zero"));
@@ -2043,6 +2047,7 @@ def later : Type := Type",
         let payload = err
             .payload
             .expect("forward reference should identify later declaration");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Resolver));
         assert_eq!(payload.candidates, vec!["later".to_owned()]);
     }
 

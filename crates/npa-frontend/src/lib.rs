@@ -47,8 +47,9 @@ pub use human::{
     HumanUniverseParam,
 };
 pub use human_diagnostic::{
-    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticSeverity,
-    HumanHoleGoal, HumanHoleGoalLocal, HumanResult,
+    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase,
+    HumanDiagnosticSeverity, HumanHoleGoal, HumanHoleGoalLocal, HumanResult, HumanUnsolvedMeta,
+    HumanUnsolvedMetaKind,
 };
 pub use human_elaborator::{
     compile_human_source_to_certificate, compile_human_source_to_core, elaborate_human_module,

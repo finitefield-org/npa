@@ -1089,6 +1089,20 @@ mod tests {
     }
 
     #[test]
+    fn phase3_machine_diagnostic_payload_shape_is_unchanged_by_human_payloads() {
+        let diagnostic = npa_frontend::MachineDiagnostic::parse(
+            npa_frontend::Span::new(npa_frontend::FileId(0), 0, 1),
+            "expected Machine Surface term",
+        );
+
+        assert_eq!(diagnostic.payload, None);
+        assert_eq!(
+            map_phase3_diagnostic_kind(&diagnostic),
+            MachineApiErrorKind::MachineTermParseError
+        );
+    }
+
+    #[test]
     fn single_component_primary_name_is_preserved() {
         let mut diagnostic = MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::MachineTermElaborationError,

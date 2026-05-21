@@ -2,25 +2,32 @@ use std::collections::BTreeMap;
 
 use crate::{
     FileId, HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanConstructorDecl, HumanDecl,
-    HumanDiagnostic, HumanDiagnosticKind, HumanExpr, HumanImplicitMode, HumanInductiveDecl,
-    HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationAssociativity, HumanNotationDecl,
-    HumanNotationHead, HumanNotationKind, HumanResult, HumanUniverseParam, Span,
+    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPhase, HumanExpr, HumanImplicitMode,
+    HumanInductiveDecl, HumanItem, HumanLevel, HumanModule, HumanName, HumanNotationAssociativity,
+    HumanNotationDecl, HumanNotationHead, HumanNotationKind, HumanResult, HumanUniverseParam, Span,
 };
 
 pub fn parse_human_module(file_id: FileId, source: &str) -> HumanResult<HumanModule> {
-    let tokens = lex_human(file_id, source)?;
-    Parser::new(tokens).parse_module(file_id, source.len() as u32)
+    let tokens = lex_human(file_id, source)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
+    Parser::new(tokens)
+        .parse_module(file_id, source.len() as u32)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))
 }
 
 pub fn parse_human_term(file_id: FileId, source: &str) -> HumanResult<HumanExpr> {
-    let tokens = lex_human(file_id, source)?;
+    let tokens = lex_human(file_id, source)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
     let mut parser = Parser::new(tokens);
-    let term = parser.parse_term()?;
+    let term = parser
+        .parse_term()
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
     if !parser.at_eof() {
         return Err(HumanDiagnostic::parse(
             parser.peek_span(),
             "expected end of Human Surface term",
-        ));
+        )
+        .with_phase(HumanDiagnosticPhase::Parser));
     }
     Ok(term)
 }
@@ -1907,6 +1914,18 @@ def bad (a : Nat) (b : Nat) (c : Nat) : Prop := a = b = c",
         );
 
         assert_eq!(err, HumanDiagnosticKind::ParseError);
+    }
+
+    #[test]
+    fn parse_error_payload_records_parser_phase() {
+        let err = parse_human_module(FileId(0), "def bad : Type :=")
+            .expect_err("invalid Human syntax should be rejected by parser");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::ParseError);
+        assert_eq!(
+            err.payload.as_ref().and_then(|payload| payload.phase),
+            Some(HumanDiagnosticPhase::Parser)
+        );
     }
 
     #[test]

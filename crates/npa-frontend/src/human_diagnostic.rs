@@ -26,6 +26,7 @@ pub enum HumanDiagnosticKind {
     AmbiguousNotation,
     TooManyNotationCandidates,
     UnsolvedImplicit,
+    UnsolvedMeta,
     UnsolvedUniverseMeta,
     UnsolvedHole,
     NamedHoleContextMismatch,
@@ -37,10 +38,34 @@ pub enum HumanDiagnosticKind {
     MachineElaborationError,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum HumanDiagnosticPhase {
+    Parser,
+    Resolver,
+    Elaborator,
+    KernelHandoff,
+    CertificateHandoff,
+}
+
+impl HumanDiagnosticPhase {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Parser => "parser",
+            Self::Resolver => "resolver",
+            Self::Elaborator => "elaborator",
+            Self::KernelHandoff => "kernel_handoff",
+            Self::CertificateHandoff => "certificate_handoff",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HumanDiagnosticPayload {
+    pub phase: Option<HumanDiagnosticPhase>,
+    pub detail: Option<String>,
     pub candidates: Vec<String>,
     pub hole_goals: Vec<HumanHoleGoal>,
+    pub unsolved_meta: Option<HumanUnsolvedMeta>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -59,6 +84,19 @@ pub struct HumanHoleGoalLocal {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanUnsolvedMeta {
+    pub kind: HumanUnsolvedMetaKind,
+    pub name: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanUnsolvedMetaKind {
+    Hole,
+    SyntheticImplicit,
+    Universe,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanDiagnostic {
     pub kind: HumanDiagnosticKind,
     pub severity: HumanDiagnosticSeverity,
@@ -73,12 +111,17 @@ impl HumanDiagnostic {
         primary_span: Span,
         message: impl Into<String>,
     ) -> Self {
+        let payload = HumanDiagnosticPayload {
+            detail: Some(message.into()),
+            ..HumanDiagnosticPayload::default()
+        };
+        let message = render_human_diagnostic_message(&kind, &payload);
         Self {
             kind,
             severity: HumanDiagnosticSeverity::Error,
             primary_span,
-            message: message.into(),
-            payload: None,
+            message,
+            payload: Some(Box::new(payload)),
         }
     }
 
@@ -103,8 +146,140 @@ impl HumanDiagnostic {
     }
 
     pub fn with_payload(mut self, payload: HumanDiagnosticPayload) -> Self {
+        let existing = self.payload.take().map(|payload| *payload).or_else(|| {
+            if self.message.is_empty() {
+                None
+            } else {
+                Some(HumanDiagnosticPayload {
+                    detail: Some(self.message.clone()),
+                    ..HumanDiagnosticPayload::default()
+                })
+            }
+        });
+        let payload = merge_human_diagnostic_payload(existing, payload);
+        self.message = render_human_diagnostic_message(&self.kind, &payload);
         self.payload = Some(Box::new(payload));
         self
+    }
+
+    pub fn with_phase(self, phase: HumanDiagnosticPhase) -> Self {
+        self.with_payload(HumanDiagnosticPayload {
+            phase: Some(phase),
+            ..HumanDiagnosticPayload::default()
+        })
+    }
+
+    pub fn with_default_phase(mut self, phase: HumanDiagnosticPhase) -> Self {
+        let current_phase = self.payload.as_ref().and_then(|payload| payload.phase);
+        if current_phase.is_none() {
+            self = self.with_phase(phase);
+        }
+        self
+    }
+}
+
+fn merge_human_diagnostic_payload(
+    existing: Option<HumanDiagnosticPayload>,
+    mut next: HumanDiagnosticPayload,
+) -> HumanDiagnosticPayload {
+    let Some(existing) = existing else {
+        return next;
+    };
+
+    if next.phase.is_none() {
+        next.phase = existing.phase;
+    }
+    if next.detail.is_none() {
+        next.detail = existing.detail;
+    }
+    if next.candidates.is_empty() {
+        next.candidates = existing.candidates;
+    }
+    if next.hole_goals.is_empty() {
+        next.hole_goals = existing.hole_goals;
+    }
+    if next.unsolved_meta.is_none() {
+        next.unsolved_meta = existing.unsolved_meta;
+    }
+    next
+}
+
+fn render_human_diagnostic_message(
+    kind: &HumanDiagnosticKind,
+    payload: &HumanDiagnosticPayload,
+) -> String {
+    let mut lines = Vec::new();
+    lines.push(
+        payload
+            .detail
+            .clone()
+            .unwrap_or_else(|| human_diagnostic_kind_label(kind).to_owned()),
+    );
+
+    if !payload.candidates.is_empty() {
+        lines.push("candidates:".to_owned());
+        lines.extend(
+            payload
+                .candidates
+                .iter()
+                .map(|candidate| format!("  {candidate}")),
+        );
+    }
+
+    for goal in &payload.hole_goals {
+        let heading = goal
+            .hole
+            .as_deref()
+            .map(|hole| format!("hole goal {hole}:"))
+            .unwrap_or_else(|| "hole goal:".to_owned());
+        lines.push(heading);
+        if !goal.context.is_empty() {
+            lines.push("context:".to_owned());
+            for local in &goal.context {
+                match &local.value {
+                    Some(value) => {
+                        lines.push(format!("  {} : {} := {}", local.name, local.ty, value))
+                    }
+                    None => lines.push(format!("  {} : {}", local.name, local.ty)),
+                }
+            }
+        }
+        if let Some(target) = &goal.target {
+            lines.push(format!("target: {target}"));
+        }
+    }
+
+    lines.join("\n")
+}
+
+fn human_diagnostic_kind_label(kind: &HumanDiagnosticKind) -> &'static str {
+    match kind {
+        HumanDiagnosticKind::NotImplemented => "not implemented",
+        HumanDiagnosticKind::ParseError => "parse error",
+        HumanDiagnosticKind::ImportAfterItem => "import after item",
+        HumanDiagnosticKind::UnsupportedSyntax => "unsupported syntax",
+        HumanDiagnosticKind::ImportResolutionError => "import resolution error",
+        HumanDiagnosticKind::MissingVerifiedImport => "missing verified import",
+        HumanDiagnosticKind::NamespaceMismatch => "namespace mismatch",
+        HumanDiagnosticKind::UnknownNamespace => "unknown namespace",
+        HumanDiagnosticKind::DuplicateDeclaration => "duplicate declaration",
+        HumanDiagnosticKind::UnknownIdentifier => "unknown identifier",
+        HumanDiagnosticKind::AmbiguousName => "ambiguous name",
+        HumanDiagnosticKind::ForwardReference => "forward reference",
+        HumanDiagnosticKind::NotationConflict => "notation conflict",
+        HumanDiagnosticKind::AmbiguousNotation => "ambiguous notation",
+        HumanDiagnosticKind::TooManyNotationCandidates => "too many notation candidates",
+        HumanDiagnosticKind::UnsolvedImplicit => "unsolved implicit",
+        HumanDiagnosticKind::UnsolvedMeta => "unsolved metavariable",
+        HumanDiagnosticKind::UnsolvedUniverseMeta => "unsolved universe metavariable",
+        HumanDiagnosticKind::UnsolvedHole => "unsolved hole",
+        HumanDiagnosticKind::NamedHoleContextMismatch => "named hole context mismatch",
+        HumanDiagnosticKind::OccursCheckFailed => "occurs check failed",
+        HumanDiagnosticKind::ExpectedFunctionType => "expected function type",
+        HumanDiagnosticKind::ExpectedSort => "expected sort",
+        HumanDiagnosticKind::TypeMismatch => "type mismatch",
+        HumanDiagnosticKind::KernelRejected => "kernel rejected",
+        HumanDiagnosticKind::MachineElaborationError => "machine elaboration error",
     }
 }
 
@@ -122,5 +297,55 @@ mod tests {
         assert_eq!(diagnostic.severity, HumanDiagnosticSeverity::Error);
         assert_eq!(diagnostic.primary_span, Span::empty(FileId(2)));
         assert!(diagnostic.message.contains("Phase 3 Human"));
+        assert_eq!(
+            diagnostic
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.detail.as_deref()),
+            Some("parse_human_module is reserved for the Phase 3 Human frontend")
+        );
+    }
+
+    #[test]
+    fn human_diagnostic_message_is_derived_from_payload() {
+        let diagnostic = HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousName,
+            Span::empty(FileId(0)),
+            "ambiguous name add",
+        )
+        .with_phase(HumanDiagnosticPhase::Resolver)
+        .with_payload(HumanDiagnosticPayload {
+            candidates: vec!["Nat.add".to_owned(), "Int.add".to_owned()],
+            ..HumanDiagnosticPayload::default()
+        });
+
+        let payload = diagnostic.payload.expect("payload should be present");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Resolver));
+        assert_eq!(payload.candidates, vec!["Nat.add", "Int.add"]);
+        assert_eq!(
+            diagnostic.message,
+            "ambiguous name add\ncandidates:\n  Nat.add\n  Int.add"
+        );
+    }
+
+    #[test]
+    fn human_diagnostic_phase_preserves_payloadless_external_message() {
+        let diagnostic = HumanDiagnostic {
+            kind: HumanDiagnosticKind::ParseError,
+            severity: HumanDiagnosticSeverity::Error,
+            primary_span: Span::empty(FileId(0)),
+            message: "external parse error".to_owned(),
+            payload: None,
+        }
+        .with_phase(HumanDiagnosticPhase::Parser);
+
+        assert_eq!(diagnostic.message, "external parse error");
+        assert_eq!(
+            diagnostic
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.detail.as_deref()),
+            Some("external parse error")
+        );
     }
 }
