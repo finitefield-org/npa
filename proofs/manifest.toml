@@ -14,6 +14,7 @@ export_hash = "sha256:3341d28e9d1d9dd875138399ab1bd7aa6e2727449cb87fe03c73b220c4
 axiom_report_hash = "sha256:fed11e73accfbfb0dfc28b4f510e151fa33d8af82d58fdb23b92567e04e59e40"
 certificate_hash = "sha256:69cb8c64c6ce722209e27820cd790af6d325c98478b3599ae796ee03df528b13"
 imports = []
+definitions = []
 theorems = ["id", "const_left", "const_right", "apply_fn", "compose", "flip", "duplicate", "prop_id", "modus_ponens", "imp_trans", "compose_assoc", "apply_twice", "ignore_middle", "select_middle", "select_last", "imp_swap", "imp_compose", "imp_ignore", "imp_duplicate", "higher_apply"]
 axioms = []
 
@@ -31,6 +32,7 @@ export_hash = "sha256:80b826d1aa6c9877b2e551521e781fcfdd3777cd8aec6cd27f4000d132
 axiom_report_hash = "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea"
 certificate_hash = "sha256:7e350cb254c1051cb59b9268ef85947a6b618f24607ce71d7fe912ab48019b45"
 imports = ["Std.Logic.Eq", "Std.Nat.Basic"]
+definitions = []
 theorems = ["eq_refl_self", "eq_refl_fn_app", "eq_refl_compose", "eq_self_imp", "eq_refl_prop", "eq_refl_apply_twice", "eq_refl_higher_apply", "eq_refl_nested_compose", "eq_refl_prop_apply", "eq_local_passthrough", "eq_refl_nat_function"]
 axioms = []
 
@@ -48,6 +50,7 @@ export_hash = "sha256:15e6dc1cf805917041c5437a3ee62cc2ebcb2fda50bc86f62bd75ab5ed
 axiom_report_hash = "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07"
 certificate_hash = "sha256:2b54ef5d31aa8b7723af87184ebd3cc37f0263a36728fe4d4b9bdb09f4af5707"
 imports = ["Std.Logic.Eq", "Std.Nat.Basic"]
+definitions = []
 theorems = ["nat_zero_self_eq", "nat_succ_zero_self_eq", "nat_id", "nat_const_zero", "nat_apply_fn", "nat_const_succ_zero", "nat_apply_twice", "nat_compose", "nat_ignore_middle", "nat_select_middle", "nat_select_last", "nat_succ_self_eq"]
 axioms = []
 
@@ -65,5 +68,24 @@ export_hash = "sha256:2be3062e9adb565d319e67b416e96dd6c5f5ec6bb4fa9fd1902c256bf0
 axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
 certificate_hash = "sha256:8f6914e6d85bd0113fba91ac8fb67824f7fd0a770424a41044686428252fe442"
 imports = []
+definitions = []
 theorems = ["imp_chain4", "imp_permute3", "imp_apply_twice", "imp_const3", "imp_flip_chain", "imp_higher_apply"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Reduction"
+source = "Proofs/Ai/Reduction/source.npa"
+certificate = "Proofs/Ai/Reduction/certificate.npcert"
+meta = "Proofs/Ai/Reduction/meta.json"
+replay = "Proofs/Ai/Reduction/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_phase2_certificate"
+source_sha256 = "sha256:5dc743c989f6efd53c391b67d413af1af6016d3dda943afd065bee2f29b26fc7"
+certificate_file_sha256 = "sha256:7216b7928a1f06981c7fa09f084dcaa300067bb450a69521688f7235aa385e58"
+export_hash = "sha256:c915b139d719a059b8886b2bd30716dbee54dc1accbe1613a35fb791e7584cb9"
+axiom_report_hash = "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65"
+certificate_hash = "sha256:3d4e3627b9d165c2cd61f4bcf7482ba04bbf9acb4e1efcc63f4f679885879005"
+imports = ["Std.Nat.Basic"]
+definitions = ["reduction_id_nat"]
+theorems = ["beta_id_nat", "beta_const_nat", "let_id_nat", "let_const_nat", "delta_id_nat"]
 axioms = []

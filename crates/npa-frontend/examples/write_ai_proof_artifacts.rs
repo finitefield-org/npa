@@ -11,7 +11,15 @@ struct ModuleArtifact {
     meta_path: &'static str,
     replay_path: &'static str,
     imports: &'static [&'static str],
+    definitions: &'static [DefinitionArtifact],
     theorems: &'static [TheoremArtifact],
+}
+
+struct DefinitionArtifact {
+    name: &'static str,
+    universe_params: &'static [&'static str],
+    ty: &'static str,
+    value: &'static str,
 }
 
 struct TheoremArtifact {
@@ -37,6 +45,7 @@ const BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Basic/meta.json",
     replay_path: "Proofs/Ai/Basic/replay.json",
     imports: &[],
+    definitions: &[],
     theorems: BASIC_THEOREMS,
 };
 
@@ -47,6 +56,7 @@ const EQ_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Eq/meta.json",
     replay_path: "Proofs/Ai/Eq/replay.json",
     imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+    definitions: &[],
     theorems: EQ_THEOREMS,
 };
 
@@ -57,6 +67,7 @@ const NAT_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Nat/meta.json",
     replay_path: "Proofs/Ai/Nat/replay.json",
     imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+    definitions: &[],
     theorems: NAT_THEOREMS,
 };
 
@@ -67,7 +78,19 @@ const PROP_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Prop/meta.json",
     replay_path: "Proofs/Ai/Prop/replay.json",
     imports: &[],
+    definitions: &[],
     theorems: PROP_THEOREMS,
+};
+
+const REDUCTION_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Reduction",
+    source_path: "Proofs/Ai/Reduction/source.npa",
+    certificate_path: "Proofs/Ai/Reduction/certificate.npcert",
+    meta_path: "Proofs/Ai/Reduction/meta.json",
+    replay_path: "Proofs/Ai/Reduction/replay.json",
+    imports: &["Std.Nat.Basic"],
+    definitions: REDUCTION_DEFINITIONS,
+    theorems: REDUCTION_THEOREMS,
 };
 
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
@@ -407,6 +430,46 @@ const PROP_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const REDUCTION_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "reduction_id_nat",
+    universe_params: &[],
+    ty: "forall (n : Nat), Nat",
+    value: "fun n => n",
+}];
+
+const REDUCTION_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "beta_id_nat",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "fun n => (fun (x : Nat) => x) n",
+    },
+    TheoremArtifact {
+        name: "beta_const_nat",
+        universe_params: &[],
+        statement: "forall (n : Nat), forall (m : Nat), Nat",
+        proof: "fun n => fun m => (fun (x : Nat) => fun (y : Nat) => x) n m",
+    },
+    TheoremArtifact {
+        name: "let_id_nat",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "fun n => let x : Nat := n in x",
+    },
+    TheoremArtifact {
+        name: "let_const_nat",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "fun n => let z : Nat := Nat.zero in z",
+    },
+    TheoremArtifact {
+        name: "delta_id_nat",
+        universe_params: &[],
+        statement: "forall (n : Nat), Nat",
+        proof: "reduction_id_nat",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -436,8 +499,10 @@ fn run() -> Result<(), String> {
         verified_human_import("Std.Nat.Basic", NAT_IMPORT_SOURCE)?;
     let eq_imports = vec![eq_import.clone(), nat_import.clone()];
     let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
-    let nat_imports = vec![eq_import, nat_import];
-    let nat_source_interfaces = vec![eq_source_interface, nat_source_interface];
+    let nat_imports = vec![eq_import.clone(), nat_import.clone()];
+    let nat_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
+    let reduction_imports = vec![nat_import];
+    let reduction_source_interfaces = vec![nat_source_interface];
 
     let basic = build_and_write_module(&proof_root, &BASIC_MODULE, &[], &[])?;
     let eq = build_and_write_module(&proof_root, &EQ_MODULE, &eq_imports, &eq_source_interfaces)?;
@@ -448,10 +513,16 @@ fn run() -> Result<(), String> {
         &nat_source_interfaces,
     )?;
     let prop = build_and_write_module(&proof_root, &PROP_MODULE, &[], &[])?;
+    let reduction = build_and_write_module(
+        &proof_root,
+        &REDUCTION_MODULE,
+        &reduction_imports,
+        &reduction_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq, nat, prop]).as_bytes(),
+        manifest_toml(&[basic, eq, nat, prop, reduction]).as_bytes(),
     )?;
 
     Ok(())
@@ -593,6 +664,20 @@ fn module_source(config: &ModuleArtifact) -> String {
     if !config.imports.is_empty() {
         source.push('\n');
     }
+    for definition in config.definitions {
+        source.push_str("def ");
+        source.push_str(definition.name);
+        if !definition.universe_params.is_empty() {
+            source.push_str(".{");
+            source.push_str(&definition.universe_params.join(","));
+            source.push('}');
+        }
+        source.push_str(" :\n  ");
+        source.push_str(definition.ty);
+        source.push_str(" :=\n  ");
+        source.push_str(definition.value);
+        source.push_str("\n\n");
+    }
     for theorem in config.theorems {
         source.push_str("theorem ");
         source.push_str(theorem.name);
@@ -661,6 +746,17 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
             quoted_items(module.config.imports)
         ));
         manifest.push_str(&format!(
+            "definitions = [{}]\n",
+            quoted_items(
+                &module
+                    .config
+                    .definitions
+                    .iter()
+                    .map(|definition| definition.name)
+                    .collect::<Vec<_>>()
+            )
+        ));
+        manifest.push_str(&format!(
             "theorems = [{}]\n",
             quoted_items(
                 &module
@@ -677,18 +773,19 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
 }
 
 fn meta_json(module: &GeneratedModule) -> String {
-    let declarations = module
-        .config
-        .theorems
-        .iter()
-        .map(|theorem| {
-            format!(
-                "    {{ \"name\": \"{}\", \"kind\": \"theorem\" }}",
-                theorem.name
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(",\n");
+    let definitions = module.config.definitions.iter().map(|definition| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"def\" }}",
+            definition.name
+        )
+    });
+    let theorems = module.config.theorems.iter().map(|theorem| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"theorem\" }}",
+            theorem.name
+        )
+    });
+    let declarations = definitions.chain(theorems).collect::<Vec<_>>().join(",\n");
     format!(
         "\
 {{
@@ -725,19 +822,15 @@ fn meta_json(module: &GeneratedModule) -> String {
 }
 
 fn replay_json(config: &ModuleArtifact) -> String {
-    let steps = config
+    let definition_steps = config.definitions.iter().map(|definition| {
+        replay_step_json(definition.name, "explicit_def_value", definition.value)
+    });
+    let theorem_steps = config
         .theorems
         .iter()
-        .map(|theorem| {
-            format!(
-                "    {{
-      \"declaration\": \"{}\",
-      \"source_kind\": \"explicit_term\",
-      \"term\": \"{}\"
-    }}",
-                theorem.name, theorem.proof
-            )
-        })
+        .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
+    let steps = definition_steps
+        .chain(theorem_steps)
         .collect::<Vec<_>>()
         .join(",\n");
     format!(
@@ -757,6 +850,17 @@ fn replay_json(config: &ModuleArtifact) -> String {
 }}
 ",
         config.module, steps, config.certificate_path
+    )
+}
+
+fn replay_step_json(declaration: &str, source_kind: &str, term: &str) -> String {
+    format!(
+        "    {{
+      \"declaration\": \"{}\",
+      \"source_kind\": \"{}\",
+      \"term\": \"{}\"
+    }}",
+        declaration, source_kind, term
     )
 }
 

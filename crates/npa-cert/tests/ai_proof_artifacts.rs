@@ -14,6 +14,7 @@ struct ExpectedModule {
     meta: &'static str,
     replay: &'static str,
     imports: &'static [&'static str],
+    definitions: &'static [&'static str],
     theorems: &'static [&'static str],
 }
 
@@ -78,6 +79,16 @@ const PROP_THEOREMS: &[&str] = &[
     "imp_higher_apply",
 ];
 
+const REDUCTION_DEFINITIONS: &[&str] = &["reduction_id_nat"];
+
+const REDUCTION_THEOREMS: &[&str] = &[
+    "beta_id_nat",
+    "beta_const_nat",
+    "let_id_nat",
+    "let_const_nat",
+    "delta_id_nat",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -86,6 +97,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Basic/meta.json",
         replay: "Proofs/Ai/Basic/replay.json",
         imports: &[],
+        definitions: &[],
         theorems: BASIC_THEOREMS,
     },
     ExpectedModule {
@@ -95,6 +107,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Eq/meta.json",
         replay: "Proofs/Ai/Eq/replay.json",
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+        definitions: &[],
         theorems: EQ_THEOREMS,
     },
     ExpectedModule {
@@ -104,6 +117,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Nat/meta.json",
         replay: "Proofs/Ai/Nat/replay.json",
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+        definitions: &[],
         theorems: NAT_THEOREMS,
     },
     ExpectedModule {
@@ -113,7 +127,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Prop/meta.json",
         replay: "Proofs/Ai/Prop/replay.json",
         imports: &[],
+        definitions: &[],
         theorems: PROP_THEOREMS,
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Reduction",
+        source: "Proofs/Ai/Reduction/source.npa",
+        certificate: "Proofs/Ai/Reduction/certificate.npcert",
+        meta: "Proofs/Ai/Reduction/meta.json",
+        replay: "Proofs/Ai/Reduction/replay.json",
+        imports: &["Std.Nat.Basic"],
+        definitions: REDUCTION_DEFINITIONS,
+        theorems: REDUCTION_THEOREMS,
     },
 ];
 
@@ -178,14 +203,19 @@ fn ai_certificates_match_manifest_and_verify() {
         assert_eq!(tagged_hash(verified.certificate_hash()), certificate_hash);
         assert!(verified.axiom_report().module_axioms.is_empty());
 
+        assert_definition_exports(&decoded, expected.definitions);
         assert_theorem_exports(&decoded, expected.theorems);
-        assert_theorem_declarations(&decoded, expected.theorems);
+        assert_declarations(&decoded, expected.definitions, expected.theorems);
 
         let meta = read_to_string(root.join(expected.meta));
         assert!(meta.contains(&format!("\"certificate_hash\": \"{certificate_hash}\"")));
         assert!(meta.contains("\"trusted_status\": \"verified_by_phase2_certificate\""));
         for import in expected.imports {
             assert!(meta.contains(&format!("\"{import}\"")));
+        }
+        for definition in expected.definitions {
+            assert!(meta.contains(&format!("\"name\": \"{definition}\"")));
+            assert!(block.contains(&format!("\"{definition}\"")));
         }
         for theorem in expected.theorems {
             assert!(meta.contains(&format!("\"name\": \"{theorem}\"")));
@@ -301,6 +331,24 @@ fn assert_imports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     assert_eq!(actual, expected);
 }
 
+fn assert_definition_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
+    let mut actual = cert
+        .export_block
+        .iter()
+        .filter(|entry| entry.kind == ExportKind::Def)
+        .map(|entry| cert.name_table[entry.name].as_dotted())
+        .collect::<Vec<_>>();
+    actual.sort();
+
+    let mut expected = expected
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect::<Vec<_>>();
+    expected.sort();
+
+    assert_eq!(actual, expected);
+}
+
 fn assert_theorem_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     let mut actual = cert
         .export_block
@@ -319,20 +367,24 @@ fn assert_theorem_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     assert_eq!(actual, expected);
 }
 
-fn assert_theorem_declarations(cert: &npa_cert::ModuleCert, expected: &[&str]) {
+fn assert_declarations(cert: &npa_cert::ModuleCert, definitions: &[&str], theorems: &[&str]) {
     let mut actual = cert
         .declarations
         .iter()
         .map(|decl| match &decl.decl {
-            DeclPayload::Theorem { name, .. } => cert.name_table[*name].as_dotted(),
-            other => panic!("AI proof corpus should contain only theorem declarations: {other:?}"),
+            DeclPayload::Def { name, .. } => (cert.name_table[*name].as_dotted(), "def"),
+            DeclPayload::Theorem { name, .. } => (cert.name_table[*name].as_dotted(), "theorem"),
+            other => {
+                panic!("AI proof corpus should contain only def/theorem declarations: {other:?}")
+            }
         })
         .collect::<Vec<_>>();
     actual.sort();
 
-    let mut expected = expected
+    let mut expected = definitions
         .iter()
-        .map(|name| (*name).to_owned())
+        .map(|name| ((*name).to_owned(), "def"))
+        .chain(theorems.iter().map(|name| ((*name).to_owned(), "theorem")))
         .collect::<Vec<_>>();
     expected.sort();
 

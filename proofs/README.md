@@ -16,6 +16,7 @@ Current bundles:
 - `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
+- `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -169,7 +170,7 @@ Introduce small beta/zeta/delta-shaped examples only after the non-reduction cor
 Items involving named helper definitions may require extending the artifact generator beyond
 theorem-only modules.
 
-Planned:
+Implemented:
 
 | Theorem | Shape |
 | --- | --- |
