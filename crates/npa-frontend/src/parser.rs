@@ -769,6 +769,127 @@ mod tests {
         }
     }
 
+    fn module_snapshot(module: &MachineModule) -> Vec<String> {
+        module.items.iter().map(item_snapshot).collect()
+    }
+
+    fn item_snapshot(item: &MachineItem) -> String {
+        match item {
+            MachineItem::Import { module, .. } => format!("import {}", module.as_dotted()),
+            MachineItem::Def(decl) => format!("def {}", decl_snapshot(decl)),
+            MachineItem::Theorem(decl) => format!("theorem {}", decl_snapshot(decl)),
+        }
+    }
+
+    fn decl_snapshot(decl: &MachineDecl) -> String {
+        let universe_params = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.as_str())
+            .collect::<Vec<_>>()
+            .join(",");
+        let binders = decl
+            .binders
+            .iter()
+            .map(binder_snapshot)
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "{}.{{{universe_params}}}[{binders}]:={} := {}",
+            decl.name.as_dotted(),
+            term_snapshot(&decl.ty),
+            term_snapshot(&decl.value)
+        )
+    }
+
+    fn binder_snapshot(binder: &MachineBinder) -> String {
+        format!("{}:{}", binder.name, term_snapshot(&binder.ty))
+    }
+
+    fn level_snapshot(level: &MachineLevel) -> String {
+        match level {
+            MachineLevel::Nat { value, .. } => value.to_string(),
+            MachineLevel::Param { name, .. } => name.clone(),
+            MachineLevel::Succ { level, .. } => format!("succ({})", level_snapshot(level)),
+            MachineLevel::Max { lhs, rhs, .. } => {
+                format!("max({},{})", level_snapshot(lhs), level_snapshot(rhs))
+            }
+            MachineLevel::IMax { lhs, rhs, .. } => {
+                format!("imax({},{})", level_snapshot(lhs), level_snapshot(rhs))
+            }
+        }
+    }
+
+    fn universe_args_snapshot(universe_args: Option<&Vec<MachineLevel>>) -> String {
+        let Some(universe_args) = universe_args else {
+            return String::new();
+        };
+        format!(
+            ".{{{}}}",
+            universe_args
+                .iter()
+                .map(level_snapshot)
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+    }
+
+    fn term_snapshot(term: &MachineTerm) -> String {
+        match term {
+            MachineTerm::Ident {
+                name,
+                universe_args,
+                explicit_mode,
+                ..
+            } => format!(
+                "{}{}{}",
+                if *explicit_mode { "@" } else { "" },
+                name.as_dotted(),
+                universe_args_snapshot(universe_args.as_ref())
+            ),
+            MachineTerm::Local { name, .. } => format!("local({name})"),
+            MachineTerm::Prop { .. } => "Prop".to_owned(),
+            MachineTerm::Type { level, .. } => format!("Type({})", level_snapshot(level)),
+            MachineTerm::Sort { level, .. } => format!("Sort({})", level_snapshot(level)),
+            MachineTerm::App { func, arg, .. } => {
+                format!("app({}, {})", term_snapshot(func), term_snapshot(arg))
+            }
+            MachineTerm::Lam { binders, body, .. } => format!(
+                "fun({}; {})",
+                binders
+                    .iter()
+                    .map(binder_snapshot)
+                    .collect::<Vec<_>>()
+                    .join(","),
+                term_snapshot(body)
+            ),
+            MachineTerm::Pi { binders, body, .. } => format!(
+                "forall({}; {})",
+                binders
+                    .iter()
+                    .map(binder_snapshot)
+                    .collect::<Vec<_>>()
+                    .join(","),
+                term_snapshot(body)
+            ),
+            MachineTerm::Let {
+                name,
+                ty,
+                value,
+                body,
+                ..
+            } => format!(
+                "let({name}:{}={}; {})",
+                term_snapshot(ty),
+                term_snapshot(value),
+                term_snapshot(body)
+            ),
+            MachineTerm::Annot { expr, ty, .. } => {
+                format!("({} : {})", term_snapshot(expr), term_snapshot(ty))
+            }
+        }
+    }
+
     #[test]
     fn parses_empty_machine_module() {
         let module = parse_machine_module(FileId(0), " \n\t ").expect("empty module should parse");
@@ -908,6 +1029,67 @@ def Test.id.{u} (A : Sort u) (x : A) : A := (x : A)";
         let second = parse_machine_module(FileId(7), source).expect("source should parse again");
 
         assert_eq!(first, second);
+    }
+
+    #[test]
+    fn machine_surface_accepted_syntax_snapshot_is_stable() {
+        let module = parse(
+            "\
+import Std.Nat.Basic
+def Test.id.{u} (A : Sort u) (x : A) : A := x
+theorem Test.self_eq (n : Nat) : Eq.{1} Nat n n := @Eq.refl.{1} Nat n
+def Test.f : forall (A : Sort 1), A := fun (A : Sort 1) => let x : A := (x : A) in x",
+        );
+
+        assert_eq!(
+            module_snapshot(&module),
+            vec![
+                "import Std.Nat.Basic",
+                "def Test.id.{u}[A:Sort(u),x:A]:=A := x",
+                "theorem Test.self_eq.{}[n:Nat]:=app(app(app(Eq.{1}, Nat), n), n) := app(app(@Eq.refl.{1}, Nat), n)",
+                "def Test.f.{}[]:=forall(A:Sort(1); A) := fun(A:Sort(1); let(x:A=(x : A); x))",
+            ]
+        );
+    }
+
+    #[test]
+    fn machine_surface_rejected_human_feature_snapshot_is_stable() {
+        let cases = [
+            ("open Nat", MachineDiagnosticKind::UnsupportedSyntax),
+            ("namespace Nat", MachineDiagnosticKind::UnsupportedSyntax),
+            (
+                "notation \"x\" => Nat.zero",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
+            (
+                "infixl:65 \" + \" => Nat.add",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
+            (
+                "axiom choice : Prop",
+                MachineDiagnosticKind::UnsupportedItem,
+            ),
+            (
+                "inductive Nat : Type",
+                MachineDiagnosticKind::UnsupportedItem,
+            ),
+            (
+                "def Test.x : Nat := n + Nat.zero",
+                MachineDiagnosticKind::UnsupportedSyntax,
+            ),
+            (
+                "def Test.x : Prop := _",
+                MachineDiagnosticKind::HoleNotAllowed,
+            ),
+            (
+                "def Test.x : Prop := \"x\"",
+                MachineDiagnosticKind::ParseError,
+            ),
+        ];
+
+        for (source, expected) in cases {
+            assert_eq!(parse_err(source), expected, "{source}");
+        }
     }
 
     #[test]

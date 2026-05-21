@@ -4006,6 +4006,33 @@ def use (n : Sort 2) : Sort 2 := n + Type",
     }
 
     #[test]
+    fn human_notation_candidate_count_limit_rejects_before_elaboration() {
+        let options = HumanCompileOptions {
+            max_notation_candidates: 1,
+        };
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+def add_a (n m : Type) : Type := n
+def add_b (n m : Type) : Type := m
+infixl:65 \" + \" => add_a
+infixl:65 \" + \" => add_b
+def use (n : Type) : Type := n + Type",
+            &[],
+            &options,
+        )
+        .expect_err("Human notation overloads above the configured limit should fail");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::TooManyNotationCandidates);
+        let payload = err
+            .payload
+            .expect("candidate count limit should carry a bounded payload");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Resolver));
+        assert_eq!(payload.candidates.len(), 1);
+    }
+
+    #[test]
     fn human_path_inserts_implicit_type_argument_for_eq_refl() {
         let imports = [nat_import(), eq_import()];
         let module = compile_human_source_to_core(
@@ -4228,6 +4255,30 @@ def bad (n : Nat) : Nat := _",
         .expect_err("unresolved Human hole should not reach certificate construction");
 
         assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedHole);
+    }
+
+    #[test]
+    fn human_unresolved_implicit_meta_rejects_certificate_path_before_certificate_output() {
+        let err = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+axiom F.{u} : Sort u
+def bad : Type := F",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("unresolved Human implicit meta should not reach certificate construction");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedImplicit);
+        let payload = err
+            .payload
+            .expect("unresolved implicit meta should carry payload");
+        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Elaborator));
+        assert_eq!(
+            payload.unsolved_meta.as_ref().map(|meta| meta.kind),
+            Some(HumanUnsolvedMetaKind::SyntheticImplicit)
+        );
     }
 
     #[test]

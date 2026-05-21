@@ -1005,6 +1005,33 @@ mod tests {
     }
 
     #[test]
+    fn canonical_term_source_fixture_is_not_widened_by_human_features() {
+        for source in [
+            "def Test.x : Prop := Prop",
+            "notation \"x\" => Nat.zero",
+            "n + Nat.zero",
+            "_",
+            "?m",
+        ] {
+            assert!(
+                canonicalize_machine_term_source(source).is_err(),
+                "Human-only syntax must not become Machine canonical source: {source}"
+            );
+        }
+
+        let canonical = canonicalize_machine_term_source("@Eq.refl.{1} Nat n")
+            .expect("Machine Surface fixture should remain accepted");
+        assert_eq!(
+            canonical.canonical_hash,
+            [
+                0x75, 0x9f, 0xf4, 0xf2, 0xb8, 0x1b, 0x44, 0x7a, 0xac, 0x4f, 0x2e, 0x12, 0x23, 0x69,
+                0x0e, 0x7a, 0xd1, 0x83, 0x74, 0x4d, 0x38, 0xa0, 0x81, 0x2d, 0xec, 0x18, 0xfb, 0xde,
+                0x37, 0x7d, 0x04, 0x02,
+            ]
+        );
+    }
+
+    #[test]
     fn canonical_name_atom_layout_matches_spec_order() {
         let canonical =
             canonicalize_machine_term_source("@Eq.refl").expect("term should canonicalize");

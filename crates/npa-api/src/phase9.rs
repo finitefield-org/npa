@@ -15910,6 +15910,28 @@ mod tests {
         }
     }
 
+    #[test]
+    fn phase9_formalization_statement_fixture_stays_machine_surface_canonical() {
+        let statement = formalization_statement("Prop");
+        let canonical = npa_frontend::canonicalize_machine_term_source("Prop").unwrap();
+
+        assert_eq!(statement.term_canonical_bytes, canonical.canonical_bytes);
+        npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
+            .expect("Phase 9 fixture statement must decode as Machine Surface canonical source");
+
+        for source in [
+            "def Test.x : Prop := Prop",
+            "notation \"x\" => Prop",
+            "Prop + Prop",
+            "_",
+        ] {
+            assert!(
+                npa_frontend::canonicalize_machine_term_source(source).is_err(),
+                "Phase 9 formalization fixtures must not accept Human syntax: {source}"
+            );
+        }
+    }
+
     fn formalization_source(
         source_text: &str,
     ) -> (

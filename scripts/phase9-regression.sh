@@ -3,6 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+# Fixed post-Phase-9 and post-Phase-3-Human gate: AI automation remains on
+# Machine Surface fixtures, while Human Surface regressions run in workspace tests.
 echo "[1/4] Phase 9 M9 regression fixtures"
 cargo test -p npa-api --lib phase9::tests::phase9_m9
 

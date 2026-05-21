@@ -8105,6 +8105,52 @@ mod tests {
     }
 
     #[test]
+    fn m9_local_exact_fixture_keeps_machine_surface_fast_path() {
+        let (proof, calls) = run_m9_local_exact_fixture();
+        let MachineTacticCandidate::Exact {
+            term: RawMachineTerm { source },
+        } = &proof.replay_plan.steps[0].candidate
+        else {
+            panic!("expected local Exact fixture");
+        };
+
+        assert_eq!(source, "h");
+        assert!(npa_frontend::lex_machine_surface_tokens(source).is_ok());
+        for human_only in [
+            "open",
+            "namespace",
+            "notation",
+            "infix",
+            "axiom",
+            "inductive",
+            "_",
+        ] {
+            assert!(
+                !source.contains(human_only),
+                "Phase 7 M9 local exact fixture must not use Human syntax: {human_only}"
+            );
+        }
+
+        for call in calls {
+            let Some(source) = (match call {
+                Phase7MachineApiCall::TacticBatch { source }
+                | Phase7MachineApiCall::Replay { source }
+                | Phase7MachineApiCall::Verify { source }
+                | Phase7MachineApiCall::SearchForGoal { source } => Some(source),
+                Phase7MachineApiCall::SnapshotGet { .. } => None,
+            }) else {
+                continue;
+            };
+            for human_only in ["notation", "infix", "namespace", "inductive"] {
+                assert!(
+                    !source.contains(human_only),
+                    "Phase 7 M9 API fixture must stay on Machine Surface payloads: {human_only}"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn m9_same_input_budget_and_phase5_responses_are_deterministic() {
         let (first_proof, first_calls) = run_m9_local_exact_fixture();
         let (second_proof, second_calls) = run_m9_local_exact_fixture();

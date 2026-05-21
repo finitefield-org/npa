@@ -648,18 +648,18 @@ crates/npa-api/src/types.rs
 
 実装タスク:
 
-- [ ] Machine Surface accepted syntax snapshot tests を追加する。
-- [ ] Machine Surface rejected human-feature tests を追加する。
-- [ ] Machine term canonical hash fixture を追加または既存 fixture を固定する。
-- [ ] Human 実装後も `./scripts/phase9-regression.sh` が通ることを CI / docs に明記する。
-- [ ] Human path の notation / overload candidate count limit tests を追加する。
-- [ ] Human path の unsolved meta certificate rejection tests を追加する。
+- [x] Machine Surface accepted syntax snapshot tests を追加する。
+- [x] Machine Surface rejected human-feature tests を追加する。
+- [x] Machine term canonical hash fixture を追加または既存 fixture を固定する。
+- [x] Human 実装後も `./scripts/phase9-regression.sh` が通ることを CI / docs に明記する。
+- [x] Human path の notation / overload candidate count limit tests を追加する。
+- [x] Human path の unsolved meta certificate rejection tests を追加する。
 
 AI 速度ガード:
 
-- [ ] wall-clock timing の固定閾値は flake しやすいため置かない。
-- [ ] 代わりに same-input same-output、resource guard、candidate count bound を固定する。
-- [ ] Phase 7 / Phase 9 の existing fixtures を Human syntax に置き換えない。
+- [x] wall-clock timing の固定閾値は flake しやすいため置かない。
+- [x] 代わりに same-input same-output、resource guard、candidate count bound を固定する。
+- [x] Phase 7 / Phase 9 の existing fixtures を Human syntax に置き換えない。
 
 影響ファイル:
 
