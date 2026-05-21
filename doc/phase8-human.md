@@ -9,6 +9,18 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
 - CI integration
 ```
 
+実装メモ（2026-05-21）:
+
+```text
+- この文書は Phase 8 Human Profile の最終ターゲット設計を記述する
+- 現リポジトリで実装済みなのは crates/npa-api の Phase 8 checker audit automation
+  library substrate と、その deterministic fixture 群である
+- standalone reference / external checker binary、verified_high_trust artifact、
+  full independent checker comparison CI はまだこの文書の integration target として扱う
+- 既存 GitHub Actions の Phase 9 Regression は Phase 9 完了後の回帰ゲートであり、
+  この文書が要求する full Phase 8 release audit CI の代替ではない
+```
+
 大原則はこれです。
 
 ```text

@@ -37,6 +37,17 @@ Phase 9 AI Profile の目的は次です。
 - SMT や quotient など trusted base を広げやすい機能の検査境界を固定する
 ```
 
+実装メモ（2026-05-21）:
+
+```text
+- Phase 9 AI MVP M1-M9 は crates/npa-api の advanced automation endpoint substrate
+  と deterministic fixture matrix として実装済み
+- production AI orchestrator、LLM / RAG / external SMT solver process、graph store の運用は
+  まだ trusted path 外の caller / Post-MVP integration scope
+- Phase 9 完了後の固定回帰ゲートは ./scripts/phase9-regression.sh であり、
+  GitHub Actions の Phase 9 Regression / phase9-regression でも実行される
+```
+
 ---
 
 # 1. 全体アーキテクチャ
@@ -5820,7 +5831,8 @@ fixture、CI policy で継続的に検査する。
 - rejected candidate は trusted env を変更しない
 - validation result に time / random seed / network result が混ざらないことを検査できる
 - docs と fixture 名が milestone / endpoint / error enum に対応している
-- Phase 9 完了後は `./scripts/phase9-regression.sh` を固定ゲートとして実行する
+- Phase 9 完了後は `./scripts/phase9-regression.sh` を固定ゲートとして実行し、
+  GitHub Actions の `Phase 9 Regression / phase9-regression` でも同じゲートを通す
 ```
 
 非対象:

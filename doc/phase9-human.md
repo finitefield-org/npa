@@ -13,6 +13,18 @@ Phase 9 は、ここまで作った小さく安全な証明支援系を、実用
 - natural language formalization
 ```
 
+実装メモ（2026-05-21）:
+
+```text
+- この文書は Phase 9 Human Profile の user-facing / kernel-facing 最終ターゲット設計を記述する
+- 現リポジトリで実装済みなのは crates/npa-api の Phase 9 AI deterministic validation /
+  replay substrate と M9 fixture matrix である
+- advanced inductive / quotient / typeclass / SMT / theorem graph / natural language formalization の
+  full human workflow は、この文書の後続 implementation target として扱う
+- Phase 9 完了後の回帰確認は ./scripts/phase9-regression.sh と
+  GitHub Actions の Phase 9 Regression で固定している
+```
+
 Phase 9 の基本方針はこれです。
 
 ```text
