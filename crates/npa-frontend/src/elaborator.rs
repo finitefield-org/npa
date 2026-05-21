@@ -2225,7 +2225,7 @@ fn find_verified_import_index(
     Ok(first_index)
 }
 
-fn certificate_imports_for_module(
+pub(crate) fn certificate_imports_for_module(
     module: &npa_cert::CoreModule,
     active_import_indices: &[usize],
     verified_modules: &[npa_cert::VerifiedModule],

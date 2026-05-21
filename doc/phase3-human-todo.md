@@ -519,16 +519,16 @@ crates/npa-frontend/src/elaborator.rs
 
 実装タスク:
 
-- [ ] Human parser が `axiom name : type` を受理する。
-- [ ] Human resolver が axiom name を global scope に登録する。
-- [ ] Human elaborator が axiom type を core declaration に変換する。
-- [ ] Phase 2 certificate handoff で axiom report に反映されることを確認する。
-- [ ] axiom policy によって verify が拒否されるケースをテストする。
+- [x] Human parser が `axiom name : type` を受理する。
+- [x] Human resolver が axiom name を global scope に登録する。
+- [x] Human elaborator が axiom type を core declaration に変換する。
+- [x] Phase 2 certificate handoff で axiom report に反映されることを確認する。
+- [x] axiom policy によって verify が拒否されるケースをテストする。
 
 AI 速度ガード:
 
-- [ ] Machine parser は source-level `axiom` を引き続き拒否する。
-- [ ] AI path が axiom を source syntax から生成する経路を増やさない。
+- [x] Machine parser は source-level `axiom` を引き続き拒否する。
+- [x] AI path が axiom を source syntax から生成する経路を増やさない。
 
 影響ファイル:
 

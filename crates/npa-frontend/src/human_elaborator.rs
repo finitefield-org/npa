@@ -1,15 +1,14 @@
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::{
-    builtin_machine_callable_profile, machine_callable_profile_from_human_binders,
-    parse_human_module, resolve_human_module,
-    resolver::{find_unique_verified_import_by_module, VerifiedImportLookupError},
+    builtin_machine_callable_profile, elaborator::certificate_imports_for_module,
+    machine_callable_profile_from_human_binders, parse_human_module, resolve_human_module,
     HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDiagnostic, HumanDiagnosticKind,
     HumanDiagnosticPayload, HumanExpr, HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal,
     HumanImplicitMode, HumanItem, HumanLevel, HumanName, HumanResolvedName, HumanResolvedNameUse,
     HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationMetadata, MachineBinder,
-    MachineCallableBinderVisibility, MachineDecl, MachineItem, MachineLevel, MachineModule,
-    MachineName, MachineTerm, ResolvedHumanModule, Span, VerifiedImport,
+    MachineCallableBinderVisibility, MachineDecl, MachineLevel, MachineName, MachineTerm,
+    MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{subst, Ctx, Decl, Env, Error, Expr, Level, Reducibility};
 
@@ -80,12 +79,43 @@ pub fn compile_human_source_to_certificate(
     options: &HumanCompileOptions,
 ) -> HumanResult<npa_cert::ModuleCert> {
     let verified_imports: Vec<_> = verified_modules.iter().map(VerifiedImport::from).collect();
-    let _core =
-        compile_human_source_to_core(file_id, module_name, source, &verified_imports, options)?;
-    Err(HumanDiagnostic::not_implemented(
-        source_span(file_id, source),
-        "compile_human_source_to_certificate",
-    ))
+    let parsed = parse_human_module(file_id, source)?;
+    let resolved = resolve_human_module(module_name.clone(), parsed, &verified_imports, options)?;
+    let active_import_indices = active_human_import_indices(&resolved, &verified_imports)?;
+    let core = elaborate_human_module(module_name, resolved, &verified_imports, options)?;
+    let certificate_imports =
+        certificate_imports_for_module(&core, &active_import_indices, verified_modules, file_id)
+            .map_err(|err| {
+                human_certificate_import_diagnostic(source_span(file_id, source), err)
+            })?;
+    let cert = npa_cert::build_module_cert(core, &certificate_imports).map_err(|err| {
+        HumanDiagnostic::error(
+            HumanDiagnosticKind::KernelRejected,
+            source_span(file_id, source),
+            format!("Phase 2 certificate handoff rejected Human source: {err:?}"),
+        )
+    })?;
+    let bytes = npa_cert::encode_module_cert(&cert).map_err(|err| {
+        HumanDiagnostic::error(
+            HumanDiagnosticKind::KernelRejected,
+            source_span(file_id, source),
+            format!("Phase 2 certificate encoding rejected Human source: {err:?}"),
+        )
+    })?;
+    let mut session = npa_cert::VerifierSession::new();
+    for import in &certificate_imports {
+        session.register_verified_module(import.clone());
+    }
+    npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal()).map_err(
+        |err| {
+            HumanDiagnostic::error(
+                HumanDiagnosticKind::KernelRejected,
+                source_span(file_id, source),
+                format!("Phase 2 certificate verification rejected Human source: {err:?}"),
+            )
+        },
+    )?;
+    Ok(cert)
 }
 
 fn source_span(file_id: crate::FileId, source: &str) -> Span {
@@ -154,6 +184,28 @@ fn notation_candidate_plans(
 enum HumanLoweredDeclKind {
     Def,
     Theorem,
+}
+
+#[derive(Clone, Debug)]
+struct HumanLoweredModule {
+    items: Vec<HumanLoweredItem>,
+}
+
+#[derive(Clone, Debug)]
+enum HumanLoweredItem {
+    Import,
+    Def(MachineDecl),
+    Theorem(MachineDecl),
+    Axiom(HumanLoweredAxiomDecl),
+}
+
+#[derive(Clone, Debug)]
+struct HumanLoweredAxiomDecl {
+    name: MachineName,
+    universe_params: Vec<MachineUniverseParam>,
+    binders: Vec<MachineBinder>,
+    ty: MachineTerm,
+    span: Span,
 }
 
 #[derive(Clone, Debug)]
@@ -1009,22 +1061,28 @@ impl HumanBidirectionalElaborator {
     fn elaborate_module(
         mut self,
         module_name: npa_cert::ModuleName,
-        module: MachineModule,
+        module: HumanLoweredModule,
     ) -> HumanResult<npa_cert::CoreModule> {
         let mut declarations = Vec::new();
 
         for item in module.items {
             match item {
-                MachineItem::Import { .. } => {}
-                MachineItem::Def(decl) => {
+                HumanLoweredItem::Import => {}
+                HumanLoweredItem::Def(decl) => {
                     let span = decl.span;
                     let decl = self.elaborate_decl(decl, HumanLoweredDeclKind::Def)?;
                     self.add_kernel_decl(decl.clone(), span)?;
                     declarations.push(decl);
                 }
-                MachineItem::Theorem(decl) => {
+                HumanLoweredItem::Theorem(decl) => {
                     let span = decl.span;
                     let decl = self.elaborate_decl(decl, HumanLoweredDeclKind::Theorem)?;
+                    self.add_kernel_decl(decl.clone(), span)?;
+                    declarations.push(decl);
+                }
+                HumanLoweredItem::Axiom(decl) => {
+                    let span = decl.span;
+                    let decl = self.elaborate_axiom_decl(decl)?;
                     self.add_kernel_decl(decl.clone(), span)?;
                     declarations.push(decl);
                 }
@@ -1034,6 +1092,35 @@ impl HumanBidirectionalElaborator {
         Ok(npa_cert::CoreModule {
             name: module_name,
             declarations,
+        })
+    }
+
+    fn elaborate_axiom_decl(&self, decl: HumanLoweredAxiomDecl) -> HumanResult<Decl> {
+        let delta: Vec<_> = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.clone())
+            .collect();
+        let mut locals = HumanLocalContext::default();
+        let mut elaborated_binders = Vec::with_capacity(decl.binders.len());
+
+        for binder in &decl.binders {
+            let (ty, ty_type) = self.infer_human_expr(&binder.ty, &locals, &delta)?;
+            self.expect_human_sort(&ty_type, &locals, &delta, binder.ty.span())?;
+            locals.push_assumption(binder.name.clone(), ty.clone());
+            elaborated_binders.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty,
+            });
+        }
+
+        let (ty, ty_type) = self.infer_human_expr(&decl.ty, &locals, &delta)?;
+        self.expect_human_sort(&ty_type, &locals, &delta, decl.ty.span())?;
+
+        Ok(Decl::Axiom {
+            name: decl.name.as_dotted(),
+            universe_params: delta,
+            ty: human_close_pi(&elaborated_binders, ty),
         })
     }
 
@@ -1595,6 +1682,56 @@ impl HumanImplicitInserter {
         Ok(decl)
     }
 
+    fn insert_axiom_decl(
+        &mut self,
+        mut decl: HumanLoweredAxiomDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+    ) -> HumanResult<HumanLoweredAxiomDecl> {
+        let delta: Vec<_> = decl
+            .universe_params
+            .iter()
+            .map(|param| param.name.clone())
+            .collect();
+        let mut locals = HumanLocalContext::default();
+        let mut elaborated_binders = Vec::with_capacity(decl.binders.len());
+        let mut transformed_binders = Vec::with_capacity(decl.binders.len());
+
+        for binder in decl.binders {
+            let ty = self.insert_term(binder.ty, &mut locals, &delta)?;
+            let ty_expr = self.elaborate_machine_term(&ty, &locals, &delta)?;
+            locals.push_assumption(binder.name.clone(), ty_expr.clone());
+            elaborated_binders.push(HumanElaboratedBinder {
+                name: binder.name.clone(),
+                ty: ty_expr,
+            });
+            transformed_binders.push(MachineBinder {
+                name: binder.name,
+                ty,
+                span: binder.span,
+            });
+        }
+
+        decl.binders = transformed_binders;
+        decl.ty = self.insert_term(decl.ty, &mut locals, &delta)?;
+        let ty_expr = self.elaborate_machine_term(&decl.ty, &locals, &delta)?;
+        let name = decl.name.as_dotted();
+        let core_decl = Decl::Axiom {
+            name: name.clone(),
+            universe_params: delta.clone(),
+            ty: human_close_pi(&elaborated_binders, ty_expr),
+        };
+        self.add_kernel_decl(core_decl, decl.span)?;
+        self.signatures.insert(
+            name,
+            HumanCallableSignature {
+                universe_params: delta,
+                implicit_profile: machine_callable_profile_from_human_binders(&metadata.binders),
+            },
+        );
+
+        Ok(decl)
+    }
+
     fn insert_term(
         &mut self,
         term: MachineTerm,
@@ -2127,6 +2264,19 @@ fn active_human_imports<'a>(
     module: &ResolvedHumanModule,
     verified_imports: &'a [VerifiedImport],
 ) -> HumanResult<Vec<&'a VerifiedImport>> {
+    active_human_import_indices(module, verified_imports).map(|indices| {
+        indices
+            .into_iter()
+            .map(|index| &verified_imports[index])
+            .collect()
+    })
+}
+
+fn active_human_import_indices(
+    module: &ResolvedHumanModule,
+    verified_imports: &[VerifiedImport],
+) -> HumanResult<Vec<usize>> {
+    let mut seen = BTreeSet::new();
     let mut imports = Vec::new();
     for item in &module.module.items {
         let HumanItem::Import {
@@ -2137,31 +2287,80 @@ fn active_human_imports<'a>(
             continue;
         };
         let import_module = npa_cert::Name(import_name.parts.clone());
-        match find_unique_verified_import_by_module(verified_imports, &import_module) {
-            Ok(import) => imports.push(import),
-            Err(VerifiedImportLookupError::Missing) => {
-                return Err(HumanDiagnostic::error(
-                    HumanDiagnosticKind::MissingVerifiedImport,
-                    *span,
-                    format!(
-                        "missing verified import for module {}",
-                        import_name.as_dotted()
-                    ),
-                ));
-            }
-            Err(VerifiedImportLookupError::Ambiguous) => {
-                return Err(HumanDiagnostic::error(
-                    HumanDiagnosticKind::AmbiguousName,
-                    *span,
-                    format!(
-                        "ambiguous verified import for module {}",
-                        import_name.as_dotted()
-                    ),
-                ));
-            }
+        if !seen.insert(import_module.clone()) {
+            continue;
         }
+        imports.push(find_human_verified_import_index(
+            verified_imports,
+            &import_module,
+            import_name,
+            *span,
+        )?);
     }
     Ok(imports)
+}
+
+fn find_human_verified_import_index(
+    verified_imports: &[VerifiedImport],
+    import_module: &npa_cert::ModuleName,
+    import_name: &HumanName,
+    span: Span,
+) -> HumanResult<usize> {
+    let mut matches = verified_imports
+        .iter()
+        .enumerate()
+        .filter(|(_, import)| &import.module == import_module);
+    let Some((first_index, first)) = matches.next() else {
+        return Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::MissingVerifiedImport,
+            span,
+            format!(
+                "missing verified import for module {}",
+                import_name.as_dotted()
+            ),
+        ));
+    };
+
+    if matches.any(|(_, import)| import != first) {
+        return Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousName,
+            span,
+            format!(
+                "ambiguous verified import for module {}",
+                import_name.as_dotted()
+            ),
+        ));
+    }
+
+    Ok(first_index)
+}
+
+fn human_certificate_import_diagnostic(
+    fallback_span: Span,
+    err: crate::MachineDiagnostic,
+) -> HumanDiagnostic {
+    let kind = match err.kind {
+        crate::MachineDiagnosticKind::MissingVerifiedImport => {
+            HumanDiagnosticKind::MissingVerifiedImport
+        }
+        crate::MachineDiagnosticKind::ImportResolutionError => {
+            HumanDiagnosticKind::ImportResolutionError
+        }
+        _ => HumanDiagnosticKind::KernelRejected,
+    };
+    let primary_span = if err.primary_span == Span::empty(fallback_span.file_id) {
+        fallback_span
+    } else {
+        err.primary_span
+    };
+    HumanDiagnostic::error(
+        kind,
+        primary_span,
+        format!(
+            "Phase 2 certificate import closure rejected Human source: {}",
+            err.message
+        ),
+    )
 }
 
 fn kernel_decls_for_human_import(import: &VerifiedImport) -> Vec<Decl> {
@@ -2483,17 +2682,15 @@ impl<'a> HumanToMachineLowering<'a> {
         })
     }
 
-    fn lower_module(&mut self, module: &ResolvedHumanModule) -> HumanResult<MachineModule> {
-        let mut machine_items = Vec::new();
+    fn lower_module(&mut self, module: &ResolvedHumanModule) -> HumanResult<HumanLoweredModule> {
+        let mut lowered_items = Vec::new();
         let mut declarations = module.state.source_interfaces.current.declarations.iter();
 
         for item in &module.module.items {
             match item {
                 HumanItem::Import { module, span } => {
-                    machine_items.push(MachineItem::Import {
-                        module: machine_name(module.clone()),
-                        span: *span,
-                    });
+                    let _ = (module, span);
+                    lowered_items.push(HumanLoweredItem::Import);
                 }
                 HumanItem::Def(decl) => {
                     let metadata = declarations.next().ok_or_else(|| {
@@ -2505,7 +2702,7 @@ impl<'a> HumanToMachineLowering<'a> {
                         metadata,
                         HumanLoweredDeclKind::Def,
                     )?;
-                    machine_items.push(MachineItem::Def(lowered));
+                    lowered_items.push(HumanLoweredItem::Def(lowered));
                 }
                 HumanItem::Theorem(decl) => {
                     let metadata = declarations.next().ok_or_else(|| {
@@ -2517,13 +2714,17 @@ impl<'a> HumanToMachineLowering<'a> {
                         metadata,
                         HumanLoweredDeclKind::Theorem,
                     )?;
-                    machine_items.push(MachineItem::Theorem(lowered));
+                    lowered_items.push(HumanLoweredItem::Theorem(lowered));
                 }
                 HumanItem::Axiom(decl) => {
-                    return Err(HumanDiagnostic::not_implemented(
-                        decl.span,
-                        "Human source-level axiom elaboration",
-                    ));
+                    let metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                    })?;
+                    let lowered = self.lower_axiom_decl(decl.clone(), metadata)?;
+                    let lowered = self
+                        .implicit_inserter
+                        .insert_axiom_decl(lowered, metadata)?;
+                    lowered_items.push(HumanLoweredItem::Axiom(lowered));
                 }
                 HumanItem::Inductive(decl) => {
                     return Err(HumanDiagnostic::not_implemented(
@@ -2538,10 +2739,8 @@ impl<'a> HumanToMachineLowering<'a> {
             }
         }
 
-        Ok(MachineModule {
-            file_id: module.module.file_id,
-            items: machine_items,
-            span: module.module.span,
+        Ok(HumanLoweredModule {
+            items: lowered_items,
         })
     }
 
@@ -2570,6 +2769,33 @@ impl<'a> HumanToMachineLowering<'a> {
             binders,
             ty,
             value,
+            span: decl.span,
+        })
+    }
+
+    fn lower_axiom_decl(
+        &mut self,
+        decl: crate::HumanAxiomDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+    ) -> HumanResult<HumanLoweredAxiomDecl> {
+        self.meta_store.begin_declaration();
+        let mut local_context = HumanLoweringLocalContext::default();
+        let binders = self.lower_binders(decl.binders, &mut local_context)?;
+        let ty = self.lower_expr(decl.ty, &mut local_context, None)?;
+        self.meta_store.reject_unsolved_for_decl(decl.span)?;
+
+        Ok(HumanLoweredAxiomDecl {
+            name: machine_name(metadata.name.clone()),
+            universe_params: decl
+                .universe_params
+                .into_iter()
+                .map(|param| MachineUniverseParam {
+                    name: param.name,
+                    span: param.span,
+                })
+                .collect(),
+            binders,
+            ty,
             span: decl.span,
         })
     }
@@ -2894,6 +3120,28 @@ mod tests {
         [seed; 32]
     }
 
+    fn verified_axiom_module(module: &str, axiom: &str) -> npa_cert::VerifiedModule {
+        let cert = npa_cert::build_module_cert(
+            npa_cert::CoreModule {
+                name: npa_cert::Name::from_dotted(module),
+                declarations: vec![Decl::Axiom {
+                    name: axiom.to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                }],
+            },
+            &[],
+        )
+        .expect("test axiom module should build a certificate");
+        let bytes = npa_cert::encode_module_cert(&cert).expect("test axiom module should encode");
+        npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("test axiom module should verify")
+    }
+
     fn verified_import(module: &str, exports: &[(&str, &[&str])]) -> VerifiedImport {
         let exports: Vec<_> = exports
             .iter()
@@ -2980,6 +3228,104 @@ mod tests {
         .expect_err("missing import should fail during Human resolution");
 
         assert_eq!(err.kind, HumanDiagnosticKind::MissingVerifiedImport);
+    }
+
+    #[test]
+    fn human_axiom_elaborates_to_core_axiom_declaration() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "axiom P : Prop",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human source-level axiom should elaborate to a core axiom");
+
+        assert_eq!(
+            module.declarations,
+            vec![Decl::Axiom {
+                name: "P".to_owned(),
+                universe_params: Vec::new(),
+                ty: Expr::sort(Level::zero()),
+            }]
+        );
+    }
+
+    #[test]
+    fn human_axiom_is_available_to_later_declarations() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+axiom P : Prop
+axiom p : P
+theorem use : P := p",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human axiom should enter the global environment after kernel acceptance");
+
+        assert_eq!(module.declarations.len(), 3);
+        let Decl::Theorem { proof, .. } = &module.declarations[2] else {
+            panic!("expected theorem");
+        };
+        assert_eq!(proof, &Expr::konst("p", vec![]));
+    }
+
+    #[test]
+    fn human_axiom_certificate_reports_axiom_and_high_trust_requires_allowlist() {
+        let cert = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "axiom P : Prop",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human axiom source should build a Phase 2 certificate");
+
+        assert_eq!(cert.axiom_report.module_axioms.len(), 1);
+        let axiom_ref = &cert.axiom_report.module_axioms[0];
+        assert_eq!(
+            cert.name_table[axiom_ref.name],
+            npa_cert::Name::from_dotted("P")
+        );
+
+        let bytes =
+            npa_cert::encode_module_cert(&cert).expect("Human axiom certificate should encode");
+        let err = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::high_trust(),
+        )
+        .expect_err("high-trust verification should reject an unallowlisted Human axiom");
+        assert!(matches!(
+            err,
+            npa_cert::CertError::ForbiddenAxiom { axiom }
+                if axiom == npa_cert::Name::from_dotted("P")
+        ));
+
+        let mut policy = npa_cert::AxiomPolicy::high_trust();
+        policy
+            .allowlisted_axioms
+            .insert(npa_cert::Name::from_dotted("P"));
+        npa_cert::verify_module_cert(&bytes, &mut npa_cert::VerifierSession::new(), &policy)
+            .expect("allowlisted Human axiom should verify in high-trust mode");
+    }
+
+    #[test]
+    fn human_axiom_certificate_omits_unimported_verified_modules() {
+        let unused = verified_axiom_module("Unused", "Unused.P");
+        let cert = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "axiom P : Prop",
+            &[unused],
+            &HumanCompileOptions::default(),
+        )
+        .expect("available but unimported verified modules should not enter the certificate");
+
+        assert!(cert.imports.is_empty());
+        assert_eq!(cert.axiom_report.module_axioms.len(), 1);
     }
 
     #[test]
