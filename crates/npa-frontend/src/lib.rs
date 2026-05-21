@@ -34,7 +34,12 @@ pub use elaborator::{
     elaborate_machine_module, elaborate_machine_term_check, elaborate_machine_term_infer_from_ast,
     MachineTermElabContextInModuleRequest,
 };
-pub use human::{HumanCompileOptions, HumanExpr, HumanItem, HumanModule};
+pub use human::{
+    HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanCompileOptions,
+    HumanConstructorDecl, HumanDecl, HumanExpr, HumanImplicitMode, HumanInductiveDecl, HumanItem,
+    HumanLevel, HumanModule, HumanName, HumanNotationDecl, HumanNotationHead, HumanNotationKind,
+    HumanUniverseParam,
+};
 pub use human_diagnostic::{
     HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticSeverity, HumanResult,
 };

@@ -232,19 +232,19 @@ crates/npa-frontend/src/human_diagnostic.rs
 
 実装タスク:
 
-- [ ] `HumanModule` / `HumanItem` / `HumanDecl` / `HumanExpr` を定義する。
-- [ ] `HumanItem` に `Import` / `Open` / `NamespaceStart` / `NamespaceEnd` /
+- [x] `HumanModule` / `HumanItem` / `HumanDecl` / `HumanExpr` を定義する。
+- [x] `HumanItem` に `Import` / `Open` / `NamespaceStart` / `NamespaceEnd` /
   `Def` / `Theorem` / `Axiom` / `Inductive` / `Notation` を持たせる。
-- [ ] `HumanExpr` に `Ident` / `App` / `Lam` / `Pi` / `Let` / `Annot` /
+- [x] `HumanExpr` に `Ident` / `App` / `Lam` / `Pi` / `Let` / `Annot` /
   `Sort` / `Arrow` / `Hole` / `ExplicitMode` / `NotationApp` 相当を持たせる。
-- [ ] `HumanBinder` に `BinderInfo::Explicit` / `BinderInfo::Implicit` を持たせる。
-- [ ] grouped binder を AST 上で保持するか、parser 直後に binder list へ展開する方針を固定する。
-- [ ] 全 node に `Span` を保持する。
+- [x] `HumanBinder` に `BinderInfo::Explicit` / `BinderInfo::Implicit` を持たせる。
+- [x] grouped binder を AST 上で保持するか、parser 直後に binder list へ展開する方針を固定する。
+- [x] 全 node に `Span` を保持する。
 
 AI 速度ガード:
 
-- [ ] Human AST を `MachineTerm` に variant 追加して表現しない。
-- [ ] Machine canonical encoder が Human AST を知る必要がない形にする。
+- [x] Human AST を `MachineTerm` に variant 追加して表現しない。
+- [x] Machine canonical encoder が Human AST を知る必要がない形にする。
 
 影響ファイル:
 
