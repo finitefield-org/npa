@@ -10,10 +10,22 @@ use npa_kernel::{
     level::normalize_level, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level,
     Reducibility,
 };
-use npa_tactic::{machine_local_context_canonical_bytes, MachineLocalDecl, VerifiedImportRef};
+use npa_tactic::{
+    machine_local_context_canonical_bytes, machine_tactic_options_canonical_bytes,
+    tactic_budget_canonical_bytes, CandidateApplyArg, CandidateRewriteRuleRef, EqFamilyRef,
+    MachineLocalDecl, MachineProofSpec, MachineTacticCandidate, MachineTacticOptions, NatFamilyRef,
+    RawMachineTerm, RewriteDirection, RewriteSite, SimpRuleRef, TacticBudget, TacticHead,
+    VerifiedImportRef,
+};
 use sha2::{Digest, Sha256};
 
+use crate::adapter::{
+    phase4_extract_closed_machine_theorem_decl, phase4_run_machine_tactic_with_budget,
+    phase4_start_machine_proof, phase4_validate_machine_tactic_candidate,
+    MachineApiDiagnosticPhase,
+};
 use crate::types::phase5_name_canonical_bytes;
+use crate::MachineApiErrorKind;
 
 const CANDIDATE_HASH_TAG: &str = "npa.phase9_ai.candidate.v1";
 const OPTIONS_HASH_TAG: &str = "npa.phase9_ai.options.v1";
@@ -28,6 +40,16 @@ const SMT_ENCODING_HASH_TAG: &str = "npa.phase9_ai.smt.encoding.v1";
 const SMT_PROOF_PAYLOAD_HASH_TAG: &str = "npa.phase9_ai.smt.proof_payload.v1";
 const SMT_COMMAND_ID_HASH_TAG: &str = "npa.phase9_ai.smt.command_id.v1";
 const SMT_SYMBOL_HASH_TAG: &str = "npa.phase9_ai.smt.symbol.v1";
+const FORMALIZATION_SOURCE_DOCUMENT_HASH_TAG: &str =
+    "npa.phase9_ai.formalization.source_document.v1";
+const FORMALIZATION_CLAIM_SPAN_HASH_TAG: &str = "npa.phase9_ai.formalization.claim_span.v1";
+const FORMALIZATION_REJECTION_REASON_HASH_TAG: &str =
+    "npa.phase9_ai.formalization.rejection_reason.v1";
+const FORMALIZATION_CANDIDATE_STATEMENT_HASH_TAG: &str =
+    "npa.phase9_ai.formalization.candidate_statement.v1";
+const FORMALIZATION_ACCEPTED_STATEMENT_HASH_TAG: &str =
+    "npa.phase9_ai.formalization.accepted_statement.v1";
+const FORMALIZATION_PROOF_ROOT_HASH_TAG: &str = "npa.phase9_ai.formalization.proof_root.v1";
 
 const MAX_OPTIONS_BYTES: usize = 16_000_000;
 const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
@@ -48,6 +70,11 @@ const MAX_PHASE9_SMT_RAW_BYTES: usize = 64_000_000;
 const MAX_PHASE9_SMT_ITEMS: u64 = 1_000_000;
 const MAX_PHASE9_SMT_REFS: u64 = 65_536;
 const MAX_PHASE9_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
+const MAX_PHASE9_FORMALIZATION_SOURCE_BYTES: usize = 16_000_000;
+const MAX_PHASE9_FORMALIZATION_REASON_BYTES: usize = 1_000_000;
+const MAX_PHASE9_FORMALIZATION_TERM_BYTES: usize = 1_000_000;
+const MAX_PHASE9_FORMALIZATION_UNIVERSE_PARAMS: u64 = 65_536;
+const MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS: u64 = 65_536;
 const MAX_NAME_COMPONENTS: u64 = 256;
 const MAX_STRING_BYTES: u64 = 1_048_576;
 
@@ -803,6 +830,100 @@ pub struct Phase9AiGoal {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineFormalizationCheckPayload {
+    pub candidate: Phase9MachineFormalizationCandidate,
+    pub intent_record: Option<Phase9FormalizationIntentRecord>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineFormalizationCandidate {
+    pub source_document: Phase9MachineFormalizationSourceDocumentRef,
+    pub claim_span: Phase9MachineFormalizationClaimSpan,
+    pub statement: Phase9MachineSurfaceTerm,
+    pub optional_proof_candidate: Option<Phase9MachineFormalizationProofCandidate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineSurfaceTerm {
+    pub universe_params: Vec<String>,
+    pub term_canonical_bytes: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineFormalizationProofCandidate {
+    pub candidate_statement_hash: Hash,
+    pub tactic: MachineTacticCandidate,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineFormalizationSourceDocumentRef {
+    Inline {
+        source_document_hash: Hash,
+        raw_utf8_bytes: Vec<u8>,
+    },
+    Artifact {
+        path: String,
+        file_hash: Hash,
+        source_document_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineFormalizationClaimSpan {
+    pub start_byte: u64,
+    pub end_byte: u64,
+    pub claim_span_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9ReviewerId {
+    Human {
+        stable_id_ascii: Vec<u8>,
+    },
+    System {
+        system_id_ascii: Vec<u8>,
+        actor_id_ascii: Vec<u8>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9FormalizationIntentRecord {
+    pub source_document_hash: Hash,
+    pub claim_span_hash: Hash,
+    pub candidate_statement_hash: Hash,
+    pub status: Phase9FormalizationIntentStatus,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9FormalizationIntentStatus {
+    Unreviewed,
+    Reviewed {
+        reviewer: Phase9ReviewerId,
+        accepted_statement_hash: Hash,
+    },
+    Rejected {
+        reviewer: Phase9ReviewerId,
+        rejection_reason: Phase9MachineFormalizationRejectionReasonRef,
+        rejection_reason_hash: Hash,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineFormalizationRejectionReasonRef {
+    Inline {
+        rejection_reason_hash: Hash,
+        raw_utf8_bytes: Vec<u8>,
+    },
+    Artifact {
+        path: String,
+        file_hash: Hash,
+        rejection_reason_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Phase9UniverseRepairCandidate {
     pub goal: Option<Phase9AiGoal>,
     pub target_expr: Expr,
@@ -1339,6 +1460,69 @@ pub fn phase9_ai_goal_canonical_bytes(
     Ok(out)
 }
 
+pub fn phase9_formalization_payload_canonical_bytes(
+    payload: &Phase9MachineFormalizationCheckPayload,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_formalization_payload_to(&mut out, payload)?;
+    Ok(out)
+}
+
+pub fn phase9_formalization_source_document_hash(raw_utf8_bytes: &[u8]) -> Hash {
+    hash_with_domain(FORMALIZATION_SOURCE_DOCUMENT_HASH_TAG, raw_utf8_bytes)
+}
+
+pub fn phase9_formalization_claim_span_hash(
+    source_document_hash: Hash,
+    start_byte: u64,
+    end_byte: u64,
+    claim_bytes: &[u8],
+) -> Hash {
+    let mut payload = Vec::new();
+    encode_hash_to(&mut payload, &source_document_hash);
+    encode_u64_to(&mut payload, start_byte);
+    encode_u64_to(&mut payload, end_byte);
+    payload.extend_from_slice(claim_bytes);
+    hash_with_domain(FORMALIZATION_CLAIM_SPAN_HASH_TAG, &payload)
+}
+
+pub fn phase9_formalization_rejection_reason_hash(raw_utf8_bytes: &[u8]) -> Hash {
+    hash_with_domain(FORMALIZATION_REJECTION_REASON_HASH_TAG, raw_utf8_bytes)
+}
+
+pub fn phase9_formalization_candidate_statement_hash(statement: &Phase9MachineSurfaceTerm) -> Hash {
+    hash_with_domain(
+        FORMALIZATION_CANDIDATE_STATEMENT_HASH_TAG,
+        &phase9_machine_surface_term_canonical_bytes(statement),
+    )
+}
+
+pub fn phase9_formalization_accepted_statement_hash(
+    env_fingerprint: Hash,
+    accepted_universe_params: &[String],
+    accepted_theorem_type: &Expr,
+) -> Hash {
+    let mut payload = Vec::new();
+    encode_hash_to(&mut payload, &env_fingerprint);
+    payload.extend_from_slice(&phase9_universe_params_canonical_bytes(
+        accepted_universe_params,
+    ));
+    payload.extend_from_slice(&npa_cert::core_expr_canonical_bytes(accepted_theorem_type));
+    hash_with_domain(FORMALIZATION_ACCEPTED_STATEMENT_HASH_TAG, &payload)
+}
+
+pub fn phase9_formalization_proof_root_hash(
+    env_fingerprint: Hash,
+    candidate_statement_hash: Hash,
+    accepted_statement_hash: Hash,
+) -> Hash {
+    let mut payload = Vec::new();
+    encode_hash_to(&mut payload, &env_fingerprint);
+    encode_hash_to(&mut payload, &candidate_statement_hash);
+    encode_hash_to(&mut payload, &accepted_statement_hash);
+    hash_with_domain(FORMALIZATION_PROOF_ROOT_HASH_TAG, &payload)
+}
+
 pub fn phase9_inductive_proposal_canonical_bytes(
     proposal: &Phase9MachineInductiveProposal,
 ) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
@@ -1571,6 +1755,7 @@ pub fn validate_phase9_ai_common_envelope(
 
     validate_target_shape(candidate_hash, envelope.task_kind, &envelope.target)?;
     validate_required_options(candidate_hash, envelope.task_kind, &options)?;
+    validate_task_options_shape(candidate_hash, envelope.task_kind, &options)?;
 
     Ok(Phase9ValidatedCommonEnvelope {
         candidate_hash,
@@ -1686,33 +1871,785 @@ pub fn run_phase9_formalize_check_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
-        request_canonical_bytes,
-        verified_imports,
-        workspace_root,
-        Phase9AiTaskKind::NaturalLanguageFormalization,
-    )
-}
-
-fn run_phase9_skeleton_request(
-    request_canonical_bytes: &[u8],
-    verified_imports: &[VerifiedImportRef],
-    workspace_root: &Path,
-    expected_task_kind: Phase9AiTaskKind,
-) -> Phase9AiEndpointResponse {
     match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        expected_task_kind,
+        Phase9AiTaskKind::NaturalLanguageFormalization,
     ) {
-        Ok(validated) => rejected_response(
-            validated.candidate_hash,
+        Ok(validated) => {
+            run_phase9_formalize_check_validated(validated, verified_imports, workspace_root)
+        }
+        Err(response) => response,
+    }
+}
+
+fn run_phase9_formalize_check_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+    workspace_root: &Path,
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let payload = match decode_formalization_payload(&validated.envelope.payload) {
+        Ok(payload) => payload,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            );
+        }
+    };
+
+    if !formalization_statement_wrapper_is_valid(&payload.candidate.statement) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+    let candidate_statement_hash =
+        phase9_formalization_candidate_statement_hash(&payload.candidate.statement);
+
+    let (source_document_hash, source_bytes) = match validate_formalization_source_document_ref(
+        candidate_hash,
+        &payload.candidate.source_document,
+        workspace_root,
+    ) {
+        Ok(validated) => validated,
+        Err(response) => return response,
+    };
+    let claim_span_hash = match validate_formalization_claim_span(
+        candidate_hash,
+        &payload.candidate.claim_span,
+        source_document_hash,
+        &source_bytes,
+    ) {
+        Ok(hash) => hash,
+        Err(response) => return response,
+    };
+    let rejected_reason_hash = match rejected_reason_ref(&payload.intent_record) {
+        Some(reason) => match validate_formalization_rejection_reason_ref(
+            candidate_hash,
+            reason,
+            workspace_root,
+        ) {
+            Ok(hash) => Some(hash),
+            Err(response) => return response,
+        },
+        None => None,
+    };
+
+    if payload
+        .intent_record
+        .as_ref()
+        .and_then(|intent| reviewer_for_intent_status(&intent.status))
+        .is_some_and(|reviewer| !reviewer_id_is_valid(reviewer))
+    {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+
+    if matches!(
+        payload.intent_record.as_ref().map(|intent| &intent.status),
+        Some(Phase9FormalizationIntentStatus::Rejected { .. })
+    ) && payload.candidate.optional_proof_candidate.is_some()
+    {
+        return formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::RejectedIntentHasProofCandidate,
+        );
+    }
+
+    if let Some(intent) = payload.intent_record.as_ref() {
+        if intent.source_document_hash != source_document_hash
+            || intent.claim_span_hash != claim_span_hash
+            || intent.candidate_statement_hash != candidate_statement_hash
+            || rejected_reason_hash
+                .is_some_and(|hash| rejected_status_reason_hash(&intent.status) != Some(hash))
+        {
+            return formalization_rejected_response(
+                candidate_hash,
+                Phase9FormalizationError::IntentRecordMismatch,
+            );
+        }
+    }
+
+    if matches!(
+        payload.intent_record.as_ref().map(|intent| &intent.status),
+        Some(Phase9FormalizationIntentStatus::Rejected { .. })
+    ) {
+        return success_response(
+            candidate_hash,
+            Phase9AiSuccessPayload::NaturalLanguageFormalization {
+                kind: Phase9FormalizationSuccessKind::IntentRecordOnly,
+                accepted_statement_hash: None,
+                formalization_proof_root_hash: None,
+            },
+        );
+    }
+
+    let (accepted_theorem_type, computed_accepted_statement_hash) =
+        match elaborate_formalization_statement(
+            candidate_hash,
+            validated.env_fingerprint,
+            &payload.candidate.statement,
+            verified_imports,
+        ) {
+            Ok(accepted) => accepted,
+            Err(response) => return response,
+        };
+
+    let reviewed_accepted_statement_hash =
+        payload
+            .intent_record
+            .as_ref()
+            .and_then(|intent| match &intent.status {
+                Phase9FormalizationIntentStatus::Reviewed {
+                    accepted_statement_hash,
+                    ..
+                } => Some(*accepted_statement_hash),
+                _ => None,
+            });
+    let accepted_statement_matches = reviewed_accepted_statement_hash
+        .is_none_or(|hash| hash == computed_accepted_statement_hash);
+
+    if let Some(proof_candidate) = payload.candidate.optional_proof_candidate.as_ref() {
+        if !accepted_statement_matches
+            || proof_candidate.candidate_statement_hash != candidate_statement_hash
+        {
+            return formalization_rejected_response(
+                candidate_hash,
+                Phase9FormalizationError::FormalizationProofStatementMismatch,
+            );
+        }
+        let proof_root_hash = phase9_formalization_proof_root_hash(
+            validated.env_fingerprint,
+            candidate_statement_hash,
+            computed_accepted_statement_hash,
+        );
+        match run_phase9_formalization_proof_bridge(
+            candidate_hash,
+            proof_root_hash,
+            &payload.candidate.statement,
+            &accepted_theorem_type,
+            proof_candidate,
+            &validated.options,
+            verified_imports,
+        ) {
+            Ok(()) => {
+                return success_response(
+                    candidate_hash,
+                    Phase9AiSuccessPayload::NaturalLanguageFormalization {
+                        kind: Phase9FormalizationSuccessKind::ProofBridgeChecked,
+                        accepted_statement_hash: Some(computed_accepted_statement_hash),
+                        formalization_proof_root_hash: Some(proof_root_hash),
+                    },
+                );
+            }
+            Err(response) => return response,
+        }
+    }
+
+    if !accepted_statement_matches {
+        return success_response(
+            candidate_hash,
+            Phase9AiSuccessPayload::NaturalLanguageFormalization {
+                kind: Phase9FormalizationSuccessKind::IntentRecordOnly,
+                accepted_statement_hash: None,
+                formalization_proof_root_hash: None,
+            },
+        );
+    }
+
+    success_response(
+        candidate_hash,
+        Phase9AiSuccessPayload::NaturalLanguageFormalization {
+            kind: Phase9FormalizationSuccessKind::CandidateStatementChecked,
+            accepted_statement_hash: Some(computed_accepted_statement_hash),
+            formalization_proof_root_hash: None,
+        },
+    )
+}
+
+fn formalization_statement_wrapper_is_valid(statement: &Phase9MachineSurfaceTerm) -> bool {
+    phase9_string_list_is_unique(&statement.universe_params)
+        && statement
+            .universe_params
+            .iter()
+            .all(|param| phase9_machine_identifier_compatible(param))
+        && statement.term_canonical_bytes.len() <= MAX_PHASE9_FORMALIZATION_TERM_BYTES
+        && npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
+            .is_ok()
+}
+
+fn phase9_machine_identifier_compatible(value: &str) -> bool {
+    let mut chars = value.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    first.is_ascii_alphabetic()
+        && chars.all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '\'')
+        && !matches!(
+            value,
+            "succ"
+                | "max"
+                | "imax"
+                | "import"
+                | "def"
+                | "theorem"
+                | "fun"
+                | "forall"
+                | "let"
+                | "in"
+                | "Prop"
+                | "Type"
+                | "Sort"
+                | "open"
+                | "namespace"
+                | "match"
+                | "with"
+                | "notation"
+                | "infix"
+                | "infixl"
+                | "infixr"
+                | "axiom"
+                | "inductive"
+        )
+}
+
+fn validate_formalization_source_document_ref(
+    candidate_hash: Hash,
+    source: &Phase9MachineFormalizationSourceDocumentRef,
+    workspace_root: &Path,
+) -> std::result::Result<(Hash, Vec<u8>), Phase9AiEndpointResponse> {
+    let (embedded_hash, bytes) = match source {
+        Phase9MachineFormalizationSourceDocumentRef::Inline {
+            source_document_hash,
+            raw_utf8_bytes,
+        } => {
+            if raw_utf8_bytes.len() > MAX_PHASE9_FORMALIZATION_SOURCE_BYTES {
+                return Err(rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    None,
+                ));
+            }
+            (*source_document_hash, raw_utf8_bytes.clone())
+        }
+        Phase9MachineFormalizationSourceDocumentRef::Artifact {
+            path,
+            file_hash,
+            source_document_hash,
+            size_bytes,
+        } => {
+            let bytes = read_phase9_formalization_artifact(
+                candidate_hash,
+                workspace_root,
+                path,
+                *file_hash,
+                *size_bytes,
+                MAX_PHASE9_FORMALIZATION_SOURCE_BYTES,
+            )?;
+            (*source_document_hash, bytes)
+        }
+    };
+    if std::str::from_utf8(&bytes).is_err() {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        ));
+    }
+    let actual_hash = phase9_formalization_source_document_hash(&bytes);
+    if actual_hash != embedded_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok((actual_hash, bytes))
+}
+
+fn validate_formalization_claim_span(
+    candidate_hash: Hash,
+    claim_span: &Phase9MachineFormalizationClaimSpan,
+    source_document_hash: Hash,
+    source_bytes: &[u8],
+) -> std::result::Result<Hash, Phase9AiEndpointResponse> {
+    let Ok(source) = std::str::from_utf8(source_bytes) else {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        ));
+    };
+    let start = usize::try_from(claim_span.start_byte).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        )
+    })?;
+    let end = usize::try_from(claim_span.end_byte).map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        )
+    })?;
+    if start > end
+        || end > source_bytes.len()
+        || !source.is_char_boundary(start)
+        || !source.is_char_boundary(end)
+    {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        ));
+    }
+    let actual_hash = phase9_formalization_claim_span_hash(
+        source_document_hash,
+        claim_span.start_byte,
+        claim_span.end_byte,
+        &source_bytes[start..end],
+    );
+    if actual_hash != claim_span.claim_span_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(actual_hash)
+}
+
+fn validate_formalization_rejection_reason_ref(
+    candidate_hash: Hash,
+    reason: &Phase9MachineFormalizationRejectionReasonRef,
+    workspace_root: &Path,
+) -> std::result::Result<Hash, Phase9AiEndpointResponse> {
+    let (embedded_hash, bytes) = match reason {
+        Phase9MachineFormalizationRejectionReasonRef::Inline {
+            rejection_reason_hash,
+            raw_utf8_bytes,
+        } => {
+            if raw_utf8_bytes.len() > MAX_PHASE9_FORMALIZATION_REASON_BYTES {
+                return Err(rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    None,
+                ));
+            }
+            (*rejection_reason_hash, raw_utf8_bytes.clone())
+        }
+        Phase9MachineFormalizationRejectionReasonRef::Artifact {
+            path,
+            file_hash,
+            rejection_reason_hash,
+            size_bytes,
+        } => {
+            let bytes = read_phase9_formalization_artifact(
+                candidate_hash,
+                workspace_root,
+                path,
+                *file_hash,
+                *size_bytes,
+                MAX_PHASE9_FORMALIZATION_REASON_BYTES,
+            )?;
+            (*rejection_reason_hash, bytes)
+        }
+    };
+    if std::str::from_utf8(&bytes).is_err() {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        ));
+    }
+    let actual_hash = phase9_formalization_rejection_reason_hash(&bytes);
+    if actual_hash != embedded_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(actual_hash)
+}
+
+fn read_phase9_formalization_artifact(
+    candidate_hash: Hash,
+    workspace_root: &Path,
+    path: &str,
+    file_hash: Hash,
+    size_bytes: u64,
+    cap: usize,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    if usize::try_from(size_bytes)
+        .map(|size| size > cap)
+        .unwrap_or(true)
+    {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        ));
+    }
+    let path = match validate_artifact_path(workspace_root, path) {
+        Ok(path) => path,
+        Err(ArtifactPathError::EnvelopeMalformed) => {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            ));
+        }
+        Err(ArtifactPathError::ArtifactUnavailable) => {
+            return Err(Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::ArtifactUnavailable,
+            });
+        }
+    };
+    let metadata = std::fs::metadata(&path).map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::ArtifactUnavailable,
+    })?;
+    if metadata.len() != size_bytes {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::ArtifactUnavailable,
+    })?;
+    if phase9_file_hash(&bytes) != file_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(bytes)
+}
+
+fn rejected_reason_ref(
+    intent_record: &Option<Phase9FormalizationIntentRecord>,
+) -> Option<&Phase9MachineFormalizationRejectionReasonRef> {
+    match intent_record.as_ref().map(|intent| &intent.status) {
+        Some(Phase9FormalizationIntentStatus::Rejected {
+            rejection_reason, ..
+        }) => Some(rejection_reason),
+        _ => None,
+    }
+}
+
+fn reviewer_for_intent_status(
+    status: &Phase9FormalizationIntentStatus,
+) -> Option<&Phase9ReviewerId> {
+    match status {
+        Phase9FormalizationIntentStatus::Unreviewed => None,
+        Phase9FormalizationIntentStatus::Reviewed { reviewer, .. }
+        | Phase9FormalizationIntentStatus::Rejected { reviewer, .. } => Some(reviewer),
+    }
+}
+
+fn rejected_status_reason_hash(status: &Phase9FormalizationIntentStatus) -> Option<Hash> {
+    match status {
+        Phase9FormalizationIntentStatus::Rejected {
+            rejection_reason_hash,
+            ..
+        } => Some(*rejection_reason_hash),
+        _ => None,
+    }
+}
+
+fn reviewer_id_is_valid(reviewer: &Phase9ReviewerId) -> bool {
+    match reviewer {
+        Phase9ReviewerId::Human { stable_id_ascii } => {
+            reviewer_ascii_field_is_valid(stable_id_ascii)
+        }
+        Phase9ReviewerId::System {
+            system_id_ascii,
+            actor_id_ascii,
+        } => {
+            reviewer_ascii_field_is_valid(system_id_ascii)
+                && reviewer_ascii_field_is_valid(actor_id_ascii)
+        }
+    }
+}
+
+fn reviewer_ascii_field_is_valid(bytes: &[u8]) -> bool {
+    !bytes.is_empty()
+        && bytes.len() <= 128
+        && bytes.iter().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(*byte, b'.' | b'_' | b'@' | b':' | b'-')
+        })
+}
+
+fn elaborate_formalization_statement(
+    candidate_hash: Hash,
+    env_fingerprint: Hash,
+    statement: &Phase9MachineSurfaceTerm,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<(Expr, Hash), Phase9AiEndpointResponse> {
+    let ast = npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
+        .map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        )
+    })?;
+    let import_modules = verified_imports
+        .iter()
+        .map(|import| import.verified_module().clone())
+        .collect::<Vec<_>>();
+    let context = npa_frontend::MachineTermElabContext::from_verified_modules(
+        &import_modules,
+        &import_modules,
+        Vec::new(),
+        statement.universe_params.clone(),
+    )
+    .map_err(|_| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        )
+    })?;
+    let options = npa_frontend::MachineCompileOptions {
+        mode: npa_frontend::MachineSurfaceMode::Complete,
+        allow_universe_meta: false,
+    };
+    let (accepted_theorem_type, inferred_type) =
+        npa_frontend::elaborate_machine_term_infer_from_ast(&ast, &context, &options).map_err(
+            |_| {
+                formalization_rejected_response(
+                    candidate_hash,
+                    Phase9FormalizationError::CandidateStatementElaborationFailed,
+                )
+            },
+        )?;
+    match context
+        .kernel_env()
+        .env()
+        .whnf(&Ctx::new(), &statement.universe_params, &inferred_type)
+    {
+        Ok(Expr::Sort(_)) => {
+            let accepted_statement_hash = phase9_formalization_accepted_statement_hash(
+                env_fingerprint,
+                &statement.universe_params,
+                &accepted_theorem_type,
+            );
+            Ok((accepted_theorem_type, accepted_statement_hash))
+        }
+        Ok(_) | Err(_) => Err(formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::CandidateStatementElaborationFailed,
+        )),
+    }
+}
+
+fn run_phase9_formalization_proof_bridge(
+    candidate_hash: Hash,
+    proof_root_hash: Hash,
+    statement: &Phase9MachineSurfaceTerm,
+    accepted_theorem_type: &Expr,
+    proof_candidate: &Phase9MachineFormalizationProofCandidate,
+    options: &Phase9AiOptions,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    let Some(formalization_options) = options.formalization.as_ref() else {
+        return Err(Phase9AiEndpointResponse::Error {
+            error: Phase9AiEndpointError::InternalValidatorFailure,
+        });
+    };
+    let tactic_options =
+        decode_phase4_tactic_options(&formalization_options.tactic_options_canonical_bytes)
+            .map_err(|_| Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            })?;
+    let tactic_budget = decode_phase4_tactic_budget(
+        &formalization_options.tactic_budget_canonical_bytes,
+    )
+    .map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::InternalValidatorFailure,
+    })?;
+    let module = formalization_scratch_module(proof_root_hash);
+    let theorem_name = formalization_scratch_theorem(proof_root_hash);
+    let start = phase4_start_machine_proof(
+        MachineProofSpec {
+            module: module.clone(),
+            theorem_name: theorem_name.clone(),
+            source_index: 0,
+            universe_params: statement.universe_params.clone(),
+            theorem_type: accepted_theorem_type.clone(),
+        },
+        verified_imports.to_vec(),
+        Vec::new(),
+        tactic_options,
+    )
+    .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    let [goal_id] = start.state.open_goals.as_slice() else {
+        return Err(formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::ProofBridgeFailed,
+        ));
+    };
+    let tactic = phase4_validate_machine_tactic_candidate(*goal_id, proof_candidate.tactic.clone())
+        .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    let run = phase4_run_machine_tactic_with_budget(&start.state, tactic.tactic, tactic_budget)
+        .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    if !run.state.open_goals.is_empty() {
+        return Err(formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::ProofBridgeFailed,
+        ));
+    }
+    let extracted = phase4_extract_closed_machine_theorem_decl(
+        &run.state,
+        MachineApiDiagnosticPhase::KernelCheck,
+    )
+    .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    let Decl::Theorem {
+        name,
+        universe_params,
+        ty,
+        proof,
+    } = extracted.theorem
+    else {
+        return Err(formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::ProofBridgeFailed,
+        ));
+    };
+    if name != theorem_name.as_dotted()
+        || universe_params != statement.universe_params
+        || !phase9_core_expr_bytes_eq(&ty, accepted_theorem_type)
+    {
+        return Err(formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::FormalizationProofStatementMismatch,
+        ));
+    }
+    let import_modules = verified_imports
+        .iter()
+        .map(|import| import.verified_module().clone())
+        .collect::<Vec<_>>();
+    let cert = match npa_cert::build_module_cert(
+        CoreModule {
+            name: module,
+            declarations: vec![Decl::Theorem {
+                name,
+                universe_params,
+                ty,
+                proof,
+            }],
+        },
+        &import_modules,
+    ) {
+        Ok(cert) => cert,
+        Err(npa_cert::CertError::Kernel(_)) => {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            ));
+        }
+        Err(_) => {
+            return Err(Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::InternalValidatorFailure,
+            });
+        }
+    };
+    let cert_bytes =
+        npa_cert::encode_module_cert(&cert).map_err(|_| Phase9AiEndpointResponse::Error {
+            error: Phase9AiEndpointError::InternalValidatorFailure,
+        })?;
+    let mut verifier_session = VerifierSession::new();
+    for import in import_modules {
+        verifier_session.register_verified_module(import);
+    }
+    npa_cert::verify_module_cert(&cert_bytes, &mut verifier_session, &AxiomPolicy::normal())
+        .map_err(|_| {
+            rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::IndependentCheckerRejected,
+                None,
+            )
+        })?;
+    Ok(())
+}
+
+fn formalization_scratch_module(proof_root_hash: Hash) -> ModuleName {
+    Name(vec![
+        "NPA".to_owned(),
+        "Phase9".to_owned(),
+        "FormalizationScratch".to_owned(),
+        lowerhex_hash(proof_root_hash),
+    ])
+}
+
+fn formalization_scratch_theorem(proof_root_hash: Hash) -> Name {
+    let mut components = formalization_scratch_module(proof_root_hash).0;
+    components.push("theorem".to_owned());
+    Name(components)
+}
+
+fn lowerhex_hash(hash: Hash) -> String {
+    let mut output = String::with_capacity(64);
+    for byte in hash {
+        use std::fmt::Write as _;
+        write!(&mut output, "{byte:02x}").expect("writing to string cannot fail");
+    }
+    output
+}
+
+fn formalization_phase4_error_response(
+    candidate_hash: Hash,
+    kind: MachineApiErrorKind,
+) -> Phase9AiEndpointResponse {
+    match kind {
+        MachineApiErrorKind::BudgetExceeded
+        | MachineApiErrorKind::TooLargeTerm
+        | MachineApiErrorKind::TooManyGoals => rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::BudgetExceeded,
+            None,
+        ),
+        MachineApiErrorKind::UnsupportedTactic => rejected_response(
+            candidate_hash,
             Phase9AiValidationError::UnsupportedFeature,
             None,
         ),
-        Err(response) => response,
+        MachineApiErrorKind::InvalidMachineApiOptions => rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        ),
+        _ => formalization_rejected_response(
+            candidate_hash,
+            Phase9FormalizationError::ProofBridgeFailed,
+        ),
     }
+}
+
+fn formalization_rejected_response(
+    candidate_hash: Hash,
+    error: Phase9FormalizationError,
+) -> Phase9AiEndpointResponse {
+    rejected_response(
+        candidate_hash,
+        Phase9AiValidationError::FeatureRejected,
+        Some(Phase9AiFeatureError::Formalization(error)),
+    )
 }
 
 fn run_phase9_inductive_validated(
@@ -3235,6 +4172,44 @@ fn validate_required_options(
             None,
         ))
     }
+}
+
+fn validate_task_options_shape(
+    candidate_hash: Hash,
+    task_kind: Phase9AiTaskKind,
+    options: &Phase9AiOptions,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    if task_kind != Phase9AiTaskKind::NaturalLanguageFormalization {
+        return Ok(());
+    }
+    let Some(formalization) = options.formalization.as_ref() else {
+        return Ok(());
+    };
+    decode_phase4_tactic_options(&formalization.tactic_options_canonical_bytes)
+        .and_then(|options| {
+            if options.max_simp_rewrite_steps == 0
+                || options.max_open_goals == 0
+                || options.max_metas == 0
+            {
+                return Err(());
+            }
+            Ok(options)
+        })
+        .map_err(|()| {
+            rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                None,
+            )
+        })?;
+    decode_phase4_tactic_budget(&formalization.tactic_budget_canonical_bytes).map_err(|()| {
+        rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        )
+    })?;
+    Ok(())
 }
 
 #[derive(Clone)]
@@ -8801,6 +9776,328 @@ fn encode_machine_local_decl_to(out: &mut Vec<u8>, local: &MachineLocalDecl) {
     }
 }
 
+fn encode_formalization_payload_to(
+    out: &mut Vec<u8>,
+    payload: &Phase9MachineFormalizationCheckPayload,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_formalization_candidate_to(out, &payload.candidate)?;
+    encode_option_formalization_intent_record_to(out, payload.intent_record.as_ref())?;
+    Ok(())
+}
+
+fn encode_formalization_candidate_to(
+    out: &mut Vec<u8>,
+    candidate: &Phase9MachineFormalizationCandidate,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_formalization_source_document_ref_to(out, &candidate.source_document);
+    encode_formalization_claim_span_to(out, &candidate.claim_span);
+    encode_machine_surface_term_to(out, &candidate.statement);
+    encode_option_formalization_proof_candidate_to(
+        out,
+        candidate.optional_proof_candidate.as_ref(),
+    )?;
+    Ok(())
+}
+
+fn phase9_machine_surface_term_canonical_bytes(statement: &Phase9MachineSurfaceTerm) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_machine_surface_term_to(&mut out, statement);
+    out
+}
+
+fn encode_machine_surface_term_to(out: &mut Vec<u8>, statement: &Phase9MachineSurfaceTerm) {
+    encode_len_to(out, statement.universe_params.len());
+    for param in &statement.universe_params {
+        encode_string_to(out, param);
+    }
+    encode_bytes_to(out, &statement.term_canonical_bytes);
+}
+
+fn encode_formalization_source_document_ref_to(
+    out: &mut Vec<u8>,
+    source: &Phase9MachineFormalizationSourceDocumentRef,
+) {
+    match source {
+        Phase9MachineFormalizationSourceDocumentRef::Inline {
+            source_document_hash,
+            raw_utf8_bytes,
+        } => {
+            out.push(0);
+            encode_hash_to(out, source_document_hash);
+            encode_bytes_to(out, raw_utf8_bytes);
+        }
+        Phase9MachineFormalizationSourceDocumentRef::Artifact {
+            path,
+            file_hash,
+            source_document_hash,
+            size_bytes,
+        } => {
+            out.push(1);
+            encode_string_to(out, path);
+            encode_hash_to(out, file_hash);
+            encode_hash_to(out, source_document_hash);
+            encode_u64_to(out, *size_bytes);
+        }
+    }
+}
+
+fn encode_formalization_claim_span_to(
+    out: &mut Vec<u8>,
+    span: &Phase9MachineFormalizationClaimSpan,
+) {
+    encode_u64_to(out, span.start_byte);
+    encode_u64_to(out, span.end_byte);
+    encode_hash_to(out, &span.claim_span_hash);
+}
+
+fn encode_option_formalization_proof_candidate_to(
+    out: &mut Vec<u8>,
+    proof: Option<&Phase9MachineFormalizationProofCandidate>,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match proof {
+        Some(proof) => {
+            out.push(1);
+            encode_hash_to(out, &proof.candidate_statement_hash);
+            encode_phase9_tactic_candidate_to(out, &proof.tactic)?;
+        }
+        None => out.push(0),
+    }
+    Ok(())
+}
+
+fn encode_option_formalization_intent_record_to(
+    out: &mut Vec<u8>,
+    intent_record: Option<&Phase9FormalizationIntentRecord>,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match intent_record {
+        Some(intent_record) => {
+            out.push(1);
+            encode_hash_to(out, &intent_record.source_document_hash);
+            encode_hash_to(out, &intent_record.claim_span_hash);
+            encode_hash_to(out, &intent_record.candidate_statement_hash);
+            encode_formalization_intent_status_to(out, &intent_record.status)?;
+        }
+        None => out.push(0),
+    }
+    Ok(())
+}
+
+fn encode_formalization_intent_status_to(
+    out: &mut Vec<u8>,
+    status: &Phase9FormalizationIntentStatus,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match status {
+        Phase9FormalizationIntentStatus::Unreviewed => out.push(0),
+        Phase9FormalizationIntentStatus::Reviewed {
+            reviewer,
+            accepted_statement_hash,
+        } => {
+            out.push(1);
+            encode_reviewer_id_to(out, reviewer);
+            encode_hash_to(out, accepted_statement_hash);
+        }
+        Phase9FormalizationIntentStatus::Rejected {
+            reviewer,
+            rejection_reason,
+            rejection_reason_hash,
+        } => {
+            out.push(2);
+            encode_reviewer_id_to(out, reviewer);
+            encode_formalization_rejection_reason_ref_to(out, rejection_reason);
+            encode_hash_to(out, rejection_reason_hash);
+        }
+    }
+    Ok(())
+}
+
+fn encode_reviewer_id_to(out: &mut Vec<u8>, reviewer: &Phase9ReviewerId) {
+    match reviewer {
+        Phase9ReviewerId::Human { stable_id_ascii } => {
+            out.push(0);
+            encode_bytes_to(out, stable_id_ascii);
+        }
+        Phase9ReviewerId::System {
+            system_id_ascii,
+            actor_id_ascii,
+        } => {
+            out.push(1);
+            encode_bytes_to(out, system_id_ascii);
+            encode_bytes_to(out, actor_id_ascii);
+        }
+    }
+}
+
+fn encode_formalization_rejection_reason_ref_to(
+    out: &mut Vec<u8>,
+    reason: &Phase9MachineFormalizationRejectionReasonRef,
+) {
+    match reason {
+        Phase9MachineFormalizationRejectionReasonRef::Inline {
+            rejection_reason_hash,
+            raw_utf8_bytes,
+        } => {
+            out.push(0);
+            encode_hash_to(out, rejection_reason_hash);
+            encode_bytes_to(out, raw_utf8_bytes);
+        }
+        Phase9MachineFormalizationRejectionReasonRef::Artifact {
+            path,
+            file_hash,
+            rejection_reason_hash,
+            size_bytes,
+        } => {
+            out.push(1);
+            encode_string_to(out, path);
+            encode_hash_to(out, file_hash);
+            encode_hash_to(out, rejection_reason_hash);
+            encode_u64_to(out, *size_bytes);
+        }
+    }
+}
+
+fn encode_phase9_tactic_candidate_to(
+    out: &mut Vec<u8>,
+    tactic: &MachineTacticCandidate,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match tactic {
+        MachineTacticCandidate::Exact { term } => {
+            out.push(0);
+            encode_string_to(out, &term.source);
+        }
+        MachineTacticCandidate::Intro { name } => {
+            out.push(1);
+            encode_string_to(out, name);
+        }
+        MachineTacticCandidate::Apply {
+            head,
+            universe_args,
+            args,
+        } => {
+            out.push(2);
+            encode_phase9_tactic_head_to(out, head)?;
+            encode_len_to(out, universe_args.len());
+            for level in universe_args {
+                encode_level_to(out, level);
+            }
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_phase9_apply_arg_to(out, arg);
+            }
+        }
+        MachineTacticCandidate::Rewrite {
+            rule,
+            direction,
+            site,
+        } => {
+            out.push(3);
+            encode_phase9_candidate_rewrite_rule_to(out, rule)?;
+            encode_phase9_rewrite_direction_to(out, *direction);
+            encode_phase9_rewrite_site_to(out, *site);
+        }
+        MachineTacticCandidate::SimpLite { rules } => {
+            out.push(4);
+            encode_len_to(out, rules.len());
+            for rule in rules {
+                encode_phase9_simp_rule_ref_to(out, rule)?;
+            }
+        }
+        MachineTacticCandidate::InductionNat { local_name } => {
+            out.push(5);
+            encode_string_to(out, local_name);
+        }
+    }
+    Ok(())
+}
+
+fn encode_phase9_candidate_rewrite_rule_to(
+    out: &mut Vec<u8>,
+    rule: &CandidateRewriteRuleRef,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_phase9_tactic_head_to(out, &rule.head)?;
+    encode_len_to(out, rule.universe_args.len());
+    for level in &rule.universe_args {
+        encode_level_to(out, level);
+    }
+    encode_len_to(out, rule.args.len());
+    for arg in &rule.args {
+        encode_phase9_apply_arg_to(out, arg);
+    }
+    Ok(())
+}
+
+fn encode_phase9_tactic_head_to(
+    out: &mut Vec<u8>,
+    head: &TacticHead,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match head {
+        TacticHead::Imported {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0);
+            encode_name_to(out, name)?;
+            encode_hash_to(out, decl_interface_hash);
+        }
+        TacticHead::CurrentModule {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(1);
+            encode_name_to(out, name)?;
+            encode_hash_to(out, decl_interface_hash);
+        }
+        TacticHead::Local { name } => {
+            out.push(2);
+            encode_string_to(out, name);
+        }
+    }
+    Ok(())
+}
+
+fn encode_phase9_apply_arg_to(out: &mut Vec<u8>, arg: &CandidateApplyArg) {
+    match arg {
+        CandidateApplyArg::Term(term) => {
+            out.push(0);
+            encode_string_to(out, &term.source);
+        }
+        CandidateApplyArg::Subgoal { name_hint } => {
+            out.push(1);
+            match name_hint {
+                Some(name_hint) => {
+                    out.push(1);
+                    encode_string_to(out, name_hint);
+                }
+                None => out.push(0),
+            }
+        }
+        CandidateApplyArg::InferFromTarget => out.push(2),
+    }
+}
+
+fn encode_phase9_simp_rule_ref_to(
+    out: &mut Vec<u8>,
+    rule: &SimpRuleRef,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_name_to(out, &rule.name)?;
+    encode_hash_to(out, &rule.decl_interface_hash);
+    encode_phase9_rewrite_direction_to(out, rule.direction);
+    Ok(())
+}
+
+fn encode_phase9_rewrite_direction_to(out: &mut Vec<u8>, direction: RewriteDirection) {
+    out.push(match direction {
+        RewriteDirection::Forward => 0,
+        RewriteDirection::Backward => 1,
+    });
+}
+
+fn encode_phase9_rewrite_site_to(out: &mut Vec<u8>, site: RewriteSite) {
+    out.push(match site {
+        RewriteSite::EqTargetLeft => 0,
+        RewriteSite::EqTargetRight => 1,
+    });
+}
+
 fn encode_universe_instantiation_patch_to(
     out: &mut Vec<u8>,
     patch: &Phase9UniverseInstantiationPatch,
@@ -9004,6 +10301,191 @@ fn decode_options(input: &[u8]) -> std::result::Result<Phase9AiOptions, DecodeEr
         return Err(DecodeError::Malformed);
     }
     Ok(options)
+}
+
+fn decode_phase4_tactic_options(input: &[u8]) -> std::result::Result<MachineTacticOptions, ()> {
+    let mut decoder = Phase4Decoder::new(input);
+    decoder.tag("npa.phase4.tactic-options.v1")?;
+    let rule_len = decoder.uvar()?;
+    if rule_len > MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS {
+        return Err(());
+    }
+    let mut simp_rules = Vec::new();
+    for _ in 0..rule_len {
+        simp_rules.push(decoder.simp_rule_ref()?);
+    }
+    let options = MachineTacticOptions {
+        simp_rules,
+        eq_family: decoder.option_eq_family_ref()?,
+        nat_family: decoder.option_nat_family_ref()?,
+        max_simp_rewrite_steps: decoder.uvar()?,
+        max_open_goals: decoder.usize()?,
+        max_metas: decoder.usize()?,
+    };
+    decoder.done()?;
+    if machine_tactic_options_canonical_bytes(&options) != input {
+        return Err(());
+    }
+    Ok(options)
+}
+
+fn decode_phase4_tactic_budget(input: &[u8]) -> std::result::Result<TacticBudget, ()> {
+    let mut decoder = Phase4Decoder::new(input);
+    decoder.tag("npa.phase4.tactic-budget.v1")?;
+    let budget = TacticBudget {
+        max_tactic_steps: decoder.uvar()?,
+        max_whnf_steps: decoder.uvar()?,
+        max_conversion_steps: decoder.uvar()?,
+        max_rewrite_steps: decoder.uvar()?,
+        max_meta_allocations: decoder.uvar()?,
+        max_expr_nodes: decoder.uvar()?,
+    };
+    decoder.done()?;
+    if tactic_budget_canonical_bytes(budget) != input {
+        return Err(());
+    }
+    Ok(budget)
+}
+
+struct Phase4Decoder<'a> {
+    input: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> Phase4Decoder<'a> {
+    fn new(input: &'a [u8]) -> Self {
+        Self { input, pos: 0 }
+    }
+
+    fn done(&self) -> std::result::Result<(), ()> {
+        if self.pos == self.input.len() {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    fn u8(&mut self) -> std::result::Result<u8, ()> {
+        let byte = *self.input.get(self.pos).ok_or(())?;
+        self.pos += 1;
+        Ok(byte)
+    }
+
+    fn uvar(&mut self) -> std::result::Result<u64, ()> {
+        let mut shift = 0u32;
+        let mut value = 0u64;
+        loop {
+            if shift >= 64 {
+                return Err(());
+            }
+            let byte = self.u8()?;
+            value |= u64::from(byte & 0x7f) << shift;
+            if byte & 0x80 == 0 {
+                return Ok(value);
+            }
+            shift += 7;
+        }
+    }
+
+    fn usize(&mut self) -> std::result::Result<usize, ()> {
+        usize::try_from(self.uvar()?).map_err(|_| ())
+    }
+
+    fn bytes(&mut self) -> std::result::Result<Vec<u8>, ()> {
+        let len = usize::try_from(self.uvar()?).map_err(|_| ())?;
+        let end = self.pos.checked_add(len).ok_or(())?;
+        let bytes = self.input.get(self.pos..end).ok_or(())?;
+        self.pos = end;
+        Ok(bytes.to_vec())
+    }
+
+    fn string(&mut self) -> std::result::Result<String, ()> {
+        let bytes = self.bytes()?;
+        if bytes.len() as u64 > MAX_STRING_BYTES {
+            return Err(());
+        }
+        String::from_utf8(bytes).map_err(|_| ())
+    }
+
+    fn tag(&mut self, expected: &str) -> std::result::Result<(), ()> {
+        if self.string()? == expected {
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
+
+    fn hash(&mut self) -> std::result::Result<Hash, ()> {
+        let end = self.pos.checked_add(32).ok_or(())?;
+        let bytes = self.input.get(self.pos..end).ok_or(())?;
+        self.pos = end;
+        Ok(bytes.try_into().unwrap())
+    }
+
+    fn name(&mut self) -> std::result::Result<Name, ()> {
+        let len = self.uvar()?;
+        if len == 0 || len > MAX_NAME_COMPONENTS {
+            return Err(());
+        }
+        let mut components = Vec::new();
+        for _ in 0..len {
+            components.push(self.string()?);
+        }
+        let name = Name(components);
+        if name.is_canonical() {
+            Ok(name)
+        } else {
+            Err(())
+        }
+    }
+
+    fn rewrite_direction(&mut self) -> std::result::Result<RewriteDirection, ()> {
+        match self.u8()? {
+            0x00 => Ok(RewriteDirection::Forward),
+            0x01 => Ok(RewriteDirection::Backward),
+            _ => Err(()),
+        }
+    }
+
+    fn simp_rule_ref(&mut self) -> std::result::Result<SimpRuleRef, ()> {
+        Ok(SimpRuleRef {
+            name: self.name()?,
+            decl_interface_hash: self.hash()?,
+            direction: self.rewrite_direction()?,
+        })
+    }
+
+    fn option_eq_family_ref(&mut self) -> std::result::Result<Option<EqFamilyRef>, ()> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(EqFamilyRef {
+                eq_name: self.name()?,
+                eq_interface_hash: self.hash()?,
+                refl_name: self.name()?,
+                refl_interface_hash: self.hash()?,
+                rec_name: self.name()?,
+                rec_interface_hash: self.hash()?,
+            })),
+            _ => Err(()),
+        }
+    }
+
+    fn option_nat_family_ref(&mut self) -> std::result::Result<Option<NatFamilyRef>, ()> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(NatFamilyRef {
+                nat_name: self.name()?,
+                nat_interface_hash: self.hash()?,
+                zero_name: self.name()?,
+                zero_interface_hash: self.hash()?,
+                succ_name: self.name()?,
+                succ_interface_hash: self.hash()?,
+                rec_name: self.name()?,
+                rec_interface_hash: self.hash()?,
+            })),
+            _ => Err(()),
+        }
+    }
 }
 
 struct Phase9InductiveDecodeBudget {
@@ -9225,6 +10707,20 @@ fn decode_theorem_graph_query_features(
         return Err(DecodeError::Malformed);
     }
     Ok(features)
+}
+
+fn decode_formalization_payload(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineFormalizationCheckPayload, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let payload = decoder.formalization_payload()?;
+    decoder.done()?;
+    let encoded = phase9_formalization_payload_canonical_bytes(&payload)
+        .map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(payload)
 }
 
 fn decode_universe_repair_candidate_outer(
@@ -10659,6 +12155,283 @@ impl<'a> Decoder<'a> {
             self.skip_string()?;
         }
         Ok(())
+    }
+
+    fn formalization_payload(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineFormalizationCheckPayload, DecodeError> {
+        Ok(Phase9MachineFormalizationCheckPayload {
+            candidate: self.formalization_candidate()?,
+            intent_record: self.option_formalization_intent_record()?,
+        })
+    }
+
+    fn formalization_candidate(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineFormalizationCandidate, DecodeError> {
+        Ok(Phase9MachineFormalizationCandidate {
+            source_document: self.formalization_source_document_ref()?,
+            claim_span: self.formalization_claim_span()?,
+            statement: self.machine_surface_term()?,
+            optional_proof_candidate: self.option_formalization_proof_candidate()?,
+        })
+    }
+
+    fn machine_surface_term(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineSurfaceTerm, DecodeError> {
+        Ok(Phase9MachineSurfaceTerm {
+            universe_params: self.string_list_with_cap(MAX_PHASE9_FORMALIZATION_UNIVERSE_PARAMS)?,
+            term_canonical_bytes: self
+                .bytes_with_cap(MAX_PHASE9_FORMALIZATION_TERM_BYTES, DecodeError::Malformed)?,
+        })
+    }
+
+    fn formalization_source_document_ref(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineFormalizationSourceDocumentRef, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9MachineFormalizationSourceDocumentRef::Inline {
+                source_document_hash: self.hash()?,
+                raw_utf8_bytes: self.bytes_with_cap(
+                    MAX_PHASE9_FORMALIZATION_SOURCE_BYTES,
+                    DecodeError::Malformed,
+                )?,
+            }),
+            1 => Ok(Phase9MachineFormalizationSourceDocumentRef::Artifact {
+                path: self.string()?,
+                file_hash: self.hash()?,
+                source_document_hash: self.hash()?,
+                size_bytes: self.u64()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn formalization_claim_span(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineFormalizationClaimSpan, DecodeError> {
+        Ok(Phase9MachineFormalizationClaimSpan {
+            start_byte: self.u64()?,
+            end_byte: self.u64()?,
+            claim_span_hash: self.hash()?,
+        })
+    }
+
+    fn option_formalization_proof_candidate(
+        &mut self,
+    ) -> std::result::Result<Option<Phase9MachineFormalizationProofCandidate>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(Phase9MachineFormalizationProofCandidate {
+                candidate_statement_hash: self.hash()?,
+                tactic: self.phase9_tactic_candidate()?,
+            })),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn option_formalization_intent_record(
+        &mut self,
+    ) -> std::result::Result<Option<Phase9FormalizationIntentRecord>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(Phase9FormalizationIntentRecord {
+                source_document_hash: self.hash()?,
+                claim_span_hash: self.hash()?,
+                candidate_statement_hash: self.hash()?,
+                status: self.formalization_intent_status()?,
+            })),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn formalization_intent_status(
+        &mut self,
+    ) -> std::result::Result<Phase9FormalizationIntentStatus, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9FormalizationIntentStatus::Unreviewed),
+            1 => Ok(Phase9FormalizationIntentStatus::Reviewed {
+                reviewer: self.reviewer_id()?,
+                accepted_statement_hash: self.hash()?,
+            }),
+            2 => Ok(Phase9FormalizationIntentStatus::Rejected {
+                reviewer: self.reviewer_id()?,
+                rejection_reason: self.formalization_rejection_reason_ref()?,
+                rejection_reason_hash: self.hash()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn reviewer_id(&mut self) -> std::result::Result<Phase9ReviewerId, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9ReviewerId::Human {
+                stable_id_ascii: self.bytes()?,
+            }),
+            1 => Ok(Phase9ReviewerId::System {
+                system_id_ascii: self.bytes()?,
+                actor_id_ascii: self.bytes()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn formalization_rejection_reason_ref(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineFormalizationRejectionReasonRef, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9MachineFormalizationRejectionReasonRef::Inline {
+                rejection_reason_hash: self.hash()?,
+                raw_utf8_bytes: self.bytes_with_cap(
+                    MAX_PHASE9_FORMALIZATION_REASON_BYTES,
+                    DecodeError::Malformed,
+                )?,
+            }),
+            1 => Ok(Phase9MachineFormalizationRejectionReasonRef::Artifact {
+                path: self.string()?,
+                file_hash: self.hash()?,
+                rejection_reason_hash: self.hash()?,
+                size_bytes: self.u64()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn phase9_tactic_candidate(
+        &mut self,
+    ) -> std::result::Result<MachineTacticCandidate, DecodeError> {
+        match self.u8()? {
+            0 => Ok(MachineTacticCandidate::Exact {
+                term: RawMachineTerm::new(self.string()?),
+            }),
+            1 => Ok(MachineTacticCandidate::Intro {
+                name: self.string()?,
+            }),
+            2 => {
+                let head = self.phase9_tactic_head()?;
+                let mut budget = Phase9InductiveDecodeBudget::new();
+                let universe_args = self.level_list_with_cap_counted(
+                    MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS,
+                    &mut budget,
+                )?;
+                let args = self.phase9_apply_args()?;
+                Ok(MachineTacticCandidate::Apply {
+                    head,
+                    universe_args,
+                    args,
+                })
+            }
+            3 => Ok(MachineTacticCandidate::Rewrite {
+                rule: self.phase9_candidate_rewrite_rule()?,
+                direction: self.phase9_rewrite_direction()?,
+                site: self.phase9_rewrite_site()?,
+            }),
+            4 => {
+                let len = self.u64()?;
+                if len > MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS {
+                    return Err(DecodeError::Malformed);
+                }
+                let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+                let mut rules = Vec::new();
+                for _ in 0..len {
+                    rules.push(self.phase9_simp_rule_ref()?);
+                }
+                Ok(MachineTacticCandidate::SimpLite { rules })
+            }
+            5 => Ok(MachineTacticCandidate::InductionNat {
+                local_name: self.string()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn phase9_apply_args(&mut self) -> std::result::Result<Vec<CandidateApplyArg>, DecodeError> {
+        let len = self.u64()?;
+        if len > MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut args = Vec::new();
+        for _ in 0..len {
+            args.push(self.phase9_apply_arg()?);
+        }
+        Ok(args)
+    }
+
+    fn phase9_apply_arg(&mut self) -> std::result::Result<CandidateApplyArg, DecodeError> {
+        match self.u8()? {
+            0 => Ok(CandidateApplyArg::Term(RawMachineTerm::new(self.string()?))),
+            1 => Ok(CandidateApplyArg::Subgoal {
+                name_hint: self.option_string()?,
+            }),
+            2 => Ok(CandidateApplyArg::InferFromTarget),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn option_string(&mut self) -> std::result::Result<Option<String>, DecodeError> {
+        match self.u8()? {
+            0 => Ok(None),
+            1 => Ok(Some(self.string()?)),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn phase9_candidate_rewrite_rule(
+        &mut self,
+    ) -> std::result::Result<CandidateRewriteRuleRef, DecodeError> {
+        let head = self.phase9_tactic_head()?;
+        let mut budget = Phase9InductiveDecodeBudget::new();
+        let universe_args =
+            self.level_list_with_cap_counted(MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS, &mut budget)?;
+        let args = self.phase9_apply_args()?;
+        Ok(CandidateRewriteRuleRef {
+            head,
+            universe_args,
+            args,
+        })
+    }
+
+    fn phase9_tactic_head(&mut self) -> std::result::Result<TacticHead, DecodeError> {
+        match self.u8()? {
+            0 => Ok(TacticHead::Imported {
+                name: self.name()?,
+                decl_interface_hash: self.hash()?,
+            }),
+            1 => Ok(TacticHead::CurrentModule {
+                name: self.name()?,
+                decl_interface_hash: self.hash()?,
+            }),
+            2 => Ok(TacticHead::Local {
+                name: self.string()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn phase9_simp_rule_ref(&mut self) -> std::result::Result<SimpRuleRef, DecodeError> {
+        Ok(SimpRuleRef {
+            name: self.name()?,
+            decl_interface_hash: self.hash()?,
+            direction: self.phase9_rewrite_direction()?,
+        })
+    }
+
+    fn phase9_rewrite_direction(&mut self) -> std::result::Result<RewriteDirection, DecodeError> {
+        match self.u8()? {
+            0 => Ok(RewriteDirection::Forward),
+            1 => Ok(RewriteDirection::Backward),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn phase9_rewrite_site(&mut self) -> std::result::Result<RewriteSite, DecodeError> {
+        match self.u8()? {
+            0 => Ok(RewriteSite::EqTargetLeft),
+            1 => Ok(RewriteSite::EqTargetRight),
+            _ => Err(DecodeError::Malformed),
+        }
     }
 
     fn option_quotient(
@@ -14029,6 +15802,503 @@ mod tests {
             Some(Phase9AiFeatureError::AdvancedInductive(
                 Phase9AdvancedInductiveError::PositivityProfileUnsupported,
             )),
+        );
+    }
+
+    fn formalization_options_bytes_with(
+        tactic_options: MachineTacticOptions,
+        tactic_budget: TacticBudget,
+    ) -> Vec<u8> {
+        let options = Phase9AiOptions {
+            formalization: Some(Phase9FormalizationOptions {
+                tactic_options_canonical_bytes: machine_tactic_options_canonical_bytes(
+                    &tactic_options,
+                ),
+                tactic_budget_canonical_bytes: tactic_budget_canonical_bytes(tactic_budget),
+            }),
+            ..Default::default()
+        };
+        phase9_ai_options_canonical_bytes(&options).unwrap()
+    }
+
+    fn formalization_options_bytes() -> Vec<u8> {
+        formalization_options_bytes_with(MachineTacticOptions::default(), TacticBudget::default())
+    }
+
+    fn machine_term_canonical_bytes(source: &str) -> Vec<u8> {
+        npa_frontend::canonicalize_machine_term_source(source)
+            .unwrap()
+            .canonical_bytes
+    }
+
+    fn formalization_statement(source: &str) -> Phase9MachineSurfaceTerm {
+        Phase9MachineSurfaceTerm {
+            universe_params: Vec::new(),
+            term_canonical_bytes: machine_term_canonical_bytes(source),
+        }
+    }
+
+    fn formalization_source(
+        source_text: &str,
+    ) -> (
+        Phase9MachineFormalizationSourceDocumentRef,
+        Phase9MachineFormalizationClaimSpan,
+        Hash,
+        Hash,
+    ) {
+        let bytes = source_text.as_bytes();
+        let source_document_hash = phase9_formalization_source_document_hash(bytes);
+        let claim_span_hash = phase9_formalization_claim_span_hash(
+            source_document_hash,
+            0,
+            bytes.len() as u64,
+            bytes,
+        );
+        (
+            Phase9MachineFormalizationSourceDocumentRef::Inline {
+                source_document_hash,
+                raw_utf8_bytes: bytes.to_vec(),
+            },
+            Phase9MachineFormalizationClaimSpan {
+                start_byte: 0,
+                end_byte: bytes.len() as u64,
+                claim_span_hash,
+            },
+            source_document_hash,
+            claim_span_hash,
+        )
+    }
+
+    fn formalization_request(
+        payload: Phase9MachineFormalizationCheckPayload,
+        options_bytes: Vec<u8>,
+    ) -> Vec<u8> {
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = Vec::new();
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::NaturalLanguageFormalization,
+            target: target_for(
+                Phase9AiTaskKind::NaturalLanguageFormalization,
+                &imports,
+                options_hash,
+                None,
+            ),
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_formalization_payload_canonical_bytes(&payload).unwrap(),
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
+    fn formalization_payload_with(
+        source_text: &str,
+        statement_source: &str,
+        intent_record: Option<Phase9FormalizationIntentRecord>,
+        optional_proof_candidate: Option<Phase9MachineFormalizationProofCandidate>,
+    ) -> Phase9MachineFormalizationCheckPayload {
+        let (source_document, claim_span, _, _) = formalization_source(source_text);
+        Phase9MachineFormalizationCheckPayload {
+            candidate: Phase9MachineFormalizationCandidate {
+                source_document,
+                claim_span,
+                statement: formalization_statement(statement_source),
+                optional_proof_candidate,
+            },
+            intent_record,
+        }
+    }
+
+    fn accepted_statement_hash_for_options(options_bytes: &[u8], statement_source: &str) -> Hash {
+        let imports = Vec::new();
+        let options_hash = phase9_ai_options_hash(options_bytes);
+        let env_fingerprint = phase9_ai_env_fingerprint(
+            Phase9AiProfileVersion::MvpV1,
+            Phase9AiTaskKind::NaturalLanguageFormalization,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let statement = formalization_statement(statement_source);
+        let ast =
+            npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
+                .unwrap();
+        let context = npa_frontend::MachineTermElabContext::from_verified_modules(
+            &[],
+            &[],
+            Vec::new(),
+            Vec::new(),
+        )
+        .unwrap();
+        let options = npa_frontend::MachineCompileOptions {
+            mode: npa_frontend::MachineSurfaceMode::Complete,
+            allow_universe_meta: false,
+        };
+        let (accepted, _) =
+            npa_frontend::elaborate_machine_term_infer_from_ast(&ast, &context, &options).unwrap();
+        phase9_formalization_accepted_statement_hash(env_fingerprint, &[], &accepted)
+    }
+
+    fn intent_record_for(
+        source_text: &str,
+        statement: &Phase9MachineSurfaceTerm,
+        status: Phase9FormalizationIntentStatus,
+    ) -> Phase9FormalizationIntentRecord {
+        let (_, _, source_document_hash, claim_span_hash) = formalization_source(source_text);
+        Phase9FormalizationIntentRecord {
+            source_document_hash,
+            claim_span_hash,
+            candidate_statement_hash: phase9_formalization_candidate_statement_hash(statement),
+            status,
+        }
+    }
+
+    fn exact_proof_candidate(
+        statement: &Phase9MachineSurfaceTerm,
+        proof_source: &str,
+    ) -> Phase9MachineFormalizationProofCandidate {
+        Phase9MachineFormalizationProofCandidate {
+            candidate_statement_hash: phase9_formalization_candidate_statement_hash(statement),
+            tactic: MachineTacticCandidate::Exact {
+                term: RawMachineTerm::new(proof_source),
+            },
+        }
+    }
+
+    fn assert_formalization_success_kind(
+        response: Phase9AiEndpointResponse,
+        expected_kind: Phase9FormalizationSuccessKind,
+    ) -> (Hash, Option<Hash>, Option<Hash>) {
+        let Phase9AiEndpointResponse::Success {
+            candidate_hash,
+            payload,
+            ..
+        } = response
+        else {
+            panic!("expected formalization success");
+        };
+        let Phase9AiSuccessPayload::NaturalLanguageFormalization {
+            kind,
+            accepted_statement_hash,
+            formalization_proof_root_hash,
+        } = *payload
+        else {
+            panic!("expected formalization payload");
+        };
+        assert_eq!(kind, expected_kind);
+        (
+            candidate_hash,
+            accepted_statement_hash,
+            formalization_proof_root_hash,
+        )
+    }
+
+    #[test]
+    fn formalization_source_and_rejection_reason_artifacts_are_validated() {
+        let root = std::env::temp_dir().join(format!(
+            "npa-phase9-formalization-artifacts-{}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        let source_bytes = b"claim: rejected artifact";
+        let reason_bytes = b"reviewer rejected this claim";
+        fs::write(root.join("source.txt"), source_bytes).unwrap();
+        fs::write(root.join("reason.txt"), reason_bytes).unwrap();
+
+        let source_document_hash = phase9_formalization_source_document_hash(source_bytes);
+        let claim_span_hash = phase9_formalization_claim_span_hash(
+            source_document_hash,
+            0,
+            source_bytes.len() as u64,
+            source_bytes,
+        );
+        let statement = formalization_statement("MissingFormalizationName");
+        let rejection_reason_hash = phase9_formalization_rejection_reason_hash(reason_bytes);
+        let payload = Phase9MachineFormalizationCheckPayload {
+            candidate: Phase9MachineFormalizationCandidate {
+                source_document: Phase9MachineFormalizationSourceDocumentRef::Artifact {
+                    path: "source.txt".to_owned(),
+                    file_hash: phase9_file_hash(source_bytes),
+                    source_document_hash,
+                    size_bytes: source_bytes.len() as u64,
+                },
+                claim_span: Phase9MachineFormalizationClaimSpan {
+                    start_byte: 0,
+                    end_byte: source_bytes.len() as u64,
+                    claim_span_hash,
+                },
+                statement: statement.clone(),
+                optional_proof_candidate: None,
+            },
+            intent_record: Some(Phase9FormalizationIntentRecord {
+                source_document_hash,
+                claim_span_hash,
+                candidate_statement_hash: phase9_formalization_candidate_statement_hash(&statement),
+                status: Phase9FormalizationIntentStatus::Rejected {
+                    reviewer: Phase9ReviewerId::Human {
+                        stable_id_ascii: b"reviewer-1".to_vec(),
+                    },
+                    rejection_reason: Phase9MachineFormalizationRejectionReasonRef::Artifact {
+                        path: "reason.txt".to_owned(),
+                        file_hash: phase9_file_hash(reason_bytes),
+                        rejection_reason_hash,
+                        size_bytes: reason_bytes.len() as u64,
+                    },
+                    rejection_reason_hash,
+                },
+            }),
+        };
+        let request = formalization_request(payload.clone(), formalization_options_bytes());
+
+        assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&request, &[], &root),
+            Phase9FormalizationSuccessKind::IntentRecordOnly,
+        );
+
+        let mut bad_payload = payload;
+        if let Phase9MachineFormalizationSourceDocumentRef::Artifact { file_hash, .. } =
+            &mut bad_payload.candidate.source_document
+        {
+            *file_hash = hash(99);
+        }
+        let bad_request = formalization_request(bad_payload, formalization_options_bytes());
+        assert_rejected(
+            run_phase9_formalize_check_request(&bad_request, &[], &root),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn formalization_rejected_intent_with_proof_candidate_is_rejected() {
+        let statement = formalization_statement("Type");
+        let reason = b"claim does not match the intended theorem".to_vec();
+        let reason_hash = phase9_formalization_rejection_reason_hash(&reason);
+        let intent = intent_record_for(
+            "claim: rejected",
+            &statement,
+            Phase9FormalizationIntentStatus::Rejected {
+                reviewer: Phase9ReviewerId::Human {
+                    stable_id_ascii: b"reviewer@example.com".to_vec(),
+                },
+                rejection_reason: Phase9MachineFormalizationRejectionReasonRef::Inline {
+                    rejection_reason_hash: reason_hash,
+                    raw_utf8_bytes: reason,
+                },
+                rejection_reason_hash: reason_hash,
+            },
+        );
+        let proof = exact_proof_candidate(&statement, "Prop");
+        let payload =
+            formalization_payload_with("claim: rejected", "Type", Some(intent), Some(proof));
+        let request = formalization_request(payload, formalization_options_bytes());
+
+        assert_rejected(
+            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::Formalization(
+                Phase9FormalizationError::RejectedIntentHasProofCandidate,
+            )),
+        );
+    }
+
+    #[test]
+    fn formalization_intent_status_fixtures_are_deterministic() {
+        let options_bytes = formalization_options_bytes();
+        let statement = formalization_statement("Prop");
+
+        let unreviewed = intent_record_for(
+            "claim: unreviewed",
+            &statement,
+            Phase9FormalizationIntentStatus::Unreviewed,
+        );
+        let unreviewed_request = formalization_request(
+            formalization_payload_with("claim: unreviewed", "Prop", Some(unreviewed), None),
+            options_bytes.clone(),
+        );
+        let (_, unreviewed_accepted, unreviewed_root) = assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&unreviewed_request, &[], &workspace_root()),
+            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+        );
+        assert!(unreviewed_accepted.is_some());
+        assert_eq!(unreviewed_root, None);
+
+        let reviewed_hash = accepted_statement_hash_for_options(&options_bytes, "Prop");
+        let reviewed = intent_record_for(
+            "claim: reviewed",
+            &statement,
+            Phase9FormalizationIntentStatus::Reviewed {
+                reviewer: Phase9ReviewerId::System {
+                    system_id_ascii: b"review-ui".to_vec(),
+                    actor_id_ascii: b"user-123".to_vec(),
+                },
+                accepted_statement_hash: reviewed_hash,
+            },
+        );
+        let reviewed_request = formalization_request(
+            formalization_payload_with("claim: reviewed", "Prop", Some(reviewed), None),
+            options_bytes.clone(),
+        );
+        let (_, reviewed_accepted, reviewed_root) = assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&reviewed_request, &[], &workspace_root()),
+            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+        );
+        assert_eq!(reviewed_accepted, Some(reviewed_hash));
+        assert_eq!(reviewed_root, None);
+
+        let rejected_statement = formalization_statement("MissingFormalizationName");
+        let reason = b"not the theorem the reviewer intended".to_vec();
+        let reason_hash = phase9_formalization_rejection_reason_hash(&reason);
+        let rejected = intent_record_for(
+            "claim: rejected",
+            &rejected_statement,
+            Phase9FormalizationIntentStatus::Rejected {
+                reviewer: Phase9ReviewerId::Human {
+                    stable_id_ascii: b"reviewer-1".to_vec(),
+                },
+                rejection_reason: Phase9MachineFormalizationRejectionReasonRef::Inline {
+                    rejection_reason_hash: reason_hash,
+                    raw_utf8_bytes: reason,
+                },
+                rejection_reason_hash: reason_hash,
+            },
+        );
+        let rejected_request = formalization_request(
+            formalization_payload_with(
+                "claim: rejected",
+                "MissingFormalizationName",
+                Some(rejected),
+                None,
+            ),
+            options_bytes,
+        );
+        let (_, rejected_accepted, rejected_root) = assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&rejected_request, &[], &workspace_root()),
+            Phase9FormalizationSuccessKind::IntentRecordOnly,
+        );
+        assert_eq!(rejected_accepted, None);
+        assert_eq!(rejected_root, None);
+    }
+
+    #[test]
+    fn formalization_statement_and_proof_bridge_failures_are_distinct() {
+        let bad_statement_request = formalization_request(
+            formalization_payload_with("claim: unknown", "UnknownFormalizationName", None, None),
+            formalization_options_bytes(),
+        );
+        assert_rejected(
+            run_phase9_formalize_check_request(&bad_statement_request, &[], &workspace_root()),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::Formalization(
+                Phase9FormalizationError::CandidateStatementElaborationFailed,
+            )),
+        );
+
+        let statement = formalization_statement("Type");
+        let proof = exact_proof_candidate(&statement, "Type");
+        let bad_proof_request = formalization_request(
+            formalization_payload_with("claim: type", "Type", None, Some(proof)),
+            formalization_options_bytes(),
+        );
+        assert_rejected(
+            run_phase9_formalize_check_request(&bad_proof_request, &[], &workspace_root()),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::Formalization(
+                Phase9FormalizationError::ProofBridgeFailed,
+            )),
+        );
+    }
+
+    #[test]
+    fn formalization_single_tactic_bridge_can_check_proof_candidate() {
+        let statement = formalization_statement("Type");
+        let proof = exact_proof_candidate(&statement, "Prop");
+        let request = formalization_request(
+            formalization_payload_with("claim: Type", "Type", None, Some(proof)),
+            formalization_options_bytes(),
+        );
+
+        let (_, accepted_statement_hash, proof_root_hash) = assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
+            Phase9FormalizationSuccessKind::ProofBridgeChecked,
+        );
+
+        assert!(accepted_statement_hash.is_some());
+        assert!(proof_root_hash.is_some());
+    }
+
+    #[test]
+    fn formalization_source_text_does_not_define_theorem_statement() {
+        let options_bytes = formalization_options_bytes();
+        let first = formalization_request(
+            formalization_payload_with("natural language confidence: 10%", "Prop", None, None),
+            options_bytes.clone(),
+        );
+        let second = formalization_request(
+            formalization_payload_with("natural language confidence: 99%", "Prop", None, None),
+            options_bytes,
+        );
+
+        let (first_candidate, first_accepted, _) = assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&first, &[], &workspace_root()),
+            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+        );
+        let (second_candidate, second_accepted, _) = assert_formalization_success_kind(
+            run_phase9_formalize_check_request(&second, &[], &workspace_root()),
+            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+        );
+
+        assert_ne!(first_candidate, second_candidate);
+        assert_eq!(first_accepted, second_accepted);
+    }
+
+    #[test]
+    fn formalization_reviewer_id_regex_is_envelope_validation() {
+        let statement = formalization_statement("Prop");
+        let reviewed_hash =
+            accepted_statement_hash_for_options(&formalization_options_bytes(), "Prop");
+        let intent = intent_record_for(
+            "claim: reviewed",
+            &statement,
+            Phase9FormalizationIntentStatus::Reviewed {
+                reviewer: Phase9ReviewerId::Human {
+                    stable_id_ascii: b"bad reviewer".to_vec(),
+                },
+                accepted_statement_hash: reviewed_hash,
+            },
+        );
+        let request = formalization_request(
+            formalization_payload_with("claim: reviewed", "Prop", Some(intent), None),
+            formalization_options_bytes(),
+        );
+
+        assert_rejected(
+            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    }
+
+    #[test]
+    fn formalization_tactic_options_shape_is_required_without_proof_candidate() {
+        let tactic_options = MachineTacticOptions {
+            max_simp_rewrite_steps: 0,
+            ..Default::default()
+        };
+        let request = formalization_request(
+            formalization_payload_with("claim: Prop", "Prop", None, None),
+            formalization_options_bytes_with(tactic_options, TacticBudget::default()),
+        );
+
+        assert_rejected(
+            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
         );
     }
 
