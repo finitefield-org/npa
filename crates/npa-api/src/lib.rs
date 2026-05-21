@@ -62,7 +62,7 @@ pub use diagnostic::{
     MachineApiDiagnosticCanonicalizationError,
 };
 pub use human::{
-    compile_human_source_to_certificate, compile_human_source_to_core,
+    check_human_tactic_term, compile_human_source_to_certificate, compile_human_source_to_core,
     human_api_default_compile_options, start_human_proof,
 };
 pub use json::{
@@ -449,7 +449,8 @@ pub use types::{
     validate_machine_endpoint_envelope, CheckedMachineProofRoot, HashString,
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
-    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, KernelCheckProfileId,
+    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanTacticTermCheckOk,
+    HumanTacticTermCheckRequest, HumanTacticTermError, KernelCheckProfileId,
     MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
     MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope, MachineApiResponseStatus,
     MachineApiSchedulerResponse, MachineApiVersion, MachineEndpointEnvelopeSpec,

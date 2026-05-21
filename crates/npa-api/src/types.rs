@@ -2,9 +2,10 @@ use std::collections::BTreeSet;
 
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
-    FileId, HumanCompileOptions, HumanDiagnostic, HumanImportedSourceInterface,
+    FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr, HumanImportedSourceInterface,
     HumanSourceInterface, MachineSurfaceCallableInterfaceTable,
 };
+use npa_kernel::Expr;
 use npa_tactic::{GoalId, MachineProofState, MachineTacticDiagnostic, MetaVarId};
 
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
@@ -101,6 +102,22 @@ pub struct HumanStartProofOk {
     pub source_interface: HumanSourceInterface,
 }
 
+#[derive(Clone, Debug)]
+pub struct HumanTacticTermCheckRequest<'term, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub term: &'term HumanExpr,
+    pub current_source_interface: &'ctx HumanSourceInterface,
+    pub imported_source_interfaces: &'ctx [HumanImportedSourceInterface],
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticTermCheckOk {
+    pub expr: Expr,
+    pub inferred_type: Expr,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileError {
     pub diagnostic: HumanDiagnostic,
@@ -125,6 +142,24 @@ impl From<HumanDiagnostic> for HumanStartProofError {
 }
 
 impl From<MachineTacticDiagnostic> for HumanStartProofError {
+    fn from(diagnostic: MachineTacticDiagnostic) -> Self {
+        Self::Machine(diagnostic)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTacticTermError {
+    Human(HumanCompileError),
+    Machine(MachineTacticDiagnostic),
+}
+
+impl From<HumanDiagnostic> for HumanTacticTermError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self::Human(HumanCompileError::from(diagnostic))
+    }
+}
+
+impl From<MachineTacticDiagnostic> for HumanTacticTermError {
     fn from(diagnostic: MachineTacticDiagnostic) -> Self {
         Self::Machine(diagnostic)
     }

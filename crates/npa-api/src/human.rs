@@ -1,8 +1,10 @@
 use crate::{
     HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanStartProofError,
-    HumanStartProofOk, HumanStartProofRequest,
+    HumanStartProofOk, HumanStartProofRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
+    HumanTacticTermError,
 };
+use npa_kernel::Decl;
 
 pub fn compile_human_source_to_core(
     request: HumanCompileCoreRequest<'_, '_>,
@@ -97,8 +99,117 @@ pub fn start_human_proof(
     })
 }
 
+pub fn check_human_tactic_term(
+    request: HumanTacticTermCheckRequest<'_, '_>,
+) -> Result<HumanTacticTermCheckOk, HumanTacticTermError> {
+    let frontend_options = npa_frontend::HumanCompileOptions::from(&request.options);
+    let goal = request.state.goal(request.goal_id)?;
+    let direct_imports = request
+        .state
+        .env
+        .imports
+        .iter()
+        .filter(|import| import.is_visible())
+        .map(frontend_import_from_tactic_ref)
+        .collect::<Vec<_>>();
+    let available_imports = request
+        .state
+        .env
+        .imports
+        .iter()
+        .map(|import| npa_frontend::VerifiedImport::from(import.verified_module()))
+        .collect::<Vec<_>>();
+    let checked_current_decls = request
+        .state
+        .env
+        .checked_current_decls
+        .iter()
+        .map(|decl| npa_frontend::MachineCheckedCurrentDecl {
+            name: decl.signature().name().clone(),
+            source_index: decl.source_index(),
+            decl_interface_hash: decl.signature().decl_interface_hash(),
+            decl: decl.core_decl().clone(),
+        })
+        .collect::<Vec<_>>();
+    let current_generated_decls =
+        human_tactic_current_generated_decls(&request.state.env.checked_current_decls);
+    let local_context = goal
+        .context
+        .iter()
+        .map(|local| npa_frontend::MachineLocalDecl {
+            name: local.name.clone(),
+            ty: local.ty.clone(),
+            value: local.value.clone(),
+        })
+        .collect::<Vec<_>>();
+    let context = npa_frontend::HumanTacticTermElabContext::from_request(
+        npa_frontend::HumanTacticTermElabContextRequest {
+            direct_imports: &direct_imports,
+            available_imports: &available_imports,
+            current_module: request.state.root.module.clone(),
+            checked_current_decls: &checked_current_decls,
+            current_generated_decls: &current_generated_decls,
+            local_context,
+            universe_params: request.state.root.universe_params.clone(),
+            current_source_interface: Some(request.current_source_interface),
+            imported_source_interfaces: request.imported_source_interfaces,
+        },
+    )?;
+    let output = npa_frontend::elaborate_human_tactic_term_check(
+        &context,
+        request.term,
+        &goal.target,
+        &frontend_options,
+    )?;
+
+    Ok(HumanTacticTermCheckOk {
+        expr: output.expr,
+        inferred_type: output.inferred_type,
+    })
+}
+
 pub fn human_api_default_compile_options() -> HumanApiCompileOptions {
     HumanApiCompileOptions::default()
+}
+
+fn frontend_import_from_tactic_ref(
+    import: &npa_tactic::VerifiedImportRef,
+) -> npa_frontend::VerifiedImport {
+    let mut frontend = npa_frontend::VerifiedImport::from(import.verified_module());
+    let visible_exports = import
+        .exports()
+        .iter()
+        .map(|export| (export.name.clone(), export.decl_interface_hash))
+        .collect::<std::collections::BTreeSet<_>>();
+    frontend.exports.retain(|export| {
+        visible_exports.contains(&(export.name.clone(), export.decl_interface_hash))
+    });
+    frontend
+}
+
+fn human_tactic_current_generated_decls(
+    checked_current_decls: &[npa_tactic::CheckedCurrentDecl],
+) -> Vec<npa_frontend::MachineCheckedCurrentGeneratedDecl> {
+    let mut generated = Vec::new();
+    for decl in checked_current_decls {
+        if let Decl::Inductive { data, .. } = decl.core_decl() {
+            for constructor in &data.constructors {
+                generated.push(npa_frontend::MachineCheckedCurrentGeneratedDecl {
+                    name: npa_cert::Name::from_dotted(&constructor.name),
+                    parent_source_index: decl.source_index(),
+                    decl_interface_hash: decl.signature().decl_interface_hash(),
+                });
+            }
+            if let Some(recursor) = &data.recursor {
+                generated.push(npa_frontend::MachineCheckedCurrentGeneratedDecl {
+                    name: npa_cert::Name::from_dotted(&recursor.name),
+                    parent_source_index: decl.source_index(),
+                    decl_interface_hash: decl.signature().decl_interface_hash(),
+                });
+            }
+        }
+    }
+    generated
 }
 
 fn active_human_verified_import_refs(
@@ -327,6 +438,47 @@ theorem target : ImportedP := by simp-lite",
         assert_eq!(ok.state.root.source_index, 0);
         npa_tactic::validate_machine_proof_state(&ok.state)
             .expect("import-backed Human-started state must validate");
+    }
+
+    #[test]
+    fn human_tactic_term_bridge_checks_goal_local_without_machine_hot_path_dependency() {
+        let ok = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanTactic"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanTactic.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "theorem target : forall (A : Type), Type := by simp-lite",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start a theorem with a Pi target");
+        let (state, _) = npa_tactic::run_machine_tactic(
+            &ok.state,
+            npa_tactic::MachineTactic::Intro {
+                goal_id: npa_tactic::GoalId(0),
+                name: "A".to_owned(),
+            },
+        )
+        .expect("Machine intro should create a local A goal");
+        let term = npa_frontend::parse_human_term(npa_frontend::FileId(0), "A")
+            .expect("Human tactic term should parse");
+        let checked = check_human_tactic_term(HumanTacticTermCheckRequest {
+            state: &state,
+            goal_id: npa_tactic::GoalId(1),
+            term: &term,
+            current_source_interface: &ok.source_interface,
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human tactic bridge should check exact local A");
+
+        assert_eq!(checked.expr, npa_kernel::Expr::bvar(0));
+        assert_eq!(
+            checked.inferred_type,
+            npa_kernel::Expr::sort(npa_kernel::type0())
+        );
     }
 
     fn workspace_manifest(crate_name: &str) -> String {

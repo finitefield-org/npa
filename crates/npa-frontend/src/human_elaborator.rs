@@ -5,13 +5,14 @@ use crate::{
     machine_callable_profile_from_human_binders, parse_human_module_with_source_interfaces,
     resolve_human_module_with_source_interfaces, HumanBinder, HumanBinderKind, HumanCompileOptions,
     HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload,
-    HumanDiagnosticPhase, HumanExpr, HumanGlobalRef, HumanHoleGoal, HumanHoleGoalLocal,
-    HumanImplicitMode, HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName,
-    HumanResolvedName, HumanResolvedNameUse, HumanResolvedNotationUse, HumanResult,
-    HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
-    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
-    MachineDecl, MachineLevel, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule,
-    Span, VerifiedImport,
+    HumanDiagnosticPhase, HumanExpr, HumanGlobalRef, HumanGlobalScopeEntry, HumanHoleGoal,
+    HumanHoleGoalLocal, HumanImplicitMode, HumanImportedSourceInterface, HumanItem, HumanLevel,
+    HumanName, HumanResolvedName, HumanResolvedNameUse, HumanResolvedNotationEntry,
+    HumanResolvedNotationUse, HumanResult, HumanSourceDeclarationKind,
+    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanUnsolvedMeta, HumanUnsolvedMetaKind,
+    MachineBinder, MachineCallableBinderVisibility, MachineCheckedCurrentDecl,
+    MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel, MachineLocalDecl, MachineName,
+    MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{
     subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level,
@@ -47,6 +48,47 @@ pub struct HumanProofStartCoreOutput {
     pub proof: HumanProofStartCore,
     pub source_interface: HumanSourceInterface,
     pub active_imports: Vec<HumanImportedSourceInterface>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanTacticTermElabContext {
+    env: Env,
+    global_scope: HumanTacticGlobalScope,
+    notation_entries: Vec<HumanResolvedNotationEntry>,
+    signatures: BTreeMap<String, HumanCallableSignature>,
+    local_context: Vec<MachineLocalDecl>,
+    universe_params: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanTacticTermElabContextRequest<'a> {
+    pub direct_imports: &'a [VerifiedImport],
+    pub available_imports: &'a [VerifiedImport],
+    pub current_module: npa_cert::ModuleName,
+    pub checked_current_decls: &'a [MachineCheckedCurrentDecl],
+    pub current_generated_decls: &'a [MachineCheckedCurrentGeneratedDecl],
+    pub local_context: Vec<MachineLocalDecl>,
+    pub universe_params: Vec<String>,
+    pub current_source_interface: Option<&'a HumanSourceInterface>,
+    pub imported_source_interfaces: &'a [HumanImportedSourceInterface],
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticTermCheckOutput {
+    pub expr: Expr,
+    pub inferred_type: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticTermInferOutput {
+    pub expr: Expr,
+    pub inferred_type: Expr,
+}
+
+#[derive(Clone, Debug, Default)]
+struct HumanTacticGlobalScope {
+    current: Vec<HumanGlobalScopeEntry>,
+    imported: Vec<HumanGlobalScopeEntry>,
 }
 
 pub fn elaborate_human_module(
@@ -169,6 +211,97 @@ fn prepare_human_proof_start_core_with_notation_plan(
         &module_name,
         proof,
     ))
+}
+
+pub fn elaborate_human_tactic_term_check(
+    context: &HumanTacticTermElabContext,
+    term: &HumanExpr,
+    expected: &Expr,
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanTacticTermCheckOutput> {
+    let resolved = resolve_human_tactic_term(context, term, options)?;
+    let mut first_error = None;
+    let mut success = None;
+
+    for plan in notation_candidate_plans_from_uses(
+        &resolved.resolved_notations,
+        options.max_notation_candidates,
+    )
+    .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
+    {
+        match elaborate_human_tactic_term_check_with_plan(context, &resolved, &plan, expected) {
+            Ok(output) if success.is_none() => success = Some(output),
+            Ok(_) => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::AmbiguousNotation,
+                    term.span(),
+                    "multiple Human tactic term notation candidates elaborated successfully",
+                )
+                .with_default_phase(HumanDiagnosticPhase::Elaborator));
+            }
+            Err(err) => {
+                first_error.get_or_insert(err);
+            }
+        }
+    }
+
+    if let Some(output) = success {
+        Ok(output)
+    } else if let Some(err) = first_error {
+        Err(err.with_default_phase(HumanDiagnosticPhase::Elaborator))
+    } else {
+        Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousNotation,
+            term.span(),
+            "no Human tactic term notation candidate plan was available",
+        )
+        .with_default_phase(HumanDiagnosticPhase::Elaborator))
+    }
+}
+
+pub fn elaborate_human_tactic_term_infer(
+    context: &HumanTacticTermElabContext,
+    term: &HumanExpr,
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanTacticTermInferOutput> {
+    let resolved = resolve_human_tactic_term(context, term, options)?;
+    let mut first_error = None;
+    let mut success = None;
+
+    for plan in notation_candidate_plans_from_uses(
+        &resolved.resolved_notations,
+        options.max_notation_candidates,
+    )
+    .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
+    {
+        match elaborate_human_tactic_term_infer_with_plan(context, &resolved, &plan) {
+            Ok(output) if success.is_none() => success = Some(output),
+            Ok(_) => {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::AmbiguousNotation,
+                    term.span(),
+                    "multiple Human tactic term notation candidates elaborated successfully",
+                )
+                .with_default_phase(HumanDiagnosticPhase::Elaborator));
+            }
+            Err(err) => {
+                first_error.get_or_insert(err);
+            }
+        }
+    }
+
+    if let Some(output) = success {
+        Ok(output)
+    } else if let Some(err) = first_error {
+        Err(err.with_default_phase(HumanDiagnosticPhase::Elaborator))
+    } else {
+        Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousNotation,
+            term.span(),
+            "no Human tactic term notation candidate plan was available",
+        )
+        .with_default_phase(HumanDiagnosticPhase::Elaborator))
+    }
 }
 
 pub fn compile_human_source_to_core(
@@ -541,6 +674,814 @@ fn prefix_current_inductive_identities(
         rules: recursor.rules,
     });
     data
+}
+
+impl HumanTacticTermElabContext {
+    pub fn from_request(request: HumanTacticTermElabContextRequest<'_>) -> HumanResult<Self> {
+        let span = Span::empty(crate::FileId(0));
+        let mut env = Env::new();
+        let mut seen_imports = BTreeSet::new();
+        for import in request
+            .direct_imports
+            .iter()
+            .chain(request.available_imports)
+        {
+            let key = (
+                import.module.clone(),
+                import.export_hash,
+                import.certificate_hash,
+            );
+            if seen_imports.insert(key) {
+                add_human_kernel_import_to_env(&mut env, import, span)?;
+            }
+        }
+
+        for decl in request.checked_current_decls {
+            add_human_kernel_decl_to_env(
+                &mut env,
+                decl.decl.clone(),
+                span,
+                "Human tactic checked current declaration",
+            )?;
+        }
+
+        let global_scope = human_tactic_global_scope(request.direct_imports, &request);
+        let signatures = human_tactic_callable_signatures(&request);
+        let notation_entries = human_tactic_notation_entries(
+            &global_scope,
+            request.current_source_interface,
+            request.imported_source_interfaces,
+            span,
+        )?;
+
+        Ok(Self {
+            env,
+            global_scope,
+            notation_entries,
+            signatures,
+            local_context: request.local_context,
+            universe_params: request.universe_params,
+        })
+    }
+
+    pub fn local_context(&self) -> &[MachineLocalDecl] {
+        &self.local_context
+    }
+
+    pub fn universe_params(&self) -> &[String] {
+        &self.universe_params
+    }
+}
+
+fn add_human_kernel_import_to_env(
+    env: &mut Env,
+    import: &VerifiedImport,
+    span: Span,
+) -> HumanResult<()> {
+    for decl in kernel_decls_for_human_import(import) {
+        add_human_kernel_decl_to_env(env, decl, span, "Human tactic import environment")?;
+    }
+    Ok(())
+}
+
+fn add_human_kernel_decl_to_env(
+    env: &mut Env,
+    decl: Decl,
+    span: Span,
+    context: &str,
+) -> HumanResult<()> {
+    if let Some(existing) = env.decl(decl.name()) {
+        if existing == &decl {
+            return Ok(());
+        }
+        return Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::KernelRejected,
+            span,
+            format!(
+                "kernel declaration {} conflicts with an existing declaration",
+                decl.name()
+            ),
+        )
+        .with_phase(HumanDiagnosticPhase::KernelHandoff));
+    }
+
+    match decl {
+        Decl::Axiom {
+            name,
+            universe_params,
+            ty,
+        } => env.add_axiom(name, universe_params, ty),
+        Decl::Def {
+            name,
+            universe_params,
+            ty,
+            value,
+            reducibility,
+        } => env.add_def(name, universe_params, ty, value, reducibility),
+        Decl::Theorem {
+            name,
+            universe_params,
+            ty,
+            proof,
+        } => env.add_theorem(name, universe_params, ty, proof),
+        Decl::Inductive { data, .. } => env.add_inductive(*data),
+        Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
+    }
+    .map_err(|err| {
+        human_kernel_decl_diagnostic(span, err, context)
+            .with_phase(HumanDiagnosticPhase::KernelHandoff)
+    })
+}
+
+fn human_tactic_global_scope(
+    direct_imports: &[VerifiedImport],
+    request: &HumanTacticTermElabContextRequest<'_>,
+) -> HumanTacticGlobalScope {
+    let span = Span::empty(crate::FileId(0));
+    let imported = direct_imports
+        .iter()
+        .flat_map(|import| {
+            import
+                .exports
+                .iter()
+                .map(move |export| HumanGlobalScopeEntry {
+                    name: HumanName::new(export.name.0.clone(), span),
+                    reference: HumanGlobalRef::Imported {
+                        module: import.module.clone(),
+                        name: export.name.clone(),
+                        decl_interface_hash: export.decl_interface_hash,
+                    },
+                    span,
+                })
+        })
+        .collect();
+    let mut current = request
+        .checked_current_decls
+        .iter()
+        .map(|decl| HumanGlobalScopeEntry {
+            name: HumanName::new(
+                prefixed_human_current_name(&request.current_module, &decl.name).0,
+                span,
+            ),
+            reference: HumanGlobalRef::Local {
+                index: decl.source_index as usize,
+                name: prefixed_human_current_name(&request.current_module, &decl.name),
+            },
+            span,
+        })
+        .collect::<Vec<_>>();
+    current.extend(
+        request
+            .current_generated_decls
+            .iter()
+            .map(|decl| HumanGlobalScopeEntry {
+                name: HumanName::new(
+                    prefixed_human_current_name(&request.current_module, &decl.name).0,
+                    span,
+                ),
+                reference: HumanGlobalRef::LocalGenerated {
+                    index: decl.parent_source_index as usize,
+                    name: prefixed_human_current_name(&request.current_module, &decl.name),
+                },
+                span,
+            }),
+    );
+    HumanTacticGlobalScope { current, imported }
+}
+
+fn human_tactic_callable_signatures(
+    request: &HumanTacticTermElabContextRequest<'_>,
+) -> BTreeMap<String, HumanCallableSignature> {
+    let mut signatures = BTreeMap::new();
+    for import in request.direct_imports {
+        for export in &import.exports {
+            let implicit_profile = human_imported_source_interface_profile(
+                request.imported_source_interfaces,
+                import,
+                export,
+            )
+            .unwrap_or_else(|| {
+                if npa_cert::builtin_decl_interface_hash(&export.name)
+                    == Some(export.decl_interface_hash)
+                {
+                    builtin_machine_callable_profile(&export.name).unwrap_or_default()
+                } else {
+                    Vec::new()
+                }
+            });
+            signatures.insert(
+                export.name.as_dotted(),
+                HumanCallableSignature {
+                    universe_params: export.universe_params.clone(),
+                    implicit_profile,
+                },
+            );
+        }
+    }
+
+    for decl in request.checked_current_decls {
+        let implicit_profile = human_current_source_interface_profile(
+            request.current_source_interface,
+            &decl.name,
+            decl.decl_interface_hash,
+        )
+        .unwrap_or_default();
+        signatures.insert(
+            prefixed_human_current_name(&request.current_module, &decl.name).as_dotted(),
+            HumanCallableSignature {
+                universe_params: decl.decl.universe_params().to_vec(),
+                implicit_profile: implicit_profile.clone(),
+            },
+        );
+        if let Decl::Inductive { data, .. } = &decl.decl {
+            for constructor in &data.constructors {
+                signatures.insert(
+                    constructor.name.clone(),
+                    HumanCallableSignature {
+                        universe_params: data.universe_params.clone(),
+                        implicit_profile: generated_constructor_profile(
+                            &constructor.ty,
+                            &implicit_profile,
+                        ),
+                    },
+                );
+            }
+            if let Some(recursor) = &data.recursor {
+                signatures.insert(
+                    recursor.name.clone(),
+                    HumanCallableSignature {
+                        universe_params: recursor.universe_params.clone(),
+                        implicit_profile: all_explicit_profile(pi_domain_count(&recursor.ty)),
+                    },
+                );
+            }
+        }
+    }
+
+    signatures
+}
+
+fn human_imported_source_interface_profile(
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> Option<Vec<MachineCallableBinderVisibility>> {
+    imported_source_interfaces
+        .iter()
+        .filter(|interface| {
+            interface.module == import.module
+                && interface.export_hash == import.export_hash
+                && interface.certificate_hash == import.certificate_hash
+        })
+        .flat_map(|interface| interface.source_interface.declarations.iter())
+        .find(|decl| {
+            decl.kind != HumanSourceDeclarationKind::Imported
+                && npa_cert::Name(decl.name.parts.clone()) == export.name
+                && decl.decl_interface_hash == Some(export.decl_interface_hash)
+        })
+        .map(|decl| machine_callable_profile_from_human_binders(&decl.binders))
+}
+
+fn human_current_source_interface_profile(
+    current_source_interface: Option<&HumanSourceInterface>,
+    name: &npa_cert::Name,
+    decl_interface_hash: npa_cert::Hash,
+) -> Option<Vec<MachineCallableBinderVisibility>> {
+    current_source_interface?
+        .declarations
+        .iter()
+        .find(|decl| {
+            npa_cert::Name(decl.name.parts.clone()) == *name
+                && decl.decl_interface_hash == Some(decl_interface_hash)
+        })
+        .map(|decl| machine_callable_profile_from_human_binders(&decl.binders))
+}
+
+fn human_tactic_notation_entries(
+    scope: &HumanTacticGlobalScope,
+    current_source_interface: Option<&HumanSourceInterface>,
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    span: Span,
+) -> HumanResult<Vec<HumanResolvedNotationEntry>> {
+    let mut entries = Vec::new();
+    if let Some(source_interface) = current_source_interface {
+        append_human_tactic_notation_entries(scope, &mut entries, &source_interface.notations)?;
+    }
+    for source_interface in imported_source_interfaces {
+        append_human_tactic_notation_entries(
+            scope,
+            &mut entries,
+            &source_interface.source_interface.notations,
+        )?;
+    }
+    let _ = span;
+    Ok(entries)
+}
+
+fn append_human_tactic_notation_entries(
+    scope: &HumanTacticGlobalScope,
+    entries: &mut Vec<HumanResolvedNotationEntry>,
+    notations: &[crate::HumanSourceNotationMetadata],
+) -> HumanResult<()> {
+    for notation in notations {
+        let Ok(Some(target)) = resolve_human_tactic_global_name(scope, &notation.target) else {
+            continue;
+        };
+        entries.push(HumanResolvedNotationEntry {
+            kind: notation.kind,
+            associativity: notation.associativity,
+            precedence: notation.precedence,
+            token: notation.token.clone(),
+            target,
+            namespace: notation.namespace.clone(),
+            span: notation.span,
+        });
+    }
+    Ok(())
+}
+
+#[derive(Clone, Debug)]
+struct HumanResolvedTacticTerm<'a> {
+    term: &'a HumanExpr,
+    resolved_names: Vec<HumanResolvedNameUse>,
+    resolved_notations: Vec<HumanResolvedNotationUse>,
+}
+
+#[derive(Clone, Debug, Default)]
+struct HumanTacticLocalScope {
+    names: Vec<HumanName>,
+}
+
+impl HumanTacticLocalScope {
+    fn from_machine_locals(locals: &[MachineLocalDecl]) -> Self {
+        let span = Span::empty(crate::FileId(0));
+        Self {
+            names: locals
+                .iter()
+                .map(|local| HumanName::new(vec![local.name.clone()], span))
+                .collect(),
+        }
+    }
+
+    fn push(&mut self, name: HumanName) {
+        self.names.push(name);
+    }
+
+    fn lookup(&self, name: &str) -> Option<(HumanName, usize)> {
+        self.names
+            .iter()
+            .rev()
+            .enumerate()
+            .find(|(_, local)| local.parts.len() == 1 && local.parts[0] == name)
+            .map(|(index, local)| (local.clone(), index))
+    }
+}
+
+struct HumanTacticTermResolver<'a> {
+    context: &'a HumanTacticTermElabContext,
+    max_notation_candidates: usize,
+    resolved_names: Vec<HumanResolvedNameUse>,
+    resolved_notations: Vec<HumanResolvedNotationUse>,
+}
+
+fn resolve_human_tactic_term<'a>(
+    context: &HumanTacticTermElabContext,
+    term: &'a HumanExpr,
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanResolvedTacticTerm<'a>> {
+    let mut resolver = HumanTacticTermResolver {
+        context,
+        max_notation_candidates: options.max_notation_candidates,
+        resolved_names: Vec::new(),
+        resolved_notations: Vec::new(),
+    };
+    let mut locals = HumanTacticLocalScope::from_machine_locals(&context.local_context);
+    resolver.resolve_expr(term, &mut locals)?;
+    Ok(HumanResolvedTacticTerm {
+        term,
+        resolved_names: resolver.resolved_names,
+        resolved_notations: resolver.resolved_notations,
+    })
+}
+
+impl HumanTacticTermResolver<'_> {
+    fn resolve_expr(
+        &mut self,
+        expr: &HumanExpr,
+        locals: &mut HumanTacticLocalScope,
+    ) -> HumanResult<()> {
+        match expr {
+            HumanExpr::Ident { name, span, .. } => {
+                let resolved = self.resolve_name(name, locals, *span)?;
+                self.resolved_names.push(HumanResolvedNameUse {
+                    source: name.clone(),
+                    resolved,
+                });
+            }
+            HumanExpr::Sort { .. } | HumanExpr::Hole { .. } => {}
+            HumanExpr::App { func, arg, .. } => {
+                self.resolve_expr(func, locals)?;
+                self.resolve_expr(arg, locals)?;
+            }
+            HumanExpr::Lam { binders, body, .. } | HumanExpr::Pi { binders, body, .. } => {
+                let mut nested = locals.clone();
+                self.resolve_binders(binders, &mut nested)?;
+                self.resolve_expr(body, &mut nested)?;
+            }
+            HumanExpr::Let {
+                name,
+                ty,
+                value,
+                body,
+                ..
+            } => {
+                if let Some(ty) = ty {
+                    self.resolve_expr(ty, locals)?;
+                }
+                self.resolve_expr(value, locals)?;
+                let mut nested = locals.clone();
+                nested.push(name.clone());
+                self.resolve_expr(body, &mut nested)?;
+            }
+            HumanExpr::Annot { expr, ty, .. } => {
+                self.resolve_expr(expr, locals)?;
+                self.resolve_expr(ty, locals)?;
+            }
+            HumanExpr::Arrow {
+                domain, codomain, ..
+            } => {
+                self.resolve_expr(domain, locals)?;
+                self.resolve_expr(codomain, locals)?;
+            }
+            HumanExpr::NotationApp { head, args, .. } => {
+                for arg in args {
+                    self.resolve_expr(arg, locals)?;
+                }
+                let candidates = self.resolve_notation_candidates(head)?;
+                self.resolved_notations.push(HumanResolvedNotationUse {
+                    head: head.clone(),
+                    candidates,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    fn resolve_binders(
+        &mut self,
+        binders: &[HumanBinder],
+        locals: &mut HumanTacticLocalScope,
+    ) -> HumanResult<()> {
+        let mut index = 0;
+        while index < binders.len() {
+            let group_end = human_binder_group_end(binders, index);
+            for binder in &binders[index..group_end] {
+                if let Some(ty) = &binder.ty {
+                    self.resolve_expr(ty, locals)?;
+                }
+            }
+            for binder in &binders[index..group_end] {
+                if let HumanBinderKind::Named(name) = &binder.kind {
+                    locals.push(name.clone());
+                }
+            }
+            index = group_end;
+        }
+
+        Ok(())
+    }
+
+    fn resolve_name(
+        &self,
+        name: &HumanName,
+        locals: &HumanTacticLocalScope,
+        span: Span,
+    ) -> HumanResult<HumanResolvedName> {
+        if name.parts.len() == 1 {
+            if let Some((local_name, de_bruijn_index)) = locals.lookup(&name.parts[0]) {
+                return Ok(HumanResolvedName::Local {
+                    name: local_name,
+                    de_bruijn_index,
+                });
+            }
+        }
+
+        if let Some(resolved) = resolve_human_tactic_global_name(&self.context.global_scope, name)?
+        {
+            return Ok(HumanResolvedName::Global(resolved));
+        }
+
+        Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::UnknownIdentifier,
+            span,
+            format!("unknown identifier {}", name.as_dotted()),
+        ))
+    }
+
+    fn resolve_notation_candidates(
+        &self,
+        head: &crate::HumanNotationHead,
+    ) -> HumanResult<Vec<HumanGlobalRef>> {
+        let mut candidates = BTreeMap::new();
+        for entry in self.context.notation_entries.iter().filter(|entry| {
+            entry.token == head.token
+                && entry.kind == head.kind
+                && entry.precedence == head.precedence
+                && entry.associativity == head.associativity
+        }) {
+            candidates.insert(
+                human_tactic_global_ref_sort_key(&entry.target),
+                entry.target.clone(),
+            );
+        }
+
+        if candidates.len() > self.max_notation_candidates {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::TooManyNotationCandidates,
+                head.span,
+                format!("notation {} has too many candidates", head.token),
+            )
+            .with_payload(human_tactic_candidate_payload(
+                candidates.keys().cloned().collect(),
+            )));
+        }
+
+        if candidates.is_empty() {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::AmbiguousNotation,
+                head.span,
+                format!("notation {} has no resolved candidates", head.token),
+            ));
+        }
+
+        Ok(candidates.into_values().collect())
+    }
+}
+
+fn resolve_human_tactic_global_name(
+    scope: &HumanTacticGlobalScope,
+    name: &HumanName,
+) -> HumanResult<Option<HumanGlobalRef>> {
+    for candidates in human_tactic_global_candidate_levels(scope, name) {
+        let mut candidates = human_tactic_dedupe_and_sort_candidates(candidates);
+        if candidates.is_empty() {
+            continue;
+        }
+        if candidates.len() == 1 {
+            return Ok(Some(candidates.remove(0).reference));
+        }
+        return Err(HumanDiagnostic::error(
+            HumanDiagnosticKind::AmbiguousName,
+            name.span,
+            format!("ambiguous name {}", name.as_dotted()),
+        )
+        .with_payload(human_tactic_candidate_payload(
+            candidates
+                .into_iter()
+                .map(|candidate| candidate.key)
+                .collect(),
+        )));
+    }
+    Ok(None)
+}
+
+fn human_tactic_global_candidate_levels(
+    scope: &HumanTacticGlobalScope,
+    name: &HumanName,
+) -> Vec<Vec<HumanTacticNameCandidate>> {
+    let exact = npa_cert::Name(name.parts.clone());
+    if name.parts.len() == 1 {
+        vec![
+            human_tactic_lookup_exact_candidates(scope, &exact),
+            human_tactic_short_name_candidates(scope, &name.parts[0]),
+        ]
+    } else {
+        vec![
+            human_tactic_lookup_exact_candidates(scope, &exact),
+            human_tactic_suffix_candidates(scope, &name.parts),
+        ]
+    }
+}
+
+fn human_tactic_lookup_exact_candidates(
+    scope: &HumanTacticGlobalScope,
+    name: &npa_cert::Name,
+) -> Vec<HumanTacticNameCandidate> {
+    let current = scope
+        .current
+        .iter()
+        .filter(|entry| npa_cert::Name(entry.name.parts.clone()) == *name)
+        .map(human_tactic_candidate_from_entry)
+        .collect::<Vec<_>>();
+    if !current.is_empty() {
+        return current;
+    }
+
+    scope
+        .imported
+        .iter()
+        .filter(|entry| npa_cert::Name(entry.name.parts.clone()) == *name)
+        .map(human_tactic_candidate_from_entry)
+        .collect()
+}
+
+fn human_tactic_short_name_candidates(
+    scope: &HumanTacticGlobalScope,
+    short_name: &str,
+) -> Vec<HumanTacticNameCandidate> {
+    let current = scope
+        .current
+        .iter()
+        .filter(|entry| {
+            entry
+                .name
+                .parts
+                .last()
+                .is_some_and(|part| part == short_name)
+        })
+        .map(human_tactic_candidate_from_entry)
+        .collect::<Vec<_>>();
+    if !current.is_empty() {
+        return current;
+    }
+
+    scope
+        .imported
+        .iter()
+        .filter(|entry| {
+            entry
+                .name
+                .parts
+                .last()
+                .is_some_and(|part| part == short_name)
+        })
+        .map(human_tactic_candidate_from_entry)
+        .collect()
+}
+
+fn human_tactic_suffix_candidates(
+    scope: &HumanTacticGlobalScope,
+    suffix: &[String],
+) -> Vec<HumanTacticNameCandidate> {
+    let current = scope
+        .current
+        .iter()
+        .filter(|entry| human_tactic_name_has_suffix(&entry.name.parts, suffix))
+        .map(human_tactic_candidate_from_entry)
+        .collect::<Vec<_>>();
+    if !current.is_empty() {
+        return current;
+    }
+
+    scope
+        .imported
+        .iter()
+        .filter(|entry| human_tactic_name_has_suffix(&entry.name.parts, suffix))
+        .map(human_tactic_candidate_from_entry)
+        .collect()
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct HumanTacticNameCandidate {
+    key: String,
+    reference: HumanGlobalRef,
+}
+
+fn human_tactic_candidate_from_entry(entry: &HumanGlobalScopeEntry) -> HumanTacticNameCandidate {
+    HumanTacticNameCandidate {
+        key: human_tactic_global_ref_sort_key(&entry.reference),
+        reference: entry.reference.clone(),
+    }
+}
+
+fn human_tactic_dedupe_and_sort_candidates(
+    candidates: Vec<HumanTacticNameCandidate>,
+) -> Vec<HumanTacticNameCandidate> {
+    let mut map = BTreeMap::new();
+    for candidate in candidates {
+        map.entry(candidate.key.clone()).or_insert(candidate);
+    }
+    map.into_values().collect()
+}
+
+fn human_tactic_candidate_payload(mut candidates: Vec<String>) -> HumanDiagnosticPayload {
+    candidates.sort();
+    candidates.dedup();
+    candidates.truncate(32);
+    HumanDiagnosticPayload {
+        candidates,
+        ..HumanDiagnosticPayload::default()
+    }
+}
+
+fn human_tactic_global_ref_sort_key(reference: &HumanGlobalRef) -> String {
+    match reference {
+        HumanGlobalRef::Imported {
+            module,
+            name,
+            decl_interface_hash,
+        } => format!(
+            "imported:{}:{}:{}",
+            module.as_dotted(),
+            name.as_dotted(),
+            human_tactic_hash_hex(decl_interface_hash)
+        ),
+        HumanGlobalRef::Local { index, name } => {
+            format!("local:{index:08}:{}", name.as_dotted())
+        }
+        HumanGlobalRef::LocalGenerated { index, name } => {
+            format!("local-generated:{index:08}:{}", name.as_dotted())
+        }
+    }
+}
+
+fn human_tactic_hash_hex(hash: &npa_cert::Hash) -> String {
+    hash.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
+fn human_tactic_name_has_suffix(name: &[String], suffix: &[String]) -> bool {
+    name.len() >= suffix.len() && &name[(name.len() - suffix.len())..] == suffix
+}
+
+fn human_binder_group_end(binders: &[HumanBinder], start: usize) -> usize {
+    let mut end = start + 1;
+    while end < binders.len() && same_human_binder_group(&binders[start], &binders[end]) {
+        end += 1;
+    }
+    end
+}
+
+fn elaborate_human_tactic_term_check_with_plan(
+    context: &HumanTacticTermElabContext,
+    resolved: &HumanResolvedTacticTerm<'_>,
+    notation_plan: &[usize],
+    expected: &Expr,
+) -> HumanResult<HumanTacticTermCheckOutput> {
+    let span = resolved.term.span();
+    let mut lowering = HumanToMachineLowering::for_tactic_term(
+        &resolved.resolved_names,
+        &resolved.resolved_notations,
+        notation_plan,
+        HumanImplicitInserter::from_tactic_context(context),
+    );
+    lowering.meta_store.begin_declaration();
+    let mut lowering_locals =
+        HumanLoweringLocalContext::from_machine_locals(&context.local_context);
+    let mut locals = human_local_context_from_machine(&context.local_context);
+    let expected_machine = core_expr_to_machine_term(expected, &locals, span);
+    let lowered = lowering.lower_expr(
+        resolved.term.clone(),
+        &mut lowering_locals,
+        expected_machine.as_ref(),
+    )?;
+    let lowered =
+        lowering
+            .implicit_inserter
+            .insert_term(lowered, &mut locals, &context.universe_params)?;
+    lowering.meta_store.reject_unsolved_for_decl(span)?;
+    let expr = HumanBidirectionalElaborator::from_tactic_context(context).check_human_expr(
+        &lowered,
+        expected,
+        &locals,
+        &context.universe_params,
+    )?;
+
+    Ok(HumanTacticTermCheckOutput {
+        expr,
+        inferred_type: expected.clone(),
+    })
+}
+
+fn elaborate_human_tactic_term_infer_with_plan(
+    context: &HumanTacticTermElabContext,
+    resolved: &HumanResolvedTacticTerm<'_>,
+    notation_plan: &[usize],
+) -> HumanResult<HumanTacticTermInferOutput> {
+    let span = resolved.term.span();
+    let mut lowering = HumanToMachineLowering::for_tactic_term(
+        &resolved.resolved_names,
+        &resolved.resolved_notations,
+        notation_plan,
+        HumanImplicitInserter::from_tactic_context(context),
+    );
+    lowering.meta_store.begin_declaration();
+    let mut lowering_locals =
+        HumanLoweringLocalContext::from_machine_locals(&context.local_context);
+    let mut locals = human_local_context_from_machine(&context.local_context);
+    let lowered = lowering.lower_expr(resolved.term.clone(), &mut lowering_locals, None)?;
+    let lowered =
+        lowering
+            .implicit_inserter
+            .insert_term(lowered, &mut locals, &context.universe_params)?;
+    lowering.meta_store.reject_unsolved_for_decl(span)?;
+    let (expr, inferred_type) = HumanBidirectionalElaborator::from_tactic_context(context)
+        .infer_human_expr(&lowered, &locals, &context.universe_params)?;
+
+    Ok(HumanTacticTermInferOutput {
+        expr,
+        inferred_type,
+    })
 }
 
 fn elaborate_human_module_with_notation_plan(
@@ -1664,6 +2605,19 @@ impl HumanLocalContext {
     }
 }
 
+fn human_local_context_from_machine(locals: &[MachineLocalDecl]) -> HumanLocalContext {
+    let mut context = HumanLocalContext::default();
+    for local in locals {
+        match &local.value {
+            Some(value) => {
+                context.push_definition(local.name.clone(), local.ty.clone(), value.clone())
+            }
+            None => context.push_assumption(local.name.clone(), local.ty.clone()),
+        }
+    }
+    context
+}
+
 struct HumanBidirectionalElaborator {
     env: Env,
 }
@@ -1678,6 +2632,12 @@ impl HumanBidirectionalElaborator {
         }
 
         Ok(elaborator)
+    }
+
+    fn from_tactic_context(context: &HumanTacticTermElabContext) -> Self {
+        Self {
+            env: context.env.clone(),
+        }
     }
 
     fn elaborate_module(
@@ -2332,6 +3292,33 @@ impl HumanLoweringLocalContext {
         });
     }
 
+    fn from_machine_locals(locals: &[MachineLocalDecl]) -> Self {
+        let span = Span::empty(crate::FileId(0));
+        let mut lowering = Self::default();
+        let mut core_locals = HumanLocalContext::default();
+        for local in locals {
+            let ty = core_expr_to_machine_term(&local.ty, &core_locals, span)
+                .unwrap_or_else(|| human_tactic_meta_fallback_machine_term(span));
+            match &local.value {
+                Some(value) => {
+                    let value_term = core_expr_to_machine_term(value, &core_locals, span)
+                        .unwrap_or_else(|| human_tactic_meta_fallback_machine_term(span));
+                    lowering.push_definition(local.name.clone(), ty.clone(), value_term);
+                    core_locals.push_definition(
+                        local.name.clone(),
+                        local.ty.clone(),
+                        value.clone(),
+                    );
+                }
+                None => {
+                    lowering.push_assumption(local.name.clone(), ty);
+                    core_locals.push_assumption(local.name.clone(), local.ty.clone());
+                }
+            }
+        }
+        lowering
+    }
+
     fn meta_snapshot(&self) -> HumanMetaContextSnapshot {
         HumanMetaContextSnapshot {
             locals: self
@@ -2383,6 +3370,15 @@ impl HumanImplicitInserter {
         }
 
         Ok(inserter)
+    }
+
+    fn from_tactic_context(context: &HumanTacticTermElabContext) -> Self {
+        Self {
+            env: context.env.clone(),
+            signatures: context.signatures.clone(),
+            imported_source_interfaces: Vec::new(),
+            insertion_steps: 0,
+        }
     }
 
     fn add_import(&mut self, import: &VerifiedImport, span: Span) -> HumanResult<()> {
@@ -3715,7 +4711,59 @@ fn core_expr_to_machine_term(
                 .collect::<Option<Vec<_>>>()?;
             Some(rebuild_machine_apps(head, args, span))
         }
-        Expr::Lam { .. } | Expr::Pi { .. } | Expr::Let { .. } => None,
+        Expr::Lam { binder, ty, body } => {
+            let ty_term = core_expr_to_machine_term(ty, locals, span)?;
+            let mut nested = locals.clone();
+            nested.push_assumption(binder.clone(), (**ty).clone());
+            Some(MachineTerm::Lam {
+                binders: vec![MachineBinder {
+                    name: binder.clone(),
+                    ty: ty_term,
+                    span,
+                }],
+                body: Box::new(core_expr_to_machine_term(body, &nested, span)?),
+                span,
+            })
+        }
+        Expr::Pi { binder, ty, body } => {
+            let ty_term = core_expr_to_machine_term(ty, locals, span)?;
+            let mut nested = locals.clone();
+            nested.push_assumption(binder.clone(), (**ty).clone());
+            Some(MachineTerm::Pi {
+                binders: vec![MachineBinder {
+                    name: binder.clone(),
+                    ty: ty_term,
+                    span,
+                }],
+                body: Box::new(core_expr_to_machine_term(body, &nested, span)?),
+                span,
+            })
+        }
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => {
+            let ty_term = core_expr_to_machine_term(ty, locals, span)?;
+            let value_term = core_expr_to_machine_term(value, locals, span)?;
+            let mut nested = locals.clone();
+            nested.push_definition(binder.clone(), (**ty).clone(), (**value).clone());
+            Some(MachineTerm::Let {
+                name: binder.clone(),
+                ty: Box::new(ty_term),
+                value: Box::new(value_term),
+                body: Box::new(core_expr_to_machine_term(body, &nested, span)?),
+                span,
+            })
+        }
+    }
+}
+
+fn human_tactic_meta_fallback_machine_term(span: Span) -> MachineTerm {
+    MachineTerm::Sort {
+        level: MachineLevel::Nat { value: 0, span },
+        span,
     }
 }
 
@@ -3778,6 +4826,22 @@ impl<'a> HumanToMachineLowering<'a> {
             meta_store: HumanMetaStore::default(),
             current_module_prefix: None,
         })
+    }
+
+    fn for_tactic_term(
+        resolved_names: &'a [HumanResolvedNameUse],
+        resolved_notations: &'a [HumanResolvedNotationUse],
+        notation_plan: &'a [usize],
+        implicit_inserter: HumanImplicitInserter,
+    ) -> Self {
+        Self {
+            name_uses: resolved_names.iter(),
+            notation_uses: resolved_notations.iter(),
+            notation_choices: notation_plan.iter(),
+            implicit_inserter,
+            meta_store: HumanMetaStore::default(),
+            current_module_prefix: None,
+        }
     }
 
     fn with_current_module_prefix(mut self, module_name: npa_cert::ModuleName) -> Self {
@@ -4494,7 +5558,9 @@ mod tests {
 
     use super::*;
     use crate::{FileId, HumanDiagnosticKind, MachineDiagnosticKind};
-    use npa_kernel::{eq_refl, eq_refl_type, eq_type, nat, type0, Decl, Expr, Level, Reducibility};
+    use npa_kernel::{
+        eq, eq_refl, eq_refl_type, eq_type, nat, type0, Decl, Expr, Level, Reducibility,
+    };
 
     fn hash(seed: u8) -> npa_cert::Hash {
         [seed; 32]
@@ -5179,6 +6245,205 @@ theorem bad (n : Nat) : Eq.{1} Nat n n := Eq.refl n",
         .expect_err("name-only Eq.refl should not get the builtin implicit profile");
 
         assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedImplicit);
+    }
+
+    #[test]
+    fn human_tactic_term_check_resolves_goal_local() {
+        let imports = [nat_import()];
+        let local_context = vec![MachineLocalDecl {
+            name: "n".to_owned(),
+            ty: nat(),
+            value: None,
+        }];
+        let context = HumanTacticTermElabContext::from_request(HumanTacticTermElabContextRequest {
+            direct_imports: &imports,
+            available_imports: &imports,
+            current_module: npa_cert::Name::from_dotted("Api.Target"),
+            checked_current_decls: &[],
+            current_generated_decls: &[],
+            local_context,
+            universe_params: Vec::new(),
+            current_source_interface: None,
+            imported_source_interfaces: &[],
+        })
+        .expect("Human tactic context should accept a Nat local");
+        let term = crate::parse_human_term(FileId(0), "n").expect("term should parse");
+        let output = elaborate_human_tactic_term_check(
+            &context,
+            &term,
+            &nat(),
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human tactic check should resolve the goal local");
+
+        assert_eq!(output.expr, Expr::bvar(0));
+        assert_eq!(output.inferred_type, nat());
+
+        let inferred =
+            elaborate_human_tactic_term_infer(&context, &term, &HumanCompileOptions::default())
+                .expect("Human tactic infer should resolve the same goal local");
+        assert_eq!(inferred.expr, Expr::bvar(0));
+        assert_eq!(inferred.inferred_type, nat());
+    }
+
+    #[test]
+    fn human_tactic_term_check_inserts_eq_refl_implicit() {
+        let imports = [nat_import(), eq_import()];
+        let local_context = vec![MachineLocalDecl {
+            name: "n".to_owned(),
+            ty: nat(),
+            value: None,
+        }];
+        let context = HumanTacticTermElabContext::from_request(HumanTacticTermElabContextRequest {
+            direct_imports: &imports,
+            available_imports: &imports,
+            current_module: npa_cert::Name::from_dotted("Api.Target"),
+            checked_current_decls: &[],
+            current_generated_decls: &[],
+            local_context,
+            universe_params: Vec::new(),
+            current_source_interface: None,
+            imported_source_interfaces: &[],
+        })
+        .expect("Human tactic context should accept Nat and Eq imports");
+        let term = crate::parse_human_term(FileId(0), "Eq.refl n").expect("term should parse");
+        let expected = eq(type0(), nat(), Expr::bvar(0), Expr::bvar(0));
+        let output = elaborate_human_tactic_term_check(
+            &context,
+            &term,
+            &expected,
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human tactic check should insert Eq.refl implicit type argument");
+
+        assert_eq!(output.expr, eq_refl(type0(), nat(), Expr::bvar(0)));
+        assert_eq!(output.inferred_type, expected);
+    }
+
+    #[test]
+    fn human_tactic_term_check_rejects_unresolved_hole_before_certificate() {
+        let imports = [nat_import()];
+        let context = HumanTacticTermElabContext::from_request(HumanTacticTermElabContextRequest {
+            direct_imports: &imports,
+            available_imports: &imports,
+            current_module: npa_cert::Name::from_dotted("Api.Target"),
+            checked_current_decls: &[],
+            current_generated_decls: &[],
+            local_context: Vec::new(),
+            universe_params: Vec::new(),
+            current_source_interface: None,
+            imported_source_interfaces: &[],
+        })
+        .expect("Human tactic context should build");
+        let term = crate::parse_human_term(FileId(0), "_").expect("hole should parse");
+        let err = elaborate_human_tactic_term_check(
+            &context,
+            &term,
+            &nat(),
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("unresolved Human tactic hole should stop before certificate handoff");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedHole);
+        assert_eq!(
+            err.payload
+                .as_ref()
+                .and_then(|payload| payload.unsolved_meta.as_ref())
+                .map(|meta| meta.kind),
+            Some(HumanUnsolvedMetaKind::Hole)
+        );
+    }
+
+    #[test]
+    fn human_tactic_term_resolves_checked_current_decl_and_generated_constructor() {
+        let imports = [nat_import()];
+        let id_name = npa_cert::Name::from_dotted("Api.Target.id_type");
+        let id_decl = Decl::Def {
+            name: id_name.as_dotted(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("A", Expr::sort(type0()), Expr::sort(type0())),
+            value: Expr::lam("A", Expr::sort(type0()), Expr::bvar(0)),
+            reducibility: Reducibility::Reducible,
+        };
+        let unit_name = npa_cert::Name::from_dotted("Api.Target.Unit");
+        let unit_mk_name = npa_cert::Name::from_dotted("Api.Target.Unit.mk");
+        let unit_data = InductiveDecl::new(
+            unit_name.as_dotted(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            type0(),
+            vec![ConstructorDecl::new(
+                unit_mk_name.as_dotted(),
+                Expr::konst(unit_name.as_dotted(), vec![]),
+            )],
+            None,
+        );
+        let unit_decl = Decl::Inductive {
+            name: unit_name.as_dotted(),
+            universe_params: Vec::new(),
+            ty: Expr::sort(type0()),
+            data: Box::new(unit_data),
+        };
+        let checked_current_decls = vec![
+            MachineCheckedCurrentDecl {
+                name: id_name.clone(),
+                source_index: 0,
+                decl_interface_hash: hash(42),
+                decl: id_decl,
+            },
+            MachineCheckedCurrentDecl {
+                name: unit_name.clone(),
+                source_index: 1,
+                decl_interface_hash: hash(43),
+                decl: unit_decl,
+            },
+        ];
+        let current_generated_decls = vec![MachineCheckedCurrentGeneratedDecl {
+            name: unit_mk_name.clone(),
+            parent_source_index: 1,
+            decl_interface_hash: hash(43),
+        }];
+        let context = HumanTacticTermElabContext::from_request(HumanTacticTermElabContextRequest {
+            direct_imports: &imports,
+            available_imports: &imports,
+            current_module: npa_cert::Name::from_dotted("Api.Target"),
+            checked_current_decls: &checked_current_decls,
+            current_generated_decls: &current_generated_decls,
+            local_context: Vec::new(),
+            universe_params: Vec::new(),
+            current_source_interface: None,
+            imported_source_interfaces: &[],
+        })
+        .expect("Human tactic context should include checked current declarations");
+
+        let id_term =
+            crate::parse_human_term(FileId(0), "id_type Nat").expect("id_type term should parse");
+        let id_output = elaborate_human_tactic_term_check(
+            &context,
+            &id_term,
+            &Expr::sort(type0()),
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human tactic term should resolve checked current declaration by short name");
+        assert_eq!(
+            id_output.expr,
+            Expr::app(Expr::konst(id_name.as_dotted(), vec![]), nat())
+        );
+
+        let mk_term =
+            crate::parse_human_term(FileId(0), "Unit.mk").expect("Unit.mk term should parse");
+        let mk_output = elaborate_human_tactic_term_check(
+            &context,
+            &mk_term,
+            &Expr::konst(unit_name.as_dotted(), vec![]),
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human tactic term should resolve generated current constructor by suffix");
+        assert_eq!(
+            mk_output.expr,
+            Expr::konst(unit_mk_name.as_dotted(), vec![])
+        );
     }
 
     #[test]
