@@ -23,6 +23,11 @@ const VALIDATION_RESULT_HASH_TAG: &str = "npa.phase9_ai.validation_result.v1";
 const UNIVERSE_CONSTRAINT_SET_HASH_TAG: &str = "npa.phase9_ai.universe.constraints.v1";
 const THEOREM_GRAPH_SNAPSHOT_HASH_TAG: &str = "npa.phase9_ai.theorem_graph.snapshot.v1";
 const THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG: &str = "npa.phase9_ai.theorem_graph.query_features.v1";
+const SMT_PROBLEM_HASH_TAG: &str = "npa.phase9_ai.smt.problem.v1";
+const SMT_ENCODING_HASH_TAG: &str = "npa.phase9_ai.smt.encoding.v1";
+const SMT_PROOF_PAYLOAD_HASH_TAG: &str = "npa.phase9_ai.smt.proof_payload.v1";
+const SMT_COMMAND_ID_HASH_TAG: &str = "npa.phase9_ai.smt.command_id.v1";
+const SMT_SYMBOL_HASH_TAG: &str = "npa.phase9_ai.smt.symbol.v1";
 
 const MAX_OPTIONS_BYTES: usize = 16_000_000;
 const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
@@ -39,6 +44,9 @@ const MAX_PHASE9_THEOREM_GRAPH_NODES: u64 = 1_000_000;
 const MAX_PHASE9_THEOREM_GRAPH_EDGES: u64 = 1_000_000;
 const MAX_PHASE9_THEOREM_GRAPH_FEATURES: u64 = 65_536;
 const MAX_PHASE9_THEOREM_GRAPH_RESULT_LIMIT: u32 = 256;
+const MAX_PHASE9_SMT_RAW_BYTES: usize = 64_000_000;
+const MAX_PHASE9_SMT_ITEMS: u64 = 1_000_000;
+const MAX_PHASE9_SMT_REFS: u64 = 65_536;
 const MAX_PHASE9_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
 const MAX_NAME_COMPONENTS: u64 = 256;
 const MAX_STRING_BYTES: u64 = 1_048_576;
@@ -249,6 +257,448 @@ pub struct Phase9SmtOptions {
     pub eq: Phase9AiGlobalRef,
     pub prop_false: Option<Phase9AiGlobalRef>,
     pub prop_not: Option<Phase9AiGlobalRef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineSmtCertificateCandidate {
+    pub goal: Phase9AiGoal,
+    pub logic: Phase9SmtLogic,
+    pub encoded_problem: Phase9MachineSmtProblemRef,
+    pub certificate_format: Phase9SmtCertificateFormat,
+    pub rule_registry_profile: Phase9SmtRuleRegistryProfile,
+    pub proof_payload: Phase9MachineSmtProofPayloadRef,
+    pub reconstruction_plan: Phase9MachineSmtReconstructionPlan,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineSmtProblemRef {
+    Inline {
+        problem_hash: Hash,
+        encoding_hash: Hash,
+        canonical_bytes: Vec<u8>,
+    },
+    Artifact {
+        path: String,
+        file_hash: Hash,
+        problem_hash: Hash,
+        encoding_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineSmtEncodedProblem {
+    pub encoder_version: Phase9SmtEncoderVersion,
+    pub goal_fingerprint: Hash,
+    pub logic: Phase9SmtLogic,
+    pub command_profile: Phase9SmtCommandProfile,
+    pub commands: Vec<Phase9SmtEncodedCommand>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9SmtCommandProfile {
+    MvpNormalizedQf,
+}
+
+impl Phase9SmtCommandProfile {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpNormalizedQf => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpNormalizedQf),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9SmtLogic {
+    MvpQfUf,
+    MvpQfLia,
+    MvpQfBv,
+    MvpQfUfLiaBv,
+}
+
+impl Phase9SmtLogic {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpQfUf => 0,
+            Self::MvpQfLia => 1,
+            Self::MvpQfBv => 2,
+            Self::MvpQfUfLiaBv => 3,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpQfUf),
+            1 => Some(Self::MvpQfLia),
+            2 => Some(Self::MvpQfBv),
+            3 => Some(Self::MvpQfUfLiaBv),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9SmtEncoderVersion {
+    MvpNormalizedQfV1,
+}
+
+impl Phase9SmtEncoderVersion {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpNormalizedQfV1 => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpNormalizedQfV1),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9SmtCertificateFormat {
+    MvpProofNodeTableV1,
+}
+
+impl Phase9SmtCertificateFormat {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpProofNodeTableV1 => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpProofNodeTableV1),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9SmtRuleRegistryProfile {
+    MvpEmptyRegistryV1,
+}
+
+impl Phase9SmtRuleRegistryProfile {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpEmptyRegistryV1 => 0,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::MvpEmptyRegistryV1),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtSymbol {
+    pub ascii: Vec<u8>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtEncodedCommand {
+    pub phase: Phase9SmtCommandPhase,
+    pub command_id: Hash,
+    pub payload: Phase9SmtCommandPayload,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Phase9SmtCommandPhase {
+    SortDecl,
+    DatatypeDecl,
+    FunctionDecl,
+    ContextAssumption,
+    TargetAssertion,
+    FinalCheck,
+}
+
+impl Phase9SmtCommandPhase {
+    fn tag(self) -> u8 {
+        match self {
+            Self::SortDecl => 0,
+            Self::DatatypeDecl => 1,
+            Self::FunctionDecl => 2,
+            Self::ContextAssumption => 3,
+            Self::TargetAssertion => 4,
+            Self::FinalCheck => 5,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::SortDecl),
+            1 => Some(Self::DatatypeDecl),
+            2 => Some(Self::FunctionDecl),
+            3 => Some(Self::ContextAssumption),
+            4 => Some(Self::TargetAssertion),
+            5 => Some(Self::FinalCheck),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9SmtCommandPayload {
+    SortDecl {
+        symbol: Phase9SmtSymbol,
+        arity: u32,
+    },
+    FunctionDecl {
+        symbol: Phase9SmtSymbol,
+        args: Vec<Phase9SmtSortExpr>,
+        result: Phase9SmtSortExpr,
+    },
+    DatatypeDecl {
+        symbol: Phase9SmtSymbol,
+        constructors: Vec<Phase9SmtDatatypeConstructor>,
+    },
+    ContextAssumption {
+        source_local_index: u32,
+        core_expr: Expr,
+        encoded_expr: Phase9SmtExpr,
+    },
+    TargetAssertion {
+        core_expr: Expr,
+        encoded_expr: Phase9SmtExpr,
+    },
+    FinalCheck,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9SmtSortExpr {
+    Bool,
+    Int,
+    BitVec {
+        width: u32,
+    },
+    User {
+        symbol: Phase9SmtSymbol,
+        args: Vec<Phase9SmtSortExpr>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtDatatypeConstructor {
+    pub constructor: Phase9SmtSymbol,
+    pub selectors: Vec<Phase9SmtDatatypeSelector>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtDatatypeSelector {
+    pub selector: Phase9SmtSymbol,
+    pub sort: Phase9SmtSortExpr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9SmtExpr {
+    Var {
+        symbol: Phase9SmtSymbol,
+        sort: Phase9SmtSortExpr,
+    },
+    BoolLit(bool),
+    IntLit(i128),
+    BitVecLit {
+        width: u32,
+        value: Vec<u8>,
+    },
+    App {
+        symbol: Phase9SmtSymbol,
+        args: Vec<Phase9SmtExpr>,
+        result_sort: Phase9SmtSortExpr,
+    },
+    BuiltinApp {
+        op: Phase9SmtBuiltinOp,
+        args: Vec<Phase9SmtExpr>,
+        result_sort: Phase9SmtSortExpr,
+    },
+    Not(Box<Phase9SmtExpr>),
+    And(Vec<Phase9SmtExpr>),
+    Or(Vec<Phase9SmtExpr>),
+    Eq(Box<Phase9SmtExpr>, Box<Phase9SmtExpr>),
+    Imp(Box<Phase9SmtExpr>, Box<Phase9SmtExpr>),
+    Ite {
+        cond: Box<Phase9SmtExpr>,
+        then_expr: Box<Phase9SmtExpr>,
+        else_expr: Box<Phase9SmtExpr>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Phase9SmtBuiltinOp {
+    IntNeg,
+    IntAdd,
+    IntSub,
+    IntLe,
+    IntLt,
+    IntGe,
+    IntGt,
+    BvNot,
+    BvAnd,
+    BvOr,
+    BvXor,
+    BvAdd,
+    BvSub,
+    BvMul,
+    BvUlt,
+    BvUle,
+    BvConcat,
+    BvExtract { high: u32, low: u32 },
+}
+
+impl Phase9SmtBuiltinOp {
+    fn tag(self) -> u8 {
+        match self {
+            Self::IntNeg => 0,
+            Self::IntAdd => 1,
+            Self::IntSub => 2,
+            Self::IntLe => 3,
+            Self::IntLt => 4,
+            Self::IntGe => 5,
+            Self::IntGt => 6,
+            Self::BvNot => 7,
+            Self::BvAnd => 8,
+            Self::BvOr => 9,
+            Self::BvXor => 10,
+            Self::BvAdd => 11,
+            Self::BvSub => 12,
+            Self::BvMul => 13,
+            Self::BvUlt => 14,
+            Self::BvUle => 15,
+            Self::BvConcat => 16,
+            Self::BvExtract { .. } => 17,
+        }
+    }
+
+    fn from_tag(tag: u8, decoder: &mut Decoder<'_>) -> std::result::Result<Self, DecodeError> {
+        Ok(match tag {
+            0 => Self::IntNeg,
+            1 => Self::IntAdd,
+            2 => Self::IntSub,
+            3 => Self::IntLe,
+            4 => Self::IntLt,
+            5 => Self::IntGe,
+            6 => Self::IntGt,
+            7 => Self::BvNot,
+            8 => Self::BvAnd,
+            9 => Self::BvOr,
+            10 => Self::BvXor,
+            11 => Self::BvAdd,
+            12 => Self::BvSub,
+            13 => Self::BvMul,
+            14 => Self::BvUlt,
+            15 => Self::BvUle,
+            16 => Self::BvConcat,
+            17 => Self::BvExtract {
+                high: decoder.u32()?,
+                low: decoder.u32()?,
+            },
+            _ => return Err(DecodeError::Malformed),
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtProofNodeTable {
+    pub certificate_format: Phase9SmtCertificateFormat,
+    pub nodes: Vec<Phase9SmtProofNode>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtProofNode {
+    pub node_id: u32,
+    pub rule_fingerprint: Hash,
+    pub premises: Vec<u32>,
+    pub conclusion_encoding: Phase9SmtConclusionEncoding,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9SmtConclusionEncoding {
+    pub encoder_version: Phase9SmtEncoderVersion,
+    pub logic: Phase9SmtLogic,
+    pub command_profile: Phase9SmtCommandProfile,
+    pub core_expr: Expr,
+    pub encoded_expr: Phase9SmtExpr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9MachineSmtProofPayloadRef {
+    Inline {
+        payload_hash: Hash,
+        canonical_bytes: Vec<u8>,
+    },
+    Artifact {
+        path: String,
+        file_hash: Hash,
+        payload_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineSmtReconstructionPlan {
+    pub imported_theory_refs: Vec<Phase9AiGlobalRef>,
+    pub steps: Vec<Phase9MachineSmtReconstructionStep>,
+    pub final_step: u32,
+    pub final_proof: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineSmtReconstructionStep {
+    pub step_id: u32,
+    pub rule: Phase9SmtReconstructionRule,
+    pub payload_bindings: Vec<Phase9MachineSmtPayloadBinding>,
+    pub premises: Vec<u32>,
+    pub conclusion: Expr,
+    pub proof: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Phase9MachineSmtPayloadBinding {
+    pub payload_hash: Hash,
+    pub node_id: u32,
+    pub rule_fingerprint: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9SmtReconstructionRule {
+    PayloadNode {
+        certificate_format: Phase9SmtCertificateFormat,
+        rule_fingerprint: Hash,
+    },
+    LocalBookkeeping {
+        kind: Phase9SmtLocalBookkeepingRule,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Phase9SmtLocalBookkeepingRule {
+    ReorderPremises {
+        permutation: Vec<u32>,
+    },
+    IntroduceTheoryLemma {
+        lemma: Phase9AiGlobalRef,
+        level_args: Vec<Level>,
+        term_args: Vec<Expr>,
+    },
+    ComposeProof {
+        combinator: Phase9AiGlobalRef,
+        level_args: Vec<Level>,
+        term_args: Vec<Expr>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -905,6 +1355,77 @@ pub fn phase9_quotient_candidate_canonical_bytes(
     Ok(out)
 }
 
+pub fn phase9_smt_candidate_canonical_bytes(
+    candidate: &Phase9MachineSmtCertificateCandidate,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_smt_candidate_to(&mut out, candidate)?;
+    Ok(out)
+}
+
+pub fn phase9_smt_problem_canonical_bytes(
+    problem: &Phase9MachineSmtEncodedProblem,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_smt_encoded_problem_to(&mut out, problem)?;
+    Ok(out)
+}
+
+pub fn phase9_smt_problem_hash(
+    problem: &Phase9MachineSmtEncodedProblem,
+) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+    Ok(hash_with_domain(
+        SMT_PROBLEM_HASH_TAG,
+        &phase9_smt_problem_canonical_bytes(problem)?,
+    ))
+}
+
+pub fn phase9_smt_encoding_hash(
+    problem: &Phase9MachineSmtEncodedProblem,
+    problem_hash: Hash,
+) -> Hash {
+    let mut out = Vec::new();
+    out.push(problem.encoder_version.tag());
+    out.push(problem.logic.tag());
+    out.push(problem.command_profile.tag());
+    encode_hash_to(&mut out, &problem.goal_fingerprint);
+    encode_hash_to(&mut out, &problem_hash);
+    hash_with_domain(SMT_ENCODING_HASH_TAG, &out)
+}
+
+pub fn phase9_smt_proof_payload_canonical_bytes(
+    payload: &Phase9SmtProofNodeTable,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    encode_smt_proof_node_table_to(&mut out, payload)?;
+    Ok(out)
+}
+
+pub fn phase9_smt_proof_payload_hash(
+    payload: &Phase9SmtProofNodeTable,
+) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+    Ok(hash_with_domain(
+        SMT_PROOF_PAYLOAD_HASH_TAG,
+        &phase9_smt_proof_payload_canonical_bytes(payload)?,
+    ))
+}
+
+pub fn phase9_smt_symbol_canonical_bytes(symbol: &Phase9SmtSymbol) -> Vec<u8> {
+    let mut out = Vec::new();
+    out.extend_from_slice(SMT_SYMBOL_HASH_TAG.as_bytes());
+    encode_bytes_to(&mut out, &symbol.ascii);
+    out
+}
+
+pub fn phase9_smt_command_id(
+    command: &Phase9SmtEncodedCommand,
+) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    out.push(command.phase.tag());
+    out.extend_from_slice(&phase9_smt_command_id_source_key(&command.payload)?);
+    Ok(hash_with_domain(SMT_COMMAND_ID_HASH_TAG, &out))
+}
+
 pub fn phase9_typeclass_resolution_plan_canonical_bytes(
     plan: &Phase9MachineTypeclassResolutionPlan,
 ) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
@@ -1129,12 +1650,17 @@ pub fn run_phase9_smt_reconstruct_request(
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
 ) -> Phase9AiEndpointResponse {
-    run_phase9_skeleton_request(
+    match validate_phase9_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
         Phase9AiTaskKind::SmtCertificate,
-    )
+    ) {
+        Ok(validated) => {
+            run_phase9_smt_reconstruct_validated(validated, verified_imports, workspace_root)
+        }
+        Err(response) => response,
+    }
 }
 
 pub fn run_phase9_theorem_graph_query_request(
@@ -1712,6 +2238,160 @@ fn run_phase9_quotient_check_validated(
         ) {
             return response;
         }
+    }
+
+    rejected_response(
+        candidate_hash,
+        Phase9AiValidationError::UnsupportedFeature,
+        None,
+    )
+}
+
+fn run_phase9_smt_reconstruct_validated(
+    validated: Phase9ValidatedCommonEnvelope,
+    verified_imports: &[VerifiedImportRef],
+    workspace_root: &Path,
+) -> Phase9AiEndpointResponse {
+    let candidate_hash = validated.candidate_hash;
+    let candidate = match decode_smt_candidate(&validated.envelope.payload) {
+        Ok(candidate) => candidate,
+        Err(_) => {
+            return smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            );
+        }
+    };
+
+    let goal_fingerprint = phase9_ai_goal_fingerprint(validated.env_fingerprint, &candidate.goal);
+    if validated.envelope.target.goal_fingerprint != Some(goal_fingerprint) {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+    match validate_phase9_ai_goal(&candidate.goal, verified_imports) {
+        Ok(()) => {}
+        Err(Phase9GoalValidationError::EnvelopeMalformed) => {
+            return smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            );
+        }
+        Err(Phase9GoalValidationError::ImportClosureMismatch) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            );
+        }
+        Err(Phase9GoalValidationError::KernelRejected) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::KernelRejected,
+                None,
+            );
+        }
+    }
+
+    let problem_bytes = match phase9_smt_problem_bytes(
+        candidate_hash,
+        &candidate.encoded_problem,
+        workspace_root,
+    ) {
+        Ok(bytes) => bytes,
+        Err(response) => return response,
+    };
+    let problem =
+        match phase9_validate_smt_problem_bytes(candidate_hash, &problem_bytes, &candidate) {
+            Ok(problem) => problem,
+            Err(response) => return response,
+        };
+    if problem.goal_fingerprint != goal_fingerprint {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::TargetFingerprintMismatch,
+            None,
+        );
+    }
+    if problem.logic != candidate.logic {
+        return smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9SmtCertificateError::EncodingMismatch,
+        );
+    }
+
+    let env = match phase9_kernel_env_from_imports(verified_imports) {
+        Ok(env) => env,
+        Err(_) => {
+            return rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            );
+        }
+    };
+    let Some(smt_options) = validated.options.smt.as_ref() else {
+        return rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            None,
+        );
+    };
+    let primitives =
+        match phase9_resolve_smt_primitives(candidate_hash, &env, smt_options, verified_imports) {
+            Ok(primitives) => primitives,
+            Err(response) => return response,
+        };
+
+    let command_context =
+        match phase9_validate_smt_commands(candidate_hash, &candidate, &problem, &primitives) {
+            Ok(context) => context,
+            Err(response) => return response,
+        };
+
+    let payload_bytes =
+        match phase9_smt_payload_bytes(candidate_hash, &candidate.proof_payload, workspace_root) {
+            Ok(bytes) => bytes,
+            Err(response) => return response,
+        };
+    let proof_payload =
+        match phase9_validate_smt_proof_payload_bytes(candidate_hash, &payload_bytes, &candidate) {
+            Ok(payload) => payload,
+            Err(response) => return response,
+        };
+    if let Err(response) = phase9_validate_smt_proof_table(
+        candidate_hash,
+        &proof_payload,
+        &candidate,
+        &problem,
+        &command_context,
+        verified_imports,
+    ) {
+        return response;
+    }
+
+    if let Err(response) =
+        phase9_validate_smt_reconstruction_plan(candidate_hash, &candidate, verified_imports)
+    {
+        return response;
+    }
+
+    if candidate
+        .reconstruction_plan
+        .steps
+        .iter()
+        .any(|step| matches!(step.rule, Phase9SmtReconstructionRule::PayloadNode { .. }))
+    {
+        return smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::UnsupportedFeature,
+            Phase9SmtCertificateError::RuleRegistryMismatch,
+        );
     }
 
     rejected_response(
@@ -4636,6 +5316,1303 @@ fn validate_phase9_ai_goal(
         .map_err(|_| Phase9GoalValidationError::KernelRejected)
 }
 
+fn smt_rejected_response(
+    candidate_hash: Hash,
+    error: Phase9AiValidationError,
+    smt_error: Phase9SmtCertificateError,
+) -> Phase9AiEndpointResponse {
+    rejected_response(
+        candidate_hash,
+        error,
+        Some(Phase9AiFeatureError::SmtCertificate(smt_error)),
+    )
+}
+
+#[derive(Clone)]
+struct Phase9ResolvedSmtPrimitives {
+    eq: Phase9ResolvedGlobalDecl,
+    prop_false: Option<Phase9ResolvedGlobalDecl>,
+    prop_not: Option<Phase9ResolvedGlobalDecl>,
+}
+
+#[derive(Default)]
+struct Phase9SmtCommandContext {
+    sort_arities: BTreeMap<Vec<u8>, u32>,
+    functions: BTreeMap<Vec<u8>, (Vec<Phase9SmtSortExpr>, Phase9SmtSortExpr)>,
+}
+
+fn phase9_smt_problem_bytes(
+    candidate_hash: Hash,
+    source: &Phase9MachineSmtProblemRef,
+    workspace_root: &Path,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    match source {
+        Phase9MachineSmtProblemRef::Inline {
+            canonical_bytes, ..
+        } => {
+            if canonical_bytes.len() > MAX_PHASE9_SMT_RAW_BYTES {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            Ok(canonical_bytes.clone())
+        }
+        Phase9MachineSmtProblemRef::Artifact {
+            path,
+            file_hash,
+            size_bytes,
+            ..
+        } => phase9_smt_artifact_bytes(
+            candidate_hash,
+            workspace_root,
+            path,
+            *file_hash,
+            *size_bytes,
+        ),
+    }
+}
+
+fn phase9_smt_payload_bytes(
+    candidate_hash: Hash,
+    source: &Phase9MachineSmtProofPayloadRef,
+    workspace_root: &Path,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    match source {
+        Phase9MachineSmtProofPayloadRef::Inline {
+            canonical_bytes, ..
+        } => {
+            if canonical_bytes.len() > MAX_PHASE9_SMT_RAW_BYTES {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            Ok(canonical_bytes.clone())
+        }
+        Phase9MachineSmtProofPayloadRef::Artifact {
+            path,
+            file_hash,
+            size_bytes,
+            ..
+        } => phase9_smt_artifact_bytes(
+            candidate_hash,
+            workspace_root,
+            path,
+            *file_hash,
+            *size_bytes,
+        ),
+    }
+}
+
+fn phase9_smt_artifact_bytes(
+    candidate_hash: Hash,
+    workspace_root: &Path,
+    path: &str,
+    file_hash: Hash,
+    size_bytes: u64,
+) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    if usize::try_from(size_bytes)
+        .map(|size| size > MAX_PHASE9_SMT_RAW_BYTES)
+        .unwrap_or(true)
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    let path = match validate_artifact_path(workspace_root, path) {
+        Ok(path) => path,
+        Err(ArtifactPathError::EnvelopeMalformed) => {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        Err(ArtifactPathError::ArtifactUnavailable) => {
+            return Err(Phase9AiEndpointResponse::Error {
+                error: Phase9AiEndpointError::ArtifactUnavailable,
+            });
+        }
+    };
+    let metadata = std::fs::metadata(&path).map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::ArtifactUnavailable,
+    })?;
+    if metadata.len() != size_bytes {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
+        error: Phase9AiEndpointError::ArtifactUnavailable,
+    })?;
+    if phase9_file_hash(&bytes) != file_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(bytes)
+}
+
+fn phase9_validate_smt_problem_bytes(
+    candidate_hash: Hash,
+    bytes: &[u8],
+    candidate: &Phase9MachineSmtCertificateCandidate,
+) -> std::result::Result<Phase9MachineSmtEncodedProblem, Phase9AiEndpointResponse> {
+    let problem = decode_smt_encoded_problem(bytes).map_err(|_| {
+        smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        )
+    })?;
+    let declared_problem_hash = match &candidate.encoded_problem {
+        Phase9MachineSmtProblemRef::Inline { problem_hash, .. }
+        | Phase9MachineSmtProblemRef::Artifact { problem_hash, .. } => *problem_hash,
+    };
+    let declared_encoding_hash = match &candidate.encoded_problem {
+        Phase9MachineSmtProblemRef::Inline { encoding_hash, .. }
+        | Phase9MachineSmtProblemRef::Artifact { encoding_hash, .. } => *encoding_hash,
+    };
+    let problem_hash = phase9_smt_problem_hash(&problem).map_err(|_| {
+        smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        )
+    })?;
+    if problem_hash != declared_problem_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    if phase9_smt_encoding_hash(&problem, problem_hash) != declared_encoding_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(problem)
+}
+
+fn phase9_validate_smt_proof_payload_bytes(
+    candidate_hash: Hash,
+    bytes: &[u8],
+    candidate: &Phase9MachineSmtCertificateCandidate,
+) -> std::result::Result<Phase9SmtProofNodeTable, Phase9AiEndpointResponse> {
+    let table = decode_smt_proof_node_table(bytes).map_err(|_| {
+        smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        )
+    })?;
+    let declared_hash = match &candidate.proof_payload {
+        Phase9MachineSmtProofPayloadRef::Inline { payload_hash, .. }
+        | Phase9MachineSmtProofPayloadRef::Artifact { payload_hash, .. } => *payload_hash,
+    };
+    let payload_hash = phase9_smt_proof_payload_hash(&table).map_err(|_| {
+        smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        )
+    })?;
+    if payload_hash != declared_hash {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    Ok(table)
+}
+
+fn phase9_resolve_smt_primitives(
+    candidate_hash: Hash,
+    env: &Env,
+    options: &Phase9SmtOptions,
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<Phase9ResolvedSmtPrimitives, Phase9AiEndpointResponse> {
+    let Some(eq) = phase9_resolve_global_decl(&options.eq, imports) else {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        ));
+    };
+    let prop_false = match &options.prop_false {
+        Some(global_ref) => Some(phase9_resolve_global_decl(global_ref, imports).ok_or_else(
+            || {
+                rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::ImportClosureMismatch,
+                    None,
+                )
+            },
+        )?),
+        None => None,
+    };
+    let prop_not = match &options.prop_not {
+        Some(global_ref) => Some(phase9_resolve_global_decl(global_ref, imports).ok_or_else(
+            || {
+                rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::ImportClosureMismatch,
+                    None,
+                )
+            },
+        )?),
+        None => None,
+    };
+    let resolved = Phase9ResolvedSmtPrimitives {
+        eq,
+        prop_false,
+        prop_not,
+    };
+    if !phase9_smt_public_interface_is_valid(env, &resolved) {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9SmtCertificateError::PublicInterfaceMismatch,
+        ));
+    }
+    Ok(resolved)
+}
+
+fn phase9_smt_public_interface_is_valid(env: &Env, resolved: &Phase9ResolvedSmtPrimitives) -> bool {
+    phase9_smt_eq_interface_is_valid(env, &resolved.eq)
+        && resolved
+            .prop_false
+            .as_ref()
+            .is_none_or(|prop_false| phase9_smt_false_interface_is_valid(env, prop_false))
+        && resolved
+            .prop_not
+            .as_ref()
+            .is_none_or(|prop_not| phase9_smt_not_interface_is_valid(env, prop_not))
+}
+
+fn phase9_smt_eq_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDecl) -> bool {
+    let Some(universe) = phase9_quotient_single_universe(resolved) else {
+        return false;
+    };
+    let expected = Expr::pi(
+        "_",
+        Expr::sort(universe),
+        Expr::pi(
+            "_",
+            Expr::bvar(0),
+            Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
+        ),
+    );
+    phase9_quotient_public_type_defeq(env, resolved, &expected)
+}
+
+fn phase9_smt_false_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDecl) -> bool {
+    resolved.universe_params.is_empty()
+        && phase9_quotient_public_type_defeq(env, resolved, &Expr::sort(Level::zero()))
+}
+
+fn phase9_smt_not_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDecl) -> bool {
+    resolved.universe_params.is_empty()
+        && phase9_quotient_public_type_defeq(
+            env,
+            resolved,
+            &Expr::pi("_", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
+        )
+}
+
+fn phase9_validate_smt_commands(
+    candidate_hash: Hash,
+    candidate: &Phase9MachineSmtCertificateCandidate,
+    problem: &Phase9MachineSmtEncodedProblem,
+    primitives: &Phase9ResolvedSmtPrimitives,
+) -> std::result::Result<Phase9SmtCommandContext, Phase9AiEndpointResponse> {
+    if problem.encoder_version != Phase9SmtEncoderVersion::MvpNormalizedQfV1
+        || problem.command_profile != Phase9SmtCommandProfile::MvpNormalizedQf
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9SmtCertificateError::EncodingMismatch,
+        ));
+    }
+    for command in &problem.commands {
+        let expected = phase9_smt_command_id(command).map_err(|_| {
+            smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            )
+        })?;
+        if command.command_id != expected {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::PayloadHashMismatch,
+                None,
+            ));
+        }
+    }
+
+    let mut context = Phase9SmtCommandContext::default();
+    let mut previous_key: Option<Vec<u8>> = None;
+    let mut target_assertions = 0usize;
+    let mut final_checks = 0usize;
+    for command in &problem.commands {
+        if !phase9_smt_command_phase_matches_payload(command.phase, &command.payload) {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        let key = phase9_smt_command_order_key(command).map_err(|_| {
+            smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            )
+        })?;
+        if previous_key
+            .as_ref()
+            .is_some_and(|previous| previous >= &key)
+        {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        previous_key = Some(key);
+
+        match &command.payload {
+            Phase9SmtCommandPayload::SortDecl { symbol, arity } => {
+                if !phase9_smt_decl_symbol_is_valid(symbol) {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::EnvelopeMalformed,
+                        Phase9SmtCertificateError::NonCanonicalPayload,
+                    ));
+                }
+                if context
+                    .sort_arities
+                    .insert(symbol.ascii.clone(), *arity)
+                    .is_some()
+                {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::EnvelopeMalformed,
+                        Phase9SmtCertificateError::NonCanonicalPayload,
+                    ));
+                }
+            }
+            Phase9SmtCommandPayload::DatatypeDecl {
+                symbol,
+                constructors,
+            } => {
+                if !phase9_smt_decl_symbol_is_valid(symbol) || constructors.is_empty() {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::EnvelopeMalformed,
+                        Phase9SmtCertificateError::NonCanonicalPayload,
+                    ));
+                }
+                for constructor in constructors {
+                    if !phase9_smt_decl_symbol_is_valid(&constructor.constructor) {
+                        return Err(smt_rejected_response(
+                            candidate_hash,
+                            Phase9AiValidationError::EnvelopeMalformed,
+                            Phase9SmtCertificateError::NonCanonicalPayload,
+                        ));
+                    }
+                    for selector in &constructor.selectors {
+                        if !phase9_smt_decl_symbol_is_valid(&selector.selector) {
+                            return Err(smt_rejected_response(
+                                candidate_hash,
+                                Phase9AiValidationError::EnvelopeMalformed,
+                                Phase9SmtCertificateError::NonCanonicalPayload,
+                            ));
+                        }
+                        phase9_validate_smt_sort(
+                            candidate_hash,
+                            &selector.sort,
+                            problem.logic,
+                            &context,
+                        )?;
+                    }
+                }
+                context.sort_arities.insert(symbol.ascii.clone(), 0);
+            }
+            Phase9SmtCommandPayload::FunctionDecl {
+                symbol,
+                args,
+                result,
+            } => {
+                if !phase9_smt_decl_symbol_is_valid(symbol) {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::EnvelopeMalformed,
+                        Phase9SmtCertificateError::NonCanonicalPayload,
+                    ));
+                }
+                for arg in args {
+                    phase9_validate_smt_sort(candidate_hash, arg, problem.logic, &context)?;
+                }
+                phase9_validate_smt_sort(candidate_hash, result, problem.logic, &context)?;
+                if context
+                    .functions
+                    .insert(symbol.ascii.clone(), (args.clone(), result.clone()))
+                    .is_some()
+                {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::EnvelopeMalformed,
+                        Phase9SmtCertificateError::NonCanonicalPayload,
+                    ));
+                }
+            }
+            Phase9SmtCommandPayload::ContextAssumption {
+                source_local_index,
+                core_expr,
+                encoded_expr,
+            } => {
+                let Some(local) = candidate
+                    .goal
+                    .local_context
+                    .get(usize::try_from(*source_local_index).unwrap_or(usize::MAX))
+                else {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::EnvelopeMalformed,
+                        Phase9SmtCertificateError::NonCanonicalPayload,
+                    ));
+                };
+                if !phase9_core_expr_bytes_eq(&local.ty, core_expr) {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::FeatureRejected,
+                        Phase9SmtCertificateError::EncodingMismatch,
+                    ));
+                }
+                let expected = phase9_smt_encode_core_bool(core_expr, primitives, false)
+                    .ok_or_else(|| {
+                        rejected_response(
+                            candidate_hash,
+                            Phase9AiValidationError::UnsupportedFeature,
+                            None,
+                        )
+                    })?;
+                if &expected != encoded_expr {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::FeatureRejected,
+                        Phase9SmtCertificateError::EncodingMismatch,
+                    ));
+                }
+                phase9_validate_smt_expr(candidate_hash, encoded_expr, problem.logic, &context)?;
+            }
+            Phase9SmtCommandPayload::TargetAssertion {
+                core_expr,
+                encoded_expr,
+            } => {
+                target_assertions += 1;
+                if !phase9_core_expr_bytes_eq(&candidate.goal.target, core_expr) {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::FeatureRejected,
+                        Phase9SmtCertificateError::EncodingMismatch,
+                    ));
+                }
+                let expected = phase9_smt_encode_core_bool(core_expr, primitives, true)
+                    .ok_or_else(|| {
+                        rejected_response(
+                            candidate_hash,
+                            Phase9AiValidationError::UnsupportedFeature,
+                            None,
+                        )
+                    })?;
+                if &expected != encoded_expr {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::FeatureRejected,
+                        Phase9SmtCertificateError::EncodingMismatch,
+                    ));
+                }
+                phase9_validate_smt_expr(candidate_hash, encoded_expr, problem.logic, &context)?;
+            }
+            Phase9SmtCommandPayload::FinalCheck => {
+                final_checks += 1;
+            }
+        }
+    }
+    if target_assertions != 1
+        || final_checks != 1
+        || !matches!(
+            problem.commands.last().map(|command| command.phase),
+            Some(Phase9SmtCommandPhase::FinalCheck)
+        )
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    Ok(context)
+}
+
+fn phase9_smt_command_phase_matches_payload(
+    phase: Phase9SmtCommandPhase,
+    payload: &Phase9SmtCommandPayload,
+) -> bool {
+    matches!(
+        (phase, payload),
+        (
+            Phase9SmtCommandPhase::SortDecl,
+            Phase9SmtCommandPayload::SortDecl { .. }
+        ) | (
+            Phase9SmtCommandPhase::DatatypeDecl,
+            Phase9SmtCommandPayload::DatatypeDecl { .. }
+        ) | (
+            Phase9SmtCommandPhase::FunctionDecl,
+            Phase9SmtCommandPayload::FunctionDecl { .. }
+        ) | (
+            Phase9SmtCommandPhase::ContextAssumption,
+            Phase9SmtCommandPayload::ContextAssumption { .. }
+        ) | (
+            Phase9SmtCommandPhase::TargetAssertion,
+            Phase9SmtCommandPayload::TargetAssertion { .. }
+        ) | (
+            Phase9SmtCommandPhase::FinalCheck,
+            Phase9SmtCommandPayload::FinalCheck
+        )
+    )
+}
+
+fn phase9_smt_command_order_key(
+    command: &Phase9SmtEncodedCommand,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut key = vec![command.phase.tag()];
+    key.extend_from_slice(&phase9_smt_command_id_source_key(&command.payload)?);
+    Ok(key)
+}
+
+fn phase9_smt_decl_symbol_is_valid(symbol: &Phase9SmtSymbol) -> bool {
+    symbol.ascii.starts_with(b"smt:")
+        && symbol.ascii.len() <= 128
+        && symbol.ascii.len() > 4
+        && symbol.ascii[4..]
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(*byte, b'_' | b'.' | b'-'))
+}
+
+fn phase9_smt_var_symbol_is_valid(symbol: &Phase9SmtSymbol) -> bool {
+    symbol.ascii.starts_with(b"lc:")
+        && symbol.ascii.len() <= 128
+        && symbol.ascii.len() > 3
+        && symbol.ascii[3..]
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(*byte, b'_' | b'.' | b'-'))
+}
+
+fn phase9_smt_encode_core_bool(
+    expr: &Expr,
+    primitives: &Phase9ResolvedSmtPrimitives,
+    negate: bool,
+) -> Option<Phase9SmtExpr> {
+    let mut encoded = if primitives
+        .prop_false
+        .as_ref()
+        .is_some_and(|false_ref| phase9_core_expr_is_const(expr, &false_ref.const_name))
+    {
+        Phase9SmtExpr::BoolLit(false)
+    } else if let Some(prop_not) = &primitives.prop_not {
+        let (head, args) = npa_kernel::expr::collect_apps(expr);
+        if let Expr::Const { name, levels } = head {
+            if name == prop_not.const_name && levels.is_empty() && args.len() == 1 {
+                Phase9SmtExpr::Not(Box::new(phase9_smt_encode_core_bool(
+                    &args[0], primitives, false,
+                )?))
+            } else {
+                return None;
+            }
+        } else {
+            return None;
+        }
+    } else {
+        return None;
+    };
+    if negate {
+        encoded = Phase9SmtExpr::Not(Box::new(encoded));
+    }
+    Some(encoded)
+}
+
+fn phase9_core_expr_is_const(expr: &Expr, expected_name: &str) -> bool {
+    matches!(expr, Expr::Const { name, levels } if name == expected_name && levels.is_empty())
+}
+
+fn phase9_validate_smt_sort(
+    candidate_hash: Hash,
+    sort: &Phase9SmtSortExpr,
+    logic: Phase9SmtLogic,
+    context: &Phase9SmtCommandContext,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    match sort {
+        Phase9SmtSortExpr::Bool => Ok(()),
+        Phase9SmtSortExpr::Int => {
+            if matches!(
+                logic,
+                Phase9SmtLogic::MvpQfLia | Phase9SmtLogic::MvpQfUfLiaBv
+            ) {
+                Ok(())
+            } else {
+                Err(rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::UnsupportedFeature,
+                    None,
+                ))
+            }
+        }
+        Phase9SmtSortExpr::BitVec { width } => {
+            if *width == 0 {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            if matches!(
+                logic,
+                Phase9SmtLogic::MvpQfBv | Phase9SmtLogic::MvpQfUfLiaBv
+            ) {
+                Ok(())
+            } else {
+                Err(rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::UnsupportedFeature,
+                    None,
+                ))
+            }
+        }
+        Phase9SmtSortExpr::User { symbol, args } => {
+            let Some(arity) = context.sort_arities.get(&symbol.ascii) else {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            };
+            if *arity != args.len() as u32 {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            for arg in args {
+                phase9_validate_smt_sort(candidate_hash, arg, logic, context)?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn phase9_validate_smt_expr(
+    candidate_hash: Hash,
+    expr: &Phase9SmtExpr,
+    logic: Phase9SmtLogic,
+    context: &Phase9SmtCommandContext,
+) -> std::result::Result<Phase9SmtSortExpr, Phase9AiEndpointResponse> {
+    match expr {
+        Phase9SmtExpr::Var { symbol, sort } => {
+            if !phase9_smt_var_symbol_is_valid(symbol) {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            phase9_validate_smt_sort(candidate_hash, sort, logic, context)?;
+            Ok(sort.clone())
+        }
+        Phase9SmtExpr::BoolLit(_) => Ok(Phase9SmtSortExpr::Bool),
+        Phase9SmtExpr::IntLit(_) => {
+            phase9_validate_smt_sort(candidate_hash, &Phase9SmtSortExpr::Int, logic, context)?;
+            Ok(Phase9SmtSortExpr::Int)
+        }
+        Phase9SmtExpr::BitVecLit { width, value } => {
+            let sort = Phase9SmtSortExpr::BitVec { width: *width };
+            phase9_validate_smt_sort(candidate_hash, &sort, logic, context)?;
+            let min_bytes = usize::try_from(u64::from(*width).div_ceil(8)).unwrap_or(usize::MAX);
+            if value.len() != min_bytes {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            Ok(sort)
+        }
+        Phase9SmtExpr::App {
+            symbol,
+            args,
+            result_sort,
+        } => {
+            let Some((expected_args, expected_result)) = context.functions.get(&symbol.ascii)
+            else {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            };
+            if expected_args.len() != args.len() || expected_result != result_sort {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            for (arg, expected_sort) in args.iter().zip(expected_args) {
+                let actual_sort = phase9_validate_smt_expr(candidate_hash, arg, logic, context)?;
+                if &actual_sort != expected_sort {
+                    return Err(smt_rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::FeatureRejected,
+                        Phase9SmtCertificateError::EncodingMismatch,
+                    ));
+                }
+            }
+            phase9_validate_smt_sort(candidate_hash, result_sort, logic, context)?;
+            Ok(result_sort.clone())
+        }
+        Phase9SmtExpr::BuiltinApp {
+            op,
+            args,
+            result_sort,
+        } => {
+            phase9_validate_smt_builtin_app(candidate_hash, *op, args, result_sort, logic, context)
+        }
+        Phase9SmtExpr::Not(inner) => {
+            phase9_expect_smt_sort(
+                candidate_hash,
+                phase9_validate_smt_expr(candidate_hash, inner, logic, context)?,
+                Phase9SmtSortExpr::Bool,
+            )?;
+            Ok(Phase9SmtSortExpr::Bool)
+        }
+        Phase9SmtExpr::And(args) | Phase9SmtExpr::Or(args) => {
+            if args.is_empty() {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            for arg in args {
+                phase9_expect_smt_sort(
+                    candidate_hash,
+                    phase9_validate_smt_expr(candidate_hash, arg, logic, context)?,
+                    Phase9SmtSortExpr::Bool,
+                )?;
+            }
+            Ok(Phase9SmtSortExpr::Bool)
+        }
+        Phase9SmtExpr::Eq(lhs, rhs) => {
+            let lhs_sort = phase9_validate_smt_expr(candidate_hash, lhs, logic, context)?;
+            let rhs_sort = phase9_validate_smt_expr(candidate_hash, rhs, logic, context)?;
+            phase9_expect_smt_sort(candidate_hash, lhs_sort, rhs_sort)?;
+            Ok(Phase9SmtSortExpr::Bool)
+        }
+        Phase9SmtExpr::Imp(lhs, rhs) => {
+            phase9_expect_smt_sort(
+                candidate_hash,
+                phase9_validate_smt_expr(candidate_hash, lhs, logic, context)?,
+                Phase9SmtSortExpr::Bool,
+            )?;
+            phase9_expect_smt_sort(
+                candidate_hash,
+                phase9_validate_smt_expr(candidate_hash, rhs, logic, context)?,
+                Phase9SmtSortExpr::Bool,
+            )?;
+            Ok(Phase9SmtSortExpr::Bool)
+        }
+        Phase9SmtExpr::Ite {
+            cond,
+            then_expr,
+            else_expr,
+        } => {
+            phase9_expect_smt_sort(
+                candidate_hash,
+                phase9_validate_smt_expr(candidate_hash, cond, logic, context)?,
+                Phase9SmtSortExpr::Bool,
+            )?;
+            let then_sort = phase9_validate_smt_expr(candidate_hash, then_expr, logic, context)?;
+            let else_sort = phase9_validate_smt_expr(candidate_hash, else_expr, logic, context)?;
+            phase9_expect_smt_sort(candidate_hash, then_sort.clone(), else_sort)?;
+            Ok(then_sort)
+        }
+    }
+}
+
+fn phase9_validate_smt_builtin_app(
+    candidate_hash: Hash,
+    op: Phase9SmtBuiltinOp,
+    args: &[Phase9SmtExpr],
+    result_sort: &Phase9SmtSortExpr,
+    logic: Phase9SmtLogic,
+    context: &Phase9SmtCommandContext,
+) -> std::result::Result<Phase9SmtSortExpr, Phase9AiEndpointResponse> {
+    let int = Phase9SmtSortExpr::Int;
+    let bool_sort = Phase9SmtSortExpr::Bool;
+    let expected = match op {
+        Phase9SmtBuiltinOp::IntNeg => {
+            phase9_expect_smt_arity(candidate_hash, args, 1)?;
+            vec![int.clone()]
+        }
+        Phase9SmtBuiltinOp::IntAdd | Phase9SmtBuiltinOp::IntSub => {
+            phase9_expect_smt_arity(candidate_hash, args, 2)?;
+            vec![int.clone(), int.clone()]
+        }
+        Phase9SmtBuiltinOp::IntLe
+        | Phase9SmtBuiltinOp::IntLt
+        | Phase9SmtBuiltinOp::IntGe
+        | Phase9SmtBuiltinOp::IntGt => {
+            phase9_expect_smt_arity(candidate_hash, args, 2)?;
+            vec![int.clone(), int.clone()]
+        }
+        Phase9SmtBuiltinOp::BvNot => {
+            phase9_expect_smt_arity(candidate_hash, args, 1)?;
+            Vec::new()
+        }
+        Phase9SmtBuiltinOp::BvAnd
+        | Phase9SmtBuiltinOp::BvOr
+        | Phase9SmtBuiltinOp::BvXor
+        | Phase9SmtBuiltinOp::BvAdd
+        | Phase9SmtBuiltinOp::BvSub
+        | Phase9SmtBuiltinOp::BvMul
+        | Phase9SmtBuiltinOp::BvUlt
+        | Phase9SmtBuiltinOp::BvUle
+        | Phase9SmtBuiltinOp::BvConcat => {
+            phase9_expect_smt_arity(candidate_hash, args, 2)?;
+            Vec::new()
+        }
+        Phase9SmtBuiltinOp::BvExtract { high, low } => {
+            phase9_expect_smt_arity(candidate_hash, args, 1)?;
+            if high < low {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                ));
+            }
+            Vec::new()
+        }
+    };
+
+    match op {
+        Phase9SmtBuiltinOp::IntNeg
+        | Phase9SmtBuiltinOp::IntAdd
+        | Phase9SmtBuiltinOp::IntSub
+        | Phase9SmtBuiltinOp::IntLe
+        | Phase9SmtBuiltinOp::IntLt
+        | Phase9SmtBuiltinOp::IntGe
+        | Phase9SmtBuiltinOp::IntGt => {
+            phase9_validate_smt_sort(candidate_hash, &int, logic, context)?;
+            for (arg, sort) in args.iter().zip(expected) {
+                phase9_expect_smt_sort(
+                    candidate_hash,
+                    phase9_validate_smt_expr(candidate_hash, arg, logic, context)?,
+                    sort,
+                )?;
+            }
+            let result = match op {
+                Phase9SmtBuiltinOp::IntNeg
+                | Phase9SmtBuiltinOp::IntAdd
+                | Phase9SmtBuiltinOp::IntSub => int,
+                _ => bool_sort,
+            };
+            phase9_expect_smt_sort(candidate_hash, result_sort.clone(), result.clone())?;
+            Ok(result)
+        }
+        _ => {
+            if !matches!(
+                logic,
+                Phase9SmtLogic::MvpQfBv | Phase9SmtLogic::MvpQfUfLiaBv
+            ) {
+                return Err(rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::UnsupportedFeature,
+                    None,
+                ));
+            }
+            let arg_sorts = args
+                .iter()
+                .map(|arg| phase9_validate_smt_expr(candidate_hash, arg, logic, context))
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+            if !arg_sorts
+                .iter()
+                .all(|sort| matches!(sort, Phase9SmtSortExpr::BitVec { width } if *width > 0))
+            {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Phase9SmtCertificateError::EncodingMismatch,
+                ));
+            }
+            let result = match op {
+                Phase9SmtBuiltinOp::BvUlt | Phase9SmtBuiltinOp::BvUle => Phase9SmtSortExpr::Bool,
+                Phase9SmtBuiltinOp::BvConcat => {
+                    let Phase9SmtSortExpr::BitVec { width: left } = arg_sorts[0] else {
+                        unreachable!()
+                    };
+                    let Phase9SmtSortExpr::BitVec { width: right } = arg_sorts[1] else {
+                        unreachable!()
+                    };
+                    Phase9SmtSortExpr::BitVec {
+                        width: left.checked_add(right).ok_or_else(|| {
+                            smt_rejected_response(
+                                candidate_hash,
+                                Phase9AiValidationError::EnvelopeMalformed,
+                                Phase9SmtCertificateError::NonCanonicalPayload,
+                            )
+                        })?,
+                    }
+                }
+                Phase9SmtBuiltinOp::BvExtract { high, low } => {
+                    let width = high
+                        .checked_sub(low)
+                        .and_then(|width| width.checked_add(1))
+                        .ok_or_else(|| {
+                            smt_rejected_response(
+                                candidate_hash,
+                                Phase9AiValidationError::EnvelopeMalformed,
+                                Phase9SmtCertificateError::NonCanonicalPayload,
+                            )
+                        })?;
+                    Phase9SmtSortExpr::BitVec { width }
+                }
+                _ => arg_sorts[0].clone(),
+            };
+            phase9_expect_smt_sort(candidate_hash, result_sort.clone(), result.clone())?;
+            Ok(result)
+        }
+    }
+}
+
+fn phase9_expect_smt_arity(
+    candidate_hash: Hash,
+    args: &[Phase9SmtExpr],
+    expected: usize,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    if args.len() == expected {
+        Ok(())
+    } else {
+        Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ))
+    }
+}
+
+fn phase9_expect_smt_sort(
+    candidate_hash: Hash,
+    actual: Phase9SmtSortExpr,
+    expected: Phase9SmtSortExpr,
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9SmtCertificateError::EncodingMismatch,
+        ))
+    }
+}
+
+fn phase9_validate_smt_proof_table(
+    candidate_hash: Hash,
+    table: &Phase9SmtProofNodeTable,
+    candidate: &Phase9MachineSmtCertificateCandidate,
+    problem: &Phase9MachineSmtEncodedProblem,
+    command_context: &Phase9SmtCommandContext,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    if table.certificate_format != candidate.certificate_format {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::FeatureRejected,
+            Phase9SmtCertificateError::EncodingMismatch,
+        ));
+    }
+    for (index, node) in table.nodes.iter().enumerate() {
+        if node.node_id != index as u32
+            || node.premises.iter().any(|premise| *premise >= node.node_id)
+        {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        let conclusion = &node.conclusion_encoding;
+        if conclusion.encoder_version != problem.encoder_version
+            || conclusion.logic != problem.logic
+            || conclusion.command_profile != problem.command_profile
+        {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::FeatureRejected,
+                Phase9SmtCertificateError::ConclusionEncodingMismatch,
+            ));
+        }
+        if !expr_levels_are_in_scope(&conclusion.core_expr, &candidate.goal.universe_params) {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        if !expr_imported_refs_are_resolved(&conclusion.core_expr, verified_imports) {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            ));
+        }
+        phase9_validate_smt_expr(
+            candidate_hash,
+            &conclusion.encoded_expr,
+            problem.logic,
+            command_context,
+        )?;
+    }
+    Ok(())
+}
+
+fn phase9_validate_smt_reconstruction_plan(
+    candidate_hash: Hash,
+    candidate: &Phase9MachineSmtCertificateCandidate,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    let plan = &candidate.reconstruction_plan;
+    if ensure_sorted_global_refs(&plan.imported_theory_refs).is_err() {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    if plan.steps.is_empty()
+        || usize::try_from(plan.final_step).map_or(true, |i| i >= plan.steps.len())
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    let mut used_theory_refs = BTreeSet::new();
+    for (index, step) in plan.steps.iter().enumerate() {
+        if step.step_id != index as u32
+            || step.premises.iter().any(|premise| *premise >= step.step_id)
+        {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        if !expr_levels_are_in_scope(&step.conclusion, &candidate.goal.universe_params)
+            || !expr_levels_are_in_scope(&step.proof, &candidate.goal.universe_params)
+        {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+        if !expr_imported_refs_are_resolved(&step.conclusion, verified_imports)
+            || !expr_imported_refs_are_resolved(&step.proof, verified_imports)
+        {
+            return Err(rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::ImportClosureMismatch,
+                None,
+            ));
+        }
+        if let Phase9SmtReconstructionRule::LocalBookkeeping { kind } = &step.rule {
+            let theory_ref = match kind {
+                Phase9SmtLocalBookkeepingRule::ReorderPremises { permutation } => {
+                    if permutation.len() != step.premises.len() {
+                        return Err(smt_rejected_response(
+                            candidate_hash,
+                            Phase9AiValidationError::EnvelopeMalformed,
+                            Phase9SmtCertificateError::NonCanonicalPayload,
+                        ));
+                    }
+                    return Err(rejected_response(
+                        candidate_hash,
+                        Phase9AiValidationError::UnsupportedFeature,
+                        None,
+                    ));
+                }
+                Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                    lemma,
+                    level_args,
+                    term_args,
+                } => {
+                    if step.premises.is_empty() {
+                        phase9_validate_smt_bookkeeping_args(
+                            candidate_hash,
+                            candidate,
+                            level_args,
+                            term_args,
+                            verified_imports,
+                        )?;
+                    }
+                    lemma
+                }
+                Phase9SmtLocalBookkeepingRule::ComposeProof {
+                    combinator,
+                    level_args,
+                    term_args,
+                } => {
+                    phase9_validate_smt_bookkeeping_args(
+                        candidate_hash,
+                        candidate,
+                        level_args,
+                        term_args,
+                        verified_imports,
+                    )?;
+                    combinator
+                }
+            };
+            used_theory_refs.insert(global_ref_sort_key(theory_ref).map_err(|_| {
+                smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::EnvelopeMalformed,
+                    Phase9SmtCertificateError::NonCanonicalPayload,
+                )
+            })?);
+            if !plan
+                .imported_theory_refs
+                .iter()
+                .any(|imported| imported == theory_ref)
+            {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Phase9SmtCertificateError::TheoryRefMismatch,
+                ));
+            }
+            if resolve_phase9_global_ref(theory_ref, verified_imports).is_none() {
+                return Err(rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::ImportClosureMismatch,
+                    None,
+                ));
+            }
+            if !step.payload_bindings.is_empty() {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Phase9SmtCertificateError::PayloadBindingMismatch,
+                ));
+            }
+            if matches!(
+                kind,
+                Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma { .. }
+            ) && !step.premises.is_empty()
+            {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    Phase9AiValidationError::FeatureRejected,
+                    Phase9SmtCertificateError::ReconstructionPremiseMismatch,
+                ));
+            }
+        }
+    }
+    if !expr_levels_are_in_scope(&plan.final_proof, &candidate.goal.universe_params) {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    if !expr_imported_refs_are_resolved(&plan.final_proof, verified_imports) {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        ));
+    }
+    for imported in &plan.imported_theory_refs {
+        let key = global_ref_sort_key(imported).map_err(|_| {
+            smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            )
+        })?;
+        if !used_theory_refs.contains(&key) {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                Phase9AiValidationError::EnvelopeMalformed,
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn phase9_validate_smt_bookkeeping_args(
+    candidate_hash: Hash,
+    candidate: &Phase9MachineSmtCertificateCandidate,
+    level_args: &[Level],
+    term_args: &[Expr],
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    if !level_args
+        .iter()
+        .all(|level| level_is_in_scope(level, &candidate.goal.universe_params))
+        || !term_args
+            .iter()
+            .all(|term| expr_levels_are_in_scope(term, &candidate.goal.universe_params))
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::EnvelopeMalformed,
+            Phase9SmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    if !term_args
+        .iter()
+        .all(|term| expr_imported_refs_are_resolved(term, verified_imports))
+    {
+        return Err(rejected_response(
+            candidate_hash,
+            Phase9AiValidationError::ImportClosureMismatch,
+            None,
+        ));
+    }
+    Ok(())
+}
+
 fn theorem_graph_rejected_response(
     candidate_hash: Hash,
     error: Phase9AiValidationError,
@@ -6103,6 +8080,443 @@ fn encode_quotient_operation_to(
     Ok(())
 }
 
+fn encode_smt_candidate_to(
+    out: &mut Vec<u8>,
+    candidate: &Phase9MachineSmtCertificateCandidate,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_goal_to(out, &candidate.goal)?;
+    out.push(candidate.logic.tag());
+    encode_smt_problem_ref_to(out, &candidate.encoded_problem);
+    out.push(candidate.certificate_format.tag());
+    out.push(candidate.rule_registry_profile.tag());
+    encode_smt_proof_payload_ref_to(out, &candidate.proof_payload);
+    encode_smt_reconstruction_plan_to(out, &candidate.reconstruction_plan)?;
+    Ok(())
+}
+
+fn encode_smt_problem_ref_to(out: &mut Vec<u8>, problem: &Phase9MachineSmtProblemRef) {
+    match problem {
+        Phase9MachineSmtProblemRef::Inline {
+            problem_hash,
+            encoding_hash,
+            canonical_bytes,
+        } => {
+            out.push(0);
+            encode_hash_to(out, problem_hash);
+            encode_hash_to(out, encoding_hash);
+            encode_bytes_to(out, canonical_bytes);
+        }
+        Phase9MachineSmtProblemRef::Artifact {
+            path,
+            file_hash,
+            problem_hash,
+            encoding_hash,
+            size_bytes,
+        } => {
+            out.push(1);
+            encode_string_to(out, path);
+            encode_hash_to(out, file_hash);
+            encode_hash_to(out, problem_hash);
+            encode_hash_to(out, encoding_hash);
+            encode_u64_to(out, *size_bytes);
+        }
+    }
+}
+
+fn encode_smt_proof_payload_ref_to(out: &mut Vec<u8>, payload: &Phase9MachineSmtProofPayloadRef) {
+    match payload {
+        Phase9MachineSmtProofPayloadRef::Inline {
+            payload_hash,
+            canonical_bytes,
+        } => {
+            out.push(0);
+            encode_hash_to(out, payload_hash);
+            encode_bytes_to(out, canonical_bytes);
+        }
+        Phase9MachineSmtProofPayloadRef::Artifact {
+            path,
+            file_hash,
+            payload_hash,
+            size_bytes,
+        } => {
+            out.push(1);
+            encode_string_to(out, path);
+            encode_hash_to(out, file_hash);
+            encode_hash_to(out, payload_hash);
+            encode_u64_to(out, *size_bytes);
+        }
+    }
+}
+
+fn encode_smt_encoded_problem_to(
+    out: &mut Vec<u8>,
+    problem: &Phase9MachineSmtEncodedProblem,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    out.push(problem.encoder_version.tag());
+    encode_hash_to(out, &problem.goal_fingerprint);
+    out.push(problem.logic.tag());
+    out.push(problem.command_profile.tag());
+    encode_len_to(out, problem.commands.len());
+    for command in &problem.commands {
+        encode_smt_command_to(out, command)?;
+    }
+    Ok(())
+}
+
+fn encode_smt_command_to(
+    out: &mut Vec<u8>,
+    command: &Phase9SmtEncodedCommand,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    out.push(command.phase.tag());
+    encode_hash_to(out, &command.command_id);
+    encode_smt_command_payload_to(out, &command.payload)?;
+    Ok(())
+}
+
+fn encode_smt_command_payload_to(
+    out: &mut Vec<u8>,
+    payload: &Phase9SmtCommandPayload,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match payload {
+        Phase9SmtCommandPayload::SortDecl { symbol, arity } => {
+            out.push(0);
+            encode_smt_symbol_to(out, symbol);
+            encode_u32_to(out, *arity);
+        }
+        Phase9SmtCommandPayload::FunctionDecl {
+            symbol,
+            args,
+            result,
+        } => {
+            out.push(1);
+            encode_smt_symbol_to(out, symbol);
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_smt_sort_expr_to(out, arg);
+            }
+            encode_smt_sort_expr_to(out, result);
+        }
+        Phase9SmtCommandPayload::DatatypeDecl {
+            symbol,
+            constructors,
+        } => {
+            out.push(2);
+            encode_smt_symbol_to(out, symbol);
+            encode_len_to(out, constructors.len());
+            for constructor in constructors {
+                encode_smt_datatype_constructor_to(out, constructor);
+            }
+        }
+        Phase9SmtCommandPayload::ContextAssumption {
+            source_local_index,
+            core_expr,
+            encoded_expr,
+        } => {
+            out.push(3);
+            encode_u32_to(out, *source_local_index);
+            encode_expr_to(out, core_expr);
+            encode_smt_expr_to(out, encoded_expr);
+        }
+        Phase9SmtCommandPayload::TargetAssertion {
+            core_expr,
+            encoded_expr,
+        } => {
+            out.push(4);
+            encode_expr_to(out, core_expr);
+            encode_smt_expr_to(out, encoded_expr);
+        }
+        Phase9SmtCommandPayload::FinalCheck => out.push(5),
+    }
+    Ok(())
+}
+
+fn encode_smt_symbol_to(out: &mut Vec<u8>, symbol: &Phase9SmtSymbol) {
+    encode_bytes_to(out, &symbol.ascii);
+}
+
+fn encode_smt_sort_expr_to(out: &mut Vec<u8>, sort: &Phase9SmtSortExpr) {
+    match sort {
+        Phase9SmtSortExpr::Bool => out.push(0),
+        Phase9SmtSortExpr::Int => out.push(1),
+        Phase9SmtSortExpr::BitVec { width } => {
+            out.push(2);
+            encode_u32_to(out, *width);
+        }
+        Phase9SmtSortExpr::User { symbol, args } => {
+            out.push(3);
+            encode_smt_symbol_to(out, symbol);
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_smt_sort_expr_to(out, arg);
+            }
+        }
+    }
+}
+
+fn encode_smt_datatype_constructor_to(
+    out: &mut Vec<u8>,
+    constructor: &Phase9SmtDatatypeConstructor,
+) {
+    encode_smt_symbol_to(out, &constructor.constructor);
+    encode_len_to(out, constructor.selectors.len());
+    for selector in &constructor.selectors {
+        encode_smt_symbol_to(out, &selector.selector);
+        encode_smt_sort_expr_to(out, &selector.sort);
+    }
+}
+
+fn encode_smt_expr_to(out: &mut Vec<u8>, expr: &Phase9SmtExpr) {
+    match expr {
+        Phase9SmtExpr::Var { symbol, sort } => {
+            out.push(0);
+            encode_smt_symbol_to(out, symbol);
+            encode_smt_sort_expr_to(out, sort);
+        }
+        Phase9SmtExpr::BoolLit(value) => {
+            out.push(1);
+            out.push(u8::from(*value));
+        }
+        Phase9SmtExpr::IntLit(value) => {
+            out.push(2);
+            encode_i128_to(out, *value);
+        }
+        Phase9SmtExpr::BitVecLit { width, value } => {
+            out.push(3);
+            encode_u32_to(out, *width);
+            encode_bytes_to(out, value);
+        }
+        Phase9SmtExpr::App {
+            symbol,
+            args,
+            result_sort,
+        } => {
+            out.push(4);
+            encode_smt_symbol_to(out, symbol);
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_smt_expr_to(out, arg);
+            }
+            encode_smt_sort_expr_to(out, result_sort);
+        }
+        Phase9SmtExpr::BuiltinApp {
+            op,
+            args,
+            result_sort,
+        } => {
+            out.push(5);
+            encode_smt_builtin_op_to(out, *op);
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_smt_expr_to(out, arg);
+            }
+            encode_smt_sort_expr_to(out, result_sort);
+        }
+        Phase9SmtExpr::Not(inner) => {
+            out.push(6);
+            encode_smt_expr_to(out, inner);
+        }
+        Phase9SmtExpr::And(args) => {
+            out.push(7);
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_smt_expr_to(out, arg);
+            }
+        }
+        Phase9SmtExpr::Or(args) => {
+            out.push(8);
+            encode_len_to(out, args.len());
+            for arg in args {
+                encode_smt_expr_to(out, arg);
+            }
+        }
+        Phase9SmtExpr::Eq(lhs, rhs) => {
+            out.push(9);
+            encode_smt_expr_to(out, lhs);
+            encode_smt_expr_to(out, rhs);
+        }
+        Phase9SmtExpr::Imp(lhs, rhs) => {
+            out.push(10);
+            encode_smt_expr_to(out, lhs);
+            encode_smt_expr_to(out, rhs);
+        }
+        Phase9SmtExpr::Ite {
+            cond,
+            then_expr,
+            else_expr,
+        } => {
+            out.push(11);
+            encode_smt_expr_to(out, cond);
+            encode_smt_expr_to(out, then_expr);
+            encode_smt_expr_to(out, else_expr);
+        }
+    }
+}
+
+fn encode_smt_builtin_op_to(out: &mut Vec<u8>, op: Phase9SmtBuiltinOp) {
+    out.push(op.tag());
+    if let Phase9SmtBuiltinOp::BvExtract { high, low } = op {
+        encode_u32_to(out, high);
+        encode_u32_to(out, low);
+    }
+}
+
+fn encode_smt_proof_node_table_to(
+    out: &mut Vec<u8>,
+    table: &Phase9SmtProofNodeTable,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    out.push(table.certificate_format.tag());
+    encode_len_to(out, table.nodes.len());
+    for node in &table.nodes {
+        encode_smt_proof_node_to(out, node);
+    }
+    Ok(())
+}
+
+fn encode_smt_proof_node_to(out: &mut Vec<u8>, node: &Phase9SmtProofNode) {
+    encode_u32_to(out, node.node_id);
+    encode_hash_to(out, &node.rule_fingerprint);
+    encode_len_to(out, node.premises.len());
+    for premise in &node.premises {
+        encode_u32_to(out, *premise);
+    }
+    encode_smt_conclusion_encoding_to(out, &node.conclusion_encoding);
+}
+
+fn encode_smt_conclusion_encoding_to(out: &mut Vec<u8>, conclusion: &Phase9SmtConclusionEncoding) {
+    out.push(conclusion.encoder_version.tag());
+    out.push(conclusion.logic.tag());
+    out.push(conclusion.command_profile.tag());
+    encode_expr_to(out, &conclusion.core_expr);
+    encode_smt_expr_to(out, &conclusion.encoded_expr);
+}
+
+fn encode_smt_reconstruction_plan_to(
+    out: &mut Vec<u8>,
+    plan: &Phase9MachineSmtReconstructionPlan,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_global_ref_list_to(out, &plan.imported_theory_refs)?;
+    encode_len_to(out, plan.steps.len());
+    for step in &plan.steps {
+        encode_smt_reconstruction_step_to(out, step)?;
+    }
+    encode_u32_to(out, plan.final_step);
+    encode_expr_to(out, &plan.final_proof);
+    Ok(())
+}
+
+fn encode_smt_reconstruction_step_to(
+    out: &mut Vec<u8>,
+    step: &Phase9MachineSmtReconstructionStep,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    encode_u32_to(out, step.step_id);
+    encode_smt_reconstruction_rule_to(out, &step.rule)?;
+    encode_len_to(out, step.payload_bindings.len());
+    for binding in &step.payload_bindings {
+        encode_hash_to(out, &binding.payload_hash);
+        encode_u32_to(out, binding.node_id);
+        encode_hash_to(out, &binding.rule_fingerprint);
+    }
+    encode_len_to(out, step.premises.len());
+    for premise in &step.premises {
+        encode_u32_to(out, *premise);
+    }
+    encode_expr_to(out, &step.conclusion);
+    encode_expr_to(out, &step.proof);
+    Ok(())
+}
+
+fn encode_smt_reconstruction_rule_to(
+    out: &mut Vec<u8>,
+    rule: &Phase9SmtReconstructionRule,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match rule {
+        Phase9SmtReconstructionRule::PayloadNode {
+            certificate_format,
+            rule_fingerprint,
+        } => {
+            out.push(0);
+            out.push(certificate_format.tag());
+            encode_hash_to(out, rule_fingerprint);
+        }
+        Phase9SmtReconstructionRule::LocalBookkeeping { kind } => {
+            out.push(1);
+            encode_smt_local_bookkeeping_rule_to(out, kind)?;
+        }
+    }
+    Ok(())
+}
+
+fn encode_smt_local_bookkeeping_rule_to(
+    out: &mut Vec<u8>,
+    rule: &Phase9SmtLocalBookkeepingRule,
+) -> std::result::Result<(), Phase9AiCanonicalError> {
+    match rule {
+        Phase9SmtLocalBookkeepingRule::ReorderPremises { permutation } => {
+            out.push(0);
+            encode_len_to(out, permutation.len());
+            for index in permutation {
+                encode_u32_to(out, *index);
+            }
+        }
+        Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+            lemma,
+            level_args,
+            term_args,
+        } => {
+            out.push(1);
+            encode_global_ref_to(out, lemma)?;
+            encode_len_to(out, level_args.len());
+            for level in level_args {
+                encode_level_to(out, level);
+            }
+            encode_len_to(out, term_args.len());
+            for term in term_args {
+                encode_expr_to(out, term);
+            }
+        }
+        Phase9SmtLocalBookkeepingRule::ComposeProof {
+            combinator,
+            level_args,
+            term_args,
+        } => {
+            out.push(2);
+            encode_global_ref_to(out, combinator)?;
+            encode_len_to(out, level_args.len());
+            for level in level_args {
+                encode_level_to(out, level);
+            }
+            encode_len_to(out, term_args.len());
+            for term in term_args {
+                encode_expr_to(out, term);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn phase9_smt_command_id_source_key(
+    payload: &Phase9SmtCommandPayload,
+) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+    let mut out = Vec::new();
+    match payload {
+        Phase9SmtCommandPayload::SortDecl { symbol, .. }
+        | Phase9SmtCommandPayload::DatatypeDecl { symbol, .. }
+        | Phase9SmtCommandPayload::FunctionDecl { symbol, .. } => {
+            encode_smt_symbol_to(&mut out, symbol);
+        }
+        Phase9SmtCommandPayload::ContextAssumption {
+            source_local_index,
+            core_expr,
+            ..
+        } => {
+            encode_u32_to(&mut out, *source_local_index);
+            encode_expr_to(&mut out, core_expr);
+        }
+        Phase9SmtCommandPayload::TargetAssertion { .. } | Phase9SmtCommandPayload::FinalCheck => {}
+    }
+    Ok(out)
+}
+
 fn encode_typeclass_resolution_plan_to(
     out: &mut Vec<u8>,
     plan: &Phase9MachineTypeclassResolutionPlan,
@@ -6628,6 +9042,44 @@ impl Phase9InductiveDecodeBudget {
     }
 }
 
+struct Phase9SmtDecodeBudget {
+    core: Phase9InductiveDecodeBudget,
+    smt_expr_nodes: u64,
+    smt_sort_nodes: u64,
+}
+
+impl Phase9SmtDecodeBudget {
+    fn new() -> Self {
+        Self {
+            core: Phase9InductiveDecodeBudget::new(),
+            smt_expr_nodes: 0,
+            smt_sort_nodes: 0,
+        }
+    }
+
+    fn spend_smt_expr(&mut self) -> std::result::Result<(), DecodeError> {
+        self.smt_expr_nodes = self
+            .smt_expr_nodes
+            .checked_add(1)
+            .ok_or(DecodeError::Malformed)?;
+        if self.smt_expr_nodes > MAX_PHASE9_SMT_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        Ok(())
+    }
+
+    fn spend_smt_sort(&mut self) -> std::result::Result<(), DecodeError> {
+        self.smt_sort_nodes = self
+            .smt_sort_nodes
+            .checked_add(1)
+            .ok_or(DecodeError::Malformed)?;
+        if self.smt_sort_nodes > MAX_PHASE9_SMT_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        Ok(())
+    }
+}
+
 fn decode_inductive_proposal(
     input: &[u8],
 ) -> std::result::Result<Phase9MachineInductiveProposal, DecodeError> {
@@ -6672,6 +9124,51 @@ fn decode_quotient_candidate(
         return Err(DecodeError::Malformed);
     }
     Ok(candidate)
+}
+
+fn decode_smt_candidate(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineSmtCertificateCandidate, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let mut budget = Phase9SmtDecodeBudget::new();
+    let candidate = decoder.smt_candidate(&mut budget)?;
+    decoder.done()?;
+    let encoded =
+        phase9_smt_candidate_canonical_bytes(&candidate).map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(candidate)
+}
+
+fn decode_smt_encoded_problem(
+    input: &[u8],
+) -> std::result::Result<Phase9MachineSmtEncodedProblem, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let mut budget = Phase9SmtDecodeBudget::new();
+    let problem = decoder.smt_encoded_problem(&mut budget)?;
+    decoder.done()?;
+    let encoded =
+        phase9_smt_problem_canonical_bytes(&problem).map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(problem)
+}
+
+fn decode_smt_proof_node_table(
+    input: &[u8],
+) -> std::result::Result<Phase9SmtProofNodeTable, DecodeError> {
+    let mut decoder = Decoder::new(input);
+    let mut budget = Phase9SmtDecodeBudget::new();
+    let table = decoder.smt_proof_node_table(&mut budget)?;
+    decoder.done()?;
+    let encoded =
+        phase9_smt_proof_payload_canonical_bytes(&table).map_err(|_| DecodeError::Malformed)?;
+    if encoded != input {
+        return Err(DecodeError::Malformed);
+    }
+    Ok(table)
 }
 
 fn decode_typeclass_resolution_plan(
@@ -6828,6 +9325,16 @@ impl<'a> Decoder<'a> {
         Ok(u64::from_be_bytes(bytes.try_into().unwrap()))
     }
 
+    fn u32(&mut self) -> std::result::Result<u32, DecodeError> {
+        let end = self.pos.checked_add(4).ok_or(DecodeError::Malformed)?;
+        let bytes = self
+            .input
+            .get(self.pos..end)
+            .ok_or(DecodeError::Malformed)?;
+        self.pos = end;
+        Ok(u32::from_be_bytes(bytes.try_into().unwrap()))
+    }
+
     fn i32(&mut self) -> std::result::Result<i32, DecodeError> {
         let end = self.pos.checked_add(4).ok_or(DecodeError::Malformed)?;
         let bytes = self
@@ -6846,6 +9353,16 @@ impl<'a> Decoder<'a> {
             .ok_or(DecodeError::Malformed)?;
         self.pos = end;
         Ok(i64::from_be_bytes(bytes.try_into().unwrap()))
+    }
+
+    fn i128(&mut self) -> std::result::Result<i128, DecodeError> {
+        let end = self.pos.checked_add(16).ok_or(DecodeError::Malformed)?;
+        let bytes = self
+            .input
+            .get(self.pos..end)
+            .ok_or(DecodeError::Malformed)?;
+        self.pos = end;
+        Ok(i128::from_be_bytes(bytes.try_into().unwrap()))
     }
 
     fn hash(&mut self) -> std::result::Result<Hash, DecodeError> {
@@ -7306,6 +9823,482 @@ impl<'a> Decoder<'a> {
             raw_function: self.expr_counted(budget)?,
             compatibility_proof: self.expr_counted(budget)?,
         })
+    }
+
+    fn smt_candidate(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9MachineSmtCertificateCandidate, DecodeError> {
+        Ok(Phase9MachineSmtCertificateCandidate {
+            goal: self.goal()?,
+            logic: Phase9SmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
+            encoded_problem: self.smt_problem_ref()?,
+            certificate_format: Phase9SmtCertificateFormat::from_tag(self.u8()?)
+                .ok_or(DecodeError::Malformed)?,
+            rule_registry_profile: Phase9SmtRuleRegistryProfile::from_tag(self.u8()?)
+                .ok_or(DecodeError::Malformed)?,
+            proof_payload: self.smt_proof_payload_ref()?,
+            reconstruction_plan: self.smt_reconstruction_plan(budget)?,
+        })
+    }
+
+    fn smt_problem_ref(&mut self) -> std::result::Result<Phase9MachineSmtProblemRef, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9MachineSmtProblemRef::Inline {
+                problem_hash: self.hash()?,
+                encoding_hash: self.hash()?,
+                canonical_bytes: self
+                    .bytes_with_cap(MAX_PHASE9_SMT_RAW_BYTES, DecodeError::Malformed)?,
+            }),
+            1 => Ok(Phase9MachineSmtProblemRef::Artifact {
+                path: self.string()?,
+                file_hash: self.hash()?,
+                problem_hash: self.hash()?,
+                encoding_hash: self.hash()?,
+                size_bytes: self.u64()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn smt_proof_payload_ref(
+        &mut self,
+    ) -> std::result::Result<Phase9MachineSmtProofPayloadRef, DecodeError> {
+        match self.u8()? {
+            0 => Ok(Phase9MachineSmtProofPayloadRef::Inline {
+                payload_hash: self.hash()?,
+                canonical_bytes: self
+                    .bytes_with_cap(MAX_PHASE9_SMT_RAW_BYTES, DecodeError::Malformed)?,
+            }),
+            1 => Ok(Phase9MachineSmtProofPayloadRef::Artifact {
+                path: self.string()?,
+                file_hash: self.hash()?,
+                payload_hash: self.hash()?,
+                size_bytes: self.u64()?,
+            }),
+            _ => Err(DecodeError::Malformed),
+        }
+    }
+
+    fn smt_encoded_problem(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9MachineSmtEncodedProblem, DecodeError> {
+        let encoder_version =
+            Phase9SmtEncoderVersion::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let goal_fingerprint = self.hash()?;
+        let logic = Phase9SmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let command_profile =
+            Phase9SmtCommandProfile::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let command_len = self.u64()?;
+        if command_len > MAX_PHASE9_SMT_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let command_len = usize::try_from(command_len).map_err(|_| DecodeError::Malformed)?;
+        let mut commands = Vec::with_capacity(command_len);
+        for _ in 0..command_len {
+            commands.push(self.smt_command(budget)?);
+        }
+        Ok(Phase9MachineSmtEncodedProblem {
+            encoder_version,
+            goal_fingerprint,
+            logic,
+            command_profile,
+            commands,
+        })
+    }
+
+    fn smt_command(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtEncodedCommand, DecodeError> {
+        Ok(Phase9SmtEncodedCommand {
+            phase: Phase9SmtCommandPhase::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
+            command_id: self.hash()?,
+            payload: self.smt_command_payload(budget)?,
+        })
+    }
+
+    fn smt_command_payload(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtCommandPayload, DecodeError> {
+        Ok(match self.u8()? {
+            0 => Phase9SmtCommandPayload::SortDecl {
+                symbol: self.smt_symbol()?,
+                arity: self.u32()?,
+            },
+            1 => {
+                let symbol = self.smt_symbol()?;
+                let args = self.smt_sort_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                let result = self.smt_sort_expr(budget)?;
+                Phase9SmtCommandPayload::FunctionDecl {
+                    symbol,
+                    args,
+                    result,
+                }
+            }
+            2 => {
+                let symbol = self.smt_symbol()?;
+                let constructor_len = self.u64()?;
+                if constructor_len > MAX_PHASE9_SMT_REFS {
+                    return Err(DecodeError::Malformed);
+                }
+                let constructor_len =
+                    usize::try_from(constructor_len).map_err(|_| DecodeError::Malformed)?;
+                let mut constructors = Vec::with_capacity(constructor_len);
+                for _ in 0..constructor_len {
+                    constructors.push(self.smt_datatype_constructor(budget)?);
+                }
+                Phase9SmtCommandPayload::DatatypeDecl {
+                    symbol,
+                    constructors,
+                }
+            }
+            3 => Phase9SmtCommandPayload::ContextAssumption {
+                source_local_index: self.u32()?,
+                core_expr: self.expr_counted(&mut budget.core)?,
+                encoded_expr: self.smt_expr(budget)?,
+            },
+            4 => Phase9SmtCommandPayload::TargetAssertion {
+                core_expr: self.expr_counted(&mut budget.core)?,
+                encoded_expr: self.smt_expr(budget)?,
+            },
+            5 => Phase9SmtCommandPayload::FinalCheck,
+            _ => return Err(DecodeError::Malformed),
+        })
+    }
+
+    fn smt_symbol(&mut self) -> std::result::Result<Phase9SmtSymbol, DecodeError> {
+        Ok(Phase9SmtSymbol {
+            ascii: self.bytes()?,
+        })
+    }
+
+    fn smt_sort_expr_list(
+        &mut self,
+        cap: u64,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Vec<Phase9SmtSortExpr>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut sorts = Vec::with_capacity(len);
+        for _ in 0..len {
+            sorts.push(self.smt_sort_expr(budget)?);
+        }
+        Ok(sorts)
+    }
+
+    fn smt_sort_expr(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtSortExpr, DecodeError> {
+        budget.spend_smt_sort()?;
+        Ok(match self.u8()? {
+            0 => Phase9SmtSortExpr::Bool,
+            1 => Phase9SmtSortExpr::Int,
+            2 => Phase9SmtSortExpr::BitVec { width: self.u32()? },
+            3 => {
+                let symbol = self.smt_symbol()?;
+                let args = self.smt_sort_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                Phase9SmtSortExpr::User { symbol, args }
+            }
+            _ => return Err(DecodeError::Malformed),
+        })
+    }
+
+    fn smt_datatype_constructor(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtDatatypeConstructor, DecodeError> {
+        let constructor = self.smt_symbol()?;
+        let selector_len = self.u64()?;
+        if selector_len > MAX_PHASE9_SMT_REFS {
+            return Err(DecodeError::Malformed);
+        }
+        let selector_len = usize::try_from(selector_len).map_err(|_| DecodeError::Malformed)?;
+        let mut selectors = Vec::with_capacity(selector_len);
+        for _ in 0..selector_len {
+            selectors.push(Phase9SmtDatatypeSelector {
+                selector: self.smt_symbol()?,
+                sort: self.smt_sort_expr(budget)?,
+            });
+        }
+        Ok(Phase9SmtDatatypeConstructor {
+            constructor,
+            selectors,
+        })
+    }
+
+    fn smt_expr(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtExpr, DecodeError> {
+        budget.spend_smt_expr()?;
+        Ok(match self.u8()? {
+            0 => Phase9SmtExpr::Var {
+                symbol: self.smt_symbol()?,
+                sort: self.smt_sort_expr(budget)?,
+            },
+            1 => match self.u8()? {
+                0 => Phase9SmtExpr::BoolLit(false),
+                1 => Phase9SmtExpr::BoolLit(true),
+                _ => return Err(DecodeError::Malformed),
+            },
+            2 => Phase9SmtExpr::IntLit(self.i128()?),
+            3 => Phase9SmtExpr::BitVecLit {
+                width: self.u32()?,
+                value: self.bytes()?,
+            },
+            4 => {
+                let symbol = self.smt_symbol()?;
+                let args = self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                let result_sort = self.smt_sort_expr(budget)?;
+                Phase9SmtExpr::App {
+                    symbol,
+                    args,
+                    result_sort,
+                }
+            }
+            5 => {
+                let tag = self.u8()?;
+                let op = Phase9SmtBuiltinOp::from_tag(tag, self)?;
+                let args = self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                let result_sort = self.smt_sort_expr(budget)?;
+                Phase9SmtExpr::BuiltinApp {
+                    op,
+                    args,
+                    result_sort,
+                }
+            }
+            6 => Phase9SmtExpr::Not(Box::new(self.smt_expr(budget)?)),
+            7 => Phase9SmtExpr::And(self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?),
+            8 => Phase9SmtExpr::Or(self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?),
+            9 => Phase9SmtExpr::Eq(
+                Box::new(self.smt_expr(budget)?),
+                Box::new(self.smt_expr(budget)?),
+            ),
+            10 => Phase9SmtExpr::Imp(
+                Box::new(self.smt_expr(budget)?),
+                Box::new(self.smt_expr(budget)?),
+            ),
+            11 => Phase9SmtExpr::Ite {
+                cond: Box::new(self.smt_expr(budget)?),
+                then_expr: Box::new(self.smt_expr(budget)?),
+                else_expr: Box::new(self.smt_expr(budget)?),
+            },
+            _ => return Err(DecodeError::Malformed),
+        })
+    }
+
+    fn smt_expr_list(
+        &mut self,
+        cap: u64,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Vec<Phase9SmtExpr>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut exprs = Vec::with_capacity(len);
+        for _ in 0..len {
+            exprs.push(self.smt_expr(budget)?);
+        }
+        Ok(exprs)
+    }
+
+    fn smt_proof_node_table(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtProofNodeTable, DecodeError> {
+        let certificate_format =
+            Phase9SmtCertificateFormat::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let node_len = self.u64()?;
+        if node_len > MAX_PHASE9_SMT_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let node_len = usize::try_from(node_len).map_err(|_| DecodeError::Malformed)?;
+        let mut nodes = Vec::with_capacity(node_len);
+        for _ in 0..node_len {
+            nodes.push(self.smt_proof_node(budget)?);
+        }
+        Ok(Phase9SmtProofNodeTable {
+            certificate_format,
+            nodes,
+        })
+    }
+
+    fn smt_proof_node(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtProofNode, DecodeError> {
+        Ok(Phase9SmtProofNode {
+            node_id: self.u32()?,
+            rule_fingerprint: self.hash()?,
+            premises: self.u32_list_with_cap(MAX_PHASE9_SMT_REFS)?,
+            conclusion_encoding: self.smt_conclusion_encoding(budget)?,
+        })
+    }
+
+    fn smt_conclusion_encoding(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtConclusionEncoding, DecodeError> {
+        Ok(Phase9SmtConclusionEncoding {
+            encoder_version: Phase9SmtEncoderVersion::from_tag(self.u8()?)
+                .ok_or(DecodeError::Malformed)?,
+            logic: Phase9SmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
+            command_profile: Phase9SmtCommandProfile::from_tag(self.u8()?)
+                .ok_or(DecodeError::Malformed)?,
+            core_expr: self.expr_counted(&mut budget.core)?,
+            encoded_expr: self.smt_expr(budget)?,
+        })
+    }
+
+    fn smt_reconstruction_plan(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9MachineSmtReconstructionPlan, DecodeError> {
+        let imported_theory_refs = self.global_ref_list_with_cap(MAX_PHASE9_SMT_REFS)?;
+        let step_len = self.u64()?;
+        if step_len > MAX_PHASE9_SMT_ITEMS {
+            return Err(DecodeError::Malformed);
+        }
+        let step_len = usize::try_from(step_len).map_err(|_| DecodeError::Malformed)?;
+        let mut steps = Vec::with_capacity(step_len);
+        for _ in 0..step_len {
+            steps.push(self.smt_reconstruction_step(budget)?);
+        }
+        Ok(Phase9MachineSmtReconstructionPlan {
+            imported_theory_refs,
+            steps,
+            final_step: self.u32()?,
+            final_proof: self.expr_counted(&mut budget.core)?,
+        })
+    }
+
+    fn smt_reconstruction_step(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9MachineSmtReconstructionStep, DecodeError> {
+        Ok(Phase9MachineSmtReconstructionStep {
+            step_id: self.u32()?,
+            rule: self.smt_reconstruction_rule(budget)?,
+            payload_bindings: self.smt_payload_binding_list()?,
+            premises: self.u32_list_with_cap(MAX_PHASE9_SMT_REFS)?,
+            conclusion: self.expr_counted(&mut budget.core)?,
+            proof: self.expr_counted(&mut budget.core)?,
+        })
+    }
+
+    fn smt_reconstruction_rule(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtReconstructionRule, DecodeError> {
+        Ok(match self.u8()? {
+            0 => Phase9SmtReconstructionRule::PayloadNode {
+                certificate_format: Phase9SmtCertificateFormat::from_tag(self.u8()?)
+                    .ok_or(DecodeError::Malformed)?,
+                rule_fingerprint: self.hash()?,
+            },
+            1 => Phase9SmtReconstructionRule::LocalBookkeeping {
+                kind: self.smt_local_bookkeeping_rule(budget)?,
+            },
+            _ => return Err(DecodeError::Malformed),
+        })
+    }
+
+    fn smt_payload_binding_list(
+        &mut self,
+    ) -> std::result::Result<Vec<Phase9MachineSmtPayloadBinding>, DecodeError> {
+        let len = self.u64()?;
+        if len > MAX_PHASE9_SMT_REFS {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut bindings = Vec::with_capacity(len);
+        for _ in 0..len {
+            bindings.push(Phase9MachineSmtPayloadBinding {
+                payload_hash: self.hash()?,
+                node_id: self.u32()?,
+                rule_fingerprint: self.hash()?,
+            });
+        }
+        Ok(bindings)
+    }
+
+    fn smt_local_bookkeeping_rule(
+        &mut self,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Phase9SmtLocalBookkeepingRule, DecodeError> {
+        Ok(match self.u8()? {
+            0 => Phase9SmtLocalBookkeepingRule::ReorderPremises {
+                permutation: self.u32_list_with_cap(MAX_PHASE9_SMT_REFS)?,
+            },
+            1 => Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                lemma: self.global_ref()?,
+                level_args: self
+                    .level_list_with_cap_counted(MAX_PHASE9_SMT_REFS, &mut budget.core)?,
+                term_args: self.expr_list_with_cap_counted(MAX_PHASE9_SMT_REFS, budget)?,
+            },
+            2 => Phase9SmtLocalBookkeepingRule::ComposeProof {
+                combinator: self.global_ref()?,
+                level_args: self
+                    .level_list_with_cap_counted(MAX_PHASE9_SMT_REFS, &mut budget.core)?,
+                term_args: self.expr_list_with_cap_counted(MAX_PHASE9_SMT_REFS, budget)?,
+            },
+            _ => return Err(DecodeError::Malformed),
+        })
+    }
+
+    fn expr_list_with_cap_counted(
+        &mut self,
+        cap: u64,
+        budget: &mut Phase9SmtDecodeBudget,
+    ) -> std::result::Result<Vec<Expr>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut exprs = Vec::with_capacity(len);
+        for _ in 0..len {
+            exprs.push(self.expr_counted(&mut budget.core)?);
+        }
+        Ok(exprs)
+    }
+
+    fn u32_list_with_cap(&mut self, cap: u64) -> std::result::Result<Vec<u32>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut values = Vec::with_capacity(len);
+        for _ in 0..len {
+            values.push(self.u32()?);
+        }
+        Ok(values)
+    }
+
+    fn global_ref_list_with_cap(
+        &mut self,
+        cap: u64,
+    ) -> std::result::Result<Vec<Phase9AiGlobalRef>, DecodeError> {
+        let len = self.u64()?;
+        if len > cap {
+            return Err(DecodeError::Malformed);
+        }
+        let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
+        let mut refs = Vec::with_capacity(len);
+        for _ in 0..len {
+            refs.push(self.global_ref()?);
+        }
+        Ok(refs)
     }
 
     fn expr_counted(
@@ -7923,11 +10916,19 @@ fn encode_u64_to(out: &mut Vec<u8>, value: u64) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
+fn encode_u32_to(out: &mut Vec<u8>, value: u32) {
+    out.extend_from_slice(&value.to_be_bytes());
+}
+
 fn encode_i32_to(out: &mut Vec<u8>, value: i32) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
 fn encode_i64_to(out: &mut Vec<u8>, value: i64) {
+    out.extend_from_slice(&value.to_be_bytes());
+}
+
+fn encode_i128_to(out: &mut Vec<u8>, value: i128) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
@@ -8715,6 +11716,269 @@ mod tests {
                 canonical_bytes: options_bytes,
             },
             payload: phase9_quotient_candidate_canonical_bytes(&candidate).unwrap(),
+        };
+        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
+    fn smt_eq_type() -> Expr {
+        Expr::pi(
+            "_",
+            Expr::sort(Level::param("u")),
+            Expr::pi(
+                "_",
+                Expr::bvar(0),
+                Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
+            ),
+        )
+    }
+
+    fn verified_smt_import() -> VerifiedImportRef {
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("S"),
+            declarations: vec![
+                npa_kernel::Decl::Axiom {
+                    name: "S.Eq".to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: smt_eq_type(),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "S.False".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "S.Not".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("_", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "S.falseProof".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("S.False", vec![]),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "S.lemma".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("S.False", vec![]),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "S.combinator".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("S.False", vec![]),
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        let mut session = npa_cert::VerifierSession::new();
+        let verified =
+            npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
+                .unwrap();
+        VerifiedImportRef::from_verified_module(&verified).unwrap()
+    }
+
+    fn smt_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+        let export = import
+            .exports()
+            .iter()
+            .find(|export| export.name == Name::from_dotted(name))
+            .unwrap();
+        Phase9AiGlobalRef {
+            module: import.module().clone(),
+            export_hash: import.export_hash(),
+            certificate_hash: import.certificate_hash(),
+            name: export.name.clone(),
+            decl_interface_hash: export.decl_interface_hash,
+        }
+    }
+
+    fn smt_options(import: &VerifiedImportRef) -> Phase9SmtOptions {
+        Phase9SmtOptions {
+            eq: smt_global_ref_for(import, "S.Eq"),
+            prop_false: Some(smt_global_ref_for(import, "S.False")),
+            prop_not: Some(smt_global_ref_for(import, "S.Not")),
+        }
+    }
+
+    fn smt_false() -> Expr {
+        Expr::konst("S.False", vec![])
+    }
+
+    fn smt_false_proof() -> Expr {
+        Expr::konst("S.falseProof", vec![])
+    }
+
+    fn smt_symbol(name: &str) -> Phase9SmtSymbol {
+        Phase9SmtSymbol {
+            ascii: name.as_bytes().to_vec(),
+        }
+    }
+
+    fn smt_command(
+        phase: Phase9SmtCommandPhase,
+        payload: Phase9SmtCommandPayload,
+    ) -> Phase9SmtEncodedCommand {
+        let mut command = Phase9SmtEncodedCommand {
+            phase,
+            command_id: hash(0),
+            payload,
+        };
+        command.command_id = phase9_smt_command_id(&command).unwrap();
+        command
+    }
+
+    fn smt_target_command() -> Phase9SmtEncodedCommand {
+        smt_command(
+            Phase9SmtCommandPhase::TargetAssertion,
+            Phase9SmtCommandPayload::TargetAssertion {
+                core_expr: smt_false(),
+                encoded_expr: Phase9SmtExpr::Not(Box::new(Phase9SmtExpr::BoolLit(false))),
+            },
+        )
+    }
+
+    fn smt_final_check_command() -> Phase9SmtEncodedCommand {
+        smt_command(
+            Phase9SmtCommandPhase::FinalCheck,
+            Phase9SmtCommandPayload::FinalCheck,
+        )
+    }
+
+    fn smt_problem(
+        goal_fingerprint: Hash,
+        logic: Phase9SmtLogic,
+        commands: Vec<Phase9SmtEncodedCommand>,
+    ) -> Phase9MachineSmtEncodedProblem {
+        Phase9MachineSmtEncodedProblem {
+            encoder_version: Phase9SmtEncoderVersion::MvpNormalizedQfV1,
+            goal_fingerprint,
+            logic,
+            command_profile: Phase9SmtCommandProfile::MvpNormalizedQf,
+            commands,
+        }
+    }
+
+    fn smt_problem_ref(problem: Phase9MachineSmtEncodedProblem) -> Phase9MachineSmtProblemRef {
+        let canonical_bytes = phase9_smt_problem_canonical_bytes(&problem).unwrap();
+        let problem_hash = phase9_smt_problem_hash(&problem).unwrap();
+        let encoding_hash = phase9_smt_encoding_hash(&problem, problem_hash);
+        Phase9MachineSmtProblemRef::Inline {
+            problem_hash,
+            encoding_hash,
+            canonical_bytes,
+        }
+    }
+
+    fn smt_payload_ref(table: Phase9SmtProofNodeTable) -> Phase9MachineSmtProofPayloadRef {
+        let canonical_bytes = phase9_smt_proof_payload_canonical_bytes(&table).unwrap();
+        let payload_hash = phase9_smt_proof_payload_hash(&table).unwrap();
+        Phase9MachineSmtProofPayloadRef::Inline {
+            payload_hash,
+            canonical_bytes,
+        }
+    }
+
+    fn smt_proof_table() -> Phase9SmtProofNodeTable {
+        Phase9SmtProofNodeTable {
+            certificate_format: Phase9SmtCertificateFormat::MvpProofNodeTableV1,
+            nodes: vec![Phase9SmtProofNode {
+                node_id: 0,
+                rule_fingerprint: hash(42),
+                premises: Vec::new(),
+                conclusion_encoding: Phase9SmtConclusionEncoding {
+                    encoder_version: Phase9SmtEncoderVersion::MvpNormalizedQfV1,
+                    logic: Phase9SmtLogic::MvpQfUf,
+                    command_profile: Phase9SmtCommandProfile::MvpNormalizedQf,
+                    core_expr: smt_false(),
+                    encoded_expr: Phase9SmtExpr::BoolLit(false),
+                },
+            }],
+        }
+    }
+
+    fn smt_payload_node_step(step_id: u32) -> Phase9MachineSmtReconstructionStep {
+        Phase9MachineSmtReconstructionStep {
+            step_id,
+            rule: Phase9SmtReconstructionRule::PayloadNode {
+                certificate_format: Phase9SmtCertificateFormat::MvpProofNodeTableV1,
+                rule_fingerprint: hash(42),
+            },
+            payload_bindings: Vec::new(),
+            premises: Vec::new(),
+            conclusion: smt_false(),
+            proof: smt_false_proof(),
+        }
+    }
+
+    fn smt_base_plan() -> Phase9MachineSmtReconstructionPlan {
+        Phase9MachineSmtReconstructionPlan {
+            imported_theory_refs: Vec::new(),
+            steps: vec![smt_payload_node_step(0)],
+            final_step: 0,
+            final_proof: smt_false_proof(),
+        }
+    }
+
+    fn smt_valid_candidate(goal_fingerprint: Hash) -> Phase9MachineSmtCertificateCandidate {
+        Phase9MachineSmtCertificateCandidate {
+            goal: Phase9AiGoal {
+                universe_params: Vec::new(),
+                local_context: Vec::new(),
+                target: smt_false(),
+            },
+            logic: Phase9SmtLogic::MvpQfUf,
+            encoded_problem: smt_problem_ref(smt_problem(
+                goal_fingerprint,
+                Phase9SmtLogic::MvpQfUf,
+                vec![smt_target_command(), smt_final_check_command()],
+            )),
+            certificate_format: Phase9SmtCertificateFormat::MvpProofNodeTableV1,
+            rule_registry_profile: Phase9SmtRuleRegistryProfile::MvpEmptyRegistryV1,
+            proof_payload: smt_payload_ref(smt_proof_table()),
+            reconstruction_plan: smt_base_plan(),
+        }
+    }
+
+    fn smt_request(
+        import: &VerifiedImportRef,
+        mutate: impl FnOnce(&mut Phase9MachineSmtCertificateCandidate),
+    ) -> Vec<u8> {
+        let options = Phase9AiOptions {
+            smt: Some(smt_options(import)),
+            ..Default::default()
+        };
+        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
+        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
+        let env_fingerprint = phase9_ai_env_fingerprint(
+            Phase9AiProfileVersion::MvpV1,
+            Phase9AiTaskKind::SmtCertificate,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let goal = Phase9AiGoal {
+            universe_params: Vec::new(),
+            local_context: Vec::new(),
+            target: smt_false(),
+        };
+        let goal_fingerprint = phase9_ai_goal_fingerprint(env_fingerprint, &goal);
+        let mut candidate = smt_valid_candidate(goal_fingerprint);
+        mutate(&mut candidate);
+        let envelope = Phase9AiCandidateEnvelope {
+            profile_version: Phase9AiProfileVersion::MvpV1,
+            task_kind: Phase9AiTaskKind::SmtCertificate,
+            target: Phase9AiTarget {
+                env_fingerprint,
+                target_decl_hash: None,
+                goal_fingerprint: Some(goal_fingerprint),
+            },
+            imports,
+            options: Phase9AiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: phase9_smt_candidate_canonical_bytes(&candidate).unwrap(),
         };
         phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
@@ -9703,6 +12967,195 @@ mod tests {
             Phase9AiValidationError::KernelRejected,
             Some(Phase9AiFeatureError::QuotientConstruction(
                 Phase9QuotientConstructionError::CompatibilityProofMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_empty_registry_rejects_valid_preregistry_payload_node() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |_| {});
+
+        assert_rejected(
+            run_phase9_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            Some(Phase9AiFeatureError::SmtCertificate(
+                Phase9SmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_encoded_problem_hash_mismatch_precedes_later_validation() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            if let Phase9MachineSmtProblemRef::Inline { problem_hash, .. } =
+                &mut candidate.encoded_problem
+            {
+                *problem_hash = hash(77);
+            }
+            candidate.proof_payload = Phase9MachineSmtProofPayloadRef::Inline {
+                payload_hash: hash(88),
+                canonical_bytes: b"malformed".to_vec(),
+            };
+        });
+
+        assert_rejected(
+            run_phase9_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::PayloadHashMismatch,
+            None,
+        );
+    }
+
+    #[test]
+    fn smt_unsupported_logic_operator_is_deterministic_rejection() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            let problem = match &candidate.encoded_problem {
+                Phase9MachineSmtProblemRef::Inline {
+                    canonical_bytes, ..
+                } => decode_smt_encoded_problem(canonical_bytes).unwrap(),
+                Phase9MachineSmtProblemRef::Artifact { .. } => unreachable!(),
+            };
+            candidate.encoded_problem = smt_problem_ref(smt_problem(
+                problem.goal_fingerprint,
+                Phase9SmtLogic::MvpQfUf,
+                vec![
+                    smt_command(
+                        Phase9SmtCommandPhase::FunctionDecl,
+                        Phase9SmtCommandPayload::FunctionDecl {
+                            symbol: smt_symbol("smt:int_fn"),
+                            args: vec![Phase9SmtSortExpr::Int],
+                            result: Phase9SmtSortExpr::Int,
+                        },
+                    ),
+                    smt_target_command(),
+                    smt_final_check_command(),
+                ],
+            ));
+        });
+
+        assert_rejected(
+            run_phase9_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::UnsupportedFeature,
+            None,
+        );
+    }
+
+    #[test]
+    fn smt_proof_payload_malformed_is_noncanonical_payload() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.proof_payload = Phase9MachineSmtProofPayloadRef::Inline {
+                payload_hash: hash(88),
+                canonical_bytes: b"malformed".to_vec(),
+            };
+        });
+
+        assert_rejected(
+            run_phase9_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::EnvelopeMalformed,
+            Some(Phase9AiFeatureError::SmtCertificate(
+                Phase9SmtCertificateError::NonCanonicalPayload,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_local_bookkeeping_payload_binding_mismatch_is_feature_rejected() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.reconstruction_plan = Phase9MachineSmtReconstructionPlan {
+                imported_theory_refs: vec![smt_global_ref_for(&import, "S.lemma")],
+                steps: vec![Phase9MachineSmtReconstructionStep {
+                    step_id: 0,
+                    rule: Phase9SmtReconstructionRule::LocalBookkeeping {
+                        kind: Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                            lemma: smt_global_ref_for(&import, "S.lemma"),
+                            level_args: Vec::new(),
+                            term_args: Vec::new(),
+                        },
+                    },
+                    payload_bindings: vec![Phase9MachineSmtPayloadBinding {
+                        payload_hash: hash(9),
+                        node_id: 0,
+                        rule_fingerprint: hash(42),
+                    }],
+                    premises: Vec::new(),
+                    conclusion: smt_false(),
+                    proof: smt_false_proof(),
+                }],
+                final_step: 0,
+                final_proof: smt_false_proof(),
+            };
+        });
+
+        assert_rejected(
+            run_phase9_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::SmtCertificate(
+                Phase9SmtCertificateError::PayloadBindingMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_local_bookkeeping_premise_mismatch_precedes_empty_registry_rejection() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.reconstruction_plan = Phase9MachineSmtReconstructionPlan {
+                imported_theory_refs: vec![smt_global_ref_for(&import, "S.lemma")],
+                steps: vec![
+                    smt_payload_node_step(0),
+                    Phase9MachineSmtReconstructionStep {
+                        step_id: 1,
+                        rule: Phase9SmtReconstructionRule::LocalBookkeeping {
+                            kind: Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                                lemma: smt_global_ref_for(&import, "S.lemma"),
+                                level_args: Vec::new(),
+                                term_args: Vec::new(),
+                            },
+                        },
+                        payload_bindings: Vec::new(),
+                        premises: vec![0],
+                        conclusion: smt_false(),
+                        proof: smt_false_proof(),
+                    },
+                ],
+                final_step: 1,
+                final_proof: smt_false_proof(),
+            };
+        });
+
+        assert_rejected(
+            run_phase9_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            Phase9AiValidationError::FeatureRejected,
+            Some(Phase9AiFeatureError::SmtCertificate(
+                Phase9SmtCertificateError::ReconstructionPremiseMismatch,
             )),
         );
     }
