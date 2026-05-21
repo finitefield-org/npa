@@ -180,6 +180,177 @@ Implemented:
 | `let_const_nat` | `Nat -> Nat`, with proof `let z : Nat := Nat.zero in z` |
 | `delta_id_nat` | `Nat -> Nat` through a local named identity definition |
 
+### P8+: Pythagorean Theorem Roadmap
+
+Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
+inner-product route first:
+
+```text
+RightTriangle A B C -> distSq B C = distSq A B + distSq A C
+```
+
+This avoids making the first target depend on square roots. The later metric statement using
+`dist` can be added after nonnegative square roots and ordered-field facts are stable.
+
+Planned prerequisite and peer theorem targets:
+
+| Layer | Module | Required for Pythagorean theorem | Same-level important theorem targets |
+| --- | --- | --- | --- |
+| P8 | `Proofs.Ai.EqReasoning` | `eq_symm`, `eq_trans`, `eq_congr_arg`, `eq_congr_fun`, `eq_subst` | `eq_congr2`, `eq_transport_const`, `eq_cast_trans` |
+| P9 | `Proofs.Ai.Algebra.Ring` | `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `sub_eq_add_neg`, `mul_assoc`, `mul_comm`, `left_distrib`, `right_distrib` | `mul_zero`, `zero_mul`, `sub_self`, `add_left_cancel`, `mul_add`, `add_mul` |
+| P10 | `Proofs.Ai.Algebra.Square` | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sq_neg`, `two_mul` | `sum_two_squares_comm`, `sq_eq_sq_of_eq_or_neg_eq`, `square_nonneg` |
+| P11 | `Proofs.Ai.OrderedField` | `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_square_of_nonneg` for the later unsquared metric form | `sqrt_mul_self`, `dist_nonneg`, `eq_of_square_eq_square_nonneg` |
+| P12 | `Proofs.Ai.Vector.Basic` | `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_sub_def`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
+| P13 | `Proofs.Ai.Vector.Dot` | `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm`, `norm_sq_def`, `dist_sq_def` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
+| P14 | `Proofs.Ai.Geometry.RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
+| P15 | `Proofs.Ai.Geometry.Metric` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
+
+The intended dependency order is:
+
+```text
+EqReasoning
+  -> Algebra.Ring -> Algebra.Square -> OrderedField
+  -> Vector.Basic -> Vector.Dot
+  -> Geometry.RightTriangle -> Geometry.Metric
+```
+
+Recommended theorem contents by module:
+
+#### `Proofs.Ai.EqReasoning`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `eq_symm` | `x = y -> y = x` |
+| `eq_trans` | `x = y -> y = z -> x = z` |
+| `eq_congr_arg` | `x = y -> f x = f y` |
+| `eq_congr_fun` | `f = g -> f x = g x` |
+| `eq_congr2` | `a = a' -> b = b' -> f a b = f a' b'` |
+| `eq_subst` | transport a proof across equality |
+| `eq_rewrite_left` | rewrite the left side of an equality target |
+| `eq_rewrite_right` | rewrite the right side of an equality target |
+| `eq_calc3` | three-step equality chaining helper for AI-generated calc blocks |
+
+#### `Proofs.Ai.Algebra.Ring`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `add_assoc` | `(a + b) + c = a + (b + c)` |
+| `add_comm` | `a + b = b + a` |
+| `add_zero` | `a + 0 = a` |
+| `zero_add` | `0 + a = a` |
+| `neg_add_cancel` | `-a + a = 0` |
+| `add_neg_cancel` | `a + -a = 0` |
+| `sub_eq_add_neg` | `a - b = a + -b` |
+| `sub_self` | `a - a = 0` |
+| `mul_assoc` | `(a * b) * c = a * (b * c)` |
+| `mul_comm` | `a * b = b * a` |
+| `mul_one` | `a * 1 = a` |
+| `one_mul` | `1 * a = a` |
+| `mul_zero` | `a * 0 = 0` |
+| `zero_mul` | `0 * a = 0` |
+| `left_distrib` | `a * (b + c) = a * b + a * c` |
+| `right_distrib` | `(a + b) * c = a * c + b * c` |
+| `add_left_cancel` | `a + b = a + c -> b = c` |
+| `ring_normalize_add_mul3` | small normalization target for sums/products of three terms |
+
+#### `Proofs.Ai.Algebra.Square`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `square_def` | `sq a = a * a` |
+| `mul_self_eq_square` | `a * a = sq a` |
+| `sq_zero` | `sq 0 = 0` |
+| `sq_one` | `sq 1 = 1` |
+| `sq_neg` | `sq (-a) = sq a` |
+| `two_mul` | `2 * a = a + a` |
+| `sq_add` | `sq (a + b) = sq a + 2 * a * b + sq b` |
+| `sq_sub` | `sq (a - b) = sq a - 2 * a * b + sq b` |
+| `sum_two_squares_comm` | `sq a + sq b = sq b + sq a` |
+| `square_nonneg` | `0 <= sq a`, used by the metric form |
+
+#### `Proofs.Ai.OrderedField`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `le_refl` | `a <= a` |
+| `le_trans` | `a <= b -> b <= c -> a <= c` |
+| `add_nonneg` | `0 <= a -> 0 <= b -> 0 <= a + b` |
+| `mul_nonneg` | `0 <= a -> 0 <= b -> 0 <= a * b` |
+| `square_nonneg` | `0 <= sq a` if it is not imported from `Algebra.Square` |
+| `sqrt_nonneg` | `0 <= sqrt a` |
+| `sqrt_square_of_nonneg` | `0 <= a -> sqrt (sq a) = a` |
+| `sqrt_mul_self` | `0 <= a -> sqrt (a * a) = a` |
+| `eq_of_square_eq_square_nonneg` | nonnegative equality from equal squares |
+
+#### `Proofs.Ai.Vector.Basic`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `vec_add_assoc` | `(u + v) + w = u + (v + w)` |
+| `vec_add_comm` | `u + v = v + u` |
+| `vec_zero_add` | `0 + v = v` |
+| `vec_add_zero` | `v + 0 = v` |
+| `vec_neg_add_cancel` | `-v + v = 0` |
+| `vec_add_neg_cancel` | `v + -v = 0` |
+| `vec_sub_def` | `u - v = u + -v` |
+| `vec_sub_self` | `v - v = 0` |
+| `vec_sub_zero` | `v - 0 = v` |
+| `vec_add_left_cancel` | `u + v = u + w -> v = w` |
+| `sub_sub_sub_cancel` | vector subtraction rearrangement used for triangle vertices |
+
+#### `Proofs.Ai.Vector.Dot`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `dot_comm` | `dot u v = dot v u` |
+| `dot_add_left` | `dot (u + v) w = dot u w + dot v w` |
+| `dot_add_right` | `dot u (v + w) = dot u v + dot u w` |
+| `dot_neg_left` | `dot (-u) v = -dot u v` |
+| `dot_neg_right` | `dot u (-v) = -dot u v` |
+| `dot_sub_left` | `dot (u - v) w = dot u w - dot v w` |
+| `dot_sub_right` | `dot u (v - w) = dot u v - dot u w` |
+| `norm_sq_def` | `normSq v = dot v v` |
+| `dist_sq_def` | `distSq A B = normSq (B - A)` |
+| `dot_self_eq_norm_sq` | `dot v v = normSq v` |
+| `norm_sq_add` | `normSq (u + v) = normSq u + 2 * dot u v + normSq v` |
+| `norm_sq_sub` | `normSq (u - v) = normSq u - 2 * dot u v + normSq v` |
+| `norm_sq_add_of_dot_zero` | `dot u v = 0 -> normSq (u + v) = normSq u + normSq v` |
+| `norm_sq_sub_of_dot_zero` | `dot u v = 0 -> normSq (u - v) = normSq u + normSq v` |
+| `parallelogram_law` | `normSq (u + v) + normSq (u - v) = 2 * normSq u + 2 * normSq v` |
+| `polarization_identity` | expresses `dot u v` using squared norms |
+
+#### `Proofs.Ai.Geometry.RightTriangle`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `perp_iff_dot_eq_zero` | `Perp u v <-> dot u v = 0` |
+| `perp_symm` | `Perp u v -> Perp v u` |
+| `right_triangle_legs_perp` | extract perpendicular leg vectors from `RightTriangle A B C` |
+| `right_triangle_not_collinear` | optional geometric sanity theorem |
+| `hypotenuse_vector_eq_sub_legs` | express the hypotenuse vector through the two leg vectors |
+| `dist_sq_leg_left` | rewrite the first leg length as a `distSq` term |
+| `dist_sq_leg_right` | rewrite the second leg length as a `distSq` term |
+| `dist_sq_hypotenuse` | rewrite the hypotenuse length as a `distSq` term |
+| `pythagorean_distance_sq` | `RightTriangle A B C -> distSq B C = distSq A B + distSq A C` |
+| `law_of_cosines` | peer theorem: squared distance with a dot-product correction term |
+| `right_triangle_area` | area of a right triangle from its two legs |
+| `median_to_hypotenuse` | classical right-triangle theorem |
+| `altitude_on_hypotenuse` | classical right-triangle theorem |
+| `thales_theorem` | circle/diameter characterization of right angles |
+
+#### `Proofs.Ai.Geometry.Metric`
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `dist_def` | `dist A B = sqrt (distSq A B)` |
+| `dist_sq_eq_square_dist` | `distSq A B = sq (dist A B)` |
+| `dist_nonneg` | `0 <= dist A B` |
+| `distance_symm` | `dist A B = dist B A` |
+| `distance_zero_iff_eq` | `dist A B = 0 <-> A = B` |
+| `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` or the square-root form when available |
+| `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
+| `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+
 Regenerate the corpus:
 
 ```sh
