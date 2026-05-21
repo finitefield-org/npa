@@ -25,6 +25,7 @@ pub enum HumanDiagnosticKind {
     NotationConflict,
     AmbiguousNotation,
     TooManyNotationCandidates,
+    UnsolvedImplicit,
     MachineElaborationError,
 }
 

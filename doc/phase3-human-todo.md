@@ -414,18 +414,18 @@ crates/npa-frontend/src/lib.rs
 
 実装タスク:
 
-- [ ] `{A : Type}` を implicit binder として source interface に残す。
-- [ ] callable profile に binder info を反映する。
-- [ ] implicit binder に対して `SyntheticImplicit` metavariable を挿入する。
-- [ ] `@f` mode では implicit term arg を自動挿入しない。
-- [ ] `@` 付き explicit implicit argument syntax を Human path で扱う。
-- [ ] unresolved implicit が declaration close 時に残る場合は certificate 化を拒否する。
+- [x] `{A : Type}` を implicit binder として source interface に残す。
+- [x] callable profile に binder info を反映する。
+- [x] implicit binder に対して `SyntheticImplicit` metavariable を挿入する。
+- [x] `@f` mode では implicit term arg を自動挿入しない。
+- [x] `@` 付き explicit implicit argument syntax を Human path で扱う。
+- [x] unresolved implicit が declaration close 時に残る場合は certificate 化を拒否する。
 
 AI 速度ガード:
 
-- [ ] Machine Surface の implicit argument required behavior を維持する。
-- [ ] `Eq.refl n` は Machine path では implicit 補完されない。
-- [ ] Human implicit insertion は bounded simple unification だけに接続する。
+- [x] Machine Surface の implicit argument required behavior を維持する。
+- [x] `Eq.refl n` は Machine path では implicit 補完されない。
+- [x] Human implicit insertion は bounded simple unification だけに接続する。
 
 影響ファイル:
 
@@ -433,6 +433,8 @@ AI 速度ガード:
 crates/npa-frontend/src/human.rs
 crates/npa-frontend/src/human_elaborator.rs
 crates/npa-frontend/src/callable.rs
+crates/npa-frontend/src/human_diagnostic.rs
+crates/npa-frontend/src/lib.rs
 ```
 
 完了条件:

@@ -21,7 +21,9 @@ mod span;
 mod term_source;
 
 pub use callable::{
-    is_machine_surface_renderable_name, MachineCallableBinderVisibility,
+    builtin_machine_callable_profile, is_machine_surface_renderable_name,
+    machine_callable_profile_from_human_binders,
+    machine_callable_visibility_from_human_binder_info, MachineCallableBinderVisibility,
     MachineSurfaceCallableInterfaceEntry, MachineSurfaceCallableInterfaceError,
     MachineSurfaceCallableInterfaceTable, MachineSurfaceCallableRef,
 };

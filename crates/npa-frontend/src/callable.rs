@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use crate::{HumanBinderInfo, HumanSourceBinderMetadata};
 use npa_cert::{Hash, ModuleName, Name};
 use sha2::{Digest, Sha256};
 
@@ -70,6 +71,36 @@ impl MachineSurfaceCallableInterfaceEntry {
 
     pub fn canonical_bytes(&self) -> &[u8] {
         &self.canonical_bytes
+    }
+}
+
+pub fn machine_callable_visibility_from_human_binder_info(
+    binder_info: HumanBinderInfo,
+) -> MachineCallableBinderVisibility {
+    match binder_info {
+        HumanBinderInfo::Explicit => MachineCallableBinderVisibility::Explicit,
+        HumanBinderInfo::Implicit => MachineCallableBinderVisibility::Implicit,
+    }
+}
+
+pub fn machine_callable_profile_from_human_binders(
+    binders: &[HumanSourceBinderMetadata],
+) -> Vec<MachineCallableBinderVisibility> {
+    binders
+        .iter()
+        .map(|binder| machine_callable_visibility_from_human_binder_info(binder.binder_info))
+        .collect()
+}
+
+pub fn builtin_machine_callable_profile(
+    name: &Name,
+) -> Option<Vec<MachineCallableBinderVisibility>> {
+    match name.as_dotted().as_str() {
+        "Eq.refl" => Some(vec![
+            MachineCallableBinderVisibility::Implicit,
+            MachineCallableBinderVisibility::Explicit,
+        ]),
+        _ => None,
     }
 }
 
@@ -347,4 +378,46 @@ fn hash_bytes(bytes: &[u8]) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     hasher.finalize().into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{FileId, HumanName, Span};
+
+    #[test]
+    fn human_binder_info_maps_to_machine_callable_profile() {
+        let span = Span::empty(FileId(0));
+        let binders = vec![
+            HumanSourceBinderMetadata {
+                name: Some(HumanName::new(vec!["A".to_owned()], span)),
+                binder_info: HumanBinderInfo::Implicit,
+                span,
+            },
+            HumanSourceBinderMetadata {
+                name: Some(HumanName::new(vec!["x".to_owned()], span)),
+                binder_info: HumanBinderInfo::Explicit,
+                span,
+            },
+        ];
+
+        assert_eq!(
+            machine_callable_profile_from_human_binders(&binders),
+            vec![
+                MachineCallableBinderVisibility::Implicit,
+                MachineCallableBinderVisibility::Explicit,
+            ]
+        );
+    }
+
+    #[test]
+    fn builtin_eq_refl_profile_marks_type_argument_implicit() {
+        assert_eq!(
+            builtin_machine_callable_profile(&Name::from_dotted("Eq.refl")),
+            Some(vec![
+                MachineCallableBinderVisibility::Implicit,
+                MachineCallableBinderVisibility::Explicit,
+            ])
+        );
+    }
 }
