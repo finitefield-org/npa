@@ -1,4 +1,4 @@
-//! Human-facing frontend for NPA machine surface syntax.
+//! Frontend profiles for NPA source syntax.
 //!
 //! This crate lowers source into `npa_cert::CoreModule` values and, when asked
 //! to produce a certificate, crosses the canonical `build_module_cert` /
@@ -8,6 +8,11 @@
 mod callable;
 mod diagnostic;
 mod elaborator;
+mod human;
+mod human_diagnostic;
+mod human_elaborator;
+mod human_parser;
+mod human_resolver;
 mod lexer;
 mod machine;
 mod parser;
@@ -29,6 +34,15 @@ pub use elaborator::{
     elaborate_machine_module, elaborate_machine_term_check, elaborate_machine_term_infer_from_ast,
     MachineTermElabContextInModuleRequest,
 };
+pub use human::{HumanCompileOptions, HumanExpr, HumanItem, HumanModule};
+pub use human_diagnostic::{
+    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticSeverity, HumanResult,
+};
+pub use human_elaborator::{
+    compile_human_source_to_certificate, compile_human_source_to_core, elaborate_human_module,
+};
+pub use human_parser::{parse_human_module, parse_human_term};
+pub use human_resolver::{resolve_human_module, ResolvedHumanModule};
 pub use lexer::{lex, Token, TokenKind};
 pub use machine::{
     MachineBinder, MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl,

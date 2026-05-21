@@ -195,19 +195,19 @@ cargo test --workspace
 
 実装タスク:
 
-- [ ] `crates/npa-frontend` 内に Human 専用 module を追加する。
-- [ ] 例: `human.rs`, `human_parser.rs`, `human_resolver.rs`, `human_elaborator.rs`, `human_diagnostic.rs`。
-- [ ] `parse_machine_*` / `resolve_machine_*` / `elaborate_machine_*` は既存 signature と意味を維持する。
-- [ ] `MachineTerm` / `MachineModule` を Human AST として再利用しない。
-- [ ] Human path から Machine path への変換が必要な場合は、明示的な lowering API に限定する。
+- [x] `crates/npa-frontend` 内に Human 専用 module を追加する。
+- [x] 例: `human.rs`, `human_parser.rs`, `human_resolver.rs`, `human_elaborator.rs`, `human_diagnostic.rs`。
+- [x] `parse_machine_*` / `resolve_machine_*` / `elaborate_machine_*` は既存 signature と意味を維持する。
+- [x] `MachineTerm` / `MachineModule` を Human AST として再利用しない。
+- [x] Human path から Machine path への変換が必要な場合は、明示的な lowering API に限定する。
 
 AI 速度ガード:
 
-- [ ] `parse_machine_module` が `open` / `namespace` / `notation` / `axiom` / `inductive` /
+- [x] `parse_machine_module` が `open` / `namespace` / `notation` / `axiom` / `inductive` /
   hole を引き続き拒否する regression test を固定する。
-- [ ] `canonicalize_machine_term_source("@Eq.refl.{1} Nat n")` の canonical bytes /
+- [x] `canonicalize_machine_term_source("@Eq.refl.{1} Nat n")` の canonical bytes /
   hash が Human 実装前後で変わらないことを固定する。
-- [ ] `npa-api` の Phase 7 / Phase 9 が Human parser を呼ばないことを grep 可能な形で保つ。
+- [x] `npa-api` の Phase 7 / Phase 9 が Human parser を呼ばないことを grep 可能な形で保つ。
 
 影響ファイル:
 

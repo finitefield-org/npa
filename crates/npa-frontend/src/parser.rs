@@ -939,7 +939,9 @@ def Test.id.{u} (A : Sort u) (x : A) : A := (x : A)";
             "open Nat",
             "namespace Nat",
             "notation \"x\" => Nat.zero",
+            "infix:50 \" = \" => Eq",
             "infixl:65 \" + \" => Nat.add",
+            "infixr:70 \" :: \" => List.cons",
         ] {
             assert_eq!(parse_err(source), MachineDiagnosticKind::UnsupportedSyntax);
         }
@@ -959,6 +961,8 @@ def Test.id.{u} (A : Sort u) (x : A) : A := (x : A)";
 
     #[test]
     fn rejects_holes() {
+        assert_eq!(parse_err("_"), MachineDiagnosticKind::HoleNotAllowed);
+        assert_eq!(parse_err("?m"), MachineDiagnosticKind::HoleNotAllowed);
         assert_eq!(
             parse_err("def Test.x : Prop := _"),
             MachineDiagnosticKind::HoleNotAllowed
