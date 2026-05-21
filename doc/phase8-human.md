@@ -19,6 +19,8 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
   full independent checker comparison CI はまだこの文書の integration target として扱う
 - 既存 GitHub Actions の Phase 9 Regression は Phase 9 完了後の回帰ゲートであり、
   この文書が要求する full Phase 8 release audit CI の代替ではない
+- Phase 8 の automation が crates/npa-api に存在しても、trusted boundary は
+  canonical certificate と checker result にあり、audit automation 自体は trusted base ではない
 ```
 
 大原則はこれです。

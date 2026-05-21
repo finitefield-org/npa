@@ -109,6 +109,12 @@ independent checker(s)
 verified_high_trust
 ```
 
+この境界は、automation や machine API を `crates/npa-api` に実装しても変わりません。
+`npa-api` は proof search controller、checker audit automation、advanced automation endpoint substrate を
+提供できますが、それらは producer / orchestrator / validator-facing library であり trusted checker ではありません。
+`npa-api` が生成した replay plan、sidecar、audit summary、fixture result は、canonical certificate と
+kernel / independent checker の deterministic result によって再検査されるまで証明の受理根拠にしてはいけません。
+
 ## 3.2 proof script ではなく proof certificate を中心にする
 
 LeanやRocqでは、人間は proof script を書きます。しかし最終的に正しさを保証するのは proof term / proof object です。NPAでは最初から **proof certificate** を第一級オブジェクトにします。

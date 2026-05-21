@@ -14,7 +14,7 @@ Rust 製 kernel と独立 checker が proof certificate だけを検査する。
 ## 基本方針
 
 - kernel は Rust で実装する。
-- AI、tactic、elaborator、parser、theorem search は trusted base に入れない。
+- AI、automation、solver、tactic、elaborator、parser、theorem search、API orchestration は trusted base に入れない。
 - 最終的な正しさは source script ではなく canonical proof certificate で保証する。
 - kernel は小さく、監査しやすく、決定的に動くものにする。
 - certificate は再検査可能で、import の `export_hash` と高信頼モード用の `certificate_hash`、declaration hash、`axiom_report_hash` を含む。
@@ -106,6 +106,10 @@ M8 `/machine/search/for_goal`、M9 `/machine/replay`、M10 `/machine/verify`、
 M11 `/machine/prompt_payload` の library API を含みます。
 同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
 Phase 9 advanced automation endpoint substrate も実装されています。
+これらの `npa-api` automation / library API は候補生成、検査要求の構成、
+監査 artifact の正規化、回帰 fixture の実行を担う非信頼層です。
+trusted base は広げません。証明の受理根拠は引き続き canonical certificate と、
+Rust kernel / 独立 checker が返す deterministic result だけです。
 
 ## 開発メモ
 

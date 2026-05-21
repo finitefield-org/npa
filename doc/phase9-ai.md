@@ -44,6 +44,9 @@ Phase 9 AI Profile の目的は次です。
   と deterministic fixture matrix として実装済み
 - production AI orchestrator、LLM / RAG / external SMT solver process、graph store の運用は
   まだ trusted path 外の caller / Post-MVP integration scope
+- crates/npa-api の Phase 9 endpoint substrate は candidate validation / replay の
+  非信頼 automation 層であり、AI 候補、score、prompt、sidecar を certificate hash や
+  checker pass/fail の根拠にしない
 - Phase 9 完了後の固定回帰ゲートは ./scripts/phase9-regression.sh であり、
   GitHub Actions の Phase 9 Regression / phase9-regression でも実行される
 ```

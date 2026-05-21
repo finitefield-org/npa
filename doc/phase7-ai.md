@@ -17,6 +17,8 @@ Phase 7 の目的は、Phase 1〜6 で作った kernel・certificate・tactic・
 - Phase 7 MVP M0-M9 は crates/npa-api の library substrate として実装済み
 - no-model MVP profile、deterministic search controller、replay / verify closure、
   training trace identity、M9 integration fixtures は同 crate の unit tests で固定している
+- crates/npa-api の Phase 7 controller は非信頼 producer / orchestrator であり、
+  replay / verify と canonical certificate check を通るまで証明の受理根拠ではない
 - M10-M13 は Phase 7.5 / later profile であり、現行 MVP の成功条件ではない
 ```
 
