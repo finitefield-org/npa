@@ -125,6 +125,8 @@ Phase 9 完了後の回帰確認は次の固定ゲートで行います。
 
 このゲートは Phase 9 M9 fixture matrix を先に実行し、その後 `fmt --check`、
 `clippy -D warnings`、workspace 全体の test を通します。
+同じゲートは GitHub Actions の `Phase 9 Regression / phase9-regression`
+として、PR と `main` への push でも実行されます。
 
 ## 参考資料
 
