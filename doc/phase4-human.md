@@ -1,7 +1,12 @@
-以下は **Phase 4: tactic** の詳細設計です。
-Phase 3 までで、表層構文を core term に落とせるようになりました。Phase 4 では、`_` や `?m` で生じた未解決 goal を、人間やAIが小さな命令で解けるようにします。
+以下は **Phase 4 Human Profile: Human Tactic** の詳細設計です。
+Phase 3 までで、表層構文を core term に落とせるようになりました。
+Phase 4 全体では、`_` や `?m` で生じた未解決 goal を小さな命令で解けるようにします。
+ただし、この文書が定義するのは、人間が `by ...` block と tactic script を書くための Human Profile です。
+AI 向けの高速・構造化された Machine Tactic は `doc/phase4-ai.md` の責務であり、この Human syntax を既定入力にしません。
 
-対象 tactic はこの6つです。
+人間向け syntax 上の対象 tactic はこの6つです。
+AI/Machine wire では Nat 限定の帰納法 tactic を `induction-nat` と呼びますが、Human syntax では
+`induction n` と書き、Human bridge が Nat 限定の Machine tactic または core proof term に変換します。
 
 ```text
 intro
@@ -214,7 +219,7 @@ struct TacticOutcome {
 }
 ```
 
-外部 API なら：
+Human IDE / CLI 向けの外部 API なら：
 
 ```json
 {
@@ -223,6 +228,10 @@ struct TacticOutcome {
   "tactic": "intro n"
 }
 ```
+
+AI / Machine API の外部境界では、この `"tactic": "intro n"` 形式を主入力にしません。
+AI 経路は `doc/phase4-ai.md` の `MachineTacticCandidate` JSON を受け取り、Human text tactic parser を通らずに
+`validate_machine_tactic_candidate` へ進みます。
 
 結果：
 
@@ -1253,6 +1262,10 @@ case succ n ih =>
 
 # 11. tactic 実行の全体フロー
 
+この節は Human source の `by ...` proof block を elaboration する流れです。
+AI / Machine 経路は、構造化済み `MachineTacticCandidate` の validation 後に同じ proof-state primitive を使いますが、
+Human tactic parser と Human name resolution は経由しません。
+
 ```text
 1. theorem の右辺が `by ...` なら proof mode に入る
 2. theorem type から初期 goal ?g を作る
@@ -1454,7 +1467,8 @@ Phase 4 が完了したと言える条件はこれです。
 
 ---
 
-一文でまとめると、Phase 4 は **「人間やAIが扱いやすい小さな証明命令を、kernel が検査できる core proof term に変換する層」** です。
+一文でまとめると、Phase 4 Human は **「人間が扱いやすい小さな証明命令を、kernel が検査できる core proof term に変換する層」** です。
+AI 向けの同等機能は、`doc/phase4-ai.md` の Machine Tactic として、Human parser を経由しない高速経路で実装します。
 
 最初に実装すべき順番は：
 
