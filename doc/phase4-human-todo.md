@@ -521,7 +521,7 @@ AI 速度ガード:
 
 ### P4H-08: `apply` を実装する
 
-Status: Pending
+Status: Done
 
 Depends on: P4H-04, P4H-07
 

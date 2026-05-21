@@ -1,12 +1,15 @@
+use std::collections::BTreeMap;
+
 use crate::{
-    HumanApiCompileOptions, HumanCompileCertificateOk, HumanCompileCertificateRequest,
-    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk,
-    HumanExactTacticRequest, HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest,
-    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanTacticScriptError,
-    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticTermCheckOk,
-    HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
+    HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
+    HumanCompileCoreRequest, HumanCompileError, HumanExactTacticOk, HumanExactTacticRequest,
+    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanStartProofError,
+    HumanStartProofOk, HumanStartProofRequest, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanTacticScriptRunRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
+    HumanTacticTermError,
 };
-use npa_kernel::Decl;
+use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
 pub fn compile_human_source_to_core(
     request: HumanCompileCoreRequest<'_, '_>,
@@ -215,6 +218,33 @@ pub fn run_human_intro_tactic(
     Ok(HumanIntroTacticOk { state, delta })
 }
 
+pub fn run_human_apply_tactic(
+    request: HumanApplyTacticRequest<'_, '_>,
+) -> Result<HumanApplyTacticOk, HumanApplyTacticError> {
+    let goal = request.state.goal(request.goal_id)?;
+    let resolved = human_apply_resolve(
+        request.state,
+        &goal,
+        request.term,
+        request.current_source_interface,
+        request.imported_source_interfaces,
+    )?;
+    let (state, delta) = npa_tactic::run_machine_tactic_with_budget(
+        request.state,
+        npa_tactic::MachineTactic::Apply {
+            goal_id: request.goal_id,
+            head: resolved.head.clone(),
+            universe_args: resolved.universe_args.clone(),
+            args: resolved.args.clone(),
+        },
+        request.budget,
+    )
+    .map_err(|diagnostic| human_apply_machine_error(diagnostic, &goal, &resolved))?;
+    npa_tactic::validate_machine_proof_state(&state)?;
+
+    Ok(HumanApplyTacticOk { state, delta })
+}
+
 pub fn run_human_tactic_script(
     request: HumanTacticScriptRunRequest<'_, '_>,
 ) -> Result<HumanTacticScriptRunOk, HumanTacticScriptError> {
@@ -248,6 +278,19 @@ pub fn run_human_tactic_script(
                     options: request.options.clone(),
                 })
                 .map_err(human_script_term_error)?;
+                state = ok.state;
+                deltas.push(ok.delta);
+            }
+            npa_frontend::HumanTacticSyntax::Apply { term, .. } => {
+                let ok = run_human_apply_tactic(HumanApplyTacticRequest {
+                    state: &state,
+                    goal_id,
+                    term,
+                    current_source_interface: request.current_source_interface,
+                    imported_source_interfaces: request.imported_source_interfaces,
+                    budget: request.budget,
+                })
+                .map_err(human_script_apply_error)?;
                 state = ok.state;
                 deltas.push(ok.delta);
             }
@@ -326,10 +369,715 @@ fn human_intro_invalid_diagnostic(
     .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
 }
 
+#[derive(Clone, Debug)]
+struct HumanApplyResolved {
+    head: npa_tactic::TacticHead,
+    universe_args: Vec<Level>,
+    args: Vec<npa_tactic::ApplyArg>,
+    head_label: String,
+    head_type: Expr,
+    span: npa_frontend::Span,
+}
+
+#[derive(Clone, Debug)]
+enum HumanApplyGlobalCandidate {
+    Imported {
+        module: npa_cert::ModuleName,
+        export_hash: npa_cert::Hash,
+        certificate_hash: npa_cert::Hash,
+        name: npa_cert::Name,
+        decl_interface_hash: npa_cert::Hash,
+    },
+    Current {
+        name: npa_cert::Name,
+        decl_interface_hash: npa_cert::Hash,
+    },
+}
+
+impl HumanApplyGlobalCandidate {
+    fn name(&self) -> &npa_cert::Name {
+        match self {
+            Self::Imported { name, .. } | Self::Current { name, .. } => name,
+        }
+    }
+
+    fn sort_key(&self) -> String {
+        match self {
+            Self::Imported {
+                module,
+                export_hash,
+                certificate_hash,
+                name,
+                decl_interface_hash,
+            } => format!(
+                "imported:{}:{}:{}:{}:{}",
+                module.as_dotted(),
+                human_apply_hash_hex(export_hash),
+                human_apply_hash_hex(certificate_hash),
+                name.as_dotted(),
+                human_apply_hash_hex(decl_interface_hash)
+            ),
+            Self::Current {
+                name,
+                decl_interface_hash,
+            } => format!(
+                "current:{}:{}",
+                name.as_dotted(),
+                human_apply_hash_hex(decl_interface_hash)
+            ),
+        }
+    }
+
+    fn tactic_head(&self) -> npa_tactic::TacticHead {
+        match self {
+            Self::Imported {
+                name,
+                decl_interface_hash,
+                ..
+            } => npa_tactic::TacticHead::Imported {
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            Self::Current {
+                name,
+                decl_interface_hash,
+            } => npa_tactic::TacticHead::CurrentModule {
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+        }
+    }
+}
+
+fn human_apply_resolve(
+    state: &npa_tactic::MachineProofState,
+    goal: &npa_tactic::MachineGoal,
+    term: &npa_frontend::HumanExpr,
+    current_source_interface: &npa_frontend::HumanSourceInterface,
+    imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+) -> Result<HumanApplyResolved, HumanApplyTacticError> {
+    let npa_frontend::HumanExpr::Ident {
+        name,
+        universe_args,
+        span,
+        ..
+    } = term
+    else {
+        return Err(human_apply_unsupported_head_diagnostic(term.span()).into());
+    };
+
+    let explicit_universe_args = human_apply_universe_args(universe_args.as_deref());
+    if let Some(local_name) = human_apply_local_head(goal, name, *span)? {
+        if !explicit_universe_args.is_empty() {
+            return Err(human_apply_unsupported_diagnostic(
+                *span,
+                "local apply heads do not accept universe arguments",
+            )
+            .into());
+        }
+        let local_index = goal
+            .context
+            .iter()
+            .position(|local| local.name == local_name)
+            .expect("resolved local apply head should exist");
+        let local = &goal.context[local_index];
+        let ctx = human_apply_goal_ctx(state, goal, *span)?;
+        let head_bvar = Expr::bvar((goal.context.len() - 1 - local_index) as u32);
+        let head_type = state
+            .env
+            .kernel_env()
+            .infer(&ctx, &state.root.universe_params, &head_bvar)
+            .map_err(|err| {
+                human_apply_unsupported_diagnostic(
+                    *span,
+                    format!("cannot infer local apply head {} type: {err:?}", local.name),
+                )
+            })?;
+        let args = human_apply_args_for_type(
+            state,
+            goal,
+            &head_type,
+            &[],
+            *span,
+            &format!("local {}", local.name),
+        )?;
+        return Ok(HumanApplyResolved {
+            head: npa_tactic::TacticHead::Local {
+                name: local.name.clone(),
+            },
+            universe_args: Vec::new(),
+            args,
+            head_label: local.name.clone(),
+            head_type,
+            span: *span,
+        });
+    }
+
+    let candidate = human_apply_global_head(state, name, *span)?;
+    let decl = state
+        .env
+        .kernel_env()
+        .decl(&candidate.name().as_dotted())
+        .ok_or_else(|| {
+            human_apply_unsupported_diagnostic(
+                *span,
+                format!(
+                    "apply head {} is not present in the kernel environment",
+                    candidate.name().as_dotted()
+                ),
+            )
+        })?;
+    let universe_params = decl.universe_params();
+    let universe_args = if let Some(args) = universe_args {
+        let args = human_apply_universe_args(Some(args));
+        if args.len() != universe_params.len() {
+            return Err(human_apply_unsupported_diagnostic(
+                *span,
+                format!(
+                    "apply head {} expects {} universe argument(s), got {}",
+                    candidate.name().as_dotted(),
+                    universe_params.len(),
+                    args.len()
+                ),
+            )
+            .into());
+        }
+        args
+    } else if universe_params.is_empty() {
+        Vec::new()
+    } else {
+        return Err(human_apply_unsupported_diagnostic(
+            *span,
+            format!(
+                "apply head {} requires explicit universe arguments in the Human apply MVP",
+                candidate.name().as_dotted()
+            ),
+        )
+        .into());
+    };
+    let head_type =
+        npa_kernel::subst::subst_levels_expr(decl.ty(), universe_params, &universe_args);
+    let implicit_profile = human_apply_global_implicit_profile(
+        &candidate,
+        current_source_interface,
+        imported_source_interfaces,
+    );
+    let args = human_apply_args_for_type(
+        state,
+        goal,
+        &head_type,
+        &implicit_profile,
+        *span,
+        &candidate.name().as_dotted(),
+    )?;
+    Ok(HumanApplyResolved {
+        head: candidate.tactic_head(),
+        universe_args,
+        args,
+        head_label: candidate.name().as_dotted(),
+        head_type,
+        span: *span,
+    })
+}
+
+fn human_apply_local_head(
+    goal: &npa_tactic::MachineGoal,
+    name: &npa_frontend::HumanName,
+    span: npa_frontend::Span,
+) -> Result<Option<String>, HumanApplyTacticError> {
+    if name.parts.len() != 1 {
+        return Ok(None);
+    }
+    let matches = goal
+        .context
+        .iter()
+        .filter(|local| local.name == name.parts[0])
+        .collect::<Vec<_>>();
+    match matches.as_slice() {
+        [] => Ok(None),
+        [local] => Ok(Some(local.name.clone())),
+        _ => Err(npa_frontend::HumanDiagnostic::error(
+            npa_frontend::HumanDiagnosticKind::AmbiguousName,
+            span,
+            format!("ambiguous local apply head {}", name.as_dotted()),
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+        .into()),
+    }
+}
+
+fn human_apply_global_head(
+    state: &npa_tactic::MachineProofState,
+    name: &npa_frontend::HumanName,
+    span: npa_frontend::Span,
+) -> Result<HumanApplyGlobalCandidate, HumanApplyTacticError> {
+    for candidates in human_apply_global_candidate_levels(state, name) {
+        let candidates = human_apply_dedupe_candidates(candidates);
+        if candidates.is_empty() {
+            continue;
+        }
+        if candidates.len() == 1 {
+            return Ok(candidates[0].clone());
+        }
+        return Err(npa_frontend::HumanDiagnostic::error(
+            npa_frontend::HumanDiagnosticKind::AmbiguousName,
+            span,
+            format!("ambiguous apply head {}", name.as_dotted()),
+        )
+        .with_payload(npa_frontend::HumanDiagnosticPayload {
+            candidates: candidates
+                .into_iter()
+                .map(|candidate| candidate.sort_key())
+                .collect(),
+            ..npa_frontend::HumanDiagnosticPayload::default()
+        })
+        .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+        .into());
+    }
+
+    Err(npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnknownIdentifier,
+        span,
+        format!("unknown apply head {}", name.as_dotted()),
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+    .into())
+}
+
+fn human_apply_global_candidate_levels(
+    state: &npa_tactic::MachineProofState,
+    name: &npa_frontend::HumanName,
+) -> Vec<Vec<HumanApplyGlobalCandidate>> {
+    let exact = npa_cert::Name(name.parts.clone());
+    if name.parts.len() == 1 {
+        vec![
+            human_apply_exact_candidates(state, &exact),
+            human_apply_short_name_candidates(state, &name.parts[0]),
+        ]
+    } else {
+        vec![
+            human_apply_exact_candidates(state, &exact),
+            human_apply_suffix_candidates(state, &name.parts),
+        ]
+    }
+}
+
+fn human_apply_exact_candidates(
+    state: &npa_tactic::MachineProofState,
+    name: &npa_cert::Name,
+) -> Vec<HumanApplyGlobalCandidate> {
+    let current = state
+        .env
+        .checked_current_decls
+        .iter()
+        .filter(|decl| decl.signature().name() == name)
+        .map(|decl| HumanApplyGlobalCandidate::Current {
+            name: decl.signature().name().clone(),
+            decl_interface_hash: decl.signature().decl_interface_hash(),
+        })
+        .collect::<Vec<_>>();
+    if !current.is_empty() {
+        return current;
+    }
+
+    human_apply_imported_candidates(state, |export| &export.name == name)
+}
+
+fn human_apply_short_name_candidates(
+    state: &npa_tactic::MachineProofState,
+    short_name: &str,
+) -> Vec<HumanApplyGlobalCandidate> {
+    let current = state
+        .env
+        .checked_current_decls
+        .iter()
+        .filter(|decl| {
+            decl.signature()
+                .name()
+                .0
+                .last()
+                .is_some_and(|part| part == short_name)
+        })
+        .map(|decl| HumanApplyGlobalCandidate::Current {
+            name: decl.signature().name().clone(),
+            decl_interface_hash: decl.signature().decl_interface_hash(),
+        })
+        .collect::<Vec<_>>();
+    if !current.is_empty() {
+        return current;
+    }
+
+    human_apply_imported_candidates(state, |export| {
+        export.name.0.last().is_some_and(|part| part == short_name)
+    })
+}
+
+fn human_apply_suffix_candidates(
+    state: &npa_tactic::MachineProofState,
+    suffix: &[String],
+) -> Vec<HumanApplyGlobalCandidate> {
+    let current = state
+        .env
+        .checked_current_decls
+        .iter()
+        .filter(|decl| human_apply_name_has_suffix(&decl.signature().name().0, suffix))
+        .map(|decl| HumanApplyGlobalCandidate::Current {
+            name: decl.signature().name().clone(),
+            decl_interface_hash: decl.signature().decl_interface_hash(),
+        })
+        .collect::<Vec<_>>();
+    if !current.is_empty() {
+        return current;
+    }
+
+    human_apply_imported_candidates(state, |export| {
+        human_apply_name_has_suffix(&export.name.0, suffix)
+    })
+}
+
+fn human_apply_imported_candidates(
+    state: &npa_tactic::MachineProofState,
+    mut is_match: impl FnMut(&npa_tactic::VerifiedExportSignature) -> bool,
+) -> Vec<HumanApplyGlobalCandidate> {
+    let mut candidates = Vec::new();
+    for import in state
+        .env
+        .imports
+        .iter()
+        .filter(|import| import.is_visible())
+    {
+        for export in import.exports().iter().filter(|export| is_match(export)) {
+            candidates.push(HumanApplyGlobalCandidate::Imported {
+                module: import.module().clone(),
+                export_hash: import.export_hash(),
+                certificate_hash: import.certificate_hash(),
+                name: export.name.clone(),
+                decl_interface_hash: export.decl_interface_hash,
+            });
+        }
+    }
+    candidates
+}
+
+fn human_apply_dedupe_candidates(
+    candidates: Vec<HumanApplyGlobalCandidate>,
+) -> Vec<HumanApplyGlobalCandidate> {
+    let mut deduped = BTreeMap::new();
+    for candidate in candidates {
+        deduped
+            .entry(candidate.sort_key())
+            .or_insert_with(|| candidate);
+    }
+    deduped.into_values().collect()
+}
+
+fn human_apply_global_implicit_profile(
+    candidate: &HumanApplyGlobalCandidate,
+    current_source_interface: &npa_frontend::HumanSourceInterface,
+    imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+) -> Vec<npa_frontend::MachineCallableBinderVisibility> {
+    match candidate {
+        HumanApplyGlobalCandidate::Current {
+            name,
+            decl_interface_hash,
+        } => current_source_interface
+            .declarations
+            .iter()
+            .find(|decl| {
+                npa_cert::Name(decl.name.parts.clone()) == *name
+                    && decl.decl_interface_hash == Some(*decl_interface_hash)
+            })
+            .map(|decl| npa_frontend::machine_callable_profile_from_human_binders(&decl.binders))
+            .unwrap_or_default(),
+        HumanApplyGlobalCandidate::Imported {
+            module,
+            export_hash,
+            certificate_hash,
+            name,
+            decl_interface_hash,
+        } => imported_source_interfaces
+            .iter()
+            .filter(|interface| {
+                interface.module == *module
+                    && interface.export_hash == *export_hash
+                    && interface.certificate_hash == Some(*certificate_hash)
+            })
+            .flat_map(|interface| interface.source_interface.declarations.iter())
+            .find(|decl| {
+                npa_cert::Name(decl.name.parts.clone()) == *name
+                    && decl.decl_interface_hash == Some(*decl_interface_hash)
+            })
+            .map(|decl| npa_frontend::machine_callable_profile_from_human_binders(&decl.binders))
+            .or_else(|| {
+                if npa_cert::builtin_decl_interface_hash(name) == Some(*decl_interface_hash) {
+                    npa_frontend::builtin_machine_callable_profile(name)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_default(),
+    }
+}
+
+fn human_apply_args_for_type(
+    state: &npa_tactic::MachineProofState,
+    goal: &npa_tactic::MachineGoal,
+    head_type: &Expr,
+    implicit_profile: &[npa_frontend::MachineCallableBinderVisibility],
+    span: npa_frontend::Span,
+    head_label: &str,
+) -> Result<Vec<npa_tactic::ApplyArg>, HumanApplyTacticError> {
+    let ctx = human_apply_goal_ctx(state, goal, span)?;
+    let env = state.env.kernel_env();
+    let delta = &state.root.universe_params;
+    let mut current = head_type.clone();
+    let mut args = Vec::new();
+
+    loop {
+        let whnf = env.whnf(&ctx, delta, &current).map_err(|err| {
+            human_apply_unsupported_diagnostic(
+                span,
+                format!("cannot inspect apply head {head_label} type: {err:?}"),
+            )
+        })?;
+        if env
+            .is_defeq(&ctx, delta, &whnf, &goal.target)
+            .map_err(|err| {
+                human_apply_unsupported_diagnostic(
+                    span,
+                    format!("cannot compare apply head {head_label} with target: {err:?}"),
+                )
+            })?
+        {
+            break;
+        }
+
+        let Expr::Pi { ty, body, .. } = whnf else {
+            break;
+        };
+        let domain = *ty;
+        let is_implicit = implicit_profile.get(args.len()).is_some_and(|visibility| {
+            *visibility == npa_frontend::MachineCallableBinderVisibility::Implicit
+        });
+        let is_proof_relevant =
+            human_apply_domain_is_proof_relevant(state, goal, &ctx, &domain, span)?;
+        let arg = if !is_proof_relevant {
+            if human_apply_body_returns_current_binder(body.as_ref()) {
+                human_apply_nonproof_arg_from_target(goal)
+                    .unwrap_or(npa_tactic::ApplyArg::InferFromTarget)
+            } else {
+                npa_tactic::ApplyArg::InferFromTarget
+            }
+        } else if is_implicit {
+            npa_tactic::ApplyArg::InferFromTarget
+        } else {
+            npa_tactic::ApplyArg::Subgoal { name_hint: None }
+        };
+        let placeholder = human_apply_placeholder(&arg, goal);
+        current = instantiate(&body, &placeholder).map_err(|err| {
+            human_apply_unsupported_diagnostic(
+                span,
+                format!("cannot instantiate apply head {head_label} type: {err:?}"),
+            )
+        })?;
+        args.push(arg);
+    }
+
+    Ok(args)
+}
+
+fn human_apply_goal_ctx(
+    state: &npa_tactic::MachineProofState,
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> Result<Ctx, HumanApplyTacticError> {
+    let mut ctx = Ctx::new();
+    let env = state.env.kernel_env();
+    for local in &goal.context {
+        env.check(
+            &ctx,
+            &state.root.universe_params,
+            &local.ty,
+            &Expr::sort(npa_kernel::type0()),
+        )
+        .or_else(|_| {
+            env.infer(&ctx, &state.root.universe_params, &local.ty)
+                .map(|_| ())
+        })
+        .map_err(|err| {
+            human_apply_unsupported_diagnostic(
+                span,
+                format!("cannot inspect local context for apply: {err:?}"),
+            )
+        })?;
+        match &local.value {
+            Some(value) => ctx.push_definition(local.name.clone(), local.ty.clone(), value.clone()),
+            None => ctx.push_assumption(local.name.clone(), local.ty.clone()),
+        }
+    }
+    Ok(ctx)
+}
+
+fn human_apply_domain_is_proof_relevant(
+    state: &npa_tactic::MachineProofState,
+    goal: &npa_tactic::MachineGoal,
+    ctx: &Ctx,
+    domain: &Expr,
+    span: npa_frontend::Span,
+) -> Result<bool, HumanApplyTacticError> {
+    let sort = state
+        .env
+        .kernel_env()
+        .infer(ctx, &state.root.universe_params, domain)
+        .map_err(|err| {
+            human_apply_unsupported_diagnostic(
+                span,
+                format!(
+                    "cannot infer apply premise type for goal {}: {err:?}",
+                    goal.id.0
+                ),
+            )
+        })?;
+    Ok(matches!(sort, Expr::Sort(level) if level == npa_kernel::prop()))
+}
+
+fn human_apply_placeholder(arg: &npa_tactic::ApplyArg, goal: &npa_tactic::MachineGoal) -> Expr {
+    match arg {
+        npa_tactic::ApplyArg::InferFromTarget => goal.target.clone(),
+        npa_tactic::ApplyArg::Term(_) => goal.target.clone(),
+        npa_tactic::ApplyArg::Subgoal { .. } => Expr::bvar(0),
+    }
+}
+
+fn human_apply_body_returns_current_binder(body: &Expr) -> bool {
+    let mut depth = 0;
+    let mut current = body;
+    while let Expr::Pi { body, .. } = current {
+        depth += 1;
+        current = body;
+    }
+    matches!(current, Expr::BVar(index) if *index as usize == depth)
+}
+
+fn human_apply_nonproof_arg_from_target(
+    goal: &npa_tactic::MachineGoal,
+) -> Option<npa_tactic::ApplyArg> {
+    let source = human_apply_render_target_arg(&goal.target, goal)?;
+    Some(npa_tactic::ApplyArg::Term(
+        npa_tactic::MachineTermSource::new_checked(source).ok()?,
+    ))
+}
+
+fn human_apply_render_target_arg(expr: &Expr, goal: &npa_tactic::MachineGoal) -> Option<String> {
+    match expr {
+        Expr::BVar(index) => {
+            let index = *index as usize;
+            if index >= goal.context.len() {
+                return None;
+            }
+            Some(goal.context[goal.context.len() - 1 - index].name.clone())
+        }
+        Expr::Const { name, levels } if levels.is_empty() => Some(name.clone()),
+        Expr::Sort(level) if *level == npa_kernel::prop() => Some("Prop".to_owned()),
+        Expr::Sort(level) if *level == npa_kernel::type0() => Some("Type".to_owned()),
+        _ => None,
+    }
+}
+
+fn human_apply_machine_error(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    goal: &npa_tactic::MachineGoal,
+    resolved: &HumanApplyResolved,
+) -> HumanApplyTacticError {
+    match diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
+        | npa_tactic::MachineTacticDiagnosticKind::TooFewApplyArguments
+        | npa_tactic::MachineTacticDiagnosticKind::AmbiguousApplyArgument
+        | npa_tactic::MachineTacticDiagnosticKind::MissingExplicitArgument
+        | npa_tactic::MachineTacticDiagnosticKind::SubgoalDataArgument => {
+            npa_frontend::HumanDiagnostic::error(
+                npa_frontend::HumanDiagnosticKind::TypeMismatch,
+                resolved.span,
+                format!(
+                    "cannot apply `{}`\n\ntarget:\n  {:?}\n\nhead type:\n  {:?}\n\n{}",
+                    resolved.head_label, goal.target, resolved.head_type, diagnostic.message
+                ),
+            )
+            .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+            .into()
+        }
+        _ => diagnostic.into(),
+    }
+}
+
+fn human_apply_unsupported_head_diagnostic(
+    span: npa_frontend::Span,
+) -> npa_frontend::HumanDiagnostic {
+    human_apply_unsupported_diagnostic(
+        span,
+        "Human apply MVP only supports a resolved local or global name as the head",
+    )
+}
+
+fn human_apply_unsupported_diagnostic(
+    span: npa_frontend::Span,
+    message: impl Into<String>,
+) -> npa_frontend::HumanDiagnostic {
+    npa_frontend::HumanDiagnostic::error(
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic,
+        span,
+        message,
+    )
+    .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator)
+}
+
+fn human_apply_universe_args(levels: Option<&[npa_frontend::HumanLevel]>) -> Vec<Level> {
+    levels
+        .unwrap_or_default()
+        .iter()
+        .map(human_apply_level)
+        .collect()
+}
+
+fn human_apply_level(level: &npa_frontend::HumanLevel) -> Level {
+    match level {
+        npa_frontend::HumanLevel::Nat { value, .. } => {
+            let mut level = Level::zero();
+            for _ in 0..*value {
+                level = Level::succ(level);
+            }
+            level
+        }
+        npa_frontend::HumanLevel::Param { name, .. } => Level::param(name.clone()),
+        npa_frontend::HumanLevel::Succ { level, .. } => Level::succ(human_apply_level(level)),
+        npa_frontend::HumanLevel::Max { lhs, rhs, .. } => {
+            Level::max(human_apply_level(lhs), human_apply_level(rhs))
+        }
+        npa_frontend::HumanLevel::IMax { lhs, rhs, .. } => {
+            Level::imax(human_apply_level(lhs), human_apply_level(rhs))
+        }
+    }
+}
+
+fn human_apply_name_has_suffix(name: &[String], suffix: &[String]) -> bool {
+    name.len() >= suffix.len() && &name[(name.len() - suffix.len())..] == suffix
+}
+
+fn human_apply_hash_hex(hash: &npa_cert::Hash) -> String {
+    hash.iter().map(|byte| format!("{byte:02x}")).collect()
+}
+
 fn human_script_intro_error(error: HumanIntroTacticError) -> HumanTacticScriptError {
     match error {
         HumanIntroTacticError::Human(error) => HumanTacticScriptError::Human(error),
         HumanIntroTacticError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
+    }
+}
+
+fn human_script_apply_error(error: HumanApplyTacticError) -> HumanTacticScriptError {
+    match error {
+        HumanApplyTacticError::Human(error) => HumanTacticScriptError::Human(error),
+        HumanApplyTacticError::Machine(diagnostic) => HumanTacticScriptError::Machine(diagnostic),
     }
 }
 
@@ -1298,17 +2046,146 @@ theorem id_nat : forall (n : Nat), Nat := by
     }
 
     #[test]
-    fn human_tactic_script_executor_rejects_unimplemented_tactic_without_machine_batch() {
-        let (nat, nat_interface) = verified_nat_human_import();
-        let verified_modules = vec![nat];
-        let imported_source_interfaces = vec![nat_interface];
+    fn human_apply_local_assumption_creates_subgoal_closed_by_exact() {
+        let verified_modules = Vec::new();
+        let imported_source_interfaces = Vec::new();
         let source = "\
-import Std.Nat.Basic
-theorem id_nat : forall (n : Nat), Nat := by
-  apply Nat.zero";
+theorem use_local (p q : Prop) (h : forall (hp : p), q) (hp : p) : q := by
+  intro p
+  intro q
+  intro h
+  intro hp
+  apply h
+  exact hp";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanApplyLocal"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanApplyLocal.use_local"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start use_local");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human apply local script should close");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 6);
+        assert_eq!(ok.deltas[4].added_goals.len(), 1);
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human apply local proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_apply_checked_current_theorem_creates_subgoal_closed_by_exact() {
+        let verified_modules = Vec::new();
+        let imported_source_interfaces = Vec::new();
+        let source = "\
+theorem id_prop {q : Prop} (hq : q) : q := hq
+theorem use_id (q : Prop) (hq : q) : q := by
+  intro q
+  intro hq
+  apply id_prop
+  exact hq";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanApplyCurrent"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanApplyCurrent.use_id"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start use_id with checked current id_prop");
+        let script = first_theorem_script(source);
+
+        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("Human apply checked current script should close");
+
+        assert!(ok.state.open_goals.is_empty());
+        assert_eq!(ok.deltas.len(), 4);
+        assert_eq!(ok.deltas[2].added_goals.len(), 1);
+        npa_tactic::extract_closed_machine_proof(&ok.state)
+            .expect("Human apply checked current proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_apply_mismatch_reports_target_and_head_type() {
+        let verified_modules = Vec::new();
+        let imported_source_interfaces = Vec::new();
+        let source = "\
+theorem bad_apply (p q : Prop) (hp : p) : q := by
+  intro p
+  intro q
+  intro hp
+  apply hp";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanApplyMismatch"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanApplyMismatch.bad_apply"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &verified_modules,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof bridge should start bad_apply");
+        let script = first_theorem_script(source);
+
+        let err = run_human_tactic_script(HumanTacticScriptRunRequest {
+            state: &started.state,
+            script: &script,
+            current_source_interface: &started.source_interface,
+            imported_source_interfaces: &imported_source_interfaces,
+            options: human_api_default_compile_options(),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect_err("Human apply mismatch should be a Human diagnostic");
+
+        let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
+            panic!("apply mismatch should map to a Human diagnostic");
+        };
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::TypeMismatch
+        );
+        assert!(diagnostic.message.contains("cannot apply `hp`"));
+        assert!(diagnostic.message.contains("target:"));
+        assert!(diagnostic.message.contains("head type:"));
+    }
+
+    #[test]
+    fn human_tactic_script_executor_rejects_unimplemented_tactic_without_machine_batch() {
+        let verified_modules = Vec::new();
+        let imported_source_interfaces = Vec::new();
+        let source = "\
+theorem target : Prop := by
+  simp-lite";
         let started = start_human_proof(HumanStartProofRequest {
             current_module: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported"),
-            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported.id_nat"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanScriptUnsupported.target"),
             current_source: HumanCurrentModuleSource {
                 file_id: npa_frontend::FileId(0),
                 source,
@@ -1456,12 +2333,16 @@ theorem id_nat : forall (n : Nat), Nat := by
     }
 
     fn first_theorem_script(source: &str) -> npa_frontend::HumanTacticScript {
+        nth_theorem_script(source, 0)
+    }
+
+    fn nth_theorem_script(source: &str, theorem_index: usize) -> npa_frontend::HumanTacticScript {
         let module = npa_frontend::parse_human_module(npa_frontend::FileId(0), source)
             .expect("Human source should parse");
         module
             .items
             .into_iter()
-            .find_map(|item| {
+            .filter_map(|item| {
                 let npa_frontend::HumanItem::Theorem(decl) = item else {
                     return None;
                 };
@@ -1470,6 +2351,7 @@ theorem id_nat : forall (n : Nat), Nat := by
                 };
                 Some(block.script)
             })
+            .nth(theorem_index)
             .expect("source should contain a theorem proof block")
     }
 
