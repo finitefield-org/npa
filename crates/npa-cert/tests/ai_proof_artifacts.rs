@@ -1,12 +1,23 @@
 use npa_cert::{
-    decode_module_cert, verify_module_cert, AxiomPolicy, DeclPayload, ExportKind, Name,
-    VerifierSession,
+    build_module_cert, decode_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy,
+    CoreModule, DeclPayload, ExportKind, Name, VerifiedModule, VerifierSession,
 };
+use npa_kernel::{Decl, Level};
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const EXPECTED_THEOREMS: &[&str] = &[
+struct ExpectedModule {
+    module: &'static str,
+    source: &'static str,
+    certificate: &'static str,
+    meta: &'static str,
+    replay: &'static str,
+    imports: &'static [&'static str],
+    theorems: &'static [&'static str],
+}
+
+const BASIC_THEOREMS: &[&str] = &[
     "id",
     "const_left",
     "const_right",
@@ -29,77 +40,137 @@ const EXPECTED_THEOREMS: &[&str] = &[
     "higher_apply",
 ];
 
+const EQ_THEOREMS: &[&str] = &[
+    "eq_refl_self",
+    "eq_refl_fn_app",
+    "eq_refl_compose",
+    "eq_self_imp",
+    "eq_refl_prop",
+];
+
+const EXPECTED_MODULES: &[ExpectedModule] = &[
+    ExpectedModule {
+        module: "Proofs.Ai.Basic",
+        source: "Proofs/Ai/Basic/source.npa",
+        certificate: "Proofs/Ai/Basic/certificate.npcert",
+        meta: "Proofs/Ai/Basic/meta.json",
+        replay: "Proofs/Ai/Basic/replay.json",
+        imports: &[],
+        theorems: BASIC_THEOREMS,
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Eq",
+        source: "Proofs/Ai/Eq/source.npa",
+        certificate: "Proofs/Ai/Eq/certificate.npcert",
+        meta: "Proofs/Ai/Eq/meta.json",
+        replay: "Proofs/Ai/Eq/replay.json",
+        imports: &["Std.Logic.Eq"],
+        theorems: EQ_THEOREMS,
+    },
+];
+
 #[test]
-fn ai_basic_certificate_matches_manifest_and_verifies() {
+fn ai_certificates_match_manifest_and_verify() {
     let root = corpus_root();
     let manifest = read_to_string(root.join("manifest.toml"));
     assert_eq!(
         quoted_value(&manifest, "schema"),
         "npa-ai-proof-corpus-v0.1"
     );
+    let eq_import = verified_eq_import_module();
 
-    let module = quoted_value(&manifest, "module");
-    let source = quoted_value(&manifest, "source");
-    let certificate = quoted_value(&manifest, "certificate");
-    let meta = quoted_value(&manifest, "meta");
-    let replay = quoted_value(&manifest, "replay");
-    let source_sha256 = quoted_value(&manifest, "source_sha256");
-    let certificate_file_sha256 = quoted_value(&manifest, "certificate_file_sha256");
-    let export_hash = quoted_value(&manifest, "export_hash");
-    let axiom_report_hash = quoted_value(&manifest, "axiom_report_hash");
-    let certificate_hash = quoted_value(&manifest, "certificate_hash");
+    for expected in EXPECTED_MODULES {
+        let block = manifest_block(&manifest, expected.module);
+        assert_eq!(
+            quoted_value(block, "trusted_status"),
+            "verified_by_phase2_certificate"
+        );
+        assert_eq!(quoted_value(block, "source"), expected.source);
+        assert_eq!(quoted_value(block, "certificate"), expected.certificate);
+        assert_eq!(quoted_value(block, "meta"), expected.meta);
+        assert_eq!(quoted_value(block, "replay"), expected.replay);
+        for import in expected.imports {
+            assert!(block.contains(&format!("\"{import}\"")));
+        }
 
-    assert_eq!(module, "Proofs.Ai.Basic");
-    assert_eq!(
-        quoted_value(&manifest, "trusted_status"),
-        "verified_by_phase2_certificate"
-    );
-    assert_eq!(source, "Proofs/Ai/Basic/source.npa");
-    assert_eq!(certificate, "Proofs/Ai/Basic/certificate.npcert");
-    assert_eq!(meta, "Proofs/Ai/Basic/meta.json");
-    assert_eq!(replay, "Proofs/Ai/Basic/replay.json");
+        let source_sha256 = quoted_value(block, "source_sha256");
+        let certificate_file_sha256 = quoted_value(block, "certificate_file_sha256");
+        let export_hash = quoted_value(block, "export_hash");
+        let axiom_report_hash = quoted_value(block, "axiom_report_hash");
+        let certificate_hash = quoted_value(block, "certificate_hash");
 
-    let source_bytes = read(root.join(source));
-    assert_eq!(tagged_sha256(&source_bytes), source_sha256);
+        let source_bytes = read(root.join(expected.source));
+        assert_eq!(tagged_sha256(&source_bytes), source_sha256);
 
-    let certificate_bytes = read(root.join(certificate));
-    assert_eq!(tagged_sha256(&certificate_bytes), certificate_file_sha256);
+        let certificate_bytes = read(root.join(expected.certificate));
+        assert_eq!(tagged_sha256(&certificate_bytes), certificate_file_sha256);
 
-    let decoded = decode_module_cert(&certificate_bytes).expect("AI corpus certificate decodes");
-    assert_eq!(decoded.header.module, Name::from_dotted(&module));
-    assert_eq!(tagged_hash(decoded.hashes.export_hash), export_hash);
-    assert_eq!(
-        tagged_hash(decoded.hashes.axiom_report_hash),
-        axiom_report_hash
-    );
-    assert_eq!(
-        tagged_hash(decoded.hashes.certificate_hash),
-        certificate_hash
-    );
-    assert!(decoded.axiom_report.module_axioms.is_empty());
+        let decoded =
+            decode_module_cert(&certificate_bytes).expect("AI corpus certificate decodes");
+        assert_eq!(decoded.header.module, Name::from_dotted(expected.module));
+        assert_eq!(tagged_hash(decoded.hashes.export_hash), export_hash);
+        assert_eq!(
+            tagged_hash(decoded.hashes.axiom_report_hash),
+            axiom_report_hash
+        );
+        assert_eq!(
+            tagged_hash(decoded.hashes.certificate_hash),
+            certificate_hash
+        );
+        assert!(decoded.axiom_report.module_axioms.is_empty());
+        assert_imports(&decoded, expected.imports);
 
-    let mut session = VerifierSession::new();
-    let verified = verify_module_cert(&certificate_bytes, &mut session, &AxiomPolicy::normal())
-        .expect("AI corpus certificate verifies");
-    assert_eq!(verified.module(), &Name::from_dotted(&module));
-    assert_eq!(tagged_hash(verified.export_hash()), export_hash);
-    assert_eq!(tagged_hash(verified.certificate_hash()), certificate_hash);
-    assert!(verified.axiom_report().module_axioms.is_empty());
+        let mut session = VerifierSession::new();
+        if expected.imports.contains(&"Std.Logic.Eq") {
+            session.register_verified_module(eq_import.clone());
+        }
+        let verified = verify_module_cert(&certificate_bytes, &mut session, &AxiomPolicy::normal())
+            .expect("AI corpus certificate verifies");
+        assert_eq!(verified.module(), &Name::from_dotted(expected.module));
+        assert_eq!(tagged_hash(verified.export_hash()), export_hash);
+        assert_eq!(tagged_hash(verified.certificate_hash()), certificate_hash);
+        assert!(verified.axiom_report().module_axioms.is_empty());
 
-    assert_theorem_exports(&decoded, EXPECTED_THEOREMS);
-    assert_theorem_declarations(&decoded, EXPECTED_THEOREMS);
+        assert_theorem_exports(&decoded, expected.theorems);
+        assert_theorem_declarations(&decoded, expected.theorems);
 
-    let meta = read_to_string(root.join(meta));
-    assert!(meta.contains(&format!("\"certificate_hash\": \"{certificate_hash}\"")));
-    assert!(meta.contains("\"trusted_status\": \"verified_by_phase2_certificate\""));
-    for theorem in EXPECTED_THEOREMS {
-        assert!(meta.contains(&format!("\"name\": \"{theorem}\"")));
-        assert!(manifest.contains(&format!("\"{theorem}\"")));
+        let meta = read_to_string(root.join(expected.meta));
+        assert!(meta.contains(&format!("\"certificate_hash\": \"{certificate_hash}\"")));
+        assert!(meta.contains("\"trusted_status\": \"verified_by_phase2_certificate\""));
+        for import in expected.imports {
+            assert!(meta.contains(&format!("\"{import}\"")));
+        }
+        for theorem in expected.theorems {
+            assert!(meta.contains(&format!("\"name\": \"{theorem}\"")));
+            assert!(block.contains(&format!("\"{theorem}\"")));
+        }
+
+        let replay = read_to_string(root.join(expected.replay));
+        assert!(replay.contains("\"trusted\": false"));
+        assert!(replay.contains(&format!(
+            "\"accepted_artifact\": \"{}\"",
+            expected.certificate
+        )));
     }
+}
 
-    let replay = read_to_string(root.join(replay));
-    assert!(replay.contains("\"trusted\": false"));
-    assert!(replay.contains("\"accepted_artifact\": \"Proofs/Ai/Basic/certificate.npcert\""));
+fn verified_eq_import_module() -> VerifiedModule {
+    verified_core_module(CoreModule {
+        name: Name::from_dotted("Std.Logic.Eq"),
+        declarations: vec![Decl::Inductive {
+            name: "Eq".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: npa_kernel::eq_type(Level::param("u")),
+            data: Box::new(npa_kernel::eq_inductive()),
+        }],
+    })
+}
+
+fn verified_core_module(module: CoreModule) -> VerifiedModule {
+    let cert = build_module_cert(module, &[]).expect("import certificate should build");
+    let bytes = encode_module_cert(&cert).expect("import certificate should encode");
+    verify_module_cert(&bytes, &mut VerifierSession::new(), &AxiomPolicy::normal())
+        .expect("import certificate should verify")
 }
 
 fn corpus_root() -> PathBuf {
@@ -119,6 +190,14 @@ fn read_to_string(path: PathBuf) -> String {
         .unwrap_or_else(|err| panic!("failed to read {}: {err}", path.display()))
 }
 
+fn manifest_block<'a>(manifest: &'a str, module: &str) -> &'a str {
+    manifest
+        .split("[[proof_modules]]")
+        .skip(1)
+        .find(|block| quoted_value(block, "module") == module)
+        .unwrap_or_else(|| panic!("manifest block for {module} not found"))
+}
+
 fn quoted_value(text: &str, key: &str) -> String {
     let prefix = format!("{key} = ");
     for line in text.lines() {
@@ -133,6 +212,19 @@ fn quoted_value(text: &str, key: &str) -> String {
         }
     }
     panic!("manifest key {key} not found");
+}
+
+fn assert_imports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
+    let actual = cert
+        .imports
+        .iter()
+        .map(|import| import.module.as_dotted())
+        .collect::<Vec<_>>();
+    let expected = expected
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
 }
 
 fn assert_theorem_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {

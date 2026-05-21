@@ -13,5 +13,23 @@ certificate_file_sha256 = "sha256:464a0d224b8667e4870888522454782231cd2cdd9049e6
 export_hash = "sha256:3341d28e9d1d9dd875138399ab1bd7aa6e2727449cb87fe03c73b220c4b231c0"
 axiom_report_hash = "sha256:fed11e73accfbfb0dfc28b4f510e151fa33d8af82d58fdb23b92567e04e59e40"
 certificate_hash = "sha256:69cb8c64c6ce722209e27820cd790af6d325c98478b3599ae796ee03df528b13"
+imports = []
 theorems = ["id", "const_left", "const_right", "apply_fn", "compose", "flip", "duplicate", "prop_id", "modus_ponens", "imp_trans", "compose_assoc", "apply_twice", "ignore_middle", "select_middle", "select_last", "imp_swap", "imp_compose", "imp_ignore", "imp_duplicate", "higher_apply"]
+axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Eq"
+source = "Proofs/Ai/Eq/source.npa"
+certificate = "Proofs/Ai/Eq/certificate.npcert"
+meta = "Proofs/Ai/Eq/meta.json"
+replay = "Proofs/Ai/Eq/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_phase2_certificate"
+source_sha256 = "sha256:73b73ef4bf25400dcad2ef662d4247a26dfaee223e3cc91e7b87aab9a8544f4c"
+certificate_file_sha256 = "sha256:5a5725cacc277558e55f2d78ffe2274dcca48b92af0810fea1229386972d33ed"
+export_hash = "sha256:ac7eb80f3cb0469ad09e6ad8834b8e8115e692896856ad7ad3aa036d1d8ebba2"
+axiom_report_hash = "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d"
+certificate_hash = "sha256:7cb0f79be2f1c096729ab3e3ec3329643694bca0ff8dcd3dcfafcb21dfd04b5b"
+imports = ["Std.Logic.Eq"]
+theorems = ["eq_refl_self", "eq_refl_fn_app", "eq_refl_compose", "eq_self_imp", "eq_refl_prop"]
 axioms = []

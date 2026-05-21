@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Eq",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "eq_refl_self",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun x => @Eq.refl.{u} A x"
+    },
+    {
+      "declaration": "eq_refl_fn_app",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun f => fun x => @Eq.refl.{v} B (f x)"
+    },
+    {
+      "declaration": "eq_refl_compose",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun f => fun g => fun x => @Eq.refl.{w} C (f (g x))"
+    },
+    {
+      "declaration": "eq_self_imp",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun x => fun h => h"
+    },
+    {
+      "declaration": "eq_refl_prop",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun p => @Eq.refl.{0} P p"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Eq/certificate.npcert"
+  }
+}

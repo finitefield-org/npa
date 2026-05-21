@@ -10,12 +10,10 @@ The trust boundary follows the repository-wide certificate-first policy:
 - `*.npcert` is the canonical artifact consumed by the certificate verifier and kernel.
 - A proof is accepted only when the certificate decodes canonically and `verify_module_cert` succeeds.
 
-Current files:
+Current bundles:
 
-- `Proofs/Ai/Basic/source.npa`: readable source for a small no-axiom theorem module.
-- `Proofs/Ai/Basic/certificate.npcert`: canonical certificate for `Proofs.Ai.Basic`.
-- `Proofs/Ai/Basic/meta.json`: producer metadata and hashes.
-- `Proofs/Ai/Basic/replay.json`: non-trusted explicit-term replay notes.
+- `Proofs/Ai/Basic/`: small no-import, no-axiom combinator and implication theorem module.
+- `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -73,10 +71,10 @@ Implemented:
 
 Module: `Proofs.Ai.Eq`
 
-Introduce `Std.Logic.Eq` and keep the first equality examples refl-only. This checks import
+This module imports `Std.Logic.Eq` and keeps the first equality examples refl-only. It checks import
 interfaces and builtin equality references without adding rewrite search as a dependency.
 
-Planned:
+Implemented:
 
 | Theorem | Shape |
 | --- | --- |
