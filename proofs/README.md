@@ -27,6 +27,8 @@ Current bundles:
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
   `Std.Logic.Eq`.
+- `Proofs/Ai/Vector/Dot/`: dot product, squared norm, and squared distance theorem targets
+  importing vector, scalar, square, and order corpus layers.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -388,7 +390,48 @@ Theorem targets:
 | `vec_add_left_cancel` | `u + v = u + w -> v = w` |
 | `sub_sub_sub_cancel` | `(u - w) - (v - w) = u - v` |
 
-### P13+: Pythagorean Theorem Roadmap
+### P13: Vector Dot Corpus
+
+Module: `Proofs.Ai.Vector.Dot`
+
+Connect `Proofs.Ai.Vector.Basic` with the scalar corpus by adding dot product, squared norm, and
+squared distance APIs. This is still a singleton-carrier corpus, so the theorem statements are
+designed as durable targets for later nontrivial instances while the current certificates remain
+small and axiom-free.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `dot` | inner product API |
+| `normSq` | squared norm, defined as `dot v v` |
+| `distSq` | squared distance, defined as `normSq (B - A)` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `dot_comm` | `dot u v = dot v u` |
+| `dot_add_left` | `dot (u + v) w = dot u w + dot v w` |
+| `dot_add_right` | `dot u (v + w) = dot u v + dot u w` |
+| `dot_neg_left` | `dot (-u) v = -dot u v` |
+| `dot_neg_right` | `dot u (-v) = -dot u v` |
+| `dot_sub_left` | `dot (u - v) w = dot u w - dot v w` |
+| `dot_sub_right` | `dot u (v - w) = dot u v - dot u w` |
+| `norm_sq_def` | `normSq v = dot v v` |
+| `dist_sq_def` | `distSq A B = normSq (B - A)` |
+| `dot_self_eq_norm_sq` | `dot v v = normSq v` |
+| `norm_sq_add` | `normSq (u + v) = normSq u + 2 * dot u v + normSq v` |
+| `norm_sq_sub` | `normSq (u - v) = normSq u - 2 * dot u v + normSq v` |
+| `norm_sq_add_of_dot_zero` | `dot u v = 0 -> normSq (u + v) = normSq u + normSq v` |
+| `norm_sq_sub_of_dot_zero` | `dot u v = 0 -> normSq (u - v) = normSq u + normSq v` |
+| `parallelogram_law` | `normSq (u + v) + normSq (u - v) = 2 * normSq u + 2 * normSq v` |
+| `polarization_identity` | `2 * dot u v = normSq (u + v) - (normSq u + normSq v)` |
+| `norm_sq_nonneg` | `0 <= normSq v` |
+
+### P14+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -420,10 +463,11 @@ Completed prerequisite:
   targets needed by later metric statements.
 - P12 `Proofs.Ai.Vector.Basic` supplies the first vector carrier and additive vector theorem targets
   used by the dot-product and geometry layers.
+- P13 `Proofs.Ai.Vector.Dot` supplies `dot`, `normSq`, `distSq`, and the dot-product expansion
+  targets used by the squared-distance Pythagoras route.
 
 | Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P13 | `Proofs.Ai.Vector.Dot` | `dot`, `normSq`, `distSq` | `norm_sq_def`, `dist_sq_def`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
 | P14 | `Proofs.Ai.Geometry.RightTriangle` | `Perp`, `RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
 | P15 | `Proofs.Ai.Geometry.Metric` | `dist` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
 
@@ -583,7 +627,7 @@ Theorem targets:
 
 #### `Proofs.Ai.Vector.Dot`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
@@ -610,7 +654,8 @@ Theorem targets:
 | `norm_sq_add_of_dot_zero` | `dot u v = 0 -> normSq (u + v) = normSq u + normSq v` |
 | `norm_sq_sub_of_dot_zero` | `dot u v = 0 -> normSq (u - v) = normSq u + normSq v` |
 | `parallelogram_law` | `normSq (u + v) + normSq (u - v) = 2 * normSq u + 2 * normSq v` |
-| `polarization_identity` | expresses `dot u v` using squared norms |
+| `polarization_identity` | `2 * dot u v = normSq (u + v) - (normSq u + normSq v)` |
+| `norm_sq_nonneg` | `0 <= normSq v` |
 
 #### `Proofs.Ai.Geometry.RightTriangle`
 

@@ -1,0 +1,112 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Vector.Dot",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dot",
+      "source_kind": "explicit_def_value",
+      "term": "fun u => fun v => zero"
+    },
+    {
+      "declaration": "normSq",
+      "source_kind": "explicit_def_value",
+      "term": "fun v => dot v v"
+    },
+    {
+      "declaration": "distSq",
+      "source_kind": "explicit_def_value",
+      "term": "fun A => fun B => normSq (vec_sub B A)"
+    },
+    {
+      "declaration": "dot_comm",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (dot u v)"
+    },
+    {
+      "declaration": "dot_add_left",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot (vec_add u v) w)"
+    },
+    {
+      "declaration": "dot_add_right",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot u (vec_add v w))"
+    },
+    {
+      "declaration": "dot_neg_left",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (dot (vec_neg u) v)"
+    },
+    {
+      "declaration": "dot_neg_right",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (dot u (vec_neg v))"
+    },
+    {
+      "declaration": "dot_sub_left",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot (vec_sub u v) w)"
+    },
+    {
+      "declaration": "dot_sub_right",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot u (vec_sub v w))"
+    },
+    {
+      "declaration": "norm_sq_def",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Eq.refl.{1} RingElem (normSq v)"
+    },
+    {
+      "declaration": "dist_sq_def",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => @Eq.refl.{1} RingElem (distSq A B)"
+    },
+    {
+      "declaration": "dot_self_eq_norm_sq",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Eq.refl.{1} RingElem (dot v v)"
+    },
+    {
+      "declaration": "norm_sq_add",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (normSq (vec_add u v))"
+    },
+    {
+      "declaration": "norm_sq_sub",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (normSq (vec_sub u v))"
+    },
+    {
+      "declaration": "norm_sq_add_of_dot_zero",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun h => @Eq.refl.{1} RingElem (normSq (vec_add u v))"
+    },
+    {
+      "declaration": "norm_sq_sub_of_dot_zero",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun h => @Eq.refl.{1} RingElem (normSq (vec_sub u v))"
+    },
+    {
+      "declaration": "parallelogram_law",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (add (normSq (vec_add u v)) (normSq (vec_sub u v)))"
+    },
+    {
+      "declaration": "polarization_identity",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem (mul two (dot u v))"
+    },
+    {
+      "declaration": "norm_sq_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Eq.refl.{1} RingElem RingElem.unit"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Vector/Dot/certificate.npcert"
+  }
+}

@@ -189,6 +189,25 @@ const VECTOR_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const VECTOR_DOT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Vector.Dot",
+    source_path: "Proofs/Ai/Vector/Dot/source.npa",
+    certificate_path: "Proofs/Ai/Vector/Dot/certificate.npcert",
+    meta_path: "Proofs/Ai/Vector/Dot/meta.json",
+    replay_path: "Proofs/Ai/Vector/Dot/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.Ring",
+        "Proofs.Ai.Algebra.Square",
+        "Proofs.Ai.OrderedField",
+        "Proofs.Ai.Vector.Basic",
+    ],
+    inductives: &[],
+    definitions: VECTOR_DOT_DEFINITIONS,
+    theorems: VECTOR_DOT_THEOREMS,
+    expected_axioms: &[],
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -1166,6 +1185,149 @@ const VECTOR_BASIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const VECTOR_DOT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "dot",
+        universe_params: &[],
+        ty: "forall (u : Vec), forall (v : Vec), RingElem",
+        value: "fun u => fun v => zero",
+    },
+    DefinitionArtifact {
+        name: "normSq",
+        universe_params: &[],
+        ty: "forall (v : Vec), RingElem",
+        value: "fun v => dot v v",
+    },
+    DefinitionArtifact {
+        name: "distSq",
+        universe_params: &[],
+        ty: "forall (A : Vec), forall (B : Vec), RingElem",
+        value: "fun A => fun B => normSq (vec_sub B A)",
+    },
+];
+
+const VECTOR_DOT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dot_comm",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (dot u v) (dot v u)",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem (dot u v)",
+    },
+    TheoremArtifact {
+        name: "dot_add_left",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot (vec_add u v) w) (add (dot u w) (dot v w))",
+        proof: "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot (vec_add u v) w)",
+    },
+    TheoremArtifact {
+        name: "dot_add_right",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot u (vec_add v w)) (add (dot u v) (dot u w))",
+        proof: "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot u (vec_add v w))",
+    },
+    TheoremArtifact {
+        name: "dot_neg_left",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (dot (vec_neg u) v) (neg (dot u v))",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem (dot (vec_neg u) v)",
+    },
+    TheoremArtifact {
+        name: "dot_neg_right",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (dot u (vec_neg v)) (neg (dot u v))",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem (dot u (vec_neg v))",
+    },
+    TheoremArtifact {
+        name: "dot_sub_left",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot (vec_sub u v) w) (sub (dot u w) (dot v w))",
+        proof: "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot (vec_sub u v) w)",
+    },
+    TheoremArtifact {
+        name: "dot_sub_right",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot u (vec_sub v w)) (sub (dot u v) (dot u w))",
+        proof: "fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot u (vec_sub v w))",
+    },
+    TheoremArtifact {
+        name: "norm_sq_def",
+        universe_params: &[],
+        statement: "forall (v : Vec), @Eq.{1} RingElem (normSq v) (dot v v)",
+        proof: "fun v => @Eq.refl.{1} RingElem (normSq v)",
+    },
+    TheoremArtifact {
+        name: "dist_sq_def",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (distSq A B) (normSq (vec_sub B A))",
+        proof: "fun A => fun B => @Eq.refl.{1} RingElem (distSq A B)",
+    },
+    TheoremArtifact {
+        name: "dot_self_eq_norm_sq",
+        universe_params: &[],
+        statement: "forall (v : Vec), @Eq.{1} RingElem (dot v v) (normSq v)",
+        proof: "fun v => @Eq.refl.{1} RingElem (dot v v)",
+    },
+    TheoremArtifact {
+        name: "norm_sq_add",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (normSq (vec_add u v)) (add (add (normSq u) (mul two (dot u v))) (normSq v))",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem (normSq (vec_add u v))",
+    },
+    TheoremArtifact {
+        name: "norm_sq_sub",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (normSq (vec_sub u v)) (add (sub (normSq u) (mul two (dot u v))) (normSq v))",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem (normSq (vec_sub u v))",
+    },
+    TheoremArtifact {
+        name: "norm_sq_add_of_dot_zero",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (h : @Eq.{1} RingElem (dot u v) zero), @Eq.{1} RingElem (normSq (vec_add u v)) (add (normSq u) (normSq v))",
+        proof:
+            "fun u => fun v => fun h => @Eq.refl.{1} RingElem (normSq (vec_add u v))",
+    },
+    TheoremArtifact {
+        name: "norm_sq_sub_of_dot_zero",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (h : @Eq.{1} RingElem (dot u v) zero), @Eq.{1} RingElem (normSq (vec_sub u v)) (add (normSq u) (normSq v))",
+        proof:
+            "fun u => fun v => fun h => @Eq.refl.{1} RingElem (normSq (vec_sub u v))",
+    },
+    TheoremArtifact {
+        name: "parallelogram_law",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (add (normSq (vec_add u v)) (normSq (vec_sub u v))) (add (mul two (normSq u)) (mul two (normSq v)))",
+        proof:
+            "fun u => fun v => @Eq.refl.{1} RingElem (add (normSq (vec_add u v)) (normSq (vec_sub u v)))",
+    },
+    TheoremArtifact {
+        name: "polarization_identity",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (mul two (dot u v)) (sub (normSq (vec_add u v)) (add (normSq u) (normSq v)))",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem (mul two (dot u v))",
+    },
+    TheoremArtifact {
+        name: "norm_sq_nonneg",
+        universe_params: &[],
+        statement: "forall (v : Vec), le zero (normSq v)",
+        proof: "fun v => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -1263,6 +1425,26 @@ fn run() -> Result<(), String> {
         &vector_basic_imports,
         &vector_basic_source_interfaces,
     )?;
+    let vector_dot_imports = vec![
+        eq_import.clone(),
+        ring.verified_module.clone(),
+        square.verified_module.clone(),
+        ordered_field.verified_module.clone(),
+        vector_basic.verified_module.clone(),
+    ];
+    let vector_dot_source_interfaces = vec![
+        eq_source_interface.clone(),
+        ring.source_interface.clone(),
+        square.source_interface.clone(),
+        ordered_field.source_interface.clone(),
+        vector_basic.source_interface.clone(),
+    ];
+    let vector_dot = build_and_write_module(
+        &proof_root,
+        &VECTOR_DOT_MODULE,
+        &vector_dot_imports,
+        &vector_dot_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -1277,6 +1459,7 @@ fn run() -> Result<(), String> {
             square,
             ordered_field,
             vector_basic,
+            vector_dot,
         ])
         .as_bytes(),
     )?;

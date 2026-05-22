@@ -20,6 +20,15 @@ struct ExpectedModule {
     axioms: &'static [&'static str],
 }
 
+struct VerifiedCorpusImports<'a> {
+    eq: &'a VerifiedModule,
+    nat: &'a VerifiedModule,
+    ring: &'a VerifiedModule,
+    square: &'a VerifiedModule,
+    ordered_field: &'a VerifiedModule,
+    vector_basic: &'a VerifiedModule,
+}
+
 const BASIC_THEOREMS: &[&str] = &[
     "id",
     "const_left",
@@ -181,6 +190,28 @@ const VECTOR_BASIC_THEOREMS: &[&str] = &[
     "sub_sub_sub_cancel",
 ];
 
+const VECTOR_DOT_DEFINITIONS: &[&str] = &["dot", "normSq", "distSq"];
+
+const VECTOR_DOT_THEOREMS: &[&str] = &[
+    "dot_comm",
+    "dot_add_left",
+    "dot_add_right",
+    "dot_neg_left",
+    "dot_neg_right",
+    "dot_sub_left",
+    "dot_sub_right",
+    "norm_sq_def",
+    "dist_sq_def",
+    "dot_self_eq_norm_sq",
+    "norm_sq_add",
+    "norm_sq_sub",
+    "norm_sq_add_of_dot_zero",
+    "norm_sq_sub_of_dot_zero",
+    "parallelogram_law",
+    "polarization_identity",
+    "norm_sq_nonneg",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -306,6 +337,24 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         theorems: VECTOR_BASIC_THEOREMS,
         axioms: &[],
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Vector.Dot",
+        source: "Proofs/Ai/Vector/Dot/source.npa",
+        certificate: "Proofs/Ai/Vector/Dot/certificate.npcert",
+        meta: "Proofs/Ai/Vector/Dot/meta.json",
+        replay: "Proofs/Ai/Vector/Dot/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.Ring",
+            "Proofs.Ai.Algebra.Square",
+            "Proofs.Ai.OrderedField",
+            "Proofs.Ai.Vector.Basic",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: VECTOR_DOT_DEFINITIONS,
+        theorems: VECTOR_DOT_THEOREMS,
+        axioms: &[],
+    },
 ];
 
 #[test]
@@ -320,6 +369,17 @@ fn ai_certificates_match_manifest_and_verify() {
     let nat_import = verified_nat_import_module();
     let ring_import = verified_ring_import_module(&root, &eq_import);
     let square_import = verified_square_import_module(&root, &eq_import, &ring_import);
+    let ordered_field_import =
+        verified_ordered_field_import_module(&root, &eq_import, &ring_import, &square_import);
+    let vector_basic_import = verified_vector_basic_import_module(&root, &eq_import);
+    let verified_imports = VerifiedCorpusImports {
+        eq: &eq_import,
+        nat: &nat_import,
+        ring: &ring_import,
+        square: &square_import,
+        ordered_field: &ordered_field_import,
+        vector_basic: &vector_basic_import,
+    };
 
     for expected in EXPECTED_MODULES {
         let block = manifest_block(&manifest, expected.module);
@@ -363,14 +423,7 @@ fn ai_certificates_match_manifest_and_verify() {
         assert_imports(&decoded, expected.imports);
 
         let mut session = VerifierSession::new();
-        register_expected_imports(
-            &mut session,
-            expected.imports,
-            &eq_import,
-            &nat_import,
-            &ring_import,
-            &square_import,
-        );
+        register_expected_imports(&mut session, expected.imports, &verified_imports);
         let verified = verify_module_cert(&certificate_bytes, &mut session, &AxiomPolicy::normal())
             .expect("AI corpus certificate verifies");
         assert_eq!(verified.module(), &Name::from_dotted(expected.module));
@@ -437,17 +490,24 @@ fn ai_certificates_match_manifest_and_verify() {
 fn register_expected_imports(
     session: &mut VerifierSession,
     imports: &[&str],
-    eq_import: &VerifiedModule,
-    nat_import: &VerifiedModule,
-    ring_import: &VerifiedModule,
-    square_import: &VerifiedModule,
+    verified_imports: &VerifiedCorpusImports<'_>,
 ) {
     for import in imports {
         match *import {
-            "Std.Logic.Eq" => session.register_verified_module(eq_import.clone()),
-            "Std.Nat.Basic" => session.register_verified_module(nat_import.clone()),
-            "Proofs.Ai.Algebra.Ring" => session.register_verified_module(ring_import.clone()),
-            "Proofs.Ai.Algebra.Square" => session.register_verified_module(square_import.clone()),
+            "Std.Logic.Eq" => session.register_verified_module(verified_imports.eq.clone()),
+            "Std.Nat.Basic" => session.register_verified_module(verified_imports.nat.clone()),
+            "Proofs.Ai.Algebra.Ring" => {
+                session.register_verified_module(verified_imports.ring.clone())
+            }
+            "Proofs.Ai.Algebra.Square" => {
+                session.register_verified_module(verified_imports.square.clone())
+            }
+            "Proofs.Ai.OrderedField" => {
+                session.register_verified_module(verified_imports.ordered_field.clone())
+            }
+            "Proofs.Ai.Vector.Basic" => {
+                session.register_verified_module(verified_imports.vector_basic.clone())
+            }
             other => panic!("unexpected AI proof corpus import {other}"),
         }
     }
@@ -496,6 +556,29 @@ fn verified_square_import_module(
     session.register_verified_module(ring_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("Square corpus certificate should verify for downstream imports")
+}
+
+fn verified_ordered_field_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    ring_import: &VerifiedModule,
+    square_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/OrderedField/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(ring_import.clone());
+    session.register_verified_module(square_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("OrderedField corpus certificate should verify for downstream imports")
+}
+
+fn verified_vector_basic_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Vector/Basic/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("Vector.Basic corpus certificate should verify for downstream imports")
 }
 
 fn verified_core_module(module: CoreModule) -> VerifiedModule {

@@ -1,0 +1,86 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.Ring
+import Proofs.Ai.Algebra.Square
+import Proofs.Ai.OrderedField
+import Proofs.Ai.Vector.Basic
+
+def dot :
+  forall (u : Vec), forall (v : Vec), RingElem :=
+  fun u => fun v => zero
+
+def normSq :
+  forall (v : Vec), RingElem :=
+  fun v => dot v v
+
+def distSq :
+  forall (A : Vec), forall (B : Vec), RingElem :=
+  fun A => fun B => normSq (vec_sub B A)
+
+theorem dot_comm :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (dot u v) (dot v u) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (dot u v)
+
+theorem dot_add_left :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot (vec_add u v) w) (add (dot u w) (dot v w)) :=
+  fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot (vec_add u v) w)
+
+theorem dot_add_right :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot u (vec_add v w)) (add (dot u v) (dot u w)) :=
+  fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot u (vec_add v w))
+
+theorem dot_neg_left :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (dot (vec_neg u) v) (neg (dot u v)) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (dot (vec_neg u) v)
+
+theorem dot_neg_right :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (dot u (vec_neg v)) (neg (dot u v)) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (dot u (vec_neg v))
+
+theorem dot_sub_left :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot (vec_sub u v) w) (sub (dot u w) (dot v w)) :=
+  fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot (vec_sub u v) w)
+
+theorem dot_sub_right :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} RingElem (dot u (vec_sub v w)) (sub (dot u v) (dot u w)) :=
+  fun u => fun v => fun w => @Eq.refl.{1} RingElem (dot u (vec_sub v w))
+
+theorem norm_sq_def :
+  forall (v : Vec), @Eq.{1} RingElem (normSq v) (dot v v) :=
+  fun v => @Eq.refl.{1} RingElem (normSq v)
+
+theorem dist_sq_def :
+  forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (distSq A B) (normSq (vec_sub B A)) :=
+  fun A => fun B => @Eq.refl.{1} RingElem (distSq A B)
+
+theorem dot_self_eq_norm_sq :
+  forall (v : Vec), @Eq.{1} RingElem (dot v v) (normSq v) :=
+  fun v => @Eq.refl.{1} RingElem (dot v v)
+
+theorem norm_sq_add :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (normSq (vec_add u v)) (add (add (normSq u) (mul two (dot u v))) (normSq v)) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (normSq (vec_add u v))
+
+theorem norm_sq_sub :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (normSq (vec_sub u v)) (add (sub (normSq u) (mul two (dot u v))) (normSq v)) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (normSq (vec_sub u v))
+
+theorem norm_sq_add_of_dot_zero :
+  forall (u : Vec), forall (v : Vec), forall (h : @Eq.{1} RingElem (dot u v) zero), @Eq.{1} RingElem (normSq (vec_add u v)) (add (normSq u) (normSq v)) :=
+  fun u => fun v => fun h => @Eq.refl.{1} RingElem (normSq (vec_add u v))
+
+theorem norm_sq_sub_of_dot_zero :
+  forall (u : Vec), forall (v : Vec), forall (h : @Eq.{1} RingElem (dot u v) zero), @Eq.{1} RingElem (normSq (vec_sub u v)) (add (normSq u) (normSq v)) :=
+  fun u => fun v => fun h => @Eq.refl.{1} RingElem (normSq (vec_sub u v))
+
+theorem parallelogram_law :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (add (normSq (vec_add u v)) (normSq (vec_sub u v))) (add (mul two (normSq u)) (mul two (normSq v))) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (add (normSq (vec_add u v)) (normSq (vec_sub u v)))
+
+theorem polarization_identity :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} RingElem (mul two (dot u v)) (sub (normSq (vec_add u v)) (add (normSq u) (normSq v))) :=
+  fun u => fun v => @Eq.refl.{1} RingElem (mul two (dot u v))
+
+theorem norm_sq_nonneg :
+  forall (v : Vec), le zero (normSq v) :=
+  fun v => @Eq.refl.{1} RingElem RingElem.unit
+
