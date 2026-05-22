@@ -9914,6 +9914,7 @@ mod tests {
         assert_eq!(export_entry(nat_module, "Nat.one").kind, ExportKind::Def);
         assert_eq!(export_entry(nat_module, "Nat.pred").kind, ExportKind::Def);
         assert_eq!(export_entry(nat_module, "Nat.add").kind, ExportKind::Def);
+        assert_eq!(export_entry(nat_module, "Nat.mul").kind, ExportKind::Def);
         for theorem in ["Nat.pred_zero", "Nat.pred_succ"] {
             let entry = export_entry(nat_module, theorem);
             assert_eq!(entry.kind, ExportKind::Theorem);
@@ -9930,11 +9931,25 @@ mod tests {
                 "{theorem} must be proved by definitional equality without new axioms"
             );
         }
+        for theorem in ["Nat.mul_zero", "Nat.mul_succ"] {
+            let entry = export_entry(nat_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert!(
+                entry.axiom_dependencies.is_empty(),
+                "{theorem} must be proved by definitional equality without new axioms"
+            );
+        }
         for theorem in [
             "Nat.zero_add",
             "Nat.succ_add",
             "Nat.add_assoc",
             "Nat.add_comm",
+            "Nat.zero_mul",
+            "Nat.succ_mul",
+            "Nat.mul_comm",
+            "Nat.left_distrib",
+            "Nat.mul_assoc",
+            "Nat.right_distrib",
         ] {
             let entry = export_entry(nat_module, theorem);
             assert_eq!(entry.kind, ExportKind::Theorem);
@@ -10543,6 +10558,42 @@ mod tests {
     }
 
     #[test]
+    fn std_nat_mul_reduces_on_second_argument() {
+        let mut env = Env::with_builtins().unwrap();
+        env.add_def(
+            "Nat.add",
+            Vec::new(),
+            nat_add_type(),
+            nat_add_value(),
+            Reducibility::Reducible,
+        )
+        .unwrap();
+        env.add_def(
+            "Nat.mul",
+            Vec::new(),
+            nat_mul_type(),
+            nat_mul_value(),
+            Reducibility::Reducible,
+        )
+        .unwrap();
+
+        let mut ctx = Ctx::new();
+        ctx.push_assumption("n", nat());
+        ctx.push_assumption("m", nat());
+        assert!(env
+            .is_defeq(&ctx, &[], &nat_mul(Expr::bvar(1), nat_zero()), &nat_zero(),)
+            .unwrap());
+        assert!(env
+            .is_defeq(
+                &ctx,
+                &[],
+                &nat_mul(Expr::bvar(1), nat_succ(Expr::bvar(0))),
+                &nat_add(nat_mul(Expr::bvar(1), Expr::bvar(0)), Expr::bvar(1)),
+            )
+            .unwrap());
+    }
+
+    #[test]
     fn classifies_std_nat_add_rules_as_simp_safe_or_rw_only() {
         let package = TestPackage::new("std_nat_add_profile_classification");
         let certs = mvp_certificate_bytes_with_m5_profiles();
@@ -10567,6 +10618,19 @@ mod tests {
                 "{name} should be a simp-safe Nat rewrite"
             );
         }
+        for name in [
+            "Nat.mul_zero",
+            "Nat.mul_succ",
+            "Nat.zero_mul",
+            "Nat.pred_zero",
+            "Nat.pred_succ",
+        ] {
+            assert_eq!(
+                safety_by_name.get(name),
+                Some(&MachineStdRewriteSafety::SimpSafe),
+                "{name} should stay a simp-safe Nat rewrite"
+            );
+        }
         for name in ["Nat.add_comm", "Nat.add_assoc"] {
             assert_eq!(
                 safety_by_name.get(name),
@@ -10586,10 +10650,79 @@ mod tests {
                 "{name} should be present in the Nat simp profile"
             );
         }
+        for name in [
+            "Nat.mul_zero",
+            "Nat.mul_succ",
+            "Nat.zero_mul",
+            "Nat.pred_zero",
+            "Nat.pred_succ",
+        ] {
+            assert!(
+                nat_simp_names.contains(name),
+                "{name} should be present in the Nat simp profile"
+            );
+        }
         for name in ["Nat.add_comm", "Nat.add_assoc"] {
             assert!(
                 !nat_simp_names.contains(name),
                 "{name} must not enter the Nat simp profile"
+            );
+        }
+    }
+
+    #[test]
+    fn keeps_late_std_nat_mul_theorems_searchable_but_out_of_mvp_profiles() {
+        let package = TestPackage::new("std_nat_late_mul_theorem_profile_exclusion");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let theorem_index = generate_machine_std_mvp_final_theorem_index(
+            &loaded,
+            &rewrite_profiles,
+            &simp_profiles,
+        )
+        .unwrap();
+        let nat_rw_names = rewrite_profile(&rewrite_profiles, STD_NAT_RW_PROFILE_ID)
+            .descriptors
+            .iter()
+            .map(|descriptor| descriptor.source.name.as_dotted())
+            .collect::<BTreeSet<_>>();
+        let nat_simp_names = simp_profile(&simp_profiles, STD_NAT_SIMP_PROFILE_ID)
+            .rules
+            .iter()
+            .map(|rule| rule.name.as_dotted())
+            .collect::<BTreeSet<_>>();
+
+        for name in [
+            "Nat.succ_mul",
+            "Nat.mul_assoc",
+            "Nat.mul_comm",
+            "Nat.left_distrib",
+            "Nat.right_distrib",
+        ] {
+            let entry = theorem_index_entry(&theorem_index, name);
+            assert!(
+                entry.modes.contains(&MachineTheoremMode::Exact)
+                    && entry.modes.contains(&MachineTheoremMode::Apply),
+                "{name} should remain searchable through the theorem index"
+            );
+            assert!(
+                !entry.modes.contains(&MachineTheoremMode::Rw)
+                    && !entry.modes.contains(&MachineTheoremMode::Simp),
+                "{name} must not be finalized as rw/simp metadata"
+            );
+            assert!(
+                !nat_rw_names.contains(name),
+                "{name} must not be emitted in the Nat MVP rewrite profile"
+            );
+            assert!(
+                !nat_simp_names.contains(name),
+                "{name} must not be emitted in the Nat MVP simp profile"
             );
         }
     }
@@ -14409,6 +14542,15 @@ mod tests {
             nat_succ_add_theorem(),
             nat_add_assoc_theorem(),
             nat_add_comm_theorem(),
+            nat_mul_def(),
+            nat_mul_zero_theorem(),
+            nat_mul_succ_theorem(),
+            nat_zero_mul_theorem(),
+            nat_succ_mul_theorem(),
+            nat_mul_comm_theorem(),
+            nat_left_distrib_theorem(),
+            nat_mul_assoc_theorem(),
+            nat_right_distrib_theorem(),
         ]);
         declarations
     }
@@ -14744,6 +14886,609 @@ mod tests {
         }
     }
 
+    fn nat_mul_def() -> Decl {
+        Decl::Def {
+            name: "Nat.mul".to_owned(),
+            universe_params: Vec::new(),
+            ty: nat_mul_type(),
+            value: nat_mul_value(),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn nat_mul_type() -> Expr {
+        Expr::pi("n", nat(), Expr::pi("m", nat(), nat()))
+    }
+
+    fn nat_mul_value() -> Expr {
+        let motive = Expr::lam("_", nat(), nat());
+        let step = Expr::lam(
+            "_",
+            nat(),
+            Expr::lam("ih", nat(), nat_add(Expr::bvar(0), Expr::bvar(3))),
+        );
+        let rec = Expr::apps(
+            Expr::konst("Nat.rec", vec![type0()]),
+            vec![motive, nat_zero(), step, Expr::bvar(0)],
+        );
+        Expr::lam("n", nat(), Expr::lam("m", nat(), rec))
+    }
+
+    fn nat_mul_zero_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.mul_zero".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("n", nat(), nat_mul_zero_prop(Expr::bvar(0))),
+            proof: Expr::lam("n", nat(), eq_refl(type0(), nat(), nat_zero())),
+        }
+    }
+
+    fn nat_mul_succ_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.mul_succ".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "n",
+                nat(),
+                Expr::pi(
+                    "m",
+                    nat(),
+                    eq(
+                        type0(),
+                        nat(),
+                        nat_mul(Expr::bvar(1), nat_succ(Expr::bvar(0))),
+                        nat_add(nat_mul(Expr::bvar(1), Expr::bvar(0)), Expr::bvar(1)),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "n",
+                nat(),
+                Expr::lam(
+                    "m",
+                    nat(),
+                    eq_refl(
+                        type0(),
+                        nat(),
+                        nat_add(nat_mul(Expr::bvar(1), Expr::bvar(0)), Expr::bvar(1)),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_zero_mul_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.zero_mul".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("n", nat(), nat_zero_mul_prop(Expr::bvar(0))),
+            proof: Expr::lam(
+                "n",
+                nat(),
+                Expr::apps(
+                    Expr::konst("Nat.rec", vec![Level::zero()]),
+                    vec![
+                        Expr::lam("n", nat(), nat_zero_mul_prop(Expr::bvar(0))),
+                        eq_refl(type0(), nat(), nat_zero()),
+                        Expr::lam(
+                            "k",
+                            nat(),
+                            Expr::lam("ih", nat_zero_mul_prop(Expr::bvar(0)), {
+                                let lhs = nat_add(nat_mul(nat_zero(), Expr::bvar(1)), nat_zero());
+                                let mid = nat_mul(nat_zero(), Expr::bvar(1));
+                                eq_trans_nat(
+                                    lhs,
+                                    mid.clone(),
+                                    nat_zero(),
+                                    Expr::app(Expr::konst("Nat.add_zero", vec![]), mid),
+                                    Expr::bvar(0),
+                                )
+                            }),
+                        ),
+                        Expr::bvar(0),
+                    ],
+                ),
+            ),
+        }
+    }
+
+    fn nat_succ_mul_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.succ_mul".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "n",
+                nat(),
+                Expr::pi("m", nat(), nat_succ_mul_prop(Expr::bvar(1), Expr::bvar(0))),
+            ),
+            proof: Expr::lam(
+                "n",
+                nat(),
+                Expr::lam(
+                    "m",
+                    nat(),
+                    Expr::apps(
+                        Expr::konst("Nat.rec", vec![Level::zero()]),
+                        vec![
+                            Expr::lam("m", nat(), nat_succ_mul_prop(Expr::bvar(2), Expr::bvar(0))),
+                            eq_refl(type0(), nat(), nat_zero()),
+                            Expr::lam(
+                                "k",
+                                nat(),
+                                Expr::lam("ih", nat_succ_mul_prop(Expr::bvar(2), Expr::bvar(0)), {
+                                    let n = Expr::bvar(3);
+                                    let k = Expr::bvar(1);
+                                    let lhs = nat_add(
+                                        nat_mul(nat_succ(n.clone()), k.clone()),
+                                        nat_succ(n.clone()),
+                                    );
+                                    let mid1 = nat_succ(nat_add(
+                                        nat_mul(nat_succ(n.clone()), k.clone()),
+                                        n.clone(),
+                                    ));
+                                    let ih_rhs = nat_add(k.clone(), nat_mul(n.clone(), k.clone()));
+                                    let mid2 = nat_succ(nat_add(ih_rhs.clone(), n.clone()));
+                                    let mid3 = nat_succ(nat_add(
+                                        k.clone(),
+                                        nat_add(nat_mul(n.clone(), k.clone()), n.clone()),
+                                    ));
+                                    let rhs = nat_add(
+                                        nat_succ(k.clone()),
+                                        nat_add(nat_mul(n.clone(), k), n.clone()),
+                                    );
+                                    eq_trans_nat(
+                                        lhs,
+                                        mid1.clone(),
+                                        rhs.clone(),
+                                        Expr::apps(
+                                            Expr::konst("Nat.add_succ", vec![]),
+                                            vec![
+                                                nat_mul(nat_succ(n.clone()), Expr::bvar(1)),
+                                                n.clone(),
+                                            ],
+                                        ),
+                                        eq_trans_nat(
+                                            mid1,
+                                            mid2.clone(),
+                                            rhs.clone(),
+                                            eq_congr_succ(
+                                                nat_add(
+                                                    nat_mul(nat_succ(n.clone()), Expr::bvar(1)),
+                                                    n.clone(),
+                                                ),
+                                                nat_add(ih_rhs.clone(), n.clone()),
+                                                eq_congr_add_right(
+                                                    n.clone(),
+                                                    nat_mul(nat_succ(n.clone()), Expr::bvar(1)),
+                                                    ih_rhs,
+                                                    Expr::bvar(0),
+                                                ),
+                                            ),
+                                            eq_trans_nat(
+                                                mid2,
+                                                mid3.clone(),
+                                                rhs,
+                                                eq_congr_succ(
+                                                    nat_add(
+                                                        nat_add(
+                                                            Expr::bvar(1),
+                                                            nat_mul(n.clone(), Expr::bvar(1)),
+                                                        ),
+                                                        n.clone(),
+                                                    ),
+                                                    nat_add(
+                                                        Expr::bvar(1),
+                                                        nat_add(
+                                                            nat_mul(n.clone(), Expr::bvar(1)),
+                                                            n.clone(),
+                                                        ),
+                                                    ),
+                                                    Expr::apps(
+                                                        Expr::konst("Nat.add_assoc", vec![]),
+                                                        vec![
+                                                            Expr::bvar(1),
+                                                            nat_mul(n.clone(), Expr::bvar(1)),
+                                                            n.clone(),
+                                                        ],
+                                                    ),
+                                                ),
+                                                eq_symm_nat(
+                                                    nat_add(
+                                                        nat_succ(Expr::bvar(1)),
+                                                        nat_add(
+                                                            nat_mul(n.clone(), Expr::bvar(1)),
+                                                            n,
+                                                        ),
+                                                    ),
+                                                    mid3,
+                                                    Expr::apps(
+                                                        Expr::konst("Nat.succ_add", vec![]),
+                                                        vec![
+                                                            Expr::bvar(1),
+                                                            nat_add(
+                                                                nat_mul(
+                                                                    Expr::bvar(3),
+                                                                    Expr::bvar(1),
+                                                                ),
+                                                                Expr::bvar(3),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    )
+                                }),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_mul_comm_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.mul_comm".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "a",
+                nat(),
+                Expr::pi("b", nat(), nat_mul_comm_prop(Expr::bvar(1), Expr::bvar(0))),
+            ),
+            proof: Expr::lam(
+                "a",
+                nat(),
+                Expr::lam(
+                    "b",
+                    nat(),
+                    Expr::apps(
+                        Expr::konst("Nat.rec", vec![Level::zero()]),
+                        vec![
+                            Expr::lam("b", nat(), nat_mul_comm_prop(Expr::bvar(2), Expr::bvar(0))),
+                            eq_symm_nat(
+                                nat_mul(nat_zero(), Expr::bvar(1)),
+                                nat_zero(),
+                                Expr::app(Expr::konst("Nat.zero_mul", vec![]), Expr::bvar(1)),
+                            ),
+                            Expr::lam(
+                                "k",
+                                nat(),
+                                Expr::lam("ih", nat_mul_comm_prop(Expr::bvar(2), Expr::bvar(0)), {
+                                    let a = Expr::bvar(3);
+                                    let k = Expr::bvar(1);
+                                    let lhs = nat_add(nat_mul(a.clone(), k.clone()), a.clone());
+                                    let mid1 = nat_add(nat_mul(k.clone(), a.clone()), a.clone());
+                                    let mid2 = nat_add(a.clone(), nat_mul(k.clone(), a.clone()));
+                                    let rhs = nat_mul(nat_succ(k.clone()), a.clone());
+                                    eq_trans_nat(
+                                        lhs,
+                                        mid1.clone(),
+                                        rhs.clone(),
+                                        eq_congr_add_right(
+                                            a.clone(),
+                                            nat_mul(a.clone(), k.clone()),
+                                            nat_mul(k.clone(), a.clone()),
+                                            Expr::bvar(0),
+                                        ),
+                                        eq_trans_nat(
+                                            mid1,
+                                            mid2.clone(),
+                                            rhs.clone(),
+                                            Expr::apps(
+                                                Expr::konst("Nat.add_comm", vec![]),
+                                                vec![nat_mul(k.clone(), a.clone()), a.clone()],
+                                            ),
+                                            eq_symm_nat(
+                                                rhs,
+                                                mid2,
+                                                Expr::apps(
+                                                    Expr::konst("Nat.succ_mul", vec![]),
+                                                    vec![k, a],
+                                                ),
+                                            ),
+                                        ),
+                                    )
+                                }),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_left_distrib_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.left_distrib".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "a",
+                nat(),
+                Expr::pi(
+                    "b",
+                    nat(),
+                    Expr::pi(
+                        "c",
+                        nat(),
+                        nat_left_distrib_prop(Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "a",
+                nat(),
+                Expr::lam(
+                    "b",
+                    nat(),
+                    Expr::lam(
+                        "c",
+                        nat(),
+                        Expr::apps(
+                            Expr::konst("Nat.rec", vec![Level::zero()]),
+                            vec![
+                                Expr::lam(
+                                    "c",
+                                    nat(),
+                                    nat_left_distrib_prop(
+                                        Expr::bvar(3),
+                                        Expr::bvar(2),
+                                        Expr::bvar(0),
+                                    ),
+                                ),
+                                eq_refl(type0(), nat(), nat_mul(Expr::bvar(2), Expr::bvar(1))),
+                                Expr::lam(
+                                    "k",
+                                    nat(),
+                                    Expr::lam(
+                                        "ih",
+                                        nat_left_distrib_prop(
+                                            Expr::bvar(3),
+                                            Expr::bvar(2),
+                                            Expr::bvar(0),
+                                        ),
+                                        {
+                                            let a = Expr::bvar(4);
+                                            let b = Expr::bvar(3);
+                                            let k = Expr::bvar(1);
+                                            let lhs = nat_add(
+                                                nat_mul(a.clone(), nat_add(b.clone(), k.clone())),
+                                                a.clone(),
+                                            );
+                                            let mid = nat_add(
+                                                nat_add(
+                                                    nat_mul(a.clone(), b.clone()),
+                                                    nat_mul(a.clone(), k.clone()),
+                                                ),
+                                                a.clone(),
+                                            );
+                                            let rhs = nat_add(
+                                                nat_mul(a.clone(), b.clone()),
+                                                nat_add(nat_mul(a.clone(), k), a.clone()),
+                                            );
+                                            eq_trans_nat(
+                                                lhs,
+                                                mid.clone(),
+                                                rhs.clone(),
+                                                eq_congr_add_right(
+                                                    a.clone(),
+                                                    nat_mul(
+                                                        a.clone(),
+                                                        nat_add(b.clone(), Expr::bvar(1)),
+                                                    ),
+                                                    nat_add(
+                                                        nat_mul(a.clone(), b.clone()),
+                                                        nat_mul(a.clone(), Expr::bvar(1)),
+                                                    ),
+                                                    Expr::bvar(0),
+                                                ),
+                                                Expr::apps(
+                                                    Expr::konst("Nat.add_assoc", vec![]),
+                                                    vec![
+                                                        nat_mul(a.clone(), b),
+                                                        nat_mul(a.clone(), Expr::bvar(1)),
+                                                        a,
+                                                    ],
+                                                ),
+                                            )
+                                        },
+                                    ),
+                                ),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_mul_assoc_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.mul_assoc".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "a",
+                nat(),
+                Expr::pi(
+                    "b",
+                    nat(),
+                    Expr::pi(
+                        "c",
+                        nat(),
+                        nat_mul_assoc_prop(Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "a",
+                nat(),
+                Expr::lam(
+                    "b",
+                    nat(),
+                    Expr::lam(
+                        "c",
+                        nat(),
+                        Expr::apps(
+                            Expr::konst("Nat.rec", vec![Level::zero()]),
+                            vec![
+                                Expr::lam(
+                                    "c",
+                                    nat(),
+                                    nat_mul_assoc_prop(Expr::bvar(3), Expr::bvar(2), Expr::bvar(0)),
+                                ),
+                                eq_refl(type0(), nat(), nat_zero()),
+                                Expr::lam(
+                                    "k",
+                                    nat(),
+                                    Expr::lam(
+                                        "ih",
+                                        nat_mul_assoc_prop(
+                                            Expr::bvar(3),
+                                            Expr::bvar(2),
+                                            Expr::bvar(0),
+                                        ),
+                                        {
+                                            let a = Expr::bvar(4);
+                                            let b = Expr::bvar(3);
+                                            let k = Expr::bvar(1);
+                                            let lhs = nat_add(
+                                                nat_mul(nat_mul(a.clone(), b.clone()), k.clone()),
+                                                nat_mul(a.clone(), b.clone()),
+                                            );
+                                            let mid = nat_add(
+                                                nat_mul(a.clone(), nat_mul(b.clone(), k.clone())),
+                                                nat_mul(a.clone(), b.clone()),
+                                            );
+                                            let rhs = nat_mul(
+                                                a.clone(),
+                                                nat_add(nat_mul(b.clone(), k), b.clone()),
+                                            );
+                                            eq_trans_nat(
+                                                lhs,
+                                                mid.clone(),
+                                                rhs.clone(),
+                                                eq_congr_add_right(
+                                                    nat_mul(a.clone(), b.clone()),
+                                                    nat_mul(
+                                                        nat_mul(a.clone(), b.clone()),
+                                                        Expr::bvar(1),
+                                                    ),
+                                                    nat_mul(
+                                                        a.clone(),
+                                                        nat_mul(b.clone(), Expr::bvar(1)),
+                                                    ),
+                                                    Expr::bvar(0),
+                                                ),
+                                                eq_symm_nat(
+                                                    rhs,
+                                                    mid,
+                                                    Expr::apps(
+                                                        Expr::konst("Nat.left_distrib", vec![]),
+                                                        vec![
+                                                            a,
+                                                            nat_mul(b.clone(), Expr::bvar(1)),
+                                                            b,
+                                                        ],
+                                                    ),
+                                                ),
+                                            )
+                                        },
+                                    ),
+                                ),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_right_distrib_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.right_distrib".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "a",
+                nat(),
+                Expr::pi(
+                    "b",
+                    nat(),
+                    Expr::pi(
+                        "c",
+                        nat(),
+                        nat_right_distrib_prop(Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "a",
+                nat(),
+                Expr::lam(
+                    "b",
+                    nat(),
+                    Expr::lam("c", nat(), {
+                        let a = Expr::bvar(2);
+                        let b = Expr::bvar(1);
+                        let c = Expr::bvar(0);
+                        let lhs = nat_mul(nat_add(a.clone(), b.clone()), c.clone());
+                        let mid1 = nat_mul(c.clone(), nat_add(a.clone(), b.clone()));
+                        let mid2 =
+                            nat_add(nat_mul(c.clone(), a.clone()), nat_mul(c.clone(), b.clone()));
+                        let mid3 =
+                            nat_add(nat_mul(a.clone(), c.clone()), nat_mul(c.clone(), b.clone()));
+                        let rhs =
+                            nat_add(nat_mul(a.clone(), c.clone()), nat_mul(b.clone(), c.clone()));
+                        eq_trans_nat(
+                            lhs,
+                            mid1.clone(),
+                            rhs.clone(),
+                            Expr::apps(
+                                Expr::konst("Nat.mul_comm", vec![]),
+                                vec![nat_add(a.clone(), b.clone()), c.clone()],
+                            ),
+                            eq_trans_nat(
+                                mid1,
+                                mid2.clone(),
+                                rhs.clone(),
+                                Expr::apps(
+                                    Expr::konst("Nat.left_distrib", vec![]),
+                                    vec![c.clone(), a.clone(), b.clone()],
+                                ),
+                                eq_trans_nat(
+                                    mid2,
+                                    mid3.clone(),
+                                    rhs,
+                                    eq_congr_add_right(
+                                        nat_mul(c.clone(), b.clone()),
+                                        nat_mul(c.clone(), a.clone()),
+                                        nat_mul(a.clone(), c.clone()),
+                                        Expr::apps(
+                                            Expr::konst("Nat.mul_comm", vec![]),
+                                            vec![c.clone(), a],
+                                        ),
+                                    ),
+                                    eq_congr_add_left(
+                                        nat_mul(Expr::bvar(2), Expr::bvar(0)),
+                                        nat_mul(Expr::bvar(0), Expr::bvar(1)),
+                                        nat_mul(Expr::bvar(1), Expr::bvar(0)),
+                                        Expr::apps(
+                                            Expr::konst("Nat.mul_comm", vec![]),
+                                            vec![Expr::bvar(0), Expr::bvar(1)],
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        )
+                    }),
+                ),
+            ),
+        }
+    }
+
     fn nat_add_zero_prop(n: Expr) -> Expr {
         eq(type0(), nat(), nat_add(n.clone(), nat_zero()), n)
     }
@@ -14774,8 +15519,60 @@ mod tests {
         eq(type0(), nat(), nat_add(a.clone(), b.clone()), nat_add(b, a))
     }
 
+    fn nat_mul_zero_prop(n: Expr) -> Expr {
+        eq(type0(), nat(), nat_mul(n, nat_zero()), nat_zero())
+    }
+
+    fn nat_zero_mul_prop(n: Expr) -> Expr {
+        eq(type0(), nat(), nat_mul(nat_zero(), n), nat_zero())
+    }
+
+    fn nat_succ_mul_prop(n: Expr, m: Expr) -> Expr {
+        eq(
+            type0(),
+            nat(),
+            nat_mul(nat_succ(n.clone()), m.clone()),
+            nat_add(m.clone(), nat_mul(n, m)),
+        )
+    }
+
+    fn nat_mul_comm_prop(a: Expr, b: Expr) -> Expr {
+        eq(type0(), nat(), nat_mul(a.clone(), b.clone()), nat_mul(b, a))
+    }
+
+    fn nat_left_distrib_prop(a: Expr, b: Expr, c: Expr) -> Expr {
+        eq(
+            type0(),
+            nat(),
+            nat_mul(a.clone(), nat_add(b.clone(), c.clone())),
+            nat_add(nat_mul(a.clone(), b), nat_mul(a, c)),
+        )
+    }
+
+    fn nat_mul_assoc_prop(a: Expr, b: Expr, c: Expr) -> Expr {
+        eq(
+            type0(),
+            nat(),
+            nat_mul(nat_mul(a.clone(), b.clone()), c.clone()),
+            nat_mul(a, nat_mul(b, c)),
+        )
+    }
+
+    fn nat_right_distrib_prop(a: Expr, b: Expr, c: Expr) -> Expr {
+        eq(
+            type0(),
+            nat(),
+            nat_mul(nat_add(a.clone(), b.clone()), c.clone()),
+            nat_add(nat_mul(a, c.clone()), nat_mul(b, c)),
+        )
+    }
+
     fn nat_add(lhs: Expr, rhs: Expr) -> Expr {
         Expr::apps(Expr::konst("Nat.add", vec![]), vec![lhs, rhs])
+    }
+
+    fn nat_mul(lhs: Expr, rhs: Expr) -> Expr {
+        Expr::apps(Expr::konst("Nat.mul", vec![]), vec![lhs, rhs])
     }
 
     fn eq_congr_succ(lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
@@ -14785,6 +15582,34 @@ mod tests {
                 nat(),
                 nat(),
                 Expr::lam("x", nat(), nat_succ(Expr::bvar(0))),
+                lhs,
+                rhs,
+                proof,
+            ],
+        )
+    }
+
+    fn eq_congr_add_right(addend: Expr, lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.congrArg", vec![type0(), type0()]),
+            vec![
+                nat(),
+                nat(),
+                Expr::lam("x", nat(), nat_add(Expr::bvar(0), shift_expr(addend, 1))),
+                lhs,
+                rhs,
+                proof,
+            ],
+        )
+    }
+
+    fn eq_congr_add_left(addend: Expr, lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.congrArg", vec![type0(), type0()]),
+            vec![
+                nat(),
+                nat(),
+                Expr::lam("x", nat(), nat_add(shift_expr(addend, 1), Expr::bvar(0))),
                 lhs,
                 rhs,
                 proof,
@@ -14806,17 +15631,14 @@ mod tests {
         )
     }
 
+    fn shift_expr(expr: Expr, amount: i32) -> Expr {
+        npa_kernel::subst::shift(&expr, amount, 0).unwrap()
+    }
+
     fn nat_m5_profile_module() -> CoreModule {
-        let mut declarations = nat_basic_declarations();
-        declarations.push(profile_helper_def("Nat.m5_lhs"));
-        declarations.extend(
-            ["Nat.mul_zero", "Nat.mul_succ", "Nat.zero_mul"]
-                .into_iter()
-                .map(|name| profile_rule_theorem(name, "Nat.m5_lhs")),
-        );
         CoreModule {
             name: Name::from_dotted("Std.Nat"),
-            declarations,
+            declarations: nat_basic_declarations(),
         }
     }
 

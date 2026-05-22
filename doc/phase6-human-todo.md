@@ -357,17 +357,17 @@ P6H-03
 
 実装タスク:
 
-- [ ] `Nat.mul` を第2引数再帰として定義する。
-- [ ] `Nat.mul_zero` と `Nat.mul_succ` を refl で証明する。
-- [ ] `Nat.zero_mul` と `Nat.succ_mul` を induction / simp-lite で証明する。
-- [ ] `Nat.mul_assoc`、`Nat.mul_comm`、`Nat.left_distrib`、`Nat.right_distrib` を MVP 後半 theorem として証明し、simp-safe / AI `RwOnly` 固定集合には入れない。
-- [ ] `Nat.pred_zero` / `Nat.pred_succ` が P6H-03 から継続して simp-safe set に含まれることを確認する。
+- [x] `Nat.mul` を第2引数再帰として定義する。
+- [x] `Nat.mul_zero` と `Nat.mul_succ` を refl で証明する。
+- [x] `Nat.zero_mul` と `Nat.succ_mul` を induction / simp-lite で証明する。
+- [x] `Nat.mul_assoc`、`Nat.mul_comm`、`Nat.left_distrib`、`Nat.right_distrib` を MVP 後半 theorem として証明し、simp-safe / AI `RwOnly` 固定集合には入れない。
+- [x] `Nat.pred_zero` / `Nat.pred_succ` が P6H-03 から継続して simp-safe set に含まれることを確認する。
 
 受け入れ条件:
 
-- [ ] `Nat.mul n Nat.zero` と `Nat.mul n (Nat.succ m)` の definitional equality tests が通る。
-- [ ] `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` が simp-safe rule として動く。
-- [ ] `Nat.mul_assoc` / `Nat.mul_comm` / distrib theorem が theorem search では見つかるが simp / AI MVP rewrite profile に混入しない。
+- [x] `Nat.mul n Nat.zero` と `Nat.mul n (Nat.succ m)` の definitional equality tests が通る。
+- [x] `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` が simp-safe rule として動く。
+- [x] `Nat.mul_assoc` / `Nat.mul_comm` / distrib theorem が theorem search では見つかるが simp / AI MVP rewrite profile に混入しない。
 
 検証:
 
