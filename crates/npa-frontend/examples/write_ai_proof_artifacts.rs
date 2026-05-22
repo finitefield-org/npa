@@ -51,6 +51,8 @@ struct GeneratedModule {
     axiom_report_hash: String,
     certificate_hash: String,
     axioms: Vec<String>,
+    verified_module: npa_cert::VerifiedModule,
+    source_interface: npa_frontend::HumanImportedSourceInterface,
 }
 
 const BASIC_MODULE: ModuleArtifact = ModuleArtifact {
@@ -141,6 +143,19 @@ const RING_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: RING_INDUCTIVES,
     definitions: RING_DEFINITIONS,
     theorems: RING_THEOREMS,
+    expected_axioms: &[],
+};
+
+const SQUARE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.Square",
+    source_path: "Proofs/Ai/Algebra/Square/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/Square/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/Square/meta.json",
+    replay_path: "Proofs/Ai/Algebra/Square/replay.json",
+    imports: &["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring"],
+    inductives: &[],
+    definitions: SQUARE_DEFINITIONS,
+    theorems: SQUARE_THEOREMS,
     expected_axioms: &[],
 };
 
@@ -811,6 +826,99 @@ const RING_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const SQUARE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "two",
+        universe_params: &[],
+        ty: "RingElem",
+        value: "add one one",
+    },
+    DefinitionArtifact {
+        name: "sq",
+        universe_params: &[],
+        ty: "forall (a : RingElem), RingElem",
+        value: "fun a => mul a a",
+    },
+];
+
+const SQUARE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "square_def",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (sq a) (mul a a)",
+        proof: "fun a => @Eq.refl.{1} RingElem (sq a)",
+    },
+    TheoremArtifact {
+        name: "mul_self_eq_square",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (mul a a) (sq a)",
+        proof: "fun a => @Eq.refl.{1} RingElem (mul a a)",
+    },
+    TheoremArtifact {
+        name: "sq_zero",
+        universe_params: &[],
+        statement: "@Eq.{1} RingElem (sq zero) zero",
+        proof: "@Eq.refl.{1} RingElem (sq zero)",
+    },
+    TheoremArtifact {
+        name: "sq_one",
+        universe_params: &[],
+        statement: "@Eq.{1} RingElem (sq one) one",
+        proof: "@Eq.refl.{1} RingElem (sq one)",
+    },
+    TheoremArtifact {
+        name: "sq_neg",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (sq (neg a)) (sq a)",
+        proof: "fun a => @Eq.refl.{1} RingElem (sq (neg a))",
+    },
+    TheoremArtifact {
+        name: "two_mul",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (mul two a) (add a a)",
+        proof: "fun a => @Eq.refl.{1} RingElem (mul two a)",
+    },
+    TheoremArtifact {
+        name: "sq_add",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (sq (add a b)) (add (add (sq a) (mul (mul two a) b)) (sq b))",
+        proof: "fun a => fun b => @Eq.refl.{1} RingElem (sq (add a b))",
+    },
+    TheoremArtifact {
+        name: "sq_sub",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (sq (sub a b)) (add (sub (sq a) (mul (mul two a) b)) (sq b))",
+        proof: "fun a => fun b => @Eq.refl.{1} RingElem (sq (sub a b))",
+    },
+    TheoremArtifact {
+        name: "sum_two_squares_comm",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (add (sq a) (sq b)) (add (sq b) (sq a))",
+        proof: "fun a => fun b => @Eq.refl.{1} RingElem (add (sq a) (sq b))",
+    },
+    TheoremArtifact {
+        name: "sq_eq_sq_of_eq_or_neg_eq",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (h : forall (P : Prop), forall (eq_case : forall (hab : @Eq.{1} RingElem a b), P), forall (neg_case : forall (hanb : @Eq.{1} RingElem a (neg b)), P), P), @Eq.{1} RingElem (sq a) (sq b)",
+        proof: "fun a => fun b => fun h => @Eq.refl.{1} RingElem (sq a)",
+    },
+    TheoremArtifact {
+        name: "square_nonneg",
+        universe_params: &[],
+        statement:
+            "forall (Nonneg : forall (x : RingElem), Prop), forall (h_zero : Nonneg zero), forall (a : RingElem), Nonneg (sq a)",
+        proof: "fun Nonneg => fun h_zero => fun a => h_zero",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -876,10 +984,18 @@ fn run() -> Result<(), String> {
         &ring_imports,
         &ring_source_interfaces,
     )?;
+    let square_imports = vec![eq_import.clone(), ring.verified_module.clone()];
+    let square_source_interfaces = vec![eq_source_interface.clone(), ring.source_interface.clone()];
+    let square = build_and_write_module(
+        &proof_root,
+        &SQUARE_MODULE,
+        &square_imports,
+        &square_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq, nat, prop, reduction, eq_reasoning, ring]).as_bytes(),
+        manifest_toml(&[basic, eq, nat, prop, reduction, eq_reasoning, ring, square]).as_bytes(),
     )?;
 
     Ok(())
@@ -949,6 +1065,8 @@ fn build_and_write_module(
         axiom_report_hash,
         certificate_hash,
         axioms,
+        verified_module: verified.clone(),
+        source_interface: human_imported_source_interface(&verified, &output.source_interface),
     };
 
     write(
@@ -961,6 +1079,19 @@ fn build_and_write_module(
     )?;
 
     Ok(generated)
+}
+
+fn human_imported_source_interface(
+    verified: &npa_cert::VerifiedModule,
+    source_interface: &npa_frontend::HumanSourceInterface,
+) -> npa_frontend::HumanImportedSourceInterface {
+    let import = npa_frontend::VerifiedImport::from(verified);
+    npa_frontend::HumanImportedSourceInterface {
+        module: import.module,
+        export_hash: import.export_hash,
+        certificate_hash: import.certificate_hash,
+        source_interface: source_interface.clone(),
+    }
 }
 
 fn verified_human_import(
@@ -990,13 +1121,7 @@ fn verified_human_import(
         &npa_cert::AxiomPolicy::normal(),
     )
     .map_err(|err| format!("import {module} did not verify: {err:?}"))?;
-    let import = npa_frontend::VerifiedImport::from(&verified);
-    let source_interface = npa_frontend::HumanImportedSourceInterface {
-        module: import.module,
-        export_hash: import.export_hash,
-        certificate_hash: import.certificate_hash,
-        source_interface: output.source_interface,
-    };
+    let source_interface = human_imported_source_interface(&verified, &output.source_interface);
 
     Ok((verified, source_interface))
 }

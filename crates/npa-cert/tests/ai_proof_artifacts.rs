@@ -132,6 +132,22 @@ const RING_THEOREMS: &[&str] = &[
     "ring_normalize_add_mul3",
 ];
 
+const SQUARE_DEFINITIONS: &[&str] = &["two", "sq"];
+
+const SQUARE_THEOREMS: &[&str] = &[
+    "square_def",
+    "mul_self_eq_square",
+    "sq_zero",
+    "sq_one",
+    "sq_neg",
+    "two_mul",
+    "sq_add",
+    "sq_sub",
+    "sum_two_squares_comm",
+    "sq_eq_sq_of_eq_or_neg_eq",
+    "square_nonneg",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -217,6 +233,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         theorems: RING_THEOREMS,
         axioms: &[],
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.Square",
+        source: "Proofs/Ai/Algebra/Square/source.npa",
+        certificate: "Proofs/Ai/Algebra/Square/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/Square/meta.json",
+        replay: "Proofs/Ai/Algebra/Square/replay.json",
+        imports: &["Proofs.Ai.Algebra.Ring", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: SQUARE_DEFINITIONS,
+        theorems: SQUARE_THEOREMS,
+        axioms: &[],
+    },
 ];
 
 #[test]
@@ -229,6 +257,7 @@ fn ai_certificates_match_manifest_and_verify() {
     );
     let eq_import = verified_eq_import_module();
     let nat_import = verified_nat_import_module();
+    let ring_import = verified_ring_import_module(&root, &eq_import);
 
     for expected in EXPECTED_MODULES {
         let block = manifest_block(&manifest, expected.module);
@@ -272,7 +301,13 @@ fn ai_certificates_match_manifest_and_verify() {
         assert_imports(&decoded, expected.imports);
 
         let mut session = VerifierSession::new();
-        register_expected_imports(&mut session, expected.imports, &eq_import, &nat_import);
+        register_expected_imports(
+            &mut session,
+            expected.imports,
+            &eq_import,
+            &nat_import,
+            &ring_import,
+        );
         let verified = verify_module_cert(&certificate_bytes, &mut session, &AxiomPolicy::normal())
             .expect("AI corpus certificate verifies");
         assert_eq!(verified.module(), &Name::from_dotted(expected.module));
@@ -337,11 +372,13 @@ fn register_expected_imports(
     imports: &[&str],
     eq_import: &VerifiedModule,
     nat_import: &VerifiedModule,
+    ring_import: &VerifiedModule,
 ) {
     for import in imports {
         match *import {
             "Std.Logic.Eq" => session.register_verified_module(eq_import.clone()),
             "Std.Nat.Basic" => session.register_verified_module(nat_import.clone()),
+            "Proofs.Ai.Algebra.Ring" => session.register_verified_module(ring_import.clone()),
             other => panic!("unexpected AI proof corpus import {other}"),
         }
     }
@@ -369,6 +406,14 @@ fn verified_nat_import_module() -> VerifiedModule {
             data: Box::new(npa_kernel::nat_inductive()),
         }],
     })
+}
+
+fn verified_ring_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/Ring/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("Ring corpus certificate should verify for downstream imports")
 }
 
 fn verified_core_module(module: CoreModule) -> VerifiedModule {

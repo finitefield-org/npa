@@ -126,3 +126,21 @@ inductives = ["RingElem"]
 definitions = ["zero", "one", "add", "neg", "sub", "mul"]
 theorems = ["sub_eq_add_neg", "add_assoc", "add_comm", "add_zero", "zero_add", "neg_add_cancel", "add_neg_cancel", "sub_self", "mul_assoc", "mul_comm", "mul_one", "one_mul", "mul_zero", "zero_mul", "left_distrib", "right_distrib", "add_left_cancel", "mul_add", "add_mul", "ring_normalize_add_mul3"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.Square"
+source = "Proofs/Ai/Algebra/Square/source.npa"
+certificate = "Proofs/Ai/Algebra/Square/certificate.npcert"
+meta = "Proofs/Ai/Algebra/Square/meta.json"
+replay = "Proofs/Ai/Algebra/Square/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:2365e73d3548fa3ce90bcda350de831b7cbb8f15c07e59e347494f7d9be728c0"
+certificate_file_sha256 = "sha256:dfc65f44639b767df19fd292e02e4cba6ea3f4c4000720a90f3ce7bd9ae220d8"
+export_hash = "sha256:787b772cee6d3eeb9d8a533e2445dd26d55accc8ee8fc370ff1bac46ff420c18"
+axiom_report_hash = "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9"
+certificate_hash = "sha256:4cafaf732b684b87a32e85f35b6fb1c7fe057fae956bd7928d61ba60c560013e"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring"]
+definitions = ["two", "sq"]
+theorems = ["square_def", "mul_self_eq_square", "sq_zero", "sq_one", "sq_neg", "two_mul", "sq_add", "sq_sub", "sum_two_squares_comm", "sq_eq_sq_of_eq_or_neg_eq", "square_nonneg"]
+axioms = []

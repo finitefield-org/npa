@@ -18,6 +18,8 @@ Current bundles:
   expected builtin `Eq.rec` axiom interface.
 - `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
   `Std.Logic.Eq`.
+- `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
+  `Std.Logic.Eq` and `Proofs.Ai.Algebra.Ring`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
@@ -274,7 +276,41 @@ Theorem targets:
 | `add_mul` | multiplication distributes over addition on the left argument |
 | `ring_normalize_add_mul3` | small normalization target for sums/products of three terms |
 
-### P10+: Pythagorean Theorem Roadmap
+### P10: Algebra Square Corpus
+
+Module: `Proofs.Ai.Algebra.Square`
+
+Build on `Proofs.Ai.Algebra.Ring` with a small square API and the first square-expansion targets
+needed by the coordinate / inner-product route to Pythagoras. As with P9, this is a concrete
+singleton-carrier corpus layer rather than an abstract algebraic axiom package. `two` and `sq` are
+API declarations; the square identities are proof targets checked through the certificate verifier.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `two` | scalar `2` API, defined as `add one one` |
+| `sq` | square operation API, defined as `mul a a` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `square_def` | `sq a = a * a` |
+| `mul_self_eq_square` | `a * a = sq a` |
+| `sq_zero` | `sq 0 = 0` |
+| `sq_one` | `sq 1 = 1` |
+| `sq_neg` | `sq (-a) = sq a` |
+| `two_mul` | `2 * a = a + a` |
+| `sq_add` | `sq (a + b) = sq a + 2 * a * b + sq b` |
+| `sq_sub` | `sq (a - b) = sq a - 2 * a * b + sq b` |
+| `sum_two_squares_comm` | `sq a + sq b = sq b + sq a` |
+| `sq_eq_sq_of_eq_or_neg_eq` | square equality from an equality-or-negated-equality witness shape |
+| `square_nonneg` | predicate-generic bridge `Nonneg 0 -> Nonneg (sq a)` before P11 introduces `le` |
+
+### P11+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -300,10 +336,11 @@ Completed prerequisite:
   transport, and calculation lemmas.
 - P9 `Proofs.Ai.Algebra.Ring` supplies the first algebra API declarations and certificate-checked
   ring-shaped law targets over a concrete singleton carrier.
+- P10 `Proofs.Ai.Algebra.Square` supplies `two`, `sq`, and square-expansion theorem targets over
+  the same concrete scalar carrier.
 
 | Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P10 | `Proofs.Ai.Algebra.Square` | `two`, `sq` | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sq_neg`, `two_mul` | `sum_two_squares_comm`, `sq_eq_sq_of_eq_or_neg_eq`, `square_nonneg` |
 | P11 | `Proofs.Ai.OrderedField` | `le`, `lt`, `sqrt` | `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_square_of_nonneg` for the later unsquared metric form | `sqrt_mul_self`, `dist_nonneg`, `eq_of_square_eq_square_nonneg` |
 | P12 | `Proofs.Ai.Vector.Basic` | `Vec`, `vec_zero`, `vec_add`, `vec_neg`, `vec_sub` | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
 | P13 | `Proofs.Ai.Vector.Dot` | `dot`, `normSq`, `distSq` | `norm_sq_def`, `dist_sq_def`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
@@ -388,7 +425,7 @@ for the laws.
 
 #### `Proofs.Ai.Algebra.Square`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
@@ -408,7 +445,8 @@ Theorem targets:
 | `sq_add` | `sq (a + b) = sq a + 2 * a * b + sq b` |
 | `sq_sub` | `sq (a - b) = sq a - 2 * a * b + sq b` |
 | `sum_two_squares_comm` | `sq a + sq b = sq b + sq a` |
-| `square_nonneg` | `0 <= sq a`, used by the metric form |
+| `sq_eq_sq_of_eq_or_neg_eq` | square equality from an equality-or-negated-equality witness shape |
+| `square_nonneg` | predicate-generic bridge to P11's ordered relation work |
 
 #### `Proofs.Ai.OrderedField`
 

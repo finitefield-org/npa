@@ -1,0 +1,77 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.Square",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "two",
+      "source_kind": "explicit_def_value",
+      "term": "add one one"
+    },
+    {
+      "declaration": "sq",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => mul a a"
+    },
+    {
+      "declaration": "square_def",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (sq a)"
+    },
+    {
+      "declaration": "mul_self_eq_square",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (mul a a)"
+    },
+    {
+      "declaration": "sq_zero",
+      "source_kind": "explicit_term",
+      "term": "@Eq.refl.{1} RingElem (sq zero)"
+    },
+    {
+      "declaration": "sq_one",
+      "source_kind": "explicit_term",
+      "term": "@Eq.refl.{1} RingElem (sq one)"
+    },
+    {
+      "declaration": "sq_neg",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (sq (neg a))"
+    },
+    {
+      "declaration": "two_mul",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (mul two a)"
+    },
+    {
+      "declaration": "sq_add",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => @Eq.refl.{1} RingElem (sq (add a b))"
+    },
+    {
+      "declaration": "sq_sub",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => @Eq.refl.{1} RingElem (sq (sub a b))"
+    },
+    {
+      "declaration": "sum_two_squares_comm",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => @Eq.refl.{1} RingElem (add (sq a) (sq b))"
+    },
+    {
+      "declaration": "sq_eq_sq_of_eq_or_neg_eq",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun h => @Eq.refl.{1} RingElem (sq a)"
+    },
+    {
+      "declaration": "square_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun Nonneg => fun h_zero => fun a => h_zero"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/Square/certificate.npcert"
+  }
+}

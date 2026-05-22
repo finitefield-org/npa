@@ -1,0 +1,55 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.Ring
+
+def two :
+  RingElem :=
+  add one one
+
+def sq :
+  forall (a : RingElem), RingElem :=
+  fun a => mul a a
+
+theorem square_def :
+  forall (a : RingElem), @Eq.{1} RingElem (sq a) (mul a a) :=
+  fun a => @Eq.refl.{1} RingElem (sq a)
+
+theorem mul_self_eq_square :
+  forall (a : RingElem), @Eq.{1} RingElem (mul a a) (sq a) :=
+  fun a => @Eq.refl.{1} RingElem (mul a a)
+
+theorem sq_zero :
+  @Eq.{1} RingElem (sq zero) zero :=
+  @Eq.refl.{1} RingElem (sq zero)
+
+theorem sq_one :
+  @Eq.{1} RingElem (sq one) one :=
+  @Eq.refl.{1} RingElem (sq one)
+
+theorem sq_neg :
+  forall (a : RingElem), @Eq.{1} RingElem (sq (neg a)) (sq a) :=
+  fun a => @Eq.refl.{1} RingElem (sq (neg a))
+
+theorem two_mul :
+  forall (a : RingElem), @Eq.{1} RingElem (mul two a) (add a a) :=
+  fun a => @Eq.refl.{1} RingElem (mul two a)
+
+theorem sq_add :
+  forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (sq (add a b)) (add (add (sq a) (mul (mul two a) b)) (sq b)) :=
+  fun a => fun b => @Eq.refl.{1} RingElem (sq (add a b))
+
+theorem sq_sub :
+  forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (sq (sub a b)) (add (sub (sq a) (mul (mul two a) b)) (sq b)) :=
+  fun a => fun b => @Eq.refl.{1} RingElem (sq (sub a b))
+
+theorem sum_two_squares_comm :
+  forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (add (sq a) (sq b)) (add (sq b) (sq a)) :=
+  fun a => fun b => @Eq.refl.{1} RingElem (add (sq a) (sq b))
+
+theorem sq_eq_sq_of_eq_or_neg_eq :
+  forall (a : RingElem), forall (b : RingElem), forall (h : forall (P : Prop), forall (eq_case : forall (hab : @Eq.{1} RingElem a b), P), forall (neg_case : forall (hanb : @Eq.{1} RingElem a (neg b)), P), P), @Eq.{1} RingElem (sq a) (sq b) :=
+  fun a => fun b => fun h => @Eq.refl.{1} RingElem (sq a)
+
+theorem square_nonneg :
+  forall (Nonneg : forall (x : RingElem), Prop), forall (h_zero : Nonneg zero), forall (a : RingElem), Nonneg (sq a) :=
+  fun Nonneg => fun h_zero => fun a => h_zero
+
