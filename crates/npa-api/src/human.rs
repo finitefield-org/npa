@@ -5,39 +5,42 @@ use crate::renderer::{core_expr_metadata, render_kernel_core_expr};
 use crate::types::HumanProofStateStoreMutationError;
 use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
-    HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
-    HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource, HumanDisplayContextOk,
-    HumanDisplayContextOptions, HumanDisplayContextRequest, HumanDisplayDiffOk,
-    HumanDisplayDiffRequest, HumanDisplayError, HumanDisplayExprRequest, HumanDisplayGoalRequest,
-    HumanDisplayMode, HumanDisplayTextOk, HumanDocumentSnapshot, HumanDocumentUpdateError,
-    HumanDocumentUpdateOk, HumanDocumentUpdateRequest, HumanExactTacticOk, HumanExactTacticRequest,
-    HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping,
-    HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
-    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanProofSession,
-    HumanProofSessionStatus, HumanProofSessionStore, HumanProofStateEntry,
-    HumanProofStateStartError, HumanProofStateStartOk, HumanProofStateStartRequest,
-    HumanProofStateStore, HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
-    HumanSessionCreateError, HumanSessionCreateOk, HumanSessionCreateRequest,
-    HumanSimpLiteTacticError, HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest,
-    HumanSourcePosition, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
-    HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest, HumanStateCurrentRequest,
-    HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest, HumanStateLookupOk,
-    HumanStateRequestError, HumanStateRequestHeader, HumanStructuredProofStateError,
-    HumanTacticCheckRequest, HumanTacticCheckResponse, HumanTacticRunErrorKind,
-    HumanTacticRunErrorReport, HumanTacticRunRequest, HumanTacticRunResponse, HumanTacticRunStatus,
-    HumanTacticRunSuggestion, HumanTacticRunSuggestionKind, HumanTacticScriptError,
-    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
-    HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticSuggestRequest,
-    HumanTacticSuggestResponse, HumanTacticSuggestion, HumanTacticSuggestionSource,
-    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
-    HumanTheoremAxiomInfo, HumanTheoremDependency, HumanTheoremDependencyKind,
-    HumanTheoremGoalSearchRequest, HumanTheoremIndex, HumanTheoremIndexEntry,
-    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource,
-    HumanTheoremMatchBinding, HumanTheoremNameSearchRequest, HumanTheoremRewriteSearchRequest,
-    HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError, HumanTheoremSearchMode,
-    HumanTheoremSearchOk, HumanTheoremSearchOptions, HumanTheoremSearchResult,
-    HumanTheoremTypeSearchRequest, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
-    StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
+    HumanCertificatePayload, HumanCompileCertificateOk, HumanCompileCertificateRequest,
+    HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
+    HumanDisplayContextOk, HumanDisplayContextOptions, HumanDisplayContextRequest,
+    HumanDisplayDiffOk, HumanDisplayDiffRequest, HumanDisplayError, HumanDisplayExprRequest,
+    HumanDisplayGoalRequest, HumanDisplayMode, HumanDisplayTextOk, HumanDocumentSnapshot,
+    HumanDocumentUpdateError, HumanDocumentUpdateOk, HumanDocumentUpdateRequest,
+    HumanExactTacticOk, HumanExactTacticRequest, HumanGoalDisplayDiffItem,
+    HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping, HumanInductionTacticError,
+    HumanInductionTacticOk, HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
+    HumanIntroTacticRequest, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
+    HumanProofStateEntry, HumanProofStateStartError, HumanProofStateStartOk,
+    HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
+    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
+    HumanSessionCreateRequest, HumanSessionVerifyError, HumanSessionVerifyImport,
+    HumanSessionVerifyImportAxiom, HumanSessionVerifyOk, HumanSessionVerifyRequest,
+    HumanSessionVerifyStatus, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
+    HumanSimpLiteTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
+    HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
+    HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
+    HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
+    HumanStructuredProofStateError, HumanTacticCheckRequest, HumanTacticCheckResponse,
+    HumanTacticRunErrorKind, HumanTacticRunErrorReport, HumanTacticRunRequest,
+    HumanTacticRunResponse, HumanTacticRunStatus, HumanTacticRunSuggestion,
+    HumanTacticRunSuggestionKind, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
+    HumanTacticStateRecordRequest, HumanTacticSuggestRequest, HumanTacticSuggestResponse,
+    HumanTacticSuggestion, HumanTacticSuggestionSource, HumanTacticTermCheckOk,
+    HumanTacticTermCheckRequest, HumanTacticTermError, HumanTheoremAxiomInfo,
+    HumanTheoremDependency, HumanTheoremDependencyKind, HumanTheoremGoalSearchRequest,
+    HumanTheoremIndex, HumanTheoremIndexEntry, HumanTheoremIndexError, HumanTheoremIndexKind,
+    HumanTheoremIndexSource, HumanTheoremMatchBinding, HumanTheoremNameSearchRequest,
+    HumanTheoremRewriteSearchRequest, HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError,
+    HumanTheoremSearchMode, HumanTheoremSearchOk, HumanTheoremSearchOptions,
+    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, LocalId, StructuredExpr,
+    StructuredGoal, StructuredGoalStatus, StructuredHypothesis, StructuredProofState,
+    HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_cert::{
     AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
@@ -45,6 +48,8 @@ use npa_cert::{
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 use sha2::{Digest, Sha256};
+
+const HUMAN_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
 
 /// Compile Human source through the Human tactic API adapter.
 ///
@@ -2953,6 +2958,369 @@ pub fn search_human_theorems_for_rewrite(
             options: request.options,
         },
     )
+}
+
+pub fn verify_human_session(
+    store: &HumanProofSessionStore,
+    request: HumanSessionVerifyRequest,
+) -> Result<HumanSessionVerifyOk, HumanSessionVerifyError> {
+    validate_human_state_request_document(store, request.header.clone())
+        .map_err(|error| HumanSessionVerifyError::State(HumanStateApiError::from(error)))?;
+    let entry = human_state_entry_for_api(store, &request.header, &request.state_id)
+        .map_err(HumanSessionVerifyError::State)?;
+    if !entry.state.open_goals.is_empty() {
+        return Err(HumanSessionVerifyError::OpenGoals {
+            session_id: request.header.session_id,
+            state_id: entry.state_id.clone(),
+            open_goals: entry
+                .state
+                .open_goals
+                .iter()
+                .filter_map(|goal_id| entry.human_goal_for_machine_goal(*goal_id).cloned())
+                .collect(),
+        });
+    }
+
+    let error_context = HumanVerifyErrorContext {
+        session_id: &request.header.session_id,
+        state_id: &entry.state_id,
+    };
+    let handoff = npa_tactic::extract_closed_machine_certificate(&entry.state).map_err(|err| {
+        error_context.error(format!(
+            "Human session certificate handoff failed after closed-state check: {:?}: {}",
+            err.kind, err.message
+        ))
+    })?;
+    let root_decl_index =
+        human_verify_root_decl_index(&handoff.certificate, &entry.state, error_context)?;
+    let root_decl = handoff
+        .certificate
+        .declarations
+        .get(root_decl_index)
+        .ok_or_else(|| {
+            error_context.error("verified certificate root declaration index is out of range")
+        })?;
+    let certificate_context =
+        human_verify_certificate_context(&entry.state, &handoff.certificate, root_decl_index);
+    let root_axioms_used = human_verify_axiom_refs_to_wire(
+        &certificate_context,
+        human_verify_root_axiom_refs(
+            handoff.verified_module.axiom_report(),
+            root_decl_index,
+            error_context,
+        )?,
+        error_context,
+    )?;
+    let axioms_used = human_verify_axiom_refs_to_wire(
+        &certificate_context,
+        &handoff.verified_module.axiom_report().module_axioms,
+        error_context,
+    )?;
+    let imports = human_verify_import_summaries(&entry.state, error_context)?;
+
+    Ok(HumanSessionVerifyOk {
+        session_id: request.header.session_id,
+        state_id: entry.state_id.clone(),
+        document_version: entry.document_version,
+        theorem_name: entry.state.root.theorem_name.clone(),
+        status: HumanSessionVerifyStatus::Verified,
+        root_decl_interface_hash: root_decl.hashes.decl_interface_hash,
+        root_decl_certificate_hash: root_decl.hashes.decl_certificate_hash,
+        certificate_hash: handoff.verified_module.certificate_hash(),
+        export_hash: handoff.verified_module.export_hash(),
+        contains_sorry: human_verify_contains_sorry(&axioms_used),
+        root_axioms_used,
+        axioms_used,
+        certificate: human_certificate_payload(&handoff.certificate_bytes),
+        imports,
+    })
+}
+
+#[derive(Clone, Copy)]
+struct HumanVerifyErrorContext<'a> {
+    session_id: &'a crate::HumanSessionId,
+    state_id: &'a crate::HumanStateId,
+}
+
+impl HumanVerifyErrorContext<'_> {
+    fn error(self, message: impl Into<String>) -> HumanSessionVerifyError {
+        HumanSessionVerifyError::CertificateHandoff {
+            session_id: self.session_id.clone(),
+            state_id: self.state_id.clone(),
+            message: message.into(),
+        }
+    }
+}
+
+struct HumanVerifyCertificateContext<'a> {
+    cert: &'a npa_cert::ModuleCert,
+    cert_decl_to_source_index: BTreeMap<usize, u64>,
+}
+
+fn human_verify_root_decl_index(
+    cert: &npa_cert::ModuleCert,
+    state: &npa_tactic::MachineProofState,
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<usize, HumanSessionVerifyError> {
+    let mut matches = cert
+        .declarations
+        .iter()
+        .enumerate()
+        .filter_map(
+            |(index, decl)| match human_verify_decl_payload_name(cert, &decl.decl) {
+                Ok(name) if name == state.root.theorem_name => Some(Ok(index)),
+                Ok(_) => None,
+                Err(message) => Some(Err(error_context.error(message))),
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    if matches.len() != 1 {
+        return Err(error_context.error(
+            "verified Human certificate does not contain exactly one root theorem declaration",
+        ));
+    }
+    let index = matches.pop().expect("len checked above");
+    if !matches!(
+        cert.declarations[index].decl,
+        DeclPayload::Theorem {
+            opacity: npa_cert::Opacity::Opaque,
+            ..
+        }
+    ) {
+        return Err(error_context.error("verified Human root declaration is not an opaque theorem"));
+    }
+    Ok(index)
+}
+
+fn human_verify_certificate_context<'a>(
+    state: &npa_tactic::MachineProofState,
+    cert: &'a npa_cert::ModuleCert,
+    root_decl_index: usize,
+) -> HumanVerifyCertificateContext<'a> {
+    let mut cert_decl_to_source_index = state
+        .env
+        .checked_current_decls
+        .iter()
+        .enumerate()
+        .map(|(index, decl)| (index, decl.source_index()))
+        .collect::<BTreeMap<_, _>>();
+    cert_decl_to_source_index.insert(root_decl_index, state.root.source_index);
+    HumanVerifyCertificateContext {
+        cert,
+        cert_decl_to_source_index,
+    }
+}
+
+fn human_verify_root_axiom_refs<'a>(
+    report: &'a npa_cert::AxiomReport,
+    root_decl_index: usize,
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<&'a [AxiomRef], HumanSessionVerifyError> {
+    let matches = report
+        .per_declaration
+        .iter()
+        .filter(|entry| entry.decl_index == root_decl_index)
+        .collect::<Vec<_>>();
+    if matches.len() != 1 {
+        return Err(error_context.error(
+            "verifier output does not contain exactly one Human root theorem axiom report",
+        ));
+    }
+    Ok(&matches[0].transitive_axioms)
+}
+
+fn human_verify_axiom_refs_to_wire(
+    context: &HumanVerifyCertificateContext<'_>,
+    axioms: &[AxiomRef],
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<Vec<MachineAxiomRefWire>, HumanSessionVerifyError> {
+    let mut out = Vec::with_capacity(axioms.len());
+    for axiom in axioms {
+        out.push(human_verify_axiom_ref_to_wire(
+            context,
+            axiom,
+            error_context,
+        )?);
+    }
+    human_sort_dedup_axiom_refs(&mut out);
+    Ok(out)
+}
+
+fn human_verify_axiom_ref_to_wire(
+    context: &HumanVerifyCertificateContext<'_>,
+    axiom: &AxiomRef,
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<MachineAxiomRefWire, HumanSessionVerifyError> {
+    let name = human_verify_cert_name(context.cert, axiom.name, error_context)?;
+    match &axiom.global_ref {
+        GlobalRef::Imported {
+            import_index,
+            decl_interface_hash,
+            ..
+        } => {
+            let import = context.cert.imports.get(*import_index).ok_or_else(|| {
+                error_context
+                    .error("verifier output imported axiom ref has out-of-range import_index")
+            })?;
+            Ok(MachineAxiomRefWire::Imported {
+                module: import.module.clone(),
+                name,
+                export_hash: import.export_hash,
+                decl_interface_hash: *decl_interface_hash,
+            })
+        }
+        GlobalRef::Local { decl_index } => {
+            let decl = context.cert.declarations.get(*decl_index).ok_or_else(|| {
+                error_context.error("verifier output local axiom ref has out-of-range decl_index")
+            })?;
+            if !matches!(decl.decl, DeclPayload::Axiom { .. }) {
+                return Err(error_context
+                    .error("verifier output local axiom ref does not point at an axiom"));
+            }
+            let source_index = context
+                .cert_decl_to_source_index
+                .get(decl_index)
+                .copied()
+                .ok_or_else(|| {
+                    error_context.error("verifier output local axiom ref has no Human source_index")
+                })?;
+            Ok(MachineAxiomRefWire::CurrentModule {
+                module: context.cert.header.module.clone(),
+                name,
+                source_index,
+                decl_interface_hash: axiom.decl_interface_hash,
+            })
+        }
+        GlobalRef::Builtin {
+            decl_interface_hash,
+            ..
+        } => Ok(MachineAxiomRefWire::Builtin {
+            name,
+            decl_interface_hash: *decl_interface_hash,
+        }),
+        GlobalRef::LocalGenerated { .. } => {
+            Err(error_context.error("verifier output axiom ref points at a generated declaration"))
+        }
+    }
+}
+
+fn human_verify_import_summaries(
+    state: &npa_tactic::MachineProofState,
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<Vec<HumanSessionVerifyImport>, HumanSessionVerifyError> {
+    let mut imports = Vec::with_capacity(state.env.imports.len());
+    for import in &state.env.imports {
+        imports.push(HumanSessionVerifyImport {
+            module: import.module().clone(),
+            export_hash: import.export_hash(),
+            certificate_hash: import.certificate_hash(),
+            module_axioms: human_verify_import_axiom_summaries(
+                import.verified_module(),
+                error_context,
+            )?,
+        });
+    }
+    imports.sort_by(|left, right| {
+        left.module
+            .as_dotted()
+            .cmp(&right.module.as_dotted())
+            .then_with(|| left.export_hash.cmp(&right.export_hash))
+            .then_with(|| left.certificate_hash.cmp(&right.certificate_hash))
+    });
+    imports.dedup_by(|left, right| {
+        left.module == right.module
+            && left.export_hash == right.export_hash
+            && left.certificate_hash == right.certificate_hash
+    });
+    Ok(imports)
+}
+
+fn human_verify_import_axiom_summaries(
+    module: &VerifiedModule,
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<Vec<HumanSessionVerifyImportAxiom>, HumanSessionVerifyError> {
+    let mut axioms = Vec::with_capacity(module.axiom_report().module_axioms.len());
+    for axiom in &module.axiom_report().module_axioms {
+        axioms.push(HumanSessionVerifyImportAxiom {
+            name: module
+                .name_table()
+                .get(axiom.name)
+                .cloned()
+                .ok_or_else(|| {
+                    error_context.error(
+                        "verified import axiom report references an out-of-range name table entry",
+                    )
+                })?,
+            decl_interface_hash: axiom.decl_interface_hash,
+        });
+    }
+    axioms.sort_by(|left, right| {
+        left.name
+            .as_dotted()
+            .cmp(&right.name.as_dotted())
+            .then_with(|| left.decl_interface_hash.cmp(&right.decl_interface_hash))
+    });
+    axioms.dedup();
+    Ok(axioms)
+}
+
+fn human_verify_decl_payload_name(
+    cert: &npa_cert::ModuleCert,
+    payload: &DeclPayload,
+) -> Result<Name, String> {
+    let name = match payload {
+        DeclPayload::Axiom { name, .. }
+        | DeclPayload::Def { name, .. }
+        | DeclPayload::Theorem { name, .. }
+        | DeclPayload::Inductive { name, .. } => *name,
+    };
+    cert.name_table.get(name).cloned().ok_or_else(|| {
+        "verified Human certificate declaration references an out-of-range name table entry"
+            .to_owned()
+    })
+}
+
+fn human_verify_cert_name(
+    cert: &npa_cert::ModuleCert,
+    name: NameId,
+    error_context: HumanVerifyErrorContext<'_>,
+) -> Result<Name, HumanSessionVerifyError> {
+    cert.name_table.get(name).cloned().ok_or_else(|| {
+        error_context
+            .error("verified Human certificate axiom report references an out-of-range name")
+    })
+}
+
+fn human_verify_contains_sorry(axioms: &[MachineAxiomRefWire]) -> bool {
+    axioms.iter().any(|axiom| match axiom {
+        MachineAxiomRefWire::Builtin { name, .. }
+        | MachineAxiomRefWire::Imported { name, .. }
+        | MachineAxiomRefWire::CurrentModule { name, .. } => name.as_dotted().contains("sorry"),
+    })
+}
+
+fn human_certificate_payload(bytes: &[u8]) -> HumanCertificatePayload {
+    HumanCertificatePayload {
+        encoding: HUMAN_CERTIFICATE_ENCODING,
+        bytes: human_hex_bytes(bytes),
+    }
+}
+
+fn human_hex_bytes(bytes: &[u8]) -> String {
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push(human_hex_digit(byte >> 4));
+        out.push(human_hex_digit(byte & 0x0f));
+    }
+    out
+}
+
+fn human_hex_digit(value: u8) -> char {
+    match value {
+        0..=9 => char::from(b'0' + value),
+        10..=15 => char::from(b'a' + value - 10),
+        _ => unreachable!("hex nybble is in range"),
+    }
 }
 
 fn human_search_index_for_state<'session>(
@@ -8288,6 +8656,186 @@ theorem target : P := by simp-lite",
     }
 
     #[test]
+    fn human_verify_rejects_open_goal_before_certificate_handoff() {
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanVerifyOpen"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(42),
+                    source: "theorem target (A : Type) : A := by simp-lite",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human verify open-goal session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanVerifyOpen.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human verify open-goal proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+
+        let err = verify_human_session(
+            &store,
+            HumanSessionVerifyRequest {
+                header,
+                state_id: started.state_id.clone(),
+            },
+        )
+        .expect_err("Human verify must reject unresolved goals before certificate handoff");
+        let HumanSessionVerifyError::OpenGoals {
+            session_id,
+            state_id,
+            open_goals,
+        } = err
+        else {
+            panic!("expected open-goal verification error");
+        };
+        assert_eq!(session_id, created.session_id);
+        assert_eq!(state_id, started.state_id);
+        assert_eq!(open_goals.len(), 1);
+    }
+
+    #[test]
+    fn human_verify_closed_state_returns_verifier_hashes_and_axiom_report() {
+        let (verified, source_interface) = verified_human_import(
+            "Lib.HumanVerifyAxiom",
+            "\
+axiom P : Prop
+axiom hp : P",
+        );
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanVerifyClosed"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(43),
+                    source: "\
+import Lib.HumanVerifyAxiom
+theorem target : P := by simp-lite",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human verify closed session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanVerifyClosed.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human verify closed proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+        let exact = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "exact hp".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(exact.status, HumanTacticRunStatus::Closed);
+        assert!(exact.error.is_none());
+        let closed_state_id = exact
+            .new_state_id
+            .expect("closed tactic should record state");
+
+        let ok = verify_human_session(
+            &store,
+            HumanSessionVerifyRequest {
+                header: header.clone(),
+                state_id: closed_state_id.clone(),
+            },
+        )
+        .expect("closed Human state should verify through certificate checker");
+        assert_eq!(ok.status, HumanSessionVerifyStatus::Verified);
+        assert_eq!(
+            ok.theorem_name,
+            npa_cert::Name::from_dotted("Api.HumanVerifyClosed.target")
+        );
+        assert_eq!(ok.certificate.encoding, HUMAN_CERTIFICATE_ENCODING);
+        assert!(!ok.certificate.bytes.is_empty());
+        assert!(!ok.contains_sorry);
+        assert!(ok
+            .axioms_used
+            .iter()
+            .any(|axiom| matches!(axiom, MachineAxiomRefWire::Imported { name, .. } if name.as_dotted() == "hp")));
+        assert_eq!(ok.root_axioms_used, ok.axioms_used);
+
+        let import = ok
+            .imports
+            .iter()
+            .find(|import| import.module == npa_cert::Name::from_dotted("Lib.HumanVerifyAxiom"))
+            .expect("Human verify response should retain import hash metadata");
+        assert_eq!(import.export_hash, verified.export_hash());
+        assert_eq!(import.certificate_hash, verified.certificate_hash());
+        assert!(import
+            .module_axioms
+            .iter()
+            .any(|axiom| axiom.name.as_dotted() == "hp"));
+
+        let cert_bytes = human_verify_decode_hex_bytes(&ok.certificate.bytes);
+        let decoded_certificate =
+            npa_cert::decode_module_cert(&cert_bytes).expect("Human verify cert should decode");
+        let mut verifier_session = npa_cert::VerifierSession::new();
+        verifier_session.register_verified_module(verified);
+        let verifier_output = npa_cert::verify_module_cert(
+            &cert_bytes,
+            &mut verifier_session,
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("Human verify certificate should re-verify");
+        assert_eq!(ok.certificate_hash, verifier_output.certificate_hash());
+        assert_eq!(ok.export_hash, verifier_output.export_hash());
+
+        let entry = get_human_proof_state(&store, &header.session_id, &closed_state_id)
+            .expect("closed Human proof state should still be stored");
+        let error_context = HumanVerifyErrorContext {
+            session_id: &header.session_id,
+            state_id: &closed_state_id,
+        };
+        let root_index =
+            human_verify_root_decl_index(&decoded_certificate, &entry.state, error_context)
+                .expect("root declaration should be located in decoded certificate");
+        let certificate_context =
+            human_verify_certificate_context(&entry.state, &decoded_certificate, root_index);
+        let verifier_axioms = human_verify_axiom_refs_to_wire(
+            &certificate_context,
+            &verifier_output.axiom_report().module_axioms,
+            error_context,
+        )
+        .expect("verifier axiom report should project to Human response wire shape");
+        assert_eq!(ok.axioms_used, verifier_axioms);
+    }
+
+    #[test]
     fn human_tactic_run_intro_exact_and_expected_pi_error_are_transactional() {
         let (nat, nat_interface) = verified_nat_human_import();
         let (eq, eq_interface) = verified_eq_human_import();
@@ -11328,6 +11876,23 @@ theorem target (n : Nat) : Eq.{1} (Nat.add n Nat.zero) n := by simp-lite";
                 .selected_goal
                 .expect("intro should select the body goal"),
         )
+    }
+
+    fn human_verify_decode_hex_bytes(value: &str) -> Vec<u8> {
+        assert!(value.len().is_multiple_of(2));
+        value
+            .as_bytes()
+            .chunks_exact(2)
+            .map(|chunk| (human_verify_hex_value(chunk[0]) << 4) | human_verify_hex_value(chunk[1]))
+            .collect()
+    }
+
+    fn human_verify_hex_value(byte: u8) -> u8 {
+        match byte {
+            b'0'..=b'9' => byte - b'0',
+            b'a'..=b'f' => byte - b'a' + 10,
+            _ => panic!("invalid lowercase hex digit"),
+        }
     }
 
     fn verified_eq_trans_human_import() -> (

@@ -718,6 +718,78 @@ pub enum HumanTheoremSearchError {
     Index(HumanTheoremIndexError),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSessionVerifyRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSessionVerifyOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub document_version: HumanDocumentVersion,
+    pub theorem_name: Name,
+    pub status: HumanSessionVerifyStatus,
+    pub root_decl_interface_hash: Hash,
+    pub root_decl_certificate_hash: Hash,
+    pub certificate_hash: Hash,
+    pub export_hash: Hash,
+    pub root_axioms_used: Vec<MachineAxiomRefWire>,
+    pub axioms_used: Vec<MachineAxiomRefWire>,
+    pub contains_sorry: bool,
+    pub certificate: HumanCertificatePayload,
+    pub imports: Vec<HumanSessionVerifyImport>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanSessionVerifyStatus {
+    Verified,
+}
+
+impl HumanSessionVerifyStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Verified => "verified",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanCertificatePayload {
+    pub encoding: &'static str,
+    pub bytes: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSessionVerifyImport {
+    pub module: ModuleName,
+    pub export_hash: Hash,
+    pub certificate_hash: Hash,
+    pub module_axioms: Vec<HumanSessionVerifyImportAxiom>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSessionVerifyImportAxiom {
+    pub name: Name,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanSessionVerifyError {
+    State(HumanStateApiError),
+    OpenGoals {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        open_goals: Vec<HumanGoalId>,
+    },
+    CertificateHandoff {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        message: String,
+    },
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HumanTacticSuggestionSource {
     Builtin,

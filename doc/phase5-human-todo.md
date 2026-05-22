@@ -719,11 +719,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `/session/verify` 相当の API を追加する。
-- [ ] open goals が残る state は verification 前に拒否する。
-- [ ] closed proof state から root proof term を抽出し、kernel check と certificate generation に渡す。
-- [ ] certificate verifier output 由来の certificate hash、axioms used、contains_sorry 相当を返す。
-- [ ] import の `export_hash` / `certificate_hash` と axiom report を無視しない。
+- [x] `/session/verify` 相当の API を追加する。
+- [x] open goals が残る state は verification 前に拒否する。
+- [x] closed proof state から root proof term を抽出し、kernel check と certificate generation に渡す。
+- [x] certificate verifier output 由来の certificate hash、axioms used、contains_sorry 相当を返す。
+- [x] import の `export_hash` / `certificate_hash` と axiom report を無視しない。
 
 依存:
 
@@ -749,9 +749,9 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] goals empty だけでは verified にせず、kernel check と certificate verifier 成功後だけ verified を返す。
-- [ ] unresolved goal が1つでもあれば certificate 化を拒否する。
-- [ ] axiom report が response と certificate verifier output で一致する。
+- [x] goals empty だけでは verified にせず、kernel check と certificate verifier 成功後だけ verified を返す。
+- [x] unresolved goal が1つでもあれば certificate 化を拒否する。
+- [x] axiom report が response と certificate verifier output で一致する。
 
 Verification:
 
@@ -762,7 +762,7 @@ cargo test -p npa-cert
 
 AI 速度ガード:
 
-- [ ] Human verify は `/machine/verify` の response schema / replay contract を変更しない。
+- [x] Human verify は `/machine/verify` の response schema / replay contract を変更しない。
 
 ---
 
