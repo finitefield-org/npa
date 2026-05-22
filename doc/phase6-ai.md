@@ -2690,14 +2690,16 @@ import bundle closure:
   Std.Logic is a direct root whenever an emitted recipe/profile must resolve std.logic.eq-family
 
 no axiom:
-  any axiom dependency in Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic rejects release
+  any non-allowed axiom dependency in Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic rejects release,
+  with only the exact kernel-standard Std.Logic Eq.rec exception when the current kernel emits it as AxiomDecl
   MachineStdModuleArtifact.axiom_report_hash is the module-level Phase 2 hash and mismatches reject as InvalidStdLibraryRelease
   MachineStdAxiomReport.axiom_report_hash is the release-wide sidecar hash and self-mismatches reject as InvalidStdAxiomPolicy
   imported axiom dependencies project to the imported module/export_hash, not the dependent owner module
   axiom report modules exactly match release modules
   reordered or duplicate axiom report modules are rejected as InvalidStdAxiomPolicy
   duplicate or non-canonical module_axioms/transitive_axioms arrays are rejected as InvalidStdAxiomPolicy
-  module_axioms and transitive_axioms are both empty for every MVP module
+  module_axioms and transitive_axioms are both empty for every MVP module,
+  except the exact kernel-standard Std.Logic Eq.rec exception and its transitive projection when applicable
   transitive_axioms mismatch with verifier-derived import closure rejects release
 
 simp profile:
