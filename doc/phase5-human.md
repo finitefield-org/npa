@@ -1,10 +1,10 @@
 以下は **Phase 5 Human Profile: IDE/API** の詳細設計です。
 
 この文書は、Phase 5 を人間向け IDE / Web UI / CLI で使う設計として整理したものです。
-AI や証明探索器にも渡せる構造化情報は含みますが、AI 専用の決定的・transactional な機械 API 契約は
-`doc/phase5-ai.md` に分けます。
+構造化 goal / search result は Human UI 上の補助機能にも使えますが、AI 証明探索器向けの
+決定的・transactional な機械 API 契約は `doc/phase5-ai.md` に分けます。
 
-Phase 4 までで、`intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` のような tactic を使って proof term を構築できるようになりました。Phase 5 では、それを **IDE・Web UI・外部AIエージェント・証明探索器が扱える API** として公開します。
+Phase 4 までで、`intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` のような tactic を使って proof term を構築できるようになりました。Phase 5 Human では、それを **IDE・Web UI・CLI・Human API client が扱える API** として公開します。
 
 対象はこの4つです。
 
@@ -54,10 +54,10 @@ proof states
   ↓
 IDE/API
   ↓
-user / AI / theorem search / tactic execution
+user / IDE action / theorem search / tactic execution
 ```
 
-つまり、ユーザーやAIが次をできるようにします。
+つまり、ユーザーや Human API client が次をできるようにします。
 
 ```text
 - 現在のgoalを見る
@@ -78,7 +78,7 @@ Phase 5 では、証明器本体の上に **Proof Server** を置きます。
 
 ```text
 ┌──────────────────────────────────────┐
-│ IDE / Web UI / CLI / AI Agent         │
+│ IDE / Web UI / CLI / Human API Client │
 └──────────────────────────────────────┘
                 ↓ JSON-RPC / HTTP / LSP
 ┌──────────────────────────────────────┐
@@ -400,10 +400,13 @@ POST /state/goals
 
 ```text
 - IDEでユーザーが tactic を試す
-- AIが tactic 候補を試す
-- 証明探索エンジンが並列に tactic を試す
+- Human UI 上の補助機能が tactic 候補を試す
+- Human API client が小さな候補を対話的に試す
 - Web UIでワンクリック補完する
 ```
+
+AI 証明探索器が多数の候補を決定的に試す経路は、この `/tactic/run` ではなく
+`doc/phase5-ai.md` の `/machine/tactics/run` / `/machine/tactics/batch` です。
 
 基本 API：
 
@@ -461,7 +464,7 @@ fn run_tactic_transactional(
 
 ## 6.3 timeout / budget
 
-AIや探索器が tactic を大量に投げるため、budget が必要です。
+外部クライアントや UI 補助が tactic を繰り返し試すため、budget が必要です。
 
 ```json
 POST /tactic/run
@@ -733,7 +736,7 @@ POST /tactic/suggest
 
 証明中に「使えそうな定理」を検索する API です。
 
-人間向けにもAI向けにも重要です。
+人間向け IDE/API と、Machine API が使う verified retrieval の設計をそろえるためにも重要です。
 
 検索方式は最初から複数用意します。
 
@@ -1010,7 +1013,9 @@ custom axiom:
 }
 ```
 
-これにより、IDEもAIもそのまま tactic execution API に渡せます。
+これにより、IDE はそのまま Human tactic execution API に渡せます。
+AI 探索器向けには、同じ検索結果を `doc/phase5-ai.md` の
+`MachineTacticCandidate` に変換する契約を別に固定します。
 
 ---
 
@@ -1186,7 +1191,7 @@ ih : 0 + n = n
 ⊢ 0 + succ n = succ n
 ```
 
-AI向けには folding しない構造データを返します。
+Machine API 向けには folding しない構造データを返します。
 
 ## 9.6 relevant context
 
@@ -1339,11 +1344,15 @@ Search theorem for goal
 
 ---
 
-# 12. AI向け API
+# 12. AI補助 / Machine API との接続
 
-Phase 5 の structured API は、AI証明探索の土台になります。
+Human structured API は、IDE 上の補助表示や小さな候補提案にも使えます。
+ただし、AI 証明探索の正規の wire contract ではありません。
+探索ノード identity、batch 実行、replay、verify は `doc/phase5-ai.md` の
+`session_id` / `snapshot_id` / `state_fingerprint` / `MachineTacticCandidate`
+に固定します。
 
-AIに渡す payload 例：
+Human UI から補助サービスに渡してよい表示用 payload 例：
 
 ```json
 {
@@ -1385,7 +1394,7 @@ AIに渡す payload 例：
 }
 ```
 
-AIの出力：
+補助サービスの出力例：
 
 ```json
 {
@@ -1402,7 +1411,10 @@ AIの出力：
 }
 ```
 
-この出力を `/tactic/run` に渡して、通ったものだけ採用します。
+Human UI では、この出力を `/tactic/run` に渡して、通ったものだけ候補として採用できます。
+AI 証明探索器が証明探索の一部として実行する場合は、text tactic ではなく
+`/machine/tactics/run` または `/machine/tactics/batch` の `MachineTacticCandidate`
+へ変換し、`/machine/replay` と `/machine/verify` まで通った結果だけを証明として扱います。
 
 ---
 
@@ -1431,7 +1443,7 @@ IDE/API は外部入力を受けるので、制限が必要です。
 - import の export_hash / high-trust 時の certificate_hash を無視する
 - axiom report を省略する
 - tactic 失敗後に state を破壊する
-- AI出力を自動で trusted にする
+- AI出力や補助サービスの候補を自動で trusted にする
 ```
 
 ## 13.3 完成判定
@@ -1566,8 +1578,9 @@ POST /display/context
 12. tactic suggestions
    builtin候補を返す
 
-13. AI用payload
-   structured goal + theorem search + failed tactics をまとめる
+13. optional assistant payload
+   Human UI 用に structured goal + theorem search + failed tactics をまとめる。
+   AI 探索器向けの deterministic payload は `doc/phase5-ai.md` 側で実装する。
 ```
 
 ---
@@ -1720,7 +1733,7 @@ Phase 5 が完了したと言える条件はこれです。
 
 # 19. 一文でまとめると
 
-Phase 5 は、**証明器の内部状態を、人間・IDE・AI・探索エンジンが安全に扱える構造化APIとして公開する段階**です。
+Phase 5 Human は、**証明器の内部状態を、人間・IDE・Human API client が安全に扱える構造化APIとして公開する段階**です。
 
 中核はこの4つです。
 
@@ -1738,4 +1751,5 @@ goal display:
   pretty / explicit / core 表示を切り替えられるようにする
 ```
 
-この Phase 5 が完成すると、次の Phase 6 以降で **AI証明探索、RAG、proof search、IDE補完、教育UI** を本格的に載せられるようになります。
+この Phase 5 Human と `doc/phase5-ai.md` の Machine API がそろうと、次の Phase 6 以降で
+**AI証明探索、RAG、proof search、IDE補完、教育UI** を本格的に載せられるようになります。
