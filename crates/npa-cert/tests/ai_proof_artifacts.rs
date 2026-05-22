@@ -162,6 +162,25 @@ const ORDERED_FIELD_THEOREMS: &[&str] = &[
     "eq_of_square_eq_square_nonneg",
 ];
 
+const VECTOR_BASIC_INDUCTIVES: &[&str] = &["Vec"];
+
+const VECTOR_BASIC_DEFINITIONS: &[&str] = &["vec_zero", "vec_add", "vec_neg", "vec_sub"];
+
+const VECTOR_BASIC_THEOREMS: &[&str] = &[
+    "vec_add_assoc",
+    "vec_add_comm",
+    "vec_zero_add",
+    "vec_add_zero",
+    "vec_neg_add_cancel",
+    "vec_add_neg_cancel",
+    "vec_sub_def",
+    "vec_sub_eq_add_neg",
+    "vec_sub_self",
+    "vec_sub_zero",
+    "vec_add_left_cancel",
+    "sub_sub_sub_cancel",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -275,6 +294,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         theorems: ORDERED_FIELD_THEOREMS,
         axioms: &[],
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Vector.Basic",
+        source: "Proofs/Ai/Vector/Basic/source.npa",
+        certificate: "Proofs/Ai/Vector/Basic/certificate.npcert",
+        meta: "Proofs/Ai/Vector/Basic/meta.json",
+        replay: "Proofs/Ai/Vector/Basic/replay.json",
+        imports: &["Std.Logic.Eq"],
+        inductives: VECTOR_BASIC_INDUCTIVES,
+        definitions: VECTOR_BASIC_DEFINITIONS,
+        theorems: VECTOR_BASIC_THEOREMS,
+        axioms: &[],
+    },
 ];
 
 #[test]
@@ -359,6 +390,10 @@ fn ai_certificates_match_manifest_and_verify() {
         if expected.module == "Proofs.Ai.Algebra.Ring" {
             assert_export(&decoded, "RingElem.unit", ExportKind::Constructor);
             assert_export(&decoded, "RingElem.rec", ExportKind::Recursor);
+        }
+        if expected.module == "Proofs.Ai.Vector.Basic" {
+            assert_export(&decoded, "Vec.unit", ExportKind::Constructor);
+            assert_export(&decoded, "Vec.rec", ExportKind::Recursor);
         }
         assert_declarations(
             &decoded,

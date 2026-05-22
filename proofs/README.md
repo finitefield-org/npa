@@ -25,6 +25,8 @@ Current bundles:
   `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
+- `Proofs/Ai/Vector/Basic/`: vector carrier and basic vector addition theorem targets importing
+  `Std.Logic.Eq`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -347,7 +349,46 @@ Theorem targets:
 | `sqrt_mul_self` | `0 <= a -> sqrt (a * a) = a` |
 | `eq_of_square_eq_square_nonneg` | nonnegative equality from equal squares |
 
-### P12+: Pythagorean Theorem Roadmap
+### P12: Vector Basic Corpus
+
+Module: `Proofs.Ai.Vector.Basic`
+
+Add the first vector carrier and additive group-shaped API targets for the coordinate route to
+Pythagoras. This module intentionally stays independent of scalar/order APIs and imports only
+`Std.Logic.Eq`; `Vector.Dot` is the next layer that combines vectors with the scalar field facts.
+As with the earlier algebra layers, this is a concrete singleton-carrier corpus whose declarations
+are checked through canonical certificates.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Vec` | singleton vector or point-difference carrier |
+| `vec_zero` | vector zero |
+| `vec_add` | vector addition |
+| `vec_neg` | vector negation |
+| `vec_sub` | vector subtraction, defined as `u + -v` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `vec_add_assoc` | `(u + v) + w = u + (v + w)` |
+| `vec_add_comm` | `u + v = v + u` |
+| `vec_zero_add` | `0 + v = v` |
+| `vec_add_zero` | `v + 0 = v` |
+| `vec_neg_add_cancel` | `-v + v = 0` |
+| `vec_add_neg_cancel` | `v + -v = 0` |
+| `vec_sub_def` | `u - v = u + -v` |
+| `vec_sub_eq_add_neg` | alias-style subtraction rewrite target for AI search |
+| `vec_sub_self` | `v - v = 0` |
+| `vec_sub_zero` | `v - 0 = v` |
+| `vec_add_left_cancel` | `u + v = u + w -> v = w` |
+| `sub_sub_sub_cancel` | `(u - w) - (v - w) = u - v` |
+
+### P13+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -377,10 +418,11 @@ Completed prerequisite:
   the same concrete scalar carrier.
 - P11 `Proofs.Ai.OrderedField` supplies `le`, `lt`, `sqrt`, and the nonnegative square-root theorem
   targets needed by later metric statements.
+- P12 `Proofs.Ai.Vector.Basic` supplies the first vector carrier and additive vector theorem targets
+  used by the dot-product and geometry layers.
 
 | Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P12 | `Proofs.Ai.Vector.Basic` | `Vec`, `vec_zero`, `vec_add`, `vec_neg`, `vec_sub` | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
 | P13 | `Proofs.Ai.Vector.Dot` | `dot`, `normSq`, `distSq` | `norm_sq_def`, `dist_sq_def`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
 | P14 | `Proofs.Ai.Geometry.RightTriangle` | `Perp`, `RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
 | P15 | `Proofs.Ai.Geometry.Metric` | `dist` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
@@ -512,7 +554,7 @@ Theorem targets:
 
 #### `Proofs.Ai.Vector.Basic`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
@@ -533,10 +575,11 @@ Theorem targets:
 | `vec_neg_add_cancel` | `-v + v = 0` |
 | `vec_add_neg_cancel` | `v + -v = 0` |
 | `vec_sub_def` | `u - v = u + -v` |
+| `vec_sub_eq_add_neg` | alias-style subtraction rewrite target for AI search |
 | `vec_sub_self` | `v - v = 0` |
 | `vec_sub_zero` | `v - 0 = v` |
 | `vec_add_left_cancel` | `u + v = u + w -> v = w` |
-| `sub_sub_sub_cancel` | vector subtraction rearrangement used for triangle vertices |
+| `sub_sub_sub_cancel` | `(u - w) - (v - w) = u - v`, used for triangle vertices |
 
 #### `Proofs.Ai.Vector.Dot`
 

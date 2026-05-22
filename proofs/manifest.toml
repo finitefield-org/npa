@@ -162,3 +162,22 @@ imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square"]
 definitions = ["le", "lt", "sqrt"]
 theorems = ["le_refl", "le_trans", "add_nonneg", "mul_nonneg", "le_square_nonneg", "sqrt_nonneg", "sqrt_square_of_nonneg", "sqrt_mul_self", "eq_of_square_eq_square_nonneg"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Vector.Basic"
+source = "Proofs/Ai/Vector/Basic/source.npa"
+certificate = "Proofs/Ai/Vector/Basic/certificate.npcert"
+meta = "Proofs/Ai/Vector/Basic/meta.json"
+replay = "Proofs/Ai/Vector/Basic/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:19db7e04cd08724e4f8e393786e86caac000a62a408b5ac25b9024e741f262a0"
+certificate_file_sha256 = "sha256:c8246be50af72b984424bd1c670cadcb0cca3e6c9cd84bdd3702ba473a9bffc3"
+export_hash = "sha256:3ba8f7b514c7f041a1ac86bf1800a21186255bac9ce31e2fea0b7d9c91d4c938"
+axiom_report_hash = "sha256:55932adb6d068a32ac76b43afee2b808d61b89bb36b85b1805fe77d82a1028b3"
+certificate_hash = "sha256:1bf2067f0bca0d1e49465dc022a3f93e3b2bb2e945d81e583f5bcc8d08a7aebf"
+imports = ["Std.Logic.Eq"]
+inductives = ["Vec"]
+definitions = ["vec_zero", "vec_add", "vec_neg", "vec_sub"]
+theorems = ["vec_add_assoc", "vec_add_comm", "vec_zero_add", "vec_add_zero", "vec_neg_add_cancel", "vec_add_neg_cancel", "vec_sub_def", "vec_sub_eq_add_neg", "vec_sub_self", "vec_sub_zero", "vec_add_left_cancel", "sub_sub_sub_cancel"]
+axioms = []

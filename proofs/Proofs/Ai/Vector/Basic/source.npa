@@ -1,0 +1,70 @@
+import Std.Logic.Eq
+
+inductive Vec :
+  Type where
+| unit : Vec
+
+def vec_zero :
+  Vec :=
+  Vec.unit
+
+def vec_add :
+  forall (u : Vec), forall (v : Vec), Vec :=
+  fun u => fun v => Vec.unit
+
+def vec_neg :
+  forall (v : Vec), Vec :=
+  fun v => Vec.unit
+
+def vec_sub :
+  forall (u : Vec), forall (v : Vec), Vec :=
+  fun u => fun v => vec_add u (vec_neg v)
+
+theorem vec_add_assoc :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} Vec (vec_add (vec_add u v) w) (vec_add u (vec_add v w)) :=
+  fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_add (vec_add u v) w)
+
+theorem vec_add_comm :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} Vec (vec_add u v) (vec_add v u) :=
+  fun u => fun v => @Eq.refl.{1} Vec (vec_add u v)
+
+theorem vec_zero_add :
+  forall (v : Vec), @Eq.{1} Vec (vec_add vec_zero v) v :=
+  fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v
+
+theorem vec_add_zero :
+  forall (v : Vec), @Eq.{1} Vec (vec_add v vec_zero) v :=
+  fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v
+
+theorem vec_neg_add_cancel :
+  forall (v : Vec), @Eq.{1} Vec (vec_add (vec_neg v) v) vec_zero :=
+  fun v => @Eq.refl.{1} Vec (vec_add (vec_neg v) v)
+
+theorem vec_add_neg_cancel :
+  forall (v : Vec), @Eq.{1} Vec (vec_add v (vec_neg v)) vec_zero :=
+  fun v => @Eq.refl.{1} Vec (vec_add v (vec_neg v))
+
+theorem vec_sub_def :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} Vec (vec_sub u v) (vec_add u (vec_neg v)) :=
+  fun u => fun v => @Eq.refl.{1} Vec (vec_sub u v)
+
+theorem vec_sub_eq_add_neg :
+  forall (u : Vec), forall (v : Vec), @Eq.{1} Vec (vec_sub u v) (vec_add u (vec_neg v)) :=
+  fun u => fun v => @Eq.refl.{1} Vec (vec_sub u v)
+
+theorem vec_sub_self :
+  forall (v : Vec), @Eq.{1} Vec (vec_sub v v) vec_zero :=
+  fun v => @Eq.refl.{1} Vec (vec_sub v v)
+
+theorem vec_sub_zero :
+  forall (v : Vec), @Eq.{1} Vec (vec_sub v vec_zero) v :=
+  fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v
+
+theorem vec_add_left_cancel :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), forall (h : @Eq.{1} Vec (vec_add u v) (vec_add u w)), @Eq.{1} Vec v w :=
+  fun u => fun v => fun w => fun h => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec x w) (@Vec.rec.{0} (fun (y : Vec) => @Eq.{1} Vec Vec.unit y) (@Eq.refl.{1} Vec Vec.unit) w) v
+
+theorem sub_sub_sub_cancel :
+  forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w)) (vec_sub u v) :=
+  fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w))
+

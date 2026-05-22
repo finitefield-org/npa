@@ -176,6 +176,19 @@ const ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const VECTOR_BASIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Vector.Basic",
+    source_path: "Proofs/Ai/Vector/Basic/source.npa",
+    certificate_path: "Proofs/Ai/Vector/Basic/certificate.npcert",
+    meta_path: "Proofs/Ai/Vector/Basic/meta.json",
+    replay_path: "Proofs/Ai/Vector/Basic/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: VECTOR_BASIC_INDUCTIVES,
+    definitions: VECTOR_BASIC_DEFINITIONS,
+    theorems: VECTOR_BASIC_THEOREMS,
+    expected_axioms: &[],
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -1026,6 +1039,133 @@ const ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const VECTOR_CONSTRUCTORS: &[ConstructorArtifact] = &[ConstructorArtifact {
+    name: "unit",
+    ty: "Vec",
+}];
+
+const VECTOR_BASIC_INDUCTIVES: &[InductiveArtifact] = &[InductiveArtifact {
+    name: "Vec",
+    universe_params: &[],
+    ty: "Type",
+    constructors: VECTOR_CONSTRUCTORS,
+}];
+
+const VECTOR_BASIC_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "vec_zero",
+        universe_params: &[],
+        ty: "Vec",
+        value: "Vec.unit",
+    },
+    DefinitionArtifact {
+        name: "vec_add",
+        universe_params: &[],
+        ty: "forall (u : Vec), forall (v : Vec), Vec",
+        value: "fun u => fun v => Vec.unit",
+    },
+    DefinitionArtifact {
+        name: "vec_neg",
+        universe_params: &[],
+        ty: "forall (v : Vec), Vec",
+        value: "fun v => Vec.unit",
+    },
+    DefinitionArtifact {
+        name: "vec_sub",
+        universe_params: &[],
+        ty: "forall (u : Vec), forall (v : Vec), Vec",
+        value: "fun u => fun v => vec_add u (vec_neg v)",
+    },
+];
+
+const VECTOR_BASIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "vec_add_assoc",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} Vec (vec_add (vec_add u v) w) (vec_add u (vec_add v w))",
+        proof: "fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_add (vec_add u v) w)",
+    },
+    TheoremArtifact {
+        name: "vec_add_comm",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} Vec (vec_add u v) (vec_add v u)",
+        proof: "fun u => fun v => @Eq.refl.{1} Vec (vec_add u v)",
+    },
+    TheoremArtifact {
+        name: "vec_zero_add",
+        universe_params: &[],
+        statement: "forall (v : Vec), @Eq.{1} Vec (vec_add vec_zero v) v",
+        proof:
+            "fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v",
+    },
+    TheoremArtifact {
+        name: "vec_add_zero",
+        universe_params: &[],
+        statement: "forall (v : Vec), @Eq.{1} Vec (vec_add v vec_zero) v",
+        proof:
+            "fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v",
+    },
+    TheoremArtifact {
+        name: "vec_neg_add_cancel",
+        universe_params: &[],
+        statement:
+            "forall (v : Vec), @Eq.{1} Vec (vec_add (vec_neg v) v) vec_zero",
+        proof: "fun v => @Eq.refl.{1} Vec (vec_add (vec_neg v) v)",
+    },
+    TheoremArtifact {
+        name: "vec_add_neg_cancel",
+        universe_params: &[],
+        statement:
+            "forall (v : Vec), @Eq.{1} Vec (vec_add v (vec_neg v)) vec_zero",
+        proof: "fun v => @Eq.refl.{1} Vec (vec_add v (vec_neg v))",
+    },
+    TheoremArtifact {
+        name: "vec_sub_def",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} Vec (vec_sub u v) (vec_add u (vec_neg v))",
+        proof: "fun u => fun v => @Eq.refl.{1} Vec (vec_sub u v)",
+    },
+    TheoremArtifact {
+        name: "vec_sub_eq_add_neg",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), @Eq.{1} Vec (vec_sub u v) (vec_add u (vec_neg v))",
+        proof: "fun u => fun v => @Eq.refl.{1} Vec (vec_sub u v)",
+    },
+    TheoremArtifact {
+        name: "vec_sub_self",
+        universe_params: &[],
+        statement: "forall (v : Vec), @Eq.{1} Vec (vec_sub v v) vec_zero",
+        proof: "fun v => @Eq.refl.{1} Vec (vec_sub v v)",
+    },
+    TheoremArtifact {
+        name: "vec_sub_zero",
+        universe_params: &[],
+        statement: "forall (v : Vec), @Eq.{1} Vec (vec_sub v vec_zero) v",
+        proof:
+            "fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v",
+    },
+    TheoremArtifact {
+        name: "vec_add_left_cancel",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), forall (h : @Eq.{1} Vec (vec_add u v) (vec_add u w)), @Eq.{1} Vec v w",
+        proof:
+            "fun u => fun v => fun w => fun h => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec x w) (@Vec.rec.{0} (fun (y : Vec) => @Eq.{1} Vec Vec.unit y) (@Eq.refl.{1} Vec Vec.unit) w) v",
+    },
+    TheoremArtifact {
+        name: "sub_sub_sub_cancel",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w)) (vec_sub u v)",
+        proof:
+            "fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w))",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -1115,6 +1255,14 @@ fn run() -> Result<(), String> {
         &ordered_field_imports,
         &ordered_field_source_interfaces,
     )?;
+    let vector_basic_imports = vec![eq_import.clone()];
+    let vector_basic_source_interfaces = vec![eq_source_interface.clone()];
+    let vector_basic = build_and_write_module(
+        &proof_root,
+        &VECTOR_BASIC_MODULE,
+        &vector_basic_imports,
+        &vector_basic_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -1128,6 +1276,7 @@ fn run() -> Result<(), String> {
             ring,
             square,
             ordered_field,
+            vector_basic,
         ])
         .as_bytes(),
     )?;

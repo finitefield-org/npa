@@ -1,0 +1,97 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Vector.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Vec",
+      "source_kind": "inductive_decl",
+      "term": "inductive Vec : Type where | unit : Vec"
+    },
+    {
+      "declaration": "vec_zero",
+      "source_kind": "explicit_def_value",
+      "term": "Vec.unit"
+    },
+    {
+      "declaration": "vec_add",
+      "source_kind": "explicit_def_value",
+      "term": "fun u => fun v => Vec.unit"
+    },
+    {
+      "declaration": "vec_neg",
+      "source_kind": "explicit_def_value",
+      "term": "fun v => Vec.unit"
+    },
+    {
+      "declaration": "vec_sub",
+      "source_kind": "explicit_def_value",
+      "term": "fun u => fun v => vec_add u (vec_neg v)"
+    },
+    {
+      "declaration": "vec_add_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_add (vec_add u v) w)"
+    },
+    {
+      "declaration": "vec_add_comm",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} Vec (vec_add u v)"
+    },
+    {
+      "declaration": "vec_zero_add",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v"
+    },
+    {
+      "declaration": "vec_add_zero",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v"
+    },
+    {
+      "declaration": "vec_neg_add_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Eq.refl.{1} Vec (vec_add (vec_neg v) v)"
+    },
+    {
+      "declaration": "vec_add_neg_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Eq.refl.{1} Vec (vec_add v (vec_neg v))"
+    },
+    {
+      "declaration": "vec_sub_def",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} Vec (vec_sub u v)"
+    },
+    {
+      "declaration": "vec_sub_eq_add_neg",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} Vec (vec_sub u v)"
+    },
+    {
+      "declaration": "vec_sub_self",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Eq.refl.{1} Vec (vec_sub v v)"
+    },
+    {
+      "declaration": "vec_sub_zero",
+      "source_kind": "explicit_term",
+      "term": "fun v => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec Vec.unit x) (@Eq.refl.{1} Vec Vec.unit) v"
+    },
+    {
+      "declaration": "vec_add_left_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => fun h => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec x w) (@Vec.rec.{0} (fun (y : Vec) => @Eq.{1} Vec Vec.unit y) (@Eq.refl.{1} Vec Vec.unit) w) v"
+    },
+    {
+      "declaration": "sub_sub_sub_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Vector/Basic/certificate.npcert"
+  }
+}
