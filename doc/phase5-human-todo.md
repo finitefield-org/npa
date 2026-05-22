@@ -317,10 +317,10 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `HumanProofStateStore`、`HumanStateId`、`HumanGoalId` mapping を追加する。
-- [ ] `start_human_proof` の `MachineProofState` を Human session 内 state として保存する。
-- [ ] tactic 実行後の new state を immutable entry として追加し、old state を破壊しない。
-- [ ] state entry に document version、source position、selected goal、messages を紐付ける。
+- [x] `HumanProofStateStore`、`HumanStateId`、`HumanGoalId` mapping を追加する。
+- [x] `start_human_proof` の `MachineProofState` を Human session 内 state として保存する。
+- [x] tactic 実行後の new state を immutable entry として追加し、old state を破壊しない。
+- [x] state entry に document version、source position、selected goal、messages を紐付ける。
 
 依存:
 
@@ -344,9 +344,9 @@ crates/npa-api/src/human.rs
 
 Acceptance criteria:
 
-- [ ] 同じ session 内で `state_id` から元の proof state を再取得できる。
-- [ ] tactic 失敗後に old state の open goals と proof skeleton が変わらない。
-- [ ] state id は Human API handle であり、Machine `state_fingerprint` の代替として使われない。
+- [x] 同じ session 内で `state_id` から元の proof state を再取得できる。
+- [x] tactic 失敗後に old state の open goals と proof skeleton が変わらない。
+- [x] state id は Human API handle であり、Machine `state_fingerprint` の代替として使われない。
 
 Verification:
 
@@ -357,7 +357,7 @@ cargo test -p npa-tactic
 
 AI 速度ガード:
 
-- [ ] Human `state_id` を Phase 7 search node identity に使う API を追加しない。
+- [x] Human `state_id` を Phase 7 search node identity に使う API を追加しない。
 
 ---
 

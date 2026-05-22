@@ -4,7 +4,7 @@ use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
     FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr, HumanImportedSourceInterface,
     HumanName, HumanRewriteRuleSyntax, HumanSourceInterface, HumanTacticScript,
-    MachineSurfaceCallableInterfaceTable,
+    MachineSurfaceCallableInterfaceTable, Span,
 };
 use npa_kernel::Expr;
 use npa_tactic::{
@@ -143,13 +143,14 @@ pub struct HumanDocumentUpdateOk {
     pub messages: Vec<HumanDiagnostic>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct HumanProofSession {
     pub session_id: HumanSessionId,
     pub status: HumanProofSessionStatus,
     pub document: HumanDocumentSnapshot,
     pub source_interface: Option<HumanSourceInterface>,
     pub active_imported_source_interfaces: Vec<HumanImportedSourceInterface>,
+    pub proof_states: HumanProofStateStore,
     pub messages: Vec<HumanDiagnostic>,
 }
 
@@ -187,7 +188,7 @@ impl HumanProofSessionStatus {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct HumanProofSessionStore {
     sessions: BTreeMap<HumanSessionId, HumanProofSession>,
     next_session_index: u64,
@@ -302,6 +303,282 @@ impl HumanDocumentVersion {
     pub fn next(self) -> Option<Self> {
         self.0.checked_add(1).map(Self)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanProofStateStore {
+    entries: BTreeMap<HumanStateId, HumanProofStateEntry>,
+    next_state_index: u64,
+    next_goal_index: u64,
+}
+
+impl HumanProofStateStore {
+    pub fn new() -> Self {
+        Self {
+            entries: BTreeMap::new(),
+            next_state_index: 1,
+            next_goal_index: 1,
+        }
+    }
+
+    pub fn state(&self, state_id: &HumanStateId) -> Option<&HumanProofStateEntry> {
+        self.entries.get(state_id)
+    }
+
+    pub fn state_count(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub(crate) fn insert_initial_state(
+        &mut self,
+        state: MachineProofState,
+        document_version: HumanDocumentVersion,
+        source_span: Option<Span>,
+        selected_goal: Option<GoalId>,
+        messages: Vec<HumanDiagnostic>,
+    ) -> Result<HumanProofStateEntry, HumanProofStateStoreMutationError> {
+        self.insert_state_entry(HumanProofStateEntryInput {
+            parent_state_id: None,
+            parent_goal_mappings: &[],
+            state,
+            document_version,
+            source_span,
+            selected_goal,
+            messages,
+        })
+    }
+
+    pub(crate) fn insert_transition_state(
+        &mut self,
+        parent_state_id: &HumanStateId,
+        state: MachineProofState,
+        source_span: Option<Span>,
+        selected_goal: Option<GoalId>,
+        messages: Vec<HumanDiagnostic>,
+    ) -> Result<HumanProofStateEntry, HumanProofStateStoreMutationError> {
+        let (parent_document_version, parent_goal_mappings) = {
+            let parent = self
+                .entries
+                .get(parent_state_id)
+                .ok_or(HumanProofStateStoreMutationError::UnknownParentState)?;
+            (parent.document_version, parent.goal_mappings.clone())
+        };
+        self.insert_state_entry(HumanProofStateEntryInput {
+            parent_state_id: Some(parent_state_id.clone()),
+            parent_goal_mappings: &parent_goal_mappings,
+            state,
+            document_version: parent_document_version,
+            source_span,
+            selected_goal,
+            messages,
+        })
+    }
+
+    fn insert_state_entry(
+        &mut self,
+        input: HumanProofStateEntryInput<'_>,
+    ) -> Result<HumanProofStateEntry, HumanProofStateStoreMutationError> {
+        let goal_mappings =
+            self.goal_mappings_for_state(&input.state, input.parent_goal_mappings)?;
+        let selected_goal = selected_human_goal(input.selected_goal, &input.state, &goal_mappings);
+        let state_id = self.allocate_state_id()?;
+        let entry = HumanProofStateEntry {
+            state_id: state_id.clone(),
+            parent_state_id: input.parent_state_id,
+            document_version: input.document_version,
+            source_span: input.source_span,
+            selected_goal,
+            goal_mappings,
+            state: input.state,
+            messages: input.messages,
+        };
+        self.entries.insert(state_id, entry.clone());
+        Ok(entry)
+    }
+
+    fn goal_mappings_for_state(
+        &mut self,
+        state: &MachineProofState,
+        parent_goal_mappings: &[HumanGoalMapping],
+    ) -> Result<Vec<HumanGoalMapping>, HumanProofStateStoreMutationError> {
+        let mut mappings = Vec::with_capacity(state.open_goals.len());
+        for machine_goal_id in &state.open_goals {
+            if let Some(existing) = parent_goal_mappings
+                .iter()
+                .find(|mapping| mapping.machine_goal_id == *machine_goal_id)
+            {
+                mappings.push(existing.clone());
+                continue;
+            }
+            mappings.push(HumanGoalMapping {
+                human_goal_id: self.allocate_goal_id()?,
+                machine_goal_id: *machine_goal_id,
+            });
+        }
+        Ok(mappings)
+    }
+
+    fn allocate_state_id(&mut self) -> Result<HumanStateId, HumanProofStateStoreMutationError> {
+        let next = self
+            .next_state_index
+            .checked_add(1)
+            .ok_or(HumanProofStateStoreMutationError::IdSpaceExhausted)?;
+        let state_id = HumanStateId::new_unchecked(format!("hst_{}", self.next_state_index));
+        self.next_state_index = next;
+        Ok(state_id)
+    }
+
+    fn allocate_goal_id(&mut self) -> Result<HumanGoalId, HumanProofStateStoreMutationError> {
+        let next = self
+            .next_goal_index
+            .checked_add(1)
+            .ok_or(HumanProofStateStoreMutationError::IdSpaceExhausted)?;
+        let goal_id = HumanGoalId::new_unchecked(format!("hgoal_{}", self.next_goal_index));
+        self.next_goal_index = next;
+        Ok(goal_id)
+    }
+}
+
+struct HumanProofStateEntryInput<'a> {
+    parent_state_id: Option<HumanStateId>,
+    parent_goal_mappings: &'a [HumanGoalMapping],
+    state: MachineProofState,
+    document_version: HumanDocumentVersion,
+    source_span: Option<Span>,
+    selected_goal: Option<GoalId>,
+    messages: Vec<HumanDiagnostic>,
+}
+
+impl Default for HumanProofStateStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanProofStateEntry {
+    pub state_id: HumanStateId,
+    pub parent_state_id: Option<HumanStateId>,
+    pub document_version: HumanDocumentVersion,
+    pub source_span: Option<Span>,
+    pub selected_goal: Option<HumanGoalId>,
+    pub goal_mappings: Vec<HumanGoalMapping>,
+    pub state: MachineProofState,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+impl HumanProofStateEntry {
+    pub fn human_goal_for_machine_goal(&self, goal_id: GoalId) -> Option<&HumanGoalId> {
+        self.goal_mappings
+            .iter()
+            .find(|mapping| mapping.machine_goal_id == goal_id)
+            .map(|mapping| &mapping.human_goal_id)
+    }
+
+    pub fn machine_goal_for_human_goal(&self, goal_id: &HumanGoalId) -> Option<GoalId> {
+        self.goal_mappings
+            .iter()
+            .find(|mapping| &mapping.human_goal_id == goal_id)
+            .map(|mapping| mapping.machine_goal_id)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanGoalMapping {
+    pub human_goal_id: HumanGoalId,
+    pub machine_goal_id: GoalId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanStateId(String);
+
+impl HumanStateId {
+    pub fn new_unchecked(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn wire(&self) -> &str {
+        self.as_str()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanGoalId(String);
+
+impl HumanGoalId {
+    pub fn new_unchecked(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn wire(&self) -> &str {
+        self.as_str()
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum HumanProofStateStoreMutationError {
+    IdSpaceExhausted,
+    UnknownParentState,
+}
+
+fn selected_human_goal(
+    selected_goal: Option<GoalId>,
+    state: &MachineProofState,
+    goal_mappings: &[HumanGoalMapping],
+) -> Option<HumanGoalId> {
+    let selected_machine_goal = selected_goal.or_else(|| state.open_goals.first().copied())?;
+    goal_mappings
+        .iter()
+        .find(|mapping| mapping.machine_goal_id == selected_machine_goal)
+        .map(|mapping| mapping.human_goal_id.clone())
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanProofStateStartRequest {
+    pub session_id: HumanSessionId,
+    pub theorem_name: Name,
+    pub source_span: Option<Span>,
+    pub selected_goal: Option<GoalId>,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanProofStateStartOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub document_version: HumanDocumentVersion,
+    pub selected_goal: Option<HumanGoalId>,
+    pub goal_mappings: Vec<HumanGoalMapping>,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanTacticStateRecordRequest {
+    pub session_id: HumanSessionId,
+    pub parent_state_id: HumanStateId,
+    pub state: MachineProofState,
+    pub source_span: Option<Span>,
+    pub selected_goal: Option<GoalId>,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticStateRecordOk {
+    pub session_id: HumanSessionId,
+    pub parent_state_id: HumanStateId,
+    pub state_id: HumanStateId,
+    pub document_version: HumanDocumentVersion,
+    pub selected_goal: Option<HumanGoalId>,
+    pub goal_mappings: Vec<HumanGoalMapping>,
+    pub messages: Vec<HumanDiagnostic>,
 }
 
 #[derive(Clone, Debug)]
@@ -474,6 +751,25 @@ pub enum HumanDocumentUpdateError {
         document_id: HumanDocumentId,
         current: HumanDocumentVersion,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanProofStateStartError {
+    UnknownSession { session_id: HumanSessionId },
+    IdSpaceExhausted,
+    Start(HumanStartProofError),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTacticStateRecordError {
+    UnknownSession {
+        session_id: HumanSessionId,
+    },
+    UnknownParentState {
+        session_id: HumanSessionId,
+        parent_state_id: HumanStateId,
+    },
+    IdSpaceExhausted,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

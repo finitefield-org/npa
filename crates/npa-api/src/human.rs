@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::types::HumanProofStateStoreMutationError;
 use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
@@ -8,13 +9,15 @@ use crate::{
     HumanExactTacticOk, HumanExactTacticRequest, HumanInductionTacticError, HumanInductionTacticOk,
     HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
     HumanIntroTacticRequest, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
-    HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
-    HumanSessionCreateError, HumanSessionCreateOk, HumanSessionCreateRequest,
-    HumanSimpLiteTacticError, HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest,
-    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanStateRequestError,
-    HumanStateRequestHeader, HumanTacticScriptError, HumanTacticScriptRunOk,
-    HumanTacticScriptRunRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
-    HumanTacticTermError,
+    HumanProofStateEntry, HumanProofStateStartError, HumanProofStateStartOk,
+    HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
+    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
+    HumanSessionCreateRequest, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
+    HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
+    HumanStateRequestError, HumanStateRequestHeader, HumanTacticScriptError,
+    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
+    HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticTermCheckOk,
+    HumanTacticTermCheckRequest, HumanTacticTermError,
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
@@ -137,6 +140,7 @@ pub fn create_human_session(
         document,
         source_interface: collected.source_interface,
         active_imported_source_interfaces: collected.active_imports,
+        proof_states: HumanProofStateStore::new(),
         messages: collected.messages,
     };
     store.insert_session(session);
@@ -148,6 +152,150 @@ pub fn create_human_session(
         status: HumanProofSessionStatus::Open,
         messages,
     })
+}
+
+/// Start a theorem proof from a Human session and store the initial proof state.
+///
+/// This records the `MachineProofState` returned by `start_human_proof` under a
+/// Human-only `HumanStateId`. The handle is for Human API state lookup and is
+/// not a replacement for Machine `state_fingerprint` in AI search paths.
+pub fn start_human_session_proof(
+    store: &mut HumanProofSessionStore,
+    request: HumanProofStateStartRequest,
+) -> Result<HumanProofStateStartOk, HumanProofStateStartError> {
+    let (current_module, file_id, source, verified_modules, imported_source_interfaces, options) = {
+        let session = store.session(&request.session_id).ok_or_else(|| {
+            HumanProofStateStartError::UnknownSession {
+                session_id: request.session_id.clone(),
+            }
+        })?;
+        (
+            session.document.current_module.clone(),
+            session.document.file_id,
+            session.document.source.clone(),
+            session.document.verified_modules.clone(),
+            session.document.imported_source_interfaces.clone(),
+            session.document.options.clone(),
+        )
+    };
+    let started = start_human_proof(HumanStartProofRequest {
+        current_module,
+        theorem_name: request.theorem_name,
+        current_source: HumanCurrentModuleSource {
+            file_id,
+            source: &source,
+        },
+        verified_modules: &verified_modules,
+        imported_source_interfaces: &imported_source_interfaces,
+        options,
+    })
+    .map_err(HumanProofStateStartError::Start)?;
+    let session = store
+        .session_mut(&request.session_id)
+        .expect("session was checked before proof start");
+    session.source_interface = Some(started.source_interface);
+    let entry = session
+        .proof_states
+        .insert_initial_state(
+            started.state,
+            session.document.document_version,
+            request.source_span,
+            request.selected_goal,
+            request.messages,
+        )
+        .map_err(human_proof_state_start_error)?;
+
+    Ok(HumanProofStateStartOk {
+        session_id: request.session_id,
+        state_id: entry.state_id,
+        document_version: entry.document_version,
+        selected_goal: entry.selected_goal,
+        goal_mappings: entry.goal_mappings,
+        messages: entry.messages,
+    })
+}
+
+/// Record a new Human proof state after a tactic has produced a new Machine state.
+///
+/// The parent entry is left untouched. Existing open Machine goals keep their
+/// Human goal handles where possible, and new Machine goals receive fresh
+/// Human-only handles.
+pub fn record_human_tactic_state(
+    store: &mut HumanProofSessionStore,
+    request: HumanTacticStateRecordRequest,
+) -> Result<HumanTacticStateRecordOk, HumanTacticStateRecordError> {
+    let session = store.session_mut(&request.session_id).ok_or_else(|| {
+        HumanTacticStateRecordError::UnknownSession {
+            session_id: request.session_id.clone(),
+        }
+    })?;
+    let entry = session
+        .proof_states
+        .insert_transition_state(
+            &request.parent_state_id,
+            request.state,
+            request.source_span,
+            request.selected_goal,
+            request.messages,
+        )
+        .map_err(|error| {
+            human_tactic_state_record_error(
+                error,
+                request.session_id.clone(),
+                request.parent_state_id.clone(),
+            )
+        })?;
+
+    Ok(HumanTacticStateRecordOk {
+        session_id: request.session_id,
+        parent_state_id: request.parent_state_id,
+        state_id: entry.state_id,
+        document_version: entry.document_version,
+        selected_goal: entry.selected_goal,
+        goal_mappings: entry.goal_mappings,
+        messages: entry.messages,
+    })
+}
+
+pub fn get_human_proof_state<'session>(
+    store: &'session HumanProofSessionStore,
+    session_id: &crate::HumanSessionId,
+    state_id: &crate::HumanStateId,
+) -> Option<&'session HumanProofStateEntry> {
+    store
+        .session(session_id)
+        .and_then(|session| session.proof_states.state(state_id))
+}
+
+fn human_proof_state_start_error(
+    error: HumanProofStateStoreMutationError,
+) -> HumanProofStateStartError {
+    match error {
+        HumanProofStateStoreMutationError::IdSpaceExhausted => {
+            HumanProofStateStartError::IdSpaceExhausted
+        }
+        HumanProofStateStoreMutationError::UnknownParentState => {
+            unreachable!("initial proof state insertion has no parent state")
+        }
+    }
+}
+
+fn human_tactic_state_record_error(
+    error: HumanProofStateStoreMutationError,
+    session_id: crate::HumanSessionId,
+    parent_state_id: crate::HumanStateId,
+) -> HumanTacticStateRecordError {
+    match error {
+        HumanProofStateStoreMutationError::IdSpaceExhausted => {
+            HumanTacticStateRecordError::IdSpaceExhausted
+        }
+        HumanProofStateStoreMutationError::UnknownParentState => {
+            HumanTacticStateRecordError::UnknownParentState {
+                session_id,
+                parent_state_id,
+            }
+        }
+    }
 }
 
 /// Replace the current Human document snapshot for an open Human session.
@@ -2509,8 +2657,9 @@ fn active_human_verified_import_refs(
 mod tests {
     use super::*;
     use crate::{
-        create_machine_session, HumanCurrentModuleSource, HumanDocumentVersion,
-        HumanProofSessionStore, HumanStateRequestHeader,
+        create_machine_session, get_human_proof_state, HumanCurrentModuleSource,
+        HumanDocumentVersion, HumanProofSessionStore, HumanProofStateStartRequest,
+        HumanStateRequestHeader, HumanTacticStateRecordRequest,
     };
 
     fn human_payload(
@@ -2738,6 +2887,186 @@ mod tests {
             vec![source_interface]
         );
         assert_eq!(store.session_count(), 1);
+    }
+
+    #[test]
+    fn human_state_store_starts_session_proof_and_retrieves_by_human_state_id() {
+        let source = "\
+theorem target : forall (P : Prop), forall (hp : P), P := by simp-lite";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.StateStore"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(21),
+                    source,
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let proof_span = npa_frontend::Span::new(npa_frontend::FileId(21), 0, 48);
+        let start_message = npa_frontend::HumanDiagnostic::error(
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal,
+            proof_span,
+            "state stored with message",
+        );
+
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.StateStore.target"),
+                source_span: Some(proof_span),
+                selected_goal: None,
+                messages: vec![start_message.clone()],
+            },
+        )
+        .expect("Human session proof should start and store state");
+
+        assert!(started.state_id.wire().starts_with("hst_"));
+        assert_eq!(started.messages, vec![start_message.clone()]);
+        let entry = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("stored Human state should be retrievable by state_id");
+        assert_eq!(entry.document_version, HumanDocumentVersion::initial());
+        assert_eq!(entry.source_span, Some(proof_span));
+        assert_eq!(entry.messages, vec![start_message]);
+        assert_eq!(entry.state.open_goals, vec![npa_tactic::GoalId(0)]);
+        assert_ne!(entry.state_id.wire(), entry.state.state_id);
+        assert_eq!(entry.goal_mappings.len(), 1);
+        assert_eq!(
+            entry.goal_mappings[0].machine_goal_id,
+            npa_tactic::GoalId(0)
+        );
+        assert!(entry.goal_mappings[0]
+            .human_goal_id
+            .wire()
+            .starts_with("hgoal_"));
+        assert_eq!(
+            entry.selected_goal.as_ref(),
+            Some(&entry.goal_mappings[0].human_goal_id)
+        );
+    }
+
+    #[test]
+    fn human_state_store_records_tactic_transition_without_mutating_parent_state() {
+        let source = "\
+theorem target : forall (P : Prop), forall (hp : P), P := by simp-lite";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.StateTransition"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(22),
+                    source,
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.StateTransition.target"),
+                source_span: Some(npa_frontend::Span::new(npa_frontend::FileId(22), 0, 48)),
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human session proof should start");
+        let parent_entry = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("parent state should be stored");
+        let parent_state = parent_entry.state.clone();
+        let parent_open_goals = parent_entry.state.open_goals.clone();
+        let parent_fingerprint = parent_entry.state.fingerprint;
+        let source_interface = store
+            .session(&created.session_id)
+            .and_then(|session| session.source_interface.clone())
+            .expect("started proof should leave a source interface on the session");
+
+        let bad_term = npa_frontend::parse_human_term(npa_frontend::FileId(22), "missing")
+            .expect("bad exact term should still parse");
+        run_human_exact_tactic(HumanExactTacticRequest {
+            state: &parent_state,
+            goal_id: npa_tactic::GoalId(0),
+            term: &bad_term,
+            current_source_interface: &source_interface,
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect_err("unknown exact term should fail without recording a new state");
+        let parent_after_failure =
+            get_human_proof_state(&store, &created.session_id, &started.state_id)
+                .expect("parent state should remain stored after tactic failure");
+        assert_eq!(parent_after_failure.state.open_goals, parent_open_goals);
+        assert_eq!(parent_after_failure.state.fingerprint, parent_fingerprint);
+        assert_eq!(
+            store
+                .session(&created.session_id)
+                .expect("session should exist")
+                .proof_states
+                .state_count(),
+            1
+        );
+
+        let intro_name = human_name("P", 0, 1);
+        let intro = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &parent_state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &intro_name,
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro should produce a new Machine state");
+        let tactic_span = npa_frontend::Span::new(npa_frontend::FileId(22), 49, 58);
+        let tactic_message = npa_frontend::HumanDiagnostic::error(
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal,
+            tactic_span,
+            "transition stored with message",
+        );
+        let recorded = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: intro.state.open_goals.first().copied(),
+                state: intro.state,
+                source_span: Some(tactic_span),
+                messages: vec![tactic_message.clone()],
+            },
+        )
+        .expect("successful tactic state should be recorded");
+        assert_eq!(recorded.messages, vec![tactic_message.clone()]);
+
+        let parent_after_success =
+            get_human_proof_state(&store, &created.session_id, &started.state_id)
+                .expect("parent state should remain stored after transition");
+        assert_eq!(parent_after_success.state.open_goals, parent_open_goals);
+        assert_eq!(parent_after_success.state.fingerprint, parent_fingerprint);
+        let child = get_human_proof_state(&store, &created.session_id, &recorded.state_id)
+            .expect("child state should be retrievable");
+        assert_eq!(child.parent_state_id.as_ref(), Some(&started.state_id));
+        assert_eq!(child.state.open_goals, vec![npa_tactic::GoalId(1)]);
+        assert_eq!(child.document_version, created.document_version);
+        assert_eq!(child.source_span, Some(tactic_span));
+        assert_eq!(child.messages, vec![tactic_message]);
+        assert_ne!(child.state_id.wire(), child.state.state_id);
+        assert!(child.state_id.wire().starts_with("hst_"));
+        assert_eq!(child.selected_goal, recorded.selected_goal);
+        assert_eq!(
+            store
+                .session(&created.session_id)
+                .expect("session should exist")
+                .proof_states
+                .state_count(),
+            2
+        );
     }
 
     #[test]
