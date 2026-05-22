@@ -10058,6 +10058,117 @@ mod tests {
                 "{theorem} should only depend on the standard Eq.rec axiom through induction/rewrite proof terms"
             );
         }
+
+        let algebra_module = loaded
+            .module(&Name::from_dotted("Std.Algebra.Basic"))
+            .unwrap();
+        assert_eq!(
+            algebra_module
+                .imports
+                .iter()
+                .map(|import| import.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic"]
+        );
+        for property in [
+            "Associative",
+            "Commutative",
+            "LeftIdentity",
+            "RightIdentity",
+        ] {
+            assert_eq!(export_entry(algebra_module, property).kind, ExportKind::Def);
+        }
+        for inductive in ["IsSemigroup", "IsMonoid", "IsCommMonoid"] {
+            assert_eq!(
+                export_entry(algebra_module, inductive).kind,
+                ExportKind::Inductive
+            );
+        }
+        for constructor in ["IsSemigroup.intro", "IsMonoid.intro", "IsCommMonoid.intro"] {
+            assert_eq!(
+                export_entry(algebra_module, constructor).kind,
+                ExportKind::Constructor
+            );
+        }
+        for recursor in ["IsSemigroup.rec", "IsMonoid.rec", "IsCommMonoid.rec"] {
+            assert_eq!(
+                export_entry(algebra_module, recursor).kind,
+                ExportKind::Recursor
+            );
+        }
+        for theorem in [
+            "IsMonoid.assoc",
+            "IsMonoid.left_id",
+            "IsMonoid.right_id",
+            "IsCommMonoid.assoc",
+            "IsCommMonoid.comm",
+            "IsCommMonoid.left_id",
+            "IsCommMonoid.right_id",
+        ] {
+            let entry = export_entry(algebra_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert!(
+                entry.axiom_dependencies.is_empty(),
+                "{theorem} should be a direct projection with no axiom dependencies"
+            );
+        }
+        let identity_unique = export_entry(algebra_module, "identity_unique");
+        assert_eq!(identity_unique.kind, ExportKind::Theorem);
+        assert_eq!(
+            identity_unique
+                .axiom_dependencies
+                .iter()
+                .map(|axiom| algebra_module.verified_module.name_table()[axiom.name].as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Eq.rec"],
+            "identity_unique should only use the standard Eq.rec axiom through Eq.symm/Eq.trans"
+        );
+        let algebra_axioms = axiom_report
+            .modules
+            .iter()
+            .find(|module| module.module == Name::from_dotted("Std.Algebra.Basic"))
+            .unwrap();
+        assert_eq!(
+            algebra_axioms
+                .module_axioms
+                .iter()
+                .map(|axiom| axiom.name.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Eq.rec"],
+            "Std.Algebra.Basic may only depend on the standard Eq.rec axiom from Std.Logic"
+        );
+        for forbidden in [
+            "Semigroup",
+            "Monoid",
+            "CommMonoid",
+            "Nat.add_is_comm_monoid",
+        ] {
+            assert!(
+                !algebra_module
+                    .verified_module
+                    .name_table()
+                    .iter()
+                    .any(|name| name.as_dotted() == forbidden),
+                "{forbidden} must not be exported by Std.Algebra.Basic"
+            );
+            assert!(
+                !nat_module
+                    .verified_module
+                    .name_table()
+                    .iter()
+                    .any(|name| name.as_dotted() == forbidden),
+                "{forbidden} must not be exported by Std.Nat"
+            );
+        }
+
+        for theorem in ["IsMonoid.assoc", "IsCommMonoid.comm", "identity_unique"] {
+            let entry = theorem_index_entry(&theorem_index, theorem);
+            assert_eq!(
+                entry.global_ref.module,
+                Name::from_dotted("Std.Algebra.Basic")
+            );
+            assert!(entry.modes.contains(&MachineTheoremMode::Apply));
+        }
     }
 
     #[test]
@@ -10376,6 +10487,32 @@ mod tests {
             vec!["Std.Nat", "Std.List", "Std.Logic"]
         );
         assert!(list_bundle.recommended_tactic_options.nat_family.is_none());
+
+        let algebra_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_ALGEBRA_BASIC_BUNDLE_ID)
+            .unwrap();
+        assert_eq!(
+            algebra_bundle
+                .root_imports
+                .iter()
+                .map(|key| key.module.as_dotted())
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from(["Std.Algebra.Basic".to_owned(), "Std.Logic".to_owned()])
+        );
+        assert_eq!(
+            algebra_bundle
+                .import_closure
+                .iter()
+                .map(|certificate| certificate.module.as_dotted())
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from(["Std.Algebra.Basic".to_owned(), "Std.Logic".to_owned()])
+        );
+        assert!(algebra_bundle
+            .recommended_tactic_options
+            .nat_family
+            .is_none());
 
         let nat_bundle = bundle_set
             .bundles
@@ -12238,6 +12375,86 @@ mod tests {
     }
 
     #[test]
+    fn exposes_std_algebra_projection_theorems_to_apply_search() {
+        let package = TestPackage::new("std_algebra_projection_apply_search");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        write_machine_std_release_sidecars(
+            package.path(),
+            &release,
+            &import_bundles,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            &axiom_report,
+        );
+        let release_json = release_manifest_json(&release);
+        let import_bundles_json = import_bundle_set_json(&import_bundles);
+        let theorem_index_json = theorem_index_json(&theorem_index);
+        let rewrite_profiles_json = rewrite_profile_set_json(&rewrite_profiles);
+        let simp_profiles_json = simp_profile_set_json(&simp_profiles);
+        let axiom_report_json = axiom_report_json(&axiom_report);
+        let (validated, _) = load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+            package.path(),
+            &release_json,
+            MachineStdReleaseSidecarJson {
+                import_bundles_json: &import_bundles_json,
+                theorem_index_json: &theorem_index_json,
+                rewrite_profiles_json: &rewrite_profiles_json,
+                simp_profiles_json: &simp_profiles_json,
+                axiom_report_json: &axiom_report_json,
+                prompt_metadata_json: None,
+            },
+        )
+        .unwrap();
+        let algebra_bundle = validated
+            .import_bundles
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_ALGEBRA_BASIC_BUNDLE_ID)
+            .unwrap();
+        let session =
+            crate::create_machine_session(&session_create_json_for_bundle(algebra_bundle))
+                .unwrap()
+                .session;
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Std.Algebra.Basic"]}"#;
+        let response = search_machine_theorems_for_goal(
+            &m8_apply_search_json(&session, filters, 128),
+            &session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("standard library algebra apply search should succeed");
+        };
+
+        let results_by_name = ok
+            .endpoint_fields
+            .results
+            .iter()
+            .map(|result| (result.global_ref.name.clone(), result))
+            .collect::<BTreeMap<_, _>>();
+        for theorem in [
+            "IsMonoid.assoc",
+            "IsCommMonoid.comm",
+            "IsCommMonoid.right_id",
+            "identity_unique",
+        ] {
+            let result = results_by_name
+                .get(&Name::from_dotted(theorem))
+                .unwrap_or_else(|| panic!("{theorem} should be available to apply search"));
+            assert_eq!(
+                result.global_ref.module,
+                Name::from_dotted("Std.Algebra.Basic")
+            );
+            assert!(result.modes.contains(&MachineTheoremMode::Apply));
+        }
+    }
+
+    #[test]
     fn rejects_prompt_metadata_profile_hash_entry_and_example_mismatches() {
         let package = TestPackage::new("bad_prompt_metadata");
         let certs = mvp_certificate_bytes_with_m5_profiles();
@@ -12894,14 +13111,18 @@ mod tests {
         let mut axiom_report = mvp_axiom_report_for(&loaded);
         let first = axiom_report
             .modules
-            .iter_mut()
-            .find(|module| module.module_axioms.is_empty())
-            .expect("fixture should include a module with no direct axiom dependencies");
+            .first_mut()
+            .expect("fixture should include at least one module");
         first.module_axioms.push(MachineStdAxiomRef {
             module: first.module.clone(),
             name: Name::from_dotted("Std.Nat.synthetic_axiom"),
             export_hash: first.export_hash,
             decl_interface_hash: test_hash(88),
+        });
+        first.module_axioms.sort_by(|lhs, rhs| {
+            machine_std_axiom_ref_canonical_bytes(lhs)
+                .unwrap()
+                .cmp(&machine_std_axiom_ref_canonical_bytes(rhs).unwrap())
         });
         axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
         let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
@@ -13060,8 +13281,7 @@ mod tests {
         let list = encode_module_cert(&list_cert).unwrap();
         verify_module_cert(&list, &mut session, &policy).unwrap();
 
-        let algebra_cert =
-            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_cert = build_module_cert(algebra_basic_module(), &[logic_verified]).unwrap();
         let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
 
         MvpCertificateBytes {
@@ -13244,8 +13464,7 @@ mod tests {
         let list = encode_module_cert(&list_cert).unwrap();
         verify_module_cert(&list, &mut session, &policy).unwrap();
 
-        let algebra_cert =
-            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_cert = build_module_cert(algebra_basic_module(), &[logic_verified]).unwrap();
         let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
 
         MvpCertificateBytes {
@@ -17201,6 +17420,763 @@ mod tests {
         }
     }
 
+    fn algebra_basic_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Algebra.Basic"),
+            declarations: algebra_basic_declarations(),
+        }
+    }
+
+    fn algebra_basic_declarations() -> Vec<Decl> {
+        vec![
+            associative_def(),
+            commutative_def(),
+            left_identity_def(),
+            right_identity_def(),
+            is_semigroup_inductive_decl(),
+            is_monoid_inductive_decl(),
+            is_comm_monoid_inductive_decl(),
+            is_monoid_assoc_theorem(),
+            is_monoid_left_id_theorem(),
+            is_monoid_right_id_theorem(),
+            is_comm_monoid_assoc_theorem(),
+            is_comm_monoid_comm_theorem(),
+            is_comm_monoid_left_id_theorem(),
+            is_comm_monoid_right_id_theorem(),
+            identity_unique_theorem(),
+        ]
+    }
+
+    fn associative_def() -> Decl {
+        let u = Level::param("u");
+        Decl::Def {
+            name: "Associative".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi("op", binary_op_type(Expr::bvar(0)), prop_sort()),
+            ),
+            value: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "op",
+                    binary_op_type(Expr::bvar(0)),
+                    Expr::pi(
+                        "a",
+                        Expr::bvar(1),
+                        Expr::pi(
+                            "b",
+                            Expr::bvar(2),
+                            Expr::pi(
+                                "c",
+                                Expr::bvar(3),
+                                eq(
+                                    u.clone(),
+                                    Expr::bvar(4),
+                                    binary_op(
+                                        Expr::bvar(3),
+                                        binary_op(Expr::bvar(3), Expr::bvar(2), Expr::bvar(1)),
+                                        Expr::bvar(0),
+                                    ),
+                                    binary_op(
+                                        Expr::bvar(3),
+                                        Expr::bvar(2),
+                                        binary_op(Expr::bvar(3), Expr::bvar(1), Expr::bvar(0)),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn commutative_def() -> Decl {
+        let u = Level::param("u");
+        Decl::Def {
+            name: "Commutative".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi("op", binary_op_type(Expr::bvar(0)), prop_sort()),
+            ),
+            value: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "op",
+                    binary_op_type(Expr::bvar(0)),
+                    Expr::pi(
+                        "a",
+                        Expr::bvar(1),
+                        Expr::pi(
+                            "b",
+                            Expr::bvar(2),
+                            eq(
+                                u.clone(),
+                                Expr::bvar(3),
+                                binary_op(Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                                binary_op(Expr::bvar(2), Expr::bvar(0), Expr::bvar(1)),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn left_identity_def() -> Decl {
+        let u = Level::param("u");
+        Decl::Def {
+            name: "LeftIdentity".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "e",
+                    Expr::bvar(0),
+                    Expr::pi("op", binary_op_type(Expr::bvar(1)), prop_sort()),
+                ),
+            ),
+            value: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "e",
+                    Expr::bvar(0),
+                    Expr::lam(
+                        "op",
+                        binary_op_type(Expr::bvar(1)),
+                        Expr::pi(
+                            "a",
+                            Expr::bvar(2),
+                            eq(
+                                u.clone(),
+                                Expr::bvar(3),
+                                binary_op(Expr::bvar(1), Expr::bvar(2), Expr::bvar(0)),
+                                Expr::bvar(0),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn right_identity_def() -> Decl {
+        let u = Level::param("u");
+        Decl::Def {
+            name: "RightIdentity".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "e",
+                    Expr::bvar(0),
+                    Expr::pi("op", binary_op_type(Expr::bvar(1)), prop_sort()),
+                ),
+            ),
+            value: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "e",
+                    Expr::bvar(0),
+                    Expr::lam(
+                        "op",
+                        binary_op_type(Expr::bvar(1)),
+                        Expr::pi(
+                            "a",
+                            Expr::bvar(2),
+                            eq(
+                                u.clone(),
+                                Expr::bvar(3),
+                                binary_op(Expr::bvar(1), Expr::bvar(0), Expr::bvar(2)),
+                                Expr::bvar(0),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn is_semigroup_inductive_decl() -> Decl {
+        let u = Level::param("u");
+        Decl::Inductive {
+            name: "IsSemigroup".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi("op", binary_op_type(Expr::bvar(0)), prop_sort()),
+            ),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "IsSemigroup",
+                vec!["u".to_owned()],
+                vec![
+                    Binder::new("A", Expr::sort(u.clone())),
+                    Binder::new("op", binary_op_type(Expr::bvar(0))),
+                ],
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "IsSemigroup.intro",
+                    is_semigroup_intro_type(u),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn is_semigroup_intro_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::pi(
+                    "assoc",
+                    associative(u.clone(), Expr::bvar(1), Expr::bvar(0)),
+                    is_semigroup(u, Expr::bvar(2), Expr::bvar(1)),
+                ),
+            ),
+        )
+    }
+
+    fn is_monoid_inductive_decl() -> Decl {
+        let u = Level::param("u");
+        Decl::Inductive {
+            name: "IsMonoid".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "op",
+                    binary_op_type(Expr::bvar(0)),
+                    Expr::pi("e", Expr::bvar(1), prop_sort()),
+                ),
+            ),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "IsMonoid",
+                vec!["u".to_owned()],
+                vec![
+                    Binder::new("A", Expr::sort(u.clone())),
+                    Binder::new("op", binary_op_type(Expr::bvar(0))),
+                    Binder::new("e", Expr::bvar(1)),
+                ],
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "IsMonoid.intro",
+                    is_monoid_intro_type(u),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn is_monoid_intro_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::pi(
+                    "e",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "assoc",
+                        associative(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                        Expr::pi(
+                            "left_id",
+                            left_identity(u.clone(), Expr::bvar(3), Expr::bvar(1), Expr::bvar(2)),
+                            Expr::pi(
+                                "right_id",
+                                right_identity(
+                                    u.clone(),
+                                    Expr::bvar(4),
+                                    Expr::bvar(2),
+                                    Expr::bvar(3),
+                                ),
+                                is_monoid(u, Expr::bvar(5), Expr::bvar(4), Expr::bvar(3)),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn is_comm_monoid_inductive_decl() -> Decl {
+        let u = Level::param("u");
+        Decl::Inductive {
+            name: "IsCommMonoid".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "op",
+                    binary_op_type(Expr::bvar(0)),
+                    Expr::pi("e", Expr::bvar(1), prop_sort()),
+                ),
+            ),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "IsCommMonoid",
+                vec!["u".to_owned()],
+                vec![
+                    Binder::new("A", Expr::sort(u.clone())),
+                    Binder::new("op", binary_op_type(Expr::bvar(0))),
+                    Binder::new("e", Expr::bvar(1)),
+                ],
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "IsCommMonoid.intro",
+                    is_comm_monoid_intro_type(u),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn is_comm_monoid_intro_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::pi(
+                    "e",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "assoc",
+                        associative(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                        Expr::pi(
+                            "comm",
+                            commutative(u.clone(), Expr::bvar(3), Expr::bvar(2)),
+                            Expr::pi(
+                                "left_id",
+                                left_identity(
+                                    u.clone(),
+                                    Expr::bvar(4),
+                                    Expr::bvar(2),
+                                    Expr::bvar(3),
+                                ),
+                                Expr::pi(
+                                    "right_id",
+                                    right_identity(
+                                        u.clone(),
+                                        Expr::bvar(5),
+                                        Expr::bvar(3),
+                                        Expr::bvar(4),
+                                    ),
+                                    is_comm_monoid(u, Expr::bvar(6), Expr::bvar(5), Expr::bvar(4)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn is_monoid_assoc_theorem() -> Decl {
+        algebra_monoid_projection_theorem("IsMonoid.assoc", MonoidProjection::Assoc)
+    }
+
+    fn is_monoid_left_id_theorem() -> Decl {
+        algebra_monoid_projection_theorem("IsMonoid.left_id", MonoidProjection::LeftId)
+    }
+
+    fn is_monoid_right_id_theorem() -> Decl {
+        algebra_monoid_projection_theorem("IsMonoid.right_id", MonoidProjection::RightId)
+    }
+
+    fn is_comm_monoid_assoc_theorem() -> Decl {
+        algebra_comm_monoid_projection_theorem("IsCommMonoid.assoc", CommMonoidProjection::Assoc)
+    }
+
+    fn is_comm_monoid_comm_theorem() -> Decl {
+        algebra_comm_monoid_projection_theorem("IsCommMonoid.comm", CommMonoidProjection::Comm)
+    }
+
+    fn is_comm_monoid_left_id_theorem() -> Decl {
+        algebra_comm_monoid_projection_theorem("IsCommMonoid.left_id", CommMonoidProjection::LeftId)
+    }
+
+    fn is_comm_monoid_right_id_theorem() -> Decl {
+        algebra_comm_monoid_projection_theorem(
+            "IsCommMonoid.right_id",
+            CommMonoidProjection::RightId,
+        )
+    }
+
+    #[derive(Clone, Copy)]
+    enum MonoidProjection {
+        Assoc,
+        LeftId,
+        RightId,
+    }
+
+    #[derive(Clone, Copy)]
+    enum CommMonoidProjection {
+        Assoc,
+        Comm,
+        LeftId,
+        RightId,
+    }
+
+    fn algebra_monoid_projection_theorem(name: &str, projection: MonoidProjection) -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: name.to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: algebra_monoid_projection_type(u.clone(), projection),
+            proof: algebra_monoid_projection_proof(u, projection),
+        }
+    }
+
+    fn algebra_monoid_projection_type(u: Level, projection: MonoidProjection) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::pi(
+                    "e",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "h",
+                        is_monoid(u.clone(), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                        monoid_projection_target(
+                            u,
+                            projection,
+                            Expr::bvar(3),
+                            Expr::bvar(2),
+                            Expr::bvar(1),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn algebra_monoid_projection_proof(u: Level, projection: MonoidProjection) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::lam(
+                    "e",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "h",
+                        is_monoid(u.clone(), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                        Expr::apps(
+                            Expr::konst("IsMonoid.rec", vec![u.clone()]),
+                            vec![
+                                Expr::bvar(3),
+                                Expr::bvar(2),
+                                Expr::bvar(1),
+                                Expr::lam(
+                                    "_",
+                                    is_monoid(
+                                        u.clone(),
+                                        Expr::bvar(3),
+                                        Expr::bvar(2),
+                                        Expr::bvar(1),
+                                    ),
+                                    monoid_projection_target(
+                                        u.clone(),
+                                        projection,
+                                        Expr::bvar(4),
+                                        Expr::bvar(3),
+                                        Expr::bvar(2),
+                                    ),
+                                ),
+                                algebra_monoid_projection_minor(u.clone(), projection),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn monoid_projection_target(
+        u: Level,
+        projection: MonoidProjection,
+        a: Expr,
+        op: Expr,
+        e: Expr,
+    ) -> Expr {
+        match projection {
+            MonoidProjection::Assoc => associative(u, a, op),
+            MonoidProjection::LeftId => left_identity(u, a, e, op),
+            MonoidProjection::RightId => right_identity(u, a, e, op),
+        }
+    }
+
+    fn algebra_monoid_projection_minor(u: Level, projection: MonoidProjection) -> Expr {
+        Expr::lam(
+            "assoc",
+            associative(u.clone(), Expr::bvar(3), Expr::bvar(2)),
+            Expr::lam(
+                "left_id",
+                left_identity(u.clone(), Expr::bvar(4), Expr::bvar(2), Expr::bvar(3)),
+                Expr::lam(
+                    "right_id",
+                    right_identity(u, Expr::bvar(5), Expr::bvar(3), Expr::bvar(4)),
+                    match projection {
+                        MonoidProjection::Assoc => Expr::bvar(2),
+                        MonoidProjection::LeftId => Expr::bvar(1),
+                        MonoidProjection::RightId => Expr::bvar(0),
+                    },
+                ),
+            ),
+        )
+    }
+
+    fn algebra_comm_monoid_projection_theorem(
+        name: &str,
+        projection: CommMonoidProjection,
+    ) -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: name.to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: algebra_comm_monoid_projection_type(u.clone(), projection),
+            proof: algebra_comm_monoid_projection_proof(u, projection),
+        }
+    }
+
+    fn algebra_comm_monoid_projection_type(u: Level, projection: CommMonoidProjection) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::pi(
+                    "e",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "h",
+                        is_comm_monoid(u.clone(), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                        comm_monoid_projection_target(
+                            u,
+                            projection,
+                            Expr::bvar(3),
+                            Expr::bvar(2),
+                            Expr::bvar(1),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn algebra_comm_monoid_projection_proof(u: Level, projection: CommMonoidProjection) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::lam(
+                    "e",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "h",
+                        is_comm_monoid(u.clone(), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                        Expr::apps(
+                            Expr::konst("IsCommMonoid.rec", vec![u.clone()]),
+                            vec![
+                                Expr::bvar(3),
+                                Expr::bvar(2),
+                                Expr::bvar(1),
+                                Expr::lam(
+                                    "_",
+                                    is_comm_monoid(
+                                        u.clone(),
+                                        Expr::bvar(3),
+                                        Expr::bvar(2),
+                                        Expr::bvar(1),
+                                    ),
+                                    comm_monoid_projection_target(
+                                        u.clone(),
+                                        projection,
+                                        Expr::bvar(4),
+                                        Expr::bvar(3),
+                                        Expr::bvar(2),
+                                    ),
+                                ),
+                                algebra_comm_monoid_projection_minor(u.clone(), projection),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn comm_monoid_projection_target(
+        u: Level,
+        projection: CommMonoidProjection,
+        a: Expr,
+        op: Expr,
+        e: Expr,
+    ) -> Expr {
+        match projection {
+            CommMonoidProjection::Assoc => associative(u, a, op),
+            CommMonoidProjection::Comm => commutative(u, a, op),
+            CommMonoidProjection::LeftId => left_identity(u, a, e, op),
+            CommMonoidProjection::RightId => right_identity(u, a, e, op),
+        }
+    }
+
+    fn algebra_comm_monoid_projection_minor(u: Level, projection: CommMonoidProjection) -> Expr {
+        Expr::lam(
+            "assoc",
+            associative(u.clone(), Expr::bvar(3), Expr::bvar(2)),
+            Expr::lam(
+                "comm",
+                commutative(u.clone(), Expr::bvar(4), Expr::bvar(3)),
+                Expr::lam(
+                    "left_id",
+                    left_identity(u.clone(), Expr::bvar(5), Expr::bvar(3), Expr::bvar(4)),
+                    Expr::lam(
+                        "right_id",
+                        right_identity(u, Expr::bvar(6), Expr::bvar(4), Expr::bvar(5)),
+                        match projection {
+                            CommMonoidProjection::Assoc => Expr::bvar(3),
+                            CommMonoidProjection::Comm => Expr::bvar(2),
+                            CommMonoidProjection::LeftId => Expr::bvar(1),
+                            CommMonoidProjection::RightId => Expr::bvar(0),
+                        },
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn identity_unique_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "identity_unique".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "op",
+                    binary_op_type(Expr::bvar(0)),
+                    Expr::pi(
+                        "e1",
+                        Expr::bvar(1),
+                        Expr::pi(
+                            "e2",
+                            Expr::bvar(2),
+                            Expr::pi(
+                                "h1",
+                                left_identity(
+                                    u.clone(),
+                                    Expr::bvar(3),
+                                    Expr::bvar(1),
+                                    Expr::bvar(2),
+                                ),
+                                Expr::pi(
+                                    "h2",
+                                    right_identity(
+                                        u.clone(),
+                                        Expr::bvar(4),
+                                        Expr::bvar(1),
+                                        Expr::bvar(3),
+                                    ),
+                                    eq(u.clone(), Expr::bvar(5), Expr::bvar(3), Expr::bvar(2)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            proof: identity_unique_proof(u),
+        }
+    }
+
+    fn identity_unique_proof(u: Level) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "op",
+                binary_op_type(Expr::bvar(0)),
+                Expr::lam(
+                    "e1",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "e2",
+                        Expr::bvar(2),
+                        Expr::lam(
+                            "h1",
+                            left_identity(u.clone(), Expr::bvar(3), Expr::bvar(1), Expr::bvar(2)),
+                            Expr::lam(
+                                "h2",
+                                right_identity(
+                                    u.clone(),
+                                    Expr::bvar(4),
+                                    Expr::bvar(1),
+                                    Expr::bvar(3),
+                                ),
+                                {
+                                    let a = Expr::bvar(5);
+                                    let op = Expr::bvar(4);
+                                    let e1 = Expr::bvar(3);
+                                    let e2 = Expr::bvar(2);
+                                    let h1 = Expr::bvar(1);
+                                    let h2 = Expr::bvar(0);
+                                    let mid = binary_op(op.clone(), e1.clone(), e2.clone());
+                                    let h2_e1 = Expr::app(h2, e1.clone());
+                                    let h1_e2 = Expr::app(h1, e2.clone());
+                                    eq_trans_general(
+                                        u.clone(),
+                                        a.clone(),
+                                        e1.clone(),
+                                        mid.clone(),
+                                        e2,
+                                        eq_symm_general(u.clone(), a, mid.clone(), e1, h2_e1),
+                                        h1_e2,
+                                    )
+                                },
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
     fn nat_add_zero_prop(n: Expr) -> Expr {
         eq(type0(), nat(), nat_add(n.clone(), nat_zero()), n)
     }
@@ -17553,6 +18529,46 @@ mod tests {
         )
     }
 
+    fn binary_op_type(a: Expr) -> Expr {
+        Expr::pi(
+            "_",
+            a.clone(),
+            Expr::pi("_", shift_expr(a.clone(), 1), shift_expr(a, 2)),
+        )
+    }
+
+    fn binary_op(op: Expr, lhs: Expr, rhs: Expr) -> Expr {
+        Expr::apps(op, vec![lhs, rhs])
+    }
+
+    fn associative(u: Level, elem_ty: Expr, op: Expr) -> Expr {
+        Expr::apps(Expr::konst("Associative", vec![u]), vec![elem_ty, op])
+    }
+
+    fn commutative(u: Level, elem_ty: Expr, op: Expr) -> Expr {
+        Expr::apps(Expr::konst("Commutative", vec![u]), vec![elem_ty, op])
+    }
+
+    fn left_identity(u: Level, elem_ty: Expr, e: Expr, op: Expr) -> Expr {
+        Expr::apps(Expr::konst("LeftIdentity", vec![u]), vec![elem_ty, e, op])
+    }
+
+    fn right_identity(u: Level, elem_ty: Expr, e: Expr, op: Expr) -> Expr {
+        Expr::apps(Expr::konst("RightIdentity", vec![u]), vec![elem_ty, e, op])
+    }
+
+    fn is_semigroup(u: Level, elem_ty: Expr, op: Expr) -> Expr {
+        Expr::apps(Expr::konst("IsSemigroup", vec![u]), vec![elem_ty, op])
+    }
+
+    fn is_monoid(u: Level, elem_ty: Expr, op: Expr, e: Expr) -> Expr {
+        Expr::apps(Expr::konst("IsMonoid", vec![u]), vec![elem_ty, op, e])
+    }
+
+    fn is_comm_monoid(u: Level, elem_ty: Expr, op: Expr, e: Expr) -> Expr {
+        Expr::apps(Expr::konst("IsCommMonoid", vec![u]), vec![elem_ty, op, e])
+    }
+
     fn identity_fn(elem_ty: Expr) -> Expr {
         Expr::lam("x", elem_ty, Expr::bvar(0))
     }
@@ -17644,10 +18660,29 @@ mod tests {
         )
     }
 
+    fn eq_symm_general(u: Level, ty: Expr, lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
+        Expr::apps(Expr::konst("Eq.symm", vec![u]), vec![ty, lhs, rhs, proof])
+    }
+
     fn eq_trans_nat(lhs: Expr, mid: Expr, rhs: Expr, left: Expr, right: Expr) -> Expr {
         Expr::apps(
             Expr::konst("Eq.trans", vec![type0()]),
             vec![nat(), lhs, mid, rhs, left, right],
+        )
+    }
+
+    fn eq_trans_general(
+        u: Level,
+        ty: Expr,
+        lhs: Expr,
+        mid: Expr,
+        rhs: Expr,
+        left: Expr,
+        right: Expr,
+    ) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.trans", vec![u]),
+            vec![ty, lhs, mid, rhs, left, right],
         )
     }
 

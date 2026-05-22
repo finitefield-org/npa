@@ -449,18 +449,18 @@ P6H-06
 
 実装タスク:
 
-- [ ] `Std.Algebra.Basic` source module を作り、direct import を `Std.Logic` のみにする。
-- [ ] `Associative` / `Commutative` / `LeftIdentity` / `RightIdentity` を unbundled property として定義する。
-- [ ] `IsSemigroup` / `IsMonoid` / `IsCommMonoid` を explicit Prop inductive として定義する。
-- [ ] `IsMonoid.assoc` / `IsMonoid.left_id` / `IsMonoid.right_id` と `IsCommMonoid` projection theorem を証明する。
-- [ ] `identity_unique` を証明する。
-- [ ] `Nat.add_is_comm_monoid` は `Std.Algebra.Basic` や `Std.Nat` の MVP release module に入れない。
+- [x] `Std.Algebra.Basic` source module を作り、direct import を `Std.Logic` のみにする。
+- [x] `Associative` / `Commutative` / `LeftIdentity` / `RightIdentity` を unbundled property として定義する。
+- [x] `IsSemigroup` / `IsMonoid` / `IsCommMonoid` を explicit Prop inductive として定義する。
+- [x] `IsMonoid.assoc` / `IsMonoid.left_id` / `IsMonoid.right_id` と `IsCommMonoid` projection theorem を証明する。
+- [x] `identity_unique` を証明する。
+- [x] `Nat.add_is_comm_monoid` は `Std.Algebra.Basic` や `Std.Nat` の MVP release module に入れない。
 
 受け入れ条件:
 
-- [ ] `Std.Algebra.Basic` certificate の import closure が `Std.Logic` と `Std.Algebra.Basic` だけで構成される。
-- [ ] typeclass resolution、bundled carrier、implicit instance search が導入されていない。
-- [ ] algebra projection theorem が apply search で候補になる。
+- [x] `Std.Algebra.Basic` certificate の import closure が `Std.Logic` と `Std.Algebra.Basic` だけで構成される。
+- [x] typeclass resolution、bundled carrier、implicit instance search が導入されていない。
+- [x] algebra projection theorem が apply search で候補になる。
 
 検証:
 
