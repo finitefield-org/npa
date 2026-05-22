@@ -1095,11 +1095,11 @@ Recommended imports:
 Regenerate the corpus:
 
 ```sh
-cargo run -p npa-frontend --example write_ai_proof_artifacts
+cargo run -p npa-proof-corpus
 ```
 
 Verify the checked-in corpus:
 
 ```sh
-cargo test -p npa-cert --test ai_proof_artifacts
+cargo test -p npa-proof-corpus
 ```

@@ -96,6 +96,16 @@ name = "npa-kernel"
 version = "0.1.0"
 
 [[package]]
+name = "npa-proof-corpus"
+version = "0.1.0"
+dependencies = [
+ "npa-cert",
+ "npa-frontend",
+ "npa-kernel",
+ "sha2",
+]
+
+[[package]]
 name = "npa-tactic"
 version = "0.1.0"
 dependencies = [

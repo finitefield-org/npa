@@ -5,6 +5,7 @@ members = [
     "crates/npa-frontend",
     "crates/npa-api",
     "crates/npa-tactic",
+    "tools/proof-corpus",
 ]
 resolver = "2"
 
