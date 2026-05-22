@@ -9,38 +9,39 @@ use crate::{
     HumanCompileCoreOk, HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource,
     HumanDisplayContextOk, HumanDisplayContextOptions, HumanDisplayContextRequest,
     HumanDisplayDiffOk, HumanDisplayDiffRequest, HumanDisplayError, HumanDisplayExprRequest,
-    HumanDisplayGoalRequest, HumanDisplayMode, HumanDisplayTextOk, HumanDocumentSnapshot,
-    HumanDocumentUpdateError, HumanDocumentUpdateOk, HumanDocumentUpdateRequest,
-    HumanExactTacticOk, HumanExactTacticRequest, HumanGoalDisplayDiffItem,
-    HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping, HumanInductionTacticError,
-    HumanInductionTacticOk, HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
-    HumanIntroTacticRequest, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
-    HumanProofStateEntry, HumanProofStateStartError, HumanProofStateStartOk,
-    HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
-    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
-    HumanSessionCreateRequest, HumanSessionVerifyError, HumanSessionVerifyImport,
-    HumanSessionVerifyImportAxiom, HumanSessionVerifyOk, HumanSessionVerifyRequest,
-    HumanSessionVerifyStatus, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
-    HumanSimpLiteTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
-    HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
-    HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
-    HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
-    HumanStructuredProofStateError, HumanTacticCheckRequest, HumanTacticCheckResponse,
-    HumanTacticRunErrorKind, HumanTacticRunErrorReport, HumanTacticRunRequest,
-    HumanTacticRunResponse, HumanTacticRunStatus, HumanTacticRunSuggestion,
-    HumanTacticRunSuggestionKind, HumanTacticScriptError, HumanTacticScriptRunOk,
-    HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
-    HumanTacticStateRecordRequest, HumanTacticSuggestRequest, HumanTacticSuggestResponse,
-    HumanTacticSuggestion, HumanTacticSuggestionSource, HumanTacticTermCheckOk,
-    HumanTacticTermCheckRequest, HumanTacticTermError, HumanTheoremAxiomInfo,
-    HumanTheoremDependency, HumanTheoremDependencyKind, HumanTheoremGoalSearchRequest,
-    HumanTheoremIndex, HumanTheoremIndexEntry, HumanTheoremIndexError, HumanTheoremIndexKind,
-    HumanTheoremIndexSource, HumanTheoremMatchBinding, HumanTheoremNameSearchRequest,
-    HumanTheoremRewriteSearchRequest, HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError,
-    HumanTheoremSearchMode, HumanTheoremSearchOk, HumanTheoremSearchOptions,
-    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, LocalId, StructuredExpr,
-    StructuredGoal, StructuredGoalStatus, StructuredHypothesis, StructuredProofState,
-    HUMAN_DISPLAY_PROFILE_ID,
+    HumanDisplayGoalRequest, HumanDisplayMode, HumanDisplayTextOk, HumanDocumentIncrementalCache,
+    HumanDocumentIncrementalDeclCacheEntry, HumanDocumentIncrementalDeclReuse,
+    HumanDocumentSnapshot, HumanDocumentUpdateError, HumanDocumentUpdateOk,
+    HumanDocumentUpdateRequest, HumanExactTacticOk, HumanExactTacticRequest,
+    HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping,
+    HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
+    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanProofSession,
+    HumanProofSessionStatus, HumanProofSessionStore, HumanProofStateEntry,
+    HumanProofStateStartError, HumanProofStateStartOk, HumanProofStateStartRequest,
+    HumanProofStateStore, HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
+    HumanSessionCreateError, HumanSessionCreateOk, HumanSessionCreateRequest,
+    HumanSessionVerifyError, HumanSessionVerifyImport, HumanSessionVerifyImportAxiom,
+    HumanSessionVerifyOk, HumanSessionVerifyRequest, HumanSessionVerifyStatus,
+    HumanSimpLiteTacticError, HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest,
+    HumanSourcePosition, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
+    HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest, HumanStateCurrentRequest,
+    HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest, HumanStateLookupOk,
+    HumanStateRequestError, HumanStateRequestHeader, HumanStructuredProofStateError,
+    HumanTacticCheckRequest, HumanTacticCheckResponse, HumanTacticRunErrorKind,
+    HumanTacticRunErrorReport, HumanTacticRunRequest, HumanTacticRunResponse, HumanTacticRunStatus,
+    HumanTacticRunSuggestion, HumanTacticRunSuggestionKind, HumanTacticScriptError,
+    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
+    HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticSuggestRequest,
+    HumanTacticSuggestResponse, HumanTacticSuggestion, HumanTacticSuggestionSource,
+    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanTheoremAxiomInfo, HumanTheoremDependency, HumanTheoremDependencyKind,
+    HumanTheoremGoalSearchRequest, HumanTheoremIndex, HumanTheoremIndexEntry,
+    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource,
+    HumanTheoremMatchBinding, HumanTheoremNameSearchRequest, HumanTheoremRewriteSearchRequest,
+    HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError, HumanTheoremSearchMode,
+    HumanTheoremSearchOk, HumanTheoremSearchOptions, HumanTheoremSearchResult,
+    HumanTheoremTypeSearchRequest, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
+    StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_cert::{
     AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
@@ -164,12 +165,14 @@ pub fn create_human_session(
     };
     let collected = collect_human_session_document(&document);
     let messages = collected.messages.clone();
+    let incremental_cache = build_human_document_incremental_cache(&document, &collected, None);
     let session = HumanProofSession {
         session_id: session_id.clone(),
         status: HumanProofSessionStatus::Open,
         document,
         source_interface: collected.source_interface,
         active_imported_source_interfaces: collected.active_imports,
+        incremental_cache: incremental_cache.clone(),
         proof_states: HumanProofStateStore::new(),
         current_state_id: None,
         messages: collected.messages,
@@ -182,6 +185,7 @@ pub fn create_human_session(
         document_version: crate::HumanDocumentVersion::initial(),
         status: HumanProofSessionStatus::Open,
         messages,
+        incremental_cache,
     })
 }
 
@@ -2632,7 +2636,7 @@ pub fn update_human_document(
     store: &mut HumanProofSessionStore,
     request: HumanDocumentUpdateRequest<'_, '_>,
 ) -> Result<HumanDocumentUpdateOk, HumanDocumentUpdateError> {
-    let (document_id, current_version) = {
+    let (document_id, current_version, prior_incremental_cache, prior_source_interface) = {
         let session = store.session(&request.session_id).ok_or_else(|| {
             HumanDocumentUpdateError::UnknownSession {
                 session_id: request.session_id.clone(),
@@ -2641,6 +2645,8 @@ pub fn update_human_document(
         (
             session.document.document_id.clone(),
             session.document.document_version,
+            session.incremental_cache.clone(),
+            session.source_interface.clone(),
         )
     };
     let next_version = current_version.next().ok_or_else(|| {
@@ -2660,8 +2666,18 @@ pub fn update_human_document(
         imported_source_interfaces: request.imported_source_interfaces.to_vec(),
         options: request.options,
     };
-    let collected = collect_human_session_document(&document);
+    let mut collected = collect_human_session_document(&document);
     let messages = collected.messages.clone();
+    let incremental_cache = build_human_document_incremental_cache(
+        &document,
+        &collected,
+        Some(&prior_incremental_cache),
+    );
+    reuse_human_document_incremental_prefix(
+        &mut collected,
+        prior_source_interface.as_ref(),
+        incremental_cache.reused_prefix_len,
+    );
     let session = store
         .session_mut(&request.session_id)
         .expect("session was checked before document collection");
@@ -2669,6 +2685,7 @@ pub fn update_human_document(
     session.document = document;
     session.source_interface = collected.source_interface;
     session.active_imported_source_interfaces = collected.active_imports;
+    session.incremental_cache = incremental_cache.clone();
     session.current_state_id = None;
     session.messages = collected.messages;
 
@@ -2678,6 +2695,7 @@ pub fn update_human_document(
         document_version: next_version,
         status: HumanProofSessionStatus::Open,
         messages,
+        incremental_cache,
     })
 }
 
@@ -4694,6 +4712,385 @@ fn human_encode_uvar(out: &mut Vec<u8>, mut value: u64) {
 
 fn human_sha256(bytes: &[u8]) -> Hash {
     Sha256::digest(bytes).into()
+}
+
+fn build_human_document_incremental_cache(
+    document: &HumanDocumentSnapshot,
+    collection: &HumanSessionDocumentCollection,
+    prior: Option<&HumanDocumentIncrementalCache>,
+) -> HumanDocumentIncrementalCache {
+    let import_interface_hash = human_document_import_interface_hash(document, collection);
+    let mut declarations = Vec::new();
+    if let Some(source_interface) = &collection.source_interface {
+        for (source_index, decl) in source_interface
+            .declarations
+            .iter()
+            .filter(|decl| decl.kind != npa_frontend::HumanSourceDeclarationKind::Imported)
+            .enumerate()
+        {
+            let source_decl_hash = human_document_source_decl_hash(document, decl);
+            let resolved_decl_hash =
+                human_document_resolved_decl_hash(import_interface_hash, source_decl_hash, decl);
+            let core_decl_hash = human_document_core_decl_hash(resolved_decl_hash, decl);
+            declarations.push(HumanDocumentIncrementalDeclCacheEntry {
+                source_index: source_index as u64,
+                source_decl_hash,
+                resolved_decl_hash,
+                core_decl_hash,
+                reuse: HumanDocumentIncrementalDeclReuse::Fresh,
+            });
+        }
+    }
+
+    let prior_for_reuse = prior.filter(|prior| {
+        prior.document_id == document.document_id
+            && prior.document_version.next() == Some(document.document_version)
+            && prior.import_interface_hash == import_interface_hash
+    });
+    let reused_prefix_len = prior_for_reuse
+        .map(|prior| {
+            declarations
+                .iter()
+                .zip(&prior.declarations)
+                .take_while(|(current, previous)| {
+                    current.source_index == previous.source_index
+                        && current.source_decl_hash == previous.source_decl_hash
+                })
+                .count()
+        })
+        .unwrap_or(0);
+    if let Some(prior) = prior_for_reuse {
+        for (current, previous) in declarations
+            .iter_mut()
+            .zip(&prior.declarations)
+            .take(reused_prefix_len)
+        {
+            current.resolved_decl_hash = previous.resolved_decl_hash;
+            current.core_decl_hash = previous.core_decl_hash;
+            current.reuse = HumanDocumentIncrementalDeclReuse::Reused;
+        }
+    }
+
+    let prior_len = prior.map(|prior| prior.declarations.len()).unwrap_or(0);
+    let suffix_changed = match prior_for_reuse {
+        Some(_) => reused_prefix_len < declarations.len() || prior_len != declarations.len(),
+        None => !declarations.is_empty() || prior_len != 0,
+    };
+
+    HumanDocumentIncrementalCache {
+        document_id: document.document_id.clone(),
+        document_version: document.document_version,
+        import_interface_hash,
+        prior_document_version: prior.map(|prior| prior.document_version),
+        prior_import_interface_hash: prior.map(|prior| prior.import_interface_hash),
+        reused_prefix_len: reused_prefix_len as u64,
+        recomputed_from: suffix_changed.then_some(reused_prefix_len as u64),
+        declarations,
+    }
+}
+
+fn reuse_human_document_incremental_prefix(
+    collection: &mut HumanSessionDocumentCollection,
+    prior_source_interface: Option<&npa_frontend::HumanSourceInterface>,
+    reused_prefix_len: u64,
+) {
+    if reused_prefix_len == 0 {
+        return;
+    }
+    let (Some(current), Some(prior)) =
+        (collection.source_interface.as_mut(), prior_source_interface)
+    else {
+        return;
+    };
+
+    for (current_decl, prior_decl) in current
+        .declarations
+        .iter_mut()
+        .filter(|decl| decl.kind != npa_frontend::HumanSourceDeclarationKind::Imported)
+        .zip(
+            prior
+                .declarations
+                .iter()
+                .filter(|decl| decl.kind != npa_frontend::HumanSourceDeclarationKind::Imported),
+        )
+        .take(reused_prefix_len as usize)
+    {
+        *current_decl = prior_decl.clone();
+    }
+}
+
+fn human_document_import_interface_hash(
+    document: &HumanDocumentSnapshot,
+    collection: &HumanSessionDocumentCollection,
+) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.document-import-interface.v1");
+    human_encode_name(&mut out, &document.current_module);
+    human_encode_uvar(&mut out, document.file_id.0 as u64);
+    human_encode_human_api_options(&mut out, &document.options);
+    human_encode_list_len(&mut out, document.verified_modules.len());
+    for verified in &document.verified_modules {
+        human_encode_name(&mut out, verified.module());
+        out.extend(verified.export_hash());
+        out.extend(verified.certificate_hash());
+    }
+    human_encode_list_len(&mut out, document.imported_source_interfaces.len());
+    for interface in &document.imported_source_interfaces {
+        human_encode_imported_source_interface(&mut out, interface);
+    }
+    human_encode_list_len(&mut out, collection.active_imports.len());
+    for interface in &collection.active_imports {
+        human_encode_imported_source_interface(&mut out, interface);
+    }
+    human_sha256(&out)
+}
+
+fn human_document_source_decl_hash(
+    document: &HumanDocumentSnapshot,
+    decl: &npa_frontend::HumanSourceDeclarationMetadata,
+) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.document-source-decl.v1");
+    human_encode_string(&mut out, human_source_declaration_kind_str(decl.kind));
+    human_encode_human_name(&mut out, &decl.name);
+    human_encode_span(&mut out, decl.span);
+    match human_document_source_prefix_slice(document, decl.span) {
+        Some(source_prefix) => {
+            out.push(0x01);
+            human_encode_string(&mut out, source_prefix);
+        }
+        None => {
+            out.push(0x00);
+            human_encode_source_decl_metadata(&mut out, decl, true);
+        }
+    }
+    human_sha256(&out)
+}
+
+fn human_document_resolved_decl_hash(
+    import_interface_hash: Hash,
+    source_decl_hash: Hash,
+    decl: &npa_frontend::HumanSourceDeclarationMetadata,
+) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.document-resolved-decl.v1");
+    out.extend(import_interface_hash);
+    out.extend(source_decl_hash);
+    human_encode_source_decl_metadata(&mut out, decl, false);
+    human_sha256(&out)
+}
+
+fn human_document_core_decl_hash(
+    resolved_decl_hash: Hash,
+    decl: &npa_frontend::HumanSourceDeclarationMetadata,
+) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.document-core-decl.v1");
+    out.extend(resolved_decl_hash);
+    human_encode_option_hash(&mut out, decl.decl_interface_hash.as_ref());
+    human_sha256(&out)
+}
+
+fn human_document_source_prefix_slice(
+    document: &HumanDocumentSnapshot,
+    span: npa_frontend::Span,
+) -> Option<&str> {
+    if span.file_id != document.file_id {
+        return None;
+    }
+    let end = usize::try_from(span.end.0).ok()?;
+    document.source.get(..end)
+}
+
+fn human_encode_human_api_options(out: &mut Vec<u8>, options: &HumanApiCompileOptions) {
+    human_encode_string(out, "npa.human-api.compile-options.v1");
+    human_encode_uvar(out, options.max_notation_candidates as u64);
+    let tactic = &options.tactic_options;
+    human_encode_list_len(out, tactic.simp_rules.len());
+    for rule in &tactic.simp_rules {
+        human_encode_name(out, &rule.name);
+        out.extend(rule.decl_interface_hash);
+        human_encode_string(
+            out,
+            match rule.direction {
+                npa_tactic::RewriteDirection::Forward => "forward",
+                npa_tactic::RewriteDirection::Backward => "backward",
+            },
+        );
+    }
+    human_encode_uvar(out, tactic.max_simp_rewrite_steps);
+    human_encode_uvar(out, tactic.max_open_goals as u64);
+    human_encode_uvar(out, tactic.max_metas as u64);
+    human_encode_option_eq_family_ref(out, tactic.eq_family.as_ref());
+    human_encode_option_nat_family_ref(out, tactic.nat_family.as_ref());
+}
+
+fn human_encode_option_eq_family_ref(out: &mut Vec<u8>, value: Option<&npa_tactic::EqFamilyRef>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            human_encode_name(out, &value.eq_name);
+            out.extend(value.eq_interface_hash);
+            human_encode_name(out, &value.refl_name);
+            out.extend(value.refl_interface_hash);
+            human_encode_name(out, &value.rec_name);
+            out.extend(value.rec_interface_hash);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn human_encode_option_nat_family_ref(out: &mut Vec<u8>, value: Option<&npa_tactic::NatFamilyRef>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            human_encode_name(out, &value.nat_name);
+            out.extend(value.nat_interface_hash);
+            human_encode_name(out, &value.zero_name);
+            out.extend(value.zero_interface_hash);
+            human_encode_name(out, &value.succ_name);
+            out.extend(value.succ_interface_hash);
+            human_encode_name(out, &value.rec_name);
+            out.extend(value.rec_interface_hash);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn human_encode_imported_source_interface(
+    out: &mut Vec<u8>,
+    interface: &npa_frontend::HumanImportedSourceInterface,
+) {
+    human_encode_name(out, &interface.module);
+    out.extend(interface.export_hash);
+    human_encode_option_hash(out, interface.certificate_hash.as_ref());
+    human_encode_source_interface_metadata(out, &interface.source_interface);
+}
+
+fn human_encode_source_interface_metadata(
+    out: &mut Vec<u8>,
+    interface: &npa_frontend::HumanSourceInterface,
+) {
+    human_encode_name(out, &interface.module);
+    human_encode_list_len(out, interface.declarations.len());
+    for decl in &interface.declarations {
+        human_encode_source_decl_metadata(out, decl, false);
+    }
+    human_encode_list_len(out, interface.notations.len());
+    for notation in &interface.notations {
+        human_encode_string(out, human_notation_kind_str(notation.kind));
+        human_encode_string(
+            out,
+            human_notation_associativity_str(notation.associativity),
+        );
+        human_encode_uvar(out, notation.precedence as u64);
+        human_encode_string(out, &notation.token);
+        human_encode_human_name(out, &notation.target);
+        human_encode_list_len(out, notation.namespace.len());
+        for component in &notation.namespace {
+            human_encode_string(out, component);
+        }
+    }
+    human_encode_list_len(out, interface.generated_declarations.len());
+    for generated in &interface.generated_declarations {
+        human_encode_string(
+            out,
+            match generated.kind {
+                npa_frontend::HumanGeneratedDeclarationKind::Constructor => "constructor",
+                npa_frontend::HumanGeneratedDeclarationKind::Recursor => "recursor",
+            },
+        );
+        human_encode_human_name(out, &generated.parent);
+        human_encode_human_name(out, &generated.name);
+        human_encode_option_hash(out, generated.decl_interface_hash.as_ref());
+    }
+}
+
+fn human_encode_source_decl_metadata(
+    out: &mut Vec<u8>,
+    decl: &npa_frontend::HumanSourceDeclarationMetadata,
+    include_span: bool,
+) {
+    human_encode_string(out, human_source_declaration_kind_str(decl.kind));
+    human_encode_human_name(out, &decl.name);
+    human_encode_list_len(out, decl.universe_params.len());
+    for param in &decl.universe_params {
+        human_encode_string(out, &param.name);
+        if include_span {
+            human_encode_span(out, param.span);
+        }
+    }
+    human_encode_list_len(out, decl.binders.len());
+    for binder in &decl.binders {
+        match &binder.name {
+            Some(name) => {
+                out.push(0x01);
+                human_encode_human_name(out, name);
+            }
+            None => out.push(0x00),
+        }
+        human_encode_string(out, human_binder_info_str(binder.binder_info));
+        if include_span {
+            human_encode_span(out, binder.span);
+        }
+    }
+    human_encode_option_hash(out, decl.decl_interface_hash.as_ref());
+    if include_span {
+        human_encode_span(out, decl.span);
+    }
+}
+
+fn human_encode_human_name(out: &mut Vec<u8>, name: &npa_frontend::HumanName) {
+    human_encode_list_len(out, name.parts.len());
+    for component in &name.parts {
+        human_encode_string(out, component);
+    }
+}
+
+fn human_encode_span(out: &mut Vec<u8>, span: npa_frontend::Span) {
+    human_encode_uvar(out, span.file_id.0 as u64);
+    human_encode_uvar(out, span.start.0 as u64);
+    human_encode_uvar(out, span.end.0 as u64);
+}
+
+fn human_source_declaration_kind_str(
+    kind: npa_frontend::HumanSourceDeclarationKind,
+) -> &'static str {
+    match kind {
+        npa_frontend::HumanSourceDeclarationKind::Def => "def",
+        npa_frontend::HumanSourceDeclarationKind::Theorem => "theorem",
+        npa_frontend::HumanSourceDeclarationKind::Axiom => "axiom",
+        npa_frontend::HumanSourceDeclarationKind::Inductive => "inductive",
+        npa_frontend::HumanSourceDeclarationKind::Imported => "imported",
+    }
+}
+
+fn human_binder_info_str(info: npa_frontend::HumanBinderInfo) -> &'static str {
+    match info {
+        npa_frontend::HumanBinderInfo::Explicit => "explicit",
+        npa_frontend::HumanBinderInfo::Implicit => "implicit",
+    }
+}
+
+fn human_notation_kind_str(kind: npa_frontend::HumanNotationKind) -> &'static str {
+    match kind {
+        npa_frontend::HumanNotationKind::Notation => "notation",
+        npa_frontend::HumanNotationKind::Prefix => "prefix",
+        npa_frontend::HumanNotationKind::Postfix => "postfix",
+        npa_frontend::HumanNotationKind::Infix => "infix",
+        npa_frontend::HumanNotationKind::Infixl => "infixl",
+        npa_frontend::HumanNotationKind::Infixr => "infixr",
+    }
+}
+
+fn human_notation_associativity_str(
+    associativity: npa_frontend::HumanNotationAssociativity,
+) -> &'static str {
+    match associativity {
+        npa_frontend::HumanNotationAssociativity::Left => "left",
+        npa_frontend::HumanNotationAssociativity::Right => "right",
+        npa_frontend::HumanNotationAssociativity::NonAssoc => "non_assoc",
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -7153,6 +7550,298 @@ mod tests {
             },
         )
         .expect("current document version should validate");
+    }
+
+    #[test]
+    fn human_incremental_reuses_prefix_and_rejects_old_state_request() {
+        let (verified, source_interface) = verified_human_import(
+            "Lib.HumanIncrementalStale",
+            "\
+axiom P : Prop
+axiom hp : P",
+        );
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanIncrementalStale"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(52),
+                    source: "\
+import Lib.HumanIncrementalStale
+def keep : Prop := P
+theorem target : P := by simp-lite",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human incremental session should be created");
+        let initial_cache = created.incremental_cache.clone();
+        assert_eq!(initial_cache.declarations.len(), 2);
+        assert_eq!(initial_cache.recomputed_from, Some(0));
+        assert!(initial_cache
+            .declarations
+            .iter()
+            .all(|entry| entry.reuse == HumanDocumentIncrementalDeclReuse::Fresh));
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanIncrementalStale.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human incremental proof should start");
+        let old_header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+
+        let updated = update_human_document(
+            &mut store,
+            HumanDocumentUpdateRequest {
+                session_id: created.session_id.clone(),
+                current_module: npa_cert::Name::from_dotted("Api.HumanIncrementalStale"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(52),
+                    source: "\
+import Lib.HumanIncrementalStale
+def keep : Prop := P
+
+theorem target_changed : P := by simp-lite",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human incremental document update should succeed");
+
+        let err = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header: old_header,
+                state_id: started.state_id,
+            },
+        )
+        .expect_err("old state request should be stale after a document edit");
+        assert!(matches!(
+            err,
+            HumanStateApiError::StaleDocumentVersion { .. }
+        ));
+        assert_eq!(updated.document_version.as_u64(), 2);
+        assert_eq!(
+            updated.incremental_cache.prior_document_version,
+            Some(created.document_version)
+        );
+        assert_eq!(
+            updated.incremental_cache.prior_import_interface_hash,
+            Some(initial_cache.import_interface_hash)
+        );
+        assert_eq!(
+            updated.incremental_cache.import_interface_hash,
+            initial_cache.import_interface_hash
+        );
+        assert_eq!(updated.incremental_cache.reused_prefix_len, 1);
+        assert_eq!(updated.incremental_cache.recomputed_from, Some(1));
+        assert_eq!(
+            updated.incremental_cache.declarations[0].reuse,
+            HumanDocumentIncrementalDeclReuse::Reused
+        );
+        assert_eq!(
+            updated.incremental_cache.declarations[1].reuse,
+            HumanDocumentIncrementalDeclReuse::Fresh
+        );
+        assert_eq!(
+            updated.incremental_cache.declarations[0].source_decl_hash,
+            initial_cache.declarations[0].source_decl_hash
+        );
+        assert_eq!(
+            updated.incremental_cache.declarations[0].resolved_decl_hash,
+            initial_cache.declarations[0].resolved_decl_hash
+        );
+        assert_eq!(
+            updated.incremental_cache.declarations[0].core_decl_hash,
+            initial_cache.declarations[0].core_decl_hash
+        );
+        assert_ne!(
+            updated.incremental_cache.declarations[1].source_decl_hash,
+            initial_cache.declarations[1].source_decl_hash
+        );
+    }
+
+    #[test]
+    fn human_incremental_import_interface_hash_invalidates_prefix() {
+        let (verified, source_interface) = verified_human_import(
+            "Lib.HumanIncrementalImport",
+            "\
+axiom P : Prop",
+        );
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanIncrementalImport"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(53),
+                    source: "axiom keep : Prop",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human incremental import session should be created");
+
+        let updated = update_human_document(
+            &mut store,
+            HumanDocumentUpdateRequest {
+                session_id: created.session_id.clone(),
+                current_module: npa_cert::Name::from_dotted("Api.HumanIncrementalImport"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(53),
+                    source: "axiom keep : Prop",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human incremental import update should succeed");
+
+        assert_ne!(
+            updated.incremental_cache.import_interface_hash,
+            created.incremental_cache.import_interface_hash
+        );
+        assert_eq!(updated.incremental_cache.reused_prefix_len, 0);
+        assert_eq!(updated.incremental_cache.recomputed_from, Some(0));
+        assert_eq!(
+            updated.incremental_cache.declarations[0].reuse,
+            HumanDocumentIncrementalDeclReuse::Fresh
+        );
+    }
+
+    #[test]
+    fn human_incremental_reused_prefix_still_verifies_via_certificate() {
+        let (verified, source_interface) = verified_human_import(
+            "Lib.HumanIncrementalVerify",
+            "\
+axiom P : Prop
+axiom hp : P",
+        );
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanIncrementalVerify"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(54),
+                    source: "\
+import Lib.HumanIncrementalVerify
+def keep : Prop := P
+theorem target : P := by simp-lite",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human incremental verify session should be created");
+        let updated = update_human_document(
+            &mut store,
+            HumanDocumentUpdateRequest {
+                session_id: created.session_id.clone(),
+                current_module: npa_cert::Name::from_dotted("Api.HumanIncrementalVerify"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(54),
+                    source: "\
+import Lib.HumanIncrementalVerify
+def keep : Prop := P
+
+theorem target : P := by simp-lite",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human incremental verify update should succeed");
+        assert_eq!(updated.incremental_cache.reused_prefix_len, 1);
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id,
+            document_version: updated.document_version,
+        };
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanIncrementalVerify.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human incremental verify proof should start after update");
+        let state_fingerprint = store
+            .session(&created.session_id)
+            .expect("Human incremental verify session should remain stored")
+            .proof_states
+            .state(&started.state_id)
+            .expect("started Human state should be stored")
+            .state
+            .fingerprint;
+        assert_ne!(
+            updated.incremental_cache.declarations[0].source_decl_hash,
+            state_fingerprint
+        );
+        assert_ne!(
+            updated.incremental_cache.declarations[0].resolved_decl_hash,
+            state_fingerprint
+        );
+        assert_ne!(
+            updated.incremental_cache.declarations[0].core_decl_hash,
+            state_fingerprint
+        );
+
+        let exact = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "exact hp".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(exact.status, HumanTacticRunStatus::Closed);
+        assert!(exact.error.is_none());
+        let closed_state_id = exact
+            .new_state_id
+            .expect("closed tactic should record state");
+        let ok = verify_human_session(
+            &store,
+            HumanSessionVerifyRequest {
+                header,
+                state_id: closed_state_id,
+            },
+        )
+        .expect("reused Human prefix must still verify through certificate checker");
+
+        assert_eq!(ok.status, HumanSessionVerifyStatus::Verified);
+        assert_eq!(
+            ok.theorem_name,
+            npa_cert::Name::from_dotted("Api.HumanIncrementalVerify.target")
+        );
+        assert!(ok
+            .axioms_used
+            .iter()
+            .any(|axiom| matches!(axiom, MachineAxiomRefWire::Imported { name, .. } if name.as_dotted() == "hp")));
     }
 
     #[test]

@@ -810,6 +810,7 @@ pub struct HumanSessionCreateOk {
     pub document_version: HumanDocumentVersion,
     pub status: HumanProofSessionStatus,
     pub messages: Vec<HumanDiagnostic>,
+    pub incremental_cache: HumanDocumentIncrementalCache,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -819,6 +820,7 @@ pub struct HumanDocumentUpdateOk {
     pub document_version: HumanDocumentVersion,
     pub status: HumanProofSessionStatus,
     pub messages: Vec<HumanDiagnostic>,
+    pub incremental_cache: HumanDocumentIncrementalCache,
 }
 
 #[derive(Clone, Debug)]
@@ -828,9 +830,42 @@ pub struct HumanProofSession {
     pub document: HumanDocumentSnapshot,
     pub source_interface: Option<HumanSourceInterface>,
     pub active_imported_source_interfaces: Vec<HumanImportedSourceInterface>,
+    pub incremental_cache: HumanDocumentIncrementalCache,
     pub proof_states: HumanProofStateStore,
     pub current_state_id: Option<HumanStateId>,
     pub messages: Vec<HumanDiagnostic>,
+}
+
+/// Human document cache metadata for declaration-level incremental work.
+///
+/// These hashes are only cache keys for the Human document pipeline. They are
+/// not Machine proof-state fingerprints and must not be used as proof
+/// acceptance evidence.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDocumentIncrementalCache {
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+    pub import_interface_hash: Hash,
+    pub prior_document_version: Option<HumanDocumentVersion>,
+    pub prior_import_interface_hash: Option<Hash>,
+    pub reused_prefix_len: u64,
+    pub recomputed_from: Option<u64>,
+    pub declarations: Vec<HumanDocumentIncrementalDeclCacheEntry>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDocumentIncrementalDeclCacheEntry {
+    pub source_index: u64,
+    pub source_decl_hash: Hash,
+    pub resolved_decl_hash: Hash,
+    pub core_decl_hash: Hash,
+    pub reuse: HumanDocumentIncrementalDeclReuse,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanDocumentIncrementalDeclReuse {
+    Fresh,
+    Reused,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

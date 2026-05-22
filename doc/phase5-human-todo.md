@@ -770,11 +770,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `source_decl_hash`、`resolved_decl_hash`、`core_decl_hash` を Human document cache key として導入する。
-- [ ] unchanged declaration の parse / resolve / elaborate result を再利用する。
-- [ ] changed declaration 以降の proof states と diagnostics を再計算する。
-- [ ] cache hit / cache miss は証明の受理根拠にしない。
-- [ ] cache invalidation を import interface hash と document version に紐付ける。
+- [x] `source_decl_hash`、`resolved_decl_hash`、`core_decl_hash` を Human document cache key として導入する。
+- [x] unchanged declaration の parse / resolve / elaborate result を再利用する。
+- [x] changed declaration 以降の proof states と diagnostics を再計算する。
+- [x] cache hit / cache miss は証明の受理根拠にしない。
+- [x] cache invalidation を import interface hash と document version に紐付ける。
 
 依存:
 
@@ -801,9 +801,9 @@ crates/npa-frontend/src/human_elaborator.rs
 
 Acceptance criteria:
 
-- [ ] source edit 後に document version が増え、古い state request は stale として拒否できる。
-- [ ] unchanged prefix の declarations は再利用される。
-- [ ] reused result でも final verify は kernel / certificate verifier を通る。
+- [x] source edit 後に document version が増え、古い state request は stale として拒否できる。
+- [x] unchanged prefix の declarations は再利用される。
+- [x] reused result でも final verify は kernel / certificate verifier を通る。
 
 Verification:
 
@@ -814,7 +814,7 @@ cargo test -p npa-frontend --lib human
 
 AI 速度ガード:
 
-- [ ] Human incremental cache key を Machine `state_fingerprint` として再利用しない。
+- [x] Human incremental cache key を Machine `state_fingerprint` として再利用しない。
 
 ---
 
