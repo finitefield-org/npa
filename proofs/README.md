@@ -504,17 +504,19 @@ Theorem targets:
 | `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
 
-### P16+: Pythagorean Theorem Roadmap
+### P16+: General Euclidean Pythagorean Roadmap
 
-Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
+Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
+space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
 inner-product route first:
 
 ```text
 RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 ```
 
-This avoids making the first target depend on square roots. P15 adds the checked bridge to the
-squared `dist` form over the current concrete scalar and vector corpus.
+This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
+the squared `dist` form over the current concrete scalar and vector corpus; P16+ replaces the
+singleton carriers with explicit law hypotheses and abstract APIs.
 
 Planned contents:
 
@@ -543,8 +545,27 @@ Completed prerequisite:
 - P15 `Proofs.Ai.Geometry.Metric` supplies `dist`, the `distSq = sq dist` bridge, and the checked
   squared metric Pythagorean theorem target.
 
-No additional Pythagorean-critical layer is currently enumerated in this roadmap. Add future P16+
-geometry layers here once the next API boundary is selected.
+P16+ policy:
+
+- Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
+  checked law-package arguments until NPA has a dedicated structure/class layer.
+- Do not introduce module-level unchecked axioms for field, vector, order, real, or Euclidean facts.
+- Keep the final theorem independent of the concrete singleton `RingElem` and `Vec` carriers.
+- Prefer squared-distance statements first; add square-root distance forms only after the required
+  nonnegative square-root and square-cancellation lemmas are available.
+
+| Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
+| --- | --- | --- | --- | --- |
+| P16 | `Proofs.Ai.Logic.Iff` | `Iff`, optionally `And` for bundled law hypotheses | `iff_refl`, `iff_symm`, `iff_trans`, `iff_mp`, `iff_mpr` | `and_intro`, `and_left`, `and_right`, `iff_of_eq` |
+| P17 | `Proofs.Ai.Algebra.AbstractRing` | abstract scalar carrier and operations, or an explicit ring-law package | `sub_eq_add_neg`, `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `add_neg_cancel`, `mul_assoc`, `mul_comm`, `mul_one`, `one_mul`, `left_distrib`, `right_distrib` | `sub_self`, `mul_zero`, `zero_mul`, `add_left_cancel`, `ring_normalize_add_mul3` |
+| P18 | `Proofs.Ai.Algebra.AbstractOrderedField` | order and square-root APIs over the abstract scalar carrier | `le_refl`, `le_trans`, `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_nonneg`, `sqrt_square_of_nonneg`, `eq_of_square_eq_square_nonneg` | `add_le_add`, `mul_le_mul_nonneg`, `zero_le_two`, `sqrt_mul_self` |
+| P19 | `Proofs.Ai.Algebra.AbstractSquareNormalize` | no new carrier; normalization helpers over P17/P18 operations | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term` | `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq` |
+| P20 | `Proofs.Ai.Vector.AbstractSpace` | abstract vector carrier, zero, add, neg, sub, scalar multiplication, vector-space law package | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_add_zero`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_add_neg_cancel`, `sub_sub_sub_cancel` | `vec_sub_self`, `vec_sub_zero`, `vec_add_left_cancel`, `smul_add`, `add_smul`, `one_smul`, `mul_smul` |
+| P21 | `Proofs.Ai.Vector.AbstractInnerProduct` | abstract inner product, `normSq`, and `distSq` over P20 | `dot_comm`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `norm_sq_def`, `dist_sq_def`, `norm_sq_sub_of_dot_zero` | `norm_sq_add`, `norm_sq_sub`, `norm_sq_nonneg`, `dot_self_eq_norm_sq`, `parallelogram_law`, `polarization_identity`, `cauchy_schwarz` |
+| P22 | `Proofs.Ai.Geometry.Affine` | abstract point carrier and displacement map `disp A B` | `disp_self`, `disp_reverse`, `disp_comp`, `hypotenuse_vector_eq_sub_legs`, `dist_sq_points_def` | `point_ext_of_zero_disp`, `dist_sq_symm`, `dist_sq_zero_iff_eq` |
+| P23 | `Proofs.Ai.Geometry.AbstractRightTriangle` | abstract `Perp` and `RightTriangle` over the inner-product geometry | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `pythagorean_distance_sq_general` | `perp_symm`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` |
+| P24 | `Proofs.Ai.Geometry.AbstractMetric` | abstract `dist` over `sqrt (distSq A B)` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance_general` | `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality` |
+| P25 | `Proofs.Ai.Geometry.Pythagorean` | no new API; final theorem module collecting P16-P24 | `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq` | `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization` |
 
 The intended dependency order is:
 
@@ -553,6 +574,11 @@ EqReasoning
   -> Algebra.Ring -> Algebra.Square -> OrderedField
   -> Vector.Basic -> Vector.Dot
   -> Geometry.RightTriangle -> Geometry.Metric
+  -> Logic.Iff
+  -> Algebra.AbstractRing -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
+  -> Vector.AbstractSpace -> Vector.AbstractInnerProduct
+  -> Geometry.Affine -> Geometry.AbstractRightTriangle -> Geometry.AbstractMetric
+  -> Geometry.Pythagorean
 ```
 
 Recommended module contents:
@@ -779,6 +805,292 @@ Theorem targets:
 | `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
 | `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+
+#### `Proofs.Ai.Logic.Iff`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Iff` | first-class logical equivalence, replacing Church-encoded iff theorem shapes |
+| `And` | optional conjunction API for bundling law hypotheses when a law-package style is useful |
+| `Or` | disjunction API for square-root and order case splits |
+| `False` | empty proposition API for contradiction and negation eliminators |
+| `Not` | negation abbreviation, normally `P -> False` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `iff_refl` | `Iff P P` |
+| `iff_symm` | `Iff P Q -> Iff Q P` |
+| `iff_trans` | `Iff P Q -> Iff Q R -> Iff P R` |
+| `iff_mp` | `Iff P Q -> P -> Q` |
+| `iff_mpr` | `Iff P Q -> Q -> P` |
+| `and_intro` | `P -> Q -> And P Q` |
+| `and_left` | `And P Q -> P` |
+| `and_right` | `And P Q -> Q` |
+| `iff_of_eq` | `P = Q -> Iff P Q` |
+| `false_elim` | `False -> P` |
+| `not_intro` | `(P -> False) -> Not P` |
+| `not_elim` | `Not P -> P -> False` |
+| `or_inl`, `or_inr`, `or_elim` | disjunction introduction and elimination helpers |
+| `iff_congr_arg` | `Iff P Q -> Iff (F P) (F Q)` for Prop-valued contexts when available |
+
+#### `Proofs.Ai.Algebra.AbstractRing`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Scalar` | abstract scalar carrier for the general theorem layer |
+| `zero`, `one`, `add`, `neg`, `sub`, `mul` | abstract ring operations, or operation parameters if names must stay local |
+| `two` | scalar `2`, either imported from square normalization or defined as `one + one` |
+| `sq` | square operation, either imported from square normalization or exposed for early algebra lemmas |
+| `RingLawArgs` | placeholder name for explicit law hypotheses until NPA has structures/classes |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `sub_eq_add_neg` | `sub a b = add a (neg b)` |
+| `add_assoc`, `add_comm`, `add_zero`, `zero_add` | additive monoid/group laws |
+| `neg_add_cancel`, `add_neg_cancel`, `sub_self` | additive inverse and subtraction laws |
+| `mul_assoc`, `mul_comm`, `mul_one`, `one_mul` | commutative multiplication laws |
+| `left_distrib`, `right_distrib` | distributivity over addition |
+| `mul_zero`, `zero_mul`, `add_left_cancel` | cancellation and zero-product helper targets |
+| `ring_normalize_add_mul3` | normalization target used by later dot/norm expansion certificates |
+| `add_right_cancel` | `b + a = c + a -> b = c` |
+| `neg_neg` | `-(-a) = a` |
+| `sub_zero`, `zero_sub` | subtraction by zero and from zero |
+| `sub_add_cancel`, `add_sub_cancel` | basic subtraction/addition cancellation lemmas |
+| `sub_add_sub_cancel` | `(a - c) - (b - c) = a - b`, scalar analogue of vector displacement cancellation |
+| `mul_left_cancel_nonzero` | optional cancellation target once nonzero hypotheses are available |
+
+#### `Proofs.Ai.Algebra.AbstractOrderedField`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `le`, `lt` | abstract order relations over the scalar carrier |
+| `sqrt` | square-root API for distance statements |
+| `Nonneg` | optional abbreviation for `le zero a`, useful for square-root APIs |
+| `Positive` | optional abbreviation for `lt zero a`, useful for strict metric statements |
+| `OrderedFieldLawArgs` | placeholder name for explicit order/field/sqrt law hypotheses |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `le_refl`, `le_trans` | order reflexivity and transitivity |
+| `add_nonneg`, `mul_nonneg` | nonnegative closure under addition and multiplication |
+| `square_nonneg` | `0 <= sq a` |
+| `sqrt_nonneg` | `0 <= sqrt a` |
+| `sqrt_square_of_nonneg` | `0 <= a -> sqrt (sq a) = a` |
+| `sqrt_mul_self` | `0 <= a -> sqrt (a * a) = a` |
+| `eq_of_square_eq_square_nonneg` | equality from equal squares under nonnegativity |
+| `add_le_add`, `mul_le_mul_nonneg`, `zero_le_two` | order helpers for metric proofs |
+| `le_antisymm` | `a <= b -> b <= a -> a = b` |
+| `lt_of_le_of_ne` | strict positivity from nonnegative and nonzero hypotheses |
+| `le_of_eq` | equality implies both order directions |
+| `sqrt_sq` | square-root/square bridge in the direction preferred by metric rewriting |
+| `sq_eq_zero_iff` | `sq a = 0 <-> a = 0` under the abstract ordered-field assumptions |
+| `sum_nonneg_eq_zero` | `0 <= a -> 0 <= b -> a + b = 0 -> a = 0` and `b = 0` as a bundled helper |
+
+#### `Proofs.Ai.Algebra.AbstractSquareNormalize`
+
+No new carrier lives here; this module should provide checked normalization lemmas over the abstract
+ring and ordered-field APIs.
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `square_def` | `sq a = a * a` in the abstract scalar layer |
+| `mul_self_eq_square` | `a * a = sq a` |
+| `sq_add` | expansion of `sq (a + b)` |
+| `sq_sub` | expansion of `sq (a - b)` |
+| `sum_two_squares_comm` | commutation of a sum of two squares |
+| `cancel_double_zero_term` | remove a `2 * x` cross term under `x = 0` |
+| `sq_zero`, `sq_one`, `sq_neg`, `two_mul` | square and scalar-2 helper lemmas |
+| `sq_eq_sq_of_eq_or_neg_eq` | bridge for later square-root equality arguments |
+| `sq_add_eq_add_sq_add_two_mul` | normalization-oriented alias for `sq_add` |
+| `sq_sub_eq_add_sq_sub_two_mul` | normalization-oriented alias for `sq_sub` |
+| `add_sq_eq_zero_iff` | sum of nonnegative squares is zero only when both terms are zero |
+| `mul_two_zero_term` | `x = 0 -> 2 * x = 0`, used by later norm expansion |
+| `normalize_add_with_zero_cross_term` | scalar-only normal form used by `norm_sq_add_of_dot_zero` |
+
+#### `Proofs.Ai.Vector.AbstractSpace`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Vector` | abstract vector carrier over the scalar API |
+| `vzero`, `vadd`, `vneg`, `vsub` | additive vector-space operations |
+| `smul` | scalar multiplication |
+| `linear_comb2` | helper API for two-term linear combinations, useful for generated proof terms |
+| `linear_comb3` | helper API for three-term linear combinations in affine point proofs |
+| `VectorSpaceLawArgs` | placeholder name for explicit vector-space law hypotheses |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `vec_sub_def` | `u - v = u + -v` |
+| `vec_add_assoc`, `vec_add_comm`, `vec_add_zero`, `vec_zero_add` | additive vector laws |
+| `vec_neg_add_cancel`, `vec_add_neg_cancel` | vector inverse laws |
+| `sub_sub_sub_cancel` | `(u - w) - (v - w) = u - v`, used for triangle vertices |
+| `vec_sub_self`, `vec_sub_zero`, `vec_add_left_cancel` | vector subtraction and cancellation helpers |
+| `smul_add`, `add_smul`, `one_smul`, `mul_smul` | scalar multiplication laws |
+| `zero_smul`, `smul_zero` | zero scalar/vector multiplication |
+| `neg_smul`, `smul_neg` | scalar multiplication and negation interaction |
+| `sub_eq_add_neg` | vector subtraction rewrite alias for search consistency |
+| `sub_add_sub_cancel_left` | `(u - w) + (w - v) = u - v` displacement-style cancellation |
+| `linear_comb2_ext` | expansion theorem for `linear_comb2` |
+| `linear_comb3_ext` | expansion theorem for `linear_comb3` |
+
+#### `Proofs.Ai.Vector.AbstractInnerProduct`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `dot` | abstract inner product |
+| `normSq` | squared norm, normally `dot v v` |
+| `distSq` | squared distance, normally `normSq (disp A B)` in the later affine layer |
+| `PerpVec` | optional vector-level perpendicular predicate, normally `dot u v = 0` |
+| `InnerProductLawArgs` | placeholder name for explicit symmetry, bilinearity, and positivity hypotheses |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `dot_comm` | inner-product symmetry |
+| `dot_add_left`, `dot_add_right` | additivity in each argument |
+| `dot_neg_left`, `dot_neg_right` | negation in each argument |
+| `dot_sub_left`, `dot_sub_right` | subtraction expansion in each argument |
+| `norm_sq_def`, `dot_self_eq_norm_sq` | squared norm definition and reverse rewrite |
+| `dist_sq_def` | squared distance definition after affine displacement is available |
+| `norm_sq_add`, `norm_sq_sub` | squared norm expansion |
+| `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero` | Pythagorean norm steps under perpendicularity |
+| `norm_sq_nonneg`, `cauchy_schwarz` | positivity and Cauchy-Schwarz targets |
+| `parallelogram_law`, `polarization_identity` | peer inner-product theorem targets |
+| `perp_vec_iff_dot_eq_zero` | first-class `Iff (PerpVec u v) (dot u v = 0)` |
+| `perp_vec_symm` | vector-level perpendicularity symmetry |
+| `norm_sq_zero_iff` | `normSq v = 0 <-> v = 0` under positive-definiteness |
+| `dist_sq_nonneg` | `0 <= distSq A B` after affine distance is connected |
+| `norm_sq_add_of_perp` | `PerpVec u v -> normSq (u + v) = normSq u + normSq v` |
+| `norm_sq_sub_of_perp` | `PerpVec u v -> normSq (u - v) = normSq u + normSq v` |
+
+#### `Proofs.Ai.Geometry.Affine`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Point` | abstract point carrier |
+| `disp` | displacement vector from one point to another |
+| `translate` | optional point translation by a vector, useful for affine law statements |
+| `midpoint` | optional midpoint API for same-level right-triangle geometry |
+| `collinear` | optional collinearity predicate for geometric sanity lemmas |
+| `AffineLawArgs` | placeholder name for explicit point/vector compatibility hypotheses |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `disp_self` | `disp A A = 0` |
+| `disp_reverse` | `disp B A = -disp A B` |
+| `disp_comp` | `disp A C = disp A B + disp B C` |
+| `hypotenuse_vector_eq_sub_legs` | express the hypotenuse displacement through two leg displacements |
+| `dist_sq_points_def` | `distSq A B = normSq (disp A B)` |
+| `point_ext_of_zero_disp` | zero displacement implies point equality |
+| `dist_sq_symm`, `dist_sq_zero_iff_eq` | squared-distance symmetry and nondegeneracy |
+| `disp_translate` | `disp A (translate A v) = v` |
+| `translate_disp` | `translate A (disp A B) = B` |
+| `disp_add` | compatibility of `disp` with vector addition along point chains |
+| `midpoint_def` | midpoint characterization via equal displacement halves when scalar division is available |
+| `collinear_iff_dep` | collinearity bridge to scalar multiple/dependence predicate when available |
+
+#### `Proofs.Ai.Geometry.AbstractRightTriangle`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Perp` | abstract perpendicularity predicate, normally `dot u v = 0` |
+| `RightTriangle` | abstract right-triangle predicate over points, with the right angle at `A` |
+| `AngleRight` | optional angle-level predicate if the geometry API later separates angle from triangle |
+| `Area2` | optional doubled-area API for right-triangle area theorem targets |
+| `FootOnHypotenuse` | optional altitude-foot predicate for classical right-triangle targets |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `perp_iff_dot_eq_zero` | first-class `Iff (Perp u v) (dot u v = 0)` |
+| `perp_symm` | `Perp u v -> Perp v u` |
+| `right_triangle_legs_perp` | extract perpendicular leg displacement vectors |
+| `pythagorean_distance_sq_general` | `RightTriangle A B C -> distSq B C = distSq A B + distSq A C` |
+| `law_of_cosines_general` | squared-distance law of cosines over the abstract inner product |
+| `right_triangle_area_general`, `median_to_hypotenuse_general` | same-level classical right-triangle targets |
+| `right_triangle_of_perp_legs` | build `RightTriangle A B C` from perpendicular leg displacements |
+| `right_triangle_not_collinear` | non-collinearity target under nonzero-leg hypotheses |
+| `pythagorean_converse_sq_general` | converse target once angle/nondegeneracy APIs are available |
+| `altitude_on_hypotenuse_general` | altitude theorem over the abstract affine/metric APIs |
+| `thales_theorem_general` | circle/diameter characterization once circle API exists |
+
+#### `Proofs.Ai.Geometry.AbstractMetric`
+
+Planned definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `dist` | abstract distance API, normally `sqrt (distSq A B)` |
+| `MetricSpaceLawArgs` | optional law package for symmetry, nonnegativity, and triangle inequality exports |
+| `Ball` | optional open/closed ball API for later metric-space library growth |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `dist_def` | `dist A B = sqrt (distSq A B)` |
+| `dist_sq_eq_square_dist` | `distSq A B = sq (dist A B)` |
+| `dist_nonneg` | `0 <= dist A B` |
+| `distance_symm` | `dist A B = dist B A` |
+| `distance_zero_iff_eq` | first-class `Iff (dist A B = 0) (A = B)` |
+| `pythagorean_distance_general` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
+| `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+| `dist_eq_zero_of_eq` | `A = B -> dist A B = 0` |
+| `eq_of_dist_eq_zero` | `dist A B = 0 -> A = B` |
+| `dist_sq_nonneg` | `0 <= distSq A B`, exported for square-root proofs |
+| `dist_eq_sqrt_dist_sq` | alias-style rewrite target for generated proofs |
+| `pythagorean_distance_unsquared` | optional square-root form once the required cancellation lemmas are available |
+
+#### `Proofs.Ai.Geometry.Pythagorean`
+
+No new API declarations live here. This final module should collect the abstract prerequisites and
+export theorem names that users can depend on.
+
+Recommended imports:
+
+| Import | Purpose |
+| --- | --- |
+| `Proofs.Ai.Logic.Iff` | first-class iff statements for public theorem APIs |
+| `Proofs.Ai.Algebra.AbstractOrderedField` | scalar order and square-root facts |
+| `Proofs.Ai.Vector.AbstractInnerProduct` | norm and dot-product expansions |
+| `Proofs.Ai.Geometry.Affine` | point displacement API |
+| `Proofs.Ai.Geometry.AbstractRightTriangle` | right-triangle hypotheses and squared-distance theorem |
+| `Proofs.Ai.Geometry.AbstractMetric` | distance API and metric theorem bridge |
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `pythagorean_theorem_sq` | abstract squared-distance theorem over a right triangle |
+| `pythagorean_theorem_dist_sq` | abstract squared metric-distance theorem |
+| `pythagorean_converse_sq` | converse target when the required nondegeneracy and angle API are available |
+| `law_of_cosines_right_angle_specialization` | law of cosines specialized to a right angle |
+| `pythagorean_theorem_api_alias` | stable alias for downstream users if theorem naming changes |
+| `pythagorean_theorem_dependencies` | documentation theorem or metadata target listing required law packages |
 
 Regenerate the corpus:
 
