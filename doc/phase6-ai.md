@@ -1700,7 +1700,8 @@ If the exact membership above names a theorem that is absent from the checked st
 A rewrite profile must not include a descriptor whose source theorem has `axiom_dependencies` outside the `allow_axioms` of the
 profile's `required_import_bundle_id`.
 This applies to `SimpSafe`, `RwOnly`, and `UnsafeForAutomation` descriptors.
-For MVP constructive std profiles, every rewrite descriptor source must have `axiom_dependencies = []`.
+For MVP constructive std profiles, every rewrite descriptor source must have `axiom_dependencies = []`, except for the exact
+standard `Std.Logic.Eq.rec` dependency when the profile bundle `allow_axioms` contains that kernel-standard exception.
 Any mismatch is `InvalidStdRewriteProfile`.
 `profile_hash` は次で計算します。
 
@@ -2039,7 +2040,8 @@ descriptor in the paired rewrite profile, and that descriptor's `safety` must be
 A rule whose only matching descriptor is `RwOnly` or `UnsafeForAutomation`, or whose paired rewrite profile has no matching
 descriptor, is `InvalidStdSimpProfile`.
 A profile must not include a theorem whose `axiom_dependencies` are outside the bundle `allow_axioms`.
-For MVP constructive std profiles, every rule must have `axiom_dependencies = []`.
+For MVP constructive std profiles, every rule must have `axiom_dependencies = []`, except for the exact standard
+`Std.Logic.Eq.rec` dependency when the profile bundle `allow_axioms` contains that kernel-standard exception.
 MVP std simp profiles use `kernel_check_profile = "npa.kernel.v0.1.builtin-none"` and `eq_family = std.logic.eq-family`,
 which selects the imported `Std.Logic` Eq family during validation.
 Every MVP `SimpRuleRef` listed above has `direction = "forward"`.
@@ -2785,6 +2787,7 @@ rewrite descriptor:
   MVP rewrite profiles emit only Forward descriptors
   rewrite descriptor sources whose axiom_dependencies are outside the profile bundle allow_axioms are rejected
   every MVP rewrite descriptor source has axiom_dependencies = []
+    or the exact standard Eq.rec exception from the profile bundle allow_axioms
   std.all.rw is the semantic union of validated std.nat.rw and std.list.rw, emitted in descriptor canonical order
   std.all.rw descriptors revalidate under std.all.mvp and reproduce the same descriptor canonical bytes
   non-renderable EqFamilyRef names are rejected in rewrite profiles

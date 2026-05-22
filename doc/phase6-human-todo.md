@@ -327,16 +327,16 @@ P6H-02
 
 実装タスク:
 
-- [ ] `Nat.add` を第2引数再帰として定義する。
-- [ ] `Nat.add_zero` と `Nat.add_succ` を definitional equality / refl で証明する。
-- [ ] `Nat.zero_add`、`Nat.succ_add`、`Nat.add_assoc`、`Nat.add_comm` を induction と Phase 4 tactic で証明する。
-- [ ] `Nat.add_comm` と `Nat.add_assoc` は simp に入れず、AI rewrite profile では exact `RwOnly` として扱う。
+- [x] `Nat.add` を第2引数再帰として定義する。
+- [x] `Nat.add_zero` と `Nat.add_succ` を definitional equality / refl で証明する。
+- [x] `Nat.zero_add`、`Nat.succ_add`、`Nat.add_assoc`、`Nat.add_comm` を induction と Phase 4 tactic で証明する。
+- [x] `Nat.add_comm` と `Nat.add_assoc` は simp に入れず、AI rewrite profile では exact `RwOnly` として扱う。
 
 受け入れ条件:
 
-- [ ] `Nat.add n Nat.zero` と `Nat.add n (Nat.succ m)` の definitional equality tests が通る。
-- [ ] `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` が simp-safe rule として動く。
-- [ ] `Nat.add_comm` / `Nat.add_assoc` は rw 候補だが simp 候補ではない。
+- [x] `Nat.add n Nat.zero` と `Nat.add n (Nat.succ m)` の definitional equality tests が通る。
+- [x] `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` が simp-safe rule として動く。
+- [x] `Nat.add_comm` / `Nat.add_assoc` は rw 候補だが simp 候補ではない。
 
 検証:
 

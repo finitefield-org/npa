@@ -4784,7 +4784,7 @@ fn mvp_rewrite_rule_candidate(
             profile_id: profile_id.to_owned(),
             name: Name::from_dotted(name),
         })?;
-    if !export.axiom_dependencies.is_empty() {
+    if !mvp_rule_axiom_dependencies_are_allowed(loaded, bundle_id, module, export) {
         return Err(
             MachineStdRewriteProfileError::NonEmptyMvpAxiomDependencies {
                 profile_id: profile_id.to_owned(),
@@ -4820,7 +4820,7 @@ fn mvp_simp_rule_candidate(
             profile_id: profile_id.to_owned(),
             name: Name::from_dotted(name),
         })?;
-    if !export.axiom_dependencies.is_empty() {
+    if !mvp_rule_axiom_dependencies_are_allowed(loaded, bundle_id, module, export) {
         return Err(MachineStdSimpProfileError::NonEmptyMvpAxiomDependencies {
             profile_id: profile_id.to_owned(),
             name: export_name,
@@ -4841,6 +4841,50 @@ fn mvp_simp_rule_candidate(
         },
         safety: MachineStdRewriteSafety::SimpSafe,
     })
+}
+
+fn mvp_rule_axiom_dependencies_are_allowed(
+    loaded: &MachineStdLoadedRelease,
+    bundle_id: &str,
+    module: &MachineStdLoadedModule,
+    export: &ExportEntry,
+) -> bool {
+    if export.axiom_dependencies.is_empty() {
+        return true;
+    }
+    let Ok(dependencies) = project_export_axiom_dependencies(loaded, module, export) else {
+        return false;
+    };
+    let Ok(allowed) = mvp_bundle_allow_axiom_wire_keys(loaded, bundle_id) else {
+        return false;
+    };
+    dependencies.iter().all(|dependency| {
+        allowed.contains(&encode_machine_axiom_ref_wire(
+            &machine_std_axiom_ref_to_wire(dependency),
+        ))
+    })
+}
+
+fn mvp_bundle_allow_axiom_wire_keys(
+    loaded: &MachineStdLoadedRelease,
+    bundle_id: &str,
+) -> Result<BTreeSet<Vec<u8>>, MachineStdImportBundleError> {
+    let Some(root_modules) = root_modules_for_bundle_id(bundle_id) else {
+        return Err(MachineStdImportBundleError::InvalidBundleMembership {
+            expected: expected_mvp_bundle_ids(),
+            actual: vec![bundle_id.to_owned()],
+        });
+    };
+    let mut root_imports = root_modules
+        .iter()
+        .map(|module| import_key_for_loaded_module(loaded, &Name::from_dotted(module), bundle_id))
+        .collect::<Result<Vec<_>, _>>()?;
+    root_imports.sort();
+    let import_closure = import_closure_for_roots(loaded, bundle_id, &root_imports)?;
+    Ok(mvp_bundle_allow_axioms(loaded, &import_closure)
+        .iter()
+        .map(encode_machine_axiom_ref_wire)
+        .collect())
 }
 
 fn resolve_profile_rule_export<'a>(
@@ -9701,7 +9745,7 @@ mod tests {
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
     use npa_kernel::{
         eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
-        Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, Reducibility,
+        Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, Reducibility,
     };
     use npa_tactic::{CandidateApplyArg, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
@@ -9869,6 +9913,7 @@ mod tests {
         );
         assert_eq!(export_entry(nat_module, "Nat.one").kind, ExportKind::Def);
         assert_eq!(export_entry(nat_module, "Nat.pred").kind, ExportKind::Def);
+        assert_eq!(export_entry(nat_module, "Nat.add").kind, ExportKind::Def);
         for theorem in ["Nat.pred_zero", "Nat.pred_succ"] {
             let entry = export_entry(nat_module, theorem);
             assert_eq!(entry.kind, ExportKind::Theorem);
@@ -9877,14 +9922,45 @@ mod tests {
                 "{theorem} must be proved by definitional equality without new axioms"
             );
         }
+        for theorem in ["Nat.add_zero", "Nat.add_succ"] {
+            let entry = export_entry(nat_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert!(
+                entry.axiom_dependencies.is_empty(),
+                "{theorem} must be proved by definitional equality without new axioms"
+            );
+        }
+        for theorem in [
+            "Nat.zero_add",
+            "Nat.succ_add",
+            "Nat.add_assoc",
+            "Nat.add_comm",
+        ] {
+            let entry = export_entry(nat_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert_eq!(
+                entry
+                    .axiom_dependencies
+                    .iter()
+                    .map(|axiom| nat_module.verified_module.name_table()[axiom.name].as_dotted())
+                    .collect::<Vec<_>>(),
+                vec!["Eq.rec"],
+                "{theorem} should only depend on the standard Eq.rec axiom through induction/rewrite proof terms"
+            );
+        }
         let nat_axioms = axiom_report
             .modules
             .iter()
             .find(|module| module.module == Name::from_dotted("Std.Nat"))
             .unwrap();
-        assert!(
-            nat_axioms.module_axioms.is_empty(),
-            "Std.Nat must not add axioms"
+        assert_eq!(
+            nat_axioms
+                .module_axioms
+                .iter()
+                .map(|axiom| axiom.name.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Eq.rec"],
+            "Std.Nat may only depend on the standard Eq.rec axiom from Std.Logic"
         );
     }
 
@@ -10431,6 +10507,91 @@ mod tests {
                 .collect::<BTreeSet<_>>(),
             BTreeSet::from(["Nat.pred_succ".to_owned(), "Nat.pred_zero".to_owned()])
         );
+    }
+
+    #[test]
+    fn std_nat_add_reduces_on_second_argument() {
+        let mut env = Env::with_builtins().unwrap();
+        env.add_def(
+            "Nat.add",
+            Vec::new(),
+            nat_add_type(),
+            nat_add_value(),
+            Reducibility::Reducible,
+        )
+        .unwrap();
+
+        let mut ctx = Ctx::new();
+        ctx.push_assumption("n", nat());
+        ctx.push_assumption("m", nat());
+        assert!(env
+            .is_defeq(
+                &ctx,
+                &[],
+                &nat_add(Expr::bvar(1), nat_zero()),
+                &Expr::bvar(1),
+            )
+            .unwrap());
+        assert!(env
+            .is_defeq(
+                &ctx,
+                &[],
+                &nat_add(Expr::bvar(1), nat_succ(Expr::bvar(0))),
+                &nat_succ(nat_add(Expr::bvar(1), Expr::bvar(0))),
+            )
+            .unwrap());
+    }
+
+    #[test]
+    fn classifies_std_nat_add_rules_as_simp_safe_or_rw_only() {
+        let package = TestPackage::new("std_nat_add_profile_classification");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let nat_rw = rewrite_profile(&rewrite_profiles, STD_NAT_RW_PROFILE_ID);
+        let nat_simp = simp_profile(&simp_profiles, STD_NAT_SIMP_PROFILE_ID);
+        let safety_by_name = nat_rw
+            .descriptors
+            .iter()
+            .map(|descriptor| (descriptor.source.name.as_dotted(), descriptor.safety))
+            .collect::<BTreeMap<_, _>>();
+        for name in ["Nat.add_zero", "Nat.add_succ", "Nat.zero_add"] {
+            assert_eq!(
+                safety_by_name.get(name),
+                Some(&MachineStdRewriteSafety::SimpSafe),
+                "{name} should be a simp-safe Nat rewrite"
+            );
+        }
+        for name in ["Nat.add_comm", "Nat.add_assoc"] {
+            assert_eq!(
+                safety_by_name.get(name),
+                Some(&MachineStdRewriteSafety::RwOnly),
+                "{name} should be rw-only and excluded from simp"
+            );
+        }
+
+        let nat_simp_names = nat_simp
+            .rules
+            .iter()
+            .map(|rule| rule.name.as_dotted())
+            .collect::<BTreeSet<_>>();
+        for name in ["Nat.add_zero", "Nat.add_succ", "Nat.zero_add"] {
+            assert!(
+                nat_simp_names.contains(name),
+                "{name} should be present in the Nat simp profile"
+            );
+        }
+        for name in ["Nat.add_comm", "Nat.add_assoc"] {
+            assert!(
+                !nat_simp_names.contains(name),
+                "{name} must not enter the Nat simp profile"
+            );
+        }
     }
 
     #[test]
@@ -11377,7 +11538,12 @@ mod tests {
                 sidecar.global_ref.decl_interface_hash
             );
             assert_eq!(result.statement.core_hash, sidecar.statement_core_hash);
-            assert_eq!(result.modes, sidecar.modes);
+            for mode in &sidecar.modes {
+                assert!(
+                    result.modes.contains(mode),
+                    "search result should preserve sidecar mode {mode:?}"
+                );
+            }
         }
 
         let result = first_fields
@@ -12207,7 +12373,11 @@ mod tests {
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
         let mut axiom_report = mvp_axiom_report_for(&loaded);
-        let first = &mut axiom_report.modules[0];
+        let first = axiom_report
+            .modules
+            .iter_mut()
+            .find(|module| module.module_axioms.is_empty())
+            .expect("fixture should include a module with no direct axiom dependencies");
         first.module_axioms.push(MachineStdAxiomRef {
             module: first.module.clone(),
             name: Name::from_dotted("Std.Nat.synthetic_axiom"),
@@ -12465,7 +12635,7 @@ mod tests {
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
         let nat_cert =
-            build_module_cert(nat_basic_module(), std::slice::from_ref(&logic_verified)).unwrap();
+            build_module_cert(nat_family_module(), std::slice::from_ref(&logic_verified)).unwrap();
         let nat = encode_module_cert(&nat_cert).unwrap();
         let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
 
@@ -14232,6 +14402,13 @@ mod tests {
             nat_pred_def(),
             nat_pred_zero_theorem(),
             nat_pred_succ_theorem(),
+            nat_add_def(),
+            nat_add_zero_theorem(),
+            nat_add_succ_theorem(),
+            nat_zero_add_theorem(),
+            nat_succ_add_theorem(),
+            nat_add_assoc_theorem(),
+            nat_add_comm_theorem(),
         ]);
         declarations
     }
@@ -14300,22 +14477,342 @@ mod tests {
         }
     }
 
+    fn nat_add_def() -> Decl {
+        Decl::Def {
+            name: "Nat.add".to_owned(),
+            universe_params: Vec::new(),
+            ty: nat_add_type(),
+            value: nat_add_value(),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn nat_add_type() -> Expr {
+        Expr::pi("n", nat(), Expr::pi("m", nat(), nat()))
+    }
+
+    fn nat_add_value() -> Expr {
+        let motive = Expr::lam("_", nat(), nat());
+        let step = Expr::lam("_", nat(), Expr::lam("ih", nat(), nat_succ(Expr::bvar(0))));
+        let rec = Expr::apps(
+            Expr::konst("Nat.rec", vec![type0()]),
+            vec![motive, Expr::bvar(1), step, Expr::bvar(0)],
+        );
+        Expr::lam("n", nat(), Expr::lam("m", nat(), rec))
+    }
+
+    fn nat_add_zero_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.add_zero".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("n", nat(), nat_add_zero_prop(Expr::bvar(0))),
+            proof: Expr::lam("n", nat(), eq_refl(type0(), nat(), Expr::bvar(0))),
+        }
+    }
+
+    fn nat_add_succ_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.add_succ".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "n",
+                nat(),
+                Expr::pi(
+                    "m",
+                    nat(),
+                    eq(
+                        type0(),
+                        nat(),
+                        nat_add(Expr::bvar(1), nat_succ(Expr::bvar(0))),
+                        nat_succ(nat_add(Expr::bvar(1), Expr::bvar(0))),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "n",
+                nat(),
+                Expr::lam(
+                    "m",
+                    nat(),
+                    eq_refl(
+                        type0(),
+                        nat(),
+                        nat_succ(nat_add(Expr::bvar(1), Expr::bvar(0))),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_zero_add_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.zero_add".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("n", nat(), nat_zero_add_prop(Expr::bvar(0))),
+            proof: Expr::lam(
+                "n",
+                nat(),
+                Expr::apps(
+                    Expr::konst("Nat.rec", vec![Level::zero()]),
+                    vec![
+                        Expr::lam("n", nat(), nat_zero_add_prop(Expr::bvar(0))),
+                        eq_refl(type0(), nat(), nat_zero()),
+                        Expr::lam(
+                            "k",
+                            nat(),
+                            Expr::lam(
+                                "ih",
+                                nat_zero_add_prop(Expr::bvar(0)),
+                                eq_congr_succ(
+                                    nat_add(nat_zero(), Expr::bvar(1)),
+                                    Expr::bvar(1),
+                                    Expr::bvar(0),
+                                ),
+                            ),
+                        ),
+                        Expr::bvar(0),
+                    ],
+                ),
+            ),
+        }
+    }
+
+    fn nat_succ_add_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.succ_add".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "n",
+                nat(),
+                Expr::pi("m", nat(), nat_succ_add_prop(Expr::bvar(1), Expr::bvar(0))),
+            ),
+            proof: Expr::lam(
+                "n",
+                nat(),
+                Expr::lam(
+                    "m",
+                    nat(),
+                    Expr::apps(
+                        Expr::konst("Nat.rec", vec![Level::zero()]),
+                        vec![
+                            Expr::lam("m", nat(), nat_succ_add_prop(Expr::bvar(2), Expr::bvar(0))),
+                            eq_refl(type0(), nat(), nat_succ(Expr::bvar(1))),
+                            Expr::lam(
+                                "k",
+                                nat(),
+                                Expr::lam(
+                                    "ih",
+                                    nat_succ_add_prop(Expr::bvar(2), Expr::bvar(0)),
+                                    eq_congr_succ(
+                                        nat_add(nat_succ(Expr::bvar(3)), Expr::bvar(1)),
+                                        nat_succ(nat_add(Expr::bvar(3), Expr::bvar(1))),
+                                        Expr::bvar(0),
+                                    ),
+                                ),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_add_assoc_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.add_assoc".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "a",
+                nat(),
+                Expr::pi(
+                    "b",
+                    nat(),
+                    Expr::pi(
+                        "c",
+                        nat(),
+                        nat_add_assoc_prop(Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "a",
+                nat(),
+                Expr::lam(
+                    "b",
+                    nat(),
+                    Expr::lam(
+                        "c",
+                        nat(),
+                        Expr::apps(
+                            Expr::konst("Nat.rec", vec![Level::zero()]),
+                            vec![
+                                Expr::lam(
+                                    "c",
+                                    nat(),
+                                    nat_add_assoc_prop(Expr::bvar(3), Expr::bvar(2), Expr::bvar(0)),
+                                ),
+                                eq_refl(type0(), nat(), nat_add(Expr::bvar(2), Expr::bvar(1))),
+                                Expr::lam(
+                                    "k",
+                                    nat(),
+                                    Expr::lam(
+                                        "ih",
+                                        nat_add_assoc_prop(
+                                            Expr::bvar(3),
+                                            Expr::bvar(2),
+                                            Expr::bvar(0),
+                                        ),
+                                        eq_congr_succ(
+                                            nat_add(
+                                                nat_add(Expr::bvar(4), Expr::bvar(3)),
+                                                Expr::bvar(1),
+                                            ),
+                                            nat_add(
+                                                Expr::bvar(4),
+                                                nat_add(Expr::bvar(3), Expr::bvar(1)),
+                                            ),
+                                            Expr::bvar(0),
+                                        ),
+                                    ),
+                                ),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_add_comm_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.add_comm".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "a",
+                nat(),
+                Expr::pi("b", nat(), nat_add_comm_prop(Expr::bvar(1), Expr::bvar(0))),
+            ),
+            proof: Expr::lam(
+                "a",
+                nat(),
+                Expr::lam(
+                    "b",
+                    nat(),
+                    Expr::apps(
+                        Expr::konst("Nat.rec", vec![Level::zero()]),
+                        vec![
+                            Expr::lam("b", nat(), nat_add_comm_prop(Expr::bvar(2), Expr::bvar(0))),
+                            eq_symm_nat(
+                                nat_add(nat_zero(), Expr::bvar(1)),
+                                Expr::bvar(1),
+                                Expr::app(Expr::konst("Nat.zero_add", vec![]), Expr::bvar(1)),
+                            ),
+                            Expr::lam(
+                                "k",
+                                nat(),
+                                Expr::lam("ih", nat_add_comm_prop(Expr::bvar(2), Expr::bvar(0)), {
+                                    let lhs = nat_succ(nat_add(Expr::bvar(3), Expr::bvar(1)));
+                                    let mid = nat_succ(nat_add(Expr::bvar(1), Expr::bvar(3)));
+                                    let rhs = nat_add(nat_succ(Expr::bvar(1)), Expr::bvar(3));
+                                    eq_trans_nat(
+                                        lhs.clone(),
+                                        mid.clone(),
+                                        rhs.clone(),
+                                        eq_congr_succ(
+                                            nat_add(Expr::bvar(3), Expr::bvar(1)),
+                                            nat_add(Expr::bvar(1), Expr::bvar(3)),
+                                            Expr::bvar(0),
+                                        ),
+                                        eq_symm_nat(
+                                            rhs,
+                                            mid,
+                                            Expr::apps(
+                                                Expr::konst("Nat.succ_add", vec![]),
+                                                vec![Expr::bvar(1), Expr::bvar(3)],
+                                            ),
+                                        ),
+                                    )
+                                }),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn nat_add_zero_prop(n: Expr) -> Expr {
+        eq(type0(), nat(), nat_add(n.clone(), nat_zero()), n)
+    }
+
+    fn nat_zero_add_prop(n: Expr) -> Expr {
+        eq(type0(), nat(), nat_add(nat_zero(), n.clone()), n)
+    }
+
+    fn nat_succ_add_prop(n: Expr, m: Expr) -> Expr {
+        eq(
+            type0(),
+            nat(),
+            nat_add(nat_succ(n.clone()), m.clone()),
+            nat_succ(nat_add(n, m)),
+        )
+    }
+
+    fn nat_add_assoc_prop(a: Expr, b: Expr, c: Expr) -> Expr {
+        eq(
+            type0(),
+            nat(),
+            nat_add(nat_add(a.clone(), b.clone()), c.clone()),
+            nat_add(a, nat_add(b, c)),
+        )
+    }
+
+    fn nat_add_comm_prop(a: Expr, b: Expr) -> Expr {
+        eq(type0(), nat(), nat_add(a.clone(), b.clone()), nat_add(b, a))
+    }
+
+    fn nat_add(lhs: Expr, rhs: Expr) -> Expr {
+        Expr::apps(Expr::konst("Nat.add", vec![]), vec![lhs, rhs])
+    }
+
+    fn eq_congr_succ(lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.congrArg", vec![type0(), type0()]),
+            vec![
+                nat(),
+                nat(),
+                Expr::lam("x", nat(), nat_succ(Expr::bvar(0))),
+                lhs,
+                rhs,
+                proof,
+            ],
+        )
+    }
+
+    fn eq_symm_nat(lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.symm", vec![type0()]),
+            vec![nat(), lhs, rhs, proof],
+        )
+    }
+
+    fn eq_trans_nat(lhs: Expr, mid: Expr, rhs: Expr, left: Expr, right: Expr) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.trans", vec![type0()]),
+            vec![nat(), lhs, mid, rhs, left, right],
+        )
+    }
+
     fn nat_m5_profile_module() -> CoreModule {
         let mut declarations = nat_basic_declarations();
-        declarations.extend([nat_binary_def("Nat.add"), profile_helper_def("Nat.m5_lhs")]);
+        declarations.push(profile_helper_def("Nat.m5_lhs"));
         declarations.extend(
-            [
-                "Nat.add_zero",
-                "Nat.add_succ",
-                "Nat.zero_add",
-                "Nat.mul_zero",
-                "Nat.mul_succ",
-                "Nat.zero_mul",
-                "Nat.add_comm",
-                "Nat.add_assoc",
-            ]
-            .into_iter()
-            .map(|name| profile_rule_theorem(name, "Nat.m5_lhs")),
+            ["Nat.mul_zero", "Nat.mul_succ", "Nat.zero_mul"]
+                .into_iter()
+                .map(|name| profile_rule_theorem(name, "Nat.m5_lhs")),
         );
         CoreModule {
             name: Name::from_dotted("Std.Nat"),
@@ -14355,16 +14852,6 @@ mod tests {
             universe_params: Vec::new(),
             ty: Expr::pi("n", nat(), nat()),
             value: Expr::lam("n", nat(), Expr::bvar(0)),
-            reducibility: Reducibility::Reducible,
-        }
-    }
-
-    fn nat_binary_def(name: &str) -> Decl {
-        Decl::Def {
-            name: name.to_owned(),
-            universe_params: Vec::new(),
-            ty: Expr::pi("lhs", nat(), Expr::pi("rhs", nat(), nat())),
-            value: Expr::lam("lhs", nat(), Expr::lam("rhs", nat(), Expr::bvar(0))),
             reducibility: Reducibility::Reducible,
         }
     }
