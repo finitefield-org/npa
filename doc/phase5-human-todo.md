@@ -822,12 +822,12 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] diagnostics payload を LSP diagnostic shape に変換する adapter を追加する。
-- [ ] hover payload に theorem statement、attributes、axioms を含める。
-- [ ] completion / code action 用に tactic suggestion と search command を返す。
-- [ ] semantic tokens / document symbols / inlay hints の最小 payload を追加する。
-- [ ] custom goal view は `/state/goals` と `/display/goal` を使う。
-- [ ] transport server は optional layer とし、kernel crate には入れない。
+- [x] diagnostics payload を LSP diagnostic shape に変換する adapter を追加する。
+- [x] hover payload に theorem statement、attributes、axioms を含める。
+- [x] completion / code action 用に tactic suggestion と search command を返す。
+- [x] semantic tokens / document symbols / inlay hints の最小 payload を追加する。
+- [x] custom goal view は `/state/goals` と `/display/goal` を使う。
+- [x] transport server は optional layer とし、kernel crate には入れない。
 
 依存:
 
@@ -854,9 +854,9 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] Human diagnostic span が LSP range に変換される。
-- [ ] hover で `Nat.add_zero` の statement と axiom info を返せる。
-- [ ] code action で `exact Eq.refl n` / `simp-lite` / search command を返せる。
+- [x] Human diagnostic span が LSP range に変換される。
+- [x] hover で `Nat.add_zero` の statement と axiom info を返せる。
+- [x] code action で `exact Eq.refl n` / `simp-lite` / search command を返せる。
 
 Verification:
 
@@ -866,7 +866,7 @@ cargo test -p npa-api human_lsp
 
 AI 速度ガード:
 
-- [ ] LSP payload type を Machine API response envelope に混ぜない。
+- [x] LSP payload type を Machine API response envelope に混ぜない。
 
 ---
 

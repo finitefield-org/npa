@@ -15,7 +15,16 @@ use crate::{
     HumanDocumentUpdateRequest, HumanExactTacticOk, HumanExactTacticRequest,
     HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping,
     HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
-    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanProofSession,
+    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanLspCodeAction,
+    HumanLspCodeActionKind, HumanLspCodeActionOk, HumanLspCodeActionRequest, HumanLspCommand,
+    HumanLspCompletionItem, HumanLspCompletionItemKind, HumanLspCompletionOk,
+    HumanLspCompletionRequest, HumanLspDiagnostic, HumanLspDiagnosticData,
+    HumanLspDiagnosticSeverity, HumanLspDiagnosticsOk, HumanLspDiagnosticsRequest,
+    HumanLspDocumentPayloadOk, HumanLspDocumentPayloadRequest, HumanLspDocumentSymbol,
+    HumanLspGoalViewOk, HumanLspGoalViewRequest, HumanLspHoleGoal, HumanLspHoleGoalLocal,
+    HumanLspHover, HumanLspHoverOk, HumanLspHoverRequest, HumanLspHoverTheorem, HumanLspInlayHint,
+    HumanLspInlayHintKind, HumanLspPosition, HumanLspRange, HumanLspSemanticToken,
+    HumanLspSemanticTokenType, HumanLspSymbolKind, HumanLspUnsolvedMeta, HumanProofSession,
     HumanProofSessionStatus, HumanProofSessionStore, HumanProofStateEntry,
     HumanProofStateStartError, HumanProofStateStartOk, HumanProofStateStartRequest,
     HumanProofStateStore, HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
@@ -1052,6 +1061,481 @@ pub fn suggest_human_tactics(
         suggestions,
         messages: Vec::new(),
         error: None,
+    }
+}
+
+pub fn human_lsp_diagnostic_from_human(
+    source: HumanCurrentModuleSource<'_>,
+    diagnostic: &npa_frontend::HumanDiagnostic,
+) -> HumanLspDiagnostic {
+    HumanLspDiagnostic {
+        range: human_lsp_range_for_span(source, diagnostic.primary_span),
+        severity: human_lsp_diagnostic_severity(diagnostic.severity.clone()),
+        code: human_lsp_diagnostic_kind_code(&diagnostic.kind).to_owned(),
+        source: "npa-human",
+        message: diagnostic.message.clone(),
+        data: human_lsp_diagnostic_data(source, diagnostic),
+    }
+}
+
+pub fn human_lsp_diagnostics(
+    store: &HumanProofSessionStore,
+    request: HumanLspDiagnosticsRequest,
+) -> Result<HumanLspDiagnosticsOk, HumanStateApiError> {
+    validate_human_state_request_document(store, request.header.clone())?;
+    let session = store
+        .session(&request.header.session_id)
+        .expect("Human LSP diagnostics validation checked session existence");
+    let source = session.document.current_source();
+    let diagnostics = session
+        .messages
+        .iter()
+        .map(|diagnostic| human_lsp_diagnostic_from_human(source, diagnostic))
+        .collect();
+    Ok(HumanLspDiagnosticsOk {
+        session_id: request.header.session_id,
+        document_id: request.header.document_id,
+        document_version: request.header.document_version,
+        diagnostics,
+    })
+}
+
+pub fn human_lsp_hover(
+    store: &HumanProofSessionStore,
+    request: HumanLspHoverRequest,
+) -> Result<HumanLspHoverOk, HumanTheoremSearchError> {
+    let (entry, index) = human_search_index_for_state(store, &request.header, &request.state_id)?;
+    let hover = index
+        .entries
+        .iter()
+        .find(|entry| human_lsp_theorem_name_matches(&entry.name, &request.name))
+        .map(human_lsp_hover_from_theorem);
+
+    Ok(HumanLspHoverOk {
+        session_id: request.header.session_id,
+        state_id: entry.state_id.clone(),
+        hover,
+    })
+}
+
+pub fn human_lsp_completions(
+    store: &HumanProofSessionStore,
+    request: HumanLspCompletionRequest,
+) -> HumanLspCompletionOk {
+    let response = suggest_human_tactics(
+        store,
+        HumanTacticSuggestRequest {
+            header: request.header,
+            state_id: request.state_id,
+            goal_id: request.goal_id,
+            max_results: request.max_results,
+        },
+    );
+    let mut items = response
+        .suggestions
+        .iter()
+        .map(human_lsp_completion_item_from_suggestion)
+        .collect::<Vec<_>>();
+    if request.include_search_command && response.error.is_none() {
+        items.push(HumanLspCompletionItem {
+            label: "Search nearby theorem".to_owned(),
+            kind: HumanLspCompletionItemKind::Command,
+            detail: "Open Human theorem search for the current goal".to_owned(),
+            insert_text: None,
+            command: Some(human_lsp_search_command(
+                &response.session_id,
+                &response.state_id,
+                &response.goal_id,
+            )),
+        });
+    }
+
+    HumanLspCompletionOk {
+        session_id: response.session_id,
+        state_id: response.state_id,
+        goal_id: response.goal_id,
+        items,
+        error: response.error,
+    }
+}
+
+pub fn human_lsp_code_actions(
+    store: &HumanProofSessionStore,
+    request: HumanLspCodeActionRequest,
+) -> HumanLspCodeActionOk {
+    let response = suggest_human_tactics(
+        store,
+        HumanTacticSuggestRequest {
+            header: request.header,
+            state_id: request.state_id,
+            goal_id: request.goal_id,
+            max_results: request.max_tactic_suggestions,
+        },
+    );
+    let mut actions = response
+        .suggestions
+        .iter()
+        .map(human_lsp_code_action_from_suggestion)
+        .collect::<Vec<_>>();
+    if request.include_search_command && response.error.is_none() {
+        actions.push(HumanLspCodeAction {
+            title: "Search nearby theorem".to_owned(),
+            kind: HumanLspCodeActionKind::Command,
+            tactic: None,
+            command: Some(human_lsp_search_command(
+                &response.session_id,
+                &response.state_id,
+                &response.goal_id,
+            )),
+            diagnostics: Vec::new(),
+        });
+    }
+
+    HumanLspCodeActionOk {
+        session_id: response.session_id,
+        state_id: response.state_id,
+        goal_id: response.goal_id,
+        actions,
+        error: response.error,
+    }
+}
+
+pub fn human_lsp_document_payloads(
+    store: &HumanProofSessionStore,
+    request: HumanLspDocumentPayloadRequest,
+) -> Result<HumanLspDocumentPayloadOk, HumanStateApiError> {
+    validate_human_state_request_document(store, request.header.clone())?;
+    let session = store
+        .session(&request.header.session_id)
+        .expect("Human LSP document validation checked session existence");
+    let source = session.document.current_source();
+    let mut semantic_tokens = Vec::new();
+    let mut document_symbols = Vec::new();
+    let mut inlay_hints = Vec::new();
+    if let Some(interface) = &session.source_interface {
+        for decl in interface
+            .declarations
+            .iter()
+            .filter(|decl| decl.kind != npa_frontend::HumanSourceDeclarationKind::Imported)
+        {
+            let selection_range = human_lsp_range_for_span(source, decl.name.span);
+            semantic_tokens.push(HumanLspSemanticToken {
+                range: selection_range,
+                token_type: human_lsp_semantic_token_type(decl.kind),
+            });
+            document_symbols.push(HumanLspDocumentSymbol {
+                name: decl.name.as_dotted(),
+                kind: human_lsp_symbol_kind(decl.kind),
+                range: human_lsp_range_for_span(source, decl.span),
+                selection_range,
+            });
+            for binder in &decl.binders {
+                inlay_hints.push(HumanLspInlayHint {
+                    position: human_lsp_range_for_span(source, binder.span).end,
+                    label: human_lsp_binder_hint_label(binder.binder_info),
+                    kind: HumanLspInlayHintKind::Parameter,
+                });
+                if let Some(name) = &binder.name {
+                    semantic_tokens.push(HumanLspSemanticToken {
+                        range: human_lsp_range_for_span(source, name.span),
+                        token_type: HumanLspSemanticTokenType::Variable,
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(HumanLspDocumentPayloadOk {
+        session_id: request.header.session_id,
+        document_id: request.header.document_id,
+        document_version: request.header.document_version,
+        semantic_tokens,
+        document_symbols,
+        inlay_hints,
+    })
+}
+
+pub fn human_lsp_goal_view(
+    store: &HumanProofSessionStore,
+    request: HumanLspGoalViewRequest,
+) -> Result<HumanLspGoalViewOk, HumanDisplayError> {
+    let goals = get_human_state_goals(
+        store,
+        HumanStateGoalsRequest {
+            header: request.header.clone(),
+            state_id: request.state_id.clone(),
+        },
+    )?;
+    let focused_goal = display_human_goal(
+        store,
+        HumanDisplayGoalRequest {
+            header: request.header,
+            state_id: request.state_id,
+            goal_id: request.goal_id,
+            mode: request.mode,
+            context_options: request.context_options,
+        },
+    )?;
+
+    Ok(HumanLspGoalViewOk {
+        session_id: goals.session_id,
+        state_id: goals.state_id,
+        document_version: goals.document_version,
+        goals: goals.goals,
+        focused_goal,
+    })
+}
+
+fn human_lsp_range_for_span(
+    source: HumanCurrentModuleSource<'_>,
+    span: npa_frontend::Span,
+) -> HumanLspRange {
+    if span.file_id != source.file_id {
+        let zero = HumanLspPosition {
+            line: 0,
+            character: 0,
+        };
+        return HumanLspRange {
+            start: zero,
+            end: zero,
+        };
+    }
+    HumanLspRange {
+        start: human_lsp_position_for_offset(source.source, span.start.0),
+        end: human_lsp_position_for_offset(source.source, span.end.0),
+    }
+}
+
+fn human_lsp_position_for_offset(source: &str, offset: u32) -> HumanLspPosition {
+    let target = usize::try_from(offset)
+        .ok()
+        .map(|offset| offset.min(source.len()))
+        .unwrap_or(source.len());
+    let mut line = 0_u32;
+    let mut character = 0_u32;
+    for (index, ch) in source.char_indices() {
+        if index >= target {
+            break;
+        }
+        if ch == '\n' {
+            line = line.saturating_add(1);
+            character = 0;
+        } else {
+            character = character.saturating_add(ch.len_utf16() as u32);
+        }
+    }
+    HumanLspPosition { line, character }
+}
+
+fn human_lsp_diagnostic_severity(
+    severity: npa_frontend::HumanDiagnosticSeverity,
+) -> HumanLspDiagnosticSeverity {
+    match severity {
+        npa_frontend::HumanDiagnosticSeverity::Error => HumanLspDiagnosticSeverity::Error,
+        npa_frontend::HumanDiagnosticSeverity::Warning => HumanLspDiagnosticSeverity::Warning,
+    }
+}
+
+fn human_lsp_diagnostic_data(
+    source: HumanCurrentModuleSource<'_>,
+    diagnostic: &npa_frontend::HumanDiagnostic,
+) -> HumanLspDiagnosticData {
+    let payload = diagnostic.payload.as_deref();
+    HumanLspDiagnosticData {
+        kind: human_lsp_diagnostic_kind_code(&diagnostic.kind).to_owned(),
+        phase: payload
+            .and_then(|payload| payload.phase)
+            .map(|phase| phase.as_str().to_owned()),
+        detail: payload.and_then(|payload| payload.detail.clone()),
+        candidates: payload
+            .map(|payload| payload.candidates.clone())
+            .unwrap_or_default(),
+        hole_goals: payload
+            .map(|payload| {
+                payload
+                    .hole_goals
+                    .iter()
+                    .map(|goal| HumanLspHoleGoal {
+                        hole: goal.hole.clone(),
+                        range: human_lsp_range_for_span(source, goal.source_span),
+                        context: goal
+                            .context
+                            .iter()
+                            .map(|local| HumanLspHoleGoalLocal {
+                                name: local.name.clone(),
+                                ty: local.ty.clone(),
+                                value: local.value.clone(),
+                            })
+                            .collect(),
+                        target: goal.target.clone(),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        unsolved_meta: payload
+            .and_then(|payload| payload.unsolved_meta.as_ref())
+            .map(|meta| HumanLspUnsolvedMeta {
+                kind: human_lsp_unsolved_meta_kind(meta.kind).to_owned(),
+                name: meta.name.clone(),
+            }),
+    }
+}
+
+fn human_lsp_diagnostic_kind_code(kind: &npa_frontend::HumanDiagnosticKind) -> &'static str {
+    match kind {
+        npa_frontend::HumanDiagnosticKind::NotImplemented => "not_implemented",
+        npa_frontend::HumanDiagnosticKind::ParseError => "parse_error",
+        npa_frontend::HumanDiagnosticKind::ImportAfterItem => "import_after_item",
+        npa_frontend::HumanDiagnosticKind::UnsupportedSyntax => "unsupported_syntax",
+        npa_frontend::HumanDiagnosticKind::ImportResolutionError => "import_resolution_error",
+        npa_frontend::HumanDiagnosticKind::MissingVerifiedImport => "missing_verified_import",
+        npa_frontend::HumanDiagnosticKind::NamespaceMismatch => "namespace_mismatch",
+        npa_frontend::HumanDiagnosticKind::UnknownNamespace => "unknown_namespace",
+        npa_frontend::HumanDiagnosticKind::DuplicateDeclaration => "duplicate_declaration",
+        npa_frontend::HumanDiagnosticKind::UnknownIdentifier => "unknown_identifier",
+        npa_frontend::HumanDiagnosticKind::AmbiguousName => "ambiguous_name",
+        npa_frontend::HumanDiagnosticKind::ForwardReference => "forward_reference",
+        npa_frontend::HumanDiagnosticKind::NotationConflict => "notation_conflict",
+        npa_frontend::HumanDiagnosticKind::AmbiguousNotation => "ambiguous_notation",
+        npa_frontend::HumanDiagnosticKind::TooManyNotationCandidates => {
+            "too_many_notation_candidates"
+        }
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic => "unsupported_tactic",
+        npa_frontend::HumanDiagnosticKind::UnsolvedImplicit => "unsolved_implicit",
+        npa_frontend::HumanDiagnosticKind::UnsolvedMeta => "unsolved_meta",
+        npa_frontend::HumanDiagnosticKind::UnsolvedUniverseMeta => "unsolved_universe_meta",
+        npa_frontend::HumanDiagnosticKind::UnsolvedHole => "unsolved_hole",
+        npa_frontend::HumanDiagnosticKind::NamedHoleContextMismatch => {
+            "named_hole_context_mismatch"
+        }
+        npa_frontend::HumanDiagnosticKind::OccursCheckFailed => "occurs_check_failed",
+        npa_frontend::HumanDiagnosticKind::ExpectedFunctionType => "expected_function_type",
+        npa_frontend::HumanDiagnosticKind::ExpectedSort => "expected_sort",
+        npa_frontend::HumanDiagnosticKind::TypeMismatch => "type_mismatch",
+        npa_frontend::HumanDiagnosticKind::NoGoalsButTacticRemaining => {
+            "no_goals_but_tactic_remaining"
+        }
+        npa_frontend::HumanDiagnosticKind::UnresolvedGoal => "unresolved_goal",
+        npa_frontend::HumanDiagnosticKind::KernelRejected => "kernel_rejected",
+        npa_frontend::HumanDiagnosticKind::MachineElaborationError => "machine_elaboration_error",
+    }
+}
+
+fn human_lsp_unsolved_meta_kind(kind: npa_frontend::HumanUnsolvedMetaKind) -> &'static str {
+    match kind {
+        npa_frontend::HumanUnsolvedMetaKind::Hole => "hole",
+        npa_frontend::HumanUnsolvedMetaKind::SyntheticImplicit => "synthetic_implicit",
+        npa_frontend::HumanUnsolvedMetaKind::Universe => "universe",
+    }
+}
+
+fn human_lsp_hover_from_theorem(theorem: &HumanTheoremIndexEntry) -> HumanLspHover {
+    let axiom_info = HumanTheoremAxiomInfo {
+        uses_axioms: !theorem.axiom_dependencies.is_empty(),
+        axiom_dependencies: theorem.axiom_dependencies.clone(),
+        score_penalty: 0,
+    };
+    let axiom_line = if axiom_info.uses_axioms {
+        format!("axioms: {}", axiom_info.axiom_dependencies.len())
+    } else {
+        "axioms: none".to_owned()
+    };
+    let contents = format!(
+        "```npa\n{} : {}\n```\nkind: {}\n{}",
+        theorem.name.as_dotted(),
+        theorem.statement_pretty,
+        theorem.kind.as_str(),
+        axiom_line
+    );
+    HumanLspHover {
+        contents,
+        theorem: HumanLspHoverTheorem {
+            name: theorem.name.clone(),
+            module: theorem.module.clone(),
+            kind: theorem.kind,
+            statement_pretty: theorem.statement_pretty.clone(),
+            attributes: theorem.attributes.clone(),
+            axiom_info,
+            export_hash: theorem.export_hash,
+            certificate_hash: theorem.certificate_hash,
+            decl_interface_hash: theorem.decl_interface_hash,
+        },
+    }
+}
+
+fn human_lsp_theorem_name_matches(full_name: &Name, requested_name: &Name) -> bool {
+    if full_name == requested_name {
+        return true;
+    }
+    let full_name = full_name.as_dotted();
+    let requested_name = requested_name.as_dotted();
+    full_name.ends_with(&format!(".{requested_name}"))
+}
+
+fn human_lsp_completion_item_from_suggestion(
+    suggestion: &HumanTacticSuggestion,
+) -> HumanLspCompletionItem {
+    HumanLspCompletionItem {
+        label: suggestion.tactic.clone(),
+        kind: HumanLspCompletionItemKind::Tactic,
+        detail: suggestion.reason.clone(),
+        insert_text: Some(suggestion.tactic.clone()),
+        command: None,
+    }
+}
+
+fn human_lsp_code_action_from_suggestion(suggestion: &HumanTacticSuggestion) -> HumanLspCodeAction {
+    HumanLspCodeAction {
+        title: format!("Run `{}`", suggestion.tactic),
+        kind: HumanLspCodeActionKind::QuickFix,
+        tactic: Some(suggestion.tactic.clone()),
+        command: None,
+        diagnostics: Vec::new(),
+    }
+}
+
+fn human_lsp_search_command(
+    session_id: &crate::HumanSessionId,
+    state_id: &crate::HumanStateId,
+    goal_id: &HumanGoalId,
+) -> HumanLspCommand {
+    HumanLspCommand {
+        title: "Search nearby theorem".to_owned(),
+        command: "npa.human.search.for_goal".to_owned(),
+        arguments: vec![
+            session_id.wire().to_owned(),
+            state_id.wire().to_owned(),
+            goal_id.wire().to_owned(),
+        ],
+    }
+}
+
+fn human_lsp_semantic_token_type(
+    kind: npa_frontend::HumanSourceDeclarationKind,
+) -> HumanLspSemanticTokenType {
+    match kind {
+        npa_frontend::HumanSourceDeclarationKind::Def => HumanLspSemanticTokenType::Function,
+        npa_frontend::HumanSourceDeclarationKind::Theorem
+        | npa_frontend::HumanSourceDeclarationKind::Axiom => HumanLspSemanticTokenType::Theorem,
+        npa_frontend::HumanSourceDeclarationKind::Inductive => HumanLspSemanticTokenType::Type,
+        npa_frontend::HumanSourceDeclarationKind::Imported => HumanLspSemanticTokenType::Function,
+    }
+}
+
+fn human_lsp_symbol_kind(kind: npa_frontend::HumanSourceDeclarationKind) -> HumanLspSymbolKind {
+    match kind {
+        npa_frontend::HumanSourceDeclarationKind::Def => HumanLspSymbolKind::Function,
+        npa_frontend::HumanSourceDeclarationKind::Theorem
+        | npa_frontend::HumanSourceDeclarationKind::Axiom => HumanLspSymbolKind::Theorem,
+        npa_frontend::HumanSourceDeclarationKind::Inductive => HumanLspSymbolKind::Type,
+        npa_frontend::HumanSourceDeclarationKind::Imported => HumanLspSymbolKind::Function,
+    }
+}
+
+fn human_lsp_binder_hint_label(info: npa_frontend::HumanBinderInfo) -> String {
+    match info {
+        npa_frontend::HumanBinderInfo::Explicit => "explicit binder".to_owned(),
+        npa_frontend::HumanBinderInfo::Implicit => "implicit binder".to_owned(),
     }
 }
 
@@ -7842,6 +8326,272 @@ theorem target : P := by simp-lite",
             .axioms_used
             .iter()
             .any(|axiom| matches!(axiom, MachineAxiomRefWire::Imported { name, .. } if name.as_dotted() == "hp")));
+    }
+
+    #[test]
+    fn human_lsp_diagnostic_span_converts_to_lsp_range() {
+        let source = "first\nsecond line\nthird";
+        let diagnostic = npa_frontend::HumanDiagnostic::error(
+            npa_frontend::HumanDiagnosticKind::TypeMismatch,
+            npa_frontend::Span::new(npa_frontend::FileId(61), 6, 12),
+            "expected Nat",
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::Elaborator);
+
+        let lsp = human_lsp_diagnostic_from_human(
+            HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(61),
+                source,
+            },
+            &diagnostic,
+        );
+
+        assert_eq!(
+            lsp.range,
+            HumanLspRange {
+                start: HumanLspPosition {
+                    line: 1,
+                    character: 0
+                },
+                end: HumanLspPosition {
+                    line: 1,
+                    character: 6
+                },
+            }
+        );
+        assert_eq!(lsp.severity, HumanLspDiagnosticSeverity::Error);
+        assert_eq!(lsp.code, "type_mismatch");
+        assert_eq!(lsp.data.phase.as_deref(), Some("elaborator"));
+        assert_eq!(lsp.data.detail.as_deref(), Some("expected Nat"));
+    }
+
+    #[test]
+    fn human_lsp_hover_returns_nat_add_zero_statement_and_axioms() {
+        let (store, header, state_id, _goal_id) = human_search_nat_add_zero_fixture();
+
+        let ok = human_lsp_hover(
+            &store,
+            HumanLspHoverRequest {
+                header,
+                state_id,
+                name: npa_cert::Name::from_dotted("Nat.add_zero"),
+            },
+        )
+        .expect("Human LSP hover should build from theorem index");
+        let hover = ok.hover.expect("Nat.add_zero hover should be present");
+
+        assert_eq!(
+            hover.theorem.name,
+            npa_cert::Name::from_dotted("Nat.add_zero")
+        );
+        assert_eq!(hover.theorem.kind, HumanTheoremIndexKind::Theorem);
+        assert!(!hover.theorem.statement_pretty.is_empty());
+        assert!(hover.contents.contains(&hover.theorem.statement_pretty));
+        assert!(!hover.theorem.axiom_info.uses_axioms);
+        assert!(hover.theorem.axiom_info.axiom_dependencies.is_empty());
+        assert!(hover.contents.contains("Nat.add_zero"));
+        assert!(hover.contents.contains("axioms: none"));
+    }
+
+    #[test]
+    fn human_lsp_code_actions_include_tactics_and_search_command() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanLspActions"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(62),
+                    source: "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem target (n : Nat) : Eq.{1} n n := by simp-lite",
+                },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human LSP action session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanLspActions.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human LSP action proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "intro n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro.status, HumanTacticRunStatus::Partial);
+        let state_id = intro.new_state_id.expect("intro should record state");
+        let goal_id = intro.selected_goal.expect("intro should select body goal");
+
+        let completions = human_lsp_completions(
+            &store,
+            HumanLspCompletionRequest {
+                header: header.clone(),
+                state_id: state_id.clone(),
+                goal_id: goal_id.clone(),
+                max_results: 10,
+                include_search_command: true,
+            },
+        );
+        assert!(completions.error.is_none());
+        assert!(completions
+            .items
+            .iter()
+            .any(|item| item.insert_text.as_deref() == Some("exact Eq.refl n")));
+
+        let actions = human_lsp_code_actions(
+            &store,
+            HumanLspCodeActionRequest {
+                header: header.clone(),
+                state_id: state_id.clone(),
+                goal_id: goal_id.clone(),
+                max_tactic_suggestions: 10,
+                include_search_command: true,
+            },
+        );
+        assert!(actions.error.is_none());
+        assert!(actions
+            .actions
+            .iter()
+            .any(|action| action.tactic.as_deref() == Some("exact Eq.refl n")));
+        assert!(actions
+            .actions
+            .iter()
+            .any(|action| action.tactic.as_deref() == Some("simp-lite")));
+        let search = actions
+            .actions
+            .iter()
+            .find_map(|action| action.command.as_ref())
+            .expect("Human LSP code actions should include theorem search command");
+        assert_eq!(search.command, "npa.human.search.for_goal");
+        assert_eq!(search.arguments[0], created.session_id.wire());
+        assert_eq!(search.arguments[1], state_id.wire());
+        assert_eq!(search.arguments[2], goal_id.wire());
+
+        let goal_view = human_lsp_goal_view(
+            &store,
+            HumanLspGoalViewRequest {
+                header,
+                state_id,
+                goal_id,
+                mode: HumanDisplayMode::Pretty,
+                context_options: HumanDisplayContextOptions::default(),
+            },
+        )
+        .expect("Human LSP goal view should use state/goals and display/goal adapters");
+        assert_eq!(goal_view.goals.len(), 1);
+        assert!(goal_view.focused_goal.text.contains("n : Nat"));
+        assert!(goal_view.focused_goal.text.contains("|- n = n"));
+    }
+
+    #[test]
+    fn human_lsp_document_payloads_return_symbols_tokens_and_inlay_hints() {
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanLspDocument"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(63),
+                    source: "theorem id (A : Type) (x : A) : A := by simp-lite",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human LSP document session should be created");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+
+        let payloads = human_lsp_document_payloads(
+            &store,
+            HumanLspDocumentPayloadRequest {
+                header: header.clone(),
+            },
+        )
+        .expect("Human LSP document payloads should be available");
+
+        assert!(payloads
+            .document_symbols
+            .iter()
+            .any(|symbol| { symbol.name == "id" && symbol.kind == HumanLspSymbolKind::Theorem }));
+        assert!(payloads
+            .semantic_tokens
+            .iter()
+            .any(|token| token.token_type == HumanLspSemanticTokenType::Theorem));
+        assert!(payloads
+            .semantic_tokens
+            .iter()
+            .any(|token| token.token_type == HumanLspSemanticTokenType::Variable));
+        assert!(payloads
+            .inlay_hints
+            .iter()
+            .any(|hint| hint.label == "explicit binder"));
+    }
+
+    #[test]
+    fn human_lsp_payloads_do_not_extend_machine_endpoint_envelopes() {
+        let endpoints = [
+            crate::MachineApiEndpoint::CreateSession,
+            crate::MachineApiEndpoint::DeleteSession,
+            crate::MachineApiEndpoint::SnapshotGet,
+            crate::MachineApiEndpoint::TacticRun,
+            crate::MachineApiEndpoint::TacticBatch,
+            crate::MachineApiEndpoint::SearchForGoal,
+            crate::MachineApiEndpoint::PromptPayload,
+            crate::MachineApiEndpoint::Replay,
+            crate::MachineApiEndpoint::Verify,
+        ];
+        let forbidden_machine_names = [
+            "lsp",
+            "hover",
+            "completion",
+            "code_action",
+            "semantic_token",
+            "document_symbol",
+            "inlay_hint",
+            "goal_view",
+        ];
+
+        for endpoint in endpoints {
+            let spec = crate::machine_endpoint_envelope_spec(endpoint);
+            assert!(forbidden_machine_names
+                .iter()
+                .all(|forbidden| !spec.endpoint.as_str().contains(forbidden)));
+            assert!(spec.fields.iter().all(|field| {
+                forbidden_machine_names
+                    .iter()
+                    .all(|forbidden| !field.name.contains(forbidden))
+            }));
+        }
     }
 
     #[test]

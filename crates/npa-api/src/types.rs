@@ -186,6 +186,316 @@ pub struct HumanStateGoalSummary {
     pub pretty: String,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanLspPosition {
+    pub line: u32,
+    pub character: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanLspRange {
+    pub start: HumanLspPosition,
+    pub end: HumanLspPosition,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanLspDiagnosticSeverity {
+    Error,
+    Warning,
+}
+
+impl HumanLspDiagnosticSeverity {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Error => "error",
+            Self::Warning => "warning",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspDiagnostic {
+    pub range: HumanLspRange,
+    pub severity: HumanLspDiagnosticSeverity,
+    pub code: String,
+    pub source: &'static str,
+    pub message: String,
+    pub data: HumanLspDiagnosticData,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct HumanLspDiagnosticData {
+    pub kind: String,
+    pub phase: Option<String>,
+    pub detail: Option<String>,
+    pub candidates: Vec<String>,
+    pub hole_goals: Vec<HumanLspHoleGoal>,
+    pub unsolved_meta: Option<HumanLspUnsolvedMeta>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspHoleGoal {
+    pub hole: Option<String>,
+    pub range: HumanLspRange,
+    pub context: Vec<HumanLspHoleGoalLocal>,
+    pub target: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspHoleGoalLocal {
+    pub name: String,
+    pub ty: String,
+    pub value: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspUnsolvedMeta {
+    pub kind: String,
+    pub name: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspDiagnosticsRequest {
+    pub header: HumanStateRequestHeader,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspDiagnosticsOk {
+    pub session_id: HumanSessionId,
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+    pub diagnostics: Vec<HumanLspDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspHoverRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub name: Name,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspHoverOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub hover: Option<HumanLspHover>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspHover {
+    pub contents: String,
+    pub theorem: HumanLspHoverTheorem,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspHoverTheorem {
+    pub name: Name,
+    pub module: ModuleName,
+    pub kind: HumanTheoremIndexKind,
+    pub statement_pretty: String,
+    pub attributes: Vec<String>,
+    pub axiom_info: HumanTheoremAxiomInfo,
+    pub export_hash: Option<Hash>,
+    pub certificate_hash: Option<Hash>,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCompletionRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub max_results: usize,
+    pub include_search_command: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCompletionOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub items: Vec<HumanLspCompletionItem>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCompletionItem {
+    pub label: String,
+    pub kind: HumanLspCompletionItemKind,
+    pub detail: String,
+    pub insert_text: Option<String>,
+    pub command: Option<HumanLspCommand>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanLspCompletionItemKind {
+    Tactic,
+    Command,
+}
+
+impl HumanLspCompletionItemKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Tactic => "tactic",
+            Self::Command => "command",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCodeActionRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub max_tactic_suggestions: usize,
+    pub include_search_command: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCodeActionOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub actions: Vec<HumanLspCodeAction>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCodeAction {
+    pub title: String,
+    pub kind: HumanLspCodeActionKind,
+    pub tactic: Option<String>,
+    pub command: Option<HumanLspCommand>,
+    pub diagnostics: Vec<HumanLspDiagnostic>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanLspCodeActionKind {
+    QuickFix,
+    Command,
+}
+
+impl HumanLspCodeActionKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::QuickFix => "quickfix",
+            Self::Command => "command",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspCommand {
+    pub title: String,
+    pub command: String,
+    pub arguments: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspDocumentPayloadRequest {
+    pub header: HumanStateRequestHeader,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspDocumentPayloadOk {
+    pub session_id: HumanSessionId,
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+    pub semantic_tokens: Vec<HumanLspSemanticToken>,
+    pub document_symbols: Vec<HumanLspDocumentSymbol>,
+    pub inlay_hints: Vec<HumanLspInlayHint>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspSemanticToken {
+    pub range: HumanLspRange,
+    pub token_type: HumanLspSemanticTokenType,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanLspSemanticTokenType {
+    Function,
+    Theorem,
+    Type,
+    Variable,
+}
+
+impl HumanLspSemanticTokenType {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Function => "function",
+            Self::Theorem => "theorem",
+            Self::Type => "type",
+            Self::Variable => "variable",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspDocumentSymbol {
+    pub name: String,
+    pub kind: HumanLspSymbolKind,
+    pub range: HumanLspRange,
+    pub selection_range: HumanLspRange,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanLspSymbolKind {
+    Function,
+    Theorem,
+    Type,
+}
+
+impl HumanLspSymbolKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Function => "function",
+            Self::Theorem => "theorem",
+            Self::Type => "type",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspInlayHint {
+    pub position: HumanLspPosition,
+    pub label: String,
+    pub kind: HumanLspInlayHintKind,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanLspInlayHintKind {
+    Type,
+    Parameter,
+}
+
+impl HumanLspInlayHintKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Type => "type",
+            Self::Parameter => "parameter",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspGoalViewRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub mode: HumanDisplayMode,
+    pub context_options: HumanDisplayContextOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanLspGoalViewOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub document_version: HumanDocumentVersion,
+    pub goals: Vec<HumanStateGoalSummary>,
+    pub focused_goal: HumanDisplayTextOk,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HumanDisplayMode {
     Pretty,
