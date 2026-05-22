@@ -451,6 +451,126 @@ pub struct HumanTacticSuggestion {
     pub tactic: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremIndex {
+    pub fingerprint: Hash,
+    pub entries: Vec<HumanTheoremIndexEntry>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremIndexEntry {
+    pub name: Name,
+    pub module: ModuleName,
+    pub source: HumanTheoremIndexSource,
+    pub universe_params: Vec<String>,
+    pub statement_core: Expr,
+    pub statement: StructuredExpr,
+    pub statement_pretty: String,
+    pub head_symbol: Option<Name>,
+    pub constants: Vec<Name>,
+    pub attributes: Vec<String>,
+    pub kind: HumanTheoremIndexKind,
+    pub dependencies: Vec<HumanTheoremDependency>,
+    pub axiom_dependencies: Vec<MachineAxiomRefWire>,
+    pub export_hash: Option<Hash>,
+    pub certificate_hash: Option<Hash>,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTheoremIndexSource {
+    VerifiedImport {
+        export_hash: Hash,
+        certificate_hash: Hash,
+    },
+    CheckedCurrentDecl {
+        source_index: u64,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTheoremIndexKind {
+    Axiom,
+    Def,
+    Theorem,
+    Inductive,
+    Constructor,
+    Recursor,
+}
+
+impl HumanTheoremIndexKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Axiom => "axiom",
+            Self::Def => "def",
+            Self::Theorem => "theorem",
+            Self::Inductive => "inductive",
+            Self::Constructor => "constructor",
+            Self::Recursor => "recursor",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremDependency {
+    pub kind: HumanTheoremDependencyKind,
+    pub name: Name,
+    pub module: Option<ModuleName>,
+    pub export_hash: Option<Hash>,
+    pub source_index: Option<u64>,
+    pub decl_interface_hash: Option<Hash>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTheoremDependencyKind {
+    Imported,
+    Current,
+    Builtin,
+    UnknownConstant,
+}
+
+impl HumanTheoremDependencyKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Imported => "imported",
+            Self::Current => "current",
+            Self::Builtin => "builtin",
+            Self::UnknownConstant => "unknown_constant",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTheoremIndexError {
+    MissingUniverseParam {
+        module: ModuleName,
+        name_index: usize,
+    },
+    MissingTerm {
+        module: ModuleName,
+        term_index: usize,
+    },
+    MissingLevel {
+        module: ModuleName,
+        level_index: usize,
+    },
+    MissingName {
+        module: ModuleName,
+        name_index: usize,
+    },
+    MissingDeclaration {
+        module: ModuleName,
+        decl_index: usize,
+    },
+    InvalidAxiomRef {
+        module: ModuleName,
+        name: Name,
+    },
+    ExpressionMetadata {
+        name: Name,
+    },
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HumanTacticSuggestionSource {
     Builtin,

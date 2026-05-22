@@ -615,11 +615,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] verified imports と checked current declarations から Human theorem index を作る。
-- [ ] Index entry に name、module、statement core expr、statement pretty、head symbol、constants、attributes、kind、dependencies、axiom deps を持たせる。
-- [ ] import の `export_hash` / high-trust `certificate_hash` / `decl_interface_hash` を保持する。
-- [ ] current declaration は kernel check 済み prefix だけを index に入れる。
-- [ ] axiom dependency を ranking / filter で使える形にする。
+- [x] verified imports と checked current declarations から Human theorem index を作る。
+- [x] Index entry に name、module、statement core expr、statement pretty、head symbol、constants、attributes、kind、dependencies、axiom deps を持たせる。
+- [x] import の `export_hash` / high-trust `certificate_hash` / `decl_interface_hash` を保持する。
+- [x] current declaration は kernel check 済み prefix だけを index に入れる。
+- [x] axiom dependency を ranking / filter で使える形にする。
 
 依存:
 
@@ -645,10 +645,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] direct verified import の theorem / def / axiom / constructor / recursor を index 化できる。
-- [ ] unchecked external theorem database は index に入らない。
-- [ ] `decl_interface_hash` のない theorem を verified result として返さない。
-- [ ] axiom 依存 theorem を識別できる。
+- [x] direct verified import の theorem / def / axiom / constructor / recursor を index 化できる。
+- [x] unchecked external theorem database は index に入らない。
+- [x] `decl_interface_hash` のない theorem を verified result として返さない。
+- [x] axiom 依存 theorem を識別できる。
 
 Verification:
 
@@ -659,7 +659,7 @@ cargo test -p npa-api search
 
 AI 速度ガード:
 
-- [ ] Machine `/machine/search/for_goal` の theorem index fingerprint を変更しない。
+- [x] Machine `/machine/search/for_goal` の theorem index fingerprint を変更しない。
 
 ---
 

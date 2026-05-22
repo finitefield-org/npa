@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire};
 use crate::renderer::{core_expr_metadata, render_kernel_core_expr};
 use crate::types::HumanProofStateStoreMutationError;
 use crate::{
@@ -28,11 +29,18 @@ use crate::{
     HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
     HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticSuggestRequest,
     HumanTacticSuggestResponse, HumanTacticSuggestion, HumanTacticSuggestionSource,
-    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError, LocalId,
+    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanTheoremDependency, HumanTheoremDependencyKind, HumanTheoremIndex, HumanTheoremIndexEntry,
+    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource, LocalId,
     StructuredExpr, StructuredGoal, StructuredGoalStatus, StructuredHypothesis,
     StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
 };
+use npa_cert::{
+    AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
+    LevelNode, ModuleName, Name, NameId, TermId, TermNode, VerifiedModule,
+};
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
+use sha2::{Digest, Sha256};
 
 /// Compile Human source through the Human tactic API adapter.
 ///
@@ -2725,6 +2733,874 @@ pub fn start_human_proof(
         &frontend_options,
     )?;
     start_human_proof_from_prepared(prepared, request.verified_modules, request.options)
+}
+
+/// Build the Human theorem index for an already-checked Human proof state.
+///
+/// The index is intentionally Human-only: it reads direct visible verified imports
+/// and the kernel-checked current declaration prefix already stored in the
+/// `MachineProofState`. It does not read Human source metadata as a source of
+/// truth and does not reuse or mutate the Machine `/machine/search/for_goal`
+/// theorem index fingerprint.
+pub fn build_human_theorem_index(
+    state: &npa_tactic::MachineProofState,
+) -> Result<HumanTheoremIndex, HumanTheoremIndexError> {
+    let mut import_facts = BTreeMap::new();
+    let mut import_entries = Vec::new();
+    for import in state
+        .env
+        .imports
+        .iter()
+        .filter(|import| import.is_visible())
+    {
+        for export in import.verified_module().export_block() {
+            let fact = human_import_export_fact(import, export)?;
+            import_facts.insert(fact.name.clone(), fact.clone());
+            import_entries.push(fact);
+        }
+    }
+
+    let mut entries = Vec::new();
+    for fact in &import_entries {
+        entries.push(human_import_export_entry(fact, &import_facts)?);
+    }
+
+    let mut current_facts = BTreeMap::new();
+    for checked in &state.env.checked_current_decls {
+        let entry = human_checked_current_entry(
+            &state.root.module,
+            checked,
+            &import_facts,
+            &current_facts,
+        )?;
+        current_facts.insert(
+            entry.name.clone(),
+            HumanCurrentTheoremFact {
+                module: entry.module.clone(),
+                name: entry.name.clone(),
+                source_index: checked.source_index(),
+                decl_interface_hash: entry.decl_interface_hash,
+                axiom_dependencies: entry.axiom_dependencies.clone(),
+            },
+        );
+        entries.push(entry);
+    }
+
+    entries.sort_by_key(human_theorem_index_entry_sort_key);
+    let fingerprint = human_theorem_index_fingerprint(&entries);
+    Ok(HumanTheoremIndex {
+        fingerprint,
+        entries,
+    })
+}
+
+#[derive(Clone, Debug)]
+struct HumanImportTheoremFact {
+    module: ModuleName,
+    name: Name,
+    universe_params: Vec<String>,
+    statement_core: Expr,
+    kind: HumanTheoremIndexKind,
+    declared_dependencies: Vec<HumanTheoremDependency>,
+    axiom_dependencies: Vec<MachineAxiomRefWire>,
+    export_hash: Hash,
+    certificate_hash: Hash,
+    decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug)]
+struct HumanCurrentTheoremFact {
+    module: ModuleName,
+    name: Name,
+    source_index: u64,
+    decl_interface_hash: Hash,
+    axiom_dependencies: Vec<MachineAxiomRefWire>,
+}
+
+fn human_import_export_fact(
+    import: &npa_tactic::VerifiedImportRef,
+    export: &ExportEntry,
+) -> Result<HumanImportTheoremFact, HumanTheoremIndexError> {
+    let verified = import.verified_module();
+    let module = import.module().clone();
+    let name = human_name_from_verified(verified, export.name)?;
+    let universe_params = export
+        .universe_params
+        .iter()
+        .map(|name_id| human_universe_param_from_verified(verified, *name_id))
+        .collect::<Result<Vec<_>, _>>()?;
+    let statement_core = human_expr_from_verified_term(verified, export.ty)?;
+    let declared_dependencies = human_export_decl_dependencies(import, export)?;
+    let mut axiom_dependencies = export
+        .axiom_dependencies
+        .iter()
+        .map(|axiom| human_import_axiom_ref_to_wire(import, axiom))
+        .collect::<Result<Vec<_>, _>>()?;
+    if export.kind == ExportKind::Axiom {
+        axiom_dependencies.push(MachineAxiomRefWire::Imported {
+            module: import.module().clone(),
+            name: name.clone(),
+            export_hash: import.export_hash(),
+            decl_interface_hash: export.decl_interface_hash,
+        });
+    }
+    human_sort_dedup_axiom_refs(&mut axiom_dependencies);
+
+    Ok(HumanImportTheoremFact {
+        module,
+        name,
+        universe_params,
+        statement_core,
+        kind: human_export_kind(export.kind),
+        declared_dependencies,
+        axiom_dependencies,
+        export_hash: import.export_hash(),
+        certificate_hash: import.certificate_hash(),
+        decl_interface_hash: export.decl_interface_hash,
+    })
+}
+
+fn human_import_export_entry(
+    fact: &HumanImportTheoremFact,
+    import_facts: &BTreeMap<Name, HumanImportTheoremFact>,
+) -> Result<HumanTheoremIndexEntry, HumanTheoremIndexError> {
+    let statement = human_index_structured_expr(&fact.name, &fact.statement_core)?;
+    let mut dependencies = fact.declared_dependencies.clone();
+    dependencies.extend(human_dependencies_from_constants(
+        &statement.constants,
+        Some(&fact.name),
+        import_facts,
+        &BTreeMap::new(),
+    ));
+    human_sort_dedup_dependencies(&mut dependencies);
+    let statement_pretty = statement.pretty.clone();
+    let head_symbol = statement.head.clone();
+    let constants = statement.constants.clone();
+
+    Ok(HumanTheoremIndexEntry {
+        name: fact.name.clone(),
+        module: fact.module.clone(),
+        source: HumanTheoremIndexSource::VerifiedImport {
+            export_hash: fact.export_hash,
+            certificate_hash: fact.certificate_hash,
+        },
+        universe_params: fact.universe_params.clone(),
+        statement_core: fact.statement_core.clone(),
+        statement,
+        statement_pretty,
+        head_symbol,
+        constants,
+        attributes: Vec::new(),
+        kind: fact.kind,
+        dependencies,
+        axiom_dependencies: fact.axiom_dependencies.clone(),
+        export_hash: Some(fact.export_hash),
+        certificate_hash: Some(fact.certificate_hash),
+        decl_interface_hash: fact.decl_interface_hash,
+    })
+}
+
+fn human_checked_current_entry(
+    current_module: &ModuleName,
+    checked: &npa_tactic::CheckedCurrentDecl,
+    import_facts: &BTreeMap<Name, HumanImportTheoremFact>,
+    current_facts: &BTreeMap<Name, HumanCurrentTheoremFact>,
+) -> Result<HumanTheoremIndexEntry, HumanTheoremIndexError> {
+    let name = checked.signature().name().clone();
+    let statement_core = checked.signature().ty().clone();
+    let statement = human_index_structured_expr(&name, &statement_core)?;
+    let mut dependency_constants = BTreeSet::new();
+    human_collect_decl_constants(checked.core_decl(), &mut dependency_constants);
+    let dependencies = human_dependencies_from_constants(
+        &dependency_constants.into_iter().collect::<Vec<_>>(),
+        Some(&name),
+        import_facts,
+        current_facts,
+    );
+    let mut axiom_dependencies =
+        human_axiom_dependencies_from_dependencies(&dependencies, import_facts, current_facts);
+    if matches!(checked.core_decl(), Decl::Axiom { .. }) {
+        axiom_dependencies.push(MachineAxiomRefWire::CurrentModule {
+            module: current_module.clone(),
+            name: name.clone(),
+            source_index: checked.source_index(),
+            decl_interface_hash: checked.signature().decl_interface_hash(),
+        });
+    }
+    human_sort_dedup_axiom_refs(&mut axiom_dependencies);
+    let statement_pretty = statement.pretty.clone();
+    let head_symbol = statement.head.clone();
+    let constants = statement.constants.clone();
+
+    Ok(HumanTheoremIndexEntry {
+        name,
+        module: current_module.clone(),
+        source: HumanTheoremIndexSource::CheckedCurrentDecl {
+            source_index: checked.source_index(),
+        },
+        universe_params: checked.signature().universe_params().to_vec(),
+        statement_core,
+        statement,
+        statement_pretty,
+        head_symbol,
+        constants,
+        attributes: Vec::new(),
+        kind: human_current_decl_kind(checked.core_decl()),
+        dependencies,
+        axiom_dependencies,
+        export_hash: None,
+        certificate_hash: None,
+        decl_interface_hash: checked.signature().decl_interface_hash(),
+    })
+}
+
+fn human_index_structured_expr(
+    name: &Name,
+    expr: &Expr,
+) -> Result<StructuredExpr, HumanTheoremIndexError> {
+    let metadata = core_expr_metadata(expr, 0)
+        .map_err(|_| HumanTheoremIndexError::ExpressionMetadata { name: name.clone() })?;
+    Ok(StructuredExpr {
+        core_hash: metadata.core_hash,
+        head: metadata.head,
+        constants: metadata.constants,
+        free_locals: metadata.free_locals,
+        size: metadata.size,
+        pretty: human_structured_expr_pretty(expr, &[]),
+    })
+}
+
+fn human_export_kind(kind: ExportKind) -> HumanTheoremIndexKind {
+    match kind {
+        ExportKind::Axiom => HumanTheoremIndexKind::Axiom,
+        ExportKind::Def => HumanTheoremIndexKind::Def,
+        ExportKind::Theorem => HumanTheoremIndexKind::Theorem,
+        ExportKind::Inductive => HumanTheoremIndexKind::Inductive,
+        ExportKind::Constructor => HumanTheoremIndexKind::Constructor,
+        ExportKind::Recursor => HumanTheoremIndexKind::Recursor,
+    }
+}
+
+fn human_current_decl_kind(decl: &Decl) -> HumanTheoremIndexKind {
+    match decl {
+        Decl::Axiom { .. } => HumanTheoremIndexKind::Axiom,
+        Decl::Def { .. } => HumanTheoremIndexKind::Def,
+        Decl::Theorem { .. } => HumanTheoremIndexKind::Theorem,
+        Decl::Inductive { .. } => HumanTheoremIndexKind::Inductive,
+        Decl::Constructor { .. } => HumanTheoremIndexKind::Constructor,
+        Decl::Recursor { .. } => HumanTheoremIndexKind::Recursor,
+    }
+}
+
+fn human_export_decl_dependencies(
+    import: &npa_tactic::VerifiedImportRef,
+    export: &ExportEntry,
+) -> Result<Vec<HumanTheoremDependency>, HumanTheoremIndexError> {
+    let Some(decl) = human_decl_cert_for_export(import.verified_module(), export)? else {
+        return Ok(Vec::new());
+    };
+    decl.dependencies
+        .iter()
+        .map(|dependency| human_dependency_entry_to_index(import, dependency))
+        .collect()
+}
+
+fn human_decl_cert_for_export<'a>(
+    module: &'a VerifiedModule,
+    export: &ExportEntry,
+) -> Result<Option<&'a npa_cert::DeclCert>, HumanTheoremIndexError> {
+    if matches!(export.kind, ExportKind::Constructor | ExportKind::Recursor) {
+        return Ok(None);
+    }
+    let export_name = human_name_from_verified(module, export.name)?;
+    for decl in module.declarations() {
+        if human_decl_payload_name(module, &decl.decl)? == export_name {
+            return Ok(Some(decl));
+        }
+    }
+    Ok(None)
+}
+
+fn human_dependency_entry_to_index(
+    owner: &npa_tactic::VerifiedImportRef,
+    dependency: &DependencyEntry,
+) -> Result<HumanTheoremDependency, HumanTheoremIndexError> {
+    let module = owner.verified_module();
+    match &dependency.global_ref {
+        GlobalRef::Local { decl_index } => {
+            let decl = module.declarations().get(*decl_index).ok_or_else(|| {
+                HumanTheoremIndexError::MissingDeclaration {
+                    module: module.module().clone(),
+                    decl_index: *decl_index,
+                }
+            })?;
+            Ok(HumanTheoremDependency {
+                kind: HumanTheoremDependencyKind::Imported,
+                name: human_decl_payload_name(module, &decl.decl)?,
+                module: Some(owner.module().clone()),
+                export_hash: Some(owner.export_hash()),
+                source_index: None,
+                decl_interface_hash: Some(dependency.decl_interface_hash),
+            })
+        }
+        GlobalRef::LocalGenerated { name, .. } => Ok(HumanTheoremDependency {
+            kind: HumanTheoremDependencyKind::Imported,
+            name: human_name_from_verified(module, *name)?,
+            module: Some(owner.module().clone()),
+            export_hash: Some(owner.export_hash()),
+            source_index: None,
+            decl_interface_hash: Some(dependency.decl_interface_hash),
+        }),
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            let imported = module.imports().get(*import_index).ok_or_else(|| {
+                HumanTheoremIndexError::MissingDeclaration {
+                    module: module.module().clone(),
+                    decl_index: *import_index,
+                }
+            })?;
+            Ok(HumanTheoremDependency {
+                kind: HumanTheoremDependencyKind::Imported,
+                name: human_name_from_verified(module, *name)?,
+                module: Some(imported.module.clone()),
+                export_hash: Some(imported.export_hash),
+                source_index: None,
+                decl_interface_hash: Some(*decl_interface_hash),
+            })
+        }
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => Ok(HumanTheoremDependency {
+            kind: HumanTheoremDependencyKind::Builtin,
+            name: human_name_from_verified(module, *name)?,
+            module: None,
+            export_hash: None,
+            source_index: None,
+            decl_interface_hash: Some(*decl_interface_hash),
+        }),
+    }
+}
+
+fn human_dependencies_from_constants(
+    constants: &[Name],
+    self_name: Option<&Name>,
+    import_facts: &BTreeMap<Name, HumanImportTheoremFact>,
+    current_facts: &BTreeMap<Name, HumanCurrentTheoremFact>,
+) -> Vec<HumanTheoremDependency> {
+    let mut dependencies = Vec::new();
+    for name in constants {
+        if self_name.is_some_and(|self_name| self_name == name) {
+            continue;
+        }
+        if let Some(imported) = import_facts.get(name) {
+            dependencies.push(HumanTheoremDependency {
+                kind: HumanTheoremDependencyKind::Imported,
+                name: imported.name.clone(),
+                module: Some(imported.module.clone()),
+                export_hash: Some(imported.export_hash),
+                source_index: None,
+                decl_interface_hash: Some(imported.decl_interface_hash),
+            });
+        } else if let Some(current) = current_facts.get(name) {
+            dependencies.push(HumanTheoremDependency {
+                kind: HumanTheoremDependencyKind::Current,
+                name: current.name.clone(),
+                module: Some(current.module.clone()),
+                export_hash: None,
+                source_index: Some(current.source_index),
+                decl_interface_hash: Some(current.decl_interface_hash),
+            });
+        } else if let Some(decl_interface_hash) = npa_cert::builtin_decl_interface_hash(name) {
+            dependencies.push(HumanTheoremDependency {
+                kind: HumanTheoremDependencyKind::Builtin,
+                name: name.clone(),
+                module: None,
+                export_hash: None,
+                source_index: None,
+                decl_interface_hash: Some(decl_interface_hash),
+            });
+        } else {
+            dependencies.push(HumanTheoremDependency {
+                kind: HumanTheoremDependencyKind::UnknownConstant,
+                name: name.clone(),
+                module: None,
+                export_hash: None,
+                source_index: None,
+                decl_interface_hash: None,
+            });
+        }
+    }
+    human_sort_dedup_dependencies(&mut dependencies);
+    dependencies
+}
+
+fn human_axiom_dependencies_from_dependencies(
+    dependencies: &[HumanTheoremDependency],
+    import_facts: &BTreeMap<Name, HumanImportTheoremFact>,
+    current_facts: &BTreeMap<Name, HumanCurrentTheoremFact>,
+) -> Vec<MachineAxiomRefWire> {
+    let mut axioms = Vec::new();
+    for dependency in dependencies {
+        match dependency.kind {
+            HumanTheoremDependencyKind::Imported => {
+                if let Some(imported) = import_facts.get(&dependency.name) {
+                    axioms.extend(imported.axiom_dependencies.clone());
+                }
+            }
+            HumanTheoremDependencyKind::Current => {
+                if let Some(current) = current_facts.get(&dependency.name) {
+                    axioms.extend(current.axiom_dependencies.clone());
+                }
+            }
+            HumanTheoremDependencyKind::Builtin => {
+                if human_is_builtin_axiom_name(&dependency.name) {
+                    if let Some(decl_interface_hash) = dependency.decl_interface_hash {
+                        axioms.push(MachineAxiomRefWire::Builtin {
+                            name: dependency.name.clone(),
+                            decl_interface_hash,
+                        });
+                    }
+                }
+            }
+            HumanTheoremDependencyKind::UnknownConstant => {}
+        }
+    }
+    human_sort_dedup_axiom_refs(&mut axioms);
+    axioms
+}
+
+fn human_import_axiom_ref_to_wire(
+    owner: &npa_tactic::VerifiedImportRef,
+    axiom: &AxiomRef,
+) -> Result<MachineAxiomRefWire, HumanTheoremIndexError> {
+    let module = owner.verified_module();
+    match &axiom.global_ref {
+        GlobalRef::Local { decl_index } => {
+            let decl = module.declarations().get(*decl_index).ok_or_else(|| {
+                HumanTheoremIndexError::MissingDeclaration {
+                    module: module.module().clone(),
+                    decl_index: *decl_index,
+                }
+            })?;
+            let name = human_decl_payload_name(module, &decl.decl)?;
+            if !matches!(decl.decl, DeclPayload::Axiom { .. }) {
+                return Err(HumanTheoremIndexError::InvalidAxiomRef {
+                    module: module.module().clone(),
+                    name,
+                });
+            }
+            Ok(MachineAxiomRefWire::Imported {
+                module: owner.module().clone(),
+                name,
+                export_hash: owner.export_hash(),
+                decl_interface_hash: axiom.decl_interface_hash,
+            })
+        }
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            let imported = module.imports().get(*import_index).ok_or_else(|| {
+                HumanTheoremIndexError::MissingDeclaration {
+                    module: module.module().clone(),
+                    decl_index: *import_index,
+                }
+            })?;
+            Ok(MachineAxiomRefWire::Imported {
+                module: imported.module.clone(),
+                name: human_name_from_verified(module, *name)?,
+                export_hash: imported.export_hash,
+                decl_interface_hash: *decl_interface_hash,
+            })
+        }
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            let name = human_name_from_verified(module, *name)?;
+            if human_is_builtin_axiom_name(&name) {
+                Ok(MachineAxiomRefWire::Builtin {
+                    name,
+                    decl_interface_hash: *decl_interface_hash,
+                })
+            } else {
+                Err(HumanTheoremIndexError::InvalidAxiomRef {
+                    module: module.module().clone(),
+                    name,
+                })
+            }
+        }
+        GlobalRef::LocalGenerated { name, .. } => {
+            let name = human_name_from_verified(module, *name)?;
+            Err(HumanTheoremIndexError::InvalidAxiomRef {
+                module: module.module().clone(),
+                name,
+            })
+        }
+    }
+}
+
+fn human_is_builtin_axiom_name(name: &Name) -> bool {
+    name.as_dotted() == "Eq.rec"
+}
+
+fn human_collect_decl_constants(decl: &Decl, out: &mut BTreeSet<Name>) {
+    match decl {
+        Decl::Axiom { ty, .. } => human_collect_expr_constants(ty, out),
+        Decl::Def { ty, value, .. } => {
+            human_collect_expr_constants(ty, out);
+            human_collect_expr_constants(value, out);
+        }
+        Decl::Theorem { ty, proof, .. } => {
+            human_collect_expr_constants(ty, out);
+            human_collect_expr_constants(proof, out);
+        }
+        Decl::Inductive { ty, data, .. } => {
+            human_collect_expr_constants(ty, out);
+            for param in &data.params {
+                human_collect_expr_constants(&param.ty, out);
+            }
+            for index in &data.indices {
+                human_collect_expr_constants(&index.ty, out);
+            }
+            for constructor in &data.constructors {
+                human_collect_expr_constants(&constructor.ty, out);
+            }
+            if let Some(recursor) = &data.recursor {
+                human_collect_expr_constants(&recursor.ty, out);
+            }
+        }
+        Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
+            human_collect_expr_constants(ty, out);
+        }
+    }
+}
+
+fn human_collect_expr_constants(expr: &Expr, out: &mut BTreeSet<Name>) {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => {}
+        Expr::Const { name, .. } => {
+            out.insert(Name::from_dotted(name));
+        }
+        Expr::App(fun, arg) => {
+            human_collect_expr_constants(fun, out);
+            human_collect_expr_constants(arg, out);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            human_collect_expr_constants(ty, out);
+            human_collect_expr_constants(body, out);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            human_collect_expr_constants(ty, out);
+            human_collect_expr_constants(value, out);
+            human_collect_expr_constants(body, out);
+        }
+    }
+}
+
+fn human_expr_from_verified_term(
+    module: &VerifiedModule,
+    term: TermId,
+) -> Result<Expr, HumanTheoremIndexError> {
+    let term_node =
+        module
+            .term_table()
+            .get(term)
+            .ok_or_else(|| HumanTheoremIndexError::MissingTerm {
+                module: module.module().clone(),
+                term_index: term,
+            })?;
+    match term_node {
+        TermNode::Sort(level) => Ok(Expr::sort(human_level_from_verified(module, *level)?)),
+        TermNode::BVar(index) => Ok(Expr::bvar(*index)),
+        TermNode::Const { global_ref, levels } => Ok(Expr::konst(
+            human_global_ref_name_from_verified(module, global_ref)?,
+            levels
+                .iter()
+                .map(|level| human_level_from_verified(module, *level))
+                .collect::<Result<Vec<_>, _>>()?,
+        )),
+        TermNode::App(fun, arg) => Ok(Expr::app(
+            human_expr_from_verified_term(module, *fun)?,
+            human_expr_from_verified_term(module, *arg)?,
+        )),
+        TermNode::Lam { ty, body } => Ok(Expr::lam(
+            "_",
+            human_expr_from_verified_term(module, *ty)?,
+            human_expr_from_verified_term(module, *body)?,
+        )),
+        TermNode::Pi { ty, body } => Ok(Expr::pi(
+            "_",
+            human_expr_from_verified_term(module, *ty)?,
+            human_expr_from_verified_term(module, *body)?,
+        )),
+        TermNode::Let { ty, value, body } => Ok(Expr::let_in(
+            "_",
+            human_expr_from_verified_term(module, *ty)?,
+            human_expr_from_verified_term(module, *value)?,
+            human_expr_from_verified_term(module, *body)?,
+        )),
+    }
+}
+
+fn human_level_from_verified(
+    module: &VerifiedModule,
+    level: LevelId,
+) -> Result<Level, HumanTheoremIndexError> {
+    let level_node =
+        module
+            .level_table()
+            .get(level)
+            .ok_or_else(|| HumanTheoremIndexError::MissingLevel {
+                module: module.module().clone(),
+                level_index: level,
+            })?;
+    match level_node {
+        LevelNode::Zero => Ok(Level::zero()),
+        LevelNode::Succ(inner) => Ok(Level::succ(human_level_from_verified(module, *inner)?)),
+        LevelNode::Max(lhs, rhs) => Ok(Level::max(
+            human_level_from_verified(module, *lhs)?,
+            human_level_from_verified(module, *rhs)?,
+        )),
+        LevelNode::IMax(lhs, rhs) => Ok(Level::imax(
+            human_level_from_verified(module, *lhs)?,
+            human_level_from_verified(module, *rhs)?,
+        )),
+        LevelNode::Param(name) => Ok(Level::param(human_universe_param_from_verified(
+            module, *name,
+        )?)),
+    }
+}
+
+fn human_global_ref_name_from_verified(
+    module: &VerifiedModule,
+    global_ref: &GlobalRef,
+) -> Result<String, HumanTheoremIndexError> {
+    match global_ref {
+        GlobalRef::Builtin { name, .. }
+        | GlobalRef::Imported { name, .. }
+        | GlobalRef::LocalGenerated { name, .. } => {
+            Ok(human_name_from_verified(module, *name)?.as_dotted())
+        }
+        GlobalRef::Local { decl_index } => {
+            let decl = module.declarations().get(*decl_index).ok_or_else(|| {
+                HumanTheoremIndexError::MissingDeclaration {
+                    module: module.module().clone(),
+                    decl_index: *decl_index,
+                }
+            })?;
+            Ok(human_decl_payload_name(module, &decl.decl)?.as_dotted())
+        }
+    }
+}
+
+fn human_decl_payload_name(
+    module: &VerifiedModule,
+    decl: &DeclPayload,
+) -> Result<Name, HumanTheoremIndexError> {
+    let name = match decl {
+        DeclPayload::Axiom { name, .. }
+        | DeclPayload::Def { name, .. }
+        | DeclPayload::Theorem { name, .. }
+        | DeclPayload::Inductive { name, .. } => *name,
+    };
+    human_name_from_verified(module, name)
+}
+
+fn human_name_from_verified(
+    module: &VerifiedModule,
+    name: NameId,
+) -> Result<Name, HumanTheoremIndexError> {
+    module
+        .name_table()
+        .get(name)
+        .cloned()
+        .ok_or_else(|| HumanTheoremIndexError::MissingName {
+            module: module.module().clone(),
+            name_index: name,
+        })
+}
+
+fn human_universe_param_from_verified(
+    module: &VerifiedModule,
+    name: NameId,
+) -> Result<String, HumanTheoremIndexError> {
+    human_name_from_verified(module, name)
+        .map(|name| name.0.into_iter().collect::<Vec<_>>().join("."))
+        .map_err(|_| HumanTheoremIndexError::MissingUniverseParam {
+            module: module.module().clone(),
+            name_index: name,
+        })
+}
+
+fn human_sort_dedup_axiom_refs(entries: &mut Vec<MachineAxiomRefWire>) {
+    entries.sort_by_key(encode_machine_axiom_ref_wire);
+    entries.dedup_by(|lhs, rhs| {
+        encode_machine_axiom_ref_wire(lhs) == encode_machine_axiom_ref_wire(rhs)
+    });
+}
+
+fn human_sort_dedup_dependencies(entries: &mut Vec<HumanTheoremDependency>) {
+    entries.sort_by_key(human_theorem_dependency_canonical_bytes);
+    entries.dedup_by(|lhs, rhs| {
+        human_theorem_dependency_canonical_bytes(lhs)
+            == human_theorem_dependency_canonical_bytes(rhs)
+    });
+}
+
+fn human_theorem_index_fingerprint(entries: &[HumanTheoremIndexEntry]) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.theorem-index.v1");
+    human_encode_list_len(&mut out, entries.len());
+    for entry in entries {
+        out.extend(human_theorem_index_entry_canonical_bytes(entry));
+    }
+    human_sha256(&out)
+}
+
+fn human_theorem_index_entry_sort_key(entry: &HumanTheoremIndexEntry) -> Vec<u8> {
+    let mut out = Vec::new();
+    human_encode_name(&mut out, &entry.module);
+    human_encode_name(&mut out, &entry.name);
+    out.extend(entry.decl_interface_hash);
+    human_encode_theorem_source(&mut out, &entry.source);
+    out
+}
+
+fn human_theorem_index_entry_canonical_bytes(entry: &HumanTheoremIndexEntry) -> Vec<u8> {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.theorem-index-entry.v1");
+    human_encode_name(&mut out, &entry.module);
+    human_encode_name(&mut out, &entry.name);
+    human_encode_theorem_source(&mut out, &entry.source);
+    human_encode_list_len(&mut out, entry.universe_params.len());
+    for param in &entry.universe_params {
+        human_encode_string(&mut out, param);
+    }
+    human_encode_string(&mut out, entry.kind.as_str());
+    out.extend(entry.statement.core_hash);
+    human_encode_string(&mut out, &entry.statement_pretty);
+    human_encode_option_name(&mut out, entry.head_symbol.as_ref());
+    human_encode_list_len(&mut out, entry.constants.len());
+    for constant in &entry.constants {
+        human_encode_name(&mut out, constant);
+    }
+    human_encode_list_len(&mut out, entry.attributes.len());
+    for attribute in &entry.attributes {
+        human_encode_string(&mut out, attribute);
+    }
+    human_encode_list_len(&mut out, entry.dependencies.len());
+    for dependency in &entry.dependencies {
+        out.extend(human_theorem_dependency_canonical_bytes(dependency));
+    }
+    human_encode_list_len(&mut out, entry.axiom_dependencies.len());
+    for axiom in &entry.axiom_dependencies {
+        out.extend(encode_machine_axiom_ref_wire(axiom));
+    }
+    human_encode_option_hash(&mut out, entry.export_hash.as_ref());
+    human_encode_option_hash(&mut out, entry.certificate_hash.as_ref());
+    out.extend(entry.decl_interface_hash);
+    out
+}
+
+fn human_theorem_dependency_canonical_bytes(dependency: &HumanTheoremDependency) -> Vec<u8> {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, "npa.human-api.theorem-dependency.v1");
+    human_encode_string(&mut out, dependency.kind.as_str());
+    human_encode_name(&mut out, &dependency.name);
+    human_encode_option_name(&mut out, dependency.module.as_ref());
+    human_encode_option_hash(&mut out, dependency.export_hash.as_ref());
+    human_encode_option_u64(&mut out, dependency.source_index);
+    human_encode_option_hash(&mut out, dependency.decl_interface_hash.as_ref());
+    out
+}
+
+fn human_encode_theorem_source(out: &mut Vec<u8>, source: &HumanTheoremIndexSource) {
+    match source {
+        HumanTheoremIndexSource::VerifiedImport {
+            export_hash,
+            certificate_hash,
+        } => {
+            out.push(0x00);
+            out.extend(export_hash);
+            out.extend(certificate_hash);
+        }
+        HumanTheoremIndexSource::CheckedCurrentDecl { source_index } => {
+            out.push(0x01);
+            human_encode_uvar(out, *source_index);
+        }
+    }
+}
+
+fn human_encode_option_name(out: &mut Vec<u8>, value: Option<&Name>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            human_encode_name(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn human_encode_option_hash(out: &mut Vec<u8>, value: Option<&Hash>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            out.extend(*value);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn human_encode_option_u64(out: &mut Vec<u8>, value: Option<u64>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            human_encode_uvar(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn human_encode_name(out: &mut Vec<u8>, name: &Name) {
+    human_encode_list_len(out, name.0.len());
+    for component in &name.0 {
+        human_encode_string(out, component);
+    }
+}
+
+fn human_encode_string(out: &mut Vec<u8>, value: &str) {
+    human_encode_uvar(out, value.len() as u64);
+    out.extend(value.as_bytes());
+}
+
+fn human_encode_list_len(out: &mut Vec<u8>, len: usize) {
+    human_encode_uvar(out, len as u64);
+}
+
+fn human_encode_uvar(out: &mut Vec<u8>, mut value: u64) {
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
+}
+
+fn human_sha256(bytes: &[u8]) -> Hash {
+    Sha256::digest(bytes).into()
 }
 
 #[derive(Clone, Debug)]
@@ -6357,6 +7233,120 @@ theorem target : forall (A : Type), forall (x : A), forall (h : Eq.{1} x x), Eq.
     }
 
     #[test]
+    fn human_theorem_index_indexes_direct_verified_import_kinds_and_axiom_deps() {
+        let (verified, source_interface) = verified_human_import(
+            "Lib.HumanTheoremIndex",
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat
+axiom P : Prop
+axiom hp : P
+def p_def : P := hp
+theorem p_thm : P := hp",
+        );
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanTheoremIndexUser"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanTheoremIndexUser.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(31),
+                source: "\
+import Lib.HumanTheoremIndex
+theorem target : P := by simp-lite",
+            },
+            verified_modules: std::slice::from_ref(&verified),
+            imported_source_interfaces: std::slice::from_ref(&source_interface),
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof should start with the verified import active");
+
+        let index = build_human_theorem_index(&started.state)
+            .expect("Human theorem index should build from verified imports");
+
+        human_theorem_index_entry_by_suffix(&index, "hp", HumanTheoremIndexKind::Axiom);
+        human_theorem_index_entry_by_suffix(&index, "p_def", HumanTheoremIndexKind::Def);
+        let theorem =
+            human_theorem_index_entry_by_suffix(&index, "p_thm", HumanTheoremIndexKind::Theorem);
+        human_theorem_index_entry_by_suffix(&index, "Nat.zero", HumanTheoremIndexKind::Constructor);
+        human_theorem_index_entry_by_suffix(&index, "Nat.rec", HumanTheoremIndexKind::Recursor);
+
+        assert_eq!(theorem.export_hash, Some(verified.export_hash()));
+        assert_eq!(theorem.certificate_hash, Some(verified.certificate_hash()));
+        assert_eq!(theorem.statement_pretty, theorem.statement.pretty);
+        assert_eq!(theorem.head_symbol, theorem.statement.head);
+        assert_eq!(theorem.constants, theorem.statement.constants);
+        assert!(theorem
+            .dependencies
+            .iter()
+            .any(|dependency| dependency.name.as_dotted().ends_with("P")));
+        assert!(theorem.axiom_dependencies.iter().any(|axiom| matches!(
+            axiom,
+            MachineAxiomRefWire::Imported { name, .. } if name.as_dotted().ends_with("hp")
+        )));
+    }
+
+    #[test]
+    fn human_theorem_index_uses_checked_current_prefix_and_ignores_unverified_metadata() {
+        let (verified, mut source_interface) = verified_human_import(
+            "Lib.HumanTheoremIndexMeta",
+            "\
+axiom P : Prop
+axiom hp : P",
+        );
+        source_interface.source_interface.declarations.push(
+            npa_frontend::HumanSourceDeclarationMetadata {
+                kind: npa_frontend::HumanSourceDeclarationKind::Theorem,
+                name: human_name("fake_external", 0, 13),
+                universe_params: Vec::new(),
+                binders: Vec::new(),
+                decl_interface_hash: None,
+                span: npa_frontend::Span::new(npa_frontend::FileId(31), 0, 13),
+            },
+        );
+        let source = "\
+import Lib.HumanTheoremIndexMeta
+theorem prior : P := hp
+theorem target : P := by simp-lite
+theorem later : P := hp";
+        let started = start_human_proof(HumanStartProofRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanTheoremIndexPrefix"),
+            theorem_name: npa_cert::Name::from_dotted("Api.HumanTheoremIndexPrefix.target"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(32),
+                source,
+            },
+            verified_modules: std::slice::from_ref(&verified),
+            imported_source_interfaces: std::slice::from_ref(&source_interface),
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human proof should start with a checked current prefix");
+
+        let index = build_human_theorem_index(&started.state)
+            .expect("Human theorem index should build from the checked prefix");
+        let prior =
+            human_theorem_index_entry_by_suffix(&index, ".prior", HumanTheoremIndexKind::Theorem);
+
+        assert_eq!(
+            prior.source,
+            HumanTheoremIndexSource::CheckedCurrentDecl { source_index: 0 }
+        );
+        assert_eq!(prior.export_hash, None);
+        assert_eq!(prior.certificate_hash, None);
+        assert!(prior.axiom_dependencies.iter().any(|axiom| matches!(
+            axiom,
+            MachineAxiomRefWire::Imported { name, .. } if name.as_dotted().ends_with("hp")
+        )));
+        assert!(!index
+            .entries
+            .iter()
+            .any(|entry| entry.name.as_dotted().ends_with(".later")));
+        assert!(!index
+            .entries
+            .iter()
+            .any(|entry| entry.name.as_dotted().ends_with("fake_external")));
+    }
+
+    #[test]
     fn human_tactic_run_intro_exact_and_expected_pi_error_are_transactional() {
         let (nat, nat_interface) = verified_nat_human_import();
         let (eq, eq_interface) = verified_eq_human_import();
@@ -9180,6 +10170,20 @@ theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
             err.diagnostic.kind,
             crate::MachineApiErrorKind::MachineTermParseError
         );
+    }
+
+    fn human_theorem_index_entry_by_suffix<'a>(
+        index: &'a HumanTheoremIndex,
+        suffix: &str,
+        kind: HumanTheoremIndexKind,
+    ) -> &'a HumanTheoremIndexEntry {
+        index
+            .entries
+            .iter()
+            .find(|entry| entry.kind == kind && entry.name.as_dotted().ends_with(suffix))
+            .unwrap_or_else(|| {
+                panic!("Human theorem index should contain {kind:?} entry ending with {suffix}")
+            })
     }
 
     fn human_name(value: &str, start: u32, end: u32) -> npa_frontend::HumanName {
