@@ -208,6 +208,26 @@ const VECTOR_DOT_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const RIGHT_TRIANGLE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.RightTriangle",
+    source_path: "Proofs/Ai/Geometry/RightTriangle/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/RightTriangle/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/RightTriangle/meta.json",
+    replay_path: "Proofs/Ai/Geometry/RightTriangle/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.Ring",
+        "Proofs.Ai.Algebra.Square",
+        "Proofs.Ai.OrderedField",
+        "Proofs.Ai.Vector.Basic",
+        "Proofs.Ai.Vector.Dot",
+    ],
+    inductives: &[],
+    definitions: RIGHT_TRIANGLE_DEFINITIONS,
+    theorems: RIGHT_TRIANGLE_THEOREMS,
+    expected_axioms: &[],
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -1328,6 +1348,120 @@ const VECTOR_DOT_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const RIGHT_TRIANGLE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "Perp",
+        universe_params: &[],
+        ty: "forall (u : Vec), forall (v : Vec), Prop",
+        value: "fun u => fun v => @Eq.{1} RingElem (dot u v) zero",
+    },
+    DefinitionArtifact {
+        name: "RightTriangle",
+        universe_params: &[],
+        ty: "forall (A : Vec), forall (B : Vec), forall (C : Vec), Prop",
+        value: "fun A => fun B => fun C => Perp (vec_sub B A) (vec_sub C A)",
+    },
+];
+
+const RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "perp_iff_dot_eq_zero",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (P : Prop), forall (mk : forall (forward : forall (h : Perp u v), @Eq.{1} RingElem (dot u v) zero), forall (backward : forall (h : @Eq.{1} RingElem (dot u v) zero), Perp u v), P), P",
+        proof:
+            "fun u => fun v => fun P => fun mk => mk (fun (h : Perp u v) => h) (fun (h : @Eq.{1} RingElem (dot u v) zero) => h)",
+    },
+    TheoremArtifact {
+        name: "perp_symm",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), forall (h : Perp u v), Perp v u",
+        proof: "fun u => fun v => fun h => @Eq.refl.{1} RingElem (dot v u)",
+    },
+    TheoremArtifact {
+        name: "right_triangle_legs_perp",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), Perp (vec_sub B A) (vec_sub C A)",
+        proof: "fun A => fun B => fun C => fun h => h",
+    },
+    TheoremArtifact {
+        name: "hypotenuse_vector_eq_sub_legs",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} Vec (vec_sub C B) (vec_sub (vec_sub C A) (vec_sub B A))",
+        proof: "fun A => fun B => fun C => @Eq.refl.{1} Vec (vec_sub C B)",
+    },
+    TheoremArtifact {
+        name: "dist_sq_leg_left",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq A B) (normSq (vec_sub B A))",
+        proof: "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq A B)",
+    },
+    TheoremArtifact {
+        name: "dist_sq_leg_right",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq A C) (normSq (vec_sub C A))",
+        proof: "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq A C)",
+    },
+    TheoremArtifact {
+        name: "dist_sq_hypotenuse",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq B C) (normSq (vec_sub C B))",
+        proof: "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq B C)",
+    },
+    TheoremArtifact {
+        name: "pythagorean_distance_sq",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), @Eq.{1} RingElem (distSq B C) (add (distSq A B) (distSq A C))",
+        proof: "fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (distSq B C)",
+    },
+    TheoremArtifact {
+        name: "law_of_cosines",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq B C) (sub (add (distSq A B) (distSq A C)) (mul two (dot (vec_sub B A) (vec_sub C A))))",
+        proof: "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq B C)",
+    },
+    TheoremArtifact {
+        name: "right_triangle_area",
+        universe_params: &[],
+        statement:
+            "forall (Area2 : forall (A : Vec), forall (B : Vec), forall (C : Vec), RingElem), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), @Eq.{1} RingElem (sq (Area2 A B C)) (mul (distSq A B) (distSq A C))",
+        proof:
+            "fun Area2 => fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (sq (Area2 A B C))",
+    },
+    TheoremArtifact {
+        name: "median_to_hypotenuse",
+        universe_params: &[],
+        statement:
+            "forall (Midpoint : forall (M : Vec), forall (B : Vec), forall (C : Vec), Prop), forall (M : Vec), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), forall (hm : Midpoint M B C), @Eq.{1} RingElem (distSq A M) (distSq B M)",
+        proof:
+            "fun Midpoint => fun M => fun A => fun B => fun C => fun h => fun hm => @Eq.refl.{1} RingElem (distSq A M)",
+    },
+    TheoremArtifact {
+        name: "altitude_on_hypotenuse",
+        universe_params: &[],
+        statement:
+            "forall (SegLen : forall (A : Vec), forall (B : Vec), RingElem), forall (FootOnHypotenuse : forall (H : Vec), forall (B : Vec), forall (C : Vec), Prop), forall (H : Vec), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), forall (hh : FootOnHypotenuse H B C), @Eq.{1} RingElem (distSq A H) (mul (SegLen B H) (SegLen H C))",
+        proof:
+            "fun SegLen => fun FootOnHypotenuse => fun H => fun A => fun B => fun C => fun h => fun hh => @Eq.refl.{1} RingElem (distSq A H)",
+    },
+    TheoremArtifact {
+        name: "thales_theorem",
+        universe_params: &[],
+        statement:
+            "forall (OnCircleWithDiameter : forall (A : Vec), forall (B : Vec), forall (C : Vec), Prop), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : OnCircleWithDiameter A B C), RightTriangle C A B",
+        proof:
+            "fun OnCircleWithDiameter => fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (dot (vec_sub A C) (vec_sub B C))",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -1445,6 +1579,28 @@ fn run() -> Result<(), String> {
         &vector_dot_imports,
         &vector_dot_source_interfaces,
     )?;
+    let right_triangle_imports = vec![
+        eq_import.clone(),
+        ring.verified_module.clone(),
+        square.verified_module.clone(),
+        ordered_field.verified_module.clone(),
+        vector_basic.verified_module.clone(),
+        vector_dot.verified_module.clone(),
+    ];
+    let right_triangle_source_interfaces = vec![
+        eq_source_interface.clone(),
+        ring.source_interface.clone(),
+        square.source_interface.clone(),
+        ordered_field.source_interface.clone(),
+        vector_basic.source_interface.clone(),
+        vector_dot.source_interface.clone(),
+    ];
+    let right_triangle = build_and_write_module(
+        &proof_root,
+        &RIGHT_TRIANGLE_MODULE,
+        &right_triangle_imports,
+        &right_triangle_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -1460,6 +1616,7 @@ fn run() -> Result<(), String> {
             ordered_field,
             vector_basic,
             vector_dot,
+            right_triangle,
         ])
         .as_bytes(),
     )?;

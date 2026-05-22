@@ -199,3 +199,21 @@ imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square",
 definitions = ["dot", "normSq", "distSq"]
 theorems = ["dot_comm", "dot_add_left", "dot_add_right", "dot_neg_left", "dot_neg_right", "dot_sub_left", "dot_sub_right", "norm_sq_def", "dist_sq_def", "dot_self_eq_norm_sq", "norm_sq_add", "norm_sq_sub", "norm_sq_add_of_dot_zero", "norm_sq_sub_of_dot_zero", "parallelogram_law", "polarization_identity", "norm_sq_nonneg"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Geometry.RightTriangle"
+source = "Proofs/Ai/Geometry/RightTriangle/source.npa"
+certificate = "Proofs/Ai/Geometry/RightTriangle/certificate.npcert"
+meta = "Proofs/Ai/Geometry/RightTriangle/meta.json"
+replay = "Proofs/Ai/Geometry/RightTriangle/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:66f65900e8043a84d5ff9a0868064fbf65cb4eec5de0e92977b0572de95cd7d6"
+certificate_file_sha256 = "sha256:bd6aef6b1d2808476910bf48b9afac4bdfa4031b4e228b228d77b6c11ccb5d66"
+export_hash = "sha256:c2a17e11ac8f8085c75bf7ab04e8d7a56de33c783d08b57d3d4248edc3c6015c"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:42d33464c03e9214d92cc5f1cc3e271dcd4cc6a2fc1ec6d5eea6b27648953527"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square", "Proofs.Ai.OrderedField", "Proofs.Ai.Vector.Basic", "Proofs.Ai.Vector.Dot"]
+definitions = ["Perp", "RightTriangle"]
+theorems = ["perp_iff_dot_eq_zero", "perp_symm", "right_triangle_legs_perp", "hypotenuse_vector_eq_sub_legs", "dist_sq_leg_left", "dist_sq_leg_right", "dist_sq_hypotenuse", "pythagorean_distance_sq", "law_of_cosines", "right_triangle_area", "median_to_hypotenuse", "altitude_on_hypotenuse", "thales_theorem"]
+axioms = []

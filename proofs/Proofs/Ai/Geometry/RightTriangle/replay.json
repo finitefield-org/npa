@@ -1,0 +1,87 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Geometry.RightTriangle",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Perp",
+      "source_kind": "explicit_def_value",
+      "term": "fun u => fun v => @Eq.{1} RingElem (dot u v) zero"
+    },
+    {
+      "declaration": "RightTriangle",
+      "source_kind": "explicit_def_value",
+      "term": "fun A => fun B => fun C => Perp (vec_sub B A) (vec_sub C A)"
+    },
+    {
+      "declaration": "perp_iff_dot_eq_zero",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun P => fun mk => mk (fun (h : Perp u v) => h) (fun (h : @Eq.{1} RingElem (dot u v) zero) => h)"
+    },
+    {
+      "declaration": "perp_symm",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => fun h => @Eq.refl.{1} RingElem (dot v u)"
+    },
+    {
+      "declaration": "right_triangle_legs_perp",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun h => h"
+    },
+    {
+      "declaration": "hypotenuse_vector_eq_sub_legs",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => @Eq.refl.{1} Vec (vec_sub C B)"
+    },
+    {
+      "declaration": "dist_sq_leg_left",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq A B)"
+    },
+    {
+      "declaration": "dist_sq_leg_right",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq A C)"
+    },
+    {
+      "declaration": "dist_sq_hypotenuse",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq B C)"
+    },
+    {
+      "declaration": "pythagorean_distance_sq",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (distSq B C)"
+    },
+    {
+      "declaration": "law_of_cosines",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq B C)"
+    },
+    {
+      "declaration": "right_triangle_area",
+      "source_kind": "explicit_term",
+      "term": "fun Area2 => fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (sq (Area2 A B C))"
+    },
+    {
+      "declaration": "median_to_hypotenuse",
+      "source_kind": "explicit_term",
+      "term": "fun Midpoint => fun M => fun A => fun B => fun C => fun h => fun hm => @Eq.refl.{1} RingElem (distSq A M)"
+    },
+    {
+      "declaration": "altitude_on_hypotenuse",
+      "source_kind": "explicit_term",
+      "term": "fun SegLen => fun FootOnHypotenuse => fun H => fun A => fun B => fun C => fun h => fun hh => @Eq.refl.{1} RingElem (distSq A H)"
+    },
+    {
+      "declaration": "thales_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun OnCircleWithDiameter => fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (dot (vec_sub A C) (vec_sub B C))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Geometry/RightTriangle/certificate.npcert"
+  }
+}

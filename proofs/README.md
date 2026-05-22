@@ -29,6 +29,8 @@ Current bundles:
   `Std.Logic.Eq`.
 - `Proofs/Ai/Vector/Dot/`: dot product, squared norm, and squared distance theorem targets
   importing vector, scalar, square, and order corpus layers.
+- `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
+  targets importing vector dot and scalar corpus layers.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -431,7 +433,45 @@ Theorem targets:
 | `polarization_identity` | `2 * dot u v = normSq (u + v) - (normSq u + normSq v)` |
 | `norm_sq_nonneg` | `0 <= normSq v` |
 
-### P14+: Pythagorean Theorem Roadmap
+### P14: Geometry Right Triangle Corpus
+
+Module: `Proofs.Ai.Geometry.RightTriangle`
+
+Add the first geometry layer over `Vec`, `dot`, `normSq`, and `distSq`. The main milestone target is
+the squared-distance Pythagorean theorem
+`RightTriangle A B C -> distSq B C = distSq A B + distSq A C`, with helper rewrites for the leg and
+hypotenuse vectors. `perp_iff_dot_eq_zero` uses a Church-encoded equivalence eliminator because the
+corpus does not yet define a first-class `Iff`; the later geometric API placeholders such as
+midpoint or altitude foot are passed as predicate parameters rather than new definitions.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Perp` | perpendicularity predicate, defined as `dot u v = 0` |
+| `RightTriangle` | right-triangle predicate over three points, with the right angle at `A` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `perp_iff_dot_eq_zero` | Church-encoded `Perp u v <-> dot u v = 0` |
+| `perp_symm` | `Perp u v -> Perp v u` |
+| `right_triangle_legs_perp` | extract perpendicular leg vectors from `RightTriangle A B C` |
+| `hypotenuse_vector_eq_sub_legs` | `C - B = (C - A) - (B - A)` |
+| `dist_sq_leg_left` | `distSq A B = normSq (B - A)` |
+| `dist_sq_leg_right` | `distSq A C = normSq (C - A)` |
+| `dist_sq_hypotenuse` | `distSq B C = normSq (C - B)` |
+| `pythagorean_distance_sq` | `RightTriangle A B C -> distSq B C = distSq A B + distSq A C` |
+| `law_of_cosines` | squared distance with a dot-product correction term |
+| `right_triangle_area` | double-area squared target parameterized by a future `Area2` API |
+| `median_to_hypotenuse` | midpoint-on-hypotenuse target parameterized by a future midpoint predicate |
+| `altitude_on_hypotenuse` | altitude-foot target parameterized by future length and foot predicates |
+| `thales_theorem` | circle/diameter-to-right-triangle target parameterized by a future circle predicate |
+
+### P15+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -465,10 +505,11 @@ Completed prerequisite:
   used by the dot-product and geometry layers.
 - P13 `Proofs.Ai.Vector.Dot` supplies `dot`, `normSq`, `distSq`, and the dot-product expansion
   targets used by the squared-distance Pythagoras route.
+- P14 `Proofs.Ai.Geometry.RightTriangle` supplies `Perp`, `RightTriangle`, leg/hypotenuse rewrites,
+  and the checked squared-distance Pythagorean theorem target.
 
 | Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P14 | `Proofs.Ai.Geometry.RightTriangle` | `Perp`, `RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
 | P15 | `Proofs.Ai.Geometry.Metric` | `dist` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
 
 The intended dependency order is:
@@ -659,7 +700,7 @@ Theorem targets:
 
 #### `Proofs.Ai.Geometry.RightTriangle`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
@@ -670,20 +711,19 @@ Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
-| `perp_iff_dot_eq_zero` | `Perp u v <-> dot u v = 0` |
+| `perp_iff_dot_eq_zero` | Church-encoded `Perp u v <-> dot u v = 0` |
 | `perp_symm` | `Perp u v -> Perp v u` |
 | `right_triangle_legs_perp` | extract perpendicular leg vectors from `RightTriangle A B C` |
-| `right_triangle_not_collinear` | optional geometric sanity theorem |
 | `hypotenuse_vector_eq_sub_legs` | express the hypotenuse vector through the two leg vectors |
 | `dist_sq_leg_left` | rewrite the first leg length as a `distSq` term |
 | `dist_sq_leg_right` | rewrite the second leg length as a `distSq` term |
 | `dist_sq_hypotenuse` | rewrite the hypotenuse length as a `distSq` term |
 | `pythagorean_distance_sq` | `RightTriangle A B C -> distSq B C = distSq A B + distSq A C` |
 | `law_of_cosines` | peer theorem: squared distance with a dot-product correction term |
-| `right_triangle_area` | area of a right triangle from its two legs |
-| `median_to_hypotenuse` | classical right-triangle theorem |
-| `altitude_on_hypotenuse` | classical right-triangle theorem |
-| `thales_theorem` | circle/diameter characterization of right angles |
+| `right_triangle_area` | double-area squared target parameterized by a future `Area2` API |
+| `median_to_hypotenuse` | midpoint-on-hypotenuse target parameterized by a future midpoint predicate |
+| `altitude_on_hypotenuse` | altitude-foot target parameterized by future length and foot predicates |
+| `thales_theorem` | circle/diameter-to-right-triangle target parameterized by a future circle predicate |
 
 #### `Proofs.Ai.Geometry.Metric`
 

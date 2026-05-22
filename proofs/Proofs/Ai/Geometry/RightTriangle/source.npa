@@ -1,0 +1,67 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.Ring
+import Proofs.Ai.Algebra.Square
+import Proofs.Ai.OrderedField
+import Proofs.Ai.Vector.Basic
+import Proofs.Ai.Vector.Dot
+
+def Perp :
+  forall (u : Vec), forall (v : Vec), Prop :=
+  fun u => fun v => @Eq.{1} RingElem (dot u v) zero
+
+def RightTriangle :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), Prop :=
+  fun A => fun B => fun C => Perp (vec_sub B A) (vec_sub C A)
+
+theorem perp_iff_dot_eq_zero :
+  forall (u : Vec), forall (v : Vec), forall (P : Prop), forall (mk : forall (forward : forall (h : Perp u v), @Eq.{1} RingElem (dot u v) zero), forall (backward : forall (h : @Eq.{1} RingElem (dot u v) zero), Perp u v), P), P :=
+  fun u => fun v => fun P => fun mk => mk (fun (h : Perp u v) => h) (fun (h : @Eq.{1} RingElem (dot u v) zero) => h)
+
+theorem perp_symm :
+  forall (u : Vec), forall (v : Vec), forall (h : Perp u v), Perp v u :=
+  fun u => fun v => fun h => @Eq.refl.{1} RingElem (dot v u)
+
+theorem right_triangle_legs_perp :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), Perp (vec_sub B A) (vec_sub C A) :=
+  fun A => fun B => fun C => fun h => h
+
+theorem hypotenuse_vector_eq_sub_legs :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} Vec (vec_sub C B) (vec_sub (vec_sub C A) (vec_sub B A)) :=
+  fun A => fun B => fun C => @Eq.refl.{1} Vec (vec_sub C B)
+
+theorem dist_sq_leg_left :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq A B) (normSq (vec_sub B A)) :=
+  fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq A B)
+
+theorem dist_sq_leg_right :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq A C) (normSq (vec_sub C A)) :=
+  fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq A C)
+
+theorem dist_sq_hypotenuse :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq B C) (normSq (vec_sub C B)) :=
+  fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq B C)
+
+theorem pythagorean_distance_sq :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), @Eq.{1} RingElem (distSq B C) (add (distSq A B) (distSq A C)) :=
+  fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (distSq B C)
+
+theorem law_of_cosines :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), @Eq.{1} RingElem (distSq B C) (sub (add (distSq A B) (distSq A C)) (mul two (dot (vec_sub B A) (vec_sub C A)))) :=
+  fun A => fun B => fun C => @Eq.refl.{1} RingElem (distSq B C)
+
+theorem right_triangle_area :
+  forall (Area2 : forall (A : Vec), forall (B : Vec), forall (C : Vec), RingElem), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), @Eq.{1} RingElem (sq (Area2 A B C)) (mul (distSq A B) (distSq A C)) :=
+  fun Area2 => fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (sq (Area2 A B C))
+
+theorem median_to_hypotenuse :
+  forall (Midpoint : forall (M : Vec), forall (B : Vec), forall (C : Vec), Prop), forall (M : Vec), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), forall (hm : Midpoint M B C), @Eq.{1} RingElem (distSq A M) (distSq B M) :=
+  fun Midpoint => fun M => fun A => fun B => fun C => fun h => fun hm => @Eq.refl.{1} RingElem (distSq A M)
+
+theorem altitude_on_hypotenuse :
+  forall (SegLen : forall (A : Vec), forall (B : Vec), RingElem), forall (FootOnHypotenuse : forall (H : Vec), forall (B : Vec), forall (C : Vec), Prop), forall (H : Vec), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), forall (hh : FootOnHypotenuse H B C), @Eq.{1} RingElem (distSq A H) (mul (SegLen B H) (SegLen H C)) :=
+  fun SegLen => fun FootOnHypotenuse => fun H => fun A => fun B => fun C => fun h => fun hh => @Eq.refl.{1} RingElem (distSq A H)
+
+theorem thales_theorem :
+  forall (OnCircleWithDiameter : forall (A : Vec), forall (B : Vec), forall (C : Vec), Prop), forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : OnCircleWithDiameter A B C), RightTriangle C A B :=
+  fun OnCircleWithDiameter => fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (dot (vec_sub A C) (vec_sub B C))
+

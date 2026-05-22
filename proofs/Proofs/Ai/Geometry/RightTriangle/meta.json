@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.RightTriangle",
+  "source": "Proofs/Ai/Geometry/RightTriangle/source.npa",
+  "certificate": "Proofs/Ai/Geometry/RightTriangle/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:66f65900e8043a84d5ff9a0868064fbf65cb4eec5de0e92977b0572de95cd7d6",
+  "certificate_file_sha256": "sha256:bd6aef6b1d2808476910bf48b9afac4bdfa4031b4e228b228d77b6c11ccb5d66",
+  "export_hash": "sha256:c2a17e11ac8f8085c75bf7ab04e8d7a56de33c783d08b57d3d4248edc3c6015c",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:42d33464c03e9214d92cc5f1cc3e271dcd4cc6a2fc1ec6d5eea6b27648953527",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square", "Proofs.Ai.OrderedField", "Proofs.Ai.Vector.Basic", "Proofs.Ai.Vector.Dot"],
+  "axioms": [],
+  "declarations": [
+    { "name": "Perp", "kind": "def" },
+    { "name": "RightTriangle", "kind": "def" },
+    { "name": "perp_iff_dot_eq_zero", "kind": "theorem" },
+    { "name": "perp_symm", "kind": "theorem" },
+    { "name": "right_triangle_legs_perp", "kind": "theorem" },
+    { "name": "hypotenuse_vector_eq_sub_legs", "kind": "theorem" },
+    { "name": "dist_sq_leg_left", "kind": "theorem" },
+    { "name": "dist_sq_leg_right", "kind": "theorem" },
+    { "name": "dist_sq_hypotenuse", "kind": "theorem" },
+    { "name": "pythagorean_distance_sq", "kind": "theorem" },
+    { "name": "law_of_cosines", "kind": "theorem" },
+    { "name": "right_triangle_area", "kind": "theorem" },
+    { "name": "median_to_hypotenuse", "kind": "theorem" },
+    { "name": "altitude_on_hypotenuse", "kind": "theorem" },
+    { "name": "thales_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
