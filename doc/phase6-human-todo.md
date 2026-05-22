@@ -238,17 +238,17 @@ None
 
 実装タスク:
 
-- [ ] `Std.Logic` source に `Eq` inductive と generated public exports を定義する。
-- [ ] `Eq.refl` は generated constructor export として扱い、同名 theorem を別途 public export しない。
-- [ ] `Eq.symm`、`Eq.trans`、`Eq.subst`、`Eq.congrArg` を証明する。
-- [ ] `Eq.rec` が kernel-standard AxiomDecl として出る場合の exact exception を axiom report に反映する。
-- [ ] `Std.Logic` certificate が ordinary `Core` ImportEntry を持たないことを検査する。
+- [x] `Std.Logic` source に `Eq` inductive と generated public exports を定義する。
+- [x] `Eq.refl` は generated constructor export として扱い、同名 theorem を別途 public export しない。
+- [x] `Eq.symm`、`Eq.trans`、`Eq.subst`、`Eq.congrArg` を証明する。
+- [x] `Eq.rec` が kernel-standard AxiomDecl として出る場合の exact exception を axiom report に反映する。
+- [x] `Std.Logic` certificate が ordinary `Core` ImportEntry を持たないことを検査する。
 
 受け入れ条件:
 
-- [ ] `Std.Logic.npcert` が source なしで verifier / kernel により再検査できる。
-- [ ] `Eq.refl` は theorem index entry ではなく generated family head として扱われる。
-- [ ] custom axiom は拒否され、許可される axiom は exact `Std.Logic.Eq.rec` 例外だけである。
+- [x] `Std.Logic.npcert` が source なしで verifier / kernel により再検査できる。
+- [x] `Eq.refl` は theorem index entry ではなく generated family head として扱われる。
+- [x] custom axiom は拒否され、許可される axiom は exact `Std.Logic.Eq.rec` 例外だけである。
 
 検証:
 

@@ -1175,6 +1175,7 @@ pub enum MachineStdReleaseLoaderError {
         module: Name,
         source: Box<CertError>,
     },
+    InvalidStdAxiomPolicy(MachineStdAxiomPolicyError),
     VerifiedIdentityMismatch {
         module: Name,
     },
@@ -1263,7 +1264,15 @@ pub fn load_machine_std_certificates_from_locators(
     let decoded = read_and_decode_std_modules(&package_root, locators)?;
     validate_import_graph(&decoded)?;
     let verification_order = topological_verification_order(&decoded)?;
-    verify_decoded_modules(decoded, verification_order, AxiomPolicy::high_trust())
+    verify_decoded_modules(
+        decoded,
+        verification_order,
+        high_trust_policy_allowing_std_mvp_axioms(),
+    )
+    .and_then(|loaded| {
+        validate_loaded_mvp_axiom_policy(&loaded)?;
+        Ok(loaded)
+    })
 }
 
 pub fn load_machine_std_mvp_release(
@@ -2821,6 +2830,16 @@ fn high_trust_policy_allowing_decoded_axioms(
         mode: TrustMode::HighTrust,
         allowlisted_axioms,
         deny_sorry: false,
+    }
+}
+
+fn high_trust_policy_allowing_std_mvp_axioms() -> AxiomPolicy {
+    let mut allowlisted_axioms = BTreeSet::new();
+    allowlisted_axioms.insert(Name::from_dotted("Eq.rec"));
+    AxiomPolicy {
+        mode: TrustMode::HighTrust,
+        allowlisted_axioms,
+        deny_sorry: true,
     }
 }
 
@@ -6197,11 +6216,45 @@ fn std_logic_eq_rec_axiom_ref(loaded: &MachineStdLoadedRelease) -> Option<Machin
                 .get(entry.name)
                 .is_some_and(|name| *name == family.rec_name)
     });
-    is_axiom_export.then(|| MachineStdAxiomRef {
+    let axiom = is_axiom_export.then(|| MachineStdAxiomRef {
         module: logic.module.clone(),
         name: family.rec_name,
         export_hash: logic.expected_export_hash,
         decl_interface_hash: family.rec_interface_hash,
+    })?;
+    std_logic_eq_rec_axiom_has_standard_shape(loaded, &axiom).then_some(axiom)
+}
+
+fn std_logic_eq_rec_axiom_has_standard_shape(
+    loaded: &MachineStdLoadedRelease,
+    axiom: &MachineStdAxiomRef,
+) -> bool {
+    if axiom.module != Name::from_dotted("Std.Logic") || axiom.name != Name::from_dotted("Eq.rec") {
+        return false;
+    }
+    let Some(logic) = loaded.module(&axiom.module) else {
+        return false;
+    };
+    let Ok(declarations) = npa_cert::verified_module_to_kernel_decls(&logic.verified_module) else {
+        return false;
+    };
+    declarations.into_iter().any(|decl| {
+        matches!(
+            decl,
+            npa_kernel::Decl::Axiom {
+                name,
+                universe_params,
+                ty,
+            } if name == "Eq.rec"
+                && universe_params.len() == 2
+                && universe_params[0] == "u"
+                && universe_params[1] == "v"
+                && npa_cert::core_expr_hash(&ty)
+                    == npa_cert::core_expr_hash(&npa_kernel::eq_rec_type(
+                        Level::param("u"),
+                        Level::param("v"),
+                    ))
+        )
     })
 }
 
@@ -6571,6 +6624,30 @@ fn validate_machine_std_axiom_report(
         expected_transitive_by_module.insert(module_name.clone(), expected_transitive);
     }
 
+    Ok(())
+}
+
+fn validate_loaded_mvp_axiom_policy(
+    loaded: &MachineStdLoadedRelease,
+) -> Result<(), MachineStdReleaseLoaderError> {
+    for module_name in loaded.verification_order() {
+        let loaded_module = loaded
+            .module(module_name)
+            .expect("verification order came from loaded module table");
+        let module_axioms = project_module_axioms(loaded, loaded_module)
+            .map_err(MachineStdReleaseLoaderError::InvalidStdAxiomPolicy)?;
+        if module_axioms
+            .iter()
+            .any(|axiom| !is_allowed_mvp_std_axiom(loaded, axiom))
+        {
+            return Err(MachineStdReleaseLoaderError::InvalidStdAxiomPolicy(
+                MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
+                    module: module_name.clone(),
+                    field: "module_axioms",
+                },
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -9614,6 +9691,48 @@ mod tests {
                 module.verified_module.export_hash()
             );
         }
+
+        let logic = loaded.module(&Name::from_dotted("Std.Logic")).unwrap();
+        assert!(
+            logic.imports.is_empty(),
+            "Std.Logic must not encode Core/prelude as an ordinary ImportEntry"
+        );
+        assert_eq!(export_entry(logic, "Eq").kind, ExportKind::Inductive);
+        assert_eq!(export_entry(logic, "Eq.refl").kind, ExportKind::Constructor);
+        assert_eq!(export_entry(logic, "Eq.rec").kind, ExportKind::Axiom);
+        for theorem in ["Eq.symm", "Eq.trans", "Eq.subst", "Eq.congrArg"] {
+            let entry = export_entry(logic, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert_eq!(
+                entry
+                    .axiom_dependencies
+                    .iter()
+                    .map(|axiom| logic.verified_module.name_table()[axiom.name].as_dotted())
+                    .collect::<Vec<_>>(),
+                vec!["Eq.rec"]
+            );
+        }
+
+        let axiom_report = mvp_axiom_report_for(&loaded);
+        let logic_axioms = axiom_report
+            .modules
+            .iter()
+            .find(|module| module.module == Name::from_dotted("Std.Logic"))
+            .unwrap();
+        assert_eq!(
+            logic_axioms
+                .module_axioms
+                .iter()
+                .map(|axiom| axiom.name.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Eq.rec"]
+        );
+
+        let theorem_index = generate_machine_std_mvp_theorem_index(&loaded).unwrap();
+        assert!(!theorem_index
+            .entries
+            .iter()
+            .any(|entry| entry.global_ref.name == Name::from_dotted("Eq.refl")));
     }
 
     #[test]
@@ -9683,8 +9802,7 @@ mod tests {
         write_valid_mvp_package(package.path());
         let loaded_before = load_machine_std_mvp_certificates(package.path()).unwrap();
         let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded_before).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded_before);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded_before);
         let release_before = release_manifest_for(&loaded_before, axiom_report.axiom_report_hash);
         let release_hash_before = machine_std_library_release_hash(&release_before).unwrap();
         let release_json = release_manifest_json(&release_before);
@@ -9694,9 +9812,7 @@ mod tests {
         write_poison_human_std_source_and_debug_files(package.path());
 
         let loaded_after = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let mut axiom_report_after = empty_axiom_report_for(&loaded_after);
-        axiom_report_after.axiom_report_hash =
-            machine_std_axiom_report_hash(&axiom_report_after).unwrap();
+        let axiom_report_after = mvp_axiom_report_for(&loaded_after);
         let release_after =
             release_manifest_for(&loaded_after, axiom_report_after.axiom_report_hash);
         assert_eq!(
@@ -9870,8 +9986,7 @@ mod tests {
         let package = TestPackage::new("valid_mvp_release_manifest");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
         let release_json = release_manifest_json(&release);
         let axiom_report_json = axiom_report_json(&axiom_report);
@@ -9935,10 +10050,12 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["Std.Nat", "Std.List", "Std.Logic"]
         );
+        let eq_rec_allow_axiom =
+            machine_std_axiom_ref_to_wire(&std_logic_eq_rec_axiom_ref(&loaded).unwrap());
         assert!(bundle_set
             .bundles
             .iter()
-            .all(|bundle| bundle.allow_axioms.is_empty()));
+            .all(|bundle| bundle.allow_axioms == vec![eq_rec_allow_axiom.clone()]));
         assert!(bundle_set.bundles.iter().all(|bundle| {
             crate::types::KernelCheckProfileId::parse(
                 &bundle.recommended_tactic_options.kernel_check_profile,
@@ -10460,8 +10577,7 @@ mod tests {
         assert_eq!(eq_rec.attributes, vec![MachineStdAttribute::Apply]);
         assert!(eq_rec.rewrite_descriptors.is_empty());
 
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
         let err = validate_machine_std_mvp_release_final_sidecar_counts(
             &release,
@@ -11411,8 +11527,7 @@ mod tests {
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
         let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
 
         let validated = load_machine_std_mvp_release_with_import_bundles_from_json(
@@ -11647,8 +11762,7 @@ mod tests {
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
         let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
         release.import_bundles_hash = test_hash(55);
 
@@ -11678,8 +11792,7 @@ mod tests {
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
         let mut import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded).unwrap();
         import_bundles.import_bundles_hash = test_hash(56);
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
 
         let err = load_machine_std_mvp_release_with_import_bundles_from_json(
@@ -11703,8 +11816,7 @@ mod tests {
         let package = TestPackage::new("release_scalar_mismatch");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
         release.protocol_version = "npa.stdlib-machine.bad".to_owned();
 
@@ -11730,7 +11842,7 @@ mod tests {
         let package = TestPackage::new("release_hash_unknown");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let axiom_report = empty_axiom_report_for(&loaded);
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let release = release_manifest_for(&loaded, test_hash(9));
         let release_json = release_manifest_json(&release).replacen(
             "{\"protocol_version\"",
@@ -11763,7 +11875,7 @@ mod tests {
         let package = TestPackage::new("non_empty_axiom_report");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
+        let mut axiom_report = mvp_axiom_report_for(&loaded);
         let first = &mut axiom_report.modules[0];
         first.module_axioms.push(MachineStdAxiomRef {
             module: first.module.clone(),
@@ -11817,11 +11929,47 @@ mod tests {
     }
 
     #[test]
+    fn mvp_certificate_loader_rejects_custom_axioms() {
+        let package = TestPackage::new("custom_axiom_loader_policy");
+        let certs = mvp_certificate_bytes_with_logic_axiom("Std.Logic.synthetic_axiom");
+        write_mvp_package(package.path(), &certs);
+
+        let err = load_machine_std_mvp_certificates(package.path()).unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseLoaderError::VerifyFailed {
+                module,
+                source,
+            } if module == Name::from_dotted("Std.Logic")
+                && matches!(*source, CertError::ForbiddenAxiom { ref axiom }
+                    if *axiom == Name::from_dotted("Std.Logic.synthetic_axiom"))
+        ));
+    }
+
+    #[test]
+    fn mvp_certificate_loader_rejects_nonstandard_eq_rec_exception() {
+        let package = TestPackage::new("nonstandard_eq_rec_loader_policy");
+        let certs = mvp_certificate_bytes_with_nonstandard_logic_eq_rec_axiom();
+        write_mvp_package(package.path(), &certs);
+
+        let err = load_machine_std_mvp_certificates(package.path()).unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseLoaderError::InvalidStdAxiomPolicy(
+                MachineStdAxiomPolicyError::NonEmptyMvpAxiomList {
+                    ref module,
+                    field: "module_axioms",
+                }
+            ) if *module == Name::from_dotted("Std.Logic")
+        ));
+    }
+
+    #[test]
     fn rejects_stale_axiom_report_self_hash_before_manifest_comparison() {
         let package = TestPackage::new("stale_axiom_report_self_hash");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
+        let mut axiom_report = mvp_axiom_report_for(&loaded);
         axiom_report.axiom_report_hash = test_hash(44);
         let release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
 
@@ -11844,8 +11992,7 @@ mod tests {
         let package = TestPackage::new("manifest_bound_axiom_hash_mismatch");
         write_valid_mvp_package(package.path());
         let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
-        let mut axiom_report = empty_axiom_report_for(&loaded);
-        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let axiom_report = mvp_axiom_report_for(&loaded);
         let release = release_manifest_for(&loaded, test_hash(45));
 
         let err = load_machine_std_mvp_release_from_json(
@@ -11874,9 +12021,9 @@ mod tests {
 
     fn mvp_certificate_bytes() -> MvpCertificateBytes {
         let mut session = VerifierSession::new();
-        let policy = AxiomPolicy::high_trust();
+        let policy = high_trust_policy_allowing_std_mvp_axioms();
 
-        let logic_cert = build_module_cert(empty_module("Std.Logic"), &[]).unwrap();
+        let logic_cert = build_module_cert(logic_eq_family_module(), &[]).unwrap();
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
@@ -11992,6 +12139,45 @@ mod tests {
             .insert(Name::from_dotted("Eq.rec"));
 
         let logic_cert = build_module_cert(logic_eq_rec_axiom_module(), &[]).unwrap();
+        let logic = encode_module_cert(&logic_cert).unwrap();
+        let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
+
+        let nat_cert = build_module_cert(
+            empty_module("Std.Nat"),
+            std::slice::from_ref(&logic_verified),
+        )
+        .unwrap();
+        let nat = encode_module_cert(&nat_cert).unwrap();
+        let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
+
+        let list_cert = build_module_cert(
+            empty_module("Std.List"),
+            &[logic_verified.clone(), nat_verified.clone()],
+        )
+        .unwrap();
+        let list = encode_module_cert(&list_cert).unwrap();
+        verify_module_cert(&list, &mut session, &policy).unwrap();
+
+        let algebra_cert =
+            build_module_cert(empty_module("Std.Algebra.Basic"), &[logic_verified]).unwrap();
+        let algebra_basic = encode_module_cert(&algebra_cert).unwrap();
+
+        MvpCertificateBytes {
+            logic,
+            nat,
+            list,
+            algebra_basic,
+        }
+    }
+
+    fn mvp_certificate_bytes_with_nonstandard_logic_eq_rec_axiom() -> MvpCertificateBytes {
+        let mut session = VerifierSession::new();
+        let mut policy = AxiomPolicy::high_trust();
+        policy
+            .allowlisted_axioms
+            .insert(Name::from_dotted("Eq.rec"));
+
+        let logic_cert = build_module_cert(logic_nonstandard_eq_rec_axiom_module(), &[]).unwrap();
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
@@ -12167,12 +12353,41 @@ mod tests {
     fn logic_eq_rec_axiom_module() -> CoreModule {
         CoreModule {
             name: Name::from_dotted("Std.Logic"),
+            declarations: vec![logic_eq_inductive_decl(), logic_eq_rec_axiom_decl()],
+        }
+    }
+
+    fn logic_eq_family_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Logic"),
+            declarations: vec![
+                logic_eq_inductive_decl(),
+                logic_eq_rec_axiom_decl(),
+                eq_symm_theorem(),
+                eq_trans_theorem(),
+                eq_subst_theorem(),
+                eq_congr_arg_theorem(),
+            ],
+        }
+    }
+
+    fn logic_eq_rec_axiom_decl() -> Decl {
+        Decl::Axiom {
+            name: "Eq.rec".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: eq_rec_type(Level::param("u"), Level::param("v")),
+        }
+    }
+
+    fn logic_nonstandard_eq_rec_axiom_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Logic"),
             declarations: vec![
                 logic_eq_inductive_decl(),
                 Decl::Axiom {
                     name: "Eq.rec".to_owned(),
                     universe_params: vec!["u".to_owned(), "v".to_owned()],
-                    ty: eq_rec_type(Level::param("u"), Level::param("v")),
+                    ty: Expr::sort(Level::zero()),
                 },
             ],
         }
@@ -12197,6 +12412,361 @@ mod tests {
             ),
             data: Box::new(data),
         }
+    }
+
+    fn eq_symm_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "Eq.symm".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: eq_symm_type(u.clone()),
+            proof: eq_symm_proof(u),
+        }
+    }
+
+    fn eq_symm_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "x",
+                Expr::bvar(0),
+                Expr::pi(
+                    "y",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "h",
+                        eq(u.clone(), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                        eq(u, Expr::bvar(3), Expr::bvar(1), Expr::bvar(2)),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_symm_proof(u: Level) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "x",
+                Expr::bvar(0),
+                Expr::lam(
+                    "y",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "h",
+                        eq(u.clone(), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)),
+                        Expr::apps(
+                            Expr::konst("Eq.rec", vec![u.clone(), Level::zero()]),
+                            vec![
+                                Expr::bvar(3),
+                                Expr::bvar(2),
+                                Expr::lam(
+                                    "b",
+                                    Expr::bvar(3),
+                                    Expr::lam(
+                                        "_h",
+                                        eq(u.clone(), Expr::bvar(4), Expr::bvar(3), Expr::bvar(0)),
+                                        eq(u.clone(), Expr::bvar(5), Expr::bvar(1), Expr::bvar(4)),
+                                    ),
+                                ),
+                                eq_refl(u.clone(), Expr::bvar(3), Expr::bvar(2)),
+                                Expr::bvar(1),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_trans_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "Eq.trans".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: eq_trans_type(u.clone()),
+            proof: eq_trans_proof(u),
+        }
+    }
+
+    fn eq_trans_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "x",
+                Expr::bvar(0),
+                Expr::pi(
+                    "y",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "z",
+                        Expr::bvar(2),
+                        Expr::pi(
+                            "hxy",
+                            eq(u.clone(), Expr::bvar(3), Expr::bvar(2), Expr::bvar(1)),
+                            Expr::pi(
+                                "hyz",
+                                eq(u.clone(), Expr::bvar(4), Expr::bvar(2), Expr::bvar(1)),
+                                eq(u, Expr::bvar(5), Expr::bvar(4), Expr::bvar(2)),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_trans_proof(u: Level) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "x",
+                Expr::bvar(0),
+                Expr::lam(
+                    "y",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "z",
+                        Expr::bvar(2),
+                        Expr::lam(
+                            "hxy",
+                            eq(u.clone(), Expr::bvar(3), Expr::bvar(2), Expr::bvar(1)),
+                            Expr::lam(
+                                "hyz",
+                                eq(u.clone(), Expr::bvar(4), Expr::bvar(2), Expr::bvar(1)),
+                                Expr::apps(
+                                    Expr::konst("Eq.rec", vec![u.clone(), Level::zero()]),
+                                    vec![
+                                        Expr::bvar(5),
+                                        Expr::bvar(3),
+                                        Expr::lam(
+                                            "b",
+                                            Expr::bvar(5),
+                                            Expr::lam(
+                                                "_h",
+                                                eq(
+                                                    u.clone(),
+                                                    Expr::bvar(6),
+                                                    Expr::bvar(4),
+                                                    Expr::bvar(0),
+                                                ),
+                                                eq(
+                                                    u.clone(),
+                                                    Expr::bvar(7),
+                                                    Expr::bvar(6),
+                                                    Expr::bvar(1),
+                                                ),
+                                            ),
+                                        ),
+                                        Expr::bvar(1),
+                                        Expr::bvar(2),
+                                        Expr::bvar(0),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_subst_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "Eq.subst".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: eq_subst_type(u.clone()),
+            proof: eq_subst_proof(u),
+        }
+    }
+
+    fn eq_subst_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "x",
+                Expr::bvar(0),
+                Expr::pi(
+                    "y",
+                    Expr::bvar(1),
+                    Expr::pi(
+                        "P",
+                        Expr::pi("_", Expr::bvar(2), Expr::sort(Level::zero())),
+                        Expr::pi(
+                            "h",
+                            eq(u.clone(), Expr::bvar(3), Expr::bvar(2), Expr::bvar(1)),
+                            Expr::pi(
+                                "px",
+                                Expr::app(Expr::bvar(1), Expr::bvar(3)),
+                                Expr::app(Expr::bvar(2), Expr::bvar(3)),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_subst_proof(u: Level) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "x",
+                Expr::bvar(0),
+                Expr::lam(
+                    "y",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "P",
+                        Expr::pi("_", Expr::bvar(2), Expr::sort(Level::zero())),
+                        Expr::lam(
+                            "h",
+                            eq(u.clone(), Expr::bvar(3), Expr::bvar(2), Expr::bvar(1)),
+                            Expr::lam(
+                                "px",
+                                Expr::app(Expr::bvar(1), Expr::bvar(3)),
+                                Expr::apps(
+                                    Expr::konst("Eq.rec", vec![u.clone(), Level::zero()]),
+                                    vec![
+                                        Expr::bvar(5),
+                                        Expr::bvar(4),
+                                        Expr::lam(
+                                            "b",
+                                            Expr::bvar(5),
+                                            Expr::lam(
+                                                "_h",
+                                                eq(
+                                                    u.clone(),
+                                                    Expr::bvar(6),
+                                                    Expr::bvar(5),
+                                                    Expr::bvar(0),
+                                                ),
+                                                Expr::app(Expr::bvar(4), Expr::bvar(1)),
+                                            ),
+                                        ),
+                                        Expr::bvar(0),
+                                        Expr::bvar(3),
+                                        Expr::bvar(1),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_congr_arg_theorem() -> Decl {
+        let u = Level::param("u");
+        let v = Level::param("v");
+        Decl::Theorem {
+            name: "Eq.congrArg".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: eq_congr_arg_type(u.clone(), v.clone()),
+            proof: eq_congr_arg_proof(u, v),
+        }
+    }
+
+    fn eq_congr_arg_type(u: Level, v: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "B",
+                Expr::sort(v.clone()),
+                Expr::pi(
+                    "f",
+                    Expr::pi("_", Expr::bvar(1), Expr::bvar(1)),
+                    Expr::pi(
+                        "x",
+                        Expr::bvar(2),
+                        Expr::pi(
+                            "y",
+                            Expr::bvar(3),
+                            Expr::pi(
+                                "h",
+                                eq(u.clone(), Expr::bvar(4), Expr::bvar(1), Expr::bvar(0)),
+                                eq(
+                                    v,
+                                    Expr::bvar(4),
+                                    Expr::app(Expr::bvar(3), Expr::bvar(2)),
+                                    Expr::app(Expr::bvar(3), Expr::bvar(1)),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn eq_congr_arg_proof(u: Level, v: Level) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "B",
+                Expr::sort(v.clone()),
+                Expr::lam(
+                    "f",
+                    Expr::pi("_", Expr::bvar(1), Expr::bvar(1)),
+                    Expr::lam(
+                        "x",
+                        Expr::bvar(2),
+                        Expr::lam(
+                            "y",
+                            Expr::bvar(3),
+                            Expr::lam(
+                                "h",
+                                eq(u.clone(), Expr::bvar(4), Expr::bvar(1), Expr::bvar(0)),
+                                Expr::apps(
+                                    Expr::konst("Eq.rec", vec![u.clone(), Level::zero()]),
+                                    vec![
+                                        Expr::bvar(5),
+                                        Expr::bvar(2),
+                                        Expr::lam(
+                                            "b",
+                                            Expr::bvar(5),
+                                            Expr::lam(
+                                                "_h",
+                                                eq(
+                                                    u.clone(),
+                                                    Expr::bvar(6),
+                                                    Expr::bvar(3),
+                                                    Expr::bvar(0),
+                                                ),
+                                                eq(
+                                                    v.clone(),
+                                                    Expr::bvar(6),
+                                                    Expr::app(Expr::bvar(5), Expr::bvar(4)),
+                                                    Expr::app(Expr::bvar(5), Expr::bvar(1)),
+                                                ),
+                                            ),
+                                        ),
+                                        eq_refl(
+                                            v.clone(),
+                                            Expr::bvar(4),
+                                            Expr::app(Expr::bvar(3), Expr::bvar(2)),
+                                        ),
+                                        Expr::bvar(1),
+                                        Expr::bvar(0),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
     }
 
     fn nat_m5_profile_module() -> CoreModule {
