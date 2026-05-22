@@ -939,6 +939,7 @@ impl HumanTacticTermElabContext {
         let span = Span::empty(crate::FileId(0));
         let mut env = Env::new();
         let mut seen_imports = BTreeSet::new();
+        let mut imports = Vec::new();
         for import in request
             .direct_imports
             .iter()
@@ -950,9 +951,10 @@ impl HumanTacticTermElabContext {
                 import.certificate_hash,
             );
             if seen_imports.insert(key) {
-                add_human_kernel_import_to_env(&mut env, import, span)?;
+                imports.push(import);
             }
         }
+        add_human_kernel_imports_to_env(&mut env, &imports, span)?;
 
         for decl in request.checked_current_decls {
             add_human_kernel_decl_to_env(
@@ -991,15 +993,74 @@ impl HumanTacticTermElabContext {
     }
 }
 
-fn add_human_kernel_import_to_env(
+fn add_human_kernel_imports_to_env(
     env: &mut Env,
-    import: &VerifiedImport,
+    imports: &[&VerifiedImport],
     span: Span,
 ) -> HumanResult<()> {
-    for decl in kernel_decls_for_human_import(import) {
-        add_human_kernel_decl_to_env(env, decl, span, "Human tactic import environment")?;
+    let mut pending = imports
+        .iter()
+        .flat_map(|import| kernel_decls_for_human_import(import))
+        .collect::<Vec<_>>();
+
+    while !pending.is_empty() {
+        let pending_names = pending
+            .iter()
+            .map(|decl| decl.name().to_owned())
+            .collect::<BTreeSet<_>>();
+        let mut next = Vec::new();
+        let mut progressed = false;
+
+        for decl in pending {
+            if human_decl_waits_for_pending_import(env, &decl, &pending_names) {
+                next.push(decl);
+                continue;
+            }
+            add_human_kernel_decl_to_env(env, decl, span, "Human tactic import environment")?;
+            progressed = true;
+        }
+
+        if !progressed {
+            if next.is_empty() {
+                return Ok(());
+            }
+            let names = next
+                .iter()
+                .map(|decl| decl.name().to_owned())
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::KernelRejected,
+                span,
+                format!("Human tactic import environment has cyclic or unresolved dependencies: {names}"),
+            )
+            .with_phase(HumanDiagnosticPhase::KernelHandoff));
+        }
+        pending = next;
     }
+
     Ok(())
+}
+
+fn human_decl_waits_for_pending_import(
+    env: &Env,
+    decl: &Decl,
+    pending_names: &BTreeSet<String>,
+) -> bool {
+    let mut references = BTreeSet::new();
+    collect_const_names_from_human_decl(&mut references, decl);
+    remove_human_decl_owned_const_names(&mut references, decl);
+    references.into_iter().any(|name| {
+        let dotted = name.as_dotted();
+        pending_import_decl_covers_reference(&dotted, pending_names) && env.decl(&dotted).is_none()
+    })
+}
+
+fn pending_import_decl_covers_reference(reference: &str, pending_names: &BTreeSet<String>) -> bool {
+    pending_names.contains(reference)
+        || reference
+            .rsplit_once('.')
+            .is_some_and(|(parent, _)| pending_names.contains(parent))
 }
 
 fn add_human_kernel_decl_to_env(

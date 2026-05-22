@@ -10291,7 +10291,7 @@ mod tests {
         MachineTacticBatchItemResponse,
     };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
-    use npa_frontend::{parse_human_module, FileId, HumanItem};
+    use npa_frontend::{canonicalize_machine_term_source, parse_human_module, FileId, HumanItem};
     use npa_kernel::{
         eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
         Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, RecursorDecl,
@@ -12450,6 +12450,517 @@ mod tests {
         assert!(false_elim
             .suggested_tactics
             .contains(&"apply False.elim".to_owned()));
+    }
+
+    struct Phase6HumanRealStdlibFixture {
+        verified_modules: Vec<VerifiedModule>,
+        options: crate::HumanApiCompileOptions,
+    }
+
+    fn phase6_human_real_stdlib_fixture(label: &str) -> Phase6HumanRealStdlibFixture {
+        let package = TestPackage::new(label);
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let bundle_set =
+            generate_machine_std_mvp_final_import_bundle_set(&loaded, &simp_profiles).unwrap();
+        let all_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_ALL_BUNDLE_ID)
+            .expect("std.all.mvp bundle should be generated");
+
+        Phase6HumanRealStdlibFixture {
+            verified_modules: loaded
+                .modules()
+                .iter()
+                .map(|module| module.verified_module.clone())
+                .collect(),
+            options: human_options_from_std_recipe(&all_bundle.recommended_tactic_options),
+        }
+    }
+
+    fn human_options_from_std_recipe(
+        recipe: &MachineStdTacticOptionsRecipe,
+    ) -> crate::HumanApiCompileOptions {
+        let mut options = crate::human_api_default_compile_options();
+        options.kernel_profile = machine_kernel_profile_from_recipe(&recipe.kernel_check_profile);
+        options.tactic_options = MachineTacticOptions {
+            simp_rules: recipe.simp_rules.clone(),
+            eq_family: recipe.eq_family.clone(),
+            nat_family: recipe.nat_family.clone(),
+            max_simp_rewrite_steps: recipe.max_simp_rewrite_steps,
+            max_open_goals: usize::try_from(recipe.max_open_goals).unwrap(),
+            max_metas: usize::try_from(recipe.max_metas).unwrap(),
+        };
+        options
+    }
+
+    fn machine_kernel_profile_from_recipe(value: &str) -> npa_tactic::MachineKernelProfile {
+        match KernelCheckProfileId::parse(value).unwrap() {
+            KernelCheckProfileId::BuiltinNone => npa_tactic::MachineKernelProfile::BuiltinNone,
+            KernelCheckProfileId::BuiltinNatEqRec => {
+                npa_tactic::MachineKernelProfile::BuiltinNatEqRec
+            }
+        }
+    }
+
+    fn assert_phase6_human_real_stdlib_certificate_verifies(
+        fixture: &Phase6HumanRealStdlibFixture,
+        module: &str,
+        source: &str,
+    ) -> crate::HumanCompileCertificateOk {
+        let ok =
+            crate::compile_human_source_to_certificate(crate::HumanCompileCertificateRequest {
+                current_module: Name::from_dotted(module),
+                current_source: crate::HumanCurrentModuleSource {
+                    file_id: FileId(0),
+                    source,
+                },
+                verified_modules: &fixture.verified_modules,
+                imported_source_interfaces: &[],
+                options: fixture.options.clone(),
+            })
+            .expect("Human real stdlib tactic fixture should compile to a certificate");
+        assert!(ok
+            .source_interface
+            .declarations
+            .iter()
+            .all(|decl| decl.decl_interface_hash.is_some()));
+
+        let bytes =
+            encode_module_cert(&ok.certificate).expect("Human real stdlib cert should encode");
+        let mut session = VerifierSession::new();
+        for verified in &fixture.verified_modules {
+            session.register_verified_module(verified.clone());
+        }
+        let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+            .expect("Human real stdlib certificate should verify");
+        assert_eq!(verified.module(), &Name::from_dotted(module));
+        ok
+    }
+
+    fn assert_phase6_human_real_stdlib_compile_error(
+        fixture: &Phase6HumanRealStdlibFixture,
+        module: &str,
+        source: &str,
+        kind: npa_frontend::HumanDiagnosticKind,
+        phase: npa_frontend::HumanDiagnosticPhase,
+    ) -> String {
+        let err =
+            crate::compile_human_source_to_certificate(crate::HumanCompileCertificateRequest {
+                current_module: Name::from_dotted(module),
+                current_source: crate::HumanCurrentModuleSource {
+                    file_id: FileId(0),
+                    source,
+                },
+                verified_modules: &fixture.verified_modules,
+                imported_source_interfaces: &[],
+                options: fixture.options.clone(),
+            })
+            .expect_err("negative Human real stdlib fixture must not produce a certificate");
+
+        assert_eq!(err.diagnostic.kind, kind, "{}", err.diagnostic.message);
+        assert_eq!(
+            err.diagnostic
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.phase),
+            Some(phase),
+            "{}",
+            err.diagnostic.message
+        );
+        err.diagnostic.message
+    }
+
+    fn phase6_human_real_stdlib_session(
+        fixture: &Phase6HumanRealStdlibFixture,
+        module: &str,
+        theorem: &str,
+        source: &'static str,
+    ) -> (
+        crate::HumanProofSessionStore,
+        crate::HumanStateRequestHeader,
+        crate::HumanStateId,
+        crate::HumanGoalId,
+    ) {
+        let mut store = crate::HumanProofSessionStore::new();
+        let created = crate::create_human_session(
+            &mut store,
+            crate::HumanSessionCreateRequest {
+                current_module: Name::from_dotted(module),
+                current_source: crate::HumanCurrentModuleSource {
+                    file_id: FileId(0),
+                    source,
+                },
+                verified_modules: &fixture.verified_modules,
+                imported_source_interfaces: &[],
+                options: fixture.options.clone(),
+            },
+        )
+        .expect("Human real stdlib session should be created");
+        let started = crate::start_human_session_proof(
+            &mut store,
+            crate::HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: Name::from_dotted(theorem),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human real stdlib proof should start");
+        let header = crate::HumanStateRequestHeader {
+            session_id: created.session_id,
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+        (
+            store,
+            header,
+            started.state_id,
+            started
+                .selected_goal
+                .expect("started Human proof should select a goal"),
+        )
+    }
+
+    fn run_phase6_human_tactics(
+        store: &mut crate::HumanProofSessionStore,
+        header: &crate::HumanStateRequestHeader,
+        mut state_id: crate::HumanStateId,
+        mut goal_id: crate::HumanGoalId,
+        tactics: &[&str],
+    ) -> (crate::HumanStateId, crate::HumanGoalId) {
+        for tactic in tactics {
+            let response = crate::run_human_tactic(
+                store,
+                crate::HumanTacticRunRequest {
+                    header: header.clone(),
+                    state_id,
+                    goal_id,
+                    tactic: (*tactic).to_owned(),
+                    budget: npa_tactic::TacticBudget::default(),
+                },
+            );
+            assert_eq!(
+                response.status,
+                crate::HumanTacticRunStatus::Partial,
+                "{tactic}: {:?}",
+                response.error
+            );
+            state_id = response
+                .new_state_id
+                .expect("partial tactic should record a new state");
+            goal_id = response
+                .selected_goal
+                .expect("partial tactic should select a new goal");
+        }
+        (state_id, goal_id)
+    }
+
+    #[test]
+    fn phase6_human_real_stdlib_phase4_tactic_regressions_compile() {
+        let fixture = phase6_human_real_stdlib_fixture("human_real_stdlib_tactics");
+        let source = "\
+import Std.Logic
+import Std.Nat
+import Std.List
+
+theorem id_nat : forall (n : Nat), Nat := by
+  intro n
+  exact n
+
+theorem refl_nat (n : Nat) : Eq.{1} Nat n n := by
+  intro n
+  exact @Eq.refl.{1} Nat n
+
+theorem apply_false_elim (P : Prop) (h : False) : P := by
+  intro P
+  intro h
+  apply False.elim
+  exact h
+
+theorem eq_trans_by_exact (A : Type) (x y z : A) (hxy : Eq.{1} A x y) (hyz : Eq.{1} A y z) : Eq.{1} A x z := by
+  intro A
+  intro x
+  intro y
+  intro z
+  intro hxy
+  intro hyz
+  exact @Eq.trans.{1} A x y z hxy hyz
+
+theorem nat_add_zero_by_rw (n : Nat) : Eq.{1} Nat (Nat.add n Nat.zero) n := by
+  intro n
+  rw [Nat.add_zero]
+  exact @Eq.refl.{1} Nat n
+
+theorem nat_induction_self (n : Nat) : Eq.{1} Nat n n := by
+  intro n
+  induction n
+  exact @Eq.refl.{1} Nat Nat.zero
+  simp-lite
+
+theorem nat_zero_add_by_simp (n : Nat) : Eq.{1} Nat (Nat.add Nat.zero n) n := by
+  intro n
+  simp-lite
+
+theorem list_append_nil_by_rw (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{1} A xs (List.nil.{1} A)) xs := by
+  intro A
+  intro xs
+  rw [List.append_nil]
+  exact @Eq.refl.{1} (List.{1} A) xs
+
+theorem list_append_nil_by_simp (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{1} A xs (List.nil.{1} A)) xs := by
+  intro A
+  intro xs
+  simp-lite";
+        assert_phase6_human_real_stdlib_certificate_verifies(
+            &fixture,
+            "Api.HumanRealStdlibTactics",
+            source,
+        );
+
+        let canonical = canonicalize_machine_term_source("@Eq.refl.{1} Nat n")
+            .expect("Machine Surface fixture should remain accepted");
+        assert_eq!(
+            canonical.canonical_hash,
+            [
+                0x60, 0x8f, 0x3f, 0x0b, 0xa3, 0x6d, 0xbb, 0xaa, 0xd6, 0x8b, 0x50, 0x0a, 0xd8, 0x9e,
+                0x90, 0x43, 0x18, 0x1a, 0xeb, 0x6c, 0x3d, 0xcf, 0xd9, 0x3e, 0xcc, 0xdb, 0x36, 0x8f,
+                0x7d, 0x29, 0x89, 0xcf,
+            ]
+        );
+        for human_only_source in [
+            "rw [Nat.add_zero]",
+            "simp-lite",
+            "theorem x : Nat := by exact Nat.zero",
+        ] {
+            assert!(
+                canonicalize_machine_term_source(human_only_source).is_err(),
+                "Human proof syntax must not widen Machine Surface: {human_only_source}"
+            );
+        }
+    }
+
+    #[test]
+    fn human_real_stdlib_negative_paths_do_not_certificate() {
+        let fixture = phase6_human_real_stdlib_fixture("human_real_stdlib_negative");
+
+        assert_phase6_human_real_stdlib_compile_error(
+            &fixture,
+            "Api.HumanRealStdlibOpenGoal",
+            "\
+import Std.Logic
+import Std.Nat
+import Std.List
+theorem open_goal : forall (n : Nat), Nat := by
+  intro n",
+            npa_frontend::HumanDiagnosticKind::UnresolvedGoal,
+            npa_frontend::HumanDiagnosticPhase::TacticUnresolvedGoal,
+        );
+
+        let sorry_err =
+            crate::compile_human_source_to_certificate(crate::HumanCompileCertificateRequest {
+                current_module: Name::from_dotted("Api.HumanRealStdlibSorry"),
+                current_source: crate::HumanCurrentModuleSource {
+                    file_id: FileId(0),
+                    source: "\
+axiom sorry_synthetic : Prop
+theorem target : Prop := sorry_synthetic",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: crate::human_api_default_compile_options(),
+            })
+            .expect_err("sorry-shaped axiom must not pass certificate handoff");
+        assert_eq!(
+            sorry_err.diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::KernelRejected
+        );
+        assert_eq!(
+            sorry_err
+                .diagnostic
+                .payload
+                .as_ref()
+                .and_then(|payload| payload.phase),
+            Some(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
+        );
+        assert!(
+            sorry_err.diagnostic.message.contains("SorryDenied"),
+            "{}",
+            sorry_err.diagnostic.message
+        );
+
+        assert_phase6_human_real_stdlib_compile_error(
+            &fixture,
+            "Api.HumanRealStdlibFailedRw",
+            "\
+import Std.Logic
+import Std.Nat
+import Std.List
+theorem failed_rw (n : Nat) : Eq.{1} Nat n n := by
+  intro n
+  rw [Nat.add_zero]",
+            npa_frontend::HumanDiagnosticKind::TypeMismatch,
+            npa_frontend::HumanDiagnosticPhase::TacticExecution,
+        );
+
+        for excluded in ["Nat.add_comm", "Nat.add_assoc", "List.append_assoc"] {
+            assert!(
+                !fixture
+                    .options
+                    .tactic_options
+                    .simp_rules
+                    .iter()
+                    .any(|rule| rule.name == Name::from_dotted(excluded)),
+                "{excluded} must stay out of the simp-lite profile"
+            );
+        }
+        let simp_message = assert_phase6_human_real_stdlib_compile_error(
+            &fixture,
+            "Api.HumanRealStdlibLoopProneSimp",
+            "\
+import Std.Logic
+import Std.Nat
+import Std.List
+theorem no_comm_simp (n m : Nat) : Eq.{1} Nat (Nat.add n m) (Nat.add m n) := by
+  intro n
+  intro m
+  simp-lite",
+            npa_frontend::HumanDiagnosticKind::TypeMismatch,
+            npa_frontend::HumanDiagnosticPhase::TacticExecution,
+        );
+        assert!(simp_message.contains("simp-lite"), "{simp_message}");
+
+        let bad_package = TestPackage::new("human_unapproved_std_axiom");
+        let bad_certs = mvp_certificate_bytes_with_logic_axiom("Std.Logic.human_bad_axiom");
+        write_mvp_package(bad_package.path(), &bad_certs);
+        let err = load_machine_std_mvp_certificates(bad_package.path()).unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseLoaderError::VerifyFailed {
+                module,
+                source,
+            } if module == Name::from_dotted("Std.Logic")
+                && matches!(*source, CertError::ForbiddenAxiom { ref axiom }
+                    if *axiom == Name::from_dotted("Std.Logic.human_bad_axiom"))
+        ));
+    }
+
+    #[test]
+    fn phase7_human_real_stdlib_search_missing_result_regressions() {
+        let fixture = phase6_human_real_stdlib_fixture("human_real_stdlib_search");
+
+        let (mut nat_store, nat_header, nat_state_id, nat_goal_id) =
+            phase6_human_real_stdlib_session(
+                &fixture,
+                "Api.HumanRealStdlibNatSearch",
+                "Api.HumanRealStdlibNatSearch.target",
+                "\
+import Std.Logic
+import Std.Nat
+import Std.List
+theorem target (n : Nat) : Eq.{1} Nat (Nat.add n Nat.zero) n := by
+  simp-lite",
+            );
+        let (nat_state_id, nat_goal_id) = run_phase6_human_tactics(
+            &mut nat_store,
+            &nat_header,
+            nat_state_id,
+            nat_goal_id,
+            &["intro n"],
+        );
+        let nat_search = crate::search_human_theorems_for_goal(
+            &nat_store,
+            crate::HumanTheoremGoalSearchRequest {
+                header: nat_header.clone(),
+                state_id: nat_state_id.clone(),
+                goal_id: nat_goal_id.clone(),
+                modes: vec![
+                    crate::HumanTheoremSearchMode::Exact,
+                    crate::HumanTheoremSearchMode::Rw,
+                    crate::HumanTheoremSearchMode::Simp,
+                ],
+                options: crate::HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("Nat.add_zero goal search should run over real stdlib");
+        assert!(nat_search.results.iter().any(|result| {
+            result.name == Name::from_dotted("Nat.add_zero")
+                && result.module == Name::from_dotted("Std.Nat")
+                && result.mode == crate::HumanTheoremSearchMode::Rw
+                && result.suggested_tactic == "rw [Nat.add_zero]"
+        }));
+
+        let missing = crate::search_human_theorems_by_name(
+            &nat_store,
+            crate::HumanTheoremNameSearchRequest {
+                header: nat_header.clone(),
+                state_id: nat_state_id.clone(),
+                query: "definitely_missing_human_std_theorem".to_owned(),
+                options: crate::HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("missing-name Human theorem search should return an empty set");
+        assert!(missing.results.is_empty());
+        let eq_trans_name = crate::search_human_theorems_by_name(
+            &nat_store,
+            crate::HumanTheoremNameSearchRequest {
+                header: nat_header,
+                state_id: nat_state_id,
+                query: "Eq.trans".to_owned(),
+                options: crate::HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("Eq.trans name search should run over real stdlib");
+        assert!(eq_trans_name.results.iter().any(|result| {
+            result.name == Name::from_dotted("Eq.trans")
+                && result.module == Name::from_dotted("Std.Logic")
+        }));
+
+        let (mut list_store, list_header, list_state_id, list_goal_id) =
+            phase6_human_real_stdlib_session(
+                &fixture,
+                "Api.HumanRealStdlibListSearch",
+                "Api.HumanRealStdlibListSearch.target",
+                "\
+import Std.Logic
+import Std.Nat
+import Std.List
+theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{1} A xs (List.nil.{1} A)) xs := by
+  simp-lite",
+            );
+        let (list_state_id, list_goal_id) = run_phase6_human_tactics(
+            &mut list_store,
+            &list_header,
+            list_state_id,
+            list_goal_id,
+            &["intro A", "intro xs"],
+        );
+        let list_search = crate::search_human_theorems_for_goal(
+            &list_store,
+            crate::HumanTheoremGoalSearchRequest {
+                header: list_header,
+                state_id: list_state_id,
+                goal_id: list_goal_id,
+                modes: vec![
+                    crate::HumanTheoremSearchMode::Rw,
+                    crate::HumanTheoremSearchMode::Simp,
+                ],
+                options: crate::HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("List.append_nil goal search should run over real stdlib");
+        assert!(list_search.results.iter().any(|result| {
+            result.name == Name::from_dotted("List.append_nil")
+                && result.module == Name::from_dotted("Std.List")
+                && result.mode == crate::HumanTheoremSearchMode::Rw
+                && result.suggested_tactic == "rw [List.append_nil]"
+        }));
     }
 
     #[test]

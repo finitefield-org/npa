@@ -577,16 +577,16 @@ P6H-10
 
 実装タスク:
 
-- [ ] `intro` / `exact` / `apply` / `rw` / `simp-lite` / `induction` の regression を real standard-library certificates 上で追加する。
-- [ ] `Nat.zero_add`、`List.append_nil`、`Eq.trans` を Phase 4 tactic だけで再証明する tests を追加する。
-- [ ] failed rewrite、loop-prone simp rule、missing theorem search result の negative tests を追加する。
-- [ ] Human by proof examples が Machine Surface fixture hash を変えないことを確認する。
+- [x] `intro` / `exact` / `apply` / `rw` / `simp-lite` / `induction` の regression を real standard-library certificates 上で追加する。
+- [x] `Nat.zero_add`、`List.append_nil`、`Eq.trans` を Phase 4 tactic だけで再証明する tests を追加する。
+- [x] failed rewrite、loop-prone simp rule、missing theorem search result の negative tests を追加する。
+- [x] Human by proof examples が Machine Surface fixture hash を変えないことを確認する。
 
 受け入れ条件:
 
-- [ ] `simp-lite` が Nat/List の基本ゴールを閉じる。
-- [ ] `rw [Nat.add_zero]` と `rw [List.append_nil]` が real stdlib theorem を使って動く。
-- [ ] unresolved goal、sorry 相当、未許可 axiom を含む theorem は certificate 化されない。
+- [x] `simp-lite` が Nat/List の基本ゴールを閉じる。
+- [x] `rw [Nat.add_zero]` と `rw [List.append_nil]` が real stdlib theorem を使って動く。
+- [x] unresolved goal、sorry 相当、未許可 axiom を含む theorem は certificate 化されない。
 
 検証:
 

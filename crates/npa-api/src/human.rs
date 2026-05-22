@@ -5618,8 +5618,9 @@ fn human_document_source_prefix_slice(
 }
 
 fn human_encode_human_api_options(out: &mut Vec<u8>, options: &HumanApiCompileOptions) {
-    human_encode_string(out, "npa.human-api.compile-options.v1");
+    human_encode_string(out, "npa.human-api.compile-options.v2");
     human_encode_uvar(out, options.max_notation_candidates as u64);
+    human_encode_string(out, options.kernel_profile.as_str());
     let tactic = &options.tactic_options;
     human_encode_list_len(out, tactic.simp_rules.len());
     for rule in &tactic.simp_rules {
@@ -5954,16 +5955,19 @@ fn start_human_proof_from_prepared(
         .cloned()
         .enumerate()
     {
-        let checked = npa_tactic::check_current_decl_for_machine_tactic_from_verified_imports(
-            &machine_tactic_imports,
-            &checked_current_decls,
-            source_index as u64,
-            decl,
-        )?;
+        let checked =
+            npa_tactic::check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_profile(
+                options.kernel_profile,
+                &machine_tactic_imports,
+                &checked_current_decls,
+                source_index as u64,
+                decl,
+            )?;
         checked_current_decls.push(checked);
     }
 
-    let state = npa_tactic::start_machine_proof(
+    let state = npa_tactic::start_machine_proof_with_kernel_profile(
+        options.kernel_profile,
         npa_tactic::MachineProofSpec {
             module: prepared.proof.module,
             theorem_name: prepared.proof.theorem_name,
@@ -7074,6 +7078,8 @@ fn human_apply_resolve(
         args
     } else if universe_params.is_empty() {
         Vec::new()
+    } else if let Some(args) = human_infer_universe_args_from_eq_goal(goal, universe_params.len()) {
+        args
     } else {
         return Err(human_apply_unsupported_diagnostic(
             *span,
@@ -7204,6 +7210,9 @@ fn human_rewrite_resolve_rule(
         args
     } else if universe_params.is_empty() {
         Vec::new()
+    } else if let Some(args) = human_infer_universe_args_from_eq_goal(&goal, universe_params.len())
+    {
+        args
     } else {
         return Err(human_rewrite_unsupported_diagnostic(
             *span,
@@ -7232,6 +7241,20 @@ fn human_rewrite_resolve_rule(
         head_type,
         span: *span,
     })
+}
+
+fn human_infer_universe_args_from_eq_goal(
+    goal: &npa_tactic::MachineGoal,
+    universe_param_count: usize,
+) -> Option<Vec<Level>> {
+    if universe_param_count != 1 {
+        return None;
+    }
+    let (head, _) = npa_kernel::expr::collect_apps(&goal.target);
+    match head {
+        Expr::Const { name, levels } if name == "Eq" && levels.len() == 1 => Some(levels),
+        _ => None,
+    }
 }
 
 fn human_rewrite_args_for_type(

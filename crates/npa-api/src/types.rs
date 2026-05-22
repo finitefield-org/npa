@@ -37,6 +37,7 @@ pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-non
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanApiCompileOptions {
     pub max_notation_candidates: usize,
+    pub kernel_profile: npa_tactic::MachineKernelProfile,
     pub tactic_options: npa_tactic::MachineTacticOptions,
 }
 
@@ -45,6 +46,7 @@ impl Default for HumanApiCompileOptions {
         let frontend = HumanCompileOptions::default();
         Self {
             max_notation_candidates: frontend.max_notation_candidates,
+            kernel_profile: npa_tactic::MachineKernelProfile::BuiltinNatEqRec,
             tactic_options: npa_tactic::MachineTacticOptions::default(),
         }
     }
