@@ -35,6 +35,15 @@ pub struct MachineExprView {
     pub pretty: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CoreExprMetadata {
+    pub core_hash: Hash,
+    pub head: Option<Name>,
+    pub constants: Vec<Name>,
+    pub free_locals: Vec<LocalId>,
+    pub size: u32,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LocalId(pub u32);
 
@@ -405,6 +414,21 @@ pub fn render_machine_expr_view(
         size: expr_size(expr)?,
         machine: rendered.source,
         pretty: None,
+    })
+}
+
+pub fn core_expr_metadata(
+    expr: &Expr,
+    base_context_len: usize,
+) -> Result<CoreExprMetadata, MachineExprRendererError> {
+    let mut constants = BTreeSet::new();
+    collect_constant_names(expr, &mut constants);
+    Ok(CoreExprMetadata {
+        core_hash: hash_core_expr(expr),
+        head: syntactic_head_name(expr),
+        constants: constants.into_iter().collect(),
+        free_locals: free_locals(expr, base_context_len)?,
+        size: expr_size(expr)?,
     })
 }
 
@@ -1621,6 +1645,17 @@ fn syntactic_head(expr: &Expr) -> Option<&str> {
     }
 }
 
+fn syntactic_head_name(expr: &Expr) -> Option<Name> {
+    let mut current = expr;
+    while let Expr::App(func, _) = current {
+        current = func;
+    }
+    match current {
+        Expr::Const { name, .. } => Some(Name::from_dotted(name)),
+        _ => None,
+    }
+}
+
 fn resolve_global_name<'a>(
     name: &str,
     context: &'a MachineExprRendererContext<'_>,
@@ -1683,6 +1718,30 @@ fn collect_constants(
         }
     }
     Ok(())
+}
+
+fn collect_constant_names(expr: &Expr, out: &mut BTreeSet<Name>) {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => {}
+        Expr::Const { name, .. } => {
+            out.insert(Name::from_dotted(name));
+        }
+        Expr::App(func, arg) => {
+            collect_constant_names(func, out);
+            collect_constant_names(arg, out);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_constant_names(ty, out);
+            collect_constant_names(body, out);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_constant_names(ty, out);
+            collect_constant_names(value, out);
+            collect_constant_names(body, out);
+        }
+    }
 }
 
 fn free_locals(

@@ -14,7 +14,9 @@ use npa_tactic::{
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
 use crate::projection::{MachineImportCertificateContext, VerifiedImportKey};
-use crate::renderer::{LocalId, MachineDisplayRenderScope, MachineExprView};
+use crate::renderer::{
+    LocalId, MachineDisplayRenderScope, MachineExprRendererError, MachineExprView,
+};
 use crate::snapshot::MachineSnapshotStore;
 use crate::validation::{
     parse_strict_u64_token, JsonPath, MachineApiErrorKind, MachineApiRequestError,
@@ -581,6 +583,60 @@ pub struct HumanTacticStateRecordOk {
     pub messages: Vec<HumanDiagnostic>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StructuredProofState {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub document_version: HumanDocumentVersion,
+    pub source_span: Option<Span>,
+    pub selected_goal: Option<HumanGoalId>,
+    pub goals: Vec<StructuredGoal>,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StructuredGoal {
+    pub goal_id: HumanGoalId,
+    pub machine_goal_id: GoalId,
+    pub meta_id: MetaVarId,
+    pub name: Option<String>,
+    pub context_hash: Hash,
+    pub context: Vec<StructuredHypothesis>,
+    pub target: StructuredExpr,
+    pub target_core_hash: Hash,
+    pub source_span: Option<Span>,
+    pub status: StructuredGoalStatus,
+    pub pretty: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StructuredHypothesis {
+    pub local_id: LocalId,
+    pub name: String,
+    pub ty: StructuredExpr,
+    pub value: Option<StructuredExpr>,
+    pub is_local_def: bool,
+    pub is_implicit: bool,
+    pub depends_on: Vec<LocalId>,
+    pub binder_index: u32,
+    pub pretty: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StructuredExpr {
+    pub core_hash: Hash,
+    pub head: Option<Name>,
+    pub constants: Vec<Name>,
+    pub free_locals: Vec<LocalId>,
+    pub size: u32,
+    pub pretty: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum StructuredGoalStatus {
+    Open,
+}
+
 #[derive(Clone, Debug)]
 pub struct HumanStartProofRequest<'src, 'imports> {
     pub current_module: ModuleName,
@@ -770,6 +826,33 @@ pub enum HumanTacticStateRecordError {
         parent_state_id: HumanStateId,
     },
     IdSpaceExhausted,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanStructuredProofStateError {
+    UnknownSession {
+        session_id: HumanSessionId,
+    },
+    UnknownState {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+    },
+    MissingGoalMapping {
+        state_id: HumanStateId,
+        machine_goal_id: GoalId,
+    },
+    MachineGoal {
+        state_id: HumanStateId,
+        machine_goal_id: GoalId,
+        diagnostic: Box<MachineTacticDiagnostic>,
+    },
+    ExpressionMetadata {
+        state_id: HumanStateId,
+        error: Box<MachineExprRendererError>,
+    },
+    LocalIndexExhausted {
+        state_id: HumanStateId,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

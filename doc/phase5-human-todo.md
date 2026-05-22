@@ -365,10 +365,10 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `StructuredProofState`、`StructuredGoal`、`StructuredHypothesis`、`StructuredExpr` を追加する。
-- [ ] Machine goal context から local id、name、type、optional value、implicit flag、dependency list を作る。
-- [ ] target / hypothesis type から `core_hash`、head symbol、constants、free locals、size を計算する。
-- [ ] `pretty` は表示 field とし、identity / cache / verification の根拠にしない。
+- [x] `StructuredProofState`、`StructuredGoal`、`StructuredHypothesis`、`StructuredExpr` を追加する。
+- [x] Machine goal context から local id、name、type、optional value、implicit flag、dependency list を作る。
+- [x] target / hypothesis type から `core_hash`、head symbol、constants、free locals、size を計算する。
+- [x] `pretty` は表示 field とし、identity / cache / verification の根拠にしない。
 
 依存:
 
@@ -393,9 +393,9 @@ crates/npa-api/src/renderer.rs
 
 Acceptance criteria:
 
-- [ ] `theorem t (n : Nat) : n = n := by _` の open goal が context `n : Nat` と target `n = n` を持つ。
-- [ ] `core_hash` は pretty text 変更では変わらず、core expr 変更で変わる。
-- [ ] local dependency order は deterministic で、HashMap iteration order に依存しない。
+- [x] `theorem t (n : Nat) : n = n := by _` の open goal が context `n : Nat` と target `n = n` を持つ。
+- [x] `core_hash` は pretty text 変更では変わらず、core expr 変更で変わる。
+- [x] local dependency order は deterministic で、HashMap iteration order に依存しない。
 
 Verification:
 
@@ -406,7 +406,7 @@ cargo test -p npa-api renderer
 
 AI 速度ガード:
 
-- [ ] `MachineGoalView` canonical bytes を変更しない。
+- [x] `MachineGoalView` canonical bytes を変更しない。
 
 ---
 

@@ -1,5 +1,6 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
+use crate::renderer::core_expr_metadata;
 use crate::types::HumanProofStateStoreMutationError;
 use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
@@ -14,10 +15,12 @@ use crate::{
     HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
     HumanSessionCreateRequest, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
     HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
-    HumanStateRequestError, HumanStateRequestHeader, HumanTacticScriptError,
-    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
-    HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticTermCheckOk,
-    HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanStateRequestError, HumanStateRequestHeader, HumanStructuredProofStateError,
+    HumanTacticScriptError, HumanTacticScriptRunOk, HumanTacticScriptRunRequest,
+    HumanTacticStateRecordError, HumanTacticStateRecordOk, HumanTacticStateRecordRequest,
+    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError, LocalId,
+    StructuredExpr, StructuredGoal, StructuredGoalStatus, StructuredHypothesis,
+    StructuredProofState,
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
@@ -265,6 +268,177 @@ pub fn get_human_proof_state<'session>(
     store
         .session(session_id)
         .and_then(|session| session.proof_states.state(state_id))
+}
+
+pub fn materialize_human_proof_state(
+    store: &HumanProofSessionStore,
+    session_id: &crate::HumanSessionId,
+    state_id: &crate::HumanStateId,
+) -> Result<StructuredProofState, HumanStructuredProofStateError> {
+    let session = store.session(session_id).ok_or_else(|| {
+        HumanStructuredProofStateError::UnknownSession {
+            session_id: session_id.clone(),
+        }
+    })?;
+    let entry = session.proof_states.state(state_id).ok_or_else(|| {
+        HumanStructuredProofStateError::UnknownState {
+            session_id: session_id.clone(),
+            state_id: state_id.clone(),
+        }
+    })?;
+    let mut goals = Vec::with_capacity(entry.state.open_goals.len());
+    for machine_goal_id in &entry.state.open_goals {
+        goals.push(materialize_human_structured_goal(entry, *machine_goal_id)?);
+    }
+
+    Ok(StructuredProofState {
+        session_id: session_id.clone(),
+        state_id: entry.state_id.clone(),
+        document_version: entry.document_version,
+        source_span: entry.source_span,
+        selected_goal: entry.selected_goal.clone(),
+        goals,
+        messages: entry.messages.clone(),
+    })
+}
+
+fn materialize_human_structured_goal(
+    entry: &HumanProofStateEntry,
+    machine_goal_id: npa_tactic::GoalId,
+) -> Result<StructuredGoal, HumanStructuredProofStateError> {
+    let human_goal_id = entry
+        .human_goal_for_machine_goal(machine_goal_id)
+        .cloned()
+        .ok_or_else(|| HumanStructuredProofStateError::MissingGoalMapping {
+            state_id: entry.state_id.clone(),
+            machine_goal_id,
+        })?;
+    let goal = entry.state.goal(machine_goal_id).map_err(|diagnostic| {
+        HumanStructuredProofStateError::MachineGoal {
+            state_id: entry.state_id.clone(),
+            machine_goal_id,
+            diagnostic: Box::new(diagnostic),
+        }
+    })?;
+
+    let mut local_names = Vec::with_capacity(goal.context.len());
+    let mut context = Vec::with_capacity(goal.context.len());
+    for (index, local) in goal.context.iter().enumerate() {
+        let hypothesis =
+            materialize_human_structured_hypothesis(entry, index, local, &local_names)?;
+        local_names.push(local.name.clone());
+        context.push(hypothesis);
+    }
+    let target = materialize_human_structured_expr(entry, &goal.target, &local_names)?;
+    let target_core_hash = target.core_hash;
+    let pretty = human_structured_goal_pretty(&context, &target);
+
+    Ok(StructuredGoal {
+        goal_id: human_goal_id,
+        machine_goal_id: goal.id,
+        meta_id: goal.meta_id,
+        name: Some(format!("?g{}", goal.id.0)),
+        context_hash: goal.context_hash,
+        context,
+        target,
+        target_core_hash,
+        source_span: entry.source_span,
+        status: StructuredGoalStatus::Open,
+        pretty,
+    })
+}
+
+fn materialize_human_structured_hypothesis(
+    entry: &HumanProofStateEntry,
+    index: usize,
+    local: &npa_tactic::MachineLocalDecl,
+    local_names: &[String],
+) -> Result<StructuredHypothesis, HumanStructuredProofStateError> {
+    let local_id = LocalId(u32::try_from(index).map_err(|_| {
+        HumanStructuredProofStateError::LocalIndexExhausted {
+            state_id: entry.state_id.clone(),
+        }
+    })?);
+    let ty = materialize_human_structured_expr(entry, &local.ty, local_names)?;
+    let value = local
+        .value
+        .as_ref()
+        .map(|value| materialize_human_structured_expr(entry, value, local_names))
+        .transpose()?;
+    let depends_on = human_structured_hypothesis_dependencies(&ty, value.as_ref());
+    let binder_index =
+        u32::try_from(index).map_err(|_| HumanStructuredProofStateError::LocalIndexExhausted {
+            state_id: entry.state_id.clone(),
+        })?;
+    let pretty = human_structured_hypothesis_pretty(&local.name, &ty, value.as_ref());
+
+    Ok(StructuredHypothesis {
+        local_id,
+        name: local.name.clone(),
+        ty,
+        value,
+        is_local_def: local.value.is_some(),
+        is_implicit: false,
+        depends_on,
+        binder_index,
+        pretty,
+    })
+}
+
+fn materialize_human_structured_expr(
+    entry: &HumanProofStateEntry,
+    expr: &Expr,
+    local_names: &[String],
+) -> Result<StructuredExpr, HumanStructuredProofStateError> {
+    let metadata = core_expr_metadata(expr, local_names.len()).map_err(|error| {
+        HumanStructuredProofStateError::ExpressionMetadata {
+            state_id: entry.state_id.clone(),
+            error: Box::new(error),
+        }
+    })?;
+    Ok(StructuredExpr {
+        core_hash: metadata.core_hash,
+        head: metadata.head,
+        constants: metadata.constants,
+        free_locals: metadata.free_locals,
+        size: metadata.size,
+        pretty: human_structured_expr_pretty(expr, local_names),
+    })
+}
+
+fn human_structured_hypothesis_dependencies(
+    ty: &StructuredExpr,
+    value: Option<&StructuredExpr>,
+) -> Vec<LocalId> {
+    let mut dependencies = BTreeSet::new();
+    dependencies.extend(ty.free_locals.iter().copied());
+    if let Some(value) = value {
+        dependencies.extend(value.free_locals.iter().copied());
+    }
+    dependencies.into_iter().collect()
+}
+
+fn human_structured_hypothesis_pretty(
+    name: &str,
+    ty: &StructuredExpr,
+    value: Option<&StructuredExpr>,
+) -> String {
+    match value {
+        Some(value) => format!("{name} : {} := {}", ty.pretty, value.pretty),
+        None => format!("{name} : {}", ty.pretty),
+    }
+}
+
+fn human_structured_goal_pretty(
+    context: &[StructuredHypothesis],
+    target: &StructuredExpr,
+) -> String {
+    let mut lines = context
+        .iter()
+        .map(|hypothesis| hypothesis.pretty.clone())
+        .collect::<Vec<_>>();
+    lines.push(format!("|- {}", target.pretty));
+    lines.join("\n")
 }
 
 fn human_proof_state_start_error(
@@ -771,6 +945,39 @@ fn human_tactic_goal_display(
 fn human_render_core_expr(expr: &Expr, local_names: &[String]) -> String {
     let mut names = local_names.to_vec();
     human_render_core_expr_with_names(expr, &mut names, 0)
+}
+
+fn human_structured_expr_pretty(expr: &Expr, local_names: &[String]) -> String {
+    if let Some((lhs, rhs)) = human_eq_app_sides(expr) {
+        return format!(
+            "{} = {}",
+            human_render_core_expr(lhs, local_names),
+            human_render_core_expr(rhs, local_names)
+        );
+    }
+    human_render_core_expr(expr, local_names)
+}
+
+fn human_eq_app_sides(expr: &Expr) -> Option<(&Expr, &Expr)> {
+    let (head, args) = human_app_head_and_args(expr);
+    let Expr::Const { name, .. } = head else {
+        return None;
+    };
+    if name != "Eq" || args.len() != 3 {
+        return None;
+    }
+    Some((args[1], args[2]))
+}
+
+fn human_app_head_and_args(expr: &Expr) -> (&Expr, Vec<&Expr>) {
+    let mut args = Vec::new();
+    let mut head = expr;
+    while let Expr::App(func, arg) = head {
+        args.push(arg.as_ref());
+        head = func.as_ref();
+    }
+    args.reverse();
+    (head, args)
 }
 
 fn human_render_core_expr_with_names(
@@ -3067,6 +3274,232 @@ theorem target : forall (P : Prop), forall (hp : P), P := by simp-lite";
                 .state_count(),
             2
         );
+    }
+
+    #[test]
+    fn human_structured_goal_materializes_context_target_and_metadata() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem target (n : Nat) : Eq.{1} n n := by simp-lite";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.StructuredGoal"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(23),
+                    source,
+                },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.StructuredGoal.target"),
+                source_span: Some(npa_frontend::Span::new(npa_frontend::FileId(23), 38, 93)),
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+        let parent = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("initial state should be stored")
+            .state
+            .clone();
+        let intro = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &parent,
+            goal_id: npa_tactic::GoalId(0),
+            name: &human_name("n", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro should expose the Nat local");
+        let recorded = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: intro.state.open_goals.first().copied(),
+                state: intro.state,
+                source_span: Some(npa_frontend::Span::new(npa_frontend::FileId(23), 83, 93)),
+                messages: Vec::new(),
+            },
+        )
+        .expect("introduced state should be recorded");
+
+        let structured =
+            materialize_human_proof_state(&store, &created.session_id, &recorded.state_id)
+                .expect("Human state should materialize as structured goals");
+
+        assert_eq!(structured.state_id, recorded.state_id);
+        assert_eq!(structured.document_version, created.document_version);
+        assert_eq!(structured.selected_goal, recorded.selected_goal);
+        assert_eq!(structured.goals.len(), 1);
+        let goal = &structured.goals[0];
+        assert_eq!(goal.goal_id, recorded.selected_goal.clone().unwrap());
+        assert_eq!(goal.machine_goal_id, npa_tactic::GoalId(1));
+        assert_eq!(goal.status, crate::StructuredGoalStatus::Open);
+        assert_eq!(goal.context.len(), 1);
+        let local = &goal.context[0];
+        assert_eq!(local.local_id, crate::LocalId(0));
+        assert_eq!(local.name, "n");
+        assert_eq!(local.ty.pretty, "Nat");
+        assert_eq!(
+            local.ty.head.as_ref().map(npa_cert::Name::as_dotted),
+            Some("Nat".to_owned())
+        );
+        assert_eq!(local.ty.constants, vec![npa_cert::Name::from_dotted("Nat")]);
+        assert!(local.ty.free_locals.is_empty());
+        assert!(local.depends_on.is_empty());
+        assert!(!local.is_local_def);
+        assert!(!local.is_implicit);
+        assert_eq!(goal.target.pretty, "n = n");
+        assert_eq!(
+            goal.target.head.as_ref().map(npa_cert::Name::as_dotted),
+            Some("Eq".to_owned())
+        );
+        assert_eq!(
+            goal.target.constants,
+            vec![
+                npa_cert::Name::from_dotted("Eq"),
+                npa_cert::Name::from_dotted("Nat")
+            ]
+        );
+        assert_eq!(goal.target.free_locals, vec![crate::LocalId(0)]);
+        assert_eq!(goal.target_core_hash, goal.target.core_hash);
+        assert!(goal.pretty.contains("n : Nat"));
+        assert!(goal.pretty.contains("|- n = n"));
+
+        let mut pretty_changed = goal.target.clone();
+        let original_hash = pretty_changed.core_hash;
+        pretty_changed.pretty = "display-only change".to_owned();
+        assert_eq!(pretty_changed.core_hash, original_hash);
+        assert_ne!(goal.target.core_hash, local.ty.core_hash);
+    }
+
+    #[test]
+    fn human_structured_goal_dependency_order_is_deterministic() {
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![eq];
+        let imported_source_interfaces = vec![eq_interface];
+        let source = "\
+import Std.Logic.Eq
+theorem target : forall (A : Type), forall (x : A), forall (h : Eq.{1} x x), Prop := by simp-lite";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.StructuredDeps"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(24),
+                    source,
+                },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.StructuredDeps.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+
+        let initial_state = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("initial state should be stored")
+            .state
+            .clone();
+        let intro_a = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &initial_state,
+            goal_id: npa_tactic::GoalId(0),
+            name: &human_name("A", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro A should succeed");
+        let state_a = intro_a.state.clone();
+        let recorded_a = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: state_a.open_goals.first().copied(),
+                state: intro_a.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("A state should be recorded");
+        let intro_x = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &state_a,
+            goal_id: state_a.open_goals[0],
+            name: &human_name("x", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro x should succeed");
+        let state_x = intro_x.state.clone();
+        let recorded_x = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: recorded_a.state_id.clone(),
+                selected_goal: state_x.open_goals.first().copied(),
+                state: intro_x.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("x state should be recorded");
+        let intro_h = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &state_x,
+            goal_id: state_x.open_goals[0],
+            name: &human_name("h", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro h should succeed");
+        let state_h = intro_h.state.clone();
+        let recorded_h = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: recorded_x.state_id.clone(),
+                selected_goal: state_h.open_goals.first().copied(),
+                state: intro_h.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("h state should be recorded");
+
+        let first =
+            materialize_human_proof_state(&store, &created.session_id, &recorded_h.state_id)
+                .expect("Human state should materialize");
+        let second =
+            materialize_human_proof_state(&store, &created.session_id, &recorded_h.state_id)
+                .expect("Human state should rematerialize deterministically");
+        assert_eq!(first, second);
+        let goal = &first.goals[0];
+        assert_eq!(goal.context.len(), 3);
+        let h = &goal.context[2];
+        assert_eq!(h.name, "h");
+        assert_eq!(h.ty.pretty, "x = x");
+        assert_eq!(h.ty.free_locals, vec![crate::LocalId(0), crate::LocalId(1)]);
+        assert_eq!(h.depends_on, vec![crate::LocalId(0), crate::LocalId(1)]);
     }
 
     #[test]
