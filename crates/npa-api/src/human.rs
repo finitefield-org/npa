@@ -3639,6 +3639,7 @@ pub fn search_human_theorems_for_goal(
         header: &request.header,
         state_id: &request.state_id,
         goal_id: &request.goal_id,
+        state: &entry.state,
         goal: &goal,
         options: &request.options,
     };
@@ -4088,6 +4089,7 @@ struct HumanGoalSearchContext<'a> {
     header: &'a HumanStateRequestHeader,
     state_id: &'a crate::HumanStateId,
     goal_id: &'a crate::HumanGoalId,
+    state: &'a npa_tactic::MachineProofState,
     goal: &'a npa_tactic::MachineGoal,
     options: &'a HumanTheoremSearchOptions,
 }
@@ -4107,7 +4109,12 @@ fn human_push_goal_search_results(
             }
             vec![format!("rw [{}]", theorem.name.as_dotted())]
         }
-        HumanTheoremSearchMode::Simp => vec!["simp-lite".to_owned()],
+        HumanTheoremSearchMode::Simp => {
+            if !human_theorem_has_simp_rule(context.state, theorem) {
+                return;
+            }
+            vec!["simp-lite".to_owned()]
+        }
         HumanTheoremSearchMode::Name | HumanTheoremSearchMode::ByType => return,
     };
 
@@ -4389,6 +4396,15 @@ fn human_theorem_relevant_to_goal(
 fn human_theorem_has_eq_conclusion(theorem: &HumanTheoremIndexEntry) -> bool {
     let (_, conclusion) = human_theorem_conclusion(&theorem.statement_core);
     human_eq_app_sides(conclusion).is_some()
+}
+
+fn human_theorem_has_simp_rule(
+    state: &npa_tactic::MachineProofState,
+    theorem: &HumanTheoremIndexEntry,
+) -> bool {
+    state.env.simp_registry.rules.iter().any(|rule| {
+        rule.key.name == theorem.name && rule.key.decl_interface_hash == theorem.decl_interface_hash
+    })
 }
 
 fn human_expr_head_name(expr: &Expr) -> Option<Name> {
@@ -10680,6 +10696,64 @@ theorem later : P := hp";
         );
         assert_eq!(rw_run.status, HumanTacticRunStatus::Partial);
         assert!(rw_run.error.is_none());
+    }
+
+    #[test]
+    fn human_search_simp_mode_requires_registered_simp_rule() {
+        let (store, header, state_id, goal_id) = human_eq_refl_goal_fixture();
+
+        let simp = search_human_theorems_for_goal(
+            &store,
+            HumanTheoremGoalSearchRequest {
+                header,
+                state_id,
+                goal_id,
+                modes: vec![HumanTheoremSearchMode::Simp],
+                options: HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("simp theorem search should run");
+
+        assert!(
+            simp.results.is_empty(),
+            "builtin reflexivity simp-lite success must not be attributed to unrelated theorem entries"
+        );
+    }
+
+    #[test]
+    fn human_search_simp_mode_recognizes_registered_simp_rule_entry() {
+        let verified = verified_axiom_simp_close_module();
+        let import = npa_tactic::VerifiedImportRef::from_verified_module(&verified)
+            .expect("simp close module should become a tactic import");
+        let rule_hash = export_interface_hash(&import, "Lib.succ_zero");
+        let state = npa_tactic::start_machine_proof(
+            human_simp_machine_spec(eq_nat(nat_succ(nat_zero()), nat_zero())),
+            vec![import],
+            Vec::new(),
+            npa_tactic::MachineTacticOptions {
+                simp_rules: vec![npa_tactic::SimpRuleRef {
+                    name: npa_cert::Name::from_dotted("Lib.succ_zero"),
+                    decl_interface_hash: rule_hash,
+                    direction: npa_tactic::RewriteDirection::Forward,
+                }],
+                ..npa_tactic::MachineTacticOptions::default()
+            },
+        )
+        .expect("Machine proof with registered simp rule should start");
+        let index = build_human_theorem_index(&state).expect("Human theorem index should build");
+        let registered_rule = index
+            .entries
+            .iter()
+            .find(|entry| entry.name == npa_cert::Name::from_dotted("Lib.succ_zero"))
+            .expect("registered simp theorem should be indexed");
+        let axiom = index
+            .entries
+            .iter()
+            .find(|entry| entry.name == npa_cert::Name::from_dotted("Lib.succ_zero_axiom"))
+            .expect("supporting axiom should be indexed");
+
+        assert!(human_theorem_has_simp_rule(&state, registered_rule));
+        assert!(!human_theorem_has_simp_rule(&state, axiom));
     }
 
     #[test]
