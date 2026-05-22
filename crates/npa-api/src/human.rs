@@ -8979,6 +8979,293 @@ theorem target (n : Nat) : Eq.{1} n n := by simp-lite",
     }
 
     #[test]
+    fn phase5_human_end_to_end_session_create_lookup_tactic_search_display_verify() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+infix:50 \" = \" => Eq
+theorem t (n : Nat) : n = n := by exact Eq.refl n";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanEndToEnd"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(65),
+                    source,
+                },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human e2e session should be created");
+        assert!(created.messages.is_empty());
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanEndToEnd.t"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human e2e proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+
+        let initial = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header: header.clone(),
+                state_id: started.state_id.clone(),
+            },
+        )
+        .expect("initial Human state lookup should work");
+        assert_eq!(initial.state.goals.len(), 1);
+        assert_eq!(initial.state.selected_goal, started.selected_goal);
+
+        let intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "intro n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro.status, HumanTacticRunStatus::Partial);
+        assert!(intro.error.is_none());
+        let body_state_id = intro.new_state_id.expect("intro should record body state");
+        let body_goal_id = intro.selected_goal.expect("intro should select body goal");
+        let body = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header: header.clone(),
+                state_id: body_state_id.clone(),
+            },
+        )
+        .expect("body Human state lookup should work");
+        assert_eq!(body.state.goals.len(), 1);
+        assert_eq!(body.state.goals[0].goal_id, body_goal_id);
+        assert_eq!(body.state.goals[0].target.pretty, "n = n");
+
+        let search = search_human_theorems_for_goal(
+            &store,
+            HumanTheoremGoalSearchRequest {
+                header: header.clone(),
+                state_id: body_state_id.clone(),
+                goal_id: body_goal_id.clone(),
+                modes: vec![HumanTheoremSearchMode::Exact],
+                options: HumanTheoremSearchOptions {
+                    limit: 10,
+                    axiom_policy: HumanTheoremSearchAxiomPolicy::Allow,
+                },
+            },
+        )
+        .expect("Human e2e theorem search should work");
+        assert!(search
+            .results
+            .iter()
+            .any(|result| result.suggested_tactic == "exact Eq.refl n"));
+
+        let display = display_human_goal(
+            &store,
+            HumanDisplayGoalRequest {
+                header: header.clone(),
+                state_id: body_state_id.clone(),
+                goal_id: body_goal_id.clone(),
+                mode: HumanDisplayMode::Pretty,
+                context_options: HumanDisplayContextOptions::default(),
+            },
+        )
+        .expect("Human e2e goal display should work");
+        assert!(display.text.contains("n : Nat"));
+        assert!(display.text.contains("|- n = n"));
+
+        let exact = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: body_state_id,
+                goal_id: body_goal_id,
+                tactic: "exact Eq.refl n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(exact.status, HumanTacticRunStatus::Closed);
+        assert!(exact.error.is_none());
+        let closed_state_id = exact
+            .new_state_id
+            .expect("exact should record closed proof state");
+
+        let verified = verify_human_session(
+            &store,
+            HumanSessionVerifyRequest {
+                header,
+                state_id: closed_state_id,
+            },
+        )
+        .expect("closed Human e2e state should verify");
+        assert_eq!(verified.status, HumanSessionVerifyStatus::Verified);
+        assert_eq!(
+            verified.theorem_name,
+            npa_cert::Name::from_dotted("Api.HumanEndToEnd.t")
+        );
+        assert!(verified.axioms_used.is_empty());
+        assert!(!verified.contains_sorry);
+    }
+
+    #[test]
+    fn phase5_human_end_to_end_type_mismatch_returns_structured_diagnostic() {
+        let source = "\
+theorem id (A : Type) (x : A) : A := by exact x";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanMismatch"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(66),
+                    source,
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human mismatch session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanMismatch.id"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human mismatch proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id,
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+        let intro_a = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "intro A".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro_a.status, HumanTacticRunStatus::Partial);
+        let intro_x = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: intro_a.new_state_id.expect("intro A should record state"),
+                goal_id: intro_a.selected_goal.expect("intro A should select goal"),
+                tactic: "intro x".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro_x.status, HumanTacticRunStatus::Partial);
+        let body_state_id = intro_x
+            .new_state_id
+            .clone()
+            .expect("intro x should record state");
+        let body_goal_id = intro_x
+            .selected_goal
+            .clone()
+            .expect("intro x should select body goal");
+
+        let bad_exact = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: body_state_id.clone(),
+                goal_id: body_goal_id.clone(),
+                tactic: "exact A".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(bad_exact.status, HumanTacticRunStatus::Error);
+        let report = bad_exact
+            .error
+            .as_ref()
+            .expect("bad exact should return structured run error");
+        assert_eq!(report.kind, HumanTacticRunErrorKind::TypeMismatch);
+        let diagnostic = report
+            .diagnostic
+            .as_ref()
+            .expect("bad exact should include a Human diagnostic");
+        assert_eq!(
+            diagnostic.kind,
+            npa_frontend::HumanDiagnosticKind::TypeMismatch
+        );
+        let payload = human_payload(diagnostic);
+        assert_eq!(
+            payload.phase,
+            Some(npa_frontend::HumanDiagnosticPhase::TacticValidation)
+        );
+        assert_eq!(payload.hole_goals.len(), 1);
+        assert_eq!(
+            payload.hole_goals[0]
+                .context
+                .iter()
+                .map(|local| local.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["A", "x"]
+        );
+        assert_eq!(payload.hole_goals[0].target.as_deref(), Some("A"));
+
+        let body = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header,
+                state_id: body_state_id,
+            },
+        )
+        .expect("failed tactic should leave the source state available");
+        assert_eq!(body.state.goals.len(), 1);
+        assert_eq!(body.state.goals[0].goal_id, body_goal_id);
+        assert_eq!(body.state.goals[0].target.pretty, "A");
+    }
+
+    #[test]
+    fn phase7_machine_api_identity_is_stable_around_phase5_human_integration_fixture() {
+        let mut before = create_machine_session(&phase5_machine_minimal_session_json("Type 0"))
+            .expect("baseline Machine session should be created")
+            .session;
+        let before_identity = phase7_machine_exact_prop_batch_identity(&mut before);
+
+        phase5_human_end_to_end_session_create_lookup_tactic_search_display_verify();
+
+        let mut after = create_machine_session(&phase5_machine_minimal_session_json("Type 0"))
+            .expect("post-Human Machine session should be created")
+            .session;
+        let after_identity = phase7_machine_exact_prop_batch_identity(&mut after);
+
+        assert_eq!(
+            before.initial_snapshot.state_fingerprint,
+            after.initial_snapshot.state_fingerprint
+        );
+        assert_eq!(before_identity, after_identity);
+    }
+
+    #[test]
     fn human_session_stores_explicit_imports_without_machine_session_integration() {
         let producer = compile_human_source_to_certificate(HumanCompileCertificateRequest {
             current_module: npa_cert::Name::from_dotted("Api.SessionLib"),
@@ -13626,6 +13913,106 @@ inductive Nat : Type where
             "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a",
+        )
+    }
+
+    fn phase5_machine_minimal_session_json(theorem_type: &str) -> String {
+        format!(
+            r#"{{
+              "protocol_version":"npa.machine-api.v1",
+              "root":{{
+                "module":"Scratch",
+                "theorem_name":"Scratch.t",
+                "source_index":0,
+                "universe_params":[],
+                "theorem_type":{{"format":"machine_surface_v1","source":"{theorem_type}"}}
+              }},
+              "import_closure":[],
+              "imports":[],
+              "checked_current_decls":[],
+              "options":{{
+                "kernel_check_profile":"npa.kernel.v0.1.builtin-nat-eq-rec",
+                "allow_axioms":[],
+                "tactic_options":{{
+                  "simp_rules":[],
+                  "eq_family":null,
+                  "nat_family":null,
+                  "max_simp_rewrite_steps":100,
+                  "max_open_goals":32,
+                  "max_metas":64
+                }}
+              }}
+            }}"#,
+        )
+    }
+
+    fn phase5_machine_budget_json() -> &'static str {
+        r#"{
+          "max_tactic_steps":100,
+          "max_whnf_steps":10000,
+          "max_conversion_steps":10000,
+          "max_rewrite_steps":100,
+          "max_meta_allocations":8,
+          "max_expr_nodes":20000
+        }"#
+    }
+
+    fn phase7_machine_batch_json(
+        session: &crate::MachineProofSession,
+        state_fingerprint: Hash,
+        candidates: &str,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "candidates":{},
+              "deterministic_budget":{},
+              "batch_policy":{{
+                "max_evaluated_candidates":256,
+                "stop_after_successes":256,
+                "stop_after_failures":256
+              }}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            crate::format_hash_string(&state_fingerprint),
+            candidates,
+            phase5_machine_budget_json(),
+        )
+    }
+
+    fn phase7_machine_exact_prop_batch_identity(
+        session: &mut crate::MachineProofSession,
+    ) -> (Hash, Hash, crate::SnapshotId, Hash) {
+        let request = phase7_machine_batch_json(
+            session,
+            session.initial_snapshot.state_fingerprint,
+            r#"[{"candidate_id":"c0","candidate":{"kind":"exact","term":{"source":"Prop"}}}]"#,
+        );
+        let response = crate::run_machine_tactic_batch_request(&request, session)
+            .expect("Machine batch fixture should run");
+        let crate::MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("Machine batch fixture should return ok response");
+        };
+        assert_eq!(ok.status, crate::MachineApiResponseStatus::Ok);
+        assert_eq!(ok.endpoint_fields.results.len(), 1);
+        let crate::MachineTacticBatchItemResponse::Success {
+            candidate_hash,
+            next_snapshot_id,
+            next_state_fingerprint,
+            ..
+        } = ok.endpoint_fields.results[0]
+        else {
+            panic!("Machine exact Prop candidate should close");
+        };
+        (
+            ok.endpoint_fields.previous_state_fingerprint,
+            candidate_hash,
+            next_snapshot_id,
+            next_state_fingerprint,
         )
     }
 

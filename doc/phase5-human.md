@@ -1599,6 +1599,13 @@ POST /display/context
 13. optional assistant payload
    Human UI 用に structured goal + theorem search + failed tactics をまとめる。
    AI 探索器向けの deterministic payload は `doc/phase5-ai.md` 側で実装する。
+
+14. integration regression
+   session create、state lookup、tactic run、search、display、verify を通す
+   Phase 5 Human end-to-end fixture を固定する。
+   Human IDE integration 後も Phase 7 MVP は `MachineApiClient`、
+   `MachineProofSnapshot`、raw `MachineTacticCandidate`、`/machine/tactics/batch`、
+   `/machine/replay`、`/machine/verify` を required path として使い続ける。
 ```
 
 ---
@@ -1745,6 +1752,10 @@ Phase 5 が完了したと言える条件はこれです。
 - goal display に pretty / explicit / core モードがある
 - unresolved goals がある場合、verify/certificate 化を拒否できる
 - goals が空になった後、kernel check と certificate generation に接続できる
+- Human session create → state lookup → tactic run → theorem search → goal display → verify の
+  end-to-end fixture が通る
+- Human UI / LSP / assistant payload を追加しても Machine `/machine/*` endpoint schema、
+  Phase 7 candidate hash、Machine state identity が変わらない
 ```
 
 ---

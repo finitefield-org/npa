@@ -924,11 +924,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] Phase 5 Human の end-to-end fixture を追加する。
-- [ ] fixture は session create、state lookup、tactic run、search、display、verify を通す。
-- [ ] Human path と Machine path の separation regression を追加する。
-- [ ] README の実装状況を更新する。
-- [ ] `doc/phase5-human.md` と本タスク分解の完了条件を同期する。
+- [x] Phase 5 Human の end-to-end fixture を追加する。
+- [x] fixture は session create、state lookup、tactic run、search、display、verify を通す。
+- [x] Human path と Machine path の separation regression を追加する。
+- [x] README の実装状況を更新する。
+- [x] `doc/phase5-human.md` と本タスク分解の完了条件を同期する。
 
 依存:
 
@@ -968,10 +968,10 @@ doc/phase5-human-todo.md
 
 Acceptance criteria:
 
-- [ ] `theorem t (n : Nat) : n = n := by exact Eq.refl n` を Human session から verify できる。
-- [ ] `theorem id (A : Type) (x : A) : A := by exact x` の type mismatch diagnostic が structured に返る。
-- [ ] Machine API Phase 7 fixtures が Human API 追加前後で同じ candidate / state identity を維持する。
-- [ ] `cargo fmt --all`、targeted tests、workspace tests の実行結果を PR / commit message で報告できる。
+- [x] `theorem t (n : Nat) : n = n := by exact Eq.refl n` を Human session から verify できる。
+- [x] `theorem id (A : Type) (x : A) : A := by exact x` の type mismatch diagnostic が structured に返る。
+- [x] Machine API Phase 7 fixtures が Human API 追加前後で同じ candidate / state identity を維持する。
+- [x] `cargo fmt --all`、targeted tests、workspace tests の実行結果を PR / commit message で報告できる。
 
 Verification:
 
@@ -988,7 +988,7 @@ cargo test -p npa-frontend --lib machine_surface
 
 AI 速度ガード:
 
-- [ ] Human IDE integration 後も Phase 7 MVP は `MachineApiClient`、`MachineProofSnapshot`、
+- [x] Human IDE integration 後も Phase 7 MVP は `MachineApiClient`、`MachineProofSnapshot`、
   raw `MachineTacticCandidate`、`/machine/tactics/batch`、`/machine/replay`、`/machine/verify` を使い続ける。
 
 ---

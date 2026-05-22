@@ -115,6 +115,13 @@ owner-aware MachineExprRenderer v1 / renderer QA substrate、MachineApiDiagnosti
 と、M5 `/machine/snapshots/get`、M6 `/machine/tactics/run`、M7 `/machine/tactics/batch`、
 M8 `/machine/search/for_goal`、M9 `/machine/replay`、M10 `/machine/verify`、
 M11 `/machine/prompt_payload` の library API を含みます。
+Phase 5 Human の IDE/API profile も `crates/npa-api` に実装済みで、Human session、
+structured proof state、transactional `/tactic/run`、theorem search、goal display、
+verify / certificate handoff、document incremental cache、LSP-facing payload、
+optional assistant payload を提供します。Phase 5 Human の統合 fixture は
+session create、state lookup、tactic run、search、display、verify を通し、同時に
+Human path が Phase 7 Machine API の candidate hash / state fingerprint を変えないことを
+regression として固定しています。
 同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
 Phase 9 advanced automation endpoint substrate も実装されています。
 これらの `npa-api` automation / library API は候補生成、検査要求の構成、
