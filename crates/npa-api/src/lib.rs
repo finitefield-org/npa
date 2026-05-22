@@ -21,6 +21,7 @@ mod callable;
 mod current;
 mod diagnostic;
 mod human;
+mod human_ide;
 mod independent_checker;
 mod json;
 mod projection;
@@ -188,6 +189,10 @@ pub use human::{
     human_api_default_compile_options, run_human_apply_tactic, run_human_exact_tactic,
     run_human_induction_tactic, run_human_intro_tactic, run_human_rewrite_tactic,
     run_human_simp_lite_tactic, run_human_tactic_script, start_human_proof,
+};
+pub use human_ide::{
+    human_ide_api_boundary, HumanIdeApiBoundary, HumanIdeMachineFastPathPolicy,
+    HumanIdeMachineSessionPolicy, HUMAN_IDE_API_PROFILE,
 };
 pub use independent_checker::{
     evaluate_required_ai_sidecar_diagnostics, independent_checker_ai_audit_input_policy_hash,

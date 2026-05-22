@@ -214,10 +214,10 @@ cargo test --workspace
 
 実装タスク:
 
-- [ ] `doc/phase5-human.md`、`doc/phase5-ai.md`、`doc/phase7-ai.md` の境界を実装コメントと test 名に反映する。
-- [ ] Human IDE API 用 module の置き場所を固定する。候補は `crates/npa-api/src/human_ide.rs` または `human.rs` 内の Human-only submodule。
-- [ ] Human IDE API が Machine session を暗黙作成しないことを public API コメントに明記する。
-- [ ] `/machine/*` request grammar、`MachineProofSnapshot`、`MachineTacticCandidate` に Human 専用 field を足さない regression を追加する。
+- [x] `doc/phase5-human.md`、`doc/phase5-ai.md`、`doc/phase7-ai.md` の境界を実装コメントと test 名に反映する。
+- [x] Human IDE API 用 module の置き場所を固定する。候補は `crates/npa-api/src/human_ide.rs` または `human.rs` 内の Human-only submodule。
+- [x] Human IDE API が Machine session を暗黙作成しないことを public API コメントに明記する。
+- [x] `/machine/*` request grammar、`MachineProofSnapshot`、`MachineTacticCandidate` に Human 専用 field を足さない regression を追加する。
 
 依存:
 
@@ -245,9 +245,9 @@ doc/phase7-ai.md
 
 Acceptance criteria:
 
-- [ ] Human IDE API の入口が Machine API と別名で export されている。
-- [ ] `run_machine_tactic_request` / `run_machine_tactic_batch_request` は Human parser を呼ばない。
-- [ ] Phase 7 / Phase 9 の tests が Human IDE module を import しなくても通る。
+- [x] Human IDE API の入口が Machine API と別名で export されている。
+- [x] `run_machine_tactic_request` / `run_machine_tactic_batch_request` は Human parser を呼ばない。
+- [x] Phase 7 / Phase 9 の tests が Human IDE module を import しなくても通る。
 
 Verification:
 
@@ -259,7 +259,7 @@ cargo test -p npa-api phase9
 
 AI 速度ガード:
 
-- [ ] Machine `state_fingerprint` / `candidate_hash` / `deterministic_budget_hash` fixtures を変更しない。
+- [x] Machine `state_fingerprint` / `candidate_hash` / `deterministic_budget_hash` fixtures を変更しない。
 
 ---
 
