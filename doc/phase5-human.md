@@ -1401,20 +1401,38 @@ Human UI から補助サービスに渡してよい表示用 payload 例：
   "candidates": [
     {
       "tactic": "simp-lite",
-      "confidence": 0.92
+      "confidence": 92,
+      "reason": "target can likely be simplified to reflexive equality"
     },
     {
       "tactic": "exact Nat.add_zero n",
-      "confidence": 0.88
+      "confidence": 88,
+      "reason": "nearby theorem matches the current goal"
     }
   ]
 }
 ```
 
-Human UI では、この出力を `/tactic/run` に渡して、通ったものだけ候補として採用できます。
+assistant output の候補 1 件は Human tactic string、confidence、reason だけで構成します。
+この confidence / reason は UI ranking と説明用の任意 metadata であり、certificate、
+replay plan、Machine tactic cache key、Machine prompt payload fingerprint に入れてはいけません。
+
+Human API の optional assistant payload は、`state_id`、`goal_summary`、`structured_goal`、
+`available_tactics`、`tactic_suggestions`、`nearby_theorems`、`failed_tactics` をまとめる
+Human UI 用 response です。`failed_tactics` は既存 `/tactic/run` と同じ実行経路を
+scratch store 上で通した diagnostic だけを表示用に返し、元の Human session state は更新しません。
+
+Human UI では、assistant output を候補採用する前に必ず `/tactic/run` と同じ検査経路に渡し、
+通った tactic string だけを UI candidate として採用します。この検査だけでは proof state は採用済みでは
+ありません。実際に証明を進める場合は、同じ tactic string を現在の session に対して改めて
+`/tactic/run` で実行します。
+
 AI 証明探索器が証明探索の一部として実行する場合は、text tactic ではなく
 `/machine/tactics/run` または `/machine/tactics/batch` の `MachineTacticCandidate`
 へ変換し、`/machine/replay` と `/machine/verify` まで通った結果だけを証明として扱います。
+AI 証明探索器向けの deterministic payload は `doc/phase5-ai.md` の `/machine/prompt_payload` を使います。
+assistant payload は Phase 7 MVP の required path ではなく、Machine `/machine/prompt_payload` の schema、
+`PromptRenderedContent` canonical bytes、`payload_fingerprint` を変更しません。
 
 ---
 

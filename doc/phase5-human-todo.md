@@ -874,10 +874,10 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] Human UI 用に structured goal、nearby theorem、failed tactics、available tactics をまとめる payload を追加する。
-- [ ] assistant output は suggested Human tactic string と confidence / reason だけにする。
-- [ ] assistant output は必ず `/tactic/run` で検査してから候補採用する。
-- [ ] AI 証明探索器向け deterministic payload は `doc/phase5-ai.md` の `/machine/prompt_payload` を使うことを API docs に明記する。
+- [x] Human UI 用に structured goal、nearby theorem、failed tactics、available tactics をまとめる payload を追加する。
+- [x] assistant output は suggested Human tactic string と confidence / reason だけにする。
+- [x] assistant output は必ず `/tactic/run` で検査してから候補採用する。
+- [x] AI 証明探索器向け deterministic payload は `doc/phase5-ai.md` の `/machine/prompt_payload` を使うことを API docs に明記する。
 
 依存:
 
@@ -903,9 +903,9 @@ doc/phase5-human.md
 
 Acceptance criteria:
 
-- [ ] assistant payload に state id、goal summary、available tactics、nearby theorem、failed tactic diagnostics が入る。
-- [ ] confidence / reason は certificate、replay plan、Machine cache key に入らない。
-- [ ] Machine `/machine/prompt_payload` の schema と fingerprint が変わらない。
+- [x] assistant payload に state id、goal summary、available tactics、nearby theorem、failed tactic diagnostics が入る。
+- [x] confidence / reason は certificate、replay plan、Machine cache key に入らない。
+- [x] Machine `/machine/prompt_payload` の schema と fingerprint が変わらない。
 
 Verification:
 
@@ -916,7 +916,7 @@ cargo test -p npa-api prompt
 
 AI 速度ガード:
 
-- [ ] assistant payload を Phase 7 MVP の required path にしない。
+- [x] assistant payload を Phase 7 MVP の required path にしない。
 
 ---
 

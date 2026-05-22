@@ -762,6 +762,113 @@ pub struct HumanTacticSuggestion {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantPayloadRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub max_tactic_suggestions: usize,
+    pub max_nearby_theorems: usize,
+    pub failed_tactics: Vec<HumanAssistantFailedTacticRequest>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantFailedTacticRequest {
+    pub tactic: String,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantPayloadOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub document_version: HumanDocumentVersion,
+    pub goal_summary: HumanStateGoalSummary,
+    pub structured_goal: StructuredGoal,
+    pub available_tactics: Vec<HumanAssistantAvailableTactic>,
+    pub tactic_suggestions: Vec<HumanAssistantCandidate>,
+    pub nearby_theorems: Vec<HumanAssistantNearbyTheorem>,
+    pub failed_tactics: Vec<HumanAssistantFailedTacticDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantAvailableTactic {
+    pub tactic: String,
+    pub description: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantCandidate {
+    pub tactic: String,
+    pub confidence: u8,
+    pub reason: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantNearbyTheorem {
+    pub name: Name,
+    pub statement_pretty: String,
+    pub suggested_tactic: String,
+    pub mode: HumanTheoremSearchMode,
+    pub why: String,
+    pub score: u64,
+    pub axiom_info: HumanTheoremAxiomInfo,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantFailedTacticDiagnostic {
+    pub tactic: String,
+    pub status: HumanTacticRunStatus,
+    pub messages: Vec<HumanDiagnostic>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanAssistantPayloadError {
+    State(HumanStateApiError),
+    Search(HumanTheoremSearchError),
+    UnknownGoal {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        goal_id: HumanGoalId,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantCandidateValidationRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub candidates: Vec<HumanAssistantCandidate>,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantCandidateValidationOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub accepted: Vec<HumanAssistantValidatedCandidate>,
+    pub rejected: Vec<HumanAssistantRejectedCandidate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantValidatedCandidate {
+    pub candidate: HumanAssistantCandidate,
+    pub status: HumanTacticRunStatus,
+    pub selected_goal: Option<HumanGoalId>,
+    pub closed_goals: Vec<HumanGoalId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanAssistantRejectedCandidate {
+    pub candidate: HumanAssistantCandidate,
+    pub status: HumanTacticRunStatus,
+    pub messages: Vec<HumanDiagnostic>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanTheoremIndex {
     pub fingerprint: Hash,
     pub entries: Vec<HumanTheoremIndexEntry>,
