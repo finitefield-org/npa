@@ -782,6 +782,9 @@ pub enum MachineStdImportBundleError {
     MissingEqFamily {
         bundle_id: String,
     },
+    MissingNatFamily {
+        bundle_id: String,
+    },
     RecipeFieldMismatch {
         bundle_id: String,
         field: &'static str,
@@ -5865,12 +5868,6 @@ pub fn validate_machine_std_mvp_import_bundle_recipes(
     simp_profiles: &MachineStdSimpProfileSet,
 ) -> Result<(), MachineStdImportBundleError> {
     for bundle in &bundle_set.bundles {
-        if bundle.recommended_tactic_options.nat_family.is_some() {
-            return Err(MachineStdImportBundleError::RecipeFieldMismatch {
-                bundle_id: bundle.bundle_id.clone(),
-                field: "nat_family",
-            });
-        }
         validate_recipe_machine_api_handoff(bundle)?;
         let profile = recipe_simp_profile_for_bundle(&bundle.bundle_id, simp_profiles)?;
         let expected_recipe = expected_final_recipe_for_bundle(loaded, &bundle.bundle_id, profile)?;
@@ -5919,7 +5916,7 @@ fn generate_mvp_import_bundle(
             kernel_check_profile: KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC.to_owned(),
             simp_rules: Vec::new(),
             eq_family: std_logic_eq_family(loaded),
-            nat_family: None,
+            nat_family: expected_nat_family_for_bundle(loaded, spec.id)?,
             max_simp_rewrite_steps: STD_MAX_SIMP_REWRITE_STEPS,
             max_open_goals: STD_MAX_OPEN_GOALS,
             max_metas: STD_MAX_METAS,
@@ -5968,11 +5965,31 @@ fn expected_final_recipe_for_bundle(
         kernel_check_profile: STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE.to_owned(),
         simp_rules: profile.rules.clone(),
         eq_family: Some(eq_family),
-        nat_family: None,
+        nat_family: expected_nat_family_for_bundle(loaded, bundle_id)?,
         max_simp_rewrite_steps: STD_MAX_SIMP_REWRITE_STEPS,
         max_open_goals: STD_MAX_OPEN_GOALS,
         max_metas: STD_MAX_METAS,
     })
+}
+
+fn expected_nat_family_for_bundle(
+    loaded: &MachineStdLoadedRelease,
+    bundle_id: &str,
+) -> Result<Option<NatFamilyRef>, MachineStdImportBundleError> {
+    let Some(root_modules) = root_modules_for_bundle_id(bundle_id) else {
+        return Err(MachineStdImportBundleError::InvalidBundleMembership {
+            expected: expected_mvp_bundle_ids(),
+            actual: vec![bundle_id.to_owned()],
+        });
+    };
+    if !root_modules.contains(&"Std.Nat") {
+        return Ok(None);
+    }
+    std_nat_family(loaded)
+        .map(Some)
+        .ok_or_else(|| MachineStdImportBundleError::MissingNatFamily {
+            bundle_id: bundle_id.to_owned(),
+        })
 }
 
 fn validate_final_recipe_shape(
@@ -6164,7 +6181,7 @@ fn expected_simp_profile_id_for_bundle(bundle_id: &str) -> Option<&'static str> 
 
 fn std_logic_eq_family(loaded: &MachineStdLoadedRelease) -> Option<EqFamilyRef> {
     let logic = loaded.module(&Name::from_dotted("Std.Logic"))?;
-    let eq = find_std_logic_export(logic, &[ExportKind::Inductive], &["Std.Logic.Eq", "Eq"])?;
+    let eq = find_std_export(logic, &[ExportKind::Inductive], &["Std.Logic.Eq", "Eq"])?;
     let refl = find_std_logic_export(
         logic,
         &[ExportKind::Constructor],
@@ -6185,7 +6202,45 @@ fn std_logic_eq_family(loaded: &MachineStdLoadedRelease) -> Option<EqFamilyRef> 
     })
 }
 
+fn std_nat_family(loaded: &MachineStdLoadedRelease) -> Option<NatFamilyRef> {
+    let nat = loaded.module(&Name::from_dotted("Std.Nat"))?;
+    let nat_head = find_std_export(nat, &[ExportKind::Inductive], &["Std.Nat.Nat", "Nat"])?;
+    let zero = find_std_export(
+        nat,
+        &[ExportKind::Constructor],
+        &["Std.Nat.Nat.zero", "Nat.zero"],
+    )?;
+    let succ = find_std_export(
+        nat,
+        &[ExportKind::Constructor],
+        &["Std.Nat.Nat.succ", "Nat.succ"],
+    )?;
+    let rec = find_std_export(
+        nat,
+        &[ExportKind::Recursor],
+        &["Std.Nat.Nat.rec", "Nat.rec"],
+    )?;
+    Some(NatFamilyRef {
+        nat_name: nat_head.0,
+        nat_interface_hash: nat_head.1,
+        zero_name: zero.0,
+        zero_interface_hash: zero.1,
+        succ_name: succ.0,
+        succ_interface_hash: succ.1,
+        rec_name: rec.0,
+        rec_interface_hash: rec.1,
+    })
+}
+
 fn find_std_logic_export(
+    module: &MachineStdLoadedModule,
+    kinds: &[ExportKind],
+    candidates: &[&str],
+) -> Option<(Name, Hash)> {
+    find_std_export(module, kinds, candidates)
+}
+
+fn find_std_export(
     module: &MachineStdLoadedModule,
     kinds: &[ExportKind],
     candidates: &[&str],
@@ -9645,8 +9700,8 @@ mod tests {
     };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
     use npa_kernel::{
-        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, type0, Binder, ConstructorDecl,
-        Decl, Expr, InductiveDecl, Level, Reducibility,
+        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
+        Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, Reducibility,
     };
     use npa_tactic::{CandidateApplyArg, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
@@ -9788,6 +9843,48 @@ mod tests {
         assert_eq!(
             theorem_index_entry(&theorem_index, "False.elim").universe_params,
             Vec::<String>::new()
+        );
+
+        let nat_module = loaded.module(&Name::from_dotted("Std.Nat")).unwrap();
+        assert_eq!(
+            nat_module
+                .imports
+                .iter()
+                .map(|import| import.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic"]
+        );
+        assert_eq!(export_entry(nat_module, "Nat").kind, ExportKind::Inductive);
+        assert_eq!(
+            export_entry(nat_module, "Nat.zero").kind,
+            ExportKind::Constructor
+        );
+        assert_eq!(
+            export_entry(nat_module, "Nat.succ").kind,
+            ExportKind::Constructor
+        );
+        assert_eq!(
+            export_entry(nat_module, "Nat.rec").kind,
+            ExportKind::Recursor
+        );
+        assert_eq!(export_entry(nat_module, "Nat.one").kind, ExportKind::Def);
+        assert_eq!(export_entry(nat_module, "Nat.pred").kind, ExportKind::Def);
+        for theorem in ["Nat.pred_zero", "Nat.pred_succ"] {
+            let entry = export_entry(nat_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert!(
+                entry.axiom_dependencies.is_empty(),
+                "{theorem} must be proved by definitional equality without new axioms"
+            );
+        }
+        let nat_axioms = axiom_report
+            .modules
+            .iter()
+            .find(|module| module.module == Name::from_dotted("Std.Nat"))
+            .unwrap();
+        assert!(
+            nat_axioms.module_axioms.is_empty(),
+            "Std.Nat must not add axioms"
         );
     }
 
@@ -10106,6 +10203,50 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["Std.Nat", "Std.List", "Std.Logic"]
         );
+        assert!(list_bundle.recommended_tactic_options.nat_family.is_none());
+
+        let nat_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        assert_eq!(
+            nat_bundle
+                .root_imports
+                .iter()
+                .map(|key| key.module.as_dotted())
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from(["Std.Logic".to_owned(), "Std.Nat".to_owned()])
+        );
+        assert_eq!(
+            nat_bundle
+                .import_closure
+                .iter()
+                .map(|certificate| certificate.module.as_dotted())
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from(["Std.Logic".to_owned(), "Std.Nat".to_owned()])
+        );
+        assert_nat_family_matches_std_nat_exports(
+            &loaded,
+            nat_bundle
+                .recommended_tactic_options
+                .nat_family
+                .as_ref()
+                .expect("std.nat.mvp should expose certificate-bound Nat family"),
+        );
+        let all_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_ALL_BUNDLE_ID)
+            .unwrap();
+        assert!(all_bundle.recommended_tactic_options.nat_family.is_some());
+        let logic_bundle = bundle_set
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_LOGIC_BUNDLE_ID)
+            .unwrap();
+        assert!(logic_bundle.recommended_tactic_options.nat_family.is_none());
+
         let eq_rec_allow_axiom =
             machine_std_axiom_ref_to_wire(&std_logic_eq_rec_axiom_ref(&loaded).unwrap());
         assert!(bundle_set
@@ -10250,6 +10391,49 @@ mod tests {
     }
 
     #[test]
+    fn registers_std_nat_pred_rules_as_simp_safe_candidates() {
+        let package = TestPackage::new("std_nat_pred_simp_safe_candidates");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let eq_family = std_logic_eq_family(&loaded).unwrap();
+        let pred_candidates = ["Nat.pred_zero", "Nat.pred_succ"]
+            .into_iter()
+            .map(|name| {
+                mvp_rewrite_rule_candidate(
+                    &loaded,
+                    STD_NAT_RW_PROFILE_ID,
+                    STD_NAT_BUNDLE_ID,
+                    name,
+                    MachineStdRewriteSafety::SimpSafe,
+                )
+                .unwrap()
+            })
+            .collect::<Vec<_>>();
+        assert!(pred_candidates
+            .iter()
+            .all(|candidate| candidate.safety == MachineStdRewriteSafety::SimpSafe));
+        let pred_rules = pred_candidates
+            .iter()
+            .map(|candidate| candidate.rule_ref.clone())
+            .collect::<Vec<_>>();
+        let resolved = resolve_rewrite_profile_rules(
+            &loaded,
+            STD_NAT_RW_PROFILE_ID,
+            STD_NAT_BUNDLE_ID,
+            &eq_family,
+            &pred_rules,
+        )
+        .unwrap();
+        assert_eq!(
+            resolved
+                .iter()
+                .map(|rule| rule.key.name.as_dotted())
+                .collect::<BTreeSet<_>>(),
+            BTreeSet::from(["Nat.pred_succ".to_owned(), "Nat.pred_zero".to_owned()])
+        );
+    }
+
+    #[test]
     fn finalizes_mvp_import_bundle_recipes_for_machine_api_handoff() {
         let package = TestPackage::new("mvp_import_bundle_recipe_finalizer");
         let certs = mvp_certificate_bytes_with_m5_profiles();
@@ -10280,7 +10464,14 @@ mod tests {
         );
         assert_eq!(recipe.simp_rules, nat_profile.rules);
         assert_eq!(request.simp_rules, nat_profile.rules);
-        assert!(recipe.nat_family.is_none());
+        assert_nat_family_matches_std_nat_exports(
+            &loaded,
+            recipe
+                .nat_family
+                .as_ref()
+                .expect("std.nat.mvp final recipe should expose Nat family"),
+        );
+        assert_eq!(request.nat_family, recipe.nat_family);
         assert_eq!(recipe.max_simp_rewrite_steps, STD_MAX_SIMP_REWRITE_STEPS);
         assert_eq!(recipe.max_open_goals, STD_MAX_OPEN_GOALS);
         assert_eq!(recipe.max_metas, STD_MAX_METAS);
@@ -10448,8 +10639,8 @@ mod tests {
     }
 
     #[test]
-    fn rejects_mvp_import_bundle_recipe_nat_family() {
-        let package = TestPackage::new("bad_import_bundle_recipe_nat_family");
+    fn rejects_missing_mvp_import_bundle_recipe_nat_family() {
+        let package = TestPackage::new("missing_import_bundle_recipe_nat_family");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
         let loaded =
@@ -10465,16 +10656,7 @@ mod tests {
             .iter_mut()
             .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
             .unwrap();
-        nat_bundle.recommended_tactic_options.nat_family = Some(NatFamilyRef {
-            nat_name: Name::from_dotted("Nat"),
-            nat_interface_hash: test_hash(1),
-            zero_name: Name::from_dotted("Nat.zero"),
-            zero_interface_hash: test_hash(2),
-            succ_name: Name::from_dotted("Nat.succ"),
-            succ_interface_hash: test_hash(3),
-            rec_name: Name::from_dotted("Nat.rec"),
-            rec_interface_hash: test_hash(4),
-        });
+        nat_bundle.recommended_tactic_options.nat_family = None;
         bundle_set.import_bundles_hash = machine_std_import_bundle_set_hash(&bundle_set).unwrap();
 
         assert!(matches!(
@@ -12176,11 +12358,8 @@ mod tests {
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
-        let nat_cert = build_module_cert(
-            empty_module("Std.Nat"),
-            std::slice::from_ref(&logic_verified),
-        )
-        .unwrap();
+        let nat_cert =
+            build_module_cert(nat_basic_module(), std::slice::from_ref(&logic_verified)).unwrap();
         let nat = encode_module_cert(&nat_cert).unwrap();
         let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
 
@@ -12215,11 +12394,8 @@ mod tests {
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
-        let nat_cert = build_module_cert(
-            empty_module("Std.Nat"),
-            std::slice::from_ref(&logic_verified),
-        )
-        .unwrap();
+        let nat_cert =
+            build_module_cert(nat_family_module(), std::slice::from_ref(&logic_verified)).unwrap();
         let nat = encode_module_cert(&nat_cert).unwrap();
         let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
 
@@ -12252,11 +12428,8 @@ mod tests {
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
-        let nat_cert = build_module_cert(
-            empty_module("Std.Nat"),
-            std::slice::from_ref(&logic_verified),
-        )
-        .unwrap();
+        let nat_cert =
+            build_module_cert(nat_family_module(), std::slice::from_ref(&logic_verified)).unwrap();
         let nat = encode_module_cert(&nat_cert).unwrap();
         let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
 
@@ -12291,11 +12464,8 @@ mod tests {
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
-        let nat_cert = build_module_cert(
-            empty_module("Std.Nat"),
-            std::slice::from_ref(&logic_verified),
-        )
-        .unwrap();
+        let nat_cert =
+            build_module_cert(nat_basic_module(), std::slice::from_ref(&logic_verified)).unwrap();
         let nat = encode_module_cert(&nat_cert).unwrap();
         let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
 
@@ -14032,17 +14202,107 @@ mod tests {
         )
     }
 
+    fn nat_basic_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Nat"),
+            declarations: nat_basic_declarations(),
+        }
+    }
+
+    fn nat_family_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.Nat"),
+            declarations: nat_family_declarations(),
+        }
+    }
+
+    fn nat_family_declarations() -> Vec<Decl> {
+        vec![Decl::Inductive {
+            name: "Nat".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::sort(type0()),
+            data: Box::new(nat_inductive()),
+        }]
+    }
+
+    fn nat_basic_declarations() -> Vec<Decl> {
+        let mut declarations = nat_family_declarations();
+        declarations.extend([
+            nat_one_def(),
+            nat_pred_def(),
+            nat_pred_zero_theorem(),
+            nat_pred_succ_theorem(),
+        ]);
+        declarations
+    }
+
+    fn nat_one_def() -> Decl {
+        Decl::Def {
+            name: "Nat.one".to_owned(),
+            universe_params: Vec::new(),
+            ty: nat(),
+            value: nat_succ(nat_zero()),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn nat_pred_def() -> Decl {
+        Decl::Def {
+            name: "Nat.pred".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("n", nat(), nat()),
+            value: Expr::lam(
+                "n",
+                nat(),
+                Expr::apps(
+                    Expr::konst("Nat.rec", vec![type0()]),
+                    vec![
+                        Expr::lam("_", nat(), nat()),
+                        nat_zero(),
+                        Expr::lam("k", nat(), Expr::lam("_ih", nat(), Expr::bvar(1))),
+                        Expr::bvar(0),
+                    ],
+                ),
+            ),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn nat_pred_zero_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.pred_zero".to_owned(),
+            universe_params: Vec::new(),
+            ty: eq(
+                type0(),
+                nat(),
+                Expr::app(Expr::konst("Nat.pred", vec![]), nat_zero()),
+                nat_zero(),
+            ),
+            proof: eq_refl(type0(), nat(), nat_zero()),
+        }
+    }
+
+    fn nat_pred_succ_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Nat.pred_succ".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "n",
+                nat(),
+                eq(
+                    type0(),
+                    nat(),
+                    Expr::app(Expr::konst("Nat.pred", vec![]), nat_succ(Expr::bvar(0))),
+                    Expr::bvar(0),
+                ),
+            ),
+            proof: Expr::lam("n", nat(), eq_refl(type0(), nat(), Expr::bvar(0))),
+        }
+    }
+
     fn nat_m5_profile_module() -> CoreModule {
-        let mut declarations = vec![
-            Decl::Inductive {
-                name: "Nat".to_owned(),
-                universe_params: Vec::new(),
-                ty: Expr::sort(type0()),
-                data: Box::new(nat_inductive()),
-            },
-            nat_binary_def("Nat.add"),
-            profile_helper_def("Nat.m5_lhs"),
-        ];
+        let mut declarations = nat_basic_declarations();
+        declarations.extend([nat_binary_def("Nat.add"), profile_helper_def("Nat.m5_lhs")]);
         declarations.extend(
             [
                 "Nat.add_zero",
@@ -14051,8 +14311,6 @@ mod tests {
                 "Nat.mul_zero",
                 "Nat.mul_succ",
                 "Nat.zero_mul",
-                "Nat.pred_zero",
-                "Nat.pred_succ",
                 "Nat.add_comm",
                 "Nat.add_assoc",
             ]
@@ -14229,6 +14487,33 @@ mod tests {
             .iter()
             .find(|artifact| artifact.module == Name::from_dotted(module))
             .unwrap()
+    }
+
+    fn assert_nat_family_matches_std_nat_exports(
+        loaded: &MachineStdLoadedRelease,
+        family: &NatFamilyRef,
+    ) {
+        let nat_module = loaded.module(&Name::from_dotted("Std.Nat")).unwrap();
+        assert_eq!(family.nat_name, Name::from_dotted("Nat"));
+        assert_eq!(
+            family.nat_interface_hash,
+            export_entry(nat_module, "Nat").decl_interface_hash
+        );
+        assert_eq!(family.zero_name, Name::from_dotted("Nat.zero"));
+        assert_eq!(
+            family.zero_interface_hash,
+            export_entry(nat_module, "Nat.zero").decl_interface_hash
+        );
+        assert_eq!(family.succ_name, Name::from_dotted("Nat.succ"));
+        assert_eq!(
+            family.succ_interface_hash,
+            export_entry(nat_module, "Nat.succ").decl_interface_hash
+        );
+        assert_eq!(family.rec_name, Name::from_dotted("Nat.rec"));
+        assert_eq!(
+            family.rec_interface_hash,
+            export_entry(nat_module, "Nat.rec").decl_interface_hash
+        );
     }
 
     fn apply_final_sidecar_counts(

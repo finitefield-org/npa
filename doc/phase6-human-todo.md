@@ -297,17 +297,17 @@ P6H-01
 
 実装タスク:
 
-- [ ] `Std.Nat` source module を作り、direct import を `Std.Logic` のみにする。
-- [ ] `Nat` inductive、`Nat.zero`、`Nat.succ`、generated recursor を public export する。
-- [ ] `Nat.one` と `Nat.pred` を定義する。
-- [ ] `Nat.pred_zero` と `Nat.pred_succ` を refl で証明する。
-- [ ] Nat 専用 numeral display / parsing を入れる場合も overloaded numerals にはしない。
+- [x] `Std.Nat` source module を作り、direct import を `Std.Logic` のみにする。
+- [x] `Nat` inductive、`Nat.zero`、`Nat.succ`、generated recursor を public export する。
+- [x] `Nat.one` と `Nat.pred` を定義する。
+- [x] `Nat.pred_zero` と `Nat.pred_succ` を refl で証明する。
+- [x] Nat 専用 numeral display / parsing を入れる場合も overloaded numerals にはしない。
 
 受け入れ条件:
 
-- [ ] `Std.Nat` certificate の import closure が `Std.Logic` と `Std.Nat` だけで構成される。
-- [ ] `Nat` generated exports が Phase 6 AI `NatFamilyRef` として解決できる。
-- [ ] `Nat.pred_zero` / `Nat.pred_succ` が simp-safe candidate として登録可能である。
+- [x] `Std.Nat` certificate の import closure が `Std.Logic` と `Std.Nat` だけで構成される。
+- [x] `Nat` generated exports が Phase 6 AI `NatFamilyRef` として解決できる。
+- [x] `Nat.pred_zero` / `Nat.pred_succ` が simp-safe candidate として登録可能である。
 
 検証:
 
