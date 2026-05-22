@@ -161,8 +161,8 @@ pub(crate) fn build_module_cert_impl(
         referenced_builtin_names(&module.declarations, &imports, &local_public_names)?;
 
     let mut env = Env::new();
-    add_referenced_builtins_to_env(&mut env, &referenced_builtins)?;
     add_imports_to_env(&mut env, &imports)?;
+    add_referenced_builtins_to_env(&mut env, &referenced_builtins)?;
 
     let mut canon_decls = Vec::new();
     for (decl_index, decl) in module.declarations.iter().cloned().enumerate() {

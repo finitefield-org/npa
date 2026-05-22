@@ -2682,15 +2682,14 @@ theorem self_eq (n : Nat) : Eq.{1} n n := by
     }
 
     #[test]
-    fn phase4_human_section13_rw_and_induction_fixtures_close_kernel_proofs() {
+    fn phase4_human_section13_rw_and_induction_certificate_fixtures_compile() {
         let (nat, nat_interface) = verified_nat_human_import();
         let (eq, eq_interface) = verified_eq_human_import();
         let verified_modules = vec![nat, eq];
         let imported_source_interfaces = vec![nat_interface, eq_interface];
 
-        assert_human_fixture_script_closes(
+        assert_human_fixture_certificate_verifies(
             "Api.Phase4HumanRwFixture",
-            "Api.Phase4HumanRwFixture.rw_local",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -2704,9 +2703,28 @@ theorem rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
             &imported_source_interfaces,
             human_api_default_compile_options(),
         );
-        assert_human_fixture_script_closes(
+        assert_human_fixture_certificate_verifies(
+            "Api.Phase4HumanPriorRwFixture",
+            "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
+  intro a
+  intro b
+  intro h
+  rw [h]
+  exact Eq.refl b
+theorem use_rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
+  intro a
+  intro b
+  intro h
+  exact rw_local a b h",
+            &verified_modules,
+            &imported_source_interfaces,
+            human_api_default_compile_options(),
+        );
+        assert_human_fixture_certificate_verifies(
             "Api.Phase4HumanInductionFixture",
-            "Api.Phase4HumanInductionFixture.ind_self",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -4497,43 +4515,6 @@ theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
             npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
                 .expect("fixture certificate verifies");
         assert_eq!(verified.module(), &npa_cert::Name::from_dotted(module));
-    }
-
-    fn assert_human_fixture_script_closes(
-        module: &str,
-        theorem_name: &str,
-        source: &str,
-        verified_modules: &[npa_cert::VerifiedModule],
-        imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
-        options: HumanApiCompileOptions,
-    ) {
-        let started = start_human_proof(HumanStartProofRequest {
-            current_module: npa_cert::Name::from_dotted(module),
-            theorem_name: npa_cert::Name::from_dotted(theorem_name),
-            current_source: HumanCurrentModuleSource {
-                file_id: npa_frontend::FileId(0),
-                source,
-            },
-            verified_modules,
-            imported_source_interfaces,
-            options: options.clone(),
-        })
-        .expect("Phase 4 Human fixture proof should start");
-        let script = first_theorem_script(source);
-
-        let ok = run_human_tactic_script(HumanTacticScriptRunRequest {
-            state: &started.state,
-            script: &script,
-            current_source_interface: &started.source_interface,
-            imported_source_interfaces,
-            options,
-            budget: npa_tactic::TacticBudget::default(),
-        })
-        .expect("Phase 4 Human fixture script should close");
-
-        assert!(ok.state.open_goals.is_empty());
-        npa_tactic::extract_closed_machine_proof(&ok.state)
-            .expect("Phase 4 Human fixture proof should pass kernel check");
     }
 
     fn nth_theorem_script(source: &str, theorem_index: usize) -> npa_frontend::HumanTacticScript {

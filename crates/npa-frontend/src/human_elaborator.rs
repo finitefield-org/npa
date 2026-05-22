@@ -16,8 +16,8 @@ use crate::{
     ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{
-    subst, Binder, ConstructorDecl, Ctx, Decl, Env, Error, Expr, InductiveDecl, Level,
-    RecursorDecl, Reducibility,
+    eq_inductive, eq_rec_type, nat_inductive, subst, Binder, ConstructorDecl, Ctx, Decl, Env,
+    Error, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
 };
 
 const MAX_HUMAN_IMPLICIT_INSERTION_STEPS: usize = 64;
@@ -1022,6 +1022,8 @@ fn add_human_kernel_decl_to_env(
         )
         .with_phase(HumanDiagnosticPhase::KernelHandoff));
     }
+
+    add_referenced_builtin_decls_to_human_env(env, &decl, span, context)?;
 
     match decl {
         Decl::Axiom {
@@ -3614,6 +3616,13 @@ impl HumanBidirectionalElaborator {
             .with_phase(HumanDiagnosticPhase::KernelHandoff));
         }
 
+        add_referenced_builtin_decls_to_human_env(
+            &mut self.env,
+            &decl,
+            span,
+            "Human declaration handoff",
+        )?;
+
         match decl {
             Decl::Axiom {
                 name,
@@ -4575,6 +4584,13 @@ impl HumanImplicitInserter {
             .with_phase(HumanDiagnosticPhase::KernelHandoff));
         }
 
+        add_referenced_builtin_decls_to_human_env(
+            &mut self.env,
+            &decl,
+            span,
+            "Human implicit environment",
+        )?;
+
         match decl {
             Decl::Axiom {
                 name,
@@ -4627,6 +4643,127 @@ impl HumanImplicitInserter {
             },
         )
     }
+}
+
+fn add_referenced_builtin_decls_to_human_env(
+    env: &mut Env,
+    decl: &Decl,
+    span: Span,
+    context: &str,
+) -> HumanResult<()> {
+    let mut names = BTreeSet::new();
+    collect_const_names_from_human_decl(&mut names, decl);
+    remove_human_decl_owned_const_names(&mut names, decl);
+    add_human_builtin_decls_for_names(env, &names, span, context)
+}
+
+fn collect_const_names_from_human_decl(names: &mut BTreeSet<npa_cert::Name>, decl: &Decl) {
+    match decl {
+        Decl::Axiom { ty, .. } => collect_const_names_from_human_expr(names, ty),
+        Decl::Def { ty, value, .. } => {
+            collect_const_names_from_human_expr(names, ty);
+            collect_const_names_from_human_expr(names, value);
+        }
+        Decl::Theorem { ty, proof, .. } => {
+            collect_const_names_from_human_expr(names, ty);
+            collect_const_names_from_human_expr(names, proof);
+        }
+        Decl::Inductive { data, .. } => {
+            for param in &data.params {
+                collect_const_names_from_human_expr(names, &param.ty);
+            }
+            for index in &data.indices {
+                collect_const_names_from_human_expr(names, &index.ty);
+            }
+            for constructor in &data.constructors {
+                collect_const_names_from_human_expr(names, &constructor.ty);
+            }
+            if let Some(recursor) = &data.recursor {
+                collect_const_names_from_human_expr(names, &recursor.ty);
+            }
+        }
+        Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
+            collect_const_names_from_human_expr(names, ty);
+        }
+    }
+}
+
+fn remove_human_decl_owned_const_names(names: &mut BTreeSet<npa_cert::Name>, decl: &Decl) {
+    names.remove(&npa_cert::Name::from_dotted(decl.name()));
+    if let Decl::Inductive { data, .. } = decl {
+        for constructor in &data.constructors {
+            names.remove(&npa_cert::Name::from_dotted(&constructor.name));
+        }
+        if let Some(recursor) = &data.recursor {
+            names.remove(&npa_cert::Name::from_dotted(&recursor.name));
+        }
+    }
+}
+
+fn collect_const_names_from_human_expr(names: &mut BTreeSet<npa_cert::Name>, expr: &Expr) {
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) => {}
+        Expr::Const { name, .. } => {
+            names.insert(npa_cert::Name::from_dotted(name));
+        }
+        Expr::App(func, arg) => {
+            collect_const_names_from_human_expr(names, func);
+            collect_const_names_from_human_expr(names, arg);
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            collect_const_names_from_human_expr(names, ty);
+            collect_const_names_from_human_expr(names, body);
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            collect_const_names_from_human_expr(names, ty);
+            collect_const_names_from_human_expr(names, value);
+            collect_const_names_from_human_expr(names, body);
+        }
+    }
+}
+
+fn add_human_builtin_decls_for_names(
+    env: &mut Env,
+    names: &BTreeSet<npa_cert::Name>,
+    span: Span,
+    context: &str,
+) -> HumanResult<()> {
+    let needs_nat = names.iter().any(|name| {
+        let name = name.as_dotted();
+        matches!(name.as_str(), "Nat" | "Nat.zero" | "Nat.succ" | "Nat.rec")
+    });
+    let needs_eq = names.iter().any(|name| {
+        let name = name.as_dotted();
+        matches!(name.as_str(), "Eq" | "Eq.refl" | "Eq.rec")
+    });
+    let needs_eq_rec = names.iter().any(|name| name.as_dotted() == "Eq.rec");
+
+    if needs_nat && env.decl("Nat").is_none() {
+        env.add_inductive(nat_inductive()).map_err(|err| {
+            human_kernel_decl_diagnostic(span, err, context)
+                .with_phase(HumanDiagnosticPhase::KernelHandoff)
+        })?;
+    }
+    if needs_eq && env.decl("Eq").is_none() {
+        env.add_inductive(eq_inductive()).map_err(|err| {
+            human_kernel_decl_diagnostic(span, err, context)
+                .with_phase(HumanDiagnosticPhase::KernelHandoff)
+        })?;
+    }
+    if needs_eq_rec && env.decl("Eq.rec").is_none() {
+        env.add_axiom(
+            "Eq.rec",
+            vec!["u".to_owned(), "v".to_owned()],
+            eq_rec_type(Level::param("u"), Level::param("v")),
+        )
+        .map_err(|err| {
+            human_kernel_decl_diagnostic(span, err, context)
+                .with_phase(HumanDiagnosticPhase::KernelHandoff)
+        })?;
+    }
+    Ok(())
 }
 
 fn human_kernel_expr_diagnostic(span: Span, err: Error, context: &str) -> HumanDiagnostic {

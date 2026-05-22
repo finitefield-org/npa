@@ -1338,9 +1338,9 @@ fn elaborate_by_proof(theorem_type: ExprId, tactics: Vec<TacticSyntax>) -> Resul
 
 この章の例は `crates/npa-api/src/human.rs` の
 `phase4_human_section13_minimal_certificate_fixtures_compile` と
-`phase4_human_section13_rw_and_induction_fixtures_close_kernel_proofs` で regression fixture として固定します。
-certificate-compatible な fixture は Human `by` source から certificate まで生成し、
-`rw` / `induction` fixture は Machine proof state を閉じて抽出 proof term を kernel で検査します。
+`phase4_human_section13_rw_and_induction_certificate_fixtures_compile` で regression fixture として固定します。
+fixture は Human `by` source から certificate まで生成し、`rw` / `induction` も
+抽出 proof term を canonical certificate と verifier で再検査します。
 同時に、`crates/npa-frontend/src/term_source.rs` の Machine Surface fixture で Human-only tactic syntax が
 Machine canonical term source に混入しないことを確認します。
 

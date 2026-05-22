@@ -102,9 +102,8 @@ open scope、overload transaction、hole を持たない Machine Surface request
 Phase 4 Human は `crates/npa-api` の Human API wrapper と `crates/npa-tactic` の
 proof-state primitive を接続して、`by` proof block の `intro` / `exact` / `apply` /
 `rw` / `simp-lite` / `induction` を kernel が検査できる proof term に変換します。
-certificate-compatible な Human examples と、`rw` / `induction` の closed proof-state fixtures を
-Machine Surface fixture hash を変えない regression として固定しています。この Human parser / bridge は
-AI 向け Machine API の既定経路には入りません。
+`rw` / `induction` を含む certificate-compatible な Human examples を、Machine Surface fixture hash を
+変えない regression として固定しています。この Human parser / bridge は AI 向け Machine API の既定経路には入りません。
 AI 向け Phase 4 M1/M2/M3/M4/M5/M6/M7 の tactic proof-state core と `exact` /
 `intro` / `apply` / `rw` / `simp-lite` / `induction-nat` は `crates/npa-tactic`
 で実装されています。closed proof state から canonical certificate へ渡す handoff API と、

@@ -29,8 +29,8 @@ pub(crate) fn verify_module_cert_impl(
 
     let mut env = Env::new();
     let builtin_refs = referenced_builtins_from_cert(&cert)?;
-    add_referenced_builtins_to_env(&mut env, &builtin_refs)?;
     add_imports_to_env(&mut env, &imports)?;
+    add_referenced_builtins_to_env(&mut env, &builtin_refs)?;
 
     for decl in cert_to_kernel_decls(&cert)? {
         add_decl_to_env(&mut env, decl.clone())?;

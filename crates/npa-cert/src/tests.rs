@@ -1,7 +1,7 @@
 use super::*;
 use npa_kernel::{
-    eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
-    ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
+    eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, nat, nat_inductive, nat_succ, nat_zero,
+    type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
 };
 
 fn id_type(a: &str, x: &str) -> Expr {
@@ -133,6 +133,46 @@ fn eq_module() -> CoreModule {
                 ),
             ),
             data: Box::new(eq_inductive()),
+        }],
+    }
+}
+
+fn eq_axiom_module_without_rec() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Std.Logic.EqShape"),
+        declarations: vec![
+            Decl::Axiom {
+                name: "Eq".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(Level::param("u")),
+                    Expr::pi(
+                        "lhs",
+                        Expr::bvar(0),
+                        Expr::pi("rhs", Expr::bvar(1), Expr::sort(Level::zero())),
+                    ),
+                ),
+            },
+            Decl::Axiom {
+                name: "Eq.refl".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: eq_refl_type(Level::param("u")),
+            },
+        ],
+    }
+}
+
+fn use_builtin_eq_rec_with_imported_eq_module() -> CoreModule {
+    let u = Level::param("u");
+    let v = Level::param("v");
+    CoreModule {
+        name: Name::from_dotted("Test.UseBuiltinEqRecWithImportedEq"),
+        declarations: vec![Decl::Theorem {
+            name: "use_builtin_eq_rec_with_imported_eq".to_owned(),
+            universe_params: vec!["u".to_owned(), "v".to_owned()],
+            ty: eq_rec_type(u.clone(), v.clone()),
+            proof: Expr::konst("Eq.rec", vec![u, v]),
         }],
     }
 }
@@ -1711,6 +1751,35 @@ fn transitive_imported_builtin_axioms_remain_builtin() {
     ));
     verify_module_cert(
         &encode_module_cert(&use_alias_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn current_builtin_eq_rec_can_coexist_with_imported_eq_shape() {
+    let eq_cert = build_module_cert(eq_axiom_module_without_rec(), &[]).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_eq = verify_module_cert(
+        &encode_module_cert(&eq_cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap();
+
+    let use_eq_rec_cert =
+        build_module_cert(use_builtin_eq_rec_with_imported_eq_module(), &[verified_eq]).unwrap();
+    let axiom = use_eq_rec_cert
+        .axiom_report
+        .module_axioms
+        .iter()
+        .find(|axiom| use_eq_rec_cert.name_table[axiom.name] == Name::from_dotted("Eq.rec"))
+        .expect("current module should report the builtin Eq.rec axiom");
+
+    assert!(matches!(axiom.global_ref, GlobalRef::Builtin { .. }));
+    verify_module_cert(
+        &encode_module_cert(&use_eq_rec_cert).unwrap(),
         &mut session,
         &AxiomPolicy::normal(),
     )
