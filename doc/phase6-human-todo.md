@@ -607,18 +607,18 @@ P6H-11
 
 実装タスク:
 
-- [ ] P6H-09 で生成した raw `.npcert` artifacts を `load_machine_std_mvp_certificates` に渡す integration fixture を追加する。
-- [ ] `MachineStdLibraryRelease` / import bundles / theorem index / rewrite profiles / simp profiles / axiom report を real stdlib artifacts から生成する。
-- [ ] `std.nat.mvp` / `std.list.mvp` / `std.all.mvp` import bundle を Phase 5 `/machine/sessions` 相当の request に展開する。
-- [ ] Phase 7 retrieval fixture が real stdlib theorem index から候補を作り、Phase 5 batch に戻る regression を追加する。
-- [ ] Phase 8 audit hook が sidecar と verifier output の一致を再検査できることを確認する。
+- [x] P6H-09 で生成した raw `.npcert` artifacts を `load_machine_std_mvp_certificates` に渡す integration fixture を追加する。
+- [x] `MachineStdLibraryRelease` / import bundles / theorem index / rewrite profiles / simp profiles / axiom report を real stdlib artifacts から生成する。
+- [x] `std.nat.mvp` / `std.list.mvp` / `std.all.mvp` import bundle を Phase 5 `/machine/sessions` 相当の request に展開する。
+- [x] Phase 7 retrieval fixture が real stdlib theorem index から候補を作り、Phase 5 batch に戻る regression を追加する。
+- [x] Phase 8 audit hook が sidecar と verifier output の一致を再検査できることを確認する。
 
 受け入れ条件:
 
-- [ ] release manifest hashes が certificate bytes / sidecar hashes と一致する。
-- [ ] recommended tactic options recipe が Phase 5 option validation に通る。
-- [ ] stale export_hash / certificate_hash / decl_interface_hash を持つ artifact が拒否される。
-- [ ] AI candidate は Phase 5 run/batch/replay/verify なしに採用されない。
+- [x] release manifest hashes が certificate bytes / sidecar hashes と一致する。
+- [x] recommended tactic options recipe が Phase 5 option validation に通る。
+- [x] stale export_hash / certificate_hash / decl_interface_hash を持つ artifact が拒否される。
+- [x] AI candidate は Phase 5 run/batch/replay/verify なしに採用されない。
 
 検証:
 

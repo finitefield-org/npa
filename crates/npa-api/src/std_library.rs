@@ -10286,9 +10286,11 @@ fn sha256(bytes: &[u8]) -> Hash {
 mod tests {
     use super::*;
     use crate::{
-        run_machine_tactic_batch_request, search_machine_theorems_for_goal,
-        types::format_hash_string, MachineApiResponseEnvelope, MachineSuggestedCandidateStatus,
-        MachineTacticBatchItemResponse,
+        run_machine_replay_request, run_machine_tactic_batch_request, run_machine_verify_request,
+        search_machine_theorems_for_goal,
+        types::{format_goal_id_wire, format_hash_string},
+        MachineApiResponseEnvelope, MachineSuggestedCandidateStatus,
+        MachineTacticBatchItemResponse, SnapshotId,
     };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
     use npa_frontend::{canonicalize_machine_term_source, parse_human_module, FileId, HumanItem};
@@ -10297,7 +10299,7 @@ mod tests {
         Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, RecursorDecl,
         Reducibility,
     };
-    use npa_tactic::{CandidateApplyArg, MachineTacticCandidate, RewriteSite, TacticHead};
+    use npa_tactic::{CandidateApplyArg, GoalId, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
         fs,
         time::{SystemTime, UNIX_EPOCH},
@@ -13660,6 +13662,386 @@ theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{
                 result.suggested_candidates[index].candidate_hash
             );
         }
+    }
+
+    #[test]
+    fn source_built_std_artifacts_feed_machine_release_sessions_retrieval_and_audit() {
+        let package = TestPackage::new("source_built_std_ai_release_loader");
+        write_valid_mvp_source_package(package.path());
+        let built = build_mvp_source_package_artifacts(package.path()).unwrap();
+        let built_by_module = built
+            .iter()
+            .map(|artifact| (artifact.module.clone(), artifact))
+            .collect::<BTreeMap<_, _>>();
+
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        assert_eq!(
+            loaded
+                .verification_order()
+                .iter()
+                .map(Name::as_dotted)
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"]
+        );
+        for module in loaded.modules() {
+            let built = built_by_module.get(&module.module).unwrap();
+            assert_eq!(module.certificate_bytes, built.certificate_bytes);
+            assert_eq!(module.expected_export_hash, built.export_hash);
+            assert_eq!(module.expected_certificate_hash, built.certificate_hash);
+            assert_eq!(module.axiom_report_hash, built.axiom_report_hash);
+        }
+
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        write_machine_std_release_sidecars(
+            package.path(),
+            &release,
+            &import_bundles,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            &axiom_report,
+        );
+
+        let validated = load_machine_std_mvp_release(package.path()).unwrap();
+        assert_eq!(validated.manifest, release);
+        assert_eq!(validated.import_bundles, import_bundles);
+        assert_eq!(
+            validated.std_library_release_hash,
+            machine_std_library_release_hash(&release).unwrap()
+        );
+        assert_eq!(
+            release.import_bundles_hash,
+            machine_std_import_bundle_set_hash(&import_bundles).unwrap()
+        );
+        assert_eq!(
+            release.theorem_index_hash,
+            machine_std_theorem_index_hash(&theorem_index).unwrap()
+        );
+        assert_eq!(
+            release.rewrite_profiles_hash,
+            machine_std_rewrite_profile_set_hash(&rewrite_profiles).unwrap()
+        );
+        assert_eq!(
+            release.simp_profiles_hash,
+            machine_std_simp_profile_set_hash(&simp_profiles).unwrap()
+        );
+        assert_eq!(
+            release.axiom_report_hash,
+            machine_std_axiom_report_hash(&axiom_report).unwrap()
+        );
+
+        let audit = audit_machine_std_mvp_validated_release(
+            &validated,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            None,
+        )
+        .unwrap();
+        assert!(audit.checks.iter().all(|check| check.passed));
+        assert_eq!(
+            audit.audit_report_hash,
+            machine_std_audit_report_hash(&audit)
+        );
+
+        for bundle_id in [STD_NAT_BUNDLE_ID, STD_LIST_BUNDLE_ID, STD_ALL_BUNDLE_ID] {
+            let bundle = validated
+                .import_bundles
+                .bundles
+                .iter()
+                .find(|bundle| bundle.bundle_id == bundle_id)
+                .unwrap();
+            for certificate in &bundle.import_closure {
+                let built = built_by_module.get(&certificate.module).unwrap();
+                assert_eq!(
+                    certificate.certificate_bytes,
+                    built.certificate_bytes,
+                    "{bundle_id} must embed source-built certificate bytes for {}",
+                    certificate.module.as_dotted()
+                );
+            }
+            let session = crate::create_machine_session(&session_create_json_for_bundle(bundle))
+                .unwrap()
+                .session;
+            assert_eq!(
+                session.options.kernel_check_profile,
+                crate::KernelCheckProfileId::BuiltinNone
+            );
+            assert_eq!(
+                session.options.tactic_options,
+                machine_std_tactic_options_recipe_request(&bundle.recommended_tactic_options)
+            );
+            assert_eq!(session.imports, bundle.root_imports);
+        }
+
+        let parsed_theorem_index =
+            parse_machine_std_theorem_index_json(&theorem_index_json(&theorem_index)).unwrap();
+        assert_eq!(parsed_theorem_index, theorem_index);
+        let nat_bundle = validated
+            .import_bundles
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        let theorem_type = "Eq.{1} Nat (Nat.add Nat.zero Nat.zero) Nat.zero";
+        let search_session = crate::create_machine_session(
+            &session_create_json_for_bundle_with_theorem_type(nat_bundle, theorem_type),
+        )
+        .unwrap()
+        .session;
+        assert_eq!(search_session.initial_snapshot.open_goals, vec![GoalId(0)]);
+
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Std.Nat"]}"#;
+        let search = search_machine_theorems_for_goal(
+            &m8_search_json(&search_session, filters),
+            &search_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(search_ok) = search else {
+            panic!("source-built std theorem retrieval should succeed");
+        };
+        let nat_add_zero_sidecar = theorem_index_entry(&parsed_theorem_index, "Nat.add_zero");
+        let nat_add_zero = search_ok
+            .endpoint_fields
+            .results
+            .iter()
+            .find(|result| result.global_ref.name == Name::from_dotted("Nat.add_zero"))
+            .expect("retrieval should expose Nat.add_zero from the source-built theorem index");
+        assert_eq!(
+            nat_add_zero.global_ref.export_hash,
+            nat_add_zero_sidecar.global_ref.export_hash
+        );
+        assert_eq!(
+            nat_add_zero.global_ref.decl_interface_hash,
+            nat_add_zero_sidecar.global_ref.decl_interface_hash
+        );
+        assert!(nat_add_zero
+            .suggested_candidates
+            .iter()
+            .all(|candidate| candidate.status == MachineSuggestedCandidateStatus::Validated));
+        assert!(
+            !nat_add_zero.suggested_candidates.is_empty(),
+            "retrieval should produce candidates but not close the proof state"
+        );
+        assert_eq!(search_session.initial_snapshot.open_goals, vec![GoalId(0)]);
+
+        let candidate_jsons = nat_add_zero
+            .suggested_candidates
+            .iter()
+            .enumerate()
+            .map(|(index, candidate)| {
+                (
+                    format!("source_built_nat_add_zero_{index}"),
+                    m8_suggested_candidate_json(&candidate.candidate),
+                )
+            })
+            .collect::<Vec<_>>();
+        let batch_candidates = candidate_jsons
+            .iter()
+            .map(|(candidate_id, candidate_json)| {
+                m8_batch_candidate_json(candidate_id, candidate_json)
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let mut batch_session = crate::create_machine_session(
+            &session_create_json_for_bundle_with_theorem_type(nat_bundle, theorem_type),
+        )
+        .unwrap()
+        .session;
+        let batch = run_machine_tactic_batch_request(
+            &m8_batch_json(&batch_session, &format!("[{batch_candidates}]")),
+            &mut batch_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(batch_ok) = batch else {
+            panic!("source-built std candidates should re-enter machine batch");
+        };
+        let success = batch_ok
+            .endpoint_fields
+            .results
+            .iter()
+            .find_map(|item| match item {
+                MachineTacticBatchItemResponse::Success {
+                    candidate_id,
+                    candidate_hash,
+                    next_snapshot_id,
+                    next_state_fingerprint,
+                    proof_delta_hash,
+                } => Some((
+                    candidate_id,
+                    candidate_hash,
+                    next_snapshot_id,
+                    next_state_fingerprint,
+                    proof_delta_hash,
+                )),
+                MachineTacticBatchItemResponse::Error { .. } => None,
+            })
+            .expect("at least one retrieved candidate should close the source-built Nat goal");
+        let candidate_json = candidate_jsons
+            .iter()
+            .find(|(candidate_id, _)| candidate_id == success.0)
+            .map(|(_, json)| json.as_str())
+            .unwrap();
+        let replay_step = m8_replay_step_json(
+            batch_ok.endpoint_fields.previous_state_fingerprint,
+            GoalId(0),
+            candidate_json,
+            *success.1,
+            batch_ok.endpoint_fields.deterministic_budget_hash,
+            *success.4,
+            *success.3,
+        );
+        assert_eq!(*success.2, SnapshotId::from_state_fingerprint(*success.3));
+
+        let mut replay_session = crate::create_machine_session(
+            &session_create_json_for_bundle_with_theorem_type(nat_bundle, theorem_type),
+        )
+        .unwrap()
+        .session;
+        let replay = run_machine_replay_request(
+            &m8_replay_json(&replay_session, &format!("[{replay_step}]"), *success.3),
+            &mut replay_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(replay_ok) = replay else {
+            panic!("source-built std candidate should replay before adoption");
+        };
+        assert_eq!(
+            replay_ok.endpoint_fields.final_state_fingerprint,
+            *success.3
+        );
+
+        let verify = run_machine_verify_request(
+            &m8_verify_json(
+                &replay_session,
+                replay_ok.endpoint_fields.final_snapshot_id,
+                replay_ok.endpoint_fields.final_state_fingerprint,
+            ),
+            &replay_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(verify_ok) = verify else {
+            panic!("source-built std replay must verify before adoption");
+        };
+        assert_eq!(verify_ok.endpoint_fields.root_axioms_used, Vec::new());
+        for dependency in &verify_ok.endpoint_fields.dependency_import_closure {
+            let bundled = nat_bundle
+                .import_closure
+                .iter()
+                .find(|certificate| certificate.module == dependency.module)
+                .unwrap();
+            assert_eq!(
+                dependency.expected_export_hash,
+                bundled.expected_export_hash
+            );
+            assert_eq!(
+                dependency.expected_certificate_hash,
+                bundled.expected_certificate_hash
+            );
+            assert_eq!(
+                dependency.certificate.bytes,
+                lower_hex_bytes(&bundled.certificate_bytes)
+            );
+        }
+    }
+
+    #[test]
+    fn source_built_std_release_rejects_stale_machine_artifact_refs() {
+        let package = TestPackage::new("source_built_std_stale_ai_artifacts");
+        write_valid_mvp_source_package(package.path());
+        build_mvp_source_package_artifacts(package.path()).unwrap();
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        let import_bundles_json = import_bundle_set_json(&import_bundles);
+        let theorem_index_json_value = theorem_index_json(&theorem_index);
+        let rewrite_profiles_json = rewrite_profile_set_json(&rewrite_profiles);
+        let simp_profiles_json = simp_profile_set_json(&simp_profiles);
+        let axiom_report_json = axiom_report_json(&axiom_report);
+
+        let mut stale_export = release.clone();
+        module_artifact_mut(&mut stale_export, "Std.Nat").expected_export_hash = test_hash(240);
+        let err = load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+            package.path(),
+            &release_manifest_json(&stale_export),
+            MachineStdReleaseSidecarJson {
+                import_bundles_json: &import_bundles_json,
+                theorem_index_json: &theorem_index_json_value,
+                rewrite_profiles_json: &rewrite_profiles_json,
+                simp_profiles_json: &simp_profiles_json,
+                axiom_report_json: &axiom_report_json,
+                prompt_metadata_json: None,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::ModuleArtifactHashMismatch {
+                    field: "expected_export_hash",
+                    ..
+                }
+            )
+        ));
+
+        let mut stale_certificate = release.clone();
+        module_artifact_mut(&mut stale_certificate, "Std.Nat").expected_certificate_hash =
+            test_hash(241);
+        let err = load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+            package.path(),
+            &release_manifest_json(&stale_certificate),
+            MachineStdReleaseSidecarJson {
+                import_bundles_json: &import_bundles_json,
+                theorem_index_json: &theorem_index_json_value,
+                rewrite_profiles_json: &rewrite_profiles_json,
+                simp_profiles_json: &simp_profiles_json,
+                axiom_report_json: &axiom_report_json,
+                prompt_metadata_json: None,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdLibraryRelease(
+                MachineStdLibraryReleaseError::ModuleArtifactHashMismatch {
+                    field: "expected_certificate_hash",
+                    ..
+                }
+            )
+        ));
+
+        let mut stale_index = theorem_index.clone();
+        let nat_add_zero_index = theorem_index_entry_index(&stale_index, "Nat.add_zero");
+        stale_index.entries[nat_add_zero_index]
+            .global_ref
+            .decl_interface_hash = test_hash(242);
+        stale_index.entries.sort_by_cached_key(|entry| {
+            machine_std_global_ref_canonical_bytes(&entry.global_ref).unwrap()
+        });
+        refresh_theorem_index_hash(&mut stale_index);
+        let mut stale_index_release = release.clone();
+        stale_index_release.theorem_index_hash = stale_index.index_hash;
+        let stale_theorem_index_json = theorem_index_json(&stale_index);
+        let err = load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+            package.path(),
+            &release_manifest_json(&stale_index_release),
+            MachineStdReleaseSidecarJson {
+                import_bundles_json: &import_bundles_json,
+                theorem_index_json: &stale_theorem_index_json,
+                rewrite_profiles_json: &rewrite_profiles_json,
+                simp_profiles_json: &simp_profiles_json,
+                axiom_report_json: &axiom_report_json,
+                prompt_metadata_json: None,
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MachineStdReleaseArtifactError::InvalidStdTheoremIndex(
+                MachineStdTheoremIndexError::InvalidEntryMembership { .. }
+            )
+        ));
     }
 
     #[test]
@@ -20629,6 +21011,17 @@ import Std.Nat
             .unwrap()
     }
 
+    fn module_artifact_mut<'a>(
+        release: &'a mut MachineStdLibraryRelease,
+        module: &str,
+    ) -> &'a mut MachineStdModuleArtifact {
+        release
+            .modules
+            .iter_mut()
+            .find(|artifact| artifact.module == Name::from_dotted(module))
+            .unwrap()
+    }
+
     fn assert_nat_family_matches_std_nat_exports(
         loaded: &MachineStdLoadedRelease,
         family: &NatFamilyRef,
@@ -21188,6 +21581,13 @@ import Std.Nat
     }
 
     fn session_create_json_for_bundle(bundle: &MachineStdImportBundle) -> String {
+        session_create_json_for_bundle_with_theorem_type(bundle, "Prop")
+    }
+
+    fn session_create_json_for_bundle_with_theorem_type(
+        bundle: &MachineStdImportBundle,
+        theorem_type_source: &str,
+    ) -> String {
         let allow_axioms_json = format!(
             "[{}]",
             bundle
@@ -21205,7 +21605,7 @@ import Std.Nat
                 "theorem_name":"Scratch.t",
                 "source_index":0,
                 "universe_params":[],
-                "theorem_type":{{"format":"machine_surface_v1","source":"Prop"}}
+                "theorem_type":{{"format":"machine_surface_v1","source":"{}"}}
               }},
               "import_closure":[{}],
               "imports":[{}],
@@ -21216,6 +21616,7 @@ import Std.Nat
                 "tactic_options":{}
               }}
             }}"#,
+            theorem_type_source,
             bundle
                 .import_closure
                 .iter()
@@ -21311,6 +21712,79 @@ import Std.Nat
 
     fn m8_batch_candidate_json(candidate_id: &str, candidate_json: &str) -> String {
         format!(r#"{{"candidate_id":"{candidate_id}","candidate":{candidate_json}}}"#)
+    }
+
+    fn m8_replay_step_json(
+        previous_state_fingerprint: Hash,
+        goal_id: GoalId,
+        candidate: &str,
+        candidate_hash: Hash,
+        deterministic_budget_hash: Hash,
+        proof_delta_hash: Hash,
+        next_state_fingerprint: Hash,
+    ) -> String {
+        format!(
+            r#"{{
+              "previous_state_fingerprint":"{}",
+              "goal_id":"{}",
+              "candidate":{},
+              "deterministic_budget":{},
+              "candidate_hash":"{}",
+              "deterministic_budget_hash":"{}",
+              "proof_delta_hash":"{}",
+              "next_state_fingerprint":"{}"
+            }}"#,
+            format_hash_string(&previous_state_fingerprint),
+            format_goal_id_wire(goal_id),
+            candidate,
+            m8_budget_json(),
+            format_hash_string(&candidate_hash),
+            format_hash_string(&deterministic_budget_hash),
+            format_hash_string(&proof_delta_hash),
+            format_hash_string(&next_state_fingerprint),
+        )
+    }
+
+    fn m8_replay_json(
+        session: &crate::MachineProofSession,
+        steps: &str,
+        final_state_fingerprint: Hash,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "plan":{{
+                "protocol_version":"npa.machine-api.v1",
+                "session_root_hash":"{}",
+                "initial_state_fingerprint":"{}",
+                "steps":{},
+                "final_state_fingerprint":"{}"
+              }}
+            }}"#,
+            session.session_id.wire(),
+            format_hash_string(&session.session_root_hash),
+            format_hash_string(&session.initial_snapshot.state_fingerprint),
+            steps,
+            format_hash_string(&final_state_fingerprint),
+        )
+    }
+
+    fn m8_verify_json(
+        session: &crate::MachineProofSession,
+        snapshot_id: SnapshotId,
+        state_fingerprint: Hash,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "mode":"certificate"
+            }}"#,
+            session.session_id.wire(),
+            snapshot_id.wire(),
+            format_hash_string(&state_fingerprint),
+        )
     }
 
     fn m8_suggested_candidate_json(candidate: &MachineTacticCandidate) -> String {
