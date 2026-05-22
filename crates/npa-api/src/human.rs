@@ -14,13 +14,15 @@ use crate::{
     HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
     HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
     HumanSessionCreateRequest, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
-    HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
-    HumanStateRequestError, HumanStateRequestHeader, HumanStructuredProofStateError,
-    HumanTacticScriptError, HumanTacticScriptRunOk, HumanTacticScriptRunRequest,
-    HumanTacticStateRecordError, HumanTacticStateRecordOk, HumanTacticStateRecordRequest,
-    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError, LocalId,
-    StructuredExpr, StructuredGoal, StructuredGoalStatus, StructuredHypothesis,
-    StructuredProofState,
+    HumanSimpLiteTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
+    HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
+    HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
+    HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
+    HumanStructuredProofStateError, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
+    HumanTacticStateRecordRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
+    HumanTacticTermError, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
+    StructuredHypothesis, StructuredProofState,
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
@@ -144,6 +146,7 @@ pub fn create_human_session(
         source_interface: collected.source_interface,
         active_imported_source_interfaces: collected.active_imports,
         proof_states: HumanProofStateStore::new(),
+        current_state_id: None,
         messages: collected.messages,
     };
     store.insert_session(session);
@@ -207,6 +210,7 @@ pub fn start_human_session_proof(
             request.messages,
         )
         .map_err(human_proof_state_start_error)?;
+    session.current_state_id = Some(entry.state_id.clone());
 
     Ok(HumanProofStateStartOk {
         session_id: request.session_id,
@@ -248,6 +252,7 @@ pub fn record_human_tactic_state(
                 request.parent_state_id.clone(),
             )
         })?;
+    session.current_state_id = Some(entry.state_id.clone());
 
     Ok(HumanTacticStateRecordOk {
         session_id: request.session_id,
@@ -300,6 +305,240 @@ pub fn materialize_human_proof_state(
         goals,
         messages: entry.messages.clone(),
     })
+}
+
+pub fn get_human_state_by_id(
+    store: &HumanProofSessionStore,
+    request: HumanStateByIdRequest,
+) -> Result<HumanStateLookupOk, HumanStateApiError> {
+    validate_human_state_request_document(store, request.header.clone())?;
+    Ok(HumanStateLookupOk {
+        state: materialize_human_state_for_api(store, &request.header, &request.state_id)?,
+    })
+}
+
+pub fn get_human_state_goals(
+    store: &HumanProofSessionStore,
+    request: HumanStateGoalsRequest,
+) -> Result<HumanStateGoalsOk, HumanStateApiError> {
+    validate_human_state_request_document(store, request.header.clone())?;
+    let entry = human_state_entry_for_api(store, &request.header, &request.state_id)?;
+    let goals = human_state_goal_summaries_for_api(&request.header, entry)?;
+
+    Ok(HumanStateGoalsOk {
+        session_id: request.header.session_id,
+        state_id: entry.state_id.clone(),
+        document_version: entry.document_version,
+        selected_goal: entry.selected_goal.clone(),
+        goals,
+    })
+}
+
+pub fn get_current_human_state(
+    store: &HumanProofSessionStore,
+    request: HumanStateCurrentRequest,
+) -> Result<HumanStateLookupOk, HumanStateApiError> {
+    validate_human_state_request_document(store, request.header.clone())?;
+    let session = store
+        .session(&request.header.session_id)
+        .expect("Human state request document validation checked session existence");
+    let state_id =
+        session
+            .current_state_id
+            .clone()
+            .ok_or_else(|| HumanStateApiError::NoCurrentState {
+                session_id: request.header.session_id.clone(),
+                document_version: request.header.document_version,
+            })?;
+
+    Ok(HumanStateLookupOk {
+        state: materialize_human_state_for_api(store, &request.header, &state_id)?,
+    })
+}
+
+pub fn get_human_state_at(
+    store: &HumanProofSessionStore,
+    request: HumanStateAtRequest,
+) -> Result<HumanStateLookupOk, HumanStateApiError> {
+    validate_human_state_request_document(store, request.header.clone())?;
+    let session = store
+        .session(&request.header.session_id)
+        .expect("Human state request document validation checked session existence");
+    let state_id =
+        human_state_id_at_position(session, request.header.document_version, request.position)
+            .ok_or_else(|| HumanStateApiError::NoProofStateAtPosition {
+                session_id: request.header.session_id.clone(),
+                document_version: request.header.document_version,
+                position: request.position,
+            })?;
+
+    Ok(HumanStateLookupOk {
+        state: materialize_human_state_for_api(store, &request.header, &state_id)?,
+    })
+}
+
+fn materialize_human_state_for_api(
+    store: &HumanProofSessionStore,
+    header: &HumanStateRequestHeader,
+    state_id: &crate::HumanStateId,
+) -> Result<StructuredProofState, HumanStateApiError> {
+    human_state_entry_for_api(store, header, state_id)?;
+
+    materialize_human_proof_state(store, &header.session_id, state_id)
+        .map_err(|error| human_state_materialization_error(header, state_id, error))
+}
+
+fn human_state_entry_for_api<'session>(
+    store: &'session HumanProofSessionStore,
+    header: &HumanStateRequestHeader,
+    state_id: &crate::HumanStateId,
+) -> Result<&'session HumanProofStateEntry, HumanStateApiError> {
+    let session = store
+        .session(&header.session_id)
+        .expect("Human state request document validation checked session existence");
+    let entry =
+        session
+            .proof_states
+            .state(state_id)
+            .ok_or_else(|| HumanStateApiError::UnknownState {
+                session_id: header.session_id.clone(),
+                state_id: state_id.clone(),
+            })?;
+    if entry.document_version != header.document_version {
+        return Err(HumanStateApiError::StaleProofState {
+            session_id: header.session_id.clone(),
+            state_id: state_id.clone(),
+            requested_document_version: header.document_version,
+            state_document_version: entry.document_version,
+        });
+    }
+    Ok(entry)
+}
+
+fn human_state_goal_summaries_for_api(
+    header: &HumanStateRequestHeader,
+    entry: &HumanProofStateEntry,
+) -> Result<Vec<HumanStateGoalSummary>, HumanStateApiError> {
+    let mut goals = Vec::with_capacity(entry.state.open_goals.len());
+    for machine_goal_id in &entry.state.open_goals {
+        let human_goal_id = entry
+            .human_goal_for_machine_goal(*machine_goal_id)
+            .cloned()
+            .ok_or_else(|| {
+                human_state_materialization_error(
+                    header,
+                    &entry.state_id,
+                    HumanStructuredProofStateError::MissingGoalMapping {
+                        state_id: entry.state_id.clone(),
+                        machine_goal_id: *machine_goal_id,
+                    },
+                )
+            })?;
+        let goal = entry.state.goal(*machine_goal_id).map_err(|diagnostic| {
+            human_state_materialization_error(
+                header,
+                &entry.state_id,
+                HumanStructuredProofStateError::MachineGoal {
+                    state_id: entry.state_id.clone(),
+                    machine_goal_id: *machine_goal_id,
+                    diagnostic: Box::new(diagnostic),
+                },
+            )
+        })?;
+
+        let mut local_names = Vec::with_capacity(goal.context.len());
+        let mut context = Vec::with_capacity(goal.context.len());
+        for local in &goal.context {
+            let ty = human_structured_expr_pretty(&local.ty, &local_names);
+            let value = local
+                .value
+                .as_ref()
+                .map(|value| human_structured_expr_pretty(value, &local_names));
+            context.push(human_state_goal_summary_hypothesis_pretty(
+                &local.name,
+                &ty,
+                value.as_deref(),
+            ));
+            local_names.push(local.name.clone());
+        }
+        let target = human_structured_expr_pretty(&goal.target, &local_names);
+        goals.push(HumanStateGoalSummary {
+            goal_id: human_goal_id,
+            pretty: human_state_goal_summary_pretty(&context, &target),
+        });
+    }
+    Ok(goals)
+}
+
+fn human_state_goal_summary_hypothesis_pretty(name: &str, ty: &str, value: Option<&str>) -> String {
+    match value {
+        Some(value) => format!("{name} : {ty} := {value}"),
+        None => format!("{name} : {ty}"),
+    }
+}
+
+fn human_state_goal_summary_pretty(context: &[String], target: &str) -> String {
+    let mut lines = context.to_vec();
+    lines.push(format!("|- {target}"));
+    lines.join("\n")
+}
+
+fn human_state_materialization_error(
+    header: &HumanStateRequestHeader,
+    state_id: &crate::HumanStateId,
+    error: HumanStructuredProofStateError,
+) -> HumanStateApiError {
+    HumanStateApiError::StateMaterialization {
+        session_id: header.session_id.clone(),
+        state_id: state_id.clone(),
+        error: Box::new(error),
+    }
+}
+
+fn human_state_id_at_position(
+    session: &HumanProofSession,
+    document_version: crate::HumanDocumentVersion,
+    position: HumanSourcePosition,
+) -> Option<crate::HumanStateId> {
+    if position.file_id != session.document.file_id {
+        return None;
+    }
+
+    let mut best: Option<(&HumanProofStateEntry, u32, bool)> = None;
+    for entry in session.proof_states.states() {
+        if entry.document_version != document_version {
+            continue;
+        }
+        let Some(span) = entry.source_span else {
+            continue;
+        };
+        if !human_span_contains_position(span, position) {
+            continue;
+        }
+        let span_len = span.end.0.saturating_sub(span.start.0);
+        let is_current = session.current_state_id.as_ref() == Some(&entry.state_id);
+        let should_replace = best.is_none_or(|(best_entry, best_len, best_is_current)| {
+            span_len < best_len
+                || (span_len == best_len && is_current && !best_is_current)
+                || (span_len == best_len
+                    && is_current == best_is_current
+                    && entry.state_id > best_entry.state_id)
+        });
+        if should_replace {
+            best = Some((entry, span_len, is_current));
+        }
+    }
+    best.map(|(entry, _, _)| entry.state_id.clone())
+}
+
+fn human_span_contains_position(span: npa_frontend::Span, position: HumanSourcePosition) -> bool {
+    if span.file_id != position.file_id {
+        return false;
+    }
+    if span.start == span.end {
+        return position.offset == span.start;
+    }
+    span.start <= position.offset && position.offset < span.end
 }
 
 fn materialize_human_structured_goal(
@@ -519,6 +758,7 @@ pub fn update_human_document(
     session.document = document;
     session.source_interface = collected.source_interface;
     session.active_imported_source_interfaces = collected.active_imports;
+    session.current_state_id = None;
     session.messages = collected.messages;
 
     Ok(HumanDocumentUpdateOk {
@@ -2942,6 +3182,7 @@ mod tests {
         );
         assert!(session.source_interface.is_some());
         assert!(session.active_imported_source_interfaces.is_empty());
+        assert_eq!(session.current_state_id, None);
         assert!(session.messages.is_empty());
     }
 
@@ -3273,6 +3514,259 @@ theorem target : forall (P : Prop), forall (hp : P), P := by simp-lite";
                 .proof_states
                 .state_count(),
             2
+        );
+    }
+
+    #[test]
+    fn human_state_api_by_id_goals_current_and_at_hole() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem target (n : Nat) : Eq.{1} n n := by exact _";
+        let file_id = npa_frontend::FileId(25);
+        let by_offset = source.find("by").expect("source should contain by") as u32;
+        let hole_offset = source.find('_').expect("source should contain a hole") as u32;
+        let proof_span = npa_frontend::Span::new(file_id, by_offset, source.len() as u32);
+        let hole_span = npa_frontend::Span::new(file_id, hole_offset, hole_offset + 1);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.StateApi"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.StateApi.target"),
+                source_span: Some(proof_span),
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+        assert_eq!(
+            store
+                .session(&created.session_id)
+                .expect("session should exist")
+                .current_state_id,
+            Some(started.state_id.clone())
+        );
+
+        let parent = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("initial state should be stored")
+            .state
+            .clone();
+        let intro = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &parent,
+            goal_id: npa_tactic::GoalId(0),
+            name: &human_name("n", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro should expose the theorem parameter at the hole");
+        let recorded = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: intro.state.open_goals.first().copied(),
+                state: intro.state,
+                source_span: Some(hole_span),
+                messages: Vec::new(),
+            },
+        )
+        .expect("hole state should be recorded");
+        assert_eq!(
+            store
+                .session(&created.session_id)
+                .expect("session should exist")
+                .current_state_id,
+            Some(recorded.state_id.clone())
+        );
+
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let by_id = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+            },
+        )
+        .expect("state/by_id should materialize the recorded state");
+        assert_eq!(by_id.state.state_id, recorded.state_id);
+        let current = get_current_human_state(
+            &store,
+            HumanStateCurrentRequest {
+                header: header.clone(),
+            },
+        )
+        .expect("state/current should follow the session cursor");
+        assert_eq!(current.state.state_id, recorded.state_id);
+        let at_hole = get_human_state_at(
+            &store,
+            HumanStateAtRequest {
+                header: header.clone(),
+                position: HumanSourcePosition::new(file_id, hole_offset),
+            },
+        )
+        .expect("state/at should resolve the hole position to the recorded state");
+        assert_eq!(at_hole.state.state_id, recorded.state_id);
+        assert_eq!(at_hole.state.goals.len(), 1);
+        let goal = &at_hole.state.goals[0];
+        assert_eq!(goal.context.len(), 1);
+        assert_eq!(goal.context[0].name, "n");
+        assert_eq!(goal.context[0].ty.pretty, "Nat");
+        assert_eq!(goal.target.pretty, "n = n");
+
+        let goals = get_human_state_goals(
+            &store,
+            HumanStateGoalsRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+            },
+        )
+        .expect("state/goals should return lightweight goal displays");
+        assert_eq!(goals.state_id, recorded.state_id);
+        assert_eq!(goals.selected_goal, recorded.selected_goal.clone());
+        assert_eq!(goals.goals.len(), 1);
+        assert_eq!(
+            goals.goals[0].goal_id,
+            recorded.selected_goal.clone().unwrap()
+        );
+        assert!(goals.goals[0].pretty.contains("n : Nat"));
+        assert!(goals.goals[0].pretty.contains("|- n = n"));
+
+        let missing_state_id = crate::HumanStateId::new_unchecked("hst_missing");
+        let missing = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header: header.clone(),
+                state_id: missing_state_id.clone(),
+            },
+        )
+        .expect_err("unknown state ids should return a structured not-found error");
+        assert_eq!(
+            missing,
+            HumanStateApiError::UnknownState {
+                session_id: created.session_id.clone(),
+                state_id: missing_state_id,
+            }
+        );
+
+        let outside = get_human_state_at(
+            &store,
+            HumanStateAtRequest {
+                header,
+                position: HumanSourcePosition::new(file_id, 0),
+            },
+        )
+        .expect_err("source position outside a proof state should be structured not-found");
+        assert_eq!(
+            outside,
+            HumanStateApiError::NoProofStateAtPosition {
+                session_id: created.session_id,
+                document_version: created.document_version,
+                position: HumanSourcePosition::new(file_id, 0),
+            }
+        );
+    }
+
+    #[test]
+    fn human_state_api_rejects_stale_document_and_reports_no_current_state() {
+        let source = "theorem target : Prop := by simp-lite";
+        let file_id = npa_frontend::FileId(26);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.StateApiStale"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.StateApiStale.target"),
+                source_span: Some(npa_frontend::Span::new(file_id, 0, source.len() as u32)),
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+
+        let updated = update_human_document(
+            &mut store,
+            HumanDocumentUpdateRequest {
+                session_id: created.session_id.clone(),
+                current_module: npa_cert::Name::from_dotted("Api.StateApiStale"),
+                current_source: HumanCurrentModuleSource {
+                    file_id,
+                    source: "axiom P : Prop",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("document update should clear the current proof cursor");
+
+        let stale = get_current_human_state(
+            &store,
+            HumanStateCurrentRequest {
+                header: HumanStateRequestHeader {
+                    session_id: created.session_id.clone(),
+                    document_id: created.document_id.clone(),
+                    document_version: created.document_version,
+                },
+            },
+        )
+        .expect_err("old document versions should be stale for state/current");
+        assert_eq!(
+            stale,
+            HumanStateApiError::StaleDocumentVersion {
+                session_id: created.session_id.clone(),
+                document_id: created.document_id.clone(),
+                requested: created.document_version,
+                current: updated.document_version,
+            }
+        );
+
+        let no_current = get_current_human_state(
+            &store,
+            HumanStateCurrentRequest {
+                header: HumanStateRequestHeader {
+                    session_id: created.session_id.clone(),
+                    document_id: updated.document_id,
+                    document_version: updated.document_version,
+                },
+            },
+        )
+        .expect_err("updated document should not retain the old current proof state");
+        assert_eq!(
+            no_current,
+            HumanStateApiError::NoCurrentState {
+                session_id: created.session_id,
+                document_version: updated.document_version,
+            }
         );
     }
 

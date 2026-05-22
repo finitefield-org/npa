@@ -2,9 +2,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
-    FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr, HumanImportedSourceInterface,
-    HumanName, HumanRewriteRuleSyntax, HumanSourceInterface, HumanTacticScript,
-    MachineSurfaceCallableInterfaceTable, Span,
+    ByteOffset, FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr,
+    HumanImportedSourceInterface, HumanName, HumanRewriteRuleSyntax, HumanSourceInterface,
+    HumanTacticScript, MachineSurfaceCallableInterfaceTable, Span,
 };
 use npa_kernel::Expr;
 use npa_tactic::{
@@ -127,6 +127,64 @@ pub struct HumanStateRequestHeader {
     pub document_version: HumanDocumentVersion,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HumanSourcePosition {
+    pub file_id: FileId,
+    pub offset: ByteOffset,
+}
+
+impl HumanSourcePosition {
+    pub const fn new(file_id: FileId, offset: u32) -> Self {
+        Self {
+            file_id,
+            offset: ByteOffset(offset),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateByIdRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateGoalsRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateCurrentRequest {
+    pub header: HumanStateRequestHeader,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateAtRequest {
+    pub header: HumanStateRequestHeader,
+    pub position: HumanSourcePosition,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateLookupOk {
+    pub state: StructuredProofState,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateGoalsOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub document_version: HumanDocumentVersion,
+    pub selected_goal: Option<HumanGoalId>,
+    pub goals: Vec<HumanStateGoalSummary>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateGoalSummary {
+    pub goal_id: HumanGoalId,
+    pub pretty: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanSessionCreateOk {
     pub session_id: HumanSessionId,
@@ -153,6 +211,7 @@ pub struct HumanProofSession {
     pub source_interface: Option<HumanSourceInterface>,
     pub active_imported_source_interfaces: Vec<HumanImportedSourceInterface>,
     pub proof_states: HumanProofStateStore,
+    pub current_state_id: Option<HumanStateId>,
     pub messages: Vec<HumanDiagnostic>,
 }
 
@@ -329,6 +388,10 @@ impl HumanProofStateStore {
 
     pub fn state_count(&self) -> usize {
         self.entries.len()
+    }
+
+    pub fn states(&self) -> impl Iterator<Item = &HumanProofStateEntry> {
+        self.entries.values()
     }
 
     pub(crate) fn insert_initial_state(
@@ -877,6 +940,95 @@ pub enum HumanStateRequestError {
         requested: HumanDocumentVersion,
         current: HumanDocumentVersion,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanStateApiError {
+    UnknownSession {
+        session_id: HumanSessionId,
+    },
+    DocumentMismatch {
+        session_id: HumanSessionId,
+        requested: HumanDocumentId,
+        current: HumanDocumentId,
+    },
+    StaleDocumentVersion {
+        session_id: HumanSessionId,
+        document_id: HumanDocumentId,
+        requested: HumanDocumentVersion,
+        current: HumanDocumentVersion,
+    },
+    FutureDocumentVersion {
+        session_id: HumanSessionId,
+        document_id: HumanDocumentId,
+        requested: HumanDocumentVersion,
+        current: HumanDocumentVersion,
+    },
+    UnknownState {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+    },
+    StaleProofState {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        requested_document_version: HumanDocumentVersion,
+        state_document_version: HumanDocumentVersion,
+    },
+    NoCurrentState {
+        session_id: HumanSessionId,
+        document_version: HumanDocumentVersion,
+    },
+    NoProofStateAtPosition {
+        session_id: HumanSessionId,
+        document_version: HumanDocumentVersion,
+        position: HumanSourcePosition,
+    },
+    StateMaterialization {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        error: Box<HumanStructuredProofStateError>,
+    },
+}
+
+impl From<HumanStateRequestError> for HumanStateApiError {
+    fn from(error: HumanStateRequestError) -> Self {
+        match error {
+            HumanStateRequestError::UnknownSession { session_id } => {
+                Self::UnknownSession { session_id }
+            }
+            HumanStateRequestError::DocumentMismatch {
+                session_id,
+                requested,
+                current,
+            } => Self::DocumentMismatch {
+                session_id,
+                requested,
+                current,
+            },
+            HumanStateRequestError::StaleDocumentVersion {
+                session_id,
+                document_id,
+                requested,
+                current,
+            } => Self::StaleDocumentVersion {
+                session_id,
+                document_id,
+                requested,
+                current,
+            },
+            HumanStateRequestError::FutureDocumentVersion {
+                session_id,
+                document_id,
+                requested,
+                current,
+            } => Self::FutureDocumentVersion {
+                session_id,
+                document_id,
+                requested,
+                current,
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

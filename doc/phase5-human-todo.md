@@ -414,11 +414,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `/state/by_id` 相当の library API を追加する。
-- [ ] `/state/goals` 相当の軽量 API を追加し、goal id と pretty display を返す。
-- [ ] `/state/current` 相当の API を session cursor state に接続する。
-- [ ] `/state/at` 相当の API を source position と proof block / hole position に対応付ける。
-- [ ] not found / stale document / no proof state の error kind を構造化する。
+- [x] `/state/by_id` 相当の library API を追加する。
+- [x] `/state/goals` 相当の軽量 API を追加し、goal id と pretty display を返す。
+- [x] `/state/current` 相当の API を session cursor state に接続する。
+- [x] `/state/at` 相当の API を source position と proof block / hole position に対応付ける。
+- [x] not found / stale document / no proof state の error kind を構造化する。
 
 依存:
 
@@ -442,9 +442,9 @@ crates/npa-api/src/human.rs
 
 Acceptance criteria:
 
-- [ ] source position から current proof state を取得できる。
-- [ ] `_` hole の位置で該当 goal が返る。
-- [ ] source position が proof 外の場合は empty goals または structured not-found response を返す。
+- [x] source position から current proof state を取得できる。
+- [x] `_` hole の位置で該当 goal が返る。
+- [x] source position が proof 外の場合は empty goals または structured not-found response を返す。
 
 Verification:
 
@@ -454,7 +454,7 @@ cargo test -p npa-api human_state_api
 
 AI 速度ガード:
 
-- [ ] `/machine/snapshots/get` の include-pretty-free path に依存変更を入れない。
+- [x] `/machine/snapshots/get` の include-pretty-free path に依存変更を入れない。
 
 ---
 
