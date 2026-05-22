@@ -566,11 +566,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `/tactic/check` 相当の API を追加し、parse / validation / expected effect を返すが state を保存しない。
-- [ ] `/tactic/suggest` 相当の builtin suggestion を追加する。
-- [ ] `target is Pi -> intro`、`Eq t t -> exact Eq.refl t`、context exact、rw 候補、Nat induction 候補を実装する。
-- [ ] suggestion response に source、confidence、reason、suggested tactic text を含める。
-- [ ] suggestion は非信頼であり、採用前に `/tactic/run` へ再投入する。
+- [x] `/tactic/check` 相当の API を追加し、parse / validation / expected effect を返すが state を保存しない。
+- [x] `/tactic/suggest` 相当の builtin suggestion を追加する。
+- [x] `target is Pi -> intro`、`Eq t t -> exact Eq.refl t`、context exact、rw 候補、Nat induction 候補を実装する。
+- [x] suggestion response に source、confidence、reason、suggested tactic text を含める。
+- [x] suggestion は非信頼であり、採用前に `/tactic/run` へ再投入する。
 
 依存:
 
@@ -594,10 +594,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] Pi target で `intro` suggestion が返る。
-- [ ] reflexive equality target で `exact Eq.refl ...` suggestion が返る。
-- [ ] context に target と同型の local があると `exact h` suggestion が返る。
-- [ ] suggestion が失敗しても proof state は変わらない。
+- [x] Pi target で `intro` suggestion が返る。
+- [x] reflexive equality target で `exact Eq.refl ...` suggestion が返る。
+- [x] context に target と同型の local があると `exact h` suggestion が返る。
+- [x] suggestion が失敗しても proof state は変わらない。
 
 Verification:
 
@@ -607,7 +607,7 @@ cargo test -p npa-api human_tactic_suggest
 
 AI 速度ガード:
 
-- [ ] Human suggestion confidence / reason は Machine cache key、replay plan、certificate に入れない。
+- [x] Human suggestion confidence / reason は Machine cache key、replay plan、certificate に入れない。
 
 ---
 

@@ -403,6 +403,68 @@ impl HumanTacticRunSuggestionKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticCheckRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub tactic: String,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticCheckResponse {
+    pub status: HumanTacticRunStatus,
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub selected_goal: Option<HumanGoalId>,
+    pub closed_goals: Vec<HumanGoalId>,
+    pub expected_goals: Vec<StructuredGoal>,
+    pub proof_deltas: Vec<MachineProofDelta>,
+    pub messages: Vec<HumanDiagnostic>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticSuggestRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub max_results: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticSuggestResponse {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub suggestions: Vec<HumanTacticSuggestion>,
+    pub messages: Vec<HumanDiagnostic>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticSuggestion {
+    pub source: HumanTacticSuggestionSource,
+    pub confidence: u8,
+    pub reason: String,
+    pub tactic: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTacticSuggestionSource {
+    Builtin,
+}
+
+impl HumanTacticSuggestionSource {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Builtin => "builtin",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanSessionCreateOk {
     pub session_id: HumanSessionId,
     pub document_id: HumanDocumentId,
