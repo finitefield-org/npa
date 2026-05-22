@@ -47,6 +47,10 @@ pub enum HumanGlobalRef {
         name: npa_cert::Name,
         decl_interface_hash: npa_cert::Hash,
     },
+    Builtin {
+        name: npa_cert::Name,
+        decl_interface_hash: npa_cert::Hash,
+    },
     Local {
         index: usize,
         name: npa_cert::Name,
@@ -637,7 +641,11 @@ impl<'a> HumanResolver<'a> {
         {
             imported_candidates.insert(candidate_from_entry(entry));
         }
-        imported_candidates.into_vec()
+        if !imported_candidates.is_empty() {
+            return imported_candidates.into_vec();
+        }
+
+        builtin_candidate(name).into_iter().collect()
     }
 
     fn opened_namespace_candidates(&self, name: &HumanName) -> Vec<HumanNameCandidate> {
@@ -1487,6 +1495,14 @@ fn global_ref_sort_key(reference: &HumanGlobalRef) -> String {
             name.as_dotted(),
             hash_hex(decl_interface_hash)
         ),
+        HumanGlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => format!(
+            "builtin:{}:{}",
+            name.as_dotted(),
+            hash_hex(decl_interface_hash)
+        ),
         HumanGlobalRef::Local { index, name } => {
             format!("local:{index:08}:{}", name.as_dotted())
         }
@@ -1749,9 +1765,24 @@ fn name_from_human(name: &HumanName) -> npa_cert::Name {
 fn human_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> HumanName {
     match reference {
         HumanGlobalRef::Imported { name, .. }
+        | HumanGlobalRef::Builtin { name, .. }
         | HumanGlobalRef::Local { name, .. }
         | HumanGlobalRef::LocalGenerated { name, .. } => HumanName::new(name.0.clone(), span),
     }
+}
+
+fn builtin_candidate(name: &npa_cert::Name) -> Option<HumanNameCandidate> {
+    let decl_interface_hash = npa_cert::builtin_decl_interface_hash(name)?;
+    Some(HumanNameCandidate {
+        key: global_ref_sort_key(&HumanGlobalRef::Builtin {
+            name: name.clone(),
+            decl_interface_hash,
+        }),
+        reference: HumanGlobalRef::Builtin {
+            name: name.clone(),
+            decl_interface_hash,
+        },
+    })
 }
 
 #[cfg(test)]
@@ -2084,6 +2115,53 @@ def use_zero : Type := zero",
         };
         assert_eq!(module, &npa_cert::Name::from_dotted("Std.Nat.Basic"));
         assert_eq!(name, &npa_cert::Name::from_dotted("Std.Nat.zero"));
+    }
+
+    #[test]
+    fn exact_builtin_name_resolves_when_not_exported_by_import() {
+        let import = verified_import("Std.Logic.Eq", &["Eq", "Eq.refl"]);
+        let resolved = resolve_source(
+            "\
+import Std.Logic.Eq
+def use.{u,v} : Type := @Eq.rec.{u,v}",
+            &[import],
+        )
+        .expect("builtin Eq.rec should resolve even though Std.Logic.Eq does not export it");
+
+        assert_eq!(resolved.resolved_names.len(), 1);
+        let HumanResolvedName::Global(HumanGlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        }) = &resolved.resolved_names[0].resolved
+        else {
+            panic!("Eq.rec should resolve as a builtin global");
+        };
+        assert_eq!(name, &npa_cert::Name::from_dotted("Eq.rec"));
+        assert_eq!(
+            npa_cert::builtin_decl_interface_hash(name),
+            Some(*decl_interface_hash)
+        );
+    }
+
+    #[test]
+    fn imported_exact_name_takes_priority_over_builtin_name() {
+        let import = verified_import("Custom.EqRec", &["Eq.rec"]);
+        let resolved = resolve_source(
+            "\
+import Custom.EqRec
+def use.{u,v} : Type := @Eq.rec.{u,v}",
+            &[import],
+        )
+        .expect("imported exact name should still resolve before builtin fallback");
+
+        assert_eq!(resolved.resolved_names.len(), 1);
+        let HumanResolvedName::Global(HumanGlobalRef::Imported { module, name, .. }) =
+            &resolved.resolved_names[0].resolved
+        else {
+            panic!("Eq.rec should resolve to the imported exact name");
+        };
+        assert_eq!(module, &npa_cert::Name::from_dotted("Custom.EqRec"));
+        assert_eq!(name, &npa_cert::Name::from_dotted("Eq.rec"));
     }
 
     #[test]

@@ -16,6 +16,7 @@ struct ExpectedModule {
     imports: &'static [&'static str],
     definitions: &'static [&'static str],
     theorems: &'static [&'static str],
+    axioms: &'static [&'static str],
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -89,6 +90,20 @@ const REDUCTION_THEOREMS: &[&str] = &[
     "delta_id_nat",
 ];
 
+const EQ_REASONING_THEOREMS: &[&str] = &[
+    "eq_symm",
+    "eq_trans",
+    "eq_congr_arg",
+    "eq_congr_fun",
+    "eq_congr2",
+    "eq_subst",
+    "eq_transport_const",
+    "eq_rewrite_left",
+    "eq_rewrite_right",
+    "eq_cast_trans",
+    "eq_calc3",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -99,6 +114,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &[],
         definitions: &[],
         theorems: BASIC_THEOREMS,
+        axioms: &[],
     },
     ExpectedModule {
         module: "Proofs.Ai.Eq",
@@ -109,6 +125,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
         definitions: &[],
         theorems: EQ_THEOREMS,
+        axioms: &[],
     },
     ExpectedModule {
         module: "Proofs.Ai.Nat",
@@ -119,6 +136,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
         definitions: &[],
         theorems: NAT_THEOREMS,
+        axioms: &[],
     },
     ExpectedModule {
         module: "Proofs.Ai.Prop",
@@ -129,6 +147,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &[],
         definitions: &[],
         theorems: PROP_THEOREMS,
+        axioms: &[],
     },
     ExpectedModule {
         module: "Proofs.Ai.Reduction",
@@ -139,6 +158,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &["Std.Nat.Basic"],
         definitions: REDUCTION_DEFINITIONS,
         theorems: REDUCTION_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.EqReasoning",
+        source: "Proofs/Ai/EqReasoning/source.npa",
+        certificate: "Proofs/Ai/EqReasoning/certificate.npcert",
+        meta: "Proofs/Ai/EqReasoning/meta.json",
+        replay: "Proofs/Ai/EqReasoning/replay.json",
+        imports: &["Std.Logic.Eq"],
+        definitions: &[],
+        theorems: EQ_REASONING_THEOREMS,
+        axioms: &["Eq.rec"],
     },
 ];
 
@@ -191,7 +222,7 @@ fn ai_certificates_match_manifest_and_verify() {
             tagged_hash(decoded.hashes.certificate_hash),
             certificate_hash
         );
-        assert!(decoded.axiom_report.module_axioms.is_empty());
+        assert_axioms(&decoded, expected.axioms);
         assert_imports(&decoded, expected.imports);
 
         let mut session = VerifierSession::new();
@@ -201,7 +232,13 @@ fn ai_certificates_match_manifest_and_verify() {
         assert_eq!(verified.module(), &Name::from_dotted(expected.module));
         assert_eq!(tagged_hash(verified.export_hash()), export_hash);
         assert_eq!(tagged_hash(verified.certificate_hash()), certificate_hash);
-        assert!(verified.axiom_report().module_axioms.is_empty());
+        let verified_axioms = verified
+            .axiom_report()
+            .module_axioms
+            .iter()
+            .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+            .collect::<Vec<_>>();
+        assert_eq!(verified_axioms, expected.axioms);
 
         assert_definition_exports(&decoded, expected.definitions);
         assert_theorem_exports(&decoded, expected.theorems);
@@ -220,6 +257,10 @@ fn ai_certificates_match_manifest_and_verify() {
         for theorem in expected.theorems {
             assert!(meta.contains(&format!("\"name\": \"{theorem}\"")));
             assert!(block.contains(&format!("\"{theorem}\"")));
+        }
+        for axiom in expected.axioms {
+            assert!(meta.contains(&format!("\"{axiom}\"")));
+            assert!(block.contains(&format!("\"{axiom}\"")));
         }
 
         let replay = read_to_string(root.join(expected.replay));
@@ -323,6 +364,20 @@ fn assert_imports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
         .imports
         .iter()
         .map(|import| import.module.as_dotted())
+        .collect::<Vec<_>>();
+    let expected = expected
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+}
+
+fn assert_axioms(cert: &npa_cert::ModuleCert, expected: &[&str]) {
+    let actual = cert
+        .axiom_report
+        .module_axioms
+        .iter()
+        .map(|axiom| cert.name_table[axiom.name].as_dotted())
         .collect::<Vec<_>>();
     let expected = expected
         .iter()

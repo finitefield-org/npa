@@ -89,3 +89,21 @@ imports = ["Std.Nat.Basic"]
 definitions = ["reduction_id_nat"]
 theorems = ["beta_id_nat", "beta_const_nat", "let_id_nat", "let_const_nat", "delta_id_nat"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.EqReasoning"
+source = "Proofs/Ai/EqReasoning/source.npa"
+certificate = "Proofs/Ai/EqReasoning/certificate.npcert"
+meta = "Proofs/Ai/EqReasoning/meta.json"
+replay = "Proofs/Ai/EqReasoning/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:3eb1f94054f46fe74c2b7294f50ff6f0a5700e53a613f6b48f8a6d0f379a34b4"
+certificate_file_sha256 = "sha256:cd4c2338a26f0bd259103706e056bb05320777b1f473ce9263fda4ad94f86682"
+export_hash = "sha256:67f90711ce596378579688b337552c3ae555aada85f97c5d40eab2381e2d1679"
+axiom_report_hash = "sha256:5283e4bbd120c3ffa60356b600be06364c3739f9c1992538f75aa4c7df947968"
+certificate_hash = "sha256:1a146be8c2aee52e4e19e44c84357bbb40bf6f649efcc78f8f8174213abfab8e"
+imports = ["Std.Logic.Eq"]
+definitions = []
+theorems = ["eq_symm", "eq_trans", "eq_congr_arg", "eq_congr_fun", "eq_congr2", "eq_subst", "eq_transport_const", "eq_rewrite_left", "eq_rewrite_right", "eq_cast_trans", "eq_calc3"]
+axioms = ["Eq.rec"]

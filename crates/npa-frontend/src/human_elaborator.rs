@@ -1685,6 +1685,14 @@ fn human_tactic_global_ref_sort_key(reference: &HumanGlobalRef) -> String {
             name.as_dotted(),
             human_tactic_hash_hex(decl_interface_hash)
         ),
+        HumanGlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => format!(
+            "builtin:{}:{}",
+            name.as_dotted(),
+            human_tactic_hash_hex(decl_interface_hash)
+        ),
         HumanGlobalRef::Local { index, name } => {
             format!("local:{index:08}:{}", name.as_dotted())
         }
@@ -3006,6 +3014,13 @@ impl HumanBidirectionalElaborator {
         for import in active_imports {
             elaborator.add_import(import, module.module.span)?;
         }
+        let builtin_names = human_referenced_builtin_names(module);
+        add_human_builtin_decls_for_names(
+            &mut elaborator.env,
+            &builtin_names,
+            module.module.span,
+            "Human resolved builtin",
+        )?;
 
         Ok(elaborator)
     }
@@ -3759,6 +3774,7 @@ impl HumanImplicitInserter {
         for import in active_imports {
             inserter.add_import(import, module.module.span)?;
         }
+        inserter.add_referenced_builtins(module)?;
 
         Ok(inserter)
     }
@@ -3793,6 +3809,30 @@ impl HumanImplicitInserter {
                 HumanCallableSignature {
                     universe_params: export.universe_params.clone(),
                     implicit_profile,
+                },
+            );
+        }
+        Ok(())
+    }
+
+    fn add_referenced_builtins(&mut self, module: &ResolvedHumanModule) -> HumanResult<()> {
+        let builtin_names = human_referenced_builtin_names(module);
+        add_human_builtin_decls_for_names(
+            &mut self.env,
+            &builtin_names,
+            module.module.span,
+            "Human implicit builtin",
+        )?;
+        for name in builtin_names {
+            let dotted = name.as_dotted();
+            let Some(decl) = self.env.decl(&dotted) else {
+                continue;
+            };
+            self.signatures.insert(
+                dotted,
+                HumanCallableSignature {
+                    universe_params: decl.universe_params().to_vec(),
+                    implicit_profile: builtin_machine_callable_profile(&name).unwrap_or_default(),
                 },
             );
         }
@@ -4655,6 +4695,24 @@ fn add_referenced_builtin_decls_to_human_env(
     collect_const_names_from_human_decl(&mut names, decl);
     remove_human_decl_owned_const_names(&mut names, decl);
     add_human_builtin_decls_for_names(env, &names, span, context)
+}
+
+fn human_referenced_builtin_names(module: &ResolvedHumanModule) -> BTreeSet<npa_cert::Name> {
+    let mut names = BTreeSet::new();
+    for resolved in &module.resolved_names {
+        if let HumanResolvedName::Global(HumanGlobalRef::Builtin { name, .. }) = &resolved.resolved
+        {
+            names.insert(name.clone());
+        }
+    }
+    for notation in &module.resolved_notations {
+        for candidate in &notation.candidates {
+            if let HumanGlobalRef::Builtin { name, .. } = candidate {
+                names.insert(name.clone());
+            }
+        }
+    }
+    names
 }
 
 fn collect_const_names_from_human_decl(names: &mut BTreeSet<npa_cert::Name>, decl: &Decl) {
@@ -6300,6 +6358,7 @@ fn machine_child_name_from_machine(parent: &MachineName, child: HumanName) -> Ma
 fn machine_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> MachineName {
     match reference {
         HumanGlobalRef::Imported { name, .. }
+        | HumanGlobalRef::Builtin { name, .. }
         | HumanGlobalRef::Local { name, .. }
         | HumanGlobalRef::LocalGenerated { name, .. } => MachineName {
             parts: name.0.clone(),
@@ -6754,6 +6813,38 @@ inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
                 )
             )
         );
+    }
+
+    #[test]
+    fn human_imported_eq_module_allows_builtin_eq_rec_reference() {
+        let (_, source_interface, verified) = verified_human_import(
+            "Std.Logic.Eq",
+            "\
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq.{u} a a",
+        );
+        let output = compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+import Std.Logic.Eq
+def copy_eq_rec.{u,v} :
+  forall (A : Sort u), forall (a : A), forall (motive : forall (b : A), forall (h : @Eq.{u} A a b), Sort v), forall (minor : motive a (@Eq.refl.{u} A a)), forall (b : A), forall (h : @Eq.{u} A a b), motive b h :=
+  @Eq.rec.{u,v}",
+            &[verified],
+            &[source_interface],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human imported Eq should allow canonical builtin Eq.rec references");
+
+        let axioms = output
+            .certificate
+            .axiom_report
+            .module_axioms
+            .iter()
+            .map(|axiom| output.certificate.name_table[axiom.name].as_dotted())
+            .collect::<Vec<_>>();
+        assert_eq!(axioms, vec!["Eq.rec"]);
     }
 
     #[test]

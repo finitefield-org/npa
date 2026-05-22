@@ -14,6 +14,8 @@ Current bundles:
 
 - `Proofs/Ai/Basic/`: small no-import, no-axiom combinator and implication theorem module.
 - `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
+- `Proofs/Ai/EqReasoning/`: equality reasoning module importing `Std.Logic.Eq` and using the
+  expected builtin `Eq.rec` axiom interface.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
@@ -172,6 +174,14 @@ theorem-only modules.
 
 Implemented:
 
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `reduction_id_nat` | local Nat identity definition used by `delta_id_nat` |
+
+Theorem targets:
+
 | Theorem | Shape |
 | --- | --- |
 | `beta_id_nat` | `Nat -> Nat`, with proof `(fun x => x) n` |
@@ -180,7 +190,40 @@ Implemented:
 | `let_const_nat` | `Nat -> Nat`, with proof `let z : Nat := Nat.zero in z` |
 | `delta_id_nat` | `Nat -> Nat` through a local named identity definition |
 
-### P8+: Pythagorean Theorem Roadmap
+### P8: Equality Reasoning Corpus
+
+Module: `Proofs.Ai.EqReasoning`
+
+Introduce equality elimination as an explicit, audited dependency. This layer imports
+`Std.Logic.Eq` and intentionally uses the kernel builtin `Eq.rec` axiom interface. `Eq.rec` is
+recorded in the certificate axiom report and is checked against the expected axiom list; no
+additional module-local axioms are introduced.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| none | Uses imported `Eq`, `Eq.refl`, and builtin `Eq.rec` only |
+
+Theorem targets:
+
+| Theorem | Shape |
+| --- | --- |
+| `eq_symm` | symmetry of equality |
+| `eq_trans` | transitivity of equality |
+| `eq_congr_arg` | congruence under a function argument |
+| `eq_congr_fun` | congruence of equal functions at an argument |
+| `eq_congr2` | congruence for a binary function |
+| `eq_subst` | substitution into a proposition family |
+| `eq_transport_const` | transport through a constant proposition family |
+| `eq_rewrite_left` | left-to-right chained rewrite |
+| `eq_rewrite_right` | right-side rewrite through symmetry-shaped input |
+| `eq_cast_trans` | composed transport through two equalities |
+| `eq_calc3` | three-step equality calculation using transitivity |
+
+### P9+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -192,18 +235,28 @@ RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 This avoids making the first target depend on square roots. The later metric statement using
 `dist` can be added after nonnegative square roots and ordered-field facts are stable.
 
-Planned prerequisite and peer theorem targets:
+Planned contents:
 
-| Layer | Module | Required for Pythagorean theorem | Same-level important theorem targets |
-| --- | --- | --- | --- |
-| P8 | `Proofs.Ai.EqReasoning` | `eq_symm`, `eq_trans`, `eq_congr_arg`, `eq_congr_fun`, `eq_subst` | `eq_congr2`, `eq_transport_const`, `eq_cast_trans` |
-| P9 | `Proofs.Ai.Algebra.Ring` | `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `sub_eq_add_neg`, `mul_assoc`, `mul_comm`, `left_distrib`, `right_distrib` | `mul_zero`, `zero_mul`, `sub_self`, `add_left_cancel`, `mul_add`, `add_mul` |
-| P10 | `Proofs.Ai.Algebra.Square` | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sq_neg`, `two_mul` | `sum_two_squares_comm`, `sq_eq_sq_of_eq_or_neg_eq`, `square_nonneg` |
-| P11 | `Proofs.Ai.OrderedField` | `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_square_of_nonneg` for the later unsquared metric form | `sqrt_mul_self`, `dist_nonneg`, `eq_of_square_eq_square_nonneg` |
-| P12 | `Proofs.Ai.Vector.Basic` | `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_sub_def`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
-| P13 | `Proofs.Ai.Vector.Dot` | `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm`, `norm_sq_def`, `dist_sq_def` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
-| P14 | `Proofs.Ai.Geometry.RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
-| P15 | `Proofs.Ai.Geometry.Metric` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
+The `Definition / API declarations` column lists declarations introduced by `def`, structure
+fields, or primitives. They are type-checked declarations, not proof targets. The theorem columns
+list declarations that should have checked proof certificates. Definitional rewrite lemmas such as
+`sub_eq_add_neg` and `square_def` are theorem targets, although many should close by `Eq.refl`
+after unfolding.
+
+Completed prerequisite:
+
+- P8 `Proofs.Ai.EqReasoning` supplies equality symmetry, transitivity, congruence, substitution,
+  transport, and calculation lemmas.
+
+| Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
+| --- | --- | --- | --- | --- |
+| P9 | `Proofs.Ai.Algebra.Ring` | `zero`, `one`, `add`, `neg`, `sub`, `mul` | `sub_eq_add_neg`, `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `mul_assoc`, `mul_comm`, `left_distrib`, `right_distrib` | `mul_zero`, `zero_mul`, `sub_self`, `add_left_cancel`, `mul_add`, `add_mul` |
+| P10 | `Proofs.Ai.Algebra.Square` | `two`, `sq` | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sq_neg`, `two_mul` | `sum_two_squares_comm`, `sq_eq_sq_of_eq_or_neg_eq`, `square_nonneg` |
+| P11 | `Proofs.Ai.OrderedField` | `le`, `lt`, `sqrt` | `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_square_of_nonneg` for the later unsquared metric form | `sqrt_mul_self`, `dist_nonneg`, `eq_of_square_eq_square_nonneg` |
+| P12 | `Proofs.Ai.Vector.Basic` | `Vec`, `vec_zero`, `vec_add`, `vec_neg`, `vec_sub` | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
+| P13 | `Proofs.Ai.Vector.Dot` | `dot`, `normSq`, `distSq` | `norm_sq_def`, `dist_sq_def`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
+| P14 | `Proofs.Ai.Geometry.RightTriangle` | `Perp`, `RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
+| P15 | `Proofs.Ai.Geometry.Metric` | `dist` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
 
 The intended dependency order is:
 
@@ -214,9 +267,12 @@ EqReasoning
   -> Geometry.RightTriangle -> Geometry.Metric
 ```
 
-Recommended theorem contents by module:
+Recommended module contents:
 
 #### `Proofs.Ai.EqReasoning`
+
+No new definitions live here; the module builds theorem targets over imported `Eq` and the
+expected builtin `Eq.rec` axiom interface.
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -226,11 +282,34 @@ Recommended theorem contents by module:
 | `eq_congr_fun` | `f = g -> f x = g x` |
 | `eq_congr2` | `a = a' -> b = b' -> f a b = f a' b'` |
 | `eq_subst` | transport a proof across equality |
+| `eq_transport_const` | transport through a constant family |
 | `eq_rewrite_left` | rewrite the left side of an equality target |
 | `eq_rewrite_right` | rewrite the right side of an equality target |
+| `eq_cast_trans` | compose transports through two equalities |
 | `eq_calc3` | three-step equality chaining helper for AI-generated calc blocks |
 
 #### `Proofs.Ai.Algebra.Ring`
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `zero` | additive identity API |
+| `one` | multiplicative identity API |
+| `add` | addition API |
+| `neg` | additive inverse API |
+| `sub` | subtraction API, normally defined as `a + -b` |
+| `mul` | multiplication API |
+
+Definitional rewrite theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `sub_eq_add_neg` | `a - b = a + -b` |
+
+Algebra law theorem targets. If this module later represents an abstract `Ring` structure, these
+may be law fields or projections there; concrete scalar instances still need checked certificates
+for the laws.
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -240,7 +319,6 @@ Recommended theorem contents by module:
 | `zero_add` | `0 + a = a` |
 | `neg_add_cancel` | `-a + a = 0` |
 | `add_neg_cancel` | `a + -a = 0` |
-| `sub_eq_add_neg` | `a - b = a + -b` |
 | `sub_self` | `a - a = 0` |
 | `mul_assoc` | `(a * b) * c = a * (b * c)` |
 | `mul_comm` | `a * b = b * a` |
@@ -254,6 +332,15 @@ Recommended theorem contents by module:
 | `ring_normalize_add_mul3` | small normalization target for sums/products of three terms |
 
 #### `Proofs.Ai.Algebra.Square`
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `two` | scalar `2`, normally `1 + 1` |
+| `sq` | square operation, normally `sq a := a * a` |
+
+Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -270,6 +357,16 @@ Recommended theorem contents by module:
 
 #### `Proofs.Ai.OrderedField`
 
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `le` | non-strict order relation |
+| `lt` | strict order relation |
+| `sqrt` | square-root API for the later metric form |
+
+Theorem targets:
+
 | Theorem | Shape / purpose |
 | --- | --- |
 | `le_refl` | `a <= a` |
@@ -283,6 +380,18 @@ Recommended theorem contents by module:
 | `eq_of_square_eq_square_nonneg` | nonnegative equality from equal squares |
 
 #### `Proofs.Ai.Vector.Basic`
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Vec` | vector or point-difference carrier |
+| `vec_zero` | vector zero |
+| `vec_add` | vector addition |
+| `vec_neg` | vector negation |
+| `vec_sub` | vector subtraction, normally `u + -v` |
+
+Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -299,6 +408,16 @@ Recommended theorem contents by module:
 | `sub_sub_sub_cancel` | vector subtraction rearrangement used for triangle vertices |
 
 #### `Proofs.Ai.Vector.Dot`
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `dot` | inner product API |
+| `normSq` | squared norm, normally `dot v v` |
+| `distSq` | squared distance, normally `normSq (B - A)` |
+
+Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -321,6 +440,15 @@ Recommended theorem contents by module:
 
 #### `Proofs.Ai.Geometry.RightTriangle`
 
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Perp` | perpendicularity predicate |
+| `RightTriangle` | right-triangle predicate over three points |
+
+Theorem targets:
+
 | Theorem | Shape / purpose |
 | --- | --- |
 | `perp_iff_dot_eq_zero` | `Perp u v <-> dot u v = 0` |
@@ -339,6 +467,14 @@ Recommended theorem contents by module:
 | `thales_theorem` | circle/diameter characterization of right angles |
 
 #### `Proofs.Ai.Geometry.Metric`
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `dist` | distance API, normally `sqrt (distSq A B)` |
+
+Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |

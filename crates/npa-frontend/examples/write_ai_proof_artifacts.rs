@@ -13,6 +13,7 @@ struct ModuleArtifact {
     imports: &'static [&'static str],
     definitions: &'static [DefinitionArtifact],
     theorems: &'static [TheoremArtifact],
+    expected_axioms: &'static [&'static str],
 }
 
 struct DefinitionArtifact {
@@ -36,6 +37,7 @@ struct GeneratedModule {
     export_hash: String,
     axiom_report_hash: String,
     certificate_hash: String,
+    axioms: Vec<String>,
 }
 
 const BASIC_MODULE: ModuleArtifact = ModuleArtifact {
@@ -47,6 +49,7 @@ const BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     imports: &[],
     definitions: &[],
     theorems: BASIC_THEOREMS,
+    expected_axioms: &[],
 };
 
 const EQ_MODULE: ModuleArtifact = ModuleArtifact {
@@ -58,6 +61,7 @@ const EQ_MODULE: ModuleArtifact = ModuleArtifact {
     imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
     definitions: &[],
     theorems: EQ_THEOREMS,
+    expected_axioms: &[],
 };
 
 const NAT_MODULE: ModuleArtifact = ModuleArtifact {
@@ -69,6 +73,7 @@ const NAT_MODULE: ModuleArtifact = ModuleArtifact {
     imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
     definitions: &[],
     theorems: NAT_THEOREMS,
+    expected_axioms: &[],
 };
 
 const PROP_MODULE: ModuleArtifact = ModuleArtifact {
@@ -80,6 +85,7 @@ const PROP_MODULE: ModuleArtifact = ModuleArtifact {
     imports: &[],
     definitions: &[],
     theorems: PROP_THEOREMS,
+    expected_axioms: &[],
 };
 
 const REDUCTION_MODULE: ModuleArtifact = ModuleArtifact {
@@ -91,6 +97,19 @@ const REDUCTION_MODULE: ModuleArtifact = ModuleArtifact {
     imports: &["Std.Nat.Basic"],
     definitions: REDUCTION_DEFINITIONS,
     theorems: REDUCTION_THEOREMS,
+    expected_axioms: &[],
+};
+
+const EQ_REASONING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.EqReasoning",
+    source_path: "Proofs/Ai/EqReasoning/source.npa",
+    certificate_path: "Proofs/Ai/EqReasoning/certificate.npcert",
+    meta_path: "Proofs/Ai/EqReasoning/meta.json",
+    replay_path: "Proofs/Ai/EqReasoning/replay.json",
+    imports: &["Std.Logic.Eq"],
+    definitions: &[],
+    theorems: EQ_REASONING_THEOREMS,
+    expected_axioms: &["Eq.rec"],
 };
 
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
@@ -470,6 +489,97 @@ const REDUCTION_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const EQ_REASONING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "eq_symm",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (x : A), forall (y : A), forall (h : @Eq.{u} A x y), @Eq.{u} A y x",
+        proof:
+            "fun A => fun x => fun y => fun h => @Eq.rec.{u,0} A x (fun (b : A) => fun (hb : @Eq.{u} A x b) => @Eq.{u} A b x) (@Eq.refl.{u} A x) y h",
+    },
+    TheoremArtifact {
+        name: "eq_trans",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (x : A), forall (y : A), forall (z : A), forall (hxy : @Eq.{u} A x y), forall (hyz : @Eq.{u} A y z), @Eq.{u} A x z",
+        proof:
+            "fun A => fun x => fun y => fun z => fun hxy => fun hyz => @Eq.rec.{u,0} A y (fun (b : A) => fun (hb : @Eq.{u} A y b) => @Eq.{u} A x b) hxy z hyz",
+    },
+    TheoremArtifact {
+        name: "eq_congr_arg",
+        universe_params: &["u", "v"],
+        statement:
+            "forall (A : Sort u), forall (B : Sort v), forall (f : forall (x : A), B), forall (x : A), forall (y : A), forall (h : @Eq.{u} A x y), @Eq.{v} B (f x) (f y)",
+        proof:
+            "fun A => fun B => fun f => fun x => fun y => fun h => @Eq.rec.{u,0} A x (fun (b : A) => fun (hb : @Eq.{u} A x b) => @Eq.{v} B (f x) (f b)) (@Eq.refl.{v} B (f x)) y h",
+    },
+    TheoremArtifact {
+        name: "eq_congr_fun",
+        universe_params: &["u", "v"],
+        statement:
+            "forall (A : Sort u), forall (B : Sort v), forall (f : forall (x : A), B), forall (g : forall (x : A), B), forall (h : @Eq.{imax u v} (forall (x : A), B) f g), forall (x : A), @Eq.{v} B (f x) (g x)",
+        proof:
+            "fun A => fun B => fun f => fun g => fun h => fun x => @Eq.rec.{imax u v,0} (forall (x : A), B) f (fun (q : forall (x : A), B) => fun (hq : @Eq.{imax u v} (forall (x : A), B) f q) => @Eq.{v} B (f x) (q x)) (@Eq.refl.{v} B (f x)) g h",
+    },
+    TheoremArtifact {
+        name: "eq_congr2",
+        universe_params: &["u", "v", "w"],
+        statement:
+            "forall (A : Sort u), forall (B : Sort v), forall (C : Sort w), forall (f : forall (a : A), forall (b : B), C), forall (a : A), forall (a2 : A), forall (b : B), forall (b2 : B), forall (ha : @Eq.{u} A a a2), forall (hb : @Eq.{v} B b b2), @Eq.{w} C (f a b) (f a2 b2)",
+        proof:
+            "fun A => fun B => fun C => fun f => fun a => fun a2 => fun b => fun b2 => fun ha => fun hb => @Eq.rec.{u,0} A a (fun (a3 : A) => fun (ha3 : @Eq.{u} A a a3) => forall (b3 : B), forall (hb3 : @Eq.{v} B b b3), @Eq.{w} C (f a b) (f a3 b3)) (fun (b3 : B) => fun (hb3 : @Eq.{v} B b b3) => @Eq.rec.{v,0} B b (fun (b4 : B) => fun (hb4 : @Eq.{v} B b b4) => @Eq.{w} C (f a b) (f a b4)) (@Eq.refl.{w} C (f a b)) b3 hb3) a2 ha b2 hb",
+    },
+    TheoremArtifact {
+        name: "eq_subst",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (P : forall (x : A), Prop), forall (x : A), forall (y : A), forall (h : @Eq.{u} A x y), forall (px : P x), P y",
+        proof:
+            "fun A => fun P => fun x => fun y => fun h => fun px => @Eq.rec.{u,0} A x (fun (b : A) => fun (hb : @Eq.{u} A x b) => P b) px y h",
+    },
+    TheoremArtifact {
+        name: "eq_transport_const",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (P : Prop), forall (x : A), forall (y : A), forall (h : @Eq.{u} A x y), forall (p : P), P",
+        proof:
+            "fun A => fun P => fun x => fun y => fun h => fun p => @Eq.rec.{u,0} A x (fun (b : A) => fun (hb : @Eq.{u} A x b) => P) p y h",
+    },
+    TheoremArtifact {
+        name: "eq_rewrite_left",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (x : A), forall (y : A), forall (z : A), forall (hxy : @Eq.{u} A x y), forall (hyz : @Eq.{u} A y z), @Eq.{u} A x z",
+        proof:
+            "fun A => fun x => fun y => fun z => fun hxy => fun hyz => @Eq.rec.{u,0} A x (fun (y2 : A) => fun (hy2 : @Eq.{u} A x y2) => forall (z2 : A), forall (hyz2 : @Eq.{u} A y2 z2), @Eq.{u} A x z2) (fun (z2 : A) => fun (hxz2 : @Eq.{u} A x z2) => hxz2) y hxy z hyz",
+    },
+    TheoremArtifact {
+        name: "eq_rewrite_right",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (x : A), forall (y : A), forall (z : A), forall (hxy : @Eq.{u} A x y), forall (hzx : @Eq.{u} A z x), @Eq.{u} A z y",
+        proof:
+            "fun A => fun x => fun y => fun z => fun hxy => fun hzx => @Eq.rec.{u,0} A x (fun (y2 : A) => fun (hy2 : @Eq.{u} A x y2) => forall (z2 : A), forall (hzx2 : @Eq.{u} A z2 x), @Eq.{u} A z2 y2) (fun (z2 : A) => fun (hzx2 : @Eq.{u} A z2 x) => hzx2) y hxy z hzx",
+    },
+    TheoremArtifact {
+        name: "eq_cast_trans",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (P : forall (x : A), Prop), forall (x : A), forall (y : A), forall (z : A), forall (hxy : @Eq.{u} A x y), forall (hyz : @Eq.{u} A y z), forall (px : P x), P z",
+        proof:
+            "fun A => fun P => fun x => fun y => fun z => fun hxy => fun hyz => fun px => @Eq.rec.{u,0} A y (fun (z2 : A) => fun (hz2 : @Eq.{u} A y z2) => P z2) (@Eq.rec.{u,0} A x (fun (y2 : A) => fun (hy2 : @Eq.{u} A x y2) => P y2) px y hxy) z hyz",
+    },
+    TheoremArtifact {
+        name: "eq_calc3",
+        universe_params: &["u"],
+        statement:
+            "forall (A : Sort u), forall (w : A), forall (x : A), forall (y : A), forall (z : A), forall (hwx : @Eq.{u} A w x), forall (hxy : @Eq.{u} A x y), forall (hyz : @Eq.{u} A y z), @Eq.{u} A w z",
+        proof:
+            "fun A => fun w => fun x => fun y => fun z => fun hwx => fun hxy => fun hyz => @eq_trans.{u} A w y z (@eq_trans.{u} A w x y hwx hxy) hyz",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -499,6 +609,8 @@ fn run() -> Result<(), String> {
         verified_human_import("Std.Nat.Basic", NAT_IMPORT_SOURCE)?;
     let eq_imports = vec![eq_import.clone(), nat_import.clone()];
     let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
+    let eq_reasoning_imports = vec![eq_import.clone()];
+    let eq_reasoning_source_interfaces = vec![eq_source_interface.clone()];
     let nat_imports = vec![eq_import.clone(), nat_import.clone()];
     let nat_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let reduction_imports = vec![nat_import];
@@ -519,10 +631,16 @@ fn run() -> Result<(), String> {
         &reduction_imports,
         &reduction_source_interfaces,
     )?;
+    let eq_reasoning = build_and_write_module(
+        &proof_root,
+        &EQ_REASONING_MODULE,
+        &eq_reasoning_imports,
+        &eq_reasoning_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq, nat, prop, reduction]).as_bytes(),
+        manifest_toml(&[basic, eq, nat, prop, reduction, eq_reasoning]).as_bytes(),
     )?;
 
     Ok(())
@@ -557,10 +675,21 @@ fn build_and_write_module(
         &npa_cert::AxiomPolicy::normal(),
     )
     .map_err(|err| format!("generated certificate did not verify: {err:?}"))?;
-    if !verified.axiom_report().module_axioms.is_empty() {
+    let axioms = verified
+        .axiom_report()
+        .module_axioms
+        .iter()
+        .map(|axiom| verified.name_table()[axiom.name].as_dotted())
+        .collect::<Vec<_>>();
+    let expected_axioms = config
+        .expected_axioms
+        .iter()
+        .map(|axiom| (*axiom).to_owned())
+        .collect::<Vec<_>>();
+    if axioms != expected_axioms {
         return Err(format!(
-            "generated AI proof corpus module {} unexpectedly depends on axioms",
-            config.module
+            "generated AI proof corpus module {} has axioms {:?}, expected {:?}",
+            config.module, axioms, expected_axioms
         ));
     }
 
@@ -580,6 +709,7 @@ fn build_and_write_module(
         export_hash,
         axiom_report_hash,
         certificate_hash,
+        axioms,
     };
 
     write(
@@ -767,7 +897,10 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
                     .collect::<Vec<_>>()
             )
         ));
-        manifest.push_str("axioms = []\n");
+        manifest.push_str(&format!(
+            "axioms = [{}]\n",
+            quoted_owned_items(&module.axioms)
+        ));
     }
     manifest
 }
@@ -801,7 +934,7 @@ fn meta_json(module: &GeneratedModule) -> String {
   \"axiom_report_hash\": \"{}\",
   \"certificate_hash\": \"{}\",
   \"imports\": [{}],
-  \"axioms\": [],
+  \"axioms\": [{}],
   \"declarations\": [
 {}
   ],
@@ -817,6 +950,7 @@ fn meta_json(module: &GeneratedModule) -> String {
         module.axiom_report_hash,
         module.certificate_hash,
         quoted_items(module.config.imports),
+        quoted_owned_items(&module.axioms),
         declarations
     )
 }
@@ -865,6 +999,14 @@ fn replay_step_json(declaration: &str, source_kind: &str, term: &str) -> String 
 }
 
 fn quoted_items(items: &[&str]) -> String {
+    items
+        .iter()
+        .map(|item| format!("\"{item}\""))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn quoted_owned_items(items: &[String]) -> String {
     items
         .iter()
         .map(|item| format!("\"{item}\""))
