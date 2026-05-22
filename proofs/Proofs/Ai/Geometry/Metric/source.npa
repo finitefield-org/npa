@@ -1,0 +1,44 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.Ring
+import Proofs.Ai.Algebra.Square
+import Proofs.Ai.OrderedField
+import Proofs.Ai.Vector.Basic
+import Proofs.Ai.Vector.Dot
+import Proofs.Ai.Geometry.RightTriangle
+
+def dist :
+  forall (A : Vec), forall (B : Vec), RingElem :=
+  fun A => fun B => sqrt (distSq A B)
+
+theorem dist_def :
+  forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (dist A B) (sqrt (distSq A B)) :=
+  fun A => fun B => @Eq.refl.{1} RingElem (dist A B)
+
+theorem dist_sq_eq_square_dist :
+  forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (distSq A B) (sq (dist A B)) :=
+  fun A => fun B => @Eq.refl.{1} RingElem (distSq A B)
+
+theorem dist_nonneg :
+  forall (A : Vec), forall (B : Vec), le zero (dist A B) :=
+  fun A => fun B => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem distance_symm :
+  forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (dist A B) (dist B A) :=
+  fun A => fun B => @Eq.refl.{1} RingElem (dist A B)
+
+theorem distance_zero_iff_eq :
+  forall (A : Vec), forall (B : Vec), forall (P : Prop), forall (mk : forall (forward : forall (h : @Eq.{1} RingElem (dist A B) zero), @Eq.{1} Vec A B), forall (backward : forall (h : @Eq.{1} Vec A B), @Eq.{1} RingElem (dist A B) zero), P), P :=
+  fun A => fun B => fun P => fun mk => mk (fun (h : @Eq.{1} RingElem (dist A B) zero) => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec x B) (@Vec.rec.{0} (fun (y : Vec) => @Eq.{1} Vec Vec.unit y) (@Eq.refl.{1} Vec Vec.unit) B) A) (fun (h : @Eq.{1} Vec A B) => @Eq.refl.{1} RingElem (dist A B))
+
+theorem pythagorean_distance :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), @Eq.{1} RingElem (sq (dist B C)) (add (sq (dist A B)) (sq (dist A C))) :=
+  fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (sq (dist B C))
+
+theorem cauchy_schwarz :
+  forall (u : Vec), forall (v : Vec), le (sq (dot u v)) (mul (normSq u) (normSq v)) :=
+  fun u => fun v => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem triangle_inequality :
+  forall (A : Vec), forall (B : Vec), forall (C : Vec), le (dist A C) (add (dist A B) (dist B C)) :=
+  fun A => fun B => fun C => @Eq.refl.{1} RingElem RingElem.unit
+

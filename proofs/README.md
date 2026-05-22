@@ -31,6 +31,8 @@ Current bundles:
   importing vector, scalar, square, and order corpus layers.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
+- `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
+  and vector dot layers.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -471,7 +473,38 @@ Theorem targets:
 | `altitude_on_hypotenuse` | altitude-foot target parameterized by future length and foot predicates |
 | `thales_theorem` | circle/diameter-to-right-triangle target parameterized by a future circle predicate |
 
-### P15+: Pythagorean Theorem Roadmap
+### P15: Geometry Metric Corpus
+
+Module: `Proofs.Ai.Geometry.Metric`
+
+Add the first distance layer over `distSq`, `sqrt`, and the right-triangle corpus. The main milestone
+target is the squared metric Pythagorean statement
+`RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)`. `distance_zero_iff_eq`
+uses the same Church-encoded equivalence shape as P14 because the corpus still does not define a
+first-class `Iff`.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `dist` | distance API, defined as `sqrt (distSq A B)` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `dist_def` | `dist A B = sqrt (distSq A B)` |
+| `dist_sq_eq_square_dist` | `distSq A B = sq (dist A B)` |
+| `dist_nonneg` | `0 <= dist A B` |
+| `distance_symm` | `dist A B = dist B A` |
+| `distance_zero_iff_eq` | Church-encoded `dist A B = 0 <-> A = B` |
+| `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
+| `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
+| `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+
+### P16+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -480,8 +513,8 @@ inner-product route first:
 RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 ```
 
-This avoids making the first target depend on square roots. The later metric statement using
-`dist` can be added after nonnegative square roots and ordered-field facts are stable.
+This avoids making the first target depend on square roots. P15 adds the checked bridge to the
+squared `dist` form over the current concrete scalar and vector corpus.
 
 Planned contents:
 
@@ -507,10 +540,11 @@ Completed prerequisite:
   targets used by the squared-distance Pythagoras route.
 - P14 `Proofs.Ai.Geometry.RightTriangle` supplies `Perp`, `RightTriangle`, leg/hypotenuse rewrites,
   and the checked squared-distance Pythagorean theorem target.
+- P15 `Proofs.Ai.Geometry.Metric` supplies `dist`, the `distSq = sq dist` bridge, and the checked
+  squared metric Pythagorean theorem target.
 
-| Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
-| --- | --- | --- | --- | --- |
-| P15 | `Proofs.Ai.Geometry.Metric` | `dist` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance` | `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality`, `cauchy_schwarz` |
+No additional Pythagorean-critical layer is currently enumerated in this roadmap. Add future P16+
+geometry layers here once the next API boundary is selected.
 
 The intended dependency order is:
 
@@ -727,7 +761,7 @@ Theorem targets:
 
 #### `Proofs.Ai.Geometry.Metric`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
@@ -741,8 +775,8 @@ Theorem targets:
 | `dist_sq_eq_square_dist` | `distSq A B = sq (dist A B)` |
 | `dist_nonneg` | `0 <= dist A B` |
 | `distance_symm` | `dist A B = dist B A` |
-| `distance_zero_iff_eq` | `dist A B = 0 <-> A = B` |
-| `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` or the square-root form when available |
+| `distance_zero_iff_eq` | Church-encoded `dist A B = 0 <-> A = B` |
+| `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
 | `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
 

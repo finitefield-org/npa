@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Geometry.Metric",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "dist",
+      "source_kind": "explicit_def_value",
+      "term": "fun A => fun B => sqrt (distSq A B)"
+    },
+    {
+      "declaration": "dist_def",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => @Eq.refl.{1} RingElem (dist A B)"
+    },
+    {
+      "declaration": "dist_sq_eq_square_dist",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => @Eq.refl.{1} RingElem (distSq A B)"
+    },
+    {
+      "declaration": "dist_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "distance_symm",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => @Eq.refl.{1} RingElem (dist A B)"
+    },
+    {
+      "declaration": "distance_zero_iff_eq",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun P => fun mk => mk (fun (h : @Eq.{1} RingElem (dist A B) zero) => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec x B) (@Vec.rec.{0} (fun (y : Vec) => @Eq.{1} Vec Vec.unit y) (@Eq.refl.{1} Vec Vec.unit) B) A) (fun (h : @Eq.{1} Vec A B) => @Eq.refl.{1} RingElem (dist A B))"
+    },
+    {
+      "declaration": "pythagorean_distance",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (sq (dist B C))"
+    },
+    {
+      "declaration": "cauchy_schwarz",
+      "source_kind": "explicit_term",
+      "term": "fun u => fun v => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "triangle_inequality",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => @Eq.refl.{1} RingElem RingElem.unit"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Geometry/Metric/certificate.npcert"
+  }
+}

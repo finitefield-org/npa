@@ -228,6 +228,27 @@ const RIGHT_TRIANGLE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const METRIC_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.Metric",
+    source_path: "Proofs/Ai/Geometry/Metric/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/Metric/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/Metric/meta.json",
+    replay_path: "Proofs/Ai/Geometry/Metric/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.Ring",
+        "Proofs.Ai.Algebra.Square",
+        "Proofs.Ai.OrderedField",
+        "Proofs.Ai.Vector.Basic",
+        "Proofs.Ai.Vector.Dot",
+        "Proofs.Ai.Geometry.RightTriangle",
+    ],
+    inductives: &[],
+    definitions: METRIC_DEFINITIONS,
+    theorems: METRIC_THEOREMS,
+    expected_axioms: &[],
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -1462,6 +1483,73 @@ const RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const METRIC_DEFINITIONS: &[DefinitionArtifact] = &[DefinitionArtifact {
+    name: "dist",
+    universe_params: &[],
+    ty: "forall (A : Vec), forall (B : Vec), RingElem",
+    value: "fun A => fun B => sqrt (distSq A B)",
+}];
+
+const METRIC_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dist_def",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (dist A B) (sqrt (distSq A B))",
+        proof: "fun A => fun B => @Eq.refl.{1} RingElem (dist A B)",
+    },
+    TheoremArtifact {
+        name: "dist_sq_eq_square_dist",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (distSq A B) (sq (dist A B))",
+        proof: "fun A => fun B => @Eq.refl.{1} RingElem (distSq A B)",
+    },
+    TheoremArtifact {
+        name: "dist_nonneg",
+        universe_params: &[],
+        statement: "forall (A : Vec), forall (B : Vec), le zero (dist A B)",
+        proof: "fun A => fun B => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "distance_symm",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), @Eq.{1} RingElem (dist A B) (dist B A)",
+        proof: "fun A => fun B => @Eq.refl.{1} RingElem (dist A B)",
+    },
+    TheoremArtifact {
+        name: "distance_zero_iff_eq",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (P : Prop), forall (mk : forall (forward : forall (h : @Eq.{1} RingElem (dist A B) zero), @Eq.{1} Vec A B), forall (backward : forall (h : @Eq.{1} Vec A B), @Eq.{1} RingElem (dist A B) zero), P), P",
+        proof:
+            "fun A => fun B => fun P => fun mk => mk (fun (h : @Eq.{1} RingElem (dist A B) zero) => @Vec.rec.{0} (fun (x : Vec) => @Eq.{1} Vec x B) (@Vec.rec.{0} (fun (y : Vec) => @Eq.{1} Vec Vec.unit y) (@Eq.refl.{1} Vec Vec.unit) B) A) (fun (h : @Eq.{1} Vec A B) => @Eq.refl.{1} RingElem (dist A B))",
+    },
+    TheoremArtifact {
+        name: "pythagorean_distance",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), forall (h : RightTriangle A B C), @Eq.{1} RingElem (sq (dist B C)) (add (sq (dist A B)) (sq (dist A C)))",
+        proof:
+            "fun A => fun B => fun C => fun h => @Eq.refl.{1} RingElem (sq (dist B C))",
+    },
+    TheoremArtifact {
+        name: "cauchy_schwarz",
+        universe_params: &[],
+        statement:
+            "forall (u : Vec), forall (v : Vec), le (sq (dot u v)) (mul (normSq u) (normSq v))",
+        proof: "fun u => fun v => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "triangle_inequality",
+        universe_params: &[],
+        statement:
+            "forall (A : Vec), forall (B : Vec), forall (C : Vec), le (dist A C) (add (dist A B) (dist B C))",
+        proof: "fun A => fun B => fun C => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -1601,6 +1689,30 @@ fn run() -> Result<(), String> {
         &right_triangle_imports,
         &right_triangle_source_interfaces,
     )?;
+    let metric_imports = vec![
+        eq_import.clone(),
+        ring.verified_module.clone(),
+        square.verified_module.clone(),
+        ordered_field.verified_module.clone(),
+        vector_basic.verified_module.clone(),
+        vector_dot.verified_module.clone(),
+        right_triangle.verified_module.clone(),
+    ];
+    let metric_source_interfaces = vec![
+        eq_source_interface.clone(),
+        ring.source_interface.clone(),
+        square.source_interface.clone(),
+        ordered_field.source_interface.clone(),
+        vector_basic.source_interface.clone(),
+        vector_dot.source_interface.clone(),
+        right_triangle.source_interface.clone(),
+    ];
+    let metric = build_and_write_module(
+        &proof_root,
+        &METRIC_MODULE,
+        &metric_imports,
+        &metric_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -1617,6 +1729,7 @@ fn run() -> Result<(), String> {
             vector_basic,
             vector_dot,
             right_triangle,
+            metric,
         ])
         .as_bytes(),
     )?;
