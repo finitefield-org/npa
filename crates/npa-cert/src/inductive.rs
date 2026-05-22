@@ -4,7 +4,7 @@ use npa_kernel::{ConstructorDecl, Expr, InductiveDecl, Level, RecursorDecl, Recu
 
 use crate::{CertError, Name, Result};
 
-/// Result of the Phase 2 deterministic inductive artifact profile classifier.
+/// Result of the deterministic certificate inductive artifact profile classifier.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InductiveArtifactProfileCheckV1 {
     /// The declaration is in the MVP recursor profile.
@@ -13,7 +13,7 @@ pub enum InductiveArtifactProfileCheckV1 {
     UnsupportedMvpRecursorProfile(UnsupportedMvpRecursorProfileV1),
 }
 
-/// Unsupported recursor profile reason returned by the Phase 2 classifier.
+/// Unsupported recursor profile reason returned by the certificate classifier.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum UnsupportedMvpRecursorProfileV1 {
     /// The declaration would require a large-elimination profile.
@@ -24,7 +24,7 @@ pub enum UnsupportedMvpRecursorProfileV1 {
     UnsupportedEliminatorShape,
 }
 
-/// Classify whether an inductive declaration is supported by the Phase 2 MVP artifact generator.
+/// Classify whether an inductive declaration is supported by the certificate MVP artifact generator.
 pub fn classify_inductive_artifact_profile_v1(
     base: &InductiveDecl,
 ) -> InductiveArtifactProfileCheckV1 {
@@ -59,7 +59,7 @@ pub fn classify_inductive_artifact_profile_v1(
     InductiveArtifactProfileCheckV1::SupportedMvpRecursor
 }
 
-/// Generate the Phase 2 MVP inductive artifacts for a supported base declaration.
+/// Generate the certificate MVP inductive artifacts for a supported base declaration.
 pub fn generate_inductive_artifacts_v1(base: &InductiveDecl) -> Result<InductiveDecl> {
     if classify_inductive_artifact_profile_v1(base)
         != InductiveArtifactProfileCheckV1::SupportedMvpRecursor

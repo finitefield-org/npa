@@ -726,7 +726,7 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
         manifest.push_str(&format!("meta = \"{}\"\n", module.config.meta_path));
         manifest.push_str(&format!("replay = \"{}\"\n", module.config.replay_path));
         manifest.push_str("producer_profile = \"human-surface-explicit-term\"\n");
-        manifest.push_str("trusted_status = \"verified_by_phase2_certificate\"\n");
+        manifest.push_str("trusted_status = \"verified_by_certificate\"\n");
         manifest.push_str(&format!("source_sha256 = \"{}\"\n", module.source_sha256));
         manifest.push_str(&format!(
             "certificate_file_sha256 = \"{}\"\n",
@@ -794,7 +794,7 @@ fn meta_json(module: &GeneratedModule) -> String {
   \"source\": \"{}\",
   \"certificate\": \"{}\",
   \"producer_profile\": \"human-surface-explicit-term\",
-  \"trusted_status\": \"verified_by_phase2_certificate\",
+  \"trusted_status\": \"verified_by_certificate\",
   \"source_sha256\": \"{}\",
   \"certificate_file_sha256\": \"{}\",
   \"export_hash\": \"{}\",

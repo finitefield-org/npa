@@ -10,8 +10,8 @@ use npa_frontend::{
 };
 use npa_kernel::{Expr, Level};
 
-const GLOBAL_REF_VIEW_TAG: &str = "npa.phase5.global-ref-view.v2";
-const LOCAL_ID_TAG: &str = "npa.phase5.local-id.v1";
+const GLOBAL_REF_VIEW_TAG: &str = "npa.machine-api.global-ref-view.v2";
+const LOCAL_ID_TAG: &str = "npa.machine-api.local-id.v1";
 const PREC_BINDER: u8 = 10;
 const PREC_APP: u8 = 80;
 const PREC_ATOM: u8 = 100;
@@ -143,7 +143,7 @@ impl Default for MachineDisplayRenderScope {
 pub struct MachineDisplayRenderScopeEntry {
     pub name: Name,
     pub view: MachineGlobalRefView,
-    pub owner_context: Phase5ResolvedDisplayCoreRefOwner,
+    pub owner_context: MachineApiResolvedDisplayCoreRefOwner,
     pub candidate_resolution: Option<MachineGlobalScopeEntry>,
     pub callable_ref: MachineSurfaceCallableRef,
 }
@@ -151,7 +151,7 @@ pub struct MachineDisplayRenderScopeEntry {
 impl MachineDisplayRenderScopeEntry {
     pub fn new(
         view: MachineGlobalRefView,
-        owner_context: Phase5ResolvedDisplayCoreRefOwner,
+        owner_context: MachineApiResolvedDisplayCoreRefOwner,
         callable_ref: MachineSurfaceCallableRef,
     ) -> Self {
         Self {
@@ -170,7 +170,7 @@ impl MachineDisplayRenderScopeEntry {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Phase5ResolvedDisplayCoreRefOwner {
+pub enum MachineApiResolvedDisplayCoreRefOwner {
     CurrentSessionRootModule {
         module: Name,
     },
@@ -431,7 +431,7 @@ pub fn renderer_qa_round_trip(
     validate_display_scope_against_qa_context(render_context, elab_context)?;
     let qa_context = elab_context
         .clone()
-        .with_additional_global_scope_entries(display_scope_phase3_projection(
+        .with_additional_global_scope_entries(display_scope_frontend_projection(
             render_context,
             display_import_index_offset,
         )?)
@@ -440,7 +440,7 @@ pub fn renderer_qa_round_trip(
         .map_err(|diagnostic| MachineExprRendererError::ElaborationFailed {
             diagnostic: Box::new(diagnostic),
         })?;
-    validate_phase3_round_trip_resolution(
+    validate_frontend_round_trip_resolution(
         &checked,
         render_context,
         &qa_context,
@@ -741,7 +741,7 @@ enum OwnerAwareExpr {
     Sort(Level),
     BVar(u32),
     Const {
-        owner_context: Box<Phase5ResolvedDisplayCoreRefOwner>,
+        owner_context: Box<MachineApiResolvedDisplayCoreRefOwner>,
         view: Box<MachineGlobalRefView>,
         levels: Vec<Level>,
     },
@@ -866,7 +866,7 @@ fn validate_owner_context(
 ) -> Result<(), MachineExprRendererError> {
     let matches = match (&entry.owner_context, &entry.view) {
         (
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: owner_module,
             },
             MachineGlobalRefView::CurrentModule { module, .. }
@@ -877,7 +877,7 @@ fn validate_owner_context(
             },
         ) => owner_module == module,
         (
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule { .. },
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule { .. },
             MachineGlobalRefView::CurrentModule { .. }
             | MachineGlobalRefView::LocalGenerated {
                 export_hash: None, ..
@@ -1001,7 +1001,7 @@ fn validate_candidate_resolution(
             _ => Ok(()),
         };
     };
-    if phase3_entry_matches_callable_ref(candidate_resolution, &entry.callable_ref) {
+    if frontend_entry_matches_callable_ref(candidate_resolution, &entry.callable_ref) {
         Ok(())
     } else {
         Err(
@@ -1012,7 +1012,7 @@ fn validate_candidate_resolution(
     }
 }
 
-fn validate_phase3_round_trip_resolution(
+fn validate_frontend_round_trip_resolution(
     checked: &MachineTermCheckResult,
     render_context: &MachineExprRendererContext<'_>,
     elab_context: &MachineTermElabContext,
@@ -1031,7 +1031,7 @@ fn validate_phase3_round_trip_resolution(
             entry.name() == &constant.name
                 && *entry.decl_interface_hash() == constant.decl_interface_hash
         });
-        let Some(phase3_entry) = matching.next() else {
+        let Some(frontend_entry) = matching.next() else {
             return Err(MachineExprRendererError::QAGlobalResolutionMissing {
                 name: constant.name.clone(),
                 decl_interface_hash: constant.decl_interface_hash,
@@ -1043,14 +1043,14 @@ fn validate_phase3_round_trip_resolution(
                 decl_interface_hash: constant.decl_interface_hash,
             });
         }
-        let expected_phase3_entry = expected_phase3_entry_for_display_entry(
+        let expected_frontend_entry = expected_frontend_entry_for_display_entry(
             display_entry,
             display_index,
             display_import_index_offset,
-            phase3_entry,
+            frontend_entry,
             elab_context,
         )?;
-        if phase3_entry != &expected_phase3_entry {
+        if frontend_entry != &expected_frontend_entry {
             return Err(MachineExprRendererError::QAGlobalResolutionMismatch {
                 name: constant.name.clone(),
             });
@@ -1066,7 +1066,7 @@ fn validate_candidate_resolution_in_qa_context(
     let Some(candidate_resolution) = &display_entry.candidate_resolution else {
         return Ok(());
     };
-    if phase3_entry_matches_callable_ref_in_context(
+    if frontend_entry_matches_callable_ref_in_context(
         candidate_resolution,
         &display_entry.callable_ref,
         elab_context,
@@ -1117,7 +1117,7 @@ fn display_entry_is_backed_by_qa_context(
             let decl_loaded =
                 elab_context.import_decl_loaded_in_kernel_env(module, export_hash, name);
             match &entry.owner_context {
-                Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+                MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                     module: owner_module,
                 } => {
                     *public_export
@@ -1126,7 +1126,7 @@ fn display_entry_is_backed_by_qa_context(
                         && direct_tactic_visible
                         && elab_context.current_module_is(owner_module)
                 }
-                Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+                MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                     owner_module,
                     owner_export_hash,
                 } if owner_module == module && owner_export_hash == export_hash => {
@@ -1140,7 +1140,7 @@ fn display_entry_is_backed_by_qa_context(
                         )
                         && *tactic_head_visible == (*public_export && direct_tactic_visible)
                 }
-                Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+                MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                     owner_module,
                     owner_export_hash,
                 } => {
@@ -1179,7 +1179,7 @@ fn display_entry_is_backed_by_qa_context(
             let decl_loaded =
                 elab_context.import_decl_loaded_in_kernel_env(module, export_hash, name);
             match &entry.owner_context {
-                Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+                MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                     module: owner_module,
                 } => {
                     *public_export
@@ -1188,7 +1188,7 @@ fn display_entry_is_backed_by_qa_context(
                         && direct_tactic_visible
                         && elab_context.current_module_is(owner_module)
                 }
-                Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+                MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                     owner_module,
                     owner_export_hash,
                 } if owner_module == module && owner_export_hash == export_hash => {
@@ -1204,7 +1204,7 @@ fn display_entry_is_backed_by_qa_context(
                         )
                         && *tactic_head_visible == (*public_export && direct_tactic_visible)
                 }
-                Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+                MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                     owner_module,
                     owner_export_hash,
                 } => {
@@ -1269,27 +1269,27 @@ fn display_entry_is_backed_by_qa_context(
     }
 }
 
-fn expected_phase3_entry_for_display_entry(
+fn expected_frontend_entry_for_display_entry(
     display_entry: &MachineDisplayRenderScopeEntry,
     display_index: usize,
     display_import_index_offset: u32,
-    phase3_entry: &MachineGlobalScopeEntry,
+    frontend_entry: &MachineGlobalScopeEntry,
     elab_context: &MachineTermElabContext,
 ) -> Result<MachineGlobalScopeEntry, MachineExprRendererError> {
     if let Some(candidate_resolution) = &display_entry.candidate_resolution {
         return Ok(candidate_resolution.clone());
     }
-    if phase3_entry_matches_callable_ref_in_context(
-        phase3_entry,
+    if frontend_entry_matches_callable_ref_in_context(
+        frontend_entry,
         &display_entry.callable_ref,
         elab_context,
     ) {
-        return Ok(phase3_entry.clone());
+        return Ok(frontend_entry.clone());
     }
-    display_entry_phase3_projection(display_entry, display_index, display_import_index_offset)
+    display_entry_frontend_projection(display_entry, display_index, display_import_index_offset)
 }
 
-fn display_scope_phase3_projection(
+fn display_scope_frontend_projection(
     context: &MachineExprRendererContext<'_>,
     display_import_index_offset: u32,
 ) -> Result<Vec<MachineGlobalScopeEntry>, MachineExprRendererError> {
@@ -1300,14 +1300,14 @@ fn display_scope_phase3_projection(
         .enumerate()
         .map(|(index, entry)| {
             entry.candidate_resolution.clone().map_or_else(
-                || display_entry_phase3_projection(entry, index, display_import_index_offset),
+                || display_entry_frontend_projection(entry, index, display_import_index_offset),
                 Ok,
             )
         })
         .collect()
 }
 
-fn display_entry_phase3_projection(
+fn display_entry_frontend_projection(
     entry: &MachineDisplayRenderScopeEntry,
     index: usize,
     import_index_offset: u32,
@@ -1377,11 +1377,11 @@ fn display_projection_import_index(
         .ok_or(MachineExprRendererError::ExpressionTooLarge)
 }
 
-fn phase3_entry_matches_callable_ref(
-    phase3_entry: &MachineGlobalScopeEntry,
+fn frontend_entry_matches_callable_ref(
+    frontend_entry: &MachineGlobalScopeEntry,
     callable_ref: &MachineSurfaceCallableRef,
 ) -> bool {
-    match (phase3_entry, callable_ref) {
+    match (frontend_entry, callable_ref) {
         (
             MachineGlobalScopeEntry::Imported {
                 name,
@@ -1432,15 +1432,15 @@ fn phase3_entry_matches_callable_ref(
     }
 }
 
-fn phase3_entry_matches_callable_ref_in_context(
-    phase3_entry: &MachineGlobalScopeEntry,
+fn frontend_entry_matches_callable_ref_in_context(
+    frontend_entry: &MachineGlobalScopeEntry,
     callable_ref: &MachineSurfaceCallableRef,
     elab_context: &MachineTermElabContext,
 ) -> bool {
-    if !phase3_entry_matches_callable_ref(phase3_entry, callable_ref) {
+    if !frontend_entry_matches_callable_ref(frontend_entry, callable_ref) {
         return false;
     }
-    match (phase3_entry, callable_ref) {
+    match (frontend_entry, callable_ref) {
         (
             MachineGlobalScopeEntry::Imported { import_index, .. },
             MachineSurfaceCallableRef::Imported {
@@ -1860,7 +1860,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: module.clone(),
                 owner_export_hash: export_hash,
             },
@@ -2181,7 +2181,7 @@ mod tests {
                 public_export: false,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: module.clone(),
                 owner_export_hash: h(1),
             },
@@ -2213,7 +2213,7 @@ mod tests {
                 decl_interface_hash: h(2),
                 source_index: 0,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: Name::from_dotted("Std.Logic"),
                 owner_export_hash: h(1),
             },
@@ -2247,7 +2247,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: Name::from_dotted("Root"),
             },
             MachineSurfaceCallableRef::Imported {
@@ -2278,7 +2278,7 @@ mod tests {
                 public_export: false,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: module.clone(),
             },
             MachineSurfaceCallableRef::CurrentGenerated {
@@ -2344,7 +2344,7 @@ mod tests {
     }
 
     #[test]
-    fn qa_round_trips_local_expression_through_phase3_elaboration() {
+    fn qa_round_trips_local_expression_through_frontend_elaboration() {
         let scope = MachineDisplayRenderScope::empty();
         let table = MachineSurfaceCallableInterfaceTable::empty();
         let base = vec![local("A", type0())];
@@ -2418,7 +2418,7 @@ mod tests {
     }
 
     #[test]
-    fn qa_round_trips_levels_after_phase3_normalization() {
+    fn qa_round_trips_levels_after_frontend_normalization() {
         let scope = MachineDisplayRenderScope::empty();
         let table = MachineSurfaceCallableInterfaceTable::empty();
         let render_context = MachineExprRendererContext {
@@ -2437,11 +2437,11 @@ mod tests {
             &elab_context,
             &type0(),
         )
-        .expect("renderer QA should compare levels after Phase 3 normalization");
+        .expect("renderer QA should compare levels after frontend normalization");
     }
 
     #[test]
-    fn qa_round_trips_constant_levels_after_phase3_normalization() {
+    fn qa_round_trips_constant_levels_after_frontend_normalization() {
         let module = Name::from_dotted("Root");
         let name = Name::from_dotted("Root.A");
         let decl_hash = h(7);
@@ -2458,7 +2458,7 @@ mod tests {
                 decl_interface_hash: decl_hash,
                 source_index: 0,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: module.clone(),
             },
             callable_ref,
@@ -2525,7 +2525,7 @@ mod tests {
                 decl_interface_hash: id_hash,
                 source_index: 0,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: module.clone(),
             },
             callable_ref.clone(),
@@ -2635,7 +2635,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: direct.module().clone(),
                 owner_export_hash: direct.export_hash(),
             },
@@ -2688,7 +2688,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unloaded.module().clone(),
                 owner_export_hash: unloaded.export_hash(),
             },
@@ -2735,7 +2735,7 @@ mod tests {
                 public_export: false,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: hidden.module.clone(),
                 owner_export_hash: hidden.export_hash,
             },
@@ -2793,7 +2793,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: Name::from_dotted("Root"),
             },
             MachineSurfaceCallableRef::Imported {
@@ -2840,7 +2840,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: Name::from_dotted("Forged.Owner"),
                 owner_export_hash: h(99),
             },
@@ -2914,7 +2914,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unrelated.module().clone(),
                 owner_export_hash: unrelated.export_hash(),
             },
@@ -2972,7 +2972,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: direct.module().clone(),
                 owner_export_hash: direct.export_hash(),
             },
@@ -3145,7 +3145,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: Name::from_dotted("Root"),
             },
             MachineSurfaceCallableRef::Imported {
@@ -3203,7 +3203,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: Name::from_dotted("Root"),
             },
             MachineSurfaceCallableRef::Imported {
@@ -3239,7 +3239,7 @@ mod tests {
             &elab_context,
             &type0(),
         )
-        .expect("direct imported refs may resolve through the existing Phase 3 import entry");
+        .expect("direct imported refs may resolve through the existing frontend import entry");
     }
 
     #[test]
@@ -3256,7 +3256,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: Name::from_dotted("Forged"),
             },
             MachineSurfaceCallableRef::Imported {
@@ -3343,7 +3343,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: forged_module.clone(),
                 owner_export_hash: h(99),
             },
@@ -3418,7 +3418,7 @@ mod tests {
                 decl_interface_hash: hidden_hash,
                 source_index: 42,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: root.clone(),
             },
             MachineSurfaceCallableRef::CurrentModule {
@@ -3464,7 +3464,7 @@ mod tests {
                 decl_interface_hash: decl_hash,
                 source_index: 0,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: forged_module.clone(),
             },
             MachineSurfaceCallableRef::CurrentModule {
@@ -3521,7 +3521,7 @@ mod tests {
                 decl_interface_hash: decl_hash,
                 source_index: 0,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: root_module.clone(),
             },
             MachineSurfaceCallableRef::CurrentModule {
@@ -3573,7 +3573,7 @@ mod tests {
                 decl_interface_hash: decl_hash,
                 source_index: 0,
             },
-            Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+            MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                 module: inner_module.clone(),
             },
             MachineSurfaceCallableRef::CurrentModule {
@@ -3634,7 +3634,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: true,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unary.module().clone(),
                 owner_export_hash: unary.export_hash(),
             },
@@ -3690,7 +3690,7 @@ mod tests {
                 public_export: false,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unary.module.clone(),
                 owner_export_hash: unary.export_hash,
             },
@@ -3742,7 +3742,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unary.module().clone(),
                 owner_export_hash: unary.export_hash(),
             },
@@ -3811,7 +3811,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unrelated.module().clone(),
                 owner_export_hash: unrelated.export_hash(),
             },
@@ -3866,7 +3866,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: unary.module().clone(),
                 owner_export_hash: unary.export_hash(),
             },
@@ -3949,7 +3949,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: direct.module().clone(),
                 owner_export_hash: direct.export_hash(),
             },
@@ -4012,7 +4012,7 @@ mod tests {
                 public_export: true,
                 tactic_head_visible: false,
             },
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: other.module().clone(),
                 owner_export_hash: other.export_hash(),
             },
@@ -4105,7 +4105,7 @@ mod tests {
     }
 
     #[test]
-    fn qa_rejects_phase3_resolution_that_differs_from_display_scope() {
+    fn qa_rejects_frontend_resolution_that_differs_from_display_scope() {
         let other = verified_core_module(
             npa_cert::CoreModule {
                 name: Name::from_dotted("Other.Module"),

@@ -642,7 +642,7 @@ fn axiom_ref_order_key(axiom: &AxiomRef) -> Vec<u8> {
 fn global_ref_order_key(global_ref: &GlobalRef) -> Vec<u8> {
     let mut out = Vec::new();
     // Keep these tags aligned with binary::encode_global_ref_to so BTreeSet order is the same as
-    // canonical GlobalRef byte order required by Phase 2.
+    // canonical GlobalRef byte order required by certificate serialization.
     match global_ref {
         GlobalRef::Builtin {
             name,

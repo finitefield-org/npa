@@ -20,78 +20,81 @@ use npa_tactic::{
 use sha2::{Digest, Sha256};
 
 use crate::adapter::{
-    phase4_extract_closed_machine_theorem_decl, phase4_run_machine_tactic_with_budget,
-    phase4_start_machine_proof, phase4_validate_machine_tactic_candidate,
-    MachineApiDiagnosticPhase,
+    machine_tactic_extract_closed_machine_theorem_decl,
+    machine_tactic_run_machine_tactic_with_budget, machine_tactic_start_machine_proof,
+    machine_tactic_validate_machine_tactic_candidate, MachineApiDiagnosticPhase,
 };
-use crate::types::phase5_name_canonical_bytes;
+use crate::types::machine_api_name_canonical_bytes;
 use crate::MachineApiErrorKind;
 
-const CANDIDATE_HASH_TAG: &str = "npa.phase9_ai.candidate.v1";
-const OPTIONS_HASH_TAG: &str = "npa.phase9_ai.options.v1";
-const ENV_FINGERPRINT_TAG: &str = "npa.phase9_ai.env.v1";
-const GOAL_FINGERPRINT_TAG: &str = "npa.phase9_ai.goal.v1";
-const VALIDATION_RESULT_HASH_TAG: &str = "npa.phase9_ai.validation_result.v1";
-const UNIVERSE_CONSTRAINT_SET_HASH_TAG: &str = "npa.phase9_ai.universe.constraints.v1";
-const THEOREM_GRAPH_SNAPSHOT_HASH_TAG: &str = "npa.phase9_ai.theorem_graph.snapshot.v1";
-const THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG: &str = "npa.phase9_ai.theorem_graph.query_features.v1";
-const SMT_PROBLEM_HASH_TAG: &str = "npa.phase9_ai.smt.problem.v1";
-const SMT_ENCODING_HASH_TAG: &str = "npa.phase9_ai.smt.encoding.v1";
-const SMT_PROOF_PAYLOAD_HASH_TAG: &str = "npa.phase9_ai.smt.proof_payload.v1";
-const SMT_COMMAND_ID_HASH_TAG: &str = "npa.phase9_ai.smt.command_id.v1";
-const SMT_SYMBOL_HASH_TAG: &str = "npa.phase9_ai.smt.symbol.v1";
+const CANDIDATE_HASH_TAG: &str = "npa.advanced-ai.candidate.v1";
+const OPTIONS_HASH_TAG: &str = "npa.advanced-ai.options.v1";
+const ENV_FINGERPRINT_TAG: &str = "npa.advanced-ai.env.v1";
+const GOAL_FINGERPRINT_TAG: &str = "npa.advanced-ai.goal.v1";
+const VALIDATION_RESULT_HASH_TAG: &str = "npa.advanced-ai.validation_result.v1";
+const UNIVERSE_CONSTRAINT_SET_HASH_TAG: &str = "npa.advanced-ai.universe.constraints.v1";
+const THEOREM_GRAPH_SNAPSHOT_HASH_TAG: &str = "npa.advanced-ai.theorem_graph.snapshot.v1";
+const THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG: &str =
+    "npa.advanced-ai.theorem_graph.query_features.v1";
+const SMT_PROBLEM_HASH_TAG: &str = "npa.advanced-ai.smt.problem.v1";
+const SMT_ENCODING_HASH_TAG: &str = "npa.advanced-ai.smt.encoding.v1";
+const SMT_PROOF_PAYLOAD_HASH_TAG: &str = "npa.advanced-ai.smt.proof_payload.v1";
+const SMT_COMMAND_ID_HASH_TAG: &str = "npa.advanced-ai.smt.command_id.v1";
+const SMT_SYMBOL_HASH_TAG: &str = "npa.advanced-ai.smt.symbol.v1";
 const FORMALIZATION_SOURCE_DOCUMENT_HASH_TAG: &str =
-    "npa.phase9_ai.formalization.source_document.v1";
-const FORMALIZATION_CLAIM_SPAN_HASH_TAG: &str = "npa.phase9_ai.formalization.claim_span.v1";
+    "npa.advanced-ai.formalization.source_document.v1";
+const FORMALIZATION_CLAIM_SPAN_HASH_TAG: &str = "npa.advanced-ai.formalization.claim_span.v1";
 const FORMALIZATION_REJECTION_REASON_HASH_TAG: &str =
-    "npa.phase9_ai.formalization.rejection_reason.v1";
+    "npa.advanced-ai.formalization.rejection_reason.v1";
 const FORMALIZATION_CANDIDATE_STATEMENT_HASH_TAG: &str =
-    "npa.phase9_ai.formalization.candidate_statement.v1";
+    "npa.advanced-ai.formalization.candidate_statement.v1";
 const FORMALIZATION_ACCEPTED_STATEMENT_HASH_TAG: &str =
-    "npa.phase9_ai.formalization.accepted_statement.v1";
-const FORMALIZATION_PROOF_ROOT_HASH_TAG: &str = "npa.phase9_ai.formalization.proof_root.v1";
+    "npa.advanced-ai.formalization.accepted_statement.v1";
+const FORMALIZATION_PROOF_ROOT_HASH_TAG: &str = "npa.advanced-ai.formalization.proof_root.v1";
 
 const MAX_OPTIONS_BYTES: usize = 16_000_000;
-const MAX_PHASE9_GLOBAL_REFS: u64 = 65_536;
-const MAX_PHASE9_INDUCTIVE_ITEMS: u64 = 65_536;
-const MAX_PHASE9_INDUCTIVE_EXPR_NODES: u64 = 1_000_000;
-const MAX_PHASE9_INDUCTIVE_LEVEL_NODES: u64 = 1_000_000;
-const MAX_PHASE9_QUOTIENT_ITEMS: u64 = 65_536;
-const MAX_PHASE9_TYPECLASS_CANDIDATES: u64 = 65_536;
-const MAX_PHASE9_TYPECLASS_DEPTH: u32 = 1_024;
-const MAX_PHASE9_TYPECLASS_NODES: u32 = 1_000_000;
-const MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES: usize = 128_000_000;
-const MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES: usize = 16_000_000;
-const MAX_PHASE9_THEOREM_GRAPH_NODES: u64 = 1_000_000;
-const MAX_PHASE9_THEOREM_GRAPH_EDGES: u64 = 1_000_000;
-const MAX_PHASE9_THEOREM_GRAPH_FEATURES: u64 = 65_536;
-const MAX_PHASE9_THEOREM_GRAPH_RESULT_LIMIT: u32 = 256;
-const MAX_PHASE9_SMT_RAW_BYTES: usize = 64_000_000;
-const MAX_PHASE9_SMT_ITEMS: u64 = 1_000_000;
-const MAX_PHASE9_SMT_REFS: u64 = 65_536;
-const MAX_PHASE9_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
-const MAX_PHASE9_FORMALIZATION_SOURCE_BYTES: usize = 16_000_000;
-const MAX_PHASE9_FORMALIZATION_REASON_BYTES: usize = 1_000_000;
-const MAX_PHASE9_FORMALIZATION_TERM_BYTES: usize = 1_000_000;
-const MAX_PHASE9_FORMALIZATION_UNIVERSE_PARAMS: u64 = 65_536;
-const MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS: u64 = 65_536;
+const MAX_ADVANCED_AI_GLOBAL_REFS: u64 = 65_536;
+const MAX_ADVANCED_AI_INDUCTIVE_ITEMS: u64 = 65_536;
+const MAX_ADVANCED_AI_INDUCTIVE_EXPR_NODES: u64 = 1_000_000;
+const MAX_ADVANCED_AI_INDUCTIVE_LEVEL_NODES: u64 = 1_000_000;
+const MAX_ADVANCED_AI_QUOTIENT_ITEMS: u64 = 65_536;
+const MAX_ADVANCED_AI_TYPECLASS_CANDIDATES: u64 = 65_536;
+const MAX_ADVANCED_AI_TYPECLASS_DEPTH: u32 = 1_024;
+const MAX_ADVANCED_AI_TYPECLASS_NODES: u32 = 1_000_000;
+const MAX_ADVANCED_AI_THEOREM_GRAPH_SNAPSHOT_BYTES: usize = 128_000_000;
+const MAX_ADVANCED_AI_THEOREM_GRAPH_QUERY_FEATURES_BYTES: usize = 16_000_000;
+const MAX_ADVANCED_AI_THEOREM_GRAPH_NODES: u64 = 1_000_000;
+const MAX_ADVANCED_AI_THEOREM_GRAPH_EDGES: u64 = 1_000_000;
+const MAX_ADVANCED_AI_THEOREM_GRAPH_FEATURES: u64 = 65_536;
+const MAX_ADVANCED_AI_THEOREM_GRAPH_RESULT_LIMIT: u32 = 256;
+const MAX_ADVANCED_AI_SMT_RAW_BYTES: usize = 64_000_000;
+const MAX_ADVANCED_AI_SMT_ITEMS: u64 = 1_000_000;
+const MAX_ADVANCED_AI_SMT_REFS: u64 = 65_536;
+const MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS: u64 = 65_536;
+const MAX_ADVANCED_AI_FORMALIZATION_SOURCE_BYTES: usize = 16_000_000;
+const MAX_ADVANCED_AI_FORMALIZATION_REASON_BYTES: usize = 1_000_000;
+const MAX_ADVANCED_AI_FORMALIZATION_TERM_BYTES: usize = 1_000_000;
+const MAX_ADVANCED_AI_FORMALIZATION_UNIVERSE_PARAMS: u64 = 65_536;
+const MAX_ADVANCED_AI_FORMALIZATION_TACTIC_ITEMS: u64 = 65_536;
 const MAX_NAME_COMPONENTS: u64 = 256;
 const MAX_STRING_BYTES: u64 = 1_048_576;
 
-pub const PHASE9_INDUCTIVE_CHECK_ENDPOINT: &str = "/machine/phase9/inductive/check";
-pub const PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT: &str = "/machine/phase9/universe/repair/check";
-pub const PHASE9_TYPECLASS_RESOLVE_ENDPOINT: &str = "/machine/phase9/typeclass/resolve";
-pub const PHASE9_QUOTIENT_CHECK_ENDPOINT: &str = "/machine/phase9/quotient/check";
-pub const PHASE9_SMT_RECONSTRUCT_ENDPOINT: &str = "/machine/phase9/smt/reconstruct";
-pub const PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT: &str = "/machine/phase9/theorem-graph/query";
-pub const PHASE9_FORMALIZE_CHECK_ENDPOINT: &str = "/machine/phase9/formalize/check";
+pub const ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT: &str = "/machine/advanced-ai/inductive/check";
+pub const ADVANCED_AI_UNIVERSE_REPAIR_CHECK_ENDPOINT: &str =
+    "/machine/advanced-ai/universe/repair/check";
+pub const ADVANCED_AI_TYPECLASS_RESOLVE_ENDPOINT: &str = "/machine/advanced-ai/typeclass/resolve";
+pub const ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT: &str = "/machine/advanced-ai/quotient/check";
+pub const ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT: &str = "/machine/advanced-ai/smt/reconstruct";
+pub const ADVANCED_AI_THEOREM_GRAPH_QUERY_ENDPOINT: &str =
+    "/machine/advanced-ai/theorem-graph/query";
+pub const ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT: &str = "/machine/advanced-ai/formalize/check";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiProfileVersion {
+pub enum AdvancedAiProfileVersion {
     MvpV1,
 }
 
-impl Phase9AiProfileVersion {
+impl AdvancedAiProfileVersion {
     fn tag(self) -> u8 {
         match self {
             Self::MvpV1 => 0,
@@ -107,7 +110,7 @@ impl Phase9AiProfileVersion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiTaskKind {
+pub enum AdvancedAiTaskKind {
     AdvancedInductive,
     UniverseRepair,
     TypeclassResolution,
@@ -117,7 +120,7 @@ pub enum Phase9AiTaskKind {
     NaturalLanguageFormalization,
 }
 
-impl Phase9AiTaskKind {
+impl AdvancedAiTaskKind {
     fn tag(self) -> u8 {
         match self {
             Self::AdvancedInductive => 0,
@@ -145,20 +148,20 @@ impl Phase9AiTaskKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9AiTarget {
+pub struct AdvancedAiTarget {
     pub env_fingerprint: Hash,
     pub target_decl_hash: Option<Hash>,
     pub goal_fingerprint: Option<Hash>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9ImportIdentity {
+pub struct AdvancedImportIdentity {
     pub module: ModuleName,
     pub export_hash: Hash,
     pub certificate_hash: Hash,
 }
 
-impl Phase9ImportIdentity {
+impl AdvancedImportIdentity {
     pub fn from_verified_import(import: &VerifiedImportRef) -> Self {
         Self {
             module: import.module().clone(),
@@ -169,7 +172,7 @@ impl Phase9ImportIdentity {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9AiOptionsRef {
+pub enum AdvancedAiOptionsRef {
     Inline {
         options_hash: Hash,
         canonical_bytes: Vec<u8>,
@@ -183,21 +186,21 @@ pub enum Phase9AiOptionsRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9AiCandidateEnvelope {
-    pub profile_version: Phase9AiProfileVersion,
-    pub task_kind: Phase9AiTaskKind,
-    pub target: Phase9AiTarget,
-    pub imports: Vec<Phase9ImportIdentity>,
-    pub options: Phase9AiOptionsRef,
+pub struct AdvancedAiCandidateEnvelope {
+    pub profile_version: AdvancedAiProfileVersion,
+    pub task_kind: AdvancedAiTaskKind,
+    pub target: AdvancedAiTarget,
+    pub imports: Vec<AdvancedImportIdentity>,
+    pub options: AdvancedAiOptionsRef,
     pub payload: Vec<u8>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiOptionsVersion {
+pub enum AdvancedAiOptionsVersion {
     MvpV1,
 }
 
-impl Phase9AiOptionsVersion {
+impl AdvancedAiOptionsVersion {
     fn tag(self) -> u8 {
         match self {
             Self::MvpV1 => 0,
@@ -213,92 +216,92 @@ impl Phase9AiOptionsVersion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9IndependentCheckerProfile {
-    Phase8MvpReference,
+pub enum AdvancedIndependentCheckerProfile {
+    IndependentCheckerMvpReference,
 }
 
-impl Phase9IndependentCheckerProfile {
+impl AdvancedIndependentCheckerProfile {
     fn tag(self) -> u8 {
         match self {
-            Self::Phase8MvpReference => 0,
+            Self::IndependentCheckerMvpReference => 0,
         }
     }
 
     fn from_tag(tag: u8) -> Option<Self> {
         match tag {
-            0 => Some(Self::Phase8MvpReference),
+            0 => Some(Self::IndependentCheckerMvpReference),
             _ => None,
         }
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9IndependentCheckerOptions {
-    pub profile: Phase9IndependentCheckerProfile,
+pub struct AdvancedIndependentCheckerOptions {
+    pub profile: AdvancedIndependentCheckerProfile,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9AdvancedInductiveOptions {
-    pub approved_nested_type_constructors: Vec<Phase9AiGlobalRef>,
+pub struct AdvancedInductiveOptions {
+    pub approved_nested_type_constructors: Vec<AdvancedAiGlobalRef>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9TypeclassOptions {
-    pub class_declarations: Vec<Phase9AiGlobalRef>,
+pub struct AdvancedTypeclassOptions {
+    pub class_declarations: Vec<AdvancedAiGlobalRef>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTypeclassResolutionPlan {
-    pub goal: Phase9AiGoal,
-    pub ordered_candidates: Vec<Phase9MachineInstanceCandidateRef>,
+pub struct AdvancedMachineTypeclassResolutionPlan {
+    pub goal: AdvancedAiGoal,
+    pub ordered_candidates: Vec<AdvancedMachineInstanceCandidateRef>,
     pub max_depth: u32,
     pub max_nodes: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineInstanceCandidateRef {
-    pub target: Phase9MachineInstanceTargetRef,
+pub struct AdvancedMachineInstanceCandidateRef {
+    pub target: AdvancedMachineInstanceTargetRef,
     pub priority_hint: Option<i32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineInstanceTargetRef {
-    Imported { global_ref: Phase9AiGlobalRef },
+pub enum AdvancedMachineInstanceTargetRef {
+    Imported { global_ref: AdvancedAiGlobalRef },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9QuotientOptions {
-    pub setoid: Phase9AiGlobalRef,
-    pub setoid_mk: Phase9AiGlobalRef,
-    pub setoid_relation: Phase9AiGlobalRef,
-    pub rel_equiv: Phase9AiGlobalRef,
-    pub quotient: Phase9AiGlobalRef,
-    pub quotient_mk: Phase9AiGlobalRef,
-    pub quotient_sound: Phase9AiGlobalRef,
-    pub quotient_lift: Phase9AiGlobalRef,
-    pub eq: Phase9AiGlobalRef,
+pub struct AdvancedQuotientOptions {
+    pub setoid: AdvancedAiGlobalRef,
+    pub setoid_mk: AdvancedAiGlobalRef,
+    pub setoid_relation: AdvancedAiGlobalRef,
+    pub rel_equiv: AdvancedAiGlobalRef,
+    pub quotient: AdvancedAiGlobalRef,
+    pub quotient_mk: AdvancedAiGlobalRef,
+    pub quotient_sound: AdvancedAiGlobalRef,
+    pub quotient_lift: AdvancedAiGlobalRef,
+    pub eq: AdvancedAiGlobalRef,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtOptions {
-    pub eq: Phase9AiGlobalRef,
-    pub prop_false: Option<Phase9AiGlobalRef>,
-    pub prop_not: Option<Phase9AiGlobalRef>,
+pub struct AdvancedSmtOptions {
+    pub eq: AdvancedAiGlobalRef,
+    pub prop_false: Option<AdvancedAiGlobalRef>,
+    pub prop_not: Option<AdvancedAiGlobalRef>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineSmtCertificateCandidate {
-    pub goal: Phase9AiGoal,
-    pub logic: Phase9SmtLogic,
-    pub encoded_problem: Phase9MachineSmtProblemRef,
-    pub certificate_format: Phase9SmtCertificateFormat,
-    pub rule_registry_profile: Phase9SmtRuleRegistryProfile,
-    pub proof_payload: Phase9MachineSmtProofPayloadRef,
-    pub reconstruction_plan: Phase9MachineSmtReconstructionPlan,
+pub struct AdvancedMachineSmtCertificateCandidate {
+    pub goal: AdvancedAiGoal,
+    pub logic: AdvancedSmtLogic,
+    pub encoded_problem: AdvancedMachineSmtProblemRef,
+    pub certificate_format: AdvancedSmtCertificateFormat,
+    pub rule_registry_profile: AdvancedSmtRuleRegistryProfile,
+    pub proof_payload: AdvancedMachineSmtProofPayloadRef,
+    pub reconstruction_plan: AdvancedMachineSmtReconstructionPlan,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineSmtProblemRef {
+pub enum AdvancedMachineSmtProblemRef {
     Inline {
         problem_hash: Hash,
         encoding_hash: Hash,
@@ -314,20 +317,20 @@ pub enum Phase9MachineSmtProblemRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineSmtEncodedProblem {
-    pub encoder_version: Phase9SmtEncoderVersion,
+pub struct AdvancedMachineSmtEncodedProblem {
+    pub encoder_version: AdvancedSmtEncoderVersion,
     pub goal_fingerprint: Hash,
-    pub logic: Phase9SmtLogic,
-    pub command_profile: Phase9SmtCommandProfile,
-    pub commands: Vec<Phase9SmtEncodedCommand>,
+    pub logic: AdvancedSmtLogic,
+    pub command_profile: AdvancedSmtCommandProfile,
+    pub commands: Vec<AdvancedSmtEncodedCommand>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtCommandProfile {
+pub enum AdvancedSmtCommandProfile {
     MvpNormalizedQf,
 }
 
-impl Phase9SmtCommandProfile {
+impl AdvancedSmtCommandProfile {
     fn tag(self) -> u8 {
         match self {
             Self::MvpNormalizedQf => 0,
@@ -343,14 +346,14 @@ impl Phase9SmtCommandProfile {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtLogic {
+pub enum AdvancedSmtLogic {
     MvpQfUf,
     MvpQfLia,
     MvpQfBv,
     MvpQfUfLiaBv,
 }
 
-impl Phase9SmtLogic {
+impl AdvancedSmtLogic {
     fn tag(self) -> u8 {
         match self {
             Self::MvpQfUf => 0,
@@ -372,11 +375,11 @@ impl Phase9SmtLogic {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtEncoderVersion {
+pub enum AdvancedSmtEncoderVersion {
     MvpNormalizedQfV1,
 }
 
-impl Phase9SmtEncoderVersion {
+impl AdvancedSmtEncoderVersion {
     fn tag(self) -> u8 {
         match self {
             Self::MvpNormalizedQfV1 => 0,
@@ -392,11 +395,11 @@ impl Phase9SmtEncoderVersion {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtCertificateFormat {
+pub enum AdvancedSmtCertificateFormat {
     MvpProofNodeTableV1,
 }
 
-impl Phase9SmtCertificateFormat {
+impl AdvancedSmtCertificateFormat {
     fn tag(self) -> u8 {
         match self {
             Self::MvpProofNodeTableV1 => 0,
@@ -412,11 +415,11 @@ impl Phase9SmtCertificateFormat {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtRuleRegistryProfile {
+pub enum AdvancedSmtRuleRegistryProfile {
     MvpEmptyRegistryV1,
 }
 
-impl Phase9SmtRuleRegistryProfile {
+impl AdvancedSmtRuleRegistryProfile {
     fn tag(self) -> u8 {
         match self {
             Self::MvpEmptyRegistryV1 => 0,
@@ -432,19 +435,19 @@ impl Phase9SmtRuleRegistryProfile {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtSymbol {
+pub struct AdvancedSmtSymbol {
     pub ascii: Vec<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtEncodedCommand {
-    pub phase: Phase9SmtCommandPhase,
+pub struct AdvancedSmtEncodedCommand {
+    pub phase: AdvancedSmtCommandPhase,
     pub command_id: Hash,
-    pub payload: Phase9SmtCommandPayload,
+    pub payload: AdvancedSmtCommandPayload,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Phase9SmtCommandPhase {
+pub enum AdvancedSmtCommandPhase {
     SortDecl,
     DatatypeDecl,
     FunctionDecl,
@@ -453,7 +456,7 @@ pub enum Phase9SmtCommandPhase {
     FinalCheck,
 }
 
-impl Phase9SmtCommandPhase {
+impl AdvancedSmtCommandPhase {
     fn tag(self) -> u8 {
         match self {
             Self::SortDecl => 0,
@@ -479,62 +482,62 @@ impl Phase9SmtCommandPhase {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9SmtCommandPayload {
+pub enum AdvancedSmtCommandPayload {
     SortDecl {
-        symbol: Phase9SmtSymbol,
+        symbol: AdvancedSmtSymbol,
         arity: u32,
     },
     FunctionDecl {
-        symbol: Phase9SmtSymbol,
-        args: Vec<Phase9SmtSortExpr>,
-        result: Phase9SmtSortExpr,
+        symbol: AdvancedSmtSymbol,
+        args: Vec<AdvancedSmtSortExpr>,
+        result: AdvancedSmtSortExpr,
     },
     DatatypeDecl {
-        symbol: Phase9SmtSymbol,
-        constructors: Vec<Phase9SmtDatatypeConstructor>,
+        symbol: AdvancedSmtSymbol,
+        constructors: Vec<AdvancedSmtDatatypeConstructor>,
     },
     ContextAssumption {
         source_local_index: u32,
         core_expr: Expr,
-        encoded_expr: Phase9SmtExpr,
+        encoded_expr: AdvancedSmtExpr,
     },
     TargetAssertion {
         core_expr: Expr,
-        encoded_expr: Phase9SmtExpr,
+        encoded_expr: AdvancedSmtExpr,
     },
     FinalCheck,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9SmtSortExpr {
+pub enum AdvancedSmtSortExpr {
     Bool,
     Int,
     BitVec {
         width: u32,
     },
     User {
-        symbol: Phase9SmtSymbol,
-        args: Vec<Phase9SmtSortExpr>,
+        symbol: AdvancedSmtSymbol,
+        args: Vec<AdvancedSmtSortExpr>,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtDatatypeConstructor {
-    pub constructor: Phase9SmtSymbol,
-    pub selectors: Vec<Phase9SmtDatatypeSelector>,
+pub struct AdvancedSmtDatatypeConstructor {
+    pub constructor: AdvancedSmtSymbol,
+    pub selectors: Vec<AdvancedSmtDatatypeSelector>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtDatatypeSelector {
-    pub selector: Phase9SmtSymbol,
-    pub sort: Phase9SmtSortExpr,
+pub struct AdvancedSmtDatatypeSelector {
+    pub selector: AdvancedSmtSymbol,
+    pub sort: AdvancedSmtSortExpr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9SmtExpr {
+pub enum AdvancedSmtExpr {
     Var {
-        symbol: Phase9SmtSymbol,
-        sort: Phase9SmtSortExpr,
+        symbol: AdvancedSmtSymbol,
+        sort: AdvancedSmtSortExpr,
     },
     BoolLit(bool),
     IntLit(i128),
@@ -543,29 +546,29 @@ pub enum Phase9SmtExpr {
         value: Vec<u8>,
     },
     App {
-        symbol: Phase9SmtSymbol,
-        args: Vec<Phase9SmtExpr>,
-        result_sort: Phase9SmtSortExpr,
+        symbol: AdvancedSmtSymbol,
+        args: Vec<AdvancedSmtExpr>,
+        result_sort: AdvancedSmtSortExpr,
     },
     BuiltinApp {
-        op: Phase9SmtBuiltinOp,
-        args: Vec<Phase9SmtExpr>,
-        result_sort: Phase9SmtSortExpr,
+        op: AdvancedSmtBuiltinOp,
+        args: Vec<AdvancedSmtExpr>,
+        result_sort: AdvancedSmtSortExpr,
     },
-    Not(Box<Phase9SmtExpr>),
-    And(Vec<Phase9SmtExpr>),
-    Or(Vec<Phase9SmtExpr>),
-    Eq(Box<Phase9SmtExpr>, Box<Phase9SmtExpr>),
-    Imp(Box<Phase9SmtExpr>, Box<Phase9SmtExpr>),
+    Not(Box<AdvancedSmtExpr>),
+    And(Vec<AdvancedSmtExpr>),
+    Or(Vec<AdvancedSmtExpr>),
+    Eq(Box<AdvancedSmtExpr>, Box<AdvancedSmtExpr>),
+    Imp(Box<AdvancedSmtExpr>, Box<AdvancedSmtExpr>),
     Ite {
-        cond: Box<Phase9SmtExpr>,
-        then_expr: Box<Phase9SmtExpr>,
-        else_expr: Box<Phase9SmtExpr>,
+        cond: Box<AdvancedSmtExpr>,
+        then_expr: Box<AdvancedSmtExpr>,
+        else_expr: Box<AdvancedSmtExpr>,
     },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtBuiltinOp {
+pub enum AdvancedSmtBuiltinOp {
     IntNeg,
     IntAdd,
     IntSub,
@@ -586,7 +589,7 @@ pub enum Phase9SmtBuiltinOp {
     BvExtract { high: u32, low: u32 },
 }
 
-impl Phase9SmtBuiltinOp {
+impl AdvancedSmtBuiltinOp {
     fn tag(self) -> u8 {
         match self {
             Self::IntNeg => 0,
@@ -639,30 +642,30 @@ impl Phase9SmtBuiltinOp {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtProofNodeTable {
-    pub certificate_format: Phase9SmtCertificateFormat,
-    pub nodes: Vec<Phase9SmtProofNode>,
+pub struct AdvancedSmtProofNodeTable {
+    pub certificate_format: AdvancedSmtCertificateFormat,
+    pub nodes: Vec<AdvancedSmtProofNode>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtProofNode {
+pub struct AdvancedSmtProofNode {
     pub node_id: u32,
     pub rule_fingerprint: Hash,
     pub premises: Vec<u32>,
-    pub conclusion_encoding: Phase9SmtConclusionEncoding,
+    pub conclusion_encoding: AdvancedSmtConclusionEncoding,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9SmtConclusionEncoding {
-    pub encoder_version: Phase9SmtEncoderVersion,
-    pub logic: Phase9SmtLogic,
-    pub command_profile: Phase9SmtCommandProfile,
+pub struct AdvancedSmtConclusionEncoding {
+    pub encoder_version: AdvancedSmtEncoderVersion,
+    pub logic: AdvancedSmtLogic,
+    pub command_profile: AdvancedSmtCommandProfile,
     pub core_expr: Expr,
-    pub encoded_expr: Phase9SmtExpr,
+    pub encoded_expr: AdvancedSmtExpr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineSmtProofPayloadRef {
+pub enum AdvancedMachineSmtProofPayloadRef {
     Inline {
         payload_hash: Hash,
         canonical_bytes: Vec<u8>,
@@ -676,86 +679,86 @@ pub enum Phase9MachineSmtProofPayloadRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineSmtReconstructionPlan {
-    pub imported_theory_refs: Vec<Phase9AiGlobalRef>,
-    pub steps: Vec<Phase9MachineSmtReconstructionStep>,
+pub struct AdvancedMachineSmtReconstructionPlan {
+    pub imported_theory_refs: Vec<AdvancedAiGlobalRef>,
+    pub steps: Vec<AdvancedMachineSmtReconstructionStep>,
     pub final_step: u32,
     pub final_proof: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineSmtReconstructionStep {
+pub struct AdvancedMachineSmtReconstructionStep {
     pub step_id: u32,
-    pub rule: Phase9SmtReconstructionRule,
-    pub payload_bindings: Vec<Phase9MachineSmtPayloadBinding>,
+    pub rule: AdvancedSmtReconstructionRule,
+    pub payload_bindings: Vec<AdvancedMachineSmtPayloadBinding>,
     pub premises: Vec<u32>,
     pub conclusion: Expr,
     pub proof: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineSmtPayloadBinding {
+pub struct AdvancedMachineSmtPayloadBinding {
     pub payload_hash: Hash,
     pub node_id: u32,
     pub rule_fingerprint: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9SmtReconstructionRule {
+pub enum AdvancedSmtReconstructionRule {
     PayloadNode {
-        certificate_format: Phase9SmtCertificateFormat,
+        certificate_format: AdvancedSmtCertificateFormat,
         rule_fingerprint: Hash,
     },
     LocalBookkeeping {
-        kind: Phase9SmtLocalBookkeepingRule,
+        kind: AdvancedSmtLocalBookkeepingRule,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9SmtLocalBookkeepingRule {
+pub enum AdvancedSmtLocalBookkeepingRule {
     ReorderPremises {
         permutation: Vec<u32>,
     },
     IntroduceTheoryLemma {
-        lemma: Phase9AiGlobalRef,
+        lemma: AdvancedAiGlobalRef,
         level_args: Vec<Level>,
         term_args: Vec<Expr>,
     },
     ComposeProof {
-        combinator: Phase9AiGlobalRef,
+        combinator: AdvancedAiGlobalRef,
         level_args: Vec<Level>,
         term_args: Vec<Expr>,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9FormalizationOptions {
+pub struct AdvancedFormalizationOptions {
     pub tactic_options_canonical_bytes: Vec<u8>,
     pub tactic_budget_canonical_bytes: Vec<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9AiOptions {
-    pub schema_version: Phase9AiOptionsVersion,
-    pub independent_checker: Phase9IndependentCheckerOptions,
-    pub advanced_inductive: Phase9AdvancedInductiveOptions,
-    pub typeclass: Phase9TypeclassOptions,
-    pub quotient: Option<Phase9QuotientOptions>,
-    pub smt: Option<Phase9SmtOptions>,
-    pub formalization: Option<Phase9FormalizationOptions>,
+pub struct AdvancedAiOptions {
+    pub schema_version: AdvancedAiOptionsVersion,
+    pub independent_checker: AdvancedIndependentCheckerOptions,
+    pub advanced_inductive: AdvancedInductiveOptions,
+    pub typeclass: AdvancedTypeclassOptions,
+    pub quotient: Option<AdvancedQuotientOptions>,
+    pub smt: Option<AdvancedSmtOptions>,
+    pub formalization: Option<AdvancedFormalizationOptions>,
 }
 
-impl Default for Phase9AiOptions {
+impl Default for AdvancedAiOptions {
     fn default() -> Self {
         Self {
-            schema_version: Phase9AiOptionsVersion::MvpV1,
-            independent_checker: Phase9IndependentCheckerOptions {
-                profile: Phase9IndependentCheckerProfile::Phase8MvpReference,
+            schema_version: AdvancedAiOptionsVersion::MvpV1,
+            independent_checker: AdvancedIndependentCheckerOptions {
+                profile: AdvancedIndependentCheckerProfile::IndependentCheckerMvpReference,
             },
-            advanced_inductive: Phase9AdvancedInductiveOptions {
+            advanced_inductive: AdvancedInductiveOptions {
                 approved_nested_type_constructors: Vec::new(),
             },
-            typeclass: Phase9TypeclassOptions {
+            typeclass: AdvancedTypeclassOptions {
                 class_declarations: Vec::new(),
             },
             quotient: None,
@@ -766,7 +769,7 @@ impl Default for Phase9AiOptions {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9AiGlobalRef {
+pub struct AdvancedAiGlobalRef {
     pub module: ModuleName,
     pub export_hash: Hash,
     pub certificate_hash: Hash,
@@ -775,88 +778,88 @@ pub struct Phase9AiGlobalRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineInductiveProposal {
+pub struct AdvancedMachineInductiveProposal {
     pub block_name: Option<Name>,
     pub expected_decl_hash: Option<Hash>,
     pub universe_params: Vec<String>,
-    pub inductives: Vec<Phase9MachineInductiveFamilyProposal>,
+    pub inductives: Vec<AdvancedMachineInductiveFamilyProposal>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineInductiveFamilyProposal {
+pub struct AdvancedMachineInductiveFamilyProposal {
     pub name: Name,
-    pub params: Vec<Phase9MachineTelescopeBinder>,
-    pub indices: Vec<Phase9MachineTelescopeBinder>,
+    pub params: Vec<AdvancedMachineTelescopeBinder>,
+    pub indices: Vec<AdvancedMachineTelescopeBinder>,
     pub result_sort: Level,
-    pub constructors: Vec<Phase9MachineConstructorProposal>,
+    pub constructors: Vec<AdvancedMachineConstructorProposal>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTelescopeBinder {
+pub struct AdvancedMachineTelescopeBinder {
     pub ty: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineConstructorProposal {
+pub struct AdvancedMachineConstructorProposal {
     pub name: Name,
     pub ty: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineQuotientConstructionCandidate {
+pub struct AdvancedMachineQuotientConstructionCandidate {
     pub expected_decl_hash: Option<Hash>,
     pub decl_name: Name,
     pub universe_params: Vec<String>,
-    pub params: Vec<Phase9MachineTelescopeBinder>,
+    pub params: Vec<AdvancedMachineTelescopeBinder>,
     pub quotient_type: Expr,
     pub carrier: Expr,
     pub relation: Expr,
     pub equivalence_proof: Expr,
-    pub operations: Vec<Phase9MachineQuotientOperationCandidate>,
+    pub operations: Vec<AdvancedMachineQuotientOperationCandidate>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineQuotientOperationCandidate {
+pub struct AdvancedMachineQuotientOperationCandidate {
     pub name: Name,
     pub raw_function: Expr,
     pub compatibility_proof: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9AiGoal {
+pub struct AdvancedAiGoal {
     pub universe_params: Vec<String>,
     pub local_context: Vec<MachineLocalDecl>,
     pub target: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineFormalizationCheckPayload {
-    pub candidate: Phase9MachineFormalizationCandidate,
-    pub intent_record: Option<Phase9FormalizationIntentRecord>,
+pub struct AdvancedMachineFormalizationCheckPayload {
+    pub candidate: AdvancedMachineFormalizationCandidate,
+    pub intent_record: Option<AdvancedFormalizationIntentRecord>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineFormalizationCandidate {
-    pub source_document: Phase9MachineFormalizationSourceDocumentRef,
-    pub claim_span: Phase9MachineFormalizationClaimSpan,
-    pub statement: Phase9MachineSurfaceTerm,
-    pub optional_proof_candidate: Option<Phase9MachineFormalizationProofCandidate>,
+pub struct AdvancedMachineFormalizationCandidate {
+    pub source_document: AdvancedMachineFormalizationSourceDocumentRef,
+    pub claim_span: AdvancedMachineFormalizationClaimSpan,
+    pub statement: AdvancedMachineSurfaceTerm,
+    pub optional_proof_candidate: Option<AdvancedMachineFormalizationProofCandidate>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineSurfaceTerm {
+pub struct AdvancedMachineSurfaceTerm {
     pub universe_params: Vec<String>,
     pub term_canonical_bytes: Vec<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineFormalizationProofCandidate {
+pub struct AdvancedMachineFormalizationProofCandidate {
     pub candidate_statement_hash: Hash,
     pub tactic: MachineTacticCandidate,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineFormalizationSourceDocumentRef {
+pub enum AdvancedMachineFormalizationSourceDocumentRef {
     Inline {
         source_document_hash: Hash,
         raw_utf8_bytes: Vec<u8>,
@@ -870,14 +873,14 @@ pub enum Phase9MachineFormalizationSourceDocumentRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineFormalizationClaimSpan {
+pub struct AdvancedMachineFormalizationClaimSpan {
     pub start_byte: u64,
     pub end_byte: u64,
     pub claim_span_hash: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9ReviewerId {
+pub enum AdvancedReviewerId {
     Human {
         stable_id_ascii: Vec<u8>,
     },
@@ -888,29 +891,29 @@ pub enum Phase9ReviewerId {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9FormalizationIntentRecord {
+pub struct AdvancedFormalizationIntentRecord {
     pub source_document_hash: Hash,
     pub claim_span_hash: Hash,
     pub candidate_statement_hash: Hash,
-    pub status: Phase9FormalizationIntentStatus,
+    pub status: AdvancedFormalizationIntentStatus,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9FormalizationIntentStatus {
+pub enum AdvancedFormalizationIntentStatus {
     Unreviewed,
     Reviewed {
-        reviewer: Phase9ReviewerId,
+        reviewer: AdvancedReviewerId,
         accepted_statement_hash: Hash,
     },
     Rejected {
-        reviewer: Phase9ReviewerId,
-        rejection_reason: Phase9MachineFormalizationRejectionReasonRef,
+        reviewer: AdvancedReviewerId,
+        rejection_reason: AdvancedMachineFormalizationRejectionReasonRef,
         rejection_reason_hash: Hash,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineFormalizationRejectionReasonRef {
+pub enum AdvancedMachineFormalizationRejectionReasonRef {
     Inline {
         rejection_reason_hash: Hash,
         raw_utf8_bytes: Vec<u8>,
@@ -924,28 +927,28 @@ pub enum Phase9MachineFormalizationRejectionReasonRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9UniverseRepairCandidate {
-    pub goal: Option<Phase9AiGoal>,
+pub struct AdvancedUniverseRepairCandidate {
+    pub goal: Option<AdvancedAiGoal>,
     pub target_expr: Expr,
-    pub instantiations: Vec<Phase9UniverseInstantiationPatch>,
-    pub constraint_hints: Vec<Phase9UniverseConstraintHint>,
-    pub minimization_hint: Option<Phase9UniverseMinimizationHint>,
+    pub instantiations: Vec<AdvancedUniverseInstantiationPatch>,
+    pub constraint_hints: Vec<AdvancedUniverseConstraintHint>,
+    pub minimization_hint: Option<AdvancedUniverseMinimizationHint>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9UniverseInstantiationPatch {
-    pub occurrence: Phase9MachineExprOccurrence,
+pub struct AdvancedUniverseInstantiationPatch {
+    pub occurrence: AdvancedMachineExprOccurrence,
     pub explicit_level_args: Vec<Level>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineExprOccurrence {
-    pub path: Vec<Phase9MachineExprPathStep>,
-    pub expected_ref: Phase9AiGlobalRef,
+pub struct AdvancedMachineExprOccurrence {
+    pub path: Vec<AdvancedMachineExprPathStep>,
+    pub expected_ref: AdvancedAiGlobalRef,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Phase9MachineExprPathStep {
+pub enum AdvancedMachineExprPathStep {
     AppFun,
     AppArg,
     LamType,
@@ -958,40 +961,40 @@ pub enum Phase9MachineExprPathStep {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9UniverseConstraintHint {
-    pub constraint: Phase9UniverseConstraint,
-    pub reason: Phase9UniverseConstraintHintReason,
+pub struct AdvancedUniverseConstraintHint {
+    pub constraint: AdvancedUniverseConstraint,
+    pub reason: AdvancedUniverseConstraintHintReason,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9UniverseConstraint {
+pub struct AdvancedUniverseConstraint {
     pub lhs: Level,
-    pub relation: Phase9UniverseConstraintRelation,
+    pub relation: AdvancedUniverseConstraintRelation,
     pub rhs: Level,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9UniverseConstraintRelation {
+pub enum AdvancedUniverseConstraintRelation {
     Le,
     Eq,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9UniverseConstraintHintReason {
+pub enum AdvancedUniverseConstraintHintReason {
     KernelDiagnostic,
     RepairCandidate,
     MinimizationExplanation,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9UniverseMinimizationHint {
+pub enum AdvancedUniverseMinimizationHint {
     KernelDefault,
     PreferLowerLevels,
     PreferExistingExplicitArgs,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiValidationError {
+pub enum AdvancedAiValidationError {
     EnvelopeMalformed,
     TargetFingerprintMismatch,
     ImportClosureMismatch,
@@ -1006,7 +1009,7 @@ pub enum Phase9AiValidationError {
     UnsupportedFeature,
 }
 
-impl Phase9AiValidationError {
+impl AdvancedAiValidationError {
     fn tag(self) -> u8 {
         match self {
             Self::EnvelopeMalformed => 0,
@@ -1026,25 +1029,25 @@ impl Phase9AiValidationError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiEndpointError {
+pub enum AdvancedAiEndpointError {
     NonCanonicalRequestBytes,
     ArtifactUnavailable,
     InternalValidatorFailure,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiFeatureError {
-    AdvancedInductive(Phase9AdvancedInductiveError),
-    UniverseRepair(Phase9UniverseRepairError),
-    TypeclassResolution(Phase9TypeclassResolutionError),
-    QuotientConstruction(Phase9QuotientConstructionError),
-    SmtCertificate(Phase9SmtCertificateError),
-    TheoremGraphQuery(Phase9TheoremGraphError),
-    Formalization(Phase9FormalizationError),
+pub enum AdvancedAiFeatureError {
+    AdvancedInductive(AdvancedInductiveError),
+    UniverseRepair(AdvancedUniverseRepairError),
+    TypeclassResolution(AdvancedTypeclassResolutionError),
+    QuotientConstruction(AdvancedQuotientConstructionError),
+    SmtCertificate(AdvancedSmtCertificateError),
+    TheoremGraphQuery(AdvancedTheoremGraphError),
+    Formalization(AdvancedFormalizationError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AdvancedInductiveError {
+pub enum AdvancedInductiveError {
     TargetRefMismatch,
     PositivityProfileUnsupported,
     ArtifactGeneratorUnavailable,
@@ -1053,7 +1056,7 @@ pub enum Phase9AdvancedInductiveError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9UniverseRepairError {
+pub enum AdvancedUniverseRepairError {
     UnknownUniverseParam,
     IllFormedLevelExpr,
     UnsatisfiedConstraint,
@@ -1066,7 +1069,7 @@ pub enum Phase9UniverseRepairError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9TypeclassResolutionError {
+pub enum AdvancedTypeclassResolutionError {
     ClassDeclarationMismatch,
     CandidateInterfaceInvalid,
     ClassHeadUnsupported,
@@ -1074,7 +1077,7 @@ pub enum Phase9TypeclassResolutionError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9QuotientConstructionError {
+pub enum AdvancedQuotientConstructionError {
     TargetRefMismatch,
     PrimitiveInterfaceMismatch,
     UniverseLevelMismatch,
@@ -1086,7 +1089,7 @@ pub enum Phase9QuotientConstructionError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9SmtCertificateError {
+pub enum AdvancedSmtCertificateError {
     EncodingMismatch,
     RuleFingerprintMismatch,
     RuleRegistryMismatch,
@@ -1101,7 +1104,7 @@ pub enum Phase9SmtCertificateError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9TheoremGraphError {
+pub enum AdvancedTheoremGraphError {
     SnapshotMalformed,
     QueryFeaturesMalformed,
     NodeResolutionMismatch,
@@ -1109,7 +1112,7 @@ pub enum Phase9TheoremGraphError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9FormalizationError {
+pub enum AdvancedFormalizationError {
     IntentRecordMismatch,
     CandidateStatementElaborationFailed,
     FormalizationProofStatementMismatch,
@@ -1118,7 +1121,7 @@ pub enum Phase9FormalizationError {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9AiSuccessPayload {
+pub enum AdvancedAiSuccessPayload {
     AdvancedInductive {
         decl_interface_hash: Hash,
         decl_certificate_hash: Hash,
@@ -1137,33 +1140,33 @@ pub enum Phase9AiSuccessPayload {
         final_proof: Expr,
     },
     TheoremGraphQuery {
-        result: Phase9MachineTheoremGraphResult,
+        result: AdvancedMachineTheoremGraphResult,
     },
     NaturalLanguageFormalization {
-        kind: Phase9FormalizationSuccessKind,
+        kind: AdvancedFormalizationSuccessKind,
         accepted_statement_hash: Option<Hash>,
         formalization_proof_root_hash: Option<Hash>,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphResult {
-    pub entries: Vec<Phase9MachineTheoremGraphResultEntry>,
+pub struct AdvancedMachineTheoremGraphResult {
+    pub entries: Vec<AdvancedMachineTheoremGraphResultEntry>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphResultEntry {
-    pub node: Phase9MachineTheoremGraphNodeRef,
-    pub score: Phase9MachineTheoremGraphScore,
+pub struct AdvancedMachineTheoremGraphResultEntry {
+    pub node: AdvancedMachineTheoremGraphNodeRef,
+    pub score: AdvancedMachineTheoremGraphScore,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphScore {
+pub struct AdvancedMachineTheoremGraphScore {
     pub score_microunits: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphNodeRef {
+pub struct AdvancedMachineTheoremGraphNodeRef {
     pub module: ModuleName,
     pub name: Name,
     pub export_hash: Hash,
@@ -1174,25 +1177,25 @@ pub struct Phase9MachineTheoremGraphNodeRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphQuery {
+pub struct AdvancedMachineTheoremGraphQuery {
     pub env_fingerprint: Hash,
     pub goal_fingerprint: Hash,
-    pub goal: Phase9AiGoal,
-    pub snapshot: Phase9MachineTheoremGraphSnapshotRef,
-    pub query_features: Phase9MachineTheoremGraphQueryFeaturesRef,
-    pub ranking_profile: Phase9TheoremGraphRankingProfile,
+    pub goal: AdvancedAiGoal,
+    pub snapshot: AdvancedMachineTheoremGraphSnapshotRef,
+    pub query_features: AdvancedMachineTheoremGraphQueryFeaturesRef,
+    pub ranking_profile: AdvancedTheoremGraphRankingProfile,
     pub limit: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphSnapshotRef {
+pub struct AdvancedMachineTheoremGraphSnapshotRef {
     pub source_release_hash: Hash,
-    pub extractor_version: Phase9TheoremGraphExtractorVersion,
-    pub source: Phase9MachineTheoremGraphSnapshotSource,
+    pub extractor_version: AdvancedTheoremGraphExtractorVersion,
+    pub source: AdvancedMachineTheoremGraphSnapshotSource,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineTheoremGraphSnapshotSource {
+pub enum AdvancedMachineTheoremGraphSnapshotSource {
     Inline {
         graph_snapshot_hash: Hash,
         canonical_bytes: Vec<u8>,
@@ -1206,7 +1209,7 @@ pub enum Phase9MachineTheoremGraphSnapshotSource {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9MachineTheoremGraphQueryFeaturesRef {
+pub enum AdvancedMachineTheoremGraphQueryFeaturesRef {
     Inline {
         query_features_hash: Hash,
         canonical_bytes: Vec<u8>,
@@ -1220,70 +1223,70 @@ pub enum Phase9MachineTheoremGraphQueryFeaturesRef {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9TheoremGraphRankingProfile {
+pub enum AdvancedTheoremGraphRankingProfile {
     MvpTupleOrder,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphSnapshot {
+pub struct AdvancedMachineTheoremGraphSnapshot {
     pub source_release_hash: Hash,
-    pub extractor_version: Phase9TheoremGraphExtractorVersion,
-    pub nodes: Vec<Phase9MachineTheoremGraphNodeRef>,
-    pub edges: Vec<Phase9MachineTheoremGraphEdge>,
+    pub extractor_version: AdvancedTheoremGraphExtractorVersion,
+    pub nodes: Vec<AdvancedMachineTheoremGraphNodeRef>,
+    pub edges: Vec<AdvancedMachineTheoremGraphEdge>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphEdge {
-    pub from: Phase9MachineTheoremGraphNodeRef,
-    pub to: Phase9MachineTheoremGraphNodeRef,
-    pub kind: Phase9TheoremGraphEdgeKind,
+pub struct AdvancedMachineTheoremGraphEdge {
+    pub from: AdvancedMachineTheoremGraphNodeRef,
+    pub to: AdvancedMachineTheoremGraphNodeRef,
+    pub kind: AdvancedTheoremGraphEdgeKind,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphQueryFeatures {
+pub struct AdvancedMachineTheoremGraphQueryFeatures {
     pub env_fingerprint: Hash,
     pub goal_fingerprint: Hash,
-    pub feature_schema_version: Phase9TheoremGraphFeatureSchemaVersion,
-    pub features: Vec<Phase9MachineTheoremGraphFeature>,
+    pub feature_schema_version: AdvancedTheoremGraphFeatureSchemaVersion,
+    pub features: Vec<AdvancedMachineTheoremGraphFeature>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9MachineTheoremGraphFeature {
-    pub key: Phase9TheoremGraphFeatureKey,
-    pub value: Phase9TheoremGraphFeatureValue,
+pub struct AdvancedMachineTheoremGraphFeature {
+    pub key: AdvancedTheoremGraphFeatureKey,
+    pub value: AdvancedTheoremGraphFeatureValue,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9TheoremGraphExtractorVersion {
+pub enum AdvancedTheoremGraphExtractorVersion {
     MvpCertificateGraphV1,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9TheoremGraphFeatureSchemaVersion {
+pub enum AdvancedTheoremGraphFeatureSchemaVersion {
     MvpGoalFeaturesV1,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9TheoremGraphEdgeKind {
+pub enum AdvancedTheoremGraphEdgeKind {
     ImportsDeclaration,
     UsesConstant,
     MentionsType,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9TheoremGraphFeatureKey {
+pub struct AdvancedTheoremGraphFeatureKey {
     pub namespace_ascii: Vec<u8>,
     pub name_ascii: Vec<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9TheoremGraphFeatureValue {
+pub enum AdvancedTheoremGraphFeatureValue {
     Bool(bool),
     I64(i64),
     Hash(Hash),
 }
 
-impl Phase9TheoremGraphRankingProfile {
+impl AdvancedTheoremGraphRankingProfile {
     fn tag(self) -> u8 {
         match self {
             Self::MvpTupleOrder => 0,
@@ -1298,7 +1301,7 @@ impl Phase9TheoremGraphRankingProfile {
     }
 }
 
-impl Phase9TheoremGraphExtractorVersion {
+impl AdvancedTheoremGraphExtractorVersion {
     fn tag(self) -> u8 {
         match self {
             Self::MvpCertificateGraphV1 => 0,
@@ -1313,7 +1316,7 @@ impl Phase9TheoremGraphExtractorVersion {
     }
 }
 
-impl Phase9TheoremGraphFeatureSchemaVersion {
+impl AdvancedTheoremGraphFeatureSchemaVersion {
     fn tag(self) -> u8 {
         match self {
             Self::MvpGoalFeaturesV1 => 0,
@@ -1328,7 +1331,7 @@ impl Phase9TheoremGraphFeatureSchemaVersion {
     }
 }
 
-impl Phase9TheoremGraphEdgeKind {
+impl AdvancedTheoremGraphEdgeKind {
     fn tag(self) -> u8 {
         match self {
             Self::ImportsDeclaration => 0,
@@ -1348,41 +1351,41 @@ impl Phase9TheoremGraphEdgeKind {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9FormalizationSuccessKind {
+pub enum AdvancedFormalizationSuccessKind {
     CandidateStatementChecked,
     IntentRecordOnly,
     ProofBridgeChecked,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase9AiEndpointResponse {
+pub enum AdvancedAiEndpointResponse {
     Success {
         candidate_hash: Hash,
         validation_result_hash: Hash,
-        payload: Box<Phase9AiSuccessPayload>,
+        payload: Box<AdvancedAiSuccessPayload>,
     },
     Rejected {
         candidate_hash: Hash,
         validation_result_hash: Hash,
-        error: Phase9AiValidationError,
-        feature_error: Option<Phase9AiFeatureError>,
+        error: AdvancedAiValidationError,
+        feature_error: Option<AdvancedAiFeatureError>,
     },
     Error {
-        error: Phase9AiEndpointError,
+        error: AdvancedAiEndpointError,
     },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase9ValidatedCommonEnvelope {
+pub struct AdvancedValidatedCommonEnvelope {
     pub candidate_hash: Hash,
     pub options_hash: Hash,
     pub env_fingerprint: Hash,
-    pub envelope: Phase9AiCandidateEnvelope,
-    pub options: Phase9AiOptions,
+    pub envelope: AdvancedAiCandidateEnvelope,
+    pub options: AdvancedAiOptions,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase9AiCanonicalError {
+pub enum AdvancedAiCanonicalError {
     InvalidName,
 }
 
@@ -1393,22 +1396,22 @@ enum DecodeError {
     TheoremGraphQueryFeaturesBytesTooLarge,
 }
 
-pub fn phase9_ai_candidate_hash(envelope_canonical_bytes: &[u8]) -> Hash {
+pub fn advanced_ai_candidate_hash(envelope_canonical_bytes: &[u8]) -> Hash {
     hash_with_domain(CANDIDATE_HASH_TAG, envelope_canonical_bytes)
 }
 
-pub fn phase9_ai_options_hash(options_canonical_bytes: &[u8]) -> Hash {
+pub fn advanced_ai_options_hash(options_canonical_bytes: &[u8]) -> Hash {
     hash_with_domain(OPTIONS_HASH_TAG, options_canonical_bytes)
 }
 
-pub fn phase9_file_hash(bytes: &[u8]) -> Hash {
+pub fn advanced_ai_file_hash(bytes: &[u8]) -> Hash {
     sha256(bytes)
 }
 
-pub fn phase9_ai_validation_result_hash_for_rejection(
+pub fn advanced_ai_validation_result_hash_for_rejection(
     candidate_hash: Hash,
-    error: Phase9AiValidationError,
-    feature_error: Option<Phase9AiFeatureError>,
+    error: AdvancedAiValidationError,
+    feature_error: Option<AdvancedAiFeatureError>,
 ) -> Hash {
     let mut payload = Vec::new();
     payload.push(1);
@@ -1417,9 +1420,9 @@ pub fn phase9_ai_validation_result_hash_for_rejection(
     validation_result_hash(candidate_hash, &payload)
 }
 
-pub fn phase9_ai_validation_result_hash_for_success(
+pub fn advanced_ai_validation_result_hash_for_success(
     candidate_hash: Hash,
-    success: &Phase9AiSuccessPayload,
+    success: &AdvancedAiSuccessPayload,
 ) -> Hash {
     let mut payload = Vec::new();
     payload.push(0);
@@ -1427,12 +1430,12 @@ pub fn phase9_ai_validation_result_hash_for_success(
     validation_result_hash(candidate_hash, &payload)
 }
 
-pub fn phase9_ai_env_fingerprint(
-    profile_version: Phase9AiProfileVersion,
-    task_kind: Phase9AiTaskKind,
-    imports: &[Phase9ImportIdentity],
+pub fn advanced_ai_env_fingerprint(
+    profile_version: AdvancedAiProfileVersion,
+    task_kind: AdvancedAiTaskKind,
+    imports: &[AdvancedImportIdentity],
     options_hash: Hash,
-) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
     let mut payload = Vec::new();
     payload.push(profile_version.tag());
     payload.push(task_kind.tag());
@@ -1441,10 +1444,10 @@ pub fn phase9_ai_env_fingerprint(
     Ok(hash_with_domain(ENV_FINGERPRINT_TAG, &payload))
 }
 
-pub fn phase9_ai_goal_fingerprint(env_fingerprint: Hash, goal: &Phase9AiGoal) -> Hash {
+pub fn advanced_ai_goal_fingerprint(env_fingerprint: Hash, goal: &AdvancedAiGoal) -> Hash {
     let mut payload = Vec::new();
     encode_hash_to(&mut payload, &env_fingerprint);
-    payload.extend_from_slice(&phase9_universe_params_canonical_bytes(
+    payload.extend_from_slice(&advanced_ai_universe_params_canonical_bytes(
         &goal.universe_params,
     ));
     payload.extend_from_slice(&machine_local_context_canonical_bytes(&goal.local_context));
@@ -1452,27 +1455,27 @@ pub fn phase9_ai_goal_fingerprint(env_fingerprint: Hash, goal: &Phase9AiGoal) ->
     hash_with_domain(GOAL_FINGERPRINT_TAG, &payload)
 }
 
-pub fn phase9_ai_goal_canonical_bytes(
-    goal: &Phase9AiGoal,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_goal_canonical_bytes(
+    goal: &AdvancedAiGoal,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_goal_to(&mut out, goal)?;
     Ok(out)
 }
 
-pub fn phase9_formalization_payload_canonical_bytes(
-    payload: &Phase9MachineFormalizationCheckPayload,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_formalization_payload_canonical_bytes(
+    payload: &AdvancedMachineFormalizationCheckPayload,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_formalization_payload_to(&mut out, payload)?;
     Ok(out)
 }
 
-pub fn phase9_formalization_source_document_hash(raw_utf8_bytes: &[u8]) -> Hash {
+pub fn advanced_ai_formalization_source_document_hash(raw_utf8_bytes: &[u8]) -> Hash {
     hash_with_domain(FORMALIZATION_SOURCE_DOCUMENT_HASH_TAG, raw_utf8_bytes)
 }
 
-pub fn phase9_formalization_claim_span_hash(
+pub fn advanced_ai_formalization_claim_span_hash(
     source_document_hash: Hash,
     start_byte: u64,
     end_byte: u64,
@@ -1486,32 +1489,34 @@ pub fn phase9_formalization_claim_span_hash(
     hash_with_domain(FORMALIZATION_CLAIM_SPAN_HASH_TAG, &payload)
 }
 
-pub fn phase9_formalization_rejection_reason_hash(raw_utf8_bytes: &[u8]) -> Hash {
+pub fn advanced_ai_formalization_rejection_reason_hash(raw_utf8_bytes: &[u8]) -> Hash {
     hash_with_domain(FORMALIZATION_REJECTION_REASON_HASH_TAG, raw_utf8_bytes)
 }
 
-pub fn phase9_formalization_candidate_statement_hash(statement: &Phase9MachineSurfaceTerm) -> Hash {
+pub fn advanced_ai_formalization_candidate_statement_hash(
+    statement: &AdvancedMachineSurfaceTerm,
+) -> Hash {
     hash_with_domain(
         FORMALIZATION_CANDIDATE_STATEMENT_HASH_TAG,
-        &phase9_machine_surface_term_canonical_bytes(statement),
+        &advanced_ai_machine_surface_term_canonical_bytes(statement),
     )
 }
 
-pub fn phase9_formalization_accepted_statement_hash(
+pub fn advanced_ai_formalization_accepted_statement_hash(
     env_fingerprint: Hash,
     accepted_universe_params: &[String],
     accepted_theorem_type: &Expr,
 ) -> Hash {
     let mut payload = Vec::new();
     encode_hash_to(&mut payload, &env_fingerprint);
-    payload.extend_from_slice(&phase9_universe_params_canonical_bytes(
+    payload.extend_from_slice(&advanced_ai_universe_params_canonical_bytes(
         accepted_universe_params,
     ));
     payload.extend_from_slice(&npa_cert::core_expr_canonical_bytes(accepted_theorem_type));
     hash_with_domain(FORMALIZATION_ACCEPTED_STATEMENT_HASH_TAG, &payload)
 }
 
-pub fn phase9_formalization_proof_root_hash(
+pub fn advanced_ai_formalization_proof_root_hash(
     env_fingerprint: Hash,
     candidate_statement_hash: Hash,
     accepted_statement_hash: Hash,
@@ -1523,49 +1528,49 @@ pub fn phase9_formalization_proof_root_hash(
     hash_with_domain(FORMALIZATION_PROOF_ROOT_HASH_TAG, &payload)
 }
 
-pub fn phase9_inductive_proposal_canonical_bytes(
-    proposal: &Phase9MachineInductiveProposal,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_inductive_proposal_canonical_bytes(
+    proposal: &AdvancedMachineInductiveProposal,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_inductive_proposal_to(&mut out, proposal)?;
     Ok(out)
 }
 
-pub fn phase9_quotient_candidate_canonical_bytes(
-    candidate: &Phase9MachineQuotientConstructionCandidate,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_quotient_candidate_canonical_bytes(
+    candidate: &AdvancedMachineQuotientConstructionCandidate,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_quotient_candidate_to(&mut out, candidate)?;
     Ok(out)
 }
 
-pub fn phase9_smt_candidate_canonical_bytes(
-    candidate: &Phase9MachineSmtCertificateCandidate,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_smt_candidate_canonical_bytes(
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_smt_candidate_to(&mut out, candidate)?;
     Ok(out)
 }
 
-pub fn phase9_smt_problem_canonical_bytes(
-    problem: &Phase9MachineSmtEncodedProblem,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_smt_problem_canonical_bytes(
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_smt_encoded_problem_to(&mut out, problem)?;
     Ok(out)
 }
 
-pub fn phase9_smt_problem_hash(
-    problem: &Phase9MachineSmtEncodedProblem,
-) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+pub fn advanced_ai_smt_problem_hash(
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
     Ok(hash_with_domain(
         SMT_PROBLEM_HASH_TAG,
-        &phase9_smt_problem_canonical_bytes(problem)?,
+        &advanced_ai_smt_problem_canonical_bytes(problem)?,
     ))
 }
 
-pub fn phase9_smt_encoding_hash(
-    problem: &Phase9MachineSmtEncodedProblem,
+pub fn advanced_ai_smt_encoding_hash(
+    problem: &AdvancedMachineSmtEncodedProblem,
     problem_hash: Hash,
 ) -> Hash {
     let mut out = Vec::new();
@@ -1577,137 +1582,137 @@ pub fn phase9_smt_encoding_hash(
     hash_with_domain(SMT_ENCODING_HASH_TAG, &out)
 }
 
-pub fn phase9_smt_proof_payload_canonical_bytes(
-    payload: &Phase9SmtProofNodeTable,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_smt_proof_payload_canonical_bytes(
+    payload: &AdvancedSmtProofNodeTable,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_smt_proof_node_table_to(&mut out, payload)?;
     Ok(out)
 }
 
-pub fn phase9_smt_proof_payload_hash(
-    payload: &Phase9SmtProofNodeTable,
-) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+pub fn advanced_ai_smt_proof_payload_hash(
+    payload: &AdvancedSmtProofNodeTable,
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
     Ok(hash_with_domain(
         SMT_PROOF_PAYLOAD_HASH_TAG,
-        &phase9_smt_proof_payload_canonical_bytes(payload)?,
+        &advanced_ai_smt_proof_payload_canonical_bytes(payload)?,
     ))
 }
 
-pub fn phase9_smt_symbol_canonical_bytes(symbol: &Phase9SmtSymbol) -> Vec<u8> {
+pub fn advanced_ai_smt_symbol_canonical_bytes(symbol: &AdvancedSmtSymbol) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(SMT_SYMBOL_HASH_TAG.as_bytes());
     encode_bytes_to(&mut out, &symbol.ascii);
     out
 }
 
-pub fn phase9_smt_command_id(
-    command: &Phase9SmtEncodedCommand,
-) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+pub fn advanced_ai_smt_command_id(
+    command: &AdvancedSmtEncodedCommand,
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     out.push(command.phase.tag());
-    out.extend_from_slice(&phase9_smt_command_id_source_key(&command.payload)?);
+    out.extend_from_slice(&advanced_ai_smt_command_id_source_key(&command.payload)?);
     Ok(hash_with_domain(SMT_COMMAND_ID_HASH_TAG, &out))
 }
 
-pub fn phase9_typeclass_resolution_plan_canonical_bytes(
-    plan: &Phase9MachineTypeclassResolutionPlan,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_typeclass_resolution_plan_canonical_bytes(
+    plan: &AdvancedMachineTypeclassResolutionPlan,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_typeclass_resolution_plan_to(&mut out, plan)?;
     Ok(out)
 }
 
-pub fn phase9_theorem_graph_query_canonical_bytes(
-    query: &Phase9MachineTheoremGraphQuery,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_theorem_graph_query_canonical_bytes(
+    query: &AdvancedMachineTheoremGraphQuery,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_theorem_graph_query_to(&mut out, query)?;
     Ok(out)
 }
 
-pub fn phase9_theorem_graph_snapshot_canonical_bytes(
-    snapshot: &Phase9MachineTheoremGraphSnapshot,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_theorem_graph_snapshot_canonical_bytes(
+    snapshot: &AdvancedMachineTheoremGraphSnapshot,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_theorem_graph_snapshot_to(&mut out, snapshot)?;
     Ok(out)
 }
 
-pub fn phase9_theorem_graph_query_features_canonical_bytes(
-    features: &Phase9MachineTheoremGraphQueryFeatures,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_theorem_graph_query_features_canonical_bytes(
+    features: &AdvancedMachineTheoremGraphQueryFeatures,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_theorem_graph_query_features_to(&mut out, features)?;
     Ok(out)
 }
 
-pub fn phase9_theorem_graph_snapshot_hash(
+pub fn advanced_ai_theorem_graph_snapshot_hash(
     canonical_bytes: &[u8],
-) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
     decode_theorem_graph_snapshot(canonical_bytes)
-        .map_err(|_| Phase9AiCanonicalError::InvalidName)?;
+        .map_err(|_| AdvancedAiCanonicalError::InvalidName)?;
     Ok(hash_with_domain(
         THEOREM_GRAPH_SNAPSHOT_HASH_TAG,
         canonical_bytes,
     ))
 }
 
-pub fn phase9_theorem_graph_query_features_hash(
+pub fn advanced_ai_theorem_graph_query_features_hash(
     canonical_bytes: &[u8],
-) -> std::result::Result<Hash, Phase9AiCanonicalError> {
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
     decode_theorem_graph_query_features(canonical_bytes)
-        .map_err(|_| Phase9AiCanonicalError::InvalidName)?;
+        .map_err(|_| AdvancedAiCanonicalError::InvalidName)?;
     Ok(hash_with_domain(
         THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG,
         canonical_bytes,
     ))
 }
 
-pub fn phase9_universe_repair_candidate_canonical_bytes(
-    candidate: &Phase9UniverseRepairCandidate,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_universe_repair_candidate_canonical_bytes(
+    candidate: &AdvancedUniverseRepairCandidate,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_universe_repair_candidate_to(&mut out, candidate)?;
     Ok(out)
 }
 
-pub fn phase9_ai_options_canonical_bytes(
-    options: &Phase9AiOptions,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_options_canonical_bytes(
+    options: &AdvancedAiOptions,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_options_to(&mut out, options)?;
     Ok(out)
 }
 
-pub fn phase9_ai_candidate_envelope_canonical_bytes(
-    envelope: &Phase9AiCandidateEnvelope,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+pub fn advanced_ai_candidate_envelope_canonical_bytes(
+    envelope: &AdvancedAiCandidateEnvelope,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_candidate_envelope_to(&mut out, envelope)?;
     Ok(out)
 }
 
-pub fn validate_phase9_ai_common_envelope(
+pub fn validate_advanced_ai_common_envelope(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-    expected_task_kind: Phase9AiTaskKind,
-) -> std::result::Result<Phase9ValidatedCommonEnvelope, Phase9AiEndpointResponse> {
+    expected_task_kind: AdvancedAiTaskKind,
+) -> std::result::Result<AdvancedValidatedCommonEnvelope, AdvancedAiEndpointResponse> {
     let envelope = match decode_candidate_envelope(request_canonical_bytes) {
         Ok(envelope) => envelope,
         Err(_) => {
-            return Err(Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::NonCanonicalRequestBytes,
+            return Err(AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::NonCanonicalRequestBytes,
             });
         }
     };
-    let candidate_hash = phase9_ai_candidate_hash(request_canonical_bytes);
+    let candidate_hash = advanced_ai_candidate_hash(request_canonical_bytes);
 
     if envelope.task_kind != expected_task_kind {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ));
     }
@@ -1724,14 +1729,14 @@ pub fn validate_phase9_ai_common_envelope(
     {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         ));
     }
 
-    let env_fingerprint = phase9_ai_env_fingerprint(
+    let env_fingerprint = advanced_ai_env_fingerprint(
         envelope.profile_version,
         envelope.task_kind,
         &envelope.imports,
@@ -1740,7 +1745,7 @@ pub fn validate_phase9_ai_common_envelope(
     .map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         )
     })?;
@@ -1748,7 +1753,7 @@ pub fn validate_phase9_ai_common_envelope(
     if envelope.target.env_fingerprint != env_fingerprint {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         ));
     }
@@ -1757,7 +1762,7 @@ pub fn validate_phase9_ai_common_envelope(
     validate_required_options(candidate_hash, envelope.task_kind, &options)?;
     validate_task_options_shape(candidate_hash, envelope.task_kind, &options)?;
 
-    Ok(Phase9ValidatedCommonEnvelope {
+    Ok(AdvancedValidatedCommonEnvelope {
         candidate_hash,
         options_hash,
         env_fingerprint,
@@ -1766,136 +1771,138 @@ pub fn validate_phase9_ai_common_envelope(
     })
 }
 
-pub fn run_phase9_inductive_check_request(
+pub fn run_advanced_ai_inductive_check_request(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        Phase9AiTaskKind::AdvancedInductive,
+        AdvancedAiTaskKind::AdvancedInductive,
     ) {
-        Ok(validated) => run_phase9_inductive_validated(validated, verified_imports),
+        Ok(validated) => run_advanced_ai_inductive_validated(validated, verified_imports),
         Err(response) => response,
     }
 }
 
-pub fn run_phase9_universe_repair_check_request(
+pub fn run_advanced_ai_universe_repair_check_request(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        Phase9AiTaskKind::UniverseRepair,
+        AdvancedAiTaskKind::UniverseRepair,
     ) {
-        Ok(validated) => run_phase9_universe_repair_validated(validated, verified_imports),
+        Ok(validated) => run_advanced_ai_universe_repair_validated(validated, verified_imports),
         Err(response) => response,
     }
 }
 
-pub fn run_phase9_typeclass_resolve_request(
+pub fn run_advanced_ai_typeclass_resolve_request(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        Phase9AiTaskKind::TypeclassResolution,
+        AdvancedAiTaskKind::TypeclassResolution,
     ) {
-        Ok(validated) => run_phase9_typeclass_resolve_validated(validated, verified_imports),
+        Ok(validated) => run_advanced_ai_typeclass_resolve_validated(validated, verified_imports),
         Err(response) => response,
     }
 }
 
-pub fn run_phase9_quotient_check_request(
+pub fn run_advanced_ai_quotient_check_request(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        Phase9AiTaskKind::QuotientConstruction,
+        AdvancedAiTaskKind::QuotientConstruction,
     ) {
-        Ok(validated) => run_phase9_quotient_check_validated(validated, verified_imports),
+        Ok(validated) => run_advanced_ai_quotient_check_validated(validated, verified_imports),
         Err(response) => response,
     }
 }
 
-pub fn run_phase9_smt_reconstruct_request(
+pub fn run_advanced_ai_smt_reconstruct_request(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        Phase9AiTaskKind::SmtCertificate,
+        AdvancedAiTaskKind::SmtCertificate,
     ) {
         Ok(validated) => {
-            run_phase9_smt_reconstruct_validated(validated, verified_imports, workspace_root)
+            run_advanced_ai_smt_reconstruct_validated(validated, verified_imports, workspace_root)
         }
         Err(response) => response,
     }
 }
 
-pub fn run_phase9_theorem_graph_query_request(
+pub fn run_advanced_ai_theorem_graph_query_request(
     request_canonical_bytes: &[u8],
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
         request_canonical_bytes,
         verified_imports,
         workspace_root,
-        Phase9AiTaskKind::TheoremGraphQuery,
+        AdvancedAiTaskKind::TheoremGraphQuery,
+    ) {
+        Ok(validated) => run_advanced_ai_theorem_graph_query_validated(
+            validated,
+            verified_imports,
+            workspace_root,
+        ),
+        Err(response) => response,
+    }
+}
+
+pub fn run_advanced_ai_formalize_check_request(
+    request_canonical_bytes: &[u8],
+    verified_imports: &[VerifiedImportRef],
+    workspace_root: &Path,
+) -> AdvancedAiEndpointResponse {
+    match validate_advanced_ai_common_envelope(
+        request_canonical_bytes,
+        verified_imports,
+        workspace_root,
+        AdvancedAiTaskKind::NaturalLanguageFormalization,
     ) {
         Ok(validated) => {
-            run_phase9_theorem_graph_query_validated(validated, verified_imports, workspace_root)
+            run_advanced_ai_formalize_check_validated(validated, verified_imports, workspace_root)
         }
         Err(response) => response,
     }
 }
 
-pub fn run_phase9_formalize_check_request(
-    request_canonical_bytes: &[u8],
+fn run_advanced_ai_formalize_check_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
-    match validate_phase9_ai_common_envelope(
-        request_canonical_bytes,
-        verified_imports,
-        workspace_root,
-        Phase9AiTaskKind::NaturalLanguageFormalization,
-    ) {
-        Ok(validated) => {
-            run_phase9_formalize_check_validated(validated, verified_imports, workspace_root)
-        }
-        Err(response) => response,
-    }
-}
-
-fn run_phase9_formalize_check_validated(
-    validated: Phase9ValidatedCommonEnvelope,
-    verified_imports: &[VerifiedImportRef],
-    workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let payload = match decode_formalization_payload(&validated.envelope.payload) {
         Ok(payload) => payload,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
@@ -1904,12 +1911,12 @@ fn run_phase9_formalize_check_validated(
     if !formalization_statement_wrapper_is_valid(&payload.candidate.statement) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
     let candidate_statement_hash =
-        phase9_formalization_candidate_statement_hash(&payload.candidate.statement);
+        advanced_ai_formalization_candidate_statement_hash(&payload.candidate.statement);
 
     let (source_document_hash, source_bytes) = match validate_formalization_source_document_ref(
         candidate_hash,
@@ -1948,19 +1955,19 @@ fn run_phase9_formalize_check_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
 
     if matches!(
         payload.intent_record.as_ref().map(|intent| &intent.status),
-        Some(Phase9FormalizationIntentStatus::Rejected { .. })
+        Some(AdvancedFormalizationIntentStatus::Rejected { .. })
     ) && payload.candidate.optional_proof_candidate.is_some()
     {
         return formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::RejectedIntentHasProofCandidate,
+            AdvancedFormalizationError::RejectedIntentHasProofCandidate,
         );
     }
 
@@ -1973,19 +1980,19 @@ fn run_phase9_formalize_check_validated(
         {
             return formalization_rejected_response(
                 candidate_hash,
-                Phase9FormalizationError::IntentRecordMismatch,
+                AdvancedFormalizationError::IntentRecordMismatch,
             );
         }
     }
 
     if matches!(
         payload.intent_record.as_ref().map(|intent| &intent.status),
-        Some(Phase9FormalizationIntentStatus::Rejected { .. })
+        Some(AdvancedFormalizationIntentStatus::Rejected { .. })
     ) {
         return success_response(
             candidate_hash,
-            Phase9AiSuccessPayload::NaturalLanguageFormalization {
-                kind: Phase9FormalizationSuccessKind::IntentRecordOnly,
+            AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+                kind: AdvancedFormalizationSuccessKind::IntentRecordOnly,
                 accepted_statement_hash: None,
                 formalization_proof_root_hash: None,
             },
@@ -2008,7 +2015,7 @@ fn run_phase9_formalize_check_validated(
             .intent_record
             .as_ref()
             .and_then(|intent| match &intent.status {
-                Phase9FormalizationIntentStatus::Reviewed {
+                AdvancedFormalizationIntentStatus::Reviewed {
                     accepted_statement_hash,
                     ..
                 } => Some(*accepted_statement_hash),
@@ -2023,15 +2030,15 @@ fn run_phase9_formalize_check_validated(
         {
             return formalization_rejected_response(
                 candidate_hash,
-                Phase9FormalizationError::FormalizationProofStatementMismatch,
+                AdvancedFormalizationError::FormalizationProofStatementMismatch,
             );
         }
-        let proof_root_hash = phase9_formalization_proof_root_hash(
+        let proof_root_hash = advanced_ai_formalization_proof_root_hash(
             validated.env_fingerprint,
             candidate_statement_hash,
             computed_accepted_statement_hash,
         );
-        match run_phase9_formalization_proof_bridge(
+        match run_advanced_ai_formalization_proof_bridge(
             candidate_hash,
             proof_root_hash,
             &payload.candidate.statement,
@@ -2043,8 +2050,8 @@ fn run_phase9_formalize_check_validated(
             Ok(()) => {
                 return success_response(
                     candidate_hash,
-                    Phase9AiSuccessPayload::NaturalLanguageFormalization {
-                        kind: Phase9FormalizationSuccessKind::ProofBridgeChecked,
+                    AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+                        kind: AdvancedFormalizationSuccessKind::ProofBridgeChecked,
                         accepted_statement_hash: Some(computed_accepted_statement_hash),
                         formalization_proof_root_hash: Some(proof_root_hash),
                     },
@@ -2057,8 +2064,8 @@ fn run_phase9_formalize_check_validated(
     if !accepted_statement_matches {
         return success_response(
             candidate_hash,
-            Phase9AiSuccessPayload::NaturalLanguageFormalization {
-                kind: Phase9FormalizationSuccessKind::IntentRecordOnly,
+            AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+                kind: AdvancedFormalizationSuccessKind::IntentRecordOnly,
                 accepted_statement_hash: None,
                 formalization_proof_root_hash: None,
             },
@@ -2067,26 +2074,26 @@ fn run_phase9_formalize_check_validated(
 
     success_response(
         candidate_hash,
-        Phase9AiSuccessPayload::NaturalLanguageFormalization {
-            kind: Phase9FormalizationSuccessKind::CandidateStatementChecked,
+        AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+            kind: AdvancedFormalizationSuccessKind::CandidateStatementChecked,
             accepted_statement_hash: Some(computed_accepted_statement_hash),
             formalization_proof_root_hash: None,
         },
     )
 }
 
-fn formalization_statement_wrapper_is_valid(statement: &Phase9MachineSurfaceTerm) -> bool {
-    phase9_string_list_is_unique(&statement.universe_params)
+fn formalization_statement_wrapper_is_valid(statement: &AdvancedMachineSurfaceTerm) -> bool {
+    advanced_ai_string_list_is_unique(&statement.universe_params)
         && statement
             .universe_params
             .iter()
-            .all(|param| phase9_machine_identifier_compatible(param))
-        && statement.term_canonical_bytes.len() <= MAX_PHASE9_FORMALIZATION_TERM_BYTES
+            .all(|param| advanced_ai_machine_identifier_compatible(param))
+        && statement.term_canonical_bytes.len() <= MAX_ADVANCED_AI_FORMALIZATION_TERM_BYTES
         && npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
             .is_ok()
 }
 
-fn phase9_machine_identifier_compatible(value: &str) -> bool {
+fn advanced_ai_machine_identifier_compatible(value: &str) -> bool {
     let mut chars = value.chars();
     let Some(first) = chars.next() else {
         return false;
@@ -2123,36 +2130,36 @@ fn phase9_machine_identifier_compatible(value: &str) -> bool {
 
 fn validate_formalization_source_document_ref(
     candidate_hash: Hash,
-    source: &Phase9MachineFormalizationSourceDocumentRef,
+    source: &AdvancedMachineFormalizationSourceDocumentRef,
     workspace_root: &Path,
-) -> std::result::Result<(Hash, Vec<u8>), Phase9AiEndpointResponse> {
+) -> std::result::Result<(Hash, Vec<u8>), AdvancedAiEndpointResponse> {
     let (embedded_hash, bytes) = match source {
-        Phase9MachineFormalizationSourceDocumentRef::Inline {
+        AdvancedMachineFormalizationSourceDocumentRef::Inline {
             source_document_hash,
             raw_utf8_bytes,
         } => {
-            if raw_utf8_bytes.len() > MAX_PHASE9_FORMALIZATION_SOURCE_BYTES {
+            if raw_utf8_bytes.len() > MAX_ADVANCED_AI_FORMALIZATION_SOURCE_BYTES {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
                     None,
                 ));
             }
             (*source_document_hash, raw_utf8_bytes.clone())
         }
-        Phase9MachineFormalizationSourceDocumentRef::Artifact {
+        AdvancedMachineFormalizationSourceDocumentRef::Artifact {
             path,
             file_hash,
             source_document_hash,
             size_bytes,
         } => {
-            let bytes = read_phase9_formalization_artifact(
+            let bytes = read_advanced_ai_formalization_artifact(
                 candidate_hash,
                 workspace_root,
                 path,
                 *file_hash,
                 *size_bytes,
-                MAX_PHASE9_FORMALIZATION_SOURCE_BYTES,
+                MAX_ADVANCED_AI_FORMALIZATION_SOURCE_BYTES,
             )?;
             (*source_document_hash, bytes)
         }
@@ -2160,15 +2167,15 @@ fn validate_formalization_source_document_ref(
     if std::str::from_utf8(&bytes).is_err() {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ));
     }
-    let actual_hash = phase9_formalization_source_document_hash(&bytes);
+    let actual_hash = advanced_ai_formalization_source_document_hash(&bytes);
     if actual_hash != embedded_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
@@ -2177,28 +2184,28 @@ fn validate_formalization_source_document_ref(
 
 fn validate_formalization_claim_span(
     candidate_hash: Hash,
-    claim_span: &Phase9MachineFormalizationClaimSpan,
+    claim_span: &AdvancedMachineFormalizationClaimSpan,
     source_document_hash: Hash,
     source_bytes: &[u8],
-) -> std::result::Result<Hash, Phase9AiEndpointResponse> {
+) -> std::result::Result<Hash, AdvancedAiEndpointResponse> {
     let Ok(source) = std::str::from_utf8(source_bytes) else {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ));
     };
     let start = usize::try_from(claim_span.start_byte).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         )
     })?;
     let end = usize::try_from(claim_span.end_byte).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         )
     })?;
@@ -2209,11 +2216,11 @@ fn validate_formalization_claim_span(
     {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ));
     }
-    let actual_hash = phase9_formalization_claim_span_hash(
+    let actual_hash = advanced_ai_formalization_claim_span_hash(
         source_document_hash,
         claim_span.start_byte,
         claim_span.end_byte,
@@ -2222,7 +2229,7 @@ fn validate_formalization_claim_span(
     if actual_hash != claim_span.claim_span_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
@@ -2231,36 +2238,36 @@ fn validate_formalization_claim_span(
 
 fn validate_formalization_rejection_reason_ref(
     candidate_hash: Hash,
-    reason: &Phase9MachineFormalizationRejectionReasonRef,
+    reason: &AdvancedMachineFormalizationRejectionReasonRef,
     workspace_root: &Path,
-) -> std::result::Result<Hash, Phase9AiEndpointResponse> {
+) -> std::result::Result<Hash, AdvancedAiEndpointResponse> {
     let (embedded_hash, bytes) = match reason {
-        Phase9MachineFormalizationRejectionReasonRef::Inline {
+        AdvancedMachineFormalizationRejectionReasonRef::Inline {
             rejection_reason_hash,
             raw_utf8_bytes,
         } => {
-            if raw_utf8_bytes.len() > MAX_PHASE9_FORMALIZATION_REASON_BYTES {
+            if raw_utf8_bytes.len() > MAX_ADVANCED_AI_FORMALIZATION_REASON_BYTES {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
                     None,
                 ));
             }
             (*rejection_reason_hash, raw_utf8_bytes.clone())
         }
-        Phase9MachineFormalizationRejectionReasonRef::Artifact {
+        AdvancedMachineFormalizationRejectionReasonRef::Artifact {
             path,
             file_hash,
             rejection_reason_hash,
             size_bytes,
         } => {
-            let bytes = read_phase9_formalization_artifact(
+            let bytes = read_advanced_ai_formalization_artifact(
                 candidate_hash,
                 workspace_root,
                 path,
                 *file_hash,
                 *size_bytes,
-                MAX_PHASE9_FORMALIZATION_REASON_BYTES,
+                MAX_ADVANCED_AI_FORMALIZATION_REASON_BYTES,
             )?;
             (*rejection_reason_hash, bytes)
         }
@@ -2268,36 +2275,36 @@ fn validate_formalization_rejection_reason_ref(
     if std::str::from_utf8(&bytes).is_err() {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ));
     }
-    let actual_hash = phase9_formalization_rejection_reason_hash(&bytes);
+    let actual_hash = advanced_ai_formalization_rejection_reason_hash(&bytes);
     if actual_hash != embedded_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     Ok(actual_hash)
 }
 
-fn read_phase9_formalization_artifact(
+fn read_advanced_ai_formalization_artifact(
     candidate_hash: Hash,
     workspace_root: &Path,
     path: &str,
     file_hash: Hash,
     size_bytes: u64,
     cap: usize,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     if usize::try_from(size_bytes)
         .map(|size| size > cap)
         .unwrap_or(true)
     {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ));
     }
@@ -2306,33 +2313,33 @@ fn read_phase9_formalization_artifact(
         Err(ArtifactPathError::EnvelopeMalformed) => {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             ));
         }
         Err(ArtifactPathError::ArtifactUnavailable) => {
-            return Err(Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::ArtifactUnavailable,
+            return Err(AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::ArtifactUnavailable,
             });
         }
     };
-    let metadata = std::fs::metadata(&path).map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::ArtifactUnavailable,
+    let metadata = std::fs::metadata(&path).map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::ArtifactUnavailable,
     })?;
     if metadata.len() != size_bytes {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
-    let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::ArtifactUnavailable,
+    let bytes = std::fs::read(path).map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::ArtifactUnavailable,
     })?;
-    if phase9_file_hash(&bytes) != file_hash {
+    if advanced_ai_file_hash(&bytes) != file_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
@@ -2340,10 +2347,10 @@ fn read_phase9_formalization_artifact(
 }
 
 fn rejected_reason_ref(
-    intent_record: &Option<Phase9FormalizationIntentRecord>,
-) -> Option<&Phase9MachineFormalizationRejectionReasonRef> {
+    intent_record: &Option<AdvancedFormalizationIntentRecord>,
+) -> Option<&AdvancedMachineFormalizationRejectionReasonRef> {
     match intent_record.as_ref().map(|intent| &intent.status) {
-        Some(Phase9FormalizationIntentStatus::Rejected {
+        Some(AdvancedFormalizationIntentStatus::Rejected {
             rejection_reason, ..
         }) => Some(rejection_reason),
         _ => None,
@@ -2351,18 +2358,18 @@ fn rejected_reason_ref(
 }
 
 fn reviewer_for_intent_status(
-    status: &Phase9FormalizationIntentStatus,
-) -> Option<&Phase9ReviewerId> {
+    status: &AdvancedFormalizationIntentStatus,
+) -> Option<&AdvancedReviewerId> {
     match status {
-        Phase9FormalizationIntentStatus::Unreviewed => None,
-        Phase9FormalizationIntentStatus::Reviewed { reviewer, .. }
-        | Phase9FormalizationIntentStatus::Rejected { reviewer, .. } => Some(reviewer),
+        AdvancedFormalizationIntentStatus::Unreviewed => None,
+        AdvancedFormalizationIntentStatus::Reviewed { reviewer, .. }
+        | AdvancedFormalizationIntentStatus::Rejected { reviewer, .. } => Some(reviewer),
     }
 }
 
-fn rejected_status_reason_hash(status: &Phase9FormalizationIntentStatus) -> Option<Hash> {
+fn rejected_status_reason_hash(status: &AdvancedFormalizationIntentStatus) -> Option<Hash> {
     match status {
-        Phase9FormalizationIntentStatus::Rejected {
+        AdvancedFormalizationIntentStatus::Rejected {
             rejection_reason_hash,
             ..
         } => Some(*rejection_reason_hash),
@@ -2370,12 +2377,12 @@ fn rejected_status_reason_hash(status: &Phase9FormalizationIntentStatus) -> Opti
     }
 }
 
-fn reviewer_id_is_valid(reviewer: &Phase9ReviewerId) -> bool {
+fn reviewer_id_is_valid(reviewer: &AdvancedReviewerId) -> bool {
     match reviewer {
-        Phase9ReviewerId::Human { stable_id_ascii } => {
+        AdvancedReviewerId::Human { stable_id_ascii } => {
             reviewer_ascii_field_is_valid(stable_id_ascii)
         }
-        Phase9ReviewerId::System {
+        AdvancedReviewerId::System {
             system_id_ascii,
             actor_id_ascii,
         } => {
@@ -2396,14 +2403,14 @@ fn reviewer_ascii_field_is_valid(bytes: &[u8]) -> bool {
 fn elaborate_formalization_statement(
     candidate_hash: Hash,
     env_fingerprint: Hash,
-    statement: &Phase9MachineSurfaceTerm,
+    statement: &AdvancedMachineSurfaceTerm,
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(Expr, Hash), Phase9AiEndpointResponse> {
+) -> std::result::Result<(Expr, Hash), AdvancedAiEndpointResponse> {
     let ast = npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
         .map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         )
     })?;
@@ -2420,7 +2427,7 @@ fn elaborate_formalization_statement(
     .map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         )
     })?;
@@ -2433,7 +2440,7 @@ fn elaborate_formalization_statement(
             |_| {
                 formalization_rejected_response(
                     candidate_hash,
-                    Phase9FormalizationError::CandidateStatementElaborationFailed,
+                    AdvancedFormalizationError::CandidateStatementElaborationFailed,
                 )
             },
         )?;
@@ -2443,7 +2450,7 @@ fn elaborate_formalization_statement(
         .whnf(&Ctx::new(), &statement.universe_params, &inferred_type)
     {
         Ok(Expr::Sort(_)) => {
-            let accepted_statement_hash = phase9_formalization_accepted_statement_hash(
+            let accepted_statement_hash = advanced_ai_formalization_accepted_statement_hash(
                 env_fingerprint,
                 &statement.universe_params,
                 &accepted_theorem_type,
@@ -2452,39 +2459,38 @@ fn elaborate_formalization_statement(
         }
         Ok(_) | Err(_) => Err(formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::CandidateStatementElaborationFailed,
+            AdvancedFormalizationError::CandidateStatementElaborationFailed,
         )),
     }
 }
 
-fn run_phase9_formalization_proof_bridge(
+fn run_advanced_ai_formalization_proof_bridge(
     candidate_hash: Hash,
     proof_root_hash: Hash,
-    statement: &Phase9MachineSurfaceTerm,
+    statement: &AdvancedMachineSurfaceTerm,
     accepted_theorem_type: &Expr,
-    proof_candidate: &Phase9MachineFormalizationProofCandidate,
-    options: &Phase9AiOptions,
+    proof_candidate: &AdvancedMachineFormalizationProofCandidate,
+    options: &AdvancedAiOptions,
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let Some(formalization_options) = options.formalization.as_ref() else {
-        return Err(Phase9AiEndpointResponse::Error {
-            error: Phase9AiEndpointError::InternalValidatorFailure,
+        return Err(AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
         });
     };
     let tactic_options =
-        decode_phase4_tactic_options(&formalization_options.tactic_options_canonical_bytes)
-            .map_err(|_| Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+        decode_machine_tactic_options(&formalization_options.tactic_options_canonical_bytes)
+            .map_err(|_| AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             })?;
-    let tactic_budget = decode_phase4_tactic_budget(
-        &formalization_options.tactic_budget_canonical_bytes,
-    )
-    .map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::InternalValidatorFailure,
-    })?;
+    let tactic_budget =
+        decode_machine_tactic_budget(&formalization_options.tactic_budget_canonical_bytes)
+            .map_err(|_| AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
+            })?;
     let module = formalization_scratch_module(proof_root_hash);
     let theorem_name = formalization_scratch_theorem(proof_root_hash);
-    let start = phase4_start_machine_proof(
+    let start = machine_tactic_start_machine_proof(
         MachineProofSpec {
             module: module.clone(),
             theorem_name: theorem_name.clone(),
@@ -2496,28 +2502,38 @@ fn run_phase9_formalization_proof_bridge(
         Vec::new(),
         tactic_options,
     )
-    .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    .map_err(|err| {
+        formalization_machine_tactic_error_response(candidate_hash, err.diagnostic.kind)
+    })?;
     let [goal_id] = start.state.open_goals.as_slice() else {
         return Err(formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::ProofBridgeFailed,
+            AdvancedFormalizationError::ProofBridgeFailed,
         ));
     };
-    let tactic = phase4_validate_machine_tactic_candidate(*goal_id, proof_candidate.tactic.clone())
-        .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
-    let run = phase4_run_machine_tactic_with_budget(&start.state, tactic.tactic, tactic_budget)
-        .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    let tactic =
+        machine_tactic_validate_machine_tactic_candidate(*goal_id, proof_candidate.tactic.clone())
+            .map_err(|err| {
+                formalization_machine_tactic_error_response(candidate_hash, err.diagnostic.kind)
+            })?;
+    let run =
+        machine_tactic_run_machine_tactic_with_budget(&start.state, tactic.tactic, tactic_budget)
+            .map_err(|err| {
+            formalization_machine_tactic_error_response(candidate_hash, err.diagnostic.kind)
+        })?;
     if !run.state.open_goals.is_empty() {
         return Err(formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::ProofBridgeFailed,
+            AdvancedFormalizationError::ProofBridgeFailed,
         ));
     }
-    let extracted = phase4_extract_closed_machine_theorem_decl(
+    let extracted = machine_tactic_extract_closed_machine_theorem_decl(
         &run.state,
         MachineApiDiagnosticPhase::KernelCheck,
     )
-    .map_err(|err| formalization_phase4_error_response(candidate_hash, err.diagnostic.kind))?;
+    .map_err(|err| {
+        formalization_machine_tactic_error_response(candidate_hash, err.diagnostic.kind)
+    })?;
     let Decl::Theorem {
         name,
         universe_params,
@@ -2527,16 +2543,16 @@ fn run_phase9_formalization_proof_bridge(
     else {
         return Err(formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::ProofBridgeFailed,
+            AdvancedFormalizationError::ProofBridgeFailed,
         ));
     };
     if name != theorem_name.as_dotted()
         || universe_params != statement.universe_params
-        || !phase9_core_expr_bytes_eq(&ty, accepted_theorem_type)
+        || !advanced_ai_core_expr_bytes_eq(&ty, accepted_theorem_type)
     {
         return Err(formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::FormalizationProofStatementMismatch,
+            AdvancedFormalizationError::FormalizationProofStatementMismatch,
         ));
     }
     let import_modules = verified_imports
@@ -2559,19 +2575,19 @@ fn run_phase9_formalization_proof_bridge(
         Err(npa_cert::CertError::Kernel(_)) => {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             ));
         }
         Err(_) => {
-            return Err(Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+            return Err(AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             });
         }
     };
     let cert_bytes =
-        npa_cert::encode_module_cert(&cert).map_err(|_| Phase9AiEndpointResponse::Error {
-            error: Phase9AiEndpointError::InternalValidatorFailure,
+        npa_cert::encode_module_cert(&cert).map_err(|_| AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
         })?;
     let mut verifier_session = VerifierSession::new();
     for import in import_modules {
@@ -2581,7 +2597,7 @@ fn run_phase9_formalization_proof_bridge(
         .map_err(|_| {
             rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::IndependentCheckerRejected,
+                AdvancedAiValidationError::IndependentCheckerRejected,
                 None,
             )
         })?;
@@ -2591,7 +2607,7 @@ fn run_phase9_formalization_proof_bridge(
 fn formalization_scratch_module(proof_root_hash: Hash) -> ModuleName {
     Name(vec![
         "NPA".to_owned(),
-        "Phase9".to_owned(),
+        "Advanced".to_owned(),
         "FormalizationScratch".to_owned(),
         lowerhex_hash(proof_root_hash),
     ])
@@ -2612,57 +2628,57 @@ fn lowerhex_hash(hash: Hash) -> String {
     output
 }
 
-fn formalization_phase4_error_response(
+fn formalization_machine_tactic_error_response(
     candidate_hash: Hash,
     kind: MachineApiErrorKind,
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     match kind {
         MachineApiErrorKind::BudgetExceeded
         | MachineApiErrorKind::TooLargeTerm
         | MachineApiErrorKind::TooManyGoals => rejected_response(
             candidate_hash,
-            Phase9AiValidationError::BudgetExceeded,
+            AdvancedAiValidationError::BudgetExceeded,
             None,
         ),
         MachineApiErrorKind::UnsupportedTactic => rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         ),
         MachineApiErrorKind::InvalidMachineApiOptions => rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         ),
         _ => formalization_rejected_response(
             candidate_hash,
-            Phase9FormalizationError::ProofBridgeFailed,
+            AdvancedFormalizationError::ProofBridgeFailed,
         ),
     }
 }
 
 fn formalization_rejected_response(
     candidate_hash: Hash,
-    error: Phase9FormalizationError,
-) -> Phase9AiEndpointResponse {
+    error: AdvancedFormalizationError,
+) -> AdvancedAiEndpointResponse {
     rejected_response(
         candidate_hash,
-        Phase9AiValidationError::FeatureRejected,
-        Some(Phase9AiFeatureError::Formalization(error)),
+        AdvancedAiValidationError::FeatureRejected,
+        Some(AdvancedAiFeatureError::Formalization(error)),
     )
 }
 
-fn run_phase9_inductive_validated(
-    validated: Phase9ValidatedCommonEnvelope,
+fn run_advanced_ai_inductive_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let proposal = match decode_inductive_proposal(&validated.envelope.payload) {
         Ok(proposal) => proposal,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
@@ -2671,21 +2687,23 @@ fn run_phase9_inductive_validated(
     let [family] = proposal.inductives.as_slice() else {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     };
 
-    let family_public_name = phase9_family_public_name(proposal.block_name.as_ref(), &family.name);
+    let family_public_name =
+        advanced_ai_family_public_name(proposal.block_name.as_ref(), &family.name);
     let constructor_public_names = family
         .constructors
         .iter()
-        .map(|constructor| phase9_append_name(&family_public_name, &constructor.name))
+        .map(|constructor| advanced_ai_append_name(&family_public_name, &constructor.name))
         .collect::<Vec<_>>();
-    let recursor_public_name = phase9_append_name(&family_public_name, &Name::from_dotted("rec"));
-    if phase9_inductive_names_collide(
+    let recursor_public_name =
+        advanced_ai_append_name(&family_public_name, &Name::from_dotted("rec"));
+    if advanced_ai_inductive_names_collide(
         family,
         &family_public_name,
         &constructor_public_names,
@@ -2693,62 +2711,65 @@ fn run_phase9_inductive_validated(
     ) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::NameCollision,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::NameCollision,
             )),
         );
     }
 
-    if !phase9_string_list_is_unique(&proposal.universe_params)
+    if !advanced_ai_string_list_is_unique(&proposal.universe_params)
         || !level_is_in_scope(&family.result_sort, &proposal.universe_params)
-        || !phase9_inductive_family_levels_are_in_scope(family, &proposal.universe_params)
+        || !advanced_ai_inductive_family_levels_are_in_scope(family, &proposal.universe_params)
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
 
-    if phase9_telescope_contains_const_name(&family.params, &family_public_name.as_dotted())
-        || phase9_telescope_contains_const_name(&family.indices, &family_public_name.as_dotted())
+    if advanced_ai_telescope_contains_const_name(&family.params, &family_public_name.as_dotted())
+        || advanced_ai_telescope_contains_const_name(
+            &family.indices,
+            &family_public_name.as_dotted(),
+        )
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::TargetRefMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::TargetRefMismatch,
             )),
         );
     }
-    if !phase9_telescope_imported_refs_are_resolved(
+    if !advanced_ai_telescope_imported_refs_are_resolved(
         &family.params,
         verified_imports,
         &BTreeSet::new(),
-    ) || !phase9_telescope_imported_refs_are_resolved(
+    ) || !advanced_ai_telescope_imported_refs_are_resolved(
         &family.indices,
         verified_imports,
         &BTreeSet::new(),
     ) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         );
     }
 
-    let env = match phase9_kernel_env_from_imports(verified_imports) {
+    let env = match advanced_ai_kernel_env_from_imports(verified_imports) {
         Ok(env) => env,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
     };
-    if phase9_check_telescope_kernel(
+    if advanced_ai_check_telescope_kernel(
         &env,
         &proposal.universe_params,
         family.params.iter().chain(&family.indices),
@@ -2757,7 +2778,7 @@ fn run_phase9_inductive_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         );
     }
@@ -2774,9 +2795,9 @@ fn run_phase9_inductive_validated(
     }) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::TargetRefMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::TargetRefMismatch,
             )),
         );
     }
@@ -2791,12 +2812,12 @@ fn run_phase9_inductive_validated(
     }) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         );
     }
 
-    let base_decl = phase9_base_inductive_decl(
+    let base_decl = advanced_ai_base_inductive_decl(
         &proposal,
         family,
         &family_public_name,
@@ -2807,15 +2828,15 @@ fn run_phase9_inductive_validated(
         .add_axiom(
             base_decl.name.clone(),
             base_decl.universe_params.clone(),
-            phase9_inductive_type(&base_decl),
+            advanced_ai_inductive_type(&base_decl),
         )
         .is_err()
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::NameCollision,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::NameCollision,
             )),
         );
     }
@@ -2830,37 +2851,37 @@ fn run_phase9_inductive_validated(
         {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
     }
 
     for constructor in &base_decl.constructors {
-        match phase9_check_constructor_result(&constructor_env, &base_decl, constructor) {
+        match advanced_ai_check_constructor_result(&constructor_env, &base_decl, constructor) {
             Ok(()) => {}
-            Err(Phase9InductiveCheckError::TargetRefMismatch) => {
+            Err(AdvancedInductiveCheckError::TargetRefMismatch) => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Some(Phase9AiFeatureError::AdvancedInductive(
-                        Phase9AdvancedInductiveError::TargetRefMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    Some(AdvancedAiFeatureError::AdvancedInductive(
+                        AdvancedInductiveError::TargetRefMismatch,
                     )),
                 );
             }
-            Err(Phase9InductiveCheckError::KernelRejected) => {
+            Err(AdvancedInductiveCheckError::KernelRejected) => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::KernelRejected,
+                    AdvancedAiValidationError::KernelRejected,
                     None,
                 );
             }
-            Err(Phase9InductiveCheckError::UnsupportedPositivity) => {
+            Err(AdvancedInductiveCheckError::UnsupportedPositivity) => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::UnsupportedFeature,
-                    Some(Phase9AiFeatureError::AdvancedInductive(
-                        Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+                    AdvancedAiValidationError::UnsupportedFeature,
+                    Some(AdvancedAiFeatureError::AdvancedInductive(
+                        AdvancedInductiveError::PositivityProfileUnsupported,
                     )),
                 );
             }
@@ -2868,30 +2889,30 @@ fn run_phase9_inductive_validated(
     }
 
     for constructor in &base_decl.constructors {
-        match phase9_check_constructor_positivity(&base_decl, constructor) {
+        match advanced_ai_check_constructor_positivity(&base_decl, constructor) {
             Ok(()) => {}
-            Err(Phase9InductiveCheckError::TargetRefMismatch) => {
+            Err(AdvancedInductiveCheckError::TargetRefMismatch) => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Some(Phase9AiFeatureError::AdvancedInductive(
-                        Phase9AdvancedInductiveError::TargetRefMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    Some(AdvancedAiFeatureError::AdvancedInductive(
+                        AdvancedInductiveError::TargetRefMismatch,
                     )),
                 );
             }
-            Err(Phase9InductiveCheckError::UnsupportedPositivity) => {
+            Err(AdvancedInductiveCheckError::UnsupportedPositivity) => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::UnsupportedFeature,
-                    Some(Phase9AiFeatureError::AdvancedInductive(
-                        Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+                    AdvancedAiValidationError::UnsupportedFeature,
+                    Some(AdvancedAiFeatureError::AdvancedInductive(
+                        AdvancedInductiveError::PositivityProfileUnsupported,
                     )),
                 );
             }
-            Err(Phase9InductiveCheckError::KernelRejected) => {
+            Err(AdvancedInductiveCheckError::KernelRejected) => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::KernelRejected,
+                    AdvancedAiValidationError::KernelRejected,
                     None,
                 );
             }
@@ -2903,24 +2924,24 @@ fn run_phase9_inductive_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     }
     let final_decl = match npa_cert::generate_inductive_artifacts_v1(&base_decl) {
         Ok(final_decl) => final_decl,
         Err(_) => {
-            return Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+            return AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             };
         }
     };
     let cert_decl = Decl::Inductive {
         name: final_decl.name.clone(),
         universe_params: final_decl.universe_params.clone(),
-        ty: phase9_inductive_type(&final_decl),
+        ty: advanced_ai_inductive_type(&final_decl),
         data: Box::new(final_decl),
     };
     let import_modules = verified_imports
@@ -2938,21 +2959,21 @@ fn run_phase9_inductive_validated(
         Err(npa_cert::CertError::Kernel(_)) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
         Err(_) => {
-            return Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+            return AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             };
         }
     };
     let cert_bytes = match npa_cert::encode_module_cert(&cert) {
         Ok(bytes) => bytes,
         Err(_) => {
-            return Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+            return AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             };
         }
     };
@@ -2963,13 +2984,13 @@ fn run_phase9_inductive_validated(
     if npa_cert::verify_module_cert(&cert_bytes, &mut verifier_session, &AxiomPolicy::normal())
         .is_err()
     {
-        return Phase9AiEndpointResponse::Error {
-            error: Phase9AiEndpointError::InternalValidatorFailure,
+        return AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
         };
     }
     let Some(decl) = cert.declarations.first() else {
-        return Phase9AiEndpointResponse::Error {
-            error: Phase9AiEndpointError::InternalValidatorFailure,
+        return AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
         };
     };
     if proposal
@@ -2978,64 +2999,64 @@ fn run_phase9_inductive_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
     success_response(
         candidate_hash,
-        Phase9AiSuccessPayload::AdvancedInductive {
+        AdvancedAiSuccessPayload::AdvancedInductive {
             decl_interface_hash: decl.hashes.decl_interface_hash,
             decl_certificate_hash: decl.hashes.decl_certificate_hash,
         },
     )
 }
 
-fn run_phase9_quotient_check_validated(
-    validated: Phase9ValidatedCommonEnvelope,
+fn run_advanced_ai_quotient_check_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let candidate = match decode_quotient_candidate(&validated.envelope.payload) {
         Ok(candidate) => candidate,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
     };
-    if !phase9_quotient_operations_are_sorted_unique(&candidate.operations) {
+    if !advanced_ai_quotient_operations_are_sorted_unique(&candidate.operations) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
-    if !phase9_string_list_is_unique(&candidate.universe_params)
-        || !phase9_quotient_levels_are_in_scope(&candidate)
+    if !advanced_ai_string_list_is_unique(&candidate.universe_params)
+        || !advanced_ai_quotient_levels_are_in_scope(&candidate)
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
-    if !phase9_quotient_payload_imported_refs_are_resolved(&candidate, verified_imports) {
+    if !advanced_ai_quotient_payload_imported_refs_are_resolved(&candidate, verified_imports) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         );
     }
 
-    let env = match phase9_kernel_env_from_imports(verified_imports) {
+    let env = match advanced_ai_kernel_env_from_imports(verified_imports) {
         Ok(env) => env,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             );
         }
@@ -3043,11 +3064,11 @@ fn run_phase9_quotient_check_validated(
     let Some(quotient_options) = validated.options.quotient.as_ref() else {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     };
-    let primitives = match phase9_resolve_quotient_primitives(
+    let primitives = match advanced_ai_resolve_quotient_primitives(
         candidate_hash,
         &env,
         quotient_options,
@@ -3057,17 +3078,17 @@ fn run_phase9_quotient_check_validated(
         Err(response) => return response,
     };
 
-    if phase9_check_telescope_kernel(&env, &candidate.universe_params, candidate.params.iter())
+    if advanced_ai_check_telescope_kernel(&env, &candidate.universe_params, candidate.params.iter())
         .is_err()
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         );
     }
-    let params_ctx = phase9_quotient_params_ctx(&candidate.params);
-    let carrier = match phase9_quotient_carrier_info(
+    let params_ctx = advanced_ai_quotient_params_ctx(&candidate.params);
+    let carrier = match advanced_ai_quotient_carrier_info(
         candidate_hash,
         &env,
         &params_ctx,
@@ -3077,7 +3098,7 @@ fn run_phase9_quotient_check_validated(
         Ok(carrier) => carrier,
         Err(response) => return response,
     };
-    if let Err(response) = phase9_validate_quotient_relation(
+    if let Err(response) = advanced_ai_validate_quotient_relation(
         candidate_hash,
         &env,
         &params_ctx,
@@ -3088,14 +3109,14 @@ fn run_phase9_quotient_check_validated(
         return response;
     }
 
-    let setoid_expr = phase9_quotient_setoid_mk_app(
+    let setoid_expr = advanced_ai_quotient_setoid_mk_app(
         &primitives,
         &carrier.universe,
         candidate.carrier.clone(),
         candidate.relation.clone(),
         candidate.equivalence_proof.clone(),
     );
-    let rel_equiv_type = phase9_quotient_rel_equiv_type(
+    let rel_equiv_type = advanced_ai_quotient_rel_equiv_type(
         &primitives,
         &carrier.universe,
         candidate.carrier.clone(),
@@ -3112,14 +3133,14 @@ fn run_phase9_quotient_check_validated(
     {
         return quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
-            Phase9QuotientConstructionError::EquivalenceProofMismatch,
+            AdvancedAiValidationError::KernelRejected,
+            AdvancedQuotientConstructionError::EquivalenceProofMismatch,
         );
     }
 
     let expected_quotient_type =
-        phase9_quotient_type_app(&primitives, &carrier.universe, setoid_expr.clone());
-    if let Err(response) = phase9_validate_quotient_type(
+        advanced_ai_quotient_type_app(&primitives, &carrier.universe, setoid_expr.clone());
+    if let Err(response) = advanced_ai_validate_quotient_type(
         candidate_hash,
         &env,
         &params_ctx,
@@ -3131,23 +3152,23 @@ fn run_phase9_quotient_check_validated(
         return response;
     }
 
-    let decl_hash = match phase9_reconstruct_quotient_decl_hash(
+    let decl_hash = match advanced_ai_reconstruct_quotient_decl_hash(
         &candidate,
         &expected_quotient_type,
         &carrier.type_level,
         verified_imports,
     ) {
         Ok(decl_hash) => decl_hash,
-        Err(Phase9QuotientDeclBuildError::KernelRejected) => {
+        Err(AdvancedQuotientDeclBuildError::KernelRejected) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
-        Err(Phase9QuotientDeclBuildError::Internal) => {
-            return Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+        Err(AdvancedQuotientDeclBuildError::Internal) => {
+            return AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             };
         }
     };
@@ -3157,13 +3178,13 @@ fn run_phase9_quotient_check_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
 
     for operation in &candidate.operations {
-        if let Err(response) = phase9_validate_quotient_operation(
+        if let Err(response) = advanced_ai_validate_quotient_operation(
             candidate_hash,
             &env,
             &params_ctx,
@@ -3179,62 +3200,62 @@ fn run_phase9_quotient_check_validated(
 
     rejected_response(
         candidate_hash,
-        Phase9AiValidationError::UnsupportedFeature,
+        AdvancedAiValidationError::UnsupportedFeature,
         None,
     )
 }
 
-fn run_phase9_smt_reconstruct_validated(
-    validated: Phase9ValidatedCommonEnvelope,
+fn run_advanced_ai_smt_reconstruct_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let candidate = match decode_smt_candidate(&validated.envelope.payload) {
         Ok(candidate) => candidate,
         Err(_) => {
             return smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             );
         }
     };
 
-    let goal_fingerprint = phase9_ai_goal_fingerprint(validated.env_fingerprint, &candidate.goal);
+    let goal_fingerprint = advanced_ai_goal_fingerprint(validated.env_fingerprint, &candidate.goal);
     if validated.envelope.target.goal_fingerprint != Some(goal_fingerprint) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
-    match validate_phase9_ai_goal(&candidate.goal, verified_imports) {
+    match validate_advanced_ai_goal(&candidate.goal, verified_imports) {
         Ok(()) => {}
-        Err(Phase9GoalValidationError::EnvelopeMalformed) => {
+        Err(AdvancedGoalValidationError::EnvelopeMalformed) => {
             return smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             );
         }
-        Err(Phase9GoalValidationError::ImportClosureMismatch) => {
+        Err(AdvancedGoalValidationError::ImportClosureMismatch) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             );
         }
-        Err(Phase9GoalValidationError::KernelRejected) => {
+        Err(AdvancedGoalValidationError::KernelRejected) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
     }
 
-    let problem_bytes = match phase9_smt_problem_bytes(
+    let problem_bytes = match advanced_ai_smt_problem_bytes(
         candidate_hash,
         &candidate.encoded_problem,
         workspace_root,
@@ -3243,31 +3264,31 @@ fn run_phase9_smt_reconstruct_validated(
         Err(response) => return response,
     };
     let problem =
-        match phase9_validate_smt_problem_bytes(candidate_hash, &problem_bytes, &candidate) {
+        match advanced_ai_validate_smt_problem_bytes(candidate_hash, &problem_bytes, &candidate) {
             Ok(problem) => problem,
             Err(response) => return response,
         };
     if problem.goal_fingerprint != goal_fingerprint {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
     if problem.logic != candidate.logic {
         return smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9SmtCertificateError::EncodingMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::EncodingMismatch,
         );
     }
 
-    let env = match phase9_kernel_env_from_imports(verified_imports) {
+    let env = match advanced_ai_kernel_env_from_imports(verified_imports) {
         Ok(env) => env,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             );
         }
@@ -3275,33 +3296,47 @@ fn run_phase9_smt_reconstruct_validated(
     let Some(smt_options) = validated.options.smt.as_ref() else {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     };
-    let primitives =
-        match phase9_resolve_smt_primitives(candidate_hash, &env, smt_options, verified_imports) {
-            Ok(primitives) => primitives,
-            Err(response) => return response,
-        };
+    let primitives = match advanced_ai_resolve_smt_primitives(
+        candidate_hash,
+        &env,
+        smt_options,
+        verified_imports,
+    ) {
+        Ok(primitives) => primitives,
+        Err(response) => return response,
+    };
 
-    let command_context =
-        match phase9_validate_smt_commands(candidate_hash, &candidate, &problem, &primitives) {
-            Ok(context) => context,
-            Err(response) => return response,
-        };
+    let command_context = match advanced_ai_validate_smt_commands(
+        candidate_hash,
+        &candidate,
+        &problem,
+        &primitives,
+    ) {
+        Ok(context) => context,
+        Err(response) => return response,
+    };
 
-    let payload_bytes =
-        match phase9_smt_payload_bytes(candidate_hash, &candidate.proof_payload, workspace_root) {
-            Ok(bytes) => bytes,
-            Err(response) => return response,
-        };
-    let proof_payload =
-        match phase9_validate_smt_proof_payload_bytes(candidate_hash, &payload_bytes, &candidate) {
-            Ok(payload) => payload,
-            Err(response) => return response,
-        };
-    if let Err(response) = phase9_validate_smt_proof_table(
+    let payload_bytes = match advanced_ai_smt_payload_bytes(
+        candidate_hash,
+        &candidate.proof_payload,
+        workspace_root,
+    ) {
+        Ok(bytes) => bytes,
+        Err(response) => return response,
+    };
+    let proof_payload = match advanced_ai_validate_smt_proof_payload_bytes(
+        candidate_hash,
+        &payload_bytes,
+        &candidate,
+    ) {
+        Ok(payload) => payload,
+        Err(response) => return response,
+    };
+    if let Err(response) = advanced_ai_validate_smt_proof_table(
         candidate_hash,
         &proof_payload,
         &candidate,
@@ -3313,7 +3348,7 @@ fn run_phase9_smt_reconstruct_validated(
     }
 
     if let Err(response) =
-        phase9_validate_smt_reconstruction_plan(candidate_hash, &candidate, verified_imports)
+        advanced_ai_validate_smt_reconstruction_plan(candidate_hash, &candidate, verified_imports)
     {
         return response;
     }
@@ -3322,96 +3357,96 @@ fn run_phase9_smt_reconstruct_validated(
         .reconstruction_plan
         .steps
         .iter()
-        .any(|step| matches!(step.rule, Phase9SmtReconstructionRule::PayloadNode { .. }))
+        .any(|step| matches!(step.rule, AdvancedSmtReconstructionRule::PayloadNode { .. }))
     {
         return smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
-            Phase9SmtCertificateError::RuleRegistryMismatch,
+            AdvancedAiValidationError::UnsupportedFeature,
+            AdvancedSmtCertificateError::RuleRegistryMismatch,
         );
     }
 
     rejected_response(
         candidate_hash,
-        Phase9AiValidationError::UnsupportedFeature,
+        AdvancedAiValidationError::UnsupportedFeature,
         None,
     )
 }
 
-fn run_phase9_typeclass_resolve_validated(
-    validated: Phase9ValidatedCommonEnvelope,
+fn run_advanced_ai_typeclass_resolve_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let plan = match decode_typeclass_resolution_plan(&validated.envelope.payload) {
         Ok(plan) => plan,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
     };
-    if !phase9_typeclass_candidate_targets_are_unique(&plan.ordered_candidates) {
+    if !advanced_ai_typeclass_candidate_targets_are_unique(&plan.ordered_candidates) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
 
     if validated.envelope.target.goal_fingerprint
-        != Some(phase9_ai_goal_fingerprint(
+        != Some(advanced_ai_goal_fingerprint(
             validated.env_fingerprint,
             &plan.goal,
         ))
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
 
-    match validate_phase9_ai_goal(&plan.goal, verified_imports) {
+    match validate_advanced_ai_goal(&plan.goal, verified_imports) {
         Ok(()) => {}
-        Err(Phase9GoalValidationError::EnvelopeMalformed) => {
+        Err(AdvancedGoalValidationError::EnvelopeMalformed) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
-        Err(Phase9GoalValidationError::ImportClosureMismatch) => {
+        Err(AdvancedGoalValidationError::ImportClosureMismatch) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             );
         }
-        Err(Phase9GoalValidationError::KernelRejected) => {
+        Err(AdvancedGoalValidationError::KernelRejected) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
     }
 
-    let env = match phase9_kernel_env_from_imports(verified_imports) {
+    let env = match advanced_ai_kernel_env_from_imports(verified_imports) {
         Ok(env) => env,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             );
         }
     };
-    let goal_ctx = phase9_goal_ctx(&plan.goal);
+    let goal_ctx = advanced_ai_goal_ctx(&plan.goal);
 
-    let class_declarations = match phase9_resolve_typeclass_class_declarations(
+    let class_declarations = match advanced_ai_resolve_typeclass_class_declarations(
         candidate_hash,
         &env,
         &validated.options.typeclass.class_declarations,
@@ -3421,7 +3456,7 @@ fn run_phase9_typeclass_resolve_validated(
         Err(response) => return response,
     };
 
-    let candidates = match phase9_resolve_typeclass_candidates(
+    let candidates = match advanced_ai_resolve_typeclass_candidates(
         candidate_hash,
         &env,
         &class_declarations,
@@ -3432,7 +3467,7 @@ fn run_phase9_typeclass_resolve_validated(
         Err(response) => return response,
     };
 
-    if phase9_typeclass_head_name(
+    if advanced_ai_typeclass_head_name(
         &env,
         &goal_ctx,
         &plan.goal.universe_params,
@@ -3443,14 +3478,14 @@ fn run_phase9_typeclass_resolve_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::TypeclassResolution(
-                Phase9TypeclassResolutionError::ClassHeadUnsupported,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::TypeclassResolution(
+                AdvancedTypeclassResolutionError::ClassHeadUnsupported,
             )),
         );
     }
 
-    let proof = match phase9_typeclass_search(
+    let proof = match advanced_ai_typeclass_search(
         &env,
         &goal_ctx,
         &plan.goal.universe_params,
@@ -3460,36 +3495,36 @@ fn run_phase9_typeclass_resolve_validated(
         plan.max_depth,
         plan.max_nodes,
     ) {
-        Phase9TypeclassSearchOutcome::Success(proof) => proof,
-        Phase9TypeclassSearchOutcome::NoSolution => {
+        AdvancedTypeclassSearchOutcome::Success(proof) => proof,
+        AdvancedTypeclassSearchOutcome::NoSolution => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::NoSolution,
-                Some(Phase9AiFeatureError::TypeclassResolution(
-                    Phase9TypeclassResolutionError::NoSolution,
+                AdvancedAiValidationError::NoSolution,
+                Some(AdvancedAiFeatureError::TypeclassResolution(
+                    AdvancedTypeclassResolutionError::NoSolution,
                 )),
             );
         }
-        Phase9TypeclassSearchOutcome::BudgetExceeded => {
+        AdvancedTypeclassSearchOutcome::BudgetExceeded => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::BudgetExceeded,
+                AdvancedAiValidationError::BudgetExceeded,
                 None,
             );
         }
-        Phase9TypeclassSearchOutcome::AmbiguousResolution => {
+        AdvancedTypeclassSearchOutcome::AmbiguousResolution => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::AmbiguousResolution,
+                AdvancedAiValidationError::AmbiguousResolution,
                 None,
             );
         }
-        Phase9TypeclassSearchOutcome::CandidateInterfaceInvalid => {
+        AdvancedTypeclassSearchOutcome::CandidateInterfaceInvalid => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::TypeclassResolution(
-                    Phase9TypeclassResolutionError::CandidateInterfaceInvalid,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::TypeclassResolution(
+                    AdvancedTypeclassResolutionError::CandidateInterfaceInvalid,
                 )),
             );
         }
@@ -3506,43 +3541,43 @@ fn run_phase9_typeclass_resolve_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         );
     }
 
     success_response(
         candidate_hash,
-        Phase9AiSuccessPayload::TypeclassResolution { proof },
+        AdvancedAiSuccessPayload::TypeclassResolution { proof },
     )
 }
 
-fn run_phase9_theorem_graph_query_validated(
-    validated: Phase9ValidatedCommonEnvelope,
+fn run_advanced_ai_theorem_graph_query_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
     workspace_root: &Path,
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let query = match decode_theorem_graph_query(&validated.envelope.payload) {
         Ok(query) => query,
         Err(DecodeError::TheoremGraphSnapshotBytesTooLarge) => {
             return theorem_graph_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9TheoremGraphError::SnapshotMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedTheoremGraphError::SnapshotMalformed,
             );
         }
         Err(DecodeError::TheoremGraphQueryFeaturesBytesTooLarge) => {
             return theorem_graph_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9TheoremGraphError::QueryFeaturesMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedTheoremGraphError::QueryFeaturesMalformed,
             );
         }
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
@@ -3550,50 +3585,50 @@ fn run_phase9_theorem_graph_query_validated(
 
     if query.env_fingerprint != validated.envelope.target.env_fingerprint
         || Some(query.goal_fingerprint) != validated.envelope.target.goal_fingerprint
-        || phase9_ai_goal_fingerprint(validated.env_fingerprint, &query.goal)
+        || advanced_ai_goal_fingerprint(validated.env_fingerprint, &query.goal)
             != query.goal_fingerprint
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
 
-    match validate_phase9_ai_goal(&query.goal, verified_imports) {
+    match validate_advanced_ai_goal(&query.goal, verified_imports) {
         Ok(()) => {}
-        Err(Phase9GoalValidationError::EnvelopeMalformed) => {
+        Err(AdvancedGoalValidationError::EnvelopeMalformed) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
-        Err(Phase9GoalValidationError::ImportClosureMismatch) => {
+        Err(AdvancedGoalValidationError::ImportClosureMismatch) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             );
         }
-        Err(Phase9GoalValidationError::KernelRejected) => {
+        Err(AdvancedGoalValidationError::KernelRejected) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             );
         }
     }
 
-    if query.limit > MAX_PHASE9_THEOREM_GRAPH_RESULT_LIMIT {
+    if query.limit > MAX_ADVANCED_AI_THEOREM_GRAPH_RESULT_LIMIT {
         return theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::LimitOutOfRange,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::LimitOutOfRange,
         );
     }
 
-    let snapshot_bytes = match phase9_theorem_graph_snapshot_bytes(
+    let snapshot_bytes = match advanced_ai_theorem_graph_snapshot_bytes(
         candidate_hash,
         &query.snapshot.source,
         workspace_root,
@@ -3601,7 +3636,7 @@ fn run_phase9_theorem_graph_query_validated(
         Ok(bytes) => bytes,
         Err(response) => return response,
     };
-    let snapshot = match phase9_validate_theorem_graph_snapshot_bytes(
+    let snapshot = match advanced_ai_validate_theorem_graph_snapshot_bytes(
         candidate_hash,
         &snapshot_bytes,
         &query.snapshot,
@@ -3610,7 +3645,7 @@ fn run_phase9_theorem_graph_query_validated(
         Err(response) => return response,
     };
 
-    let feature_bytes = match phase9_theorem_graph_query_features_bytes(
+    let feature_bytes = match advanced_ai_theorem_graph_query_features_bytes(
         candidate_hash,
         &query.query_features,
         workspace_root,
@@ -3618,7 +3653,7 @@ fn run_phase9_theorem_graph_query_validated(
         Ok(bytes) => bytes,
         Err(response) => return response,
     };
-    let query_features = match phase9_validate_theorem_graph_query_features_bytes(
+    let query_features = match advanced_ai_validate_theorem_graph_query_features_bytes(
         candidate_hash,
         &feature_bytes,
         &query,
@@ -3632,52 +3667,52 @@ fn run_phase9_theorem_graph_query_validated(
     {
         return theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::SnapshotMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::SnapshotMalformed,
         );
     }
     if query_features.env_fingerprint != query.env_fingerprint
         || query_features.goal_fingerprint != query.goal_fingerprint
         || query_features.feature_schema_version
-            != Phase9TheoremGraphFeatureSchemaVersion::MvpGoalFeaturesV1
+            != AdvancedTheoremGraphFeatureSchemaVersion::MvpGoalFeaturesV1
     {
         return theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::QueryFeaturesMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::QueryFeaturesMalformed,
         );
     }
-    if !phase9_theorem_graph_features_are_well_formed(&query_features.features) {
+    if !advanced_ai_theorem_graph_features_are_well_formed(&query_features.features) {
         return theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::QueryFeaturesMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::QueryFeaturesMalformed,
         );
     }
-    if !phase9_theorem_graph_snapshot_is_well_formed(&snapshot) {
+    if !advanced_ai_theorem_graph_snapshot_is_well_formed(&snapshot) {
         return theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::SnapshotMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::SnapshotMalformed,
         );
     }
 
     let mut entries = Vec::new();
     for node in &snapshot.nodes {
-        match phase9_resolve_theorem_graph_node(node, verified_imports) {
-            Phase9TheoremGraphNodeResolution::Missing => {}
-            Phase9TheoremGraphNodeResolution::Mismatch => {
+        match advanced_ai_resolve_theorem_graph_node(node, verified_imports) {
+            AdvancedTheoremGraphNodeResolution::Missing => {}
+            AdvancedTheoremGraphNodeResolution::Mismatch => {
                 return theorem_graph_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Phase9TheoremGraphError::NodeResolutionMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    AdvancedTheoremGraphError::NodeResolutionMismatch,
                 );
             }
-            Phase9TheoremGraphNodeResolution::Resolved { eligible } => {
+            AdvancedTheoremGraphNodeResolution::Resolved { eligible } => {
                 if eligible && entries.len() < query.limit as usize {
-                    entries.push(Phase9MachineTheoremGraphResultEntry {
+                    entries.push(AdvancedMachineTheoremGraphResultEntry {
                         node: node.clone(),
-                        score: Phase9MachineTheoremGraphScore {
+                        score: AdvancedMachineTheoremGraphScore {
                             score_microunits: 0,
                         },
                     });
@@ -3688,31 +3723,31 @@ fn run_phase9_theorem_graph_query_validated(
 
     success_response(
         candidate_hash,
-        Phase9AiSuccessPayload::TheoremGraphQuery {
-            result: Phase9MachineTheoremGraphResult { entries },
+        AdvancedAiSuccessPayload::TheoremGraphQuery {
+            result: AdvancedMachineTheoremGraphResult { entries },
         },
     )
 }
 
-struct Phase9UniverseRepairCandidateOuter {
-    goal: Option<Phase9AiGoal>,
+struct AdvancedUniverseRepairCandidateOuter {
+    goal: Option<AdvancedAiGoal>,
     target_expr: Expr,
     instantiation_items: Vec<Vec<u8>>,
     constraint_hint_items: Vec<Vec<u8>>,
-    minimization_hint: Option<Phase9UniverseMinimizationHint>,
+    minimization_hint: Option<AdvancedUniverseMinimizationHint>,
 }
 
-fn run_phase9_universe_repair_validated(
-    validated: Phase9ValidatedCommonEnvelope,
+fn run_advanced_ai_universe_repair_validated(
+    validated: AdvancedValidatedCommonEnvelope,
     verified_imports: &[VerifiedImportRef],
-) -> Phase9AiEndpointResponse {
+) -> AdvancedAiEndpointResponse {
     let candidate_hash = validated.candidate_hash;
     let raw = match decode_universe_repair_candidate_outer(&validated.envelope.payload) {
         Ok(raw) => raw,
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
@@ -3721,7 +3756,7 @@ fn run_phase9_universe_repair_validated(
     if validated.envelope.target.target_decl_hash.is_some() {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
     }
@@ -3731,33 +3766,36 @@ fn run_phase9_universe_repair_validated(
         None => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
     };
-    if !phase9_core_expr_bytes_eq(&goal.target, &raw.target_expr) {
+    if !advanced_ai_core_expr_bytes_eq(&goal.target, &raw.target_expr) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::TargetFingerprintMismatch,
             )),
         );
     }
     if validated.envelope.target.goal_fingerprint
-        != Some(phase9_ai_goal_fingerprint(validated.env_fingerprint, goal))
+        != Some(advanced_ai_goal_fingerprint(
+            validated.env_fingerprint,
+            goal,
+        ))
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::TargetFingerprintMismatch,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::TargetFingerprintMismatch,
             )),
         );
     }
 
-    if !phase9_string_list_is_unique(&goal.universe_params)
+    if !advanced_ai_string_list_is_unique(&goal.universe_params)
         || !expr_levels_are_in_scope(&goal.target, &goal.universe_params)
         || !goal
             .local_context
@@ -3766,21 +3804,21 @@ fn run_phase9_universe_repair_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
     if !goal_imported_refs_are_resolved(goal, verified_imports) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         );
     }
     if validate_goal_kernel(goal, verified_imports).is_err() {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         );
     }
@@ -3790,7 +3828,7 @@ fn run_phase9_universe_repair_validated(
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
@@ -3798,7 +3836,7 @@ fn run_phase9_universe_repair_validated(
     if !universe_instantiations_are_strictly_sorted(&instantiations) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
@@ -3808,7 +3846,7 @@ fn run_phase9_universe_repair_validated(
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             );
         }
@@ -3816,7 +3854,7 @@ fn run_phase9_universe_repair_validated(
     if !universe_constraint_hints_are_strictly_sorted(&constraint_hints) {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
@@ -3824,9 +3862,9 @@ fn run_phase9_universe_repair_validated(
         if !constraint_levels_are_in_scope(&hint.constraint, &goal.universe_params) {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::UnknownUniverseParam,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::UnknownUniverseParam,
                 )),
             );
         }
@@ -3839,9 +3877,9 @@ fn run_phase9_universe_repair_validated(
             None => {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Some(Phase9AiFeatureError::UniverseRepair(
-                        Phase9UniverseRepairError::InvalidOccurrencePath,
+                    AdvancedAiValidationError::FeatureRejected,
+                    Some(AdvancedAiFeatureError::UniverseRepair(
+                        AdvancedUniverseRepairError::InvalidOccurrencePath,
                     )),
                 );
             }
@@ -3849,38 +3887,40 @@ fn run_phase9_universe_repair_validated(
         let Expr::Const { name, .. } = reached else {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::InvalidOccurrencePath,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::InvalidOccurrencePath,
                 )),
             );
         };
-        let resolved =
-            match resolve_phase9_global_ref(&patch.occurrence.expected_ref, verified_imports) {
-                Some(resolved) => resolved,
-                None => {
-                    return rejected_response(
-                        candidate_hash,
-                        Phase9AiValidationError::ImportClosureMismatch,
-                        None,
-                    );
-                }
-            };
+        let resolved = match resolve_advanced_ai_global_ref(
+            &patch.occurrence.expected_ref,
+            verified_imports,
+        ) {
+            Some(resolved) => resolved,
+            None => {
+                return rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::ImportClosureMismatch,
+                    None,
+                );
+            }
+        };
         if name != &resolved.const_name {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::TargetRefMismatch,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::TargetRefMismatch,
                 )),
             );
         }
         if patch.explicit_level_args.len() != resolved.universe_arity {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::IllFormedLevelExpr,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::IllFormedLevelExpr,
                 )),
             );
         }
@@ -3888,9 +3928,9 @@ fn run_phase9_universe_repair_validated(
             if !level_is_in_scope(level, &goal.universe_params) {
                 return rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Some(Phase9AiFeatureError::UniverseRepair(
-                        Phase9UniverseRepairError::UnknownUniverseParam,
+                    AdvancedAiValidationError::FeatureRejected,
+                    Some(AdvancedAiFeatureError::UniverseRepair(
+                        AdvancedUniverseRepairError::UnknownUniverseParam,
                     )),
                 );
             }
@@ -3902,8 +3942,8 @@ fn run_phase9_universe_repair_validated(
         )
         .is_none()
         {
-            return Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::InternalValidatorFailure,
+            return AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
             };
         }
     }
@@ -3913,25 +3953,25 @@ fn run_phase9_universe_repair_validated(
         Err(_) => {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::NoSolution,
-                Some(Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::UnsatisfiedConstraint,
+                AdvancedAiValidationError::NoSolution,
+                Some(AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::UnsatisfiedConstraint,
                 )),
             );
         }
     };
     let constraint_keys = constraints
         .iter()
-        .map(phase9_universe_constraint_canonical_bytes)
+        .map(advanced_ai_universe_constraint_canonical_bytes)
         .collect::<BTreeSet<_>>();
     for hint in &constraint_hints {
-        let key = phase9_universe_constraint_canonical_bytes(&hint.constraint);
+        let key = advanced_ai_universe_constraint_canonical_bytes(&hint.constraint);
         if !constraint_keys.contains(&key) {
             return rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::ConstraintHintMismatch,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::ConstraintHintMismatch,
                 )),
             );
         }
@@ -3942,14 +3982,14 @@ fn run_phase9_universe_repair_validated(
     {
         return rejected_response(
             candidate_hash,
-            Phase9AiValidationError::NoSolution,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::UnsatisfiedConstraint,
+            AdvancedAiValidationError::NoSolution,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::UnsatisfiedConstraint,
             )),
         );
     }
-    let constraint_set_hash = phase9_universe_constraint_set_hash(&constraints);
-    let success = Phase9AiSuccessPayload::UniverseRepair {
+    let constraint_set_hash = advanced_ai_universe_constraint_set_hash(&constraints);
+    let success = AdvancedAiSuccessPayload::UniverseRepair {
         repaired_expr,
         constraint_set_hash,
     };
@@ -3958,11 +3998,11 @@ fn run_phase9_universe_repair_validated(
 
 fn success_response(
     candidate_hash: Hash,
-    payload: Phase9AiSuccessPayload,
-) -> Phase9AiEndpointResponse {
+    payload: AdvancedAiSuccessPayload,
+) -> AdvancedAiEndpointResponse {
     let validation_result_hash =
-        phase9_ai_validation_result_hash_for_success(candidate_hash, &payload);
-    Phase9AiEndpointResponse::Success {
+        advanced_ai_validation_result_hash_for_success(candidate_hash, &payload);
+    AdvancedAiEndpointResponse::Success {
         candidate_hash,
         validation_result_hash,
         payload: Box::new(payload),
@@ -3971,15 +4011,15 @@ fn success_response(
 
 fn validate_imports(
     candidate_hash: Hash,
-    imports: &[Phase9ImportIdentity],
+    imports: &[AdvancedImportIdentity],
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
-    let mut previous: Option<&Phase9ImportIdentity> = None;
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
+    let mut previous: Option<&AdvancedImportIdentity> = None;
     for import in imports {
         if !import.module.is_canonical() {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             ));
         }
@@ -3988,14 +4028,14 @@ fn validate_imports(
                 Ok(Ordering::Greater) => {
                     return Err(rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
+                        AdvancedAiValidationError::EnvelopeMalformed,
                         None,
                     ));
                 }
                 Ok(Ordering::Equal) => {
                     return Err(rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::ImportClosureMismatch,
+                        AdvancedAiValidationError::ImportClosureMismatch,
                         None,
                     ));
                 }
@@ -4003,7 +4043,7 @@ fn validate_imports(
                 Err(_) => {
                     return Err(rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
+                        AdvancedAiValidationError::EnvelopeMalformed,
                         None,
                     ));
                 }
@@ -4015,17 +4055,17 @@ fn validate_imports(
     if imports.len() != verified_imports.len() {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         ));
     }
 
     for (expected, actual) in imports.iter().zip(verified_imports) {
-        let actual = Phase9ImportIdentity::from_verified_import(actual);
+        let actual = AdvancedImportIdentity::from_verified_import(actual);
         if expected != &actual {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             ));
         }
@@ -4036,24 +4076,24 @@ fn validate_imports(
 
 fn validate_options_ref(
     candidate_hash: Hash,
-    options_ref: &Phase9AiOptionsRef,
+    options_ref: &AdvancedAiOptionsRef,
     workspace_root: &Path,
-) -> std::result::Result<(Phase9AiOptions, Hash), Phase9AiEndpointResponse> {
+) -> std::result::Result<(AdvancedAiOptions, Hash), AdvancedAiEndpointResponse> {
     let (declared_options_hash, canonical_bytes) = match options_ref {
-        Phase9AiOptionsRef::Inline {
+        AdvancedAiOptionsRef::Inline {
             options_hash,
             canonical_bytes,
         } => {
             if canonical_bytes.len() > MAX_OPTIONS_BYTES {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
                     None,
                 ));
             }
             (*options_hash, canonical_bytes.clone())
         }
-        Phase9AiOptionsRef::Artifact {
+        AdvancedAiOptionsRef::Artifact {
             path,
             file_hash,
             options_hash,
@@ -4065,7 +4105,7 @@ fn validate_options_ref(
             {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
                     None,
                 ));
             }
@@ -4074,23 +4114,23 @@ fn validate_options_ref(
                 Err(ArtifactPathError::EnvelopeMalformed) => {
                     return Err(rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
+                        AdvancedAiValidationError::EnvelopeMalformed,
                         None,
                     ));
                 }
                 Err(ArtifactPathError::ArtifactUnavailable) => {
-                    return Err(Phase9AiEndpointResponse::Error {
-                        error: Phase9AiEndpointError::ArtifactUnavailable,
+                    return Err(AdvancedAiEndpointResponse::Error {
+                        error: AdvancedAiEndpointError::ArtifactUnavailable,
                     });
                 }
             };
-            let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::ArtifactUnavailable,
+            let bytes = std::fs::read(path).map_err(|_| AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::ArtifactUnavailable,
             })?;
-            if bytes.len() as u64 != *size_bytes || phase9_file_hash(&bytes) != *file_hash {
+            if bytes.len() as u64 != *size_bytes || advanced_ai_file_hash(&bytes) != *file_hash {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::PayloadHashMismatch,
+                    AdvancedAiValidationError::PayloadHashMismatch,
                     None,
                 ));
             }
@@ -4101,15 +4141,15 @@ fn validate_options_ref(
     let options = decode_options(&canonical_bytes).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         )
     })?;
-    let actual_options_hash = phase9_ai_options_hash(&canonical_bytes);
+    let actual_options_hash = advanced_ai_options_hash(&canonical_bytes);
     if actual_options_hash != declared_options_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
@@ -4119,22 +4159,22 @@ fn validate_options_ref(
 
 fn validate_target_shape(
     candidate_hash: Hash,
-    task_kind: Phase9AiTaskKind,
-    target: &Phase9AiTarget,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    task_kind: AdvancedAiTaskKind,
+    target: &AdvancedAiTarget,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let valid = match task_kind {
-        Phase9AiTaskKind::AdvancedInductive
-        | Phase9AiTaskKind::QuotientConstruction
-        | Phase9AiTaskKind::NaturalLanguageFormalization => {
+        AdvancedAiTaskKind::AdvancedInductive
+        | AdvancedAiTaskKind::QuotientConstruction
+        | AdvancedAiTaskKind::NaturalLanguageFormalization => {
             target.target_decl_hash.is_none() && target.goal_fingerprint.is_none()
         }
-        Phase9AiTaskKind::UniverseRepair => {
+        AdvancedAiTaskKind::UniverseRepair => {
             (target.target_decl_hash.is_none() && target.goal_fingerprint.is_some())
                 || (target.target_decl_hash.is_some() && target.goal_fingerprint.is_none())
         }
-        Phase9AiTaskKind::TypeclassResolution
-        | Phase9AiTaskKind::SmtCertificate
-        | Phase9AiTaskKind::TheoremGraphQuery => {
+        AdvancedAiTaskKind::TypeclassResolution
+        | AdvancedAiTaskKind::SmtCertificate
+        | AdvancedAiTaskKind::TheoremGraphQuery => {
             target.target_decl_hash.is_none() && target.goal_fingerprint.is_some()
         }
     };
@@ -4143,7 +4183,7 @@ fn validate_target_shape(
     } else {
         Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ))
     }
@@ -4151,24 +4191,24 @@ fn validate_target_shape(
 
 fn validate_required_options(
     candidate_hash: Hash,
-    task_kind: Phase9AiTaskKind,
-    options: &Phase9AiOptions,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    task_kind: AdvancedAiTaskKind,
+    options: &AdvancedAiOptions,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let valid = match task_kind {
-        Phase9AiTaskKind::QuotientConstruction => options.quotient.is_some(),
-        Phase9AiTaskKind::SmtCertificate => options.smt.is_some(),
-        Phase9AiTaskKind::NaturalLanguageFormalization => options.formalization.is_some(),
-        Phase9AiTaskKind::AdvancedInductive
-        | Phase9AiTaskKind::UniverseRepair
-        | Phase9AiTaskKind::TypeclassResolution
-        | Phase9AiTaskKind::TheoremGraphQuery => true,
+        AdvancedAiTaskKind::QuotientConstruction => options.quotient.is_some(),
+        AdvancedAiTaskKind::SmtCertificate => options.smt.is_some(),
+        AdvancedAiTaskKind::NaturalLanguageFormalization => options.formalization.is_some(),
+        AdvancedAiTaskKind::AdvancedInductive
+        | AdvancedAiTaskKind::UniverseRepair
+        | AdvancedAiTaskKind::TypeclassResolution
+        | AdvancedAiTaskKind::TheoremGraphQuery => true,
     };
     if valid {
         Ok(())
     } else {
         Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         ))
     }
@@ -4176,16 +4216,16 @@ fn validate_required_options(
 
 fn validate_task_options_shape(
     candidate_hash: Hash,
-    task_kind: Phase9AiTaskKind,
-    options: &Phase9AiOptions,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
-    if task_kind != Phase9AiTaskKind::NaturalLanguageFormalization {
+    task_kind: AdvancedAiTaskKind,
+    options: &AdvancedAiOptions,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
+    if task_kind != AdvancedAiTaskKind::NaturalLanguageFormalization {
         return Ok(());
     }
     let Some(formalization) = options.formalization.as_ref() else {
         return Ok(());
     };
-    decode_phase4_tactic_options(&formalization.tactic_options_canonical_bytes)
+    decode_machine_tactic_options(&formalization.tactic_options_canonical_bytes)
         .and_then(|options| {
             if options.max_simp_rewrite_steps == 0
                 || options.max_open_goals == 0
@@ -4198,14 +4238,14 @@ fn validate_task_options_shape(
         .map_err(|()| {
             rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 None,
             )
         })?;
-    decode_phase4_tactic_budget(&formalization.tactic_budget_canonical_bytes).map_err(|()| {
+    decode_machine_tactic_budget(&formalization.tactic_budget_canonical_bytes).map_err(|()| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         )
     })?;
@@ -4213,25 +4253,25 @@ fn validate_task_options_shape(
 }
 
 #[derive(Clone)]
-struct Phase9ResolvedGlobalDecl {
+struct AdvancedResolvedGlobalDecl {
     const_name: String,
     universe_params: Vec<String>,
     ty: Expr,
 }
 
-struct Phase9ResolvedQuotientInterface {
-    setoid: Phase9ResolvedGlobalDecl,
-    setoid_mk: Phase9ResolvedGlobalDecl,
-    setoid_relation: Phase9ResolvedGlobalDecl,
-    rel_equiv: Phase9ResolvedGlobalDecl,
-    quotient: Phase9ResolvedGlobalDecl,
-    quotient_mk: Phase9ResolvedGlobalDecl,
-    quotient_sound: Phase9ResolvedGlobalDecl,
-    quotient_lift: Phase9ResolvedGlobalDecl,
-    eq: Phase9ResolvedGlobalDecl,
+struct AdvancedResolvedQuotientInterface {
+    setoid: AdvancedResolvedGlobalDecl,
+    setoid_mk: AdvancedResolvedGlobalDecl,
+    setoid_relation: AdvancedResolvedGlobalDecl,
+    rel_equiv: AdvancedResolvedGlobalDecl,
+    quotient: AdvancedResolvedGlobalDecl,
+    quotient_mk: AdvancedResolvedGlobalDecl,
+    quotient_sound: AdvancedResolvedGlobalDecl,
+    quotient_lift: AdvancedResolvedGlobalDecl,
+    eq: AdvancedResolvedGlobalDecl,
 }
 
-struct Phase9ResolvedQuotientPrimitives {
+struct AdvancedResolvedQuotientPrimitives {
     setoid_mk: String,
     setoid_relation: String,
     rel_equiv: String,
@@ -4239,36 +4279,36 @@ struct Phase9ResolvedQuotientPrimitives {
     eq: String,
 }
 
-struct Phase9QuotientCarrierInfo {
+struct AdvancedQuotientCarrierInfo {
     expr: Expr,
     type_level: Level,
     universe: Level,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Phase9QuotientDeclBuildError {
+enum AdvancedQuotientDeclBuildError {
     KernelRejected,
     Internal,
 }
 
 fn quotient_rejected_response(
     candidate_hash: Hash,
-    error: Phase9AiValidationError,
-    quotient_error: Phase9QuotientConstructionError,
-) -> Phase9AiEndpointResponse {
+    error: AdvancedAiValidationError,
+    quotient_error: AdvancedQuotientConstructionError,
+) -> AdvancedAiEndpointResponse {
     rejected_response(
         candidate_hash,
         error,
-        Some(Phase9AiFeatureError::QuotientConstruction(quotient_error)),
+        Some(AdvancedAiFeatureError::QuotientConstruction(quotient_error)),
     )
 }
 
-fn phase9_quotient_operations_are_sorted_unique(
-    operations: &[Phase9MachineQuotientOperationCandidate],
+fn advanced_ai_quotient_operations_are_sorted_unique(
+    operations: &[AdvancedMachineQuotientOperationCandidate],
 ) -> bool {
     let mut previous: Option<Vec<u8>> = None;
     for operation in operations {
-        let Ok(key) = phase5_name_canonical_bytes(&operation.name) else {
+        let Ok(key) = machine_api_name_canonical_bytes(&operation.name) else {
             return false;
         };
         if previous.as_ref().is_some_and(|previous| previous >= &key) {
@@ -4279,8 +4319,8 @@ fn phase9_quotient_operations_are_sorted_unique(
     true
 }
 
-fn phase9_quotient_levels_are_in_scope(
-    candidate: &Phase9MachineQuotientConstructionCandidate,
+fn advanced_ai_quotient_levels_are_in_scope(
+    candidate: &AdvancedMachineQuotientConstructionCandidate,
 ) -> bool {
     candidate
         .params
@@ -4299,11 +4339,11 @@ fn phase9_quotient_levels_are_in_scope(
         })
 }
 
-fn phase9_quotient_payload_imported_refs_are_resolved(
-    candidate: &Phase9MachineQuotientConstructionCandidate,
+fn advanced_ai_quotient_payload_imported_refs_are_resolved(
+    candidate: &AdvancedMachineQuotientConstructionCandidate,
     imports: &[VerifiedImportRef],
 ) -> bool {
-    phase9_telescope_imported_refs_are_resolved(&candidate.params, imports, &BTreeSet::new())
+    advanced_ai_telescope_imported_refs_are_resolved(&candidate.params, imports, &BTreeSet::new())
         && expr_imported_refs_are_resolved(&candidate.quotient_type, imports)
         && expr_imported_refs_are_resolved(&candidate.carrier, imports)
         && expr_imported_refs_are_resolved(&candidate.relation, imports)
@@ -4314,59 +4354,63 @@ fn phase9_quotient_payload_imported_refs_are_resolved(
         })
 }
 
-fn phase9_resolve_quotient_primitives(
+fn advanced_ai_resolve_quotient_primitives(
     candidate_hash: Hash,
     env: &Env,
-    options: &Phase9QuotientOptions,
+    options: &AdvancedQuotientOptions,
     imports: &[VerifiedImportRef],
-) -> std::result::Result<Phase9ResolvedQuotientPrimitives, Phase9AiEndpointResponse> {
-    let resolved = Phase9ResolvedQuotientInterface {
-        setoid: phase9_resolve_quotient_primitive_ref(candidate_hash, &options.setoid, imports)?,
-        setoid_mk: phase9_resolve_quotient_primitive_ref(
+) -> std::result::Result<AdvancedResolvedQuotientPrimitives, AdvancedAiEndpointResponse> {
+    let resolved = AdvancedResolvedQuotientInterface {
+        setoid: advanced_ai_resolve_quotient_primitive_ref(
+            candidate_hash,
+            &options.setoid,
+            imports,
+        )?,
+        setoid_mk: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.setoid_mk,
             imports,
         )?,
-        setoid_relation: phase9_resolve_quotient_primitive_ref(
+        setoid_relation: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.setoid_relation,
             imports,
         )?,
-        rel_equiv: phase9_resolve_quotient_primitive_ref(
+        rel_equiv: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.rel_equiv,
             imports,
         )?,
-        quotient: phase9_resolve_quotient_primitive_ref(
+        quotient: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.quotient,
             imports,
         )?,
-        quotient_mk: phase9_resolve_quotient_primitive_ref(
+        quotient_mk: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.quotient_mk,
             imports,
         )?,
-        quotient_sound: phase9_resolve_quotient_primitive_ref(
+        quotient_sound: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.quotient_sound,
             imports,
         )?,
-        quotient_lift: phase9_resolve_quotient_primitive_ref(
+        quotient_lift: advanced_ai_resolve_quotient_primitive_ref(
             candidate_hash,
             &options.quotient_lift,
             imports,
         )?,
-        eq: phase9_resolve_quotient_primitive_ref(candidate_hash, &options.eq, imports)?,
+        eq: advanced_ai_resolve_quotient_primitive_ref(candidate_hash, &options.eq, imports)?,
     };
-    if !phase9_quotient_public_interface_is_valid(env, &resolved) {
+    if !advanced_ai_quotient_public_interface_is_valid(env, &resolved) {
         return Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::PrimitiveInterfaceMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::PrimitiveInterfaceMismatch,
         ));
     }
-    Ok(Phase9ResolvedQuotientPrimitives {
+    Ok(AdvancedResolvedQuotientPrimitives {
         setoid_mk: resolved.setoid_mk.const_name,
         setoid_relation: resolved.setoid_relation.const_name,
         rel_equiv: resolved.rel_equiv.const_name,
@@ -4375,28 +4419,28 @@ fn phase9_resolve_quotient_primitives(
     })
 }
 
-fn phase9_resolve_quotient_primitive_ref(
+fn advanced_ai_resolve_quotient_primitive_ref(
     candidate_hash: Hash,
-    global_ref: &Phase9AiGlobalRef,
+    global_ref: &AdvancedAiGlobalRef,
     imports: &[VerifiedImportRef],
-) -> std::result::Result<Phase9ResolvedGlobalDecl, Phase9AiEndpointResponse> {
-    let Some(resolved) = phase9_resolve_global_decl(global_ref, imports) else {
+) -> std::result::Result<AdvancedResolvedGlobalDecl, AdvancedAiEndpointResponse> {
+    let Some(resolved) = advanced_ai_resolve_global_decl(global_ref, imports) else {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         ));
     };
     Ok(resolved)
 }
 
-fn phase9_resolve_global_decl(
-    global_ref: &Phase9AiGlobalRef,
+fn advanced_ai_resolve_global_decl(
+    global_ref: &AdvancedAiGlobalRef,
     imports: &[VerifiedImportRef],
-) -> Option<Phase9ResolvedGlobalDecl> {
+) -> Option<AdvancedResolvedGlobalDecl> {
     let mut matches = Vec::new();
     for import in imports {
-        let identity = Phase9ImportIdentity::from_verified_import(import);
+        let identity = AdvancedImportIdentity::from_verified_import(import);
         if identity.module != global_ref.module
             || identity.export_hash != global_ref.export_hash
             || identity.certificate_hash != global_ref.certificate_hash
@@ -4411,7 +4455,7 @@ fn phase9_resolve_global_decl(
                 .certified_env_decls()
                 .iter()
                 .find(|decl| decl.name() == export.name.as_dotted())?;
-            matches.push(Phase9ResolvedGlobalDecl {
+            matches.push(AdvancedResolvedGlobalDecl {
                 const_name: export.name.as_dotted(),
                 universe_params: decl.universe_params().to_vec(),
                 ty: decl.ty().clone(),
@@ -4424,41 +4468,41 @@ fn phase9_resolve_global_decl(
     Some(resolved.clone())
 }
 
-fn phase9_quotient_public_interface_is_valid(
+fn advanced_ai_quotient_public_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    phase9_quotient_setoid_interface_is_valid(env, resolved)
-        && phase9_quotient_rel_equiv_interface_is_valid(env, resolved)
-        && phase9_quotient_setoid_mk_interface_is_valid(env, resolved)
-        && phase9_quotient_setoid_relation_interface_is_valid(env, resolved)
-        && phase9_quotient_quotient_interface_is_valid(env, resolved)
-        && phase9_quotient_mk_interface_is_valid(env, resolved)
-        && phase9_quotient_sound_interface_is_valid(env, resolved)
-        && phase9_quotient_lift_interface_is_valid(env, resolved)
-        && phase9_quotient_eq_interface_is_valid(env, resolved)
+    advanced_ai_quotient_setoid_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_rel_equiv_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_setoid_mk_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_setoid_relation_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_quotient_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_mk_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_sound_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_lift_interface_is_valid(env, resolved)
+        && advanced_ai_quotient_eq_interface_is_valid(env, resolved)
 }
 
-fn phase9_quotient_setoid_interface_is_valid(
+fn advanced_ai_quotient_setoid_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.setoid) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.setoid) else {
         return false;
     };
     let type_level = Level::succ(u.clone());
     let expected = Expr::pi("_", Expr::sort(type_level.clone()), Expr::sort(type_level));
-    phase9_quotient_public_type_defeq(env, &resolved.setoid, &expected)
+    advanced_ai_quotient_public_type_defeq(env, &resolved.setoid, &expected)
 }
 
-fn phase9_quotient_rel_equiv_interface_is_valid(
+fn advanced_ai_quotient_rel_equiv_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.rel_equiv) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.rel_equiv) else {
         return false;
     };
-    let relation_ty = match phase9_quotient_relation_expected_type(&Expr::bvar(0)) {
+    let relation_ty = match advanced_ai_quotient_relation_expected_type(&Expr::bvar(0)) {
         Ok(ty) => ty,
         Err(_) => return false,
     };
@@ -4467,26 +4511,26 @@ fn phase9_quotient_rel_equiv_interface_is_valid(
         Expr::sort(Level::succ(u)),
         Expr::pi("_", relation_ty, Expr::sort(Level::zero())),
     );
-    phase9_quotient_public_type_defeq(env, &resolved.rel_equiv, &expected)
+    advanced_ai_quotient_public_type_defeq(env, &resolved.rel_equiv, &expected)
 }
 
-fn phase9_quotient_setoid_mk_interface_is_valid(
+fn advanced_ai_quotient_setoid_mk_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.setoid_mk) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.setoid_mk) else {
         return false;
     };
-    let relation_ty = match phase9_quotient_relation_expected_type(&Expr::bvar(0)) {
+    let relation_ty = match advanced_ai_quotient_relation_expected_type(&Expr::bvar(0)) {
         Ok(ty) => ty,
         Err(_) => return false,
     };
     let equiv_ty = Expr::apps(
-        phase9_quotient_const(&resolved.rel_equiv.const_name, vec![u.clone()]),
+        advanced_ai_quotient_const(&resolved.rel_equiv.const_name, vec![u.clone()]),
         vec![Expr::bvar(1), Expr::bvar(0)],
     );
     let setoid_ty = Expr::app(
-        phase9_quotient_const(&resolved.setoid.const_name, vec![u.clone()]),
+        advanced_ai_quotient_const(&resolved.setoid.const_name, vec![u.clone()]),
         Expr::bvar(2),
     );
     let expected = Expr::pi(
@@ -4494,128 +4538,133 @@ fn phase9_quotient_setoid_mk_interface_is_valid(
         Expr::sort(Level::succ(u)),
         Expr::pi("_", relation_ty, Expr::pi("_", equiv_ty, setoid_ty)),
     );
-    phase9_quotient_public_type_defeq(env, &resolved.setoid_mk, &expected)
+    advanced_ai_quotient_public_type_defeq(env, &resolved.setoid_mk, &expected)
 }
 
-fn phase9_quotient_setoid_relation_interface_is_valid(
+fn advanced_ai_quotient_setoid_relation_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.setoid_relation) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.setoid_relation) else {
         return false;
     };
     let mut ctx = Ctx::new();
     let delta = &resolved.setoid_relation.universe_params;
     let mut current = resolved.setoid_relation.ty.clone();
-    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((setoid_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
     let Some(carrier) =
-        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+        advanced_ai_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
     else {
         return false;
     };
     ctx.push_assumption("s", setoid_domain);
     current = body;
 
-    let Some((lhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+    let Some((lhs_domain, body)) = advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
         return false;
     };
-    let Some(carrier_lhs) = phase9_shift_public_expr(&carrier, 1) else {
+    let Some(carrier_lhs) = advanced_ai_shift_public_expr(&carrier, 1) else {
         return false;
     };
-    if !phase9_quotient_defeq(env, &ctx, delta, &lhs_domain, &carrier_lhs) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &lhs_domain, &carrier_lhs) {
         return false;
     }
     ctx.push_assumption("a", lhs_domain);
     current = body;
 
-    let Some((rhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+    let Some((rhs_domain, body)) = advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
         return false;
     };
-    let Some(carrier_rhs) = phase9_shift_public_expr(&carrier, 2) else {
+    let Some(carrier_rhs) = advanced_ai_shift_public_expr(&carrier, 2) else {
         return false;
     };
-    if !phase9_quotient_defeq(env, &ctx, delta, &rhs_domain, &carrier_rhs) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &rhs_domain, &carrier_rhs) {
         return false;
     }
     ctx.push_assumption("b", rhs_domain);
-    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::sort(Level::zero()))
+    advanced_ai_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::sort(Level::zero()))
 }
 
-fn phase9_quotient_quotient_interface_is_valid(
+fn advanced_ai_quotient_quotient_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.quotient) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.quotient) else {
         return false;
     };
     let mut ctx = Ctx::new();
     let delta = &resolved.quotient.universe_params;
     let current = resolved.quotient.ty.clone();
-    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((setoid_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
-    if phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+    if advanced_ai_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
         .is_none()
     {
         return false;
     }
     ctx.push_assumption("s", setoid_domain);
-    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::sort(Level::succ(u)))
+    advanced_ai_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::sort(Level::succ(u)))
 }
 
-fn phase9_quotient_mk_interface_is_valid(
+fn advanced_ai_quotient_mk_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.quotient_mk) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.quotient_mk) else {
         return false;
     };
     let mut ctx = Ctx::new();
     let delta = &resolved.quotient_mk.universe_params;
     let mut current = resolved.quotient_mk.ty.clone();
-    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((setoid_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
     let Some(carrier) =
-        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+        advanced_ai_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
     else {
         return false;
     };
     ctx.push_assumption("s", setoid_domain);
     current = body;
 
-    let Some((value_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((value_domain, body)) = advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
-    let Some(carrier_value) = phase9_shift_public_expr(&carrier, 1) else {
+    let Some(carrier_value) = advanced_ai_shift_public_expr(&carrier, 1) else {
         return false;
     };
-    if !phase9_quotient_defeq(env, &ctx, delta, &value_domain, &carrier_value) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &value_domain, &carrier_value) {
         return false;
     }
     ctx.push_assumption("a", value_domain);
     let expected = Expr::app(
-        phase9_quotient_const(&resolved.quotient.const_name, vec![u]),
+        advanced_ai_quotient_const(&resolved.quotient.const_name, vec![u]),
         Expr::bvar(1),
     );
-    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, expected)
+    advanced_ai_quotient_public_tail_defeq(env, &ctx, delta, body, expected)
 }
 
-fn phase9_quotient_sound_interface_is_valid(
+fn advanced_ai_quotient_sound_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.quotient_sound) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.quotient_sound) else {
         return false;
     };
     let type_level = Level::succ(u.clone());
-    let primitives = Phase9ResolvedQuotientPrimitives {
+    let primitives = AdvancedResolvedQuotientPrimitives {
         setoid_mk: resolved.setoid_mk.const_name.clone(),
         setoid_relation: resolved.setoid_relation.const_name.clone(),
         rel_equiv: resolved.rel_equiv.const_name.clone(),
@@ -4625,79 +4674,83 @@ fn phase9_quotient_sound_interface_is_valid(
     let mut ctx = Ctx::new();
     let delta = &resolved.quotient_sound.universe_params;
     let mut current = resolved.quotient_sound.ty.clone();
-    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((setoid_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
     let Some(carrier) =
-        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+        advanced_ai_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
     else {
         return false;
     };
     ctx.push_assumption("s", setoid_domain);
     current = body;
 
-    let Some((lhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+    let Some((lhs_domain, body)) = advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
         return false;
     };
-    let Some(carrier_lhs) = phase9_shift_public_expr(&carrier, 1) else {
+    let Some(carrier_lhs) = advanced_ai_shift_public_expr(&carrier, 1) else {
         return false;
     };
-    if !phase9_quotient_defeq(env, &ctx, delta, &lhs_domain, &carrier_lhs) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &lhs_domain, &carrier_lhs) {
         return false;
     }
     ctx.push_assumption("a", lhs_domain);
     current = body;
 
-    let Some((rhs_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+    let Some((rhs_domain, body)) = advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
         return false;
     };
-    let Some(carrier_rhs) = phase9_shift_public_expr(&carrier, 2) else {
+    let Some(carrier_rhs) = advanced_ai_shift_public_expr(&carrier, 2) else {
         return false;
     };
-    if !phase9_quotient_defeq(env, &ctx, delta, &rhs_domain, &carrier_rhs) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &rhs_domain, &carrier_rhs) {
         return false;
     }
     ctx.push_assumption("b", rhs_domain);
     current = body;
 
-    let Some((relation_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((relation_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
-    let expected_relation = phase9_quotient_setoid_relation_app(
+    let expected_relation = advanced_ai_quotient_setoid_relation_app(
         &primitives,
         &u,
         Expr::bvar(2),
         Expr::bvar(1),
         Expr::bvar(0),
     );
-    if !phase9_quotient_defeq(env, &ctx, delta, &relation_domain, &expected_relation) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &relation_domain, &expected_relation) {
         return false;
     }
     ctx.push_assumption("p", relation_domain);
     let quotient_for_s = Expr::app(
-        phase9_quotient_const(&resolved.quotient.const_name, vec![u.clone()]),
+        advanced_ai_quotient_const(&resolved.quotient.const_name, vec![u.clone()]),
         Expr::bvar(3),
     );
     let lhs = Expr::apps(
-        phase9_quotient_const(&resolved.quotient_mk.const_name, vec![u.clone()]),
+        advanced_ai_quotient_const(&resolved.quotient_mk.const_name, vec![u.clone()]),
         vec![Expr::bvar(3), Expr::bvar(2)],
     );
     let rhs = Expr::apps(
-        phase9_quotient_const(&resolved.quotient_mk.const_name, vec![u]),
+        advanced_ai_quotient_const(&resolved.quotient_mk.const_name, vec![u]),
         vec![Expr::bvar(3), Expr::bvar(1)],
     );
     let expected = Expr::apps(
-        phase9_quotient_const(&resolved.eq.const_name, vec![type_level]),
+        advanced_ai_quotient_const(&resolved.eq.const_name, vec![type_level]),
         vec![quotient_for_s, lhs, rhs],
     );
-    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, expected)
+    advanced_ai_quotient_public_tail_defeq(env, &ctx, delta, body, expected)
 }
 
-fn phase9_quotient_lift_interface_is_valid(
+fn advanced_ai_quotient_lift_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
     if resolved.quotient_lift.universe_params.len() != 2 {
         return false;
@@ -4705,7 +4758,7 @@ fn phase9_quotient_lift_interface_is_valid(
     let u = Level::param(resolved.quotient_lift.universe_params[0].clone());
     let v = Level::param(resolved.quotient_lift.universe_params[1].clone());
     let result_type_level = Level::succ(v);
-    let primitives = Phase9ResolvedQuotientPrimitives {
+    let primitives = AdvancedResolvedQuotientPrimitives {
         setoid_mk: resolved.setoid_mk.const_name.clone(),
         setoid_relation: resolved.setoid_relation.const_name.clone(),
         rel_equiv: resolved.rel_equiv.const_name.clone(),
@@ -4715,23 +4768,25 @@ fn phase9_quotient_lift_interface_is_valid(
     let mut ctx = Ctx::new();
     let delta = &resolved.quotient_lift.universe_params;
     let mut current = resolved.quotient_lift.ty.clone();
-    let Some((setoid_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((setoid_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
     let Some(carrier) =
-        phase9_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
+        advanced_ai_quotient_public_setoid_carrier(env, &ctx, delta, resolved, &u, &setoid_domain)
     else {
         return false;
     };
     ctx.push_assumption("s", setoid_domain);
     current = body;
 
-    let Some((result_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((result_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
-    if !phase9_quotient_defeq(
+    if !advanced_ai_quotient_defeq(
         env,
         &ctx,
         delta,
@@ -4743,24 +4798,26 @@ fn phase9_quotient_lift_interface_is_valid(
     ctx.push_assumption("result", result_domain);
     current = body;
 
-    let Some((raw_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current) else {
+    let Some((raw_domain, body)) = advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
+    else {
         return false;
     };
-    let Some(raw_carrier) = phase9_shift_public_expr(&carrier, 2) else {
+    let Some(raw_carrier) = advanced_ai_shift_public_expr(&carrier, 2) else {
         return false;
     };
     let expected_raw = Expr::pi("_", raw_carrier, Expr::bvar(1));
-    if !phase9_quotient_defeq(env, &ctx, delta, &raw_domain, &expected_raw) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &raw_domain, &expected_raw) {
         return false;
     }
     ctx.push_assumption("f", raw_domain);
     current = body;
 
-    let Some((compat_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((compat_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
-    let expected_compat = match phase9_quotient_compatibility_type(
+    let expected_compat = match advanced_ai_quotient_compatibility_type(
         &primitives,
         &u,
         &result_type_level,
@@ -4772,32 +4829,33 @@ fn phase9_quotient_lift_interface_is_valid(
         Ok(ty) => ty,
         Err(_) => return false,
     };
-    if !phase9_quotient_defeq(env, &ctx, delta, &compat_domain, &expected_compat) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &compat_domain, &expected_compat) {
         return false;
     }
     ctx.push_assumption("h", compat_domain);
     current = body;
 
-    let Some((quotient_domain, body)) = phase9_quotient_public_peel_pi(env, &ctx, delta, current)
+    let Some((quotient_domain, body)) =
+        advanced_ai_quotient_public_peel_pi(env, &ctx, delta, current)
     else {
         return false;
     };
     let expected_quotient = Expr::app(
-        phase9_quotient_const(&resolved.quotient.const_name, vec![u]),
+        advanced_ai_quotient_const(&resolved.quotient.const_name, vec![u]),
         Expr::bvar(3),
     );
-    if !phase9_quotient_defeq(env, &ctx, delta, &quotient_domain, &expected_quotient) {
+    if !advanced_ai_quotient_defeq(env, &ctx, delta, &quotient_domain, &expected_quotient) {
         return false;
     }
     ctx.push_assumption("q", quotient_domain);
-    phase9_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::bvar(3))
+    advanced_ai_quotient_public_tail_defeq(env, &ctx, delta, body, Expr::bvar(3))
 }
 
-fn phase9_quotient_eq_interface_is_valid(
+fn advanced_ai_quotient_eq_interface_is_valid(
     env: &Env,
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
 ) -> bool {
-    let Some(u) = phase9_quotient_single_universe(&resolved.eq) else {
+    let Some(u) = advanced_ai_quotient_single_universe(&resolved.eq) else {
         return false;
     };
     let expected = Expr::pi(
@@ -4809,22 +4867,22 @@ fn phase9_quotient_eq_interface_is_valid(
             Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
         ),
     );
-    phase9_quotient_public_type_defeq(env, &resolved.eq, &expected)
+    advanced_ai_quotient_public_type_defeq(env, &resolved.eq, &expected)
 }
 
-fn phase9_quotient_single_universe(resolved: &Phase9ResolvedGlobalDecl) -> Option<Level> {
+fn advanced_ai_quotient_single_universe(resolved: &AdvancedResolvedGlobalDecl) -> Option<Level> {
     let [param] = resolved.universe_params.as_slice() else {
         return None;
     };
     Some(Level::param(param.clone()))
 }
 
-fn phase9_quotient_public_type_defeq(
+fn advanced_ai_quotient_public_type_defeq(
     env: &Env,
-    resolved: &Phase9ResolvedGlobalDecl,
+    resolved: &AdvancedResolvedGlobalDecl,
     expected: &Expr,
 ) -> bool {
-    phase9_quotient_defeq(
+    advanced_ai_quotient_defeq(
         env,
         &Ctx::new(),
         &resolved.universe_params,
@@ -4833,7 +4891,7 @@ fn phase9_quotient_public_type_defeq(
     )
 }
 
-fn phase9_quotient_public_peel_pi(
+fn advanced_ai_quotient_public_peel_pi(
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
@@ -4846,11 +4904,11 @@ fn phase9_quotient_public_peel_pi(
     Some((*ty, *body))
 }
 
-fn phase9_quotient_public_setoid_carrier(
+fn advanced_ai_quotient_public_setoid_carrier(
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
-    resolved: &Phase9ResolvedQuotientInterface,
+    resolved: &AdvancedResolvedQuotientInterface,
     universe: &Level,
     domain: &Expr,
 ) -> Option<Expr> {
@@ -4877,17 +4935,17 @@ fn phase9_quotient_public_setoid_carrier(
     Some(*carrier)
 }
 
-fn phase9_quotient_public_tail_defeq(
+fn advanced_ai_quotient_public_tail_defeq(
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
     actual: Expr,
     expected: Expr,
 ) -> bool {
-    phase9_quotient_defeq(env, ctx, delta, &actual, &expected)
+    advanced_ai_quotient_defeq(env, ctx, delta, &actual, &expected)
 }
 
-fn phase9_quotient_defeq(
+fn advanced_ai_quotient_defeq(
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
@@ -4897,11 +4955,11 @@ fn phase9_quotient_defeq(
     matches!(env.is_defeq(ctx, delta, actual, expected), Ok(true))
 }
 
-fn phase9_shift_public_expr(expr: &Expr, amount: i32) -> Option<Expr> {
+fn advanced_ai_shift_public_expr(expr: &Expr, amount: i32) -> Option<Expr> {
     npa_kernel::subst::shift(expr, amount, 0).ok()
 }
 
-fn phase9_quotient_params_ctx(params: &[Phase9MachineTelescopeBinder]) -> Ctx {
+fn advanced_ai_quotient_params_ctx(params: &[AdvancedMachineTelescopeBinder]) -> Ctx {
     let mut ctx = Ctx::new();
     for (index, binder) in params.iter().enumerate() {
         ctx.push_assumption(format!("p{index}"), binder.ty.clone());
@@ -4909,49 +4967,52 @@ fn phase9_quotient_params_ctx(params: &[Phase9MachineTelescopeBinder]) -> Ctx {
     ctx
 }
 
-fn phase9_quotient_carrier_info(
+fn advanced_ai_quotient_carrier_info(
     candidate_hash: Hash,
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
     carrier: &Expr,
-) -> std::result::Result<Phase9QuotientCarrierInfo, Phase9AiEndpointResponse> {
+) -> std::result::Result<AdvancedQuotientCarrierInfo, AdvancedAiEndpointResponse> {
     let carrier_ty = env.infer(ctx, delta, carrier).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
     let carrier_ty = env.whnf(ctx, delta, &carrier_ty).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
     let Expr::Sort(level) = carrier_ty else {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         ));
     };
-    let Some((type_level, universe)) = phase9_quotient_successor_level(&level, delta) else {
+    let Some((type_level, universe)) = advanced_ai_quotient_successor_level(&level, delta) else {
         return Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::UniverseLevelMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::UniverseLevelMismatch,
         ));
     };
-    Ok(Phase9QuotientCarrierInfo {
+    Ok(AdvancedQuotientCarrierInfo {
         expr: carrier.clone(),
         type_level,
         universe,
     })
 }
 
-fn phase9_quotient_successor_level(level: &Level, params: &[String]) -> Option<(Level, Level)> {
+fn advanced_ai_quotient_successor_level(
+    level: &Level,
+    params: &[String],
+) -> Option<(Level, Level)> {
     let normalized = normalize_level(level.clone());
     let Level::Succ(inner) = normalized else {
         return None;
@@ -4962,42 +5023,42 @@ fn phase9_quotient_successor_level(level: &Level, params: &[String]) -> Option<(
     Some((Level::succ((*inner).clone()), *inner))
 }
 
-fn phase9_validate_quotient_relation(
+fn advanced_ai_validate_quotient_relation(
     candidate_hash: Hash,
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
     relation: &Expr,
     carrier: &Expr,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let relation_ty = env.infer(ctx, delta, relation).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
-    let expected = phase9_quotient_relation_expected_type(carrier).map_err(|_| {
-        Phase9AiEndpointResponse::Error {
-            error: Phase9AiEndpointError::InternalValidatorFailure,
+    let expected = advanced_ai_quotient_relation_expected_type(carrier).map_err(|_| {
+        AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
         }
     })?;
     match env.is_defeq(ctx, delta, &relation_ty, &expected) {
         Ok(true) => Ok(()),
         Ok(false) => Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::RelationTypeMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::RelationTypeMismatch,
         )),
         Err(_) => Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )),
     }
 }
 
-fn phase9_validate_quotient_type(
+fn advanced_ai_validate_quotient_type(
     candidate_hash: Hash,
     env: &Env,
     ctx: &Ctx,
@@ -5005,11 +5066,11 @@ fn phase9_validate_quotient_type(
     quotient_type: &Expr,
     expected_quotient_type: &Expr,
     type_level: &Level,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let quotient_type_ty = env.infer(ctx, delta, quotient_type).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
@@ -5019,14 +5080,14 @@ fn phase9_validate_quotient_type(
         Ok(false) => {
             return Err(quotient_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Phase9QuotientConstructionError::QuotientTypeMismatch,
+                AdvancedAiValidationError::FeatureRejected,
+                AdvancedQuotientConstructionError::QuotientTypeMismatch,
             ));
         }
         Err(_) => {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             ));
         }
@@ -5035,28 +5096,28 @@ fn phase9_validate_quotient_type(
         Ok(true) => Ok(()),
         Ok(false) => Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::QuotientTypeMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::QuotientTypeMismatch,
         )),
         Err(_) => Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )),
     }
 }
 
-fn phase9_reconstruct_quotient_decl_hash(
-    candidate: &Phase9MachineQuotientConstructionCandidate,
+fn advanced_ai_reconstruct_quotient_decl_hash(
+    candidate: &AdvancedMachineQuotientConstructionCandidate,
     quotient_body: &Expr,
     type_level: &Level,
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<Hash, Phase9QuotientDeclBuildError> {
+) -> std::result::Result<Hash, AdvancedQuotientDeclBuildError> {
     let decl = Decl::Def {
         name: candidate.decl_name.as_dotted(),
         universe_params: candidate.universe_params.clone(),
-        ty: phase9_close_params_type(&candidate.params, Expr::sort(type_level.clone())),
-        value: phase9_close_params_value(&candidate.params, quotient_body.clone()),
+        ty: advanced_ai_close_params_type(&candidate.params, Expr::sort(type_level.clone())),
+        value: advanced_ai_close_params_value(&candidate.params, quotient_body.clone()),
         reducibility: Reducibility::Reducible,
     };
     let import_modules = verified_imports
@@ -5071,39 +5132,39 @@ fn phase9_reconstruct_quotient_decl_hash(
         &import_modules,
     )
     .map_err(|err| match err {
-        npa_cert::CertError::Kernel(_) => Phase9QuotientDeclBuildError::KernelRejected,
-        _ => Phase9QuotientDeclBuildError::Internal,
+        npa_cert::CertError::Kernel(_) => AdvancedQuotientDeclBuildError::KernelRejected,
+        _ => AdvancedQuotientDeclBuildError::Internal,
     })?;
     cert.declarations
         .first()
         .map(|decl| decl.hashes.decl_certificate_hash)
-        .ok_or(Phase9QuotientDeclBuildError::Internal)
+        .ok_or(AdvancedQuotientDeclBuildError::Internal)
 }
 
 #[allow(clippy::too_many_arguments)]
-fn phase9_validate_quotient_operation(
+fn advanced_ai_validate_quotient_operation(
     candidate_hash: Hash,
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
-    primitives: &Phase9ResolvedQuotientPrimitives,
-    carrier: &Phase9QuotientCarrierInfo,
+    primitives: &AdvancedResolvedQuotientPrimitives,
+    carrier: &AdvancedQuotientCarrierInfo,
     setoid_expr: &Expr,
-    operation: &Phase9MachineQuotientOperationCandidate,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    operation: &AdvancedMachineQuotientOperationCandidate,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let raw_ty = env
         .infer(ctx, delta, &operation.raw_function)
         .map_err(|_| {
             rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             )
         })?;
     let raw_ty = env.whnf(ctx, delta, &raw_ty).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
@@ -5115,8 +5176,8 @@ fn phase9_validate_quotient_operation(
     else {
         return Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::RawFunctionTypeMismatch,
         ));
     };
     match env.is_defeq(ctx, delta, &raw_domain, &carrier.expr) {
@@ -5124,14 +5185,14 @@ fn phase9_validate_quotient_operation(
         Ok(false) => {
             return Err(quotient_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+                AdvancedAiValidationError::FeatureRejected,
+                AdvancedQuotientConstructionError::RawFunctionTypeMismatch,
             ));
         }
         Err(_) => {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::KernelRejected,
+                AdvancedAiValidationError::KernelRejected,
                 None,
             ));
         }
@@ -5139,48 +5200,48 @@ fn phase9_validate_quotient_operation(
     let result_type = npa_kernel::subst::shift(&raw_body, -1, 0).map_err(|_| {
         quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::RawFunctionTypeMismatch,
         )
     })?;
     if matches!(env.whnf(ctx, delta, &result_type), Ok(Expr::Pi { .. })) {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         ));
     }
     let result_type_ty = env.infer(ctx, delta, &result_type).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
     let result_type_ty = env.whnf(ctx, delta, &result_type_ty).map_err(|_| {
         rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         )
     })?;
     let Expr::Sort(result_sort_level) = result_type_ty else {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
+            AdvancedAiValidationError::KernelRejected,
             None,
         ));
     };
     let Some((result_type_level, _result_universe)) =
-        phase9_quotient_successor_level(&result_sort_level, delta)
+        advanced_ai_quotient_successor_level(&result_sort_level, delta)
     else {
         return Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9QuotientConstructionError::UniverseLevelMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedQuotientConstructionError::UniverseLevelMismatch,
         ));
     };
-    let expected = phase9_quotient_compatibility_type(
+    let expected = advanced_ai_quotient_compatibility_type(
         primitives,
         &carrier.universe,
         &result_type_level,
@@ -5189,8 +5250,8 @@ fn phase9_validate_quotient_operation(
         &result_type,
         &operation.raw_function,
     )
-    .map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::InternalValidatorFailure,
+    .map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::InternalValidatorFailure,
     })?;
     if env
         .check(ctx, delta, &operation.compatibility_proof, &expected)
@@ -5198,14 +5259,14 @@ fn phase9_validate_quotient_operation(
     {
         return Err(quotient_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::KernelRejected,
-            Phase9QuotientConstructionError::CompatibilityProofMismatch,
+            AdvancedAiValidationError::KernelRejected,
+            AdvancedQuotientConstructionError::CompatibilityProofMismatch,
         ));
     }
     Ok(())
 }
 
-fn phase9_quotient_relation_expected_type(carrier: &Expr) -> std::result::Result<Expr, ()> {
+fn advanced_ai_quotient_relation_expected_type(carrier: &Expr) -> std::result::Result<Expr, ()> {
     Ok(Expr::pi(
         "_",
         carrier.clone(),
@@ -5218,8 +5279,8 @@ fn phase9_quotient_relation_expected_type(carrier: &Expr) -> std::result::Result
 }
 
 #[allow(clippy::too_many_arguments)]
-fn phase9_quotient_compatibility_type(
-    primitives: &Phase9ResolvedQuotientPrimitives,
+fn advanced_ai_quotient_compatibility_type(
+    primitives: &AdvancedResolvedQuotientPrimitives,
     carrier_universe: &Level,
     result_type_level: &Level,
     carrier: &Expr,
@@ -5229,7 +5290,7 @@ fn phase9_quotient_compatibility_type(
 ) -> std::result::Result<Expr, ()> {
     let carrier_after_a = npa_kernel::subst::shift(carrier, 1, 0).map_err(|_| ())?;
     let setoid_after_ab = npa_kernel::subst::shift(setoid_expr, 2, 0).map_err(|_| ())?;
-    let relation_proof_ty = phase9_quotient_setoid_relation_app(
+    let relation_proof_ty = advanced_ai_quotient_setoid_relation_app(
         primitives,
         carrier_universe,
         setoid_after_ab,
@@ -5240,7 +5301,8 @@ fn phase9_quotient_compatibility_type(
     let raw_after_abp = npa_kernel::subst::shift(raw_function, 3, 0).map_err(|_| ())?;
     let lhs = Expr::app(raw_after_abp.clone(), Expr::bvar(2));
     let rhs = Expr::app(raw_after_abp, Expr::bvar(1));
-    let eq_body = phase9_quotient_eq_app(primitives, result_type_level, result_after_abp, lhs, rhs);
+    let eq_body =
+        advanced_ai_quotient_eq_app(primitives, result_type_level, result_after_abp, lhs, rhs);
     Ok(Expr::pi(
         "_",
         carrier.clone(),
@@ -5252,95 +5314,95 @@ fn phase9_quotient_compatibility_type(
     ))
 }
 
-fn phase9_close_params_type(params: &[Phase9MachineTelescopeBinder], body: Expr) -> Expr {
+fn advanced_ai_close_params_type(params: &[AdvancedMachineTelescopeBinder], body: Expr) -> Expr {
     params
         .iter()
         .rev()
         .fold(body, |body, binder| Expr::pi("_", binder.ty.clone(), body))
 }
 
-fn phase9_close_params_value(params: &[Phase9MachineTelescopeBinder], body: Expr) -> Expr {
+fn advanced_ai_close_params_value(params: &[AdvancedMachineTelescopeBinder], body: Expr) -> Expr {
     params
         .iter()
         .rev()
         .fold(body, |body, binder| Expr::lam("_", binder.ty.clone(), body))
 }
 
-fn phase9_quotient_const(name: &str, levels: Vec<Level>) -> Expr {
+fn advanced_ai_quotient_const(name: &str, levels: Vec<Level>) -> Expr {
     Expr::konst(name.to_owned(), levels)
 }
 
-fn phase9_quotient_rel_equiv_type(
-    primitives: &Phase9ResolvedQuotientPrimitives,
+fn advanced_ai_quotient_rel_equiv_type(
+    primitives: &AdvancedResolvedQuotientPrimitives,
     carrier_universe: &Level,
     carrier: Expr,
     relation: Expr,
 ) -> Expr {
     Expr::apps(
-        phase9_quotient_const(&primitives.rel_equiv, vec![carrier_universe.clone()]),
+        advanced_ai_quotient_const(&primitives.rel_equiv, vec![carrier_universe.clone()]),
         vec![carrier, relation],
     )
 }
 
-fn phase9_quotient_setoid_mk_app(
-    primitives: &Phase9ResolvedQuotientPrimitives,
+fn advanced_ai_quotient_setoid_mk_app(
+    primitives: &AdvancedResolvedQuotientPrimitives,
     carrier_universe: &Level,
     carrier: Expr,
     relation: Expr,
     equivalence_proof: Expr,
 ) -> Expr {
     Expr::apps(
-        phase9_quotient_const(&primitives.setoid_mk, vec![carrier_universe.clone()]),
+        advanced_ai_quotient_const(&primitives.setoid_mk, vec![carrier_universe.clone()]),
         vec![carrier, relation, equivalence_proof],
     )
 }
 
-fn phase9_quotient_setoid_relation_app(
-    primitives: &Phase9ResolvedQuotientPrimitives,
+fn advanced_ai_quotient_setoid_relation_app(
+    primitives: &AdvancedResolvedQuotientPrimitives,
     carrier_universe: &Level,
     setoid_expr: Expr,
     lhs: Expr,
     rhs: Expr,
 ) -> Expr {
     Expr::apps(
-        phase9_quotient_const(&primitives.setoid_relation, vec![carrier_universe.clone()]),
+        advanced_ai_quotient_const(&primitives.setoid_relation, vec![carrier_universe.clone()]),
         vec![setoid_expr, lhs, rhs],
     )
 }
 
-fn phase9_quotient_type_app(
-    primitives: &Phase9ResolvedQuotientPrimitives,
+fn advanced_ai_quotient_type_app(
+    primitives: &AdvancedResolvedQuotientPrimitives,
     carrier_universe: &Level,
     setoid_expr: Expr,
 ) -> Expr {
     Expr::app(
-        phase9_quotient_const(&primitives.quotient, vec![carrier_universe.clone()]),
+        advanced_ai_quotient_const(&primitives.quotient, vec![carrier_universe.clone()]),
         setoid_expr,
     )
 }
 
-fn phase9_quotient_eq_app(
-    primitives: &Phase9ResolvedQuotientPrimitives,
+fn advanced_ai_quotient_eq_app(
+    primitives: &AdvancedResolvedQuotientPrimitives,
     sort_level: &Level,
     result_type: Expr,
     lhs: Expr,
     rhs: Expr,
 ) -> Expr {
     Expr::apps(
-        phase9_quotient_const(&primitives.eq, vec![sort_level.clone()]),
+        advanced_ai_quotient_const(&primitives.eq, vec![sort_level.clone()]),
         vec![result_type, lhs, rhs],
     )
 }
 
 #[derive(Clone)]
-struct Phase9ResolvedTypeclassGlobalRef {
+struct AdvancedResolvedTypeclassGlobalRef {
     const_name: String,
     universe_params: Vec<String>,
     ty: Expr,
 }
 
 #[derive(Clone)]
-struct Phase9ResolvedTypeclassCandidate {
+struct AdvancedResolvedTypeclassCandidate {
     target_key: Vec<u8>,
     const_name: String,
     universe_params: Vec<String>,
@@ -5349,7 +5411,7 @@ struct Phase9ResolvedTypeclassCandidate {
     class_head: Option<String>,
 }
 
-struct Phase9TypeclassCandidateApplication {
+struct AdvancedTypeclassCandidateApplication {
     levels: Vec<Level>,
     args: Vec<Option<Expr>>,
     recursive_obligations: Vec<(usize, Expr)>,
@@ -5357,13 +5419,13 @@ struct Phase9TypeclassCandidateApplication {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Phase9TypeclassSearchStop {
+enum AdvancedTypeclassSearchStop {
     AmbiguousResolution,
     BudgetExceeded,
     CandidateInterfaceInvalid,
 }
 
-enum Phase9TypeclassSearchOutcome {
+enum AdvancedTypeclassSearchOutcome {
     Success(Expr),
     NoSolution,
     BudgetExceeded,
@@ -5371,12 +5433,12 @@ enum Phase9TypeclassSearchOutcome {
     CandidateInterfaceInvalid,
 }
 
-fn phase9_typeclass_candidate_targets_are_unique(
-    candidates: &[Phase9MachineInstanceCandidateRef],
+fn advanced_ai_typeclass_candidate_targets_are_unique(
+    candidates: &[AdvancedMachineInstanceCandidateRef],
 ) -> bool {
     let mut seen = BTreeSet::new();
     for candidate in candidates {
-        let Ok(key) = phase9_instance_target_canonical_bytes(&candidate.target) else {
+        let Ok(key) = advanced_ai_instance_target_canonical_bytes(&candidate.target) else {
             return false;
         };
         if !seen.insert(key) {
@@ -5386,7 +5448,7 @@ fn phase9_typeclass_candidate_targets_are_unique(
     true
 }
 
-fn phase9_goal_ctx(goal: &Phase9AiGoal) -> Ctx {
+fn advanced_ai_goal_ctx(goal: &AdvancedAiGoal) -> Ctx {
     let mut ctx = Ctx::new();
     for local in &goal.local_context {
         if let Some(value) = &local.value {
@@ -5398,27 +5460,27 @@ fn phase9_goal_ctx(goal: &Phase9AiGoal) -> Ctx {
     ctx
 }
 
-fn phase9_resolve_typeclass_class_declarations(
+fn advanced_ai_resolve_typeclass_class_declarations(
     candidate_hash: Hash,
     env: &Env,
-    class_declarations: &[Phase9AiGlobalRef],
+    class_declarations: &[AdvancedAiGlobalRef],
     imports: &[VerifiedImportRef],
-) -> std::result::Result<BTreeSet<String>, Phase9AiEndpointResponse> {
+) -> std::result::Result<BTreeSet<String>, AdvancedAiEndpointResponse> {
     let mut resolved_classes = BTreeSet::new();
     for class_ref in class_declarations {
-        let Some(resolved) = phase9_resolve_typeclass_global_ref(class_ref, imports) else {
+        let Some(resolved) = advanced_ai_resolve_typeclass_global_ref(class_ref, imports) else {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             ));
         };
-        if !phase9_typeclass_class_declaration_is_valid(env, &resolved) {
+        if !advanced_ai_typeclass_class_declaration_is_valid(env, &resolved) {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::TypeclassResolution(
-                    Phase9TypeclassResolutionError::ClassDeclarationMismatch,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::TypeclassResolution(
+                    AdvancedTypeclassResolutionError::ClassDeclarationMismatch,
                 )),
             ));
         }
@@ -5427,59 +5489,60 @@ fn phase9_resolve_typeclass_class_declarations(
     Ok(resolved_classes)
 }
 
-fn phase9_resolve_typeclass_candidates(
+fn advanced_ai_resolve_typeclass_candidates(
     candidate_hash: Hash,
     env: &Env,
     class_declarations: &BTreeSet<String>,
-    candidates: &[Phase9MachineInstanceCandidateRef],
+    candidates: &[AdvancedMachineInstanceCandidateRef],
     imports: &[VerifiedImportRef],
-) -> std::result::Result<Vec<Phase9ResolvedTypeclassCandidate>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<AdvancedResolvedTypeclassCandidate>, AdvancedAiEndpointResponse> {
     let mut resolved = Vec::new();
     for candidate in candidates {
         let target_key =
-            phase9_instance_target_canonical_bytes(&candidate.target).map_err(|_| {
+            advanced_ai_instance_target_canonical_bytes(&candidate.target).map_err(|_| {
                 rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
                     None,
                 )
             })?;
-        let Phase9MachineInstanceTargetRef::Imported { global_ref } = &candidate.target;
-        let Some(resolved_ref) = phase9_resolve_typeclass_global_ref(global_ref, imports) else {
+        let AdvancedMachineInstanceTargetRef::Imported { global_ref } = &candidate.target;
+        let Some(resolved_ref) = advanced_ai_resolve_typeclass_global_ref(global_ref, imports)
+        else {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             ));
         };
         let Some((telescope, result)) =
-            phase9_decompose_typeclass_candidate_type(env, &resolved_ref)
+            advanced_ai_decompose_typeclass_candidate_type(env, &resolved_ref)
         else {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::TypeclassResolution(
-                    Phase9TypeclassResolutionError::CandidateInterfaceInvalid,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::TypeclassResolution(
+                    AdvancedTypeclassResolutionError::CandidateInterfaceInvalid,
                 )),
             ));
         };
-        if !phase9_candidate_expr_has_only_telescope_bvars(&result, telescope.len(), 0) {
+        if !advanced_ai_candidate_expr_has_only_telescope_bvars(&result, telescope.len(), 0) {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Some(Phase9AiFeatureError::TypeclassResolution(
-                    Phase9TypeclassResolutionError::CandidateInterfaceInvalid,
+                AdvancedAiValidationError::FeatureRejected,
+                Some(AdvancedAiFeatureError::TypeclassResolution(
+                    AdvancedTypeclassResolutionError::CandidateInterfaceInvalid,
                 )),
             ));
         }
-        let class_head = phase9_typeclass_head_name(
+        let class_head = advanced_ai_typeclass_head_name(
             env,
-            &phase9_telescope_ctx(&telescope),
+            &advanced_ai_telescope_ctx(&telescope),
             &resolved_ref.universe_params,
             &result,
             class_declarations,
         );
-        resolved.push(Phase9ResolvedTypeclassCandidate {
+        resolved.push(AdvancedResolvedTypeclassCandidate {
             target_key,
             const_name: resolved_ref.const_name,
             universe_params: resolved_ref.universe_params,
@@ -5491,13 +5554,13 @@ fn phase9_resolve_typeclass_candidates(
     Ok(resolved)
 }
 
-fn phase9_resolve_typeclass_global_ref(
-    global_ref: &Phase9AiGlobalRef,
+fn advanced_ai_resolve_typeclass_global_ref(
+    global_ref: &AdvancedAiGlobalRef,
     imports: &[VerifiedImportRef],
-) -> Option<Phase9ResolvedTypeclassGlobalRef> {
+) -> Option<AdvancedResolvedTypeclassGlobalRef> {
     let mut matches = Vec::new();
     for import in imports {
-        let identity = Phase9ImportIdentity::from_verified_import(import);
+        let identity = AdvancedImportIdentity::from_verified_import(import);
         if identity.module != global_ref.module
             || identity.export_hash != global_ref.export_hash
             || identity.certificate_hash != global_ref.certificate_hash
@@ -5512,7 +5575,7 @@ fn phase9_resolve_typeclass_global_ref(
                 .certified_env_decls()
                 .iter()
                 .find(|decl| decl.name() == export.name.as_dotted())?;
-            matches.push(Phase9ResolvedTypeclassGlobalRef {
+            matches.push(AdvancedResolvedTypeclassGlobalRef {
                 const_name: export.name.as_dotted(),
                 universe_params: decl.universe_params().to_vec(),
                 ty: decl.ty().clone(),
@@ -5525,9 +5588,9 @@ fn phase9_resolve_typeclass_global_ref(
     Some(resolved.clone())
 }
 
-fn phase9_typeclass_class_declaration_is_valid(
+fn advanced_ai_typeclass_class_declaration_is_valid(
     env: &Env,
-    class_decl: &Phase9ResolvedTypeclassGlobalRef,
+    class_decl: &AdvancedResolvedTypeclassGlobalRef,
 ) -> bool {
     let mut ctx = Ctx::new();
     let mut current = class_decl.ty.clone();
@@ -5549,9 +5612,9 @@ fn phase9_typeclass_class_declaration_is_valid(
     }
 }
 
-fn phase9_decompose_typeclass_candidate_type(
+fn advanced_ai_decompose_typeclass_candidate_type(
     env: &Env,
-    candidate: &Phase9ResolvedTypeclassGlobalRef,
+    candidate: &AdvancedResolvedTypeclassGlobalRef,
 ) -> Option<(Vec<Expr>, Expr)> {
     let mut ctx = Ctx::new();
     let mut telescope = Vec::new();
@@ -5570,7 +5633,7 @@ fn phase9_decompose_typeclass_candidate_type(
     }
 }
 
-fn phase9_telescope_ctx(telescope: &[Expr]) -> Ctx {
+fn advanced_ai_telescope_ctx(telescope: &[Expr]) -> Ctx {
     let mut ctx = Ctx::new();
     for ty in telescope {
         ctx.push_assumption("_", ty.clone());
@@ -5578,7 +5641,7 @@ fn phase9_telescope_ctx(telescope: &[Expr]) -> Ctx {
     ctx
 }
 
-fn phase9_typeclass_head_name(
+fn advanced_ai_typeclass_head_name(
     env: &Env,
     ctx: &Ctx,
     delta: &[String],
@@ -5598,19 +5661,19 @@ fn phase9_typeclass_head_name(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn phase9_typeclass_search(
+fn advanced_ai_typeclass_search(
     env: &Env,
     goal_ctx: &Ctx,
     goal_universe_params: &[String],
     goal_target: &Expr,
     class_declarations: &BTreeSet<String>,
-    candidates: &[Phase9ResolvedTypeclassCandidate],
+    candidates: &[AdvancedResolvedTypeclassCandidate],
     max_depth: u32,
     max_nodes: u32,
-) -> Phase9TypeclassSearchOutcome {
+) -> AdvancedTypeclassSearchOutcome {
     let mut node_count = 0u32;
     let mut successes = BTreeMap::<Vec<u8>, Expr>::new();
-    match phase9_collect_typeclass_solutions(
+    match advanced_ai_collect_typeclass_solutions(
         env,
         goal_ctx,
         goal_universe_params,
@@ -5625,44 +5688,44 @@ fn phase9_typeclass_search(
     ) {
         Ok(proofs) => {
             for proof in proofs {
-                let key = phase9_expr_canonical_bytes(&proof);
+                let key = advanced_ai_expr_canonical_bytes(&proof);
                 successes.entry(key).or_insert(proof);
                 if successes.len() > 1 {
-                    return Phase9TypeclassSearchOutcome::AmbiguousResolution;
+                    return AdvancedTypeclassSearchOutcome::AmbiguousResolution;
                 }
             }
         }
-        Err(Phase9TypeclassSearchStop::AmbiguousResolution) => {
-            return Phase9TypeclassSearchOutcome::AmbiguousResolution;
+        Err(AdvancedTypeclassSearchStop::AmbiguousResolution) => {
+            return AdvancedTypeclassSearchOutcome::AmbiguousResolution;
         }
-        Err(Phase9TypeclassSearchStop::BudgetExceeded) => {
-            return Phase9TypeclassSearchOutcome::BudgetExceeded;
+        Err(AdvancedTypeclassSearchStop::BudgetExceeded) => {
+            return AdvancedTypeclassSearchOutcome::BudgetExceeded;
         }
-        Err(Phase9TypeclassSearchStop::CandidateInterfaceInvalid) => {
-            return Phase9TypeclassSearchOutcome::CandidateInterfaceInvalid;
+        Err(AdvancedTypeclassSearchStop::CandidateInterfaceInvalid) => {
+            return AdvancedTypeclassSearchOutcome::CandidateInterfaceInvalid;
         }
     }
     match successes.into_values().next() {
-        Some(proof) => Phase9TypeclassSearchOutcome::Success(proof),
-        None => Phase9TypeclassSearchOutcome::NoSolution,
+        Some(proof) => AdvancedTypeclassSearchOutcome::Success(proof),
+        None => AdvancedTypeclassSearchOutcome::NoSolution,
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn phase9_collect_typeclass_solutions(
+fn advanced_ai_collect_typeclass_solutions(
     env: &Env,
     goal_ctx: &Ctx,
     goal_universe_params: &[String],
     obligation: &Expr,
     class_declarations: &BTreeSet<String>,
-    candidates: &[Phase9ResolvedTypeclassCandidate],
+    candidates: &[AdvancedResolvedTypeclassCandidate],
     max_depth: u32,
     max_nodes: u32,
     current_depth: u32,
     node_count: &mut u32,
     visited: &[(Vec<u8>, Vec<u8>)],
-) -> std::result::Result<Vec<Expr>, Phase9TypeclassSearchStop> {
-    let Some(obligation_head) = phase9_typeclass_head_name(
+) -> std::result::Result<Vec<Expr>, AdvancedTypeclassSearchStop> {
+    let Some(obligation_head) = advanced_ai_typeclass_head_name(
         env,
         goal_ctx,
         goal_universe_params,
@@ -5674,13 +5737,13 @@ fn phase9_collect_typeclass_solutions(
     let mut solutions = BTreeMap::<Vec<u8>, Expr>::new();
     for candidate in candidates {
         if *node_count >= max_nodes {
-            return Err(Phase9TypeclassSearchStop::BudgetExceeded);
+            return Err(AdvancedTypeclassSearchStop::BudgetExceeded);
         }
         *node_count += 1;
         if candidate.class_head.as_ref() != Some(&obligation_head) {
             continue;
         }
-        let Some(application) = phase9_try_typeclass_candidate(
+        let Some(application) = advanced_ai_try_typeclass_candidate(
             env,
             goal_ctx,
             goal_universe_params,
@@ -5692,7 +5755,7 @@ fn phase9_collect_typeclass_solutions(
             continue;
         };
         if current_depth >= max_depth {
-            return Err(Phase9TypeclassSearchStop::BudgetExceeded);
+            return Err(AdvancedTypeclassSearchStop::BudgetExceeded);
         }
         let cycle_entry = (
             application.fingerprint.clone(),
@@ -5703,7 +5766,7 @@ fn phase9_collect_typeclass_solutions(
         }
         let mut child_visited = visited.to_owned();
         child_visited.push(cycle_entry);
-        let recursive_sets = phase9_collect_recursive_typeclass_solutions(
+        let recursive_sets = advanced_ai_collect_recursive_typeclass_solutions(
             env,
             goal_ctx,
             goal_universe_params,
@@ -5720,7 +5783,7 @@ fn phase9_collect_typeclass_solutions(
             continue;
         }
         let mut candidate_solutions = Vec::new();
-        phase9_build_typeclass_proofs(
+        advanced_ai_build_typeclass_proofs(
             candidate,
             &application,
             &recursive_sets,
@@ -5735,10 +5798,10 @@ fn phase9_collect_typeclass_solutions(
             {
                 continue;
             }
-            let key = phase9_expr_canonical_bytes(&proof);
+            let key = advanced_ai_expr_canonical_bytes(&proof);
             solutions.entry(key).or_insert(proof);
             if solutions.len() > 1 {
-                return Err(Phase9TypeclassSearchStop::AmbiguousResolution);
+                return Err(AdvancedTypeclassSearchStop::AmbiguousResolution);
             }
         }
     }
@@ -5746,22 +5809,22 @@ fn phase9_collect_typeclass_solutions(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn phase9_collect_recursive_typeclass_solutions(
+fn advanced_ai_collect_recursive_typeclass_solutions(
     env: &Env,
     goal_ctx: &Ctx,
     goal_universe_params: &[String],
     class_declarations: &BTreeSet<String>,
-    candidates: &[Phase9ResolvedTypeclassCandidate],
+    candidates: &[AdvancedResolvedTypeclassCandidate],
     max_depth: u32,
     max_nodes: u32,
     current_depth: u32,
     node_count: &mut u32,
     visited: &[(Vec<u8>, Vec<u8>)],
     obligations: &[(usize, Expr)],
-) -> std::result::Result<Vec<(usize, Vec<Expr>)>, Phase9TypeclassSearchStop> {
+) -> std::result::Result<Vec<(usize, Vec<Expr>)>, AdvancedTypeclassSearchStop> {
     let mut recursive_sets = Vec::new();
     for (arg_index, obligation) in obligations {
-        let proofs = phase9_collect_typeclass_solutions(
+        let proofs = advanced_ai_collect_typeclass_solutions(
             env,
             goal_ctx,
             goal_universe_params,
@@ -5782,9 +5845,9 @@ fn phase9_collect_recursive_typeclass_solutions(
     Ok(recursive_sets)
 }
 
-fn phase9_build_typeclass_proofs(
-    candidate: &Phase9ResolvedTypeclassCandidate,
-    application: &Phase9TypeclassCandidateApplication,
+fn advanced_ai_build_typeclass_proofs(
+    candidate: &AdvancedResolvedTypeclassCandidate,
+    application: &AdvancedTypeclassCandidateApplication,
     recursive_sets: &[(usize, Vec<Expr>)],
     index: usize,
     args: &mut [Option<Expr>],
@@ -5803,7 +5866,7 @@ fn phase9_build_typeclass_proofs(
     let (arg_index, choices) = &recursive_sets[index];
     for proof in choices {
         args[*arg_index] = Some(proof.clone());
-        phase9_build_typeclass_proofs(
+        advanced_ai_build_typeclass_proofs(
             candidate,
             application,
             recursive_sets,
@@ -5815,20 +5878,21 @@ fn phase9_build_typeclass_proofs(
     args[*arg_index] = None;
 }
 
-fn phase9_try_typeclass_candidate(
+fn advanced_ai_try_typeclass_candidate(
     env: &Env,
     goal_ctx: &Ctx,
     goal_universe_params: &[String],
     obligation: &Expr,
     class_declarations: &BTreeSet<String>,
-    candidate: &Phase9ResolvedTypeclassCandidate,
-) -> std::result::Result<Option<Phase9TypeclassCandidateApplication>, Phase9TypeclassSearchStop> {
+    candidate: &AdvancedResolvedTypeclassCandidate,
+) -> std::result::Result<Option<AdvancedTypeclassCandidateApplication>, AdvancedTypeclassSearchStop>
+{
     let obligation = env
         .whnf(goal_ctx, goal_universe_params, obligation)
-        .map_err(|_| Phase9TypeclassSearchStop::CandidateInterfaceInvalid)?;
+        .map_err(|_| AdvancedTypeclassSearchStop::CandidateInterfaceInvalid)?;
     let mut universe_assignments = vec![None; candidate.universe_params.len()];
     let mut term_assignments = vec![None; candidate.telescope.len()];
-    if !phase9_match_typeclass_expr(
+    if !advanced_ai_match_typeclass_expr(
         &candidate.result,
         &obligation,
         candidate.telescope.len(),
@@ -5846,7 +5910,7 @@ fn phase9_try_typeclass_candidate(
     let mut args = vec![None; candidate.telescope.len()];
     let mut recursive_obligations = Vec::new();
     for index in 0..candidate.telescope.len() {
-        let Some(binder_ty) = phase9_instantiate_candidate_expr(
+        let Some(binder_ty) = advanced_ai_instantiate_candidate_expr(
             &candidate.telescope[index],
             index,
             &candidate.universe_params,
@@ -5864,7 +5928,7 @@ fn phase9_try_typeclass_candidate(
                 return Ok(None);
             }
             args[index] = Some(term.clone());
-        } else if phase9_typeclass_head_name(
+        } else if advanced_ai_typeclass_head_name(
             env,
             goal_ctx,
             goal_universe_params,
@@ -5879,15 +5943,15 @@ fn phase9_try_typeclass_candidate(
         }
     }
 
-    Ok(Some(Phase9TypeclassCandidateApplication {
+    Ok(Some(AdvancedTypeclassCandidateApplication {
         levels,
         args,
         recursive_obligations,
-        fingerprint: phase9_expr_canonical_bytes(&obligation),
+        fingerprint: advanced_ai_expr_canonical_bytes(&obligation),
     }))
 }
 
-fn phase9_match_typeclass_expr(
+fn advanced_ai_match_typeclass_expr(
     pattern: &Expr,
     target: &Expr,
     telescope_len: usize,
@@ -5895,10 +5959,10 @@ fn phase9_match_typeclass_expr(
     universe_params: &[String],
     universe_assignments: &mut [Option<Level>],
     term_assignments: &mut [Option<Expr>],
-) -> std::result::Result<bool, Phase9TypeclassSearchStop> {
+) -> std::result::Result<bool, AdvancedTypeclassSearchStop> {
     match pattern {
         Expr::Sort(level) => match target {
-            Expr::Sort(target_level) => phase9_match_typeclass_level(
+            Expr::Sort(target_level) => advanced_ai_match_typeclass_level(
                 level,
                 target_level,
                 universe_params,
@@ -5908,19 +5972,20 @@ fn phase9_match_typeclass_expr(
         },
         Expr::BVar(index) => {
             let Some(pattern_index) =
-                phase9_candidate_bvar_to_pattern_index(*index, telescope_len, local_depth)
+                advanced_ai_candidate_bvar_to_pattern_index(*index, telescope_len, local_depth)
             else {
-                return Err(Phase9TypeclassSearchStop::CandidateInterfaceInvalid);
+                return Err(AdvancedTypeclassSearchStop::CandidateInterfaceInvalid);
             };
             let assigned = &mut term_assignments[pattern_index];
             let target = if local_depth == 0 {
                 target.clone()
             } else {
                 npa_kernel::subst::shift(target, -(local_depth as i32), 0)
-                    .map_err(|_| Phase9TypeclassSearchStop::CandidateInterfaceInvalid)?
+                    .map_err(|_| AdvancedTypeclassSearchStop::CandidateInterfaceInvalid)?
             };
             if let Some(existing) = assigned {
-                Ok(phase9_expr_canonical_bytes(existing) == phase9_expr_canonical_bytes(&target))
+                Ok(advanced_ai_expr_canonical_bytes(existing)
+                    == advanced_ai_expr_canonical_bytes(&target))
             } else {
                 *assigned = Some(target);
                 Ok(true)
@@ -5932,7 +5997,7 @@ fn phase9_match_typeclass_expr(
                 levels: target_levels,
             } if name == target_name && levels.len() == target_levels.len() => {
                 for (level, target_level) in levels.iter().zip(target_levels) {
-                    if !phase9_match_typeclass_level(
+                    if !advanced_ai_match_typeclass_level(
                         level,
                         target_level,
                         universe_params,
@@ -5946,7 +6011,7 @@ fn phase9_match_typeclass_expr(
             _ => Ok(false),
         },
         Expr::App(fun, arg) => match target {
-            Expr::App(target_fun, target_arg) => Ok(phase9_match_typeclass_expr(
+            Expr::App(target_fun, target_arg) => Ok(advanced_ai_match_typeclass_expr(
                 fun,
                 target_fun,
                 telescope_len,
@@ -5954,7 +6019,7 @@ fn phase9_match_typeclass_expr(
                 universe_params,
                 universe_assignments,
                 term_assignments,
-            )? && phase9_match_typeclass_expr(
+            )? && advanced_ai_match_typeclass_expr(
                 arg,
                 target_arg,
                 telescope_len,
@@ -5970,7 +6035,7 @@ fn phase9_match_typeclass_expr(
                 ty: target_ty,
                 body: target_body,
                 ..
-            } => Ok(phase9_match_typeclass_expr(
+            } => Ok(advanced_ai_match_typeclass_expr(
                 ty,
                 target_ty,
                 telescope_len,
@@ -5978,7 +6043,7 @@ fn phase9_match_typeclass_expr(
                 universe_params,
                 universe_assignments,
                 term_assignments,
-            )? && phase9_match_typeclass_expr(
+            )? && advanced_ai_match_typeclass_expr(
                 body,
                 target_body,
                 telescope_len,
@@ -5994,7 +6059,7 @@ fn phase9_match_typeclass_expr(
                 ty: target_ty,
                 body: target_body,
                 ..
-            } => Ok(phase9_match_typeclass_expr(
+            } => Ok(advanced_ai_match_typeclass_expr(
                 ty,
                 target_ty,
                 telescope_len,
@@ -6002,7 +6067,7 @@ fn phase9_match_typeclass_expr(
                 universe_params,
                 universe_assignments,
                 term_assignments,
-            )? && phase9_match_typeclass_expr(
+            )? && advanced_ai_match_typeclass_expr(
                 body,
                 target_body,
                 telescope_len,
@@ -6017,18 +6082,17 @@ fn phase9_match_typeclass_expr(
     }
 }
 
-fn phase9_match_typeclass_level(
+fn advanced_ai_match_typeclass_level(
     pattern: &Level,
     target: &Level,
     universe_params: &[String],
     universe_assignments: &mut [Option<Level>],
-) -> std::result::Result<bool, Phase9TypeclassSearchStop> {
+) -> std::result::Result<bool, AdvancedTypeclassSearchStop> {
     if let Level::Param(name) = pattern {
         if let Some(index) = universe_params.iter().position(|param| param == name) {
             if let Some(existing) = &universe_assignments[index] {
-                return Ok(
-                    phase9_level_canonical_bytes(existing) == phase9_level_canonical_bytes(target)
-                );
+                return Ok(advanced_ai_level_canonical_bytes(existing)
+                    == advanced_ai_level_canonical_bytes(target));
             }
             universe_assignments[index] = Some(target.clone());
             return Ok(true);
@@ -6036,17 +6100,20 @@ fn phase9_match_typeclass_level(
     }
     match (pattern, target) {
         (Level::Zero, Level::Zero) => Ok(true),
-        (Level::Succ(pattern), Level::Succ(target)) => {
-            phase9_match_typeclass_level(pattern, target, universe_params, universe_assignments)
-        }
+        (Level::Succ(pattern), Level::Succ(target)) => advanced_ai_match_typeclass_level(
+            pattern,
+            target,
+            universe_params,
+            universe_assignments,
+        ),
         (Level::Max(pattern_left, pattern_right), Level::Max(target_left, target_right))
         | (Level::IMax(pattern_left, pattern_right), Level::IMax(target_left, target_right)) => {
-            Ok(phase9_match_typeclass_level(
+            Ok(advanced_ai_match_typeclass_level(
                 pattern_left,
                 target_left,
                 universe_params,
                 universe_assignments,
-            )? && phase9_match_typeclass_level(
+            )? && advanced_ai_match_typeclass_level(
                 pattern_right,
                 target_right,
                 universe_params,
@@ -6058,41 +6125,43 @@ fn phase9_match_typeclass_level(
     }
 }
 
-fn phase9_instantiate_candidate_expr(
+fn advanced_ai_instantiate_candidate_expr(
     expr: &Expr,
     candidate_context_len: usize,
     universe_params: &[String],
     levels: &[Level],
     term_assignments: &[Option<Expr>],
-) -> std::result::Result<Option<Expr>, Phase9TypeclassSearchStop> {
+) -> std::result::Result<Option<Expr>, AdvancedTypeclassSearchStop> {
     let expr = npa_kernel::subst::subst_levels_expr(expr, universe_params, levels);
-    phase9_replace_candidate_bvars(&expr, candidate_context_len, 0, term_assignments)
+    advanced_ai_replace_candidate_bvars(&expr, candidate_context_len, 0, term_assignments)
 }
 
-fn phase9_replace_candidate_bvars(
+fn advanced_ai_replace_candidate_bvars(
     expr: &Expr,
     candidate_context_len: usize,
     local_depth: u32,
     term_assignments: &[Option<Expr>],
-) -> std::result::Result<Option<Expr>, Phase9TypeclassSearchStop> {
+) -> std::result::Result<Option<Expr>, AdvancedTypeclassSearchStop> {
     Ok(Some(match expr {
         Expr::Sort(level) => Expr::sort(level.clone()),
         Expr::BVar(index) if *index < local_depth => Expr::bvar(*index),
         Expr::BVar(index) => {
-            let Some(pattern_index) =
-                phase9_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
-            else {
-                return Err(Phase9TypeclassSearchStop::CandidateInterfaceInvalid);
+            let Some(pattern_index) = advanced_ai_candidate_bvar_to_pattern_index(
+                *index,
+                candidate_context_len,
+                local_depth,
+            ) else {
+                return Err(AdvancedTypeclassSearchStop::CandidateInterfaceInvalid);
             };
             let Some(term) = &term_assignments[pattern_index] else {
                 return Ok(None);
             };
             npa_kernel::subst::shift(term, local_depth as i32, 0)
-                .map_err(|_| Phase9TypeclassSearchStop::CandidateInterfaceInvalid)?
+                .map_err(|_| AdvancedTypeclassSearchStop::CandidateInterfaceInvalid)?
         }
         Expr::Const { name, levels } => Expr::konst(name.clone(), levels.clone()),
         Expr::App(fun, arg) => Expr::app(
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 fun,
                 candidate_context_len,
                 local_depth,
@@ -6101,7 +6170,7 @@ fn phase9_replace_candidate_bvars(
                 Some(fun) => fun,
                 None => return Ok(None),
             },
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 arg,
                 candidate_context_len,
                 local_depth,
@@ -6113,7 +6182,7 @@ fn phase9_replace_candidate_bvars(
         ),
         Expr::Lam { binder, ty, body } => Expr::lam(
             binder.clone(),
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 ty,
                 candidate_context_len,
                 local_depth,
@@ -6122,7 +6191,7 @@ fn phase9_replace_candidate_bvars(
                 Some(ty) => ty,
                 None => return Ok(None),
             },
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 body,
                 candidate_context_len,
                 local_depth + 1,
@@ -6134,7 +6203,7 @@ fn phase9_replace_candidate_bvars(
         ),
         Expr::Pi { binder, ty, body } => Expr::pi(
             binder.clone(),
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 ty,
                 candidate_context_len,
                 local_depth,
@@ -6143,7 +6212,7 @@ fn phase9_replace_candidate_bvars(
                 Some(ty) => ty,
                 None => return Ok(None),
             },
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 body,
                 candidate_context_len,
                 local_depth + 1,
@@ -6160,7 +6229,7 @@ fn phase9_replace_candidate_bvars(
             body,
         } => Expr::let_in(
             binder.clone(),
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 ty,
                 candidate_context_len,
                 local_depth,
@@ -6169,7 +6238,7 @@ fn phase9_replace_candidate_bvars(
                 Some(ty) => ty,
                 None => return Ok(None),
             },
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 value,
                 candidate_context_len,
                 local_depth,
@@ -6178,7 +6247,7 @@ fn phase9_replace_candidate_bvars(
                 Some(value) => value,
                 None => return Ok(None),
             },
-            match phase9_replace_candidate_bvars(
+            match advanced_ai_replace_candidate_bvars(
                 body,
                 candidate_context_len,
                 local_depth + 1,
@@ -6191,7 +6260,7 @@ fn phase9_replace_candidate_bvars(
     }))
 }
 
-fn phase9_candidate_expr_has_only_telescope_bvars(
+fn advanced_ai_candidate_expr_has_only_telescope_bvars(
     expr: &Expr,
     candidate_context_len: usize,
     local_depth: u32,
@@ -6200,44 +6269,52 @@ fn phase9_candidate_expr_has_only_telescope_bvars(
         Expr::Sort(_) | Expr::Const { .. } => true,
         Expr::BVar(index) if *index < local_depth => true,
         Expr::BVar(index) => {
-            phase9_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
+            advanced_ai_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
                 .is_some()
         }
         Expr::App(fun, arg) => {
-            phase9_candidate_expr_has_only_telescope_bvars(fun, candidate_context_len, local_depth)
-                && phase9_candidate_expr_has_only_telescope_bvars(
-                    arg,
-                    candidate_context_len,
-                    local_depth,
-                )
+            advanced_ai_candidate_expr_has_only_telescope_bvars(
+                fun,
+                candidate_context_len,
+                local_depth,
+            ) && advanced_ai_candidate_expr_has_only_telescope_bvars(
+                arg,
+                candidate_context_len,
+                local_depth,
+            )
         }
         Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
-            phase9_candidate_expr_has_only_telescope_bvars(ty, candidate_context_len, local_depth)
-                && phase9_candidate_expr_has_only_telescope_bvars(
-                    body,
-                    candidate_context_len,
-                    local_depth + 1,
-                )
+            advanced_ai_candidate_expr_has_only_telescope_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+            ) && advanced_ai_candidate_expr_has_only_telescope_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+            )
         }
         Expr::Let {
             ty, value, body, ..
         } => {
-            phase9_candidate_expr_has_only_telescope_bvars(ty, candidate_context_len, local_depth)
-                && phase9_candidate_expr_has_only_telescope_bvars(
-                    value,
-                    candidate_context_len,
-                    local_depth,
-                )
-                && phase9_candidate_expr_has_only_telescope_bvars(
-                    body,
-                    candidate_context_len,
-                    local_depth + 1,
-                )
+            advanced_ai_candidate_expr_has_only_telescope_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+            ) && advanced_ai_candidate_expr_has_only_telescope_bvars(
+                value,
+                candidate_context_len,
+                local_depth,
+            ) && advanced_ai_candidate_expr_has_only_telescope_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+            )
         }
     }
 }
 
-fn phase9_candidate_bvar_to_pattern_index(
+fn advanced_ai_candidate_bvar_to_pattern_index(
     index: u32,
     candidate_context_len: usize,
     local_depth: u32,
@@ -6252,94 +6329,94 @@ fn phase9_candidate_bvar_to_pattern_index(
     Some(candidate_context_len - 1 - candidate_index_from_recent)
 }
 
-fn phase9_expr_canonical_bytes(expr: &Expr) -> Vec<u8> {
+fn advanced_ai_expr_canonical_bytes(expr: &Expr) -> Vec<u8> {
     let mut out = Vec::new();
     encode_expr_to(&mut out, expr);
     out
 }
 
-fn phase9_level_canonical_bytes(level: &Level) -> Vec<u8> {
+fn advanced_ai_level_canonical_bytes(level: &Level) -> Vec<u8> {
     let mut out = Vec::new();
     encode_level_to(&mut out, level);
     out
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Phase9GoalValidationError {
+enum AdvancedGoalValidationError {
     EnvelopeMalformed,
     ImportClosureMismatch,
     KernelRejected,
 }
 
-fn validate_phase9_ai_goal(
-    goal: &Phase9AiGoal,
+fn validate_advanced_ai_goal(
+    goal: &AdvancedAiGoal,
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(), Phase9GoalValidationError> {
-    if !phase9_string_list_is_unique(&goal.universe_params)
+) -> std::result::Result<(), AdvancedGoalValidationError> {
+    if !advanced_ai_string_list_is_unique(&goal.universe_params)
         || !expr_levels_are_in_scope(&goal.target, &goal.universe_params)
         || !goal
             .local_context
             .iter()
             .all(|local| local_decl_levels_are_in_scope(local, &goal.universe_params))
     {
-        return Err(Phase9GoalValidationError::EnvelopeMalformed);
+        return Err(AdvancedGoalValidationError::EnvelopeMalformed);
     }
     if !goal_imported_refs_are_resolved(goal, verified_imports) {
-        return Err(Phase9GoalValidationError::ImportClosureMismatch);
+        return Err(AdvancedGoalValidationError::ImportClosureMismatch);
     }
     validate_goal_kernel(goal, verified_imports)
-        .map_err(|_| Phase9GoalValidationError::KernelRejected)
+        .map_err(|_| AdvancedGoalValidationError::KernelRejected)
 }
 
 fn smt_rejected_response(
     candidate_hash: Hash,
-    error: Phase9AiValidationError,
-    smt_error: Phase9SmtCertificateError,
-) -> Phase9AiEndpointResponse {
+    error: AdvancedAiValidationError,
+    smt_error: AdvancedSmtCertificateError,
+) -> AdvancedAiEndpointResponse {
     rejected_response(
         candidate_hash,
         error,
-        Some(Phase9AiFeatureError::SmtCertificate(smt_error)),
+        Some(AdvancedAiFeatureError::SmtCertificate(smt_error)),
     )
 }
 
 #[derive(Clone)]
-struct Phase9ResolvedSmtPrimitives {
-    eq: Phase9ResolvedGlobalDecl,
-    prop_false: Option<Phase9ResolvedGlobalDecl>,
-    prop_not: Option<Phase9ResolvedGlobalDecl>,
+struct AdvancedResolvedSmtPrimitives {
+    eq: AdvancedResolvedGlobalDecl,
+    prop_false: Option<AdvancedResolvedGlobalDecl>,
+    prop_not: Option<AdvancedResolvedGlobalDecl>,
 }
 
 #[derive(Default)]
-struct Phase9SmtCommandContext {
+struct AdvancedSmtCommandContext {
     sort_arities: BTreeMap<Vec<u8>, u32>,
-    functions: BTreeMap<Vec<u8>, (Vec<Phase9SmtSortExpr>, Phase9SmtSortExpr)>,
+    functions: BTreeMap<Vec<u8>, (Vec<AdvancedSmtSortExpr>, AdvancedSmtSortExpr)>,
 }
 
-fn phase9_smt_problem_bytes(
+fn advanced_ai_smt_problem_bytes(
     candidate_hash: Hash,
-    source: &Phase9MachineSmtProblemRef,
+    source: &AdvancedMachineSmtProblemRef,
     workspace_root: &Path,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     match source {
-        Phase9MachineSmtProblemRef::Inline {
+        AdvancedMachineSmtProblemRef::Inline {
             canonical_bytes, ..
         } => {
-            if canonical_bytes.len() > MAX_PHASE9_SMT_RAW_BYTES {
+            if canonical_bytes.len() > MAX_ADVANCED_AI_SMT_RAW_BYTES {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             Ok(canonical_bytes.clone())
         }
-        Phase9MachineSmtProblemRef::Artifact {
+        AdvancedMachineSmtProblemRef::Artifact {
             path,
             file_hash,
             size_bytes,
             ..
-        } => phase9_smt_artifact_bytes(
+        } => advanced_ai_smt_artifact_bytes(
             candidate_hash,
             workspace_root,
             path,
@@ -6349,30 +6426,30 @@ fn phase9_smt_problem_bytes(
     }
 }
 
-fn phase9_smt_payload_bytes(
+fn advanced_ai_smt_payload_bytes(
     candidate_hash: Hash,
-    source: &Phase9MachineSmtProofPayloadRef,
+    source: &AdvancedMachineSmtProofPayloadRef,
     workspace_root: &Path,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     match source {
-        Phase9MachineSmtProofPayloadRef::Inline {
+        AdvancedMachineSmtProofPayloadRef::Inline {
             canonical_bytes, ..
         } => {
-            if canonical_bytes.len() > MAX_PHASE9_SMT_RAW_BYTES {
+            if canonical_bytes.len() > MAX_ADVANCED_AI_SMT_RAW_BYTES {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             Ok(canonical_bytes.clone())
         }
-        Phase9MachineSmtProofPayloadRef::Artifact {
+        AdvancedMachineSmtProofPayloadRef::Artifact {
             path,
             file_hash,
             size_bytes,
             ..
-        } => phase9_smt_artifact_bytes(
+        } => advanced_ai_smt_artifact_bytes(
             candidate_hash,
             workspace_root,
             path,
@@ -6382,21 +6459,21 @@ fn phase9_smt_payload_bytes(
     }
 }
 
-fn phase9_smt_artifact_bytes(
+fn advanced_ai_smt_artifact_bytes(
     candidate_hash: Hash,
     workspace_root: &Path,
     path: &str,
     file_hash: Hash,
     size_bytes: u64,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     if usize::try_from(size_bytes)
-        .map(|size| size > MAX_PHASE9_SMT_RAW_BYTES)
+        .map(|size| size > MAX_ADVANCED_AI_SMT_RAW_BYTES)
         .unwrap_or(true)
     {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ));
     }
     let path = match validate_artifact_path(workspace_root, path) {
@@ -6404,182 +6481,185 @@ fn phase9_smt_artifact_bytes(
         Err(ArtifactPathError::EnvelopeMalformed) => {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
         Err(ArtifactPathError::ArtifactUnavailable) => {
-            return Err(Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::ArtifactUnavailable,
+            return Err(AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::ArtifactUnavailable,
             });
         }
     };
-    let metadata = std::fs::metadata(&path).map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::ArtifactUnavailable,
+    let metadata = std::fs::metadata(&path).map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::ArtifactUnavailable,
     })?;
     if metadata.len() != size_bytes {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
-    let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::ArtifactUnavailable,
+    let bytes = std::fs::read(path).map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::ArtifactUnavailable,
     })?;
-    if phase9_file_hash(&bytes) != file_hash {
+    if advanced_ai_file_hash(&bytes) != file_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     Ok(bytes)
 }
 
-fn phase9_validate_smt_problem_bytes(
+fn advanced_ai_validate_smt_problem_bytes(
     candidate_hash: Hash,
     bytes: &[u8],
-    candidate: &Phase9MachineSmtCertificateCandidate,
-) -> std::result::Result<Phase9MachineSmtEncodedProblem, Phase9AiEndpointResponse> {
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+) -> std::result::Result<AdvancedMachineSmtEncodedProblem, AdvancedAiEndpointResponse> {
     let problem = decode_smt_encoded_problem(bytes).map_err(|_| {
         smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         )
     })?;
     let declared_problem_hash = match &candidate.encoded_problem {
-        Phase9MachineSmtProblemRef::Inline { problem_hash, .. }
-        | Phase9MachineSmtProblemRef::Artifact { problem_hash, .. } => *problem_hash,
+        AdvancedMachineSmtProblemRef::Inline { problem_hash, .. }
+        | AdvancedMachineSmtProblemRef::Artifact { problem_hash, .. } => *problem_hash,
     };
     let declared_encoding_hash = match &candidate.encoded_problem {
-        Phase9MachineSmtProblemRef::Inline { encoding_hash, .. }
-        | Phase9MachineSmtProblemRef::Artifact { encoding_hash, .. } => *encoding_hash,
+        AdvancedMachineSmtProblemRef::Inline { encoding_hash, .. }
+        | AdvancedMachineSmtProblemRef::Artifact { encoding_hash, .. } => *encoding_hash,
     };
-    let problem_hash = phase9_smt_problem_hash(&problem).map_err(|_| {
+    let problem_hash = advanced_ai_smt_problem_hash(&problem).map_err(|_| {
         smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         )
     })?;
     if problem_hash != declared_problem_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
-    if phase9_smt_encoding_hash(&problem, problem_hash) != declared_encoding_hash {
+    if advanced_ai_smt_encoding_hash(&problem, problem_hash) != declared_encoding_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     Ok(problem)
 }
 
-fn phase9_validate_smt_proof_payload_bytes(
+fn advanced_ai_validate_smt_proof_payload_bytes(
     candidate_hash: Hash,
     bytes: &[u8],
-    candidate: &Phase9MachineSmtCertificateCandidate,
-) -> std::result::Result<Phase9SmtProofNodeTable, Phase9AiEndpointResponse> {
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+) -> std::result::Result<AdvancedSmtProofNodeTable, AdvancedAiEndpointResponse> {
     let table = decode_smt_proof_node_table(bytes).map_err(|_| {
         smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         )
     })?;
     let declared_hash = match &candidate.proof_payload {
-        Phase9MachineSmtProofPayloadRef::Inline { payload_hash, .. }
-        | Phase9MachineSmtProofPayloadRef::Artifact { payload_hash, .. } => *payload_hash,
+        AdvancedMachineSmtProofPayloadRef::Inline { payload_hash, .. }
+        | AdvancedMachineSmtProofPayloadRef::Artifact { payload_hash, .. } => *payload_hash,
     };
-    let payload_hash = phase9_smt_proof_payload_hash(&table).map_err(|_| {
+    let payload_hash = advanced_ai_smt_proof_payload_hash(&table).map_err(|_| {
         smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         )
     })?;
     if payload_hash != declared_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     Ok(table)
 }
 
-fn phase9_resolve_smt_primitives(
+fn advanced_ai_resolve_smt_primitives(
     candidate_hash: Hash,
     env: &Env,
-    options: &Phase9SmtOptions,
+    options: &AdvancedSmtOptions,
     imports: &[VerifiedImportRef],
-) -> std::result::Result<Phase9ResolvedSmtPrimitives, Phase9AiEndpointResponse> {
-    let Some(eq) = phase9_resolve_global_decl(&options.eq, imports) else {
+) -> std::result::Result<AdvancedResolvedSmtPrimitives, AdvancedAiEndpointResponse> {
+    let Some(eq) = advanced_ai_resolve_global_decl(&options.eq, imports) else {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         ));
     };
     let prop_false = match &options.prop_false {
-        Some(global_ref) => Some(phase9_resolve_global_decl(global_ref, imports).ok_or_else(
-            || {
+        Some(global_ref) => Some(
+            advanced_ai_resolve_global_decl(global_ref, imports).ok_or_else(|| {
                 rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::ImportClosureMismatch,
+                    AdvancedAiValidationError::ImportClosureMismatch,
                     None,
                 )
-            },
-        )?),
+            })?,
+        ),
         None => None,
     };
     let prop_not = match &options.prop_not {
-        Some(global_ref) => Some(phase9_resolve_global_decl(global_ref, imports).ok_or_else(
-            || {
+        Some(global_ref) => Some(
+            advanced_ai_resolve_global_decl(global_ref, imports).ok_or_else(|| {
                 rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::ImportClosureMismatch,
+                    AdvancedAiValidationError::ImportClosureMismatch,
                     None,
                 )
-            },
-        )?),
+            })?,
+        ),
         None => None,
     };
-    let resolved = Phase9ResolvedSmtPrimitives {
+    let resolved = AdvancedResolvedSmtPrimitives {
         eq,
         prop_false,
         prop_not,
     };
-    if !phase9_smt_public_interface_is_valid(env, &resolved) {
+    if !advanced_ai_smt_public_interface_is_valid(env, &resolved) {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9SmtCertificateError::PublicInterfaceMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::PublicInterfaceMismatch,
         ));
     }
     Ok(resolved)
 }
 
-fn phase9_smt_public_interface_is_valid(env: &Env, resolved: &Phase9ResolvedSmtPrimitives) -> bool {
-    phase9_smt_eq_interface_is_valid(env, &resolved.eq)
+fn advanced_ai_smt_public_interface_is_valid(
+    env: &Env,
+    resolved: &AdvancedResolvedSmtPrimitives,
+) -> bool {
+    advanced_ai_smt_eq_interface_is_valid(env, &resolved.eq)
         && resolved
             .prop_false
             .as_ref()
-            .is_none_or(|prop_false| phase9_smt_false_interface_is_valid(env, prop_false))
+            .is_none_or(|prop_false| advanced_ai_smt_false_interface_is_valid(env, prop_false))
         && resolved
             .prop_not
             .as_ref()
-            .is_none_or(|prop_not| phase9_smt_not_interface_is_valid(env, prop_not))
+            .is_none_or(|prop_not| advanced_ai_smt_not_interface_is_valid(env, prop_not))
 }
 
-fn phase9_smt_eq_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDecl) -> bool {
-    let Some(universe) = phase9_quotient_single_universe(resolved) else {
+fn advanced_ai_smt_eq_interface_is_valid(env: &Env, resolved: &AdvancedResolvedGlobalDecl) -> bool {
+    let Some(universe) = advanced_ai_quotient_single_universe(resolved) else {
         return false;
     };
     let expected = Expr::pi(
@@ -6591,72 +6671,78 @@ fn phase9_smt_eq_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDe
             Expr::pi("_", Expr::bvar(1), Expr::sort(Level::zero())),
         ),
     );
-    phase9_quotient_public_type_defeq(env, resolved, &expected)
+    advanced_ai_quotient_public_type_defeq(env, resolved, &expected)
 }
 
-fn phase9_smt_false_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDecl) -> bool {
+fn advanced_ai_smt_false_interface_is_valid(
+    env: &Env,
+    resolved: &AdvancedResolvedGlobalDecl,
+) -> bool {
     resolved.universe_params.is_empty()
-        && phase9_quotient_public_type_defeq(env, resolved, &Expr::sort(Level::zero()))
+        && advanced_ai_quotient_public_type_defeq(env, resolved, &Expr::sort(Level::zero()))
 }
 
-fn phase9_smt_not_interface_is_valid(env: &Env, resolved: &Phase9ResolvedGlobalDecl) -> bool {
+fn advanced_ai_smt_not_interface_is_valid(
+    env: &Env,
+    resolved: &AdvancedResolvedGlobalDecl,
+) -> bool {
     resolved.universe_params.is_empty()
-        && phase9_quotient_public_type_defeq(
+        && advanced_ai_quotient_public_type_defeq(
             env,
             resolved,
             &Expr::pi("_", Expr::sort(Level::zero()), Expr::sort(Level::zero())),
         )
 }
 
-fn phase9_validate_smt_commands(
+fn advanced_ai_validate_smt_commands(
     candidate_hash: Hash,
-    candidate: &Phase9MachineSmtCertificateCandidate,
-    problem: &Phase9MachineSmtEncodedProblem,
-    primitives: &Phase9ResolvedSmtPrimitives,
-) -> std::result::Result<Phase9SmtCommandContext, Phase9AiEndpointResponse> {
-    if problem.encoder_version != Phase9SmtEncoderVersion::MvpNormalizedQfV1
-        || problem.command_profile != Phase9SmtCommandProfile::MvpNormalizedQf
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+    problem: &AdvancedMachineSmtEncodedProblem,
+    primitives: &AdvancedResolvedSmtPrimitives,
+) -> std::result::Result<AdvancedSmtCommandContext, AdvancedAiEndpointResponse> {
+    if problem.encoder_version != AdvancedSmtEncoderVersion::MvpNormalizedQfV1
+        || problem.command_profile != AdvancedSmtCommandProfile::MvpNormalizedQf
     {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9SmtCertificateError::EncodingMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::EncodingMismatch,
         ));
     }
     for command in &problem.commands {
-        let expected = phase9_smt_command_id(command).map_err(|_| {
+        let expected = advanced_ai_smt_command_id(command).map_err(|_| {
             smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             )
         })?;
         if command.command_id != expected {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::PayloadHashMismatch,
+                AdvancedAiValidationError::PayloadHashMismatch,
                 None,
             ));
         }
     }
 
-    let mut context = Phase9SmtCommandContext::default();
+    let mut context = AdvancedSmtCommandContext::default();
     let mut previous_key: Option<Vec<u8>> = None;
     let mut target_assertions = 0usize;
     let mut final_checks = 0usize;
     for command in &problem.commands {
-        if !phase9_smt_command_phase_matches_payload(command.phase, &command.payload) {
+        if !advanced_ai_smt_command_phase_matches_payload(command.phase, &command.payload) {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
-        let key = phase9_smt_command_order_key(command).map_err(|_| {
+        let key = advanced_ai_smt_command_order_key(command).map_err(|_| {
             smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             )
         })?;
         if previous_key
@@ -6665,19 +6751,19 @@ fn phase9_validate_smt_commands(
         {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
         previous_key = Some(key);
 
         match &command.payload {
-            Phase9SmtCommandPayload::SortDecl { symbol, arity } => {
-                if !phase9_smt_decl_symbol_is_valid(symbol) {
+            AdvancedSmtCommandPayload::SortDecl { symbol, arity } => {
+                if !advanced_ai_smt_decl_symbol_is_valid(symbol) {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
-                        Phase9SmtCertificateError::NonCanonicalPayload,
+                        AdvancedAiValidationError::EnvelopeMalformed,
+                        AdvancedSmtCertificateError::NonCanonicalPayload,
                     ));
                 }
                 if context
@@ -6687,39 +6773,39 @@ fn phase9_validate_smt_commands(
                 {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
-                        Phase9SmtCertificateError::NonCanonicalPayload,
+                        AdvancedAiValidationError::EnvelopeMalformed,
+                        AdvancedSmtCertificateError::NonCanonicalPayload,
                     ));
                 }
             }
-            Phase9SmtCommandPayload::DatatypeDecl {
+            AdvancedSmtCommandPayload::DatatypeDecl {
                 symbol,
                 constructors,
             } => {
-                if !phase9_smt_decl_symbol_is_valid(symbol) || constructors.is_empty() {
+                if !advanced_ai_smt_decl_symbol_is_valid(symbol) || constructors.is_empty() {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
-                        Phase9SmtCertificateError::NonCanonicalPayload,
+                        AdvancedAiValidationError::EnvelopeMalformed,
+                        AdvancedSmtCertificateError::NonCanonicalPayload,
                     ));
                 }
                 for constructor in constructors {
-                    if !phase9_smt_decl_symbol_is_valid(&constructor.constructor) {
+                    if !advanced_ai_smt_decl_symbol_is_valid(&constructor.constructor) {
                         return Err(smt_rejected_response(
                             candidate_hash,
-                            Phase9AiValidationError::EnvelopeMalformed,
-                            Phase9SmtCertificateError::NonCanonicalPayload,
+                            AdvancedAiValidationError::EnvelopeMalformed,
+                            AdvancedSmtCertificateError::NonCanonicalPayload,
                         ));
                     }
                     for selector in &constructor.selectors {
-                        if !phase9_smt_decl_symbol_is_valid(&selector.selector) {
+                        if !advanced_ai_smt_decl_symbol_is_valid(&selector.selector) {
                             return Err(smt_rejected_response(
                                 candidate_hash,
-                                Phase9AiValidationError::EnvelopeMalformed,
-                                Phase9SmtCertificateError::NonCanonicalPayload,
+                                AdvancedAiValidationError::EnvelopeMalformed,
+                                AdvancedSmtCertificateError::NonCanonicalPayload,
                             ));
                         }
-                        phase9_validate_smt_sort(
+                        advanced_ai_validate_smt_sort(
                             candidate_hash,
                             &selector.sort,
                             problem.logic,
@@ -6729,22 +6815,22 @@ fn phase9_validate_smt_commands(
                 }
                 context.sort_arities.insert(symbol.ascii.clone(), 0);
             }
-            Phase9SmtCommandPayload::FunctionDecl {
+            AdvancedSmtCommandPayload::FunctionDecl {
                 symbol,
                 args,
                 result,
             } => {
-                if !phase9_smt_decl_symbol_is_valid(symbol) {
+                if !advanced_ai_smt_decl_symbol_is_valid(symbol) {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
-                        Phase9SmtCertificateError::NonCanonicalPayload,
+                        AdvancedAiValidationError::EnvelopeMalformed,
+                        AdvancedSmtCertificateError::NonCanonicalPayload,
                     ));
                 }
                 for arg in args {
-                    phase9_validate_smt_sort(candidate_hash, arg, problem.logic, &context)?;
+                    advanced_ai_validate_smt_sort(candidate_hash, arg, problem.logic, &context)?;
                 }
-                phase9_validate_smt_sort(candidate_hash, result, problem.logic, &context)?;
+                advanced_ai_validate_smt_sort(candidate_hash, result, problem.logic, &context)?;
                 if context
                     .functions
                     .insert(symbol.ascii.clone(), (args.clone(), result.clone()))
@@ -6752,12 +6838,12 @@ fn phase9_validate_smt_commands(
                 {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
-                        Phase9SmtCertificateError::NonCanonicalPayload,
+                        AdvancedAiValidationError::EnvelopeMalformed,
+                        AdvancedSmtCertificateError::NonCanonicalPayload,
                     ));
                 }
             }
-            Phase9SmtCommandPayload::ContextAssumption {
+            AdvancedSmtCommandPayload::ContextAssumption {
                 source_local_index,
                 core_expr,
                 encoded_expr,
@@ -6769,64 +6855,74 @@ fn phase9_validate_smt_commands(
                 else {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::EnvelopeMalformed,
-                        Phase9SmtCertificateError::NonCanonicalPayload,
+                        AdvancedAiValidationError::EnvelopeMalformed,
+                        AdvancedSmtCertificateError::NonCanonicalPayload,
                     ));
                 };
-                if !phase9_core_expr_bytes_eq(&local.ty, core_expr) {
+                if !advanced_ai_core_expr_bytes_eq(&local.ty, core_expr) {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::FeatureRejected,
-                        Phase9SmtCertificateError::EncodingMismatch,
+                        AdvancedAiValidationError::FeatureRejected,
+                        AdvancedSmtCertificateError::EncodingMismatch,
                     ));
                 }
-                let expected = phase9_smt_encode_core_bool(core_expr, primitives, false)
+                let expected = advanced_ai_smt_encode_core_bool(core_expr, primitives, false)
                     .ok_or_else(|| {
                         rejected_response(
                             candidate_hash,
-                            Phase9AiValidationError::UnsupportedFeature,
+                            AdvancedAiValidationError::UnsupportedFeature,
                             None,
                         )
                     })?;
                 if &expected != encoded_expr {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::FeatureRejected,
-                        Phase9SmtCertificateError::EncodingMismatch,
+                        AdvancedAiValidationError::FeatureRejected,
+                        AdvancedSmtCertificateError::EncodingMismatch,
                     ));
                 }
-                phase9_validate_smt_expr(candidate_hash, encoded_expr, problem.logic, &context)?;
+                advanced_ai_validate_smt_expr(
+                    candidate_hash,
+                    encoded_expr,
+                    problem.logic,
+                    &context,
+                )?;
             }
-            Phase9SmtCommandPayload::TargetAssertion {
+            AdvancedSmtCommandPayload::TargetAssertion {
                 core_expr,
                 encoded_expr,
             } => {
                 target_assertions += 1;
-                if !phase9_core_expr_bytes_eq(&candidate.goal.target, core_expr) {
+                if !advanced_ai_core_expr_bytes_eq(&candidate.goal.target, core_expr) {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::FeatureRejected,
-                        Phase9SmtCertificateError::EncodingMismatch,
+                        AdvancedAiValidationError::FeatureRejected,
+                        AdvancedSmtCertificateError::EncodingMismatch,
                     ));
                 }
-                let expected = phase9_smt_encode_core_bool(core_expr, primitives, true)
+                let expected = advanced_ai_smt_encode_core_bool(core_expr, primitives, true)
                     .ok_or_else(|| {
                         rejected_response(
                             candidate_hash,
-                            Phase9AiValidationError::UnsupportedFeature,
+                            AdvancedAiValidationError::UnsupportedFeature,
                             None,
                         )
                     })?;
                 if &expected != encoded_expr {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::FeatureRejected,
-                        Phase9SmtCertificateError::EncodingMismatch,
+                        AdvancedAiValidationError::FeatureRejected,
+                        AdvancedSmtCertificateError::EncodingMismatch,
                     ));
                 }
-                phase9_validate_smt_expr(candidate_hash, encoded_expr, problem.logic, &context)?;
+                advanced_ai_validate_smt_expr(
+                    candidate_hash,
+                    encoded_expr,
+                    problem.logic,
+                    &context,
+                )?;
             }
-            Phase9SmtCommandPayload::FinalCheck => {
+            AdvancedSmtCommandPayload::FinalCheck => {
                 final_checks += 1;
             }
         }
@@ -6835,55 +6931,55 @@ fn phase9_validate_smt_commands(
         || final_checks != 1
         || !matches!(
             problem.commands.last().map(|command| command.phase),
-            Some(Phase9SmtCommandPhase::FinalCheck)
+            Some(AdvancedSmtCommandPhase::FinalCheck)
         )
     {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ));
     }
     Ok(context)
 }
 
-fn phase9_smt_command_phase_matches_payload(
-    phase: Phase9SmtCommandPhase,
-    payload: &Phase9SmtCommandPayload,
+fn advanced_ai_smt_command_phase_matches_payload(
+    phase: AdvancedSmtCommandPhase,
+    payload: &AdvancedSmtCommandPayload,
 ) -> bool {
     matches!(
         (phase, payload),
         (
-            Phase9SmtCommandPhase::SortDecl,
-            Phase9SmtCommandPayload::SortDecl { .. }
+            AdvancedSmtCommandPhase::SortDecl,
+            AdvancedSmtCommandPayload::SortDecl { .. }
         ) | (
-            Phase9SmtCommandPhase::DatatypeDecl,
-            Phase9SmtCommandPayload::DatatypeDecl { .. }
+            AdvancedSmtCommandPhase::DatatypeDecl,
+            AdvancedSmtCommandPayload::DatatypeDecl { .. }
         ) | (
-            Phase9SmtCommandPhase::FunctionDecl,
-            Phase9SmtCommandPayload::FunctionDecl { .. }
+            AdvancedSmtCommandPhase::FunctionDecl,
+            AdvancedSmtCommandPayload::FunctionDecl { .. }
         ) | (
-            Phase9SmtCommandPhase::ContextAssumption,
-            Phase9SmtCommandPayload::ContextAssumption { .. }
+            AdvancedSmtCommandPhase::ContextAssumption,
+            AdvancedSmtCommandPayload::ContextAssumption { .. }
         ) | (
-            Phase9SmtCommandPhase::TargetAssertion,
-            Phase9SmtCommandPayload::TargetAssertion { .. }
+            AdvancedSmtCommandPhase::TargetAssertion,
+            AdvancedSmtCommandPayload::TargetAssertion { .. }
         ) | (
-            Phase9SmtCommandPhase::FinalCheck,
-            Phase9SmtCommandPayload::FinalCheck
+            AdvancedSmtCommandPhase::FinalCheck,
+            AdvancedSmtCommandPayload::FinalCheck
         )
     )
 }
 
-fn phase9_smt_command_order_key(
-    command: &Phase9SmtEncodedCommand,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+fn advanced_ai_smt_command_order_key(
+    command: &AdvancedSmtEncodedCommand,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut key = vec![command.phase.tag()];
-    key.extend_from_slice(&phase9_smt_command_id_source_key(&command.payload)?);
+    key.extend_from_slice(&advanced_ai_smt_command_id_source_key(&command.payload)?);
     Ok(key)
 }
 
-fn phase9_smt_decl_symbol_is_valid(symbol: &Phase9SmtSymbol) -> bool {
+fn advanced_ai_smt_decl_symbol_is_valid(symbol: &AdvancedSmtSymbol) -> bool {
     symbol.ascii.starts_with(b"smt:")
         && symbol.ascii.len() <= 128
         && symbol.ascii.len() > 4
@@ -6892,7 +6988,7 @@ fn phase9_smt_decl_symbol_is_valid(symbol: &Phase9SmtSymbol) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(*byte, b'_' | b'.' | b'-'))
 }
 
-fn phase9_smt_var_symbol_is_valid(symbol: &Phase9SmtSymbol) -> bool {
+fn advanced_ai_smt_var_symbol_is_valid(symbol: &AdvancedSmtSymbol) -> bool {
     symbol.ascii.starts_with(b"lc:")
         && symbol.ascii.len() <= 128
         && symbol.ascii.len() > 3
@@ -6901,22 +6997,22 @@ fn phase9_smt_var_symbol_is_valid(symbol: &Phase9SmtSymbol) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(*byte, b'_' | b'.' | b'-'))
 }
 
-fn phase9_smt_encode_core_bool(
+fn advanced_ai_smt_encode_core_bool(
     expr: &Expr,
-    primitives: &Phase9ResolvedSmtPrimitives,
+    primitives: &AdvancedResolvedSmtPrimitives,
     negate: bool,
-) -> Option<Phase9SmtExpr> {
+) -> Option<AdvancedSmtExpr> {
     let mut encoded = if primitives
         .prop_false
         .as_ref()
-        .is_some_and(|false_ref| phase9_core_expr_is_const(expr, &false_ref.const_name))
+        .is_some_and(|false_ref| advanced_ai_core_expr_is_const(expr, &false_ref.const_name))
     {
-        Phase9SmtExpr::BoolLit(false)
+        AdvancedSmtExpr::BoolLit(false)
     } else if let Some(prop_not) = &primitives.prop_not {
         let (head, args) = npa_kernel::expr::collect_apps(expr);
         if let Expr::Const { name, levels } = head {
             if name == prop_not.const_name && levels.is_empty() && args.len() == 1 {
-                Phase9SmtExpr::Not(Box::new(phase9_smt_encode_core_bool(
+                AdvancedSmtExpr::Not(Box::new(advanced_ai_smt_encode_core_bool(
                     &args[0], primitives, false,
                 )?))
             } else {
@@ -6929,118 +7025,123 @@ fn phase9_smt_encode_core_bool(
         return None;
     };
     if negate {
-        encoded = Phase9SmtExpr::Not(Box::new(encoded));
+        encoded = AdvancedSmtExpr::Not(Box::new(encoded));
     }
     Some(encoded)
 }
 
-fn phase9_core_expr_is_const(expr: &Expr, expected_name: &str) -> bool {
+fn advanced_ai_core_expr_is_const(expr: &Expr, expected_name: &str) -> bool {
     matches!(expr, Expr::Const { name, levels } if name == expected_name && levels.is_empty())
 }
 
-fn phase9_validate_smt_sort(
+fn advanced_ai_validate_smt_sort(
     candidate_hash: Hash,
-    sort: &Phase9SmtSortExpr,
-    logic: Phase9SmtLogic,
-    context: &Phase9SmtCommandContext,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    sort: &AdvancedSmtSortExpr,
+    logic: AdvancedSmtLogic,
+    context: &AdvancedSmtCommandContext,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     match sort {
-        Phase9SmtSortExpr::Bool => Ok(()),
-        Phase9SmtSortExpr::Int => {
+        AdvancedSmtSortExpr::Bool => Ok(()),
+        AdvancedSmtSortExpr::Int => {
             if matches!(
                 logic,
-                Phase9SmtLogic::MvpQfLia | Phase9SmtLogic::MvpQfUfLiaBv
+                AdvancedSmtLogic::MvpQfLia | AdvancedSmtLogic::MvpQfUfLiaBv
             ) {
                 Ok(())
             } else {
                 Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::UnsupportedFeature,
+                    AdvancedAiValidationError::UnsupportedFeature,
                     None,
                 ))
             }
         }
-        Phase9SmtSortExpr::BitVec { width } => {
+        AdvancedSmtSortExpr::BitVec { width } => {
             if *width == 0 {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             if matches!(
                 logic,
-                Phase9SmtLogic::MvpQfBv | Phase9SmtLogic::MvpQfUfLiaBv
+                AdvancedSmtLogic::MvpQfBv | AdvancedSmtLogic::MvpQfUfLiaBv
             ) {
                 Ok(())
             } else {
                 Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::UnsupportedFeature,
+                    AdvancedAiValidationError::UnsupportedFeature,
                     None,
                 ))
             }
         }
-        Phase9SmtSortExpr::User { symbol, args } => {
+        AdvancedSmtSortExpr::User { symbol, args } => {
             let Some(arity) = context.sort_arities.get(&symbol.ascii) else {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             };
             if *arity != args.len() as u32 {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             for arg in args {
-                phase9_validate_smt_sort(candidate_hash, arg, logic, context)?;
+                advanced_ai_validate_smt_sort(candidate_hash, arg, logic, context)?;
             }
             Ok(())
         }
     }
 }
 
-fn phase9_validate_smt_expr(
+fn advanced_ai_validate_smt_expr(
     candidate_hash: Hash,
-    expr: &Phase9SmtExpr,
-    logic: Phase9SmtLogic,
-    context: &Phase9SmtCommandContext,
-) -> std::result::Result<Phase9SmtSortExpr, Phase9AiEndpointResponse> {
+    expr: &AdvancedSmtExpr,
+    logic: AdvancedSmtLogic,
+    context: &AdvancedSmtCommandContext,
+) -> std::result::Result<AdvancedSmtSortExpr, AdvancedAiEndpointResponse> {
     match expr {
-        Phase9SmtExpr::Var { symbol, sort } => {
-            if !phase9_smt_var_symbol_is_valid(symbol) {
+        AdvancedSmtExpr::Var { symbol, sort } => {
+            if !advanced_ai_smt_var_symbol_is_valid(symbol) {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
-            phase9_validate_smt_sort(candidate_hash, sort, logic, context)?;
+            advanced_ai_validate_smt_sort(candidate_hash, sort, logic, context)?;
             Ok(sort.clone())
         }
-        Phase9SmtExpr::BoolLit(_) => Ok(Phase9SmtSortExpr::Bool),
-        Phase9SmtExpr::IntLit(_) => {
-            phase9_validate_smt_sort(candidate_hash, &Phase9SmtSortExpr::Int, logic, context)?;
-            Ok(Phase9SmtSortExpr::Int)
+        AdvancedSmtExpr::BoolLit(_) => Ok(AdvancedSmtSortExpr::Bool),
+        AdvancedSmtExpr::IntLit(_) => {
+            advanced_ai_validate_smt_sort(
+                candidate_hash,
+                &AdvancedSmtSortExpr::Int,
+                logic,
+                context,
+            )?;
+            Ok(AdvancedSmtSortExpr::Int)
         }
-        Phase9SmtExpr::BitVecLit { width, value } => {
-            let sort = Phase9SmtSortExpr::BitVec { width: *width };
-            phase9_validate_smt_sort(candidate_hash, &sort, logic, context)?;
+        AdvancedSmtExpr::BitVecLit { width, value } => {
+            let sort = AdvancedSmtSortExpr::BitVec { width: *width };
+            advanced_ai_validate_smt_sort(candidate_hash, &sort, logic, context)?;
             let min_bytes = usize::try_from(u64::from(*width).div_ceil(8)).unwrap_or(usize::MAX);
             if value.len() != min_bytes {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             Ok(sort)
         }
-        Phase9SmtExpr::App {
+        AdvancedSmtExpr::App {
             symbol,
             args,
             result_sort,
@@ -7049,148 +7150,156 @@ fn phase9_validate_smt_expr(
             else {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             };
             if expected_args.len() != args.len() || expected_result != result_sort {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             for (arg, expected_sort) in args.iter().zip(expected_args) {
-                let actual_sort = phase9_validate_smt_expr(candidate_hash, arg, logic, context)?;
+                let actual_sort =
+                    advanced_ai_validate_smt_expr(candidate_hash, arg, logic, context)?;
                 if &actual_sort != expected_sort {
                     return Err(smt_rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::FeatureRejected,
-                        Phase9SmtCertificateError::EncodingMismatch,
+                        AdvancedAiValidationError::FeatureRejected,
+                        AdvancedSmtCertificateError::EncodingMismatch,
                     ));
                 }
             }
-            phase9_validate_smt_sort(candidate_hash, result_sort, logic, context)?;
+            advanced_ai_validate_smt_sort(candidate_hash, result_sort, logic, context)?;
             Ok(result_sort.clone())
         }
-        Phase9SmtExpr::BuiltinApp {
+        AdvancedSmtExpr::BuiltinApp {
             op,
             args,
             result_sort,
-        } => {
-            phase9_validate_smt_builtin_app(candidate_hash, *op, args, result_sort, logic, context)
-        }
-        Phase9SmtExpr::Not(inner) => {
-            phase9_expect_smt_sort(
+        } => advanced_ai_validate_smt_builtin_app(
+            candidate_hash,
+            *op,
+            args,
+            result_sort,
+            logic,
+            context,
+        ),
+        AdvancedSmtExpr::Not(inner) => {
+            advanced_ai_expect_smt_sort(
                 candidate_hash,
-                phase9_validate_smt_expr(candidate_hash, inner, logic, context)?,
-                Phase9SmtSortExpr::Bool,
+                advanced_ai_validate_smt_expr(candidate_hash, inner, logic, context)?,
+                AdvancedSmtSortExpr::Bool,
             )?;
-            Ok(Phase9SmtSortExpr::Bool)
+            Ok(AdvancedSmtSortExpr::Bool)
         }
-        Phase9SmtExpr::And(args) | Phase9SmtExpr::Or(args) => {
+        AdvancedSmtExpr::And(args) | AdvancedSmtExpr::Or(args) => {
             if args.is_empty() {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             for arg in args {
-                phase9_expect_smt_sort(
+                advanced_ai_expect_smt_sort(
                     candidate_hash,
-                    phase9_validate_smt_expr(candidate_hash, arg, logic, context)?,
-                    Phase9SmtSortExpr::Bool,
+                    advanced_ai_validate_smt_expr(candidate_hash, arg, logic, context)?,
+                    AdvancedSmtSortExpr::Bool,
                 )?;
             }
-            Ok(Phase9SmtSortExpr::Bool)
+            Ok(AdvancedSmtSortExpr::Bool)
         }
-        Phase9SmtExpr::Eq(lhs, rhs) => {
-            let lhs_sort = phase9_validate_smt_expr(candidate_hash, lhs, logic, context)?;
-            let rhs_sort = phase9_validate_smt_expr(candidate_hash, rhs, logic, context)?;
-            phase9_expect_smt_sort(candidate_hash, lhs_sort, rhs_sort)?;
-            Ok(Phase9SmtSortExpr::Bool)
+        AdvancedSmtExpr::Eq(lhs, rhs) => {
+            let lhs_sort = advanced_ai_validate_smt_expr(candidate_hash, lhs, logic, context)?;
+            let rhs_sort = advanced_ai_validate_smt_expr(candidate_hash, rhs, logic, context)?;
+            advanced_ai_expect_smt_sort(candidate_hash, lhs_sort, rhs_sort)?;
+            Ok(AdvancedSmtSortExpr::Bool)
         }
-        Phase9SmtExpr::Imp(lhs, rhs) => {
-            phase9_expect_smt_sort(
+        AdvancedSmtExpr::Imp(lhs, rhs) => {
+            advanced_ai_expect_smt_sort(
                 candidate_hash,
-                phase9_validate_smt_expr(candidate_hash, lhs, logic, context)?,
-                Phase9SmtSortExpr::Bool,
+                advanced_ai_validate_smt_expr(candidate_hash, lhs, logic, context)?,
+                AdvancedSmtSortExpr::Bool,
             )?;
-            phase9_expect_smt_sort(
+            advanced_ai_expect_smt_sort(
                 candidate_hash,
-                phase9_validate_smt_expr(candidate_hash, rhs, logic, context)?,
-                Phase9SmtSortExpr::Bool,
+                advanced_ai_validate_smt_expr(candidate_hash, rhs, logic, context)?,
+                AdvancedSmtSortExpr::Bool,
             )?;
-            Ok(Phase9SmtSortExpr::Bool)
+            Ok(AdvancedSmtSortExpr::Bool)
         }
-        Phase9SmtExpr::Ite {
+        AdvancedSmtExpr::Ite {
             cond,
             then_expr,
             else_expr,
         } => {
-            phase9_expect_smt_sort(
+            advanced_ai_expect_smt_sort(
                 candidate_hash,
-                phase9_validate_smt_expr(candidate_hash, cond, logic, context)?,
-                Phase9SmtSortExpr::Bool,
+                advanced_ai_validate_smt_expr(candidate_hash, cond, logic, context)?,
+                AdvancedSmtSortExpr::Bool,
             )?;
-            let then_sort = phase9_validate_smt_expr(candidate_hash, then_expr, logic, context)?;
-            let else_sort = phase9_validate_smt_expr(candidate_hash, else_expr, logic, context)?;
-            phase9_expect_smt_sort(candidate_hash, then_sort.clone(), else_sort)?;
+            let then_sort =
+                advanced_ai_validate_smt_expr(candidate_hash, then_expr, logic, context)?;
+            let else_sort =
+                advanced_ai_validate_smt_expr(candidate_hash, else_expr, logic, context)?;
+            advanced_ai_expect_smt_sort(candidate_hash, then_sort.clone(), else_sort)?;
             Ok(then_sort)
         }
     }
 }
 
-fn phase9_validate_smt_builtin_app(
+fn advanced_ai_validate_smt_builtin_app(
     candidate_hash: Hash,
-    op: Phase9SmtBuiltinOp,
-    args: &[Phase9SmtExpr],
-    result_sort: &Phase9SmtSortExpr,
-    logic: Phase9SmtLogic,
-    context: &Phase9SmtCommandContext,
-) -> std::result::Result<Phase9SmtSortExpr, Phase9AiEndpointResponse> {
-    let int = Phase9SmtSortExpr::Int;
-    let bool_sort = Phase9SmtSortExpr::Bool;
+    op: AdvancedSmtBuiltinOp,
+    args: &[AdvancedSmtExpr],
+    result_sort: &AdvancedSmtSortExpr,
+    logic: AdvancedSmtLogic,
+    context: &AdvancedSmtCommandContext,
+) -> std::result::Result<AdvancedSmtSortExpr, AdvancedAiEndpointResponse> {
+    let int = AdvancedSmtSortExpr::Int;
+    let bool_sort = AdvancedSmtSortExpr::Bool;
     let expected = match op {
-        Phase9SmtBuiltinOp::IntNeg => {
-            phase9_expect_smt_arity(candidate_hash, args, 1)?;
+        AdvancedSmtBuiltinOp::IntNeg => {
+            advanced_ai_expect_smt_arity(candidate_hash, args, 1)?;
             vec![int.clone()]
         }
-        Phase9SmtBuiltinOp::IntAdd | Phase9SmtBuiltinOp::IntSub => {
-            phase9_expect_smt_arity(candidate_hash, args, 2)?;
+        AdvancedSmtBuiltinOp::IntAdd | AdvancedSmtBuiltinOp::IntSub => {
+            advanced_ai_expect_smt_arity(candidate_hash, args, 2)?;
             vec![int.clone(), int.clone()]
         }
-        Phase9SmtBuiltinOp::IntLe
-        | Phase9SmtBuiltinOp::IntLt
-        | Phase9SmtBuiltinOp::IntGe
-        | Phase9SmtBuiltinOp::IntGt => {
-            phase9_expect_smt_arity(candidate_hash, args, 2)?;
+        AdvancedSmtBuiltinOp::IntLe
+        | AdvancedSmtBuiltinOp::IntLt
+        | AdvancedSmtBuiltinOp::IntGe
+        | AdvancedSmtBuiltinOp::IntGt => {
+            advanced_ai_expect_smt_arity(candidate_hash, args, 2)?;
             vec![int.clone(), int.clone()]
         }
-        Phase9SmtBuiltinOp::BvNot => {
-            phase9_expect_smt_arity(candidate_hash, args, 1)?;
+        AdvancedSmtBuiltinOp::BvNot => {
+            advanced_ai_expect_smt_arity(candidate_hash, args, 1)?;
             Vec::new()
         }
-        Phase9SmtBuiltinOp::BvAnd
-        | Phase9SmtBuiltinOp::BvOr
-        | Phase9SmtBuiltinOp::BvXor
-        | Phase9SmtBuiltinOp::BvAdd
-        | Phase9SmtBuiltinOp::BvSub
-        | Phase9SmtBuiltinOp::BvMul
-        | Phase9SmtBuiltinOp::BvUlt
-        | Phase9SmtBuiltinOp::BvUle
-        | Phase9SmtBuiltinOp::BvConcat => {
-            phase9_expect_smt_arity(candidate_hash, args, 2)?;
+        AdvancedSmtBuiltinOp::BvAnd
+        | AdvancedSmtBuiltinOp::BvOr
+        | AdvancedSmtBuiltinOp::BvXor
+        | AdvancedSmtBuiltinOp::BvAdd
+        | AdvancedSmtBuiltinOp::BvSub
+        | AdvancedSmtBuiltinOp::BvMul
+        | AdvancedSmtBuiltinOp::BvUlt
+        | AdvancedSmtBuiltinOp::BvUle
+        | AdvancedSmtBuiltinOp::BvConcat => {
+            advanced_ai_expect_smt_arity(candidate_hash, args, 2)?;
             Vec::new()
         }
-        Phase9SmtBuiltinOp::BvExtract { high, low } => {
-            phase9_expect_smt_arity(candidate_hash, args, 1)?;
+        AdvancedSmtBuiltinOp::BvExtract { high, low } => {
+            advanced_ai_expect_smt_arity(candidate_hash, args, 1)?;
             if high < low {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 ));
             }
             Vec::new()
@@ -7198,140 +7307,142 @@ fn phase9_validate_smt_builtin_app(
     };
 
     match op {
-        Phase9SmtBuiltinOp::IntNeg
-        | Phase9SmtBuiltinOp::IntAdd
-        | Phase9SmtBuiltinOp::IntSub
-        | Phase9SmtBuiltinOp::IntLe
-        | Phase9SmtBuiltinOp::IntLt
-        | Phase9SmtBuiltinOp::IntGe
-        | Phase9SmtBuiltinOp::IntGt => {
-            phase9_validate_smt_sort(candidate_hash, &int, logic, context)?;
+        AdvancedSmtBuiltinOp::IntNeg
+        | AdvancedSmtBuiltinOp::IntAdd
+        | AdvancedSmtBuiltinOp::IntSub
+        | AdvancedSmtBuiltinOp::IntLe
+        | AdvancedSmtBuiltinOp::IntLt
+        | AdvancedSmtBuiltinOp::IntGe
+        | AdvancedSmtBuiltinOp::IntGt => {
+            advanced_ai_validate_smt_sort(candidate_hash, &int, logic, context)?;
             for (arg, sort) in args.iter().zip(expected) {
-                phase9_expect_smt_sort(
+                advanced_ai_expect_smt_sort(
                     candidate_hash,
-                    phase9_validate_smt_expr(candidate_hash, arg, logic, context)?,
+                    advanced_ai_validate_smt_expr(candidate_hash, arg, logic, context)?,
                     sort,
                 )?;
             }
             let result = match op {
-                Phase9SmtBuiltinOp::IntNeg
-                | Phase9SmtBuiltinOp::IntAdd
-                | Phase9SmtBuiltinOp::IntSub => int,
+                AdvancedSmtBuiltinOp::IntNeg
+                | AdvancedSmtBuiltinOp::IntAdd
+                | AdvancedSmtBuiltinOp::IntSub => int,
                 _ => bool_sort,
             };
-            phase9_expect_smt_sort(candidate_hash, result_sort.clone(), result.clone())?;
+            advanced_ai_expect_smt_sort(candidate_hash, result_sort.clone(), result.clone())?;
             Ok(result)
         }
         _ => {
             if !matches!(
                 logic,
-                Phase9SmtLogic::MvpQfBv | Phase9SmtLogic::MvpQfUfLiaBv
+                AdvancedSmtLogic::MvpQfBv | AdvancedSmtLogic::MvpQfUfLiaBv
             ) {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::UnsupportedFeature,
+                    AdvancedAiValidationError::UnsupportedFeature,
                     None,
                 ));
             }
             let arg_sorts = args
                 .iter()
-                .map(|arg| phase9_validate_smt_expr(candidate_hash, arg, logic, context))
+                .map(|arg| advanced_ai_validate_smt_expr(candidate_hash, arg, logic, context))
                 .collect::<std::result::Result<Vec<_>, _>>()?;
             if !arg_sorts
                 .iter()
-                .all(|sort| matches!(sort, Phase9SmtSortExpr::BitVec { width } if *width > 0))
+                .all(|sort| matches!(sort, AdvancedSmtSortExpr::BitVec { width } if *width > 0))
             {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Phase9SmtCertificateError::EncodingMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    AdvancedSmtCertificateError::EncodingMismatch,
                 ));
             }
             let result = match op {
-                Phase9SmtBuiltinOp::BvUlt | Phase9SmtBuiltinOp::BvUle => Phase9SmtSortExpr::Bool,
-                Phase9SmtBuiltinOp::BvConcat => {
-                    let Phase9SmtSortExpr::BitVec { width: left } = arg_sorts[0] else {
+                AdvancedSmtBuiltinOp::BvUlt | AdvancedSmtBuiltinOp::BvUle => {
+                    AdvancedSmtSortExpr::Bool
+                }
+                AdvancedSmtBuiltinOp::BvConcat => {
+                    let AdvancedSmtSortExpr::BitVec { width: left } = arg_sorts[0] else {
                         unreachable!()
                     };
-                    let Phase9SmtSortExpr::BitVec { width: right } = arg_sorts[1] else {
+                    let AdvancedSmtSortExpr::BitVec { width: right } = arg_sorts[1] else {
                         unreachable!()
                     };
-                    Phase9SmtSortExpr::BitVec {
+                    AdvancedSmtSortExpr::BitVec {
                         width: left.checked_add(right).ok_or_else(|| {
                             smt_rejected_response(
                                 candidate_hash,
-                                Phase9AiValidationError::EnvelopeMalformed,
-                                Phase9SmtCertificateError::NonCanonicalPayload,
+                                AdvancedAiValidationError::EnvelopeMalformed,
+                                AdvancedSmtCertificateError::NonCanonicalPayload,
                             )
                         })?,
                     }
                 }
-                Phase9SmtBuiltinOp::BvExtract { high, low } => {
+                AdvancedSmtBuiltinOp::BvExtract { high, low } => {
                     let width = high
                         .checked_sub(low)
                         .and_then(|width| width.checked_add(1))
                         .ok_or_else(|| {
                             smt_rejected_response(
                                 candidate_hash,
-                                Phase9AiValidationError::EnvelopeMalformed,
-                                Phase9SmtCertificateError::NonCanonicalPayload,
+                                AdvancedAiValidationError::EnvelopeMalformed,
+                                AdvancedSmtCertificateError::NonCanonicalPayload,
                             )
                         })?;
-                    Phase9SmtSortExpr::BitVec { width }
+                    AdvancedSmtSortExpr::BitVec { width }
                 }
                 _ => arg_sorts[0].clone(),
             };
-            phase9_expect_smt_sort(candidate_hash, result_sort.clone(), result.clone())?;
+            advanced_ai_expect_smt_sort(candidate_hash, result_sort.clone(), result.clone())?;
             Ok(result)
         }
     }
 }
 
-fn phase9_expect_smt_arity(
+fn advanced_ai_expect_smt_arity(
     candidate_hash: Hash,
-    args: &[Phase9SmtExpr],
+    args: &[AdvancedSmtExpr],
     expected: usize,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     if args.len() == expected {
         Ok(())
     } else {
         Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ))
     }
 }
 
-fn phase9_expect_smt_sort(
+fn advanced_ai_expect_smt_sort(
     candidate_hash: Hash,
-    actual: Phase9SmtSortExpr,
-    expected: Phase9SmtSortExpr,
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+    actual: AdvancedSmtSortExpr,
+    expected: AdvancedSmtSortExpr,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     if actual == expected {
         Ok(())
     } else {
         Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9SmtCertificateError::EncodingMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::EncodingMismatch,
         ))
     }
 }
 
-fn phase9_validate_smt_proof_table(
+fn advanced_ai_validate_smt_proof_table(
     candidate_hash: Hash,
-    table: &Phase9SmtProofNodeTable,
-    candidate: &Phase9MachineSmtCertificateCandidate,
-    problem: &Phase9MachineSmtEncodedProblem,
-    command_context: &Phase9SmtCommandContext,
+    table: &AdvancedSmtProofNodeTable,
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+    problem: &AdvancedMachineSmtEncodedProblem,
+    command_context: &AdvancedSmtCommandContext,
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     if table.certificate_format != candidate.certificate_format {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9SmtCertificateError::EncodingMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::EncodingMismatch,
         ));
     }
     for (index, node) in table.nodes.iter().enumerate() {
@@ -7340,8 +7451,8 @@ fn phase9_validate_smt_proof_table(
         {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
         let conclusion = &node.conclusion_encoding;
@@ -7351,25 +7462,25 @@ fn phase9_validate_smt_proof_table(
         {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::FeatureRejected,
-                Phase9SmtCertificateError::ConclusionEncodingMismatch,
+                AdvancedAiValidationError::FeatureRejected,
+                AdvancedSmtCertificateError::ConclusionEncodingMismatch,
             ));
         }
         if !expr_levels_are_in_scope(&conclusion.core_expr, &candidate.goal.universe_params) {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
         if !expr_imported_refs_are_resolved(&conclusion.core_expr, verified_imports) {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             ));
         }
-        phase9_validate_smt_expr(
+        advanced_ai_validate_smt_expr(
             candidate_hash,
             &conclusion.encoded_expr,
             problem.logic,
@@ -7379,17 +7490,17 @@ fn phase9_validate_smt_proof_table(
     Ok(())
 }
 
-fn phase9_validate_smt_reconstruction_plan(
+fn advanced_ai_validate_smt_reconstruction_plan(
     candidate_hash: Hash,
-    candidate: &Phase9MachineSmtCertificateCandidate,
+    candidate: &AdvancedMachineSmtCertificateCandidate,
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     let plan = &candidate.reconstruction_plan;
     if ensure_sorted_global_refs(&plan.imported_theory_refs).is_err() {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ));
     }
     if plan.steps.is_empty()
@@ -7397,8 +7508,8 @@ fn phase9_validate_smt_reconstruction_plan(
     {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ));
     }
     let mut used_theory_refs = BTreeSet::new();
@@ -7408,8 +7519,8 @@ fn phase9_validate_smt_reconstruction_plan(
         {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
         if !expr_levels_are_in_scope(&step.conclusion, &candidate.goal.universe_params)
@@ -7417,8 +7528,8 @@ fn phase9_validate_smt_reconstruction_plan(
         {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
         if !expr_imported_refs_are_resolved(&step.conclusion, verified_imports)
@@ -7426,33 +7537,33 @@ fn phase9_validate_smt_reconstruction_plan(
         {
             return Err(rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::ImportClosureMismatch,
+                AdvancedAiValidationError::ImportClosureMismatch,
                 None,
             ));
         }
-        if let Phase9SmtReconstructionRule::LocalBookkeeping { kind } = &step.rule {
+        if let AdvancedSmtReconstructionRule::LocalBookkeeping { kind } = &step.rule {
             let theory_ref = match kind {
-                Phase9SmtLocalBookkeepingRule::ReorderPremises { permutation } => {
+                AdvancedSmtLocalBookkeepingRule::ReorderPremises { permutation } => {
                     if permutation.len() != step.premises.len() {
                         return Err(smt_rejected_response(
                             candidate_hash,
-                            Phase9AiValidationError::EnvelopeMalformed,
-                            Phase9SmtCertificateError::NonCanonicalPayload,
+                            AdvancedAiValidationError::EnvelopeMalformed,
+                            AdvancedSmtCertificateError::NonCanonicalPayload,
                         ));
                     }
                     return Err(rejected_response(
                         candidate_hash,
-                        Phase9AiValidationError::UnsupportedFeature,
+                        AdvancedAiValidationError::UnsupportedFeature,
                         None,
                     ));
                 }
-                Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma {
                     lemma,
                     level_args,
                     term_args,
                 } => {
                     if step.premises.is_empty() {
-                        phase9_validate_smt_bookkeeping_args(
+                        advanced_ai_validate_smt_bookkeeping_args(
                             candidate_hash,
                             candidate,
                             level_args,
@@ -7462,12 +7573,12 @@ fn phase9_validate_smt_reconstruction_plan(
                     }
                     lemma
                 }
-                Phase9SmtLocalBookkeepingRule::ComposeProof {
+                AdvancedSmtLocalBookkeepingRule::ComposeProof {
                     combinator,
                     level_args,
                     term_args,
                 } => {
-                    phase9_validate_smt_bookkeeping_args(
+                    advanced_ai_validate_smt_bookkeeping_args(
                         candidate_hash,
                         candidate,
                         level_args,
@@ -7480,8 +7591,8 @@ fn phase9_validate_smt_reconstruction_plan(
             used_theory_refs.insert(global_ref_sort_key(theory_ref).map_err(|_| {
                 smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9SmtCertificateError::NonCanonicalPayload,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::NonCanonicalPayload,
                 )
             })?);
             if !plan
@@ -7491,33 +7602,33 @@ fn phase9_validate_smt_reconstruction_plan(
             {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Phase9SmtCertificateError::TheoryRefMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    AdvancedSmtCertificateError::TheoryRefMismatch,
                 ));
             }
-            if resolve_phase9_global_ref(theory_ref, verified_imports).is_none() {
+            if resolve_advanced_ai_global_ref(theory_ref, verified_imports).is_none() {
                 return Err(rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::ImportClosureMismatch,
+                    AdvancedAiValidationError::ImportClosureMismatch,
                     None,
                 ));
             }
             if !step.payload_bindings.is_empty() {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Phase9SmtCertificateError::PayloadBindingMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    AdvancedSmtCertificateError::PayloadBindingMismatch,
                 ));
             }
             if matches!(
                 kind,
-                Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma { .. }
+                AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma { .. }
             ) && !step.premises.is_empty()
             {
                 return Err(smt_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::FeatureRejected,
-                    Phase9SmtCertificateError::ReconstructionPremiseMismatch,
+                    AdvancedAiValidationError::FeatureRejected,
+                    AdvancedSmtCertificateError::ReconstructionPremiseMismatch,
                 ));
             }
         }
@@ -7525,14 +7636,14 @@ fn phase9_validate_smt_reconstruction_plan(
     if !expr_levels_are_in_scope(&plan.final_proof, &candidate.goal.universe_params) {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ));
     }
     if !expr_imported_refs_are_resolved(&plan.final_proof, verified_imports) {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         ));
     }
@@ -7540,28 +7651,28 @@ fn phase9_validate_smt_reconstruction_plan(
         let key = global_ref_sort_key(imported).map_err(|_| {
             smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             )
         })?;
         if !used_theory_refs.contains(&key) {
             return Err(smt_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
-                Phase9SmtCertificateError::NonCanonicalPayload,
+                AdvancedAiValidationError::EnvelopeMalformed,
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             ));
         }
     }
     Ok(())
 }
 
-fn phase9_validate_smt_bookkeeping_args(
+fn advanced_ai_validate_smt_bookkeeping_args(
     candidate_hash: Hash,
-    candidate: &Phase9MachineSmtCertificateCandidate,
+    candidate: &AdvancedMachineSmtCertificateCandidate,
     level_args: &[Level],
     term_args: &[Expr],
     verified_imports: &[VerifiedImportRef],
-) -> std::result::Result<(), Phase9AiEndpointResponse> {
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
     if !level_args
         .iter()
         .all(|level| level_is_in_scope(level, &candidate.goal.universe_params))
@@ -7571,8 +7682,8 @@ fn phase9_validate_smt_bookkeeping_args(
     {
         return Err(smt_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
         ));
     }
     if !term_args
@@ -7581,7 +7692,7 @@ fn phase9_validate_smt_bookkeeping_args(
     {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         ));
     }
@@ -7590,102 +7701,102 @@ fn phase9_validate_smt_bookkeeping_args(
 
 fn theorem_graph_rejected_response(
     candidate_hash: Hash,
-    error: Phase9AiValidationError,
-    graph_error: Phase9TheoremGraphError,
-) -> Phase9AiEndpointResponse {
+    error: AdvancedAiValidationError,
+    graph_error: AdvancedTheoremGraphError,
+) -> AdvancedAiEndpointResponse {
     rejected_response(
         candidate_hash,
         error,
-        Some(Phase9AiFeatureError::TheoremGraphQuery(graph_error)),
+        Some(AdvancedAiFeatureError::TheoremGraphQuery(graph_error)),
     )
 }
 
-fn phase9_theorem_graph_snapshot_bytes(
+fn advanced_ai_theorem_graph_snapshot_bytes(
     candidate_hash: Hash,
-    source: &Phase9MachineTheoremGraphSnapshotSource,
+    source: &AdvancedMachineTheoremGraphSnapshotSource,
     workspace_root: &Path,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     match source {
-        Phase9MachineTheoremGraphSnapshotSource::Inline {
+        AdvancedMachineTheoremGraphSnapshotSource::Inline {
             canonical_bytes, ..
         } => {
-            if canonical_bytes.len() > MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES {
+            if canonical_bytes.len() > MAX_ADVANCED_AI_THEOREM_GRAPH_SNAPSHOT_BYTES {
                 return Err(theorem_graph_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9TheoremGraphError::SnapshotMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedTheoremGraphError::SnapshotMalformed,
                 ));
             }
             Ok(canonical_bytes.clone())
         }
-        Phase9MachineTheoremGraphSnapshotSource::Artifact {
+        AdvancedMachineTheoremGraphSnapshotSource::Artifact {
             path,
             file_hash,
             size_bytes,
             ..
-        } => phase9_theorem_graph_artifact_bytes(
+        } => advanced_ai_theorem_graph_artifact_bytes(
             candidate_hash,
             workspace_root,
             path,
             *file_hash,
             *size_bytes,
-            MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES,
-            Phase9TheoremGraphError::SnapshotMalformed,
+            MAX_ADVANCED_AI_THEOREM_GRAPH_SNAPSHOT_BYTES,
+            AdvancedTheoremGraphError::SnapshotMalformed,
         ),
     }
 }
 
-fn phase9_theorem_graph_query_features_bytes(
+fn advanced_ai_theorem_graph_query_features_bytes(
     candidate_hash: Hash,
-    source: &Phase9MachineTheoremGraphQueryFeaturesRef,
+    source: &AdvancedMachineTheoremGraphQueryFeaturesRef,
     workspace_root: &Path,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     match source {
-        Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+        AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
             canonical_bytes, ..
         } => {
-            if canonical_bytes.len() > MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES {
+            if canonical_bytes.len() > MAX_ADVANCED_AI_THEOREM_GRAPH_QUERY_FEATURES_BYTES {
                 return Err(theorem_graph_rejected_response(
                     candidate_hash,
-                    Phase9AiValidationError::EnvelopeMalformed,
-                    Phase9TheoremGraphError::QueryFeaturesMalformed,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedTheoremGraphError::QueryFeaturesMalformed,
                 ));
             }
             Ok(canonical_bytes.clone())
         }
-        Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+        AdvancedMachineTheoremGraphQueryFeaturesRef::Artifact {
             path,
             file_hash,
             size_bytes,
             ..
-        } => phase9_theorem_graph_artifact_bytes(
+        } => advanced_ai_theorem_graph_artifact_bytes(
             candidate_hash,
             workspace_root,
             path,
             *file_hash,
             *size_bytes,
-            MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES,
-            Phase9TheoremGraphError::QueryFeaturesMalformed,
+            MAX_ADVANCED_AI_THEOREM_GRAPH_QUERY_FEATURES_BYTES,
+            AdvancedTheoremGraphError::QueryFeaturesMalformed,
         ),
     }
 }
 
-fn phase9_theorem_graph_artifact_bytes(
+fn advanced_ai_theorem_graph_artifact_bytes(
     candidate_hash: Hash,
     workspace_root: &Path,
     path: &str,
     file_hash: Hash,
     size_bytes: u64,
     max_bytes: usize,
-    malformed_error: Phase9TheoremGraphError,
-) -> std::result::Result<Vec<u8>, Phase9AiEndpointResponse> {
+    malformed_error: AdvancedTheoremGraphError,
+) -> std::result::Result<Vec<u8>, AdvancedAiEndpointResponse> {
     if usize::try_from(size_bytes)
         .map(|size| size > max_bytes)
         .unwrap_or(true)
     {
         return Err(theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             malformed_error,
         ));
     }
@@ -7694,57 +7805,57 @@ fn phase9_theorem_graph_artifact_bytes(
         Err(ArtifactPathError::EnvelopeMalformed) => {
             return Err(theorem_graph_rejected_response(
                 candidate_hash,
-                Phase9AiValidationError::EnvelopeMalformed,
+                AdvancedAiValidationError::EnvelopeMalformed,
                 malformed_error,
             ));
         }
         Err(ArtifactPathError::ArtifactUnavailable) => {
-            return Err(Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::ArtifactUnavailable,
+            return Err(AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::ArtifactUnavailable,
             });
         }
     };
-    let metadata = std::fs::metadata(&path).map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::ArtifactUnavailable,
+    let metadata = std::fs::metadata(&path).map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::ArtifactUnavailable,
     })?;
     if metadata.len() != size_bytes {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
-    let bytes = std::fs::read(path).map_err(|_| Phase9AiEndpointResponse::Error {
-        error: Phase9AiEndpointError::ArtifactUnavailable,
+    let bytes = std::fs::read(path).map_err(|_| AdvancedAiEndpointResponse::Error {
+        error: AdvancedAiEndpointError::ArtifactUnavailable,
     })?;
-    if phase9_file_hash(&bytes) != file_hash {
+    if advanced_ai_file_hash(&bytes) != file_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     Ok(bytes)
 }
 
-fn phase9_validate_theorem_graph_snapshot_bytes(
+fn advanced_ai_validate_theorem_graph_snapshot_bytes(
     candidate_hash: Hash,
     bytes: &[u8],
-    snapshot_ref: &Phase9MachineTheoremGraphSnapshotRef,
-) -> std::result::Result<Phase9MachineTheoremGraphSnapshot, Phase9AiEndpointResponse> {
-    phase9_precheck_theorem_graph_snapshot_outer(bytes).map_err(|_| {
+    snapshot_ref: &AdvancedMachineTheoremGraphSnapshotRef,
+) -> std::result::Result<AdvancedMachineTheoremGraphSnapshot, AdvancedAiEndpointResponse> {
+    advanced_ai_precheck_theorem_graph_snapshot_outer(bytes).map_err(|_| {
         theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::SnapshotMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::SnapshotMalformed,
         )
     })?;
     let expected_hash = match &snapshot_ref.source {
-        Phase9MachineTheoremGraphSnapshotSource::Inline {
+        AdvancedMachineTheoremGraphSnapshotSource::Inline {
             graph_snapshot_hash,
             ..
         }
-        | Phase9MachineTheoremGraphSnapshotSource::Artifact {
+        | AdvancedMachineTheoremGraphSnapshotSource::Artifact {
             graph_snapshot_hash,
             ..
         } => *graph_snapshot_hash,
@@ -7752,38 +7863,38 @@ fn phase9_validate_theorem_graph_snapshot_bytes(
     if hash_with_domain(THEOREM_GRAPH_SNAPSHOT_HASH_TAG, bytes) != expected_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     let snapshot = decode_theorem_graph_snapshot(bytes).map_err(|_| {
         theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::SnapshotMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::SnapshotMalformed,
         )
     })?;
     Ok(snapshot)
 }
 
-fn phase9_validate_theorem_graph_query_features_bytes(
+fn advanced_ai_validate_theorem_graph_query_features_bytes(
     candidate_hash: Hash,
     bytes: &[u8],
-    query: &Phase9MachineTheoremGraphQuery,
-) -> std::result::Result<Phase9MachineTheoremGraphQueryFeatures, Phase9AiEndpointResponse> {
-    phase9_precheck_theorem_graph_query_features_outer(bytes).map_err(|_| {
+    query: &AdvancedMachineTheoremGraphQuery,
+) -> std::result::Result<AdvancedMachineTheoremGraphQueryFeatures, AdvancedAiEndpointResponse> {
+    advanced_ai_precheck_theorem_graph_query_features_outer(bytes).map_err(|_| {
         theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::QueryFeaturesMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::QueryFeaturesMalformed,
         )
     })?;
     let expected_hash = match &query.query_features {
-        Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+        AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
             query_features_hash,
             ..
         }
-        | Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+        | AdvancedMachineTheoremGraphQueryFeaturesRef::Artifact {
             query_features_hash,
             ..
         } => *query_features_hash,
@@ -7791,35 +7902,35 @@ fn phase9_validate_theorem_graph_query_features_bytes(
     if hash_with_domain(THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG, bytes) != expected_hash {
         return Err(rejected_response(
             candidate_hash,
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         ));
     }
     let query_features = decode_theorem_graph_query_features(bytes).map_err(|_| {
         theorem_graph_rejected_response(
             candidate_hash,
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9TheoremGraphError::QueryFeaturesMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedTheoremGraphError::QueryFeaturesMalformed,
         )
     })?;
     Ok(query_features)
 }
 
-fn phase9_precheck_theorem_graph_snapshot_outer(
+fn advanced_ai_precheck_theorem_graph_snapshot_outer(
     bytes: &[u8],
 ) -> std::result::Result<(), DecodeError> {
     let mut decoder = Decoder::new(bytes);
     decoder.hash()?;
-    Phase9TheoremGraphExtractorVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
+    AdvancedTheoremGraphExtractorVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
     let node_len = decoder.u64()?;
-    if node_len > MAX_PHASE9_THEOREM_GRAPH_NODES {
+    if node_len > MAX_ADVANCED_AI_THEOREM_GRAPH_NODES {
         return Err(DecodeError::Malformed);
     }
     for _ in 0..node_len {
         decoder.skip_theorem_graph_node()?;
     }
     let edge_len = decoder.u64()?;
-    if edge_len > MAX_PHASE9_THEOREM_GRAPH_EDGES {
+    if edge_len > MAX_ADVANCED_AI_THEOREM_GRAPH_EDGES {
         return Err(DecodeError::Malformed);
     }
     for _ in 0..edge_len {
@@ -7828,16 +7939,16 @@ fn phase9_precheck_theorem_graph_snapshot_outer(
     decoder.done()
 }
 
-fn phase9_precheck_theorem_graph_query_features_outer(
+fn advanced_ai_precheck_theorem_graph_query_features_outer(
     bytes: &[u8],
 ) -> std::result::Result<(), DecodeError> {
     let mut decoder = Decoder::new(bytes);
     decoder.hash()?;
     decoder.hash()?;
-    Phase9TheoremGraphFeatureSchemaVersion::from_tag(decoder.u8()?)
+    AdvancedTheoremGraphFeatureSchemaVersion::from_tag(decoder.u8()?)
         .ok_or(DecodeError::Malformed)?;
     let feature_len = decoder.u64()?;
-    if feature_len > MAX_PHASE9_THEOREM_GRAPH_FEATURES {
+    if feature_len > MAX_ADVANCED_AI_THEOREM_GRAPH_FEATURES {
         return Err(DecodeError::Malformed);
     }
     for _ in 0..feature_len {
@@ -7846,15 +7957,15 @@ fn phase9_precheck_theorem_graph_query_features_outer(
     decoder.done()
 }
 
-fn phase9_theorem_graph_features_are_well_formed(
-    features: &[Phase9MachineTheoremGraphFeature],
+fn advanced_ai_theorem_graph_features_are_well_formed(
+    features: &[AdvancedMachineTheoremGraphFeature],
 ) -> bool {
     let mut previous = None;
     for feature in features {
-        if !phase9_theorem_graph_feature_key_is_valid(&feature.key) {
+        if !advanced_ai_theorem_graph_feature_key_is_valid(&feature.key) {
             return false;
         }
-        let key = phase9_theorem_graph_feature_key_canonical_bytes(&feature.key);
+        let key = advanced_ai_theorem_graph_feature_key_canonical_bytes(&feature.key);
         if previous.as_ref().is_some_and(|previous| previous >= &key) {
             return false;
         }
@@ -7863,12 +7974,12 @@ fn phase9_theorem_graph_features_are_well_formed(
     true
 }
 
-fn phase9_theorem_graph_feature_key_is_valid(key: &Phase9TheoremGraphFeatureKey) -> bool {
-    phase9_theorem_graph_feature_key_component_is_valid(&key.namespace_ascii)
-        && phase9_theorem_graph_feature_key_component_is_valid(&key.name_ascii)
+fn advanced_ai_theorem_graph_feature_key_is_valid(key: &AdvancedTheoremGraphFeatureKey) -> bool {
+    advanced_ai_theorem_graph_feature_key_component_is_valid(&key.namespace_ascii)
+        && advanced_ai_theorem_graph_feature_key_component_is_valid(&key.name_ascii)
 }
 
-fn phase9_theorem_graph_feature_key_component_is_valid(bytes: &[u8]) -> bool {
+fn advanced_ai_theorem_graph_feature_key_component_is_valid(bytes: &[u8]) -> bool {
     if bytes.is_empty() || bytes.len() > 64 {
         return false;
     }
@@ -7883,20 +7994,22 @@ fn phase9_theorem_graph_feature_key_component_is_valid(bytes: &[u8]) -> bool {
         .all(|byte| byte.is_ascii_alphanumeric() || matches!(*byte, b'_' | b'.' | b':' | b'-'))
 }
 
-fn phase9_theorem_graph_feature_key_canonical_bytes(key: &Phase9TheoremGraphFeatureKey) -> Vec<u8> {
+fn advanced_ai_theorem_graph_feature_key_canonical_bytes(
+    key: &AdvancedTheoremGraphFeatureKey,
+) -> Vec<u8> {
     let mut out = Vec::new();
     encode_bytes_to(&mut out, &key.namespace_ascii);
     encode_bytes_to(&mut out, &key.name_ascii);
     out
 }
 
-fn phase9_theorem_graph_snapshot_is_well_formed(
-    snapshot: &Phase9MachineTheoremGraphSnapshot,
+fn advanced_ai_theorem_graph_snapshot_is_well_formed(
+    snapshot: &AdvancedMachineTheoremGraphSnapshot,
 ) -> bool {
     let mut previous_node = None;
     let mut node_bytes = BTreeSet::new();
     for node in &snapshot.nodes {
-        let identity = phase9_theorem_graph_node_identity_key(node);
+        let identity = advanced_ai_theorem_graph_node_identity_key(node);
         if previous_node
             .as_ref()
             .is_some_and(|previous| previous >= &identity)
@@ -7904,7 +8017,7 @@ fn phase9_theorem_graph_snapshot_is_well_formed(
             return false;
         }
         previous_node = Some(identity);
-        let Ok(bytes) = phase9_theorem_graph_node_canonical_bytes(node) else {
+        let Ok(bytes) = advanced_ai_theorem_graph_node_canonical_bytes(node) else {
             return false;
         };
         node_bytes.insert(bytes);
@@ -7912,7 +8025,7 @@ fn phase9_theorem_graph_snapshot_is_well_formed(
 
     let mut previous_edge = None;
     for edge in &snapshot.edges {
-        let key = phase9_theorem_graph_edge_key(edge);
+        let key = advanced_ai_theorem_graph_edge_key(edge);
         if previous_edge
             .as_ref()
             .is_some_and(|previous| previous >= &key)
@@ -7921,10 +8034,10 @@ fn phase9_theorem_graph_snapshot_is_well_formed(
         }
         previous_edge = Some(key);
 
-        let Ok(from) = phase9_theorem_graph_node_canonical_bytes(&edge.from) else {
+        let Ok(from) = advanced_ai_theorem_graph_node_canonical_bytes(&edge.from) else {
             return false;
         };
-        let Ok(to) = phase9_theorem_graph_node_canonical_bytes(&edge.to) else {
+        let Ok(to) = advanced_ai_theorem_graph_node_canonical_bytes(&edge.to) else {
             return false;
         };
         if !node_bytes.contains(&from) || !node_bytes.contains(&to) {
@@ -7934,7 +8047,9 @@ fn phase9_theorem_graph_snapshot_is_well_formed(
     true
 }
 
-fn phase9_theorem_graph_node_identity_key(node: &Phase9MachineTheoremGraphNodeRef) -> Vec<u8> {
+fn advanced_ai_theorem_graph_node_identity_key(
+    node: &AdvancedMachineTheoremGraphNodeRef,
+) -> Vec<u8> {
     let mut out = Vec::new();
     encode_name_to(&mut out, &node.module).expect("decoded theorem graph module is canonical");
     encode_name_to(&mut out, &node.name).expect("decoded theorem graph name is canonical");
@@ -7944,30 +8059,30 @@ fn phase9_theorem_graph_node_identity_key(node: &Phase9MachineTheoremGraphNodeRe
     out
 }
 
-fn phase9_theorem_graph_edge_key(edge: &Phase9MachineTheoremGraphEdge) -> Vec<u8> {
+fn advanced_ai_theorem_graph_edge_key(edge: &AdvancedMachineTheoremGraphEdge) -> Vec<u8> {
     let mut out = Vec::new();
-    out.extend_from_slice(&phase9_theorem_graph_node_identity_key(&edge.from));
-    out.extend_from_slice(&phase9_theorem_graph_node_identity_key(&edge.to));
+    out.extend_from_slice(&advanced_ai_theorem_graph_node_identity_key(&edge.from));
+    out.extend_from_slice(&advanced_ai_theorem_graph_node_identity_key(&edge.to));
     out.push(edge.kind.tag());
     out
 }
 
-enum Phase9TheoremGraphNodeResolution {
+enum AdvancedTheoremGraphNodeResolution {
     Missing,
     Mismatch,
     Resolved { eligible: bool },
 }
 
-fn phase9_resolve_theorem_graph_node(
-    node: &Phase9MachineTheoremGraphNodeRef,
+fn advanced_ai_resolve_theorem_graph_node(
+    node: &AdvancedMachineTheoremGraphNodeRef,
     imports: &[VerifiedImportRef],
-) -> Phase9TheoremGraphNodeResolution {
+) -> AdvancedTheoremGraphNodeResolution {
     let Some(import) = imports.iter().find(|import| {
         import.module() == &node.module
             && import.export_hash() == node.export_hash
             && import.certificate_hash() == node.certificate_hash
     }) else {
-        return Phase9TheoremGraphNodeResolution::Missing;
+        return AdvancedTheoremGraphNodeResolution::Missing;
     };
 
     let matches = import
@@ -7978,10 +8093,10 @@ fn phase9_resolve_theorem_graph_node(
         })
         .collect::<Vec<_>>();
     let [export] = matches.as_slice() else {
-        return Phase9TheoremGraphNodeResolution::Missing;
+        return AdvancedTheoremGraphNodeResolution::Missing;
     };
     if export.type_hash != node.type_hash {
-        return Phase9TheoremGraphNodeResolution::Mismatch;
+        return AdvancedTheoremGraphNodeResolution::Mismatch;
     }
     let Some(decl) = import
         .verified_module()
@@ -7989,43 +8104,43 @@ fn phase9_resolve_theorem_graph_node(
         .iter()
         .find(|decl| decl.hashes.decl_interface_hash == export.decl_interface_hash)
     else {
-        return Phase9TheoremGraphNodeResolution::Mismatch;
+        return AdvancedTheoremGraphNodeResolution::Mismatch;
     };
     if decl.hashes.decl_certificate_hash != node.decl_certificate_hash {
-        return Phase9TheoremGraphNodeResolution::Mismatch;
+        return AdvancedTheoremGraphNodeResolution::Mismatch;
     }
-    Phase9TheoremGraphNodeResolution::Resolved {
+    AdvancedTheoremGraphNodeResolution::Resolved {
         eligible: matches!(export.kind, ExportKind::Axiom | ExportKind::Theorem),
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Phase9InductiveCheckError {
+enum AdvancedInductiveCheckError {
     TargetRefMismatch,
     KernelRejected,
     UnsupportedPositivity,
 }
 
-struct ResolvedPhase9GlobalRef {
+struct ResolvedAdvancedAiGlobalRef {
     const_name: String,
     universe_arity: usize,
 }
 
-fn phase9_family_public_name(block_name: Option<&Name>, family_name: &Name) -> Name {
+fn advanced_ai_family_public_name(block_name: Option<&Name>, family_name: &Name) -> Name {
     match block_name {
-        Some(block_name) => phase9_append_name(block_name, family_name),
+        Some(block_name) => advanced_ai_append_name(block_name, family_name),
         None => family_name.clone(),
     }
 }
 
-fn phase9_append_name(prefix: &Name, suffix: &Name) -> Name {
+fn advanced_ai_append_name(prefix: &Name, suffix: &Name) -> Name {
     let mut components = prefix.0.clone();
     components.extend(suffix.0.iter().cloned());
     Name(components)
 }
 
-fn phase9_inductive_names_collide(
-    family: &Phase9MachineInductiveFamilyProposal,
+fn advanced_ai_inductive_names_collide(
+    family: &AdvancedMachineInductiveFamilyProposal,
     family_public_name: &Name,
     constructor_public_names: &[Name],
     recursor_public_name: &Name,
@@ -8052,8 +8167,8 @@ fn phase9_inductive_names_collide(
     !public_names.insert(recursor_public_name.clone())
 }
 
-fn phase9_inductive_family_levels_are_in_scope(
-    family: &Phase9MachineInductiveFamilyProposal,
+fn advanced_ai_inductive_family_levels_are_in_scope(
+    family: &AdvancedMachineInductiveFamilyProposal,
     params: &[String],
 ) -> bool {
     family
@@ -8067,8 +8182,8 @@ fn phase9_inductive_family_levels_are_in_scope(
             .all(|constructor| expr_levels_are_in_scope(&constructor.ty, params))
 }
 
-fn phase9_telescope_contains_const_name(
-    telescope: &[Phase9MachineTelescopeBinder],
+fn advanced_ai_telescope_contains_const_name(
+    telescope: &[AdvancedMachineTelescopeBinder],
     name: &str,
 ) -> bool {
     telescope
@@ -8096,8 +8211,8 @@ fn expr_contains_const_name(expr: &Expr, needle: &str) -> bool {
     }
 }
 
-fn phase9_telescope_imported_refs_are_resolved(
-    telescope: &[Phase9MachineTelescopeBinder],
+fn advanced_ai_telescope_imported_refs_are_resolved(
+    telescope: &[AdvancedMachineTelescopeBinder],
     imports: &[VerifiedImportRef],
     allowed_local_names: &BTreeSet<String>,
 ) -> bool {
@@ -8154,10 +8269,10 @@ fn expr_imported_refs_are_resolved_with_allowed_locals(
     }
 }
 
-fn phase9_check_telescope_kernel<'a>(
+fn advanced_ai_check_telescope_kernel<'a>(
     env: &Env,
     delta: &[String],
-    telescope: impl Iterator<Item = &'a Phase9MachineTelescopeBinder>,
+    telescope: impl Iterator<Item = &'a AdvancedMachineTelescopeBinder>,
 ) -> std::result::Result<(), ()> {
     let mut ctx = Ctx::new();
     for (index, binder) in telescope.enumerate() {
@@ -8167,9 +8282,9 @@ fn phase9_check_telescope_kernel<'a>(
     Ok(())
 }
 
-fn phase9_base_inductive_decl(
-    proposal: &Phase9MachineInductiveProposal,
-    family: &Phase9MachineInductiveFamilyProposal,
+fn advanced_ai_base_inductive_decl(
+    proposal: &AdvancedMachineInductiveProposal,
+    family: &AdvancedMachineInductiveFamilyProposal,
     family_public_name: &Name,
     constructor_public_names: &[Name],
 ) -> InductiveDecl {
@@ -8201,7 +8316,7 @@ fn phase9_base_inductive_decl(
     )
 }
 
-fn phase9_inductive_type(data: &InductiveDecl) -> Expr {
+fn advanced_ai_inductive_type(data: &InductiveDecl) -> Expr {
     data.params
         .iter()
         .chain(&data.indices)
@@ -8211,19 +8326,19 @@ fn phase9_inductive_type(data: &InductiveDecl) -> Expr {
         })
 }
 
-fn phase9_check_constructor_result(
+fn advanced_ai_check_constructor_result(
     env: &Env,
     data: &InductiveDecl,
     constructor: &ConstructorDecl,
-) -> std::result::Result<(), Phase9InductiveCheckError> {
-    let (domains, result) = phase9_peel_pi_domains(&constructor.ty);
+) -> std::result::Result<(), AdvancedInductiveCheckError> {
+    let (domains, result) = advanced_ai_peel_pi_domains(&constructor.ty);
     let result = env
         .whnf(&Ctx::new(), &data.universe_params, &result)
-        .map_err(|_| Phase9InductiveCheckError::KernelRejected)?;
+        .map_err(|_| AdvancedInductiveCheckError::KernelRejected)?;
     let (head, args) = npa_kernel::expr::collect_apps(&result);
     let levels = match head {
         Expr::Const { name, levels } if name == data.name => levels,
-        _ => return Err(Phase9InductiveCheckError::TargetRefMismatch),
+        _ => return Err(AdvancedInductiveCheckError::TargetRefMismatch),
     };
     let expected_levels = data
         .universe_params
@@ -8234,56 +8349,56 @@ fn phase9_check_constructor_result(
         || args.len() != data.params.len() + data.indices.len()
         || domains.len() < data.params.len()
     {
-        return Err(Phase9InductiveCheckError::TargetRefMismatch);
+        return Err(AdvancedInductiveCheckError::TargetRefMismatch);
     }
     for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
-        let expected = phase9_bvar_for_abs(domains.len(), param_index)
-            .ok_or(Phase9InductiveCheckError::TargetRefMismatch)?;
+        let expected = advanced_ai_bvar_for_abs(domains.len(), param_index)
+            .ok_or(AdvancedInductiveCheckError::TargetRefMismatch)?;
         if arg != &expected {
-            return Err(Phase9InductiveCheckError::TargetRefMismatch);
+            return Err(AdvancedInductiveCheckError::TargetRefMismatch);
         }
     }
     Ok(())
 }
 
-fn phase9_check_constructor_positivity(
+fn advanced_ai_check_constructor_positivity(
     data: &InductiveDecl,
     constructor: &ConstructorDecl,
-) -> std::result::Result<(), Phase9InductiveCheckError> {
-    let (domains, _) = phase9_peel_pi_domains(&constructor.ty);
+) -> std::result::Result<(), AdvancedInductiveCheckError> {
+    let (domains, _) = advanced_ai_peel_pi_domains(&constructor.ty);
     for (domain_index, domain) in domains.iter().enumerate() {
         if domain_index >= data.params.len() {
-            match phase9_direct_recursive_domain_status(data, domain, domain_index)? {
-                Phase9DirectRecursiveDomain::Direct => continue,
-                Phase9DirectRecursiveDomain::BadTarget => {
-                    return Err(Phase9InductiveCheckError::TargetRefMismatch)
+            match advanced_ai_direct_recursive_domain_status(data, domain, domain_index)? {
+                AdvancedDirectRecursiveDomain::Direct => continue,
+                AdvancedDirectRecursiveDomain::BadTarget => {
+                    return Err(AdvancedInductiveCheckError::TargetRefMismatch)
                 }
-                Phase9DirectRecursiveDomain::NotRecursive => {}
+                AdvancedDirectRecursiveDomain::NotRecursive => {}
             }
         }
         if expr_contains_const_name(domain, &data.name) {
-            return Err(Phase9InductiveCheckError::UnsupportedPositivity);
+            return Err(AdvancedInductiveCheckError::UnsupportedPositivity);
         }
     }
     Ok(())
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Phase9DirectRecursiveDomain {
+enum AdvancedDirectRecursiveDomain {
     Direct,
     BadTarget,
     NotRecursive,
 }
 
-fn phase9_direct_recursive_domain_status(
+fn advanced_ai_direct_recursive_domain_status(
     data: &InductiveDecl,
     domain: &Expr,
     ctx_len: usize,
-) -> std::result::Result<Phase9DirectRecursiveDomain, Phase9InductiveCheckError> {
+) -> std::result::Result<AdvancedDirectRecursiveDomain, AdvancedInductiveCheckError> {
     let (head, args) = npa_kernel::expr::collect_apps(domain);
     let levels = match head {
         Expr::Const { name, levels } if name == data.name => levels,
-        _ => return Ok(Phase9DirectRecursiveDomain::NotRecursive),
+        _ => return Ok(AdvancedDirectRecursiveDomain::NotRecursive),
     };
     let expected_levels = data
         .universe_params
@@ -8293,13 +8408,13 @@ fn phase9_direct_recursive_domain_status(
     if !npa_kernel::level::levels_eq(&levels, &expected_levels)
         || args.len() != data.params.len() + data.indices.len()
     {
-        return Ok(Phase9DirectRecursiveDomain::BadTarget);
+        return Ok(AdvancedDirectRecursiveDomain::BadTarget);
     }
     for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
-        let expected = phase9_bvar_for_abs(ctx_len, param_index)
-            .ok_or(Phase9InductiveCheckError::TargetRefMismatch)?;
+        let expected = advanced_ai_bvar_for_abs(ctx_len, param_index)
+            .ok_or(AdvancedInductiveCheckError::TargetRefMismatch)?;
         if arg != &expected {
-            return Ok(Phase9DirectRecursiveDomain::BadTarget);
+            return Ok(AdvancedDirectRecursiveDomain::BadTarget);
         }
     }
     if args
@@ -8307,12 +8422,12 @@ fn phase9_direct_recursive_domain_status(
         .skip(data.params.len())
         .any(|arg| expr_contains_const_name(arg, &data.name))
     {
-        return Err(Phase9InductiveCheckError::UnsupportedPositivity);
+        return Err(AdvancedInductiveCheckError::UnsupportedPositivity);
     }
-    Ok(Phase9DirectRecursiveDomain::Direct)
+    Ok(AdvancedDirectRecursiveDomain::Direct)
 }
 
-fn phase9_peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
+fn advanced_ai_peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
     let mut domains = Vec::new();
     let mut current = ty.clone();
     while let Expr::Pi { ty, body, .. } = current {
@@ -8322,16 +8437,16 @@ fn phase9_peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
     (domains, current)
 }
 
-fn phase9_bvar_for_abs(ctx_len: usize, abs: usize) -> Option<Expr> {
+fn advanced_ai_bvar_for_abs(ctx_len: usize, abs: usize) -> Option<Expr> {
     if abs >= ctx_len {
         return None;
     }
     Some(Expr::bvar((ctx_len - 1 - abs) as u32))
 }
 
-fn phase9_universe_constraint_set_hash(constraints: &[Phase9UniverseConstraint]) -> Hash {
+fn advanced_ai_universe_constraint_set_hash(constraints: &[AdvancedUniverseConstraint]) -> Hash {
     let mut canonical = constraints.to_vec();
-    canonical.sort_by_key(phase9_universe_constraint_canonical_bytes);
+    canonical.sort_by_key(advanced_ai_universe_constraint_canonical_bytes);
     let mut out = Vec::new();
     encode_len_to(&mut out, canonical.len());
     for constraint in &canonical {
@@ -8340,7 +8455,7 @@ fn phase9_universe_constraint_set_hash(constraints: &[Phase9UniverseConstraint])
     hash_with_domain(UNIVERSE_CONSTRAINT_SET_HASH_TAG, &out)
 }
 
-fn phase9_universe_params_canonical_bytes(params: &[String]) -> Vec<u8> {
+fn advanced_ai_universe_params_canonical_bytes(params: &[String]) -> Vec<u8> {
     let mut out = Vec::new();
     encode_len_to(&mut out, params.len());
     for param in params {
@@ -8349,11 +8464,11 @@ fn phase9_universe_params_canonical_bytes(params: &[String]) -> Vec<u8> {
     out
 }
 
-fn phase9_core_expr_bytes_eq(lhs: &Expr, rhs: &Expr) -> bool {
+fn advanced_ai_core_expr_bytes_eq(lhs: &Expr, rhs: &Expr) -> bool {
     npa_cert::core_expr_canonical_bytes(lhs) == npa_cert::core_expr_canonical_bytes(rhs)
 }
 
-fn phase9_string_list_is_unique(values: &[String]) -> bool {
+fn advanced_ai_string_list_is_unique(values: &[String]) -> bool {
     let mut seen = BTreeSet::new();
     values.iter().all(|value| seen.insert(value))
 }
@@ -8399,13 +8514,13 @@ fn level_is_in_scope(level: &Level, params: &[String]) -> bool {
 }
 
 fn constraint_levels_are_in_scope(
-    constraint: &Phase9UniverseConstraint,
+    constraint: &AdvancedUniverseConstraint,
     params: &[String],
 ) -> bool {
     level_is_in_scope(&constraint.lhs, params) && level_is_in_scope(&constraint.rhs, params)
 }
 
-fn goal_imported_refs_are_resolved(goal: &Phase9AiGoal, imports: &[VerifiedImportRef]) -> bool {
+fn goal_imported_refs_are_resolved(goal: &AdvancedAiGoal, imports: &[VerifiedImportRef]) -> bool {
     goal.local_context.iter().all(|local| {
         expr_imported_refs_are_resolved(&local.ty, imports)
             && local
@@ -8450,10 +8565,10 @@ fn const_name_is_exported_once(name: &str, imports: &[VerifiedImportRef]) -> boo
 }
 
 fn validate_goal_kernel(
-    goal: &Phase9AiGoal,
+    goal: &AdvancedAiGoal,
     imports: &[VerifiedImportRef],
 ) -> std::result::Result<(), ()> {
-    let env = phase9_kernel_env_from_imports(imports)?;
+    let env = advanced_ai_kernel_env_from_imports(imports)?;
     let mut ctx = Ctx::new();
     for local in &goal.local_context {
         expect_sort_public(&env, &ctx, &goal.universe_params, &local.ty)?;
@@ -8469,10 +8584,10 @@ fn validate_goal_kernel(
 }
 
 fn derive_universe_constraints(
-    goal: &Phase9AiGoal,
+    goal: &AdvancedAiGoal,
     repaired_expr: &Expr,
     imports: &[VerifiedImportRef],
-) -> std::result::Result<Vec<Phase9UniverseConstraint>, ()> {
+) -> std::result::Result<Vec<AdvancedUniverseConstraint>, ()> {
     // The current kernel stores no declaration-local universe constraints, so
     // rechecking the repaired goal is the deterministic solver boundary for M2.
     let mut repaired_goal = goal.clone();
@@ -8481,7 +8596,9 @@ fn derive_universe_constraints(
     Ok(Vec::new())
 }
 
-fn phase9_kernel_env_from_imports(imports: &[VerifiedImportRef]) -> std::result::Result<Env, ()> {
+fn advanced_ai_kernel_env_from_imports(
+    imports: &[VerifiedImportRef],
+) -> std::result::Result<Env, ()> {
     let mut env = Env::new();
     for import in imports {
         for decl in import.certified_env_decls() {
@@ -8549,13 +8666,13 @@ fn expect_sort_public(
     }
 }
 
-fn resolve_phase9_global_ref(
-    global_ref: &Phase9AiGlobalRef,
+fn resolve_advanced_ai_global_ref(
+    global_ref: &AdvancedAiGlobalRef,
     imports: &[VerifiedImportRef],
-) -> Option<ResolvedPhase9GlobalRef> {
+) -> Option<ResolvedAdvancedAiGlobalRef> {
     let mut matches = Vec::new();
     for import in imports {
-        let identity = Phase9ImportIdentity::from_verified_import(import);
+        let identity = AdvancedImportIdentity::from_verified_import(import);
         if identity.module != global_ref.module
             || identity.export_hash != global_ref.export_hash
             || identity.certificate_hash != global_ref.certificate_hash
@@ -8570,7 +8687,7 @@ fn resolve_phase9_global_ref(
                 .certified_env_decls()
                 .iter()
                 .find(|decl| decl.name() == export.name.as_dotted())?;
-            matches.push(ResolvedPhase9GlobalRef {
+            matches.push(ResolvedAdvancedAiGlobalRef {
                 const_name: export.name.as_dotted(),
                 universe_arity: decl.universe_params().len(),
             });
@@ -8579,25 +8696,25 @@ fn resolve_phase9_global_ref(
     let [resolved] = matches.as_slice() else {
         return None;
     };
-    Some(ResolvedPhase9GlobalRef {
+    Some(ResolvedAdvancedAiGlobalRef {
         const_name: resolved.const_name.clone(),
         universe_arity: resolved.universe_arity,
     })
 }
 
-fn expr_at_path<'a>(expr: &'a Expr, path: &[Phase9MachineExprPathStep]) -> Option<&'a Expr> {
+fn expr_at_path<'a>(expr: &'a Expr, path: &[AdvancedMachineExprPathStep]) -> Option<&'a Expr> {
     let mut current = expr;
     for step in path {
         current = match (current, step) {
-            (Expr::App(fun, _), Phase9MachineExprPathStep::AppFun) => fun,
-            (Expr::App(_, arg), Phase9MachineExprPathStep::AppArg) => arg,
-            (Expr::Lam { ty, .. }, Phase9MachineExprPathStep::LamType) => ty,
-            (Expr::Lam { body, .. }, Phase9MachineExprPathStep::LamBody) => body,
-            (Expr::Pi { ty, .. }, Phase9MachineExprPathStep::PiDomain) => ty,
-            (Expr::Pi { body, .. }, Phase9MachineExprPathStep::PiCodomain) => body,
-            (Expr::Let { ty, .. }, Phase9MachineExprPathStep::LetType) => ty,
-            (Expr::Let { value, .. }, Phase9MachineExprPathStep::LetValue) => value,
-            (Expr::Let { body, .. }, Phase9MachineExprPathStep::LetBody) => body,
+            (Expr::App(fun, _), AdvancedMachineExprPathStep::AppFun) => fun,
+            (Expr::App(_, arg), AdvancedMachineExprPathStep::AppArg) => arg,
+            (Expr::Lam { ty, .. }, AdvancedMachineExprPathStep::LamType) => ty,
+            (Expr::Lam { body, .. }, AdvancedMachineExprPathStep::LamBody) => body,
+            (Expr::Pi { ty, .. }, AdvancedMachineExprPathStep::PiDomain) => ty,
+            (Expr::Pi { body, .. }, AdvancedMachineExprPathStep::PiCodomain) => body,
+            (Expr::Let { ty, .. }, AdvancedMachineExprPathStep::LetType) => ty,
+            (Expr::Let { value, .. }, AdvancedMachineExprPathStep::LetValue) => value,
+            (Expr::Let { body, .. }, AdvancedMachineExprPathStep::LetBody) => body,
             _ => return None,
         };
     }
@@ -8606,7 +8723,7 @@ fn expr_at_path<'a>(expr: &'a Expr, path: &[Phase9MachineExprPathStep]) -> Optio
 
 fn replace_const_levels_at_path(
     expr: &mut Expr,
-    path: &[Phase9MachineExprPathStep],
+    path: &[AdvancedMachineExprPathStep],
     explicit_level_args: Vec<Level>,
 ) -> Option<()> {
     let current = expr_at_path_mut(expr, path)?;
@@ -8619,20 +8736,20 @@ fn replace_const_levels_at_path(
 
 fn expr_at_path_mut<'a>(
     expr: &'a mut Expr,
-    path: &[Phase9MachineExprPathStep],
+    path: &[AdvancedMachineExprPathStep],
 ) -> Option<&'a mut Expr> {
     let mut current = expr;
     for step in path {
         current = match (current, step) {
-            (Expr::App(fun, _), Phase9MachineExprPathStep::AppFun) => fun,
-            (Expr::App(_, arg), Phase9MachineExprPathStep::AppArg) => arg,
-            (Expr::Lam { ty, .. }, Phase9MachineExprPathStep::LamType) => ty,
-            (Expr::Lam { body, .. }, Phase9MachineExprPathStep::LamBody) => body,
-            (Expr::Pi { ty, .. }, Phase9MachineExprPathStep::PiDomain) => ty,
-            (Expr::Pi { body, .. }, Phase9MachineExprPathStep::PiCodomain) => body,
-            (Expr::Let { ty, .. }, Phase9MachineExprPathStep::LetType) => ty,
-            (Expr::Let { value, .. }, Phase9MachineExprPathStep::LetValue) => value,
-            (Expr::Let { body, .. }, Phase9MachineExprPathStep::LetBody) => body,
+            (Expr::App(fun, _), AdvancedMachineExprPathStep::AppFun) => fun,
+            (Expr::App(_, arg), AdvancedMachineExprPathStep::AppArg) => arg,
+            (Expr::Lam { ty, .. }, AdvancedMachineExprPathStep::LamType) => ty,
+            (Expr::Lam { body, .. }, AdvancedMachineExprPathStep::LamBody) => body,
+            (Expr::Pi { ty, .. }, AdvancedMachineExprPathStep::PiDomain) => ty,
+            (Expr::Pi { body, .. }, AdvancedMachineExprPathStep::PiCodomain) => body,
+            (Expr::Let { ty, .. }, AdvancedMachineExprPathStep::LetType) => ty,
+            (Expr::Let { value, .. }, AdvancedMachineExprPathStep::LetValue) => value,
+            (Expr::Let { body, .. }, AdvancedMachineExprPathStep::LetBody) => body,
             _ => return None,
         };
     }
@@ -8641,7 +8758,7 @@ fn expr_at_path_mut<'a>(
 
 fn decode_universe_instantiation_items(
     items: &[Vec<u8>],
-) -> std::result::Result<Vec<Phase9UniverseInstantiationPatch>, DecodeError> {
+) -> std::result::Result<Vec<AdvancedUniverseInstantiationPatch>, DecodeError> {
     items
         .iter()
         .map(|item| decode_universe_instantiation_patch(item))
@@ -8650,7 +8767,7 @@ fn decode_universe_instantiation_items(
 
 fn decode_universe_constraint_hint_items(
     items: &[Vec<u8>],
-) -> std::result::Result<Vec<Phase9UniverseConstraintHint>, DecodeError> {
+) -> std::result::Result<Vec<AdvancedUniverseConstraintHint>, DecodeError> {
     items
         .iter()
         .map(|item| decode_universe_constraint_hint(item))
@@ -8658,7 +8775,7 @@ fn decode_universe_constraint_hint_items(
 }
 
 fn universe_instantiations_are_strictly_sorted(
-    instantiations: &[Phase9UniverseInstantiationPatch],
+    instantiations: &[AdvancedUniverseInstantiationPatch],
 ) -> bool {
     let mut previous: Option<Vec<u8>> = None;
     for patch in instantiations {
@@ -8671,7 +8788,7 @@ fn universe_instantiations_are_strictly_sorted(
     true
 }
 
-fn universe_instantiation_key(patch: &Phase9UniverseInstantiationPatch) -> Vec<u8> {
+fn universe_instantiation_key(patch: &AdvancedUniverseInstantiationPatch) -> Vec<u8> {
     let mut out = Vec::new();
     encode_path_steps_to(&mut out, &patch.occurrence.path);
     encode_global_ref_to(&mut out, &patch.occurrence.expected_ref)
@@ -8679,10 +8796,10 @@ fn universe_instantiation_key(patch: &Phase9UniverseInstantiationPatch) -> Vec<u
     out
 }
 
-fn universe_constraint_hints_are_strictly_sorted(hints: &[Phase9UniverseConstraintHint]) -> bool {
+fn universe_constraint_hints_are_strictly_sorted(hints: &[AdvancedUniverseConstraintHint]) -> bool {
     let mut previous: Option<Vec<u8>> = None;
     for hint in hints {
-        let key = phase9_universe_constraint_canonical_bytes(&hint.constraint);
+        let key = advanced_ai_universe_constraint_canonical_bytes(&hint.constraint);
         if previous.as_ref().is_some_and(|previous| previous >= &key) {
             return false;
         }
@@ -8691,18 +8808,20 @@ fn universe_constraint_hints_are_strictly_sorted(hints: &[Phase9UniverseConstrai
     true
 }
 
-fn phase9_universe_constraint_canonical_bytes(constraint: &Phase9UniverseConstraint) -> Vec<u8> {
+fn advanced_ai_universe_constraint_canonical_bytes(
+    constraint: &AdvancedUniverseConstraint,
+) -> Vec<u8> {
     let mut out = Vec::new();
     encode_universe_constraint_to(&mut out, constraint);
     out
 }
 
-fn universe_constraint_is_satisfiable(constraint: &Phase9UniverseConstraint) -> bool {
+fn universe_constraint_is_satisfiable(constraint: &AdvancedUniverseConstraint) -> bool {
     match constraint.relation {
-        Phase9UniverseConstraintRelation::Eq => {
+        AdvancedUniverseConstraintRelation::Eq => {
             normalized_levels_are_equal(&constraint.lhs, &constraint.rhs)
         }
-        Phase9UniverseConstraintRelation::Le => {
+        AdvancedUniverseConstraintRelation::Le => {
             level_leq_is_satisfiable(&constraint.lhs, &constraint.rhs)
         }
     }
@@ -8734,12 +8853,12 @@ fn level_leq_is_satisfiable(lhs: &Level, rhs: &Level) -> bool {
 
 fn rejected_response(
     candidate_hash: Hash,
-    error: Phase9AiValidationError,
-    feature_error: Option<Phase9AiFeatureError>,
-) -> Phase9AiEndpointResponse {
-    Phase9AiEndpointResponse::Rejected {
+    error: AdvancedAiValidationError,
+    feature_error: Option<AdvancedAiFeatureError>,
+) -> AdvancedAiEndpointResponse {
+    AdvancedAiEndpointResponse::Rejected {
         candidate_hash,
-        validation_result_hash: phase9_ai_validation_result_hash_for_rejection(
+        validation_result_hash: advanced_ai_validation_result_hash_for_rejection(
             candidate_hash,
             error,
             feature_error,
@@ -8756,9 +8875,9 @@ fn validation_result_hash(candidate_hash: Hash, payload: &[u8]) -> Hash {
     hash_with_domain(VALIDATION_RESULT_HASH_TAG, &bytes)
 }
 
-fn encode_success_payload_to(out: &mut Vec<u8>, success: &Phase9AiSuccessPayload) {
+fn encode_success_payload_to(out: &mut Vec<u8>, success: &AdvancedAiSuccessPayload) {
     match success {
-        Phase9AiSuccessPayload::AdvancedInductive {
+        AdvancedAiSuccessPayload::AdvancedInductive {
             decl_interface_hash,
             decl_certificate_hash,
         } => {
@@ -8766,7 +8885,7 @@ fn encode_success_payload_to(out: &mut Vec<u8>, success: &Phase9AiSuccessPayload
             encode_hash_to(out, decl_interface_hash);
             encode_hash_to(out, decl_certificate_hash);
         }
-        Phase9AiSuccessPayload::UniverseRepair {
+        AdvancedAiSuccessPayload::UniverseRepair {
             repaired_expr,
             constraint_set_hash,
         } => {
@@ -8774,34 +8893,34 @@ fn encode_success_payload_to(out: &mut Vec<u8>, success: &Phase9AiSuccessPayload
             encode_expr_to(out, repaired_expr);
             encode_hash_to(out, constraint_set_hash);
         }
-        Phase9AiSuccessPayload::TypeclassResolution { proof } => {
+        AdvancedAiSuccessPayload::TypeclassResolution { proof } => {
             out.push(2);
             encode_expr_to(out, proof);
         }
-        Phase9AiSuccessPayload::QuotientConstruction {
+        AdvancedAiSuccessPayload::QuotientConstruction {
             decl_certificate_hash,
         } => {
             out.push(3);
             encode_hash_to(out, decl_certificate_hash);
         }
-        Phase9AiSuccessPayload::SmtCertificate { final_proof } => {
+        AdvancedAiSuccessPayload::SmtCertificate { final_proof } => {
             out.push(4);
             encode_expr_to(out, final_proof);
         }
-        Phase9AiSuccessPayload::TheoremGraphQuery { result } => {
+        AdvancedAiSuccessPayload::TheoremGraphQuery { result } => {
             out.push(5);
             encode_theorem_graph_result_to(out, result);
         }
-        Phase9AiSuccessPayload::NaturalLanguageFormalization {
+        AdvancedAiSuccessPayload::NaturalLanguageFormalization {
             kind,
             accepted_statement_hash,
             formalization_proof_root_hash,
         } => {
             out.push(6);
             out.push(match kind {
-                Phase9FormalizationSuccessKind::CandidateStatementChecked => 0,
-                Phase9FormalizationSuccessKind::IntentRecordOnly => 1,
-                Phase9FormalizationSuccessKind::ProofBridgeChecked => 2,
+                AdvancedFormalizationSuccessKind::CandidateStatementChecked => 0,
+                AdvancedFormalizationSuccessKind::IntentRecordOnly => 1,
+                AdvancedFormalizationSuccessKind::ProofBridgeChecked => 2,
             });
             encode_option_hash_to(out, accepted_statement_hash.as_ref());
             encode_option_hash_to(out, formalization_proof_root_hash.as_ref());
@@ -8811,8 +8930,8 @@ fn encode_success_payload_to(out: &mut Vec<u8>, success: &Phase9AiSuccessPayload
 
 fn encode_candidate_envelope_to(
     out: &mut Vec<u8>,
-    envelope: &Phase9AiCandidateEnvelope,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    envelope: &AdvancedAiCandidateEnvelope,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     out.push(envelope.profile_version.tag());
     out.push(envelope.task_kind.tag());
     encode_target_to(out, &envelope.target);
@@ -8822,7 +8941,7 @@ fn encode_candidate_envelope_to(
     Ok(())
 }
 
-fn encode_target_to(out: &mut Vec<u8>, target: &Phase9AiTarget) {
+fn encode_target_to(out: &mut Vec<u8>, target: &AdvancedAiTarget) {
     encode_hash_to(out, &target.env_fingerprint);
     encode_option_hash_to(out, target.target_decl_hash.as_ref());
     encode_option_hash_to(out, target.goal_fingerprint.as_ref());
@@ -8830,8 +8949,8 @@ fn encode_target_to(out: &mut Vec<u8>, target: &Phase9AiTarget) {
 
 fn encode_import_identities_to(
     out: &mut Vec<u8>,
-    imports: &[Phase9ImportIdentity],
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    imports: &[AdvancedImportIdentity],
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_len_to(out, imports.len());
     for import in imports {
         encode_name_to(out, &import.module)?;
@@ -8841,9 +8960,9 @@ fn encode_import_identities_to(
     Ok(())
 }
 
-fn encode_options_ref_to(out: &mut Vec<u8>, options_ref: &Phase9AiOptionsRef) {
+fn encode_options_ref_to(out: &mut Vec<u8>, options_ref: &AdvancedAiOptionsRef) {
     match options_ref {
-        Phase9AiOptionsRef::Inline {
+        AdvancedAiOptionsRef::Inline {
             options_hash,
             canonical_bytes,
         } => {
@@ -8851,7 +8970,7 @@ fn encode_options_ref_to(out: &mut Vec<u8>, options_ref: &Phase9AiOptionsRef) {
             encode_hash_to(out, options_hash);
             encode_bytes_to(out, canonical_bytes);
         }
-        Phase9AiOptionsRef::Artifact {
+        AdvancedAiOptionsRef::Artifact {
             path,
             file_hash,
             options_hash,
@@ -8868,8 +8987,8 @@ fn encode_options_ref_to(out: &mut Vec<u8>, options_ref: &Phase9AiOptionsRef) {
 
 fn encode_options_to(
     out: &mut Vec<u8>,
-    options: &Phase9AiOptions,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    options: &AdvancedAiOptions,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     out.push(options.schema_version.tag());
     out.push(options.independent_checker.profile.tag());
     encode_global_ref_list_to(
@@ -8885,8 +9004,8 @@ fn encode_options_to(
 
 fn encode_global_ref_list_to(
     out: &mut Vec<u8>,
-    refs: &[Phase9AiGlobalRef],
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    refs: &[AdvancedAiGlobalRef],
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_len_to(out, refs.len());
     for global_ref in refs {
         encode_global_ref_to(out, global_ref)?;
@@ -8896,8 +9015,8 @@ fn encode_global_ref_list_to(
 
 fn encode_global_ref_to(
     out: &mut Vec<u8>,
-    global_ref: &Phase9AiGlobalRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    global_ref: &AdvancedAiGlobalRef,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_name_to(out, &global_ref.module)?;
     encode_hash_to(out, &global_ref.export_hash);
     encode_hash_to(out, &global_ref.certificate_hash);
@@ -8908,8 +9027,8 @@ fn encode_global_ref_to(
 
 fn encode_option_quotient_to(
     out: &mut Vec<u8>,
-    options: Option<&Phase9QuotientOptions>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    options: Option<&AdvancedQuotientOptions>,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match options {
         Some(options) => {
             out.push(1);
@@ -8930,8 +9049,8 @@ fn encode_option_quotient_to(
 
 fn encode_option_smt_to(
     out: &mut Vec<u8>,
-    options: Option<&Phase9SmtOptions>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    options: Option<&AdvancedSmtOptions>,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match options {
         Some(options) => {
             out.push(1);
@@ -8946,8 +9065,8 @@ fn encode_option_smt_to(
 
 fn encode_option_global_ref_to(
     out: &mut Vec<u8>,
-    global_ref: Option<&Phase9AiGlobalRef>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    global_ref: Option<&AdvancedAiGlobalRef>,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match global_ref {
         Some(global_ref) => {
             out.push(1);
@@ -8958,7 +9077,10 @@ fn encode_option_global_ref_to(
     Ok(())
 }
 
-fn encode_option_formalization_to(out: &mut Vec<u8>, options: Option<&Phase9FormalizationOptions>) {
+fn encode_option_formalization_to(
+    out: &mut Vec<u8>,
+    options: Option<&AdvancedFormalizationOptions>,
+) {
     match options {
         Some(options) => {
             out.push(1);
@@ -8971,8 +9093,8 @@ fn encode_option_formalization_to(out: &mut Vec<u8>, options: Option<&Phase9Form
 
 fn encode_inductive_proposal_to(
     out: &mut Vec<u8>,
-    proposal: &Phase9MachineInductiveProposal,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    proposal: &AdvancedMachineInductiveProposal,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_option_name_to(out, proposal.block_name.as_ref())?;
     encode_option_hash_to(out, proposal.expected_decl_hash.as_ref());
     encode_len_to(out, proposal.universe_params.len());
@@ -8989,7 +9111,7 @@ fn encode_inductive_proposal_to(
 fn encode_option_name_to(
     out: &mut Vec<u8>,
     name: Option<&Name>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match name {
         Some(name) => {
             out.push(1);
@@ -9002,8 +9124,8 @@ fn encode_option_name_to(
 
 fn encode_inductive_family_to(
     out: &mut Vec<u8>,
-    family: &Phase9MachineInductiveFamilyProposal,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    family: &AdvancedMachineInductiveFamilyProposal,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_name_to(out, &family.name)?;
     encode_telescope_to(out, &family.params);
     encode_telescope_to(out, &family.indices);
@@ -9016,7 +9138,7 @@ fn encode_inductive_family_to(
     Ok(())
 }
 
-fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[Phase9MachineTelescopeBinder]) {
+fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[AdvancedMachineTelescopeBinder]) {
     encode_len_to(out, telescope.len());
     for binder in telescope {
         encode_expr_to(out, &binder.ty);
@@ -9025,8 +9147,8 @@ fn encode_telescope_to(out: &mut Vec<u8>, telescope: &[Phase9MachineTelescopeBin
 
 fn encode_quotient_candidate_to(
     out: &mut Vec<u8>,
-    candidate: &Phase9MachineQuotientConstructionCandidate,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    candidate: &AdvancedMachineQuotientConstructionCandidate,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_option_hash_to(out, candidate.expected_decl_hash.as_ref());
     encode_name_to(out, &candidate.decl_name)?;
     encode_len_to(out, candidate.universe_params.len());
@@ -9047,8 +9169,8 @@ fn encode_quotient_candidate_to(
 
 fn encode_quotient_operation_to(
     out: &mut Vec<u8>,
-    operation: &Phase9MachineQuotientOperationCandidate,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    operation: &AdvancedMachineQuotientOperationCandidate,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_name_to(out, &operation.name)?;
     encode_expr_to(out, &operation.raw_function);
     encode_expr_to(out, &operation.compatibility_proof);
@@ -9057,8 +9179,8 @@ fn encode_quotient_operation_to(
 
 fn encode_smt_candidate_to(
     out: &mut Vec<u8>,
-    candidate: &Phase9MachineSmtCertificateCandidate,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_goal_to(out, &candidate.goal)?;
     out.push(candidate.logic.tag());
     encode_smt_problem_ref_to(out, &candidate.encoded_problem);
@@ -9069,9 +9191,9 @@ fn encode_smt_candidate_to(
     Ok(())
 }
 
-fn encode_smt_problem_ref_to(out: &mut Vec<u8>, problem: &Phase9MachineSmtProblemRef) {
+fn encode_smt_problem_ref_to(out: &mut Vec<u8>, problem: &AdvancedMachineSmtProblemRef) {
     match problem {
-        Phase9MachineSmtProblemRef::Inline {
+        AdvancedMachineSmtProblemRef::Inline {
             problem_hash,
             encoding_hash,
             canonical_bytes,
@@ -9081,7 +9203,7 @@ fn encode_smt_problem_ref_to(out: &mut Vec<u8>, problem: &Phase9MachineSmtProble
             encode_hash_to(out, encoding_hash);
             encode_bytes_to(out, canonical_bytes);
         }
-        Phase9MachineSmtProblemRef::Artifact {
+        AdvancedMachineSmtProblemRef::Artifact {
             path,
             file_hash,
             problem_hash,
@@ -9098,9 +9220,9 @@ fn encode_smt_problem_ref_to(out: &mut Vec<u8>, problem: &Phase9MachineSmtProble
     }
 }
 
-fn encode_smt_proof_payload_ref_to(out: &mut Vec<u8>, payload: &Phase9MachineSmtProofPayloadRef) {
+fn encode_smt_proof_payload_ref_to(out: &mut Vec<u8>, payload: &AdvancedMachineSmtProofPayloadRef) {
     match payload {
-        Phase9MachineSmtProofPayloadRef::Inline {
+        AdvancedMachineSmtProofPayloadRef::Inline {
             payload_hash,
             canonical_bytes,
         } => {
@@ -9108,7 +9230,7 @@ fn encode_smt_proof_payload_ref_to(out: &mut Vec<u8>, payload: &Phase9MachineSmt
             encode_hash_to(out, payload_hash);
             encode_bytes_to(out, canonical_bytes);
         }
-        Phase9MachineSmtProofPayloadRef::Artifact {
+        AdvancedMachineSmtProofPayloadRef::Artifact {
             path,
             file_hash,
             payload_hash,
@@ -9125,8 +9247,8 @@ fn encode_smt_proof_payload_ref_to(out: &mut Vec<u8>, payload: &Phase9MachineSmt
 
 fn encode_smt_encoded_problem_to(
     out: &mut Vec<u8>,
-    problem: &Phase9MachineSmtEncodedProblem,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     out.push(problem.encoder_version.tag());
     encode_hash_to(out, &problem.goal_fingerprint);
     out.push(problem.logic.tag());
@@ -9140,8 +9262,8 @@ fn encode_smt_encoded_problem_to(
 
 fn encode_smt_command_to(
     out: &mut Vec<u8>,
-    command: &Phase9SmtEncodedCommand,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    command: &AdvancedSmtEncodedCommand,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     out.push(command.phase.tag());
     encode_hash_to(out, &command.command_id);
     encode_smt_command_payload_to(out, &command.payload)?;
@@ -9150,15 +9272,15 @@ fn encode_smt_command_to(
 
 fn encode_smt_command_payload_to(
     out: &mut Vec<u8>,
-    payload: &Phase9SmtCommandPayload,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    payload: &AdvancedSmtCommandPayload,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match payload {
-        Phase9SmtCommandPayload::SortDecl { symbol, arity } => {
+        AdvancedSmtCommandPayload::SortDecl { symbol, arity } => {
             out.push(0);
             encode_smt_symbol_to(out, symbol);
             encode_u32_to(out, *arity);
         }
-        Phase9SmtCommandPayload::FunctionDecl {
+        AdvancedSmtCommandPayload::FunctionDecl {
             symbol,
             args,
             result,
@@ -9171,7 +9293,7 @@ fn encode_smt_command_payload_to(
             }
             encode_smt_sort_expr_to(out, result);
         }
-        Phase9SmtCommandPayload::DatatypeDecl {
+        AdvancedSmtCommandPayload::DatatypeDecl {
             symbol,
             constructors,
         } => {
@@ -9182,7 +9304,7 @@ fn encode_smt_command_payload_to(
                 encode_smt_datatype_constructor_to(out, constructor);
             }
         }
-        Phase9SmtCommandPayload::ContextAssumption {
+        AdvancedSmtCommandPayload::ContextAssumption {
             source_local_index,
             core_expr,
             encoded_expr,
@@ -9192,7 +9314,7 @@ fn encode_smt_command_payload_to(
             encode_expr_to(out, core_expr);
             encode_smt_expr_to(out, encoded_expr);
         }
-        Phase9SmtCommandPayload::TargetAssertion {
+        AdvancedSmtCommandPayload::TargetAssertion {
             core_expr,
             encoded_expr,
         } => {
@@ -9200,24 +9322,24 @@ fn encode_smt_command_payload_to(
             encode_expr_to(out, core_expr);
             encode_smt_expr_to(out, encoded_expr);
         }
-        Phase9SmtCommandPayload::FinalCheck => out.push(5),
+        AdvancedSmtCommandPayload::FinalCheck => out.push(5),
     }
     Ok(())
 }
 
-fn encode_smt_symbol_to(out: &mut Vec<u8>, symbol: &Phase9SmtSymbol) {
+fn encode_smt_symbol_to(out: &mut Vec<u8>, symbol: &AdvancedSmtSymbol) {
     encode_bytes_to(out, &symbol.ascii);
 }
 
-fn encode_smt_sort_expr_to(out: &mut Vec<u8>, sort: &Phase9SmtSortExpr) {
+fn encode_smt_sort_expr_to(out: &mut Vec<u8>, sort: &AdvancedSmtSortExpr) {
     match sort {
-        Phase9SmtSortExpr::Bool => out.push(0),
-        Phase9SmtSortExpr::Int => out.push(1),
-        Phase9SmtSortExpr::BitVec { width } => {
+        AdvancedSmtSortExpr::Bool => out.push(0),
+        AdvancedSmtSortExpr::Int => out.push(1),
+        AdvancedSmtSortExpr::BitVec { width } => {
             out.push(2);
             encode_u32_to(out, *width);
         }
-        Phase9SmtSortExpr::User { symbol, args } => {
+        AdvancedSmtSortExpr::User { symbol, args } => {
             out.push(3);
             encode_smt_symbol_to(out, symbol);
             encode_len_to(out, args.len());
@@ -9230,7 +9352,7 @@ fn encode_smt_sort_expr_to(out: &mut Vec<u8>, sort: &Phase9SmtSortExpr) {
 
 fn encode_smt_datatype_constructor_to(
     out: &mut Vec<u8>,
-    constructor: &Phase9SmtDatatypeConstructor,
+    constructor: &AdvancedSmtDatatypeConstructor,
 ) {
     encode_smt_symbol_to(out, &constructor.constructor);
     encode_len_to(out, constructor.selectors.len());
@@ -9240,27 +9362,27 @@ fn encode_smt_datatype_constructor_to(
     }
 }
 
-fn encode_smt_expr_to(out: &mut Vec<u8>, expr: &Phase9SmtExpr) {
+fn encode_smt_expr_to(out: &mut Vec<u8>, expr: &AdvancedSmtExpr) {
     match expr {
-        Phase9SmtExpr::Var { symbol, sort } => {
+        AdvancedSmtExpr::Var { symbol, sort } => {
             out.push(0);
             encode_smt_symbol_to(out, symbol);
             encode_smt_sort_expr_to(out, sort);
         }
-        Phase9SmtExpr::BoolLit(value) => {
+        AdvancedSmtExpr::BoolLit(value) => {
             out.push(1);
             out.push(u8::from(*value));
         }
-        Phase9SmtExpr::IntLit(value) => {
+        AdvancedSmtExpr::IntLit(value) => {
             out.push(2);
             encode_i128_to(out, *value);
         }
-        Phase9SmtExpr::BitVecLit { width, value } => {
+        AdvancedSmtExpr::BitVecLit { width, value } => {
             out.push(3);
             encode_u32_to(out, *width);
             encode_bytes_to(out, value);
         }
-        Phase9SmtExpr::App {
+        AdvancedSmtExpr::App {
             symbol,
             args,
             result_sort,
@@ -9273,7 +9395,7 @@ fn encode_smt_expr_to(out: &mut Vec<u8>, expr: &Phase9SmtExpr) {
             }
             encode_smt_sort_expr_to(out, result_sort);
         }
-        Phase9SmtExpr::BuiltinApp {
+        AdvancedSmtExpr::BuiltinApp {
             op,
             args,
             result_sort,
@@ -9286,35 +9408,35 @@ fn encode_smt_expr_to(out: &mut Vec<u8>, expr: &Phase9SmtExpr) {
             }
             encode_smt_sort_expr_to(out, result_sort);
         }
-        Phase9SmtExpr::Not(inner) => {
+        AdvancedSmtExpr::Not(inner) => {
             out.push(6);
             encode_smt_expr_to(out, inner);
         }
-        Phase9SmtExpr::And(args) => {
+        AdvancedSmtExpr::And(args) => {
             out.push(7);
             encode_len_to(out, args.len());
             for arg in args {
                 encode_smt_expr_to(out, arg);
             }
         }
-        Phase9SmtExpr::Or(args) => {
+        AdvancedSmtExpr::Or(args) => {
             out.push(8);
             encode_len_to(out, args.len());
             for arg in args {
                 encode_smt_expr_to(out, arg);
             }
         }
-        Phase9SmtExpr::Eq(lhs, rhs) => {
+        AdvancedSmtExpr::Eq(lhs, rhs) => {
             out.push(9);
             encode_smt_expr_to(out, lhs);
             encode_smt_expr_to(out, rhs);
         }
-        Phase9SmtExpr::Imp(lhs, rhs) => {
+        AdvancedSmtExpr::Imp(lhs, rhs) => {
             out.push(10);
             encode_smt_expr_to(out, lhs);
             encode_smt_expr_to(out, rhs);
         }
-        Phase9SmtExpr::Ite {
+        AdvancedSmtExpr::Ite {
             cond,
             then_expr,
             else_expr,
@@ -9327,9 +9449,9 @@ fn encode_smt_expr_to(out: &mut Vec<u8>, expr: &Phase9SmtExpr) {
     }
 }
 
-fn encode_smt_builtin_op_to(out: &mut Vec<u8>, op: Phase9SmtBuiltinOp) {
+fn encode_smt_builtin_op_to(out: &mut Vec<u8>, op: AdvancedSmtBuiltinOp) {
     out.push(op.tag());
-    if let Phase9SmtBuiltinOp::BvExtract { high, low } = op {
+    if let AdvancedSmtBuiltinOp::BvExtract { high, low } = op {
         encode_u32_to(out, high);
         encode_u32_to(out, low);
     }
@@ -9337,8 +9459,8 @@ fn encode_smt_builtin_op_to(out: &mut Vec<u8>, op: Phase9SmtBuiltinOp) {
 
 fn encode_smt_proof_node_table_to(
     out: &mut Vec<u8>,
-    table: &Phase9SmtProofNodeTable,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    table: &AdvancedSmtProofNodeTable,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     out.push(table.certificate_format.tag());
     encode_len_to(out, table.nodes.len());
     for node in &table.nodes {
@@ -9347,7 +9469,7 @@ fn encode_smt_proof_node_table_to(
     Ok(())
 }
 
-fn encode_smt_proof_node_to(out: &mut Vec<u8>, node: &Phase9SmtProofNode) {
+fn encode_smt_proof_node_to(out: &mut Vec<u8>, node: &AdvancedSmtProofNode) {
     encode_u32_to(out, node.node_id);
     encode_hash_to(out, &node.rule_fingerprint);
     encode_len_to(out, node.premises.len());
@@ -9357,7 +9479,10 @@ fn encode_smt_proof_node_to(out: &mut Vec<u8>, node: &Phase9SmtProofNode) {
     encode_smt_conclusion_encoding_to(out, &node.conclusion_encoding);
 }
 
-fn encode_smt_conclusion_encoding_to(out: &mut Vec<u8>, conclusion: &Phase9SmtConclusionEncoding) {
+fn encode_smt_conclusion_encoding_to(
+    out: &mut Vec<u8>,
+    conclusion: &AdvancedSmtConclusionEncoding,
+) {
     out.push(conclusion.encoder_version.tag());
     out.push(conclusion.logic.tag());
     out.push(conclusion.command_profile.tag());
@@ -9367,8 +9492,8 @@ fn encode_smt_conclusion_encoding_to(out: &mut Vec<u8>, conclusion: &Phase9SmtCo
 
 fn encode_smt_reconstruction_plan_to(
     out: &mut Vec<u8>,
-    plan: &Phase9MachineSmtReconstructionPlan,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    plan: &AdvancedMachineSmtReconstructionPlan,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_global_ref_list_to(out, &plan.imported_theory_refs)?;
     encode_len_to(out, plan.steps.len());
     for step in &plan.steps {
@@ -9381,8 +9506,8 @@ fn encode_smt_reconstruction_plan_to(
 
 fn encode_smt_reconstruction_step_to(
     out: &mut Vec<u8>,
-    step: &Phase9MachineSmtReconstructionStep,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    step: &AdvancedMachineSmtReconstructionStep,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_u32_to(out, step.step_id);
     encode_smt_reconstruction_rule_to(out, &step.rule)?;
     encode_len_to(out, step.payload_bindings.len());
@@ -9402,10 +9527,10 @@ fn encode_smt_reconstruction_step_to(
 
 fn encode_smt_reconstruction_rule_to(
     out: &mut Vec<u8>,
-    rule: &Phase9SmtReconstructionRule,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    rule: &AdvancedSmtReconstructionRule,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match rule {
-        Phase9SmtReconstructionRule::PayloadNode {
+        AdvancedSmtReconstructionRule::PayloadNode {
             certificate_format,
             rule_fingerprint,
         } => {
@@ -9413,7 +9538,7 @@ fn encode_smt_reconstruction_rule_to(
             out.push(certificate_format.tag());
             encode_hash_to(out, rule_fingerprint);
         }
-        Phase9SmtReconstructionRule::LocalBookkeeping { kind } => {
+        AdvancedSmtReconstructionRule::LocalBookkeeping { kind } => {
             out.push(1);
             encode_smt_local_bookkeeping_rule_to(out, kind)?;
         }
@@ -9423,17 +9548,17 @@ fn encode_smt_reconstruction_rule_to(
 
 fn encode_smt_local_bookkeeping_rule_to(
     out: &mut Vec<u8>,
-    rule: &Phase9SmtLocalBookkeepingRule,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    rule: &AdvancedSmtLocalBookkeepingRule,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match rule {
-        Phase9SmtLocalBookkeepingRule::ReorderPremises { permutation } => {
+        AdvancedSmtLocalBookkeepingRule::ReorderPremises { permutation } => {
             out.push(0);
             encode_len_to(out, permutation.len());
             for index in permutation {
                 encode_u32_to(out, *index);
             }
         }
-        Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+        AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma {
             lemma,
             level_args,
             term_args,
@@ -9449,7 +9574,7 @@ fn encode_smt_local_bookkeeping_rule_to(
                 encode_expr_to(out, term);
             }
         }
-        Phase9SmtLocalBookkeepingRule::ComposeProof {
+        AdvancedSmtLocalBookkeepingRule::ComposeProof {
             combinator,
             level_args,
             term_args,
@@ -9469,17 +9594,17 @@ fn encode_smt_local_bookkeeping_rule_to(
     Ok(())
 }
 
-fn phase9_smt_command_id_source_key(
-    payload: &Phase9SmtCommandPayload,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+fn advanced_ai_smt_command_id_source_key(
+    payload: &AdvancedSmtCommandPayload,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     match payload {
-        Phase9SmtCommandPayload::SortDecl { symbol, .. }
-        | Phase9SmtCommandPayload::DatatypeDecl { symbol, .. }
-        | Phase9SmtCommandPayload::FunctionDecl { symbol, .. } => {
+        AdvancedSmtCommandPayload::SortDecl { symbol, .. }
+        | AdvancedSmtCommandPayload::DatatypeDecl { symbol, .. }
+        | AdvancedSmtCommandPayload::FunctionDecl { symbol, .. } => {
             encode_smt_symbol_to(&mut out, symbol);
         }
-        Phase9SmtCommandPayload::ContextAssumption {
+        AdvancedSmtCommandPayload::ContextAssumption {
             source_local_index,
             core_expr,
             ..
@@ -9487,15 +9612,16 @@ fn phase9_smt_command_id_source_key(
             encode_u32_to(&mut out, *source_local_index);
             encode_expr_to(&mut out, core_expr);
         }
-        Phase9SmtCommandPayload::TargetAssertion { .. } | Phase9SmtCommandPayload::FinalCheck => {}
+        AdvancedSmtCommandPayload::TargetAssertion { .. }
+        | AdvancedSmtCommandPayload::FinalCheck => {}
     }
     Ok(out)
 }
 
 fn encode_typeclass_resolution_plan_to(
     out: &mut Vec<u8>,
-    plan: &Phase9MachineTypeclassResolutionPlan,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    plan: &AdvancedMachineTypeclassResolutionPlan,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_goal_to(out, &plan.goal)?;
     encode_len_to(out, plan.ordered_candidates.len());
     for candidate in &plan.ordered_candidates {
@@ -9508,8 +9634,8 @@ fn encode_typeclass_resolution_plan_to(
 
 fn encode_instance_candidate_to(
     out: &mut Vec<u8>,
-    candidate: &Phase9MachineInstanceCandidateRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    candidate: &AdvancedMachineInstanceCandidateRef,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_instance_target_to(out, &candidate.target)?;
     encode_option_i32_to(out, candidate.priority_hint);
     Ok(())
@@ -9517,10 +9643,10 @@ fn encode_instance_candidate_to(
 
 fn encode_instance_target_to(
     out: &mut Vec<u8>,
-    target: &Phase9MachineInstanceTargetRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    target: &AdvancedMachineInstanceTargetRef,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match target {
-        Phase9MachineInstanceTargetRef::Imported { global_ref } => {
+        AdvancedMachineInstanceTargetRef::Imported { global_ref } => {
             out.push(0);
             encode_global_ref_to(out, global_ref)?;
         }
@@ -9528,9 +9654,9 @@ fn encode_instance_target_to(
     Ok(())
 }
 
-fn phase9_instance_target_canonical_bytes(
-    target: &Phase9MachineInstanceTargetRef,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+fn advanced_ai_instance_target_canonical_bytes(
+    target: &AdvancedMachineInstanceTargetRef,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_instance_target_to(&mut out, target)?;
     Ok(out)
@@ -9538,8 +9664,8 @@ fn phase9_instance_target_canonical_bytes(
 
 fn encode_theorem_graph_query_to(
     out: &mut Vec<u8>,
-    query: &Phase9MachineTheoremGraphQuery,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    query: &AdvancedMachineTheoremGraphQuery,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_hash_to(out, &query.env_fingerprint);
     encode_hash_to(out, &query.goal_fingerprint);
     encode_goal_to(out, &query.goal)?;
@@ -9552,12 +9678,12 @@ fn encode_theorem_graph_query_to(
 
 fn encode_theorem_graph_snapshot_ref_to(
     out: &mut Vec<u8>,
-    snapshot: &Phase9MachineTheoremGraphSnapshotRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    snapshot: &AdvancedMachineTheoremGraphSnapshotRef,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_hash_to(out, &snapshot.source_release_hash);
     out.push(snapshot.extractor_version.tag());
     match &snapshot.source {
-        Phase9MachineTheoremGraphSnapshotSource::Inline {
+        AdvancedMachineTheoremGraphSnapshotSource::Inline {
             graph_snapshot_hash,
             canonical_bytes,
         } => {
@@ -9565,7 +9691,7 @@ fn encode_theorem_graph_snapshot_ref_to(
             encode_hash_to(out, graph_snapshot_hash);
             encode_bytes_to(out, canonical_bytes);
         }
-        Phase9MachineTheoremGraphSnapshotSource::Artifact {
+        AdvancedMachineTheoremGraphSnapshotSource::Artifact {
             path,
             file_hash,
             graph_snapshot_hash,
@@ -9583,10 +9709,10 @@ fn encode_theorem_graph_snapshot_ref_to(
 
 fn encode_theorem_graph_query_features_ref_to(
     out: &mut Vec<u8>,
-    features: &Phase9MachineTheoremGraphQueryFeaturesRef,
+    features: &AdvancedMachineTheoremGraphQueryFeaturesRef,
 ) {
     match features {
-        Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+        AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
             query_features_hash,
             canonical_bytes,
         } => {
@@ -9594,7 +9720,7 @@ fn encode_theorem_graph_query_features_ref_to(
             encode_hash_to(out, query_features_hash);
             encode_bytes_to(out, canonical_bytes);
         }
-        Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+        AdvancedMachineTheoremGraphQueryFeaturesRef::Artifact {
             path,
             file_hash,
             query_features_hash,
@@ -9611,8 +9737,8 @@ fn encode_theorem_graph_query_features_ref_to(
 
 fn encode_theorem_graph_snapshot_to(
     out: &mut Vec<u8>,
-    snapshot: &Phase9MachineTheoremGraphSnapshot,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    snapshot: &AdvancedMachineTheoremGraphSnapshot,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_hash_to(out, &snapshot.source_release_hash);
     out.push(snapshot.extractor_version.tag());
     encode_len_to(out, snapshot.nodes.len());
@@ -9628,8 +9754,8 @@ fn encode_theorem_graph_snapshot_to(
 
 fn encode_theorem_graph_query_features_to(
     out: &mut Vec<u8>,
-    features: &Phase9MachineTheoremGraphQueryFeatures,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    features: &AdvancedMachineTheoremGraphQueryFeatures,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_hash_to(out, &features.env_fingerprint);
     encode_hash_to(out, &features.goal_fingerprint);
     out.push(features.feature_schema_version.tag());
@@ -9640,7 +9766,7 @@ fn encode_theorem_graph_query_features_to(
     Ok(())
 }
 
-fn encode_theorem_graph_result_to(out: &mut Vec<u8>, result: &Phase9MachineTheoremGraphResult) {
+fn encode_theorem_graph_result_to(out: &mut Vec<u8>, result: &AdvancedMachineTheoremGraphResult) {
     encode_len_to(out, result.entries.len());
     for entry in &result.entries {
         encode_theorem_graph_node_to(out, &entry.node)
@@ -9651,8 +9777,8 @@ fn encode_theorem_graph_result_to(out: &mut Vec<u8>, result: &Phase9MachineTheor
 
 fn encode_theorem_graph_edge_to(
     out: &mut Vec<u8>,
-    edge: &Phase9MachineTheoremGraphEdge,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    edge: &AdvancedMachineTheoremGraphEdge,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_theorem_graph_node_to(out, &edge.from)?;
     encode_theorem_graph_node_to(out, &edge.to)?;
     out.push(edge.kind.tag());
@@ -9661,8 +9787,8 @@ fn encode_theorem_graph_edge_to(
 
 fn encode_theorem_graph_node_to(
     out: &mut Vec<u8>,
-    node: &Phase9MachineTheoremGraphNodeRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    node: &AdvancedMachineTheoremGraphNodeRef,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_name_to(out, &node.module)?;
     encode_name_to(out, &node.name)?;
     encode_hash_to(out, &node.export_hash);
@@ -9673,27 +9799,30 @@ fn encode_theorem_graph_node_to(
     Ok(())
 }
 
-fn phase9_theorem_graph_node_canonical_bytes(
-    node: &Phase9MachineTheoremGraphNodeRef,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
+fn advanced_ai_theorem_graph_node_canonical_bytes(
+    node: &AdvancedMachineTheoremGraphNodeRef,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
     let mut out = Vec::new();
     encode_theorem_graph_node_to(&mut out, node)?;
     Ok(out)
 }
 
-fn encode_theorem_graph_feature_to(out: &mut Vec<u8>, feature: &Phase9MachineTheoremGraphFeature) {
+fn encode_theorem_graph_feature_to(
+    out: &mut Vec<u8>,
+    feature: &AdvancedMachineTheoremGraphFeature,
+) {
     encode_bytes_to(out, &feature.key.namespace_ascii);
     encode_bytes_to(out, &feature.key.name_ascii);
     match &feature.value {
-        Phase9TheoremGraphFeatureValue::Bool(value) => {
+        AdvancedTheoremGraphFeatureValue::Bool(value) => {
             out.push(0);
             out.push(u8::from(*value));
         }
-        Phase9TheoremGraphFeatureValue::I64(value) => {
+        AdvancedTheoremGraphFeatureValue::I64(value) => {
             out.push(1);
             encode_i64_to(out, *value);
         }
-        Phase9TheoremGraphFeatureValue::Hash(value) => {
+        AdvancedTheoremGraphFeatureValue::Hash(value) => {
             out.push(2);
             encode_hash_to(out, value);
         }
@@ -9702,8 +9831,8 @@ fn encode_theorem_graph_feature_to(out: &mut Vec<u8>, feature: &Phase9MachineThe
 
 fn encode_universe_repair_candidate_to(
     out: &mut Vec<u8>,
-    candidate: &Phase9UniverseRepairCandidate,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    candidate: &AdvancedUniverseRepairCandidate,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_option_goal_to(out, candidate.goal.as_ref())?;
     encode_expr_to(out, &candidate.target_expr);
     encode_len_to(out, candidate.instantiations.len());
@@ -9724,8 +9853,8 @@ fn encode_universe_repair_candidate_to(
 
 fn encode_universe_repair_candidate_outer_to(
     out: &mut Vec<u8>,
-    candidate: &Phase9UniverseRepairCandidateOuter,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    candidate: &AdvancedUniverseRepairCandidateOuter,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_option_goal_to(out, candidate.goal.as_ref())?;
     encode_expr_to(out, &candidate.target_expr);
     encode_raw_bytes_list_to(out, &candidate.instantiation_items);
@@ -9736,8 +9865,8 @@ fn encode_universe_repair_candidate_outer_to(
 
 fn encode_option_goal_to(
     out: &mut Vec<u8>,
-    goal: Option<&Phase9AiGoal>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    goal: Option<&AdvancedAiGoal>,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match goal {
         Some(goal) => {
             out.push(1);
@@ -9750,8 +9879,8 @@ fn encode_option_goal_to(
 
 fn encode_goal_to(
     out: &mut Vec<u8>,
-    goal: &Phase9AiGoal,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    goal: &AdvancedAiGoal,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_len_to(out, goal.universe_params.len());
     for param in &goal.universe_params {
         encode_string_to(out, param);
@@ -9778,8 +9907,8 @@ fn encode_machine_local_decl_to(out: &mut Vec<u8>, local: &MachineLocalDecl) {
 
 fn encode_formalization_payload_to(
     out: &mut Vec<u8>,
-    payload: &Phase9MachineFormalizationCheckPayload,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    payload: &AdvancedMachineFormalizationCheckPayload,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_formalization_candidate_to(out, &payload.candidate)?;
     encode_option_formalization_intent_record_to(out, payload.intent_record.as_ref())?;
     Ok(())
@@ -9787,8 +9916,8 @@ fn encode_formalization_payload_to(
 
 fn encode_formalization_candidate_to(
     out: &mut Vec<u8>,
-    candidate: &Phase9MachineFormalizationCandidate,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    candidate: &AdvancedMachineFormalizationCandidate,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_formalization_source_document_ref_to(out, &candidate.source_document);
     encode_formalization_claim_span_to(out, &candidate.claim_span);
     encode_machine_surface_term_to(out, &candidate.statement);
@@ -9799,13 +9928,15 @@ fn encode_formalization_candidate_to(
     Ok(())
 }
 
-fn phase9_machine_surface_term_canonical_bytes(statement: &Phase9MachineSurfaceTerm) -> Vec<u8> {
+fn advanced_ai_machine_surface_term_canonical_bytes(
+    statement: &AdvancedMachineSurfaceTerm,
+) -> Vec<u8> {
     let mut out = Vec::new();
     encode_machine_surface_term_to(&mut out, statement);
     out
 }
 
-fn encode_machine_surface_term_to(out: &mut Vec<u8>, statement: &Phase9MachineSurfaceTerm) {
+fn encode_machine_surface_term_to(out: &mut Vec<u8>, statement: &AdvancedMachineSurfaceTerm) {
     encode_len_to(out, statement.universe_params.len());
     for param in &statement.universe_params {
         encode_string_to(out, param);
@@ -9815,10 +9946,10 @@ fn encode_machine_surface_term_to(out: &mut Vec<u8>, statement: &Phase9MachineSu
 
 fn encode_formalization_source_document_ref_to(
     out: &mut Vec<u8>,
-    source: &Phase9MachineFormalizationSourceDocumentRef,
+    source: &AdvancedMachineFormalizationSourceDocumentRef,
 ) {
     match source {
-        Phase9MachineFormalizationSourceDocumentRef::Inline {
+        AdvancedMachineFormalizationSourceDocumentRef::Inline {
             source_document_hash,
             raw_utf8_bytes,
         } => {
@@ -9826,7 +9957,7 @@ fn encode_formalization_source_document_ref_to(
             encode_hash_to(out, source_document_hash);
             encode_bytes_to(out, raw_utf8_bytes);
         }
-        Phase9MachineFormalizationSourceDocumentRef::Artifact {
+        AdvancedMachineFormalizationSourceDocumentRef::Artifact {
             path,
             file_hash,
             source_document_hash,
@@ -9843,7 +9974,7 @@ fn encode_formalization_source_document_ref_to(
 
 fn encode_formalization_claim_span_to(
     out: &mut Vec<u8>,
-    span: &Phase9MachineFormalizationClaimSpan,
+    span: &AdvancedMachineFormalizationClaimSpan,
 ) {
     encode_u64_to(out, span.start_byte);
     encode_u64_to(out, span.end_byte);
@@ -9852,13 +9983,13 @@ fn encode_formalization_claim_span_to(
 
 fn encode_option_formalization_proof_candidate_to(
     out: &mut Vec<u8>,
-    proof: Option<&Phase9MachineFormalizationProofCandidate>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    proof: Option<&AdvancedMachineFormalizationProofCandidate>,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match proof {
         Some(proof) => {
             out.push(1);
             encode_hash_to(out, &proof.candidate_statement_hash);
-            encode_phase9_tactic_candidate_to(out, &proof.tactic)?;
+            encode_advanced_ai_tactic_candidate_to(out, &proof.tactic)?;
         }
         None => out.push(0),
     }
@@ -9867,8 +9998,8 @@ fn encode_option_formalization_proof_candidate_to(
 
 fn encode_option_formalization_intent_record_to(
     out: &mut Vec<u8>,
-    intent_record: Option<&Phase9FormalizationIntentRecord>,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    intent_record: Option<&AdvancedFormalizationIntentRecord>,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match intent_record {
         Some(intent_record) => {
             out.push(1);
@@ -9884,11 +10015,11 @@ fn encode_option_formalization_intent_record_to(
 
 fn encode_formalization_intent_status_to(
     out: &mut Vec<u8>,
-    status: &Phase9FormalizationIntentStatus,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    status: &AdvancedFormalizationIntentStatus,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match status {
-        Phase9FormalizationIntentStatus::Unreviewed => out.push(0),
-        Phase9FormalizationIntentStatus::Reviewed {
+        AdvancedFormalizationIntentStatus::Unreviewed => out.push(0),
+        AdvancedFormalizationIntentStatus::Reviewed {
             reviewer,
             accepted_statement_hash,
         } => {
@@ -9896,7 +10027,7 @@ fn encode_formalization_intent_status_to(
             encode_reviewer_id_to(out, reviewer);
             encode_hash_to(out, accepted_statement_hash);
         }
-        Phase9FormalizationIntentStatus::Rejected {
+        AdvancedFormalizationIntentStatus::Rejected {
             reviewer,
             rejection_reason,
             rejection_reason_hash,
@@ -9910,13 +10041,13 @@ fn encode_formalization_intent_status_to(
     Ok(())
 }
 
-fn encode_reviewer_id_to(out: &mut Vec<u8>, reviewer: &Phase9ReviewerId) {
+fn encode_reviewer_id_to(out: &mut Vec<u8>, reviewer: &AdvancedReviewerId) {
     match reviewer {
-        Phase9ReviewerId::Human { stable_id_ascii } => {
+        AdvancedReviewerId::Human { stable_id_ascii } => {
             out.push(0);
             encode_bytes_to(out, stable_id_ascii);
         }
-        Phase9ReviewerId::System {
+        AdvancedReviewerId::System {
             system_id_ascii,
             actor_id_ascii,
         } => {
@@ -9929,10 +10060,10 @@ fn encode_reviewer_id_to(out: &mut Vec<u8>, reviewer: &Phase9ReviewerId) {
 
 fn encode_formalization_rejection_reason_ref_to(
     out: &mut Vec<u8>,
-    reason: &Phase9MachineFormalizationRejectionReasonRef,
+    reason: &AdvancedMachineFormalizationRejectionReasonRef,
 ) {
     match reason {
-        Phase9MachineFormalizationRejectionReasonRef::Inline {
+        AdvancedMachineFormalizationRejectionReasonRef::Inline {
             rejection_reason_hash,
             raw_utf8_bytes,
         } => {
@@ -9940,7 +10071,7 @@ fn encode_formalization_rejection_reason_ref_to(
             encode_hash_to(out, rejection_reason_hash);
             encode_bytes_to(out, raw_utf8_bytes);
         }
-        Phase9MachineFormalizationRejectionReasonRef::Artifact {
+        AdvancedMachineFormalizationRejectionReasonRef::Artifact {
             path,
             file_hash,
             rejection_reason_hash,
@@ -9955,10 +10086,10 @@ fn encode_formalization_rejection_reason_ref_to(
     }
 }
 
-fn encode_phase9_tactic_candidate_to(
+fn encode_advanced_ai_tactic_candidate_to(
     out: &mut Vec<u8>,
     tactic: &MachineTacticCandidate,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match tactic {
         MachineTacticCandidate::Exact { term } => {
             out.push(0);
@@ -9974,14 +10105,14 @@ fn encode_phase9_tactic_candidate_to(
             args,
         } => {
             out.push(2);
-            encode_phase9_tactic_head_to(out, head)?;
+            encode_advanced_ai_tactic_head_to(out, head)?;
             encode_len_to(out, universe_args.len());
             for level in universe_args {
                 encode_level_to(out, level);
             }
             encode_len_to(out, args.len());
             for arg in args {
-                encode_phase9_apply_arg_to(out, arg);
+                encode_advanced_ai_apply_arg_to(out, arg);
             }
         }
         MachineTacticCandidate::Rewrite {
@@ -9990,15 +10121,15 @@ fn encode_phase9_tactic_candidate_to(
             site,
         } => {
             out.push(3);
-            encode_phase9_candidate_rewrite_rule_to(out, rule)?;
-            encode_phase9_rewrite_direction_to(out, *direction);
-            encode_phase9_rewrite_site_to(out, *site);
+            encode_advanced_ai_candidate_rewrite_rule_to(out, rule)?;
+            encode_advanced_ai_rewrite_direction_to(out, *direction);
+            encode_advanced_ai_rewrite_site_to(out, *site);
         }
         MachineTacticCandidate::SimpLite { rules } => {
             out.push(4);
             encode_len_to(out, rules.len());
             for rule in rules {
-                encode_phase9_simp_rule_ref_to(out, rule)?;
+                encode_advanced_ai_simp_rule_ref_to(out, rule)?;
             }
         }
         MachineTacticCandidate::InductionNat { local_name } => {
@@ -10009,26 +10140,26 @@ fn encode_phase9_tactic_candidate_to(
     Ok(())
 }
 
-fn encode_phase9_candidate_rewrite_rule_to(
+fn encode_advanced_ai_candidate_rewrite_rule_to(
     out: &mut Vec<u8>,
     rule: &CandidateRewriteRuleRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
-    encode_phase9_tactic_head_to(out, &rule.head)?;
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
+    encode_advanced_ai_tactic_head_to(out, &rule.head)?;
     encode_len_to(out, rule.universe_args.len());
     for level in &rule.universe_args {
         encode_level_to(out, level);
     }
     encode_len_to(out, rule.args.len());
     for arg in &rule.args {
-        encode_phase9_apply_arg_to(out, arg);
+        encode_advanced_ai_apply_arg_to(out, arg);
     }
     Ok(())
 }
 
-fn encode_phase9_tactic_head_to(
+fn encode_advanced_ai_tactic_head_to(
     out: &mut Vec<u8>,
     head: &TacticHead,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     match head {
         TacticHead::Imported {
             name,
@@ -10054,7 +10185,7 @@ fn encode_phase9_tactic_head_to(
     Ok(())
 }
 
-fn encode_phase9_apply_arg_to(out: &mut Vec<u8>, arg: &CandidateApplyArg) {
+fn encode_advanced_ai_apply_arg_to(out: &mut Vec<u8>, arg: &CandidateApplyArg) {
     match arg {
         CandidateApplyArg::Term(term) => {
             out.push(0);
@@ -10074,24 +10205,24 @@ fn encode_phase9_apply_arg_to(out: &mut Vec<u8>, arg: &CandidateApplyArg) {
     }
 }
 
-fn encode_phase9_simp_rule_ref_to(
+fn encode_advanced_ai_simp_rule_ref_to(
     out: &mut Vec<u8>,
     rule: &SimpRuleRef,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_name_to(out, &rule.name)?;
     encode_hash_to(out, &rule.decl_interface_hash);
-    encode_phase9_rewrite_direction_to(out, rule.direction);
+    encode_advanced_ai_rewrite_direction_to(out, rule.direction);
     Ok(())
 }
 
-fn encode_phase9_rewrite_direction_to(out: &mut Vec<u8>, direction: RewriteDirection) {
+fn encode_advanced_ai_rewrite_direction_to(out: &mut Vec<u8>, direction: RewriteDirection) {
     out.push(match direction {
         RewriteDirection::Forward => 0,
         RewriteDirection::Backward => 1,
     });
 }
 
-fn encode_phase9_rewrite_site_to(out: &mut Vec<u8>, site: RewriteSite) {
+fn encode_advanced_ai_rewrite_site_to(out: &mut Vec<u8>, site: RewriteSite) {
     out.push(match site {
         RewriteSite::EqTargetLeft => 0,
         RewriteSite::EqTargetRight => 1,
@@ -10100,8 +10231,8 @@ fn encode_phase9_rewrite_site_to(out: &mut Vec<u8>, site: RewriteSite) {
 
 fn encode_universe_instantiation_patch_to(
     out: &mut Vec<u8>,
-    patch: &Phase9UniverseInstantiationPatch,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+    patch: &AdvancedUniverseInstantiationPatch,
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_path_steps_to(out, &patch.occurrence.path);
     encode_global_ref_to(out, &patch.occurrence.expected_ref)?;
     encode_len_to(out, patch.explicit_level_args.len());
@@ -10111,54 +10242,54 @@ fn encode_universe_instantiation_patch_to(
     Ok(())
 }
 
-fn encode_universe_constraint_hint_to(out: &mut Vec<u8>, hint: &Phase9UniverseConstraintHint) {
+fn encode_universe_constraint_hint_to(out: &mut Vec<u8>, hint: &AdvancedUniverseConstraintHint) {
     encode_universe_constraint_to(out, &hint.constraint);
     out.push(match hint.reason {
-        Phase9UniverseConstraintHintReason::KernelDiagnostic => 0,
-        Phase9UniverseConstraintHintReason::RepairCandidate => 1,
-        Phase9UniverseConstraintHintReason::MinimizationExplanation => 2,
+        AdvancedUniverseConstraintHintReason::KernelDiagnostic => 0,
+        AdvancedUniverseConstraintHintReason::RepairCandidate => 1,
+        AdvancedUniverseConstraintHintReason::MinimizationExplanation => 2,
     });
 }
 
-fn encode_universe_constraint_to(out: &mut Vec<u8>, constraint: &Phase9UniverseConstraint) {
+fn encode_universe_constraint_to(out: &mut Vec<u8>, constraint: &AdvancedUniverseConstraint) {
     encode_level_to(out, &constraint.lhs);
     out.push(match constraint.relation {
-        Phase9UniverseConstraintRelation::Le => 0,
-        Phase9UniverseConstraintRelation::Eq => 1,
+        AdvancedUniverseConstraintRelation::Le => 0,
+        AdvancedUniverseConstraintRelation::Eq => 1,
     });
     encode_level_to(out, &constraint.rhs);
 }
 
 fn encode_option_minimization_hint_to(
     out: &mut Vec<u8>,
-    hint: Option<Phase9UniverseMinimizationHint>,
+    hint: Option<AdvancedUniverseMinimizationHint>,
 ) {
     match hint {
         Some(hint) => {
             out.push(1);
             out.push(match hint {
-                Phase9UniverseMinimizationHint::KernelDefault => 0,
-                Phase9UniverseMinimizationHint::PreferLowerLevels => 1,
-                Phase9UniverseMinimizationHint::PreferExistingExplicitArgs => 2,
+                AdvancedUniverseMinimizationHint::KernelDefault => 0,
+                AdvancedUniverseMinimizationHint::PreferLowerLevels => 1,
+                AdvancedUniverseMinimizationHint::PreferExistingExplicitArgs => 2,
             });
         }
         None => out.push(0),
     }
 }
 
-fn encode_path_steps_to(out: &mut Vec<u8>, path: &[Phase9MachineExprPathStep]) {
+fn encode_path_steps_to(out: &mut Vec<u8>, path: &[AdvancedMachineExprPathStep]) {
     encode_len_to(out, path.len());
     for step in path {
         out.push(match step {
-            Phase9MachineExprPathStep::AppFun => 0,
-            Phase9MachineExprPathStep::AppArg => 1,
-            Phase9MachineExprPathStep::LamType => 2,
-            Phase9MachineExprPathStep::LamBody => 3,
-            Phase9MachineExprPathStep::PiDomain => 4,
-            Phase9MachineExprPathStep::PiCodomain => 5,
-            Phase9MachineExprPathStep::LetType => 6,
-            Phase9MachineExprPathStep::LetValue => 7,
-            Phase9MachineExprPathStep::LetBody => 8,
+            AdvancedMachineExprPathStep::AppFun => 0,
+            AdvancedMachineExprPathStep::AppArg => 1,
+            AdvancedMachineExprPathStep::LamType => 2,
+            AdvancedMachineExprPathStep::LamBody => 3,
+            AdvancedMachineExprPathStep::PiDomain => 4,
+            AdvancedMachineExprPathStep::PiCodomain => 5,
+            AdvancedMachineExprPathStep::LetType => 6,
+            AdvancedMachineExprPathStep::LetValue => 7,
+            AdvancedMachineExprPathStep::LetBody => 8,
         });
     }
 }
@@ -10240,18 +10371,18 @@ fn encode_raw_bytes_list_to(out: &mut Vec<u8>, items: &[Vec<u8>]) {
 
 fn decode_candidate_envelope(
     input: &[u8],
-) -> std::result::Result<Phase9AiCandidateEnvelope, DecodeError> {
+) -> std::result::Result<AdvancedAiCandidateEnvelope, DecodeError> {
     let mut decoder = Decoder::new(input);
     let profile_version =
-        Phase9AiProfileVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
-    let task_kind = Phase9AiTaskKind::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
+        AdvancedAiProfileVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
+    let task_kind = AdvancedAiTaskKind::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
     let target = decoder.target()?;
     let imports = decoder.import_identities()?;
     let options = decoder.options_ref()?;
     let payload = decoder.bytes()?;
     decoder.done()?;
 
-    let envelope = Phase9AiCandidateEnvelope {
+    let envelope = AdvancedAiCandidateEnvelope {
         profile_version,
         task_kind,
         target,
@@ -10259,7 +10390,7 @@ fn decode_candidate_envelope(
         options,
         payload,
     };
-    let encoded = phase9_ai_candidate_envelope_canonical_bytes(&envelope)
+    let encoded = advanced_ai_candidate_envelope_canonical_bytes(&envelope)
         .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
@@ -10267,12 +10398,12 @@ fn decode_candidate_envelope(
     Ok(envelope)
 }
 
-fn decode_options(input: &[u8]) -> std::result::Result<Phase9AiOptions, DecodeError> {
+fn decode_options(input: &[u8]) -> std::result::Result<AdvancedAiOptions, DecodeError> {
     let mut decoder = Decoder::new(input);
     let schema_version =
-        Phase9AiOptionsVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
-    let independent_checker = Phase9IndependentCheckerOptions {
-        profile: Phase9IndependentCheckerProfile::from_tag(decoder.u8()?)
+        AdvancedAiOptionsVersion::from_tag(decoder.u8()?).ok_or(DecodeError::Malformed)?;
+    let independent_checker = AdvancedIndependentCheckerOptions {
+        profile: AdvancedIndependentCheckerProfile::from_tag(decoder.u8()?)
             .ok_or(DecodeError::Malformed)?,
     };
     let approved_nested_type_constructors = decoder.global_ref_list()?;
@@ -10284,30 +10415,30 @@ fn decode_options(input: &[u8]) -> std::result::Result<Phase9AiOptions, DecodeEr
     let formalization = decoder.option_formalization()?;
     decoder.done()?;
 
-    let options = Phase9AiOptions {
+    let options = AdvancedAiOptions {
         schema_version,
         independent_checker,
-        advanced_inductive: Phase9AdvancedInductiveOptions {
+        advanced_inductive: AdvancedInductiveOptions {
             approved_nested_type_constructors,
         },
-        typeclass: Phase9TypeclassOptions { class_declarations },
+        typeclass: AdvancedTypeclassOptions { class_declarations },
         quotient,
         smt,
         formalization,
     };
     let encoded =
-        phase9_ai_options_canonical_bytes(&options).map_err(|_| DecodeError::Malformed)?;
+        advanced_ai_options_canonical_bytes(&options).map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
     }
     Ok(options)
 }
 
-fn decode_phase4_tactic_options(input: &[u8]) -> std::result::Result<MachineTacticOptions, ()> {
-    let mut decoder = Phase4Decoder::new(input);
-    decoder.tag("npa.phase4.tactic-options.v1")?;
+fn decode_machine_tactic_options(input: &[u8]) -> std::result::Result<MachineTacticOptions, ()> {
+    let mut decoder = MachineTacticDecoder::new(input);
+    decoder.tag("npa.machine-tactic.tactic-options.v1")?;
     let rule_len = decoder.uvar()?;
-    if rule_len > MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS {
+    if rule_len > MAX_ADVANCED_AI_FORMALIZATION_TACTIC_ITEMS {
         return Err(());
     }
     let mut simp_rules = Vec::new();
@@ -10329,9 +10460,9 @@ fn decode_phase4_tactic_options(input: &[u8]) -> std::result::Result<MachineTact
     Ok(options)
 }
 
-fn decode_phase4_tactic_budget(input: &[u8]) -> std::result::Result<TacticBudget, ()> {
-    let mut decoder = Phase4Decoder::new(input);
-    decoder.tag("npa.phase4.tactic-budget.v1")?;
+fn decode_machine_tactic_budget(input: &[u8]) -> std::result::Result<TacticBudget, ()> {
+    let mut decoder = MachineTacticDecoder::new(input);
+    decoder.tag("npa.machine-tactic.tactic-budget.v1")?;
     let budget = TacticBudget {
         max_tactic_steps: decoder.uvar()?,
         max_whnf_steps: decoder.uvar()?,
@@ -10347,12 +10478,12 @@ fn decode_phase4_tactic_budget(input: &[u8]) -> std::result::Result<TacticBudget
     Ok(budget)
 }
 
-struct Phase4Decoder<'a> {
+struct MachineTacticDecoder<'a> {
     input: &'a [u8],
     pos: usize,
 }
 
-impl<'a> Phase4Decoder<'a> {
+impl<'a> MachineTacticDecoder<'a> {
     fn new(input: &'a [u8]) -> Self {
         Self { input, pos: 0 }
     }
@@ -10488,12 +10619,12 @@ impl<'a> Phase4Decoder<'a> {
     }
 }
 
-struct Phase9InductiveDecodeBudget {
+struct AdvancedInductiveDecodeBudget {
     expr_nodes: u64,
     level_nodes: u64,
 }
 
-impl Phase9InductiveDecodeBudget {
+impl AdvancedInductiveDecodeBudget {
     fn new() -> Self {
         Self {
             expr_nodes: 0,
@@ -10506,7 +10637,7 @@ impl Phase9InductiveDecodeBudget {
             .expr_nodes
             .checked_add(1)
             .ok_or(DecodeError::Malformed)?;
-        if self.expr_nodes > MAX_PHASE9_INDUCTIVE_EXPR_NODES {
+        if self.expr_nodes > MAX_ADVANCED_AI_INDUCTIVE_EXPR_NODES {
             return Err(DecodeError::Malformed);
         }
         Ok(())
@@ -10517,23 +10648,23 @@ impl Phase9InductiveDecodeBudget {
             .level_nodes
             .checked_add(1)
             .ok_or(DecodeError::Malformed)?;
-        if self.level_nodes > MAX_PHASE9_INDUCTIVE_LEVEL_NODES {
+        if self.level_nodes > MAX_ADVANCED_AI_INDUCTIVE_LEVEL_NODES {
             return Err(DecodeError::Malformed);
         }
         Ok(())
     }
 }
 
-struct Phase9SmtDecodeBudget {
-    core: Phase9InductiveDecodeBudget,
+struct AdvancedSmtDecodeBudget {
+    core: AdvancedInductiveDecodeBudget,
     smt_expr_nodes: u64,
     smt_sort_nodes: u64,
 }
 
-impl Phase9SmtDecodeBudget {
+impl AdvancedSmtDecodeBudget {
     fn new() -> Self {
         Self {
-            core: Phase9InductiveDecodeBudget::new(),
+            core: AdvancedInductiveDecodeBudget::new(),
             smt_expr_nodes: 0,
             smt_sort_nodes: 0,
         }
@@ -10544,7 +10675,7 @@ impl Phase9SmtDecodeBudget {
             .smt_expr_nodes
             .checked_add(1)
             .ok_or(DecodeError::Malformed)?;
-        if self.smt_expr_nodes > MAX_PHASE9_SMT_ITEMS {
+        if self.smt_expr_nodes > MAX_ADVANCED_AI_SMT_ITEMS {
             return Err(DecodeError::Malformed);
         }
         Ok(())
@@ -10555,7 +10686,7 @@ impl Phase9SmtDecodeBudget {
             .smt_sort_nodes
             .checked_add(1)
             .ok_or(DecodeError::Malformed)?;
-        if self.smt_sort_nodes > MAX_PHASE9_SMT_ITEMS {
+        if self.smt_sort_nodes > MAX_ADVANCED_AI_SMT_ITEMS {
             return Err(DecodeError::Malformed);
         }
         Ok(())
@@ -10564,14 +10695,14 @@ impl Phase9SmtDecodeBudget {
 
 fn decode_inductive_proposal(
     input: &[u8],
-) -> std::result::Result<Phase9MachineInductiveProposal, DecodeError> {
+) -> std::result::Result<AdvancedMachineInductiveProposal, DecodeError> {
     let mut decoder = Decoder::new(input);
-    let mut budget = Phase9InductiveDecodeBudget::new();
+    let mut budget = AdvancedInductiveDecodeBudget::new();
     let block_name = decoder.option_name()?;
     let expected_decl_hash = decoder.option_hash()?;
-    let universe_params = decoder.string_list_with_cap(MAX_PHASE9_INDUCTIVE_ITEMS)?;
+    let universe_params = decoder.string_list_with_cap(MAX_ADVANCED_AI_INDUCTIVE_ITEMS)?;
     let inductive_len = decoder.u64()?;
-    if inductive_len > MAX_PHASE9_INDUCTIVE_ITEMS {
+    if inductive_len > MAX_ADVANCED_AI_INDUCTIVE_ITEMS {
         return Err(DecodeError::Malformed);
     }
     let mut inductives = Vec::new();
@@ -10579,14 +10710,14 @@ fn decode_inductive_proposal(
         inductives.push(decoder.inductive_family(&mut budget)?);
     }
     decoder.done()?;
-    let proposal = Phase9MachineInductiveProposal {
+    let proposal = AdvancedMachineInductiveProposal {
         block_name,
         expected_decl_hash,
         universe_params,
         inductives,
     };
-    let encoded =
-        phase9_inductive_proposal_canonical_bytes(&proposal).map_err(|_| DecodeError::Malformed)?;
+    let encoded = advanced_ai_inductive_proposal_canonical_bytes(&proposal)
+        .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
     }
@@ -10595,12 +10726,12 @@ fn decode_inductive_proposal(
 
 fn decode_quotient_candidate(
     input: &[u8],
-) -> std::result::Result<Phase9MachineQuotientConstructionCandidate, DecodeError> {
+) -> std::result::Result<AdvancedMachineQuotientConstructionCandidate, DecodeError> {
     let mut decoder = Decoder::new(input);
-    let mut budget = Phase9InductiveDecodeBudget::new();
+    let mut budget = AdvancedInductiveDecodeBudget::new();
     let candidate = decoder.quotient_candidate(&mut budget)?;
     decoder.done()?;
-    let encoded = phase9_quotient_candidate_canonical_bytes(&candidate)
+    let encoded = advanced_ai_quotient_candidate_canonical_bytes(&candidate)
         .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
@@ -10610,13 +10741,13 @@ fn decode_quotient_candidate(
 
 fn decode_smt_candidate(
     input: &[u8],
-) -> std::result::Result<Phase9MachineSmtCertificateCandidate, DecodeError> {
+) -> std::result::Result<AdvancedMachineSmtCertificateCandidate, DecodeError> {
     let mut decoder = Decoder::new(input);
-    let mut budget = Phase9SmtDecodeBudget::new();
+    let mut budget = AdvancedSmtDecodeBudget::new();
     let candidate = decoder.smt_candidate(&mut budget)?;
     decoder.done()?;
-    let encoded =
-        phase9_smt_candidate_canonical_bytes(&candidate).map_err(|_| DecodeError::Malformed)?;
+    let encoded = advanced_ai_smt_candidate_canonical_bytes(&candidate)
+        .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
     }
@@ -10625,13 +10756,13 @@ fn decode_smt_candidate(
 
 fn decode_smt_encoded_problem(
     input: &[u8],
-) -> std::result::Result<Phase9MachineSmtEncodedProblem, DecodeError> {
+) -> std::result::Result<AdvancedMachineSmtEncodedProblem, DecodeError> {
     let mut decoder = Decoder::new(input);
-    let mut budget = Phase9SmtDecodeBudget::new();
+    let mut budget = AdvancedSmtDecodeBudget::new();
     let problem = decoder.smt_encoded_problem(&mut budget)?;
     decoder.done()?;
     let encoded =
-        phase9_smt_problem_canonical_bytes(&problem).map_err(|_| DecodeError::Malformed)?;
+        advanced_ai_smt_problem_canonical_bytes(&problem).map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
     }
@@ -10640,13 +10771,13 @@ fn decode_smt_encoded_problem(
 
 fn decode_smt_proof_node_table(
     input: &[u8],
-) -> std::result::Result<Phase9SmtProofNodeTable, DecodeError> {
+) -> std::result::Result<AdvancedSmtProofNodeTable, DecodeError> {
     let mut decoder = Decoder::new(input);
-    let mut budget = Phase9SmtDecodeBudget::new();
+    let mut budget = AdvancedSmtDecodeBudget::new();
     let table = decoder.smt_proof_node_table(&mut budget)?;
     decoder.done()?;
-    let encoded =
-        phase9_smt_proof_payload_canonical_bytes(&table).map_err(|_| DecodeError::Malformed)?;
+    let encoded = advanced_ai_smt_proof_payload_canonical_bytes(&table)
+        .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
     }
@@ -10655,11 +10786,11 @@ fn decode_smt_proof_node_table(
 
 fn decode_typeclass_resolution_plan(
     input: &[u8],
-) -> std::result::Result<Phase9MachineTypeclassResolutionPlan, DecodeError> {
+) -> std::result::Result<AdvancedMachineTypeclassResolutionPlan, DecodeError> {
     let mut decoder = Decoder::new(input);
     let plan = decoder.typeclass_resolution_plan()?;
     decoder.done()?;
-    let encoded = phase9_typeclass_resolution_plan_canonical_bytes(&plan)
+    let encoded = advanced_ai_typeclass_resolution_plan_canonical_bytes(&plan)
         .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
@@ -10669,12 +10800,12 @@ fn decode_typeclass_resolution_plan(
 
 fn decode_theorem_graph_query(
     input: &[u8],
-) -> std::result::Result<Phase9MachineTheoremGraphQuery, DecodeError> {
+) -> std::result::Result<AdvancedMachineTheoremGraphQuery, DecodeError> {
     let mut decoder = Decoder::new(input);
     let query = decoder.theorem_graph_query()?;
     decoder.done()?;
-    let encoded =
-        phase9_theorem_graph_query_canonical_bytes(&query).map_err(|_| DecodeError::Malformed)?;
+    let encoded = advanced_ai_theorem_graph_query_canonical_bytes(&query)
+        .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
     }
@@ -10683,11 +10814,11 @@ fn decode_theorem_graph_query(
 
 fn decode_theorem_graph_snapshot(
     input: &[u8],
-) -> std::result::Result<Phase9MachineTheoremGraphSnapshot, DecodeError> {
+) -> std::result::Result<AdvancedMachineTheoremGraphSnapshot, DecodeError> {
     let mut decoder = Decoder::new(input);
     let snapshot = decoder.theorem_graph_snapshot()?;
     decoder.done()?;
-    let encoded = phase9_theorem_graph_snapshot_canonical_bytes(&snapshot)
+    let encoded = advanced_ai_theorem_graph_snapshot_canonical_bytes(&snapshot)
         .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
@@ -10697,11 +10828,11 @@ fn decode_theorem_graph_snapshot(
 
 fn decode_theorem_graph_query_features(
     input: &[u8],
-) -> std::result::Result<Phase9MachineTheoremGraphQueryFeatures, DecodeError> {
+) -> std::result::Result<AdvancedMachineTheoremGraphQueryFeatures, DecodeError> {
     let mut decoder = Decoder::new(input);
     let features = decoder.theorem_graph_query_features()?;
     decoder.done()?;
-    let encoded = phase9_theorem_graph_query_features_canonical_bytes(&features)
+    let encoded = advanced_ai_theorem_graph_query_features_canonical_bytes(&features)
         .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
@@ -10711,11 +10842,11 @@ fn decode_theorem_graph_query_features(
 
 fn decode_formalization_payload(
     input: &[u8],
-) -> std::result::Result<Phase9MachineFormalizationCheckPayload, DecodeError> {
+) -> std::result::Result<AdvancedMachineFormalizationCheckPayload, DecodeError> {
     let mut decoder = Decoder::new(input);
     let payload = decoder.formalization_payload()?;
     decoder.done()?;
-    let encoded = phase9_formalization_payload_canonical_bytes(&payload)
+    let encoded = advanced_ai_formalization_payload_canonical_bytes(&payload)
         .map_err(|_| DecodeError::Malformed)?;
     if encoded != input {
         return Err(DecodeError::Malformed);
@@ -10725,16 +10856,17 @@ fn decode_formalization_payload(
 
 fn decode_universe_repair_candidate_outer(
     input: &[u8],
-) -> std::result::Result<Phase9UniverseRepairCandidateOuter, DecodeError> {
+) -> std::result::Result<AdvancedUniverseRepairCandidateOuter, DecodeError> {
     let mut decoder = Decoder::new(input);
     let goal = decoder.option_goal()?;
     let target_expr = decoder.expr()?;
-    let instantiation_items = decoder.bytes_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
-    let constraint_hint_items = decoder.bytes_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+    let instantiation_items = decoder.bytes_list_with_cap(MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS)?;
+    let constraint_hint_items =
+        decoder.bytes_list_with_cap(MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS)?;
     let minimization_hint = decoder.option_minimization_hint()?;
     decoder.done()?;
 
-    let candidate = Phase9UniverseRepairCandidateOuter {
+    let candidate = AdvancedUniverseRepairCandidateOuter {
         goal,
         target_expr,
         instantiation_items,
@@ -10752,14 +10884,14 @@ fn decode_universe_repair_candidate_outer(
 
 fn decode_universe_instantiation_patch(
     input: &[u8],
-) -> std::result::Result<Phase9UniverseInstantiationPatch, DecodeError> {
+) -> std::result::Result<AdvancedUniverseInstantiationPatch, DecodeError> {
     let mut decoder = Decoder::new(input);
     let path = decoder.path_steps()?;
     let expected_ref = decoder.global_ref()?;
-    let explicit_level_args = decoder.level_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+    let explicit_level_args = decoder.level_list_with_cap(MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS)?;
     decoder.done()?;
-    let patch = Phase9UniverseInstantiationPatch {
-        occurrence: Phase9MachineExprOccurrence { path, expected_ref },
+    let patch = AdvancedUniverseInstantiationPatch {
+        occurrence: AdvancedMachineExprOccurrence { path, expected_ref },
         explicit_level_args,
     };
     let mut encoded = Vec::new();
@@ -10773,12 +10905,12 @@ fn decode_universe_instantiation_patch(
 
 fn decode_universe_constraint_hint(
     input: &[u8],
-) -> std::result::Result<Phase9UniverseConstraintHint, DecodeError> {
+) -> std::result::Result<AdvancedUniverseConstraintHint, DecodeError> {
     let mut decoder = Decoder::new(input);
     let constraint = decoder.universe_constraint()?;
     let reason = decoder.constraint_hint_reason()?;
     decoder.done()?;
-    let hint = Phase9UniverseConstraintHint { constraint, reason };
+    let hint = AdvancedUniverseConstraintHint { constraint, reason };
     let mut encoded = Vec::new();
     encode_universe_constraint_hint_to(&mut encoded, &hint);
     if encoded != input {
@@ -10970,8 +11102,8 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn target(&mut self) -> std::result::Result<Phase9AiTarget, DecodeError> {
-        Ok(Phase9AiTarget {
+    fn target(&mut self) -> std::result::Result<AdvancedAiTarget, DecodeError> {
+        Ok(AdvancedAiTarget {
             env_fingerprint: self.hash()?,
             target_decl_hash: self.option_hash()?,
             goal_fingerprint: self.option_hash()?,
@@ -10999,11 +11131,13 @@ impl<'a> Decoder<'a> {
         Ok(values)
     }
 
-    fn import_identities(&mut self) -> std::result::Result<Vec<Phase9ImportIdentity>, DecodeError> {
+    fn import_identities(
+        &mut self,
+    ) -> std::result::Result<Vec<AdvancedImportIdentity>, DecodeError> {
         let len = usize::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
         let mut imports = Vec::new();
         for _ in 0..len {
-            imports.push(Phase9ImportIdentity {
+            imports.push(AdvancedImportIdentity {
                 module: self.name()?,
                 export_hash: self.hash()?,
                 certificate_hash: self.hash()?,
@@ -11012,13 +11146,13 @@ impl<'a> Decoder<'a> {
         Ok(imports)
     }
 
-    fn options_ref(&mut self) -> std::result::Result<Phase9AiOptionsRef, DecodeError> {
+    fn options_ref(&mut self) -> std::result::Result<AdvancedAiOptionsRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9AiOptionsRef::Inline {
+            0 => Ok(AdvancedAiOptionsRef::Inline {
                 options_hash: self.hash()?,
                 canonical_bytes: self.bytes()?,
             }),
-            1 => Ok(Phase9AiOptionsRef::Artifact {
+            1 => Ok(AdvancedAiOptionsRef::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 options_hash: self.hash()?,
@@ -11028,7 +11162,7 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn option_goal(&mut self) -> std::result::Result<Option<Phase9AiGoal>, DecodeError> {
+    fn option_goal(&mut self) -> std::result::Result<Option<AdvancedAiGoal>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
             1 => Ok(Some(self.goal()?)),
@@ -11036,7 +11170,7 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn goal(&mut self) -> std::result::Result<Phase9AiGoal, DecodeError> {
+    fn goal(&mut self) -> std::result::Result<AdvancedAiGoal, DecodeError> {
         let param_len = self.u64()?;
         if param_len > MAX_NAME_COMPONENTS {
             return Err(DecodeError::Malformed);
@@ -11046,7 +11180,7 @@ impl<'a> Decoder<'a> {
             universe_params.push(self.string()?);
         }
         let local_len = self.u64()?;
-        if local_len > MAX_PHASE9_UNIVERSE_REPAIR_ITEMS {
+        if local_len > MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let mut local_context = Vec::new();
@@ -11054,7 +11188,7 @@ impl<'a> Decoder<'a> {
             local_context.push(self.machine_local_decl()?);
         }
         let target = self.expr()?;
-        Ok(Phase9AiGoal {
+        Ok(AdvancedAiGoal {
             universe_params,
             local_context,
             target,
@@ -11081,7 +11215,7 @@ impl<'a> Decoder<'a> {
             }
             2 => {
                 let name = self.string()?;
-                let levels = self.level_list_with_cap(MAX_PHASE9_UNIVERSE_REPAIR_ITEMS)?;
+                let levels = self.level_list_with_cap(MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS)?;
                 Ok(Expr::konst(name, levels))
             }
             3 => {
@@ -11141,24 +11275,24 @@ impl<'a> Decoder<'a> {
         Ok(levels)
     }
 
-    fn path_steps(&mut self) -> std::result::Result<Vec<Phase9MachineExprPathStep>, DecodeError> {
+    fn path_steps(&mut self) -> std::result::Result<Vec<AdvancedMachineExprPathStep>, DecodeError> {
         let len = self.u64()?;
-        if len > MAX_PHASE9_UNIVERSE_REPAIR_ITEMS {
+        if len > MAX_ADVANCED_AI_UNIVERSE_REPAIR_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
         let mut path = Vec::new();
         for _ in 0..len {
             path.push(match self.u8()? {
-                0 => Phase9MachineExprPathStep::AppFun,
-                1 => Phase9MachineExprPathStep::AppArg,
-                2 => Phase9MachineExprPathStep::LamType,
-                3 => Phase9MachineExprPathStep::LamBody,
-                4 => Phase9MachineExprPathStep::PiDomain,
-                5 => Phase9MachineExprPathStep::PiCodomain,
-                6 => Phase9MachineExprPathStep::LetType,
-                7 => Phase9MachineExprPathStep::LetValue,
-                8 => Phase9MachineExprPathStep::LetBody,
+                0 => AdvancedMachineExprPathStep::AppFun,
+                1 => AdvancedMachineExprPathStep::AppArg,
+                2 => AdvancedMachineExprPathStep::LamType,
+                3 => AdvancedMachineExprPathStep::LamBody,
+                4 => AdvancedMachineExprPathStep::PiDomain,
+                5 => AdvancedMachineExprPathStep::PiCodomain,
+                6 => AdvancedMachineExprPathStep::LetType,
+                7 => AdvancedMachineExprPathStep::LetValue,
+                8 => AdvancedMachineExprPathStep::LetBody,
                 _ => return Err(DecodeError::Malformed),
             });
         }
@@ -11167,13 +11301,13 @@ impl<'a> Decoder<'a> {
 
     fn option_minimization_hint(
         &mut self,
-    ) -> std::result::Result<Option<Phase9UniverseMinimizationHint>, DecodeError> {
+    ) -> std::result::Result<Option<AdvancedUniverseMinimizationHint>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
             1 => Ok(Some(match self.u8()? {
-                0 => Phase9UniverseMinimizationHint::KernelDefault,
-                1 => Phase9UniverseMinimizationHint::PreferLowerLevels,
-                2 => Phase9UniverseMinimizationHint::PreferExistingExplicitArgs,
+                0 => AdvancedUniverseMinimizationHint::KernelDefault,
+                1 => AdvancedUniverseMinimizationHint::PreferLowerLevels,
+                2 => AdvancedUniverseMinimizationHint::PreferExistingExplicitArgs,
                 _ => return Err(DecodeError::Malformed),
             })),
             _ => Err(DecodeError::Malformed),
@@ -11182,31 +11316,31 @@ impl<'a> Decoder<'a> {
 
     fn universe_constraint(
         &mut self,
-    ) -> std::result::Result<Phase9UniverseConstraint, DecodeError> {
+    ) -> std::result::Result<AdvancedUniverseConstraint, DecodeError> {
         let lhs = self.level()?;
         let relation = match self.u8()? {
-            0 => Phase9UniverseConstraintRelation::Le,
-            1 => Phase9UniverseConstraintRelation::Eq,
+            0 => AdvancedUniverseConstraintRelation::Le,
+            1 => AdvancedUniverseConstraintRelation::Eq,
             _ => return Err(DecodeError::Malformed),
         };
         let rhs = self.level()?;
-        Ok(Phase9UniverseConstraint { lhs, relation, rhs })
+        Ok(AdvancedUniverseConstraint { lhs, relation, rhs })
     }
 
     fn constraint_hint_reason(
         &mut self,
-    ) -> std::result::Result<Phase9UniverseConstraintHintReason, DecodeError> {
+    ) -> std::result::Result<AdvancedUniverseConstraintHintReason, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9UniverseConstraintHintReason::KernelDiagnostic),
-            1 => Ok(Phase9UniverseConstraintHintReason::RepairCandidate),
-            2 => Ok(Phase9UniverseConstraintHintReason::MinimizationExplanation),
+            0 => Ok(AdvancedUniverseConstraintHintReason::KernelDiagnostic),
+            1 => Ok(AdvancedUniverseConstraintHintReason::RepairCandidate),
+            2 => Ok(AdvancedUniverseConstraintHintReason::MinimizationExplanation),
             _ => Err(DecodeError::Malformed),
         }
     }
 
-    fn global_ref_list(&mut self) -> std::result::Result<Vec<Phase9AiGlobalRef>, DecodeError> {
+    fn global_ref_list(&mut self) -> std::result::Result<Vec<AdvancedAiGlobalRef>, DecodeError> {
         let len = self.u64()?;
-        if len > MAX_PHASE9_GLOBAL_REFS {
+        if len > MAX_ADVANCED_AI_GLOBAL_REFS {
             return Err(DecodeError::Malformed);
         }
         let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
@@ -11217,8 +11351,8 @@ impl<'a> Decoder<'a> {
         Ok(refs)
     }
 
-    fn global_ref(&mut self) -> std::result::Result<Phase9AiGlobalRef, DecodeError> {
-        Ok(Phase9AiGlobalRef {
+    fn global_ref(&mut self) -> std::result::Result<AdvancedAiGlobalRef, DecodeError> {
+        Ok(AdvancedAiGlobalRef {
             module: self.name()?,
             export_hash: self.hash()?,
             certificate_hash: self.hash()?,
@@ -11229,26 +11363,26 @@ impl<'a> Decoder<'a> {
 
     fn inductive_family(
         &mut self,
-        budget: &mut Phase9InductiveDecodeBudget,
-    ) -> std::result::Result<Phase9MachineInductiveFamilyProposal, DecodeError> {
+        budget: &mut AdvancedInductiveDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineInductiveFamilyProposal, DecodeError> {
         let name = self.name()?;
-        let params = self.telescope_with_cap(MAX_PHASE9_INDUCTIVE_ITEMS, budget)?;
-        let indices = self.telescope_with_cap(MAX_PHASE9_INDUCTIVE_ITEMS, budget)?;
+        let params = self.telescope_with_cap(MAX_ADVANCED_AI_INDUCTIVE_ITEMS, budget)?;
+        let indices = self.telescope_with_cap(MAX_ADVANCED_AI_INDUCTIVE_ITEMS, budget)?;
         let result_sort = self.level_counted(budget)?;
         let constructor_len = self.u64()?;
-        if constructor_len > MAX_PHASE9_INDUCTIVE_ITEMS {
+        if constructor_len > MAX_ADVANCED_AI_INDUCTIVE_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let constructor_len =
             usize::try_from(constructor_len).map_err(|_| DecodeError::Malformed)?;
         let mut constructors = Vec::new();
         for _ in 0..constructor_len {
-            constructors.push(Phase9MachineConstructorProposal {
+            constructors.push(AdvancedMachineConstructorProposal {
                 name: self.name()?,
                 ty: self.expr_counted(budget)?,
             });
         }
-        Ok(Phase9MachineInductiveFamilyProposal {
+        Ok(AdvancedMachineInductiveFamilyProposal {
             name,
             params,
             indices,
@@ -11260,8 +11394,8 @@ impl<'a> Decoder<'a> {
     fn telescope_with_cap(
         &mut self,
         cap: u64,
-        budget: &mut Phase9InductiveDecodeBudget,
-    ) -> std::result::Result<Vec<Phase9MachineTelescopeBinder>, DecodeError> {
+        budget: &mut AdvancedInductiveDecodeBudget,
+    ) -> std::result::Result<Vec<AdvancedMachineTelescopeBinder>, DecodeError> {
         let len = self.u64()?;
         if len > cap {
             return Err(DecodeError::Malformed);
@@ -11269,7 +11403,7 @@ impl<'a> Decoder<'a> {
         let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
         let mut telescope = Vec::new();
         for _ in 0..len {
-            telescope.push(Phase9MachineTelescopeBinder {
+            telescope.push(AdvancedMachineTelescopeBinder {
                 ty: self.expr_counted(budget)?,
             });
         }
@@ -11278,18 +11412,18 @@ impl<'a> Decoder<'a> {
 
     fn quotient_candidate(
         &mut self,
-        budget: &mut Phase9InductiveDecodeBudget,
-    ) -> std::result::Result<Phase9MachineQuotientConstructionCandidate, DecodeError> {
+        budget: &mut AdvancedInductiveDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineQuotientConstructionCandidate, DecodeError> {
         let expected_decl_hash = self.option_hash()?;
         let decl_name = self.name()?;
-        let universe_params = self.string_list_with_cap(MAX_PHASE9_QUOTIENT_ITEMS)?;
-        let params = self.telescope_with_cap(MAX_PHASE9_QUOTIENT_ITEMS, budget)?;
+        let universe_params = self.string_list_with_cap(MAX_ADVANCED_AI_QUOTIENT_ITEMS)?;
+        let params = self.telescope_with_cap(MAX_ADVANCED_AI_QUOTIENT_ITEMS, budget)?;
         let quotient_type = self.expr_counted(budget)?;
         let carrier = self.expr_counted(budget)?;
         let relation = self.expr_counted(budget)?;
         let equivalence_proof = self.expr_counted(budget)?;
         let operation_len = self.u64()?;
-        if operation_len > MAX_PHASE9_QUOTIENT_ITEMS {
+        if operation_len > MAX_ADVANCED_AI_QUOTIENT_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let operation_len = usize::try_from(operation_len).map_err(|_| DecodeError::Malformed)?;
@@ -11297,7 +11431,7 @@ impl<'a> Decoder<'a> {
         for _ in 0..operation_len {
             operations.push(self.quotient_operation(budget)?);
         }
-        Ok(Phase9MachineQuotientConstructionCandidate {
+        Ok(AdvancedMachineQuotientConstructionCandidate {
             expected_decl_hash,
             decl_name,
             universe_params,
@@ -11312,9 +11446,9 @@ impl<'a> Decoder<'a> {
 
     fn quotient_operation(
         &mut self,
-        budget: &mut Phase9InductiveDecodeBudget,
-    ) -> std::result::Result<Phase9MachineQuotientOperationCandidate, DecodeError> {
-        Ok(Phase9MachineQuotientOperationCandidate {
+        budget: &mut AdvancedInductiveDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineQuotientOperationCandidate, DecodeError> {
+        Ok(AdvancedMachineQuotientOperationCandidate {
             name: self.name()?,
             raw_function: self.expr_counted(budget)?,
             compatibility_proof: self.expr_counted(budget)?,
@@ -11323,30 +11457,32 @@ impl<'a> Decoder<'a> {
 
     fn smt_candidate(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9MachineSmtCertificateCandidate, DecodeError> {
-        Ok(Phase9MachineSmtCertificateCandidate {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineSmtCertificateCandidate, DecodeError> {
+        Ok(AdvancedMachineSmtCertificateCandidate {
             goal: self.goal()?,
-            logic: Phase9SmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
+            logic: AdvancedSmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
             encoded_problem: self.smt_problem_ref()?,
-            certificate_format: Phase9SmtCertificateFormat::from_tag(self.u8()?)
+            certificate_format: AdvancedSmtCertificateFormat::from_tag(self.u8()?)
                 .ok_or(DecodeError::Malformed)?,
-            rule_registry_profile: Phase9SmtRuleRegistryProfile::from_tag(self.u8()?)
+            rule_registry_profile: AdvancedSmtRuleRegistryProfile::from_tag(self.u8()?)
                 .ok_or(DecodeError::Malformed)?,
             proof_payload: self.smt_proof_payload_ref()?,
             reconstruction_plan: self.smt_reconstruction_plan(budget)?,
         })
     }
 
-    fn smt_problem_ref(&mut self) -> std::result::Result<Phase9MachineSmtProblemRef, DecodeError> {
+    fn smt_problem_ref(
+        &mut self,
+    ) -> std::result::Result<AdvancedMachineSmtProblemRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9MachineSmtProblemRef::Inline {
+            0 => Ok(AdvancedMachineSmtProblemRef::Inline {
                 problem_hash: self.hash()?,
                 encoding_hash: self.hash()?,
                 canonical_bytes: self
-                    .bytes_with_cap(MAX_PHASE9_SMT_RAW_BYTES, DecodeError::Malformed)?,
+                    .bytes_with_cap(MAX_ADVANCED_AI_SMT_RAW_BYTES, DecodeError::Malformed)?,
             }),
-            1 => Ok(Phase9MachineSmtProblemRef::Artifact {
+            1 => Ok(AdvancedMachineSmtProblemRef::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 problem_hash: self.hash()?,
@@ -11359,14 +11495,14 @@ impl<'a> Decoder<'a> {
 
     fn smt_proof_payload_ref(
         &mut self,
-    ) -> std::result::Result<Phase9MachineSmtProofPayloadRef, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineSmtProofPayloadRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9MachineSmtProofPayloadRef::Inline {
+            0 => Ok(AdvancedMachineSmtProofPayloadRef::Inline {
                 payload_hash: self.hash()?,
                 canonical_bytes: self
-                    .bytes_with_cap(MAX_PHASE9_SMT_RAW_BYTES, DecodeError::Malformed)?,
+                    .bytes_with_cap(MAX_ADVANCED_AI_SMT_RAW_BYTES, DecodeError::Malformed)?,
             }),
-            1 => Ok(Phase9MachineSmtProofPayloadRef::Artifact {
+            1 => Ok(AdvancedMachineSmtProofPayloadRef::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 payload_hash: self.hash()?,
@@ -11378,16 +11514,16 @@ impl<'a> Decoder<'a> {
 
     fn smt_encoded_problem(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9MachineSmtEncodedProblem, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineSmtEncodedProblem, DecodeError> {
         let encoder_version =
-            Phase9SmtEncoderVersion::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+            AdvancedSmtEncoderVersion::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
         let goal_fingerprint = self.hash()?;
-        let logic = Phase9SmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let logic = AdvancedSmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
         let command_profile =
-            Phase9SmtCommandProfile::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+            AdvancedSmtCommandProfile::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
         let command_len = self.u64()?;
-        if command_len > MAX_PHASE9_SMT_ITEMS {
+        if command_len > MAX_ADVANCED_AI_SMT_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let command_len = usize::try_from(command_len).map_err(|_| DecodeError::Malformed)?;
@@ -11395,7 +11531,7 @@ impl<'a> Decoder<'a> {
         for _ in 0..command_len {
             commands.push(self.smt_command(budget)?);
         }
-        Ok(Phase9MachineSmtEncodedProblem {
+        Ok(AdvancedMachineSmtEncodedProblem {
             encoder_version,
             goal_fingerprint,
             logic,
@@ -11406,10 +11542,10 @@ impl<'a> Decoder<'a> {
 
     fn smt_command(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtEncodedCommand, DecodeError> {
-        Ok(Phase9SmtEncodedCommand {
-            phase: Phase9SmtCommandPhase::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtEncodedCommand, DecodeError> {
+        Ok(AdvancedSmtEncodedCommand {
+            phase: AdvancedSmtCommandPhase::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
             command_id: self.hash()?,
             payload: self.smt_command_payload(budget)?,
         })
@@ -11417,18 +11553,18 @@ impl<'a> Decoder<'a> {
 
     fn smt_command_payload(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtCommandPayload, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtCommandPayload, DecodeError> {
         Ok(match self.u8()? {
-            0 => Phase9SmtCommandPayload::SortDecl {
+            0 => AdvancedSmtCommandPayload::SortDecl {
                 symbol: self.smt_symbol()?,
                 arity: self.u32()?,
             },
             1 => {
                 let symbol = self.smt_symbol()?;
-                let args = self.smt_sort_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                let args = self.smt_sort_expr_list(MAX_ADVANCED_AI_SMT_REFS, budget)?;
                 let result = self.smt_sort_expr(budget)?;
-                Phase9SmtCommandPayload::FunctionDecl {
+                AdvancedSmtCommandPayload::FunctionDecl {
                     symbol,
                     args,
                     result,
@@ -11437,7 +11573,7 @@ impl<'a> Decoder<'a> {
             2 => {
                 let symbol = self.smt_symbol()?;
                 let constructor_len = self.u64()?;
-                if constructor_len > MAX_PHASE9_SMT_REFS {
+                if constructor_len > MAX_ADVANCED_AI_SMT_REFS {
                     return Err(DecodeError::Malformed);
                 }
                 let constructor_len =
@@ -11446,27 +11582,27 @@ impl<'a> Decoder<'a> {
                 for _ in 0..constructor_len {
                     constructors.push(self.smt_datatype_constructor(budget)?);
                 }
-                Phase9SmtCommandPayload::DatatypeDecl {
+                AdvancedSmtCommandPayload::DatatypeDecl {
                     symbol,
                     constructors,
                 }
             }
-            3 => Phase9SmtCommandPayload::ContextAssumption {
+            3 => AdvancedSmtCommandPayload::ContextAssumption {
                 source_local_index: self.u32()?,
                 core_expr: self.expr_counted(&mut budget.core)?,
                 encoded_expr: self.smt_expr(budget)?,
             },
-            4 => Phase9SmtCommandPayload::TargetAssertion {
+            4 => AdvancedSmtCommandPayload::TargetAssertion {
                 core_expr: self.expr_counted(&mut budget.core)?,
                 encoded_expr: self.smt_expr(budget)?,
             },
-            5 => Phase9SmtCommandPayload::FinalCheck,
+            5 => AdvancedSmtCommandPayload::FinalCheck,
             _ => return Err(DecodeError::Malformed),
         })
     }
 
-    fn smt_symbol(&mut self) -> std::result::Result<Phase9SmtSymbol, DecodeError> {
-        Ok(Phase9SmtSymbol {
+    fn smt_symbol(&mut self) -> std::result::Result<AdvancedSmtSymbol, DecodeError> {
+        Ok(AdvancedSmtSymbol {
             ascii: self.bytes()?,
         })
     }
@@ -11474,8 +11610,8 @@ impl<'a> Decoder<'a> {
     fn smt_sort_expr_list(
         &mut self,
         cap: u64,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Vec<Phase9SmtSortExpr>, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<Vec<AdvancedSmtSortExpr>, DecodeError> {
         let len = self.u64()?;
         if len > cap {
             return Err(DecodeError::Malformed);
@@ -11490,17 +11626,17 @@ impl<'a> Decoder<'a> {
 
     fn smt_sort_expr(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtSortExpr, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtSortExpr, DecodeError> {
         budget.spend_smt_sort()?;
         Ok(match self.u8()? {
-            0 => Phase9SmtSortExpr::Bool,
-            1 => Phase9SmtSortExpr::Int,
-            2 => Phase9SmtSortExpr::BitVec { width: self.u32()? },
+            0 => AdvancedSmtSortExpr::Bool,
+            1 => AdvancedSmtSortExpr::Int,
+            2 => AdvancedSmtSortExpr::BitVec { width: self.u32()? },
             3 => {
                 let symbol = self.smt_symbol()?;
-                let args = self.smt_sort_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
-                Phase9SmtSortExpr::User { symbol, args }
+                let args = self.smt_sort_expr_list(MAX_ADVANCED_AI_SMT_REFS, budget)?;
+                AdvancedSmtSortExpr::User { symbol, args }
             }
             _ => return Err(DecodeError::Malformed),
         })
@@ -11508,22 +11644,22 @@ impl<'a> Decoder<'a> {
 
     fn smt_datatype_constructor(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtDatatypeConstructor, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtDatatypeConstructor, DecodeError> {
         let constructor = self.smt_symbol()?;
         let selector_len = self.u64()?;
-        if selector_len > MAX_PHASE9_SMT_REFS {
+        if selector_len > MAX_ADVANCED_AI_SMT_REFS {
             return Err(DecodeError::Malformed);
         }
         let selector_len = usize::try_from(selector_len).map_err(|_| DecodeError::Malformed)?;
         let mut selectors = Vec::with_capacity(selector_len);
         for _ in 0..selector_len {
-            selectors.push(Phase9SmtDatatypeSelector {
+            selectors.push(AdvancedSmtDatatypeSelector {
                 selector: self.smt_symbol()?,
                 sort: self.smt_sort_expr(budget)?,
             });
         }
-        Ok(Phase9SmtDatatypeConstructor {
+        Ok(AdvancedSmtDatatypeConstructor {
             constructor,
             selectors,
         })
@@ -11531,29 +11667,29 @@ impl<'a> Decoder<'a> {
 
     fn smt_expr(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtExpr, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtExpr, DecodeError> {
         budget.spend_smt_expr()?;
         Ok(match self.u8()? {
-            0 => Phase9SmtExpr::Var {
+            0 => AdvancedSmtExpr::Var {
                 symbol: self.smt_symbol()?,
                 sort: self.smt_sort_expr(budget)?,
             },
             1 => match self.u8()? {
-                0 => Phase9SmtExpr::BoolLit(false),
-                1 => Phase9SmtExpr::BoolLit(true),
+                0 => AdvancedSmtExpr::BoolLit(false),
+                1 => AdvancedSmtExpr::BoolLit(true),
                 _ => return Err(DecodeError::Malformed),
             },
-            2 => Phase9SmtExpr::IntLit(self.i128()?),
-            3 => Phase9SmtExpr::BitVecLit {
+            2 => AdvancedSmtExpr::IntLit(self.i128()?),
+            3 => AdvancedSmtExpr::BitVecLit {
                 width: self.u32()?,
                 value: self.bytes()?,
             },
             4 => {
                 let symbol = self.smt_symbol()?;
-                let args = self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                let args = self.smt_expr_list(MAX_ADVANCED_AI_SMT_REFS, budget)?;
                 let result_sort = self.smt_sort_expr(budget)?;
-                Phase9SmtExpr::App {
+                AdvancedSmtExpr::App {
                     symbol,
                     args,
                     result_sort,
@@ -11561,27 +11697,27 @@ impl<'a> Decoder<'a> {
             }
             5 => {
                 let tag = self.u8()?;
-                let op = Phase9SmtBuiltinOp::from_tag(tag, self)?;
-                let args = self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?;
+                let op = AdvancedSmtBuiltinOp::from_tag(tag, self)?;
+                let args = self.smt_expr_list(MAX_ADVANCED_AI_SMT_REFS, budget)?;
                 let result_sort = self.smt_sort_expr(budget)?;
-                Phase9SmtExpr::BuiltinApp {
+                AdvancedSmtExpr::BuiltinApp {
                     op,
                     args,
                     result_sort,
                 }
             }
-            6 => Phase9SmtExpr::Not(Box::new(self.smt_expr(budget)?)),
-            7 => Phase9SmtExpr::And(self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?),
-            8 => Phase9SmtExpr::Or(self.smt_expr_list(MAX_PHASE9_SMT_REFS, budget)?),
-            9 => Phase9SmtExpr::Eq(
+            6 => AdvancedSmtExpr::Not(Box::new(self.smt_expr(budget)?)),
+            7 => AdvancedSmtExpr::And(self.smt_expr_list(MAX_ADVANCED_AI_SMT_REFS, budget)?),
+            8 => AdvancedSmtExpr::Or(self.smt_expr_list(MAX_ADVANCED_AI_SMT_REFS, budget)?),
+            9 => AdvancedSmtExpr::Eq(
                 Box::new(self.smt_expr(budget)?),
                 Box::new(self.smt_expr(budget)?),
             ),
-            10 => Phase9SmtExpr::Imp(
+            10 => AdvancedSmtExpr::Imp(
                 Box::new(self.smt_expr(budget)?),
                 Box::new(self.smt_expr(budget)?),
             ),
-            11 => Phase9SmtExpr::Ite {
+            11 => AdvancedSmtExpr::Ite {
                 cond: Box::new(self.smt_expr(budget)?),
                 then_expr: Box::new(self.smt_expr(budget)?),
                 else_expr: Box::new(self.smt_expr(budget)?),
@@ -11593,8 +11729,8 @@ impl<'a> Decoder<'a> {
     fn smt_expr_list(
         &mut self,
         cap: u64,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Vec<Phase9SmtExpr>, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<Vec<AdvancedSmtExpr>, DecodeError> {
         let len = self.u64()?;
         if len > cap {
             return Err(DecodeError::Malformed);
@@ -11609,12 +11745,12 @@ impl<'a> Decoder<'a> {
 
     fn smt_proof_node_table(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtProofNodeTable, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtProofNodeTable, DecodeError> {
         let certificate_format =
-            Phase9SmtCertificateFormat::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+            AdvancedSmtCertificateFormat::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
         let node_len = self.u64()?;
-        if node_len > MAX_PHASE9_SMT_ITEMS {
+        if node_len > MAX_ADVANCED_AI_SMT_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let node_len = usize::try_from(node_len).map_err(|_| DecodeError::Malformed)?;
@@ -11622,7 +11758,7 @@ impl<'a> Decoder<'a> {
         for _ in 0..node_len {
             nodes.push(self.smt_proof_node(budget)?);
         }
-        Ok(Phase9SmtProofNodeTable {
+        Ok(AdvancedSmtProofNodeTable {
             certificate_format,
             nodes,
         })
@@ -11630,25 +11766,25 @@ impl<'a> Decoder<'a> {
 
     fn smt_proof_node(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtProofNode, DecodeError> {
-        Ok(Phase9SmtProofNode {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtProofNode, DecodeError> {
+        Ok(AdvancedSmtProofNode {
             node_id: self.u32()?,
             rule_fingerprint: self.hash()?,
-            premises: self.u32_list_with_cap(MAX_PHASE9_SMT_REFS)?,
+            premises: self.u32_list_with_cap(MAX_ADVANCED_AI_SMT_REFS)?,
             conclusion_encoding: self.smt_conclusion_encoding(budget)?,
         })
     }
 
     fn smt_conclusion_encoding(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtConclusionEncoding, DecodeError> {
-        Ok(Phase9SmtConclusionEncoding {
-            encoder_version: Phase9SmtEncoderVersion::from_tag(self.u8()?)
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtConclusionEncoding, DecodeError> {
+        Ok(AdvancedSmtConclusionEncoding {
+            encoder_version: AdvancedSmtEncoderVersion::from_tag(self.u8()?)
                 .ok_or(DecodeError::Malformed)?,
-            logic: Phase9SmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
-            command_profile: Phase9SmtCommandProfile::from_tag(self.u8()?)
+            logic: AdvancedSmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
+            command_profile: AdvancedSmtCommandProfile::from_tag(self.u8()?)
                 .ok_or(DecodeError::Malformed)?,
             core_expr: self.expr_counted(&mut budget.core)?,
             encoded_expr: self.smt_expr(budget)?,
@@ -11657,11 +11793,11 @@ impl<'a> Decoder<'a> {
 
     fn smt_reconstruction_plan(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9MachineSmtReconstructionPlan, DecodeError> {
-        let imported_theory_refs = self.global_ref_list_with_cap(MAX_PHASE9_SMT_REFS)?;
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineSmtReconstructionPlan, DecodeError> {
+        let imported_theory_refs = self.global_ref_list_with_cap(MAX_ADVANCED_AI_SMT_REFS)?;
         let step_len = self.u64()?;
-        if step_len > MAX_PHASE9_SMT_ITEMS {
+        if step_len > MAX_ADVANCED_AI_SMT_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let step_len = usize::try_from(step_len).map_err(|_| DecodeError::Malformed)?;
@@ -11669,7 +11805,7 @@ impl<'a> Decoder<'a> {
         for _ in 0..step_len {
             steps.push(self.smt_reconstruction_step(budget)?);
         }
-        Ok(Phase9MachineSmtReconstructionPlan {
+        Ok(AdvancedMachineSmtReconstructionPlan {
             imported_theory_refs,
             steps,
             final_step: self.u32()?,
@@ -11679,13 +11815,13 @@ impl<'a> Decoder<'a> {
 
     fn smt_reconstruction_step(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9MachineSmtReconstructionStep, DecodeError> {
-        Ok(Phase9MachineSmtReconstructionStep {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedMachineSmtReconstructionStep, DecodeError> {
+        Ok(AdvancedMachineSmtReconstructionStep {
             step_id: self.u32()?,
             rule: self.smt_reconstruction_rule(budget)?,
             payload_bindings: self.smt_payload_binding_list()?,
-            premises: self.u32_list_with_cap(MAX_PHASE9_SMT_REFS)?,
+            premises: self.u32_list_with_cap(MAX_ADVANCED_AI_SMT_REFS)?,
             conclusion: self.expr_counted(&mut budget.core)?,
             proof: self.expr_counted(&mut budget.core)?,
         })
@@ -11693,15 +11829,15 @@ impl<'a> Decoder<'a> {
 
     fn smt_reconstruction_rule(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtReconstructionRule, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtReconstructionRule, DecodeError> {
         Ok(match self.u8()? {
-            0 => Phase9SmtReconstructionRule::PayloadNode {
-                certificate_format: Phase9SmtCertificateFormat::from_tag(self.u8()?)
+            0 => AdvancedSmtReconstructionRule::PayloadNode {
+                certificate_format: AdvancedSmtCertificateFormat::from_tag(self.u8()?)
                     .ok_or(DecodeError::Malformed)?,
                 rule_fingerprint: self.hash()?,
             },
-            1 => Phase9SmtReconstructionRule::LocalBookkeeping {
+            1 => AdvancedSmtReconstructionRule::LocalBookkeeping {
                 kind: self.smt_local_bookkeeping_rule(budget)?,
             },
             _ => return Err(DecodeError::Malformed),
@@ -11710,15 +11846,15 @@ impl<'a> Decoder<'a> {
 
     fn smt_payload_binding_list(
         &mut self,
-    ) -> std::result::Result<Vec<Phase9MachineSmtPayloadBinding>, DecodeError> {
+    ) -> std::result::Result<Vec<AdvancedMachineSmtPayloadBinding>, DecodeError> {
         let len = self.u64()?;
-        if len > MAX_PHASE9_SMT_REFS {
+        if len > MAX_ADVANCED_AI_SMT_REFS {
             return Err(DecodeError::Malformed);
         }
         let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
         let mut bindings = Vec::with_capacity(len);
         for _ in 0..len {
-            bindings.push(Phase9MachineSmtPayloadBinding {
+            bindings.push(AdvancedMachineSmtPayloadBinding {
                 payload_hash: self.hash()?,
                 node_id: self.u32()?,
                 rule_fingerprint: self.hash()?,
@@ -11729,23 +11865,23 @@ impl<'a> Decoder<'a> {
 
     fn smt_local_bookkeeping_rule(
         &mut self,
-        budget: &mut Phase9SmtDecodeBudget,
-    ) -> std::result::Result<Phase9SmtLocalBookkeepingRule, DecodeError> {
+        budget: &mut AdvancedSmtDecodeBudget,
+    ) -> std::result::Result<AdvancedSmtLocalBookkeepingRule, DecodeError> {
         Ok(match self.u8()? {
-            0 => Phase9SmtLocalBookkeepingRule::ReorderPremises {
-                permutation: self.u32_list_with_cap(MAX_PHASE9_SMT_REFS)?,
+            0 => AdvancedSmtLocalBookkeepingRule::ReorderPremises {
+                permutation: self.u32_list_with_cap(MAX_ADVANCED_AI_SMT_REFS)?,
             },
-            1 => Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+            1 => AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma {
                 lemma: self.global_ref()?,
                 level_args: self
-                    .level_list_with_cap_counted(MAX_PHASE9_SMT_REFS, &mut budget.core)?,
-                term_args: self.expr_list_with_cap_counted(MAX_PHASE9_SMT_REFS, budget)?,
+                    .level_list_with_cap_counted(MAX_ADVANCED_AI_SMT_REFS, &mut budget.core)?,
+                term_args: self.expr_list_with_cap_counted(MAX_ADVANCED_AI_SMT_REFS, budget)?,
             },
-            2 => Phase9SmtLocalBookkeepingRule::ComposeProof {
+            2 => AdvancedSmtLocalBookkeepingRule::ComposeProof {
                 combinator: self.global_ref()?,
                 level_args: self
-                    .level_list_with_cap_counted(MAX_PHASE9_SMT_REFS, &mut budget.core)?,
-                term_args: self.expr_list_with_cap_counted(MAX_PHASE9_SMT_REFS, budget)?,
+                    .level_list_with_cap_counted(MAX_ADVANCED_AI_SMT_REFS, &mut budget.core)?,
+                term_args: self.expr_list_with_cap_counted(MAX_ADVANCED_AI_SMT_REFS, budget)?,
             },
             _ => return Err(DecodeError::Malformed),
         })
@@ -11754,7 +11890,7 @@ impl<'a> Decoder<'a> {
     fn expr_list_with_cap_counted(
         &mut self,
         cap: u64,
-        budget: &mut Phase9SmtDecodeBudget,
+        budget: &mut AdvancedSmtDecodeBudget,
     ) -> std::result::Result<Vec<Expr>, DecodeError> {
         let len = self.u64()?;
         if len > cap {
@@ -11784,7 +11920,7 @@ impl<'a> Decoder<'a> {
     fn global_ref_list_with_cap(
         &mut self,
         cap: u64,
-    ) -> std::result::Result<Vec<Phase9AiGlobalRef>, DecodeError> {
+    ) -> std::result::Result<Vec<AdvancedAiGlobalRef>, DecodeError> {
         let len = self.u64()?;
         if len > cap {
             return Err(DecodeError::Malformed);
@@ -11799,7 +11935,7 @@ impl<'a> Decoder<'a> {
 
     fn expr_counted(
         &mut self,
-        budget: &mut Phase9InductiveDecodeBudget,
+        budget: &mut AdvancedInductiveDecodeBudget,
     ) -> std::result::Result<Expr, DecodeError> {
         budget.spend_expr()?;
         match self.u8()? {
@@ -11811,7 +11947,7 @@ impl<'a> Decoder<'a> {
             2 => {
                 let name = self.string()?;
                 let levels =
-                    self.level_list_with_cap_counted(MAX_PHASE9_INDUCTIVE_ITEMS, budget)?;
+                    self.level_list_with_cap_counted(MAX_ADVANCED_AI_INDUCTIVE_ITEMS, budget)?;
                 Ok(Expr::konst(name, levels))
             }
             3 => {
@@ -11841,7 +11977,7 @@ impl<'a> Decoder<'a> {
 
     fn level_counted(
         &mut self,
-        budget: &mut Phase9InductiveDecodeBudget,
+        budget: &mut AdvancedInductiveDecodeBudget,
     ) -> std::result::Result<Level, DecodeError> {
         budget.spend_level()?;
         match self.u8()? {
@@ -11865,7 +12001,7 @@ impl<'a> Decoder<'a> {
     fn level_list_with_cap_counted(
         &mut self,
         cap: u64,
-        budget: &mut Phase9InductiveDecodeBudget,
+        budget: &mut AdvancedInductiveDecodeBudget,
     ) -> std::result::Result<Vec<Level>, DecodeError> {
         let len = self.u64()?;
         if len > cap {
@@ -11881,10 +12017,10 @@ impl<'a> Decoder<'a> {
 
     fn typeclass_resolution_plan(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTypeclassResolutionPlan, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTypeclassResolutionPlan, DecodeError> {
         let goal = self.goal()?;
         let candidate_len = self.u64()?;
-        if candidate_len > MAX_PHASE9_TYPECLASS_CANDIDATES {
+        if candidate_len > MAX_ADVANCED_AI_TYPECLASS_CANDIDATES {
             return Err(DecodeError::Malformed);
         }
         let candidate_len = usize::try_from(candidate_len).map_err(|_| DecodeError::Malformed)?;
@@ -11893,14 +12029,14 @@ impl<'a> Decoder<'a> {
             ordered_candidates.push(self.instance_candidate()?);
         }
         let max_depth = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
-        if max_depth > MAX_PHASE9_TYPECLASS_DEPTH {
+        if max_depth > MAX_ADVANCED_AI_TYPECLASS_DEPTH {
             return Err(DecodeError::Malformed);
         }
         let max_nodes = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
-        if max_nodes > MAX_PHASE9_TYPECLASS_NODES {
+        if max_nodes > MAX_ADVANCED_AI_TYPECLASS_NODES {
             return Err(DecodeError::Malformed);
         }
-        Ok(Phase9MachineTypeclassResolutionPlan {
+        Ok(AdvancedMachineTypeclassResolutionPlan {
             goal,
             ordered_candidates,
             max_depth,
@@ -11910,8 +12046,8 @@ impl<'a> Decoder<'a> {
 
     fn instance_candidate(
         &mut self,
-    ) -> std::result::Result<Phase9MachineInstanceCandidateRef, DecodeError> {
-        Ok(Phase9MachineInstanceCandidateRef {
+    ) -> std::result::Result<AdvancedMachineInstanceCandidateRef, DecodeError> {
+        Ok(AdvancedMachineInstanceCandidateRef {
             target: self.instance_target()?,
             priority_hint: self.option_i32()?,
         })
@@ -11919,9 +12055,9 @@ impl<'a> Decoder<'a> {
 
     fn instance_target(
         &mut self,
-    ) -> std::result::Result<Phase9MachineInstanceTargetRef, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineInstanceTargetRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9MachineInstanceTargetRef::Imported {
+            0 => Ok(AdvancedMachineInstanceTargetRef::Imported {
                 global_ref: self.global_ref()?,
             }),
             _ => Err(DecodeError::Malformed),
@@ -11938,16 +12074,16 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_query(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphQuery, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphQuery, DecodeError> {
         let env_fingerprint = self.hash()?;
         let goal_fingerprint = self.hash()?;
         let goal = self.goal()?;
         let snapshot = self.theorem_graph_snapshot_ref()?;
         let query_features = self.theorem_graph_query_features_ref()?;
-        let ranking_profile =
-            Phase9TheoremGraphRankingProfile::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        let ranking_profile = AdvancedTheoremGraphRankingProfile::from_tag(self.u8()?)
+            .ok_or(DecodeError::Malformed)?;
         let limit = u32::try_from(self.u64()?).map_err(|_| DecodeError::Malformed)?;
-        Ok(Phase9MachineTheoremGraphQuery {
+        Ok(AdvancedMachineTheoremGraphQuery {
             env_fingerprint,
             goal_fingerprint,
             goal,
@@ -11960,19 +12096,19 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_snapshot_ref(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphSnapshotRef, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphSnapshotRef, DecodeError> {
         let source_release_hash = self.hash()?;
-        let extractor_version = Phase9TheoremGraphExtractorVersion::from_tag(self.u8()?)
+        let extractor_version = AdvancedTheoremGraphExtractorVersion::from_tag(self.u8()?)
             .ok_or(DecodeError::Malformed)?;
         let source = match self.u8()? {
-            0 => Phase9MachineTheoremGraphSnapshotSource::Inline {
+            0 => AdvancedMachineTheoremGraphSnapshotSource::Inline {
                 graph_snapshot_hash: self.hash()?,
                 canonical_bytes: self.bytes_with_cap(
-                    MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES,
+                    MAX_ADVANCED_AI_THEOREM_GRAPH_SNAPSHOT_BYTES,
                     DecodeError::TheoremGraphSnapshotBytesTooLarge,
                 )?,
             },
-            1 => Phase9MachineTheoremGraphSnapshotSource::Artifact {
+            1 => AdvancedMachineTheoremGraphSnapshotSource::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 graph_snapshot_hash: self.hash()?,
@@ -11980,7 +12116,7 @@ impl<'a> Decoder<'a> {
             },
             _ => return Err(DecodeError::Malformed),
         };
-        Ok(Phase9MachineTheoremGraphSnapshotRef {
+        Ok(AdvancedMachineTheoremGraphSnapshotRef {
             source_release_hash,
             extractor_version,
             source,
@@ -11989,16 +12125,16 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_query_features_ref(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphQueryFeaturesRef, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphQueryFeaturesRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+            0 => Ok(AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
                 query_features_hash: self.hash()?,
                 canonical_bytes: self.bytes_with_cap(
-                    MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES,
+                    MAX_ADVANCED_AI_THEOREM_GRAPH_QUERY_FEATURES_BYTES,
                     DecodeError::TheoremGraphQueryFeaturesBytesTooLarge,
                 )?,
             }),
-            1 => Ok(Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+            1 => Ok(AdvancedMachineTheoremGraphQueryFeaturesRef::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 query_features_hash: self.hash()?,
@@ -12010,12 +12146,12 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_snapshot(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphSnapshot, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphSnapshot, DecodeError> {
         let source_release_hash = self.hash()?;
-        let extractor_version = Phase9TheoremGraphExtractorVersion::from_tag(self.u8()?)
+        let extractor_version = AdvancedTheoremGraphExtractorVersion::from_tag(self.u8()?)
             .ok_or(DecodeError::Malformed)?;
         let node_len = self.u64()?;
-        if node_len > MAX_PHASE9_THEOREM_GRAPH_NODES {
+        if node_len > MAX_ADVANCED_AI_THEOREM_GRAPH_NODES {
             return Err(DecodeError::Malformed);
         }
         let node_len = usize::try_from(node_len).map_err(|_| DecodeError::Malformed)?;
@@ -12024,7 +12160,7 @@ impl<'a> Decoder<'a> {
             nodes.push(self.theorem_graph_node()?);
         }
         let edge_len = self.u64()?;
-        if edge_len > MAX_PHASE9_THEOREM_GRAPH_EDGES {
+        if edge_len > MAX_ADVANCED_AI_THEOREM_GRAPH_EDGES {
             return Err(DecodeError::Malformed);
         }
         let edge_len = usize::try_from(edge_len).map_err(|_| DecodeError::Malformed)?;
@@ -12032,7 +12168,7 @@ impl<'a> Decoder<'a> {
         for _ in 0..edge_len {
             edges.push(self.theorem_graph_edge()?);
         }
-        Ok(Phase9MachineTheoremGraphSnapshot {
+        Ok(AdvancedMachineTheoremGraphSnapshot {
             source_release_hash,
             extractor_version,
             nodes,
@@ -12042,13 +12178,13 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_query_features(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphQueryFeatures, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphQueryFeatures, DecodeError> {
         let env_fingerprint = self.hash()?;
         let goal_fingerprint = self.hash()?;
-        let feature_schema_version = Phase9TheoremGraphFeatureSchemaVersion::from_tag(self.u8()?)
+        let feature_schema_version = AdvancedTheoremGraphFeatureSchemaVersion::from_tag(self.u8()?)
             .ok_or(DecodeError::Malformed)?;
         let feature_len = self.u64()?;
-        if feature_len > MAX_PHASE9_THEOREM_GRAPH_FEATURES {
+        if feature_len > MAX_ADVANCED_AI_THEOREM_GRAPH_FEATURES {
             return Err(DecodeError::Malformed);
         }
         let feature_len = usize::try_from(feature_len).map_err(|_| DecodeError::Malformed)?;
@@ -12056,7 +12192,7 @@ impl<'a> Decoder<'a> {
         for _ in 0..feature_len {
             features.push(self.theorem_graph_feature()?);
         }
-        Ok(Phase9MachineTheoremGraphQueryFeatures {
+        Ok(AdvancedMachineTheoremGraphQueryFeatures {
             env_fingerprint,
             goal_fingerprint,
             feature_schema_version,
@@ -12066,18 +12202,18 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_edge(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphEdge, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphEdge, DecodeError> {
         let from = self.theorem_graph_node()?;
         let to = self.theorem_graph_node()?;
         let kind =
-            Phase9TheoremGraphEdgeKind::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
-        Ok(Phase9MachineTheoremGraphEdge { from, to, kind })
+            AdvancedTheoremGraphEdgeKind::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        Ok(AdvancedMachineTheoremGraphEdge { from, to, kind })
     }
 
     fn theorem_graph_node(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphNodeRef, DecodeError> {
-        Ok(Phase9MachineTheoremGraphNodeRef {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphNodeRef, DecodeError> {
+        Ok(AdvancedMachineTheoremGraphNodeRef {
             module: self.name()?,
             name: self.name()?,
             export_hash: self.hash()?,
@@ -12090,28 +12226,28 @@ impl<'a> Decoder<'a> {
 
     fn theorem_graph_feature(
         &mut self,
-    ) -> std::result::Result<Phase9MachineTheoremGraphFeature, DecodeError> {
-        let key = Phase9TheoremGraphFeatureKey {
+    ) -> std::result::Result<AdvancedMachineTheoremGraphFeature, DecodeError> {
+        let key = AdvancedTheoremGraphFeatureKey {
             namespace_ascii: self.bytes()?,
             name_ascii: self.bytes()?,
         };
         let value = match self.u8()? {
             0 => match self.u8()? {
-                0 => Phase9TheoremGraphFeatureValue::Bool(false),
-                1 => Phase9TheoremGraphFeatureValue::Bool(true),
+                0 => AdvancedTheoremGraphFeatureValue::Bool(false),
+                1 => AdvancedTheoremGraphFeatureValue::Bool(true),
                 _ => return Err(DecodeError::Malformed),
             },
-            1 => Phase9TheoremGraphFeatureValue::I64(self.i64()?),
-            2 => Phase9TheoremGraphFeatureValue::Hash(self.hash()?),
+            1 => AdvancedTheoremGraphFeatureValue::I64(self.i64()?),
+            2 => AdvancedTheoremGraphFeatureValue::Hash(self.hash()?),
             _ => return Err(DecodeError::Malformed),
         };
-        Ok(Phase9MachineTheoremGraphFeature { key, value })
+        Ok(AdvancedMachineTheoremGraphFeature { key, value })
     }
 
     fn skip_theorem_graph_edge(&mut self) -> std::result::Result<(), DecodeError> {
         self.skip_theorem_graph_node()?;
         self.skip_theorem_graph_node()?;
-        Phase9TheoremGraphEdgeKind::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
+        AdvancedTheoremGraphEdgeKind::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?;
         Ok(())
     }
 
@@ -12159,8 +12295,8 @@ impl<'a> Decoder<'a> {
 
     fn formalization_payload(
         &mut self,
-    ) -> std::result::Result<Phase9MachineFormalizationCheckPayload, DecodeError> {
-        Ok(Phase9MachineFormalizationCheckPayload {
+    ) -> std::result::Result<AdvancedMachineFormalizationCheckPayload, DecodeError> {
+        Ok(AdvancedMachineFormalizationCheckPayload {
             candidate: self.formalization_candidate()?,
             intent_record: self.option_formalization_intent_record()?,
         })
@@ -12168,8 +12304,8 @@ impl<'a> Decoder<'a> {
 
     fn formalization_candidate(
         &mut self,
-    ) -> std::result::Result<Phase9MachineFormalizationCandidate, DecodeError> {
-        Ok(Phase9MachineFormalizationCandidate {
+    ) -> std::result::Result<AdvancedMachineFormalizationCandidate, DecodeError> {
+        Ok(AdvancedMachineFormalizationCandidate {
             source_document: self.formalization_source_document_ref()?,
             claim_span: self.formalization_claim_span()?,
             statement: self.machine_surface_term()?,
@@ -12179,26 +12315,29 @@ impl<'a> Decoder<'a> {
 
     fn machine_surface_term(
         &mut self,
-    ) -> std::result::Result<Phase9MachineSurfaceTerm, DecodeError> {
-        Ok(Phase9MachineSurfaceTerm {
-            universe_params: self.string_list_with_cap(MAX_PHASE9_FORMALIZATION_UNIVERSE_PARAMS)?,
-            term_canonical_bytes: self
-                .bytes_with_cap(MAX_PHASE9_FORMALIZATION_TERM_BYTES, DecodeError::Malformed)?,
+    ) -> std::result::Result<AdvancedMachineSurfaceTerm, DecodeError> {
+        Ok(AdvancedMachineSurfaceTerm {
+            universe_params: self
+                .string_list_with_cap(MAX_ADVANCED_AI_FORMALIZATION_UNIVERSE_PARAMS)?,
+            term_canonical_bytes: self.bytes_with_cap(
+                MAX_ADVANCED_AI_FORMALIZATION_TERM_BYTES,
+                DecodeError::Malformed,
+            )?,
         })
     }
 
     fn formalization_source_document_ref(
         &mut self,
-    ) -> std::result::Result<Phase9MachineFormalizationSourceDocumentRef, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineFormalizationSourceDocumentRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9MachineFormalizationSourceDocumentRef::Inline {
+            0 => Ok(AdvancedMachineFormalizationSourceDocumentRef::Inline {
                 source_document_hash: self.hash()?,
                 raw_utf8_bytes: self.bytes_with_cap(
-                    MAX_PHASE9_FORMALIZATION_SOURCE_BYTES,
+                    MAX_ADVANCED_AI_FORMALIZATION_SOURCE_BYTES,
                     DecodeError::Malformed,
                 )?,
             }),
-            1 => Ok(Phase9MachineFormalizationSourceDocumentRef::Artifact {
+            1 => Ok(AdvancedMachineFormalizationSourceDocumentRef::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 source_document_hash: self.hash()?,
@@ -12210,8 +12349,8 @@ impl<'a> Decoder<'a> {
 
     fn formalization_claim_span(
         &mut self,
-    ) -> std::result::Result<Phase9MachineFormalizationClaimSpan, DecodeError> {
-        Ok(Phase9MachineFormalizationClaimSpan {
+    ) -> std::result::Result<AdvancedMachineFormalizationClaimSpan, DecodeError> {
+        Ok(AdvancedMachineFormalizationClaimSpan {
             start_byte: self.u64()?,
             end_byte: self.u64()?,
             claim_span_hash: self.hash()?,
@@ -12220,12 +12359,12 @@ impl<'a> Decoder<'a> {
 
     fn option_formalization_proof_candidate(
         &mut self,
-    ) -> std::result::Result<Option<Phase9MachineFormalizationProofCandidate>, DecodeError> {
+    ) -> std::result::Result<Option<AdvancedMachineFormalizationProofCandidate>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
-            1 => Ok(Some(Phase9MachineFormalizationProofCandidate {
+            1 => Ok(Some(AdvancedMachineFormalizationProofCandidate {
                 candidate_statement_hash: self.hash()?,
-                tactic: self.phase9_tactic_candidate()?,
+                tactic: self.advanced_ai_tactic_candidate()?,
             })),
             _ => Err(DecodeError::Malformed),
         }
@@ -12233,10 +12372,10 @@ impl<'a> Decoder<'a> {
 
     fn option_formalization_intent_record(
         &mut self,
-    ) -> std::result::Result<Option<Phase9FormalizationIntentRecord>, DecodeError> {
+    ) -> std::result::Result<Option<AdvancedFormalizationIntentRecord>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
-            1 => Ok(Some(Phase9FormalizationIntentRecord {
+            1 => Ok(Some(AdvancedFormalizationIntentRecord {
                 source_document_hash: self.hash()?,
                 claim_span_hash: self.hash()?,
                 candidate_statement_hash: self.hash()?,
@@ -12248,14 +12387,14 @@ impl<'a> Decoder<'a> {
 
     fn formalization_intent_status(
         &mut self,
-    ) -> std::result::Result<Phase9FormalizationIntentStatus, DecodeError> {
+    ) -> std::result::Result<AdvancedFormalizationIntentStatus, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9FormalizationIntentStatus::Unreviewed),
-            1 => Ok(Phase9FormalizationIntentStatus::Reviewed {
+            0 => Ok(AdvancedFormalizationIntentStatus::Unreviewed),
+            1 => Ok(AdvancedFormalizationIntentStatus::Reviewed {
                 reviewer: self.reviewer_id()?,
                 accepted_statement_hash: self.hash()?,
             }),
-            2 => Ok(Phase9FormalizationIntentStatus::Rejected {
+            2 => Ok(AdvancedFormalizationIntentStatus::Rejected {
                 reviewer: self.reviewer_id()?,
                 rejection_reason: self.formalization_rejection_reason_ref()?,
                 rejection_reason_hash: self.hash()?,
@@ -12264,12 +12403,12 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn reviewer_id(&mut self) -> std::result::Result<Phase9ReviewerId, DecodeError> {
+    fn reviewer_id(&mut self) -> std::result::Result<AdvancedReviewerId, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9ReviewerId::Human {
+            0 => Ok(AdvancedReviewerId::Human {
                 stable_id_ascii: self.bytes()?,
             }),
-            1 => Ok(Phase9ReviewerId::System {
+            1 => Ok(AdvancedReviewerId::System {
                 system_id_ascii: self.bytes()?,
                 actor_id_ascii: self.bytes()?,
             }),
@@ -12279,16 +12418,16 @@ impl<'a> Decoder<'a> {
 
     fn formalization_rejection_reason_ref(
         &mut self,
-    ) -> std::result::Result<Phase9MachineFormalizationRejectionReasonRef, DecodeError> {
+    ) -> std::result::Result<AdvancedMachineFormalizationRejectionReasonRef, DecodeError> {
         match self.u8()? {
-            0 => Ok(Phase9MachineFormalizationRejectionReasonRef::Inline {
+            0 => Ok(AdvancedMachineFormalizationRejectionReasonRef::Inline {
                 rejection_reason_hash: self.hash()?,
                 raw_utf8_bytes: self.bytes_with_cap(
-                    MAX_PHASE9_FORMALIZATION_REASON_BYTES,
+                    MAX_ADVANCED_AI_FORMALIZATION_REASON_BYTES,
                     DecodeError::Malformed,
                 )?,
             }),
-            1 => Ok(Phase9MachineFormalizationRejectionReasonRef::Artifact {
+            1 => Ok(AdvancedMachineFormalizationRejectionReasonRef::Artifact {
                 path: self.string()?,
                 file_hash: self.hash()?,
                 rejection_reason_hash: self.hash()?,
@@ -12298,7 +12437,7 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn phase9_tactic_candidate(
+    fn advanced_ai_tactic_candidate(
         &mut self,
     ) -> std::result::Result<MachineTacticCandidate, DecodeError> {
         match self.u8()? {
@@ -12309,13 +12448,13 @@ impl<'a> Decoder<'a> {
                 name: self.string()?,
             }),
             2 => {
-                let head = self.phase9_tactic_head()?;
-                let mut budget = Phase9InductiveDecodeBudget::new();
+                let head = self.advanced_ai_tactic_head()?;
+                let mut budget = AdvancedInductiveDecodeBudget::new();
                 let universe_args = self.level_list_with_cap_counted(
-                    MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS,
+                    MAX_ADVANCED_AI_FORMALIZATION_TACTIC_ITEMS,
                     &mut budget,
                 )?;
-                let args = self.phase9_apply_args()?;
+                let args = self.advanced_ai_apply_args()?;
                 Ok(MachineTacticCandidate::Apply {
                     head,
                     universe_args,
@@ -12323,19 +12462,19 @@ impl<'a> Decoder<'a> {
                 })
             }
             3 => Ok(MachineTacticCandidate::Rewrite {
-                rule: self.phase9_candidate_rewrite_rule()?,
-                direction: self.phase9_rewrite_direction()?,
-                site: self.phase9_rewrite_site()?,
+                rule: self.advanced_ai_candidate_rewrite_rule()?,
+                direction: self.advanced_ai_rewrite_direction()?,
+                site: self.advanced_ai_rewrite_site()?,
             }),
             4 => {
                 let len = self.u64()?;
-                if len > MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS {
+                if len > MAX_ADVANCED_AI_FORMALIZATION_TACTIC_ITEMS {
                     return Err(DecodeError::Malformed);
                 }
                 let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
                 let mut rules = Vec::new();
                 for _ in 0..len {
-                    rules.push(self.phase9_simp_rule_ref()?);
+                    rules.push(self.advanced_ai_simp_rule_ref()?);
                 }
                 Ok(MachineTacticCandidate::SimpLite { rules })
             }
@@ -12346,20 +12485,22 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn phase9_apply_args(&mut self) -> std::result::Result<Vec<CandidateApplyArg>, DecodeError> {
+    fn advanced_ai_apply_args(
+        &mut self,
+    ) -> std::result::Result<Vec<CandidateApplyArg>, DecodeError> {
         let len = self.u64()?;
-        if len > MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS {
+        if len > MAX_ADVANCED_AI_FORMALIZATION_TACTIC_ITEMS {
             return Err(DecodeError::Malformed);
         }
         let len = usize::try_from(len).map_err(|_| DecodeError::Malformed)?;
         let mut args = Vec::new();
         for _ in 0..len {
-            args.push(self.phase9_apply_arg()?);
+            args.push(self.advanced_ai_apply_arg()?);
         }
         Ok(args)
     }
 
-    fn phase9_apply_arg(&mut self) -> std::result::Result<CandidateApplyArg, DecodeError> {
+    fn advanced_ai_apply_arg(&mut self) -> std::result::Result<CandidateApplyArg, DecodeError> {
         match self.u8()? {
             0 => Ok(CandidateApplyArg::Term(RawMachineTerm::new(self.string()?))),
             1 => Ok(CandidateApplyArg::Subgoal {
@@ -12378,14 +12519,14 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn phase9_candidate_rewrite_rule(
+    fn advanced_ai_candidate_rewrite_rule(
         &mut self,
     ) -> std::result::Result<CandidateRewriteRuleRef, DecodeError> {
-        let head = self.phase9_tactic_head()?;
-        let mut budget = Phase9InductiveDecodeBudget::new();
-        let universe_args =
-            self.level_list_with_cap_counted(MAX_PHASE9_FORMALIZATION_TACTIC_ITEMS, &mut budget)?;
-        let args = self.phase9_apply_args()?;
+        let head = self.advanced_ai_tactic_head()?;
+        let mut budget = AdvancedInductiveDecodeBudget::new();
+        let universe_args = self
+            .level_list_with_cap_counted(MAX_ADVANCED_AI_FORMALIZATION_TACTIC_ITEMS, &mut budget)?;
+        let args = self.advanced_ai_apply_args()?;
         Ok(CandidateRewriteRuleRef {
             head,
             universe_args,
@@ -12393,7 +12534,7 @@ impl<'a> Decoder<'a> {
         })
     }
 
-    fn phase9_tactic_head(&mut self) -> std::result::Result<TacticHead, DecodeError> {
+    fn advanced_ai_tactic_head(&mut self) -> std::result::Result<TacticHead, DecodeError> {
         match self.u8()? {
             0 => Ok(TacticHead::Imported {
                 name: self.name()?,
@@ -12410,15 +12551,17 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn phase9_simp_rule_ref(&mut self) -> std::result::Result<SimpRuleRef, DecodeError> {
+    fn advanced_ai_simp_rule_ref(&mut self) -> std::result::Result<SimpRuleRef, DecodeError> {
         Ok(SimpRuleRef {
             name: self.name()?,
             decl_interface_hash: self.hash()?,
-            direction: self.phase9_rewrite_direction()?,
+            direction: self.advanced_ai_rewrite_direction()?,
         })
     }
 
-    fn phase9_rewrite_direction(&mut self) -> std::result::Result<RewriteDirection, DecodeError> {
+    fn advanced_ai_rewrite_direction(
+        &mut self,
+    ) -> std::result::Result<RewriteDirection, DecodeError> {
         match self.u8()? {
             0 => Ok(RewriteDirection::Forward),
             1 => Ok(RewriteDirection::Backward),
@@ -12426,7 +12569,7 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn phase9_rewrite_site(&mut self) -> std::result::Result<RewriteSite, DecodeError> {
+    fn advanced_ai_rewrite_site(&mut self) -> std::result::Result<RewriteSite, DecodeError> {
         match self.u8()? {
             0 => Ok(RewriteSite::EqTargetLeft),
             1 => Ok(RewriteSite::EqTargetRight),
@@ -12436,10 +12579,10 @@ impl<'a> Decoder<'a> {
 
     fn option_quotient(
         &mut self,
-    ) -> std::result::Result<Option<Phase9QuotientOptions>, DecodeError> {
+    ) -> std::result::Result<Option<AdvancedQuotientOptions>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
-            1 => Ok(Some(Phase9QuotientOptions {
+            1 => Ok(Some(AdvancedQuotientOptions {
                 setoid: self.global_ref()?,
                 setoid_mk: self.global_ref()?,
                 setoid_relation: self.global_ref()?,
@@ -12454,10 +12597,10 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn option_smt(&mut self) -> std::result::Result<Option<Phase9SmtOptions>, DecodeError> {
+    fn option_smt(&mut self) -> std::result::Result<Option<AdvancedSmtOptions>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
-            1 => Ok(Some(Phase9SmtOptions {
+            1 => Ok(Some(AdvancedSmtOptions {
                 eq: self.global_ref()?,
                 prop_false: self.option_global_ref()?,
                 prop_not: self.option_global_ref()?,
@@ -12466,7 +12609,9 @@ impl<'a> Decoder<'a> {
         }
     }
 
-    fn option_global_ref(&mut self) -> std::result::Result<Option<Phase9AiGlobalRef>, DecodeError> {
+    fn option_global_ref(
+        &mut self,
+    ) -> std::result::Result<Option<AdvancedAiGlobalRef>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
             1 => Ok(Some(self.global_ref()?)),
@@ -12476,10 +12621,10 @@ impl<'a> Decoder<'a> {
 
     fn option_formalization(
         &mut self,
-    ) -> std::result::Result<Option<Phase9FormalizationOptions>, DecodeError> {
+    ) -> std::result::Result<Option<AdvancedFormalizationOptions>, DecodeError> {
         match self.u8()? {
             0 => Ok(None),
-            1 => Ok(Some(Phase9FormalizationOptions {
+            1 => Ok(Some(AdvancedFormalizationOptions {
                 tactic_options_canonical_bytes: self.bytes()?,
                 tactic_budget_canonical_bytes: self.bytes()?,
             })),
@@ -12488,7 +12633,7 @@ impl<'a> Decoder<'a> {
     }
 }
 
-fn ensure_sorted_global_refs(refs: &[Phase9AiGlobalRef]) -> std::result::Result<(), DecodeError> {
+fn ensure_sorted_global_refs(refs: &[AdvancedAiGlobalRef]) -> std::result::Result<(), DecodeError> {
     let mut previous: Option<Vec<u8>> = None;
     for global_ref in refs {
         let key = global_ref_sort_key(global_ref).map_err(|_| DecodeError::Malformed)?;
@@ -12503,42 +12648,42 @@ fn ensure_sorted_global_refs(refs: &[Phase9AiGlobalRef]) -> std::result::Result<
 }
 
 fn compare_import_identities(
-    left: &Phase9ImportIdentity,
-    right: &Phase9ImportIdentity,
-) -> std::result::Result<Ordering, Phase9AiCanonicalError> {
+    left: &AdvancedImportIdentity,
+    right: &AdvancedImportIdentity,
+) -> std::result::Result<Ordering, AdvancedAiCanonicalError> {
     Ok(import_identity_sort_key(left)?.cmp(&import_identity_sort_key(right)?))
 }
 
 fn import_identity_sort_key(
-    import: &Phase9ImportIdentity,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
-    let mut key = phase5_name_canonical_bytes(&import.module)
-        .map_err(|_| Phase9AiCanonicalError::InvalidName)?;
+    import: &AdvancedImportIdentity,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
+    let mut key = machine_api_name_canonical_bytes(&import.module)
+        .map_err(|_| AdvancedAiCanonicalError::InvalidName)?;
     key.extend_from_slice(&import.export_hash);
     key.extend_from_slice(&import.certificate_hash);
     Ok(key)
 }
 
 fn global_ref_sort_key(
-    global_ref: &Phase9AiGlobalRef,
-) -> std::result::Result<Vec<u8>, Phase9AiCanonicalError> {
-    let mut key = phase5_name_canonical_bytes(&global_ref.module)
-        .map_err(|_| Phase9AiCanonicalError::InvalidName)?;
+    global_ref: &AdvancedAiGlobalRef,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
+    let mut key = machine_api_name_canonical_bytes(&global_ref.module)
+        .map_err(|_| AdvancedAiCanonicalError::InvalidName)?;
     key.extend_from_slice(&global_ref.export_hash);
     key.extend_from_slice(&global_ref.certificate_hash);
     key.extend_from_slice(
-        &phase5_name_canonical_bytes(&global_ref.name)
-            .map_err(|_| Phase9AiCanonicalError::InvalidName)?,
+        &machine_api_name_canonical_bytes(&global_ref.name)
+            .map_err(|_| AdvancedAiCanonicalError::InvalidName)?,
     );
     key.extend_from_slice(&global_ref.decl_interface_hash);
     Ok(key)
 }
 
-fn encode_validation_error_to(out: &mut Vec<u8>, error: Phase9AiValidationError) {
+fn encode_validation_error_to(out: &mut Vec<u8>, error: AdvancedAiValidationError) {
     out.push(error.tag());
 }
 
-fn encode_feature_error_option_to(out: &mut Vec<u8>, feature: Option<Phase9AiFeatureError>) {
+fn encode_feature_error_option_to(out: &mut Vec<u8>, feature: Option<AdvancedAiFeatureError>) {
     match feature {
         Some(feature) => {
             out.push(1);
@@ -12548,87 +12693,87 @@ fn encode_feature_error_option_to(out: &mut Vec<u8>, feature: Option<Phase9AiFea
     }
 }
 
-fn encode_feature_error_to(out: &mut Vec<u8>, feature: Phase9AiFeatureError) {
+fn encode_feature_error_to(out: &mut Vec<u8>, feature: AdvancedAiFeatureError) {
     match feature {
-        Phase9AiFeatureError::AdvancedInductive(error) => {
+        AdvancedAiFeatureError::AdvancedInductive(error) => {
             out.push(0);
             out.push(match error {
-                Phase9AdvancedInductiveError::TargetRefMismatch => 0,
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported => 1,
-                Phase9AdvancedInductiveError::ArtifactGeneratorUnavailable => 2,
-                Phase9AdvancedInductiveError::GeneratedArtifactMismatch => 3,
-                Phase9AdvancedInductiveError::NameCollision => 4,
+                AdvancedInductiveError::TargetRefMismatch => 0,
+                AdvancedInductiveError::PositivityProfileUnsupported => 1,
+                AdvancedInductiveError::ArtifactGeneratorUnavailable => 2,
+                AdvancedInductiveError::GeneratedArtifactMismatch => 3,
+                AdvancedInductiveError::NameCollision => 4,
             });
         }
-        Phase9AiFeatureError::UniverseRepair(error) => {
+        AdvancedAiFeatureError::UniverseRepair(error) => {
             out.push(1);
             out.push(match error {
-                Phase9UniverseRepairError::UnknownUniverseParam => 0,
-                Phase9UniverseRepairError::IllFormedLevelExpr => 1,
-                Phase9UniverseRepairError::UnsatisfiedConstraint => 2,
-                Phase9UniverseRepairError::NonCanonicalSolution => 3,
-                Phase9UniverseRepairError::TargetFingerprintMismatch => 4,
-                Phase9UniverseRepairError::InvalidOccurrencePath => 5,
-                Phase9UniverseRepairError::AmbiguousOccurrence => 6,
-                Phase9UniverseRepairError::TargetRefMismatch => 7,
-                Phase9UniverseRepairError::ConstraintHintMismatch => 8,
+                AdvancedUniverseRepairError::UnknownUniverseParam => 0,
+                AdvancedUniverseRepairError::IllFormedLevelExpr => 1,
+                AdvancedUniverseRepairError::UnsatisfiedConstraint => 2,
+                AdvancedUniverseRepairError::NonCanonicalSolution => 3,
+                AdvancedUniverseRepairError::TargetFingerprintMismatch => 4,
+                AdvancedUniverseRepairError::InvalidOccurrencePath => 5,
+                AdvancedUniverseRepairError::AmbiguousOccurrence => 6,
+                AdvancedUniverseRepairError::TargetRefMismatch => 7,
+                AdvancedUniverseRepairError::ConstraintHintMismatch => 8,
             });
         }
-        Phase9AiFeatureError::TypeclassResolution(error) => {
+        AdvancedAiFeatureError::TypeclassResolution(error) => {
             out.push(2);
             out.push(match error {
-                Phase9TypeclassResolutionError::ClassDeclarationMismatch => 0,
-                Phase9TypeclassResolutionError::CandidateInterfaceInvalid => 1,
-                Phase9TypeclassResolutionError::ClassHeadUnsupported => 2,
-                Phase9TypeclassResolutionError::NoSolution => 3,
+                AdvancedTypeclassResolutionError::ClassDeclarationMismatch => 0,
+                AdvancedTypeclassResolutionError::CandidateInterfaceInvalid => 1,
+                AdvancedTypeclassResolutionError::ClassHeadUnsupported => 2,
+                AdvancedTypeclassResolutionError::NoSolution => 3,
             });
         }
-        Phase9AiFeatureError::QuotientConstruction(error) => {
+        AdvancedAiFeatureError::QuotientConstruction(error) => {
             out.push(3);
             out.push(match error {
-                Phase9QuotientConstructionError::TargetRefMismatch => 0,
-                Phase9QuotientConstructionError::PrimitiveInterfaceMismatch => 1,
-                Phase9QuotientConstructionError::UniverseLevelMismatch => 2,
-                Phase9QuotientConstructionError::CompatibilityProofMismatch => 3,
-                Phase9QuotientConstructionError::QuotientTypeMismatch => 4,
-                Phase9QuotientConstructionError::RelationTypeMismatch => 5,
-                Phase9QuotientConstructionError::EquivalenceProofMismatch => 6,
-                Phase9QuotientConstructionError::RawFunctionTypeMismatch => 7,
+                AdvancedQuotientConstructionError::TargetRefMismatch => 0,
+                AdvancedQuotientConstructionError::PrimitiveInterfaceMismatch => 1,
+                AdvancedQuotientConstructionError::UniverseLevelMismatch => 2,
+                AdvancedQuotientConstructionError::CompatibilityProofMismatch => 3,
+                AdvancedQuotientConstructionError::QuotientTypeMismatch => 4,
+                AdvancedQuotientConstructionError::RelationTypeMismatch => 5,
+                AdvancedQuotientConstructionError::EquivalenceProofMismatch => 6,
+                AdvancedQuotientConstructionError::RawFunctionTypeMismatch => 7,
             });
         }
-        Phase9AiFeatureError::SmtCertificate(error) => {
+        AdvancedAiFeatureError::SmtCertificate(error) => {
             out.push(4);
             out.push(match error {
-                Phase9SmtCertificateError::EncodingMismatch => 0,
-                Phase9SmtCertificateError::RuleFingerprintMismatch => 1,
-                Phase9SmtCertificateError::RuleRegistryMismatch => 2,
-                Phase9SmtCertificateError::NonCanonicalPayload => 3,
-                Phase9SmtCertificateError::ReconstructionProofMismatch => 4,
-                Phase9SmtCertificateError::ConclusionEncodingMismatch => 5,
-                Phase9SmtCertificateError::PayloadBindingMismatch => 6,
-                Phase9SmtCertificateError::ReconstructionConclusionMismatch => 7,
-                Phase9SmtCertificateError::ReconstructionPremiseMismatch => 8,
-                Phase9SmtCertificateError::PublicInterfaceMismatch => 9,
-                Phase9SmtCertificateError::TheoryRefMismatch => 10,
+                AdvancedSmtCertificateError::EncodingMismatch => 0,
+                AdvancedSmtCertificateError::RuleFingerprintMismatch => 1,
+                AdvancedSmtCertificateError::RuleRegistryMismatch => 2,
+                AdvancedSmtCertificateError::NonCanonicalPayload => 3,
+                AdvancedSmtCertificateError::ReconstructionProofMismatch => 4,
+                AdvancedSmtCertificateError::ConclusionEncodingMismatch => 5,
+                AdvancedSmtCertificateError::PayloadBindingMismatch => 6,
+                AdvancedSmtCertificateError::ReconstructionConclusionMismatch => 7,
+                AdvancedSmtCertificateError::ReconstructionPremiseMismatch => 8,
+                AdvancedSmtCertificateError::PublicInterfaceMismatch => 9,
+                AdvancedSmtCertificateError::TheoryRefMismatch => 10,
             });
         }
-        Phase9AiFeatureError::TheoremGraphQuery(error) => {
+        AdvancedAiFeatureError::TheoremGraphQuery(error) => {
             out.push(5);
             out.push(match error {
-                Phase9TheoremGraphError::SnapshotMalformed => 0,
-                Phase9TheoremGraphError::QueryFeaturesMalformed => 1,
-                Phase9TheoremGraphError::NodeResolutionMismatch => 2,
-                Phase9TheoremGraphError::LimitOutOfRange => 3,
+                AdvancedTheoremGraphError::SnapshotMalformed => 0,
+                AdvancedTheoremGraphError::QueryFeaturesMalformed => 1,
+                AdvancedTheoremGraphError::NodeResolutionMismatch => 2,
+                AdvancedTheoremGraphError::LimitOutOfRange => 3,
             });
         }
-        Phase9AiFeatureError::Formalization(error) => {
+        AdvancedAiFeatureError::Formalization(error) => {
             out.push(6);
             out.push(match error {
-                Phase9FormalizationError::IntentRecordMismatch => 0,
-                Phase9FormalizationError::CandidateStatementElaborationFailed => 1,
-                Phase9FormalizationError::FormalizationProofStatementMismatch => 2,
-                Phase9FormalizationError::RejectedIntentHasProofCandidate => 3,
-                Phase9FormalizationError::ProofBridgeFailed => 4,
+                AdvancedFormalizationError::IntentRecordMismatch => 0,
+                AdvancedFormalizationError::CandidateStatementElaborationFailed => 1,
+                AdvancedFormalizationError::FormalizationProofStatementMismatch => 2,
+                AdvancedFormalizationError::RejectedIntentHasProofCandidate => 3,
+                AdvancedFormalizationError::ProofBridgeFailed => 4,
             });
         }
     }
@@ -12637,9 +12782,9 @@ fn encode_feature_error_to(out: &mut Vec<u8>, feature: Phase9AiFeatureError) {
 fn encode_name_to(
     out: &mut Vec<u8>,
     name: &Name,
-) -> std::result::Result<(), Phase9AiCanonicalError> {
+) -> std::result::Result<(), AdvancedAiCanonicalError> {
     if !name.is_canonical() {
-        return Err(Phase9AiCanonicalError::InvalidName);
+        return Err(AdvancedAiCanonicalError::InvalidName);
     }
     encode_len_to(out, name.0.len());
     for component in &name.0 {
@@ -12789,11 +12934,11 @@ mod tests {
     }
 
     fn empty_options_bytes() -> Vec<u8> {
-        phase9_ai_options_canonical_bytes(&Phase9AiOptions::default()).unwrap()
+        advanced_ai_options_canonical_bytes(&AdvancedAiOptions::default()).unwrap()
     }
 
-    fn global_ref(seed: u8) -> Phase9AiGlobalRef {
-        Phase9AiGlobalRef {
+    fn global_ref(seed: u8) -> AdvancedAiGlobalRef {
+        AdvancedAiGlobalRef {
             module: Name::from_dotted("Std.Prim"),
             export_hash: hash(seed),
             certificate_hash: hash(seed.wrapping_add(1)),
@@ -12831,13 +12976,13 @@ mod tests {
         VerifiedImportRef::from_verified_module(&verified).unwrap()
     }
 
-    fn universe_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+    fn universe_global_ref_for(import: &VerifiedImportRef, name: &str) -> AdvancedAiGlobalRef {
         let export = import
             .exports()
             .iter()
             .find(|export| export.name == Name::from_dotted(name))
             .unwrap();
-        Phase9AiGlobalRef {
+        AdvancedAiGlobalRef {
             module: import.module().clone(),
             export_hash: import.export_hash(),
             certificate_hash: import.certificate_hash(),
@@ -12846,7 +12991,7 @@ mod tests {
         }
     }
 
-    fn universe_global_ref(import: &VerifiedImportRef) -> Phase9AiGlobalRef {
+    fn universe_global_ref(import: &VerifiedImportRef) -> AdvancedAiGlobalRef {
         universe_global_ref_for(import, "Lib.T")
     }
 
@@ -12884,7 +13029,7 @@ mod tests {
     fn theorem_graph_node(
         import: &VerifiedImportRef,
         name: &str,
-    ) -> Phase9MachineTheoremGraphNodeRef {
+    ) -> AdvancedMachineTheoremGraphNodeRef {
         let export = import
             .exports()
             .iter()
@@ -12896,7 +13041,7 @@ mod tests {
             .iter()
             .find(|decl| decl.hashes.decl_interface_hash == export.decl_interface_hash)
             .unwrap();
-        Phase9MachineTheoremGraphNodeRef {
+        AdvancedMachineTheoremGraphNodeRef {
             module: import.module().clone(),
             name: export.name.clone(),
             export_hash: import.export_hash(),
@@ -12907,8 +13052,8 @@ mod tests {
         }
     }
 
-    fn missing_theorem_graph_node() -> Phase9MachineTheoremGraphNodeRef {
-        Phase9MachineTheoremGraphNodeRef {
+    fn missing_theorem_graph_node() -> AdvancedMachineTheoremGraphNodeRef {
+        AdvancedMachineTheoremGraphNodeRef {
             module: Name::from_dotted("Missing"),
             name: Name::from_dotted("Missing.P"),
             export_hash: hash(31),
@@ -12919,8 +13064,8 @@ mod tests {
         }
     }
 
-    fn theorem_graph_goal() -> Phase9AiGoal {
-        Phase9AiGoal {
+    fn theorem_graph_goal() -> AdvancedAiGoal {
+        AdvancedAiGoal {
             universe_params: Vec::new(),
             local_context: Vec::new(),
             target: Expr::sort(Level::zero()),
@@ -12930,23 +13075,23 @@ mod tests {
     fn theorem_graph_features(
         env_fingerprint: Hash,
         goal_fingerprint: Hash,
-    ) -> Phase9MachineTheoremGraphQueryFeatures {
-        Phase9MachineTheoremGraphQueryFeatures {
+    ) -> AdvancedMachineTheoremGraphQueryFeatures {
+        AdvancedMachineTheoremGraphQueryFeatures {
             env_fingerprint,
             goal_fingerprint,
-            feature_schema_version: Phase9TheoremGraphFeatureSchemaVersion::MvpGoalFeaturesV1,
+            feature_schema_version: AdvancedTheoremGraphFeatureSchemaVersion::MvpGoalFeaturesV1,
             features: Vec::new(),
         }
     }
 
     fn theorem_graph_snapshot(
         source_release_hash: Hash,
-        mut nodes: Vec<Phase9MachineTheoremGraphNodeRef>,
-    ) -> Phase9MachineTheoremGraphSnapshot {
-        nodes.sort_by_key(phase9_theorem_graph_node_identity_key);
-        Phase9MachineTheoremGraphSnapshot {
+        mut nodes: Vec<AdvancedMachineTheoremGraphNodeRef>,
+    ) -> AdvancedMachineTheoremGraphSnapshot {
+        nodes.sort_by_key(advanced_ai_theorem_graph_node_identity_key);
+        AdvancedMachineTheoremGraphSnapshot {
             source_release_hash,
-            extractor_version: Phase9TheoremGraphExtractorVersion::MvpCertificateGraphV1,
+            extractor_version: AdvancedTheoremGraphExtractorVersion::MvpCertificateGraphV1,
             nodes,
             edges: Vec::new(),
         }
@@ -12957,7 +13102,7 @@ mod tests {
     ) -> Vec<u8> {
         let mut bytes = Vec::new();
         encode_hash_to(&mut bytes, &source_release_hash);
-        bytes.push(Phase9TheoremGraphExtractorVersion::MvpCertificateGraphV1.tag());
+        bytes.push(AdvancedTheoremGraphExtractorVersion::MvpCertificateGraphV1.tag());
         encode_u64_to(&mut bytes, 1);
         encode_u64_to(&mut bytes, 1);
         encode_bytes_to(&mut bytes, b"");
@@ -12973,67 +13118,67 @@ mod tests {
         import: &VerifiedImportRef,
         snapshot_hash_override: Option<Hash>,
         query_features_hash_override: Option<Hash>,
-        snapshot: Phase9MachineTheoremGraphSnapshot,
-        query_features_override: Option<Phase9MachineTheoremGraphQueryFeatures>,
+        snapshot: AdvancedMachineTheoremGraphSnapshot,
+        query_features_override: Option<AdvancedMachineTheoremGraphQueryFeatures>,
         limit: u32,
     ) -> Vec<u8> {
         let options_bytes = empty_options_bytes();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
-        let env_fingerprint = phase9_ai_env_fingerprint(
-            Phase9AiProfileVersion::MvpV1,
-            Phase9AiTaskKind::TheoremGraphQuery,
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let imports = vec![AdvancedImportIdentity::from_verified_import(import)];
+        let env_fingerprint = advanced_ai_env_fingerprint(
+            AdvancedAiProfileVersion::MvpV1,
+            AdvancedAiTaskKind::TheoremGraphQuery,
             &imports,
             options_hash,
         )
         .unwrap();
         let goal = theorem_graph_goal();
-        let goal_fingerprint = phase9_ai_goal_fingerprint(env_fingerprint, &goal);
-        let snapshot_bytes = phase9_theorem_graph_snapshot_canonical_bytes(&snapshot).unwrap();
+        let goal_fingerprint = advanced_ai_goal_fingerprint(env_fingerprint, &goal);
+        let snapshot_bytes = advanced_ai_theorem_graph_snapshot_canonical_bytes(&snapshot).unwrap();
         let snapshot_hash = snapshot_hash_override
-            .unwrap_or_else(|| phase9_theorem_graph_snapshot_hash(&snapshot_bytes).unwrap());
+            .unwrap_or_else(|| advanced_ai_theorem_graph_snapshot_hash(&snapshot_bytes).unwrap());
         let query_features = query_features_override
             .unwrap_or_else(|| theorem_graph_features(env_fingerprint, goal_fingerprint));
         let query_features_bytes =
-            phase9_theorem_graph_query_features_canonical_bytes(&query_features).unwrap();
+            advanced_ai_theorem_graph_query_features_canonical_bytes(&query_features).unwrap();
         let query_features_hash = query_features_hash_override.unwrap_or_else(|| {
-            phase9_theorem_graph_query_features_hash(&query_features_bytes).unwrap()
+            advanced_ai_theorem_graph_query_features_hash(&query_features_bytes).unwrap()
         });
-        let query = Phase9MachineTheoremGraphQuery {
+        let query = AdvancedMachineTheoremGraphQuery {
             env_fingerprint,
             goal_fingerprint,
             goal,
-            snapshot: Phase9MachineTheoremGraphSnapshotRef {
+            snapshot: AdvancedMachineTheoremGraphSnapshotRef {
                 source_release_hash: snapshot.source_release_hash,
-                extractor_version: Phase9TheoremGraphExtractorVersion::MvpCertificateGraphV1,
-                source: Phase9MachineTheoremGraphSnapshotSource::Inline {
+                extractor_version: AdvancedTheoremGraphExtractorVersion::MvpCertificateGraphV1,
+                source: AdvancedMachineTheoremGraphSnapshotSource::Inline {
                     graph_snapshot_hash: snapshot_hash,
                     canonical_bytes: snapshot_bytes,
                 },
             },
-            query_features: Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+            query_features: AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
                 query_features_hash,
                 canonical_bytes: query_features_bytes,
             },
-            ranking_profile: Phase9TheoremGraphRankingProfile::MvpTupleOrder,
+            ranking_profile: AdvancedTheoremGraphRankingProfile::MvpTupleOrder,
             limit,
         };
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::TheoremGraphQuery,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::TheoremGraphQuery,
+            target: AdvancedAiTarget {
                 env_fingerprint,
                 target_decl_hash: None,
                 goal_fingerprint: Some(goal_fingerprint),
             },
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_theorem_graph_query_canonical_bytes(&query).unwrap(),
+            payload: advanced_ai_theorem_graph_query_canonical_bytes(&query).unwrap(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn quotient_u() -> Level {
@@ -13072,8 +13217,8 @@ mod tests {
         Expr::konst("Q.toResult", vec![quotient_u()])
     }
 
-    fn quotient_primitives_for_tests() -> Phase9ResolvedQuotientPrimitives {
-        Phase9ResolvedQuotientPrimitives {
+    fn quotient_primitives_for_tests() -> AdvancedResolvedQuotientPrimitives {
+        AdvancedResolvedQuotientPrimitives {
             setoid_mk: "Q.SetoidMk".to_owned(),
             setoid_relation: "Q.SetoidRelation".to_owned(),
             rel_equiv: "Q.RelEquiv".to_owned(),
@@ -13090,7 +13235,7 @@ mod tests {
     }
 
     fn quotient_setoid_expr() -> Expr {
-        phase9_quotient_setoid_mk_app(
+        advanced_ai_quotient_setoid_mk_app(
             &quotient_primitives_for_tests(),
             &quotient_u(),
             quotient_carrier(),
@@ -13100,7 +13245,7 @@ mod tests {
     }
 
     fn quotient_type_expr() -> Expr {
-        phase9_quotient_type_app(
+        advanced_ai_quotient_type_app(
             &quotient_primitives_for_tests(),
             &quotient_u(),
             quotient_setoid_expr(),
@@ -13159,7 +13304,7 @@ mod tests {
     }
 
     fn quotient_sound_type() -> Expr {
-        let relation_premise = phase9_quotient_setoid_relation_app(
+        let relation_premise = advanced_ai_quotient_setoid_relation_app(
             &quotient_primitives_for_tests(),
             &quotient_u(),
             Expr::bvar(2),
@@ -13170,7 +13315,7 @@ mod tests {
             Expr::app(Expr::konst("Q.Quotient", vec![quotient_u()]), Expr::bvar(3));
         let lhs = quotient_mk_app(Expr::bvar(3), Expr::bvar(2));
         let rhs = quotient_mk_app(Expr::bvar(3), Expr::bvar(1));
-        let equality = phase9_quotient_eq_app(
+        let equality = advanced_ai_quotient_eq_app(
             &quotient_primitives_for_tests(),
             &quotient_type_level(),
             quotient_for_s,
@@ -13195,7 +13340,7 @@ mod tests {
     fn quotient_lift_type() -> Expr {
         let result_sort = Expr::sort(Level::succ(quotient_v()));
         let raw_function_ty = Expr::pi("_", quotient_carrier(), Expr::bvar(1));
-        let compatibility_ty = phase9_quotient_compatibility_type(
+        let compatibility_ty = advanced_ai_quotient_compatibility_type(
             &quotient_primitives_for_tests(),
             &quotient_u(),
             &Level::succ(quotient_v()),
@@ -13227,7 +13372,7 @@ mod tests {
     }
 
     fn quotient_compatibility_type() -> Expr {
-        phase9_quotient_compatibility_type(
+        advanced_ai_quotient_compatibility_type(
             &quotient_primitives_for_tests(),
             &quotient_u(),
             &Level::succ(Level::zero()),
@@ -13356,7 +13501,7 @@ mod tests {
                 npa_kernel::Decl::Axiom {
                     name: "Q.equiv".to_owned(),
                     universe_params: vec!["u".to_owned()],
-                    ty: phase9_quotient_rel_equiv_type(
+                    ty: advanced_ai_quotient_rel_equiv_type(
                         &quotient_primitives_for_tests(),
                         &quotient_u(),
                         quotient_carrier(),
@@ -13409,13 +13554,13 @@ mod tests {
         VerifiedImportRef::from_verified_module(&verified).unwrap()
     }
 
-    fn quotient_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+    fn quotient_global_ref_for(import: &VerifiedImportRef, name: &str) -> AdvancedAiGlobalRef {
         let export = import
             .exports()
             .iter()
             .find(|export| export.name == Name::from_dotted(name))
             .unwrap();
-        Phase9AiGlobalRef {
+        AdvancedAiGlobalRef {
             module: import.module().clone(),
             export_hash: import.export_hash(),
             certificate_hash: import.certificate_hash(),
@@ -13424,8 +13569,8 @@ mod tests {
         }
     }
 
-    fn quotient_options(import: &VerifiedImportRef) -> Phase9QuotientOptions {
-        Phase9QuotientOptions {
+    fn quotient_options(import: &VerifiedImportRef) -> AdvancedQuotientOptions {
+        AdvancedQuotientOptions {
             setoid: quotient_global_ref_for(import, "Q.Setoid"),
             setoid_mk: quotient_global_ref_for(import, "Q.SetoidMk"),
             setoid_relation: quotient_global_ref_for(import, "Q.SetoidRelation"),
@@ -13438,8 +13583,8 @@ mod tests {
         }
     }
 
-    fn quotient_candidate() -> Phase9MachineQuotientConstructionCandidate {
-        Phase9MachineQuotientConstructionCandidate {
+    fn quotient_candidate() -> AdvancedMachineQuotientConstructionCandidate {
+        AdvancedMachineQuotientConstructionCandidate {
             expected_decl_hash: None,
             decl_name: Name::from_dotted("Q.GeneratedQuotient"),
             universe_params: vec!["u".to_owned()],
@@ -13448,7 +13593,7 @@ mod tests {
             carrier: quotient_carrier(),
             relation: quotient_rel(),
             equivalence_proof: quotient_equiv(),
-            operations: vec![Phase9MachineQuotientOperationCandidate {
+            operations: vec![AdvancedMachineQuotientOperationCandidate {
                 name: Name::from_dotted("op"),
                 raw_function: quotient_to_result(),
                 compatibility_proof: Expr::konst("Q.compat", vec![quotient_u()]),
@@ -13458,39 +13603,39 @@ mod tests {
 
     fn quotient_request(
         import: &VerifiedImportRef,
-        candidate: Phase9MachineQuotientConstructionCandidate,
-        options_override: Option<Phase9AiOptions>,
+        candidate: AdvancedMachineQuotientConstructionCandidate,
+        options_override: Option<AdvancedAiOptions>,
     ) -> Vec<u8> {
         let mut options = options_override.unwrap_or_default();
         if options.quotient.is_none() {
             options.quotient = Some(quotient_options(import));
         }
-        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
-        let env_fingerprint = phase9_ai_env_fingerprint(
-            Phase9AiProfileVersion::MvpV1,
-            Phase9AiTaskKind::QuotientConstruction,
+        let options_bytes = advanced_ai_options_canonical_bytes(&options).unwrap();
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let imports = vec![AdvancedImportIdentity::from_verified_import(import)];
+        let env_fingerprint = advanced_ai_env_fingerprint(
+            AdvancedAiProfileVersion::MvpV1,
+            AdvancedAiTaskKind::QuotientConstruction,
             &imports,
             options_hash,
         )
         .unwrap();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::QuotientConstruction,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::QuotientConstruction,
+            target: AdvancedAiTarget {
                 env_fingerprint,
                 target_decl_hash: None,
                 goal_fingerprint: None,
             },
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_quotient_candidate_canonical_bytes(&candidate).unwrap(),
+            payload: advanced_ai_quotient_candidate_canonical_bytes(&candidate).unwrap(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn smt_eq_type() -> Expr {
@@ -13550,13 +13695,13 @@ mod tests {
         VerifiedImportRef::from_verified_module(&verified).unwrap()
     }
 
-    fn smt_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+    fn smt_global_ref_for(import: &VerifiedImportRef, name: &str) -> AdvancedAiGlobalRef {
         let export = import
             .exports()
             .iter()
             .find(|export| export.name == Name::from_dotted(name))
             .unwrap();
-        Phase9AiGlobalRef {
+        AdvancedAiGlobalRef {
             module: import.module().clone(),
             export_hash: import.export_hash(),
             certificate_hash: import.certificate_hash(),
@@ -13565,8 +13710,8 @@ mod tests {
         }
     }
 
-    fn smt_options(import: &VerifiedImportRef) -> Phase9SmtOptions {
-        Phase9SmtOptions {
+    fn smt_options(import: &VerifiedImportRef) -> AdvancedSmtOptions {
+        AdvancedSmtOptions {
             eq: smt_global_ref_for(import, "S.Eq"),
             prop_false: Some(smt_global_ref_for(import, "S.False")),
             prop_not: Some(smt_global_ref_for(import, "S.Not")),
@@ -13581,99 +13726,99 @@ mod tests {
         Expr::konst("S.falseProof", vec![])
     }
 
-    fn smt_symbol(name: &str) -> Phase9SmtSymbol {
-        Phase9SmtSymbol {
+    fn smt_symbol(name: &str) -> AdvancedSmtSymbol {
+        AdvancedSmtSymbol {
             ascii: name.as_bytes().to_vec(),
         }
     }
 
     fn smt_command(
-        phase: Phase9SmtCommandPhase,
-        payload: Phase9SmtCommandPayload,
-    ) -> Phase9SmtEncodedCommand {
-        let mut command = Phase9SmtEncodedCommand {
+        phase: AdvancedSmtCommandPhase,
+        payload: AdvancedSmtCommandPayload,
+    ) -> AdvancedSmtEncodedCommand {
+        let mut command = AdvancedSmtEncodedCommand {
             phase,
             command_id: hash(0),
             payload,
         };
-        command.command_id = phase9_smt_command_id(&command).unwrap();
+        command.command_id = advanced_ai_smt_command_id(&command).unwrap();
         command
     }
 
-    fn smt_target_command() -> Phase9SmtEncodedCommand {
+    fn smt_target_command() -> AdvancedSmtEncodedCommand {
         smt_command(
-            Phase9SmtCommandPhase::TargetAssertion,
-            Phase9SmtCommandPayload::TargetAssertion {
+            AdvancedSmtCommandPhase::TargetAssertion,
+            AdvancedSmtCommandPayload::TargetAssertion {
                 core_expr: smt_false(),
-                encoded_expr: Phase9SmtExpr::Not(Box::new(Phase9SmtExpr::BoolLit(false))),
+                encoded_expr: AdvancedSmtExpr::Not(Box::new(AdvancedSmtExpr::BoolLit(false))),
             },
         )
     }
 
-    fn smt_final_check_command() -> Phase9SmtEncodedCommand {
+    fn smt_final_check_command() -> AdvancedSmtEncodedCommand {
         smt_command(
-            Phase9SmtCommandPhase::FinalCheck,
-            Phase9SmtCommandPayload::FinalCheck,
+            AdvancedSmtCommandPhase::FinalCheck,
+            AdvancedSmtCommandPayload::FinalCheck,
         )
     }
 
     fn smt_problem(
         goal_fingerprint: Hash,
-        logic: Phase9SmtLogic,
-        commands: Vec<Phase9SmtEncodedCommand>,
-    ) -> Phase9MachineSmtEncodedProblem {
-        Phase9MachineSmtEncodedProblem {
-            encoder_version: Phase9SmtEncoderVersion::MvpNormalizedQfV1,
+        logic: AdvancedSmtLogic,
+        commands: Vec<AdvancedSmtEncodedCommand>,
+    ) -> AdvancedMachineSmtEncodedProblem {
+        AdvancedMachineSmtEncodedProblem {
+            encoder_version: AdvancedSmtEncoderVersion::MvpNormalizedQfV1,
             goal_fingerprint,
             logic,
-            command_profile: Phase9SmtCommandProfile::MvpNormalizedQf,
+            command_profile: AdvancedSmtCommandProfile::MvpNormalizedQf,
             commands,
         }
     }
 
-    fn smt_problem_ref(problem: Phase9MachineSmtEncodedProblem) -> Phase9MachineSmtProblemRef {
-        let canonical_bytes = phase9_smt_problem_canonical_bytes(&problem).unwrap();
-        let problem_hash = phase9_smt_problem_hash(&problem).unwrap();
-        let encoding_hash = phase9_smt_encoding_hash(&problem, problem_hash);
-        Phase9MachineSmtProblemRef::Inline {
+    fn smt_problem_ref(problem: AdvancedMachineSmtEncodedProblem) -> AdvancedMachineSmtProblemRef {
+        let canonical_bytes = advanced_ai_smt_problem_canonical_bytes(&problem).unwrap();
+        let problem_hash = advanced_ai_smt_problem_hash(&problem).unwrap();
+        let encoding_hash = advanced_ai_smt_encoding_hash(&problem, problem_hash);
+        AdvancedMachineSmtProblemRef::Inline {
             problem_hash,
             encoding_hash,
             canonical_bytes,
         }
     }
 
-    fn smt_payload_ref(table: Phase9SmtProofNodeTable) -> Phase9MachineSmtProofPayloadRef {
-        let canonical_bytes = phase9_smt_proof_payload_canonical_bytes(&table).unwrap();
-        let payload_hash = phase9_smt_proof_payload_hash(&table).unwrap();
-        Phase9MachineSmtProofPayloadRef::Inline {
+    fn smt_payload_ref(table: AdvancedSmtProofNodeTable) -> AdvancedMachineSmtProofPayloadRef {
+        let canonical_bytes = advanced_ai_smt_proof_payload_canonical_bytes(&table).unwrap();
+        let payload_hash = advanced_ai_smt_proof_payload_hash(&table).unwrap();
+        AdvancedMachineSmtProofPayloadRef::Inline {
             payload_hash,
             canonical_bytes,
         }
     }
 
-    fn smt_proof_table() -> Phase9SmtProofNodeTable {
-        Phase9SmtProofNodeTable {
-            certificate_format: Phase9SmtCertificateFormat::MvpProofNodeTableV1,
-            nodes: vec![Phase9SmtProofNode {
+    fn smt_proof_table() -> AdvancedSmtProofNodeTable {
+        AdvancedSmtProofNodeTable {
+            certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
+            nodes: vec![AdvancedSmtProofNode {
                 node_id: 0,
                 rule_fingerprint: hash(42),
                 premises: Vec::new(),
-                conclusion_encoding: Phase9SmtConclusionEncoding {
-                    encoder_version: Phase9SmtEncoderVersion::MvpNormalizedQfV1,
-                    logic: Phase9SmtLogic::MvpQfUf,
-                    command_profile: Phase9SmtCommandProfile::MvpNormalizedQf,
+                conclusion_encoding: AdvancedSmtConclusionEncoding {
+                    encoder_version: AdvancedSmtEncoderVersion::MvpNormalizedQfV1,
+                    logic: AdvancedSmtLogic::MvpQfUf,
+                    command_profile: AdvancedSmtCommandProfile::MvpNormalizedQf,
                     core_expr: smt_false(),
-                    encoded_expr: Phase9SmtExpr::BoolLit(false),
+                    encoded_expr: AdvancedSmtExpr::BoolLit(false),
                 },
             }],
         }
     }
 
-    fn smt_payload_node_step(step_id: u32) -> Phase9MachineSmtReconstructionStep {
-        Phase9MachineSmtReconstructionStep {
+    fn smt_payload_node_step(step_id: u32) -> AdvancedMachineSmtReconstructionStep {
+        AdvancedMachineSmtReconstructionStep {
             step_id,
-            rule: Phase9SmtReconstructionRule::PayloadNode {
-                certificate_format: Phase9SmtCertificateFormat::MvpProofNodeTableV1,
+            rule: AdvancedSmtReconstructionRule::PayloadNode {
+                certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
                 rule_fingerprint: hash(42),
             },
             payload_bindings: Vec::new(),
@@ -13683,8 +13828,8 @@ mod tests {
         }
     }
 
-    fn smt_base_plan() -> Phase9MachineSmtReconstructionPlan {
-        Phase9MachineSmtReconstructionPlan {
+    fn smt_base_plan() -> AdvancedMachineSmtReconstructionPlan {
+        AdvancedMachineSmtReconstructionPlan {
             imported_theory_refs: Vec::new(),
             steps: vec![smt_payload_node_step(0)],
             final_step: 0,
@@ -13692,21 +13837,21 @@ mod tests {
         }
     }
 
-    fn smt_valid_candidate(goal_fingerprint: Hash) -> Phase9MachineSmtCertificateCandidate {
-        Phase9MachineSmtCertificateCandidate {
-            goal: Phase9AiGoal {
+    fn smt_valid_candidate(goal_fingerprint: Hash) -> AdvancedMachineSmtCertificateCandidate {
+        AdvancedMachineSmtCertificateCandidate {
+            goal: AdvancedAiGoal {
                 universe_params: Vec::new(),
                 local_context: Vec::new(),
                 target: smt_false(),
             },
-            logic: Phase9SmtLogic::MvpQfUf,
+            logic: AdvancedSmtLogic::MvpQfUf,
             encoded_problem: smt_problem_ref(smt_problem(
                 goal_fingerprint,
-                Phase9SmtLogic::MvpQfUf,
+                AdvancedSmtLogic::MvpQfUf,
                 vec![smt_target_command(), smt_final_check_command()],
             )),
-            certificate_format: Phase9SmtCertificateFormat::MvpProofNodeTableV1,
-            rule_registry_profile: Phase9SmtRuleRegistryProfile::MvpEmptyRegistryV1,
+            certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
+            rule_registry_profile: AdvancedSmtRuleRegistryProfile::MvpEmptyRegistryV1,
             proof_payload: smt_payload_ref(smt_proof_table()),
             reconstruction_plan: smt_base_plan(),
         }
@@ -13714,46 +13859,46 @@ mod tests {
 
     fn smt_request(
         import: &VerifiedImportRef,
-        mutate: impl FnOnce(&mut Phase9MachineSmtCertificateCandidate),
+        mutate: impl FnOnce(&mut AdvancedMachineSmtCertificateCandidate),
     ) -> Vec<u8> {
-        let options = Phase9AiOptions {
+        let options = AdvancedAiOptions {
             smt: Some(smt_options(import)),
             ..Default::default()
         };
-        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
-        let env_fingerprint = phase9_ai_env_fingerprint(
-            Phase9AiProfileVersion::MvpV1,
-            Phase9AiTaskKind::SmtCertificate,
+        let options_bytes = advanced_ai_options_canonical_bytes(&options).unwrap();
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let imports = vec![AdvancedImportIdentity::from_verified_import(import)];
+        let env_fingerprint = advanced_ai_env_fingerprint(
+            AdvancedAiProfileVersion::MvpV1,
+            AdvancedAiTaskKind::SmtCertificate,
             &imports,
             options_hash,
         )
         .unwrap();
-        let goal = Phase9AiGoal {
+        let goal = AdvancedAiGoal {
             universe_params: Vec::new(),
             local_context: Vec::new(),
             target: smt_false(),
         };
-        let goal_fingerprint = phase9_ai_goal_fingerprint(env_fingerprint, &goal);
+        let goal_fingerprint = advanced_ai_goal_fingerprint(env_fingerprint, &goal);
         let mut candidate = smt_valid_candidate(goal_fingerprint);
         mutate(&mut candidate);
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::SmtCertificate,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::SmtCertificate,
+            target: AdvancedAiTarget {
                 env_fingerprint,
                 target_decl_hash: None,
                 goal_fingerprint: Some(goal_fingerprint),
             },
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_smt_candidate_canonical_bytes(&candidate).unwrap(),
+            payload: advanced_ai_smt_candidate_canonical_bytes(&candidate).unwrap(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn verified_typeclass_import() -> VerifiedImportRef {
@@ -13813,13 +13958,13 @@ mod tests {
         VerifiedImportRef::from_verified_module(&verified).unwrap()
     }
 
-    fn typeclass_global_ref_for(import: &VerifiedImportRef, name: &str) -> Phase9AiGlobalRef {
+    fn typeclass_global_ref_for(import: &VerifiedImportRef, name: &str) -> AdvancedAiGlobalRef {
         let export = import
             .exports()
             .iter()
             .find(|export| export.name == Name::from_dotted(name))
             .unwrap();
-        Phase9AiGlobalRef {
+        AdvancedAiGlobalRef {
             module: import.module().clone(),
             export_hash: import.export_hash(),
             certificate_hash: import.certificate_hash(),
@@ -13832,17 +13977,17 @@ mod tests {
         import: &VerifiedImportRef,
         name: &str,
         priority_hint: Option<i32>,
-    ) -> Phase9MachineInstanceCandidateRef {
-        Phase9MachineInstanceCandidateRef {
-            target: Phase9MachineInstanceTargetRef::Imported {
+    ) -> AdvancedMachineInstanceCandidateRef {
+        AdvancedMachineInstanceCandidateRef {
+            target: AdvancedMachineInstanceTargetRef::Imported {
                 global_ref: typeclass_global_ref_for(import, name),
             },
             priority_hint,
         }
     }
 
-    fn typeclass_goal(target: Expr) -> Phase9AiGoal {
-        Phase9AiGoal {
+    fn typeclass_goal(target: Expr) -> AdvancedAiGoal {
+        AdvancedAiGoal {
             universe_params: Vec::new(),
             local_context: Vec::new(),
             target,
@@ -13851,49 +13996,49 @@ mod tests {
 
     fn typeclass_request(
         import: &VerifiedImportRef,
-        goal: Phase9AiGoal,
-        ordered_candidates: Vec<Phase9MachineInstanceCandidateRef>,
+        goal: AdvancedAiGoal,
+        ordered_candidates: Vec<AdvancedMachineInstanceCandidateRef>,
         max_depth: u32,
         max_nodes: u32,
-        options_override: Option<Phase9AiOptions>,
+        options_override: Option<AdvancedAiOptions>,
     ) -> Vec<u8> {
         let mut options = options_override.unwrap_or_default();
         if options.typeclass.class_declarations.is_empty() {
             options.typeclass.class_declarations = vec![typeclass_global_ref_for(import, "TC.Cls")];
         }
-        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
-        let env_fingerprint = phase9_ai_env_fingerprint(
-            Phase9AiProfileVersion::MvpV1,
-            Phase9AiTaskKind::TypeclassResolution,
+        let options_bytes = advanced_ai_options_canonical_bytes(&options).unwrap();
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let imports = vec![AdvancedImportIdentity::from_verified_import(import)];
+        let env_fingerprint = advanced_ai_env_fingerprint(
+            AdvancedAiProfileVersion::MvpV1,
+            AdvancedAiTaskKind::TypeclassResolution,
             &imports,
             options_hash,
         )
         .unwrap();
-        let goal_fingerprint = phase9_ai_goal_fingerprint(env_fingerprint, &goal);
-        let plan = Phase9MachineTypeclassResolutionPlan {
+        let goal_fingerprint = advanced_ai_goal_fingerprint(env_fingerprint, &goal);
+        let plan = AdvancedMachineTypeclassResolutionPlan {
             goal,
             ordered_candidates,
             max_depth,
             max_nodes,
         };
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::TypeclassResolution,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::TypeclassResolution,
+            target: AdvancedAiTarget {
                 env_fingerprint,
                 target_decl_hash: None,
                 goal_fingerprint: Some(goal_fingerprint),
             },
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_typeclass_resolution_plan_canonical_bytes(&plan).unwrap(),
+            payload: advanced_ai_typeclass_resolution_plan_canonical_bytes(&plan).unwrap(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn typeclass_cls(arg: Expr) -> Expr {
@@ -13908,55 +14053,55 @@ mod tests {
         Expr::app(Expr::konst("TC.Wrap", vec![]), arg)
     }
 
-    fn phase9_unary_expr() -> Expr {
+    fn advanced_ai_unary_expr() -> Expr {
         Expr::konst("Unary", vec![])
     }
 
-    fn valid_inductive_proposal() -> Phase9MachineInductiveProposal {
-        Phase9MachineInductiveProposal {
+    fn valid_inductive_proposal() -> AdvancedMachineInductiveProposal {
+        AdvancedMachineInductiveProposal {
             block_name: None,
             expected_decl_hash: None,
             universe_params: Vec::new(),
-            inductives: vec![Phase9MachineInductiveFamilyProposal {
+            inductives: vec![AdvancedMachineInductiveFamilyProposal {
                 name: Name::from_dotted("Unary"),
                 params: Vec::new(),
                 indices: Vec::new(),
                 result_sort: Level::succ(Level::zero()),
                 constructors: vec![
-                    Phase9MachineConstructorProposal {
+                    AdvancedMachineConstructorProposal {
                         name: Name::from_dotted("zero"),
-                        ty: phase9_unary_expr(),
+                        ty: advanced_ai_unary_expr(),
                     },
-                    Phase9MachineConstructorProposal {
+                    AdvancedMachineConstructorProposal {
                         name: Name::from_dotted("succ"),
-                        ty: Expr::pi("_", phase9_unary_expr(), phase9_unary_expr()),
+                        ty: Expr::pi("_", advanced_ai_unary_expr(), advanced_ai_unary_expr()),
                     },
                 ],
             }],
         }
     }
 
-    fn inductive_request(proposal: Phase9MachineInductiveProposal) -> Vec<u8> {
+    fn inductive_request(proposal: AdvancedMachineInductiveProposal) -> Vec<u8> {
         inductive_request_with_imports(proposal, Vec::new())
     }
 
     fn inductive_request_with_imports(
-        proposal: Phase9MachineInductiveProposal,
+        proposal: AdvancedMachineInductiveProposal,
         verified_imports: Vec<&VerifiedImportRef>,
     ) -> Vec<u8> {
         let options_bytes = empty_options_bytes();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let options_hash = advanced_ai_options_hash(&options_bytes);
         let imports = verified_imports
             .iter()
-            .map(|import| Phase9ImportIdentity::from_verified_import(import))
+            .map(|import| AdvancedImportIdentity::from_verified_import(import))
             .collect::<Vec<_>>();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::AdvancedInductive,
-            target: Phase9AiTarget {
-                env_fingerprint: phase9_ai_env_fingerprint(
-                    Phase9AiProfileVersion::MvpV1,
-                    Phase9AiTaskKind::AdvancedInductive,
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::AdvancedInductive,
+            target: AdvancedAiTarget {
+                env_fingerprint: advanced_ai_env_fingerprint(
+                    AdvancedAiProfileVersion::MvpV1,
+                    AdvancedAiTaskKind::AdvancedInductive,
                     &imports,
                     options_hash,
                 )
@@ -13965,30 +14110,30 @@ mod tests {
                 goal_fingerprint: None,
             },
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_inductive_proposal_canonical_bytes(&proposal).unwrap(),
+            payload: advanced_ai_inductive_proposal_canonical_bytes(&proposal).unwrap(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
-    fn universe_goal(target: Expr) -> Phase9AiGoal {
-        Phase9AiGoal {
+    fn universe_goal(target: Expr) -> AdvancedAiGoal {
+        AdvancedAiGoal {
             universe_params: vec!["u".to_owned()],
             local_context: Vec::new(),
             target,
         }
     }
 
-    fn valid_universe_candidate(import: &VerifiedImportRef) -> Phase9UniverseRepairCandidate {
+    fn valid_universe_candidate(import: &VerifiedImportRef) -> AdvancedUniverseRepairCandidate {
         let target = universe_target_expr();
-        Phase9UniverseRepairCandidate {
+        AdvancedUniverseRepairCandidate {
             goal: Some(universe_goal(target.clone())),
             target_expr: target,
-            instantiations: vec![Phase9UniverseInstantiationPatch {
-                occurrence: Phase9MachineExprOccurrence {
+            instantiations: vec![AdvancedUniverseInstantiationPatch {
+                occurrence: AdvancedMachineExprOccurrence {
                     path: Vec::new(),
                     expected_ref: universe_global_ref(import),
                 },
@@ -14001,16 +14146,16 @@ mod tests {
 
     fn universe_request_with_target(
         import: &VerifiedImportRef,
-        candidate: Phase9UniverseRepairCandidate,
+        candidate: AdvancedUniverseRepairCandidate,
         target_decl_hash: Option<Hash>,
         goal_fingerprint: Option<Hash>,
     ) -> Vec<u8> {
         let options_bytes = empty_options_bytes();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let imports = vec![Phase9ImportIdentity::from_verified_import(import)];
-        let env_fingerprint = phase9_ai_env_fingerprint(
-            Phase9AiProfileVersion::MvpV1,
-            Phase9AiTaskKind::UniverseRepair,
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let imports = vec![AdvancedImportIdentity::from_verified_import(import)];
+        let env_fingerprint = advanced_ai_env_fingerprint(
+            AdvancedAiProfileVersion::MvpV1,
+            AdvancedAiTaskKind::UniverseRepair,
             &imports,
             options_hash,
         )
@@ -14022,26 +14167,26 @@ mod tests {
                 candidate
                     .goal
                     .as_ref()
-                    .map(|goal| phase9_ai_goal_fingerprint(env_fingerprint, goal))
+                    .map(|goal| advanced_ai_goal_fingerprint(env_fingerprint, goal))
             })
         };
-        let payload = phase9_universe_repair_candidate_canonical_bytes(&candidate).unwrap();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::UniverseRepair,
-            target: Phase9AiTarget {
+        let payload = advanced_ai_universe_repair_candidate_canonical_bytes(&candidate).unwrap();
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::UniverseRepair,
+            target: AdvancedAiTarget {
                 env_fingerprint,
                 target_decl_hash,
                 goal_fingerprint,
             },
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
             payload,
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn valid_universe_request(import: &VerifiedImportRef) -> Vec<u8> {
@@ -14049,14 +14194,14 @@ mod tests {
     }
 
     fn target_for(
-        task_kind: Phase9AiTaskKind,
-        imports: &[Phase9ImportIdentity],
+        task_kind: AdvancedAiTaskKind,
+        imports: &[AdvancedImportIdentity],
         options_hash: Hash,
         goal_fingerprint: Option<Hash>,
-    ) -> Phase9AiTarget {
-        Phase9AiTarget {
-            env_fingerprint: phase9_ai_env_fingerprint(
-                Phase9AiProfileVersion::MvpV1,
+    ) -> AdvancedAiTarget {
+        AdvancedAiTarget {
+            env_fingerprint: advanced_ai_env_fingerprint(
+                AdvancedAiProfileVersion::MvpV1,
                 task_kind,
                 imports,
                 options_hash,
@@ -14068,24 +14213,24 @@ mod tests {
     }
 
     fn inline_request(
-        task_kind: Phase9AiTaskKind,
+        task_kind: AdvancedAiTaskKind,
         options_bytes: Vec<u8>,
-        imports: Vec<Phase9ImportIdentity>,
+        imports: Vec<AdvancedImportIdentity>,
         goal_fingerprint: Option<Hash>,
     ) -> Vec<u8> {
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
             task_kind,
             target: target_for(task_kind, &imports, options_hash, goal_fingerprint),
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
             payload: b"opaque-payload".to_vec(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn workspace_root() -> PathBuf {
@@ -14093,12 +14238,12 @@ mod tests {
     }
 
     fn assert_rejected(
-        response: Phase9AiEndpointResponse,
-        expected_error: Phase9AiValidationError,
-        expected_feature_error: Option<Phase9AiFeatureError>,
+        response: AdvancedAiEndpointResponse,
+        expected_error: AdvancedAiValidationError,
+        expected_feature_error: Option<AdvancedAiFeatureError>,
     ) -> Hash {
         match response {
-            Phase9AiEndpointResponse::Rejected {
+            AdvancedAiEndpointResponse::Rejected {
                 candidate_hash,
                 validation_result_hash,
                 error,
@@ -14108,7 +14253,7 @@ mod tests {
                 assert_eq!(feature_error, expected_feature_error);
                 assert_eq!(
                     validation_result_hash,
-                    phase9_ai_validation_result_hash_for_rejection(
+                    advanced_ai_validation_result_hash_for_rejection(
                         candidate_hash,
                         error,
                         feature_error
@@ -14120,9 +14265,9 @@ mod tests {
         }
     }
 
-    fn assert_success(response: Phase9AiEndpointResponse) -> (Hash, Phase9AiSuccessPayload) {
+    fn assert_success(response: AdvancedAiEndpointResponse) -> (Hash, AdvancedAiSuccessPayload) {
         match response {
-            Phase9AiEndpointResponse::Success {
+            AdvancedAiEndpointResponse::Success {
                 candidate_hash,
                 validation_result_hash,
                 payload,
@@ -14130,7 +14275,7 @@ mod tests {
                 let payload = *payload;
                 assert_eq!(
                     validation_result_hash,
-                    phase9_ai_validation_result_hash_for_success(candidate_hash, &payload)
+                    advanced_ai_validation_result_hash_for_success(candidate_hash, &payload)
                 );
                 (candidate_hash, payload)
             }
@@ -14138,55 +14283,58 @@ mod tests {
         }
     }
 
-    fn phase9_m9_endpoint_token(endpoint: &str) -> &'static str {
+    fn advanced_ai_m9_endpoint_token(endpoint: &str) -> &'static str {
         match endpoint {
-            PHASE9_INDUCTIVE_CHECK_ENDPOINT => "inductive_check",
-            PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT => "universe_repair_check",
-            PHASE9_TYPECLASS_RESOLVE_ENDPOINT => "typeclass_resolve",
-            PHASE9_QUOTIENT_CHECK_ENDPOINT => "quotient_check",
-            PHASE9_SMT_RECONSTRUCT_ENDPOINT => "smt_reconstruct",
-            PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT => "theorem_graph_query",
-            PHASE9_FORMALIZE_CHECK_ENDPOINT => "formalize_check",
-            _ => panic!("unknown Phase 9 endpoint {endpoint}"),
+            ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT => "inductive_check",
+            ADVANCED_AI_UNIVERSE_REPAIR_CHECK_ENDPOINT => "universe_repair_check",
+            ADVANCED_AI_TYPECLASS_RESOLVE_ENDPOINT => "typeclass_resolve",
+            ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT => "quotient_check",
+            ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT => "smt_reconstruct",
+            ADVANCED_AI_THEOREM_GRAPH_QUERY_ENDPOINT => "theorem_graph_query",
+            ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT => "formalize_check",
+            _ => panic!("unknown advanced AI endpoint {endpoint}"),
         }
     }
 
-    fn assert_phase9_m9_fixture_name(name: &str, endpoint: &str, outcome: &str) {
-        assert!(name.starts_with("phase9_m9_"), "{name}");
-        assert!(name.contains(phase9_m9_endpoint_token(endpoint)), "{name}");
+    fn assert_advanced_ai_m9_fixture_name(name: &str, endpoint: &str, outcome: &str) {
+        assert!(name.starts_with("advanced_ai_m9_"), "{name}");
+        assert!(
+            name.contains(advanced_ai_m9_endpoint_token(endpoint)),
+            "{name}"
+        );
         assert!(name.contains(outcome), "{name}");
     }
 
-    fn assert_phase9_m9_success_fixture(
+    fn assert_advanced_ai_m9_success_fixture(
         name: &str,
         endpoint: &str,
-        response: Phase9AiEndpointResponse,
-    ) -> (Hash, Phase9AiSuccessPayload) {
-        assert_phase9_m9_fixture_name(name, endpoint, "success");
+        response: AdvancedAiEndpointResponse,
+    ) -> (Hash, AdvancedAiSuccessPayload) {
+        assert_advanced_ai_m9_fixture_name(name, endpoint, "success");
         assert_success(response)
     }
 
-    fn assert_phase9_m9_rejected_fixture(
+    fn assert_advanced_ai_m9_rejected_fixture(
         name: &str,
         endpoint: &str,
-        response: Phase9AiEndpointResponse,
-        expected_error: Phase9AiValidationError,
-        expected_feature_error: Option<Phase9AiFeatureError>,
+        response: AdvancedAiEndpointResponse,
+        expected_error: AdvancedAiValidationError,
+        expected_feature_error: Option<AdvancedAiFeatureError>,
     ) -> Hash {
-        assert_phase9_m9_fixture_name(name, endpoint, "rejected");
+        assert_advanced_ai_m9_fixture_name(name, endpoint, "rejected");
         assert_rejected(response, expected_error, expected_feature_error)
     }
 
-    fn assert_phase9_m9_error_fixture(
+    fn assert_advanced_ai_m9_error_fixture(
         name: &str,
         endpoint: &str,
-        response: Phase9AiEndpointResponse,
-        expected_error: Phase9AiEndpointError,
+        response: AdvancedAiEndpointResponse,
+        expected_error: AdvancedAiEndpointError,
     ) {
-        assert_phase9_m9_fixture_name(name, endpoint, "error");
+        assert_advanced_ai_m9_fixture_name(name, endpoint, "error");
         assert_eq!(
             response,
-            Phase9AiEndpointResponse::Error {
+            AdvancedAiEndpointResponse::Error {
                 error: expected_error
             }
         );
@@ -14195,16 +14343,16 @@ mod tests {
     #[test]
     fn common_candidate_hash_is_available_when_options_decode_fails() {
         let request = inline_request(
-            Phase9AiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::AdvancedInductive,
             b"not-options".to_vec(),
             Vec::new(),
             None,
         );
-        let expected_candidate_hash = phase9_ai_candidate_hash(&request);
+        let expected_candidate_hash = advanced_ai_candidate_hash(&request);
 
         let candidate_hash = assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
 
@@ -14214,9 +14362,9 @@ mod tests {
     #[test]
     fn top_level_decode_failure_is_endpoint_error_without_candidate_hash() {
         assert_eq!(
-            run_phase9_inductive_check_request(b"not-an-envelope", &[], &workspace_root()),
-            Phase9AiEndpointResponse::Error {
-                error: Phase9AiEndpointError::NonCanonicalRequestBytes
+            run_advanced_ai_inductive_check_request(b"not-an-envelope", &[], &workspace_root()),
+            AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::NonCanonicalRequestBytes
             }
         );
     }
@@ -14224,30 +14372,30 @@ mod tests {
     #[test]
     fn options_hash_mismatch_is_payload_hash_mismatch() {
         let options_bytes = empty_options_bytes();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::AdvancedInductive,
-            target: target_for(Phase9AiTaskKind::AdvancedInductive, &[], hash(9), None),
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::AdvancedInductive,
+            target: target_for(AdvancedAiTaskKind::AdvancedInductive, &[], hash(9), None),
             imports: Vec::new(),
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash: hash(9),
                 canonical_bytes: options_bytes,
             },
             payload: Vec::new(),
         };
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::PayloadHashMismatch,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
     }
 
     #[test]
     fn quotient_options_round_trip_named_primitive_refs() {
-        let options = Phase9AiOptions {
-            quotient: Some(Phase9QuotientOptions {
+        let options = AdvancedAiOptions {
+            quotient: Some(AdvancedQuotientOptions {
                 setoid: global_ref(1),
                 setoid_mk: global_ref(4),
                 setoid_relation: global_ref(7),
@@ -14260,25 +14408,28 @@ mod tests {
             }),
             ..Default::default()
         };
-        let bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
+        let bytes = advanced_ai_options_canonical_bytes(&options).unwrap();
 
         assert_eq!(decode_options(&bytes).unwrap(), options);
 
         let mut changed = options.clone();
         changed.quotient.as_mut().unwrap().eq.decl_interface_hash = hash(99);
-        assert_ne!(phase9_ai_options_canonical_bytes(&changed).unwrap(), bytes);
+        assert_ne!(
+            advanced_ai_options_canonical_bytes(&changed).unwrap(),
+            bytes
+        );
     }
 
     #[test]
-    fn formalization_options_preserve_nested_phase4_bytes() {
-        let options = Phase9AiOptions {
-            formalization: Some(Phase9FormalizationOptions {
-                tactic_options_canonical_bytes: b"phase4-options".to_vec(),
-                tactic_budget_canonical_bytes: b"phase4-budget".to_vec(),
+    fn formalization_options_preserve_nested_machine_tactic_bytes() {
+        let options = AdvancedAiOptions {
+            formalization: Some(AdvancedFormalizationOptions {
+                tactic_options_canonical_bytes: b"machine-tactic-options".to_vec(),
+                tactic_budget_canonical_bytes: b"machine-tactic-budget".to_vec(),
             }),
             ..Default::default()
         };
-        let bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
+        let bytes = advanced_ai_options_canonical_bytes(&options).unwrap();
 
         assert_eq!(decode_options(&bytes).unwrap(), options);
 
@@ -14289,46 +14440,49 @@ mod tests {
             .unwrap()
             .tactic_budget_canonical_bytes
             .push(0);
-        assert_ne!(phase9_ai_options_canonical_bytes(&changed).unwrap(), bytes);
+        assert_ne!(
+            advanced_ai_options_canonical_bytes(&changed).unwrap(),
+            bytes
+        );
     }
 
     #[test]
-    fn phase9_domain_hashes_use_documented_tag_concatenation() {
+    fn advanced_ai_domain_hashes_use_documented_tag_concatenation() {
         let payload = b"payload";
         let mut expected = Vec::new();
         expected.extend_from_slice(CANDIDATE_HASH_TAG.as_bytes());
         expected.extend_from_slice(payload);
 
-        assert_eq!(phase9_ai_candidate_hash(payload), sha256(&expected));
+        assert_eq!(advanced_ai_candidate_hash(payload), sha256(&expected));
     }
 
     #[test]
     fn artifact_hash_and_size_mismatch_is_candidate_rejection() {
-        let root = std::env::temp_dir().join(format!("npa-phase9-m1-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("npa-advanced-ai-m1-{}", std::process::id()));
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("options.bin"), empty_options_bytes()).unwrap();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::AdvancedInductive,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::AdvancedInductive,
+            target: AdvancedAiTarget {
                 env_fingerprint: hash(1),
                 target_decl_hash: None,
                 goal_fingerprint: None,
             },
             imports: Vec::new(),
-            options: Phase9AiOptionsRef::Artifact {
+            options: AdvancedAiOptionsRef::Artifact {
                 path: "options.bin".to_owned(),
                 file_hash: hash(2),
-                options_hash: phase9_ai_options_hash(&empty_options_bytes()),
+                options_hash: advanced_ai_options_hash(&empty_options_bytes()),
                 size_bytes: empty_options_bytes().len() as u64,
             },
             payload: Vec::new(),
         };
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &root),
-            Phase9AiValidationError::PayloadHashMismatch,
+            run_advanced_ai_inductive_check_request(&request, &[], &root),
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
         let _ = fs::remove_dir_all(root);
@@ -14336,28 +14490,28 @@ mod tests {
 
     #[test]
     fn artifact_path_shape_failure_is_candidate_rejection() {
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::AdvancedInductive,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::AdvancedInductive,
+            target: AdvancedAiTarget {
                 env_fingerprint: hash(1),
                 target_decl_hash: None,
                 goal_fingerprint: None,
             },
             imports: Vec::new(),
-            options: Phase9AiOptionsRef::Artifact {
+            options: AdvancedAiOptionsRef::Artifact {
                 path: "../options.bin".to_owned(),
                 file_hash: hash(2),
-                options_hash: phase9_ai_options_hash(&empty_options_bytes()),
+                options_hash: advanced_ai_options_hash(&empty_options_bytes()),
                 size_bytes: empty_options_bytes().len() as u64,
             },
             payload: Vec::new(),
         };
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
@@ -14365,35 +14519,39 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn artifact_symlink_escape_is_candidate_rejection() {
-        let root =
-            std::env::temp_dir().join(format!("npa-phase9-symlink-root-{}", std::process::id()));
-        let outside =
-            std::env::temp_dir().join(format!("npa-phase9-symlink-outside-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!(
+            "npa-advanced-ai-symlink-root-{}",
+            std::process::id()
+        ));
+        let outside = std::env::temp_dir().join(format!(
+            "npa-advanced-ai-symlink-outside-{}",
+            std::process::id()
+        ));
         fs::create_dir_all(&root).unwrap();
         fs::write(&outside, empty_options_bytes()).unwrap();
         std::os::unix::fs::symlink(&outside, root.join("escaped-options.bin")).unwrap();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::AdvancedInductive,
-            target: Phase9AiTarget {
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::AdvancedInductive,
+            target: AdvancedAiTarget {
                 env_fingerprint: hash(1),
                 target_decl_hash: None,
                 goal_fingerprint: None,
             },
             imports: Vec::new(),
-            options: Phase9AiOptionsRef::Artifact {
+            options: AdvancedAiOptionsRef::Artifact {
                 path: "escaped-options.bin".to_owned(),
-                file_hash: phase9_file_hash(&empty_options_bytes()),
-                options_hash: phase9_ai_options_hash(&empty_options_bytes()),
+                file_hash: advanced_ai_file_hash(&empty_options_bytes()),
+                options_hash: advanced_ai_options_hash(&empty_options_bytes()),
                 size_bytes: empty_options_bytes().len() as u64,
             },
             payload: Vec::new(),
         };
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &root),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_inductive_check_request(&request, &[], &root),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
         let _ = fs::remove_dir_all(root);
@@ -14402,33 +14560,33 @@ mod tests {
 
     #[test]
     fn duplicate_import_identity_is_import_closure_mismatch() {
-        let import = Phase9ImportIdentity {
+        let import = AdvancedImportIdentity {
             module: Name::from_dotted("A"),
             export_hash: hash(1),
             certificate_hash: hash(2),
         };
         let request = inline_request(
-            Phase9AiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::AdvancedInductive,
             empty_options_bytes(),
             vec![import.clone(), import],
             None,
         );
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::ImportClosureMismatch,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::ImportClosureMismatch,
             None,
         );
     }
 
     #[test]
-    fn import_sort_order_uses_phase5_name_canonical_bytes() {
-        let import_b = Phase9ImportIdentity {
+    fn import_sort_order_uses_machine_api_name_canonical_bytes() {
+        let import_b = AdvancedImportIdentity {
             module: Name::from_dotted("B"),
             export_hash: hash(1),
             certificate_hash: hash(2),
         };
-        let import_aa = Phase9ImportIdentity {
+        let import_aa = AdvancedImportIdentity {
             module: Name::from_dotted("AA"),
             export_hash: hash(3),
             certificate_hash: hash(4),
@@ -14438,15 +14596,15 @@ mod tests {
             Ordering::Less
         );
         let request = inline_request(
-            Phase9AiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::AdvancedInductive,
             empty_options_bytes(),
             vec![import_aa, import_b],
             None,
         );
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
@@ -14454,18 +14612,18 @@ mod tests {
     #[test]
     fn env_fingerprint_mismatch_is_target_fingerprint_mismatch() {
         let mut request = decode_candidate_envelope(&inline_request(
-            Phase9AiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::AdvancedInductive,
             empty_options_bytes(),
             Vec::new(),
             None,
         ))
         .unwrap();
         request.target.env_fingerprint = hash(7);
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&request).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&request).unwrap();
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
@@ -14473,11 +14631,11 @@ mod tests {
     #[test]
     fn advanced_inductive_valid_candidate_returns_decl_hashes() {
         let request = inductive_request(valid_inductive_proposal());
-        let expected_candidate_hash = phase9_ai_candidate_hash(&request);
+        let expected_candidate_hash = advanced_ai_candidate_hash(&request);
 
-        let response = run_phase9_inductive_check_request(&request, &[], &workspace_root());
+        let response = run_advanced_ai_inductive_check_request(&request, &[], &workspace_root());
 
-        let Phase9AiEndpointResponse::Success {
+        let AdvancedAiEndpointResponse::Success {
             candidate_hash,
             validation_result_hash,
             payload,
@@ -14486,7 +14644,7 @@ mod tests {
             panic!("expected success response");
         };
         assert_eq!(candidate_hash, expected_candidate_hash);
-        let Phase9AiSuccessPayload::AdvancedInductive {
+        let AdvancedAiSuccessPayload::AdvancedInductive {
             decl_interface_hash,
             decl_certificate_hash,
         } = *payload
@@ -14495,13 +14653,13 @@ mod tests {
         };
         assert_ne!(decl_interface_hash, [0; 32]);
         assert_ne!(decl_certificate_hash, [0; 32]);
-        let expected_payload = Phase9AiSuccessPayload::AdvancedInductive {
+        let expected_payload = AdvancedAiSuccessPayload::AdvancedInductive {
             decl_interface_hash,
             decl_certificate_hash,
         };
         assert_eq!(
             validation_result_hash,
-            phase9_ai_validation_result_hash_for_success(candidate_hash, &expected_payload)
+            advanced_ai_validation_result_hash_for_success(candidate_hash, &expected_payload)
         );
     }
 
@@ -14512,8 +14670,8 @@ mod tests {
         let request = inductive_request(proposal);
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
@@ -14525,10 +14683,10 @@ mod tests {
         let request = inductive_request(proposal);
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::TargetRefMismatch,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::TargetRefMismatch,
             )),
         );
     }
@@ -14540,10 +14698,10 @@ mod tests {
         let request = inductive_request(proposal);
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::NameCollision,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::NameCollision,
             )),
         );
     }
@@ -14553,21 +14711,21 @@ mod tests {
         let mut proposal = valid_inductive_proposal();
         proposal.inductives[0]
             .constructors
-            .push(Phase9MachineConstructorProposal {
+            .push(AdvancedMachineConstructorProposal {
                 name: Name::from_dotted("bad"),
                 ty: Expr::pi(
                     "_",
-                    Expr::pi("_", phase9_unary_expr(), phase9_unary_expr()),
-                    phase9_unary_expr(),
+                    Expr::pi("_", advanced_ai_unary_expr(), advanced_ai_unary_expr()),
+                    advanced_ai_unary_expr(),
                 ),
             });
         let request = inductive_request(proposal);
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     }
@@ -14578,28 +14736,28 @@ mod tests {
         let mut proposal = valid_inductive_proposal();
         proposal.inductives[0]
             .constructors
-            .push(Phase9MachineConstructorProposal {
+            .push(AdvancedMachineConstructorProposal {
                 name: Name::from_dotted("boxed"),
                 ty: Expr::pi(
                     "_",
                     Expr::app(
                         Expr::konst("Lib.F", vec![Level::succ(Level::zero())]),
-                        phase9_unary_expr(),
+                        advanced_ai_unary_expr(),
                     ),
-                    phase9_unary_expr(),
+                    advanced_ai_unary_expr(),
                 ),
             });
         let request = inductive_request_with_imports(proposal, vec![&import]);
 
         assert_rejected(
-            run_phase9_inductive_check_request(
+            run_advanced_ai_inductive_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     }
@@ -14613,28 +14771,28 @@ mod tests {
         let request = inductive_request(proposal);
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     }
 
     #[test]
     fn advanced_inductive_indexed_family_result_check_runs_before_generator_rejection() {
-        let proposal = Phase9MachineInductiveProposal {
+        let proposal = AdvancedMachineInductiveProposal {
             block_name: None,
             expected_decl_hash: None,
             universe_params: Vec::new(),
-            inductives: vec![Phase9MachineInductiveFamilyProposal {
+            inductives: vec![AdvancedMachineInductiveFamilyProposal {
                 name: Name::from_dotted("Ix"),
                 params: Vec::new(),
-                indices: vec![Phase9MachineTelescopeBinder {
+                indices: vec![AdvancedMachineTelescopeBinder {
                     ty: Expr::sort(Level::zero()),
                 }],
                 result_sort: Level::succ(Level::zero()),
-                constructors: vec![Phase9MachineConstructorProposal {
+                constructors: vec![AdvancedMachineConstructorProposal {
                     name: Name::from_dotted("mk"),
                     ty: Expr::pi(
                         "_",
@@ -14647,26 +14805,26 @@ mod tests {
         let request = inductive_request(proposal);
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     }
 
     #[test]
-    fn quotient_valid_request_is_unsupported_before_phase8_adoption() {
+    fn quotient_valid_request_is_unsupported_before_independent_checker_adoption() {
         let import = verified_quotient_import();
         let request = quotient_request(&import, quotient_candidate(), None);
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
     }
@@ -14674,21 +14832,21 @@ mod tests {
     #[test]
     fn quotient_primitive_interface_mismatch_is_feature_rejected() {
         let import = verified_quotient_import();
-        let mut options = Phase9AiOptions::default();
+        let mut options = AdvancedAiOptions::default();
         let mut quotient = quotient_options(&import);
         quotient.setoid = quotient_global_ref_for(&import, "Q.BadPrimitive");
         options.quotient = Some(quotient);
         let request = quotient_request(&import, quotient_candidate(), Some(options));
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::QuotientConstruction(
-                Phase9QuotientConstructionError::PrimitiveInterfaceMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::QuotientConstruction(
+                AdvancedQuotientConstructionError::PrimitiveInterfaceMismatch,
             )),
         );
     }
@@ -14696,21 +14854,21 @@ mod tests {
     #[test]
     fn quotient_same_arity_eq_interface_mismatch_is_feature_rejected() {
         let import = verified_quotient_import();
-        let mut options = Phase9AiOptions::default();
+        let mut options = AdvancedAiOptions::default();
         let mut quotient = quotient_options(&import);
         quotient.eq = quotient_global_ref_for(&import, "Q.BadEq");
         options.quotient = Some(quotient);
         let request = quotient_request(&import, quotient_candidate(), Some(options));
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::QuotientConstruction(
-                Phase9QuotientConstructionError::PrimitiveInterfaceMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::QuotientConstruction(
+                AdvancedQuotientConstructionError::PrimitiveInterfaceMismatch,
             )),
         );
     }
@@ -14723,14 +14881,14 @@ mod tests {
         let request = quotient_request(&import, candidate, None);
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::QuotientConstruction(
-                Phase9QuotientConstructionError::RelationTypeMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::QuotientConstruction(
+                AdvancedQuotientConstructionError::RelationTypeMismatch,
             )),
         );
     }
@@ -14743,14 +14901,14 @@ mod tests {
         let request = quotient_request(&import, candidate, None);
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::KernelRejected,
-            Some(Phase9AiFeatureError::QuotientConstruction(
-                Phase9QuotientConstructionError::EquivalenceProofMismatch,
+            AdvancedAiValidationError::KernelRejected,
+            Some(AdvancedAiFeatureError::QuotientConstruction(
+                AdvancedQuotientConstructionError::EquivalenceProofMismatch,
             )),
         );
     }
@@ -14765,12 +14923,12 @@ mod tests {
         let request = quotient_request(&import, candidate, None);
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
             None,
         );
     }
@@ -14783,14 +14941,14 @@ mod tests {
         let request = quotient_request(&import, candidate, None);
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::QuotientConstruction(
-                Phase9QuotientConstructionError::RawFunctionTypeMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::QuotientConstruction(
+                AdvancedQuotientConstructionError::RawFunctionTypeMismatch,
             )),
         );
     }
@@ -14804,14 +14962,14 @@ mod tests {
         let request = quotient_request(&import, candidate, None);
 
         assert_rejected(
-            run_phase9_quotient_check_request(
+            run_advanced_ai_quotient_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::KernelRejected,
-            Some(Phase9AiFeatureError::QuotientConstruction(
-                Phase9QuotientConstructionError::CompatibilityProofMismatch,
+            AdvancedAiValidationError::KernelRejected,
+            Some(AdvancedAiFeatureError::QuotientConstruction(
+                AdvancedQuotientConstructionError::CompatibilityProofMismatch,
             )),
         );
     }
@@ -14822,14 +14980,14 @@ mod tests {
         let request = smt_request(&import, |_| {});
 
         assert_rejected(
-            run_phase9_smt_reconstruct_request(
+            run_advanced_ai_smt_reconstruct_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::SmtCertificate(
-                Phase9SmtCertificateError::RuleRegistryMismatch,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
             )),
         );
     }
@@ -14838,24 +14996,24 @@ mod tests {
     fn smt_encoded_problem_hash_mismatch_precedes_later_validation() {
         let import = verified_smt_import();
         let request = smt_request(&import, |candidate| {
-            if let Phase9MachineSmtProblemRef::Inline { problem_hash, .. } =
+            if let AdvancedMachineSmtProblemRef::Inline { problem_hash, .. } =
                 &mut candidate.encoded_problem
             {
                 *problem_hash = hash(77);
             }
-            candidate.proof_payload = Phase9MachineSmtProofPayloadRef::Inline {
+            candidate.proof_payload = AdvancedMachineSmtProofPayloadRef::Inline {
                 payload_hash: hash(88),
                 canonical_bytes: b"malformed".to_vec(),
             };
         });
 
         assert_rejected(
-            run_phase9_smt_reconstruct_request(
+            run_advanced_ai_smt_reconstruct_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
     }
@@ -14865,21 +15023,21 @@ mod tests {
         let import = verified_smt_import();
         let request = smt_request(&import, |candidate| {
             let problem = match &candidate.encoded_problem {
-                Phase9MachineSmtProblemRef::Inline {
+                AdvancedMachineSmtProblemRef::Inline {
                     canonical_bytes, ..
                 } => decode_smt_encoded_problem(canonical_bytes).unwrap(),
-                Phase9MachineSmtProblemRef::Artifact { .. } => unreachable!(),
+                AdvancedMachineSmtProblemRef::Artifact { .. } => unreachable!(),
             };
             candidate.encoded_problem = smt_problem_ref(smt_problem(
                 problem.goal_fingerprint,
-                Phase9SmtLogic::MvpQfUf,
+                AdvancedSmtLogic::MvpQfUf,
                 vec![
                     smt_command(
-                        Phase9SmtCommandPhase::FunctionDecl,
-                        Phase9SmtCommandPayload::FunctionDecl {
+                        AdvancedSmtCommandPhase::FunctionDecl,
+                        AdvancedSmtCommandPayload::FunctionDecl {
                             symbol: smt_symbol("smt:int_fn"),
-                            args: vec![Phase9SmtSortExpr::Int],
-                            result: Phase9SmtSortExpr::Int,
+                            args: vec![AdvancedSmtSortExpr::Int],
+                            result: AdvancedSmtSortExpr::Int,
                         },
                     ),
                     smt_target_command(),
@@ -14889,12 +15047,12 @@ mod tests {
         });
 
         assert_rejected(
-            run_phase9_smt_reconstruct_request(
+            run_advanced_ai_smt_reconstruct_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
     }
@@ -14903,21 +15061,21 @@ mod tests {
     fn smt_proof_payload_malformed_is_noncanonical_payload() {
         let import = verified_smt_import();
         let request = smt_request(&import, |candidate| {
-            candidate.proof_payload = Phase9MachineSmtProofPayloadRef::Inline {
+            candidate.proof_payload = AdvancedMachineSmtProofPayloadRef::Inline {
                 payload_hash: hash(88),
                 canonical_bytes: b"malformed".to_vec(),
             };
         });
 
         assert_rejected(
-            run_phase9_smt_reconstruct_request(
+            run_advanced_ai_smt_reconstruct_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
-            Some(Phase9AiFeatureError::SmtCertificate(
-                Phase9SmtCertificateError::NonCanonicalPayload,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::NonCanonicalPayload,
             )),
         );
     }
@@ -14926,18 +15084,18 @@ mod tests {
     fn smt_local_bookkeeping_payload_binding_mismatch_is_feature_rejected() {
         let import = verified_smt_import();
         let request = smt_request(&import, |candidate| {
-            candidate.reconstruction_plan = Phase9MachineSmtReconstructionPlan {
+            candidate.reconstruction_plan = AdvancedMachineSmtReconstructionPlan {
                 imported_theory_refs: vec![smt_global_ref_for(&import, "S.lemma")],
-                steps: vec![Phase9MachineSmtReconstructionStep {
+                steps: vec![AdvancedMachineSmtReconstructionStep {
                     step_id: 0,
-                    rule: Phase9SmtReconstructionRule::LocalBookkeeping {
-                        kind: Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                    rule: AdvancedSmtReconstructionRule::LocalBookkeeping {
+                        kind: AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma {
                             lemma: smt_global_ref_for(&import, "S.lemma"),
                             level_args: Vec::new(),
                             term_args: Vec::new(),
                         },
                     },
-                    payload_bindings: vec![Phase9MachineSmtPayloadBinding {
+                    payload_bindings: vec![AdvancedMachineSmtPayloadBinding {
                         payload_hash: hash(9),
                         node_id: 0,
                         rule_fingerprint: hash(42),
@@ -14952,14 +15110,14 @@ mod tests {
         });
 
         assert_rejected(
-            run_phase9_smt_reconstruct_request(
+            run_advanced_ai_smt_reconstruct_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::SmtCertificate(
-                Phase9SmtCertificateError::PayloadBindingMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::PayloadBindingMismatch,
             )),
         );
     }
@@ -14968,14 +15126,14 @@ mod tests {
     fn smt_local_bookkeeping_premise_mismatch_precedes_empty_registry_rejection() {
         let import = verified_smt_import();
         let request = smt_request(&import, |candidate| {
-            candidate.reconstruction_plan = Phase9MachineSmtReconstructionPlan {
+            candidate.reconstruction_plan = AdvancedMachineSmtReconstructionPlan {
                 imported_theory_refs: vec![smt_global_ref_for(&import, "S.lemma")],
                 steps: vec![
                     smt_payload_node_step(0),
-                    Phase9MachineSmtReconstructionStep {
+                    AdvancedMachineSmtReconstructionStep {
                         step_id: 1,
-                        rule: Phase9SmtReconstructionRule::LocalBookkeeping {
-                            kind: Phase9SmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                        rule: AdvancedSmtReconstructionRule::LocalBookkeeping {
+                            kind: AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma {
                                 lemma: smt_global_ref_for(&import, "S.lemma"),
                                 level_args: Vec::new(),
                                 term_args: Vec::new(),
@@ -14993,14 +15151,14 @@ mod tests {
         });
 
         assert_rejected(
-            run_phase9_smt_reconstruct_request(
+            run_advanced_ai_smt_reconstruct_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::SmtCertificate(
-                Phase9SmtCertificateError::ReconstructionPremiseMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::ReconstructionPremiseMismatch,
             )),
         );
     }
@@ -15017,16 +15175,16 @@ mod tests {
             None,
         );
 
-        let response = run_phase9_typeclass_resolve_request(
+        let response = run_advanced_ai_typeclass_resolve_request(
             &request,
             std::slice::from_ref(&import),
             &workspace_root(),
         );
 
-        let Phase9AiEndpointResponse::Success { payload, .. } = response else {
+        let AdvancedAiEndpointResponse::Success { payload, .. } = response else {
             panic!("expected typeclass success");
         };
-        let Phase9AiSuccessPayload::TypeclassResolution { proof } = *payload else {
+        let AdvancedAiSuccessPayload::TypeclassResolution { proof } = *payload else {
             panic!("expected typeclass payload");
         };
         assert_eq!(proof, Expr::konst("TC.instBase", vec![]));
@@ -15047,16 +15205,16 @@ mod tests {
             None,
         );
 
-        let response = run_phase9_typeclass_resolve_request(
+        let response = run_advanced_ai_typeclass_resolve_request(
             &request,
             std::slice::from_ref(&import),
             &workspace_root(),
         );
 
-        let Phase9AiEndpointResponse::Success { payload, .. } = response else {
+        let AdvancedAiEndpointResponse::Success { payload, .. } = response else {
             panic!("expected typeclass success");
         };
-        let Phase9AiSuccessPayload::TypeclassResolution { proof } = *payload else {
+        let AdvancedAiSuccessPayload::TypeclassResolution { proof } = *payload else {
             panic!("expected typeclass payload");
         };
         assert_eq!(
@@ -15081,14 +15239,14 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::NoSolution,
-            Some(Phase9AiFeatureError::TypeclassResolution(
-                Phase9TypeclassResolutionError::NoSolution,
+            AdvancedAiValidationError::NoSolution,
+            Some(AdvancedAiFeatureError::TypeclassResolution(
+                AdvancedTypeclassResolutionError::NoSolution,
             )),
         );
     }
@@ -15109,12 +15267,12 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::AmbiguousResolution,
+            AdvancedAiValidationError::AmbiguousResolution,
             None,
         );
     }
@@ -15136,12 +15294,12 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::AmbiguousResolution,
+            AdvancedAiValidationError::AmbiguousResolution,
             None,
         );
     }
@@ -15159,12 +15317,12 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::BudgetExceeded,
+            AdvancedAiValidationError::BudgetExceeded,
             None,
         );
     }
@@ -15172,7 +15330,7 @@ mod tests {
     #[test]
     fn typeclass_resolution_rejects_invalid_class_declaration() {
         let import = verified_typeclass_import();
-        let mut options = Phase9AiOptions::default();
+        let mut options = AdvancedAiOptions::default();
         options.typeclass.class_declarations =
             vec![typeclass_global_ref_for(&import, "TC.instBase")];
         let request = typeclass_request(
@@ -15185,14 +15343,14 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::TypeclassResolution(
-                Phase9TypeclassResolutionError::ClassDeclarationMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::TypeclassResolution(
+                AdvancedTypeclassResolutionError::ClassDeclarationMismatch,
             )),
         );
     }
@@ -15210,14 +15368,14 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::TypeclassResolution(
-                Phase9TypeclassResolutionError::ClassHeadUnsupported,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::TypeclassResolution(
+                AdvancedTypeclassResolutionError::ClassHeadUnsupported,
             )),
         );
     }
@@ -15238,12 +15396,12 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_typeclass_resolve_request(
+            run_advanced_ai_typeclass_resolve_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
@@ -15258,16 +15416,16 @@ mod tests {
             theorem_graph_snapshot(hash(41), vec![ineligible, missing, eligible.clone()]);
         let request = theorem_graph_inline_query_request(&import, None, None, snapshot, None, 16);
 
-        let response = run_phase9_theorem_graph_query_request(
+        let response = run_advanced_ai_theorem_graph_query_request(
             &request,
             std::slice::from_ref(&import),
             &workspace_root(),
         );
 
-        let Phase9AiEndpointResponse::Success { payload, .. } = response else {
+        let AdvancedAiEndpointResponse::Success { payload, .. } = response else {
             panic!("expected theorem graph success");
         };
-        let Phase9AiSuccessPayload::TheoremGraphQuery { result } = *payload else {
+        let AdvancedAiSuccessPayload::TheoremGraphQuery { result } = *payload else {
             panic!("expected theorem graph payload");
         };
         assert_eq!(result.entries.len(), 1);
@@ -15284,12 +15442,12 @@ mod tests {
             theorem_graph_inline_query_request(&import, Some(hash(99)), None, snapshot, None, 16);
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
     }
@@ -15303,12 +15461,12 @@ mod tests {
             theorem_graph_inline_query_request(&import, None, Some(hash(98)), snapshot, None, 16);
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
     }
@@ -15324,18 +15482,18 @@ mod tests {
         .unwrap();
         let mut query = decode_theorem_graph_query(&request.payload).unwrap();
         query.snapshot.source_release_hash = hash(42);
-        request.payload = phase9_theorem_graph_query_canonical_bytes(&query).unwrap();
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&request).unwrap();
+        request.payload = advanced_ai_theorem_graph_query_canonical_bytes(&query).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&request).unwrap();
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
-            Some(Phase9AiFeatureError::TheoremGraphQuery(
-                Phase9TheoremGraphError::SnapshotMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            Some(AdvancedAiFeatureError::TheoremGraphQuery(
+                AdvancedTheoremGraphError::SnapshotMalformed,
             )),
         );
     }
@@ -15355,10 +15513,10 @@ mod tests {
             None,
             None,
             decode_theorem_graph_snapshot(match &query.snapshot.source {
-                Phase9MachineTheoremGraphSnapshotSource::Inline {
+                AdvancedMachineTheoremGraphSnapshotSource::Inline {
                     canonical_bytes, ..
                 } => canonical_bytes,
-                Phase9MachineTheoremGraphSnapshotSource::Artifact { .. } => unreachable!(),
+                AdvancedMachineTheoremGraphSnapshotSource::Artifact { .. } => unreachable!(),
             })
             .unwrap(),
             Some(bad_features),
@@ -15366,14 +15524,14 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
-            Some(Phase9AiFeatureError::TheoremGraphQuery(
-                Phase9TheoremGraphError::QueryFeaturesMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            Some(AdvancedAiFeatureError::TheoremGraphQuery(
+                AdvancedTheoremGraphError::QueryFeaturesMalformed,
             )),
         );
     }
@@ -15387,14 +15545,14 @@ mod tests {
         let request = theorem_graph_inline_query_request(&import, None, None, snapshot, None, 16);
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::TheoremGraphQuery(
-                Phase9TheoremGraphError::NodeResolutionMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::TheoremGraphQuery(
+                AdvancedTheoremGraphError::NodeResolutionMismatch,
             )),
         );
     }
@@ -15408,14 +15566,14 @@ mod tests {
             theorem_graph_inline_query_request(&import, Some(hash(99)), None, snapshot, None, 257);
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
-            Some(Phase9AiFeatureError::TheoremGraphQuery(
-                Phase9TheoremGraphError::LimitOutOfRange,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            Some(AdvancedAiFeatureError::TheoremGraphQuery(
+                AdvancedTheoremGraphError::LimitOutOfRange,
             )),
         );
     }
@@ -15440,23 +15598,23 @@ mod tests {
         encode_hash_to(&mut payload, &hash(99));
         encode_u64_to(
             &mut payload,
-            u64::try_from(MAX_PHASE9_THEOREM_GRAPH_SNAPSHOT_BYTES).unwrap() + 1,
+            u64::try_from(MAX_ADVANCED_AI_THEOREM_GRAPH_SNAPSHOT_BYTES).unwrap() + 1,
         );
         encode_theorem_graph_query_features_ref_to(&mut payload, &query.query_features);
         payload.push(query.ranking_profile.tag());
         encode_u64_to(&mut payload, u64::from(query.limit));
         envelope.payload = payload;
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
-            Some(Phase9AiFeatureError::TheoremGraphQuery(
-                Phase9TheoremGraphError::SnapshotMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            Some(AdvancedAiFeatureError::TheoremGraphQuery(
+                AdvancedTheoremGraphError::SnapshotMalformed,
             )),
         );
     }
@@ -15480,22 +15638,22 @@ mod tests {
         encode_hash_to(&mut payload, &hash(98));
         encode_u64_to(
             &mut payload,
-            u64::try_from(MAX_PHASE9_THEOREM_GRAPH_QUERY_FEATURES_BYTES).unwrap() + 1,
+            u64::try_from(MAX_ADVANCED_AI_THEOREM_GRAPH_QUERY_FEATURES_BYTES).unwrap() + 1,
         );
         payload.push(query.ranking_profile.tag());
         encode_u64_to(&mut payload, u64::from(query.limit));
         envelope.payload = payload;
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
-            Some(Phase9AiFeatureError::TheoremGraphQuery(
-                Phase9TheoremGraphError::QueryFeaturesMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            Some(AdvancedAiFeatureError::TheoremGraphQuery(
+                AdvancedTheoremGraphError::QueryFeaturesMalformed,
             )),
         );
     }
@@ -15510,20 +15668,20 @@ mod tests {
         ))
         .unwrap();
         let mut query = decode_theorem_graph_query(&envelope.payload).unwrap();
-        query.snapshot.source = Phase9MachineTheoremGraphSnapshotSource::Inline {
+        query.snapshot.source = AdvancedMachineTheoremGraphSnapshotSource::Inline {
             graph_snapshot_hash: hash(99),
             canonical_bytes: theorem_graph_snapshot_bytes_with_noncanonical_node_name(hash(41)),
         };
-        envelope.payload = phase9_theorem_graph_query_canonical_bytes(&query).unwrap();
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        envelope.payload = advanced_ai_theorem_graph_query_canonical_bytes(&query).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(
+            run_advanced_ai_theorem_graph_query_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
     }
@@ -15531,73 +15689,78 @@ mod tests {
     #[test]
     fn theorem_graph_snapshot_artifact_file_hash_mismatch_is_payload_hash_mismatch() {
         let import = verified_theorem_graph_import();
-        let root = std::env::temp_dir().join(format!("npa-phase9-m4-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!("npa-advanced-ai-m4-{}", std::process::id()));
         fs::create_dir_all(&root).unwrap();
         let snapshot =
             theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
-        let snapshot_bytes = phase9_theorem_graph_snapshot_canonical_bytes(&snapshot).unwrap();
+        let snapshot_bytes = advanced_ai_theorem_graph_snapshot_canonical_bytes(&snapshot).unwrap();
         fs::write(root.join("snapshot.bin"), &snapshot_bytes).unwrap();
         let query_features_env = {
             let options_bytes = empty_options_bytes();
-            let options_hash = phase9_ai_options_hash(&options_bytes);
-            let imports = vec![Phase9ImportIdentity::from_verified_import(&import)];
-            phase9_ai_env_fingerprint(
-                Phase9AiProfileVersion::MvpV1,
-                Phase9AiTaskKind::TheoremGraphQuery,
+            let options_hash = advanced_ai_options_hash(&options_bytes);
+            let imports = vec![AdvancedImportIdentity::from_verified_import(&import)];
+            advanced_ai_env_fingerprint(
+                AdvancedAiProfileVersion::MvpV1,
+                AdvancedAiTaskKind::TheoremGraphQuery,
                 &imports,
                 options_hash,
             )
             .unwrap()
         };
         let goal = theorem_graph_goal();
-        let goal_fingerprint = phase9_ai_goal_fingerprint(query_features_env, &goal);
+        let goal_fingerprint = advanced_ai_goal_fingerprint(query_features_env, &goal);
         let features = theorem_graph_features(query_features_env, goal_fingerprint);
-        let feature_bytes = phase9_theorem_graph_query_features_canonical_bytes(&features).unwrap();
-        let query = Phase9MachineTheoremGraphQuery {
+        let feature_bytes =
+            advanced_ai_theorem_graph_query_features_canonical_bytes(&features).unwrap();
+        let query = AdvancedMachineTheoremGraphQuery {
             env_fingerprint: query_features_env,
             goal_fingerprint,
             goal,
-            snapshot: Phase9MachineTheoremGraphSnapshotRef {
+            snapshot: AdvancedMachineTheoremGraphSnapshotRef {
                 source_release_hash: snapshot.source_release_hash,
                 extractor_version: snapshot.extractor_version,
-                source: Phase9MachineTheoremGraphSnapshotSource::Artifact {
+                source: AdvancedMachineTheoremGraphSnapshotSource::Artifact {
                     path: "snapshot.bin".to_owned(),
                     file_hash: hash(1),
-                    graph_snapshot_hash: phase9_theorem_graph_snapshot_hash(&snapshot_bytes)
+                    graph_snapshot_hash: advanced_ai_theorem_graph_snapshot_hash(&snapshot_bytes)
                         .unwrap(),
                     size_bytes: snapshot_bytes.len() as u64,
                 },
             },
-            query_features: Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
-                query_features_hash: phase9_theorem_graph_query_features_hash(&feature_bytes)
+            query_features: AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
+                query_features_hash: advanced_ai_theorem_graph_query_features_hash(&feature_bytes)
                     .unwrap(),
                 canonical_bytes: feature_bytes,
             },
-            ranking_profile: Phase9TheoremGraphRankingProfile::MvpTupleOrder,
+            ranking_profile: AdvancedTheoremGraphRankingProfile::MvpTupleOrder,
             limit: 16,
         };
         let options_bytes = empty_options_bytes();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::TheoremGraphQuery,
-            target: Phase9AiTarget {
+        let options_hash = advanced_ai_options_hash(&options_bytes);
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::TheoremGraphQuery,
+            target: AdvancedAiTarget {
                 env_fingerprint: query_features_env,
                 target_decl_hash: None,
                 goal_fingerprint: Some(goal_fingerprint),
             },
-            imports: vec![Phase9ImportIdentity::from_verified_import(&import)],
-            options: Phase9AiOptionsRef::Inline {
+            imports: vec![AdvancedImportIdentity::from_verified_import(&import)],
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_theorem_graph_query_canonical_bytes(&query).unwrap(),
+            payload: advanced_ai_theorem_graph_query_canonical_bytes(&query).unwrap(),
         };
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(&request, std::slice::from_ref(&import), &root),
-            Phase9AiValidationError::PayloadHashMismatch,
+            run_advanced_ai_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &root,
+            ),
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
         let _ = fs::remove_dir_all(root);
@@ -15606,8 +15769,10 @@ mod tests {
     #[test]
     fn theorem_graph_query_features_artifact_file_hash_mismatch_is_payload_hash_mismatch() {
         let import = verified_theorem_graph_import();
-        let root =
-            std::env::temp_dir().join(format!("npa-phase9-m4-features-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!(
+            "npa-advanced-ai-m4-features-{}",
+            std::process::id()
+        ));
         fs::create_dir_all(&root).unwrap();
         let snapshot =
             theorem_graph_snapshot(hash(41), vec![theorem_graph_node(&import, "GraphLib.P")]);
@@ -15617,25 +15782,29 @@ mod tests {
         .unwrap();
         let mut query = decode_theorem_graph_query(&envelope.payload).unwrap();
         let (query_features_hash, feature_bytes) = match &query.query_features {
-            Phase9MachineTheoremGraphQueryFeaturesRef::Inline {
+            AdvancedMachineTheoremGraphQueryFeaturesRef::Inline {
                 query_features_hash,
                 canonical_bytes,
             } => (*query_features_hash, canonical_bytes.clone()),
-            Phase9MachineTheoremGraphQueryFeaturesRef::Artifact { .. } => unreachable!(),
+            AdvancedMachineTheoremGraphQueryFeaturesRef::Artifact { .. } => unreachable!(),
         };
         fs::write(root.join("features.bin"), &feature_bytes).unwrap();
-        query.query_features = Phase9MachineTheoremGraphQueryFeaturesRef::Artifact {
+        query.query_features = AdvancedMachineTheoremGraphQueryFeaturesRef::Artifact {
             path: "features.bin".to_owned(),
             file_hash: hash(2),
             query_features_hash,
             size_bytes: feature_bytes.len() as u64,
         };
-        envelope.payload = phase9_theorem_graph_query_canonical_bytes(&query).unwrap();
-        let request = phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
+        envelope.payload = advanced_ai_theorem_graph_query_canonical_bytes(&query).unwrap();
+        let request = advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap();
 
         assert_rejected(
-            run_phase9_theorem_graph_query_request(&request, std::slice::from_ref(&import), &root),
-            Phase9AiValidationError::PayloadHashMismatch,
+            run_advanced_ai_theorem_graph_query_request(
+                &request,
+                std::slice::from_ref(&import),
+                &root,
+            ),
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
         let _ = fs::remove_dir_all(root);
@@ -15645,15 +15814,15 @@ mod tests {
     fn universe_repair_valid_patch_returns_repaired_expr_and_constraint_hash() {
         let import = verified_universe_import();
         let request = valid_universe_request(&import);
-        let expected_candidate_hash = phase9_ai_candidate_hash(&request);
+        let expected_candidate_hash = advanced_ai_candidate_hash(&request);
 
-        let response = run_phase9_universe_repair_check_request(
+        let response = run_advanced_ai_universe_repair_check_request(
             &request,
             std::slice::from_ref(&import),
             &workspace_root(),
         );
 
-        let Phase9AiEndpointResponse::Success {
+        let AdvancedAiEndpointResponse::Success {
             candidate_hash,
             validation_result_hash,
             payload,
@@ -15662,14 +15831,14 @@ mod tests {
             panic!("expected success response");
         };
         assert_eq!(candidate_hash, expected_candidate_hash);
-        let expected_payload = Phase9AiSuccessPayload::UniverseRepair {
+        let expected_payload = AdvancedAiSuccessPayload::UniverseRepair {
             repaired_expr: Expr::konst("Lib.T", vec![Level::succ(Level::param("u"))]),
-            constraint_set_hash: phase9_universe_constraint_set_hash(&[]),
+            constraint_set_hash: advanced_ai_universe_constraint_set_hash(&[]),
         };
         assert_eq!(*payload, expected_payload);
         assert_eq!(
             validation_result_hash,
-            phase9_ai_validation_result_hash_for_success(candidate_hash, &expected_payload)
+            advanced_ai_validation_result_hash_for_success(candidate_hash, &expected_payload)
         );
     }
 
@@ -15684,12 +15853,12 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
     }
@@ -15698,18 +15867,18 @@ mod tests {
     fn universe_repair_invalid_path_is_feature_rejection() {
         let import = verified_universe_import();
         let mut candidate = valid_universe_candidate(&import);
-        candidate.instantiations[0].occurrence.path = vec![Phase9MachineExprPathStep::AppFun];
+        candidate.instantiations[0].occurrence.path = vec![AdvancedMachineExprPathStep::AppFun];
         let request = universe_request_with_target(&import, candidate, None, None);
 
         assert_rejected(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::InvalidOccurrencePath,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::InvalidOccurrencePath,
             )),
         );
     }
@@ -15722,14 +15891,14 @@ mod tests {
         let request = universe_request_with_target(&import, candidate, None, None);
 
         assert_rejected(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::UnknownUniverseParam,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::UnknownUniverseParam,
             )),
         );
     }
@@ -15742,14 +15911,14 @@ mod tests {
         let request = universe_request_with_target(&import, candidate, None, None);
 
         assert_rejected(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::IllFormedLevelExpr,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::IllFormedLevelExpr,
             )),
         );
     }
@@ -15761,12 +15930,12 @@ mod tests {
             Expr::konst("Lib.F", vec![Level::succ(Level::param("u"))]),
             universe_target_expr(),
         );
-        let candidate = Phase9UniverseRepairCandidate {
+        let candidate = AdvancedUniverseRepairCandidate {
             goal: Some(universe_goal(target.clone())),
             target_expr: target,
-            instantiations: vec![Phase9UniverseInstantiationPatch {
-                occurrence: Phase9MachineExprOccurrence {
-                    path: vec![Phase9MachineExprPathStep::AppFun],
+            instantiations: vec![AdvancedUniverseInstantiationPatch {
+                occurrence: AdvancedMachineExprOccurrence {
+                    path: vec![AdvancedMachineExprPathStep::AppFun],
                     expected_ref: universe_global_ref_for(&import, "Lib.F"),
                 },
                 explicit_level_args: vec![Level::param("u")],
@@ -15777,14 +15946,14 @@ mod tests {
         let request = universe_request_with_target(&import, candidate, None, None);
 
         assert_rejected(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::NoSolution,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::UnsatisfiedConstraint,
+            AdvancedAiValidationError::NoSolution,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::UnsatisfiedConstraint,
             )),
         );
     }
@@ -15793,25 +15962,25 @@ mod tests {
     fn universe_repair_constraint_hint_cannot_add_solver_input() {
         let import = verified_universe_import();
         let mut candidate = valid_universe_candidate(&import);
-        candidate.constraint_hints = vec![Phase9UniverseConstraintHint {
-            constraint: Phase9UniverseConstraint {
+        candidate.constraint_hints = vec![AdvancedUniverseConstraintHint {
+            constraint: AdvancedUniverseConstraint {
                 lhs: Level::param("u"),
-                relation: Phase9UniverseConstraintRelation::Le,
+                relation: AdvancedUniverseConstraintRelation::Le,
                 rhs: Level::param("u"),
             },
-            reason: Phase9UniverseConstraintHintReason::RepairCandidate,
+            reason: AdvancedUniverseConstraintHintReason::RepairCandidate,
         }];
         let request = universe_request_with_target(&import, candidate, None, None);
 
         assert_rejected(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &request,
                 std::slice::from_ref(&import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::UniverseRepair(
-                Phase9UniverseRepairError::ConstraintHintMismatch,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::UniverseRepair(
+                AdvancedUniverseRepairError::ConstraintHintMismatch,
             )),
         );
     }
@@ -15820,25 +15989,25 @@ mod tests {
     fn universe_repair_minimization_hint_does_not_change_result_payload() {
         let import = verified_universe_import();
         let mut first_candidate = valid_universe_candidate(&import);
-        first_candidate.minimization_hint = Some(Phase9UniverseMinimizationHint::KernelDefault);
+        first_candidate.minimization_hint = Some(AdvancedUniverseMinimizationHint::KernelDefault);
         let mut second_candidate = valid_universe_candidate(&import);
         second_candidate.minimization_hint =
-            Some(Phase9UniverseMinimizationHint::PreferLowerLevels);
-        let first = run_phase9_universe_repair_check_request(
+            Some(AdvancedUniverseMinimizationHint::PreferLowerLevels);
+        let first = run_advanced_ai_universe_repair_check_request(
             &universe_request_with_target(&import, first_candidate, None, None),
             std::slice::from_ref(&import),
             &workspace_root(),
         );
-        let second = run_phase9_universe_repair_check_request(
+        let second = run_advanced_ai_universe_repair_check_request(
             &universe_request_with_target(&import, second_candidate, None, None),
             std::slice::from_ref(&import),
             &workspace_root(),
         );
 
-        let Phase9AiEndpointResponse::Success { payload: first, .. } = first else {
+        let AdvancedAiEndpointResponse::Success { payload: first, .. } = first else {
             panic!("expected first success");
         };
-        let Phase9AiEndpointResponse::Success {
+        let AdvancedAiEndpointResponse::Success {
             payload: second, ..
         } = second
         else {
@@ -15849,30 +16018,30 @@ mod tests {
 
     #[test]
     fn approved_nested_type_constructor_is_common_unsupported_feature() {
-        let mut options = Phase9AiOptions::default();
+        let mut options = AdvancedAiOptions::default();
         options
             .advanced_inductive
             .approved_nested_type_constructors
-            .push(Phase9AiGlobalRef {
+            .push(AdvancedAiGlobalRef {
                 module: Name::from_dotted("Std.List"),
                 export_hash: hash(1),
                 certificate_hash: hash(2),
                 name: Name::from_dotted("List"),
                 decl_interface_hash: hash(3),
             });
-        let options_bytes = phase9_ai_options_canonical_bytes(&options).unwrap();
+        let options_bytes = advanced_ai_options_canonical_bytes(&options).unwrap();
         let request = inline_request(
-            Phase9AiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::AdvancedInductive,
             options_bytes,
             Vec::new(),
             None,
         );
 
         assert_rejected(
-            run_phase9_inductive_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::AdvancedInductive(
-                Phase9AdvancedInductiveError::PositivityProfileUnsupported,
+            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::AdvancedInductive(
+                AdvancedInductiveError::PositivityProfileUnsupported,
             )),
         );
     }
@@ -15881,8 +16050,8 @@ mod tests {
         tactic_options: MachineTacticOptions,
         tactic_budget: TacticBudget,
     ) -> Vec<u8> {
-        let options = Phase9AiOptions {
-            formalization: Some(Phase9FormalizationOptions {
+        let options = AdvancedAiOptions {
+            formalization: Some(AdvancedFormalizationOptions {
                 tactic_options_canonical_bytes: machine_tactic_options_canonical_bytes(
                     &tactic_options,
                 ),
@@ -15890,7 +16059,7 @@ mod tests {
             }),
             ..Default::default()
         };
-        phase9_ai_options_canonical_bytes(&options).unwrap()
+        advanced_ai_options_canonical_bytes(&options).unwrap()
     }
 
     fn formalization_options_bytes() -> Vec<u8> {
@@ -15903,21 +16072,22 @@ mod tests {
             .canonical_bytes
     }
 
-    fn formalization_statement(source: &str) -> Phase9MachineSurfaceTerm {
-        Phase9MachineSurfaceTerm {
+    fn formalization_statement(source: &str) -> AdvancedMachineSurfaceTerm {
+        AdvancedMachineSurfaceTerm {
             universe_params: Vec::new(),
             term_canonical_bytes: machine_term_canonical_bytes(source),
         }
     }
 
     #[test]
-    fn phase9_formalization_statement_fixture_stays_machine_surface_canonical() {
+    fn advanced_ai_formalization_statement_fixture_stays_machine_surface_canonical() {
         let statement = formalization_statement("Prop");
         let canonical = npa_frontend::canonicalize_machine_term_source("Prop").unwrap();
 
         assert_eq!(statement.term_canonical_bytes, canonical.canonical_bytes);
-        npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
-            .expect("Phase 9 fixture statement must decode as Machine Surface canonical source");
+        npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes).expect(
+            "advanced AI fixture statement must decode as Machine Surface canonical source",
+        );
 
         for source in [
             "def Test.x : Prop := Prop",
@@ -15927,7 +16097,7 @@ mod tests {
         ] {
             assert!(
                 npa_frontend::canonicalize_machine_term_source(source).is_err(),
-                "Phase 9 formalization fixtures must not accept Human syntax: {source}"
+                "advanced AI formalization fixtures must not accept Human syntax: {source}"
             );
         }
     }
@@ -15935,25 +16105,25 @@ mod tests {
     fn formalization_source(
         source_text: &str,
     ) -> (
-        Phase9MachineFormalizationSourceDocumentRef,
-        Phase9MachineFormalizationClaimSpan,
+        AdvancedMachineFormalizationSourceDocumentRef,
+        AdvancedMachineFormalizationClaimSpan,
         Hash,
         Hash,
     ) {
         let bytes = source_text.as_bytes();
-        let source_document_hash = phase9_formalization_source_document_hash(bytes);
-        let claim_span_hash = phase9_formalization_claim_span_hash(
+        let source_document_hash = advanced_ai_formalization_source_document_hash(bytes);
+        let claim_span_hash = advanced_ai_formalization_claim_span_hash(
             source_document_hash,
             0,
             bytes.len() as u64,
             bytes,
         );
         (
-            Phase9MachineFormalizationSourceDocumentRef::Inline {
+            AdvancedMachineFormalizationSourceDocumentRef::Inline {
                 source_document_hash,
                 raw_utf8_bytes: bytes.to_vec(),
             },
-            Phase9MachineFormalizationClaimSpan {
+            AdvancedMachineFormalizationClaimSpan {
                 start_byte: 0,
                 end_byte: bytes.len() as u64,
                 claim_span_hash,
@@ -15964,39 +16134,39 @@ mod tests {
     }
 
     fn formalization_request(
-        payload: Phase9MachineFormalizationCheckPayload,
+        payload: AdvancedMachineFormalizationCheckPayload,
         options_bytes: Vec<u8>,
     ) -> Vec<u8> {
-        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let options_hash = advanced_ai_options_hash(&options_bytes);
         let imports = Vec::new();
-        let envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::NaturalLanguageFormalization,
+        let envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::NaturalLanguageFormalization,
             target: target_for(
-                Phase9AiTaskKind::NaturalLanguageFormalization,
+                AdvancedAiTaskKind::NaturalLanguageFormalization,
                 &imports,
                 options_hash,
                 None,
             ),
             imports,
-            options: Phase9AiOptionsRef::Inline {
+            options: AdvancedAiOptionsRef::Inline {
                 options_hash,
                 canonical_bytes: options_bytes,
             },
-            payload: phase9_formalization_payload_canonical_bytes(&payload).unwrap(),
+            payload: advanced_ai_formalization_payload_canonical_bytes(&payload).unwrap(),
         };
-        phase9_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
     }
 
     fn formalization_payload_with(
         source_text: &str,
         statement_source: &str,
-        intent_record: Option<Phase9FormalizationIntentRecord>,
-        optional_proof_candidate: Option<Phase9MachineFormalizationProofCandidate>,
-    ) -> Phase9MachineFormalizationCheckPayload {
+        intent_record: Option<AdvancedFormalizationIntentRecord>,
+        optional_proof_candidate: Option<AdvancedMachineFormalizationProofCandidate>,
+    ) -> AdvancedMachineFormalizationCheckPayload {
         let (source_document, claim_span, _, _) = formalization_source(source_text);
-        Phase9MachineFormalizationCheckPayload {
-            candidate: Phase9MachineFormalizationCandidate {
+        AdvancedMachineFormalizationCheckPayload {
+            candidate: AdvancedMachineFormalizationCandidate {
                 source_document,
                 claim_span,
                 statement: formalization_statement(statement_source),
@@ -16008,10 +16178,10 @@ mod tests {
 
     fn accepted_statement_hash_for_options(options_bytes: &[u8], statement_source: &str) -> Hash {
         let imports = Vec::new();
-        let options_hash = phase9_ai_options_hash(options_bytes);
-        let env_fingerprint = phase9_ai_env_fingerprint(
-            Phase9AiProfileVersion::MvpV1,
-            Phase9AiTaskKind::NaturalLanguageFormalization,
+        let options_hash = advanced_ai_options_hash(options_bytes);
+        let env_fingerprint = advanced_ai_env_fingerprint(
+            AdvancedAiProfileVersion::MvpV1,
+            AdvancedAiTaskKind::NaturalLanguageFormalization,
             &imports,
             options_hash,
         )
@@ -16033,29 +16203,29 @@ mod tests {
         };
         let (accepted, _) =
             npa_frontend::elaborate_machine_term_infer_from_ast(&ast, &context, &options).unwrap();
-        phase9_formalization_accepted_statement_hash(env_fingerprint, &[], &accepted)
+        advanced_ai_formalization_accepted_statement_hash(env_fingerprint, &[], &accepted)
     }
 
     fn intent_record_for(
         source_text: &str,
-        statement: &Phase9MachineSurfaceTerm,
-        status: Phase9FormalizationIntentStatus,
-    ) -> Phase9FormalizationIntentRecord {
+        statement: &AdvancedMachineSurfaceTerm,
+        status: AdvancedFormalizationIntentStatus,
+    ) -> AdvancedFormalizationIntentRecord {
         let (_, _, source_document_hash, claim_span_hash) = formalization_source(source_text);
-        Phase9FormalizationIntentRecord {
+        AdvancedFormalizationIntentRecord {
             source_document_hash,
             claim_span_hash,
-            candidate_statement_hash: phase9_formalization_candidate_statement_hash(statement),
+            candidate_statement_hash: advanced_ai_formalization_candidate_statement_hash(statement),
             status,
         }
     }
 
     fn exact_proof_candidate(
-        statement: &Phase9MachineSurfaceTerm,
+        statement: &AdvancedMachineSurfaceTerm,
         proof_source: &str,
-    ) -> Phase9MachineFormalizationProofCandidate {
-        Phase9MachineFormalizationProofCandidate {
-            candidate_statement_hash: phase9_formalization_candidate_statement_hash(statement),
+    ) -> AdvancedMachineFormalizationProofCandidate {
+        AdvancedMachineFormalizationProofCandidate {
+            candidate_statement_hash: advanced_ai_formalization_candidate_statement_hash(statement),
             tactic: MachineTacticCandidate::Exact {
                 term: RawMachineTerm::new(proof_source),
             },
@@ -16063,10 +16233,10 @@ mod tests {
     }
 
     fn assert_formalization_success_kind(
-        response: Phase9AiEndpointResponse,
-        expected_kind: Phase9FormalizationSuccessKind,
+        response: AdvancedAiEndpointResponse,
+        expected_kind: AdvancedFormalizationSuccessKind,
     ) -> (Hash, Option<Hash>, Option<Hash>) {
-        let Phase9AiEndpointResponse::Success {
+        let AdvancedAiEndpointResponse::Success {
             candidate_hash,
             payload,
             ..
@@ -16074,7 +16244,7 @@ mod tests {
         else {
             panic!("expected formalization success");
         };
-        let Phase9AiSuccessPayload::NaturalLanguageFormalization {
+        let AdvancedAiSuccessPayload::NaturalLanguageFormalization {
             kind,
             accepted_statement_hash,
             formalization_proof_root_hash,
@@ -16093,7 +16263,7 @@ mod tests {
     #[test]
     fn formalization_source_and_rejection_reason_artifacts_are_validated() {
         let root = std::env::temp_dir().join(format!(
-            "npa-phase9-formalization-artifacts-{}",
+            "npa-advanced-ai-formalization-artifacts-{}",
             std::process::id()
         ));
         fs::create_dir_all(&root).unwrap();
@@ -16102,24 +16272,24 @@ mod tests {
         fs::write(root.join("source.txt"), source_bytes).unwrap();
         fs::write(root.join("reason.txt"), reason_bytes).unwrap();
 
-        let source_document_hash = phase9_formalization_source_document_hash(source_bytes);
-        let claim_span_hash = phase9_formalization_claim_span_hash(
+        let source_document_hash = advanced_ai_formalization_source_document_hash(source_bytes);
+        let claim_span_hash = advanced_ai_formalization_claim_span_hash(
             source_document_hash,
             0,
             source_bytes.len() as u64,
             source_bytes,
         );
         let statement = formalization_statement("MissingFormalizationName");
-        let rejection_reason_hash = phase9_formalization_rejection_reason_hash(reason_bytes);
-        let payload = Phase9MachineFormalizationCheckPayload {
-            candidate: Phase9MachineFormalizationCandidate {
-                source_document: Phase9MachineFormalizationSourceDocumentRef::Artifact {
+        let rejection_reason_hash = advanced_ai_formalization_rejection_reason_hash(reason_bytes);
+        let payload = AdvancedMachineFormalizationCheckPayload {
+            candidate: AdvancedMachineFormalizationCandidate {
+                source_document: AdvancedMachineFormalizationSourceDocumentRef::Artifact {
                     path: "source.txt".to_owned(),
-                    file_hash: phase9_file_hash(source_bytes),
+                    file_hash: advanced_ai_file_hash(source_bytes),
                     source_document_hash,
                     size_bytes: source_bytes.len() as u64,
                 },
-                claim_span: Phase9MachineFormalizationClaimSpan {
+                claim_span: AdvancedMachineFormalizationClaimSpan {
                     start_byte: 0,
                     end_byte: source_bytes.len() as u64,
                     claim_span_hash,
@@ -16127,17 +16297,19 @@ mod tests {
                 statement: statement.clone(),
                 optional_proof_candidate: None,
             },
-            intent_record: Some(Phase9FormalizationIntentRecord {
+            intent_record: Some(AdvancedFormalizationIntentRecord {
                 source_document_hash,
                 claim_span_hash,
-                candidate_statement_hash: phase9_formalization_candidate_statement_hash(&statement),
-                status: Phase9FormalizationIntentStatus::Rejected {
-                    reviewer: Phase9ReviewerId::Human {
+                candidate_statement_hash: advanced_ai_formalization_candidate_statement_hash(
+                    &statement,
+                ),
+                status: AdvancedFormalizationIntentStatus::Rejected {
+                    reviewer: AdvancedReviewerId::Human {
                         stable_id_ascii: b"reviewer-1".to_vec(),
                     },
-                    rejection_reason: Phase9MachineFormalizationRejectionReasonRef::Artifact {
+                    rejection_reason: AdvancedMachineFormalizationRejectionReasonRef::Artifact {
                         path: "reason.txt".to_owned(),
-                        file_hash: phase9_file_hash(reason_bytes),
+                        file_hash: advanced_ai_file_hash(reason_bytes),
                         rejection_reason_hash,
                         size_bytes: reason_bytes.len() as u64,
                     },
@@ -16148,20 +16320,20 @@ mod tests {
         let request = formalization_request(payload.clone(), formalization_options_bytes());
 
         assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&request, &[], &root),
-            Phase9FormalizationSuccessKind::IntentRecordOnly,
+            run_advanced_ai_formalize_check_request(&request, &[], &root),
+            AdvancedFormalizationSuccessKind::IntentRecordOnly,
         );
 
         let mut bad_payload = payload;
-        if let Phase9MachineFormalizationSourceDocumentRef::Artifact { file_hash, .. } =
+        if let AdvancedMachineFormalizationSourceDocumentRef::Artifact { file_hash, .. } =
             &mut bad_payload.candidate.source_document
         {
             *file_hash = hash(99);
         }
         let bad_request = formalization_request(bad_payload, formalization_options_bytes());
         assert_rejected(
-            run_phase9_formalize_check_request(&bad_request, &[], &root),
-            Phase9AiValidationError::PayloadHashMismatch,
+            run_advanced_ai_formalize_check_request(&bad_request, &[], &root),
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
 
@@ -16172,15 +16344,15 @@ mod tests {
     fn formalization_rejected_intent_with_proof_candidate_is_rejected() {
         let statement = formalization_statement("Type");
         let reason = b"claim does not match the intended theorem".to_vec();
-        let reason_hash = phase9_formalization_rejection_reason_hash(&reason);
+        let reason_hash = advanced_ai_formalization_rejection_reason_hash(&reason);
         let intent = intent_record_for(
             "claim: rejected",
             &statement,
-            Phase9FormalizationIntentStatus::Rejected {
-                reviewer: Phase9ReviewerId::Human {
+            AdvancedFormalizationIntentStatus::Rejected {
+                reviewer: AdvancedReviewerId::Human {
                     stable_id_ascii: b"reviewer@example.com".to_vec(),
                 },
-                rejection_reason: Phase9MachineFormalizationRejectionReasonRef::Inline {
+                rejection_reason: AdvancedMachineFormalizationRejectionReasonRef::Inline {
                     rejection_reason_hash: reason_hash,
                     raw_utf8_bytes: reason,
                 },
@@ -16193,10 +16365,10 @@ mod tests {
         let request = formalization_request(payload, formalization_options_bytes());
 
         assert_rejected(
-            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::Formalization(
-                Phase9FormalizationError::RejectedIntentHasProofCandidate,
+            run_advanced_ai_formalize_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::Formalization(
+                AdvancedFormalizationError::RejectedIntentHasProofCandidate,
             )),
         );
     }
@@ -16209,15 +16381,15 @@ mod tests {
         let unreviewed = intent_record_for(
             "claim: unreviewed",
             &statement,
-            Phase9FormalizationIntentStatus::Unreviewed,
+            AdvancedFormalizationIntentStatus::Unreviewed,
         );
         let unreviewed_request = formalization_request(
             formalization_payload_with("claim: unreviewed", "Prop", Some(unreviewed), None),
             options_bytes.clone(),
         );
         let (_, unreviewed_accepted, unreviewed_root) = assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&unreviewed_request, &[], &workspace_root()),
-            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+            run_advanced_ai_formalize_check_request(&unreviewed_request, &[], &workspace_root()),
+            AdvancedFormalizationSuccessKind::CandidateStatementChecked,
         );
         assert!(unreviewed_accepted.is_some());
         assert_eq!(unreviewed_root, None);
@@ -16226,8 +16398,8 @@ mod tests {
         let reviewed = intent_record_for(
             "claim: reviewed",
             &statement,
-            Phase9FormalizationIntentStatus::Reviewed {
-                reviewer: Phase9ReviewerId::System {
+            AdvancedFormalizationIntentStatus::Reviewed {
+                reviewer: AdvancedReviewerId::System {
                     system_id_ascii: b"review-ui".to_vec(),
                     actor_id_ascii: b"user-123".to_vec(),
                 },
@@ -16239,23 +16411,23 @@ mod tests {
             options_bytes.clone(),
         );
         let (_, reviewed_accepted, reviewed_root) = assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&reviewed_request, &[], &workspace_root()),
-            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+            run_advanced_ai_formalize_check_request(&reviewed_request, &[], &workspace_root()),
+            AdvancedFormalizationSuccessKind::CandidateStatementChecked,
         );
         assert_eq!(reviewed_accepted, Some(reviewed_hash));
         assert_eq!(reviewed_root, None);
 
         let rejected_statement = formalization_statement("MissingFormalizationName");
         let reason = b"not the theorem the reviewer intended".to_vec();
-        let reason_hash = phase9_formalization_rejection_reason_hash(&reason);
+        let reason_hash = advanced_ai_formalization_rejection_reason_hash(&reason);
         let rejected = intent_record_for(
             "claim: rejected",
             &rejected_statement,
-            Phase9FormalizationIntentStatus::Rejected {
-                reviewer: Phase9ReviewerId::Human {
+            AdvancedFormalizationIntentStatus::Rejected {
+                reviewer: AdvancedReviewerId::Human {
                     stable_id_ascii: b"reviewer-1".to_vec(),
                 },
-                rejection_reason: Phase9MachineFormalizationRejectionReasonRef::Inline {
+                rejection_reason: AdvancedMachineFormalizationRejectionReasonRef::Inline {
                     rejection_reason_hash: reason_hash,
                     raw_utf8_bytes: reason,
                 },
@@ -16272,8 +16444,8 @@ mod tests {
             options_bytes,
         );
         let (_, rejected_accepted, rejected_root) = assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&rejected_request, &[], &workspace_root()),
-            Phase9FormalizationSuccessKind::IntentRecordOnly,
+            run_advanced_ai_formalize_check_request(&rejected_request, &[], &workspace_root()),
+            AdvancedFormalizationSuccessKind::IntentRecordOnly,
         );
         assert_eq!(rejected_accepted, None);
         assert_eq!(rejected_root, None);
@@ -16286,10 +16458,10 @@ mod tests {
             formalization_options_bytes(),
         );
         assert_rejected(
-            run_phase9_formalize_check_request(&bad_statement_request, &[], &workspace_root()),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::Formalization(
-                Phase9FormalizationError::CandidateStatementElaborationFailed,
+            run_advanced_ai_formalize_check_request(&bad_statement_request, &[], &workspace_root()),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::Formalization(
+                AdvancedFormalizationError::CandidateStatementElaborationFailed,
             )),
         );
 
@@ -16300,10 +16472,10 @@ mod tests {
             formalization_options_bytes(),
         );
         assert_rejected(
-            run_phase9_formalize_check_request(&bad_proof_request, &[], &workspace_root()),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::Formalization(
-                Phase9FormalizationError::ProofBridgeFailed,
+            run_advanced_ai_formalize_check_request(&bad_proof_request, &[], &workspace_root()),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::Formalization(
+                AdvancedFormalizationError::ProofBridgeFailed,
             )),
         );
     }
@@ -16318,8 +16490,8 @@ mod tests {
         );
 
         let (_, accepted_statement_hash, proof_root_hash) = assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
-            Phase9FormalizationSuccessKind::ProofBridgeChecked,
+            run_advanced_ai_formalize_check_request(&request, &[], &workspace_root()),
+            AdvancedFormalizationSuccessKind::ProofBridgeChecked,
         );
 
         assert!(accepted_statement_hash.is_some());
@@ -16339,12 +16511,12 @@ mod tests {
         );
 
         let (first_candidate, first_accepted, _) = assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&first, &[], &workspace_root()),
-            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+            run_advanced_ai_formalize_check_request(&first, &[], &workspace_root()),
+            AdvancedFormalizationSuccessKind::CandidateStatementChecked,
         );
         let (second_candidate, second_accepted, _) = assert_formalization_success_kind(
-            run_phase9_formalize_check_request(&second, &[], &workspace_root()),
-            Phase9FormalizationSuccessKind::CandidateStatementChecked,
+            run_advanced_ai_formalize_check_request(&second, &[], &workspace_root()),
+            AdvancedFormalizationSuccessKind::CandidateStatementChecked,
         );
 
         assert_ne!(first_candidate, second_candidate);
@@ -16359,8 +16531,8 @@ mod tests {
         let intent = intent_record_for(
             "claim: reviewed",
             &statement,
-            Phase9FormalizationIntentStatus::Reviewed {
-                reviewer: Phase9ReviewerId::Human {
+            AdvancedFormalizationIntentStatus::Reviewed {
+                reviewer: AdvancedReviewerId::Human {
                     stable_id_ascii: b"bad reviewer".to_vec(),
                 },
                 accepted_statement_hash: reviewed_hash,
@@ -16372,8 +16544,8 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_formalize_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
@@ -16390,80 +16562,80 @@ mod tests {
         );
 
         assert_rejected(
-            run_phase9_formalize_check_request(&request, &[], &workspace_root()),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_formalize_check_request(&request, &[], &workspace_root()),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
     }
 
     #[test]
-    fn phase9_m9_endpoint_fixture_matrix_is_deterministic_without_ai() {
-        type Phase9Route = fn(&[u8], &[VerifiedImportRef], &Path) -> Phase9AiEndpointResponse;
-        let routes: [(&str, Phase9Route); 7] = [
+    fn advanced_ai_m9_endpoint_fixture_matrix_is_deterministic_without_ai() {
+        type AdvancedRoute = fn(&[u8], &[VerifiedImportRef], &Path) -> AdvancedAiEndpointResponse;
+        let routes: [(&str, AdvancedRoute); 7] = [
             (
-                PHASE9_INDUCTIVE_CHECK_ENDPOINT,
-                run_phase9_inductive_check_request,
+                ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
+                run_advanced_ai_inductive_check_request,
             ),
             (
-                PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
-                run_phase9_universe_repair_check_request,
+                ADVANCED_AI_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+                run_advanced_ai_universe_repair_check_request,
             ),
             (
-                PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
-                run_phase9_typeclass_resolve_request,
+                ADVANCED_AI_TYPECLASS_RESOLVE_ENDPOINT,
+                run_advanced_ai_typeclass_resolve_request,
             ),
             (
-                PHASE9_QUOTIENT_CHECK_ENDPOINT,
-                run_phase9_quotient_check_request,
+                ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT,
+                run_advanced_ai_quotient_check_request,
             ),
             (
-                PHASE9_SMT_RECONSTRUCT_ENDPOINT,
-                run_phase9_smt_reconstruct_request,
+                ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT,
+                run_advanced_ai_smt_reconstruct_request,
             ),
             (
-                PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
-                run_phase9_theorem_graph_query_request,
+                ADVANCED_AI_THEOREM_GRAPH_QUERY_ENDPOINT,
+                run_advanced_ai_theorem_graph_query_request,
             ),
             (
-                PHASE9_FORMALIZE_CHECK_ENDPOINT,
-                run_phase9_formalize_check_request,
+                ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT,
+                run_advanced_ai_formalize_check_request,
             ),
         ];
 
         for (endpoint, route) in routes {
             let fixture = format!(
-                "phase9_m9_{}_error_noncanonical_request",
-                phase9_m9_endpoint_token(endpoint)
+                "advanced_ai_m9_{}_error_noncanonical_request",
+                advanced_ai_m9_endpoint_token(endpoint)
             );
-            assert_phase9_m9_error_fixture(
+            assert_advanced_ai_m9_error_fixture(
                 &fixture,
                 endpoint,
                 route(b"not-an-envelope", &[], &workspace_root()),
-                Phase9AiEndpointError::NonCanonicalRequestBytes,
+                AdvancedAiEndpointError::NonCanonicalRequestBytes,
             );
         }
 
         let inductive_request = inductive_request(valid_inductive_proposal());
         let inductive_first =
-            run_phase9_inductive_check_request(&inductive_request, &[], &workspace_root());
+            run_advanced_ai_inductive_check_request(&inductive_request, &[], &workspace_root());
         let inductive_second =
-            run_phase9_inductive_check_request(&inductive_request, &[], &workspace_root());
+            run_advanced_ai_inductive_check_request(&inductive_request, &[], &workspace_root());
         assert_eq!(inductive_first, inductive_second);
-        let (_, inductive_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_inductive_check_success_advanced_inductive",
-            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+        let (_, inductive_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_inductive_check_success_advanced_inductive",
+            ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
             inductive_first,
         );
         assert!(matches!(
             inductive_payload,
-            Phase9AiSuccessPayload::AdvancedInductive { .. }
+            AdvancedAiSuccessPayload::AdvancedInductive { .. }
         ));
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_inductive_check_rejected_envelope_malformed_payload",
-            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
-            run_phase9_inductive_check_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_inductive_check_rejected_envelope_malformed_payload",
+            ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
+            run_advanced_ai_inductive_check_request(
                 &inline_request(
-                    Phase9AiTaskKind::AdvancedInductive,
+                    AdvancedAiTaskKind::AdvancedInductive,
                     empty_options_bytes(),
                     Vec::new(),
                     None,
@@ -16471,38 +16643,38 @@ mod tests {
                 &[],
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
 
         let universe_import = verified_universe_import();
         let universe_request = valid_universe_request(&universe_import);
-        let universe_first = run_phase9_universe_repair_check_request(
+        let universe_first = run_advanced_ai_universe_repair_check_request(
             &universe_request,
             std::slice::from_ref(&universe_import),
             &workspace_root(),
         );
-        let universe_second = run_phase9_universe_repair_check_request(
+        let universe_second = run_advanced_ai_universe_repair_check_request(
             &universe_request,
             std::slice::from_ref(&universe_import),
             &workspace_root(),
         );
         assert_eq!(universe_first, universe_second);
-        let (_, universe_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_universe_repair_check_success_repaired_expr",
-            PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+        let (_, universe_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_universe_repair_check_success_repaired_expr",
+            ADVANCED_AI_UNIVERSE_REPAIR_CHECK_ENDPOINT,
             universe_first,
         );
         assert!(matches!(
             universe_payload,
-            Phase9AiSuccessPayload::UniverseRepair { .. }
+            AdvancedAiSuccessPayload::UniverseRepair { .. }
         ));
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_universe_repair_check_rejected_envelope_malformed_payload",
-            PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
-            run_phase9_universe_repair_check_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_universe_repair_check_rejected_envelope_malformed_payload",
+            ADVANCED_AI_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+            run_advanced_ai_universe_repair_check_request(
                 &inline_request(
-                    Phase9AiTaskKind::UniverseRepair,
+                    AdvancedAiTaskKind::UniverseRepair,
                     empty_options_bytes(),
                     Vec::new(),
                     Some(hash(11)),
@@ -16510,7 +16682,7 @@ mod tests {
                 &[],
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
 
@@ -16527,32 +16699,32 @@ mod tests {
             1,
             None,
         );
-        let typeclass_first = run_phase9_typeclass_resolve_request(
+        let typeclass_first = run_advanced_ai_typeclass_resolve_request(
             &typeclass_request,
             std::slice::from_ref(&typeclass_import),
             &workspace_root(),
         );
-        let typeclass_second = run_phase9_typeclass_resolve_request(
+        let typeclass_second = run_advanced_ai_typeclass_resolve_request(
             &typeclass_request,
             std::slice::from_ref(&typeclass_import),
             &workspace_root(),
         );
         assert_eq!(typeclass_first, typeclass_second);
-        let (_, typeclass_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_typeclass_resolve_success_direct_instance",
-            PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
+        let (_, typeclass_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_typeclass_resolve_success_direct_instance",
+            ADVANCED_AI_TYPECLASS_RESOLVE_ENDPOINT,
             typeclass_first,
         );
         assert!(matches!(
             typeclass_payload,
-            Phase9AiSuccessPayload::TypeclassResolution { .. }
+            AdvancedAiSuccessPayload::TypeclassResolution { .. }
         ));
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_typeclass_resolve_rejected_envelope_malformed_payload",
-            PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
-            run_phase9_typeclass_resolve_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_typeclass_resolve_rejected_envelope_malformed_payload",
+            ADVANCED_AI_TYPECLASS_RESOLVE_ENDPOINT,
+            run_advanced_ai_typeclass_resolve_request(
                 &inline_request(
-                    Phase9AiTaskKind::TypeclassResolution,
+                    AdvancedAiTaskKind::TypeclassResolution,
                     empty_options_bytes(),
                     Vec::new(),
                     Some(hash(12)),
@@ -16560,7 +16732,7 @@ mod tests {
                 &[],
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
 
@@ -16570,15 +16742,15 @@ mod tests {
             quotient_import.certificate_hash(),
             quotient_import.verified_module().axiom_report().clone(),
         );
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_quotient_check_rejected_phase8_mvp_unsupported",
-            PHASE9_QUOTIENT_CHECK_ENDPOINT,
-            run_phase9_quotient_check_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_quotient_check_rejected_independent_checker_mvp_unsupported",
+            ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT,
+            run_advanced_ai_quotient_check_request(
                 &quotient_request(&quotient_import, quotient_candidate(), None),
                 std::slice::from_ref(&quotient_import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
         assert_eq!(
@@ -16591,17 +16763,17 @@ mod tests {
         );
 
         let smt_import = verified_smt_import();
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_smt_reconstruct_rejected_empty_registry",
-            PHASE9_SMT_RECONSTRUCT_ENDPOINT,
-            run_phase9_smt_reconstruct_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_smt_reconstruct_rejected_empty_registry",
+            ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT,
+            run_advanced_ai_smt_reconstruct_request(
                 &smt_request(&smt_import, |_| {}),
                 std::slice::from_ref(&smt_import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::SmtCertificate(
-                Phase9SmtCertificateError::RuleRegistryMismatch,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
             )),
         );
 
@@ -16612,32 +16784,32 @@ mod tests {
         );
         let graph_request =
             theorem_graph_inline_query_request(&graph_import, None, None, graph_snapshot, None, 16);
-        let graph_first = run_phase9_theorem_graph_query_request(
+        let graph_first = run_advanced_ai_theorem_graph_query_request(
             &graph_request,
             std::slice::from_ref(&graph_import),
             &workspace_root(),
         );
-        let graph_second = run_phase9_theorem_graph_query_request(
+        let graph_second = run_advanced_ai_theorem_graph_query_request(
             &graph_request,
             std::slice::from_ref(&graph_import),
             &workspace_root(),
         );
         assert_eq!(graph_first, graph_second);
-        let (_, graph_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_theorem_graph_query_success_public_axiom_node",
-            PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
+        let (_, graph_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_theorem_graph_query_success_public_axiom_node",
+            ADVANCED_AI_THEOREM_GRAPH_QUERY_ENDPOINT,
             graph_first,
         );
         assert!(matches!(
             graph_payload,
-            Phase9AiSuccessPayload::TheoremGraphQuery { .. }
+            AdvancedAiSuccessPayload::TheoremGraphQuery { .. }
         ));
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_theorem_graph_query_rejected_envelope_malformed_payload",
-            PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
-            run_phase9_theorem_graph_query_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_theorem_graph_query_rejected_envelope_malformed_payload",
+            ADVANCED_AI_THEOREM_GRAPH_QUERY_ENDPOINT,
+            run_advanced_ai_theorem_graph_query_request(
                 &inline_request(
-                    Phase9AiTaskKind::TheoremGraphQuery,
+                    AdvancedAiTaskKind::TheoremGraphQuery,
                     empty_options_bytes(),
                     Vec::new(),
                     Some(hash(13)),
@@ -16645,7 +16817,7 @@ mod tests {
                 &[],
                 &workspace_root(),
             ),
-            Phase9AiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
 
@@ -16659,33 +16831,33 @@ mod tests {
             ),
             formalization_options_bytes(),
         );
-        let formalization_first = run_phase9_formalize_check_request(
+        let formalization_first = run_advanced_ai_formalize_check_request(
             &formalization_success_request,
             &[],
             &workspace_root(),
         );
-        let formalization_second = run_phase9_formalize_check_request(
+        let formalization_second = run_advanced_ai_formalize_check_request(
             &formalization_success_request,
             &[],
             &workspace_root(),
         );
         assert_eq!(formalization_first, formalization_second);
-        let (_, formalization_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_formalize_check_success_proof_bridge_checked",
-            PHASE9_FORMALIZE_CHECK_ENDPOINT,
+        let (_, formalization_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_formalize_check_success_proof_bridge_checked",
+            ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT,
             formalization_first,
         );
         assert!(matches!(
             formalization_payload,
-            Phase9AiSuccessPayload::NaturalLanguageFormalization {
-                kind: Phase9FormalizationSuccessKind::ProofBridgeChecked,
+            AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+                kind: AdvancedFormalizationSuccessKind::ProofBridgeChecked,
                 ..
             }
         ));
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_formalize_check_rejected_statement_elaboration_failed",
-            PHASE9_FORMALIZE_CHECK_ENDPOINT,
-            run_phase9_formalize_check_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_formalize_check_rejected_statement_elaboration_failed",
+            ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT,
+            run_advanced_ai_formalize_check_request(
                 &formalization_request(
                     formalization_payload_with(
                         "claim: unknown",
@@ -16698,17 +16870,17 @@ mod tests {
                 &[],
                 &workspace_root(),
             ),
-            Phase9AiValidationError::FeatureRejected,
-            Some(Phase9AiFeatureError::Formalization(
-                Phase9FormalizationError::CandidateStatementElaborationFailed,
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::Formalization(
+                AdvancedFormalizationError::CandidateStatementElaborationFailed,
             )),
         );
     }
 
     #[test]
-    fn phase9_m9_artifact_replay_uses_exact_bytes_and_stable_hashes() {
+    fn advanced_ai_m9_artifact_replay_uses_exact_bytes_and_stable_hashes() {
         let root = std::env::temp_dir().join(format!(
-            "npa-phase9-m9-artifact-replay-{}",
+            "npa-advanced-ai-m9-artifact-replay-{}",
             std::process::id()
         ));
         let _ = fs::remove_dir_all(&root);
@@ -16716,15 +16888,15 @@ mod tests {
 
         let options_bytes = empty_options_bytes();
         fs::write(root.join("options.bin"), &options_bytes).unwrap();
-        let options_hash = phase9_ai_options_hash(&options_bytes);
+        let options_hash = advanced_ai_options_hash(&options_bytes);
         let proposal = valid_inductive_proposal();
-        let artifact_envelope = Phase9AiCandidateEnvelope {
-            profile_version: Phase9AiProfileVersion::MvpV1,
-            task_kind: Phase9AiTaskKind::AdvancedInductive,
-            target: Phase9AiTarget {
-                env_fingerprint: phase9_ai_env_fingerprint(
-                    Phase9AiProfileVersion::MvpV1,
-                    Phase9AiTaskKind::AdvancedInductive,
+        let artifact_envelope = AdvancedAiCandidateEnvelope {
+            profile_version: AdvancedAiProfileVersion::MvpV1,
+            task_kind: AdvancedAiTaskKind::AdvancedInductive,
+            target: AdvancedAiTarget {
+                env_fingerprint: advanced_ai_env_fingerprint(
+                    AdvancedAiProfileVersion::MvpV1,
+                    AdvancedAiTaskKind::AdvancedInductive,
                     &[],
                     options_hash,
                 )
@@ -16733,27 +16905,28 @@ mod tests {
                 goal_fingerprint: None,
             },
             imports: Vec::new(),
-            options: Phase9AiOptionsRef::Artifact {
+            options: AdvancedAiOptionsRef::Artifact {
                 path: "options.bin".to_owned(),
-                file_hash: phase9_file_hash(&options_bytes),
+                file_hash: advanced_ai_file_hash(&options_bytes),
                 options_hash,
                 size_bytes: options_bytes.len() as u64,
             },
-            payload: phase9_inductive_proposal_canonical_bytes(&proposal).unwrap(),
+            payload: advanced_ai_inductive_proposal_canonical_bytes(&proposal).unwrap(),
         };
         let artifact_request =
-            phase9_ai_candidate_envelope_canonical_bytes(&artifact_envelope).unwrap();
+            advanced_ai_candidate_envelope_canonical_bytes(&artifact_envelope).unwrap();
         let inline_request = inductive_request(proposal);
 
-        let artifact_first = run_phase9_inductive_check_request(&artifact_request, &[], &root);
-        let artifact_second = run_phase9_inductive_check_request(&artifact_request, &[], &root);
+        let artifact_first = run_advanced_ai_inductive_check_request(&artifact_request, &[], &root);
+        let artifact_second =
+            run_advanced_ai_inductive_check_request(&artifact_request, &[], &root);
         assert_eq!(artifact_first, artifact_second);
-        let (_, artifact_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_inductive_check_success_artifact_options_replay",
-            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
+        let (_, artifact_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_inductive_check_success_artifact_options_replay",
+            ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
             artifact_first,
         );
-        let (_, inline_payload) = assert_success(run_phase9_inductive_check_request(
+        let (_, inline_payload) = assert_success(run_advanced_ai_inductive_check_request(
             &inline_request,
             &[],
             &workspace_root(),
@@ -16761,11 +16934,11 @@ mod tests {
         assert_eq!(artifact_payload, inline_payload);
 
         fs::write(root.join("options.bin"), b"corrupt-options").unwrap();
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_inductive_check_rejected_artifact_payload_hash_mismatch",
-            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
-            run_phase9_inductive_check_request(&artifact_request, &[], &root),
-            Phase9AiValidationError::PayloadHashMismatch,
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_inductive_check_rejected_artifact_payload_hash_mismatch",
+            ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
+            run_advanced_ai_inductive_check_request(&artifact_request, &[], &root),
+            AdvancedAiValidationError::PayloadHashMismatch,
             None,
         );
 
@@ -16773,43 +16946,43 @@ mod tests {
     }
 
     #[test]
-    fn phase9_m9_phase8_support_matrix_and_sidecar_boundaries_are_pinned() {
+    fn advanced_ai_m9_independent_checker_support_matrix_and_sidecar_boundaries_are_pinned() {
         let inductive_request = inductive_request(valid_inductive_proposal());
-        let (_, inductive_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_inductive_check_success_phase8_mvp_supported_certificate",
-            PHASE9_INDUCTIVE_CHECK_ENDPOINT,
-            run_phase9_inductive_check_request(&inductive_request, &[], &workspace_root()),
+        let (_, inductive_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_inductive_check_success_independent_checker_mvp_supported_certificate",
+            ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
+            run_advanced_ai_inductive_check_request(&inductive_request, &[], &workspace_root()),
         );
         assert!(matches!(
             inductive_payload,
-            Phase9AiSuccessPayload::AdvancedInductive { .. }
+            AdvancedAiSuccessPayload::AdvancedInductive { .. }
         ));
 
         let quotient_import = verified_quotient_import();
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_quotient_check_rejected_phase8_mvp_support_matrix",
-            PHASE9_QUOTIENT_CHECK_ENDPOINT,
-            run_phase9_quotient_check_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_quotient_check_rejected_independent_checker_mvp_support_matrix",
+            ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT,
+            run_advanced_ai_quotient_check_request(
                 &quotient_request(&quotient_import, quotient_candidate(), None),
                 std::slice::from_ref(&quotient_import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
 
         let smt_import = verified_smt_import();
-        assert_phase9_m9_rejected_fixture(
-            "phase9_m9_smt_reconstruct_rejected_phase8_mvp_empty_registry",
-            PHASE9_SMT_RECONSTRUCT_ENDPOINT,
-            run_phase9_smt_reconstruct_request(
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_smt_reconstruct_rejected_independent_checker_mvp_empty_registry",
+            ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT,
+            run_advanced_ai_smt_reconstruct_request(
                 &smt_request(&smt_import, |_| {}),
                 std::slice::from_ref(&smt_import),
                 &workspace_root(),
             ),
-            Phase9AiValidationError::UnsupportedFeature,
-            Some(Phase9AiFeatureError::SmtCertificate(
-                Phase9SmtCertificateError::RuleRegistryMismatch,
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
             )),
         );
 
@@ -16832,17 +17005,17 @@ mod tests {
             ),
             formalization_options_bytes(),
         );
-        let (first_candidate_hash, first_payload) = assert_phase9_m9_success_fixture(
-            "phase9_m9_formalize_check_success_phase8_mvp_proof_bridge",
-            PHASE9_FORMALIZE_CHECK_ENDPOINT,
-            run_phase9_formalize_check_request(&first, &[], &workspace_root()),
+        let (first_candidate_hash, first_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_formalize_check_success_independent_checker_mvp_proof_bridge",
+            ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT,
+            run_advanced_ai_formalize_check_request(&first, &[], &workspace_root()),
         );
         let (second_candidate_hash, second_payload) = assert_success(
-            run_phase9_formalize_check_request(&second, &[], &workspace_root()),
+            run_advanced_ai_formalize_check_request(&second, &[], &workspace_root()),
         );
         assert_ne!(first_candidate_hash, second_candidate_hash);
 
-        let Phase9AiSuccessPayload::NaturalLanguageFormalization {
+        let AdvancedAiSuccessPayload::NaturalLanguageFormalization {
             kind: first_kind,
             accepted_statement_hash: first_accepted,
             formalization_proof_root_hash: first_root,
@@ -16850,7 +17023,7 @@ mod tests {
         else {
             panic!("expected formalization payload");
         };
-        let Phase9AiSuccessPayload::NaturalLanguageFormalization {
+        let AdvancedAiSuccessPayload::NaturalLanguageFormalization {
             kind: second_kind,
             accepted_statement_hash: second_accepted,
             formalization_proof_root_hash: second_root,
@@ -16860,11 +17033,11 @@ mod tests {
         };
         assert_eq!(
             first_kind,
-            Phase9FormalizationSuccessKind::ProofBridgeChecked
+            AdvancedFormalizationSuccessKind::ProofBridgeChecked
         );
         assert_eq!(
             second_kind,
-            Phase9FormalizationSuccessKind::ProofBridgeChecked
+            AdvancedFormalizationSuccessKind::ProofBridgeChecked
         );
         assert_eq!(first_accepted, second_accepted);
         assert_eq!(first_root, second_root);
@@ -16904,54 +17077,57 @@ mod tests {
     }
 
     #[test]
-    fn phase9_m9_api_profile_and_error_tags_are_compatibility_pinned() {
-        assert_eq!(Phase9AiProfileVersion::MvpV1.tag(), 0);
+    fn advanced_ai_m9_api_profile_and_error_tags_are_compatibility_pinned() {
+        assert_eq!(AdvancedAiProfileVersion::MvpV1.tag(), 0);
         assert_eq!(
-            Phase9AiProfileVersion::from_tag(0),
-            Some(Phase9AiProfileVersion::MvpV1)
+            AdvancedAiProfileVersion::from_tag(0),
+            Some(AdvancedAiProfileVersion::MvpV1)
         );
-        assert_eq!(Phase9AiProfileVersion::from_tag(1), None);
-        assert_eq!(Phase9AiOptionsVersion::MvpV1.tag(), 0);
+        assert_eq!(AdvancedAiProfileVersion::from_tag(1), None);
+        assert_eq!(AdvancedAiOptionsVersion::MvpV1.tag(), 0);
         assert_eq!(
-            Phase9AiOptionsVersion::from_tag(0),
-            Some(Phase9AiOptionsVersion::MvpV1)
+            AdvancedAiOptionsVersion::from_tag(0),
+            Some(AdvancedAiOptionsVersion::MvpV1)
         );
-        assert_eq!(Phase9AiOptionsVersion::from_tag(1), None);
-        assert_eq!(Phase9IndependentCheckerProfile::Phase8MvpReference.tag(), 0);
+        assert_eq!(AdvancedAiOptionsVersion::from_tag(1), None);
         assert_eq!(
-            Phase9IndependentCheckerProfile::from_tag(0),
-            Some(Phase9IndependentCheckerProfile::Phase8MvpReference)
+            AdvancedIndependentCheckerProfile::IndependentCheckerMvpReference.tag(),
+            0
         );
-        assert_eq!(Phase9IndependentCheckerProfile::from_tag(1), None);
+        assert_eq!(
+            AdvancedIndependentCheckerProfile::from_tag(0),
+            Some(AdvancedIndependentCheckerProfile::IndependentCheckerMvpReference)
+        );
+        assert_eq!(AdvancedIndependentCheckerProfile::from_tag(1), None);
 
         let task_kinds = [
-            Phase9AiTaskKind::AdvancedInductive,
-            Phase9AiTaskKind::UniverseRepair,
-            Phase9AiTaskKind::TypeclassResolution,
-            Phase9AiTaskKind::QuotientConstruction,
-            Phase9AiTaskKind::SmtCertificate,
-            Phase9AiTaskKind::TheoremGraphQuery,
-            Phase9AiTaskKind::NaturalLanguageFormalization,
+            AdvancedAiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::UniverseRepair,
+            AdvancedAiTaskKind::TypeclassResolution,
+            AdvancedAiTaskKind::QuotientConstruction,
+            AdvancedAiTaskKind::SmtCertificate,
+            AdvancedAiTaskKind::TheoremGraphQuery,
+            AdvancedAiTaskKind::NaturalLanguageFormalization,
         ];
         for (expected_tag, task_kind) in (0u8..).zip(task_kinds) {
             assert_eq!(task_kind.tag(), expected_tag);
-            assert_eq!(Phase9AiTaskKind::from_tag(expected_tag), Some(task_kind));
+            assert_eq!(AdvancedAiTaskKind::from_tag(expected_tag), Some(task_kind));
         }
-        assert_eq!(Phase9AiTaskKind::from_tag(7), None);
+        assert_eq!(AdvancedAiTaskKind::from_tag(7), None);
 
         let validation_errors = [
-            Phase9AiValidationError::EnvelopeMalformed,
-            Phase9AiValidationError::TargetFingerprintMismatch,
-            Phase9AiValidationError::ImportClosureMismatch,
-            Phase9AiValidationError::PayloadHashMismatch,
-            Phase9AiValidationError::KernelRejected,
-            Phase9AiValidationError::IndependentCheckerRejected,
-            Phase9AiValidationError::NonDeterministicResult,
-            Phase9AiValidationError::BudgetExceeded,
-            Phase9AiValidationError::AmbiguousResolution,
-            Phase9AiValidationError::NoSolution,
-            Phase9AiValidationError::FeatureRejected,
-            Phase9AiValidationError::UnsupportedFeature,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedAiValidationError::TargetFingerprintMismatch,
+            AdvancedAiValidationError::ImportClosureMismatch,
+            AdvancedAiValidationError::PayloadHashMismatch,
+            AdvancedAiValidationError::KernelRejected,
+            AdvancedAiValidationError::IndependentCheckerRejected,
+            AdvancedAiValidationError::NonDeterministicResult,
+            AdvancedAiValidationError::BudgetExceeded,
+            AdvancedAiValidationError::AmbiguousResolution,
+            AdvancedAiValidationError::NoSolution,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedAiValidationError::UnsupportedFeature,
         ];
         for (expected_tag, error) in (0u8..).zip(validation_errors) {
             assert_eq!(error.tag(), expected_tag);
@@ -16959,39 +17135,45 @@ mod tests {
 
         let feature_error_tags = [
             (
-                Phase9AiFeatureError::AdvancedInductive(
-                    Phase9AdvancedInductiveError::TargetRefMismatch,
+                AdvancedAiFeatureError::AdvancedInductive(
+                    AdvancedInductiveError::TargetRefMismatch,
                 ),
                 vec![0, 0],
             ),
             (
-                Phase9AiFeatureError::UniverseRepair(
-                    Phase9UniverseRepairError::UnknownUniverseParam,
+                AdvancedAiFeatureError::UniverseRepair(
+                    AdvancedUniverseRepairError::UnknownUniverseParam,
                 ),
                 vec![1, 0],
             ),
             (
-                Phase9AiFeatureError::TypeclassResolution(
-                    Phase9TypeclassResolutionError::ClassDeclarationMismatch,
+                AdvancedAiFeatureError::TypeclassResolution(
+                    AdvancedTypeclassResolutionError::ClassDeclarationMismatch,
                 ),
                 vec![2, 0],
             ),
             (
-                Phase9AiFeatureError::QuotientConstruction(
-                    Phase9QuotientConstructionError::TargetRefMismatch,
+                AdvancedAiFeatureError::QuotientConstruction(
+                    AdvancedQuotientConstructionError::TargetRefMismatch,
                 ),
                 vec![3, 0],
             ),
             (
-                Phase9AiFeatureError::SmtCertificate(Phase9SmtCertificateError::EncodingMismatch),
+                AdvancedAiFeatureError::SmtCertificate(
+                    AdvancedSmtCertificateError::EncodingMismatch,
+                ),
                 vec![4, 0],
             ),
             (
-                Phase9AiFeatureError::TheoremGraphQuery(Phase9TheoremGraphError::SnapshotMalformed),
+                AdvancedAiFeatureError::TheoremGraphQuery(
+                    AdvancedTheoremGraphError::SnapshotMalformed,
+                ),
                 vec![5, 0],
             ),
             (
-                Phase9AiFeatureError::Formalization(Phase9FormalizationError::IntentRecordMismatch),
+                AdvancedAiFeatureError::Formalization(
+                    AdvancedFormalizationError::IntentRecordMismatch,
+                ),
                 vec![6, 0],
             ),
         ];
@@ -17004,36 +17186,36 @@ mod tests {
 
     #[test]
     fn route_skeletons_bind_each_endpoint_to_its_task_kind() {
-        type Phase9Route = fn(&[u8], &[VerifiedImportRef], &Path) -> Phase9AiEndpointResponse;
+        type AdvancedRoute = fn(&[u8], &[VerifiedImportRef], &Path) -> AdvancedAiEndpointResponse;
 
-        let routes: [(&str, Phase9Route); 7] = [
+        let routes: [(&str, AdvancedRoute); 7] = [
             (
-                PHASE9_INDUCTIVE_CHECK_ENDPOINT,
-                run_phase9_inductive_check_request,
+                ADVANCED_AI_INDUCTIVE_CHECK_ENDPOINT,
+                run_advanced_ai_inductive_check_request,
             ),
             (
-                PHASE9_UNIVERSE_REPAIR_CHECK_ENDPOINT,
-                run_phase9_universe_repair_check_request,
+                ADVANCED_AI_UNIVERSE_REPAIR_CHECK_ENDPOINT,
+                run_advanced_ai_universe_repair_check_request,
             ),
             (
-                PHASE9_TYPECLASS_RESOLVE_ENDPOINT,
-                run_phase9_typeclass_resolve_request,
+                ADVANCED_AI_TYPECLASS_RESOLVE_ENDPOINT,
+                run_advanced_ai_typeclass_resolve_request,
             ),
             (
-                PHASE9_QUOTIENT_CHECK_ENDPOINT,
-                run_phase9_quotient_check_request,
+                ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT,
+                run_advanced_ai_quotient_check_request,
             ),
             (
-                PHASE9_SMT_RECONSTRUCT_ENDPOINT,
-                run_phase9_smt_reconstruct_request,
+                ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT,
+                run_advanced_ai_smt_reconstruct_request,
             ),
             (
-                PHASE9_THEOREM_GRAPH_QUERY_ENDPOINT,
-                run_phase9_theorem_graph_query_request,
+                ADVANCED_AI_THEOREM_GRAPH_QUERY_ENDPOINT,
+                run_advanced_ai_theorem_graph_query_request,
             ),
             (
-                PHASE9_FORMALIZE_CHECK_ENDPOINT,
-                run_phase9_formalize_check_request,
+                ADVANCED_AI_FORMALIZE_CHECK_ENDPOINT,
+                run_advanced_ai_formalize_check_request,
             ),
         ];
         assert_eq!(routes.len(), 7);
@@ -17041,33 +17223,33 @@ mod tests {
         let import = verified_universe_import();
         let universe = valid_universe_request(&import);
         assert_rejected(
-            run_phase9_inductive_check_request(&universe, &[], &workspace_root()),
-            Phase9AiValidationError::EnvelopeMalformed,
+            run_advanced_ai_inductive_check_request(&universe, &[], &workspace_root()),
+            AdvancedAiValidationError::EnvelopeMalformed,
             None,
         );
         assert!(matches!(
-            run_phase9_universe_repair_check_request(
+            run_advanced_ai_universe_repair_check_request(
                 &universe,
                 std::slice::from_ref(&import),
                 &workspace_root()
             ),
-            Phase9AiEndpointResponse::Success { .. }
+            AdvancedAiEndpointResponse::Success { .. }
         ));
     }
 
     #[test]
     fn common_validation_success_is_deterministic_for_same_replay_input() {
         let request = inline_request(
-            Phase9AiTaskKind::AdvancedInductive,
+            AdvancedAiTaskKind::AdvancedInductive,
             empty_options_bytes(),
             Vec::new(),
             None,
         );
 
-        let first = run_phase9_inductive_check_request(&request, &[], &workspace_root());
-        let second = run_phase9_inductive_check_request(&request, &[], &workspace_root());
+        let first = run_advanced_ai_inductive_check_request(&request, &[], &workspace_root());
+        let second = run_advanced_ai_inductive_check_request(&request, &[], &workspace_root());
 
         assert_eq!(first, second);
-        assert_rejected(first, Phase9AiValidationError::EnvelopeMalformed, None);
+        assert_rejected(first, AdvancedAiValidationError::EnvelopeMalformed, None);
     }
 }

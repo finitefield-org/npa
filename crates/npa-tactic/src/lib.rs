@@ -342,7 +342,7 @@ impl MachineTermSource {
         })?;
         Ok(Self {
             source,
-            canonical_hash: machine_term_source_hash_from_phase3(&canonical.canonical_bytes),
+            canonical_hash: machine_term_source_hash_from_frontend(&canonical.canonical_bytes),
         })
     }
 
@@ -988,7 +988,7 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_p
         )
     })?;
     let decl_hashes =
-        phase2_current_decl_hashes(&canonical_imports, checked_prior_current_decls, &decl)?;
+        certificate_current_decl_hashes(&canonical_imports, checked_prior_current_decls, &decl)?;
     Ok(CheckedCurrentDecl::from_checked_parts(
         source_index,
         decl,
@@ -1052,7 +1052,7 @@ impl MachineTacticEnv {
                 ));
             }
             let expected_decl_hashes =
-                phase2_current_decl_hashes(&imports, &normalized_current, &checked.core_decl)?;
+                certificate_current_decl_hashes(&imports, &normalized_current, &checked.core_decl)?;
             let expected_signature = CheckedDeclSignature::from_core_decl(
                 &checked.core_decl,
                 expected_decl_hashes.decl_interface_hash,
@@ -1075,7 +1075,7 @@ impl MachineTacticEnv {
                 return Err(MachineTacticDiagnostic::new(
                     MachineTacticDiagnosticKind::CurrentDeclSignatureMismatch,
                     format!(
-                        "checked current declaration {} has a stale Phase 2 declaration hash",
+                        "checked current declaration {} has a stale certificate declaration hash",
                         checked.core_decl.name()
                     ),
                 ));
@@ -4869,7 +4869,7 @@ pub fn extract_closed_machine_theorem_decl(state: &MachineProofState) -> Result<
 
 /// Verified certificate handoff for a closed machine proof.
 ///
-/// Phase 4/5/7 produce tactic candidates and proof states, not trusted Phase 2
+/// Machine tactic, machine API, and AI search produce tactic candidates and proof states, not trusted certificate
 /// producer tokens. This handoff keeps the boundary at the final `CoreModule`,
 /// canonical `.npcert` bytes, and the `VerifiedModule` returned by
 /// `npa_cert::verify_module_cert`.
@@ -5958,13 +5958,13 @@ fn resolve_eq_family(
                 && kernel_env.decl("Eq.refl").is_some()
                 && kernel_env.decl("Eq.rec").is_some()
             {
-                let mut out = tagged_bytes("npa.phase4.resolved-eq-family.builtin.v1");
+                let mut out = tagged_bytes("npa.machine-tactic.resolved-eq-family.builtin.v1");
                 encode_string_to(&mut out, "builtin-nat-eq-rec-v0.1");
                 Ok(Some(ResolvedEqFamily {
                     eq_name: Name::from_dotted("Eq"),
                     refl_name: Name::from_dotted("Eq.refl"),
                     rec_name: Name::from_dotted("Eq.rec"),
-                    fingerprint: hash_with_domain("npa.phase4.resolved-eq-family.v1", &out),
+                    fingerprint: hash_with_domain("npa.machine-tactic.resolved-eq-family.v1", &out),
                 }))
             } else {
                 Ok(None)
@@ -5999,7 +5999,7 @@ fn resolve_eq_family(
                     "Eq family heads must resolve to the same verified import or checked current declaration",
                 ));
             }
-            let mut out = tagged_bytes("npa.phase4.resolved-eq-family.decl.v1");
+            let mut out = tagged_bytes("npa.machine-tactic.resolved-eq-family.decl.v1");
             encode_family_origin_to(&mut out, &eq.origin);
             encode_checked_decl_signature_to(&mut out, &eq.signature);
             encode_checked_decl_signature_to(&mut out, &refl.signature);
@@ -6008,7 +6008,7 @@ fn resolve_eq_family(
                 eq_name: reference.eq_name.clone(),
                 refl_name: reference.refl_name.clone(),
                 rec_name: reference.rec_name.clone(),
-                fingerprint: hash_with_domain("npa.phase4.resolved-eq-family.v1", &out),
+                fingerprint: hash_with_domain("npa.machine-tactic.resolved-eq-family.v1", &out),
             }))
         }
     }
@@ -6384,7 +6384,7 @@ fn resolve_nat_family(
             "Nat family heads must resolve to the same verified import or checked current declaration",
         ));
     }
-    let mut out = tagged_bytes("npa.phase4.resolved-nat-family.decl.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.resolved-nat-family.decl.v1");
     encode_family_origin_to(&mut out, &nat.origin);
     encode_checked_decl_signature_to(&mut out, &nat.signature);
     encode_checked_decl_signature_to(&mut out, &zero.signature);
@@ -6395,7 +6395,7 @@ fn resolve_nat_family(
         zero_name: reference.zero_name.clone(),
         succ_name: reference.succ_name.clone(),
         rec_name: reference.rec_name.clone(),
-        fingerprint: hash_with_domain("npa.phase4.resolved-nat-family.v1", &out),
+        fingerprint: hash_with_domain("npa.machine-tactic.resolved-nat-family.v1", &out),
     }))
 }
 
@@ -6937,7 +6937,7 @@ fn validate_machine_term_source(term: &MachineTermSource) -> Result<()> {
                 ),
             )
         })?;
-    let expected = machine_term_source_hash_from_phase3(&canonical.canonical_bytes);
+    let expected = machine_term_source_hash_from_frontend(&canonical.canonical_bytes);
     if term.canonical_hash != expected {
         return Err(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineTermSource,
@@ -6945,7 +6945,7 @@ fn validate_machine_term_source(term: &MachineTermSource) -> Result<()> {
         )
         .with_expected_actual_payloads(
             DiagnosticPayloadKind::MachineTermSource,
-            &machine_term_source_canonical_bytes_from_phase3(&canonical.canonical_bytes),
+            &machine_term_source_canonical_bytes_from_frontend(&canonical.canonical_bytes),
             &term.canonical_hash,
         ));
     }
@@ -7314,7 +7314,7 @@ fn collect_core_apps(expr: &Expr) -> (Expr, Vec<Expr>) {
     (head, args)
 }
 
-const PATTERN_META_PREFIX: &str = "\0npa.phase4.pattern-meta.";
+const PATTERN_META_PREFIX: &str = "\0npa.machine-tactic.pattern-meta.";
 
 fn pattern_meta_expr(id: PatternMetaId) -> Expr {
     Expr::konst(format!("{PATTERN_META_PREFIX}{}", id.0), Vec::new())
@@ -8497,7 +8497,7 @@ fn proof_expr_node_count(expr: &ProofExpr) -> u64 {
     }
 }
 
-fn phase2_current_decl_hashes(
+fn certificate_current_decl_hashes(
     imports: &[VerifiedImportRef],
     checked_prior_current_decls: &[CheckedCurrentDecl],
     decl: &Decl,
@@ -8520,7 +8520,7 @@ fn phase2_current_decl_hashes(
         MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::UncheckedCurrentDecl,
             format!(
-                "Phase 2 rejected current declaration interface hash materialization for {}: {err:?}",
+                "certificate rejected current declaration interface hash materialization for {}: {err:?}",
                 decl.name()
             ),
         )
@@ -8534,7 +8534,7 @@ fn phase2_current_decl_hashes(
     Err(MachineTacticDiagnostic::new(
         MachineTacticDiagnosticKind::CurrentDeclSignatureMismatch,
         format!(
-            "Phase 2 materialization did not return current declaration {}",
+            "certificate materialization did not return current declaration {}",
             decl.name()
         ),
     ))
@@ -8564,25 +8564,25 @@ fn decl_payload_name(cert: &npa_cert::ModuleCert, payload: &DeclPayload) -> Resu
     cert.name_table.get(name_id).cloned().ok_or_else(|| {
         MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::CurrentDeclSignatureMismatch,
-            "Phase 2 materialization returned a declaration with an invalid name id",
+            "certificate materialization returned a declaration with an invalid name id",
         )
     })
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Phase2ImportKey {
+struct CertificateImportKey {
     module: ModuleName,
     export_hash: Hash,
     certificate_hash: Hash,
 }
 
-impl PartialOrd for Phase2ImportKey {
+impl PartialOrd for CertificateImportKey {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Phase2ImportKey {
+impl Ord for CertificateImportKey {
     fn cmp(&self, other: &Self) -> Ordering {
         name_canonical_bytes(&self.module)
             .cmp(&name_canonical_bytes(&other.module))
@@ -8591,15 +8591,17 @@ impl Ord for Phase2ImportKey {
     }
 }
 
-fn phase2_import_key_from_ref(import: &VerifiedImportRef) -> Phase2ImportKey {
-    Phase2ImportKey {
+fn certificate_import_key_from_ref(import: &VerifiedImportRef) -> CertificateImportKey {
+    CertificateImportKey {
         module: import.module.clone(),
         export_hash: import.export_hash,
         certificate_hash: import.certificate_hash,
     }
 }
 
-fn phase2_import_key_from_entry(entry: &npa_cert::ImportEntry) -> Result<Phase2ImportKey> {
+fn certificate_import_key_from_entry(
+    entry: &npa_cert::ImportEntry,
+) -> Result<CertificateImportKey> {
     let Some(certificate_hash) = entry.certificate_hash else {
         return Err(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidVerifiedImport,
@@ -8609,7 +8611,7 @@ fn phase2_import_key_from_entry(entry: &npa_cert::ImportEntry) -> Result<Phase2I
             ),
         ));
     };
-    Ok(Phase2ImportKey {
+    Ok(CertificateImportKey {
         module: entry.module.clone(),
         export_hash: entry.export_hash,
         certificate_hash,
@@ -8622,7 +8624,7 @@ fn certificate_imports_for_current_decl_hashes(
 ) -> Result<Vec<VerifiedModule>> {
     let imports_by_key = imports
         .iter()
-        .map(|import| (phase2_import_key_from_ref(import), import))
+        .map(|import| (certificate_import_key_from_ref(import), import))
         .collect::<BTreeMap<_, _>>();
     let visible_imports = imports
         .iter()
@@ -8633,8 +8635,8 @@ fn certificate_imports_for_current_decl_hashes(
     let mut pending_keys = Vec::new();
 
     for import in &visible_imports {
-        select_phase2_import_key(
-            &phase2_import_key_from_ref(import),
+        select_certificate_import_key(
+            &certificate_import_key_from_ref(import),
             &imports_by_key,
             &mut selected_keys,
             &mut pending_keys,
@@ -8688,10 +8690,10 @@ fn certificate_imports_for_current_decl_hashes(
 
 fn add_axiom_origin_imports_for_referenced_visible_exports(
     import: &VerifiedImportRef,
-    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
+    imports_by_key: &BTreeMap<CertificateImportKey, &VerifiedImportRef>,
     referenced_names: &BTreeSet<Name>,
-    selected_keys: &mut BTreeSet<Phase2ImportKey>,
-    pending_keys: &mut Vec<Phase2ImportKey>,
+    selected_keys: &mut BTreeSet<CertificateImportKey>,
+    pending_keys: &mut Vec<CertificateImportKey>,
 ) -> Result<()> {
     for export in import.verified_module.export_block() {
         let Some(export_name) = import.verified_module.name_table().get(export.name) else {
@@ -8717,8 +8719,8 @@ fn add_axiom_origin_imports_for_referenced_visible_exports(
                         "verified import axiom provenance references an out-of-range import table entry",
                     )
                 })?;
-            let key = phase2_import_key_from_entry(import_entry)?;
-            select_phase2_import_key(&key, imports_by_key, selected_keys, pending_keys)?;
+            let key = certificate_import_key_from_entry(import_entry)?;
+            select_certificate_import_key(&key, imports_by_key, selected_keys, pending_keys)?;
         }
     }
     Ok(())
@@ -8726,12 +8728,12 @@ fn add_axiom_origin_imports_for_referenced_visible_exports(
 
 fn add_export_interface_dependency_imports_for_current_decl(
     import: &VerifiedImportRef,
-    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
-    selected_keys: &mut BTreeSet<Phase2ImportKey>,
-    pending_keys: &mut Vec<Phase2ImportKey>,
+    imports_by_key: &BTreeMap<CertificateImportKey, &VerifiedImportRef>,
+    selected_keys: &mut BTreeSet<CertificateImportKey>,
+    pending_keys: &mut Vec<CertificateImportKey>,
 ) -> Result<()> {
     for export in import.verified_module.export_block() {
-        add_phase2_term_dependency_imports(
+        add_certificate_term_dependency_imports(
             import,
             export.ty,
             imports_by_key,
@@ -8739,7 +8741,7 @@ fn add_export_interface_dependency_imports_for_current_decl(
             pending_keys,
         )?;
         if let Some(body) = export.body {
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 body,
                 imports_by_key,
@@ -8751,12 +8753,12 @@ fn add_export_interface_dependency_imports_for_current_decl(
     Ok(())
 }
 
-fn add_phase2_term_dependency_imports(
+fn add_certificate_term_dependency_imports(
     import: &VerifiedImportRef,
     term: TermId,
-    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
-    selected_keys: &mut BTreeSet<Phase2ImportKey>,
-    pending_keys: &mut Vec<Phase2ImportKey>,
+    imports_by_key: &BTreeMap<CertificateImportKey, &VerifiedImportRef>,
+    selected_keys: &mut BTreeSet<CertificateImportKey>,
+    pending_keys: &mut Vec<CertificateImportKey>,
 ) -> Result<()> {
     let Some(term) = import.verified_module.term_table().get(term) else {
         return Err(MachineTacticDiagnostic::new(
@@ -8778,19 +8780,19 @@ fn add_phase2_term_dependency_imports(
                             "verified import export references an out-of-range import table entry",
                         )
                     })?;
-                let key = phase2_import_key_from_entry(import_entry)?;
-                select_phase2_import_key(&key, imports_by_key, selected_keys, pending_keys)?;
+                let key = certificate_import_key_from_entry(import_entry)?;
+                select_certificate_import_key(&key, imports_by_key, selected_keys, pending_keys)?;
             }
         }
         TermNode::App(fun, arg) => {
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *fun,
                 imports_by_key,
                 selected_keys,
                 pending_keys,
             )?;
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *arg,
                 imports_by_key,
@@ -8799,14 +8801,14 @@ fn add_phase2_term_dependency_imports(
             )?;
         }
         TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *ty,
                 imports_by_key,
                 selected_keys,
                 pending_keys,
             )?;
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *body,
                 imports_by_key,
@@ -8815,21 +8817,21 @@ fn add_phase2_term_dependency_imports(
             )?;
         }
         TermNode::Let { ty, value, body } => {
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *ty,
                 imports_by_key,
                 selected_keys,
                 pending_keys,
             )?;
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *value,
                 imports_by_key,
                 selected_keys,
                 pending_keys,
             )?;
-            add_phase2_term_dependency_imports(
+            add_certificate_term_dependency_imports(
                 import,
                 *body,
                 imports_by_key,
@@ -8841,11 +8843,11 @@ fn add_phase2_term_dependency_imports(
     Ok(())
 }
 
-fn select_phase2_import_key(
-    key: &Phase2ImportKey,
-    imports_by_key: &BTreeMap<Phase2ImportKey, &VerifiedImportRef>,
-    selected_keys: &mut BTreeSet<Phase2ImportKey>,
-    pending_keys: &mut Vec<Phase2ImportKey>,
+fn select_certificate_import_key(
+    key: &CertificateImportKey,
+    imports_by_key: &BTreeMap<CertificateImportKey, &VerifiedImportRef>,
+    selected_keys: &mut BTreeSet<CertificateImportKey>,
+    pending_keys: &mut Vec<CertificateImportKey>,
 ) -> Result<()> {
     if !imports_by_key.contains_key(key) {
         return Err(MachineTacticDiagnostic::new(
@@ -8965,7 +8967,7 @@ fn verified_export_signature_hash(export: &VerifiedExportSignature) -> Hash {
     encode_hash_to(&mut out, &export.decl_interface_hash);
     encode_hash_to(&mut out, &export.type_hash);
     encode_option_hash_to(&mut out, export.body_hash.as_ref());
-    hash_with_domain("npa.phase4.verified-export-signature.v1", &out)
+    hash_with_domain("npa.machine-tactic.verified-export-signature.v1", &out)
 }
 
 fn checked_current_chain_fingerprint(checked_current_decls: &[CheckedCurrentDecl]) -> Hash {
@@ -8978,7 +8980,7 @@ fn checked_current_chain_fingerprint(checked_current_decls: &[CheckedCurrentDecl
         encode_hash_to(&mut out, &decl.prior_chain_fingerprint);
         encode_hash_to(&mut out, &decl.checked_env_fingerprint);
     }
-    hash_with_domain("npa.phase4.current.prior-chain.v1", &out)
+    hash_with_domain("npa.machine-tactic.current.prior-chain.v1", &out)
 }
 
 fn checked_env_fingerprint_with_kernel_profile(
@@ -9019,19 +9021,19 @@ fn checked_env_fingerprint_with_kernel_profile(
         encode_hash_to(&mut out, &decl.checked_env_fingerprint);
     }
     encode_hash_to(&mut out, &kernel_check_profile_hash(kernel_profile));
-    hash_with_domain("npa.phase4.current.checked-env.v1", &out)
+    hash_with_domain("npa.machine-tactic.current.checked-env.v1", &out)
 }
 
-fn machine_term_source_canonical_bytes_from_phase3(phase3_canonical_bytes: &[u8]) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.machine-term-source.v1");
-    out.extend_from_slice(phase3_canonical_bytes);
+fn machine_term_source_canonical_bytes_from_frontend(frontend_canonical_bytes: &[u8]) -> Vec<u8> {
+    let mut out = tagged_bytes("npa.machine-tactic.machine-term-source.v1");
+    out.extend_from_slice(frontend_canonical_bytes);
     out
 }
 
-fn machine_term_source_hash_from_phase3(phase3_canonical_bytes: &[u8]) -> Hash {
+fn machine_term_source_hash_from_frontend(frontend_canonical_bytes: &[u8]) -> Hash {
     hash_with_domain(
-        "npa.phase4.machine-term-source.hash.v1",
-        &machine_term_source_canonical_bytes_from_phase3(phase3_canonical_bytes),
+        "npa.machine-tactic.machine-term-source.hash.v1",
+        &machine_term_source_canonical_bytes_from_frontend(frontend_canonical_bytes),
     )
 }
 
@@ -9041,55 +9043,58 @@ fn expected_actual_diagnostic_hash(
     payload_kind: DiagnosticPayloadKind,
     payload: &[u8],
 ) -> Hash {
-    let mut out = tagged_bytes("npa.phase4.diagnostic.expected-actual.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.diagnostic.expected-actual.v1");
     encode_diagnostic_kind_to(&mut out, kind);
     encode_diagnostic_hash_side_to(&mut out, side);
     encode_diagnostic_payload_kind_to(&mut out, payload_kind);
     encode_list_len_to(&mut out, payload.len());
     out.extend_from_slice(payload);
-    hash_with_domain("npa.phase4.diagnostic.expected-actual.hash.v1", &out)
+    hash_with_domain(
+        "npa.machine-tactic.diagnostic.expected-actual.hash.v1",
+        &out,
+    )
 }
 
 pub fn meta_var_id_canonical_bytes(id: MetaVarId) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.meta-var-id.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.meta-var-id.v1");
     encode_u64_to(&mut out, id.0);
     out
 }
 
 pub fn goal_id_canonical_bytes(id: GoalId) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.goal-id.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.goal-id.v1");
     encode_u64_to(&mut out, id.0);
     out
 }
 
 pub fn proof_expr_canonical_bytes(expr: &ProofExpr) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.proof-expr.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.proof-expr.v1");
     encode_proof_expr_to(&mut out, expr);
     out
 }
 
 pub fn proof_expr_hash(expr: &ProofExpr) -> Hash {
     hash_with_domain(
-        "npa.phase4.proof-expr.hash.v1",
+        "npa.machine-tactic.proof-expr.hash.v1",
         &proof_expr_canonical_bytes(expr),
     )
 }
 
 pub fn machine_local_decl_canonical_bytes(local: &MachineLocalDecl) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.machine-local-decl.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.machine-local-decl.v1");
     encode_machine_local_decl_to(&mut out, local);
     out
 }
 
 pub fn machine_local_decl_hash(local: &MachineLocalDecl) -> Hash {
     hash_with_domain(
-        "npa.phase4.machine-local-decl.hash.v1",
+        "npa.machine-tactic.machine-local-decl.hash.v1",
         &machine_local_decl_canonical_bytes(local),
     )
 }
 
 pub fn machine_local_context_canonical_bytes(context: &[MachineLocalDecl]) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.machine-local-context.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.machine-local-context.v1");
     encode_list_len_to(&mut out, context.len());
     for local in context {
         encode_machine_local_decl_to(&mut out, local);
@@ -9099,38 +9104,38 @@ pub fn machine_local_context_canonical_bytes(context: &[MachineLocalDecl]) -> Ve
 
 pub fn machine_local_context_hash(context: &[MachineLocalDecl]) -> Hash {
     hash_with_domain(
-        "npa.phase4.machine-local-context.hash.v1",
+        "npa.machine-tactic.machine-local-context.hash.v1",
         &machine_local_context_canonical_bytes(context),
     )
 }
 
 pub fn checked_decl_signature_canonical_bytes(signature: &CheckedDeclSignature) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.checked-decl-signature.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.checked-decl-signature.v1");
     encode_checked_decl_signature_to(&mut out, signature);
     out
 }
 
 pub fn checked_decl_signature_hash(signature: &CheckedDeclSignature) -> Hash {
     hash_with_domain(
-        "npa.phase4.checked-decl-signature.hash.v1",
+        "npa.machine-tactic.checked-decl-signature.hash.v1",
         &checked_decl_signature_canonical_bytes(signature),
     )
 }
 
 pub fn core_expr_hash(expr: &Expr) -> Hash {
-    phase1_core_expr_hash(expr)
+    kernel_core_expr_hash(expr)
 }
 
 pub fn core_expr_canonical_bytes(expr: &Expr) -> Vec<u8> {
     npa_cert::core_expr_canonical_bytes(expr)
 }
 
-fn phase1_core_expr_hash(expr: &Expr) -> Hash {
+fn kernel_core_expr_hash(expr: &Expr) -> Hash {
     let mut payload = Vec::new();
     match expr {
         Expr::Sort(level) => {
             payload.push(0x00);
-            payload.extend(phase1_core_level_hash(&normalize_level(level.clone())));
+            payload.extend(kernel_core_level_hash(&normalize_level(level.clone())));
         }
         Expr::BVar(index) => {
             payload.push(0x01);
@@ -9141,63 +9146,63 @@ fn phase1_core_expr_hash(expr: &Expr) -> Hash {
             encode_string_to(&mut payload, name);
             encode_u64_to(&mut payload, levels.len() as u64);
             for level in levels {
-                payload.extend(phase1_core_level_hash(&normalize_level(level.clone())));
+                payload.extend(kernel_core_level_hash(&normalize_level(level.clone())));
             }
         }
         Expr::App(func, arg) => {
             payload.push(0x03);
-            payload.extend(phase1_core_expr_hash(func));
-            payload.extend(phase1_core_expr_hash(arg));
+            payload.extend(kernel_core_expr_hash(func));
+            payload.extend(kernel_core_expr_hash(arg));
         }
         Expr::Lam { ty, body, .. } => {
             payload.push(0x04);
-            payload.extend(phase1_core_expr_hash(ty));
-            payload.extend(phase1_core_expr_hash(body));
+            payload.extend(kernel_core_expr_hash(ty));
+            payload.extend(kernel_core_expr_hash(body));
         }
         Expr::Pi { ty, body, .. } => {
             payload.push(0x05);
-            payload.extend(phase1_core_expr_hash(ty));
-            payload.extend(phase1_core_expr_hash(body));
+            payload.extend(kernel_core_expr_hash(ty));
+            payload.extend(kernel_core_expr_hash(body));
         }
         Expr::Let {
             ty, value, body, ..
         } => {
             payload.push(0x06);
-            payload.extend(phase1_core_expr_hash(ty));
-            payload.extend(phase1_core_expr_hash(value));
-            payload.extend(phase1_core_expr_hash(body));
+            payload.extend(kernel_core_expr_hash(ty));
+            payload.extend(kernel_core_expr_hash(value));
+            payload.extend(kernel_core_expr_hash(body));
         }
     }
-    phase1_hash_with_domain(b"NPA-PHASE1-EXPR-0.1", &payload)
+    kernel_core_hash_with_domain(b"NPA-KERNEL-CORE-EXPR-0.1", &payload)
 }
 
-fn phase1_core_level_hash(level: &Level) -> Hash {
+fn kernel_core_level_hash(level: &Level) -> Hash {
     let mut payload = Vec::new();
     match level {
         Level::Zero => payload.push(0x00),
         Level::Succ(inner) => {
             payload.push(0x01);
-            payload.extend(phase1_core_level_hash(inner));
+            payload.extend(kernel_core_level_hash(inner));
         }
         Level::Max(lhs, rhs) => {
             payload.push(0x02);
-            payload.extend(phase1_core_level_hash(lhs));
-            payload.extend(phase1_core_level_hash(rhs));
+            payload.extend(kernel_core_level_hash(lhs));
+            payload.extend(kernel_core_level_hash(rhs));
         }
         Level::IMax(lhs, rhs) => {
             payload.push(0x03);
-            payload.extend(phase1_core_level_hash(lhs));
-            payload.extend(phase1_core_level_hash(rhs));
+            payload.extend(kernel_core_level_hash(lhs));
+            payload.extend(kernel_core_level_hash(rhs));
         }
         Level::Param(name) => {
             payload.push(0x04);
             encode_string_to(&mut payload, name);
         }
     }
-    phase1_hash_with_domain(b"NPA-LEVEL-0.1", &payload)
+    kernel_core_hash_with_domain(b"NPA-LEVEL-0.1", &payload)
 }
 
-fn phase1_hash_with_domain(domain: &[u8], payload: &[u8]) -> Hash {
+fn kernel_core_hash_with_domain(domain: &[u8], payload: &[u8]) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(domain);
     hasher.update(payload);
@@ -9215,33 +9220,33 @@ pub fn machine_term_source_canonical_bytes(term: &MachineTermSource) -> Result<V
                 ),
             )
         })?;
-    Ok(machine_term_source_canonical_bytes_from_phase3(
+    Ok(machine_term_source_canonical_bytes_from_frontend(
         &canonical.canonical_bytes,
     ))
 }
 
 pub fn machine_term_source_hash(term: &MachineTermSource) -> Result<Hash> {
     Ok(hash_with_domain(
-        "npa.phase4.machine-term-source.hash.v1",
+        "npa.machine-tactic.machine-term-source.hash.v1",
         &machine_term_source_canonical_bytes(term)?,
     ))
 }
 
 pub fn machine_tactic_canonical_bytes(tactic: &MachineTactic) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.machine-tactic.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.machine-tactic.v1");
     encode_machine_tactic_to(&mut out, tactic);
     out
 }
 
 pub fn machine_tactic_hash(tactic: &MachineTactic) -> Hash {
     hash_with_domain(
-        "npa.phase4.machine-tactic.hash.v1",
+        "npa.machine-tactic.machine-tactic.hash.v1",
         &machine_tactic_canonical_bytes(tactic),
     )
 }
 
 pub fn tactic_budget_canonical_bytes(budget: TacticBudget) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.tactic-budget.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.tactic-budget.v1");
     encode_u64_to(&mut out, budget.max_tactic_steps);
     encode_u64_to(&mut out, budget.max_whnf_steps);
     encode_u64_to(&mut out, budget.max_conversion_steps);
@@ -9271,7 +9276,7 @@ pub fn machine_tactic_cache_key(
 }
 
 pub fn machine_tactic_cache_key_canonical_bytes(key: &MachineTacticCacheKey) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.machine-tactic-cache-key.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.machine-tactic-cache-key.v1");
     encode_hash_to(&mut out, &key.state_fingerprint);
     encode_goal_id_to(&mut out, key.goal_id);
     encode_hash_to(&mut out, &key.tactic_hash);
@@ -9281,13 +9286,13 @@ pub fn machine_tactic_cache_key_canonical_bytes(key: &MachineTacticCacheKey) -> 
 
 pub fn machine_tactic_cache_key_hash(key: &MachineTacticCacheKey) -> Hash {
     hash_with_domain(
-        "npa.phase4.machine-tactic-cache-key.hash.v1",
+        "npa.machine-tactic.machine-tactic-cache-key.hash.v1",
         &machine_tactic_cache_key_canonical_bytes(key),
     )
 }
 
 fn universe_param_list_canonical_bytes(params: &[String]) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.universe-param-list.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.universe-param-list.v1");
     encode_list_len_to(&mut out, params.len());
     for param in params {
         encode_string_to(&mut out, param);
@@ -9296,7 +9301,7 @@ fn universe_param_list_canonical_bytes(params: &[String]) -> Vec<u8> {
 }
 
 fn level_arg_list_canonical_bytes(levels: &[Level]) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.level-arg-list.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.level-arg-list.v1");
     encode_list_len_to(&mut out, levels.len());
     for level in levels {
         encode_level_to(&mut out, level);
@@ -9306,13 +9311,13 @@ fn level_arg_list_canonical_bytes(levels: &[Level]) -> Vec<u8> {
 
 pub fn machine_tactic_options_hash(options: &MachineTacticOptions) -> Hash {
     hash_with_domain(
-        "npa.phase4.machine-tactic-options.v1",
+        "npa.machine-tactic.machine-tactic-options.v1",
         &machine_tactic_options_canonical_bytes(options),
     )
 }
 
 pub fn machine_tactic_options_canonical_bytes(options: &MachineTacticOptions) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.tactic-options.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.tactic-options.v1");
     encode_machine_tactic_options_to(&mut out, options);
     out
 }
@@ -9320,14 +9325,14 @@ pub fn machine_tactic_options_canonical_bytes(options: &MachineTacticOptions) ->
 pub fn simp_registry_hash(registry: &SimpRegistry) -> Hash {
     let mut out = Vec::new();
     encode_simp_registry_to(&mut out, registry);
-    hash_with_domain("npa.phase4.simp-registry.v1", &out)
+    hash_with_domain("npa.machine-tactic.simp-registry.v1", &out)
 }
 
 pub fn resolved_family_options_canonical_bytes(
     eq_family: Option<&ResolvedEqFamily>,
     nat_family: Option<&ResolvedNatFamily>,
 ) -> Vec<u8> {
-    let mut out = tagged_bytes("npa.phase4.resolved-family-options.v1");
+    let mut out = tagged_bytes("npa.machine-tactic.resolved-family-options.v1");
     encode_option_resolved_eq_to(&mut out, eq_family);
     encode_option_resolved_nat_to(&mut out, nat_family);
     out
@@ -9351,7 +9356,7 @@ pub fn machine_proof_delta_hash(delta: &MachineProofDelta) -> Hash {
         encode_hash_to(&mut out, &meta.target_hash);
     }
     encode_hash_to(&mut out, &delta.to_state_fingerprint);
-    hash_with_domain("npa.phase4.machine-proof-delta.v1", &out)
+    hash_with_domain("npa.machine-tactic.machine-proof-delta.v1", &out)
 }
 
 fn machine_tactic_env_hash(env: &MachineTacticEnv) -> Hash {
@@ -9387,7 +9392,7 @@ fn machine_tactic_env_hash(env: &MachineTacticEnv) -> Hash {
     encode_option_resolved_nat_to(&mut out, env.nat_family.as_ref());
     encode_hash_to(&mut out, &env.options_fingerprint);
     encode_hash_to(&mut out, &kernel_check_profile_hash(env.kernel_profile));
-    hash_with_domain("npa.phase4.machine-tactic-env.v1", &out)
+    hash_with_domain("npa.machine-tactic.machine-tactic-env.v1", &out)
 }
 
 fn machine_proof_state_hash(state: &MachineProofState) -> Hash {
@@ -9424,17 +9429,17 @@ fn machine_proof_state_hash(state: &MachineProofState) -> Hash {
         &mut out,
         &kernel_check_profile_hash(state.env.kernel_profile),
     );
-    hash_with_domain("npa.phase4.machine-proof-state.v1", &out)
+    hash_with_domain("npa.machine-tactic.machine-proof-state.v1", &out)
 }
 
 fn kernel_check_profile_hash(profile: MachineKernelProfile) -> Hash {
     let mut out = Vec::new();
     encode_string_to(&mut out, "core-spec-v0.1");
-    encode_string_to(&mut out, "npa-kernel.phase1.v0.1");
+    encode_string_to(&mut out, "npa-kernel.core.v0.1");
     encode_string_to(&mut out, "beta-delta-iota-zeta.v0.1");
     encode_string_to(&mut out, "levels-imax-v0.1");
     encode_string_to(&mut out, profile.as_str());
-    hash_with_domain("npa.phase4.kernel-check-profile.v1", &out)
+    hash_with_domain("npa.machine-tactic.kernel-check-profile.v1", &out)
 }
 
 fn encode_diagnostic_kind_to(out: &mut Vec<u8>, kind: &MachineTacticDiagnosticKind) {
@@ -10892,11 +10897,11 @@ mod tests {
     }
 
     #[test]
-    fn core_expr_hash_uses_phase1_machine_api_domain() {
+    fn core_expr_hash_uses_kernel_core_machine_api_domain() {
         let mut payload = vec![0x00];
-        payload.extend(phase1_core_level_hash(&Level::zero()));
+        payload.extend(kernel_core_level_hash(&Level::zero()));
         let mut hasher = Sha256::new();
-        hasher.update(b"NPA-PHASE1-EXPR-0.1");
+        hasher.update(b"NPA-KERNEL-CORE-EXPR-0.1");
         hasher.update(&payload);
         let expected: Hash = hasher.finalize().into();
 
@@ -10907,7 +10912,7 @@ mod tests {
     #[test]
     fn kernel_profile_hash_commits_to_semantic_profile_fields() {
         let old_profile_hash = hash_with_domain(
-            "npa.phase4.kernel-check-profile.v1",
+            "npa.machine-tactic.kernel-check-profile.v1",
             b"npa-kernel:core-spec-v0.1",
         );
 
@@ -11878,7 +11883,7 @@ mod tests {
                 name: "Nat".to_owned(),
             },
         )
-        .expect_err("intro should follow Phase 3 local/global shadowing");
+        .expect_err("intro should follow frontend local/global shadowing");
         assert_eq!(
             global_shadow.kind,
             MachineTacticDiagnosticKind::InvalidMachineTactic
@@ -13116,7 +13121,7 @@ mod tests {
             encode_hash_to(&mut out, &meta.target_hash);
         }
         encode_hash_to(&mut out, &delta.to_state_fingerprint);
-        let expected_hash = hash_with_domain("npa.phase4.machine-proof-delta.v1", &out);
+        let expected_hash = hash_with_domain("npa.machine-tactic.machine-proof-delta.v1", &out);
 
         assert_eq!(delta.delta_hash, expected_hash);
     }
@@ -13530,7 +13535,7 @@ mod tests {
     }
 
     #[test]
-    fn certificate_handoff_stays_separate_from_phase2_producer_tokens() {
+    fn certificate_handoff_stays_separate_from_certificate_producer_tokens() {
         let _: fn(&MachineProofState) -> Result<CoreModule> = extract_closed_machine_core_module;
         let _: fn(&MachineProofState) -> Result<MachineProofCertificate> =
             extract_closed_machine_certificate;
@@ -13712,7 +13717,7 @@ mod tests {
     }
 
     #[test]
-    fn current_decl_signature_uses_phase2_interface_hash() {
+    fn current_decl_signature_uses_certificate_interface_hash() {
         let decl = Decl::Def {
             name: "Test.A".to_owned(),
             universe_params: Vec::new(),
@@ -13739,7 +13744,7 @@ mod tests {
     }
 
     #[test]
-    fn verified_import_env_hashes_use_phase2_declaration_hashes() {
+    fn verified_import_env_hashes_use_certificate_declaration_hashes() {
         let module = CoreModule {
             name: Name::from_dotted("A"),
             declarations: vec![Decl::Def {

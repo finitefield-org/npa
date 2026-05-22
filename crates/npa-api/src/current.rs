@@ -206,7 +206,7 @@ pub enum CheckedCurrentDeclProjectionError {
         source_index: u64,
         name: Name,
     },
-    Phase4Rejected {
+    MachineTacticRejected {
         source_index: u64,
         diagnostic: Box<MachineTacticDiagnostic>,
     },
@@ -278,12 +278,13 @@ pub fn project_checked_current_decl_context_with_kernel_profile(
     }
 
     let direct_import_entries = imports.direct_import_entries();
-    let phase4_imports = phase4_import_refs_from_context(imports).map_err(|diagnostic| {
-        CheckedCurrentDeclProjectionError::Phase4Rejected {
-            source_index: 0,
-            diagnostic: Box::new(diagnostic),
-        }
-    })?;
+    let machine_tactic_imports =
+        machine_tactic_import_refs_from_context(imports).map_err(|diagnostic| {
+            CheckedCurrentDeclProjectionError::MachineTacticRejected {
+                source_index: 0,
+                diagnostic: Box::new(diagnostic),
+            }
+        })?;
 
     let mut checked_current_decls = Vec::new();
     let mut decl_index_table = Vec::new();
@@ -301,7 +302,7 @@ pub fn project_checked_current_decl_context_with_kernel_profile(
             &generated_decl_table,
         )?;
         if let Decl::Axiom { name, .. } = &core_decl {
-            return Err(CheckedCurrentDeclProjectionError::Phase4Rejected {
+            return Err(CheckedCurrentDeclProjectionError::MachineTacticRejected {
                 source_index,
                 diagnostic: Box::new(MachineTacticDiagnostic::new(
                     MachineTacticDiagnosticKind::UncheckedCurrentDecl,
@@ -329,13 +330,13 @@ pub fn project_checked_current_decl_context_with_kernel_profile(
         let checked =
             check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_profile(
                 kernel_profile,
-                &phase4_imports,
+                &machine_tactic_imports,
                 &checked_current_decls,
                 source_index,
                 core_decl.clone(),
             )
             .map_err(|diagnostic| {
-                CheckedCurrentDeclProjectionError::Phase4Rejected {
+                CheckedCurrentDeclProjectionError::MachineTacticRejected {
                     source_index,
                     diagnostic: Box::new(diagnostic),
                 }
@@ -394,7 +395,7 @@ pub(crate) fn validate_checked_current_decl_package_bytes(
     Ok(())
 }
 
-pub(crate) fn phase4_import_refs_from_context(
+pub(crate) fn machine_tactic_import_refs_from_context(
     imports: &MachineImportCertificateContext,
 ) -> Result<Vec<VerifiedImportRef>, MachineTacticDiagnostic> {
     let direct_keys = imports
@@ -439,7 +440,7 @@ fn decode_checked_current_decl_package(
     bytes: &[u8],
 ) -> Result<DecodedCheckedCurrentDeclPackage, CheckedCurrentDeclProjectionError> {
     let mut decoder = PackageDecoder::new(bytes);
-    decoder.tag("npa.phase5.checked-current-decl-package.v5")?;
+    decoder.tag("npa.machine-api.checked-current-decl-package.v5")?;
     let source_index = decoder.u64()?;
     let signature_start = decoder.offset();
     let signature = decoder.checked_decl_signature()?;
@@ -815,7 +816,7 @@ impl<'a> PackageDecoder<'a> {
     fn checked_decl_signature(
         &mut self,
     ) -> Result<MachineCheckedDeclSignature, CheckedCurrentDeclProjectionError> {
-        self.tag("npa.phase4.checked-decl-signature.v1")?;
+        self.tag("npa.machine-tactic.checked-decl-signature.v1")?;
         let name = self.name()?;
         let param_len = self.bounded_len()?;
         let universe_params = (0..param_len)
@@ -832,14 +833,14 @@ impl<'a> PackageDecoder<'a> {
     }
 
     fn core_decl_package(&mut self) -> Result<CoreDeclPackage, CheckedCurrentDeclProjectionError> {
-        self.tag("npa.phase5.current-core-decl-package.v1")?;
-        self.tag("npa.phase5.current-core-decl-package.name-table.v1")?;
+        self.tag("npa.machine-api.current-core-decl-package.v1")?;
+        self.tag("npa.machine-api.current-core-decl-package.name-table.v1")?;
         let name_table = self.name_table()?;
-        self.tag("npa.phase5.current-core-decl-package.level-table.v1")?;
+        self.tag("npa.machine-api.current-core-decl-package.level-table.v1")?;
         let level_table = self.level_table()?;
-        self.tag("npa.phase5.current-core-decl-package.term-table.v1")?;
+        self.tag("npa.machine-api.current-core-decl-package.term-table.v1")?;
         let term_table = self.term_table()?;
-        self.tag("npa.phase5.current-core-decl-package.root-decl.v1")?;
+        self.tag("npa.machine-api.current-core-decl-package.root-decl.v1")?;
         let root_decl = self.decl_payload()?;
         let package = CoreDeclPackage {
             name_table,
@@ -854,11 +855,11 @@ impl<'a> PackageDecoder<'a> {
     fn current_decl_dependency_report(
         &mut self,
     ) -> Result<CurrentDeclDependencyReport, CheckedCurrentDeclProjectionError> {
-        self.tag("npa.phase5.current-decl-dependency-report.v4")?;
+        self.tag("npa.machine-api.current-decl-dependency-report.v4")?;
         let dep_len = self.bounded_len()?;
         let mut direct_dependency_entries = Vec::with_capacity(dep_len);
         for _ in 0..dep_len {
-            self.tag("npa.phase5.current-decl-dependency-entry.v1")?;
+            self.tag("npa.machine-api.current-decl-dependency-entry.v1")?;
             direct_dependency_entries.push(CurrentDeclDependencyEntry {
                 dependency_ref: self.machine_dependency_ref_wire()?,
                 decl_interface_hash: self.hash()?,
@@ -880,7 +881,7 @@ impl<'a> PackageDecoder<'a> {
     fn machine_dependency_ref_wire(
         &mut self,
     ) -> Result<MachineDependencyRefWire, CheckedCurrentDeclProjectionError> {
-        self.tag("npa.phase5.dependency-ref-wire.v2")?;
+        self.tag("npa.machine-api.dependency-ref-wire.v2")?;
         Ok(match self.byte()? {
             0x00 => MachineDependencyRefWire::Imported {
                 module: self.name()?,
@@ -909,7 +910,7 @@ impl<'a> PackageDecoder<'a> {
     fn machine_axiom_ref_wire(
         &mut self,
     ) -> Result<MachineAxiomRefWire, CheckedCurrentDeclProjectionError> {
-        self.tag("npa.phase5.axiom-ref-wire.v1")?;
+        self.tag("npa.machine-api.axiom-ref-wire.v1")?;
         Ok(match self.byte()? {
             0x00 => MachineAxiomRefWire::Imported {
                 module: self.name()?,
@@ -1891,7 +1892,7 @@ fn sort_dedup_axiom_refs(entries: &mut Vec<MachineAxiomRefWire>) {
 
 fn encode_checked_current_decl_package(package: &DecodedCheckedCurrentDeclPackage) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.checked-current-decl-package.v5");
+    encode_string(&mut out, "npa.machine-api.checked-current-decl-package.v5");
     encode_uvar(&mut out, package.source_index);
     out.extend(encode_checked_decl_signature(&package.signature));
     encode_core_decl_package_to(&mut out, &package.core_package);
@@ -1903,7 +1904,7 @@ fn encode_checked_current_decl_package(package: &DecodedCheckedCurrentDeclPackag
 
 fn encode_checked_decl_signature(signature: &MachineCheckedDeclSignature) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase4.checked-decl-signature.v1");
+    encode_string(&mut out, "npa.machine-tactic.checked-decl-signature.v1");
     encode_name(&mut out, &signature.name);
     encode_uvar(&mut out, signature.universe_params.len() as u64);
     for param in &signature.universe_params {
@@ -1915,14 +1916,26 @@ fn encode_checked_decl_signature(signature: &MachineCheckedDeclSignature) -> Vec
 }
 
 fn encode_core_decl_package_to(out: &mut Vec<u8>, package: &CoreDeclPackage) {
-    encode_string(out, "npa.phase5.current-core-decl-package.v1");
-    encode_string(out, "npa.phase5.current-core-decl-package.name-table.v1");
+    encode_string(out, "npa.machine-api.current-core-decl-package.v1");
+    encode_string(
+        out,
+        "npa.machine-api.current-core-decl-package.name-table.v1",
+    );
     encode_name_table_to(out, &package.name_table);
-    encode_string(out, "npa.phase5.current-core-decl-package.level-table.v1");
+    encode_string(
+        out,
+        "npa.machine-api.current-core-decl-package.level-table.v1",
+    );
     encode_level_table_to(out, &package.level_table);
-    encode_string(out, "npa.phase5.current-core-decl-package.term-table.v1");
+    encode_string(
+        out,
+        "npa.machine-api.current-core-decl-package.term-table.v1",
+    );
     encode_term_table_to(out, &package.term_table);
-    encode_string(out, "npa.phase5.current-core-decl-package.root-decl.v1");
+    encode_string(
+        out,
+        "npa.machine-api.current-core-decl-package.root-decl.v1",
+    );
     encode_decl_payload_to(out, &package.root_decl);
 }
 
@@ -1930,7 +1943,7 @@ fn encode_current_decl_dependency_report_to(
     out: &mut Vec<u8>,
     report: &CurrentDeclDependencyReport,
 ) {
-    encode_string(out, "npa.phase5.current-decl-dependency-report.v4");
+    encode_string(out, "npa.machine-api.current-decl-dependency-report.v4");
     encode_uvar(out, report.direct_dependency_entries.len() as u64);
     for entry in &report.direct_dependency_entries {
         out.extend(encode_current_decl_dependency_entry(entry));
@@ -1943,7 +1956,7 @@ fn encode_current_decl_dependency_report_to(
 
 fn encode_current_decl_dependency_entry(entry: &CurrentDeclDependencyEntry) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.current-decl-dependency-entry.v1");
+    encode_string(&mut out, "npa.machine-api.current-decl-dependency-entry.v1");
     out.extend(encode_machine_dependency_ref_wire(&entry.dependency_ref));
     out.extend(entry.decl_interface_hash);
     out
@@ -1951,7 +1964,7 @@ fn encode_current_decl_dependency_entry(entry: &CurrentDeclDependencyEntry) -> V
 
 fn encode_machine_dependency_ref_wire(value: &MachineDependencyRefWire) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.dependency-ref-wire.v2");
+    encode_string(&mut out, "npa.machine-api.dependency-ref-wire.v2");
     match value {
         MachineDependencyRefWire::Imported {
             module,
@@ -1993,7 +2006,7 @@ fn encode_machine_dependency_ref_wire(value: &MachineDependencyRefWire) -> Vec<u
 
 pub(crate) fn encode_machine_axiom_ref_wire(value: &MachineAxiomRefWire) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.axiom-ref-wire.v1");
+    encode_string(&mut out, "npa.machine-api.axiom-ref-wire.v1");
     match value {
         MachineAxiomRefWire::Imported {
             module,
@@ -2838,7 +2851,7 @@ pub(crate) fn encode_checked_current_decl_package_for_test(
     });
     let checked =
         check_current_decl_for_machine_tactic_from_verified_imports(&[], &[], source_index, decl)
-            .expect("test current declaration should pass Phase 4 current checking");
+            .expect("test current declaration should pass machine tactic current checking");
     let imports = MachineImportCertificateContext::empty();
     let dependency_report = derive_dependency_report(
         root_module,
@@ -3327,7 +3340,7 @@ mod tests {
         prior_context: Option<&MachineCheckedCurrentDeclContext>,
     ) -> Vec<u8> {
         let root = root_module();
-        let phase4_imports = imports
+        let machine_tactic_imports = imports
             .direct_import_entries()
             .iter()
             .map(|entry| VerifiedImportRef::from_verified_module(&entry.verified_module))
@@ -3337,7 +3350,7 @@ mod tests {
             .map(|context| context.checked_current_decls().to_vec())
             .unwrap_or_default();
         let checked = check_current_decl_for_machine_tactic_from_verified_imports(
-            &phase4_imports,
+            &machine_tactic_imports,
             &checked_prior,
             source_index,
             decl,
@@ -3510,7 +3523,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_phase2_height_first_level_table_order() {
+    fn accepts_certificate_height_first_level_table_order() {
         let package = param_succ_core_package(vec![LevelNode::Param(1), LevelNode::Succ(0)], 1);
 
         validate_core_decl_package(&package).unwrap();
@@ -3569,7 +3582,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_phase2_height_first_term_table_order() {
+    fn accepts_certificate_height_first_term_table_order() {
         let package = CoreDeclPackage {
             name_table: vec![Name::from_dotted("M.term")],
             level_table: Vec::new(),
@@ -3682,7 +3695,7 @@ mod tests {
         .unwrap_err();
 
         match err {
-            CheckedCurrentDeclProjectionError::Phase4Rejected {
+            CheckedCurrentDeclProjectionError::MachineTacticRejected {
                 source_index,
                 diagnostic,
             } => {
@@ -3692,7 +3705,9 @@ mod tests {
                     MachineTacticDiagnosticKind::UncheckedCurrentDecl
                 );
             }
-            other => panic!("expected Phase4Rejected for current axiom package, got {other:?}"),
+            other => {
+                panic!("expected MachineTacticRejected for current axiom package, got {other:?}")
+            }
         }
     }
 

@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use crate::current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire};
 use crate::{MachineApiDiagnosticProjection, MachineApiErrorKind};
 
-const API_DIAGNOSTIC_TAG: &str = "npa.phase5.api-diagnostic.v1";
+const API_DIAGNOSTIC_TAG: &str = "npa.machine-api.api-diagnostic.v1";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MachineApiDiagnosticCanonicalizationError {
@@ -442,7 +442,7 @@ fn encode_u32(out: &mut Vec<u8>, mut value: u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MachineApiDiagnosticPhase, MachineApiTacticKind, Phase5UpstreamDiagnostic};
+    use crate::{MachineApiDiagnosticPhase, MachineApiTacticKind, MachineApiUpstreamDiagnostic};
     use npa_tactic::{GoalId, MachineTacticDiagnostic, MachineTacticDiagnosticKind};
 
     fn projection(kind: MachineApiErrorKind) -> MachineApiDiagnosticProjection {
@@ -457,7 +457,7 @@ mod tests {
             expected_hash: None,
             actual_hash: None,
             source_message: "display only".to_owned(),
-            upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+            upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::MachineTermElaborationError,
                 "display only",
             )),
@@ -532,10 +532,11 @@ mod tests {
 
         let mut display_changed = diagnostic.clone();
         display_changed.source_message = "different display text".to_owned();
-        display_changed.upstream = Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
-            MachineTacticDiagnosticKind::TypeMismatch,
-            "different source diagnostic message",
-        ));
+        display_changed.upstream =
+            MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
+                MachineTacticDiagnosticKind::TypeMismatch,
+                "different source diagnostic message",
+            ));
         assert_eq!(display_changed.diagnostic_hash().unwrap(), hash);
 
         let mut structured_changed = diagnostic;

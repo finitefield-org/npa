@@ -21,7 +21,7 @@ use crate::types::{
 use crate::validation::{parse_request_body, MachineApiErrorKind, MachineApiRequestError};
 use crate::{
     validate_machine_endpoint_envelope, MachineApiDiagnosticPhase, MachineApiDiagnosticProjection,
-    Phase5UpstreamDiagnostic,
+    MachineApiUpstreamDiagnostic,
 };
 
 const CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
@@ -590,7 +590,7 @@ fn generated_certificate_context<'a>(
                 MachineApiErrorKind::VerifyFailed,
                 MachineApiDiagnosticPhase::CertificateGeneration,
                 format!(
-                    "generated certificate declaration {} has no Phase 5 source_index",
+                    "generated certificate declaration {} has no machine API source_index",
                     name.as_dotted()
                 ),
             ));
@@ -730,7 +730,7 @@ fn axiom_ref_to_wire(
                     plain_error(
                         MachineApiErrorKind::VerifyFailed,
                         MachineApiDiagnosticPhase::CertificateVerify,
-                        "verifier output local axiom ref has no Phase 5 source_index",
+                        "verifier output local axiom ref has no machine API source_index",
                     )
                 })?;
             Ok(MachineAxiomRefWire::CurrentModule {
@@ -925,7 +925,7 @@ fn disallowed_axiom_error(axiom: MachineAxiomRefWire) -> Box<MachineVerifyError>
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineProofState,
             message,
         )),
@@ -950,8 +950,8 @@ fn plain_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
-            phase4_kind_for_api_kind(kind),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
+            machine_tactic_kind_for_api_kind(kind),
             message,
         )),
     };
@@ -960,7 +960,7 @@ fn plain_error(
 
 fn boxed_error(diagnostic: MachineApiDiagnosticProjection) -> Box<MachineVerifyError> {
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("verify diagnostics must satisfy Phase 5 wire invariants");
+        .expect("verify diagnostics must satisfy machine API wire invariants");
     let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
         status: MachineApiResponseStatus::Error,
         error: wire,
@@ -972,7 +972,7 @@ fn boxed_error(diagnostic: MachineApiDiagnosticProjection) -> Box<MachineVerifyE
     })
 }
 
-fn phase4_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosticKind {
+fn machine_tactic_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosticKind {
     match kind {
         MachineApiErrorKind::VerifyFailed => MachineTacticDiagnosticKind::KernelRejected,
         MachineApiErrorKind::InvalidVerifyRequest

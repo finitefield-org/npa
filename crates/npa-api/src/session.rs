@@ -24,14 +24,15 @@ use npa_tactic::{
 use sha2::{Digest, Sha256};
 
 use crate::adapter::{
-    map_phase3_diagnostic_kind, phase4_start_machine_proof_with_kernel_profile,
-    MachineApiDiagnosticPhase, MachineApiDiagnosticProjection, Phase5UpstreamDiagnostic,
+    machine_tactic_start_machine_proof_with_kernel_profile, map_frontend_diagnostic_kind,
+    MachineApiDiagnosticPhase, MachineApiDiagnosticProjection, MachineApiUpstreamDiagnostic,
 };
 use crate::callable::{
     build_machine_surface_callable_interface_table, MachineSurfaceCallableInterfaceBuildError,
 };
 use crate::current::{
-    encode_machine_axiom_ref_wire, imported_axiom_ref_to_wire, phase4_import_refs_from_context,
+    encode_machine_axiom_ref_wire, imported_axiom_ref_to_wire,
+    machine_tactic_import_refs_from_context,
     project_checked_current_decl_context_with_kernel_profile,
     validate_checked_current_decl_package_bytes, CheckedCurrentDeclPackageInput,
     MachineAxiomRefWire, MachineCheckedCurrentDeclContext,
@@ -42,8 +43,8 @@ use crate::projection::{
     VerifiedModuleCertificateInput, VerifiedModuleContextEntry,
 };
 use crate::renderer::{
-    MachineDisplayRenderScope, MachineDisplayRenderScopeEntry, MachineGlobalRefView,
-    Phase5ResolvedDisplayCoreRefOwner,
+    MachineApiResolvedDisplayCoreRefOwner, MachineDisplayRenderScope,
+    MachineDisplayRenderScopeEntry, MachineGlobalRefView,
 };
 use crate::snapshot::{MachineSnapshotMaterializationContext, MachineSnapshotStoreError};
 use crate::types::{
@@ -217,7 +218,7 @@ pub fn create_machine_session(
         &request.root,
         &import_context,
         &request,
-        phase4_kernel_profile(request.options.kernel_check_profile),
+        machine_tactic_kernel_profile(request.options.kernel_check_profile),
     )?;
     validate_current_collisions(&request.root, &import_context, &checked_current_decls)?;
 
@@ -234,17 +235,17 @@ pub fn create_machine_session(
         &import_context,
         &checked_current_decls,
     )?;
-    let phase4_imports = phase4_direct_import_refs(&import_context)?;
-    let phase4_options = phase4_tactic_options(&options.tactic_options)?;
-    let phase4_kernel_profile = phase4_kernel_profile(options.kernel_check_profile);
+    let machine_tactic_imports = machine_tactic_direct_import_refs(&import_context)?;
+    let machine_tactic_options = machine_tactic_options(&options.tactic_options)?;
+    let machine_tactic_kernel_profile = machine_tactic_kernel_profile(options.kernel_check_profile);
     let tactic_env = MachineTacticEnv::new_with_kernel_profile(
-        phase4_kernel_profile,
-        phase4_imports.clone(),
+        machine_tactic_kernel_profile,
+        machine_tactic_imports.clone(),
         checked_current_decls.checked_current_decls().to_vec(),
-        phase4_options.clone(),
+        machine_tactic_options.clone(),
     )
     .map_err(option_semantic_error)?;
-    options.tactic_options = tactic_options_request_from_phase4(&tactic_env.options)?;
+    options.tactic_options = tactic_options_request_from_machine_tactic(&tactic_env.options)?;
 
     let dependency_axioms = verified_and_current_axioms(&import_context, &checked_current_decls)?;
     ensure_axioms_allowed(&options.allow_axioms, &dependency_axioms)?;
@@ -282,12 +283,12 @@ pub fn create_machine_session(
         universe_params: checked_root.root.universe_params.clone(),
         theorem_type: checked_root.expr,
     };
-    let started = phase4_start_machine_proof_with_kernel_profile(
-        phase4_kernel_profile,
+    let started = machine_tactic_start_machine_proof_with_kernel_profile(
+        machine_tactic_kernel_profile,
         proof_spec,
-        phase4_imports,
+        machine_tactic_imports,
         checked_current_decls.checked_current_decls().to_vec(),
-        phase4_options,
+        machine_tactic_options,
     )
     .map_err(|error| {
         let mut diagnostic = error.diagnostic;
@@ -315,7 +316,7 @@ pub fn create_machine_session(
         imports: &import_context,
         current: &checked_current_decls,
         options: &options,
-        phase4_options: &started.options,
+        machine_tactic_options: &started.options,
         resolved_eq_family: started.resolved_eq_family.as_ref(),
         resolved_nat_family: started.resolved_nat_family.as_ref(),
         callable_table: &callable_table,
@@ -663,7 +664,7 @@ fn parse_checked_current_decl_item(
         path,
     )?;
     if required_string(&object, "encoding")
-        != "npa.phase5.checked-current-decl-package.canonical.v5.hex"
+        != "npa.machine-api.checked-current-decl-package.canonical.v5.hex"
     {
         return Err(grammar_error(
             MachineApiErrorKind::InvalidCheckedCurrentDecl,
@@ -1076,7 +1077,7 @@ fn validate_kernel_profile(
     }
 }
 
-fn phase4_kernel_profile(profile: KernelCheckProfileId) -> MachineKernelProfile {
+fn machine_tactic_kernel_profile(profile: KernelCheckProfileId) -> MachineKernelProfile {
     match profile {
         KernelCheckProfileId::BuiltinNone => MachineKernelProfile::BuiltinNone,
         KernelCheckProfileId::BuiltinNatEqRec => MachineKernelProfile::BuiltinNatEqRec,
@@ -1321,15 +1322,15 @@ fn validate_allow_axioms(
     Ok(())
 }
 
-fn phase4_direct_import_refs(
+fn machine_tactic_direct_import_refs(
     import_context: &MachineImportCertificateContext,
 ) -> Result<Vec<VerifiedImportRef>, Box<MachineSessionCreateError>> {
-    phase4_import_refs_from_context(import_context).map_err(|diagnostic| {
-        phase4_import_error(diagnostic, MachineApiErrorKind::InvalidVerifiedImport)
+    machine_tactic_import_refs_from_context(import_context).map_err(|diagnostic| {
+        machine_tactic_import_error(diagnostic, MachineApiErrorKind::InvalidVerifiedImport)
     })
 }
 
-fn phase4_tactic_options(
+fn machine_tactic_options(
     options: &MachineTacticOptionsRequest,
 ) -> Result<MachineTacticOptions, Box<MachineSessionCreateError>> {
     options
@@ -1345,19 +1346,19 @@ pub(crate) fn validate_machine_tactic_options_request_against_context(
     current: &MachineCheckedCurrentDeclContext,
 ) -> Result<MachineTacticOptionsRequest, Box<MachineSessionCreateError>> {
     validate_tactic_option_head_resolution(options, imports, current)?;
-    let phase4_imports = phase4_direct_import_refs(imports)?;
-    let phase4_options = phase4_tactic_options(options)?;
+    let machine_tactic_imports = machine_tactic_direct_import_refs(imports)?;
+    let machine_tactic_options = machine_tactic_options(options)?;
     let tactic_env = MachineTacticEnv::new_with_kernel_profile(
-        phase4_kernel_profile(kernel_check_profile),
-        phase4_imports,
+        machine_tactic_kernel_profile(kernel_check_profile),
+        machine_tactic_imports,
         current.checked_current_decls().to_vec(),
-        phase4_options,
+        machine_tactic_options,
     )
     .map_err(option_semantic_error)?;
-    tactic_options_request_from_phase4(&tactic_env.options)
+    tactic_options_request_from_machine_tactic(&tactic_env.options)
 }
 
-fn tactic_options_request_from_phase4(
+fn tactic_options_request_from_machine_tactic(
     options: &MachineTacticOptions,
 ) -> Result<MachineTacticOptionsRequest, Box<MachineSessionCreateError>> {
     Ok(MachineTacticOptionsRequest {
@@ -1366,10 +1367,11 @@ fn tactic_options_request_from_phase4(
         nat_family: options.nat_family.clone(),
         max_simp_rewrite_steps: options.max_simp_rewrite_steps,
         max_open_goals: u64::try_from(options.max_open_goals).map_err(|_| {
-            invalid_options("max_open_goals does not fit u64 after Phase 4 validation")
+            invalid_options("max_open_goals does not fit u64 after machine tactic validation")
         })?,
-        max_metas: u64::try_from(options.max_metas)
-            .map_err(|_| invalid_options("max_metas does not fit u64 after Phase 4 validation"))?,
+        max_metas: u64::try_from(options.max_metas).map_err(|_| {
+            invalid_options("max_metas does not fit u64 after machine tactic validation")
+        })?,
     })
 }
 
@@ -1512,7 +1514,7 @@ fn build_display_render_scope(
                 export_hash: import.key.export_hash,
                 decl_interface_hash: export.decl_interface_hash,
             };
-            let owner_context = Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            let owner_context = MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: import.key.module.clone(),
                 owner_export_hash: import.key.export_hash,
             };
@@ -1537,7 +1539,7 @@ fn build_display_render_scope(
         entries.push(
             MachineDisplayRenderScopeEntry::new(
                 view,
-                Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+                MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                     module: root_module.clone(),
                 },
                 MachineSurfaceCallableRef::CurrentModule {
@@ -1569,7 +1571,7 @@ fn build_display_render_scope(
         entries.push(
             MachineDisplayRenderScopeEntry::new(
                 view,
-                Phase5ResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
+                MachineApiResolvedDisplayCoreRefOwner::CurrentSessionRootModule {
                     module: root_module.clone(),
                 },
                 MachineSurfaceCallableRef::CurrentGenerated {
@@ -1647,7 +1649,7 @@ fn root_term_elab_context(
         },
     )
     .map(|context| context.with_callable_interface_table(callable_table))
-    .map_err(|diagnostic| phase3_error(diagnostic, MachineApiDiagnosticPhase::SessionCreate))
+    .map_err(|diagnostic| frontend_error(diagnostic, MachineApiDiagnosticPhase::SessionCreate))
 }
 
 #[derive(Clone, Debug)]
@@ -1664,11 +1666,11 @@ fn check_root_theorem_type(
 ) -> Result<CheckedRootTerm, Box<MachineSessionCreateError>> {
     let canonical =
         canonicalize_machine_term_source(&root.theorem_type.source).map_err(|diagnostic| {
-            phase3_error(diagnostic, MachineApiDiagnosticPhase::MachineTermParse)
+            frontend_error(diagnostic, MachineApiDiagnosticPhase::MachineTermParse)
         })?;
     let ast =
         decode_machine_term_source_canonical(&canonical.canonical_bytes).map_err(|diagnostic| {
-            phase3_error(diagnostic, MachineApiDiagnosticPhase::MachineTermParse)
+            frontend_error(diagnostic, MachineApiDiagnosticPhase::MachineTermParse)
         })?;
     let compile_options = MachineCompileOptions {
         mode: MachineSurfaceMode::Complete,
@@ -1676,7 +1678,7 @@ fn check_root_theorem_type(
     };
     let (_expr, inferred_type) =
         elaborate_machine_term_infer_from_ast(&ast, context, &compile_options).map_err(
-            |diagnostic| phase3_error(diagnostic, MachineApiDiagnosticPhase::MachineTermCheck),
+            |diagnostic| frontend_error(diagnostic, MachineApiDiagnosticPhase::MachineTermCheck),
         )?;
     ensure_inferred_type_is_sort(context, &root.universe_params, &inferred_type)?;
     let checked = elaborate_machine_term_check(
@@ -1685,7 +1687,9 @@ fn check_root_theorem_type(
         &inferred_type,
         &compile_options,
     )
-    .map_err(|diagnostic| phase3_error(diagnostic, MachineApiDiagnosticPhase::MachineTermCheck))?;
+    .map_err(|diagnostic| {
+        frontend_error(diagnostic, MachineApiDiagnosticPhase::MachineTermCheck)
+    })?;
     ensure_inferred_type_is_sort(context, &root.universe_params, &checked.inferred_type)?;
     let theorem_type_core_hash = core_expr_hash(&checked.expr);
     Ok(CheckedRootTerm {
@@ -1696,7 +1700,7 @@ fn check_root_theorem_type(
             universe_params: root.universe_params.clone(),
             theorem_type_source: MachineRootTermSource {
                 source: canonical.source,
-                phase3_canonical_hash: canonical.canonical_hash,
+                frontend_canonical_hash: canonical.canonical_hash,
             },
             theorem_type_core_hash,
         },
@@ -1795,7 +1799,7 @@ struct SessionRootHashInput<'a> {
     imports: &'a MachineImportCertificateContext,
     current: &'a MachineCheckedCurrentDeclContext,
     options: &'a MachineApiOptions,
-    phase4_options: &'a MachineTacticOptions,
+    machine_tactic_options: &'a MachineTacticOptions,
     resolved_eq_family: Option<&'a ResolvedEqFamily>,
     resolved_nat_family: Option<&'a ResolvedNatFamily>,
     callable_table: &'a npa_frontend::MachineSurfaceCallableInterfaceTable,
@@ -1804,7 +1808,7 @@ struct SessionRootHashInput<'a> {
 
 fn session_root_hash(input: SessionRootHashInput<'_>) -> Hash {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.session-root.v1");
+    encode_string(&mut out, "npa.machine-api.session-root.v1");
     encode_string(&mut out, input.protocol_version.as_str());
     out.extend(input.root.canonical_bytes());
     encode_import_certificate_context_to(&mut out, input.imports);
@@ -1814,7 +1818,7 @@ fn session_root_hash(input: SessionRootHashInput<'_>) -> Hash {
     encode_machine_api_options_to(
         &mut out,
         input.options,
-        input.phase4_options,
+        input.machine_tactic_options,
         input.resolved_eq_family,
         input.resolved_nat_family,
         &input.simp_registry_fingerprint,
@@ -1826,7 +1830,7 @@ fn encode_import_certificate_context_to(
     out: &mut Vec<u8>,
     imports: &MachineImportCertificateContext,
 ) {
-    encode_string(out, "npa.phase5.session-import-context.v1");
+    encode_string(out, "npa.machine-api.session-import-context.v1");
     encode_list_len(out, imports.verified_modules().len());
     for entry in imports.verified_modules() {
         encode_verified_import_key(out, &entry.key);
@@ -1841,7 +1845,7 @@ fn encode_import_certificate_context_to(
 }
 
 fn encode_direct_imports_to(out: &mut Vec<u8>, imports: &MachineImportCertificateContext) {
-    encode_string(out, "npa.phase5.session-direct-imports.v1");
+    encode_string(out, "npa.machine-api.session-direct-imports.v1");
     encode_list_len(out, imports.direct_import_entries().len());
     for entry in imports.direct_import_entries() {
         encode_verified_import_key(out, &entry.key);
@@ -1852,7 +1856,7 @@ fn encode_direct_imports_to(out: &mut Vec<u8>, imports: &MachineImportCertificat
 }
 
 fn encode_checked_current_to(out: &mut Vec<u8>, current: &MachineCheckedCurrentDeclContext) {
-    encode_string(out, "npa.phase5.session-checked-current.v1");
+    encode_string(out, "npa.machine-api.session-checked-current.v1");
     encode_list_len(out, current.decl_index_table().len());
     for entry in current.decl_index_table() {
         out.extend(&entry.package_bytes);
@@ -1862,18 +1866,20 @@ fn encode_checked_current_to(out: &mut Vec<u8>, current: &MachineCheckedCurrentD
 fn encode_machine_api_options_to(
     out: &mut Vec<u8>,
     options: &MachineApiOptions,
-    phase4_options: &MachineTacticOptions,
+    machine_tactic_options: &MachineTacticOptions,
     resolved_eq_family: Option<&ResolvedEqFamily>,
     resolved_nat_family: Option<&ResolvedNatFamily>,
     simp_registry_hash: &Hash,
 ) {
-    encode_string(out, "npa.phase5.machine-api-options.v1");
+    encode_string(out, "npa.machine-api.machine-api-options.v1");
     out.extend(kernel_check_profile_hash(options.kernel_check_profile));
     encode_list_len(out, options.allow_axioms.len());
     for axiom in &options.allow_axioms {
         out.extend(encode_machine_axiom_ref_wire(axiom));
     }
-    out.extend(machine_tactic_options_canonical_bytes(phase4_options));
+    out.extend(machine_tactic_options_canonical_bytes(
+        machine_tactic_options,
+    ));
     out.extend(resolved_family_options_canonical_bytes(
         resolved_eq_family,
         resolved_nat_family,
@@ -1917,18 +1923,18 @@ fn semantic_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineProofState,
             message,
         )),
     })
 }
 
-fn phase3_error(
+fn frontend_error(
     diagnostic: npa_frontend::MachineDiagnostic,
     phase: MachineApiDiagnosticPhase,
 ) -> Box<MachineSessionCreateError> {
-    let kind = map_phase3_diagnostic_kind(&diagnostic);
+    let kind = map_frontend_diagnostic_kind(&diagnostic);
     let (expected_hash, actual_hash) = if kind == MachineApiErrorKind::TypeMismatch {
         let payload = diagnostic.payload.as_deref();
         (
@@ -1950,7 +1956,7 @@ fn phase3_error(
         expected_hash,
         actual_hash,
         source_message,
-        upstream: Phase5UpstreamDiagnostic::Phase3(diagnostic),
+        upstream: MachineApiUpstreamDiagnostic::Frontend(diagnostic),
     })
 }
 
@@ -1967,7 +1973,7 @@ fn machine_term_check_error(message: impl Into<String>) -> Box<MachineSessionCre
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::MachineTermElaborationError,
             message,
         )),
@@ -1992,11 +1998,11 @@ fn option_semantic_error(diagnostic: MachineTacticDiagnostic) -> Box<MachineSess
         expected_hash: None,
         actual_hash: None,
         source_message,
-        upstream: Phase5UpstreamDiagnostic::Phase4(diagnostic),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(diagnostic),
     })
 }
 
-fn phase4_import_error(
+fn machine_tactic_import_error(
     diagnostic: MachineTacticDiagnostic,
     kind: MachineApiErrorKind,
 ) -> Box<MachineSessionCreateError> {
@@ -2012,7 +2018,7 @@ fn phase4_import_error(
         expected_hash: None,
         actual_hash: None,
         source_message,
-        upstream: Phase5UpstreamDiagnostic::Phase4(diagnostic),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(diagnostic),
     })
 }
 
@@ -2030,7 +2036,7 @@ fn disallowed_axiom_error(axiom: MachineAxiomRefWire) -> Box<MachineSessionCreat
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineProofState,
             message,
         )),
@@ -2039,7 +2045,7 @@ fn disallowed_axiom_error(axiom: MachineAxiomRefWire) -> Box<MachineSessionCreat
 
 fn boxed_error(diagnostic: MachineApiDiagnosticProjection) -> Box<MachineSessionCreateError> {
     let error = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("session create diagnostics must satisfy Phase 5 wire invariants");
+        .expect("session create diagnostics must satisfy machine API wire invariants");
     Box::new(MachineSessionCreateError { diagnostic, error })
 }
 
@@ -2403,7 +2409,7 @@ fn sort_dedup_simp_rules(entries: &mut Vec<SimpRuleRef>) {
 
 fn encode_simp_rule_ref(rule: &SimpRuleRef) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.simp-rule-ref.v1");
+    encode_string(&mut out, "npa.machine-api.simp-rule-ref.v1");
     encode_name(&mut out, &rule.name);
     out.extend(rule.decl_interface_hash);
     out.push(match rule.direction {
@@ -2428,7 +2434,7 @@ fn has_strict_module_prefix(module: &Name, name: &Name) -> bool {
 fn kernel_check_profile_hash(profile: KernelCheckProfileId) -> Hash {
     let mut out = Vec::new();
     encode_string(&mut out, "core-spec-v0.1");
-    encode_string(&mut out, "npa-kernel.phase1.v0.1");
+    encode_string(&mut out, "npa-kernel.core.v0.1");
     encode_string(&mut out, "beta-delta-iota-zeta.v0.1");
     encode_string(&mut out, "levels-imax-v0.1");
     let builtin_profile_id = match profile {
@@ -2436,7 +2442,7 @@ fn kernel_check_profile_hash(profile: KernelCheckProfileId) -> Hash {
         KernelCheckProfileId::BuiltinNatEqRec => "builtin-nat-eq-rec-v0.1",
     };
     encode_string(&mut out, builtin_profile_id);
-    hash_with_domain("npa.phase4.kernel-check-profile.v1", &out)
+    hash_with_domain("npa.machine-tactic.kernel-check-profile.v1", &out)
 }
 
 fn hash_with_domain(domain: &str, payload: &[u8]) -> Hash {
@@ -2717,7 +2723,7 @@ mod tests {
         encode_checked_current_to(&mut actual, &current_context);
 
         let mut expected = Vec::new();
-        encode_string(&mut expected, "npa.phase5.session-checked-current.v1");
+        encode_string(&mut expected, "npa.machine-api.session-checked-current.v1");
         encode_list_len(&mut expected, 1);
         expected.extend(&current_bytes);
 
@@ -2725,8 +2731,8 @@ mod tests {
     }
 
     #[test]
-    fn machine_api_options_projection_inlines_phase4_bytes() {
-        let phase4_options = MachineTacticOptions {
+    fn machine_api_options_projection_inlines_machine_tactic_bytes() {
+        let machine_tactic_options = MachineTacticOptions {
             simp_rules: Vec::new(),
             max_simp_rewrite_steps: 100,
             max_open_goals: 32,
@@ -2737,24 +2743,27 @@ mod tests {
         let options = MachineApiOptions {
             kernel_check_profile: KernelCheckProfileId::BuiltinNatEqRec,
             allow_axioms: Vec::new(),
-            tactic_options: tactic_options_request_from_phase4(&phase4_options).unwrap(),
+            tactic_options: tactic_options_request_from_machine_tactic(&machine_tactic_options)
+                .unwrap(),
         };
         let simp_registry_hash = [0x55; 32];
         let mut actual = Vec::new();
         encode_machine_api_options_to(
             &mut actual,
             &options,
-            &phase4_options,
+            &machine_tactic_options,
             None,
             None,
             &simp_registry_hash,
         );
 
         let mut expected = Vec::new();
-        encode_string(&mut expected, "npa.phase5.machine-api-options.v1");
+        encode_string(&mut expected, "npa.machine-api.machine-api-options.v1");
         expected.extend(kernel_check_profile_hash(options.kernel_check_profile));
         encode_list_len(&mut expected, 0);
-        expected.extend(machine_tactic_options_canonical_bytes(&phase4_options));
+        expected.extend(machine_tactic_options_canonical_bytes(
+            &machine_tactic_options,
+        ));
         expected.extend(resolved_family_options_canonical_bytes(None, None));
         expected.extend(simp_registry_hash);
 
@@ -2802,7 +2811,7 @@ mod tests {
               "import_closure":[],
               "imports":[],
               "checked_current_decls":[{{
-                "encoding":"npa.phase5.checked-current-decl-package.canonical.v5.hex",
+                "encoding":"npa.machine-api.checked-current-decl-package.canonical.v5.hex",
                 "bytes":"{current_hex}"
               }}],
               "options":{{

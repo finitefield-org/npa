@@ -77,7 +77,7 @@ impl MachineApiTacticKind {
         }
     }
 
-    fn from_phase4_kind(kind: &str) -> Option<Self> {
+    fn from_machine_tactic_kind(kind: &str) -> Option<Self> {
         match kind {
             "intro" => Some(Self::Intro),
             "exact" => Some(Self::Exact),
@@ -90,8 +90,8 @@ impl MachineApiTacticKind {
     }
 
     fn from_candidate(candidate: &MachineTacticCandidate) -> Self {
-        Self::from_phase4_kind(machine_tactic_candidate_kind(candidate))
-            .expect("Phase 4 exposes only MVP tactic candidate kinds")
+        Self::from_machine_tactic_kind(machine_tactic_candidate_kind(candidate))
+            .expect("machine tactic exposes only MVP tactic candidate kinds")
     }
 
     fn from_tactic(tactic: &MachineTactic) -> Self {
@@ -107,9 +107,9 @@ impl MachineApiTacticKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase5UpstreamDiagnostic {
-    Phase3(npa_frontend::MachineDiagnostic),
-    Phase4(MachineTacticDiagnostic),
+pub enum MachineApiUpstreamDiagnostic {
+    Frontend(npa_frontend::MachineDiagnostic),
+    MachineTactic(MachineTacticDiagnostic),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -124,21 +124,21 @@ pub struct MachineApiDiagnosticProjection {
     pub expected_hash: Option<Hash>,
     pub actual_hash: Option<Hash>,
     pub source_message: String,
-    pub upstream: Phase5UpstreamDiagnostic,
+    pub upstream: MachineApiUpstreamDiagnostic,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase4AdapterError {
+pub struct MachineTacticAdapterError {
     pub diagnostic: MachineApiDiagnosticProjection,
     pub candidate_hash: Option<Hash>,
     pub deterministic_budget_hash: Option<Hash>,
     pub cache_key_hash: Option<Hash>,
 }
 
-pub type Phase4AdapterResult<T> = Result<T, Box<Phase4AdapterError>>;
+pub type MachineTacticAdapterResult<T> = Result<T, Box<MachineTacticAdapterError>>;
 
 #[derive(Clone, Debug)]
-pub struct Phase4StartProofOutput {
+pub struct MachineTacticStartProofOutput {
     pub state: MachineProofState,
     pub state_fingerprint: Hash,
     pub options: MachineTacticOptions,
@@ -150,7 +150,7 @@ pub struct Phase4StartProofOutput {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase4ValidatedTactic {
+pub struct ValidatedMachineTactic {
     pub tactic: MachineTactic,
     pub goal_id: GoalId,
     pub tactic_kind: MachineApiTacticKind,
@@ -158,7 +158,7 @@ pub struct Phase4ValidatedTactic {
 }
 
 #[derive(Clone, Debug)]
-pub struct Phase4TacticRunOutput {
+pub struct MachineTacticRunOutput {
     pub state: MachineProofState,
     pub delta: MachineProofDelta,
     pub goal_id: GoalId,
@@ -171,17 +171,17 @@ pub struct Phase4TacticRunOutput {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase4ExtractedTheorem {
+pub struct MachineTacticExtractedTheorem {
     pub theorem: Decl,
 }
 
-pub fn phase4_start_machine_proof(
+pub fn machine_tactic_start_machine_proof(
     spec: MachineProofSpec,
     imports: Vec<VerifiedImportRef>,
     checked_current_decls: Vec<CheckedCurrentDecl>,
     options: MachineTacticOptions,
-) -> Phase4AdapterResult<Phase4StartProofOutput> {
-    phase4_start_machine_proof_with_kernel_profile(
+) -> MachineTacticAdapterResult<MachineTacticStartProofOutput> {
+    machine_tactic_start_machine_proof_with_kernel_profile(
         MachineKernelProfile::BuiltinNatEqRec,
         spec,
         imports,
@@ -190,13 +190,13 @@ pub fn phase4_start_machine_proof(
     )
 }
 
-pub fn phase4_start_machine_proof_with_kernel_profile(
+pub fn machine_tactic_start_machine_proof_with_kernel_profile(
     kernel_profile: MachineKernelProfile,
     spec: MachineProofSpec,
     imports: Vec<VerifiedImportRef>,
     checked_current_decls: Vec<CheckedCurrentDecl>,
     options: MachineTacticOptions,
-) -> Phase4AdapterResult<Phase4StartProofOutput> {
+) -> MachineTacticAdapterResult<MachineTacticStartProofOutput> {
     start_machine_proof_with_kernel_profile(
         kernel_profile,
         spec,
@@ -204,7 +204,7 @@ pub fn phase4_start_machine_proof_with_kernel_profile(
         checked_current_decls,
         options,
     )
-    .map(|state| Phase4StartProofOutput {
+    .map(|state| MachineTacticStartProofOutput {
         state_fingerprint: state.fingerprint,
         options: state.env.options.clone(),
         resolved_eq_family: state.env.eq_family.clone(),
@@ -215,44 +215,46 @@ pub fn phase4_start_machine_proof_with_kernel_profile(
         state,
     })
     .map_err(|diagnostic| {
-        let phase = phase4_start_proof_phase(&diagnostic);
-        phase4_error(diagnostic, phase)
+        let phase = machine_tactic_start_proof_phase(&diagnostic);
+        machine_tactic_error(diagnostic, phase)
     })
 }
 
-pub fn phase4_validate_machine_tactic_candidate(
+pub fn machine_tactic_validate_machine_tactic_candidate(
     goal_id: GoalId,
     candidate: MachineTacticCandidate,
-) -> Phase4AdapterResult<Phase4ValidatedTactic> {
+) -> MachineTacticAdapterResult<ValidatedMachineTactic> {
     let tactic_kind = MachineApiTacticKind::from_candidate(&candidate);
     prepass_candidate_terms(&candidate, goal_id, tactic_kind)?;
     validate_machine_tactic_candidate(goal_id, candidate)
         .map(|tactic| {
             let candidate_hash = machine_tactic_hash(&tactic);
-            Phase4ValidatedTactic {
+            ValidatedMachineTactic {
                 tactic,
                 goal_id,
                 tactic_kind,
                 candidate_hash,
             }
         })
-        .map_err(|diagnostic| phase4_candidate_validation_error(diagnostic, goal_id, tactic_kind))
+        .map_err(|diagnostic| {
+            machine_tactic_candidate_validation_error(diagnostic, goal_id, tactic_kind)
+        })
 }
 
-pub fn phase4_run_machine_tactic(
+pub fn machine_tactic_run_machine_tactic(
     state: &MachineProofState,
     tactic: MachineTactic,
-) -> Phase4AdapterResult<Phase4TacticRunOutput> {
-    phase4_run_machine_tactic_with_budget(state, tactic, TacticBudget::default())
+) -> MachineTacticAdapterResult<MachineTacticRunOutput> {
+    machine_tactic_run_machine_tactic_with_budget(state, tactic, TacticBudget::default())
 }
 
-pub fn phase4_run_machine_tactic_with_budget(
+pub fn machine_tactic_run_machine_tactic_with_budget(
     state: &MachineProofState,
     tactic: MachineTactic,
     budget: TacticBudget,
-) -> Phase4AdapterResult<Phase4TacticRunOutput> {
+) -> MachineTacticAdapterResult<MachineTacticRunOutput> {
     if let Err(diagnostic) = validate_machine_proof_state(state) {
-        return Err(phase4_error(
+        return Err(machine_tactic_error(
             diagnostic,
             MachineApiDiagnosticPhase::SnapshotLookup,
         ));
@@ -265,7 +267,7 @@ pub fn phase4_run_machine_tactic_with_budget(
     let cache_key_hash =
         machine_tactic_cache_key_hash(&machine_tactic_cache_key(state, &tactic, budget));
     run_machine_tactic_with_budget(state, tactic, budget)
-        .map(|(state, delta)| Phase4TacticRunOutput {
+        .map(|(state, delta)| MachineTacticRunOutput {
             next_state_fingerprint: state.fingerprint,
             proof_delta_hash: delta.delta_hash,
             state,
@@ -278,8 +280,8 @@ pub fn phase4_run_machine_tactic_with_budget(
         })
         .map_err(|diagnostic| {
             let include_correlation_hashes = tactic_run_correlation_hashes_allowed(&diagnostic);
-            let phase = phase4_tactic_run_phase(&diagnostic);
-            let mut error = phase4_error(diagnostic, phase);
+            let phase = machine_tactic_run_phase(&diagnostic);
+            let mut error = machine_tactic_error(diagnostic, phase);
             if include_correlation_hashes {
                 error.candidate_hash = Some(candidate_hash);
                 error.deterministic_budget_hash = Some(deterministic_budget_hash);
@@ -289,22 +291,22 @@ pub fn phase4_run_machine_tactic_with_budget(
         })
 }
 
-pub fn phase4_extract_closed_machine_theorem_decl(
+pub fn machine_tactic_extract_closed_machine_theorem_decl(
     state: &MachineProofState,
     phase: MachineApiDiagnosticPhase,
-) -> Phase4AdapterResult<Phase4ExtractedTheorem> {
+) -> MachineTacticAdapterResult<MachineTacticExtractedTheorem> {
     extract_closed_machine_theorem_decl(state)
-        .map(|theorem| Phase4ExtractedTheorem { theorem })
-        .map_err(|diagnostic| phase4_error(diagnostic, phase))
+        .map(|theorem| MachineTacticExtractedTheorem { theorem })
+        .map_err(|diagnostic| machine_tactic_error(diagnostic, phase))
 }
 
-pub fn phase4_machine_tactic_result_error(
+pub fn machine_tactic_machine_tactic_result_error(
     state: &MachineProofState,
     tactic: MachineTactic,
     budget: TacticBudget,
-) -> Option<Box<Phase4AdapterError>> {
+) -> Option<Box<MachineTacticAdapterError>> {
     if let Err(diagnostic) = validate_machine_proof_state(state) {
-        return Some(phase4_error(
+        return Some(machine_tactic_error(
             diagnostic,
             MachineApiDiagnosticPhase::SnapshotLookup,
         ));
@@ -318,8 +320,8 @@ pub fn phase4_machine_tactic_result_error(
             let cache_key_hash =
                 machine_tactic_cache_key_hash(&machine_tactic_cache_key(state, &tactic, budget));
             let include_correlation_hashes = tactic_run_correlation_hashes_allowed(&diagnostic);
-            let phase = phase4_tactic_run_phase(&diagnostic);
-            let mut error = phase4_error(diagnostic, phase);
+            let phase = machine_tactic_run_phase(&diagnostic);
+            let mut error = machine_tactic_error(diagnostic, phase);
             if include_correlation_hashes {
                 error.candidate_hash = Some(candidate_hash);
                 error.deterministic_budget_hash = Some(deterministic_budget_hash);
@@ -330,110 +332,120 @@ pub fn phase4_machine_tactic_result_error(
     }
 }
 
-pub fn map_phase4_diagnostic_kind(diagnostic: &MachineTacticDiagnostic) -> MachineApiErrorKind {
+pub fn map_machine_tactic_diagnostic_kind(
+    diagnostic: &MachineTacticDiagnostic,
+) -> MachineApiErrorKind {
     use MachineApiErrorKind as Api;
-    use MachineTacticDiagnosticKind as Phase4;
+    use MachineTacticDiagnosticKind as MachineTactic;
 
     match &diagnostic.kind {
-        Phase4::InvalidMachineProofState
-        | Phase4::UnknownMeta
-        | Phase4::InvalidMetaContext
-        | Phase4::InvalidMetaDependency
-        | Phase4::ProofExprScopeError
-        | Phase4::UnresolvedGoal
-        | Phase4::AmbiguousKernelEnvDecl
-        | Phase4::KernelRejected
-        | Phase4::InvalidMachineTermSource => Api::InvalidMachineProofState,
-        Phase4::MachineTermElaborationError => Api::MachineTermElaborationError,
-        Phase4::UnknownName => Api::UnknownName,
-        Phase4::ImplicitArgumentRequired | Phase4::MissingExplicitArgument => {
+        MachineTactic::InvalidMachineProofState
+        | MachineTactic::UnknownMeta
+        | MachineTactic::InvalidMetaContext
+        | MachineTactic::InvalidMetaDependency
+        | MachineTactic::ProofExprScopeError
+        | MachineTactic::UnresolvedGoal
+        | MachineTactic::AmbiguousKernelEnvDecl
+        | MachineTactic::KernelRejected
+        | MachineTactic::InvalidMachineTermSource => Api::InvalidMachineProofState,
+        MachineTactic::MachineTermElaborationError => Api::MachineTermElaborationError,
+        MachineTactic::UnknownName => Api::UnknownName,
+        MachineTactic::ImplicitArgumentRequired | MachineTactic::MissingExplicitArgument => {
             Api::ImplicitArgumentRequired
         }
-        Phase4::InvalidMachineProofSpec => Api::InvalidSessionRequest,
-        Phase4::InvalidMachineTactic => Api::InvalidCandidate,
-        Phase4::InvalidBatchPolicy => Api::InvalidBatchPolicy,
-        Phase4::UnknownGoal | Phase4::GoalAlreadyAssigned => Api::GoalNotOpen,
-        Phase4::UnknownTacticHead
-        | Phase4::AmbiguousTacticHead
-        | Phase4::UnknownLocalName
-        | Phase4::AmbiguousLocalName
-        | Phase4::InvalidLocalHead
-        | Phase4::UnknownSimpRule
-        | Phase4::AmbiguousSimpRule
-        | Phase4::InvalidSimpRule
-        | Phase4::AmbiguousApplyArgument
-        | Phase4::TooManyApplyArguments
-        | Phase4::TooFewApplyArguments
-        | Phase4::SubgoalDataArgument => Api::InvalidCandidate,
-        Phase4::ExpectedFunctionType | Phase4::ExpectedPiTarget => Api::ExpectedPiType,
-        Phase4::ExpectedEqTarget | Phase4::AmbiguousRewriteRule => Api::RewriteRuleInvalid,
-        Phase4::UniverseArgumentMismatch | Phase4::TypeMismatch | Phase4::ProofExprTypeMismatch
+        MachineTactic::InvalidMachineProofSpec => Api::InvalidSessionRequest,
+        MachineTactic::InvalidMachineTactic => Api::InvalidCandidate,
+        MachineTactic::InvalidBatchPolicy => Api::InvalidBatchPolicy,
+        MachineTactic::UnknownGoal | MachineTactic::GoalAlreadyAssigned => Api::GoalNotOpen,
+        MachineTactic::UnknownTacticHead
+        | MachineTactic::AmbiguousTacticHead
+        | MachineTactic::UnknownLocalName
+        | MachineTactic::AmbiguousLocalName
+        | MachineTactic::InvalidLocalHead
+        | MachineTactic::UnknownSimpRule
+        | MachineTactic::AmbiguousSimpRule
+        | MachineTactic::InvalidSimpRule
+        | MachineTactic::AmbiguousApplyArgument
+        | MachineTactic::TooManyApplyArguments
+        | MachineTactic::TooFewApplyArguments
+        | MachineTactic::SubgoalDataArgument => Api::InvalidCandidate,
+        MachineTactic::ExpectedFunctionType | MachineTactic::ExpectedPiTarget => {
+            Api::ExpectedPiType
+        }
+        MachineTactic::ExpectedEqTarget | MachineTactic::AmbiguousRewriteRule => {
+            Api::RewriteRuleInvalid
+        }
+        MachineTactic::UniverseArgumentMismatch
+        | MachineTactic::TypeMismatch
+        | MachineTactic::ProofExprTypeMismatch
             if has_expected_actual(diagnostic) =>
         {
             Api::TypeMismatch
         }
-        Phase4::UniverseArgumentMismatch | Phase4::TypeMismatch => Api::MachineTermElaborationError,
-        Phase4::ProofExprTypeMismatch => Api::InvalidMachineProofState,
-        Phase4::SimpNoProgress => Api::SimpNoProgress,
-        Phase4::SimpStepLimitExceeded => Api::BudgetExceeded,
-        Phase4::UnsupportedMachineTactic | Phase4::TacticPrimitiveUnavailable => {
+        MachineTactic::UniverseArgumentMismatch | MachineTactic::TypeMismatch => {
+            Api::MachineTermElaborationError
+        }
+        MachineTactic::ProofExprTypeMismatch => Api::InvalidMachineProofState,
+        MachineTactic::SimpNoProgress => Api::SimpNoProgress,
+        MachineTactic::SimpStepLimitExceeded => Api::BudgetExceeded,
+        MachineTactic::UnsupportedMachineTactic | MachineTactic::TacticPrimitiveUnavailable => {
             Api::UnsupportedTactic
         }
-        Phase4::InvalidInductionTarget => Api::InductionTargetNotNat,
-        Phase4::GoalLimitExceeded => Api::TooManyGoals,
-        Phase4::MetaLimitExceeded => Api::BudgetExceeded,
-        Phase4::TacticFuelExhausted {
+        MachineTactic::InvalidInductionTarget => Api::InductionTargetNotNat,
+        MachineTactic::GoalLimitExceeded => Api::TooManyGoals,
+        MachineTactic::MetaLimitExceeded => Api::BudgetExceeded,
+        MachineTactic::TacticFuelExhausted {
             kind: TacticFuelKind::ExprNode,
         } => Api::TooLargeTerm,
-        Phase4::TacticFuelExhausted { .. } => Api::BudgetExceeded,
-        Phase4::InvalidCurrentDeclOrder
-        | Phase4::UncheckedCurrentDecl
-        | Phase4::CurrentDeclSignatureMismatch => Api::InvalidCheckedCurrentDecl,
-        Phase4::InvalidVerifiedImport => Api::InvalidVerifiedImport,
-        Phase4::InvalidTacticOption
-        | Phase4::UnsupportedTacticOption
-        | Phase4::InvalidEqFamily
-        | Phase4::InvalidNatFamily => Api::InvalidMachineApiOptions,
+        MachineTactic::TacticFuelExhausted { .. } => Api::BudgetExceeded,
+        MachineTactic::InvalidCurrentDeclOrder
+        | MachineTactic::UncheckedCurrentDecl
+        | MachineTactic::CurrentDeclSignatureMismatch => Api::InvalidCheckedCurrentDecl,
+        MachineTactic::InvalidVerifiedImport => Api::InvalidVerifiedImport,
+        MachineTactic::InvalidTacticOption
+        | MachineTactic::UnsupportedTacticOption
+        | MachineTactic::InvalidEqFamily
+        | MachineTactic::InvalidNatFamily => Api::InvalidMachineApiOptions,
     }
 }
 
-pub fn map_phase3_diagnostic_kind(
+pub fn map_frontend_diagnostic_kind(
     diagnostic: &npa_frontend::MachineDiagnostic,
 ) -> MachineApiErrorKind {
-    use npa_frontend::MachineDiagnosticKind as Phase3;
+    use npa_frontend::MachineDiagnosticKind as Frontend;
     use MachineApiErrorKind as Api;
 
     match diagnostic.kind {
-        Phase3::ParseError => Api::MachineTermParseError,
-        Phase3::UnsupportedSyntax
-        | Phase3::UnsupportedItem
-        | Phase3::ImportAfterItem
-        | Phase3::ImportResolutionError
-        | Phase3::MissingVerifiedImport
-        | Phase3::DuplicateDeclaration
-        | Phase3::DuplicateUniverseParam
-        | Phase3::UnknownUniverseParam
-        | Phase3::UniverseLevelTooLarge
-        | Phase3::UnannotatedBinder
-        | Phase3::UnannotatedLet
-        | Phase3::HoleNotAllowed
-        | Phase3::UnsolvedUniverseMeta
-        | Phase3::KernelRejected
-        | Phase3::ExpectedSort
-        | Phase3::TooManyArguments
-        | Phase3::TooFewArguments => Api::MachineTermElaborationError,
-        Phase3::UnknownGlobalName
-        | Phase3::ShortGlobalName
-        | Phase3::AmbiguousGlobalName
-        | Phase3::GlobalShadowedByLocal
-        | Phase3::UnknownLocalName => Api::UnknownName,
-        Phase3::ImplicitArgumentRequired | Phase3::MissingExplicitUniverse => {
+        Frontend::ParseError => Api::MachineTermParseError,
+        Frontend::UnsupportedSyntax
+        | Frontend::UnsupportedItem
+        | Frontend::ImportAfterItem
+        | Frontend::ImportResolutionError
+        | Frontend::MissingVerifiedImport
+        | Frontend::DuplicateDeclaration
+        | Frontend::DuplicateUniverseParam
+        | Frontend::UnknownUniverseParam
+        | Frontend::UniverseLevelTooLarge
+        | Frontend::UnannotatedBinder
+        | Frontend::UnannotatedLet
+        | Frontend::HoleNotAllowed
+        | Frontend::UnsolvedUniverseMeta
+        | Frontend::KernelRejected
+        | Frontend::ExpectedSort
+        | Frontend::TooManyArguments
+        | Frontend::TooFewArguments => Api::MachineTermElaborationError,
+        Frontend::UnknownGlobalName
+        | Frontend::ShortGlobalName
+        | Frontend::AmbiguousGlobalName
+        | Frontend::GlobalShadowedByLocal
+        | Frontend::UnknownLocalName => Api::UnknownName,
+        Frontend::ImplicitArgumentRequired | Frontend::MissingExplicitUniverse => {
             Api::ImplicitArgumentRequired
         }
-        Phase3::ExpectedFunctionType => Api::ExpectedPiType,
-        Phase3::TypeMismatch if phase3_has_expected_actual(diagnostic) => Api::TypeMismatch,
-        Phase3::TypeMismatch => Api::MachineTermElaborationError,
-        Phase3::CertificateRejected => Api::VerifyFailed,
+        Frontend::ExpectedFunctionType => Api::ExpectedPiType,
+        Frontend::TypeMismatch if frontend_has_expected_actual(diagnostic) => Api::TypeMismatch,
+        Frontend::TypeMismatch => Api::MachineTermElaborationError,
+        Frontend::CertificateRejected => Api::VerifyFailed,
     }
 }
 
@@ -441,7 +453,7 @@ fn prepass_candidate_terms(
     candidate: &MachineTacticCandidate,
     goal_id: GoalId,
     tactic_kind: MachineApiTacticKind,
-) -> Phase4AdapterResult<()> {
+) -> MachineTacticAdapterResult<()> {
     match candidate {
         MachineTacticCandidate::Exact { term } => prepass_raw_term(term, goal_id, tactic_kind),
         MachineTacticCandidate::Intro { .. }
@@ -465,7 +477,7 @@ fn prepass_rewrite_rule(
     rule: &CandidateRewriteRuleRef,
     goal_id: GoalId,
     tactic_kind: MachineApiTacticKind,
-) -> Phase4AdapterResult<()> {
+) -> MachineTacticAdapterResult<()> {
     for arg in &rule.args {
         if let CandidateApplyArg::Term(term) = arg {
             prepass_raw_term(term, goal_id, tactic_kind)?;
@@ -478,13 +490,13 @@ fn prepass_raw_term(
     term: &RawMachineTerm,
     goal_id: GoalId,
     tactic_kind: MachineApiTacticKind,
-) -> Phase4AdapterResult<()> {
+) -> MachineTacticAdapterResult<()> {
     npa_frontend::canonicalize_machine_term_source(&term.source)
         .map(|_| ())
         .map_err(|diagnostic| {
-            let phase = phase3_term_phase(&diagnostic);
-            Box::new(Phase4AdapterError {
-                diagnostic: project_phase3_diagnostic(
+            let phase = frontend_term_phase(&diagnostic);
+            Box::new(MachineTacticAdapterError {
+                diagnostic: project_frontend_diagnostic(
                     diagnostic,
                     phase,
                     Some(goal_id),
@@ -497,38 +509,39 @@ fn prepass_raw_term(
         })
 }
 
-fn phase4_candidate_validation_error(
+fn machine_tactic_candidate_validation_error(
     diagnostic: MachineTacticDiagnostic,
     goal_id: GoalId,
     tactic_kind: MachineApiTacticKind,
-) -> Box<Phase4AdapterError> {
-    let mut error = phase4_error(diagnostic, MachineApiDiagnosticPhase::CandidateValidation);
+) -> Box<MachineTacticAdapterError> {
+    let mut error =
+        machine_tactic_error(diagnostic, MachineApiDiagnosticPhase::CandidateValidation);
     error.diagnostic.goal_id = Some(goal_id);
     error.diagnostic.tactic_kind = Some(tactic_kind);
     error
 }
 
-fn phase4_error(
+fn machine_tactic_error(
     diagnostic: MachineTacticDiagnostic,
     phase: MachineApiDiagnosticPhase,
-) -> Box<Phase4AdapterError> {
-    Box::new(Phase4AdapterError {
-        diagnostic: project_phase4_diagnostic(diagnostic, phase),
+) -> Box<MachineTacticAdapterError> {
+    Box::new(MachineTacticAdapterError {
+        diagnostic: project_machine_tactic_diagnostic(diagnostic, phase),
         candidate_hash: None,
         deterministic_budget_hash: None,
         cache_key_hash: None,
     })
 }
 
-fn project_phase4_diagnostic(
+fn project_machine_tactic_diagnostic(
     diagnostic: MachineTacticDiagnostic,
     phase: MachineApiDiagnosticPhase,
 ) -> MachineApiDiagnosticProjection {
-    let kind = map_phase4_diagnostic_kind(&diagnostic);
+    let kind = map_machine_tactic_diagnostic_kind(&diagnostic);
     let (expected_hash, actual_hash) = mismatch_hashes_for_api(kind, &diagnostic);
     let goal_id = diagnostic.goal_id;
-    let tactic_kind = phase4_tactic_kind_for_api(kind, &diagnostic);
-    let primary_name = phase4_primary_name_for_api(kind, &diagnostic);
+    let tactic_kind = machine_tactic_kind_for_api(kind, &diagnostic);
+    let primary_name = machine_tactic_primary_name_for_api(kind, &diagnostic);
     let source_message = diagnostic.message.to_string();
     MachineApiDiagnosticProjection {
         kind,
@@ -541,18 +554,18 @@ fn project_phase4_diagnostic(
         expected_hash,
         actual_hash,
         source_message,
-        upstream: Phase5UpstreamDiagnostic::Phase4(diagnostic),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(diagnostic),
     }
 }
 
-fn project_phase3_diagnostic(
+fn project_frontend_diagnostic(
     diagnostic: npa_frontend::MachineDiagnostic,
     phase: MachineApiDiagnosticPhase,
     goal_id: Option<GoalId>,
     tactic_kind: Option<MachineApiTacticKind>,
 ) -> MachineApiDiagnosticProjection {
-    let kind = map_phase3_diagnostic_kind(&diagnostic);
-    let (expected_hash, actual_hash) = phase3_mismatch_hashes_for_api(kind, &diagnostic);
+    let kind = map_frontend_diagnostic_kind(&diagnostic);
+    let (expected_hash, actual_hash) = frontend_mismatch_hashes_for_api(kind, &diagnostic);
     let source_message = diagnostic.message.clone();
     MachineApiDiagnosticProjection {
         kind,
@@ -565,12 +578,14 @@ fn project_phase3_diagnostic(
         expected_hash,
         actual_hash,
         source_message,
-        upstream: Phase5UpstreamDiagnostic::Phase3(diagnostic),
+        upstream: MachineApiUpstreamDiagnostic::Frontend(diagnostic),
     }
 }
 
-fn phase4_start_proof_phase(diagnostic: &MachineTacticDiagnostic) -> MachineApiDiagnosticPhase {
-    match map_phase4_diagnostic_kind(diagnostic) {
+fn machine_tactic_start_proof_phase(
+    diagnostic: &MachineTacticDiagnostic,
+) -> MachineApiDiagnosticPhase {
+    match map_machine_tactic_diagnostic_kind(diagnostic) {
         MachineApiErrorKind::MachineTermParseError => MachineApiDiagnosticPhase::MachineTermParse,
         MachineApiErrorKind::MachineTermElaborationError
         | MachineApiErrorKind::UnknownName
@@ -581,7 +596,7 @@ fn phase4_start_proof_phase(diagnostic: &MachineTacticDiagnostic) -> MachineApiD
     }
 }
 
-fn phase4_tactic_run_phase(diagnostic: &MachineTacticDiagnostic) -> MachineApiDiagnosticPhase {
+fn machine_tactic_run_phase(diagnostic: &MachineTacticDiagnostic) -> MachineApiDiagnosticPhase {
     match diagnostic.kind {
         MachineTacticDiagnosticKind::UnknownGoal
         | MachineTacticDiagnosticKind::GoalAlreadyAssigned => {
@@ -593,7 +608,7 @@ fn phase4_tactic_run_phase(diagnostic: &MachineTacticDiagnostic) -> MachineApiDi
         _ => {}
     }
 
-    match map_phase4_diagnostic_kind(diagnostic) {
+    match map_machine_tactic_diagnostic_kind(diagnostic) {
         MachineApiErrorKind::InvalidCandidate => MachineApiDiagnosticPhase::CandidateValidation,
         MachineApiErrorKind::MachineTermParseError => MachineApiDiagnosticPhase::MachineTermParse,
         MachineApiErrorKind::MachineTermElaborationError
@@ -614,7 +629,7 @@ fn tactic_run_correlation_hashes_allowed(diagnostic: &MachineTacticDiagnostic) -
     )
 }
 
-fn phase4_tactic_kind_for_api(
+fn machine_tactic_kind_for_api(
     kind: MachineApiErrorKind,
     diagnostic: &MachineTacticDiagnostic,
 ) -> Option<MachineApiTacticKind> {
@@ -625,10 +640,10 @@ fn phase4_tactic_kind_for_api(
     diagnostic
         .tactic_kind
         .as_deref()
-        .and_then(MachineApiTacticKind::from_phase4_kind)
+        .and_then(MachineApiTacticKind::from_machine_tactic_kind)
 }
 
-fn phase4_primary_name_for_api(
+fn machine_tactic_primary_name_for_api(
     kind: MachineApiErrorKind,
     diagnostic: &MachineTacticDiagnostic,
 ) -> Option<Name> {
@@ -651,8 +666,8 @@ fn phase4_primary_name_for_api(
         .cloned()
 }
 
-fn phase3_term_phase(diagnostic: &npa_frontend::MachineDiagnostic) -> MachineApiDiagnosticPhase {
-    if map_phase3_diagnostic_kind(diagnostic) == MachineApiErrorKind::MachineTermParseError {
+fn frontend_term_phase(diagnostic: &npa_frontend::MachineDiagnostic) -> MachineApiDiagnosticPhase {
+    if map_frontend_diagnostic_kind(diagnostic) == MachineApiErrorKind::MachineTermParseError {
         MachineApiDiagnosticPhase::MachineTermParse
     } else {
         MachineApiDiagnosticPhase::MachineTermCheck
@@ -673,7 +688,7 @@ fn mismatch_hashes_for_api(
     }
 }
 
-fn phase3_mismatch_hashes_for_api(
+fn frontend_mismatch_hashes_for_api(
     kind: MachineApiErrorKind,
     diagnostic: &npa_frontend::MachineDiagnostic,
 ) -> (Option<Hash>, Option<Hash>) {
@@ -692,7 +707,7 @@ fn has_expected_actual(diagnostic: &MachineTacticDiagnostic) -> bool {
     diagnostic.expected_hash.is_some() && diagnostic.actual_hash.is_some()
 }
 
-fn phase3_has_expected_actual(diagnostic: &npa_frontend::MachineDiagnostic) -> bool {
+fn frontend_has_expected_actual(diagnostic: &npa_frontend::MachineDiagnostic) -> bool {
     diagnostic
         .payload
         .as_ref()
@@ -728,7 +743,7 @@ mod tests {
     }
 
     fn start_state(theorem_type: Expr) -> MachineProofState {
-        phase4_start_machine_proof(
+        machine_tactic_start_machine_proof(
             trivial_spec(theorem_type),
             Vec::new(),
             Vec::new(),
@@ -739,12 +754,13 @@ mod tests {
     }
 
     #[test]
-    fn validates_candidate_and_returns_phase4_candidate_hash() {
+    fn validates_candidate_and_returns_machine_tactic_candidate_hash() {
         let candidate = MachineTacticCandidate::Exact {
             term: RawMachineTerm::new("Prop"),
         };
 
-        let validated = phase4_validate_machine_tactic_candidate(GoalId(0), candidate).unwrap();
+        let validated =
+            machine_tactic_validate_machine_tactic_candidate(GoalId(0), candidate).unwrap();
 
         assert_eq!(validated.goal_id, GoalId(0));
         assert_eq!(validated.tactic_kind, MachineApiTacticKind::Exact);
@@ -760,7 +776,8 @@ mod tests {
             term: RawMachineTerm::new("("),
         };
 
-        let err = phase4_validate_machine_tactic_candidate(GoalId(7), candidate).unwrap_err();
+        let err =
+            machine_tactic_validate_machine_tactic_candidate(GoalId(7), candidate).unwrap_err();
 
         assert_eq!(
             err.diagnostic.kind,
@@ -786,7 +803,7 @@ mod tests {
             ..trivial_spec(type0())
         };
 
-        let err = phase4_start_machine_proof(
+        let err = machine_tactic_start_machine_proof(
             spec,
             Vec::new(),
             Vec::new(),
@@ -815,7 +832,7 @@ mod tests {
             ..trivial_spec(type0())
         };
 
-        let err = phase4_start_machine_proof(
+        let err = machine_tactic_start_machine_proof(
             spec,
             Vec::new(),
             Vec::new(),
@@ -841,7 +858,7 @@ mod tests {
             ..trivial_spec(type0())
         };
 
-        let err = phase4_start_machine_proof(
+        let err = machine_tactic_start_machine_proof(
             spec,
             Vec::new(),
             Vec::new(),
@@ -861,9 +878,9 @@ mod tests {
     }
 
     #[test]
-    fn run_error_maps_phase4_type_mismatch_with_correlation_hashes() {
+    fn run_error_maps_machine_tactic_type_mismatch_with_correlation_hashes() {
         let state = start_state(prop());
-        let validated = phase4_validate_machine_tactic_candidate(
+        let validated = machine_tactic_validate_machine_tactic_candidate(
             GoalId(0),
             MachineTacticCandidate::Exact {
                 term: RawMachineTerm::new("Type"),
@@ -872,8 +889,8 @@ mod tests {
         .unwrap();
         let budget = TacticBudget::default();
 
-        let err =
-            phase4_run_machine_tactic_with_budget(&state, validated.tactic, budget).unwrap_err();
+        let err = machine_tactic_run_machine_tactic_with_budget(&state, validated.tactic, budget)
+            .unwrap_err();
 
         assert_eq!(err.diagnostic.kind, MachineApiErrorKind::TypeMismatch);
         assert_eq!(
@@ -898,7 +915,7 @@ mod tests {
     #[test]
     fn run_goal_not_open_maps_to_snapshot_lookup_without_tactic_correlation() {
         let state = start_state(type0());
-        let validated = phase4_validate_machine_tactic_candidate(
+        let validated = machine_tactic_validate_machine_tactic_candidate(
             GoalId(99),
             MachineTacticCandidate::Exact {
                 term: RawMachineTerm::new("Prop"),
@@ -906,7 +923,7 @@ mod tests {
         )
         .unwrap();
 
-        let err = phase4_run_machine_tactic(&state, validated.tactic).unwrap_err();
+        let err = machine_tactic_run_machine_tactic(&state, validated.tactic).unwrap_err();
 
         assert_eq!(err.diagnostic.kind, MachineApiErrorKind::GoalNotOpen);
         assert_eq!(
@@ -923,7 +940,7 @@ mod tests {
     #[test]
     fn run_stale_snapshot_maps_to_snapshot_lookup_without_correlation_hashes() {
         let mut state = start_state(type0());
-        let validated = phase4_validate_machine_tactic_candidate(
+        let validated = machine_tactic_validate_machine_tactic_candidate(
             GoalId(0),
             MachineTacticCandidate::Exact {
                 term: RawMachineTerm::new("Prop"),
@@ -932,7 +949,7 @@ mod tests {
         .unwrap();
         state.state_id = "stale".to_owned();
 
-        let err = phase4_run_machine_tactic(&state, validated.tactic.clone()).unwrap_err();
+        let err = machine_tactic_run_machine_tactic(&state, validated.tactic.clone()).unwrap_err();
 
         assert_eq!(
             err.diagnostic.kind,
@@ -948,9 +965,12 @@ mod tests {
         assert_eq!(err.deterministic_budget_hash, None);
         assert_eq!(err.cache_key_hash, None);
 
-        let result_err =
-            phase4_machine_tactic_result_error(&state, validated.tactic, TacticBudget::default())
-                .unwrap();
+        let result_err = machine_tactic_machine_tactic_result_error(
+            &state,
+            validated.tactic,
+            TacticBudget::default(),
+        )
+        .unwrap();
         assert_eq!(
             result_err.diagnostic.kind,
             MachineApiErrorKind::InvalidMachineProofState
@@ -969,15 +989,15 @@ mod tests {
     #[test]
     fn run_intro_name_collision_is_post_canonical_candidate_error() {
         let state = start_state(Expr::pi("p", prop(), Expr::pi("q", prop(), prop())));
-        let intro_p = phase4_validate_machine_tactic_candidate(
+        let intro_p = machine_tactic_validate_machine_tactic_candidate(
             GoalId(0),
             MachineTacticCandidate::Intro {
                 name: "p".to_owned(),
             },
         )
         .unwrap();
-        let run = phase4_run_machine_tactic(&state, intro_p.tactic).unwrap();
-        let duplicate = phase4_validate_machine_tactic_candidate(
+        let run = machine_tactic_run_machine_tactic(&state, intro_p.tactic).unwrap();
+        let duplicate = machine_tactic_validate_machine_tactic_candidate(
             GoalId(1),
             MachineTacticCandidate::Intro {
                 name: "p".to_owned(),
@@ -985,7 +1005,7 @@ mod tests {
         )
         .unwrap();
 
-        let err = phase4_run_machine_tactic(&run.state, duplicate.tactic).unwrap_err();
+        let err = machine_tactic_run_machine_tactic(&run.state, duplicate.tactic).unwrap_err();
 
         assert_eq!(err.diagnostic.kind, MachineApiErrorKind::InvalidCandidate);
         assert_eq!(
@@ -1009,7 +1029,7 @@ mod tests {
     fn extract_closed_theorem_maps_open_goal_to_caller_phase() {
         let state = start_state(type0());
 
-        let err = phase4_extract_closed_machine_theorem_decl(
+        let err = machine_tactic_extract_closed_machine_theorem_decl(
             &state,
             MachineApiDiagnosticPhase::SnapshotLookup,
         )
@@ -1028,21 +1048,21 @@ mod tests {
     #[test]
     fn extract_closed_theorem_succeeds_after_exact() {
         let state = start_state(type0());
-        let validated = phase4_validate_machine_tactic_candidate(
+        let validated = machine_tactic_validate_machine_tactic_candidate(
             GoalId(0),
             MachineTacticCandidate::Exact {
                 term: RawMachineTerm::new("Prop"),
             },
         )
         .unwrap();
-        let run = phase4_run_machine_tactic(&state, validated.tactic).unwrap();
+        let run = machine_tactic_run_machine_tactic(&state, validated.tactic).unwrap();
 
         assert_eq!(run.next_state_fingerprint, run.state.fingerprint);
         assert_eq!(run.proof_delta_hash, run.delta.delta_hash);
 
         let closed = run.state;
 
-        let extracted = phase4_extract_closed_machine_theorem_decl(
+        let extracted = machine_tactic_extract_closed_machine_theorem_decl(
             &closed,
             MachineApiDiagnosticPhase::KernelCheck,
         )
@@ -1060,7 +1080,7 @@ mod tests {
     }
 
     #[test]
-    fn phase4_mapping_is_exhaustive_for_current_tactic_diagnostics() {
+    fn machine_tactic_mapping_is_exhaustive_for_current_tactic_diagnostics() {
         let diagnostic = MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::TacticFuelExhausted {
                 kind: TacticFuelKind::ExprNode,
@@ -1069,13 +1089,13 @@ mod tests {
         );
 
         assert_eq!(
-            map_phase4_diagnostic_kind(&diagnostic),
+            map_machine_tactic_diagnostic_kind(&diagnostic),
             MachineApiErrorKind::TooLargeTerm
         );
     }
 
     #[test]
-    fn phase3_universe_level_too_large_is_mapped() {
+    fn frontend_universe_level_too_large_is_mapped() {
         let diagnostic = npa_frontend::MachineDiagnostic::error(
             npa_frontend::MachineDiagnosticKind::UniverseLevelTooLarge,
             npa_frontend::Span::new(npa_frontend::FileId(0), 0, 1),
@@ -1083,13 +1103,13 @@ mod tests {
         );
 
         assert_eq!(
-            map_phase3_diagnostic_kind(&diagnostic),
+            map_frontend_diagnostic_kind(&diagnostic),
             MachineApiErrorKind::MachineTermElaborationError
         );
     }
 
     #[test]
-    fn phase3_machine_diagnostic_payload_shape_is_unchanged_by_human_payloads() {
+    fn frontend_machine_diagnostic_payload_shape_is_unchanged_by_human_payloads() {
         let diagnostic = npa_frontend::MachineDiagnostic::parse(
             npa_frontend::Span::new(npa_frontend::FileId(0), 0, 1),
             "expected Machine Surface term",
@@ -1097,7 +1117,7 @@ mod tests {
 
         assert_eq!(diagnostic.payload, None);
         assert_eq!(
-            map_phase3_diagnostic_kind(&diagnostic),
+            map_frontend_diagnostic_kind(&diagnostic),
             MachineApiErrorKind::MachineTermParseError
         );
     }
@@ -1110,8 +1130,10 @@ mod tests {
         );
         diagnostic.primary_name = Some(Name::from_dotted("Eq"));
 
-        let projected =
-            project_phase4_diagnostic(diagnostic, MachineApiDiagnosticPhase::MachineTermCheck);
+        let projected = project_machine_tactic_diagnostic(
+            diagnostic,
+            MachineApiDiagnosticPhase::MachineTermCheck,
+        );
 
         assert_eq!(projected.primary_name, Some(Name::from_dotted("Eq")));
     }
@@ -1124,8 +1146,10 @@ mod tests {
         );
         diagnostic.primary_name = Some(Name::from_dotted("Bad..Name"));
 
-        let projected =
-            project_phase4_diagnostic(diagnostic, MachineApiDiagnosticPhase::MachineTermCheck);
+        let projected = project_machine_tactic_diagnostic(
+            diagnostic,
+            MachineApiDiagnosticPhase::MachineTermCheck,
+        );
 
         assert_eq!(projected.primary_name, None);
     }
@@ -1138,7 +1162,7 @@ mod tests {
         );
 
         assert_eq!(
-            map_phase4_diagnostic_kind(&diagnostic),
+            map_machine_tactic_diagnostic_kind(&diagnostic),
             MachineApiErrorKind::InvalidMachineProofState
         );
     }

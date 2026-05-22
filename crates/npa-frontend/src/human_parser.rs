@@ -603,13 +603,13 @@ fn validate_mvp_notation_token(token: &str, span: Span) -> HumanResult<()> {
     if token.chars().any(char::is_whitespace) {
         return Err(HumanDiagnostic::parse(
             span,
-            "multi-token notation is not part of the Phase 3 MVP",
+            "multi-token notation is not part of the frontend MVP",
         ));
     }
     if reserved_notation_token(token) || !token.chars().all(is_operator_char) {
         return Err(HumanDiagnostic::parse(
             span,
-            format!("notation token {token} is not a Phase 3 MVP operator"),
+            format!("notation token {token} is not a frontend MVP operator"),
         ));
     }
     Ok(())

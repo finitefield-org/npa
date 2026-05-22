@@ -24,13 +24,13 @@ use crate::validation::{
 };
 use crate::{
     validate_machine_endpoint_envelope, HashString, MachineApiDiagnosticPhase,
-    MachineApiDiagnosticProjection, Phase5UpstreamDiagnostic,
+    MachineApiDiagnosticProjection, MachineApiUpstreamDiagnostic,
 };
 
-const STORED_SNAPSHOT_VIEW_TAG: &str = "npa.phase5.stored-snapshot-view.v1";
-const STORED_EXPR_VIEW_TAG: &str = "npa.phase5.stored-expr-view.v1";
-const LOCAL_NAME_MAP_TAG: &str = "npa.phase5.local-name-map.v1";
-const GOAL_FINGERPRINT_TAG: &str = "npa.phase5.goal-fingerprint.v1";
+const STORED_SNAPSHOT_VIEW_TAG: &str = "npa.machine-api.stored-snapshot-view.v1";
+const STORED_EXPR_VIEW_TAG: &str = "npa.machine-api.stored-expr-view.v1";
+const LOCAL_NAME_MAP_TAG: &str = "npa.machine-api.local-name-map.v1";
+const GOAL_FINGERPRINT_TAG: &str = "npa.machine-api.goal-fingerprint.v1";
 
 #[derive(Clone, Copy, Debug)]
 pub struct MachineSnapshotMaterializationContext<'a> {
@@ -839,13 +839,13 @@ fn snapshot_semantic_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineProofState,
             message,
         )),
     };
     let error = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("snapshot get diagnostics must satisfy Phase 5 wire invariants");
+        .expect("snapshot get diagnostics must satisfy machine API wire invariants");
     Box::new(MachineSnapshotGetError { diagnostic, error })
 }
 

@@ -2,7 +2,7 @@
 //!
 //! This crate lowers source into `npa_cert::CoreModule` values and, when asked
 //! to produce a certificate, crosses the canonical `build_module_cert` /
-//! `verify_module_cert` boundary. Phase 2 producer fast-path candidates remain
+//! `verify_module_cert` boundary. Certificate producer fast-path candidates remain
 //! in `npa-cert` until a separate bridge is designed.
 
 mod callable;

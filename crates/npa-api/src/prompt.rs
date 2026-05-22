@@ -27,10 +27,10 @@ use crate::validation::{
     MachineApiErrorKind, MachineApiRequestError, MachineApiRequestErrorReason, ObjectSchema,
     ValidatedObject,
 };
-use crate::{validate_machine_endpoint_envelope, MachineApiVersion, Phase5UpstreamDiagnostic};
+use crate::{validate_machine_endpoint_envelope, MachineApiUpstreamDiagnostic, MachineApiVersion};
 
-const PROMPT_PAYLOAD_TAG: &str = "npa.phase5.prompt-payload.v1";
-const PROMPT_RENDERED_CONTENT_TAG: &str = "npa.phase5.prompt-rendered-content.v1";
+const PROMPT_PAYLOAD_TAG: &str = "npa.machine-api.prompt-payload.v1";
+const PROMPT_RENDERED_CONTENT_TAG: &str = "npa.machine-api.prompt-rendered-content.v1";
 
 const PREMISE_SELECTION_FIELDS: &[FieldSpec] = &[
     FieldSpec::required("modes", JsonFieldType::Array),
@@ -765,13 +765,13 @@ fn prompt_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
             MachineTacticDiagnosticKind::InvalidMachineProofState,
             message,
         )),
     };
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("prompt payload diagnostics must satisfy Phase 5 wire invariants");
+        .expect("prompt payload diagnostics must satisfy machine API wire invariants");
     let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
         status: MachineApiResponseStatus::Error,
         error: wire,
@@ -968,7 +968,7 @@ mod tests {
     }
 
     #[test]
-    fn prompt_payload_returns_deterministic_phase7_context() {
+    fn prompt_payload_returns_deterministic_ai_search_context() {
         let session = imported_axiom_session();
         let reusable_hash = format_hash_string(&session.initial_snapshot.state_fingerprint);
         let failed_candidates = format!(

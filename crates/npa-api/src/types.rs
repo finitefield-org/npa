@@ -26,7 +26,7 @@ use crate::{
 };
 
 pub const MACHINE_API_VERSION: &str = "npa.machine-api.v1";
-pub const MACHINE_DISPLAY_PROFILE_ID: &str = "npa.phase5.display.v1";
+pub const MACHINE_DISPLAY_PROFILE_ID: &str = "npa.machine-api.display.v1";
 pub const MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA: &str = "npa.machine_tactic_candidate.v1";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.builtin-nat-eq-rec";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
@@ -476,7 +476,7 @@ pub struct CheckedMachineProofRoot {
 impl CheckedMachineProofRoot {
     pub fn canonical_bytes(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        encode_string(&mut out, "npa.phase5.checked-machine-proof-root.v1");
+        encode_string(&mut out, "npa.machine-api.checked-machine-proof-root.v1");
         encode_name(&mut out, &self.module);
         encode_name(&mut out, &self.theorem_name);
         encode_uvar(&mut out, self.source_index);
@@ -484,7 +484,7 @@ impl CheckedMachineProofRoot {
         for param in &self.universe_params {
             encode_string(&mut out, param);
         }
-        encode_hash(&mut out, &self.theorem_type_source.phase3_canonical_hash);
+        encode_hash(&mut out, &self.theorem_type_source.frontend_canonical_hash);
         encode_hash(&mut out, &self.theorem_type_core_hash);
         out
     }
@@ -493,7 +493,7 @@ impl CheckedMachineProofRoot {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MachineRootTermSource {
     pub source: String,
-    pub phase3_canonical_hash: Hash,
+    pub frontend_canonical_hash: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -855,7 +855,7 @@ pub fn parse_local_id_wire(value: &str) -> Result<LocalId, MachineWireGrammarErr
     Ok(LocalId(value))
 }
 
-pub fn parse_phase5_name(value: &str) -> Result<Name, MachineWireGrammarError> {
+pub fn parse_machine_api_name(value: &str) -> Result<Name, MachineWireGrammarError> {
     if value.is_empty() || value.starts_with('.') || value.ends_with('.') || value.contains("..") {
         return Err(MachineWireGrammarError::new(
             MachineWireGrammarErrorKind::InvalidName,
@@ -873,14 +873,14 @@ pub fn parse_phase5_name(value: &str) -> Result<Name, MachineWireGrammarError> {
 }
 
 pub fn parse_module_name_wire(value: &str) -> Result<ModuleName, MachineWireGrammarError> {
-    parse_phase5_name(value)
+    parse_machine_api_name(value)
 }
 
 pub fn parse_fully_qualified_name_wire(value: &str) -> Result<Name, MachineWireGrammarError> {
-    parse_phase5_name(value)
+    parse_machine_api_name(value)
 }
 
-pub fn phase5_name_canonical_bytes(name: &Name) -> Result<Vec<u8>, MachineWireGrammarError> {
+pub fn machine_api_name_canonical_bytes(name: &Name) -> Result<Vec<u8>, MachineWireGrammarError> {
     if !name.is_canonical() {
         return Err(MachineWireGrammarError::new(
             MachineWireGrammarErrorKind::InvalidName,
@@ -927,7 +927,7 @@ pub fn is_machine_local_name(value: &str) -> bool {
 pub fn parse_machine_surface_renderable_name_wire(
     value: &str,
 ) -> Result<Name, MachineWireGrammarError> {
-    let name = parse_phase5_name(value)?;
+    let name = parse_machine_api_name(value)?;
     if is_machine_surface_renderable_name_wire(&name) {
         Ok(name)
     } else {
@@ -1732,7 +1732,7 @@ fn encode_uvar(out: &mut Vec<u8>, mut value: u64) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{parse_request_body, MachineApiRequestErrorReason, Phase5UpstreamDiagnostic};
+    use crate::{parse_request_body, MachineApiRequestErrorReason, MachineApiUpstreamDiagnostic};
 
     #[test]
     fn hash_and_snapshot_wire_grammar_is_canonical_lowercase_sha256() {
@@ -1791,12 +1791,12 @@ mod tests {
     }
 
     #[test]
-    fn phase5_names_and_renderable_names_are_distinct() {
+    fn machine_api_names_and_renderable_names_are_distinct() {
         assert_eq!(
-            parse_phase5_name("Std.Nat.Basic").unwrap().as_dotted(),
+            parse_machine_api_name("Std.Nat.Basic").unwrap().as_dotted(),
             "Std.Nat.Basic"
         );
-        assert!(parse_phase5_name("Std..Nat").is_err());
+        assert!(parse_machine_api_name("Std..Nat").is_err());
         assert!(parse_machine_surface_renderable_name_wire("Nat.succ").is_ok());
         assert!(parse_machine_surface_renderable_name_wire("Prop").is_err());
         assert!(is_machine_universe_param_name("u"));
@@ -2021,10 +2021,12 @@ mod tests {
             expected_hash: None,
             actual_hash: None,
             source_message: "goal is not open".to_owned(),
-            upstream: Phase5UpstreamDiagnostic::Phase4(npa_tactic::MachineTacticDiagnostic::new(
-                npa_tactic::MachineTacticDiagnosticKind::UnknownGoal,
-                "goal is not open",
-            )),
+            upstream: MachineApiUpstreamDiagnostic::MachineTactic(
+                npa_tactic::MachineTacticDiagnostic::new(
+                    npa_tactic::MachineTacticDiagnosticKind::UnknownGoal,
+                    "goal is not open",
+                ),
+            ),
         };
 
         let wire = MachineApiErrorWire::from_projection(&diagnostic).unwrap();
@@ -2064,10 +2066,12 @@ mod tests {
             expected_hash: None,
             actual_hash: None,
             source_message: "goal is not open".to_owned(),
-            upstream: Phase5UpstreamDiagnostic::Phase4(npa_tactic::MachineTacticDiagnostic::new(
-                npa_tactic::MachineTacticDiagnosticKind::UnknownGoal,
-                "goal is not open",
-            )),
+            upstream: MachineApiUpstreamDiagnostic::MachineTactic(
+                npa_tactic::MachineTacticDiagnostic::new(
+                    npa_tactic::MachineTacticDiagnosticKind::UnknownGoal,
+                    "goal is not open",
+                ),
+            ),
         };
         let error = TacticRunErrorObject {
             diagnostic: MachineApiErrorWire::from_projection(&diagnostic).unwrap(),

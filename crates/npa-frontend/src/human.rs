@@ -637,7 +637,7 @@ mod tests {
     }
 
     #[test]
-    fn human_tactic_ast_models_only_phase4_mvp_variants() {
+    fn human_tactic_ast_models_only_machine_tactic_mvp_variants() {
         let forward_rule = HumanRewriteRuleSyntax {
             direction: HumanRewriteDirection::Forward,
             term: ident("h", 28, 29),

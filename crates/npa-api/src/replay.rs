@@ -5,9 +5,9 @@ use npa_tactic::{
 };
 
 use crate::adapter::{
-    phase4_run_machine_tactic_with_budget, phase4_validate_machine_tactic_candidate,
-    MachineApiDiagnosticPhase, MachineApiDiagnosticProjection, MachineApiTacticKind,
-    Phase4AdapterError,
+    machine_tactic_run_machine_tactic_with_budget,
+    machine_tactic_validate_machine_tactic_candidate, MachineApiDiagnosticPhase,
+    MachineApiDiagnosticProjection, MachineApiTacticKind, MachineTacticAdapterError,
 };
 use crate::json::{JsonDocument, JsonValue, JsonValueKind};
 use crate::snapshot::{
@@ -28,7 +28,7 @@ use crate::validation::{
     JsonFieldType, JsonPath, MachineApiErrorKind, MachineApiRequestError,
     MachineApiRequestErrorReason, ObjectSchema,
 };
-use crate::{validate_machine_endpoint_envelope, Phase5UpstreamDiagnostic};
+use crate::{validate_machine_endpoint_envelope, MachineApiUpstreamDiagnostic};
 
 const MAX_REPLAY_STEPS: usize = 4096;
 
@@ -481,7 +481,7 @@ fn replay_step(
             ),
         )
     })?;
-    let validated = phase4_validate_machine_tactic_candidate(step.goal_id, candidate)
+    let validated = machine_tactic_validate_machine_tactic_candidate(step.goal_id, candidate)
         .map_err(|error| replay_adapter_error(error, step.goal_id, tactic_kind))?;
     let tactic_kind = Some(validated.tactic_kind);
     if validated.candidate_hash != step.candidate_hash {
@@ -492,7 +492,7 @@ fn replay_step(
         ));
     }
 
-    let run = phase4_run_machine_tactic_with_budget(
+    let run = machine_tactic_run_machine_tactic_with_budget(
         &current_state,
         validated.tactic,
         step.deterministic_budget,
@@ -531,7 +531,7 @@ fn replay_step(
 }
 
 fn replay_adapter_error(
-    error: Box<Phase4AdapterError>,
+    error: Box<MachineTacticAdapterError>,
     goal_id: GoalId,
     fallback_tactic_kind: Option<MachineApiTacticKind>,
 ) -> Box<MachineReplayError> {
@@ -540,7 +540,7 @@ fn replay_adapter_error(
         return plain_error(
             MachineApiErrorKind::InvalidMachineProofState,
             MachineApiDiagnosticPhase::ReplayExecution,
-            "replay step hit a Phase 5 / Phase 4 invariant failure",
+            "replay step hit a machine API / machine tactic invariant failure",
             Some(goal_id),
             tactic_kind,
         );
@@ -633,13 +633,13 @@ fn plain_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
-            phase4_kind_for_api_kind(kind),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
+            machine_tactic_kind_for_api_kind(kind),
             message,
         )),
     };
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("replay diagnostics must satisfy Phase 5 wire invariants");
+        .expect("replay diagnostics must satisfy machine API wire invariants");
     let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
         status: MachineApiResponseStatus::Error,
         error: wire,
@@ -663,7 +663,7 @@ fn replay_scheduler_stop(kind: MachineSchedulerArtifactKind) -> MachineReplayRes
     })
 }
 
-fn phase4_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosticKind {
+fn machine_tactic_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosticKind {
     match kind {
         MachineApiErrorKind::ReplayHashMismatch
         | MachineApiErrorKind::InvalidReplayPlan

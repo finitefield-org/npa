@@ -611,7 +611,7 @@ fn export_signature_summary_hash(
     module: &VerifiedModule,
 ) -> Result<Hash, ImportProjectionError> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.export-signature-summary.v1");
+    encode_string(&mut out, "npa.machine-api.export-signature-summary.v1");
     encode_name(&mut out, &key.module);
     out.extend(key.export_hash);
     out.extend(key.certificate_hash);
@@ -644,7 +644,7 @@ fn export_signature_summary_hash(
 
 fn decoded_name_table_hash(key: &VerifiedImportKey, module: &VerifiedModule) -> Hash {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.decoded-name-table.v1");
+    encode_string(&mut out, "npa.machine-api.decoded-name-table.v1");
     encode_verified_import_key(&mut out, key);
     encode_uvar(&mut out, module.name_table().len() as u64);
     for name in module.name_table() {
@@ -659,7 +659,7 @@ fn decl_index_table_hash(
     module: &VerifiedModule,
 ) -> Hash {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.import-decl-index-table.v1");
+    encode_string(&mut out, "npa.machine-api.import-decl-index-table.v1");
     encode_verified_import_key(&mut out, key);
     encode_uvar(&mut out, decls.len() as u64);
     for decl in decls {
@@ -711,7 +711,7 @@ fn generated_decl_table_hash(
     });
 
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.import-generated-decl-table.v1");
+    encode_string(&mut out, "npa.machine-api.import-generated-decl-table.v1");
     encode_verified_import_key(&mut out, key);
     encode_uvar(&mut out, entries.len() as u64);
     for entry in entries {
@@ -741,7 +741,10 @@ fn certified_env_decl_hashes_summary_hash(
     module: &VerifiedModule,
 ) -> Hash {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.certified-env-decl-hashes-summary.v1");
+    encode_string(
+        &mut out,
+        "npa.machine-api.certified-env-decl-hashes-summary.v1",
+    );
     encode_name(&mut out, &key.module);
     out.extend(key.export_hash);
     out.extend(key.certificate_hash);
@@ -1059,7 +1062,7 @@ mod tests {
     }
 
     #[test]
-    fn import_keys_use_phase5_name_canonical_order() {
+    fn import_keys_use_machine_api_name_canonical_order() {
         let (b_bytes, verified_b) = cert_bytes(id_module("B", "B.id"), &[]);
         let (aa_bytes, verified_aa) = cert_bytes(id_module("AA", "AA.id"), &[]);
         let b_key = key_from_verified(&verified_b);

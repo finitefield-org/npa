@@ -4,7 +4,7 @@
   "source": "Proofs/Ai/Eq/source.npa",
   "certificate": "Proofs/Ai/Eq/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
-  "trusted_status": "verified_by_phase2_certificate",
+  "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:14e178062e8df0a03db3f53d28f9315b16fe1f9cdc0a83bcdb5b08155c9ad087",
   "certificate_file_sha256": "sha256:4b7afc156ec23739738393b0237d9a69792b0410fd96b877e6dada217274cd01",
   "export_hash": "sha256:80b826d1aa6c9877b2e551521e781fcfdd3777cd8aec6cd27f4000d132eb64ef",

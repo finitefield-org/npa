@@ -42,20 +42,22 @@ use crate::{
     MachineVerifyOkFields, MachineVerifyResponse,
 };
 
-const PHASE7_MVP_MAX_TACTICS_PER_NODE: u32 = 16;
-const PHASE7_MVP_PREMISE_QUERY_LIMIT: u32 = 32;
-const PHASE7_CANDIDATE_PAYLOAD_HASH_TAG: &str = "npa.phase7.candidate-payload.v1";
-pub const PHASE7_TRAINING_TRACE_SCHEMA: &str = "npa.phase7.training-trace.v1";
-const PHASE7_POSITIVE_TRAINING_IDENTITY_HASH_TAG: &str = "npa.phase7.training-positive-identity.v1";
-const PHASE7_NEGATIVE_TRAINING_IDENTITY_HASH_TAG: &str = "npa.phase7.training-negative-identity.v1";
+const AI_SEARCH_MVP_MAX_TACTICS_PER_NODE: u32 = 16;
+const AI_SEARCH_MVP_PREMISE_QUERY_LIMIT: u32 = 32;
+const AI_SEARCH_CANDIDATE_PAYLOAD_HASH_TAG: &str = "npa.ai-search.candidate-payload.v1";
+pub const AI_SEARCH_TRAINING_TRACE_SCHEMA: &str = "npa.ai-search.training-trace.v1";
+const AI_SEARCH_POSITIVE_TRAINING_IDENTITY_HASH_TAG: &str =
+    "npa.ai-search.training-positive-identity.v1";
+const AI_SEARCH_NEGATIVE_TRAINING_IDENTITY_HASH_TAG: &str =
+    "npa.ai-search.training-negative-identity.v1";
 
-const PHASE7_CONFIG_FIELDS: &[FieldSpec] = &[
+const AI_SEARCH_CONFIG_FIELDS: &[FieldSpec] = &[
     FieldSpec::required("search_budget", JsonFieldType::Object),
     FieldSpec::required("per_tactic_deterministic_budget", JsonFieldType::Object),
     FieldSpec::required("batch_policy", JsonFieldType::Object),
 ];
 
-const PHASE7_SEARCH_BUDGET_FIELDS: &[FieldSpec] = &[
+const AI_SEARCH_SEARCH_BUDGET_FIELDS: &[FieldSpec] = &[
     FieldSpec::required(
         "wall_clock_ms",
         JsonFieldType::UnsignedInteger { max: u64::MAX },
@@ -74,7 +76,7 @@ const PHASE7_SEARCH_BUDGET_FIELDS: &[FieldSpec] = &[
     ),
 ];
 
-const PHASE7_BATCH_POLICY_FIELDS: &[FieldSpec] = &[
+const AI_SEARCH_BATCH_POLICY_FIELDS: &[FieldSpec] = &[
     FieldSpec::required(
         "max_evaluated_candidates",
         JsonFieldType::UnsignedInteger { max: u64::MAX },
@@ -89,7 +91,7 @@ const PHASE7_BATCH_POLICY_FIELDS: &[FieldSpec] = &[
     ),
 ];
 
-const PHASE7_BATCH_SCHEDULER_FIELDS: &[FieldSpec] = &[
+const AI_SEARCH_BATCH_SCHEDULER_FIELDS: &[FieldSpec] = &[
     FieldSpec::optional(
         "per_candidate_timeout_ms",
         JsonFieldType::UnsignedInteger { max: u64::MAX },
@@ -105,7 +107,7 @@ const PHASE7_BATCH_SCHEDULER_FIELDS: &[FieldSpec] = &[
 ];
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Phase7SearchBudget {
+pub struct AiSearchBudget {
     pub wall_clock_ms: u64,
     pub max_nodes: u64,
     pub max_tactics_per_node: u32,
@@ -113,28 +115,28 @@ pub struct Phase7SearchBudget {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Phase7MvpControllerConfig {
-    pub search_budget: Phase7SearchBudget,
+pub struct AiSearchMvpControllerConfig {
+    pub search_budget: AiSearchBudget,
     pub per_tactic_deterministic_budget: TacticBudget,
     pub scheduler_limits: Option<MachineBatchSchedulerLimits>,
     pub batch_policy: MachineTacticBatchPolicy,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7SnapshotGetRequest {
+pub struct AiSearchSnapshotGetRequest {
     pub session_id: SessionId,
     pub snapshot_id: SnapshotId,
     pub state_fingerprint: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7InitialSnapshot {
+pub struct AiSearchInitialSnapshot {
     pub snapshot: MachineProofSnapshot,
-    pub goals: Vec<Phase7GoalSummary>,
+    pub goals: Vec<AiSearchGoalSummary>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7GoalSummary {
+pub struct AiSearchGoalSummary {
     pub goal_id: GoalId,
     pub open_goal_index: u32,
     pub goal_fingerprint: Hash,
@@ -146,7 +148,7 @@ pub struct Phase7GoalSummary {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PremiseQueryRequest {
+pub struct AiSearchPremiseQueryRequest {
     pub session_id: SessionId,
     pub snapshot_id: SnapshotId,
     pub state_fingerprint: Hash,
@@ -154,14 +156,14 @@ pub struct Phase7PremiseQueryRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7RetrievalCacheKey {
+pub struct AiSearchRetrievalCacheKey {
     pub session_root_hash: Hash,
     pub query_fingerprint: Hash,
     pub theorem_index_fingerprint: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PremiseRef {
+pub struct AiSearchPremiseRef {
     pub module: Name,
     pub name: Name,
     pub export_hash: Hash,
@@ -169,16 +171,16 @@ pub struct Phase7PremiseRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PremiseUsage {
-    pub premise_ref: Phase7PremiseRef,
+pub struct AiSearchPremiseUsage {
+    pub premise_ref: AiSearchPremiseRef,
     pub universe_params: Vec<String>,
     pub statement_core_hash: Hash,
     pub axioms_used: Vec<MachineAxiomRefWire>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PremiseCacheEntry {
-    pub premise_ref: Phase7PremiseRef,
+pub struct AiSearchPremiseCacheEntry {
+    pub premise_ref: AiSearchPremiseRef,
     pub universe_params: Vec<String>,
     pub statement_core_hash: Hash,
     pub statement_head: Option<MachineGlobalRefView>,
@@ -188,14 +190,14 @@ pub struct Phase7PremiseCacheEntry {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PremiseRetrieval {
-    pub cache_key: Phase7RetrievalCacheKey,
-    pub cache_entries: Vec<Phase7PremiseCacheEntry>,
+pub struct AiSearchPremiseRetrieval {
+    pub cache_key: AiSearchRetrievalCacheKey,
+    pub cache_entries: Vec<AiSearchPremiseCacheEntry>,
     pub results: Vec<MachineTheoremSearchResult>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PositiveTrainingIdentity {
+pub struct AiSearchPositiveTrainingIdentity {
     pub state_fingerprint: Hash,
     pub goal_id: GoalId,
     pub candidate_hash: Hash,
@@ -204,7 +206,7 @@ pub struct Phase7PositiveTrainingIdentity {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7NegativeTrainingIdentity {
+pub struct AiSearchNegativeTrainingIdentity {
     pub state_fingerprint: Hash,
     pub goal_id: GoalId,
     pub candidate_hash: Hash,
@@ -213,23 +215,23 @@ pub struct Phase7NegativeTrainingIdentity {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7TrainingTraceRecord {
+pub struct AiSearchTrainingTraceRecord {
     pub trace_schema: String,
     pub session_root_hash: Hash,
     pub snapshot_id: SnapshotId,
     pub state_fingerprint: Hash,
-    pub node_id: Phase7NodeId,
+    pub node_id: AiSearchNodeId,
     pub batch_index: u32,
-    pub goal: Phase7GoalSummary,
-    pub retrieved_premises: Vec<Phase7PremiseCacheEntry>,
-    pub tactic_candidates: Vec<Phase7TrainingTraceCandidate>,
+    pub goal: AiSearchGoalSummary,
+    pub retrieved_premises: Vec<AiSearchPremiseCacheEntry>,
+    pub tactic_candidates: Vec<AiSearchTrainingTraceCandidate>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7TrainingTraceCandidate {
+pub enum AiSearchTrainingTraceCandidate {
     Success {
         rank_index: u32,
-        phase7_candidate_payload_hash: Hash,
+        ai_search_candidate_payload_hash: Hash,
         candidate: MachineTacticCandidate,
         candidate_hash: Hash,
         deterministic_budget_hash: Hash,
@@ -239,7 +241,7 @@ pub enum Phase7TrainingTraceCandidate {
     },
     Error {
         rank_index: u32,
-        phase7_candidate_payload_hash: Hash,
+        ai_search_candidate_payload_hash: Hash,
         candidate: MachineTacticCandidate,
         candidate_hash: Hash,
         error_kind: FailedCandidateErrorKind,
@@ -253,29 +255,29 @@ pub enum Phase7TrainingTraceCandidate {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7CandidateEnvelope {
+pub struct AiSearchCandidateEnvelope {
     pub candidate: MachineTacticCandidate,
-    pub phase7_candidate_payload_hash: Hash,
+    pub ai_search_candidate_payload_hash: Hash,
     pub candidate_hash: Option<Hash>,
-    pub metadata: Phase7CandidateMetadata,
+    pub metadata: AiSearchCandidateMetadata,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7CandidateMetadata {
-    pub source: Phase7CandidateSource,
-    pub rank: Phase7CandidateRankMetadata,
-    pub score: Phase7Score,
+pub struct AiSearchCandidateMetadata {
+    pub source: AiSearchCandidateSource,
+    pub rank: AiSearchCandidateRankMetadata,
+    pub score: AiSearchScore,
     pub display_text: Option<String>,
-    pub premises_used: Vec<Phase7PremiseUsage>,
-    pub expected_effect: Phase7ExpectedEffect,
-    pub cost_estimate: Phase7CandidateCostEstimate,
-    pub trust_flags: Phase7TrustFlags,
-    pub repair: Option<Phase7CandidateRepairMetadata>,
+    pub premises_used: Vec<AiSearchPremiseUsage>,
+    pub expected_effect: AiSearchExpectedEffect,
+    pub cost_estimate: AiSearchCandidateCostEstimate,
+    pub trust_flags: AiSearchTrustFlags,
+    pub repair: Option<AiSearchCandidateRepairMetadata>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7CandidateSource {
-    Phase5Suggested,
+pub enum AiSearchCandidateSource {
+    MachineApiSuggested,
     Builtin,
     Model,
     Exploration,
@@ -283,14 +285,14 @@ pub enum Phase7CandidateSource {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Phase7CandidateRankMetadata {
+pub struct AiSearchCandidateRankMetadata {
     pub source_rank: u8,
     pub source_index: u32,
     pub builtin_kind_rank: u8,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7BuiltinKind {
+pub enum AiSearchBuiltinKind {
     Intro,
     LocalExact,
     InductionNat,
@@ -298,7 +300,7 @@ pub enum Phase7BuiltinKind {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7ExpectedEffect {
+pub enum AiSearchExpectedEffect {
     IntroBinder,
     CloseGoal,
     Rewrite,
@@ -308,29 +310,29 @@ pub enum Phase7ExpectedEffect {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Phase7CandidateCostEstimate {
+pub struct AiSearchCandidateCostEstimate {
     pub estimated_timeout_ms: u32,
-    pub risk: Phase7CandidateCostRisk,
+    pub risk: AiSearchCandidateCostRisk,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7CandidateCostRisk {
+pub enum AiSearchCandidateCostRisk {
     Low,
     Medium,
     High,
 }
 
-pub type Phase7Score = i64;
+pub type AiSearchScore = i64;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7TrustFlags {
+pub struct AiSearchTrustFlags {
     pub uses_axioms: Vec<MachineAxiomRefWire>,
     pub contains_forbidden_tokens: bool,
-    pub forbidden_token_class: Option<Phase7ForbiddenTokenClass>,
+    pub forbidden_token_class: Option<AiSearchForbiddenTokenClass>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7CandidateRepairMetadata {
+pub struct AiSearchCandidateRepairMetadata {
     pub parent_candidate_hash: Hash,
     pub error_kind: FailedCandidateErrorKind,
     pub repair_depth: u32,
@@ -338,14 +340,14 @@ pub struct Phase7CandidateRepairMetadata {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7ForbiddenToken {
-    pub class: Phase7ForbiddenTokenClass,
+pub struct AiSearchForbiddenToken {
+    pub class: AiSearchForbiddenTokenClass,
     pub spelling: String,
     pub raw_term_index: u32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7ForbiddenTokenClass {
+pub enum AiSearchForbiddenTokenClass {
     Sorry,
     Admit,
     Axiom,
@@ -360,7 +362,7 @@ pub enum Phase7ForbiddenTokenClass {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7CandidateFilterError {
+pub enum AiSearchCandidateFilterError {
     RawMachineTermLex {
         raw_term_index: u32,
         source: String,
@@ -369,39 +371,39 @@ pub enum Phase7CandidateFilterError {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7CandidateFilterResult {
-    pub accepted: Vec<Phase7CandidateEnvelope>,
-    pub rejected: Vec<Phase7RejectedCandidateEnvelope>,
-    pub errors: Vec<Phase7CandidateFilterError>,
+pub struct AiSearchCandidateFilterResult {
+    pub accepted: Vec<AiSearchCandidateEnvelope>,
+    pub rejected: Vec<AiSearchRejectedCandidateEnvelope>,
+    pub errors: Vec<AiSearchCandidateFilterError>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7RejectedCandidateEnvelope {
-    pub envelope: Phase7CandidateEnvelope,
-    pub forbidden_token: Phase7ForbiddenToken,
+pub struct AiSearchRejectedCandidateEnvelope {
+    pub envelope: AiSearchCandidateEnvelope,
+    pub forbidden_token: AiSearchForbiddenToken,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7AssignedCandidate {
+pub struct AiSearchAssignedCandidate {
     pub candidate_id: String,
     pub rank_index: u32,
-    pub envelope: Phase7CandidateEnvelope,
+    pub envelope: AiSearchCandidateEnvelope,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7TacticBatchRequest {
+pub struct AiSearchTacticBatchRequest {
     pub session_id: SessionId,
     pub snapshot_id: SnapshotId,
     pub state_fingerprint: Hash,
     pub goal_id: GoalId,
-    pub candidates: Vec<Phase7AssignedCandidate>,
+    pub candidates: Vec<AiSearchAssignedCandidate>,
     pub deterministic_budget: TacticBudget,
     pub batch_policy: MachineTacticBatchPolicy,
     pub scheduler_limits: Option<MachineBatchSchedulerLimits>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7ReplayStep {
+pub struct AiSearchReplayStep {
     pub previous_state_fingerprint: Hash,
     pub goal_id: GoalId,
     pub candidate: MachineTacticCandidate,
@@ -413,16 +415,16 @@ pub struct Phase7ReplayStep {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7ReplayPlan {
+pub struct AiSearchReplayPlan {
     pub protocol_version: MachineApiVersion,
     pub session_root_hash: Hash,
     pub initial_state_fingerprint: Hash,
-    pub steps: Vec<Phase7ReplayStep>,
+    pub steps: Vec<AiSearchReplayStep>,
     pub final_state_fingerprint: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7AcceptedCandidateFailure {
+pub struct AiSearchAcceptedCandidateFailure {
     pub error_kind: FailedCandidateErrorKind,
     pub phase: crate::MachineApiDiagnosticPhase,
     pub goal_id: Option<GoalId>,
@@ -434,65 +436,65 @@ pub struct Phase7AcceptedCandidateFailure {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7NonAcceptedCandidateError {
+pub struct AiSearchNonAcceptedCandidateError {
     pub candidate_id: String,
-    pub phase7_candidate_payload_hash: Hash,
+    pub ai_search_candidate_payload_hash: Hash,
     pub error_kind: MachineApiErrorKind,
     pub phase: crate::MachineApiDiagnosticPhase,
     pub has_candidate_hash: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7DeferredCandidate {
+pub struct AiSearchDeferredCandidate {
     pub candidate_id: String,
-    pub envelope: Phase7CandidateEnvelope,
+    pub envelope: AiSearchCandidateEnvelope,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7DeferredCandidateDropReason {
+pub enum AiSearchDeferredCandidateDropReason {
     SchedulerStoppedCandidate,
     MaxTacticsPerNode,
     WallClockBudgetExceeded,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Phase7SchedulerStop {
+pub struct AiSearchSchedulerStop {
     pub status: MachineApiResponseStatus,
     pub completed_prefix_len: u32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7BatchEvaluation {
-    pub successful_transitions: Vec<Phase7SuccessfulCandidateTransition>,
-    pub accepted_failure_records: Vec<Phase7AcceptedCandidateFailureRecord>,
-    pub replay_steps: Vec<Phase7ReplayStep>,
-    pub accepted_failures: Vec<Phase7AcceptedCandidateFailure>,
-    pub non_accepted_errors: Vec<Phase7NonAcceptedCandidateError>,
-    pub training_trace_candidates: Vec<Phase7TrainingTraceCandidate>,
+pub struct AiSearchBatchEvaluation {
+    pub successful_transitions: Vec<AiSearchSuccessfulCandidateTransition>,
+    pub accepted_failure_records: Vec<AiSearchAcceptedCandidateFailureRecord>,
+    pub replay_steps: Vec<AiSearchReplayStep>,
+    pub accepted_failures: Vec<AiSearchAcceptedCandidateFailure>,
+    pub non_accepted_errors: Vec<AiSearchNonAcceptedCandidateError>,
+    pub training_trace_candidates: Vec<AiSearchTrainingTraceCandidate>,
     pub evaluated_count: u32,
-    pub deferred_candidates: Vec<Phase7DeferredCandidate>,
-    pub scheduler_stop: Option<Phase7SchedulerStop>,
+    pub deferred_candidates: Vec<AiSearchDeferredCandidate>,
+    pub scheduler_stop: Option<AiSearchSchedulerStop>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7SuccessfulCandidateTransition {
+pub struct AiSearchSuccessfulCandidateTransition {
     pub candidate_id: String,
-    pub envelope: Phase7CandidateEnvelope,
+    pub envelope: AiSearchCandidateEnvelope,
     pub next_snapshot_id: SnapshotId,
-    pub replay_step: Phase7ReplayStep,
+    pub replay_step: AiSearchReplayStep,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7AcceptedCandidateFailureRecord {
+pub struct AiSearchAcceptedCandidateFailureRecord {
     pub candidate_id: String,
-    pub envelope: Phase7CandidateEnvelope,
-    pub failure: Phase7AcceptedCandidateFailure,
+    pub envelope: AiSearchCandidateEnvelope,
+    pub failure: AiSearchAcceptedCandidateFailure,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7PendingCandidate {
+pub struct AiSearchPendingCandidate {
     pub goal_id: GoalId,
-    pub candidate: Phase7CandidateEnvelope,
+    pub candidate: AiSearchCandidateEnvelope,
     pub repair_depth: u32,
     pub parent_candidate_hash: Hash,
     pub error_kind: FailedCandidateErrorKind,
@@ -500,38 +502,38 @@ pub struct Phase7PendingCandidate {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Phase7RepairCandidateOutput {
-    pub pending: Vec<Phase7PendingCandidate>,
+pub struct AiSearchRepairCandidateOutput {
+    pub pending: Vec<AiSearchPendingCandidate>,
     pub repeated_candidate_payload_hashes: Vec<Hash>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Phase7RuleBasedRepair;
+pub struct AiSearchRuleBasedRepair;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7RuleBasedRepairAction {
+pub enum AiSearchRuleBasedRepairAction {
     Noop,
     TrySimpLite,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7RepairChainStopReason {
+pub enum AiSearchRepairChainStopReason {
     RepeatedError,
     RepeatedCandidate,
     MaxRepairDepth,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7MachineControllerErrorKind {
+pub enum AiSearchMachineControllerErrorKind {
     TopLevelBatchError,
     BatchResponseContractViolation,
     SuggestedCandidateHashMismatch,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7MachineControllerError {
-    pub kind: Phase7MachineControllerErrorKind,
-    pub endpoint: Phase7MachineApiEndpointKind,
+pub struct AiSearchMachineControllerError {
+    pub kind: AiSearchMachineControllerErrorKind,
+    pub endpoint: AiSearchMachineApiEndpointKind,
     pub message: String,
     pub candidate_id: Option<String>,
     pub expected_hash: Option<Hash>,
@@ -541,55 +543,55 @@ pub struct Phase7MachineControllerError {
     pub status: Option<MachineApiResponseStatus>,
 }
 
-pub type Phase7MachineControllerResult<T> = Result<T, Box<Phase7MachineControllerError>>;
+pub type AiSearchMachineControllerResult<T> = Result<T, Box<AiSearchMachineControllerError>>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7TacticBatchRunError {
-    MachineApi(Phase7MachineApiError),
-    Controller(Box<Phase7MachineControllerError>),
+pub enum AiSearchTacticBatchRunError {
+    MachineApi(AiSearchMachineApiError),
+    Controller(Box<AiSearchMachineControllerError>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Phase7NodeId(pub u64);
+pub struct AiSearchNodeId(pub u64);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7NodeStatus {
+pub enum AiSearchNodeStatus {
     Queued,
     Expanded,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7SearchNode {
-    pub node_id: Phase7NodeId,
+pub struct AiSearchNode {
+    pub node_id: AiSearchNodeId,
     pub session_id: SessionId,
     pub session_root_hash: Hash,
     pub initial_state_fingerprint: Hash,
     pub snapshot_id: SnapshotId,
     pub state_fingerprint: Hash,
-    pub goals: Vec<Phase7GoalSummary>,
-    pub replay_steps: Vec<Phase7ReplayStep>,
+    pub goals: Vec<AiSearchGoalSummary>,
+    pub replay_steps: Vec<AiSearchReplayStep>,
     pub depth: u32,
-    pub cumulative_score: Phase7Score,
+    pub cumulative_score: AiSearchScore,
     pub last_candidate: Option<MachineTacticCandidate>,
     pub last_candidate_hash: Option<Hash>,
-    pub used_premises: Vec<Phase7PremiseUsage>,
-    pub parent: Option<Phase7NodeId>,
-    pub status: Phase7NodeStatus,
+    pub used_premises: Vec<AiSearchPremiseUsage>,
+    pub parent: Option<AiSearchNodeId>,
+    pub status: AiSearchNodeStatus,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7SearchInput {
+pub struct AiSearchInput {
     pub session_id: SessionId,
     pub session_root_hash: Hash,
     pub initial_snapshot: MachineProofSnapshot,
-    pub search_budget: Phase7SearchBudget,
+    pub search_budget: AiSearchBudget,
     pub per_tactic_deterministic_budget: TacticBudget,
     pub scheduler_limits: Option<MachineBatchSchedulerLimits>,
     pub batch_policy: MachineTacticBatchPolicy,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Phase7SearchStats {
+pub struct AiSearchStats {
     pub nodes_expanded: u64,
     pub candidates_evaluated: u64,
     pub scheduler_stops: u64,
@@ -603,17 +605,17 @@ pub struct Phase7SearchStats {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7SearchBudgetLimit {
+pub enum AiSearchBudgetLimit {
     WallClock,
     MaxNodes,
     MaxDepth,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7SearchFailureReason {
+pub enum AiSearchFailureReason {
     QueueExhausted,
     SearchBudgetExceeded {
-        limit: Phase7SearchBudgetLimit,
+        limit: AiSearchBudgetLimit,
     },
     MachineControllerError {
         endpoint: String,
@@ -627,19 +629,19 @@ pub enum Phase7SearchFailureReason {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7SearchFailure {
-    pub reason: Phase7SearchFailureReason,
-    pub best_partial_replay_prefix: Option<Vec<Phase7ReplayStep>>,
+pub struct AiSearchFailure {
+    pub reason: AiSearchFailureReason,
+    pub best_partial_replay_prefix: Option<Vec<AiSearchReplayStep>>,
     pub best_snapshot_id: Option<SnapshotId>,
     pub best_state_fingerprint: Option<Hash>,
-    pub remaining_goals: Option<Vec<Phase7GoalSummary>>,
-    pub search_stats: Phase7SearchStats,
-    pub trace_events: Vec<Phase7SearchTraceEvent>,
-    pub training_trace_records: Vec<Phase7TrainingTraceRecord>,
+    pub remaining_goals: Option<Vec<AiSearchGoalSummary>>,
+    pub search_stats: AiSearchStats,
+    pub trace_events: Vec<AiSearchTraceEvent>,
+    pub training_trace_records: Vec<AiSearchTrainingTraceRecord>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Phase7MinimizationStats {
+pub struct AiSearchMinimizationStats {
     pub pass_kinds_attempted: u64,
     pub rebuilt_plans: u64,
     pub replay_attempts: u64,
@@ -648,15 +650,15 @@ pub struct Phase7MinimizationStats {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7MinimizationResult {
-    pub replay_plan: Phase7ReplayPlan,
+pub struct AiSearchMinimizationResult {
+    pub replay_plan: AiSearchReplayPlan,
     pub replay_response: MachineReplayOkFields,
     pub verify_response: MachineApiOkResponse<MachineVerifyOkFields>,
-    pub minimization_stats: Phase7MinimizationStats,
+    pub minimization_stats: AiSearchMinimizationStats,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7ReplayStepEdit {
+pub struct AiSearchReplayStepEdit {
     pub original_goal_id: GoalId,
     pub original_open_goal_index: u32,
     pub candidate: MachineTacticCandidate,
@@ -664,36 +666,34 @@ pub struct Phase7ReplayStepEdit {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7VerifiedProof {
-    pub replay_plan: Phase7ReplayPlan,
+pub struct AiSearchVerifiedProof {
+    pub replay_plan: AiSearchReplayPlan,
     pub final_snapshot_id: SnapshotId,
     pub final_state_fingerprint: Hash,
     pub verify_response: MachineApiOkResponse<MachineVerifyOkFields>,
-    pub search_stats: Phase7SearchStats,
-    pub minimization_stats: Phase7MinimizationStats,
-    pub trace_events: Vec<Phase7SearchTraceEvent>,
-    pub training_trace_records: Vec<Phase7TrainingTraceRecord>,
+    pub search_stats: AiSearchStats,
+    pub minimization_stats: AiSearchMinimizationStats,
+    pub trace_events: Vec<AiSearchTraceEvent>,
+    pub training_trace_records: Vec<AiSearchTrainingTraceRecord>,
 }
 
-pub type Phase7SearchResult = Result<Phase7VerifiedProof, Box<Phase7SearchFailure>>;
+pub type AiSearchResult = Result<AiSearchVerifiedProof, Box<AiSearchFailure>>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Phase7SearchTraceEvent {
+pub struct AiSearchTraceEvent {
     pub event_index: u64,
-    pub node_id: Phase7NodeId,
-    pub kind: Phase7SearchTraceEventKind,
+    pub node_id: AiSearchNodeId,
+    pub kind: AiSearchTraceEventKind,
 }
 
-pub type Phase7TraceEvent = Phase7SearchTraceEvent;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7SearchTraceEventKind {
+pub enum AiSearchTraceEventKind {
     NodeExpanded,
     DuplicateStateSkipped {
         duplicate_state_fingerprint: Hash,
     },
     ChildQueued {
-        child_node_id: Phase7NodeId,
+        child_node_id: AiSearchNodeId,
         state_fingerprint: Hash,
     },
     NoCandidateForSelectedGoal {
@@ -711,7 +711,7 @@ pub enum Phase7SearchTraceEventKind {
     },
     NonAcceptedCandidateError {
         candidate_id: String,
-        phase7_candidate_payload_hash: Hash,
+        ai_search_candidate_payload_hash: Hash,
         error_kind: MachineApiErrorKind,
         phase: crate::MachineApiDiagnosticPhase,
         has_candidate_hash: bool,
@@ -719,12 +719,12 @@ pub enum Phase7SearchTraceEventKind {
     },
     DeferredCandidateDropped {
         candidate_id: String,
-        phase7_candidate_payload_hash: Hash,
-        reason: Phase7DeferredCandidateDropReason,
+        ai_search_candidate_payload_hash: Hash,
+        reason: AiSearchDeferredCandidateDropReason,
     },
     ForbiddenCandidateDiscarded {
-        phase7_candidate_payload_hash: Hash,
-        forbidden_token_class: Phase7ForbiddenTokenClass,
+        ai_search_candidate_payload_hash: Hash,
+        forbidden_token_class: AiSearchForbiddenTokenClass,
     },
     MaxTacticsPerNodeStopped {
         max_tactics_per_node: u32,
@@ -737,7 +737,7 @@ pub enum Phase7SearchTraceEventKind {
         parent_candidate_hash: Hash,
         error_kind: FailedCandidateErrorKind,
         repair_depth: u32,
-        reason: Phase7RepairChainStopReason,
+        reason: AiSearchRepairChainStopReason,
         repeated_candidate_payload_hash: Option<Hash>,
     },
     ClosedNodeReplayRejected {
@@ -751,27 +751,27 @@ pub enum Phase7SearchTraceEventKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Phase7SearchPriorityKey {
+pub struct AiSearchPriorityKey {
     pub open_goal_count: u32,
     pub depth: u32,
     pub replay_step_count: u32,
     pub total_open_goal_target_size: u64,
     pub state_fingerprint: Hash,
-    pub node_id: Phase7NodeId,
+    pub node_id: AiSearchNodeId,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Phase7BestPartialKey {
+pub struct AiSearchBestPartialKey {
     pub open_goal_count: u32,
     pub total_open_goal_target_size: u64,
     pub replay_step_count: u32,
     pub depth: u32,
     pub state_fingerprint: Hash,
-    pub node_id: Phase7NodeId,
+    pub node_id: AiSearchNodeId,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Phase7MachineApiEndpointKind {
+pub enum AiSearchMachineApiEndpointKind {
     SnapshotGet,
     SearchForGoal,
     TacticBatch,
@@ -780,7 +780,7 @@ pub enum Phase7MachineApiEndpointKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7MachineApiCall {
+pub enum AiSearchMachineApiCall {
     SnapshotGet {
         session_id: SessionId,
         snapshot_id: SnapshotId,
@@ -802,7 +802,7 @@ pub enum Phase7MachineApiCall {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Phase7MachineApiError {
+pub enum AiSearchMachineApiError {
     SnapshotGet(Box<MachineSnapshotGetError>),
     SearchForGoal(Box<MachineTheoremSearchError>),
     TacticBatch(Box<MachineTacticBatchError>),
@@ -810,154 +810,154 @@ pub enum Phase7MachineApiError {
     Verify(Box<MachineVerifyError>),
     SearchForGoalResponse(Box<MachineApiErrorWire>),
     UnexpectedSchedulerStop {
-        endpoint: Phase7MachineApiEndpointKind,
+        endpoint: AiSearchMachineApiEndpointKind,
     },
     FakeRequestValidation {
-        endpoint: Phase7MachineApiEndpointKind,
+        endpoint: AiSearchMachineApiEndpointKind,
         error: MachineApiRequestError,
     },
     FakeResponseExhausted {
-        endpoint: Phase7MachineApiEndpointKind,
+        endpoint: AiSearchMachineApiEndpointKind,
     },
 }
 
-pub type Phase7MachineApiResult<T> = Result<T, Phase7MachineApiError>;
+pub type AiSearchMachineApiResult<T> = Result<T, AiSearchMachineApiError>;
 
-pub trait Phase7MachineApiClient {
+pub trait AiSearchMachineApiClient {
     fn get_snapshot(
         &mut self,
-        request: Phase7SnapshotGetRequest,
-    ) -> Phase7MachineApiResult<MachineSnapshotGetOk>;
+        request: AiSearchSnapshotGetRequest,
+    ) -> AiSearchMachineApiResult<MachineSnapshotGetOk>;
 
     fn search_for_goal(
         &mut self,
         source: &str,
-    ) -> Phase7MachineApiResult<MachineTheoremSearchResponse>;
+    ) -> AiSearchMachineApiResult<MachineTheoremSearchResponse>;
 
     fn run_tactic_batch(
         &mut self,
         source: &str,
-    ) -> Phase7MachineApiResult<MachineTacticBatchResponse>;
+    ) -> AiSearchMachineApiResult<MachineTacticBatchResponse>;
 
-    fn replay(&mut self, source: &str) -> Phase7MachineApiResult<MachineReplayResponse>;
+    fn replay(&mut self, source: &str) -> AiSearchMachineApiResult<MachineReplayResponse>;
 
-    fn verify(&mut self, source: &str) -> Phase7MachineApiResult<MachineVerifyResponse>;
+    fn verify(&mut self, source: &str) -> AiSearchMachineApiResult<MachineVerifyResponse>;
 }
 
-pub struct Phase7LocalMachineApiClient<'session> {
+pub struct AiSearchLocalMachineApiClient<'session> {
     session: &'session mut MachineProofSession,
 }
 
-impl<'session> Phase7LocalMachineApiClient<'session> {
+impl<'session> AiSearchLocalMachineApiClient<'session> {
     pub fn new(session: &'session mut MachineProofSession) -> Self {
         Self { session }
     }
 }
 
-impl Phase7MachineApiClient for Phase7LocalMachineApiClient<'_> {
+impl AiSearchMachineApiClient for AiSearchLocalMachineApiClient<'_> {
     fn get_snapshot(
         &mut self,
-        request: Phase7SnapshotGetRequest,
-    ) -> Phase7MachineApiResult<MachineSnapshotGetOk> {
-        let source = phase7_snapshot_get_request_json(&request);
+        request: AiSearchSnapshotGetRequest,
+    ) -> AiSearchMachineApiResult<MachineSnapshotGetOk> {
+        let source = ai_search_snapshot_get_request_json(&request);
         get_machine_snapshot(&source, std::iter::once(&*self.session))
-            .map_err(Phase7MachineApiError::SnapshotGet)
+            .map_err(AiSearchMachineApiError::SnapshotGet)
     }
 
     fn search_for_goal(
         &mut self,
         source: &str,
-    ) -> Phase7MachineApiResult<MachineTheoremSearchResponse> {
+    ) -> AiSearchMachineApiResult<MachineTheoremSearchResponse> {
         search_machine_theorems_for_goal(source, &*self.session)
-            .map_err(Phase7MachineApiError::SearchForGoal)
+            .map_err(AiSearchMachineApiError::SearchForGoal)
     }
 
     fn run_tactic_batch(
         &mut self,
         source: &str,
-    ) -> Phase7MachineApiResult<MachineTacticBatchResponse> {
+    ) -> AiSearchMachineApiResult<MachineTacticBatchResponse> {
         run_machine_tactic_batch_request(source, self.session)
-            .map_err(Phase7MachineApiError::TacticBatch)
+            .map_err(AiSearchMachineApiError::TacticBatch)
     }
 
-    fn replay(&mut self, source: &str) -> Phase7MachineApiResult<MachineReplayResponse> {
-        run_machine_replay_request(source, self.session).map_err(Phase7MachineApiError::Replay)
+    fn replay(&mut self, source: &str) -> AiSearchMachineApiResult<MachineReplayResponse> {
+        run_machine_replay_request(source, self.session).map_err(AiSearchMachineApiError::Replay)
     }
 
-    fn verify(&mut self, source: &str) -> Phase7MachineApiResult<MachineVerifyResponse> {
-        run_machine_verify_request(source, &*self.session).map_err(Phase7MachineApiError::Verify)
+    fn verify(&mut self, source: &str) -> AiSearchMachineApiResult<MachineVerifyResponse> {
+        run_machine_verify_request(source, &*self.session).map_err(AiSearchMachineApiError::Verify)
     }
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Phase7FakeMachineApiClient {
-    calls: Vec<Phase7MachineApiCall>,
-    snapshot_get_responses: VecDeque<Phase7MachineApiResult<MachineSnapshotGetOk>>,
-    search_for_goal_responses: VecDeque<Phase7MachineApiResult<MachineTheoremSearchResponse>>,
-    tactic_batch_responses: VecDeque<Phase7MachineApiResult<MachineTacticBatchResponse>>,
-    replay_responses: VecDeque<Phase7MachineApiResult<MachineReplayResponse>>,
-    verify_responses: VecDeque<Phase7MachineApiResult<MachineVerifyResponse>>,
+pub struct AiSearchFakeMachineApiClient {
+    calls: Vec<AiSearchMachineApiCall>,
+    snapshot_get_responses: VecDeque<AiSearchMachineApiResult<MachineSnapshotGetOk>>,
+    search_for_goal_responses: VecDeque<AiSearchMachineApiResult<MachineTheoremSearchResponse>>,
+    tactic_batch_responses: VecDeque<AiSearchMachineApiResult<MachineTacticBatchResponse>>,
+    replay_responses: VecDeque<AiSearchMachineApiResult<MachineReplayResponse>>,
+    verify_responses: VecDeque<AiSearchMachineApiResult<MachineVerifyResponse>>,
 }
 
-impl Phase7FakeMachineApiClient {
+impl AiSearchFakeMachineApiClient {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn calls(&self) -> &[Phase7MachineApiCall] {
+    pub fn calls(&self) -> &[AiSearchMachineApiCall] {
         &self.calls
     }
 
     pub fn push_snapshot_get_response(
         &mut self,
-        response: Phase7MachineApiResult<MachineSnapshotGetOk>,
+        response: AiSearchMachineApiResult<MachineSnapshotGetOk>,
     ) {
         self.snapshot_get_responses.push_back(response);
     }
 
     pub fn push_search_for_goal_response(
         &mut self,
-        response: Phase7MachineApiResult<MachineTheoremSearchResponse>,
+        response: AiSearchMachineApiResult<MachineTheoremSearchResponse>,
     ) {
         self.search_for_goal_responses.push_back(response);
     }
 
     pub fn push_tactic_batch_response(
         &mut self,
-        response: Phase7MachineApiResult<MachineTacticBatchResponse>,
+        response: AiSearchMachineApiResult<MachineTacticBatchResponse>,
     ) {
         self.tactic_batch_responses.push_back(response);
     }
 
     pub fn push_replay_response(
         &mut self,
-        response: Phase7MachineApiResult<MachineReplayResponse>,
+        response: AiSearchMachineApiResult<MachineReplayResponse>,
     ) {
         self.replay_responses.push_back(response);
     }
 
     pub fn push_verify_response(
         &mut self,
-        response: Phase7MachineApiResult<MachineVerifyResponse>,
+        response: AiSearchMachineApiResult<MachineVerifyResponse>,
     ) {
         self.verify_responses.push_back(response);
     }
 }
 
-impl Phase7MachineApiClient for Phase7FakeMachineApiClient {
+impl AiSearchMachineApiClient for AiSearchFakeMachineApiClient {
     fn get_snapshot(
         &mut self,
-        request: Phase7SnapshotGetRequest,
-    ) -> Phase7MachineApiResult<MachineSnapshotGetOk> {
-        self.calls.push(Phase7MachineApiCall::SnapshotGet {
+        request: AiSearchSnapshotGetRequest,
+    ) -> AiSearchMachineApiResult<MachineSnapshotGetOk> {
+        self.calls.push(AiSearchMachineApiCall::SnapshotGet {
             session_id: request.session_id,
             snapshot_id: request.snapshot_id,
             state_fingerprint: request.state_fingerprint,
             include_pretty: false,
         });
         self.snapshot_get_responses.pop_front().unwrap_or(Err(
-            Phase7MachineApiError::FakeResponseExhausted {
-                endpoint: Phase7MachineApiEndpointKind::SnapshotGet,
+            AiSearchMachineApiError::FakeResponseExhausted {
+                endpoint: AiSearchMachineApiEndpointKind::SnapshotGet,
             },
         ))
     }
@@ -965,19 +965,19 @@ impl Phase7MachineApiClient for Phase7FakeMachineApiClient {
     fn search_for_goal(
         &mut self,
         source: &str,
-    ) -> Phase7MachineApiResult<MachineTheoremSearchResponse> {
+    ) -> AiSearchMachineApiResult<MachineTheoremSearchResponse> {
         parse_machine_theorem_search_request(source).map_err(|error| {
-            Phase7MachineApiError::FakeRequestValidation {
-                endpoint: Phase7MachineApiEndpointKind::SearchForGoal,
+            AiSearchMachineApiError::FakeRequestValidation {
+                endpoint: AiSearchMachineApiEndpointKind::SearchForGoal,
                 error,
             }
         })?;
-        self.calls.push(Phase7MachineApiCall::SearchForGoal {
+        self.calls.push(AiSearchMachineApiCall::SearchForGoal {
             source: source.to_owned(),
         });
         self.search_for_goal_responses.pop_front().unwrap_or(Err(
-            Phase7MachineApiError::FakeResponseExhausted {
-                endpoint: Phase7MachineApiEndpointKind::SearchForGoal,
+            AiSearchMachineApiError::FakeResponseExhausted {
+                endpoint: AiSearchMachineApiEndpointKind::SearchForGoal,
             },
         ))
     }
@@ -985,65 +985,65 @@ impl Phase7MachineApiClient for Phase7FakeMachineApiClient {
     fn run_tactic_batch(
         &mut self,
         source: &str,
-    ) -> Phase7MachineApiResult<MachineTacticBatchResponse> {
+    ) -> AiSearchMachineApiResult<MachineTacticBatchResponse> {
         parse_machine_tactic_batch_request(source).map_err(|error| {
-            Phase7MachineApiError::FakeRequestValidation {
-                endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+            AiSearchMachineApiError::FakeRequestValidation {
+                endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
                 error,
             }
         })?;
-        self.calls.push(Phase7MachineApiCall::TacticBatch {
+        self.calls.push(AiSearchMachineApiCall::TacticBatch {
             source: source.to_owned(),
         });
         self.tactic_batch_responses.pop_front().unwrap_or(Err(
-            Phase7MachineApiError::FakeResponseExhausted {
-                endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+            AiSearchMachineApiError::FakeResponseExhausted {
+                endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
             },
         ))
     }
 
-    fn replay(&mut self, source: &str) -> Phase7MachineApiResult<MachineReplayResponse> {
+    fn replay(&mut self, source: &str) -> AiSearchMachineApiResult<MachineReplayResponse> {
         parse_machine_replay_request(source).map_err(|error| {
-            Phase7MachineApiError::FakeRequestValidation {
-                endpoint: Phase7MachineApiEndpointKind::Replay,
+            AiSearchMachineApiError::FakeRequestValidation {
+                endpoint: AiSearchMachineApiEndpointKind::Replay,
                 error,
             }
         })?;
-        self.calls.push(Phase7MachineApiCall::Replay {
+        self.calls.push(AiSearchMachineApiCall::Replay {
             source: source.to_owned(),
         });
         self.replay_responses.pop_front().unwrap_or(Err(
-            Phase7MachineApiError::FakeResponseExhausted {
-                endpoint: Phase7MachineApiEndpointKind::Replay,
+            AiSearchMachineApiError::FakeResponseExhausted {
+                endpoint: AiSearchMachineApiEndpointKind::Replay,
             },
         ))
     }
 
-    fn verify(&mut self, source: &str) -> Phase7MachineApiResult<MachineVerifyResponse> {
+    fn verify(&mut self, source: &str) -> AiSearchMachineApiResult<MachineVerifyResponse> {
         parse_machine_verify_request(source).map_err(|error| {
-            Phase7MachineApiError::FakeRequestValidation {
-                endpoint: Phase7MachineApiEndpointKind::Verify,
+            AiSearchMachineApiError::FakeRequestValidation {
+                endpoint: AiSearchMachineApiEndpointKind::Verify,
                 error,
             }
         })?;
-        self.calls.push(Phase7MachineApiCall::Verify {
+        self.calls.push(AiSearchMachineApiCall::Verify {
             source: source.to_owned(),
         });
         self.verify_responses.pop_front().unwrap_or(Err(
-            Phase7MachineApiError::FakeResponseExhausted {
-                endpoint: Phase7MachineApiEndpointKind::Verify,
+            AiSearchMachineApiError::FakeResponseExhausted {
+                endpoint: AiSearchMachineApiEndpointKind::Verify,
             },
         ))
     }
 }
 
-pub fn phase7_assign_candidate_ids(
-    candidates: Vec<Phase7CandidateEnvelope>,
-) -> Vec<Phase7AssignedCandidate> {
+pub fn ai_search_assign_candidate_ids(
+    candidates: Vec<AiSearchCandidateEnvelope>,
+) -> Vec<AiSearchAssignedCandidate> {
     candidates
         .into_iter()
         .enumerate()
-        .map(|(index, envelope)| Phase7AssignedCandidate {
+        .map(|(index, envelope)| AiSearchAssignedCandidate {
             candidate_id: format!("c{index}"),
             rank_index: usize_to_u32(index),
             envelope,
@@ -1051,7 +1051,7 @@ pub fn phase7_assign_candidate_ids(
         .collect()
 }
 
-pub fn phase7_cap_batch_policy(
+pub fn ai_search_cap_batch_policy(
     policy: MachineTacticBatchPolicy,
     candidate_count: usize,
 ) -> MachineTacticBatchPolicy {
@@ -1063,7 +1063,7 @@ pub fn phase7_cap_batch_policy(
     }
 }
 
-pub fn phase7_tactic_batch_request_json(request: &Phase7TacticBatchRequest) -> String {
+pub fn ai_search_tactic_batch_request_json(request: &AiSearchTacticBatchRequest) -> String {
     let candidates = request
         .candidates
         .iter()
@@ -1071,12 +1071,12 @@ pub fn phase7_tactic_batch_request_json(request: &Phase7TacticBatchRequest) -> S
             format!(
                 r#"{{"candidate_id":{},"candidate":{}}}"#,
                 json_string(&candidate.candidate_id),
-                phase7_candidate_payload_json(&candidate.envelope.candidate)
+                ai_search_candidate_payload_json(&candidate.envelope.candidate)
             )
         })
         .collect::<Vec<_>>()
         .join(",");
-    let capped_policy = phase7_cap_batch_policy(request.batch_policy, request.candidates.len());
+    let capped_policy = ai_search_cap_batch_policy(request.batch_policy, request.candidates.len());
     let mut source = format!(
         r#"{{"session_id":"{}","snapshot_id":"{}","state_fingerprint":"{}","goal_id":"{}","candidates":[{}],"deterministic_budget":{},"batch_policy":{}"#,
         request.session_id.wire(),
@@ -1084,37 +1084,37 @@ pub fn phase7_tactic_batch_request_json(request: &Phase7TacticBatchRequest) -> S
         format_hash_string(&request.state_fingerprint),
         format_goal_id_wire(request.goal_id),
         candidates,
-        phase7_tactic_budget_json(request.deterministic_budget),
-        phase7_batch_policy_json(capped_policy)
+        ai_search_tactic_budget_json(request.deterministic_budget),
+        ai_search_batch_policy_json(capped_policy)
     );
     if let Some(scheduler_limits) = request.scheduler_limits {
         source.push_str(r#","scheduler_limits":"#);
-        source.push_str(&phase7_scheduler_limits_json(scheduler_limits));
+        source.push_str(&ai_search_scheduler_limits_json(scheduler_limits));
     }
     source.push('}');
     source
 }
 
-pub fn phase7_run_tactic_batch(
-    client: &mut impl Phase7MachineApiClient,
-    request: &Phase7TacticBatchRequest,
-) -> Result<Phase7BatchEvaluation, Phase7TacticBatchRunError> {
-    let source = phase7_tactic_batch_request_json(request);
+pub fn ai_search_run_tactic_batch(
+    client: &mut impl AiSearchMachineApiClient,
+    request: &AiSearchTacticBatchRequest,
+) -> Result<AiSearchBatchEvaluation, AiSearchTacticBatchRunError> {
+    let source = ai_search_tactic_batch_request_json(request);
     let response = client
         .run_tactic_batch(&source)
-        .map_err(Phase7TacticBatchRunError::MachineApi)?;
-    phase7_evaluate_tactic_batch_response(request, response)
-        .map_err(Phase7TacticBatchRunError::Controller)
+        .map_err(AiSearchTacticBatchRunError::MachineApi)?;
+    ai_search_evaluate_tactic_batch_response(request, response)
+        .map_err(AiSearchTacticBatchRunError::Controller)
 }
 
-pub fn phase7_positive_training_identity(
+pub fn ai_search_positive_training_identity(
     state_fingerprint: Hash,
     goal_id: GoalId,
     candidate_hash: Hash,
     proof_delta_hash: Hash,
     next_state_fingerprint: Hash,
-) -> Phase7PositiveTrainingIdentity {
-    Phase7PositiveTrainingIdentity {
+) -> AiSearchPositiveTrainingIdentity {
+    AiSearchPositiveTrainingIdentity {
         state_fingerprint,
         goal_id,
         candidate_hash,
@@ -1123,12 +1123,12 @@ pub fn phase7_positive_training_identity(
     }
 }
 
-pub fn phase7_negative_training_identity(
+pub fn ai_search_negative_training_identity(
     state_fingerprint: Hash,
     goal_id: GoalId,
-    failure: &Phase7AcceptedCandidateFailure,
-) -> Phase7NegativeTrainingIdentity {
-    Phase7NegativeTrainingIdentity {
+    failure: &AiSearchAcceptedCandidateFailure,
+) -> AiSearchNegativeTrainingIdentity {
+    AiSearchNegativeTrainingIdentity {
         state_fingerprint,
         goal_id,
         candidate_hash: failure.candidate_hash,
@@ -1137,26 +1137,30 @@ pub fn phase7_negative_training_identity(
     }
 }
 
-pub fn phase7_positive_training_identity_hash(identity: &Phase7PositiveTrainingIdentity) -> Hash {
-    let payload = phase7_positive_training_identity_json(identity);
+pub fn ai_search_positive_training_identity_hash(
+    identity: &AiSearchPositiveTrainingIdentity,
+) -> Hash {
+    let payload = ai_search_positive_training_identity_json(identity);
     let mut bytes = Vec::new();
-    bytes.extend_from_slice(PHASE7_POSITIVE_TRAINING_IDENTITY_HASH_TAG.as_bytes());
+    bytes.extend_from_slice(AI_SEARCH_POSITIVE_TRAINING_IDENTITY_HASH_TAG.as_bytes());
     bytes.push(0);
     bytes.extend_from_slice(payload.as_bytes());
     sha256(&bytes)
 }
 
-pub fn phase7_negative_training_identity_hash(identity: &Phase7NegativeTrainingIdentity) -> Hash {
-    let payload = phase7_negative_training_identity_json(identity);
+pub fn ai_search_negative_training_identity_hash(
+    identity: &AiSearchNegativeTrainingIdentity,
+) -> Hash {
+    let payload = ai_search_negative_training_identity_json(identity);
     let mut bytes = Vec::new();
-    bytes.extend_from_slice(PHASE7_NEGATIVE_TRAINING_IDENTITY_HASH_TAG.as_bytes());
+    bytes.extend_from_slice(AI_SEARCH_NEGATIVE_TRAINING_IDENTITY_HASH_TAG.as_bytes());
     bytes.push(0);
     bytes.extend_from_slice(payload.as_bytes());
     sha256(&bytes)
 }
 
-pub fn phase7_candidate_hash_mismatch(
-    envelope: &Phase7CandidateEnvelope,
+pub fn ai_search_candidate_hash_mismatch(
+    envelope: &AiSearchCandidateEnvelope,
     response_candidate_hash: Option<Hash>,
 ) -> bool {
     envelope
@@ -1164,21 +1168,21 @@ pub fn phase7_candidate_hash_mismatch(
         .is_some_and(|expected| response_candidate_hash != Some(expected))
 }
 
-pub fn phase7_evaluate_tactic_batch_response(
-    request: &Phase7TacticBatchRequest,
+pub fn ai_search_evaluate_tactic_batch_response(
+    request: &AiSearchTacticBatchRequest,
     response: MachineTacticBatchResponse,
-) -> Phase7MachineControllerResult<Phase7BatchEvaluation> {
+) -> AiSearchMachineControllerResult<AiSearchBatchEvaluation> {
     match response {
         MachineApiResponseEnvelope::Ok(ok) => {
             if ok.status != MachineApiResponseStatus::Ok {
-                return Err(phase7_batch_contract_violation(
+                return Err(ai_search_batch_contract_violation(
                     format!("batch ok envelope used status {}", ok.status.as_str()),
                     Some(ok.status),
                 ));
             }
             let fields = ok.endpoint_fields;
-            phase7_validate_ok_batch_fields(request, &fields)?;
-            Ok(phase7_build_batch_evaluation(
+            ai_search_validate_ok_batch_fields(request, &fields)?;
+            Ok(ai_search_build_batch_evaluation(
                 request,
                 &fields.results,
                 fields.deterministic_budget_hash,
@@ -1192,7 +1196,7 @@ pub fn phase7_evaluate_tactic_batch_response(
                 MachineApiResponseStatus::PartialTimeout
                     | MachineApiResponseStatus::PartialResourceLimit
             ) {
-                return Err(phase7_batch_contract_violation(
+                return Err(ai_search_batch_contract_violation(
                     format!(
                         "batch scheduler envelope used status {}",
                         stop.status.as_str()
@@ -1201,27 +1205,27 @@ pub fn phase7_evaluate_tactic_batch_response(
                 ));
             }
             let fields = stop.endpoint_fields;
-            phase7_validate_scheduler_batch_fields(request, &fields, stop.status)?;
+            ai_search_validate_scheduler_batch_fields(request, &fields, stop.status)?;
             let completed_prefix_len = fields.completed_prefix_len;
             let deferred_start = if fields.results.is_empty() {
                 request.candidates.len()
             } else {
                 (fields.results.len() + 1).min(request.candidates.len())
             };
-            Ok(phase7_build_batch_evaluation(
+            Ok(ai_search_build_batch_evaluation(
                 request,
                 &fields.results,
                 fields.deterministic_budget_hash,
-                Some(Phase7SchedulerStop {
+                Some(AiSearchSchedulerStop {
                     status: stop.status,
                     completed_prefix_len,
                 }),
                 deferred_start,
             ))
         }
-        MachineApiResponseEnvelope::Error(error) => Err(Box::new(Phase7MachineControllerError {
-            kind: Phase7MachineControllerErrorKind::TopLevelBatchError,
-            endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+        MachineApiResponseEnvelope::Error(error) => Err(Box::new(AiSearchMachineControllerError {
+            kind: AiSearchMachineControllerErrorKind::TopLevelBatchError,
+            endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
             message: error.error.kind.as_str().to_owned(),
             candidate_id: None,
             expected_hash: None,
@@ -1233,13 +1237,13 @@ pub fn phase7_evaluate_tactic_batch_response(
     }
 }
 
-pub fn phase7_replay_step_json(step: &Phase7ReplayStep) -> String {
+pub fn ai_search_replay_step_json(step: &AiSearchReplayStep) -> String {
     format!(
         r#"{{"previous_state_fingerprint":{},"goal_id":{},"candidate":{},"deterministic_budget":{},"candidate_hash":{},"deterministic_budget_hash":{},"proof_delta_hash":{},"next_state_fingerprint":{}}}"#,
         json_string(&format_hash_string(&step.previous_state_fingerprint)),
         json_string(&format_goal_id_wire(step.goal_id)),
-        phase7_candidate_payload_json(&step.candidate),
-        phase7_tactic_budget_json(step.deterministic_budget),
+        ai_search_candidate_payload_json(&step.candidate),
+        ai_search_tactic_budget_json(step.deterministic_budget),
         json_string(&format_hash_string(&step.candidate_hash)),
         json_string(&format_hash_string(&step.deterministic_budget_hash)),
         json_string(&format_hash_string(&step.proof_delta_hash)),
@@ -1247,8 +1251,8 @@ pub fn phase7_replay_step_json(step: &Phase7ReplayStep) -> String {
     )
 }
 
-pub fn phase7_build_replay_plan(node: &Phase7SearchNode) -> Phase7ReplayPlan {
-    Phase7ReplayPlan {
+pub fn ai_search_build_replay_plan(node: &AiSearchNode) -> AiSearchReplayPlan {
+    AiSearchReplayPlan {
         protocol_version: MachineApiVersion::V1,
         session_root_hash: node.session_root_hash,
         initial_state_fingerprint: node.initial_state_fingerprint,
@@ -1257,11 +1261,11 @@ pub fn phase7_build_replay_plan(node: &Phase7SearchNode) -> Phase7ReplayPlan {
     }
 }
 
-pub fn phase7_replay_plan_json(plan: &Phase7ReplayPlan) -> String {
+pub fn ai_search_replay_plan_json(plan: &AiSearchReplayPlan) -> String {
     let steps = plan
         .steps
         .iter()
-        .map(phase7_replay_step_json)
+        .map(ai_search_replay_step_json)
         .collect::<Vec<_>>()
         .join(",");
     format!(
@@ -1274,15 +1278,15 @@ pub fn phase7_replay_plan_json(plan: &Phase7ReplayPlan) -> String {
     )
 }
 
-pub fn phase7_replay_request_json(session_id: SessionId, plan: &Phase7ReplayPlan) -> String {
+pub fn ai_search_replay_request_json(session_id: SessionId, plan: &AiSearchReplayPlan) -> String {
     format!(
         r#"{{"session_id":"{}","plan":{}}}"#,
         session_id.wire(),
-        phase7_replay_plan_json(plan)
+        ai_search_replay_plan_json(plan)
     )
 }
 
-pub fn phase7_verify_request_json(
+pub fn ai_search_verify_request_json(
     session_id: SessionId,
     snapshot_id: SnapshotId,
     state_fingerprint: Hash,
@@ -1295,15 +1299,15 @@ pub fn phase7_verify_request_json(
     )
 }
 
-pub fn phase7_training_trace_records_json(records: &[Phase7TrainingTraceRecord]) -> String {
+pub fn ai_search_training_trace_records_json(records: &[AiSearchTrainingTraceRecord]) -> String {
     let members = records
         .iter()
-        .map(phase7_training_trace_record_json)
+        .map(ai_search_training_trace_record_json)
         .collect::<Vec<_>>();
     format!("[{}]", members.join(","))
 }
 
-pub fn phase7_training_trace_record_json(record: &Phase7TrainingTraceRecord) -> String {
+pub fn ai_search_training_trace_record_json(record: &AiSearchTrainingTraceRecord) -> String {
     format!(
         r#"{{"trace_schema":{},"session_root_hash":{},"snapshot_id":{},"state_fingerprint":{},"node_id":{},"batch_index":{},"goal":{},"retrieved_premises":{},"tactic_candidates":{}}}"#,
         json_string(&record.trace_schema),
@@ -1312,13 +1316,15 @@ pub fn phase7_training_trace_record_json(record: &Phase7TrainingTraceRecord) -> 
         json_string(&format_hash_string(&record.state_fingerprint)),
         record.node_id.0,
         record.batch_index,
-        phase7_goal_summary_json(&record.goal),
-        phase7_premise_cache_entries_json(&record.retrieved_premises),
-        phase7_training_trace_candidates_json(&record.tactic_candidates),
+        ai_search_goal_summary_json(&record.goal),
+        ai_search_premise_cache_entries_json(&record.retrieved_premises),
+        ai_search_training_trace_candidates_json(&record.tactic_candidates),
     )
 }
 
-pub fn phase7_positive_training_identity_json(identity: &Phase7PositiveTrainingIdentity) -> String {
+pub fn ai_search_positive_training_identity_json(
+    identity: &AiSearchPositiveTrainingIdentity,
+) -> String {
     format!(
         r#"{{"state_fingerprint":{},"goal_id":{},"candidate_hash":{},"proof_delta_hash":{},"next_state_fingerprint":{}}}"#,
         json_string(&format_hash_string(&identity.state_fingerprint)),
@@ -1329,7 +1335,9 @@ pub fn phase7_positive_training_identity_json(identity: &Phase7PositiveTrainingI
     )
 }
 
-pub fn phase7_negative_training_identity_json(identity: &Phase7NegativeTrainingIdentity) -> String {
+pub fn ai_search_negative_training_identity_json(
+    identity: &AiSearchNegativeTrainingIdentity,
+) -> String {
     format!(
         r#"{{"state_fingerprint":{},"goal_id":{},"candidate_hash":{},"error_kind":{},"diagnostic_hash":{}}}"#,
         json_string(&format_hash_string(&identity.state_fingerprint)),
@@ -1340,26 +1348,26 @@ pub fn phase7_negative_training_identity_json(identity: &Phase7NegativeTrainingI
     )
 }
 
-pub fn phase7_minimize_replay_plan(
-    client: &mut impl Phase7MachineApiClient,
+pub fn ai_search_minimize_replay_plan(
+    client: &mut impl AiSearchMachineApiClient,
     session_id: SessionId,
     initial_snapshot: &MachineProofSnapshot,
-    verified_replay_plan: Phase7ReplayPlan,
+    verified_replay_plan: AiSearchReplayPlan,
     verified_replay: MachineReplayOkFields,
     verified_response: MachineApiOkResponse<MachineVerifyOkFields>,
-) -> Phase7MinimizationResult {
+) -> AiSearchMinimizationResult {
     let mut current_plan = verified_replay_plan;
     let mut current_replay = verified_replay;
     let mut current_verify = verified_response;
-    let mut minimization_stats = Phase7MinimizationStats::default();
+    let mut minimization_stats = AiSearchMinimizationStats::default();
 
-    for pass in Phase7MinimizationPassKind::ALL {
+    for pass in AiSearchMinimizationPassKind::ALL {
         minimization_stats.pass_kinds_attempted += 1;
         let mut changed = true;
 
         while changed {
             changed = false;
-            let Some(step_edits) = phase7_make_step_edits_with_goal_indices(
+            let Some(step_edits) = ai_search_make_step_edits_with_goal_indices(
                 client,
                 session_id.clone(),
                 initial_snapshot,
@@ -1368,8 +1376,8 @@ pub fn phase7_minimize_replay_plan(
                 break;
             };
 
-            for proposed_steps in phase7_minimization_proposals(pass, &step_edits) {
-                let Some(rebuilt) = phase7_rebuild_replay_plan_from_step_edits(
+            for proposed_steps in ai_search_minimization_proposals(pass, &step_edits) {
+                let Some(rebuilt) = ai_search_rebuild_replay_plan_from_step_edits(
                     client,
                     session_id.clone(),
                     initial_snapshot,
@@ -1381,7 +1389,7 @@ pub fn phase7_minimize_replay_plan(
                 minimization_stats.rebuilt_plans += 1;
 
                 minimization_stats.replay_attempts += 1;
-                let replay_source = phase7_replay_request_json(session_id.clone(), &rebuilt);
+                let replay_source = ai_search_replay_request_json(session_id.clone(), &rebuilt);
                 let Ok(MachineApiResponseEnvelope::Ok(replayed)) = client.replay(&replay_source)
                 else {
                     continue;
@@ -1391,7 +1399,7 @@ pub fn phase7_minimize_replay_plan(
                 }
 
                 minimization_stats.verify_attempts += 1;
-                let verify_source = phase7_verify_request_json(
+                let verify_source = ai_search_verify_request_json(
                     session_id.clone(),
                     replayed.endpoint_fields.final_snapshot_id,
                     replayed.endpoint_fields.final_state_fingerprint,
@@ -1414,7 +1422,7 @@ pub fn phase7_minimize_replay_plan(
         }
     }
 
-    Phase7MinimizationResult {
+    AiSearchMinimizationResult {
         replay_plan: current_plan,
         replay_response: current_replay,
         verify_response: current_verify,
@@ -1423,13 +1431,13 @@ pub fn phase7_minimize_replay_plan(
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Phase7MinimizationPassKind {
+enum AiSearchMinimizationPassKind {
     DeleteRedundantSteps,
     ReplaceBlocksWithSimpLiteEmpty,
     MinimizeExistingSimpLiteRules,
 }
 
-impl Phase7MinimizationPassKind {
+impl AiSearchMinimizationPassKind {
     const ALL: [Self; 3] = [
         Self::DeleteRedundantSteps,
         Self::ReplaceBlocksWithSimpLiteEmpty,
@@ -1437,26 +1445,26 @@ impl Phase7MinimizationPassKind {
     ];
 }
 
-fn phase7_minimization_proposals(
-    pass: Phase7MinimizationPassKind,
-    step_edits: &[Phase7ReplayStepEdit],
-) -> Vec<Vec<Phase7ReplayStepEdit>> {
+fn ai_search_minimization_proposals(
+    pass: AiSearchMinimizationPassKind,
+    step_edits: &[AiSearchReplayStepEdit],
+) -> Vec<Vec<AiSearchReplayStepEdit>> {
     match pass {
-        Phase7MinimizationPassKind::DeleteRedundantSteps => {
-            phase7_delete_redundant_steps_proposals(step_edits)
+        AiSearchMinimizationPassKind::DeleteRedundantSteps => {
+            ai_search_delete_redundant_steps_proposals(step_edits)
         }
-        Phase7MinimizationPassKind::ReplaceBlocksWithSimpLiteEmpty => {
-            phase7_replace_blocks_with_simp_lite_empty_proposals(step_edits)
+        AiSearchMinimizationPassKind::ReplaceBlocksWithSimpLiteEmpty => {
+            ai_search_replace_blocks_with_simp_lite_empty_proposals(step_edits)
         }
-        Phase7MinimizationPassKind::MinimizeExistingSimpLiteRules => {
-            phase7_minimize_existing_simp_lite_rules_proposals(step_edits)
+        AiSearchMinimizationPassKind::MinimizeExistingSimpLiteRules => {
+            ai_search_minimize_existing_simp_lite_rules_proposals(step_edits)
         }
     }
 }
 
-fn phase7_delete_redundant_steps_proposals(
-    step_edits: &[Phase7ReplayStepEdit],
-) -> Vec<Vec<Phase7ReplayStepEdit>> {
+fn ai_search_delete_redundant_steps_proposals(
+    step_edits: &[AiSearchReplayStepEdit],
+) -> Vec<Vec<AiSearchReplayStepEdit>> {
     let mut proposals = Vec::new();
     for index in 0..step_edits.len() {
         let mut proposal = step_edits.to_vec();
@@ -1468,16 +1476,16 @@ fn phase7_delete_redundant_steps_proposals(
     proposals
 }
 
-fn phase7_replace_blocks_with_simp_lite_empty_proposals(
-    step_edits: &[Phase7ReplayStepEdit],
-) -> Vec<Vec<Phase7ReplayStepEdit>> {
+fn ai_search_replace_blocks_with_simp_lite_empty_proposals(
+    step_edits: &[AiSearchReplayStepEdit],
+) -> Vec<Vec<AiSearchReplayStepEdit>> {
     let mut proposals = Vec::new();
     for block_len in (1..=step_edits.len()).rev() {
         for start_index in 0..=step_edits.len() - block_len {
             let replacement_source = &step_edits[start_index];
             let mut proposal = Vec::new();
             proposal.extend_from_slice(&step_edits[..start_index]);
-            proposal.push(Phase7ReplayStepEdit {
+            proposal.push(AiSearchReplayStepEdit {
                 original_goal_id: replacement_source.original_goal_id,
                 original_open_goal_index: replacement_source.original_open_goal_index,
                 candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
@@ -1492,9 +1500,9 @@ fn phase7_replace_blocks_with_simp_lite_empty_proposals(
     proposals
 }
 
-fn phase7_minimize_existing_simp_lite_rules_proposals(
-    step_edits: &[Phase7ReplayStepEdit],
-) -> Vec<Vec<Phase7ReplayStepEdit>> {
+fn ai_search_minimize_existing_simp_lite_rules_proposals(
+    step_edits: &[AiSearchReplayStepEdit],
+) -> Vec<Vec<AiSearchReplayStepEdit>> {
     let mut proposals = Vec::new();
     for step_index in 0..step_edits.len() {
         let MachineTacticCandidate::SimpLite { rules } = &step_edits[step_index].candidate else {
@@ -1515,13 +1523,13 @@ fn phase7_minimize_existing_simp_lite_rules_proposals(
     proposals
 }
 
-fn phase7_make_step_edits_with_goal_indices(
-    client: &mut impl Phase7MachineApiClient,
+fn ai_search_make_step_edits_with_goal_indices(
+    client: &mut impl AiSearchMachineApiClient,
     session_id: SessionId,
     initial_snapshot: &MachineProofSnapshot,
-    current_plan: &Phase7ReplayPlan,
-) -> Option<Vec<Phase7ReplayStepEdit>> {
-    let mut snapshot = phase7_minimization_initial_snapshot(
+    current_plan: &AiSearchReplayPlan,
+) -> Option<Vec<AiSearchReplayStepEdit>> {
+    let mut snapshot = ai_search_minimization_initial_snapshot(
         client,
         session_id.clone(),
         initial_snapshot,
@@ -1534,14 +1542,14 @@ fn phase7_make_step_edits_with_goal_indices(
             .open_goals
             .iter()
             .position(|goal_id| *goal_id == step.goal_id)?;
-        edits.push(Phase7ReplayStepEdit {
+        edits.push(AiSearchReplayStepEdit {
             original_goal_id: step.goal_id,
             original_open_goal_index: usize_to_u32(open_goal_index),
             candidate: step.candidate.clone(),
             deterministic_budget: step.deterministic_budget,
         });
 
-        let (replayed_step, next_snapshot) = phase7_minimization_reexecute_step(
+        let (replayed_step, next_snapshot) = ai_search_minimization_reexecute_step(
             client,
             session_id.clone(),
             &snapshot,
@@ -1562,14 +1570,14 @@ fn phase7_make_step_edits_with_goal_indices(
     Some(edits)
 }
 
-fn phase7_rebuild_replay_plan_from_step_edits(
-    client: &mut impl Phase7MachineApiClient,
+fn ai_search_rebuild_replay_plan_from_step_edits(
+    client: &mut impl AiSearchMachineApiClient,
     session_id: SessionId,
     initial_snapshot: &MachineProofSnapshot,
-    current_plan: &Phase7ReplayPlan,
-    proposed_steps: &[Phase7ReplayStepEdit],
-) -> Option<Phase7ReplayPlan> {
-    let mut snapshot = phase7_minimization_initial_snapshot(
+    current_plan: &AiSearchReplayPlan,
+    proposed_steps: &[AiSearchReplayStepEdit],
+) -> Option<AiSearchReplayPlan> {
+    let mut snapshot = ai_search_minimization_initial_snapshot(
         client,
         session_id.clone(),
         initial_snapshot,
@@ -1578,8 +1586,8 @@ fn phase7_rebuild_replay_plan_from_step_edits(
     let mut replay_steps = Vec::new();
 
     for edit in proposed_steps {
-        let execution_goal_id = phase7_minimization_execution_goal_id(&snapshot, edit)?;
-        let (step, next_snapshot) = phase7_minimization_reexecute_step(
+        let execution_goal_id = ai_search_minimization_execution_goal_id(&snapshot, edit)?;
+        let (step, next_snapshot) = ai_search_minimization_reexecute_step(
             client,
             session_id.clone(),
             &snapshot,
@@ -1591,7 +1599,7 @@ fn phase7_rebuild_replay_plan_from_step_edits(
         snapshot = next_snapshot;
     }
 
-    Some(Phase7ReplayPlan {
+    Some(AiSearchReplayPlan {
         protocol_version: current_plan.protocol_version,
         session_root_hash: current_plan.session_root_hash,
         initial_state_fingerprint: current_plan.initial_state_fingerprint,
@@ -1600,17 +1608,17 @@ fn phase7_rebuild_replay_plan_from_step_edits(
     })
 }
 
-fn phase7_minimization_initial_snapshot(
-    client: &mut impl Phase7MachineApiClient,
+fn ai_search_minimization_initial_snapshot(
+    client: &mut impl AiSearchMachineApiClient,
     session_id: SessionId,
     initial_snapshot: &MachineProofSnapshot,
-    current_plan: &Phase7ReplayPlan,
+    current_plan: &AiSearchReplayPlan,
 ) -> Option<MachineProofSnapshot> {
     if initial_snapshot.state_fingerprint != current_plan.initial_state_fingerprint {
         return None;
     }
     client
-        .get_snapshot(Phase7SnapshotGetRequest {
+        .get_snapshot(AiSearchSnapshotGetRequest {
             session_id,
             snapshot_id: initial_snapshot.snapshot_id,
             state_fingerprint: current_plan.initial_state_fingerprint,
@@ -1619,9 +1627,9 @@ fn phase7_minimization_initial_snapshot(
         .map(|ok| ok.snapshot)
 }
 
-fn phase7_minimization_execution_goal_id(
+fn ai_search_minimization_execution_goal_id(
     snapshot: &MachineProofSnapshot,
-    edit: &Phase7ReplayStepEdit,
+    edit: &AiSearchReplayStepEdit,
 ) -> Option<GoalId> {
     if snapshot.open_goals.contains(&edit.original_goal_id) {
         return Some(edit.original_goal_id);
@@ -1632,23 +1640,23 @@ fn phase7_minimization_execution_goal_id(
         .copied()
 }
 
-fn phase7_minimization_reexecute_step(
-    client: &mut impl Phase7MachineApiClient,
+fn ai_search_minimization_reexecute_step(
+    client: &mut impl AiSearchMachineApiClient,
     session_id: SessionId,
     snapshot: &MachineProofSnapshot,
     goal_id: GoalId,
     candidate: MachineTacticCandidate,
     deterministic_budget: TacticBudget,
-) -> Option<(Phase7ReplayStep, MachineProofSnapshot)> {
-    let request = Phase7TacticBatchRequest {
+) -> Option<(AiSearchReplayStep, MachineProofSnapshot)> {
+    let request = AiSearchTacticBatchRequest {
         session_id: session_id.clone(),
         snapshot_id: snapshot.snapshot_id,
         state_fingerprint: snapshot.state_fingerprint,
         goal_id,
-        candidates: vec![Phase7AssignedCandidate {
+        candidates: vec![AiSearchAssignedCandidate {
             candidate_id: "c0".to_owned(),
             rank_index: 0,
-            envelope: phase7_minimization_candidate_envelope(candidate),
+            envelope: ai_search_minimization_candidate_envelope(candidate),
         }],
         deterministic_budget,
         batch_policy: MachineTacticBatchPolicy {
@@ -1658,7 +1666,7 @@ fn phase7_minimization_reexecute_step(
         },
         scheduler_limits: None,
     };
-    let evaluation = phase7_run_tactic_batch(client, &request).ok()?;
+    let evaluation = ai_search_run_tactic_batch(client, &request).ok()?;
     if evaluation.scheduler_stop.is_some()
         || evaluation.evaluated_count != 1
         || !evaluation.accepted_failure_records.is_empty()
@@ -1668,7 +1676,7 @@ fn phase7_minimization_reexecute_step(
     }
     let transition = evaluation.successful_transitions.into_iter().next()?;
     let next_snapshot = client
-        .get_snapshot(Phase7SnapshotGetRequest {
+        .get_snapshot(AiSearchSnapshotGetRequest {
             session_id,
             snapshot_id: transition.next_snapshot_id,
             state_fingerprint: transition.replay_step.next_state_fingerprint,
@@ -1678,25 +1686,25 @@ fn phase7_minimization_reexecute_step(
     Some((transition.replay_step, next_snapshot))
 }
 
-fn phase7_minimization_candidate_envelope(
+fn ai_search_minimization_candidate_envelope(
     candidate: MachineTacticCandidate,
-) -> Phase7CandidateEnvelope {
-    let metadata = phase7_candidate_metadata(
-        Phase7CandidateSource::Builtin,
+) -> AiSearchCandidateEnvelope {
+    let metadata = ai_search_candidate_metadata(
+        AiSearchCandidateSource::Builtin,
         None,
         0,
         Vec::new(),
         Vec::new(),
         &candidate,
     );
-    phase7_candidate_envelope(candidate, None, metadata)
+    ai_search_candidate_envelope(candidate, None, metadata)
 }
 
-fn phase7_validate_ok_batch_fields(
-    request: &Phase7TacticBatchRequest,
+fn ai_search_validate_ok_batch_fields(
+    request: &AiSearchTacticBatchRequest,
     fields: &MachineTacticBatchOkFields,
-) -> Phase7MachineControllerResult<()> {
-    phase7_validate_batch_common_fields(
+) -> AiSearchMachineControllerResult<()> {
+    ai_search_validate_batch_common_fields(
         request,
         fields.previous_state_fingerprint,
         fields.deterministic_budget_hash,
@@ -1706,12 +1714,12 @@ fn phase7_validate_ok_batch_fields(
     )
 }
 
-fn phase7_validate_scheduler_batch_fields(
-    request: &Phase7TacticBatchRequest,
+fn ai_search_validate_scheduler_batch_fields(
+    request: &AiSearchTacticBatchRequest,
     fields: &MachineTacticBatchSchedulerFields,
     status: MachineApiResponseStatus,
-) -> Phase7MachineControllerResult<()> {
-    phase7_validate_batch_common_fields(
+) -> AiSearchMachineControllerResult<()> {
+    ai_search_validate_batch_common_fields(
         request,
         fields.previous_state_fingerprint,
         fields.deterministic_budget_hash,
@@ -1720,7 +1728,7 @@ fn phase7_validate_scheduler_batch_fields(
         fields.failure_count,
     )?;
     if fields.completed_prefix_len as usize != fields.results.len() {
-        return Err(phase7_batch_contract_violation(
+        return Err(ai_search_batch_contract_violation(
             format!(
                 "completed_prefix_len {} did not match result prefix length {}",
                 fields.completed_prefix_len,
@@ -1730,7 +1738,7 @@ fn phase7_validate_scheduler_batch_fields(
         ));
     }
     if fields.results.len() == request.candidates.len() {
-        return Err(phase7_batch_contract_violation(
+        return Err(ai_search_batch_contract_violation(
             "scheduler partial response completed every candidate".to_owned(),
             Some(status),
         ));
@@ -1738,18 +1746,18 @@ fn phase7_validate_scheduler_batch_fields(
     Ok(())
 }
 
-fn phase7_validate_batch_common_fields(
-    request: &Phase7TacticBatchRequest,
+fn ai_search_validate_batch_common_fields(
+    request: &AiSearchTacticBatchRequest,
     previous_state_fingerprint: Hash,
     deterministic_budget_hash: Hash,
     results: &[MachineTacticBatchItemResponse],
     success_count: u32,
     failure_count: u32,
-) -> Phase7MachineControllerResult<()> {
+) -> AiSearchMachineControllerResult<()> {
     if previous_state_fingerprint != request.state_fingerprint {
-        return Err(Box::new(Phase7MachineControllerError {
-            kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
-            endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+        return Err(Box::new(AiSearchMachineControllerError {
+            kind: AiSearchMachineControllerErrorKind::BatchResponseContractViolation,
+            endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
             message: "batch previous_state_fingerprint did not match request".to_owned(),
             candidate_id: None,
             expected_hash: Some(request.state_fingerprint),
@@ -1762,9 +1770,9 @@ fn phase7_validate_batch_common_fields(
 
     let expected_budget_hash = tactic_budget_hash(request.deterministic_budget);
     if deterministic_budget_hash != expected_budget_hash {
-        return Err(Box::new(Phase7MachineControllerError {
-            kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
-            endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+        return Err(Box::new(AiSearchMachineControllerError {
+            kind: AiSearchMachineControllerErrorKind::BatchResponseContractViolation,
+            endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
             message: "batch deterministic_budget_hash did not match request budget".to_owned(),
             candidate_id: None,
             expected_hash: Some(expected_budget_hash),
@@ -1776,7 +1784,7 @@ fn phase7_validate_batch_common_fields(
     }
 
     if results.len() > request.candidates.len() {
-        return Err(phase7_batch_contract_violation(
+        return Err(ai_search_batch_contract_violation(
             format!(
                 "batch returned {} results for {} candidates",
                 results.len(),
@@ -1791,11 +1799,11 @@ fn phase7_validate_batch_common_fields(
     let mut actual_failure_count = 0u32;
     for (index, item) in results.iter().enumerate() {
         let expected_id = &request.candidates[index].candidate_id;
-        let actual_id = phase7_batch_item_candidate_id(item);
+        let actual_id = ai_search_batch_item_candidate_id(item);
         if actual_id != expected_id {
-            return Err(Box::new(Phase7MachineControllerError {
-                kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
-                endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+            return Err(Box::new(AiSearchMachineControllerError {
+                kind: AiSearchMachineControllerErrorKind::BatchResponseContractViolation,
+                endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
                 message: format!(
                     "batch result at index {index} used candidate_id {actual_id}, expected {expected_id}"
                 ),
@@ -1808,7 +1816,7 @@ fn phase7_validate_batch_common_fields(
             }));
         }
         if !seen_ids.insert(actual_id) {
-            return Err(phase7_batch_contract_violation(
+            return Err(ai_search_batch_contract_violation(
                 format!("batch repeated candidate_id {actual_id}"),
                 None,
             ));
@@ -1821,7 +1829,7 @@ fn phase7_validate_batch_common_fields(
     }
 
     if success_count != actual_success_count || failure_count != actual_failure_count {
-        return Err(phase7_batch_contract_violation(
+        return Err(ai_search_batch_contract_violation(
             format!(
                 "batch count fields reported {success_count} successes and {failure_count} failures, observed {actual_success_count} successes and {actual_failure_count} failures"
             ),
@@ -1829,20 +1837,20 @@ fn phase7_validate_batch_common_fields(
         ));
     }
 
-    phase7_validate_candidate_hashes(request, results)
+    ai_search_validate_candidate_hashes(request, results)
 }
 
-fn phase7_validate_candidate_hashes(
-    request: &Phase7TacticBatchRequest,
+fn ai_search_validate_candidate_hashes(
+    request: &AiSearchTacticBatchRequest,
     results: &[MachineTacticBatchItemResponse],
-) -> Phase7MachineControllerResult<()> {
+) -> AiSearchMachineControllerResult<()> {
     for (index, item) in results.iter().enumerate() {
         let assigned = &request.candidates[index];
-        let actual_hash = phase7_batch_item_candidate_hash(item);
-        if phase7_candidate_hash_mismatch(&assigned.envelope, actual_hash) {
-            return Err(Box::new(Phase7MachineControllerError {
-                kind: Phase7MachineControllerErrorKind::SuggestedCandidateHashMismatch,
-                endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+        let actual_hash = ai_search_batch_item_candidate_hash(item);
+        if ai_search_candidate_hash_mismatch(&assigned.envelope, actual_hash) {
+            return Err(Box::new(AiSearchMachineControllerError {
+                kind: AiSearchMachineControllerErrorKind::SuggestedCandidateHashMismatch,
+                endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
                 message: "batch candidate_hash did not match suggested candidate envelope"
                     .to_owned(),
                 candidate_id: Some(assigned.candidate_id.clone()),
@@ -1857,13 +1865,13 @@ fn phase7_validate_candidate_hashes(
     Ok(())
 }
 
-fn phase7_build_batch_evaluation(
-    request: &Phase7TacticBatchRequest,
+fn ai_search_build_batch_evaluation(
+    request: &AiSearchTacticBatchRequest,
     results: &[MachineTacticBatchItemResponse],
     deterministic_budget_hash: Hash,
-    scheduler_stop: Option<Phase7SchedulerStop>,
+    scheduler_stop: Option<AiSearchSchedulerStop>,
     deferred_start: usize,
-) -> Phase7BatchEvaluation {
+) -> AiSearchBatchEvaluation {
     let mut successful_transitions = Vec::new();
     let mut accepted_failure_records = Vec::new();
     let mut replay_steps = Vec::new();
@@ -1881,7 +1889,7 @@ fn phase7_build_batch_evaluation(
                 next_state_fingerprint,
                 proof_delta_hash,
             } => {
-                let replay_step = Phase7ReplayStep {
+                let replay_step = AiSearchReplayStep {
                     previous_state_fingerprint: request.state_fingerprint,
                     goal_id: request.goal_id,
                     candidate: assigned.envelope.candidate.clone(),
@@ -1892,15 +1900,17 @@ fn phase7_build_batch_evaluation(
                     next_state_fingerprint: *next_state_fingerprint,
                 };
                 replay_steps.push(replay_step.clone());
-                successful_transitions.push(Phase7SuccessfulCandidateTransition {
+                successful_transitions.push(AiSearchSuccessfulCandidateTransition {
                     candidate_id: candidate_id.clone(),
                     envelope: assigned.envelope.clone(),
                     next_snapshot_id: *next_snapshot_id,
                     replay_step,
                 });
-                training_trace_candidates.push(Phase7TrainingTraceCandidate::Success {
+                training_trace_candidates.push(AiSearchTrainingTraceCandidate::Success {
                     rank_index: assigned.rank_index,
-                    phase7_candidate_payload_hash: assigned.envelope.phase7_candidate_payload_hash,
+                    ai_search_candidate_payload_hash: assigned
+                        .envelope
+                        .ai_search_candidate_payload_hash,
                     candidate: assigned.envelope.candidate.clone(),
                     candidate_hash: *candidate_hash,
                     deterministic_budget_hash,
@@ -1914,21 +1924,21 @@ fn phase7_build_batch_evaluation(
                 diagnostic,
                 ..
             } => {
-                if let Some(failure) = phase7_normalize_accepted_candidate_failure(
+                if let Some(failure) = ai_search_normalize_accepted_candidate_failure(
                     diagnostic,
                     *candidate_hash,
                     deterministic_budget_hash,
                 ) {
-                    accepted_failure_records.push(Phase7AcceptedCandidateFailureRecord {
+                    accepted_failure_records.push(AiSearchAcceptedCandidateFailureRecord {
                         candidate_id: assigned.candidate_id.clone(),
                         envelope: assigned.envelope.clone(),
                         failure: failure.clone(),
                     });
-                    training_trace_candidates.push(Phase7TrainingTraceCandidate::Error {
+                    training_trace_candidates.push(AiSearchTrainingTraceCandidate::Error {
                         rank_index: assigned.rank_index,
-                        phase7_candidate_payload_hash: assigned
+                        ai_search_candidate_payload_hash: assigned
                             .envelope
-                            .phase7_candidate_payload_hash,
+                            .ai_search_candidate_payload_hash,
                         candidate: assigned.envelope.candidate.clone(),
                         candidate_hash: failure.candidate_hash,
                         error_kind: failure.error_kind,
@@ -1941,11 +1951,11 @@ fn phase7_build_batch_evaluation(
                     });
                     accepted_failures.push(failure);
                 } else {
-                    non_accepted_errors.push(Phase7NonAcceptedCandidateError {
+                    non_accepted_errors.push(AiSearchNonAcceptedCandidateError {
                         candidate_id: assigned.candidate_id.clone(),
-                        phase7_candidate_payload_hash: assigned
+                        ai_search_candidate_payload_hash: assigned
                             .envelope
-                            .phase7_candidate_payload_hash,
+                            .ai_search_candidate_payload_hash,
                         error_kind: diagnostic.error_kind,
                         phase: diagnostic.phase,
                         has_candidate_hash: candidate_hash.is_some(),
@@ -1955,7 +1965,7 @@ fn phase7_build_batch_evaluation(
         }
     }
 
-    Phase7BatchEvaluation {
+    AiSearchBatchEvaluation {
         successful_transitions,
         accepted_failure_records,
         replay_steps,
@@ -1963,18 +1973,18 @@ fn phase7_build_batch_evaluation(
         non_accepted_errors,
         training_trace_candidates,
         evaluated_count: usize_to_u32(results.len()),
-        deferred_candidates: phase7_deferred_candidates(request, deferred_start),
+        deferred_candidates: ai_search_deferred_candidates(request, deferred_start),
         scheduler_stop,
     }
 }
 
-fn phase7_normalize_accepted_candidate_failure(
+fn ai_search_normalize_accepted_candidate_failure(
     diagnostic: &MachineApiCompactErrorWire,
     candidate_hash: Option<Hash>,
     deterministic_budget_hash: Hash,
-) -> Option<Phase7AcceptedCandidateFailure> {
-    Some(Phase7AcceptedCandidateFailure {
-        error_kind: phase7_failed_candidate_error_kind(diagnostic.error_kind)?,
+) -> Option<AiSearchAcceptedCandidateFailure> {
+    Some(AiSearchAcceptedCandidateFailure {
+        error_kind: ai_search_failed_candidate_error_kind(diagnostic.error_kind)?,
         phase: diagnostic.phase,
         goal_id: diagnostic.goal_id,
         tactic_kind: diagnostic.tactic_kind,
@@ -1985,7 +1995,7 @@ fn phase7_normalize_accepted_candidate_failure(
     })
 }
 
-fn phase7_failed_candidate_error_kind(
+fn ai_search_failed_candidate_error_kind(
     kind: MachineApiErrorKind,
 ) -> Option<FailedCandidateErrorKind> {
     match kind {
@@ -2013,42 +2023,42 @@ fn phase7_failed_candidate_error_kind(
     }
 }
 
-fn phase7_batch_item_candidate_id(item: &MachineTacticBatchItemResponse) -> &str {
+fn ai_search_batch_item_candidate_id(item: &MachineTacticBatchItemResponse) -> &str {
     match item {
         MachineTacticBatchItemResponse::Success { candidate_id, .. }
         | MachineTacticBatchItemResponse::Error { candidate_id, .. } => candidate_id,
     }
 }
 
-fn phase7_batch_item_candidate_hash(item: &MachineTacticBatchItemResponse) -> Option<Hash> {
+fn ai_search_batch_item_candidate_hash(item: &MachineTacticBatchItemResponse) -> Option<Hash> {
     match item {
         MachineTacticBatchItemResponse::Success { candidate_hash, .. } => Some(*candidate_hash),
         MachineTacticBatchItemResponse::Error { candidate_hash, .. } => *candidate_hash,
     }
 }
 
-fn phase7_deferred_candidates(
-    request: &Phase7TacticBatchRequest,
+fn ai_search_deferred_candidates(
+    request: &AiSearchTacticBatchRequest,
     start: usize,
-) -> Vec<Phase7DeferredCandidate> {
+) -> Vec<AiSearchDeferredCandidate> {
     request
         .candidates
         .iter()
         .skip(start)
-        .map(|assigned| Phase7DeferredCandidate {
+        .map(|assigned| AiSearchDeferredCandidate {
             candidate_id: assigned.candidate_id.clone(),
             envelope: assigned.envelope.clone(),
         })
         .collect()
 }
 
-fn phase7_batch_contract_violation(
+fn ai_search_batch_contract_violation(
     message: String,
     status: Option<MachineApiResponseStatus>,
-) -> Box<Phase7MachineControllerError> {
-    Box::new(Phase7MachineControllerError {
-        kind: Phase7MachineControllerErrorKind::BatchResponseContractViolation,
-        endpoint: Phase7MachineApiEndpointKind::TacticBatch,
+) -> Box<AiSearchMachineControllerError> {
+    Box::new(AiSearchMachineControllerError {
+        kind: AiSearchMachineControllerErrorKind::BatchResponseContractViolation,
+        endpoint: AiSearchMachineApiEndpointKind::TacticBatch,
         message,
         candidate_id: None,
         expected_hash: None,
@@ -2059,7 +2069,7 @@ fn phase7_batch_contract_violation(
     })
 }
 
-fn phase7_tactic_budget_json(budget: TacticBudget) -> String {
+fn ai_search_tactic_budget_json(budget: TacticBudget) -> String {
     format!(
         r#"{{"max_tactic_steps":{},"max_whnf_steps":{},"max_conversion_steps":{},"max_rewrite_steps":{},"max_meta_allocations":{},"max_expr_nodes":{}}}"#,
         budget.max_tactic_steps,
@@ -2071,14 +2081,14 @@ fn phase7_tactic_budget_json(budget: TacticBudget) -> String {
     )
 }
 
-fn phase7_batch_policy_json(policy: MachineTacticBatchPolicy) -> String {
+fn ai_search_batch_policy_json(policy: MachineTacticBatchPolicy) -> String {
     format!(
         r#"{{"max_evaluated_candidates":{},"stop_after_successes":{},"stop_after_failures":{}}}"#,
         policy.max_evaluated_candidates, policy.stop_after_successes, policy.stop_after_failures,
     )
 }
 
-fn phase7_scheduler_limits_json(limits: MachineBatchSchedulerLimits) -> String {
+fn ai_search_scheduler_limits_json(limits: MachineBatchSchedulerLimits) -> String {
     let mut fields = Vec::new();
     if let Some(value) = limits.per_candidate_timeout_ms {
         fields.push(format!(r#""per_candidate_timeout_ms":{value}"#));
@@ -2092,7 +2102,7 @@ fn phase7_scheduler_limits_json(limits: MachineBatchSchedulerLimits) -> String {
     format!("{{{}}}", fields.join(","))
 }
 
-impl Phase7RuleBasedRepair {
+impl AiSearchRuleBasedRepair {
     pub fn new() -> Self {
         Self
     }
@@ -2100,26 +2110,26 @@ impl Phase7RuleBasedRepair {
     pub fn repair_candidate(
         self,
         goal: &MachineGoalView,
-        failed_envelope: &Phase7CandidateEnvelope,
-        failure: &Phase7AcceptedCandidateFailure,
+        failed_envelope: &AiSearchCandidateEnvelope,
+        failure: &AiSearchAcceptedCandidateFailure,
         repair_depth: u32,
-    ) -> Phase7RepairCandidateOutput {
+    ) -> AiSearchRepairCandidateOutput {
         if repair_depth > 2 {
-            return Phase7RepairCandidateOutput::default();
+            return AiSearchRepairCandidateOutput::default();
         }
 
-        match phase7_rule_based_repair_action(failure.error_kind) {
-            Phase7RuleBasedRepairAction::Noop => Phase7RepairCandidateOutput::default(),
-            Phase7RuleBasedRepairAction::TrySimpLite => {
-                phase7_simp_lite_repair_candidate(goal, failed_envelope, failure, repair_depth)
+        match ai_search_rule_based_repair_action(failure.error_kind) {
+            AiSearchRuleBasedRepairAction::Noop => AiSearchRepairCandidateOutput::default(),
+            AiSearchRuleBasedRepairAction::TrySimpLite => {
+                ai_search_simp_lite_repair_candidate(goal, failed_envelope, failure, repair_depth)
             }
         }
     }
 }
 
-pub fn phase7_rule_based_repair_action(
+pub fn ai_search_rule_based_repair_action(
     kind: FailedCandidateErrorKind,
-) -> Phase7RuleBasedRepairAction {
+) -> AiSearchRuleBasedRepairAction {
     match kind {
         FailedCandidateErrorKind::UnsupportedTactic
         | FailedCandidateErrorKind::MachineTermElaborationError
@@ -2127,16 +2137,16 @@ pub fn phase7_rule_based_repair_action(
         | FailedCandidateErrorKind::ImplicitArgumentRequired
         | FailedCandidateErrorKind::InductionTargetNotNat
         | FailedCandidateErrorKind::BudgetExceeded
-        | FailedCandidateErrorKind::TooLargeTerm => Phase7RuleBasedRepairAction::Noop,
+        | FailedCandidateErrorKind::TooLargeTerm => AiSearchRuleBasedRepairAction::Noop,
         FailedCandidateErrorKind::TypeMismatch
         | FailedCandidateErrorKind::ExpectedPiType
         | FailedCandidateErrorKind::RewriteRuleInvalid
         | FailedCandidateErrorKind::SimpNoProgress
-        | FailedCandidateErrorKind::TooManyGoals => Phase7RuleBasedRepairAction::TrySimpLite,
+        | FailedCandidateErrorKind::TooManyGoals => AiSearchRuleBasedRepairAction::TrySimpLite,
     }
 }
 
-pub fn phase7_repair_depth_of(envelope: &Phase7CandidateEnvelope) -> u32 {
+pub fn ai_search_repair_depth_of(envelope: &AiSearchCandidateEnvelope) -> u32 {
     envelope
         .metadata
         .repair
@@ -2144,20 +2154,20 @@ pub fn phase7_repair_depth_of(envelope: &Phase7CandidateEnvelope) -> u32 {
         .map_or(0, |repair| repair.repair_depth)
 }
 
-fn phase7_simp_lite_repair_candidate(
+fn ai_search_simp_lite_repair_candidate(
     goal: &MachineGoalView,
-    failed_envelope: &Phase7CandidateEnvelope,
-    failure: &Phase7AcceptedCandidateFailure,
+    failed_envelope: &AiSearchCandidateEnvelope,
+    failure: &AiSearchAcceptedCandidateFailure,
     repair_depth: u32,
-) -> Phase7RepairCandidateOutput {
-    if !phase7_goal_allows_tactic(goal, MachineApiTacticKind::SimpLite) {
-        return Phase7RepairCandidateOutput::default();
+) -> AiSearchRepairCandidateOutput {
+    if !ai_search_goal_allows_tactic(goal, MachineApiTacticKind::SimpLite) {
+        return AiSearchRepairCandidateOutput::default();
     }
 
-    let chain_tried_payload_hashes = phase7_repair_chain_tried_payload_hashes(failed_envelope);
+    let chain_tried_payload_hashes = ai_search_repair_chain_tried_payload_hashes(failed_envelope);
     let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
-    let mut metadata = phase7_candidate_metadata(
-        Phase7CandidateSource::Repair,
+    let mut metadata = ai_search_candidate_metadata(
+        AiSearchCandidateSource::Repair,
         None,
         0,
         Vec::new(),
@@ -2165,23 +2175,23 @@ fn phase7_simp_lite_repair_candidate(
         &candidate,
     );
     metadata.display_text = Some("simp-lite".to_owned());
-    metadata.repair = Some(Phase7CandidateRepairMetadata {
+    metadata.repair = Some(AiSearchCandidateRepairMetadata {
         parent_candidate_hash: failure.candidate_hash,
         error_kind: failure.error_kind,
         repair_depth,
         chain_tried_payload_hashes: chain_tried_payload_hashes.clone(),
     });
-    let envelope = phase7_candidate_envelope(candidate, None, metadata);
+    let envelope = ai_search_candidate_envelope(candidate, None, metadata);
 
-    if chain_tried_payload_hashes.contains(&envelope.phase7_candidate_payload_hash) {
-        return Phase7RepairCandidateOutput {
+    if chain_tried_payload_hashes.contains(&envelope.ai_search_candidate_payload_hash) {
+        return AiSearchRepairCandidateOutput {
             pending: Vec::new(),
-            repeated_candidate_payload_hashes: vec![envelope.phase7_candidate_payload_hash],
+            repeated_candidate_payload_hashes: vec![envelope.ai_search_candidate_payload_hash],
         };
     }
 
-    Phase7RepairCandidateOutput {
-        pending: vec![Phase7PendingCandidate {
+    AiSearchRepairCandidateOutput {
+        pending: vec![AiSearchPendingCandidate {
             goal_id: goal.goal_id,
             repair_depth,
             parent_candidate_hash: failure.candidate_hash,
@@ -2193,19 +2203,19 @@ fn phase7_simp_lite_repair_candidate(
     }
 }
 
-fn phase7_repair_chain_tried_payload_hashes(envelope: &Phase7CandidateEnvelope) -> Vec<Hash> {
+fn ai_search_repair_chain_tried_payload_hashes(envelope: &AiSearchCandidateEnvelope) -> Vec<Hash> {
     let mut chain = envelope
         .metadata
         .repair
         .as_ref()
         .map_or_else(Vec::new, |repair| repair.chain_tried_payload_hashes.clone());
-    chain.push(envelope.phase7_candidate_payload_hash);
+    chain.push(envelope.ai_search_candidate_payload_hash);
     chain
 }
 
-fn phase7_repeated_repair_error(
-    envelope: &Phase7CandidateEnvelope,
-    failure: &Phase7AcceptedCandidateFailure,
+fn ai_search_repeated_repair_error(
+    envelope: &AiSearchCandidateEnvelope,
+    failure: &AiSearchAcceptedCandidateFailure,
 ) -> bool {
     envelope
         .metadata
@@ -2214,16 +2224,16 @@ fn phase7_repeated_repair_error(
         .is_some_and(|repair| repair.error_kind == failure.error_kind)
 }
 
-fn phase7_limit_repairs(
-    pending_repairs: Vec<Phase7PendingCandidate>,
-) -> Vec<Phase7PendingCandidate> {
+fn ai_search_limit_repairs(
+    pending_repairs: Vec<AiSearchPendingCandidate>,
+) -> Vec<AiSearchPendingCandidate> {
     let mut seen_payloads = BTreeSet::new();
     let mut per_parent_counts: BTreeMap<(GoalId, Hash, FailedCandidateErrorKind), u32> =
         BTreeMap::new();
     let mut out = Vec::new();
 
     for pending in pending_repairs {
-        if !seen_payloads.insert(pending.candidate.phase7_candidate_payload_hash) {
+        if !seen_payloads.insert(pending.candidate.ai_search_candidate_payload_hash) {
             continue;
         }
 
@@ -2243,11 +2253,11 @@ fn phase7_limit_repairs(
     out
 }
 
-fn phase7_merge_node_candidates(
-    deferred_candidates: &mut Vec<Phase7DeferredCandidate>,
-    pending_repairs: &mut Vec<Phase7PendingCandidate>,
-    fresh_candidates: &mut Vec<Phase7CandidateEnvelope>,
-) -> Vec<Phase7CandidateEnvelope> {
+fn ai_search_merge_node_candidates(
+    deferred_candidates: &mut Vec<AiSearchDeferredCandidate>,
+    pending_repairs: &mut Vec<AiSearchPendingCandidate>,
+    fresh_candidates: &mut Vec<AiSearchCandidateEnvelope>,
+) -> Vec<AiSearchCandidateEnvelope> {
     let mut candidates = Vec::new();
     candidates.extend(
         deferred_candidates
@@ -2255,17 +2265,17 @@ fn phase7_merge_node_candidates(
             .map(|deferred| deferred.envelope),
     );
 
-    let mut repairs = phase7_limit_repairs(std::mem::take(pending_repairs));
-    repairs.sort_by(phase7_pending_candidate_order);
+    let mut repairs = ai_search_limit_repairs(std::mem::take(pending_repairs));
+    repairs.sort_by(ai_search_pending_candidate_order);
     candidates.extend(repairs.into_iter().map(|pending| pending.candidate));
 
     candidates.extend(std::mem::take(fresh_candidates));
-    phase7_dedupe_candidate_envelopes(candidates)
+    ai_search_dedupe_candidate_envelopes(candidates)
 }
 
-fn phase7_pending_candidate_order(
-    left: &Phase7PendingCandidate,
-    right: &Phase7PendingCandidate,
+fn ai_search_pending_candidate_order(
+    left: &AiSearchPendingCandidate,
+    right: &AiSearchPendingCandidate,
 ) -> Ordering {
     left.repair_depth
         .cmp(&right.repair_depth)
@@ -2273,26 +2283,26 @@ fn phase7_pending_candidate_order(
         .then_with(|| left.error_kind.as_str().cmp(right.error_kind.as_str()))
         .then_with(|| {
             left.candidate
-                .phase7_candidate_payload_hash
-                .cmp(&right.candidate.phase7_candidate_payload_hash)
+                .ai_search_candidate_payload_hash
+                .cmp(&right.candidate.ai_search_candidate_payload_hash)
         })
 }
 
-pub fn phase7_search_node_priority_key(node: &Phase7SearchNode) -> Phase7SearchPriorityKey {
-    Phase7SearchPriorityKey {
+pub fn ai_search_node_priority_key(node: &AiSearchNode) -> AiSearchPriorityKey {
+    AiSearchPriorityKey {
         open_goal_count: usize_to_u32(node.goals.len()),
         depth: node.depth,
         replay_step_count: usize_to_u32(node.replay_steps.len()),
-        total_open_goal_target_size: phase7_total_open_goal_target_size(&node.goals),
+        total_open_goal_target_size: ai_search_total_open_goal_target_size(&node.goals),
         state_fingerprint: node.state_fingerprint,
         node_id: node.node_id,
     }
 }
 
-pub fn phase7_search_node_best_partial_key(node: &Phase7SearchNode) -> Phase7BestPartialKey {
-    Phase7BestPartialKey {
+pub fn ai_search_node_best_partial_key(node: &AiSearchNode) -> AiSearchBestPartialKey {
+    AiSearchBestPartialKey {
         open_goal_count: usize_to_u32(node.goals.len()),
-        total_open_goal_target_size: phase7_total_open_goal_target_size(&node.goals),
+        total_open_goal_target_size: ai_search_total_open_goal_target_size(&node.goals),
         replay_step_count: usize_to_u32(node.replay_steps.len()),
         depth: node.depth,
         state_fingerprint: node.state_fingerprint,
@@ -2300,30 +2310,30 @@ pub fn phase7_search_node_best_partial_key(node: &Phase7SearchNode) -> Phase7Bes
     }
 }
 
-pub fn phase7_run_mvp_search(
-    client: &mut impl Phase7MachineApiClient,
-    input: Phase7SearchInput,
-) -> Phase7SearchResult {
-    let mut node_ids = Phase7NodeIdAllocator::new();
-    let mut queue = Phase7SearchPriorityQueue::new();
+pub fn ai_search_run_mvp_search(
+    client: &mut impl AiSearchMachineApiClient,
+    input: AiSearchInput,
+) -> AiSearchResult {
+    let mut node_ids = AiSearchNodeIdAllocator::new();
+    let mut queue = AiSearchPriorityQueue::new();
     let mut discovered_states = BTreeSet::new();
-    let mut stats = Phase7SearchStats::default();
-    let mut trace = Phase7TraceBuilder::new();
+    let mut stats = AiSearchStats::default();
+    let mut trace = AiSearchTraceBuilder::new();
     let mut training_trace_records = Vec::new();
-    let mut best_partial: Option<Phase7SearchNode> = None;
-    let mut failure_reason = Phase7SearchFailureReason::QueueExhausted;
+    let mut best_partial: Option<AiSearchNode> = None;
+    let mut failure_reason = AiSearchFailureReason::QueueExhausted;
     let mut depth_budget_hit = false;
     let mut initial_no_candidate_goal = None;
 
-    let root = phase7_root_search_node(&input, node_ids.allocate());
+    let root = ai_search_root_search_node(&input, node_ids.allocate());
     discovered_states.insert(root.state_fingerprint);
     queue.push(root);
 
     while let Some(mut node) = queue.pop_best() {
-        node.status = Phase7NodeStatus::Expanded;
-        trace.push(&node, Phase7SearchTraceEventKind::NodeExpanded);
+        node.status = AiSearchNodeStatus::Expanded;
+        trace.push(&node, AiSearchTraceEventKind::NodeExpanded);
 
-        let snapshot = match client.get_snapshot(Phase7SnapshotGetRequest {
+        let snapshot = match client.get_snapshot(AiSearchSnapshotGetRequest {
             session_id: node.session_id.clone(),
             snapshot_id: node.snapshot_id,
             state_fingerprint: node.state_fingerprint,
@@ -2331,15 +2341,15 @@ pub fn phase7_run_mvp_search(
             Ok(ok) => ok.snapshot,
             Err(error) => {
                 stats.controller_errors += 1;
-                let reason = phase7_search_failure_reason_from_machine_api_error(
-                    Phase7MachineApiEndpointKind::SnapshotGet,
+                let reason = ai_search_failure_reason_from_machine_api_error(
+                    AiSearchMachineApiEndpointKind::SnapshotGet,
                     &error,
                 );
                 trace.push(
                     &node,
-                    phase7_machine_controller_trace_kind_from_reason(&reason),
+                    ai_search_machine_controller_trace_kind_from_reason(&reason),
                 );
-                return Err(phase7_search_failure(
+                return Err(ai_search_failure(
                     reason,
                     best_partial,
                     stats,
@@ -2348,12 +2358,12 @@ pub fn phase7_run_mvp_search(
                 ));
             }
         };
-        node.goals = phase7_goal_summaries(&snapshot);
+        node.goals = ai_search_goal_summaries(&snapshot);
 
         if node.goals.is_empty() {
-            match phase7_attempt_closed_node(client, &node, &mut stats, &mut trace) {
-                Phase7ClosedNodeOutcome::Verified(verified) => {
-                    let minimization = phase7_minimize_replay_plan(
+            match ai_search_attempt_closed_node(client, &node, &mut stats, &mut trace) {
+                AiSearchClosedNodeOutcome::Verified(verified) => {
+                    let minimization = ai_search_minimize_replay_plan(
                         client,
                         node.session_id.clone(),
                         &input.initial_snapshot,
@@ -2361,7 +2371,7 @@ pub fn phase7_run_mvp_search(
                         verified.replay_response,
                         verified.verify_response,
                     );
-                    return Ok(Phase7VerifiedProof {
+                    return Ok(AiSearchVerifiedProof {
                         replay_plan: minimization.replay_plan,
                         final_snapshot_id: minimization.replay_response.final_snapshot_id,
                         final_state_fingerprint: minimization
@@ -2374,9 +2384,9 @@ pub fn phase7_run_mvp_search(
                         training_trace_records,
                     });
                 }
-                Phase7ClosedNodeOutcome::Rejected => continue,
-                Phase7ClosedNodeOutcome::ControllerError { reason } => {
-                    return Err(phase7_search_failure(
+                AiSearchClosedNodeOutcome::Rejected => continue,
+                AiSearchClosedNodeOutcome::ControllerError { reason } => {
+                    return Err(ai_search_failure(
                         reason,
                         best_partial,
                         stats,
@@ -2388,7 +2398,7 @@ pub fn phase7_run_mvp_search(
         }
 
         if best_partial.as_ref().is_none_or(|best| {
-            phase7_search_node_best_partial_key(&node) < phase7_search_node_best_partial_key(best)
+            ai_search_node_best_partial_key(&node) < ai_search_node_best_partial_key(best)
         }) {
             best_partial = Some(node.clone());
             stats.best_partial_updates += 1;
@@ -2399,7 +2409,7 @@ pub fn phase7_run_mvp_search(
             stats.max_depth_stops += 1;
             trace.push(
                 &node,
-                Phase7SearchTraceEventKind::MaxDepthStopped {
+                AiSearchTraceEventKind::MaxDepthStopped {
                     max_depth: input.search_budget.max_depth,
                 },
             );
@@ -2407,23 +2417,23 @@ pub fn phase7_run_mvp_search(
         }
 
         if stats.nodes_expanded >= input.search_budget.max_nodes {
-            failure_reason = Phase7SearchFailureReason::SearchBudgetExceeded {
-                limit: Phase7SearchBudgetLimit::MaxNodes,
+            failure_reason = AiSearchFailureReason::SearchBudgetExceeded {
+                limit: AiSearchBudgetLimit::MaxNodes,
             };
             break;
         }
         stats.nodes_expanded += 1;
 
-        let Some(goal_summary) = select_phase7_goal(&snapshot) else {
+        let Some(goal_summary) = select_ai_search_goal(&snapshot) else {
             stats.no_candidate_stops += 1;
             continue;
         };
         let goal_id = goal_summary.goal_id;
         let Some(goal) = snapshot.goals.iter().find(|goal| goal.goal_id == goal_id) else {
             stats.controller_errors += 1;
-            let reason = Phase7SearchFailureReason::MachineControllerError {
-                endpoint: phase7_machine_api_endpoint_wire(
-                    Phase7MachineApiEndpointKind::SnapshotGet,
+            let reason = AiSearchFailureReason::MachineControllerError {
+                endpoint: ai_search_machine_api_endpoint_wire(
+                    AiSearchMachineApiEndpointKind::SnapshotGet,
                 )
                 .to_owned(),
                 error_kind: "invalid_machine_proof_state".to_owned(),
@@ -2432,9 +2442,9 @@ pub fn phase7_run_mvp_search(
             };
             trace.push(
                 &node,
-                phase7_machine_controller_trace_kind_from_reason(&reason),
+                ai_search_machine_controller_trace_kind_from_reason(&reason),
             );
-            return Err(phase7_search_failure(
+            return Err(ai_search_failure(
                 reason,
                 best_partial,
                 stats,
@@ -2443,9 +2453,9 @@ pub fn phase7_run_mvp_search(
             ));
         };
 
-        let retrieval = match retrieve_phase7_premises(
+        let retrieval = match retrieve_ai_search_premises(
             client,
-            &Phase7PremiseQueryRequest {
+            &AiSearchPremiseQueryRequest {
                 session_id: node.session_id.clone(),
                 snapshot_id: node.snapshot_id,
                 state_fingerprint: node.state_fingerprint,
@@ -2456,15 +2466,15 @@ pub fn phase7_run_mvp_search(
             Ok(retrieval) => retrieval,
             Err(error) => {
                 stats.controller_errors += 1;
-                let reason = phase7_search_failure_reason_from_machine_api_error(
-                    Phase7MachineApiEndpointKind::SearchForGoal,
+                let reason = ai_search_failure_reason_from_machine_api_error(
+                    AiSearchMachineApiEndpointKind::SearchForGoal,
                     &error,
                 );
                 trace.push(
                     &node,
-                    phase7_machine_controller_trace_kind_from_reason(&reason),
+                    ai_search_machine_controller_trace_kind_from_reason(&reason),
                 );
-                return Err(phase7_search_failure(
+                return Err(ai_search_failure(
                     reason,
                     best_partial,
                     stats,
@@ -2474,8 +2484,8 @@ pub fn phase7_run_mvp_search(
             }
         };
 
-        let candidate_generation = phase7_mvp_candidate_generation(goal, &retrieval);
-        phase7_record_forbidden_candidate_discards(
+        let candidate_generation = ai_search_mvp_candidate_generation(goal, &retrieval);
+        ai_search_record_forbidden_candidate_discards(
             &mut trace,
             &node,
             &candidate_generation.rejected,
@@ -2485,10 +2495,10 @@ pub fn phase7_run_mvp_search(
         let mut pending_repairs = Vec::new();
         let mut evaluated_for_node = 0u32;
         let mut training_batch_index = 0u32;
-        let repair = Phase7RuleBasedRepair::new();
+        let repair = AiSearchRuleBasedRepair::new();
 
         loop {
-            let mut candidates = phase7_merge_node_candidates(
+            let mut candidates = ai_search_merge_node_candidates(
                 &mut deferred_candidates,
                 &mut pending_repairs,
                 &mut fresh_candidates,
@@ -2502,13 +2512,13 @@ pub fn phase7_run_mvp_search(
             let candidates_exceeded_remaining_tactic_budget =
                 candidates.len() > remaining_tactic_budget as usize;
             candidates =
-                phase7_take_remaining_node_tactic_budget(candidates, remaining_tactic_budget);
+                ai_search_take_remaining_node_tactic_budget(candidates, remaining_tactic_budget);
 
             if candidates.is_empty() {
                 if max_tactics_budget_reached_before_batch {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                        AiSearchTraceEventKind::MaxTacticsPerNodeStopped {
                             max_tactics_per_node: input.search_budget.max_tactics_per_node,
                         },
                     );
@@ -2519,32 +2529,32 @@ pub fn phase7_run_mvp_search(
                     }
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::NoCandidateForSelectedGoal { goal_id },
+                        AiSearchTraceEventKind::NoCandidateForSelectedGoal { goal_id },
                     );
                 }
                 break;
             }
 
-            let batch_request = Phase7TacticBatchRequest {
+            let batch_request = AiSearchTacticBatchRequest {
                 session_id: node.session_id.clone(),
                 snapshot_id: node.snapshot_id,
                 state_fingerprint: node.state_fingerprint,
                 goal_id,
-                candidates: phase7_assign_candidate_ids(candidates),
+                candidates: ai_search_assign_candidate_ids(candidates),
                 deterministic_budget: input.per_tactic_deterministic_budget,
                 batch_policy: input.batch_policy,
                 scheduler_limits: input.scheduler_limits,
             };
-            let evaluation = match phase7_run_tactic_batch(client, &batch_request) {
+            let evaluation = match ai_search_run_tactic_batch(client, &batch_request) {
                 Ok(evaluation) => evaluation,
                 Err(error) => {
                     stats.controller_errors += 1;
-                    let reason = phase7_search_failure_reason_from_tactic_batch_run_error(&error);
+                    let reason = ai_search_failure_reason_from_tactic_batch_run_error(&error);
                     trace.push(
                         &node,
-                        phase7_machine_controller_trace_kind_from_reason(&reason),
+                        ai_search_machine_controller_trace_kind_from_reason(&reason),
                     );
-                    return Err(phase7_search_failure(
+                    return Err(ai_search_failure(
                         reason,
                         best_partial,
                         stats,
@@ -2560,20 +2570,20 @@ pub fn phase7_run_mvp_search(
                     stats.zero_progress_scheduler_stops += 1;
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::ZeroProgressSchedulerStopped {
+                        AiSearchTraceEventKind::ZeroProgressSchedulerStopped {
                             status: scheduler_stop.status,
                         },
                     );
                 } else {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::SchedulerStopped {
+                        AiSearchTraceEventKind::SchedulerStopped {
                             status: scheduler_stop.status,
                             completed_prefix_len: scheduler_stop.completed_prefix_len,
                         },
                     );
                 }
-                phase7_record_scheduler_dropped_candidates(
+                ai_search_record_scheduler_dropped_candidates(
                     &mut trace,
                     &node,
                     &batch_request,
@@ -2586,16 +2596,16 @@ pub fn phase7_run_mvp_search(
                 && !evaluation.deferred_candidates.is_empty()
             {
                 stats.controller_errors += 1;
-                let error = phase7_batch_contract_violation(
+                let error = ai_search_batch_contract_violation(
                     "batch ok response did not evaluate any candidate".to_owned(),
                     None,
                 );
-                let reason = phase7_search_failure_reason_from_controller_error(&error);
+                let reason = ai_search_failure_reason_from_controller_error(&error);
                 trace.push(
                     &node,
-                    phase7_machine_controller_trace_kind_from_reason(&reason),
+                    ai_search_machine_controller_trace_kind_from_reason(&reason),
                 );
-                return Err(phase7_search_failure(
+                return Err(ai_search_failure(
                     reason,
                     best_partial,
                     stats,
@@ -2604,7 +2614,7 @@ pub fn phase7_run_mvp_search(
                 ));
             }
 
-            phase7_record_training_trace_batch(
+            ai_search_record_training_trace_batch(
                 &mut training_trace_records,
                 &node,
                 &mut training_batch_index,
@@ -2612,7 +2622,7 @@ pub fn phase7_run_mvp_search(
                 &retrieval.cache_entries,
                 &evaluation,
             );
-            phase7_record_non_accepted_candidate_errors(
+            ai_search_record_non_accepted_candidate_errors(
                 &mut trace,
                 &node,
                 &evaluation.non_accepted_errors,
@@ -2620,14 +2630,14 @@ pub fn phase7_run_mvp_search(
 
             evaluated_for_node = evaluated_for_node
                 .checked_add(evaluation.evaluated_count)
-                .expect("phase7 evaluated candidates for node fits in u32");
+                .expect("ai_search evaluated candidates for node fits in u32");
             stats.candidates_evaluated += u64::from(evaluation.evaluated_count);
 
             for transition in evaluation.successful_transitions {
                 if discovered_states.contains(&transition.replay_step.next_state_fingerprint) {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::DuplicateStateSkipped {
+                        AiSearchTraceEventKind::DuplicateStateSkipped {
                             duplicate_state_fingerprint: transition
                                 .replay_step
                                 .next_state_fingerprint,
@@ -2636,7 +2646,7 @@ pub fn phase7_run_mvp_search(
                     continue;
                 }
 
-                let child_snapshot = match client.get_snapshot(Phase7SnapshotGetRequest {
+                let child_snapshot = match client.get_snapshot(AiSearchSnapshotGetRequest {
                     session_id: node.session_id.clone(),
                     snapshot_id: transition.next_snapshot_id,
                     state_fingerprint: transition.replay_step.next_state_fingerprint,
@@ -2644,15 +2654,15 @@ pub fn phase7_run_mvp_search(
                     Ok(ok) => ok.snapshot,
                     Err(error) => {
                         stats.controller_errors += 1;
-                        let reason = phase7_search_failure_reason_from_machine_api_error(
-                            Phase7MachineApiEndpointKind::SnapshotGet,
+                        let reason = ai_search_failure_reason_from_machine_api_error(
+                            AiSearchMachineApiEndpointKind::SnapshotGet,
                             &error,
                         );
                         trace.push(
                             &node,
-                            phase7_machine_controller_trace_kind_from_reason(&reason),
+                            ai_search_machine_controller_trace_kind_from_reason(&reason),
                         );
-                        return Err(phase7_search_failure(
+                        return Err(ai_search_failure(
                             reason,
                             best_partial,
                             stats,
@@ -2663,7 +2673,7 @@ pub fn phase7_run_mvp_search(
                 };
 
                 let child_node_id = node_ids.allocate();
-                let child = phase7_make_child_search_node(
+                let child = ai_search_make_child_search_node(
                     &node,
                     child_node_id,
                     transition,
@@ -2672,7 +2682,7 @@ pub fn phase7_run_mvp_search(
                 discovered_states.insert(child.state_fingerprint);
                 trace.push(
                     &node,
-                    Phase7SearchTraceEventKind::ChildQueued {
+                    AiSearchTraceEventKind::ChildQueued {
                         child_node_id,
                         state_fingerprint: child.state_fingerprint,
                     },
@@ -2682,29 +2692,29 @@ pub fn phase7_run_mvp_search(
 
             let mut next_repairs = Vec::new();
             for record in evaluation.accepted_failure_records {
-                if phase7_repeated_repair_error(&record.envelope, &record.failure) {
+                if ai_search_repeated_repair_error(&record.envelope, &record.failure) {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::RepairChainStopped {
+                        AiSearchTraceEventKind::RepairChainStopped {
                             parent_candidate_hash: record.failure.candidate_hash,
                             error_kind: record.failure.error_kind,
-                            repair_depth: phase7_repair_depth_of(&record.envelope),
-                            reason: Phase7RepairChainStopReason::RepeatedError,
+                            repair_depth: ai_search_repair_depth_of(&record.envelope),
+                            reason: AiSearchRepairChainStopReason::RepeatedError,
                             repeated_candidate_payload_hash: None,
                         },
                     );
                     continue;
                 }
 
-                let parent_repair_depth = phase7_repair_depth_of(&record.envelope);
+                let parent_repair_depth = ai_search_repair_depth_of(&record.envelope);
                 if parent_repair_depth >= 2 {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::RepairChainStopped {
+                        AiSearchTraceEventKind::RepairChainStopped {
                             parent_candidate_hash: record.failure.candidate_hash,
                             error_kind: record.failure.error_kind,
                             repair_depth: parent_repair_depth,
-                            reason: Phase7RepairChainStopReason::MaxRepairDepth,
+                            reason: AiSearchRepairChainStopReason::MaxRepairDepth,
                             repeated_candidate_payload_hash: None,
                         },
                     );
@@ -2720,18 +2730,18 @@ pub fn phase7_run_mvp_search(
                 for repeated_hash in repair_output.repeated_candidate_payload_hashes {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::RepairChainStopped {
+                        AiSearchTraceEventKind::RepairChainStopped {
                             parent_candidate_hash: record.failure.candidate_hash,
                             error_kind: record.failure.error_kind,
                             repair_depth: parent_repair_depth,
-                            reason: Phase7RepairChainStopReason::RepeatedCandidate,
+                            reason: AiSearchRepairChainStopReason::RepeatedCandidate,
                             repeated_candidate_payload_hash: Some(repeated_hash),
                         },
                     );
                 }
                 next_repairs.extend(repair_output.pending);
             }
-            pending_repairs = phase7_limit_repairs(next_repairs);
+            pending_repairs = ai_search_limit_repairs(next_repairs);
 
             deferred_candidates = evaluation.deferred_candidates;
             if deferred_candidates.is_empty() && pending_repairs.is_empty() {
@@ -2740,7 +2750,7 @@ pub fn phase7_run_mvp_search(
                 {
                     trace.push(
                         &node,
-                        Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                        AiSearchTraceEventKind::MaxTacticsPerNodeStopped {
                             max_tactics_per_node: input.search_budget.max_tactics_per_node,
                         },
                     );
@@ -2748,15 +2758,15 @@ pub fn phase7_run_mvp_search(
                 break;
             }
             if evaluated_for_node >= input.search_budget.max_tactics_per_node {
-                phase7_record_deferred_candidate_drops(
+                ai_search_record_deferred_candidate_drops(
                     &mut trace,
                     &node,
                     &deferred_candidates,
-                    Phase7DeferredCandidateDropReason::MaxTacticsPerNode,
+                    AiSearchDeferredCandidateDropReason::MaxTacticsPerNode,
                 );
                 trace.push(
                     &node,
-                    Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+                    AiSearchTraceEventKind::MaxTacticsPerNodeStopped {
                         max_tactics_per_node: input.search_budget.max_tactics_per_node,
                     },
                 );
@@ -2770,16 +2780,14 @@ pub fn phase7_run_mvp_search(
             .as_ref()
             .is_some_and(|partial| partial.parent.is_none())
     }) {
-        failure_reason = Phase7SearchFailureReason::NoCandidateForSelectedGoal { goal_id };
-    } else if matches!(failure_reason, Phase7SearchFailureReason::QueueExhausted)
-        && depth_budget_hit
-    {
-        failure_reason = Phase7SearchFailureReason::SearchBudgetExceeded {
-            limit: Phase7SearchBudgetLimit::MaxDepth,
+        failure_reason = AiSearchFailureReason::NoCandidateForSelectedGoal { goal_id };
+    } else if matches!(failure_reason, AiSearchFailureReason::QueueExhausted) && depth_budget_hit {
+        failure_reason = AiSearchFailureReason::SearchBudgetExceeded {
+            limit: AiSearchBudgetLimit::MaxDepth,
         };
     }
 
-    Err(phase7_search_failure(
+    Err(ai_search_failure(
         failure_reason,
         best_partial,
         stats,
@@ -2788,81 +2796,81 @@ pub fn phase7_run_mvp_search(
     ))
 }
 
-struct Phase7ClosedNodeVerified {
-    replay_plan: Phase7ReplayPlan,
+struct AiSearchClosedNodeVerified {
+    replay_plan: AiSearchReplayPlan,
     replay_response: MachineReplayOkFields,
     verify_response: MachineApiOkResponse<MachineVerifyOkFields>,
 }
 
-enum Phase7ClosedNodeOutcome {
-    Verified(Box<Phase7ClosedNodeVerified>),
+enum AiSearchClosedNodeOutcome {
+    Verified(Box<AiSearchClosedNodeVerified>),
     Rejected,
-    ControllerError { reason: Phase7SearchFailureReason },
+    ControllerError { reason: AiSearchFailureReason },
 }
 
-fn phase7_attempt_closed_node(
-    client: &mut impl Phase7MachineApiClient,
-    node: &Phase7SearchNode,
-    stats: &mut Phase7SearchStats,
-    trace: &mut Phase7TraceBuilder,
-) -> Phase7ClosedNodeOutcome {
-    let replay_plan = phase7_build_replay_plan(node);
-    let replay_source = phase7_replay_request_json(node.session_id.clone(), &replay_plan);
+fn ai_search_attempt_closed_node(
+    client: &mut impl AiSearchMachineApiClient,
+    node: &AiSearchNode,
+    stats: &mut AiSearchStats,
+    trace: &mut AiSearchTraceBuilder,
+) -> AiSearchClosedNodeOutcome {
+    let replay_plan = ai_search_build_replay_plan(node);
+    let replay_source = ai_search_replay_request_json(node.session_id.clone(), &replay_plan);
     let replay_response = match client.replay(&replay_source) {
         Ok(response) => match response {
             MachineApiResponseEnvelope::Ok(ok) => {
                 if ok.status == MachineApiResponseStatus::Ok {
                     ok.endpoint_fields
                 } else {
-                    phase7_record_closed_node_replay_rejection(node, stats, trace, ok.status);
-                    return Phase7ClosedNodeOutcome::Rejected;
+                    ai_search_record_closed_node_replay_rejection(node, stats, trace, ok.status);
+                    return AiSearchClosedNodeOutcome::Rejected;
                 }
             }
             MachineApiResponseEnvelope::SchedulerStopped(stop) => {
-                phase7_record_closed_node_replay_rejection(node, stats, trace, stop.status);
-                return Phase7ClosedNodeOutcome::Rejected;
+                ai_search_record_closed_node_replay_rejection(node, stats, trace, stop.status);
+                return AiSearchClosedNodeOutcome::Rejected;
             }
             MachineApiResponseEnvelope::Error(error) => {
-                if phase7_is_replay_controller_error_wire(&error.error) {
-                    return phase7_closed_node_controller_error(
+                if ai_search_is_replay_controller_error_wire(&error.error) {
+                    return ai_search_closed_node_controller_error(
                         node,
                         stats,
                         trace,
-                        phase7_machine_controller_error_reason_from_wire(
-                            Phase7MachineApiEndpointKind::Replay,
+                        ai_search_machine_controller_error_reason_from_wire(
+                            AiSearchMachineApiEndpointKind::Replay,
                             error.error.kind.as_str(),
                             Some(error.error.phase.as_str()),
                             Some(error.error.diagnostic_hash),
                         ),
                     );
                 }
-                phase7_record_closed_node_replay_rejection(node, stats, trace, error.status);
-                return Phase7ClosedNodeOutcome::Rejected;
+                ai_search_record_closed_node_replay_rejection(node, stats, trace, error.status);
+                return AiSearchClosedNodeOutcome::Rejected;
             }
         },
         Err(error) => {
-            if phase7_is_replay_controller_error(&error) {
-                return phase7_closed_node_controller_error(
+            if ai_search_is_replay_controller_error(&error) {
+                return ai_search_closed_node_controller_error(
                     node,
                     stats,
                     trace,
-                    phase7_search_failure_reason_from_machine_api_error(
-                        Phase7MachineApiEndpointKind::Replay,
+                    ai_search_failure_reason_from_machine_api_error(
+                        AiSearchMachineApiEndpointKind::Replay,
                         &error,
                     ),
                 );
             }
-            phase7_record_closed_node_replay_rejection(
+            ai_search_record_closed_node_replay_rejection(
                 node,
                 stats,
                 trace,
-                phase7_replay_error_status(&error),
+                ai_search_replay_error_status(&error),
             );
-            return Phase7ClosedNodeOutcome::Rejected;
+            return AiSearchClosedNodeOutcome::Rejected;
         }
     };
 
-    let verify_source = phase7_verify_request_json(
+    let verify_source = ai_search_verify_request_json(
         node.session_id.clone(),
         replay_response.final_snapshot_id,
         replay_response.final_state_fingerprint,
@@ -2873,123 +2881,123 @@ fn phase7_attempt_closed_node(
                 if ok.status == MachineApiResponseStatus::Verified {
                     ok
                 } else {
-                    phase7_record_closed_node_verify_rejection(node, stats, trace, ok.status);
-                    return Phase7ClosedNodeOutcome::Rejected;
+                    ai_search_record_closed_node_verify_rejection(node, stats, trace, ok.status);
+                    return AiSearchClosedNodeOutcome::Rejected;
                 }
             }
             MachineApiResponseEnvelope::SchedulerStopped(stop) => {
-                phase7_record_closed_node_verify_rejection(node, stats, trace, stop.status);
-                return Phase7ClosedNodeOutcome::Rejected;
+                ai_search_record_closed_node_verify_rejection(node, stats, trace, stop.status);
+                return AiSearchClosedNodeOutcome::Rejected;
             }
             MachineApiResponseEnvelope::Error(error) => {
-                if phase7_is_verify_controller_error_wire(&error.error) {
-                    return phase7_closed_node_controller_error(
+                if ai_search_is_verify_controller_error_wire(&error.error) {
+                    return ai_search_closed_node_controller_error(
                         node,
                         stats,
                         trace,
-                        phase7_machine_controller_error_reason_from_wire(
-                            Phase7MachineApiEndpointKind::Verify,
+                        ai_search_machine_controller_error_reason_from_wire(
+                            AiSearchMachineApiEndpointKind::Verify,
                             error.error.kind.as_str(),
                             Some(error.error.phase.as_str()),
                             Some(error.error.diagnostic_hash),
                         ),
                     );
                 }
-                phase7_record_closed_node_verify_rejection(node, stats, trace, error.status);
-                return Phase7ClosedNodeOutcome::Rejected;
+                ai_search_record_closed_node_verify_rejection(node, stats, trace, error.status);
+                return AiSearchClosedNodeOutcome::Rejected;
             }
         },
         Err(error) => {
-            if phase7_is_verify_controller_error(&error) {
-                return phase7_closed_node_controller_error(
+            if ai_search_is_verify_controller_error(&error) {
+                return ai_search_closed_node_controller_error(
                     node,
                     stats,
                     trace,
-                    phase7_search_failure_reason_from_machine_api_error(
-                        Phase7MachineApiEndpointKind::Verify,
+                    ai_search_failure_reason_from_machine_api_error(
+                        AiSearchMachineApiEndpointKind::Verify,
                         &error,
                     ),
                 );
             }
-            phase7_record_closed_node_verify_rejection(
+            ai_search_record_closed_node_verify_rejection(
                 node,
                 stats,
                 trace,
-                phase7_verify_error_status(&error),
+                ai_search_verify_error_status(&error),
             );
-            return Phase7ClosedNodeOutcome::Rejected;
+            return AiSearchClosedNodeOutcome::Rejected;
         }
     };
 
-    Phase7ClosedNodeOutcome::Verified(Box::new(Phase7ClosedNodeVerified {
+    AiSearchClosedNodeOutcome::Verified(Box::new(AiSearchClosedNodeVerified {
         replay_plan,
         replay_response,
         verify_response,
     }))
 }
 
-fn phase7_closed_node_controller_error(
-    node: &Phase7SearchNode,
-    stats: &mut Phase7SearchStats,
-    trace: &mut Phase7TraceBuilder,
-    reason: Phase7SearchFailureReason,
-) -> Phase7ClosedNodeOutcome {
+fn ai_search_closed_node_controller_error(
+    node: &AiSearchNode,
+    stats: &mut AiSearchStats,
+    trace: &mut AiSearchTraceBuilder,
+    reason: AiSearchFailureReason,
+) -> AiSearchClosedNodeOutcome {
     stats.controller_errors += 1;
     trace.push(
         node,
-        phase7_machine_controller_trace_kind_from_reason(&reason),
+        ai_search_machine_controller_trace_kind_from_reason(&reason),
     );
-    Phase7ClosedNodeOutcome::ControllerError { reason }
+    AiSearchClosedNodeOutcome::ControllerError { reason }
 }
 
-fn phase7_record_closed_node_replay_rejection(
-    node: &Phase7SearchNode,
-    stats: &mut Phase7SearchStats,
-    trace: &mut Phase7TraceBuilder,
+fn ai_search_record_closed_node_replay_rejection(
+    node: &AiSearchNode,
+    stats: &mut AiSearchStats,
+    trace: &mut AiSearchTraceBuilder,
     status: MachineApiResponseStatus,
 ) {
     stats.closed_node_replay_rejections += 1;
     trace.push(
         node,
-        Phase7SearchTraceEventKind::ClosedNodeReplayRejected {
-            endpoint: phase7_machine_api_endpoint_wire(Phase7MachineApiEndpointKind::Replay)
+        AiSearchTraceEventKind::ClosedNodeReplayRejected {
+            endpoint: ai_search_machine_api_endpoint_wire(AiSearchMachineApiEndpointKind::Replay)
                 .to_owned(),
             status,
         },
     );
 }
 
-fn phase7_record_closed_node_verify_rejection(
-    node: &Phase7SearchNode,
-    stats: &mut Phase7SearchStats,
-    trace: &mut Phase7TraceBuilder,
+fn ai_search_record_closed_node_verify_rejection(
+    node: &AiSearchNode,
+    stats: &mut AiSearchStats,
+    trace: &mut AiSearchTraceBuilder,
     status: MachineApiResponseStatus,
 ) {
     stats.closed_node_verify_rejections += 1;
     trace.push(
         node,
-        Phase7SearchTraceEventKind::ClosedNodeVerifyRejected {
-            endpoint: phase7_machine_api_endpoint_wire(Phase7MachineApiEndpointKind::Verify)
+        AiSearchTraceEventKind::ClosedNodeVerifyRejected {
+            endpoint: ai_search_machine_api_endpoint_wire(AiSearchMachineApiEndpointKind::Verify)
                 .to_owned(),
             status,
         },
     );
 }
 
-fn phase7_is_replay_controller_error(error: &Phase7MachineApiError) -> bool {
+fn ai_search_is_replay_controller_error(error: &AiSearchMachineApiError) -> bool {
     match error {
-        Phase7MachineApiError::Replay(error) => {
-            phase7_is_replay_controller_error_kind(error.diagnostic.kind)
+        AiSearchMachineApiError::Replay(error) => {
+            ai_search_is_replay_controller_error_kind(error.diagnostic.kind)
         }
         _ => true,
     }
 }
 
-fn phase7_is_replay_controller_error_wire(error: &MachineApiErrorWire) -> bool {
-    phase7_is_replay_controller_error_kind(error.kind)
+fn ai_search_is_replay_controller_error_wire(error: &MachineApiErrorWire) -> bool {
+    ai_search_is_replay_controller_error_kind(error.kind)
 }
 
-fn phase7_is_replay_controller_error_kind(kind: MachineApiErrorKind) -> bool {
+fn ai_search_is_replay_controller_error_kind(kind: MachineApiErrorKind) -> bool {
     matches!(
         kind,
         MachineApiErrorKind::InvalidReplayPlan
@@ -3001,20 +3009,20 @@ fn phase7_is_replay_controller_error_kind(kind: MachineApiErrorKind) -> bool {
     )
 }
 
-fn phase7_is_verify_controller_error(error: &Phase7MachineApiError) -> bool {
+fn ai_search_is_verify_controller_error(error: &AiSearchMachineApiError) -> bool {
     match error {
-        Phase7MachineApiError::Verify(error) => {
-            phase7_is_verify_controller_error_kind(error.diagnostic.kind, error.diagnostic.phase)
+        AiSearchMachineApiError::Verify(error) => {
+            ai_search_is_verify_controller_error_kind(error.diagnostic.kind, error.diagnostic.phase)
         }
         _ => true,
     }
 }
 
-fn phase7_is_verify_controller_error_wire(error: &MachineApiErrorWire) -> bool {
-    phase7_is_verify_controller_error_kind(error.kind, error.phase)
+fn ai_search_is_verify_controller_error_wire(error: &MachineApiErrorWire) -> bool {
+    ai_search_is_verify_controller_error_kind(error.kind, error.phase)
 }
 
-fn phase7_is_verify_controller_error_kind(
+fn ai_search_is_verify_controller_error_kind(
     kind: MachineApiErrorKind,
     phase: crate::MachineApiDiagnosticPhase,
 ) -> bool {
@@ -3033,21 +3041,21 @@ fn phase7_is_verify_controller_error_kind(
     )
 }
 
-fn phase7_replay_error_status(error: &Phase7MachineApiError) -> MachineApiResponseStatus {
+fn ai_search_replay_error_status(error: &AiSearchMachineApiError) -> MachineApiResponseStatus {
     match error {
-        Phase7MachineApiError::Replay(error) => phase7_replay_response_status(&error.response),
+        AiSearchMachineApiError::Replay(error) => ai_search_replay_response_status(&error.response),
         _ => MachineApiResponseStatus::Error,
     }
 }
 
-fn phase7_verify_error_status(error: &Phase7MachineApiError) -> MachineApiResponseStatus {
+fn ai_search_verify_error_status(error: &AiSearchMachineApiError) -> MachineApiResponseStatus {
     match error {
-        Phase7MachineApiError::Verify(error) => phase7_verify_response_status(&error.response),
+        AiSearchMachineApiError::Verify(error) => ai_search_verify_response_status(&error.response),
         _ => MachineApiResponseStatus::Error,
     }
 }
 
-fn phase7_replay_response_status(response: &MachineReplayResponse) -> MachineApiResponseStatus {
+fn ai_search_replay_response_status(response: &MachineReplayResponse) -> MachineApiResponseStatus {
     match response {
         MachineApiResponseEnvelope::Ok(ok) => ok.status,
         MachineApiResponseEnvelope::Error(error) => error.status,
@@ -3055,7 +3063,7 @@ fn phase7_replay_response_status(response: &MachineReplayResponse) -> MachineApi
     }
 }
 
-fn phase7_verify_response_status(response: &MachineVerifyResponse) -> MachineApiResponseStatus {
+fn ai_search_verify_response_status(response: &MachineVerifyResponse) -> MachineApiResponseStatus {
     match response {
         MachineApiResponseEnvelope::Ok(ok) => ok.status,
         MachineApiResponseEnvelope::Error(error) => error.status,
@@ -3063,15 +3071,15 @@ fn phase7_verify_response_status(response: &MachineVerifyResponse) -> MachineApi
     }
 }
 
-fn phase7_root_search_node(input: &Phase7SearchInput, node_id: Phase7NodeId) -> Phase7SearchNode {
-    Phase7SearchNode {
+fn ai_search_root_search_node(input: &AiSearchInput, node_id: AiSearchNodeId) -> AiSearchNode {
+    AiSearchNode {
         node_id,
         session_id: input.session_id.clone(),
         session_root_hash: input.session_root_hash,
         initial_state_fingerprint: input.initial_snapshot.state_fingerprint,
         snapshot_id: input.initial_snapshot.snapshot_id,
         state_fingerprint: input.initial_snapshot.state_fingerprint,
-        goals: phase7_goal_summaries(&input.initial_snapshot),
+        goals: ai_search_goal_summaries(&input.initial_snapshot),
         replay_steps: Vec::new(),
         depth: 0,
         cumulative_score: 0,
@@ -3079,47 +3087,47 @@ fn phase7_root_search_node(input: &Phase7SearchInput, node_id: Phase7NodeId) -> 
         last_candidate_hash: None,
         used_premises: Vec::new(),
         parent: None,
-        status: Phase7NodeStatus::Queued,
+        status: AiSearchNodeStatus::Queued,
     }
 }
 
-fn phase7_make_child_search_node(
-    parent: &Phase7SearchNode,
-    node_id: Phase7NodeId,
-    transition: Phase7SuccessfulCandidateTransition,
+fn ai_search_make_child_search_node(
+    parent: &AiSearchNode,
+    node_id: AiSearchNodeId,
+    transition: AiSearchSuccessfulCandidateTransition,
     child_snapshot: &MachineProofSnapshot,
-) -> Phase7SearchNode {
+) -> AiSearchNode {
     let mut replay_steps = parent.replay_steps.clone();
     replay_steps.push(transition.replay_step.clone());
-    Phase7SearchNode {
+    AiSearchNode {
         node_id,
         session_id: parent.session_id.clone(),
         session_root_hash: parent.session_root_hash,
         initial_state_fingerprint: parent.initial_state_fingerprint,
         snapshot_id: transition.next_snapshot_id,
         state_fingerprint: transition.replay_step.next_state_fingerprint,
-        goals: phase7_goal_summaries(child_snapshot),
+        goals: ai_search_goal_summaries(child_snapshot),
         replay_steps,
         depth: parent
             .depth
             .checked_add(1)
-            .expect("phase7 search depth fits in u32"),
+            .expect("ai_search search depth fits in u32"),
         cumulative_score: parent.cumulative_score,
         last_candidate: Some(transition.envelope.candidate.clone()),
         last_candidate_hash: Some(transition.replay_step.candidate_hash),
-        used_premises: phase7_append_unique_premises(
+        used_premises: ai_search_append_unique_premises(
             &parent.used_premises,
             &transition.envelope.metadata.premises_used,
         ),
         parent: Some(parent.node_id),
-        status: Phase7NodeStatus::Queued,
+        status: AiSearchNodeStatus::Queued,
     }
 }
 
-fn phase7_append_unique_premises(
-    current: &[Phase7PremiseUsage],
-    next: &[Phase7PremiseUsage],
-) -> Vec<Phase7PremiseUsage> {
+fn ai_search_append_unique_premises(
+    current: &[AiSearchPremiseUsage],
+    next: &[AiSearchPremiseUsage],
+) -> Vec<AiSearchPremiseUsage> {
     let mut out = current.to_vec();
     for premise in next {
         if !out.contains(premise) {
@@ -3129,20 +3137,20 @@ fn phase7_append_unique_premises(
     out
 }
 
-fn phase7_record_training_trace_batch(
-    records: &mut Vec<Phase7TrainingTraceRecord>,
-    node: &Phase7SearchNode,
+fn ai_search_record_training_trace_batch(
+    records: &mut Vec<AiSearchTrainingTraceRecord>,
+    node: &AiSearchNode,
     batch_index: &mut u32,
-    goal: &Phase7GoalSummary,
-    retrieved_premises: &[Phase7PremiseCacheEntry],
-    evaluation: &Phase7BatchEvaluation,
+    goal: &AiSearchGoalSummary,
+    retrieved_premises: &[AiSearchPremiseCacheEntry],
+    evaluation: &AiSearchBatchEvaluation,
 ) {
     if evaluation.evaluated_count == 0 {
         return;
     }
 
-    records.push(Phase7TrainingTraceRecord {
-        trace_schema: PHASE7_TRAINING_TRACE_SCHEMA.to_owned(),
+    records.push(AiSearchTrainingTraceRecord {
+        trace_schema: AI_SEARCH_TRAINING_TRACE_SCHEMA.to_owned(),
         session_root_hash: node.session_root_hash,
         snapshot_id: node.snapshot_id,
         state_fingerprint: node.state_fingerprint,
@@ -3154,36 +3162,38 @@ fn phase7_record_training_trace_batch(
     });
     *batch_index = batch_index
         .checked_add(1)
-        .expect("phase7 training batch index fits in u32");
+        .expect("ai_search training batch index fits in u32");
 }
 
-fn phase7_record_forbidden_candidate_discards(
-    trace: &mut Phase7TraceBuilder,
-    node: &Phase7SearchNode,
-    rejected: &[Phase7RejectedCandidateEnvelope],
+fn ai_search_record_forbidden_candidate_discards(
+    trace: &mut AiSearchTraceBuilder,
+    node: &AiSearchNode,
+    rejected: &[AiSearchRejectedCandidateEnvelope],
 ) {
     for rejected in rejected {
         trace.push(
             node,
-            Phase7SearchTraceEventKind::ForbiddenCandidateDiscarded {
-                phase7_candidate_payload_hash: rejected.envelope.phase7_candidate_payload_hash,
+            AiSearchTraceEventKind::ForbiddenCandidateDiscarded {
+                ai_search_candidate_payload_hash: rejected
+                    .envelope
+                    .ai_search_candidate_payload_hash,
                 forbidden_token_class: rejected.forbidden_token.class,
             },
         );
     }
 }
 
-fn phase7_record_non_accepted_candidate_errors(
-    trace: &mut Phase7TraceBuilder,
-    node: &Phase7SearchNode,
-    errors: &[Phase7NonAcceptedCandidateError],
+fn ai_search_record_non_accepted_candidate_errors(
+    trace: &mut AiSearchTraceBuilder,
+    node: &AiSearchNode,
+    errors: &[AiSearchNonAcceptedCandidateError],
 ) {
     for error in errors {
         trace.push(
             node,
-            Phase7SearchTraceEventKind::NonAcceptedCandidateError {
+            AiSearchTraceEventKind::NonAcceptedCandidateError {
                 candidate_id: error.candidate_id.clone(),
-                phase7_candidate_payload_hash: error.phase7_candidate_payload_hash,
+                ai_search_candidate_payload_hash: error.ai_search_candidate_payload_hash,
                 error_kind: error.error_kind,
                 phase: error.phase,
                 has_candidate_hash: error.has_candidate_hash,
@@ -3193,11 +3203,11 @@ fn phase7_record_non_accepted_candidate_errors(
     }
 }
 
-fn phase7_record_scheduler_dropped_candidates(
-    trace: &mut Phase7TraceBuilder,
-    node: &Phase7SearchNode,
-    request: &Phase7TacticBatchRequest,
-    evaluation: &Phase7BatchEvaluation,
+fn ai_search_record_scheduler_dropped_candidates(
+    trace: &mut AiSearchTraceBuilder,
+    node: &AiSearchNode,
+    request: &AiSearchTacticBatchRequest,
+    evaluation: &AiSearchBatchEvaluation,
 ) {
     if evaluation.scheduler_stop.is_none() {
         return;
@@ -3217,51 +3227,55 @@ fn phase7_record_scheduler_dropped_candidates(
         }
         trace.push(
             node,
-            Phase7SearchTraceEventKind::DeferredCandidateDropped {
+            AiSearchTraceEventKind::DeferredCandidateDropped {
                 candidate_id: assigned.candidate_id.clone(),
-                phase7_candidate_payload_hash: assigned.envelope.phase7_candidate_payload_hash,
-                reason: Phase7DeferredCandidateDropReason::SchedulerStoppedCandidate,
+                ai_search_candidate_payload_hash: assigned
+                    .envelope
+                    .ai_search_candidate_payload_hash,
+                reason: AiSearchDeferredCandidateDropReason::SchedulerStoppedCandidate,
             },
         );
     }
 }
 
-fn phase7_record_deferred_candidate_drops(
-    trace: &mut Phase7TraceBuilder,
-    node: &Phase7SearchNode,
-    deferred_candidates: &[Phase7DeferredCandidate],
-    reason: Phase7DeferredCandidateDropReason,
+fn ai_search_record_deferred_candidate_drops(
+    trace: &mut AiSearchTraceBuilder,
+    node: &AiSearchNode,
+    deferred_candidates: &[AiSearchDeferredCandidate],
+    reason: AiSearchDeferredCandidateDropReason,
 ) {
     for candidate in deferred_candidates {
         trace.push(
             node,
-            Phase7SearchTraceEventKind::DeferredCandidateDropped {
+            AiSearchTraceEventKind::DeferredCandidateDropped {
                 candidate_id: candidate.candidate_id.clone(),
-                phase7_candidate_payload_hash: candidate.envelope.phase7_candidate_payload_hash,
+                ai_search_candidate_payload_hash: candidate
+                    .envelope
+                    .ai_search_candidate_payload_hash,
                 reason,
             },
         );
     }
 }
 
-fn phase7_take_remaining_node_tactic_budget(
-    candidates: Vec<Phase7CandidateEnvelope>,
+fn ai_search_take_remaining_node_tactic_budget(
+    candidates: Vec<AiSearchCandidateEnvelope>,
     remaining: u32,
-) -> Vec<Phase7CandidateEnvelope> {
+) -> Vec<AiSearchCandidateEnvelope> {
     candidates.into_iter().take(remaining as usize).collect()
 }
 
-fn phase7_total_open_goal_target_size(goals: &[Phase7GoalSummary]) -> u64 {
+fn ai_search_total_open_goal_target_size(goals: &[AiSearchGoalSummary]) -> u64 {
     goals.iter().map(|goal| u64::from(goal.expr_size)).sum()
 }
 
-fn phase7_search_failure(
-    reason: Phase7SearchFailureReason,
-    best_partial: Option<Phase7SearchNode>,
-    search_stats: Phase7SearchStats,
-    trace_events: Vec<Phase7SearchTraceEvent>,
-    training_trace_records: Vec<Phase7TrainingTraceRecord>,
-) -> Box<Phase7SearchFailure> {
+fn ai_search_failure(
+    reason: AiSearchFailureReason,
+    best_partial: Option<AiSearchNode>,
+    search_stats: AiSearchStats,
+    trace_events: Vec<AiSearchTraceEvent>,
+    training_trace_records: Vec<AiSearchTrainingTraceRecord>,
+) -> Box<AiSearchFailure> {
     let (best_partial_replay_prefix, best_snapshot_id, best_state_fingerprint, remaining_goals) =
         if let Some(node) = best_partial {
             (
@@ -3273,7 +3287,7 @@ fn phase7_search_failure(
         } else {
             (None, None, None, None)
         };
-    Box::new(Phase7SearchFailure {
+    Box::new(AiSearchFailure {
         reason,
         best_partial_replay_prefix,
         best_snapshot_id,
@@ -3285,108 +3299,108 @@ fn phase7_search_failure(
     })
 }
 
-fn phase7_search_failure_reason_from_tactic_batch_run_error(
-    error: &Phase7TacticBatchRunError,
-) -> Phase7SearchFailureReason {
+fn ai_search_failure_reason_from_tactic_batch_run_error(
+    error: &AiSearchTacticBatchRunError,
+) -> AiSearchFailureReason {
     match error {
-        Phase7TacticBatchRunError::MachineApi(error) => {
-            phase7_search_failure_reason_from_machine_api_error(
-                Phase7MachineApiEndpointKind::TacticBatch,
+        AiSearchTacticBatchRunError::MachineApi(error) => {
+            ai_search_failure_reason_from_machine_api_error(
+                AiSearchMachineApiEndpointKind::TacticBatch,
                 error,
             )
         }
-        Phase7TacticBatchRunError::Controller(error) => {
-            phase7_search_failure_reason_from_controller_error(error)
+        AiSearchTacticBatchRunError::Controller(error) => {
+            ai_search_failure_reason_from_controller_error(error)
         }
     }
 }
 
-fn phase7_search_failure_reason_from_controller_error(
-    error: &Phase7MachineControllerError,
-) -> Phase7SearchFailureReason {
-    Phase7SearchFailureReason::MachineControllerError {
-        endpoint: phase7_machine_api_endpoint_wire(error.endpoint).to_owned(),
-        error_kind: phase7_machine_controller_error_kind_wire(error),
+fn ai_search_failure_reason_from_controller_error(
+    error: &AiSearchMachineControllerError,
+) -> AiSearchFailureReason {
+    AiSearchFailureReason::MachineControllerError {
+        endpoint: ai_search_machine_api_endpoint_wire(error.endpoint).to_owned(),
+        error_kind: ai_search_machine_controller_error_kind_wire(error),
         error_phase: error.phase.map(|phase| phase.as_str().to_owned()),
         diagnostic_hash: error.diagnostic_hash,
     }
 }
 
-fn phase7_machine_controller_error_kind_wire(error: &Phase7MachineControllerError) -> String {
+fn ai_search_machine_controller_error_kind_wire(error: &AiSearchMachineControllerError) -> String {
     match error.kind {
-        Phase7MachineControllerErrorKind::TopLevelBatchError => error.message.clone(),
-        Phase7MachineControllerErrorKind::BatchResponseContractViolation => {
+        AiSearchMachineControllerErrorKind::TopLevelBatchError => error.message.clone(),
+        AiSearchMachineControllerErrorKind::BatchResponseContractViolation => {
             "batch_response_contract_violation".to_owned()
         }
-        Phase7MachineControllerErrorKind::SuggestedCandidateHashMismatch => {
+        AiSearchMachineControllerErrorKind::SuggestedCandidateHashMismatch => {
             "suggested_candidate_hash_mismatch".to_owned()
         }
     }
 }
 
-fn phase7_search_failure_reason_from_machine_api_error(
-    fallback_endpoint: Phase7MachineApiEndpointKind,
-    error: &Phase7MachineApiError,
-) -> Phase7SearchFailureReason {
+fn ai_search_failure_reason_from_machine_api_error(
+    fallback_endpoint: AiSearchMachineApiEndpointKind,
+    error: &AiSearchMachineApiError,
+) -> AiSearchFailureReason {
     match error {
-        Phase7MachineApiError::SnapshotGet(error) => {
-            phase7_machine_controller_error_reason_from_wire(
+        AiSearchMachineApiError::SnapshotGet(error) => {
+            ai_search_machine_controller_error_reason_from_wire(
                 fallback_endpoint,
                 error.error.kind.as_str(),
                 Some(error.error.phase.as_str()),
                 Some(error.error.diagnostic_hash),
             )
         }
-        Phase7MachineApiError::SearchForGoal(error) => {
-            phase7_machine_controller_error_reason_from_diagnostic(
+        AiSearchMachineApiError::SearchForGoal(error) => {
+            ai_search_machine_controller_error_reason_from_diagnostic(
                 fallback_endpoint,
                 &error.diagnostic,
             )
         }
-        Phase7MachineApiError::TacticBatch(error) => {
-            phase7_machine_controller_error_reason_from_diagnostic(
+        AiSearchMachineApiError::TacticBatch(error) => {
+            ai_search_machine_controller_error_reason_from_diagnostic(
                 fallback_endpoint,
                 &error.diagnostic,
             )
         }
-        Phase7MachineApiError::Replay(error) => {
-            phase7_machine_controller_error_reason_from_diagnostic(
+        AiSearchMachineApiError::Replay(error) => {
+            ai_search_machine_controller_error_reason_from_diagnostic(
                 fallback_endpoint,
                 &error.diagnostic,
             )
         }
-        Phase7MachineApiError::Verify(error) => {
-            phase7_machine_controller_error_reason_from_diagnostic(
+        AiSearchMachineApiError::Verify(error) => {
+            ai_search_machine_controller_error_reason_from_diagnostic(
                 fallback_endpoint,
                 &error.diagnostic,
             )
         }
-        Phase7MachineApiError::SearchForGoalResponse(error) => {
-            phase7_machine_controller_error_reason_from_wire(
+        AiSearchMachineApiError::SearchForGoalResponse(error) => {
+            ai_search_machine_controller_error_reason_from_wire(
                 fallback_endpoint,
                 error.kind.as_str(),
                 Some(error.phase.as_str()),
                 Some(error.diagnostic_hash),
             )
         }
-        Phase7MachineApiError::UnexpectedSchedulerStop { endpoint } => {
-            phase7_machine_controller_error_reason_from_wire(
+        AiSearchMachineApiError::UnexpectedSchedulerStop { endpoint } => {
+            ai_search_machine_controller_error_reason_from_wire(
                 *endpoint,
                 "scheduler_stopped",
                 None,
                 None,
             )
         }
-        Phase7MachineApiError::FakeRequestValidation { endpoint, error } => {
-            phase7_machine_controller_error_reason_from_wire(
+        AiSearchMachineApiError::FakeRequestValidation { endpoint, error } => {
+            ai_search_machine_controller_error_reason_from_wire(
                 *endpoint,
                 error.kind.as_str(),
                 Some(crate::MachineApiDiagnosticPhase::RequestValidation.as_str()),
                 None,
             )
         }
-        Phase7MachineApiError::FakeResponseExhausted { endpoint } => {
-            phase7_machine_controller_error_reason_from_wire(
+        AiSearchMachineApiError::FakeResponseExhausted { endpoint } => {
+            ai_search_machine_controller_error_reason_from_wire(
                 *endpoint,
                 "transport_error",
                 None,
@@ -3396,11 +3410,11 @@ fn phase7_search_failure_reason_from_machine_api_error(
     }
 }
 
-fn phase7_machine_controller_error_reason_from_diagnostic(
-    endpoint: Phase7MachineApiEndpointKind,
+fn ai_search_machine_controller_error_reason_from_diagnostic(
+    endpoint: AiSearchMachineApiEndpointKind,
     diagnostic: &crate::MachineApiDiagnosticProjection,
-) -> Phase7SearchFailureReason {
-    phase7_machine_controller_error_reason_from_wire(
+) -> AiSearchFailureReason {
+    ai_search_machine_controller_error_reason_from_wire(
         endpoint,
         diagnostic.kind.as_str(),
         Some(diagnostic.phase.as_str()),
@@ -3408,119 +3422,119 @@ fn phase7_machine_controller_error_reason_from_diagnostic(
     )
 }
 
-fn phase7_machine_controller_error_reason_from_wire(
-    endpoint: Phase7MachineApiEndpointKind,
+fn ai_search_machine_controller_error_reason_from_wire(
+    endpoint: AiSearchMachineApiEndpointKind,
     error_kind: &str,
     error_phase: Option<&str>,
     diagnostic_hash: Option<Hash>,
-) -> Phase7SearchFailureReason {
-    Phase7SearchFailureReason::MachineControllerError {
-        endpoint: phase7_machine_api_endpoint_wire(endpoint).to_owned(),
+) -> AiSearchFailureReason {
+    AiSearchFailureReason::MachineControllerError {
+        endpoint: ai_search_machine_api_endpoint_wire(endpoint).to_owned(),
         error_kind: error_kind.to_owned(),
         error_phase: error_phase.map(str::to_owned),
         diagnostic_hash,
     }
 }
 
-fn phase7_machine_controller_trace_kind_from_reason(
-    reason: &Phase7SearchFailureReason,
-) -> Phase7SearchTraceEventKind {
+fn ai_search_machine_controller_trace_kind_from_reason(
+    reason: &AiSearchFailureReason,
+) -> AiSearchTraceEventKind {
     match reason {
-        Phase7SearchFailureReason::MachineControllerError {
+        AiSearchFailureReason::MachineControllerError {
             endpoint,
             error_kind,
             ..
-        } => Phase7SearchTraceEventKind::MachineControllerError {
+        } => AiSearchTraceEventKind::MachineControllerError {
             endpoint: endpoint.clone(),
             error_kind: error_kind.clone(),
         },
-        _ => Phase7SearchTraceEventKind::MachineControllerError {
-            endpoint: "phase7".to_owned(),
+        _ => AiSearchTraceEventKind::MachineControllerError {
+            endpoint: "ai_search".to_owned(),
             error_kind: "controller_error".to_owned(),
         },
     }
 }
 
-fn phase7_machine_api_endpoint_wire(endpoint: Phase7MachineApiEndpointKind) -> &'static str {
+fn ai_search_machine_api_endpoint_wire(endpoint: AiSearchMachineApiEndpointKind) -> &'static str {
     match endpoint {
-        Phase7MachineApiEndpointKind::SnapshotGet => "/machine/snapshots/get",
-        Phase7MachineApiEndpointKind::SearchForGoal => "/machine/search/for_goal",
-        Phase7MachineApiEndpointKind::TacticBatch => "/machine/tactics/batch",
-        Phase7MachineApiEndpointKind::Replay => "/machine/replay",
-        Phase7MachineApiEndpointKind::Verify => "/machine/verify",
+        AiSearchMachineApiEndpointKind::SnapshotGet => "/machine/snapshots/get",
+        AiSearchMachineApiEndpointKind::SearchForGoal => "/machine/search/for_goal",
+        AiSearchMachineApiEndpointKind::TacticBatch => "/machine/tactics/batch",
+        AiSearchMachineApiEndpointKind::Replay => "/machine/replay",
+        AiSearchMachineApiEndpointKind::Verify => "/machine/verify",
     }
 }
 
 #[derive(Clone, Debug, Default)]
-struct Phase7NodeIdAllocator {
+struct AiSearchNodeIdAllocator {
     next: u64,
 }
 
-impl Phase7NodeIdAllocator {
+impl AiSearchNodeIdAllocator {
     fn new() -> Self {
         Self::default()
     }
 
-    fn allocate(&mut self) -> Phase7NodeId {
-        let node_id = Phase7NodeId(self.next);
+    fn allocate(&mut self) -> AiSearchNodeId {
+        let node_id = AiSearchNodeId(self.next);
         self.next = self
             .next
             .checked_add(1)
-            .expect("phase7 node id fits in u64");
+            .expect("ai_search node id fits in u64");
         node_id
     }
 }
 
 #[derive(Clone, Debug, Default)]
-struct Phase7SearchPriorityQueue {
-    nodes: Vec<Phase7SearchNode>,
+struct AiSearchPriorityQueue {
+    nodes: Vec<AiSearchNode>,
 }
 
-impl Phase7SearchPriorityQueue {
+impl AiSearchPriorityQueue {
     fn new() -> Self {
         Self::default()
     }
 
-    fn push(&mut self, node: Phase7SearchNode) {
+    fn push(&mut self, node: AiSearchNode) {
         self.nodes.push(node);
     }
 
-    fn pop_best(&mut self) -> Option<Phase7SearchNode> {
+    fn pop_best(&mut self) -> Option<AiSearchNode> {
         let best_index = self
             .nodes
             .iter()
             .enumerate()
-            .min_by_key(|(_, node)| phase7_search_node_priority_key(node))
+            .min_by_key(|(_, node)| ai_search_node_priority_key(node))
             .map(|(index, _)| index)?;
         Some(self.nodes.remove(best_index))
     }
 }
 
 #[derive(Clone, Debug, Default)]
-struct Phase7TraceBuilder {
-    events: Vec<Phase7SearchTraceEvent>,
+struct AiSearchTraceBuilder {
+    events: Vec<AiSearchTraceEvent>,
 }
 
-impl Phase7TraceBuilder {
+impl AiSearchTraceBuilder {
     fn new() -> Self {
         Self::default()
     }
 
-    fn push(&mut self, node: &Phase7SearchNode, kind: Phase7SearchTraceEventKind) {
-        self.events.push(Phase7SearchTraceEvent {
+    fn push(&mut self, node: &AiSearchNode, kind: AiSearchTraceEventKind) {
+        self.events.push(AiSearchTraceEvent {
             event_index: u64::try_from(self.events.len())
-                .expect("phase7 trace event count fits in u64"),
+                .expect("ai_search trace event count fits in u64"),
             node_id: node.node_id,
             kind,
         });
     }
 
-    fn finish(self) -> Vec<Phase7SearchTraceEvent> {
+    fn finish(self) -> Vec<AiSearchTraceEvent> {
         self.events
     }
 }
 
-pub fn phase7_snapshot_get_request_json(request: &Phase7SnapshotGetRequest) -> String {
+pub fn ai_search_snapshot_get_request_json(request: &AiSearchSnapshotGetRequest) -> String {
     format!(
         r#"{{"session_id":"{}","snapshot_id":"{}","state_fingerprint":"{}","include_pretty":false}}"#,
         request.session_id.wire(),
@@ -3529,130 +3543,132 @@ pub fn phase7_snapshot_get_request_json(request: &Phase7SnapshotGetRequest) -> S
     )
 }
 
-pub fn load_phase7_initial_snapshot(
-    client: &mut impl Phase7MachineApiClient,
-    request: Phase7SnapshotGetRequest,
-) -> Phase7MachineApiResult<Phase7InitialSnapshot> {
+pub fn load_ai_search_initial_snapshot(
+    client: &mut impl AiSearchMachineApiClient,
+    request: AiSearchSnapshotGetRequest,
+) -> AiSearchMachineApiResult<AiSearchInitialSnapshot> {
     let snapshot = client.get_snapshot(request)?.snapshot;
-    let goals = phase7_goal_summaries(&snapshot);
-    Ok(Phase7InitialSnapshot { snapshot, goals })
+    let goals = ai_search_goal_summaries(&snapshot);
+    Ok(AiSearchInitialSnapshot { snapshot, goals })
 }
 
-pub fn phase7_goal_summaries(snapshot: &MachineProofSnapshot) -> Vec<Phase7GoalSummary> {
+pub fn ai_search_goal_summaries(snapshot: &MachineProofSnapshot) -> Vec<AiSearchGoalSummary> {
     snapshot
         .goals
         .iter()
         .enumerate()
-        .map(|(index, goal)| phase7_goal_summary(goal, index))
+        .map(|(index, goal)| ai_search_goal_summary(goal, index))
         .collect()
 }
 
-pub fn select_phase7_goal(snapshot: &MachineProofSnapshot) -> Option<Phase7GoalSummary> {
-    phase7_goal_summaries(snapshot)
+pub fn select_ai_search_goal(snapshot: &MachineProofSnapshot) -> Option<AiSearchGoalSummary> {
+    ai_search_goal_summaries(snapshot)
         .into_iter()
-        .min_by(phase7_goal_selection_order)
+        .min_by(ai_search_goal_selection_order)
 }
 
-pub fn phase7_mvp_premise_query_json(request: &Phase7PremiseQueryRequest) -> String {
+pub fn ai_search_mvp_premise_query_json(request: &AiSearchPremiseQueryRequest) -> String {
     format!(
         r#"{{"session_id":"{}","snapshot_id":"{}","state_fingerprint":"{}","goal_id":"{}","modes":["exact","apply","rw","simp"],"limit":{},"filters":{{"exclude_axioms":true}}}}"#,
         request.session_id.wire(),
         request.snapshot_id.wire(),
         format_hash_string(&request.state_fingerprint),
         format_goal_id_wire(request.goal_id),
-        PHASE7_MVP_PREMISE_QUERY_LIMIT
+        AI_SEARCH_MVP_PREMISE_QUERY_LIMIT
     )
 }
 
-pub fn retrieve_phase7_premises(
-    client: &mut impl Phase7MachineApiClient,
-    request: &Phase7PremiseQueryRequest,
+pub fn retrieve_ai_search_premises(
+    client: &mut impl AiSearchMachineApiClient,
+    request: &AiSearchPremiseQueryRequest,
     session_root_hash: Hash,
-) -> Phase7MachineApiResult<Phase7PremiseRetrieval> {
-    let source = phase7_mvp_premise_query_json(request);
+) -> AiSearchMachineApiResult<AiSearchPremiseRetrieval> {
+    let source = ai_search_mvp_premise_query_json(request);
     let response = client.search_for_goal(&source)?;
     match response {
-        MachineApiResponseEnvelope::Ok(ok) => Ok(phase7_premise_retrieval_from_search_ok(
+        MachineApiResponseEnvelope::Ok(ok) => Ok(ai_search_premise_retrieval_from_search_ok(
             session_root_hash,
             ok.endpoint_fields,
         )),
         MachineApiResponseEnvelope::Error(error) => Err(
-            Phase7MachineApiError::SearchForGoalResponse(Box::new(error.error)),
+            AiSearchMachineApiError::SearchForGoalResponse(Box::new(error.error)),
         ),
         MachineApiResponseEnvelope::SchedulerStopped(_) => {
-            Err(Phase7MachineApiError::UnexpectedSchedulerStop {
-                endpoint: Phase7MachineApiEndpointKind::SearchForGoal,
+            Err(AiSearchMachineApiError::UnexpectedSchedulerStop {
+                endpoint: AiSearchMachineApiEndpointKind::SearchForGoal,
             })
         }
     }
 }
 
-pub fn phase7_premise_retrieval_from_search_ok(
+pub fn ai_search_premise_retrieval_from_search_ok(
     session_root_hash: Hash,
     search: MachineTheoremSearchOkFields,
-) -> Phase7PremiseRetrieval {
-    let cache_key = phase7_retrieval_cache_key(session_root_hash, &search);
-    let cache_entries = phase7_premise_cache_entries(&search);
-    Phase7PremiseRetrieval {
+) -> AiSearchPremiseRetrieval {
+    let cache_key = ai_search_retrieval_cache_key(session_root_hash, &search);
+    let cache_entries = ai_search_premise_cache_entries(&search);
+    AiSearchPremiseRetrieval {
         cache_key,
         cache_entries,
         results: search.results,
     }
 }
 
-pub fn phase7_retrieval_cache_key(
+pub fn ai_search_retrieval_cache_key(
     session_root_hash: Hash,
     search: &MachineTheoremSearchOkFields,
-) -> Phase7RetrievalCacheKey {
-    Phase7RetrievalCacheKey {
+) -> AiSearchRetrievalCacheKey {
+    AiSearchRetrievalCacheKey {
         session_root_hash,
         query_fingerprint: search.query_fingerprint,
         theorem_index_fingerprint: search.theorem_index_fingerprint,
     }
 }
 
-pub fn phase7_premise_cache_entries(
+pub fn ai_search_premise_cache_entries(
     search: &MachineTheoremSearchOkFields,
-) -> Vec<Phase7PremiseCacheEntry> {
+) -> Vec<AiSearchPremiseCacheEntry> {
     search
         .results
         .iter()
         .enumerate()
-        .map(|(index, result)| phase7_premise_cache_entry(result, index))
+        .map(|(index, result)| ai_search_premise_cache_entry(result, index))
         .collect()
 }
 
-pub fn phase7_premise_usages(search: &MachineTheoremSearchOkFields) -> Vec<Phase7PremiseUsage> {
-    search.results.iter().map(phase7_premise_usage).collect()
+pub fn ai_search_premise_usages(
+    search: &MachineTheoremSearchOkFields,
+) -> Vec<AiSearchPremiseUsage> {
+    search.results.iter().map(ai_search_premise_usage).collect()
 }
 
-pub fn phase7_mvp_candidate_envelopes(
+pub fn ai_search_mvp_candidate_envelopes(
     goal: &MachineGoalView,
-    retrieval: &Phase7PremiseRetrieval,
-) -> Vec<Phase7CandidateEnvelope> {
-    phase7_mvp_candidate_generation(goal, retrieval).accepted
+    retrieval: &AiSearchPremiseRetrieval,
+) -> Vec<AiSearchCandidateEnvelope> {
+    ai_search_mvp_candidate_generation(goal, retrieval).accepted
 }
 
-pub fn phase7_mvp_candidate_generation(
+pub fn ai_search_mvp_candidate_generation(
     goal: &MachineGoalView,
-    retrieval: &Phase7PremiseRetrieval,
-) -> Phase7CandidateFilterResult {
-    let mut candidates = phase7_suggested_candidate_envelopes(&retrieval.results);
-    candidates.extend(phase7_builtin_candidate_envelopes(goal));
-    phase7_rank_filter_and_dedupe_candidate_envelopes(candidates)
+    retrieval: &AiSearchPremiseRetrieval,
+) -> AiSearchCandidateFilterResult {
+    let mut candidates = ai_search_suggested_candidate_envelopes(&retrieval.results);
+    candidates.extend(ai_search_builtin_candidate_envelopes(goal));
+    ai_search_rank_filter_and_dedupe_candidate_envelopes(candidates)
 }
 
-pub fn phase7_suggested_candidate_envelopes(
+pub fn ai_search_suggested_candidate_envelopes(
     results: &[MachineTheoremSearchResult],
-) -> Vec<Phase7CandidateEnvelope> {
+) -> Vec<AiSearchCandidateEnvelope> {
     let mut out = Vec::new();
     let mut source_index = 0u32;
     for result in results {
-        let premise_usage = phase7_premise_usage(result);
+        let premise_usage = ai_search_premise_usage(result);
         for suggested in &result.suggested_candidates {
             let candidate = suggested.candidate.clone();
-            let metadata = phase7_candidate_metadata(
-                Phase7CandidateSource::Phase5Suggested,
+            let metadata = ai_search_candidate_metadata(
+                AiSearchCandidateSource::MachineApiSuggested,
                 None,
                 source_index,
                 vec![premise_usage.clone()],
@@ -3660,29 +3676,31 @@ pub fn phase7_suggested_candidate_envelopes(
                 &candidate,
             );
             let envelope =
-                phase7_candidate_envelope(candidate, Some(suggested.candidate_hash), metadata);
+                ai_search_candidate_envelope(candidate, Some(suggested.candidate_hash), metadata);
             out.push(envelope);
             source_index = source_index
                 .checked_add(1)
-                .expect("phase7 suggested candidate source_index fits in u32");
+                .expect("ai_search suggested candidate source_index fits in u32");
         }
     }
     out
 }
 
-pub fn phase7_builtin_candidate_envelopes(goal: &MachineGoalView) -> Vec<Phase7CandidateEnvelope> {
+pub fn ai_search_builtin_candidate_envelopes(
+    goal: &MachineGoalView,
+) -> Vec<AiSearchCandidateEnvelope> {
     let mut out = Vec::new();
 
-    if let Some(candidate) = phase7_builtin_intro_candidate(goal) {
-        push_phase7_builtin_candidate(&mut out, Phase7BuiltinKind::Intro, 0, candidate);
+    if let Some(candidate) = ai_search_builtin_intro_candidate(goal) {
+        push_ai_search_builtin_candidate(&mut out, AiSearchBuiltinKind::Intro, 0, candidate);
     }
 
     let mut local_exact_index = 0u32;
     for local in &goal.context {
-        if phase7_local_exact_prefilter(goal, local) {
-            push_phase7_builtin_candidate(
+        if ai_search_local_exact_prefilter(goal, local) {
+            push_ai_search_builtin_candidate(
                 &mut out,
-                Phase7BuiltinKind::LocalExact,
+                AiSearchBuiltinKind::LocalExact,
                 local_exact_index,
                 MachineTacticCandidate::Exact {
                     term: RawMachineTerm::new(local.machine_name.clone()),
@@ -3690,16 +3708,16 @@ pub fn phase7_builtin_candidate_envelopes(goal: &MachineGoalView) -> Vec<Phase7C
             );
             local_exact_index = local_exact_index
                 .checked_add(1)
-                .expect("phase7 local exact source_index fits in u32");
+                .expect("ai_search local exact source_index fits in u32");
         }
     }
 
     let mut induction_index = 0u32;
     for (index, local) in goal.context.iter().enumerate() {
-        if phase7_induction_nat_prefilter(goal, index, local) {
-            push_phase7_builtin_candidate(
+        if ai_search_induction_nat_prefilter(goal, index, local) {
+            push_ai_search_builtin_candidate(
                 &mut out,
-                Phase7BuiltinKind::InductionNat,
+                AiSearchBuiltinKind::InductionNat,
                 induction_index,
                 MachineTacticCandidate::InductionNat {
                     local_name: local.machine_name.clone(),
@@ -3707,14 +3725,14 @@ pub fn phase7_builtin_candidate_envelopes(goal: &MachineGoalView) -> Vec<Phase7C
             );
             induction_index = induction_index
                 .checked_add(1)
-                .expect("phase7 induction source_index fits in u32");
+                .expect("ai_search induction source_index fits in u32");
         }
     }
 
-    if phase7_goal_allows_tactic(goal, MachineApiTacticKind::SimpLite) {
-        push_phase7_builtin_candidate(
+    if ai_search_goal_allows_tactic(goal, MachineApiTacticKind::SimpLite) {
+        push_ai_search_builtin_candidate(
             &mut out,
-            Phase7BuiltinKind::SimpLiteEmpty,
+            AiSearchBuiltinKind::SimpLiteEmpty,
             0,
             MachineTacticCandidate::SimpLite { rules: Vec::new() },
         );
@@ -3723,47 +3741,47 @@ pub fn phase7_builtin_candidate_envelopes(goal: &MachineGoalView) -> Vec<Phase7C
     out
 }
 
-pub fn phase7_rank_filter_and_dedupe_candidate_envelopes(
-    mut candidates: Vec<Phase7CandidateEnvelope>,
-) -> Phase7CandidateFilterResult {
-    candidates.sort_by(phase7_candidate_envelope_order);
-    let mut filtered = filter_phase7_candidate_envelopes(candidates);
-    filtered.accepted = phase7_dedupe_candidate_envelopes(filtered.accepted);
+pub fn ai_search_rank_filter_and_dedupe_candidate_envelopes(
+    mut candidates: Vec<AiSearchCandidateEnvelope>,
+) -> AiSearchCandidateFilterResult {
+    candidates.sort_by(ai_search_candidate_envelope_order);
+    let mut filtered = filter_ai_search_candidate_envelopes(candidates);
+    filtered.accepted = ai_search_dedupe_candidate_envelopes(filtered.accepted);
     filtered
 }
 
-pub fn phase7_rank_and_dedupe_candidate_envelopes(
-    mut candidates: Vec<Phase7CandidateEnvelope>,
-) -> Vec<Phase7CandidateEnvelope> {
-    candidates.sort_by(phase7_candidate_envelope_order);
-    phase7_dedupe_candidate_envelopes(candidates)
+pub fn ai_search_rank_and_dedupe_candidate_envelopes(
+    mut candidates: Vec<AiSearchCandidateEnvelope>,
+) -> Vec<AiSearchCandidateEnvelope> {
+    candidates.sort_by(ai_search_candidate_envelope_order);
+    ai_search_dedupe_candidate_envelopes(candidates)
 }
 
-fn phase7_dedupe_candidate_envelopes(
-    candidates: Vec<Phase7CandidateEnvelope>,
-) -> Vec<Phase7CandidateEnvelope> {
+fn ai_search_dedupe_candidate_envelopes(
+    candidates: Vec<AiSearchCandidateEnvelope>,
+) -> Vec<AiSearchCandidateEnvelope> {
     let mut seen = BTreeSet::new();
     let mut out = Vec::new();
     for candidate in candidates {
-        if seen.insert(candidate.phase7_candidate_payload_hash) {
+        if seen.insert(candidate.ai_search_candidate_payload_hash) {
             out.push(candidate);
         }
     }
     out
 }
 
-pub fn filter_phase7_candidate_envelopes(
-    candidates: Vec<Phase7CandidateEnvelope>,
-) -> Phase7CandidateFilterResult {
+pub fn filter_ai_search_candidate_envelopes(
+    candidates: Vec<AiSearchCandidateEnvelope>,
+) -> AiSearchCandidateFilterResult {
     let mut accepted = Vec::new();
     let mut rejected = Vec::new();
     let mut errors = Vec::new();
     for mut envelope in candidates {
-        match phase7_candidate_forbidden_token(&envelope.candidate) {
+        match ai_search_candidate_forbidden_token(&envelope.candidate) {
             Ok(Some(forbidden_token)) => {
                 envelope.metadata.trust_flags.contains_forbidden_tokens = true;
                 envelope.metadata.trust_flags.forbidden_token_class = Some(forbidden_token.class);
-                rejected.push(Phase7RejectedCandidateEnvelope {
+                rejected.push(AiSearchRejectedCandidateEnvelope {
                     envelope,
                     forbidden_token,
                 });
@@ -3772,41 +3790,41 @@ pub fn filter_phase7_candidate_envelopes(
             Err(error) => errors.push(error),
         }
     }
-    Phase7CandidateFilterResult {
+    AiSearchCandidateFilterResult {
         accepted,
         rejected,
         errors,
     }
 }
 
-pub fn phase7_candidate_envelope(
+pub fn ai_search_candidate_envelope(
     candidate: MachineTacticCandidate,
     candidate_hash: Option<Hash>,
-    metadata: Phase7CandidateMetadata,
-) -> Phase7CandidateEnvelope {
-    Phase7CandidateEnvelope {
-        phase7_candidate_payload_hash: phase7_candidate_payload_hash(&candidate),
+    metadata: AiSearchCandidateMetadata,
+) -> AiSearchCandidateEnvelope {
+    AiSearchCandidateEnvelope {
+        ai_search_candidate_payload_hash: ai_search_candidate_payload_hash(&candidate),
         candidate,
         candidate_hash,
         metadata,
     }
 }
 
-pub fn phase7_candidate_payload_hash(candidate: &MachineTacticCandidate) -> Hash {
-    let payload = phase7_candidate_payload_json(candidate);
+pub fn ai_search_candidate_payload_hash(candidate: &MachineTacticCandidate) -> Hash {
+    let payload = ai_search_candidate_payload_json(candidate);
     let mut bytes = Vec::new();
-    bytes.extend_from_slice(PHASE7_CANDIDATE_PAYLOAD_HASH_TAG.as_bytes());
+    bytes.extend_from_slice(AI_SEARCH_CANDIDATE_PAYLOAD_HASH_TAG.as_bytes());
     bytes.push(0);
     bytes.extend_from_slice(payload.as_bytes());
     sha256(&bytes)
 }
 
-pub fn phase7_candidate_payload_json(candidate: &MachineTacticCandidate) -> String {
+pub fn ai_search_candidate_payload_json(candidate: &MachineTacticCandidate) -> String {
     match candidate {
         MachineTacticCandidate::Exact { term } => {
             format!(
                 r#"{{"kind":"exact","term":{}}}"#,
-                phase7_raw_machine_term_json(term)
+                ai_search_raw_machine_term_json(term)
             )
         }
         MachineTacticCandidate::Intro { name } => {
@@ -3818,9 +3836,9 @@ pub fn phase7_candidate_payload_json(candidate: &MachineTacticCandidate) -> Stri
             args,
         } => format!(
             r#"{{"args":{},"head":{},"kind":"apply","universe_args":{}}}"#,
-            phase7_apply_arg_array_json(args),
-            phase7_tactic_head_json(head),
-            phase7_level_array_json(universe_args),
+            ai_search_apply_arg_array_json(args),
+            ai_search_tactic_head_json(head),
+            ai_search_level_array_json(universe_args),
         ),
         MachineTacticCandidate::Rewrite {
             rule,
@@ -3828,14 +3846,14 @@ pub fn phase7_candidate_payload_json(candidate: &MachineTacticCandidate) -> Stri
             site,
         } => format!(
             r#"{{"direction":{},"kind":"rw","rule":{},"site":{}}}"#,
-            json_string(phase7_rewrite_direction_wire(*direction)),
-            phase7_rewrite_rule_json(rule),
-            json_string(phase7_rewrite_site_wire(*site)),
+            json_string(ai_search_rewrite_direction_wire(*direction)),
+            ai_search_rewrite_rule_json(rule),
+            json_string(ai_search_rewrite_site_wire(*site)),
         ),
         MachineTacticCandidate::SimpLite { rules } => {
             format!(
                 r#"{{"kind":"simp-lite","rules":{}}}"#,
-                phase7_simp_rule_array_json(rules)
+                ai_search_simp_rule_array_json(rules)
             )
         }
         MachineTacticCandidate::InductionNat { local_name } => format!(
@@ -3845,19 +3863,21 @@ pub fn phase7_candidate_payload_json(candidate: &MachineTacticCandidate) -> Stri
     }
 }
 
-fn phase7_training_trace_candidates_json(candidates: &[Phase7TrainingTraceCandidate]) -> String {
+fn ai_search_training_trace_candidates_json(
+    candidates: &[AiSearchTrainingTraceCandidate],
+) -> String {
     let members = candidates
         .iter()
-        .map(phase7_training_trace_candidate_json)
+        .map(ai_search_training_trace_candidate_json)
         .collect::<Vec<_>>();
     format!("[{}]", members.join(","))
 }
 
-fn phase7_training_trace_candidate_json(candidate: &Phase7TrainingTraceCandidate) -> String {
+fn ai_search_training_trace_candidate_json(candidate: &AiSearchTrainingTraceCandidate) -> String {
     match candidate {
-        Phase7TrainingTraceCandidate::Success {
+        AiSearchTrainingTraceCandidate::Success {
             rank_index,
-            phase7_candidate_payload_hash,
+            ai_search_candidate_payload_hash,
             candidate,
             candidate_hash,
             deterministic_budget_hash,
@@ -3865,19 +3885,19 @@ fn phase7_training_trace_candidate_json(candidate: &Phase7TrainingTraceCandidate
             next_snapshot_id,
             next_state_fingerprint,
         } => format!(
-            r#"{{"rank_index":{},"phase7_candidate_payload_hash":{},"candidate":{},"candidate_hash":{},"result":"success","deterministic_budget_hash":{},"proof_delta_hash":{},"next_snapshot_id":{},"next_state_fingerprint":{}}}"#,
+            r#"{{"rank_index":{},"ai_search_candidate_payload_hash":{},"candidate":{},"candidate_hash":{},"result":"success","deterministic_budget_hash":{},"proof_delta_hash":{},"next_snapshot_id":{},"next_state_fingerprint":{}}}"#,
             rank_index,
-            json_string(&format_hash_string(phase7_candidate_payload_hash)),
-            phase7_candidate_payload_json(candidate),
+            json_string(&format_hash_string(ai_search_candidate_payload_hash)),
+            ai_search_candidate_payload_json(candidate),
             json_string(&format_hash_string(candidate_hash)),
             json_string(&format_hash_string(deterministic_budget_hash)),
             json_string(&format_hash_string(proof_delta_hash)),
             json_string(&next_snapshot_id.wire()),
             json_string(&format_hash_string(next_state_fingerprint)),
         ),
-        Phase7TrainingTraceCandidate::Error {
+        AiSearchTrainingTraceCandidate::Error {
             rank_index,
-            phase7_candidate_payload_hash,
+            ai_search_candidate_payload_hash,
             candidate,
             candidate_hash,
             error_kind,
@@ -3889,10 +3909,10 @@ fn phase7_training_trace_candidate_json(candidate: &Phase7TrainingTraceCandidate
             tactic_kind,
         } => {
             let mut source = format!(
-                r#"{{"rank_index":{},"phase7_candidate_payload_hash":{},"candidate":{},"candidate_hash":{},"result":"error","error_kind":{},"phase":{},"deterministic_budget_hash":{},"diagnostic_hash":{},"retryable":{}"#,
+                r#"{{"rank_index":{},"ai_search_candidate_payload_hash":{},"candidate":{},"candidate_hash":{},"result":"error","error_kind":{},"phase":{},"deterministic_budget_hash":{},"diagnostic_hash":{},"retryable":{}"#,
                 rank_index,
-                json_string(&format_hash_string(phase7_candidate_payload_hash)),
-                phase7_candidate_payload_json(candidate),
+                json_string(&format_hash_string(ai_search_candidate_payload_hash)),
+                ai_search_candidate_payload_json(candidate),
                 json_string(&format_hash_string(candidate_hash)),
                 json_string(error_kind.as_str()),
                 json_string(phase.as_str()),
@@ -3914,16 +3934,17 @@ fn phase7_training_trace_candidate_json(candidate: &Phase7TrainingTraceCandidate
     }
 }
 
-pub fn phase7_candidate_forbidden_token(
+pub fn ai_search_candidate_forbidden_token(
     candidate: &MachineTacticCandidate,
-) -> Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> {
+) -> Result<Option<AiSearchForbiddenToken>, AiSearchCandidateFilterError> {
     let mut best_token = None;
-    for (raw_term_index, term) in phase7_candidate_raw_terms(candidate)
+    for (raw_term_index, term) in ai_search_candidate_raw_terms(candidate)
         .into_iter()
         .enumerate()
     {
-        if let Some(token) = phase7_raw_term_forbidden_token(usize_to_u32(raw_term_index), term)? {
-            if phase7_forbidden_token_is_better(best_token.as_ref(), &token) {
+        if let Some(token) = ai_search_raw_term_forbidden_token(usize_to_u32(raw_term_index), term)?
+        {
+            if ai_search_forbidden_token_is_better(best_token.as_ref(), &token) {
                 best_token = Some(token);
             }
         }
@@ -3931,53 +3952,53 @@ pub fn phase7_candidate_forbidden_token(
     Ok(best_token)
 }
 
-pub fn phase7_expected_effect(candidate: &MachineTacticCandidate) -> Phase7ExpectedEffect {
+pub fn ai_search_expected_effect(candidate: &MachineTacticCandidate) -> AiSearchExpectedEffect {
     match candidate {
-        MachineTacticCandidate::Intro { .. } => Phase7ExpectedEffect::IntroBinder,
-        MachineTacticCandidate::Exact { .. } => Phase7ExpectedEffect::CloseGoal,
-        MachineTacticCandidate::Rewrite { .. } => Phase7ExpectedEffect::Rewrite,
-        MachineTacticCandidate::SimpLite { .. } => Phase7ExpectedEffect::Simplify,
-        MachineTacticCandidate::InductionNat { .. } => Phase7ExpectedEffect::InductionSplit,
-        MachineTacticCandidate::Apply { .. } => Phase7ExpectedEffect::Unknown,
+        MachineTacticCandidate::Intro { .. } => AiSearchExpectedEffect::IntroBinder,
+        MachineTacticCandidate::Exact { .. } => AiSearchExpectedEffect::CloseGoal,
+        MachineTacticCandidate::Rewrite { .. } => AiSearchExpectedEffect::Rewrite,
+        MachineTacticCandidate::SimpLite { .. } => AiSearchExpectedEffect::Simplify,
+        MachineTacticCandidate::InductionNat { .. } => AiSearchExpectedEffect::InductionSplit,
+        MachineTacticCandidate::Apply { .. } => AiSearchExpectedEffect::Unknown,
     }
 }
 
-pub fn phase7_candidate_cost_estimate(
+pub fn ai_search_candidate_cost_estimate(
     candidate: &MachineTacticCandidate,
-) -> Phase7CandidateCostEstimate {
+) -> AiSearchCandidateCostEstimate {
     match candidate {
         MachineTacticCandidate::Intro { .. } | MachineTacticCandidate::Exact { .. } => {
-            Phase7CandidateCostEstimate {
+            AiSearchCandidateCostEstimate {
                 estimated_timeout_ms: 100,
-                risk: Phase7CandidateCostRisk::Low,
+                risk: AiSearchCandidateCostRisk::Low,
             }
         }
-        MachineTacticCandidate::Rewrite { .. } => Phase7CandidateCostEstimate {
+        MachineTacticCandidate::Rewrite { .. } => AiSearchCandidateCostEstimate {
             estimated_timeout_ms: 200,
-            risk: Phase7CandidateCostRisk::Medium,
+            risk: AiSearchCandidateCostRisk::Medium,
         },
         MachineTacticCandidate::SimpLite { rules } if rules.is_empty() => {
-            Phase7CandidateCostEstimate {
+            AiSearchCandidateCostEstimate {
                 estimated_timeout_ms: 100,
-                risk: Phase7CandidateCostRisk::Low,
+                risk: AiSearchCandidateCostRisk::Low,
             }
         }
-        MachineTacticCandidate::SimpLite { .. } => Phase7CandidateCostEstimate {
+        MachineTacticCandidate::SimpLite { .. } => AiSearchCandidateCostEstimate {
             estimated_timeout_ms: 200,
-            risk: Phase7CandidateCostRisk::Medium,
+            risk: AiSearchCandidateCostRisk::Medium,
         },
-        MachineTacticCandidate::InductionNat { .. } => Phase7CandidateCostEstimate {
+        MachineTacticCandidate::InductionNat { .. } => AiSearchCandidateCostEstimate {
             estimated_timeout_ms: 500,
-            risk: Phase7CandidateCostRisk::Medium,
+            risk: AiSearchCandidateCostRisk::Medium,
         },
-        MachineTacticCandidate::Apply { .. } => Phase7CandidateCostEstimate {
+        MachineTacticCandidate::Apply { .. } => AiSearchCandidateCostEstimate {
             estimated_timeout_ms: 500,
-            risk: Phase7CandidateCostRisk::High,
+            risk: AiSearchCandidateCostRisk::High,
         },
     }
 }
 
-pub fn phase7_fresh_intro_name(
+pub fn ai_search_fresh_intro_name(
     goal: &MachineGoalView,
     outer_binder_name: Option<&str>,
 ) -> Option<String> {
@@ -4016,8 +4037,8 @@ pub fn phase7_fresh_intro_name(
     None
 }
 
-fn phase7_goal_summary(goal: &MachineGoalView, open_goal_index: usize) -> Phase7GoalSummary {
-    Phase7GoalSummary {
+fn ai_search_goal_summary(goal: &MachineGoalView, open_goal_index: usize) -> AiSearchGoalSummary {
+    AiSearchGoalSummary {
         goal_id: goal.goal_id,
         open_goal_index: usize_to_u32(open_goal_index),
         goal_fingerprint: goal.goal_fingerprint,
@@ -4029,42 +4050,42 @@ fn phase7_goal_summary(goal: &MachineGoalView, open_goal_index: usize) -> Phase7
     }
 }
 
-fn phase7_goal_summary_json(goal: &Phase7GoalSummary) -> String {
+fn ai_search_goal_summary_json(goal: &AiSearchGoalSummary) -> String {
     format!(
         r#"{{"goal_id":{},"open_goal_index":{},"goal_fingerprint":{},"target_hash":{},"target_head":{},"target_free_local_count":{},"context_size":{},"expr_size":{}}}"#,
         json_string(&format_goal_id_wire(goal.goal_id)),
         goal.open_goal_index,
         json_string(&format_hash_string(&goal.goal_fingerprint)),
         json_string(&format_hash_string(&goal.target_hash)),
-        phase7_optional_global_ref_view_json(goal.target_head.as_ref()),
+        ai_search_optional_global_ref_view_json(goal.target_head.as_ref()),
         goal.target_free_local_count,
         goal.context_size,
         goal.expr_size,
     )
 }
 
-fn phase7_premise_cache_entries_json(entries: &[Phase7PremiseCacheEntry]) -> String {
+fn ai_search_premise_cache_entries_json(entries: &[AiSearchPremiseCacheEntry]) -> String {
     let members = entries
         .iter()
-        .map(phase7_premise_cache_entry_json)
+        .map(ai_search_premise_cache_entry_json)
         .collect::<Vec<_>>();
     format!("[{}]", members.join(","))
 }
 
-fn phase7_premise_cache_entry_json(entry: &Phase7PremiseCacheEntry) -> String {
+fn ai_search_premise_cache_entry_json(entry: &AiSearchPremiseCacheEntry) -> String {
     format!(
         r#"{{"premise_ref":{},"universe_params":{},"statement_core_hash":{},"statement_head":{},"axioms_used":{},"modes":{},"response_index":{}}}"#,
-        phase7_premise_ref_json(&entry.premise_ref),
-        phase7_string_array_json(&entry.universe_params),
+        ai_search_premise_ref_json(&entry.premise_ref),
+        ai_search_string_array_json(&entry.universe_params),
         json_string(&format_hash_string(&entry.statement_core_hash)),
-        phase7_optional_global_ref_view_json(entry.statement_head.as_ref()),
-        phase7_axiom_refs_json(&entry.axioms_used),
-        phase7_theorem_modes_json(&entry.modes),
+        ai_search_optional_global_ref_view_json(entry.statement_head.as_ref()),
+        ai_search_axiom_refs_json(&entry.axioms_used),
+        ai_search_theorem_modes_json(&entry.modes),
         entry.response_index,
     )
 }
 
-fn phase7_premise_ref_json(premise_ref: &Phase7PremiseRef) -> String {
+fn ai_search_premise_ref_json(premise_ref: &AiSearchPremiseRef) -> String {
     format!(
         r#"{{"module":{},"name":{},"export_hash":{},"decl_interface_hash":{}}}"#,
         json_string(&premise_ref.module.as_dotted()),
@@ -4074,7 +4095,10 @@ fn phase7_premise_ref_json(premise_ref: &Phase7PremiseRef) -> String {
     )
 }
 
-fn phase7_goal_selection_order(left: &Phase7GoalSummary, right: &Phase7GoalSummary) -> Ordering {
+fn ai_search_goal_selection_order(
+    left: &AiSearchGoalSummary,
+    right: &AiSearchGoalSummary,
+) -> Ordering {
     left.expr_size
         .cmp(&right.expr_size)
         .then_with(|| left.context_size.cmp(&right.context_size))
@@ -4088,12 +4112,12 @@ fn phase7_goal_selection_order(left: &Phase7GoalSummary, right: &Phase7GoalSumma
         })
 }
 
-fn phase7_premise_cache_entry(
+fn ai_search_premise_cache_entry(
     result: &MachineTheoremSearchResult,
     response_index: usize,
-) -> Phase7PremiseCacheEntry {
-    Phase7PremiseCacheEntry {
-        premise_ref: phase7_premise_ref(result),
+) -> AiSearchPremiseCacheEntry {
+    AiSearchPremiseCacheEntry {
+        premise_ref: ai_search_premise_ref(result),
         universe_params: result.universe_params.clone(),
         statement_core_hash: result.statement.core_hash,
         statement_head: result.statement.head.clone(),
@@ -4103,17 +4127,17 @@ fn phase7_premise_cache_entry(
     }
 }
 
-fn phase7_premise_usage(result: &MachineTheoremSearchResult) -> Phase7PremiseUsage {
-    Phase7PremiseUsage {
-        premise_ref: phase7_premise_ref(result),
+fn ai_search_premise_usage(result: &MachineTheoremSearchResult) -> AiSearchPremiseUsage {
+    AiSearchPremiseUsage {
+        premise_ref: ai_search_premise_ref(result),
         universe_params: result.universe_params.clone(),
         statement_core_hash: result.statement.core_hash,
         axioms_used: result.axioms_used.clone(),
     }
 }
 
-fn phase7_premise_ref(result: &MachineTheoremSearchResult) -> Phase7PremiseRef {
-    Phase7PremiseRef {
+fn ai_search_premise_ref(result: &MachineTheoremSearchResult) -> AiSearchPremiseRef {
+    AiSearchPremiseRef {
         module: result.global_ref.module.clone(),
         name: result.global_ref.name.clone(),
         export_hash: result.global_ref.export_hash,
@@ -4121,45 +4145,45 @@ fn phase7_premise_ref(result: &MachineTheoremSearchResult) -> Phase7PremiseRef {
     }
 }
 
-fn push_phase7_builtin_candidate(
-    out: &mut Vec<Phase7CandidateEnvelope>,
-    builtin_kind: Phase7BuiltinKind,
+fn push_ai_search_builtin_candidate(
+    out: &mut Vec<AiSearchCandidateEnvelope>,
+    builtin_kind: AiSearchBuiltinKind,
     source_index: u32,
     candidate: MachineTacticCandidate,
 ) {
-    let metadata = phase7_candidate_metadata(
-        Phase7CandidateSource::Builtin,
+    let metadata = ai_search_candidate_metadata(
+        AiSearchCandidateSource::Builtin,
         Some(builtin_kind),
         source_index,
         Vec::new(),
         Vec::new(),
         &candidate,
     );
-    let envelope = phase7_candidate_envelope(candidate, None, metadata);
+    let envelope = ai_search_candidate_envelope(candidate, None, metadata);
     out.push(envelope);
 }
 
-fn phase7_candidate_metadata(
-    source: Phase7CandidateSource,
-    builtin_kind: Option<Phase7BuiltinKind>,
+fn ai_search_candidate_metadata(
+    source: AiSearchCandidateSource,
+    builtin_kind: Option<AiSearchBuiltinKind>,
     source_index: u32,
-    premises_used: Vec<Phase7PremiseUsage>,
+    premises_used: Vec<AiSearchPremiseUsage>,
     uses_axioms: Vec<MachineAxiomRefWire>,
     candidate: &MachineTacticCandidate,
-) -> Phase7CandidateMetadata {
-    Phase7CandidateMetadata {
+) -> AiSearchCandidateMetadata {
+    AiSearchCandidateMetadata {
         source,
-        rank: Phase7CandidateRankMetadata {
-            source_rank: phase7_candidate_source_rank(source),
+        rank: AiSearchCandidateRankMetadata {
+            source_rank: ai_search_candidate_source_rank(source),
             source_index,
-            builtin_kind_rank: phase7_builtin_kind_rank(builtin_kind),
+            builtin_kind_rank: ai_search_builtin_kind_rank(builtin_kind),
         },
         score: 0,
         display_text: None,
         premises_used,
-        expected_effect: phase7_expected_effect(candidate),
-        cost_estimate: phase7_candidate_cost_estimate(candidate),
-        trust_flags: Phase7TrustFlags {
+        expected_effect: ai_search_expected_effect(candidate),
+        cost_estimate: ai_search_candidate_cost_estimate(candidate),
+        trust_flags: AiSearchTrustFlags {
             uses_axioms,
             contains_forbidden_tokens: false,
             forbidden_token_class: None,
@@ -4168,29 +4192,29 @@ fn phase7_candidate_metadata(
     }
 }
 
-fn phase7_candidate_source_rank(source: Phase7CandidateSource) -> u8 {
+fn ai_search_candidate_source_rank(source: AiSearchCandidateSource) -> u8 {
     match source {
-        Phase7CandidateSource::Phase5Suggested => 0,
-        Phase7CandidateSource::Builtin => 1,
-        Phase7CandidateSource::Model => 2,
-        Phase7CandidateSource::Exploration => 3,
-        Phase7CandidateSource::Repair => 4,
+        AiSearchCandidateSource::MachineApiSuggested => 0,
+        AiSearchCandidateSource::Builtin => 1,
+        AiSearchCandidateSource::Model => 2,
+        AiSearchCandidateSource::Exploration => 3,
+        AiSearchCandidateSource::Repair => 4,
     }
 }
 
-fn phase7_builtin_kind_rank(kind: Option<Phase7BuiltinKind>) -> u8 {
+fn ai_search_builtin_kind_rank(kind: Option<AiSearchBuiltinKind>) -> u8 {
     match kind {
-        Some(Phase7BuiltinKind::Intro) => 0,
-        Some(Phase7BuiltinKind::LocalExact) => 1,
-        Some(Phase7BuiltinKind::InductionNat) => 2,
-        Some(Phase7BuiltinKind::SimpLiteEmpty) => 3,
+        Some(AiSearchBuiltinKind::Intro) => 0,
+        Some(AiSearchBuiltinKind::LocalExact) => 1,
+        Some(AiSearchBuiltinKind::InductionNat) => 2,
+        Some(AiSearchBuiltinKind::SimpLiteEmpty) => 3,
         None => 255,
     }
 }
 
-fn phase7_candidate_envelope_order(
-    left: &Phase7CandidateEnvelope,
-    right: &Phase7CandidateEnvelope,
+fn ai_search_candidate_envelope_order(
+    left: &AiSearchCandidateEnvelope,
+    right: &AiSearchCandidateEnvelope,
 ) -> Ordering {
     left.metadata
         .rank
@@ -4209,45 +4233,45 @@ fn phase7_candidate_envelope_order(
                 .cmp(&right.metadata.rank.source_index)
         })
         .then_with(|| {
-            left.phase7_candidate_payload_hash
-                .cmp(&right.phase7_candidate_payload_hash)
+            left.ai_search_candidate_payload_hash
+                .cmp(&right.ai_search_candidate_payload_hash)
         })
 }
 
-fn phase7_builtin_intro_candidate(goal: &MachineGoalView) -> Option<MachineTacticCandidate> {
+fn ai_search_builtin_intro_candidate(goal: &MachineGoalView) -> Option<MachineTacticCandidate> {
     let term = parse_machine_term(FileId(0), &goal.target.machine).ok()?;
     let MachineTerm::Pi { binders, .. } = term else {
         return None;
     };
     let outer_binder_name = binders.first().map(|binder| binder.name.as_str());
     Some(MachineTacticCandidate::Intro {
-        name: phase7_fresh_intro_name(goal, outer_binder_name)?,
+        name: ai_search_fresh_intro_name(goal, outer_binder_name)?,
     })
 }
 
-fn phase7_local_exact_prefilter(goal: &MachineGoalView, local: &MachineLocalView) -> bool {
+fn ai_search_local_exact_prefilter(goal: &MachineGoalView, local: &MachineLocalView) -> bool {
     local.value.is_none()
         && local.ty.core_hash == goal.target.core_hash
-        && phase7_machine_name_is_unique(goal, &local.machine_name)
+        && ai_search_machine_name_is_unique(goal, &local.machine_name)
 }
 
-fn phase7_induction_nat_prefilter(
+fn ai_search_induction_nat_prefilter(
     goal: &MachineGoalView,
     context_index: usize,
     local: &MachineLocalView,
 ) -> bool {
-    phase7_goal_allows_tactic(goal, MachineApiTacticKind::InductionNat)
-        && phase7_machine_name_is_unique(goal, &local.machine_name)
+    ai_search_goal_allows_tactic(goal, MachineApiTacticKind::InductionNat)
+        && ai_search_machine_name_is_unique(goal, &local.machine_name)
         && local.value.is_none()
         && context_index + 1 == goal.context.len()
         && goal.target.free_locals.contains(&local.local_id)
 }
 
-fn phase7_goal_allows_tactic(goal: &MachineGoalView, tactic: MachineApiTacticKind) -> bool {
+fn ai_search_goal_allows_tactic(goal: &MachineGoalView, tactic: MachineApiTacticKind) -> bool {
     goal.allowed_tactics.contains(&tactic)
 }
 
-fn phase7_machine_name_is_unique(goal: &MachineGoalView, machine_name: &str) -> bool {
+fn ai_search_machine_name_is_unique(goal: &MachineGoalView, machine_name: &str) -> bool {
     goal.context
         .iter()
         .filter(|local| local.machine_name == machine_name)
@@ -4255,12 +4279,12 @@ fn phase7_machine_name_is_unique(goal: &MachineGoalView, machine_name: &str) -> 
         == 1
 }
 
-fn phase7_raw_term_forbidden_token(
+fn ai_search_raw_term_forbidden_token(
     raw_term_index: u32,
     term: &RawMachineTerm,
-) -> Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> {
+) -> Result<Option<AiSearchForbiddenToken>, AiSearchCandidateFilterError> {
     let tokens = lex_machine_surface_tokens(&term.source).map_err(|error| {
-        Phase7CandidateFilterError::RawMachineTermLex {
+        AiSearchCandidateFilterError::RawMachineTermLex {
             raw_term_index,
             source: term.source.clone(),
             message: error.message,
@@ -4279,12 +4303,12 @@ fn phase7_raw_term_forbidden_token(
     let mut best_token = None;
     for (index, token) in semantic_tokens.iter().enumerate() {
         if matches!(token.kind, MachineSurfaceTokenKind::ExternalCommand) {
-            let candidate = Phase7ForbiddenToken {
-                class: Phase7ForbiddenTokenClass::ExternalCommand,
+            let candidate = AiSearchForbiddenToken {
+                class: AiSearchForbiddenTokenClass::ExternalCommand,
                 spelling: token.spelling.clone(),
                 raw_term_index,
             };
-            if phase7_forbidden_token_is_better(best_token.as_ref(), &candidate) {
+            if ai_search_forbidden_token_is_better(best_token.as_ref(), &candidate) {
                 best_token = Some(candidate);
             }
         }
@@ -4293,12 +4317,12 @@ fn phase7_raw_term_forbidden_token(
                 .get(index + 1)
                 .is_some_and(|next| next.spelling == "unsafe")
         {
-            let candidate = Phase7ForbiddenToken {
-                class: Phase7ForbiddenTokenClass::SetOptionUnsafe,
+            let candidate = AiSearchForbiddenToken {
+                class: AiSearchForbiddenTokenClass::SetOptionUnsafe,
                 spelling: "set_option unsafe".to_owned(),
                 raw_term_index,
             };
-            if phase7_forbidden_token_is_better(best_token.as_ref(), &candidate) {
+            if ai_search_forbidden_token_is_better(best_token.as_ref(), &candidate) {
                 best_token = Some(candidate);
             }
             continue;
@@ -4309,13 +4333,13 @@ fn phase7_raw_term_forbidden_token(
         {
             continue;
         }
-        if let Some(class) = phase7_forbidden_token_class_for_spelling(&token.spelling) {
-            let candidate = Phase7ForbiddenToken {
+        if let Some(class) = ai_search_forbidden_token_class_for_spelling(&token.spelling) {
+            let candidate = AiSearchForbiddenToken {
                 class,
                 spelling: token.spelling.clone(),
                 raw_term_index,
             };
-            if phase7_forbidden_token_is_better(best_token.as_ref(), &candidate) {
+            if ai_search_forbidden_token_is_better(best_token.as_ref(), &candidate) {
                 best_token = Some(candidate);
             }
         }
@@ -4323,47 +4347,49 @@ fn phase7_raw_term_forbidden_token(
     Ok(best_token)
 }
 
-fn phase7_forbidden_token_is_better(
-    current: Option<&Phase7ForbiddenToken>,
-    candidate: &Phase7ForbiddenToken,
+fn ai_search_forbidden_token_is_better(
+    current: Option<&AiSearchForbiddenToken>,
+    candidate: &AiSearchForbiddenToken,
 ) -> bool {
     current.is_none_or(|current| {
-        phase7_forbidden_token_class_rank(candidate.class)
-            < phase7_forbidden_token_class_rank(current.class)
+        ai_search_forbidden_token_class_rank(candidate.class)
+            < ai_search_forbidden_token_class_rank(current.class)
     })
 }
 
-fn phase7_forbidden_token_class_rank(class: Phase7ForbiddenTokenClass) -> u8 {
+fn ai_search_forbidden_token_class_rank(class: AiSearchForbiddenTokenClass) -> u8 {
     match class {
-        Phase7ForbiddenTokenClass::Sorry => 0,
-        Phase7ForbiddenTokenClass::Admit => 1,
-        Phase7ForbiddenTokenClass::Axiom => 2,
-        Phase7ForbiddenTokenClass::Unsafe => 3,
-        Phase7ForbiddenTokenClass::Import => 4,
-        Phase7ForbiddenTokenClass::SetOptionUnsafe => 5,
-        Phase7ForbiddenTokenClass::Declare => 6,
-        Phase7ForbiddenTokenClass::Eval => 7,
-        Phase7ForbiddenTokenClass::Shell => 8,
-        Phase7ForbiddenTokenClass::ExternalCommand => 9,
-        Phase7ForbiddenTokenClass::DisallowedTacticKind => 10,
+        AiSearchForbiddenTokenClass::Sorry => 0,
+        AiSearchForbiddenTokenClass::Admit => 1,
+        AiSearchForbiddenTokenClass::Axiom => 2,
+        AiSearchForbiddenTokenClass::Unsafe => 3,
+        AiSearchForbiddenTokenClass::Import => 4,
+        AiSearchForbiddenTokenClass::SetOptionUnsafe => 5,
+        AiSearchForbiddenTokenClass::Declare => 6,
+        AiSearchForbiddenTokenClass::Eval => 7,
+        AiSearchForbiddenTokenClass::Shell => 8,
+        AiSearchForbiddenTokenClass::ExternalCommand => 9,
+        AiSearchForbiddenTokenClass::DisallowedTacticKind => 10,
     }
 }
 
-fn phase7_forbidden_token_class_for_spelling(spelling: &str) -> Option<Phase7ForbiddenTokenClass> {
+fn ai_search_forbidden_token_class_for_spelling(
+    spelling: &str,
+) -> Option<AiSearchForbiddenTokenClass> {
     match spelling {
-        "sorry" => Some(Phase7ForbiddenTokenClass::Sorry),
-        "admit" => Some(Phase7ForbiddenTokenClass::Admit),
-        "axiom" => Some(Phase7ForbiddenTokenClass::Axiom),
-        "unsafe" => Some(Phase7ForbiddenTokenClass::Unsafe),
-        "import" => Some(Phase7ForbiddenTokenClass::Import),
-        "declare" => Some(Phase7ForbiddenTokenClass::Declare),
-        "eval" => Some(Phase7ForbiddenTokenClass::Eval),
-        "shell" => Some(Phase7ForbiddenTokenClass::Shell),
+        "sorry" => Some(AiSearchForbiddenTokenClass::Sorry),
+        "admit" => Some(AiSearchForbiddenTokenClass::Admit),
+        "axiom" => Some(AiSearchForbiddenTokenClass::Axiom),
+        "unsafe" => Some(AiSearchForbiddenTokenClass::Unsafe),
+        "import" => Some(AiSearchForbiddenTokenClass::Import),
+        "declare" => Some(AiSearchForbiddenTokenClass::Declare),
+        "eval" => Some(AiSearchForbiddenTokenClass::Eval),
+        "shell" => Some(AiSearchForbiddenTokenClass::Shell),
         _ => None,
     }
 }
 
-fn phase7_candidate_raw_terms(candidate: &MachineTacticCandidate) -> Vec<&RawMachineTerm> {
+fn ai_search_candidate_raw_terms(candidate: &MachineTacticCandidate) -> Vec<&RawMachineTerm> {
     let mut terms = Vec::new();
     match candidate {
         MachineTacticCandidate::Exact { term } => terms.push(term),
@@ -4388,11 +4414,11 @@ fn phase7_candidate_raw_terms(candidate: &MachineTacticCandidate) -> Vec<&RawMac
     terms
 }
 
-fn phase7_raw_machine_term_json(term: &RawMachineTerm) -> String {
+fn ai_search_raw_machine_term_json(term: &RawMachineTerm) -> String {
     format!(r#"{{"source":{}}}"#, json_string(&term.source))
 }
 
-fn phase7_tactic_head_json(head: &TacticHead) -> String {
+fn ai_search_tactic_head_json(head: &TacticHead) -> String {
     match head {
         TacticHead::Imported {
             name,
@@ -4416,25 +4442,28 @@ fn phase7_tactic_head_json(head: &TacticHead) -> String {
     }
 }
 
-fn phase7_rewrite_rule_json(rule: &CandidateRewriteRuleRef) -> String {
+fn ai_search_rewrite_rule_json(rule: &CandidateRewriteRuleRef) -> String {
     format!(
         r#"{{"args":{},"head":{},"universe_args":{}}}"#,
-        phase7_apply_arg_array_json(&rule.args),
-        phase7_tactic_head_json(&rule.head),
-        phase7_level_array_json(&rule.universe_args),
+        ai_search_apply_arg_array_json(&rule.args),
+        ai_search_tactic_head_json(&rule.head),
+        ai_search_level_array_json(&rule.universe_args),
     )
 }
 
-fn phase7_apply_arg_array_json(args: &[CandidateApplyArg]) -> String {
-    let members = args.iter().map(phase7_apply_arg_json).collect::<Vec<_>>();
+fn ai_search_apply_arg_array_json(args: &[CandidateApplyArg]) -> String {
+    let members = args
+        .iter()
+        .map(ai_search_apply_arg_json)
+        .collect::<Vec<_>>();
     format!("[{}]", members.join(","))
 }
 
-fn phase7_apply_arg_json(arg: &CandidateApplyArg) -> String {
+fn ai_search_apply_arg_json(arg: &CandidateApplyArg) -> String {
     match arg {
         CandidateApplyArg::Term(term) => format!(
             r#"{{"mode":"term","term":{}}}"#,
-            phase7_raw_machine_term_json(term)
+            ai_search_raw_machine_term_json(term)
         ),
         CandidateApplyArg::Subgoal { name_hint } => {
             let name_hint = name_hint
@@ -4447,81 +4476,84 @@ fn phase7_apply_arg_json(arg: &CandidateApplyArg) -> String {
     }
 }
 
-fn phase7_simp_rule_array_json(rules: &[SimpRuleRef]) -> String {
-    let members = rules.iter().map(phase7_simp_rule_json).collect::<Vec<_>>();
-    format!("[{}]", members.join(","))
-}
-
-fn phase7_simp_rule_json(rule: &SimpRuleRef) -> String {
-    format!(
-        r#"{{"decl_interface_hash":{},"direction":{},"name":{}}}"#,
-        json_string(&format_hash_string(&rule.decl_interface_hash)),
-        json_string(phase7_rewrite_direction_wire(rule.direction)),
-        json_string(&rule.name.as_dotted()),
-    )
-}
-
-fn phase7_level_array_json(levels: &[Level]) -> String {
-    let members = levels
+fn ai_search_simp_rule_array_json(rules: &[SimpRuleRef]) -> String {
+    let members = rules
         .iter()
-        .map(|level| json_string(&phase7_render_level_wire(level)))
+        .map(ai_search_simp_rule_json)
         .collect::<Vec<_>>();
     format!("[{}]", members.join(","))
 }
 
-fn phase7_render_level_wire(level: &Level) -> String {
-    if let Some(value) = phase7_level_as_nat(level) {
+fn ai_search_simp_rule_json(rule: &SimpRuleRef) -> String {
+    format!(
+        r#"{{"decl_interface_hash":{},"direction":{},"name":{}}}"#,
+        json_string(&format_hash_string(&rule.decl_interface_hash)),
+        json_string(ai_search_rewrite_direction_wire(rule.direction)),
+        json_string(&rule.name.as_dotted()),
+    )
+}
+
+fn ai_search_level_array_json(levels: &[Level]) -> String {
+    let members = levels
+        .iter()
+        .map(|level| json_string(&ai_search_render_level_wire(level)))
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn ai_search_render_level_wire(level: &Level) -> String {
+    if let Some(value) = ai_search_level_as_nat(level) {
         return value.to_string();
     }
     match level {
         Level::Zero => "0".to_owned(),
-        Level::Succ(inner) => format!("succ {}", phase7_render_level_wire(inner)),
+        Level::Succ(inner) => format!("succ {}", ai_search_render_level_wire(inner)),
         Level::Max(lhs, rhs) => {
             format!(
                 "max {} {}",
-                phase7_render_level_wire(lhs),
-                phase7_render_level_wire(rhs)
+                ai_search_render_level_wire(lhs),
+                ai_search_render_level_wire(rhs)
             )
         }
         Level::IMax(lhs, rhs) => {
             format!(
                 "imax {} {}",
-                phase7_render_level_wire(lhs),
-                phase7_render_level_wire(rhs)
+                ai_search_render_level_wire(lhs),
+                ai_search_render_level_wire(rhs)
             )
         }
         Level::Param(name) => name.clone(),
     }
 }
 
-fn phase7_level_as_nat(level: &Level) -> Option<u64> {
+fn ai_search_level_as_nat(level: &Level) -> Option<u64> {
     match level {
         Level::Zero => Some(0),
-        Level::Succ(inner) => Some(phase7_level_as_nat(inner)? + 1),
+        Level::Succ(inner) => Some(ai_search_level_as_nat(inner)? + 1),
         _ => None,
     }
 }
 
-fn phase7_rewrite_direction_wire(direction: RewriteDirection) -> &'static str {
+fn ai_search_rewrite_direction_wire(direction: RewriteDirection) -> &'static str {
     match direction {
         RewriteDirection::Forward => "forward",
         RewriteDirection::Backward => "backward",
     }
 }
 
-fn phase7_rewrite_site_wire(site: RewriteSite) -> &'static str {
+fn ai_search_rewrite_site_wire(site: RewriteSite) -> &'static str {
     match site {
         RewriteSite::EqTargetLeft => "eq_target_left",
         RewriteSite::EqTargetRight => "eq_target_right",
     }
 }
 
-fn phase7_optional_global_ref_view_json(view: Option<&MachineGlobalRefView>) -> String {
-    view.map(phase7_global_ref_view_json)
+fn ai_search_optional_global_ref_view_json(view: Option<&MachineGlobalRefView>) -> String {
+    view.map(ai_search_global_ref_view_json)
         .unwrap_or_else(|| "null".to_owned())
 }
 
-fn phase7_global_ref_view_json(view: &MachineGlobalRefView) -> String {
+fn ai_search_global_ref_view_json(view: &MachineGlobalRefView) -> String {
     match view {
         MachineGlobalRefView::Imported {
             module,
@@ -4579,12 +4611,15 @@ fn phase7_global_ref_view_json(view: &MachineGlobalRefView) -> String {
     }
 }
 
-fn phase7_axiom_refs_json(axioms: &[MachineAxiomRefWire]) -> String {
-    let members = axioms.iter().map(phase7_axiom_ref_json).collect::<Vec<_>>();
+fn ai_search_axiom_refs_json(axioms: &[MachineAxiomRefWire]) -> String {
+    let members = axioms
+        .iter()
+        .map(ai_search_axiom_ref_json)
+        .collect::<Vec<_>>();
     format!("[{}]", members.join(","))
 }
 
-fn phase7_axiom_ref_json(axiom: &MachineAxiomRefWire) -> String {
+fn ai_search_axiom_ref_json(axiom: &MachineAxiomRefWire) -> String {
     match axiom {
         MachineAxiomRefWire::Imported {
             module,
@@ -4621,7 +4656,7 @@ fn phase7_axiom_ref_json(axiom: &MachineAxiomRefWire) -> String {
     }
 }
 
-fn phase7_theorem_modes_json(modes: &[MachineTheoremMode]) -> String {
+fn ai_search_theorem_modes_json(modes: &[MachineTheoremMode]) -> String {
     let members = modes
         .iter()
         .map(|mode| json_string(mode.as_str()))
@@ -4629,7 +4664,7 @@ fn phase7_theorem_modes_json(modes: &[MachineTheoremMode]) -> String {
     format!("[{}]", members.join(","))
 }
 
-fn phase7_string_array_json(values: &[String]) -> String {
+fn ai_search_string_array_json(values: &[String]) -> String {
     let members = values
         .iter()
         .map(|value| json_string(value))
@@ -4671,13 +4706,13 @@ fn usize_to_u32(value: usize) -> u32 {
     u32::try_from(value).expect("machine API vector length fits in u32")
 }
 
-pub fn parse_phase7_mvp_controller_config(
+pub fn parse_ai_search_mvp_controller_config(
     source: &str,
-) -> Result<Phase7MvpControllerConfig, MachineApiRequestError> {
+) -> Result<AiSearchMvpControllerConfig, MachineApiRequestError> {
     let doc = parse_request_body(source, MachineApiErrorKind::InvalidBatchPolicy)?;
-    let members = validate_phase7_config_top_level(doc.root())?;
+    let members = validate_ai_search_config_top_level(doc.root())?;
 
-    let search_budget = parse_phase7_search_budget(
+    let search_budget = parse_ai_search_budget(
         required_config_field(members, "search_budget"),
         &JsonPath::root().field("search_budget"),
     )?;
@@ -4688,15 +4723,18 @@ pub fn parse_phase7_mvp_controller_config(
     )?;
     let scheduler_limits = member_value(members, "scheduler_limits")
         .map(|value| {
-            parse_phase7_batch_scheduler_limits(value, &JsonPath::root().field("scheduler_limits"))
+            parse_ai_search_batch_scheduler_limits(
+                value,
+                &JsonPath::root().field("scheduler_limits"),
+            )
         })
         .transpose()?;
-    let batch_policy = parse_phase7_batch_policy(
+    let batch_policy = parse_ai_search_batch_policy(
         required_config_field(members, "batch_policy"),
         &JsonPath::root().field("batch_policy"),
     )?;
 
-    validate_phase7_mvp_controller_config(Phase7MvpControllerConfig {
+    validate_ai_search_mvp_controller_config(AiSearchMvpControllerConfig {
         search_budget,
         per_tactic_deterministic_budget,
         scheduler_limits,
@@ -4704,9 +4742,9 @@ pub fn parse_phase7_mvp_controller_config(
     })
 }
 
-pub fn validate_phase7_mvp_controller_config(
-    config: Phase7MvpControllerConfig,
-) -> Result<Phase7MvpControllerConfig, MachineApiRequestError> {
+pub fn validate_ai_search_mvp_controller_config(
+    config: AiSearchMvpControllerConfig,
+) -> Result<AiSearchMvpControllerConfig, MachineApiRequestError> {
     validate_positive_u64(
         config.search_budget.wall_clock_ms,
         "wall_clock_ms",
@@ -4721,7 +4759,7 @@ pub fn validate_phase7_mvp_controller_config(
         &JsonPath::root().field("search_budget").field("max_nodes"),
         MachineApiErrorKind::InvalidBatchPolicy,
     )?;
-    if config.search_budget.max_tactics_per_node != PHASE7_MVP_MAX_TACTICS_PER_NODE {
+    if config.search_budget.max_tactics_per_node != AI_SEARCH_MVP_MAX_TACTICS_PER_NODE {
         return Err(invalid_u64(
             "max_tactics_per_node",
             u64::from(config.search_budget.max_tactics_per_node),
@@ -4757,19 +4795,19 @@ pub fn validate_phase7_mvp_controller_config(
     Ok(config)
 }
 
-fn parse_phase7_search_budget(
+fn parse_ai_search_budget(
     value: &JsonValue<'_>,
     path: &JsonPath,
-) -> Result<Phase7SearchBudget, MachineApiRequestError> {
+) -> Result<AiSearchBudget, MachineApiRequestError> {
     let object = validate_json_object(
         value,
         ObjectSchema::new(
             MachineApiErrorKind::InvalidBatchPolicy,
-            PHASE7_SEARCH_BUDGET_FIELDS,
+            AI_SEARCH_SEARCH_BUDGET_FIELDS,
         ),
         path,
     )?;
-    Ok(Phase7SearchBudget {
+    Ok(AiSearchBudget {
         wall_clock_ms: required_u64(&object, "wall_clock_ms"),
         max_nodes: required_u64(&object, "max_nodes"),
         max_tactics_per_node: required_u32(
@@ -4781,7 +4819,7 @@ fn parse_phase7_search_budget(
     })
 }
 
-fn parse_phase7_batch_policy(
+fn parse_ai_search_batch_policy(
     value: &JsonValue<'_>,
     path: &JsonPath,
 ) -> Result<MachineTacticBatchPolicy, MachineApiRequestError> {
@@ -4789,7 +4827,7 @@ fn parse_phase7_batch_policy(
         value,
         ObjectSchema::new(
             MachineApiErrorKind::InvalidBatchPolicy,
-            PHASE7_BATCH_POLICY_FIELDS,
+            AI_SEARCH_BATCH_POLICY_FIELDS,
         ),
         path,
     )?;
@@ -4812,7 +4850,7 @@ fn parse_phase7_batch_policy(
     })
 }
 
-fn parse_phase7_batch_scheduler_limits(
+fn parse_ai_search_batch_scheduler_limits(
     value: &JsonValue<'_>,
     path: &JsonPath,
 ) -> Result<MachineBatchSchedulerLimits, MachineApiRequestError> {
@@ -4820,7 +4858,7 @@ fn parse_phase7_batch_scheduler_limits(
         value,
         ObjectSchema::new(
             MachineApiErrorKind::InvalidSchedulerLimits,
-            PHASE7_BATCH_SCHEDULER_FIELDS,
+            AI_SEARCH_BATCH_SCHEDULER_FIELDS,
         ),
         path,
     )?;
@@ -4843,7 +4881,7 @@ fn parse_phase7_batch_scheduler_limits(
     })
 }
 
-fn validate_phase7_config_top_level<'value, 'src>(
+fn validate_ai_search_config_top_level<'value, 'src>(
     root: &'value JsonValue<'src>,
 ) -> Result<&'value [JsonMember<'src>], MachineApiRequestError> {
     let members = root.object_members().ok_or_else(|| {
@@ -4877,7 +4915,7 @@ fn validate_phase7_config_top_level<'value, 'src>(
                 JsonFieldType::Object,
                 MachineApiErrorKind::InvalidSchedulerLimits,
             )?;
-        } else if let Some(field) = PHASE7_CONFIG_FIELDS
+        } else if let Some(field) = AI_SEARCH_CONFIG_FIELDS
             .iter()
             .find(|field| field.name == member.key())
         {
@@ -4898,7 +4936,7 @@ fn validate_phase7_config_top_level<'value, 'src>(
         }
     }
 
-    for field in PHASE7_CONFIG_FIELDS {
+    for field in AI_SEARCH_CONFIG_FIELDS {
         if !members.iter().any(|member| member.key() == field.name) {
             return Err(MachineApiRequestError::new(
                 field_error_kind(field.name),
@@ -5143,27 +5181,28 @@ mod tests {
     }
 
     #[test]
-    fn phase7_candidate_api_stays_separate_from_phase2_core_candidates() {
+    fn ai_search_candidate_api_stays_separate_from_certificate_core_candidates() {
         let _: fn(
             MachineTacticCandidate,
             Option<Hash>,
-            Phase7CandidateMetadata,
-        ) -> Phase7CandidateEnvelope = phase7_candidate_envelope;
-        let _: fn(&MachineTacticCandidate) -> Hash = phase7_candidate_payload_hash;
-        let _: fn(&MachineTacticCandidate) -> String = phase7_candidate_payload_json;
-        let _: fn(&MachineTacticCandidate) -> Phase7ExpectedEffect = phase7_expected_effect;
-        let _: fn(&MachineTacticCandidate) -> Phase7CandidateCostEstimate =
-            phase7_candidate_cost_estimate;
+            AiSearchCandidateMetadata,
+        ) -> AiSearchCandidateEnvelope = ai_search_candidate_envelope;
+        let _: fn(&MachineTacticCandidate) -> Hash = ai_search_candidate_payload_hash;
+        let _: fn(&MachineTacticCandidate) -> String = ai_search_candidate_payload_json;
+        let _: fn(&MachineTacticCandidate) -> AiSearchExpectedEffect = ai_search_expected_effect;
+        let _: fn(&MachineTacticCandidate) -> AiSearchCandidateCostEstimate =
+            ai_search_candidate_cost_estimate;
         let _: fn(
             &MachineTacticCandidate,
-        )
-            -> std::result::Result<Option<Phase7ForbiddenToken>, Phase7CandidateFilterError> =
-            phase7_candidate_forbidden_token;
+        ) -> std::result::Result<
+            Option<AiSearchForbiddenToken>,
+            AiSearchCandidateFilterError,
+        > = ai_search_candidate_forbidden_token;
         let _: fn(
             GoalId,
             MachineTacticCandidate,
-        ) -> crate::Phase4AdapterResult<crate::Phase4ValidatedTactic> =
-            crate::phase4_validate_machine_tactic_candidate;
+        ) -> crate::MachineTacticAdapterResult<crate::ValidatedMachineTactic> =
+            crate::machine_tactic_validate_machine_tactic_candidate;
 
         assert_ne!(
             std::any::TypeId::of::<MachineTacticCandidate>(),
@@ -5171,14 +5210,14 @@ mod tests {
         );
     }
 
-    fn unwrap_search_failure(result: Phase7SearchResult) -> Phase7SearchFailure {
+    fn unwrap_search_failure(result: AiSearchResult) -> AiSearchFailure {
         match result {
             Ok(proof) => panic!("expected search failure, got verified proof {proof:?}"),
             Err(failure) => *failure,
         }
     }
 
-    fn unwrap_verified_proof(result: Phase7SearchResult) -> Phase7VerifiedProof {
+    fn unwrap_verified_proof(result: AiSearchResult) -> AiSearchVerifiedProof {
         match result {
             Ok(proof) => proof,
             Err(failure) => panic!("expected verified proof, got search failure {failure:?}"),
@@ -5197,8 +5236,8 @@ mod tests {
         }
     }
 
-    fn snapshot_request() -> Phase7SnapshotGetRequest {
-        Phase7SnapshotGetRequest {
+    fn snapshot_request() -> AiSearchSnapshotGetRequest {
+        AiSearchSnapshotGetRequest {
             session_id: SessionId::parse("msess_001").unwrap(),
             snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
             state_fingerprint: hash(1),
@@ -5364,9 +5403,9 @@ mod tests {
         })
     }
 
-    fn empty_retrieval() -> Phase7PremiseRetrieval {
-        Phase7PremiseRetrieval {
-            cache_key: Phase7RetrievalCacheKey {
+    fn empty_retrieval() -> AiSearchPremiseRetrieval {
+        AiSearchPremiseRetrieval {
+            cache_key: AiSearchRetrievalCacheKey {
                 session_root_hash: hash(90),
                 query_fingerprint: hash(91),
                 theorem_index_fingerprint: hash(92),
@@ -5429,65 +5468,65 @@ mod tests {
         )
     }
 
-    fn mvp_config() -> Phase7MvpControllerConfig {
-        parse_phase7_mvp_controller_config(valid_config_json()).unwrap()
+    fn mvp_config() -> AiSearchMvpControllerConfig {
+        parse_ai_search_mvp_controller_config(valid_config_json()).unwrap()
     }
 
-    fn phase7_test_envelope(
+    fn ai_search_test_envelope(
         source_index: u32,
         candidate_hash: Option<Hash>,
-    ) -> Phase7CandidateEnvelope {
+    ) -> AiSearchCandidateEnvelope {
         let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
-        let metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::SimpLiteEmpty),
+        let metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::SimpLiteEmpty),
             source_index,
             Vec::new(),
             Vec::new(),
             &candidate,
         );
-        phase7_candidate_envelope(candidate, candidate_hash, metadata)
+        ai_search_candidate_envelope(candidate, candidate_hash, metadata)
     }
 
-    fn phase7_exact_test_envelope(
+    fn ai_search_exact_test_envelope(
         source_index: u32,
         candidate_hash: Option<Hash>,
         term: &str,
-    ) -> Phase7CandidateEnvelope {
+    ) -> AiSearchCandidateEnvelope {
         let candidate = MachineTacticCandidate::Exact {
             term: RawMachineTerm::new(term),
         };
-        let metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::LocalExact),
+        let metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::LocalExact),
             source_index,
             Vec::new(),
             Vec::new(),
             &candidate,
         );
-        phase7_candidate_envelope(candidate, candidate_hash, metadata)
+        ai_search_candidate_envelope(candidate, candidate_hash, metadata)
     }
 
-    fn phase7_test_batch_request(
-        candidates: Vec<Phase7CandidateEnvelope>,
-    ) -> Phase7TacticBatchRequest {
+    fn ai_search_test_batch_request(
+        candidates: Vec<AiSearchCandidateEnvelope>,
+    ) -> AiSearchTacticBatchRequest {
         let snapshot = snapshot_request();
         let config = mvp_config();
-        Phase7TacticBatchRequest {
+        AiSearchTacticBatchRequest {
             session_id: snapshot.session_id,
             snapshot_id: snapshot.snapshot_id,
             state_fingerprint: snapshot.state_fingerprint,
             goal_id: GoalId(0),
-            candidates: phase7_assign_candidate_ids(candidates),
+            candidates: ai_search_assign_candidate_ids(candidates),
             deterministic_budget: config.per_tactic_deterministic_budget,
             batch_policy: config.batch_policy,
             scheduler_limits: None,
         }
     }
 
-    fn phase7_test_search_input(initial_snapshot: MachineProofSnapshot) -> Phase7SearchInput {
+    fn ai_search_test_search_input(initial_snapshot: MachineProofSnapshot) -> AiSearchInput {
         let config = mvp_config();
-        Phase7SearchInput {
+        AiSearchInput {
             session_id: initial_snapshot.session_id.clone(),
             session_root_hash: hash(90),
             initial_snapshot,
@@ -5512,8 +5551,8 @@ mod tests {
     fn accepted_failure(
         error_kind: FailedCandidateErrorKind,
         candidate_hash: Hash,
-    ) -> Phase7AcceptedCandidateFailure {
-        Phase7AcceptedCandidateFailure {
+    ) -> AiSearchAcceptedCandidateFailure {
+        AiSearchAcceptedCandidateFailure {
             error_kind,
             phase: crate::MachineApiDiagnosticPhase::TacticExecution,
             goal_id: Some(GoalId(0)),
@@ -5543,7 +5582,7 @@ mod tests {
     }
 
     fn ok_batch_response(
-        request: &Phase7TacticBatchRequest,
+        request: &AiSearchTacticBatchRequest,
         results: Vec<MachineTacticBatchItemResponse>,
     ) -> MachineTacticBatchResponse {
         ok_batch_response_for(
@@ -5682,8 +5721,8 @@ mod tests {
     }
 
     #[test]
-    fn phase7_snapshot_get_request_forces_include_pretty_false() {
-        let source = phase7_snapshot_get_request_json(&snapshot_request());
+    fn ai_search_snapshot_get_request_forces_include_pretty_false() {
+        let source = ai_search_snapshot_get_request_json(&snapshot_request());
 
         let parsed = parse_machine_snapshot_get_request(&source).unwrap();
 
@@ -5695,19 +5734,19 @@ mod tests {
     #[test]
     fn fake_client_records_snapshot_get_without_pretty() {
         let request = snapshot_request();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
 
         let err = client.get_snapshot(request.clone()).unwrap_err();
 
         assert_eq!(
             err,
-            Phase7MachineApiError::FakeResponseExhausted {
-                endpoint: Phase7MachineApiEndpointKind::SnapshotGet
+            AiSearchMachineApiError::FakeResponseExhausted {
+                endpoint: AiSearchMachineApiEndpointKind::SnapshotGet
             }
         );
         assert_eq!(
             client.calls(),
-            &[Phase7MachineApiCall::SnapshotGet {
+            &[AiSearchMachineApiCall::SnapshotGet {
                 session_id: request.session_id,
                 snapshot_id: request.snapshot_id,
                 state_fingerprint: request.state_fingerprint,
@@ -5723,12 +5762,12 @@ mod tests {
             goal_view(GoalId(1), 30, 8, 0, 0, Some(imported_ref("Eq", 40))),
             goal_view(GoalId(0), 31, 3, 1, 2, None),
         ]);
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: snapshot.clone(),
         }));
 
-        let loaded = load_phase7_initial_snapshot(&mut client, request.clone()).unwrap();
+        let loaded = load_ai_search_initial_snapshot(&mut client, request.clone()).unwrap();
 
         assert_eq!(loaded.snapshot, snapshot);
         assert_eq!(loaded.goals.len(), 2);
@@ -5738,7 +5777,7 @@ mod tests {
         assert_eq!(loaded.goals[0].target_free_local_count, 0);
         assert_eq!(
             client.calls(),
-            &[Phase7MachineApiCall::SnapshotGet {
+            &[AiSearchMachineApiCall::SnapshotGet {
                 session_id: request.session_id,
                 snapshot_id: request.snapshot_id,
                 state_fingerprint: request.state_fingerprint,
@@ -5755,8 +5794,8 @@ mod tests {
             goal_view(GoalId(0), 32, 5, 1, 0, None),
         ]);
 
-        let summaries = phase7_goal_summaries(&snapshot);
-        let selected = select_phase7_goal(&snapshot).unwrap();
+        let summaries = ai_search_goal_summaries(&snapshot);
+        let selected = select_ai_search_goal(&snapshot).unwrap();
 
         assert_eq!(summaries[0].goal_id, GoalId(2));
         assert_eq!(summaries[1].open_goal_index, 1);
@@ -5767,8 +5806,8 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_premise_query_is_fixed_phase5_search_shape() {
-        let source = phase7_mvp_premise_query_json(&Phase7PremiseQueryRequest {
+    fn ai_search_mvp_premise_query_is_fixed_machine_api_search_shape() {
+        let source = ai_search_mvp_premise_query_json(&AiSearchPremiseQueryRequest {
             session_id: SessionId::parse("msess_001").unwrap(),
             snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
             state_fingerprint: hash(1),
@@ -5796,15 +5835,15 @@ mod tests {
     }
 
     #[test]
-    fn retrieve_phase7_premises_uses_fixed_query_and_preserves_phase5_results() {
-        let request = Phase7PremiseQueryRequest {
+    fn retrieve_ai_search_premises_uses_fixed_query_and_preserves_machine_api_results() {
+        let request = AiSearchPremiseQueryRequest {
             session_id: SessionId::parse("msess_001").unwrap(),
             snapshot_id: SnapshotId::from_state_fingerprint(hash(1)),
             state_fingerprint: hash(1),
             goal_id: GoalId(7),
         };
         let search = search_ok_fields(theorem_result("display", Vec::new()));
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_search_for_goal_response(Ok(MachineApiResponseEnvelope::Ok(
             MachineApiOkResponse {
                 status: MachineApiResponseStatus::Ok,
@@ -5812,11 +5851,11 @@ mod tests {
             },
         )));
 
-        let retrieval = retrieve_phase7_premises(&mut client, &request, hash(99)).unwrap();
+        let retrieval = retrieve_ai_search_premises(&mut client, &request, hash(99)).unwrap();
 
         assert_eq!(
             retrieval.cache_key,
-            Phase7RetrievalCacheKey {
+            AiSearchRetrievalCacheKey {
                 session_root_hash: hash(99),
                 query_fingerprint: hash(20),
                 theorem_index_fingerprint: hash(21),
@@ -5825,7 +5864,7 @@ mod tests {
         assert_eq!(retrieval.cache_entries.len(), 1);
         assert_eq!(retrieval.results, search.results);
         assert_eq!(client.calls().len(), 1);
-        let Phase7MachineApiCall::SearchForGoal { source } = &client.calls()[0] else {
+        let AiSearchMachineApiCall::SearchForGoal { source } = &client.calls()[0] else {
             panic!("expected search_for_goal call");
         };
         let parsed = parse_machine_theorem_search_request(source).unwrap();
@@ -5854,8 +5893,8 @@ mod tests {
         };
         let mut search = search_ok_fields(theorem_result("pretty theorem text", vec![suggested]));
 
-        let entries = phase7_premise_cache_entries(&search);
-        let usages = phase7_premise_usages(&search);
+        let entries = ai_search_premise_cache_entries(&search);
+        let usages = ai_search_premise_usages(&search);
 
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].premise_ref.module, name("Std.Nat.Basic"));
@@ -5870,7 +5909,7 @@ mod tests {
         assert_eq!(entries[0].response_index, 0);
         assert_eq!(
             usages[0],
-            Phase7PremiseUsage {
+            AiSearchPremiseUsage {
                 premise_ref: entries[0].premise_ref.clone(),
                 universe_params: entries[0].universe_params.clone(),
                 statement_core_hash: entries[0].statement_core_hash,
@@ -5883,18 +5922,18 @@ mod tests {
         search.results[0].score = 99;
         search.results[0].suggested_candidates.clear();
 
-        assert_eq!(phase7_premise_cache_entries(&search), original_entries);
+        assert_eq!(ai_search_premise_cache_entries(&search), original_entries);
     }
 
     #[test]
-    fn retrieval_cache_key_uses_phase5_fingerprints() {
+    fn retrieval_cache_key_uses_machine_api_fingerprints() {
         let search = search_ok_fields(theorem_result("display", Vec::new()));
 
-        let key = phase7_retrieval_cache_key(hash(99), &search);
+        let key = ai_search_retrieval_cache_key(hash(99), &search);
 
         assert_eq!(
             key,
-            Phase7RetrievalCacheKey {
+            AiSearchRetrievalCacheKey {
                 session_root_hash: hash(99),
                 query_fingerprint: hash(20),
                 theorem_index_fingerprint: hash(21),
@@ -5903,16 +5942,16 @@ mod tests {
     }
 
     #[test]
-    fn candidate_payload_json_is_phase5_candidate_shape_and_hash_is_payload_only() {
+    fn candidate_payload_json_is_machine_api_candidate_shape_and_hash_is_payload_only() {
         let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
-        let payload = phase7_candidate_payload_json(&candidate);
+        let payload = ai_search_candidate_payload_json(&candidate);
 
         assert_eq!(payload, r#"{"kind":"simp-lite","rules":[]}"#);
         parse_machine_tactic_batch_request(&batch_request_with_candidate(&payload)).unwrap();
 
-        let mut metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::SimpLiteEmpty),
+        let mut metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::SimpLiteEmpty),
             0,
             Vec::new(),
             Vec::new(),
@@ -5920,12 +5959,12 @@ mod tests {
         );
         metadata.score = 999;
         metadata.display_text = Some("unsafe display is not payload".to_owned());
-        let first = phase7_candidate_envelope(candidate.clone(), None, metadata);
-        let second = phase7_candidate_envelope(
+        let first = ai_search_candidate_envelope(candidate.clone(), None, metadata);
+        let second = ai_search_candidate_envelope(
             candidate,
             Some(hash(77)),
-            phase7_candidate_metadata(
-                Phase7CandidateSource::Phase5Suggested,
+            ai_search_candidate_metadata(
+                AiSearchCandidateSource::MachineApiSuggested,
                 None,
                 7,
                 Vec::new(),
@@ -5935,8 +5974,8 @@ mod tests {
         );
 
         assert_eq!(
-            first.phase7_candidate_payload_hash,
-            second.phase7_candidate_payload_hash
+            first.ai_search_candidate_payload_hash,
+            second.ai_search_candidate_payload_hash
         );
         assert!(!payload.contains("candidate_hash"));
         assert!(!payload.contains("display"));
@@ -5956,7 +5995,7 @@ mod tests {
                 CandidateApplyArg::InferFromTarget,
             ],
         };
-        let apply_payload = phase7_candidate_payload_json(&apply);
+        let apply_payload = ai_search_candidate_payload_json(&apply);
 
         assert_eq!(
             apply_payload,
@@ -5976,7 +6015,7 @@ mod tests {
             direction: RewriteDirection::Forward,
             site: RewriteSite::EqTargetLeft,
         };
-        let rw_payload = phase7_candidate_payload_json(&rw);
+        let rw_payload = ai_search_candidate_payload_json(&rw);
 
         assert_eq!(
             rw_payload,
@@ -5989,10 +6028,10 @@ mod tests {
     }
 
     #[test]
-    fn candidate_metadata_matches_phase7_score_and_repair_shape() {
+    fn candidate_metadata_matches_ai_search_score_and_repair_shape() {
         let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
-        let mut metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Repair,
+        let mut metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Repair,
             None,
             0,
             Vec::new(),
@@ -6000,7 +6039,7 @@ mod tests {
             &candidate,
         );
         metadata.score = -1;
-        metadata.repair = Some(Phase7CandidateRepairMetadata {
+        metadata.repair = Some(AiSearchCandidateRepairMetadata {
             parent_candidate_hash: hash(60),
             error_kind: FailedCandidateErrorKind::TypeMismatch,
             repair_depth: 1,
@@ -6010,7 +6049,7 @@ mod tests {
         assert_eq!(metadata.score, -1);
         assert_eq!(
             metadata.repair,
-            Some(Phase7CandidateRepairMetadata {
+            Some(AiSearchCandidateRepairMetadata {
                 parent_candidate_hash: hash(60),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
                 repair_depth: 1,
@@ -6020,7 +6059,7 @@ mod tests {
     }
 
     #[test]
-    fn suggested_candidate_envelopes_flatten_phase5_results_and_preserve_hashes() {
+    fn suggested_candidate_envelopes_flatten_machine_api_results_and_preserve_hashes() {
         let suggested = MachineSuggestedCandidate {
             status: MachineSuggestedCandidateStatus::Validated,
             candidate_hash: hash(40),
@@ -6029,17 +6068,17 @@ mod tests {
         let mut result = theorem_result("display", vec![suggested]);
         result.score = 999;
 
-        let envelopes = phase7_suggested_candidate_envelopes(&[result.clone()]);
+        let envelopes = ai_search_suggested_candidate_envelopes(&[result.clone()]);
 
         assert_eq!(envelopes.len(), 1);
         assert_eq!(envelopes[0].candidate_hash, Some(hash(40)));
         assert_eq!(
             envelopes[0].metadata.source,
-            Phase7CandidateSource::Phase5Suggested
+            AiSearchCandidateSource::MachineApiSuggested
         );
         assert_eq!(
             envelopes[0].metadata.rank,
-            Phase7CandidateRankMetadata {
+            AiSearchCandidateRankMetadata {
                 source_rank: 0,
                 source_index: 0,
                 builtin_kind_rank: 255
@@ -6049,7 +6088,7 @@ mod tests {
         assert_eq!(envelopes[0].metadata.premises_used.len(), 1);
         assert_eq!(
             envelopes[0].metadata.premises_used[0].premise_ref,
-            phase7_premise_ref(&result)
+            ai_search_premise_ref(&result)
         );
         assert_eq!(
             envelopes[0].metadata.trust_flags.uses_axioms,
@@ -6058,7 +6097,7 @@ mod tests {
     }
 
     #[test]
-    fn builtin_generator_emits_mvp_candidates_without_phase5_hashes() {
+    fn builtin_generator_emits_mvp_candidates_without_machine_api_hashes() {
         let mut goal = goal_view(GoalId(0), 30, 5, 1, 1, None);
         goal.target.machine = "forall (p : Prop), Prop".to_owned();
         goal.context[0].machine_name = "n".to_owned();
@@ -6068,7 +6107,7 @@ mod tests {
             MachineApiTacticKind::SimpLite,
         ];
 
-        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+        let envelopes = ai_search_builtin_candidate_envelopes(&goal);
 
         assert_eq!(envelopes.len(), 3);
         assert!(envelopes
@@ -6101,7 +6140,7 @@ mod tests {
         goal.context[0].machine_name = max_length_name.clone();
 
         assert_eq!(
-            phase7_fresh_intro_name(&goal, Some(&max_length_name)),
+            ai_search_fresh_intro_name(&goal, Some(&max_length_name)),
             Some("x".to_owned())
         );
     }
@@ -6115,7 +6154,7 @@ mod tests {
         local.ty = goal.target.clone();
         goal.context = vec![local.clone()];
 
-        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+        let envelopes = ai_search_builtin_candidate_envelopes(&goal);
 
         assert_eq!(envelopes.len(), 1);
         assert!(matches!(
@@ -6127,7 +6166,7 @@ mod tests {
 
         let mut duplicate_goal = goal;
         duplicate_goal.context.push(local);
-        assert!(phase7_builtin_candidate_envelopes(&duplicate_goal).is_empty());
+        assert!(ai_search_builtin_candidate_envelopes(&duplicate_goal).is_empty());
     }
 
     #[test]
@@ -6137,14 +6176,14 @@ mod tests {
         goal.context[1].machine_name = "m".to_owned();
         goal.allowed_tactics = vec![MachineApiTacticKind::InductionNat];
 
-        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+        let envelopes = ai_search_builtin_candidate_envelopes(&goal);
 
         assert!(envelopes.is_empty());
 
         goal.context.swap(0, 1);
         goal.context[1].local_id = LocalId(0);
         goal.context[1].machine_name = "n".to_owned();
-        let envelopes = phase7_builtin_candidate_envelopes(&goal);
+        let envelopes = ai_search_builtin_candidate_envelopes(&goal);
 
         assert_eq!(envelopes.len(), 1);
         assert!(matches!(
@@ -6158,48 +6197,48 @@ mod tests {
         let unsafe_candidate = MachineTacticCandidate::Exact {
             term: RawMachineTerm::new("Std.unsafe.Type"),
         };
-        let token = phase7_candidate_forbidden_token(&unsafe_candidate)
+        let token = ai_search_candidate_forbidden_token(&unsafe_candidate)
             .unwrap()
             .unwrap();
-        assert_eq!(token.class, Phase7ForbiddenTokenClass::Unsafe);
+        assert_eq!(token.class, AiSearchForbiddenTokenClass::Unsafe);
         assert_eq!(token.spelling, "unsafe");
 
         let set_option_candidate = MachineTacticCandidate::Exact {
             term: RawMachineTerm::new("set_option -- comment\n unsafe"),
         };
-        let token = phase7_candidate_forbidden_token(&set_option_candidate)
+        let token = ai_search_candidate_forbidden_token(&set_option_candidate)
             .unwrap()
             .unwrap();
-        assert_eq!(token.class, Phase7ForbiddenTokenClass::SetOptionUnsafe);
+        assert_eq!(token.class, AiSearchForbiddenTokenClass::SetOptionUnsafe);
 
         let priority_candidate = MachineTacticCandidate::Exact {
             term: RawMachineTerm::new("import unsafe"),
         };
-        let token = phase7_candidate_forbidden_token(&priority_candidate)
+        let token = ai_search_candidate_forbidden_token(&priority_candidate)
             .unwrap()
             .unwrap();
-        assert_eq!(token.class, Phase7ForbiddenTokenClass::Unsafe);
+        assert_eq!(token.class, AiSearchForbiddenTokenClass::Unsafe);
         assert_eq!(token.spelling, "unsafe");
 
         let safe_candidate = MachineTacticCandidate::Exact {
             term: RawMachineTerm::new("hunsafe"),
         };
         assert_eq!(
-            phase7_candidate_forbidden_token(&safe_candidate).unwrap(),
+            ai_search_candidate_forbidden_token(&safe_candidate).unwrap(),
             None
         );
 
         let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
-        let mut metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::SimpLiteEmpty),
+        let mut metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::SimpLiteEmpty),
             0,
             Vec::new(),
             Vec::new(),
             &candidate,
         );
         metadata.display_text = Some("unsafe".to_owned());
-        let result = filter_phase7_candidate_envelopes(vec![phase7_candidate_envelope(
+        let result = filter_ai_search_candidate_envelopes(vec![ai_search_candidate_envelope(
             candidate, None, metadata,
         )]);
         assert_eq!(result.accepted.len(), 1);
@@ -6216,7 +6255,7 @@ mod tests {
         local.ty = goal.target.clone();
         goal.context = vec![local];
 
-        let builtin = phase7_builtin_candidate_envelopes(&goal);
+        let builtin = ai_search_builtin_candidate_envelopes(&goal);
         assert_eq!(builtin.len(), 1);
         assert!(matches!(
             builtin[0].candidate,
@@ -6225,14 +6264,14 @@ mod tests {
             } if source == "unsafe"
         ));
 
-        let result = phase7_mvp_candidate_generation(&goal, &empty_retrieval());
+        let result = ai_search_mvp_candidate_generation(&goal, &empty_retrieval());
 
         assert!(result.accepted.is_empty());
         assert!(result.errors.is_empty());
         assert_eq!(result.rejected.len(), 1);
         assert_eq!(
             result.rejected[0].forbidden_token.class,
-            Phase7ForbiddenTokenClass::Unsafe
+            AiSearchForbiddenTokenClass::Unsafe
         );
         assert!(
             result.rejected[0]
@@ -6253,9 +6292,9 @@ mod tests {
         };
         let duplicate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
 
-        let mut later_metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::LocalExact),
+        let mut later_metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::LocalExact),
             1,
             Vec::new(),
             Vec::new(),
@@ -6263,24 +6302,24 @@ mod tests {
         );
         later_metadata.score = 1000;
         later_metadata.display_text = Some("aaa".to_owned());
-        let earlier_metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::LocalExact),
+        let earlier_metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::LocalExact),
             0,
             Vec::new(),
             Vec::new(),
             &candidate0,
         );
-        let builtin_duplicate_metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Builtin,
-            Some(Phase7BuiltinKind::SimpLiteEmpty),
+        let builtin_duplicate_metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::Builtin,
+            Some(AiSearchBuiltinKind::SimpLiteEmpty),
             0,
             Vec::new(),
             Vec::new(),
             &duplicate,
         );
-        let suggested_duplicate_metadata = phase7_candidate_metadata(
-            Phase7CandidateSource::Phase5Suggested,
+        let suggested_duplicate_metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::MachineApiSuggested,
             None,
             9,
             Vec::new(),
@@ -6288,11 +6327,11 @@ mod tests {
             &duplicate,
         );
 
-        let ordered = phase7_rank_and_dedupe_candidate_envelopes(vec![
-            phase7_candidate_envelope(duplicate.clone(), None, builtin_duplicate_metadata),
-            phase7_candidate_envelope(candidate1, None, later_metadata),
-            phase7_candidate_envelope(candidate0, None, earlier_metadata),
-            phase7_candidate_envelope(duplicate, Some(hash(88)), suggested_duplicate_metadata),
+        let ordered = ai_search_rank_and_dedupe_candidate_envelopes(vec![
+            ai_search_candidate_envelope(duplicate.clone(), None, builtin_duplicate_metadata),
+            ai_search_candidate_envelope(candidate1, None, later_metadata),
+            ai_search_candidate_envelope(candidate0, None, earlier_metadata),
+            ai_search_candidate_envelope(duplicate, Some(hash(88)), suggested_duplicate_metadata),
         ]);
 
         assert_eq!(ordered.len(), 3);
@@ -6317,9 +6356,9 @@ mod tests {
 
     #[test]
     fn batch_request_builder_assigns_ids_caps_policy_and_uses_batch_endpoint() {
-        let mut request = phase7_test_batch_request(vec![
-            phase7_test_envelope(0, None),
-            phase7_test_envelope(1, None),
+        let mut request = ai_search_test_batch_request(vec![
+            ai_search_test_envelope(0, None),
+            ai_search_test_envelope(1, None),
         ]);
         request.scheduler_limits = Some(MachineBatchSchedulerLimits {
             per_candidate_timeout_ms: Some(100),
@@ -6327,7 +6366,7 @@ mod tests {
             max_memory_mb: None,
         });
 
-        let source = phase7_tactic_batch_request_json(&request);
+        let source = ai_search_tactic_batch_request_json(&request);
         let parsed = parse_machine_tactic_batch_request(&source).unwrap();
 
         assert_eq!(parsed.candidates[0].candidate_id, "c0");
@@ -6338,24 +6377,24 @@ mod tests {
         assert_eq!(parsed.scheduler_limits.per_candidate_timeout_ms, Some(100));
         assert_eq!(parsed.scheduler_limits.batch_timeout_ms, Some(1000));
 
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_tactic_batch_response(Ok(ok_batch_response(&request, Vec::new())));
-        let evaluation = phase7_run_tactic_batch(&mut client, &request).unwrap();
+        let evaluation = ai_search_run_tactic_batch(&mut client, &request).unwrap();
 
         assert_eq!(evaluation.replay_steps.len(), 0);
         assert_eq!(evaluation.deferred_candidates.len(), 2);
         assert_eq!(client.calls().len(), 1);
         assert!(matches!(
             &client.calls()[0],
-            Phase7MachineApiCall::TacticBatch { source: actual } if actual == &source
+            AiSearchMachineApiCall::TacticBatch { source: actual } if actual == &source
         ));
     }
 
     #[test]
     fn batch_success_items_build_replay_steps_and_errors_normalize_failures() {
-        let request = phase7_test_batch_request(vec![
-            phase7_test_envelope(0, None),
-            phase7_test_envelope(1, Some(hash(50))),
+        let request = ai_search_test_batch_request(vec![
+            ai_search_test_envelope(0, None),
+            ai_search_test_envelope(1, Some(hash(50))),
         ]);
         let response = ok_batch_response(
             &request,
@@ -6375,7 +6414,7 @@ mod tests {
             ],
         );
 
-        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+        let evaluation = ai_search_evaluate_tactic_batch_response(&request, response).unwrap();
 
         assert_eq!(evaluation.successful_transitions.len(), 1);
         assert_eq!(evaluation.replay_steps.len(), 1);
@@ -6413,7 +6452,7 @@ mod tests {
 
         assert!(matches!(
             &evaluation.training_trace_candidates[0],
-            Phase7TrainingTraceCandidate::Success {
+            AiSearchTrainingTraceCandidate::Success {
                 rank_index: 0,
                 candidate_hash,
                 proof_delta_hash,
@@ -6425,7 +6464,7 @@ mod tests {
         ));
         assert!(matches!(
             &evaluation.training_trace_candidates[1],
-            Phase7TrainingTraceCandidate::Error {
+            AiSearchTrainingTraceCandidate::Error {
                 rank_index: 1,
                 candidate_hash,
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
@@ -6434,7 +6473,7 @@ mod tests {
             } if *candidate_hash == hash(50) && *diagnostic_hash == hash(55)
         ));
 
-        let step_json = phase7_replay_step_json(step);
+        let step_json = ai_search_replay_step_json(step);
         assert!(!step_json.contains("candidate_id"));
         assert!(!step_json.contains("display"));
         let replay_source = format!(
@@ -6450,25 +6489,25 @@ mod tests {
     }
 
     #[test]
-    fn m8_training_identity_hashes_exclude_phase7_payload_hash() {
+    fn m8_training_identity_hashes_exclude_ai_search_payload_hash() {
         let positive =
-            phase7_positive_training_identity(hash(1), GoalId(0), hash(40), hash(41), hash(42));
+            ai_search_positive_training_identity(hash(1), GoalId(0), hash(40), hash(41), hash(42));
         let same_positive =
-            phase7_positive_training_identity(hash(1), GoalId(0), hash(40), hash(41), hash(42));
+            ai_search_positive_training_identity(hash(1), GoalId(0), hash(40), hash(41), hash(42));
         let changed_positive =
-            phase7_positive_training_identity(hash(1), GoalId(0), hash(40), hash(99), hash(42));
+            ai_search_positive_training_identity(hash(1), GoalId(0), hash(40), hash(99), hash(42));
         assert_eq!(
-            phase7_positive_training_identity_hash(&positive),
-            phase7_positive_training_identity_hash(&same_positive)
+            ai_search_positive_training_identity_hash(&positive),
+            ai_search_positive_training_identity_hash(&same_positive)
         );
         assert_ne!(
-            phase7_positive_training_identity_hash(&positive),
-            phase7_positive_training_identity_hash(&changed_positive)
+            ai_search_positive_training_identity_hash(&positive),
+            ai_search_positive_training_identity_hash(&changed_positive)
         );
-        assert!(!phase7_positive_training_identity_json(&positive)
-            .contains("phase7_candidate_payload_hash"));
+        assert!(!ai_search_positive_training_identity_json(&positive)
+            .contains("ai_search_candidate_payload_hash"));
 
-        let failure = Phase7AcceptedCandidateFailure {
+        let failure = AiSearchAcceptedCandidateFailure {
             error_kind: FailedCandidateErrorKind::TypeMismatch,
             phase: crate::MachineApiDiagnosticPhase::TacticExecution,
             goal_id: Some(GoalId(0)),
@@ -6478,27 +6517,28 @@ mod tests {
             diagnostic_hash: hash(52),
             retryable: false,
         };
-        let negative = phase7_negative_training_identity(hash(1), GoalId(0), &failure);
+        let negative = ai_search_negative_training_identity(hash(1), GoalId(0), &failure);
         let changed_payload_sidecar =
-            phase7_candidate_payload_hash(&MachineTacticCandidate::Exact {
+            ai_search_candidate_payload_hash(&MachineTacticCandidate::Exact {
                 term: RawMachineTerm::new("different_payload"),
             });
         assert_ne!(changed_payload_sidecar, hash(50));
         assert_eq!(
-            phase7_negative_training_identity_hash(&negative),
-            phase7_negative_training_identity_hash(&phase7_negative_training_identity(
+            ai_search_negative_training_identity_hash(&negative),
+            ai_search_negative_training_identity_hash(&ai_search_negative_training_identity(
                 hash(1),
                 GoalId(0),
                 &failure,
             ))
         );
-        assert!(!phase7_negative_training_identity_json(&negative)
-            .contains("phase7_candidate_payload_hash"));
+        assert!(!ai_search_negative_training_identity_json(&negative)
+            .contains("ai_search_candidate_payload_hash"));
     }
 
     #[test]
     fn batch_candidate_hash_mismatch_is_controller_error_before_replay() {
-        let request = phase7_test_batch_request(vec![phase7_test_envelope(0, Some(hash(77)))]);
+        let request =
+            ai_search_test_batch_request(vec![ai_search_test_envelope(0, Some(hash(77)))]);
         let response = ok_batch_response(
             &request,
             vec![MachineTacticBatchItemResponse::Success {
@@ -6510,11 +6550,11 @@ mod tests {
             }],
         );
 
-        let error = phase7_evaluate_tactic_batch_response(&request, response).unwrap_err();
+        let error = ai_search_evaluate_tactic_batch_response(&request, response).unwrap_err();
 
         assert_eq!(
             error.kind,
-            Phase7MachineControllerErrorKind::SuggestedCandidateHashMismatch
+            AiSearchMachineControllerErrorKind::SuggestedCandidateHashMismatch
         );
         assert_eq!(error.candidate_id.as_deref(), Some("c0"));
         assert_eq!(error.expected_hash, Some(hash(77)));
@@ -6523,9 +6563,9 @@ mod tests {
 
     #[test]
     fn zero_progress_scheduler_stop_is_not_a_candidate_failure_or_deferred_suffix() {
-        let request = phase7_test_batch_request(vec![
-            phase7_test_envelope(0, None),
-            phase7_test_envelope(1, None),
+        let request = ai_search_test_batch_request(vec![
+            ai_search_test_envelope(0, None),
+            ai_search_test_envelope(1, None),
         ]);
         let response = MachineApiResponseEnvelope::SchedulerStopped(MachineApiSchedulerResponse {
             status: MachineApiResponseStatus::PartialTimeout,
@@ -6544,7 +6584,7 @@ mod tests {
             },
         });
 
-        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+        let evaluation = ai_search_evaluate_tactic_batch_response(&request, response).unwrap();
 
         assert_eq!(evaluation.evaluated_count, 0);
         assert!(evaluation.replay_steps.is_empty());
@@ -6553,7 +6593,7 @@ mod tests {
         assert!(evaluation.non_accepted_errors.is_empty());
         assert_eq!(
             evaluation.scheduler_stop,
-            Some(Phase7SchedulerStop {
+            Some(AiSearchSchedulerStop {
                 status: MachineApiResponseStatus::PartialTimeout,
                 completed_prefix_len: 0,
             })
@@ -6567,7 +6607,7 @@ mod tests {
         goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
         let root = snapshot_with_state(1, vec![goal]);
         let config = mvp_config();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -6582,9 +6622,9 @@ mod tests {
             }],
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(failure.training_trace_records.len(), 1);
@@ -6593,7 +6633,7 @@ mod tests {
             .is_empty());
         assert!(failure.trace_events.iter().any(|event| matches!(
             &event.kind,
-            Phase7SearchTraceEventKind::NonAcceptedCandidateError {
+            AiSearchTraceEventKind::NonAcceptedCandidateError {
                 candidate_id,
                 error_kind: MachineApiErrorKind::TypeMismatch,
                 has_candidate_hash: false,
@@ -6609,7 +6649,7 @@ mod tests {
         goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
         let root = snapshot_with_state(1, vec![goal]);
         let config = mvp_config();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -6635,23 +6675,23 @@ mod tests {
             },
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert!(failure.training_trace_records.is_empty());
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::ZeroProgressSchedulerStopped {
+            AiSearchTraceEventKind::ZeroProgressSchedulerStopped {
                 status: MachineApiResponseStatus::PartialTimeout
             }
         )));
         assert!(failure.trace_events.iter().any(|event| matches!(
             &event.kind,
-            Phase7SearchTraceEventKind::DeferredCandidateDropped {
+            AiSearchTraceEventKind::DeferredCandidateDropped {
                 candidate_id,
-                reason: Phase7DeferredCandidateDropReason::SchedulerStoppedCandidate,
+                reason: AiSearchDeferredCandidateDropReason::SchedulerStoppedCandidate,
                 ..
             } if candidate_id == "c0"
         )));
@@ -6659,11 +6699,11 @@ mod tests {
 
     #[test]
     fn scheduler_stop_after_prefix_defers_only_suffix_after_stopped_candidate() {
-        let request = phase7_test_batch_request(vec![
-            phase7_test_envelope(0, None),
-            phase7_test_envelope(1, None),
-            phase7_test_envelope(2, None),
-            phase7_test_envelope(3, None),
+        let request = ai_search_test_batch_request(vec![
+            ai_search_test_envelope(0, None),
+            ai_search_test_envelope(1, None),
+            ai_search_test_envelope(2, None),
+            ai_search_test_envelope(3, None),
         ]);
         let response = MachineApiResponseEnvelope::SchedulerStopped(MachineApiSchedulerResponse {
             status: MachineApiResponseStatus::PartialResourceLimit,
@@ -6688,14 +6728,14 @@ mod tests {
             },
         });
 
-        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+        let evaluation = ai_search_evaluate_tactic_batch_response(&request, response).unwrap();
 
         assert_eq!(evaluation.replay_steps.len(), 1);
         assert!(evaluation.accepted_failures.is_empty());
         assert!(evaluation.non_accepted_errors.is_empty());
         assert_eq!(
             evaluation.scheduler_stop,
-            Some(Phase7SchedulerStop {
+            Some(AiSearchSchedulerStop {
                 status: MachineApiResponseStatus::PartialResourceLimit,
                 completed_prefix_len: 1,
             })
@@ -6707,9 +6747,9 @@ mod tests {
 
     #[test]
     fn batch_contract_violations_end_as_controller_errors() {
-        let request = phase7_test_batch_request(vec![
-            phase7_test_envelope(0, None),
-            phase7_test_envelope(1, None),
+        let request = ai_search_test_batch_request(vec![
+            ai_search_test_envelope(0, None),
+            ai_search_test_envelope(1, None),
         ]);
         let bad_prefix = ok_batch_response(
             &request,
@@ -6722,10 +6762,10 @@ mod tests {
             }],
         );
 
-        let error = phase7_evaluate_tactic_batch_response(&request, bad_prefix).unwrap_err();
+        let error = ai_search_evaluate_tactic_batch_response(&request, bad_prefix).unwrap_err();
         assert_eq!(
             error.kind,
-            Phase7MachineControllerErrorKind::BatchResponseContractViolation
+            AiSearchMachineControllerErrorKind::BatchResponseContractViolation
         );
 
         let bad_budget = MachineApiResponseEnvelope::Ok(MachineApiOkResponse {
@@ -6738,10 +6778,10 @@ mod tests {
                 failure_count: 0,
             },
         });
-        let error = phase7_evaluate_tactic_batch_response(&request, bad_budget).unwrap_err();
+        let error = ai_search_evaluate_tactic_batch_response(&request, bad_budget).unwrap_err();
         assert_eq!(
             error.kind,
-            Phase7MachineControllerErrorKind::BatchResponseContractViolation
+            AiSearchMachineControllerErrorKind::BatchResponseContractViolation
         );
         assert_eq!(
             error.expected_hash,
@@ -6752,7 +6792,7 @@ mod tests {
 
     #[test]
     fn m5_batch_error_without_candidate_hash_is_not_repair_accepted_failure() {
-        let request = phase7_test_batch_request(vec![phase7_test_envelope(0, None)]);
+        let request = ai_search_test_batch_request(vec![ai_search_test_envelope(0, None)]);
         let response = ok_batch_response(
             &request,
             vec![MachineTacticBatchItemResponse::Error {
@@ -6762,7 +6802,7 @@ mod tests {
             }],
         );
 
-        let evaluation = phase7_evaluate_tactic_batch_response(&request, response).unwrap();
+        let evaluation = ai_search_evaluate_tactic_batch_response(&request, response).unwrap();
 
         assert!(evaluation.accepted_failures.is_empty());
         assert!(evaluation.accepted_failure_records.is_empty());
@@ -6780,57 +6820,57 @@ mod tests {
         let cases = [
             (
                 FailedCandidateErrorKind::UnsupportedTactic,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
             (
                 FailedCandidateErrorKind::MachineTermElaborationError,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
             (
                 FailedCandidateErrorKind::UnknownName,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
             (
                 FailedCandidateErrorKind::ImplicitArgumentRequired,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
             (
                 FailedCandidateErrorKind::TypeMismatch,
-                Phase7RuleBasedRepairAction::TrySimpLite,
+                AiSearchRuleBasedRepairAction::TrySimpLite,
             ),
             (
                 FailedCandidateErrorKind::ExpectedPiType,
-                Phase7RuleBasedRepairAction::TrySimpLite,
+                AiSearchRuleBasedRepairAction::TrySimpLite,
             ),
             (
                 FailedCandidateErrorKind::RewriteRuleInvalid,
-                Phase7RuleBasedRepairAction::TrySimpLite,
+                AiSearchRuleBasedRepairAction::TrySimpLite,
             ),
             (
                 FailedCandidateErrorKind::SimpNoProgress,
-                Phase7RuleBasedRepairAction::TrySimpLite,
+                AiSearchRuleBasedRepairAction::TrySimpLite,
             ),
             (
                 FailedCandidateErrorKind::InductionTargetNotNat,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
             (
                 FailedCandidateErrorKind::BudgetExceeded,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
             (
                 FailedCandidateErrorKind::TooManyGoals,
-                Phase7RuleBasedRepairAction::TrySimpLite,
+                AiSearchRuleBasedRepairAction::TrySimpLite,
             ),
             (
                 FailedCandidateErrorKind::TooLargeTerm,
-                Phase7RuleBasedRepairAction::Noop,
+                AiSearchRuleBasedRepairAction::Noop,
             ),
         ];
 
         assert_eq!(cases.len(), 12);
         for (kind, expected) in cases {
-            assert_eq!(phase7_rule_based_repair_action(kind), expected);
+            assert_eq!(ai_search_rule_based_repair_action(kind), expected);
         }
     }
 
@@ -6838,10 +6878,10 @@ mod tests {
     fn m5_rule_based_repair_generates_limited_simp_lite_metadata() {
         let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
         goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
-        let failed = phase7_exact_test_envelope(0, Some(hash(40)), "h");
+        let failed = ai_search_exact_test_envelope(0, Some(hash(40)), "h");
         let failure = accepted_failure(FailedCandidateErrorKind::TypeMismatch, hash(40));
 
-        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
+        let output = AiSearchRuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
 
         assert!(output.repeated_candidate_payload_hashes.is_empty());
         assert_eq!(output.pending.len(), 1);
@@ -6852,9 +6892,9 @@ mod tests {
         assert_eq!(pending.error_kind, FailedCandidateErrorKind::TypeMismatch);
         assert_eq!(
             pending.chain_tried_payload_hashes,
-            vec![failed.phase7_candidate_payload_hash]
+            vec![failed.ai_search_candidate_payload_hash]
         );
-        assert_eq!(phase7_repair_depth_of(&pending.candidate), 1);
+        assert_eq!(ai_search_repair_depth_of(&pending.candidate), 1);
         assert_eq!(pending.candidate.candidate_hash, None);
         assert!(matches!(
             pending.candidate.candidate,
@@ -6862,23 +6902,23 @@ mod tests {
         ));
         assert_eq!(
             pending.candidate.metadata.source,
-            Phase7CandidateSource::Repair
+            AiSearchCandidateSource::Repair
         );
         assert_eq!(pending.candidate.metadata.rank.source_rank, 4);
         assert_eq!(pending.candidate.metadata.rank.source_index, 0);
         assert_eq!(pending.candidate.metadata.rank.builtin_kind_rank, 255);
         assert_eq!(
             pending.candidate.metadata.expected_effect,
-            Phase7ExpectedEffect::Simplify
+            AiSearchExpectedEffect::Simplify
         );
         assert!(pending.candidate.metadata.premises_used.is_empty());
         assert_eq!(
             pending.candidate.metadata.repair,
-            Some(Phase7CandidateRepairMetadata {
+            Some(AiSearchCandidateRepairMetadata {
                 parent_candidate_hash: hash(40),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
                 repair_depth: 1,
-                chain_tried_payload_hashes: vec![failed.phase7_candidate_payload_hash],
+                chain_tried_payload_hashes: vec![failed.ai_search_candidate_payload_hash],
             })
         );
     }
@@ -6886,10 +6926,10 @@ mod tests {
     #[test]
     fn m5_rule_based_repair_does_not_generate_without_allowed_simp_lite() {
         let goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
-        let failed = phase7_exact_test_envelope(0, Some(hash(40)), "h");
+        let failed = ai_search_exact_test_envelope(0, Some(hash(40)), "h");
         let failure = accepted_failure(FailedCandidateErrorKind::TypeMismatch, hash(40));
 
-        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
+        let output = AiSearchRuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
 
         assert!(output.pending.is_empty());
         assert!(output.repeated_candidate_payload_hashes.is_empty());
@@ -6899,10 +6939,10 @@ mod tests {
     fn m5_rule_based_repair_refuses_depth_above_two() {
         let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
         goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
-        let failed = phase7_exact_test_envelope(0, Some(hash(40)), "h");
+        let failed = ai_search_exact_test_envelope(0, Some(hash(40)), "h");
         let failure = accepted_failure(FailedCandidateErrorKind::TypeMismatch, hash(40));
 
-        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 3);
+        let output = AiSearchRuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 3);
 
         assert!(output.pending.is_empty());
         assert!(output.repeated_candidate_payload_hashes.is_empty());
@@ -6912,56 +6952,56 @@ mod tests {
     fn m5_rule_based_repair_reports_chain_duplicate_payload() {
         let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
         goal.allowed_tactics = vec![MachineApiTacticKind::SimpLite];
-        let failed = phase7_test_envelope(0, Some(hash(40)));
+        let failed = ai_search_test_envelope(0, Some(hash(40)));
         let failure = accepted_failure(FailedCandidateErrorKind::SimpNoProgress, hash(40));
 
-        let output = Phase7RuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
+        let output = AiSearchRuleBasedRepair::new().repair_candidate(&goal, &failed, &failure, 1);
 
         assert!(output.pending.is_empty());
         assert_eq!(
             output.repeated_candidate_payload_hashes,
-            vec![failed.phase7_candidate_payload_hash]
+            vec![failed.ai_search_candidate_payload_hash]
         );
     }
 
     #[test]
     fn m5_repair_limiter_preserves_first_three_per_parent_and_dedupes_payload() {
         let pending = vec![
-            Phase7PendingCandidate {
+            AiSearchPendingCandidate {
                 goal_id: GoalId(0),
-                candidate: phase7_exact_test_envelope(0, None, "h0"),
+                candidate: ai_search_exact_test_envelope(0, None, "h0"),
                 repair_depth: 1,
                 parent_candidate_hash: hash(40),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
                 chain_tried_payload_hashes: vec![hash(90)],
             },
-            Phase7PendingCandidate {
+            AiSearchPendingCandidate {
                 goal_id: GoalId(0),
-                candidate: phase7_exact_test_envelope(0, None, "h0"),
+                candidate: ai_search_exact_test_envelope(0, None, "h0"),
                 repair_depth: 1,
                 parent_candidate_hash: hash(40),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
                 chain_tried_payload_hashes: vec![hash(90)],
             },
-            Phase7PendingCandidate {
+            AiSearchPendingCandidate {
                 goal_id: GoalId(0),
-                candidate: phase7_exact_test_envelope(1, None, "h1"),
+                candidate: ai_search_exact_test_envelope(1, None, "h1"),
                 repair_depth: 1,
                 parent_candidate_hash: hash(40),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
                 chain_tried_payload_hashes: vec![hash(90)],
             },
-            Phase7PendingCandidate {
+            AiSearchPendingCandidate {
                 goal_id: GoalId(0),
-                candidate: phase7_exact_test_envelope(2, None, "h2"),
+                candidate: ai_search_exact_test_envelope(2, None, "h2"),
                 repair_depth: 1,
                 parent_candidate_hash: hash(40),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
                 chain_tried_payload_hashes: vec![hash(90)],
             },
-            Phase7PendingCandidate {
+            AiSearchPendingCandidate {
                 goal_id: GoalId(0),
-                candidate: phase7_exact_test_envelope(3, None, "h3"),
+                candidate: ai_search_exact_test_envelope(3, None, "h3"),
                 repair_depth: 1,
                 parent_candidate_hash: hash(40),
                 error_kind: FailedCandidateErrorKind::TypeMismatch,
@@ -6969,7 +7009,7 @@ mod tests {
             },
         ];
 
-        let limited = phase7_limit_repairs(pending);
+        let limited = ai_search_limit_repairs(pending);
 
         assert_eq!(limited.len(), 3);
         assert!(matches!(
@@ -6999,7 +7039,7 @@ mod tests {
         let root = snapshot_with_state(1, vec![goal]);
         let closed_child = snapshot_with_state(2, Vec::new());
         let config = mvp_config();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7047,9 +7087,9 @@ mod tests {
         }));
         client.push_replay_response(Ok(replay_scheduler_stopped_response()));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(failure.search_stats.candidates_evaluated, 3);
@@ -7057,7 +7097,7 @@ mod tests {
             .calls()
             .iter()
             .filter_map(|call| match call {
-                Phase7MachineApiCall::TacticBatch { source } => Some(source),
+                AiSearchMachineApiCall::TacticBatch { source } => Some(source),
                 _ => None,
             })
             .collect::<Vec<_>>();
@@ -7069,16 +7109,16 @@ mod tests {
         assert!(batch_sources[1].contains(r#""rules":[]"#));
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::RepairChainStopped {
-                reason: Phase7RepairChainStopReason::RepeatedCandidate,
+            AiSearchTraceEventKind::RepairChainStopped {
+                reason: AiSearchRepairChainStopReason::RepeatedCandidate,
                 repeated_candidate_payload_hash: Some(_),
                 ..
             }
         )));
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::ChildQueued {
-                child_node_id: Phase7NodeId(1),
+            AiSearchTraceEventKind::ChildQueued {
+                child_node_id: AiSearchNodeId(1),
                 ..
             }
         )));
@@ -7091,7 +7131,7 @@ mod tests {
         let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
         let replay_final_state_fingerprint = hash(90);
         let config = mvp_config();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7125,9 +7165,9 @@ mod tests {
         )));
         client.push_verify_response(Ok(verify_ok_response()));
 
-        let proof = unwrap_verified_proof(phase7_run_mvp_search(
+        let proof = unwrap_verified_proof(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(proof.replay_plan.steps.len(), 1);
@@ -7147,15 +7187,15 @@ mod tests {
         assert_eq!(proof.training_trace_records.len(), 1);
         assert_eq!(
             proof.training_trace_records[0].trace_schema,
-            PHASE7_TRAINING_TRACE_SCHEMA
+            AI_SEARCH_TRAINING_TRACE_SCHEMA
         );
         assert_eq!(proof.training_trace_records[0].batch_index, 0);
         assert_eq!(proof.training_trace_records[0].tactic_candidates.len(), 1);
         assert!(matches!(
             &proof.training_trace_records[0].tactic_candidates[0],
-            Phase7TrainingTraceCandidate::Success {
+            AiSearchTrainingTraceCandidate::Success {
                 rank_index: 0,
-                phase7_candidate_payload_hash: _,
+                ai_search_candidate_payload_hash: _,
                 candidate_hash,
                 proof_delta_hash,
                 next_state_fingerprint,
@@ -7164,17 +7204,17 @@ mod tests {
                 && *proof_delta_hash == hash(43)
                 && *next_state_fingerprint == closed_child.state_fingerprint
         ));
-        let training_json = phase7_training_trace_records_json(&proof.training_trace_records);
-        assert!(training_json.starts_with(r#"[{"trace_schema":"npa.phase7.training-trace.v1""#));
+        let training_json = ai_search_training_trace_records_json(&proof.training_trace_records);
+        assert!(training_json.starts_with(r#"[{"trace_schema":"npa.ai-search.training-trace.v1""#));
         assert!(training_json.contains(r#""result":"success""#));
-        assert!(training_json.contains(r#""phase7_candidate_payload_hash":"#));
+        assert!(training_json.contains(r#""ai_search_candidate_payload_hash":"#));
         assert!(!training_json.contains("chosen_candidate_hash"));
         assert_eq!(proof.search_stats.candidates_evaluated, 1);
         assert_eq!(proof.search_stats.closed_node_replay_rejections, 0);
         assert_eq!(proof.search_stats.closed_node_verify_rejections, 0);
 
         let replay_source = client.calls().iter().find_map(|call| match call {
-            Phase7MachineApiCall::Replay { source } => Some(source),
+            AiSearchMachineApiCall::Replay { source } => Some(source),
             _ => None,
         });
         let replay_source = replay_source.expect("expected replay call");
@@ -7185,7 +7225,7 @@ mod tests {
         )));
 
         let verify_source = client.calls().iter().find_map(|call| match call {
-            Phase7MachineApiCall::Verify { source } => Some(source),
+            AiSearchMachineApiCall::Verify { source } => Some(source),
             _ => None,
         });
         let verify_source = verify_source.expect("expected verify call");
@@ -7205,7 +7245,7 @@ mod tests {
         let root = snapshot_with_state(1, Vec::new());
         let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
         let replay_final_state_fingerprint = hash(90);
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7218,27 +7258,27 @@ mod tests {
             crate::MachineApiDiagnosticPhase::CertificateVerify,
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
-        assert_eq!(failure.reason, Phase7SearchFailureReason::QueueExhausted);
+        assert_eq!(failure.reason, AiSearchFailureReason::QueueExhausted);
         assert_eq!(failure.best_partial_replay_prefix, None);
         assert_eq!(failure.best_snapshot_id, None);
         assert_eq!(failure.search_stats.closed_node_verify_rejections, 1);
         assert_eq!(failure.search_stats.closed_node_replay_rejections, 0);
         assert!(failure.trace_events.iter().any(|event| matches!(
             &event.kind,
-            Phase7SearchTraceEventKind::ClosedNodeVerifyRejected { endpoint, status }
-                if endpoint == "/machine/verify" && *status == MachineApiResponseStatus::Error
+            AiSearchTraceEventKind::ClosedNodeVerifyRejected { endpoint, status }
+                if endpoint == "/machine/verify" && matches!(status, MachineApiResponseStatus::Error)
         )));
     }
 
     #[test]
     fn m6_replay_controller_error_preserves_phase_in_failure_reason() {
         let root = snapshot_with_state(1, Vec::new());
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7247,14 +7287,14 @@ mod tests {
             crate::MachineApiDiagnosticPhase::ReplayExecution,
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(
             failure.reason,
-            Phase7SearchFailureReason::MachineControllerError {
+            AiSearchFailureReason::MachineControllerError {
                 endpoint: "/machine/replay".to_owned(),
                 error_kind: "replay_hash_mismatch".to_owned(),
                 error_phase: Some("replay_execution".to_owned()),
@@ -7264,7 +7304,7 @@ mod tests {
         assert_eq!(failure.search_stats.controller_errors, 1);
         assert!(failure.trace_events.iter().any(|event| matches!(
             &event.kind,
-            Phase7SearchTraceEventKind::MachineControllerError { endpoint, error_kind }
+            AiSearchTraceEventKind::MachineControllerError { endpoint, error_kind }
                 if endpoint == "/machine/replay" && error_kind == "replay_hash_mismatch"
         )));
     }
@@ -7274,7 +7314,7 @@ mod tests {
         let root = snapshot_with_state(1, Vec::new());
         let replay_final_snapshot_id = SnapshotId::from_state_fingerprint(hash(90));
         let replay_final_state_fingerprint = hash(90);
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7287,14 +7327,14 @@ mod tests {
             crate::MachineApiDiagnosticPhase::RequestValidation,
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(
             failure.reason,
-            Phase7SearchFailureReason::MachineControllerError {
+            AiSearchFailureReason::MachineControllerError {
                 endpoint: "/machine/verify".to_owned(),
                 error_kind: "invalid_verify_request".to_owned(),
                 error_phase: Some("request_validation".to_owned()),
@@ -7309,7 +7349,7 @@ mod tests {
     fn m7_minimization_proposal_order_is_fixed() {
         let budget = mvp_config().per_tactic_deterministic_budget;
         let edits = vec![
-            Phase7ReplayStepEdit {
+            AiSearchReplayStepEdit {
                 original_goal_id: GoalId(0),
                 original_open_goal_index: 0,
                 candidate: MachineTacticCandidate::Exact {
@@ -7317,7 +7357,7 @@ mod tests {
                 },
                 deterministic_budget: budget,
             },
-            Phase7ReplayStepEdit {
+            AiSearchReplayStepEdit {
                 original_goal_id: GoalId(1),
                 original_open_goal_index: 0,
                 candidate: MachineTacticCandidate::Exact {
@@ -7325,7 +7365,7 @@ mod tests {
                 },
                 deterministic_budget: budget,
             },
-            Phase7ReplayStepEdit {
+            AiSearchReplayStepEdit {
                 original_goal_id: GoalId(2),
                 original_open_goal_index: 0,
                 candidate: MachineTacticCandidate::SimpLite {
@@ -7336,21 +7376,21 @@ mod tests {
         ];
 
         assert_eq!(
-            Phase7MinimizationPassKind::ALL,
+            AiSearchMinimizationPassKind::ALL,
             [
-                Phase7MinimizationPassKind::DeleteRedundantSteps,
-                Phase7MinimizationPassKind::ReplaceBlocksWithSimpLiteEmpty,
-                Phase7MinimizationPassKind::MinimizeExistingSimpLiteRules,
+                AiSearchMinimizationPassKind::DeleteRedundantSteps,
+                AiSearchMinimizationPassKind::ReplaceBlocksWithSimpLiteEmpty,
+                AiSearchMinimizationPassKind::MinimizeExistingSimpLiteRules,
             ]
         );
 
-        let delete = phase7_delete_redundant_steps_proposals(&edits);
+        let delete = ai_search_delete_redundant_steps_proposals(&edits);
         assert_eq!(delete.len(), 3);
         assert_eq!(delete[0][0].original_goal_id, GoalId(1));
         assert_eq!(delete[1][0].original_goal_id, GoalId(0));
         assert_eq!(delete[1][1].original_goal_id, GoalId(2));
 
-        let replace = phase7_replace_blocks_with_simp_lite_empty_proposals(&edits);
+        let replace = ai_search_replace_blocks_with_simp_lite_empty_proposals(&edits);
         assert_eq!(replace.len(), 6);
         assert_eq!(replace[0].len(), 1);
         assert!(matches!(
@@ -7364,7 +7404,7 @@ mod tests {
         assert_eq!(replace[2][0].original_goal_id, GoalId(0));
         assert_eq!(replace[2][1].original_goal_id, GoalId(1));
 
-        let simp_rules = phase7_minimize_existing_simp_lite_rules_proposals(&edits);
+        let simp_rules = ai_search_minimize_existing_simp_lite_rules_proposals(&edits);
         assert_eq!(simp_rules.len(), 2);
         assert!(matches!(
             simp_rules[0][2].candidate,
@@ -7383,20 +7423,20 @@ mod tests {
         let initial = snapshot_with_state(1, vec![goal_view(GoalId(2), 30, 5, 0, 0, None)]);
         let closed = snapshot_with_state(2, Vec::new());
         let budget = mvp_config().per_tactic_deterministic_budget;
-        let current_plan = Phase7ReplayPlan {
+        let current_plan = AiSearchReplayPlan {
             protocol_version: MachineApiVersion::V1,
             session_root_hash: hash(90),
             initial_state_fingerprint: initial.state_fingerprint,
             steps: Vec::new(),
             final_state_fingerprint: initial.state_fingerprint,
         };
-        let edit = Phase7ReplayStepEdit {
+        let edit = AiSearchReplayStepEdit {
             original_goal_id: GoalId(99),
             original_open_goal_index: 0,
             candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
             deterministic_budget: budget,
         };
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: initial.clone(),
         }));
@@ -7415,7 +7455,7 @@ mod tests {
             snapshot: closed.clone(),
         }));
 
-        let rebuilt = phase7_rebuild_replay_plan_from_step_edits(
+        let rebuilt = ai_search_rebuild_replay_plan_from_step_edits(
             &mut client,
             initial.session_id.clone(),
             &initial,
@@ -7440,7 +7480,7 @@ mod tests {
         let initial = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
         let closed = snapshot_with_state(2, Vec::new());
         let budget = mvp_config().per_tactic_deterministic_budget;
-        let step = Phase7ReplayStep {
+        let step = AiSearchReplayStep {
             previous_state_fingerprint: initial.state_fingerprint,
             goal_id: GoalId(0),
             candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
@@ -7450,14 +7490,14 @@ mod tests {
             proof_delta_hash: hash(41),
             next_state_fingerprint: closed.state_fingerprint,
         };
-        let plan = Phase7ReplayPlan {
+        let plan = AiSearchReplayPlan {
             protocol_version: MachineApiVersion::V1,
             session_root_hash: hash(90),
             initial_state_fingerprint: initial.state_fingerprint,
             steps: vec![step],
             final_state_fingerprint: closed.state_fingerprint,
         };
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: initial.clone(),
         }));
@@ -7482,7 +7522,7 @@ mod tests {
         )));
         client.push_verify_response(Ok(verify_ok_response()));
 
-        let result = phase7_minimize_replay_plan(
+        let result = ai_search_minimize_replay_plan(
             &mut client,
             initial.session_id.clone(),
             &initial,
@@ -7519,7 +7559,7 @@ mod tests {
         let initial = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
         let closed = snapshot_with_state(2, Vec::new());
         let budget = mvp_config().per_tactic_deterministic_budget;
-        let step = Phase7ReplayStep {
+        let step = AiSearchReplayStep {
             previous_state_fingerprint: initial.state_fingerprint,
             goal_id: GoalId(0),
             candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
@@ -7529,14 +7569,14 @@ mod tests {
             proof_delta_hash: hash(41),
             next_state_fingerprint: closed.state_fingerprint,
         };
-        let plan = Phase7ReplayPlan {
+        let plan = AiSearchReplayPlan {
             protocol_version: MachineApiVersion::V1,
             session_root_hash: hash(90),
             initial_state_fingerprint: initial.state_fingerprint,
             steps: vec![step],
             final_state_fingerprint: closed.state_fingerprint,
         };
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: initial.clone(),
         }));
@@ -7564,7 +7604,7 @@ mod tests {
             crate::MachineApiDiagnosticPhase::CertificateVerify,
         )));
 
-        let result = phase7_minimize_replay_plan(
+        let result = ai_search_minimize_replay_plan(
             &mut client,
             closed.session_id.clone(),
             &snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]),
@@ -7598,40 +7638,40 @@ mod tests {
             ],
         );
         let mut one_goal_node =
-            phase7_root_search_node(&phase7_test_search_input(one_goal), Phase7NodeId(1));
+            ai_search_root_search_node(&ai_search_test_search_input(one_goal), AiSearchNodeId(1));
         let mut two_goal_node =
-            phase7_root_search_node(&phase7_test_search_input(two_goals), Phase7NodeId(2));
+            ai_search_root_search_node(&ai_search_test_search_input(two_goals), AiSearchNodeId(2));
         one_goal_node.depth = 1;
         two_goal_node.depth = 0;
 
-        let one_goal_priority = phase7_search_node_priority_key(&one_goal_node);
+        let one_goal_priority = ai_search_node_priority_key(&one_goal_node);
         assert_eq!(one_goal_priority.open_goal_count, 1);
         assert_eq!(one_goal_priority.depth, 1);
         assert_eq!(one_goal_priority.total_open_goal_target_size, 9);
-        assert!(one_goal_priority < phase7_search_node_priority_key(&two_goal_node));
+        assert!(one_goal_priority < ai_search_node_priority_key(&two_goal_node));
 
-        let two_goal_partial = phase7_search_node_best_partial_key(&two_goal_node);
+        let two_goal_partial = ai_search_node_best_partial_key(&two_goal_node);
         assert_eq!(two_goal_partial.open_goal_count, 2);
         assert_eq!(two_goal_partial.total_open_goal_target_size, 9);
-        assert!(phase7_search_node_best_partial_key(&one_goal_node) < two_goal_partial);
+        assert!(ai_search_node_best_partial_key(&one_goal_node) < two_goal_partial);
     }
 
     #[test]
     fn m4_search_respects_max_depth_without_expanding_node() {
         let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
-        let mut input = phase7_test_search_input(root.clone());
+        let mut input = ai_search_test_search_input(root.clone());
         input.search_budget.max_depth = 0;
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(&mut client, input));
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(&mut client, input));
 
         assert_eq!(
             failure.reason,
-            Phase7SearchFailureReason::SearchBudgetExceeded {
-                limit: Phase7SearchBudgetLimit::MaxDepth
+            AiSearchFailureReason::SearchBudgetExceeded {
+                limit: AiSearchBudgetLimit::MaxDepth
             }
         );
         assert_eq!(failure.search_stats.nodes_expanded, 0);
@@ -7639,7 +7679,7 @@ mod tests {
         assert_eq!(failure.best_snapshot_id, Some(root.snapshot_id));
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::MaxDepthStopped { max_depth: 0 }
+            AiSearchTraceEventKind::MaxDepthStopped { max_depth: 0 }
         )));
         assert_eq!(client.calls().len(), 1);
     }
@@ -7647,26 +7687,26 @@ mod tests {
     #[test]
     fn m4_search_no_candidate_initial_goal_returns_no_candidate_failure() {
         let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
         client.push_search_for_goal_response(Ok(search_ok_response(Vec::new())));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(
             failure.reason,
-            Phase7SearchFailureReason::NoCandidateForSelectedGoal { goal_id: GoalId(0) }
+            AiSearchFailureReason::NoCandidateForSelectedGoal { goal_id: GoalId(0) }
         );
         assert_eq!(failure.search_stats.nodes_expanded, 1);
         assert_eq!(failure.search_stats.no_candidate_stops, 1);
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::NoCandidateForSelectedGoal { goal_id: GoalId(0) }
+            AiSearchTraceEventKind::NoCandidateForSelectedGoal { goal_id: GoalId(0) }
         )));
     }
 
@@ -7674,7 +7714,7 @@ mod tests {
     fn m4_search_caps_batch_to_max_tactics_per_node() {
         let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
         let config = mvp_config();
-        let mut input = phase7_test_search_input(root.clone());
+        let mut input = ai_search_test_search_input(root.clone());
         input.search_budget.max_tactics_per_node = 1;
         let suggested = vec![
             suggested_candidate(
@@ -7688,7 +7728,7 @@ mod tests {
                 },
             ),
         ];
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7705,17 +7745,17 @@ mod tests {
             }],
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(&mut client, input));
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(&mut client, input));
 
         assert_eq!(failure.search_stats.candidates_evaluated, 1);
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::MaxTacticsPerNodeStopped {
+            AiSearchTraceEventKind::MaxTacticsPerNodeStopped {
                 max_tactics_per_node: 1
             }
         )));
         let batch_source = client.calls().iter().find_map(|call| match call {
-            Phase7MachineApiCall::TacticBatch { source } => Some(source),
+            AiSearchMachineApiCall::TacticBatch { source } => Some(source),
             _ => None,
         });
         let parsed = parse_machine_tactic_batch_request(batch_source.unwrap()).unwrap();
@@ -7727,7 +7767,7 @@ mod tests {
     fn m4_search_rejects_no_progress_ok_batch_as_controller_error() {
         let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
         let config = mvp_config();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7744,14 +7784,14 @@ mod tests {
             Vec::new(),
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(
             failure.reason,
-            Phase7SearchFailureReason::MachineControllerError {
+            AiSearchFailureReason::MachineControllerError {
                 endpoint: "/machine/tactics/batch".to_owned(),
                 error_kind: "batch_response_contract_violation".to_owned(),
                 error_phase: None,
@@ -7762,7 +7802,7 @@ mod tests {
         assert_eq!(failure.search_stats.candidates_evaluated, 0);
         assert!(failure.trace_events.iter().any(|event| matches!(
             &event.kind,
-            Phase7SearchTraceEventKind::MachineControllerError { endpoint, error_kind }
+            AiSearchTraceEventKind::MachineControllerError { endpoint, error_kind }
                 if endpoint == "/machine/tactics/batch"
                     && error_kind == "batch_response_contract_violation"
         )));
@@ -7772,7 +7812,7 @@ mod tests {
     fn m4_search_records_duplicate_state_without_queueing_it() {
         let root = snapshot_with_state(1, vec![goal_view(GoalId(0), 30, 5, 0, 0, None)]);
         let config = mvp_config();
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7795,22 +7835,22 @@ mod tests {
             }],
         )));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root.clone()),
+            ai_search_test_search_input(root.clone()),
         ));
 
         assert_eq!(failure.search_stats.candidates_evaluated, 1);
         assert!(failure.trace_events.iter().any(|event| matches!(
             event.kind,
-            Phase7SearchTraceEventKind::DuplicateStateSkipped {
+            AiSearchTraceEventKind::DuplicateStateSkipped {
                 duplicate_state_fingerprint
             } if duplicate_state_fingerprint == root.state_fingerprint
         )));
         assert!(!failure
             .trace_events
             .iter()
-            .any(|event| { matches!(event.kind, Phase7SearchTraceEventKind::ChildQueued { .. }) }));
+            .any(|event| { matches!(event.kind, AiSearchTraceEventKind::ChildQueued { .. }) }));
         assert_eq!(client.calls().len(), 3);
     }
 
@@ -7820,9 +7860,9 @@ mod tests {
         let child0 = snapshot_with_state(2, vec![goal_view(GoalId(1), 31, 5, 0, 0, None)]);
         let child1 = snapshot_with_state(3, vec![goal_view(GoalId(2), 32, 5, 0, 0, None)]);
         let config = mvp_config();
-        let mut input = phase7_test_search_input(root.clone());
+        let mut input = ai_search_test_search_input(root.clone());
         input.search_budget.max_nodes = 1;
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7867,25 +7907,23 @@ mod tests {
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: child1 }));
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk { snapshot: child0 }));
 
-        let failure = unwrap_search_failure(phase7_run_mvp_search(&mut client, input));
+        let failure = unwrap_search_failure(ai_search_run_mvp_search(&mut client, input));
 
         assert_eq!(
             failure.reason,
-            Phase7SearchFailureReason::SearchBudgetExceeded {
-                limit: Phase7SearchBudgetLimit::MaxNodes
+            AiSearchFailureReason::SearchBudgetExceeded {
+                limit: AiSearchBudgetLimit::MaxNodes
             }
         );
         let child_ids = failure
             .trace_events
             .iter()
             .filter_map(|event| match event.kind {
-                Phase7SearchTraceEventKind::ChildQueued { child_node_id, .. } => {
-                    Some(child_node_id)
-                }
+                AiSearchTraceEventKind::ChildQueued { child_node_id, .. } => Some(child_node_id),
                 _ => None,
             })
             .collect::<Vec<_>>();
-        assert_eq!(child_ids, vec![Phase7NodeId(1), Phase7NodeId(2)]);
+        assert_eq!(child_ids, vec![AiSearchNodeId(1), AiSearchNodeId(2)]);
     }
 
     #[test]
@@ -7905,7 +7943,7 @@ mod tests {
         let replay_final_state_fingerprint = hash(90);
         let config = mvp_config();
 
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -7962,9 +8000,9 @@ mod tests {
         )));
         client.push_verify_response(Ok(verify_ok_response()));
 
-        let proof = unwrap_verified_proof(phase7_run_mvp_search(
+        let proof = unwrap_verified_proof(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
 
         assert_eq!(proof.replay_plan.steps.len(), 2);
@@ -7999,7 +8037,7 @@ mod tests {
             .calls()
             .iter()
             .filter_map(|call| match call {
-                Phase7MachineApiCall::TacticBatch { source } => Some(source),
+                AiSearchMachineApiCall::TacticBatch { source } => Some(source),
                 _ => None,
             })
             .collect::<Vec<_>>();
@@ -8012,14 +8050,14 @@ mod tests {
         assert!(client
             .calls()
             .iter()
-            .any(|call| matches!(call, Phase7MachineApiCall::Replay { .. })));
+            .any(|call| matches!(call, AiSearchMachineApiCall::Replay { .. })));
         assert!(client
             .calls()
             .iter()
-            .any(|call| matches!(call, Phase7MachineApiCall::Verify { .. })));
+            .any(|call| matches!(call, AiSearchMachineApiCall::Verify { .. })));
     }
 
-    fn run_m9_local_exact_fixture() -> (Phase7VerifiedProof, Vec<Phase7MachineApiCall>) {
+    fn run_m9_local_exact_fixture() -> (AiSearchVerifiedProof, Vec<AiSearchMachineApiCall>) {
         let mut goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
         let mut local = local_view(0);
         local.machine_name = "h".to_owned();
@@ -8032,7 +8070,7 @@ mod tests {
         let replay_final_state_fingerprint = hash(91);
         let config = mvp_config();
 
-        let mut client = Phase7FakeMachineApiClient::new();
+        let mut client = AiSearchFakeMachineApiClient::new();
         client.push_snapshot_get_response(Ok(MachineSnapshotGetOk {
             snapshot: root.clone(),
         }));
@@ -8058,9 +8096,9 @@ mod tests {
         )));
         client.push_verify_response(Ok(verify_ok_response()));
 
-        let proof = unwrap_verified_proof(phase7_run_mvp_search(
+        let proof = unwrap_verified_proof(ai_search_run_mvp_search(
             &mut client,
-            phase7_test_search_input(root),
+            ai_search_test_search_input(root),
         ));
         let calls = client.calls().to_vec();
         (proof, calls)
@@ -8080,7 +8118,7 @@ mod tests {
         assert_eq!(proof.search_stats.candidates_evaluated, 1);
 
         let batch_source = calls.iter().find_map(|call| match call {
-            Phase7MachineApiCall::TacticBatch { source } => Some(source),
+            AiSearchMachineApiCall::TacticBatch { source } => Some(source),
             _ => None,
         });
         let batch_source = batch_source.expect("expected local Exact batch call");
@@ -8088,7 +8126,7 @@ mod tests {
         assert!(batch_source.contains(r#""source":"h""#));
 
         let replay_source = calls.iter().find_map(|call| match call {
-            Phase7MachineApiCall::Replay { source } => Some(source),
+            AiSearchMachineApiCall::Replay { source } => Some(source),
             _ => None,
         });
         let replay_source = replay_source.expect("expected replay call");
@@ -8101,7 +8139,7 @@ mod tests {
         }
         assert!(calls
             .iter()
-            .any(|call| matches!(call, Phase7MachineApiCall::Verify { .. })));
+            .any(|call| matches!(call, AiSearchMachineApiCall::Verify { .. })));
     }
 
     #[test]
@@ -8127,31 +8165,31 @@ mod tests {
         ] {
             assert!(
                 !source.contains(human_only),
-                "Phase 7 M9 local exact fixture must not use Human syntax: {human_only}"
+                "AI search M9 local exact fixture must not use Human syntax: {human_only}"
             );
         }
 
         for call in calls {
             let Some(source) = (match call {
-                Phase7MachineApiCall::TacticBatch { source }
-                | Phase7MachineApiCall::Replay { source }
-                | Phase7MachineApiCall::Verify { source }
-                | Phase7MachineApiCall::SearchForGoal { source } => Some(source),
-                Phase7MachineApiCall::SnapshotGet { .. } => None,
+                AiSearchMachineApiCall::TacticBatch { source }
+                | AiSearchMachineApiCall::Replay { source }
+                | AiSearchMachineApiCall::Verify { source }
+                | AiSearchMachineApiCall::SearchForGoal { source } => Some(source),
+                AiSearchMachineApiCall::SnapshotGet { .. } => None,
             }) else {
                 continue;
             };
             for human_only in ["notation", "infix", "namespace", "inductive"] {
                 assert!(
                     !source.contains(human_only),
-                    "Phase 7 M9 API fixture must stay on Machine Surface payloads: {human_only}"
+                    "AI search M9 API fixture must stay on Machine Surface payloads: {human_only}"
                 );
             }
         }
     }
 
     #[test]
-    fn m9_same_input_budget_and_phase5_responses_are_deterministic() {
+    fn m9_same_input_budget_and_machine_api_responses_are_deterministic() {
         let (first_proof, first_calls) = run_m9_local_exact_fixture();
         let (second_proof, second_calls) = run_m9_local_exact_fixture();
 
@@ -8174,7 +8212,7 @@ mod tests {
                 &format!(r#""{field}":true,"batch_policy""#),
             );
 
-            let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+            let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
             assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
             assert_eq!(
@@ -8193,35 +8231,35 @@ mod tests {
     }
 
     #[test]
-    fn fake_client_validates_raw_phase5_requests_before_queue_lookup() {
-        let mut client = Phase7FakeMachineApiClient::new();
+    fn fake_client_validates_raw_machine_api_requests_before_queue_lookup() {
+        let mut client = AiSearchFakeMachineApiClient::new();
 
         let cases = [
             (
                 client.search_for_goal("{}").unwrap_err(),
-                Phase7MachineApiEndpointKind::SearchForGoal,
+                AiSearchMachineApiEndpointKind::SearchForGoal,
                 MachineApiErrorKind::InvalidTheoremQuery,
             ),
             (
                 client.run_tactic_batch("{}").unwrap_err(),
-                Phase7MachineApiEndpointKind::TacticBatch,
+                AiSearchMachineApiEndpointKind::TacticBatch,
                 MachineApiErrorKind::InvalidBatchPolicy,
             ),
             (
                 client.replay("{}").unwrap_err(),
-                Phase7MachineApiEndpointKind::Replay,
+                AiSearchMachineApiEndpointKind::Replay,
                 MachineApiErrorKind::InvalidReplayPlan,
             ),
             (
                 client.verify("{}").unwrap_err(),
-                Phase7MachineApiEndpointKind::Verify,
+                AiSearchMachineApiEndpointKind::Verify,
                 MachineApiErrorKind::InvalidVerifyRequest,
             ),
         ];
 
         for (error, endpoint, kind) in cases {
             match error {
-                Phase7MachineApiError::FakeRequestValidation {
+                AiSearchMachineApiError::FakeRequestValidation {
                     endpoint: actual,
                     error,
                 } => {
@@ -8235,8 +8273,8 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_accepts_omitted_scheduler_limits() {
-        let config = parse_phase7_mvp_controller_config(valid_config_json()).unwrap();
+    fn ai_search_mvp_config_accepts_omitted_scheduler_limits() {
+        let config = parse_ai_search_mvp_controller_config(valid_config_json()).unwrap();
 
         assert_eq!(config.search_budget.max_tactics_per_node, 16);
         assert_eq!(config.scheduler_limits, None);
@@ -8244,13 +8282,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_accepts_present_scheduler_limits() {
+    fn ai_search_mvp_config_accepts_present_scheduler_limits() {
         let source = valid_config_json().replace(
             r#""batch_policy""#,
             r#""scheduler_limits":{"per_candidate_timeout_ms":100,"batch_timeout_ms":1000,"max_memory_mb":1024},"batch_policy""#,
         );
 
-        let config = parse_phase7_mvp_controller_config(&source).unwrap();
+        let config = parse_ai_search_mvp_controller_config(&source).unwrap();
 
         assert_eq!(
             config.scheduler_limits,
@@ -8263,13 +8301,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_non_mvp_tactics_per_node() {
+    fn ai_search_mvp_config_rejects_non_mvp_tactics_per_node() {
         let source = valid_config_json().replace(
             r#""max_tactics_per_node": 16"#,
             r#""max_tactics_per_node": 8"#,
         );
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
         assert_eq!(
@@ -8281,13 +8319,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_tactics_per_node_outside_u32_range() {
+    fn ai_search_mvp_config_rejects_tactics_per_node_outside_u32_range() {
         let source = valid_config_json().replace(
             r#""max_tactics_per_node": 16"#,
             r#""max_tactics_per_node": 4294967296"#,
         );
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
         assert_eq!(
@@ -8303,13 +8341,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_null_scheduler_limits() {
+    fn ai_search_mvp_config_rejects_null_scheduler_limits() {
         let source = valid_config_json().replace(
             r#""batch_policy""#,
             r#""scheduler_limits":null,"batch_policy""#,
         );
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidSchedulerLimits);
         assert_eq!(
@@ -8321,11 +8359,11 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_unknown_field() {
+    fn ai_search_mvp_config_rejects_unknown_field() {
         let source =
             valid_config_json().replace(r#""batch_policy""#, r#""unknown":true,"batch_policy""#);
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
         assert_eq!(
@@ -8337,10 +8375,10 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_float_search_budget() {
+    fn ai_search_mvp_config_rejects_float_search_budget() {
         let source = valid_config_json().replace(r#""max_nodes": 10000"#, r#""max_nodes": 1.5"#);
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
         assert_eq!(
@@ -8354,10 +8392,10 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_negative_search_budget() {
+    fn ai_search_mvp_config_rejects_negative_search_budget() {
         let source = valid_config_json().replace(r#""max_nodes": 10000"#, r#""max_nodes": -1"#);
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
         assert_eq!(
@@ -8371,11 +8409,11 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_max_depth_outside_u32_range() {
+    fn ai_search_mvp_config_rejects_max_depth_outside_u32_range() {
         let source =
             valid_config_json().replace(r#""max_depth": 64"#, r#""max_depth": 4294967296"#);
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidBatchPolicy);
         assert_eq!(
@@ -8391,13 +8429,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_scheduler_zero() {
+    fn ai_search_mvp_config_rejects_scheduler_zero() {
         let source = valid_config_json().replace(
             r#""batch_policy""#,
             r#""scheduler_limits":{"batch_timeout_ms":0},"batch_policy""#,
         );
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidSchedulerLimits);
         assert_eq!(
@@ -8411,13 +8449,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_mvp_config_rejects_scheduler_string() {
+    fn ai_search_mvp_config_rejects_scheduler_string() {
         let source = valid_config_json().replace(
             r#""batch_policy""#,
             r#""scheduler_limits":{"batch_timeout_ms":"1000"},"batch_policy""#,
         );
 
-        let err = parse_phase7_mvp_controller_config(&source).unwrap_err();
+        let err = parse_ai_search_mvp_controller_config(&source).unwrap_err();
 
         assert_eq!(err.kind, MachineApiErrorKind::InvalidSchedulerLimits);
         assert_eq!(

@@ -14,7 +14,7 @@ use crate::{
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
-/// Compile Human source through the Phase 4 Human API adapter.
+/// Compile Human source through the Human tactic API adapter.
 ///
 /// Unlike the plain `npa_frontend::compile_human_source_to_core*` helpers, this
 /// wrapper executes Human `by` proof blocks through the `npa-api` tactic bridge
@@ -37,7 +37,7 @@ pub fn compile_human_source_to_core(
     })
 }
 
-/// Compile Human source to a Phase 2 certificate through the Human API adapter.
+/// Compile Human source to a certificate through the Human API adapter.
 ///
 /// Plain frontend certificate compilation remains responsible for already-core
 /// Human terms only. This API wrapper is the layer that runs Human `by` proof
@@ -223,7 +223,7 @@ fn start_human_proof_from_prepared(
     verified_modules: &[npa_cert::VerifiedModule],
     options: HumanApiCompileOptions,
 ) -> Result<HumanStartProofOk, HumanStartProofError> {
-    let phase4_imports =
+    let machine_tactic_imports =
         active_human_verified_import_refs(verified_modules, &prepared.active_imports)?;
     let mut checked_current_decls = Vec::with_capacity(prepared.proof.prior_declarations.len());
     for (source_index, decl) in prepared
@@ -234,7 +234,7 @@ fn start_human_proof_from_prepared(
         .enumerate()
     {
         let checked = npa_tactic::check_current_decl_for_machine_tactic_from_verified_imports(
-            &phase4_imports,
+            &machine_tactic_imports,
             &checked_current_decls,
             source_index as u64,
             decl,
@@ -250,7 +250,7 @@ fn start_human_proof_from_prepared(
             universe_params: prepared.proof.universe_params,
             theorem_type: prepared.proof.theorem_type,
         },
-        phase4_imports,
+        machine_tactic_imports,
         checked_current_decls,
         options.tactic_options.clone(),
     )?;
@@ -272,7 +272,7 @@ fn human_build_and_verify_certificate(
             npa_frontend::HumanDiagnostic::error(
                 npa_frontend::HumanDiagnosticKind::KernelRejected,
                 human_source_span(source),
-                format!("Phase 2 certificate handoff rejected Human by proof source: {err:?}"),
+                format!("certificate certificate handoff rejected Human by proof source: {err:?}"),
             )
             .with_phase(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
         })?;
@@ -280,7 +280,7 @@ fn human_build_and_verify_certificate(
         npa_frontend::HumanDiagnostic::error(
             npa_frontend::HumanDiagnosticKind::KernelRejected,
             human_source_span(source),
-            format!("Phase 2 certificate encoding rejected Human by proof source: {err:?}"),
+            format!("certificate certificate encoding rejected Human by proof source: {err:?}"),
         )
         .with_phase(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
     })?;
@@ -293,7 +293,9 @@ fn human_build_and_verify_certificate(
             npa_frontend::HumanDiagnostic::error(
                 npa_frontend::HumanDiagnosticKind::KernelRejected,
                 human_source_span(source),
-                format!("Phase 2 certificate verification rejected Human by proof source: {err:?}"),
+                format!(
+                    "certificate certificate verification rejected Human by proof source: {err:?}"
+                ),
             )
             .with_phase(npa_frontend::HumanDiagnosticPhase::CertificateHandoff)
         },
@@ -2347,7 +2349,7 @@ mod tests {
         };
 
         let ok = compile_human_source_to_certificate(request)
-            .expect("Human API should compile source to a Phase 2 certificate");
+            .expect("Human API should compile source to a certificate certificate");
         assert_eq!(ok.source_interface.declarations.len(), 1);
         let bytes = npa_cert::encode_module_cert(&ok.certificate)
             .expect("Human API certificate should encode");
@@ -2624,7 +2626,7 @@ theorem self_eq : Eq.{1} n n := by
     }
 
     #[test]
-    fn phase4_human_section13_minimal_certificate_fixtures_compile() {
+    fn machine_tactic_human_section13_minimal_certificate_fixtures_compile() {
         let (nat, nat_interface) = verified_nat_human_import();
         let (eq, eq_interface) = verified_eq_human_import();
         let verified_modules = vec![nat, eq];
@@ -2632,7 +2634,7 @@ theorem self_eq : Eq.{1} n n := by
         let default_options = human_api_default_compile_options();
 
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanIntroExactFixture",
+            "Api.HumanTacticIntroExactFixture",
             "\
 import Std.Nat.Basic
 theorem id_nat : forall (n : Nat), Nat := by
@@ -2643,7 +2645,7 @@ theorem id_nat : forall (n : Nat), Nat := by
             default_options.clone(),
         );
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanEqReflFixture",
+            "Api.HumanTacticEqReflFixture",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -2655,7 +2657,7 @@ theorem self_eq : Eq.{1} n n := by
             default_options.clone(),
         );
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanApplyFixture",
+            "Api.HumanTacticApplyFixture",
             "\
 theorem id_prop {q : Prop} (hq : q) : q := hq
 theorem use_id (q : Prop) (hq : q) : q := by
@@ -2668,7 +2670,7 @@ theorem use_id (q : Prop) (hq : q) : q := by
             default_options.clone(),
         );
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanSimpLiteFixture",
+            "Api.HumanTacticSimpLiteFixture",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -2682,14 +2684,14 @@ theorem self_eq (n : Nat) : Eq.{1} n n := by
     }
 
     #[test]
-    fn phase4_human_section13_rw_and_induction_certificate_fixtures_compile() {
+    fn machine_tactic_human_section13_rw_and_induction_certificate_fixtures_compile() {
         let (nat, nat_interface) = verified_nat_human_import();
         let (eq, eq_interface) = verified_eq_human_import();
         let verified_modules = vec![nat, eq];
         let imported_source_interfaces = vec![nat_interface, eq_interface];
 
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanRwFixture",
+            "Api.HumanTacticRwFixture",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -2704,7 +2706,7 @@ theorem rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
             human_api_default_compile_options(),
         );
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanPriorRwFixture",
+            "Api.HumanTacticPriorRwFixture",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -2724,7 +2726,7 @@ theorem use_rw_local (a b : Nat) (h : Eq.{1} a b) : Eq.{1} a a := by
             human_api_default_compile_options(),
         );
         assert_human_fixture_certificate_verifies(
-            "Api.Phase4HumanInductionFixture",
+            "Api.HumanTacticInductionFixture",
             "\
 import Std.Nat.Basic
 import Std.Logic.Eq
@@ -2740,15 +2742,15 @@ theorem ind_self (n : Nat) : Eq.{1} n n := by
     }
 
     #[test]
-    fn phase4_human_section14_typeclass_driven_apply_is_rejected_by_diagnostic() {
+    fn machine_tactic_human_section14_typeclass_driven_apply_is_rejected_by_diagnostic() {
         let source = "\
 theorem no_typeclass_apply (p : Prop) : p := by
   intro p
   apply inferInstance";
         let started = start_human_proof(HumanStartProofRequest {
-            current_module: npa_cert::Name::from_dotted("Api.Phase4HumanUnsupportedTypeclassApply"),
+            current_module: npa_cert::Name::from_dotted("Api.HumanTacticUnsupportedTypeclassApply"),
             theorem_name: npa_cert::Name::from_dotted(
-                "Api.Phase4HumanUnsupportedTypeclassApply.no_typeclass_apply",
+                "Api.HumanTacticUnsupportedTypeclassApply.no_typeclass_apply",
             ),
             current_source: HumanCurrentModuleSource {
                 file_id: npa_frontend::FileId(0),
@@ -2769,7 +2771,7 @@ theorem no_typeclass_apply (p : Prop) : p := by
             options: human_api_default_compile_options(),
             budget: npa_tactic::TacticBudget::default(),
         })
-        .expect_err("typeclass-driven apply is outside Phase 4 Human MVP");
+        .expect_err("typeclass-driven apply is outside Human tactic MVP");
 
         let HumanTacticScriptError::Human(HumanCompileError { diagnostic }) = err else {
             panic!("typeclass-driven apply should map to a Human diagnostic");
@@ -4499,7 +4501,7 @@ theorem bad_induction (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by
             imported_source_interfaces,
             options,
         })
-        .expect("Phase 4 Human fixture should compile to a certificate");
+        .expect("Human tactic fixture should compile to a certificate");
         assert!(ok
             .source_interface
             .declarations

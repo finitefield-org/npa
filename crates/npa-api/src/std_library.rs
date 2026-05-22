@@ -28,11 +28,11 @@ use crate::{
     search::MachineTheoremMode,
     session::{validate_machine_tactic_options_request_against_context, MachineSessionCreateError},
     types::{
-        parse_fully_qualified_name_wire, parse_hash_string,
+        machine_api_name_canonical_bytes, parse_fully_qualified_name_wire, parse_hash_string,
         parse_machine_surface_renderable_name_wire, parse_machine_universe_param_name,
-        parse_module_name_wire, phase5_name_canonical_bytes, KernelCheckProfileId,
-        MachineTacticOptionsRequest, MachineWireGrammarError,
-        KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC, KERNEL_CHECK_PROFILE_BUILTIN_NONE,
+        parse_module_name_wire, KernelCheckProfileId, MachineTacticOptionsRequest,
+        MachineWireGrammarError, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
+        KERNEL_CHECK_PROFILE_BUILTIN_NONE,
     },
     validation::{parse_strict_u64_token, StrictUnsignedIntegerError},
 };
@@ -52,36 +52,36 @@ const STD_LIBRARY_PROTOCOL_VERSION: &str = "npa.stdlib-machine.v1";
 const STD_LIBRARY_PROFILE_ID: &str = "npa.stdlib.mvp.v1";
 const STD_PROMPT_METADATA_PROFILE_ID: &str = "npa.stdlib.prompt-metadata.mvp.v1";
 const STD_CORE_SPEC_ID: &str = "core-spec-v0.1";
-const STD_KERNEL_SEMANTICS_PROFILE_ID: &str = "npa-kernel.phase1.v0.1";
+const STD_KERNEL_SEMANTICS_PROFILE_ID: &str = "npa-kernel.core.v0.1";
 const STD_REDUCTION_PROFILE_ID: &str = "beta-delta-iota-zeta.v0.1";
 const STD_UNIVERSE_PROFILE_ID: &str = "levels-imax-v0.1";
 const STD_KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = KERNEL_CHECK_PROFILE_BUILTIN_NONE;
 const STD_KERNEL_BUILTIN_NONE_PROFILE_ID: &str = "builtin-none-v0.1";
 const STD_KERNEL_BUILTIN_NAT_EQ_REC_PROFILE_ID: &str = "builtin-nat-eq-rec-v0.1";
 const STD_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
-const STD_MODULE_ARTIFACT_TAG: &str = "npa.phase6.std-module-artifact.v1";
-const STD_LIBRARY_RELEASE_TAG: &str = "npa.phase6.std-library-release.v1";
-const STD_IMPORT_BUNDLE_TAG: &str = "npa.phase6.std-import-bundle.v1";
-const STD_IMPORT_BUNDLE_SET_TAG: &str = "npa.phase6.std-import-bundle-set.v1";
-const STD_TACTIC_OPTIONS_RECIPE_TAG: &str = "npa.phase6.std-tactic-options-recipe.v1";
-const PHASE4_KERNEL_CHECK_PROFILE_TAG: &str = "npa.phase4.kernel-check-profile.v1";
-const STD_AXIOM_REPORT_TAG: &str = "npa.phase6.std-axiom-report.v1";
-const STD_THEOREM_INDEX_TAG: &str = "npa.phase6.std-theorem-index.v1";
-const STD_GLOBAL_REF_TAG: &str = "npa.phase6.std-global-ref.v1";
-const STD_GLOBAL_REF_VIEW_TAG: &str = "npa.phase6.std-global-ref-view.v1";
-const STD_RULE_TELESCOPE_TAG: &str = "npa.phase6.std-rule-telescope.v1";
-const STD_REWRITE_PROFILE_TAG: &str = "npa.phase6.std-rewrite-profile.v1";
-const STD_REWRITE_PROFILE_SET_TAG: &str = "npa.phase6.std-rewrite-profile-set.v1";
-const STD_SIMP_PROFILE_TAG: &str = "npa.phase6.std-simp-profile.v1";
-const STD_SIMP_PROFILE_SET_TAG: &str = "npa.phase6.std-simp-profile-set.v1";
-const STD_PROMPT_METADATA_SET_TAG: &str = "npa.phase6.std-prompt-metadata-set.v1";
-const STD_PROMPT_METADATA_TAG: &str = "npa.phase6.std-prompt-metadata.v1";
-const STD_PROMPT_EXAMPLE_TAG: &str = "npa.phase6.std-prompt-example.v1";
-const STD_AUDIT_CHECK_TAG: &str = "npa.phase8.std-library-audit-check.v1";
-const STD_AUDIT_REPORT_TAG: &str = "npa.phase8.std-library-audit-report.v1";
-const PHASE5_AXIOM_REF_WIRE_TAG: &str = "npa.phase5.axiom-ref-wire.v1";
+const STD_MODULE_ARTIFACT_TAG: &str = "npa.std-library.std-module-artifact.v1";
+const STD_LIBRARY_RELEASE_TAG: &str = "npa.std-library.std-library-release.v1";
+const STD_IMPORT_BUNDLE_TAG: &str = "npa.std-library.std-import-bundle.v1";
+const STD_IMPORT_BUNDLE_SET_TAG: &str = "npa.std-library.std-import-bundle-set.v1";
+const STD_TACTIC_OPTIONS_RECIPE_TAG: &str = "npa.std-library.std-tactic-options-recipe.v1";
+const MACHINE_TACTIC_KERNEL_CHECK_PROFILE_TAG: &str = "npa.machine-tactic.kernel-check-profile.v1";
+const STD_AXIOM_REPORT_TAG: &str = "npa.std-library.std-axiom-report.v1";
+const STD_THEOREM_INDEX_TAG: &str = "npa.std-library.std-theorem-index.v1";
+const STD_GLOBAL_REF_TAG: &str = "npa.std-library.std-global-ref.v1";
+const STD_GLOBAL_REF_VIEW_TAG: &str = "npa.std-library.std-global-ref-view.v1";
+const STD_RULE_TELESCOPE_TAG: &str = "npa.std-library.std-rule-telescope.v1";
+const STD_REWRITE_PROFILE_TAG: &str = "npa.std-library.std-rewrite-profile.v1";
+const STD_REWRITE_PROFILE_SET_TAG: &str = "npa.std-library.std-rewrite-profile-set.v1";
+const STD_SIMP_PROFILE_TAG: &str = "npa.std-library.std-simp-profile.v1";
+const STD_SIMP_PROFILE_SET_TAG: &str = "npa.std-library.std-simp-profile-set.v1";
+const STD_PROMPT_METADATA_SET_TAG: &str = "npa.std-library.std-prompt-metadata-set.v1";
+const STD_PROMPT_METADATA_TAG: &str = "npa.std-library.std-prompt-metadata.v1";
+const STD_PROMPT_EXAMPLE_TAG: &str = "npa.std-library.std-prompt-example.v1";
+const STD_AUDIT_CHECK_TAG: &str = "npa.independent-checker.std-library-audit-check.v1";
+const STD_AUDIT_REPORT_TAG: &str = "npa.independent-checker.std-library-audit-report.v1";
+const MACHINE_API_AXIOM_REF_WIRE_TAG: &str = "npa.machine-api.axiom-ref-wire.v1";
 const STD_THEOREM_INDEX_PROFILE_ID: &str = "npa.stdlib.theorem-index.mvp.v1";
-const STD_AUDIT_PROFILE_ID: &str = "npa.phase8.stdlib-audit.mvp.v1";
+const STD_AUDIT_PROFILE_ID: &str = "npa.independent-checker.stdlib-audit.mvp.v1";
 const STD_LOGIC_BUNDLE_ID: &str = "std.logic.mvp";
 const STD_NAT_BUNDLE_ID: &str = "std.nat.mvp";
 const STD_LIST_BUNDLE_ID: &str = "std.list.mvp";
@@ -758,7 +758,7 @@ pub enum MachineStdImportBundleError {
         bundle_id: String,
         source: Box<ImportProjectionError>,
     },
-    RecipePhase5ValidationFailed {
+    RecipeMachineApiValidationFailed {
         bundle_id: String,
         source: Box<MachineSessionCreateError>,
     },
@@ -2143,7 +2143,10 @@ pub fn machine_std_rule_telescope_canonical_bytes(
     encode_uvar(&mut out, rule.rule_telescope.len() as u64);
     for (index, param) in rule.rule_telescope.iter().enumerate() {
         encode_uvar(&mut out, index as u64);
-        encode_hash(&mut out, &phase6_core_expr_hash(loaded, owner, &param.ty)?);
+        encode_hash(
+            &mut out,
+            &std_library_core_expr_hash(loaded, owner, &param.ty)?,
+        );
     }
     Ok(out)
 }
@@ -2377,7 +2380,7 @@ pub fn machine_std_axiom_ref_canonical_bytes(
     axiom: &MachineStdAxiomRef,
 ) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
     let mut out = Vec::new();
-    encode_string(&mut out, PHASE5_AXIOM_REF_WIRE_TAG);
+    encode_string(&mut out, MACHINE_API_AXIOM_REF_WIRE_TAG);
     out.push(0x00);
     encode_name(&mut out, &axiom.module)?;
     encode_name(&mut out, &axiom.name)?;
@@ -2490,7 +2493,10 @@ fn machine_std_loaded_release_audit_hash(
     loaded: &MachineStdLoadedRelease,
 ) -> Result<Hash, MachineStdCanonicalBytesError> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase8.std-library-loaded-release.v1");
+    encode_string(
+        &mut out,
+        "npa.independent-checker.std-library-loaded-release.v1",
+    );
     encode_uvar(&mut out, loaded.modules().len() as u64);
     for module in loaded.modules() {
         encode_name(&mut out, &module.module)?;
@@ -4430,9 +4436,9 @@ fn generate_mvp_rewrite_profile(
             source: candidate.global_ref.clone(),
             direction: candidate.rule_ref.direction,
             safety: candidate.safety,
-            lhs_core_hash: phase6_core_expr_hash(loaded, owner, &rule.theorem_lhs)
+            lhs_core_hash: std_library_core_expr_hash(loaded, owner, &rule.theorem_lhs)
                 .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
-            rhs_core_hash: phase6_core_expr_hash(loaded, owner, &rule.theorem_rhs)
+            rhs_core_hash: std_library_core_expr_hash(loaded, owner, &rule.theorem_rhs)
                 .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
             rule_telescope_hash: machine_std_rule_telescope_hash(loaded, owner, rule)
                 .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?,
@@ -4952,9 +4958,9 @@ fn validate_simp_safe_rule(
             name: rule.key.name.clone(),
         });
     }
-    let lhs_hash = phase6_core_expr_hash(loaded, owner, &rule.from_pattern)
+    let lhs_hash = std_library_core_expr_hash(loaded, owner, &rule.from_pattern)
         .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
-    let rhs_hash = phase6_core_expr_hash(loaded, owner, &rule.to_pattern)
+    let rhs_hash = std_library_core_expr_hash(loaded, owner, &rule.to_pattern)
         .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
     if lhs_hash == rhs_hash {
         return Err(MachineStdRewriteProfileError::SimpSafeLintFailed {
@@ -5173,9 +5179,9 @@ fn same_expr(
     lhs: &Expr,
     rhs: &Expr,
 ) -> Result<bool, MachineStdRewriteProfileError> {
-    let lhs = phase6_core_expr_canonical_bytes(loaded, owner, lhs)
+    let lhs = std_library_core_expr_canonical_bytes(loaded, owner, lhs)
         .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
-    let rhs = phase6_core_expr_canonical_bytes(loaded, owner, rhs)
+    let rhs = std_library_core_expr_canonical_bytes(loaded, owner, rhs)
         .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
     Ok(lhs == rhs)
 }
@@ -5254,7 +5260,7 @@ fn normalize_expr_const_global_ref_view(
 ) -> Result<Option<MachineStdGlobalRefView>, MachineStdRewriteProfileError> {
     let name = Name::from_dotted(name);
     for (decl_index, decl) in owner.verified_module.declarations().iter().enumerate() {
-        if phase6_decl_name(owner, decl).as_ref() == Some(&name) {
+        if std_library_decl_name(owner, decl).as_ref() == Some(&name) {
             return Ok(Some(
                 normalize_local_global_ref_view(owner, decl_index).map_err(|source| {
                     MachineStdRewriteProfileError::RuleValidationFailed {
@@ -5268,7 +5274,7 @@ fn normalize_expr_const_global_ref_view(
             ));
         }
         if inductive_decl_contains_generated(owner, decl, &name, None).unwrap_or(false) {
-            let name_id = phase6_name_id(owner, &name)
+            let name_id = std_library_name_id(owner, &name)
                 .map_err(|source| MachineStdRewriteProfileError::CanonicalBytes { source })?;
             return Ok(Some(
                 normalize_local_generated_global_ref_view(owner, decl_index, name_id).map_err(
@@ -5781,7 +5787,7 @@ pub fn validate_machine_std_mvp_import_bundle_recipes(
                 field: "nat_family",
             });
         }
-        validate_recipe_phase5_handoff(bundle)?;
+        validate_recipe_machine_api_handoff(bundle)?;
         let profile = recipe_simp_profile_for_bundle(&bundle.bundle_id, simp_profiles)?;
         let expected_recipe = expected_final_recipe_for_bundle(loaded, &bundle.bundle_id, profile)?;
         validate_final_recipe_shape(
@@ -5945,7 +5951,7 @@ fn validate_final_recipe_shape(
     Ok(())
 }
 
-fn validate_recipe_phase5_handoff(
+fn validate_recipe_machine_api_handoff(
     bundle: &MachineStdImportBundle,
 ) -> Result<(), MachineStdImportBundleError> {
     let import_context = import_bundle_certificate_context(bundle)?;
@@ -5963,7 +5969,7 @@ fn validate_recipe_phase5_handoff(
         &MachineCheckedCurrentDeclContext::empty(),
     )
     .map_err(
-        |source| MachineStdImportBundleError::RecipePhase5ValidationFailed {
+        |source| MachineStdImportBundleError::RecipeMachineApiValidationFailed {
             bundle_id: bundle.bundle_id.clone(),
             source,
         },
@@ -5971,7 +5977,7 @@ fn validate_recipe_phase5_handoff(
     if normalized != request {
         return Err(MachineStdImportBundleError::RecipeFieldMismatch {
             bundle_id: bundle.bundle_id.clone(),
-            field: "phase5_tactic_options_request",
+            field: "machine_api_tactic_options_request",
         });
     }
     Ok(())
@@ -8986,7 +8992,7 @@ fn compare_module_names(lhs: &Name, rhs: &Name) -> std::cmp::Ordering {
 }
 
 fn module_name_canonical_bytes(module: &Name) -> Result<Vec<u8>, MachineStdReleaseLoaderError> {
-    phase5_name_canonical_bytes(module).map_err(|source| {
+    machine_api_name_canonical_bytes(module).map_err(|source| {
         MachineStdReleaseLoaderError::InvalidCanonicalModuleName {
             module: module.clone(),
             source: Box::new(source),
@@ -9059,7 +9065,7 @@ fn verify_decoded_modules(
 
 fn machine_std_kernel_check_profile_canonical_bytes(profile: &str) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, PHASE4_KERNEL_CHECK_PROFILE_TAG);
+    encode_string(&mut out, MACHINE_TACTIC_KERNEL_CHECK_PROFILE_TAG);
     encode_string(&mut out, STD_CORE_SPEC_ID);
     encode_string(&mut out, STD_KERNEL_SEMANTICS_PROFILE_ID);
     encode_string(&mut out, STD_REDUCTION_PROFILE_ID);
@@ -9251,36 +9257,36 @@ fn simp_rule_ref_canonical_bytes(
     Ok(out)
 }
 
-fn phase6_core_expr_hash(
+fn std_library_core_expr_hash(
     loaded: &MachineStdLoadedRelease,
     owner: &MachineStdLoadedModule,
     expr: &Expr,
 ) -> Result<Hash, MachineStdCanonicalBytesError> {
-    let payload = phase6_core_expr_canonical_bytes(loaded, owner, expr)?;
+    let payload = std_library_core_expr_canonical_bytes(loaded, owner, expr)?;
     let mut bytes = b"NPA-TERM-0.1".to_vec();
     bytes.extend(payload);
     Ok(sha256(&bytes))
 }
 
-fn phase6_core_expr_canonical_bytes(
+fn std_library_core_expr_canonical_bytes(
     loaded: &MachineStdLoadedRelease,
     owner: &MachineStdLoadedModule,
     expr: &Expr,
 ) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
     let mut out = Vec::new();
-    encode_phase6_core_expr(&mut out, loaded, owner, expr)?;
+    encode_std_library_core_expr(&mut out, loaded, owner, expr)?;
     Ok(out)
 }
 
-fn phase6_core_level_hash(level: &Level) -> Result<Hash, MachineStdCanonicalBytesError> {
+fn std_library_core_level_hash(level: &Level) -> Result<Hash, MachineStdCanonicalBytesError> {
     let mut payload = Vec::new();
-    encode_phase6_core_level(&mut payload, &normalize_level(level.clone()))?;
+    encode_std_library_core_level(&mut payload, &normalize_level(level.clone()))?;
     let mut bytes = b"NPA-LEVEL-0.1".to_vec();
     bytes.extend(payload);
     Ok(sha256(&bytes))
 }
 
-fn encode_phase6_core_expr(
+fn encode_std_library_core_expr(
     out: &mut Vec<u8>,
     loaded: &MachineStdLoadedRelease,
     owner: &MachineStdLoadedModule,
@@ -9289,7 +9295,7 @@ fn encode_phase6_core_expr(
     match expr {
         Expr::Sort(level) => {
             out.push(0x00);
-            encode_hash(out, &phase6_core_level_hash(level)?);
+            encode_hash(out, &std_library_core_level_hash(level)?);
         }
         Expr::BVar(index) => {
             out.push(0x01);
@@ -9297,49 +9303,49 @@ fn encode_phase6_core_expr(
         }
         Expr::Const { name, levels } => {
             out.push(0x02);
-            let global_ref = phase6_global_ref_for_const(loaded, owner, name)?;
-            encode_phase6_global_ref(out, &global_ref);
+            let global_ref = std_library_global_ref_for_const(loaded, owner, name)?;
+            encode_std_library_global_ref(out, &global_ref);
             encode_uvar(out, levels.len() as u64);
             for level in levels {
-                encode_hash(out, &phase6_core_level_hash(level)?);
+                encode_hash(out, &std_library_core_level_hash(level)?);
             }
         }
         Expr::App(fun, arg) => {
             out.push(0x03);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, fun)?);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, arg)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, fun)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, arg)?);
         }
         Expr::Lam { ty, body, .. } => {
             out.push(0x04);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, ty)?);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, body)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, ty)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, body)?);
         }
         Expr::Pi { ty, body, .. } => {
             out.push(0x05);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, ty)?);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, body)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, ty)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, body)?);
         }
         Expr::Let {
             ty, value, body, ..
         } => {
             out.push(0x06);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, ty)?);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, value)?);
-            encode_hash(out, &phase6_core_expr_hash(loaded, owner, body)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, ty)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, value)?);
+            encode_hash(out, &std_library_core_expr_hash(loaded, owner, body)?);
         }
     }
     Ok(())
 }
 
-fn phase6_global_ref_for_const(
+fn std_library_global_ref_for_const(
     loaded: &MachineStdLoadedRelease,
     owner: &MachineStdLoadedModule,
     name: &str,
 ) -> Result<GlobalRef, MachineStdCanonicalBytesError> {
     let name = Name::from_dotted(name);
-    let name_id = phase6_name_id(owner, &name)?;
+    let name_id = std_library_name_id(owner, &name)?;
     for (decl_index, decl) in owner.verified_module.declarations().iter().enumerate() {
-        if phase6_decl_name(owner, decl).as_ref() == Some(&name) {
+        if std_library_decl_name(owner, decl).as_ref() == Some(&name) {
             return Ok(GlobalRef::Local { decl_index });
         }
         if inductive_decl_contains_generated(owner, decl, &name, None).unwrap_or(false) {
@@ -9367,7 +9373,7 @@ fn phase6_global_ref_for_const(
     })
 }
 
-fn phase6_decl_name(module: &MachineStdLoadedModule, decl: &DeclCert) -> Option<Name> {
+fn std_library_decl_name(module: &MachineStdLoadedModule, decl: &DeclCert) -> Option<Name> {
     let name_id = match &decl.decl {
         DeclPayload::Axiom { name, .. }
         | DeclPayload::Def { name, .. }
@@ -9377,7 +9383,7 @@ fn phase6_decl_name(module: &MachineStdLoadedModule, decl: &DeclCert) -> Option<
     module.verified_module.name_table().get(name_id).cloned()
 }
 
-fn phase6_name_id(
+fn std_library_name_id(
     owner: &MachineStdLoadedModule,
     name: &Name,
 ) -> Result<usize, MachineStdCanonicalBytesError> {
@@ -9392,7 +9398,7 @@ fn phase6_name_id(
         })
 }
 
-fn encode_phase6_global_ref(out: &mut Vec<u8>, global_ref: &GlobalRef) {
+fn encode_std_library_global_ref(out: &mut Vec<u8>, global_ref: &GlobalRef) {
     match global_ref {
         GlobalRef::Builtin {
             name,
@@ -9424,7 +9430,7 @@ fn encode_phase6_global_ref(out: &mut Vec<u8>, global_ref: &GlobalRef) {
     }
 }
 
-fn encode_phase6_core_level(
+fn encode_std_library_core_level(
     out: &mut Vec<u8>,
     level: &Level,
 ) -> Result<(), MachineStdCanonicalBytesError> {
@@ -9432,17 +9438,17 @@ fn encode_phase6_core_level(
         Level::Zero => out.push(0x00),
         Level::Succ(inner) => {
             out.push(0x01);
-            encode_hash(out, &phase6_core_level_hash(inner)?);
+            encode_hash(out, &std_library_core_level_hash(inner)?);
         }
         Level::Max(lhs, rhs) => {
             out.push(0x02);
-            encode_hash(out, &phase6_core_level_hash(lhs)?);
-            encode_hash(out, &phase6_core_level_hash(rhs)?);
+            encode_hash(out, &std_library_core_level_hash(lhs)?);
+            encode_hash(out, &std_library_core_level_hash(rhs)?);
         }
         Level::IMax(lhs, rhs) => {
             out.push(0x03);
-            encode_hash(out, &phase6_core_level_hash(lhs)?);
-            encode_hash(out, &phase6_core_level_hash(rhs)?);
+            encode_hash(out, &std_library_core_level_hash(lhs)?);
+            encode_hash(out, &std_library_core_level_hash(rhs)?);
         }
         Level::Param(name) => {
             out.push(0x04);
@@ -9458,7 +9464,7 @@ fn encode_string(out: &mut Vec<u8>, value: &str) {
 }
 
 fn encode_name(out: &mut Vec<u8>, name: &Name) -> Result<(), MachineStdCanonicalBytesError> {
-    let bytes = phase5_name_canonical_bytes(name).map_err(|source| {
+    let bytes = machine_api_name_canonical_bytes(name).map_err(|source| {
         MachineStdCanonicalBytesError::InvalidName {
             name: name.clone(),
             source: Box::new(source),
@@ -9897,7 +9903,7 @@ mod tests {
     }
 
     #[test]
-    fn finalizes_mvp_import_bundle_recipes_for_phase5_handoff() {
+    fn finalizes_mvp_import_bundle_recipes_for_machine_api_handoff() {
         let package = TestPackage::new("mvp_import_bundle_recipe_finalizer");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
@@ -10008,8 +10014,8 @@ mod tests {
     }
 
     #[test]
-    fn rejects_stale_import_bundle_recipe_refs_with_phase5_validation() {
-        let package = TestPackage::new("stale_import_bundle_recipe_phase5");
+    fn rejects_stale_import_bundle_recipe_refs_with_machine_api_validation() {
+        let package = TestPackage::new("stale_import_bundle_recipe_machine_api");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
         let loaded =
@@ -10045,7 +10051,7 @@ mod tests {
                 &bundle_set,
                 &simp_profiles,
             ),
-            Err(MachineStdImportBundleError::RecipePhase5ValidationFailed {
+            Err(MachineStdImportBundleError::RecipeMachineApiValidationFailed {
                 bundle_id,
                 ..
             }) if bundle_id == STD_NAT_BUNDLE_ID
@@ -10081,7 +10087,7 @@ mod tests {
         assert!(
             matches!(
                 recipe_error,
-                MachineStdImportBundleError::RecipePhase5ValidationFailed {
+                MachineStdImportBundleError::RecipeMachineApiValidationFailed {
                     ref bundle_id,
                     ..
                 } if bundle_id == STD_NAT_BUNDLE_ID
@@ -10496,8 +10502,8 @@ mod tests {
     }
 
     #[test]
-    fn audits_mvp_release_artifacts_for_phase8() {
-        let package = TestPackage::new("phase8_audit_report");
+    fn audits_mvp_release_artifacts_for_independent_checker() {
+        let package = TestPackage::new("independent_checker_audit_report");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
         let loaded =
@@ -10621,7 +10627,7 @@ mod tests {
 
     #[test]
     fn audit_rejects_manifest_bound_sidecar_hash_mismatch() {
-        let package = TestPackage::new("phase8_audit_sidecar_hash_mismatch");
+        let package = TestPackage::new("independent_checker_audit_sidecar_hash_mismatch");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
         let loaded =
@@ -10660,7 +10666,7 @@ mod tests {
 
     #[test]
     fn audit_rejects_custom_import_bundle_allow_axiom() {
-        let package = TestPackage::new("phase8_audit_custom_allow_axiom");
+        let package = TestPackage::new("independent_checker_audit_custom_allow_axiom");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
         let loaded =
@@ -10702,8 +10708,8 @@ mod tests {
     }
 
     #[test]
-    fn phase6_release_artifacts_drive_m8_search_candidates_through_phase5_batch() {
-        let package = TestPackage::new("phase6_release_m8_search_candidates");
+    fn std_library_release_artifacts_drive_m8_search_candidates_through_machine_api_batch() {
+        let package = TestPackage::new("std_library_release_m8_search_candidates");
         let certs = mvp_certificate_bytes_with_m5_profiles();
         write_mvp_package(package.path(), &certs);
         let loaded =
@@ -10788,7 +10794,7 @@ mod tests {
             (MachineApiResponseEnvelope::Ok(first), MachineApiResponseEnvelope::Ok(second)) => {
                 (first.endpoint_fields, second.endpoint_fields)
             }
-            _ => panic!("Phase 6 Nat bundle search should succeed"),
+            _ => panic!("standard library Nat bundle search should succeed"),
         };
         assert_eq!(
             first_fields.query_fingerprint,
@@ -10808,9 +10814,9 @@ mod tests {
             .collect::<BTreeMap<_, _>>();
         assert_eq!(first_fields.results.len(), expected_nat_entries.len());
         for result in &first_fields.results {
-            let sidecar = expected_nat_entries
-                .get(&result.global_ref.name)
-                .expect("search result should come from the Phase 6 theorem index sidecar");
+            let sidecar = expected_nat_entries.get(&result.global_ref.name).expect(
+                "search result should come from the standard library theorem index sidecar",
+            );
             assert_eq!(result.global_ref.module, sidecar.global_ref.module);
             assert_eq!(
                 result.global_ref.export_hash,
@@ -10884,7 +10890,7 @@ mod tests {
             .enumerate()
             .map(|(index, candidate)| {
                 m8_batch_candidate_json(
-                    &format!("phase6_nat_add_zero_{index}"),
+                    &format!("std_library_nat_add_zero_{index}"),
                     &m8_suggested_candidate_json(&candidate.candidate),
                 )
             })
@@ -10900,7 +10906,7 @@ mod tests {
         )
         .unwrap();
         let MachineApiResponseEnvelope::Ok(batch_ok) = batch_response else {
-            panic!("Phase 6 suggested candidates should re-enter Phase 5 batch");
+            panic!("standard library suggested candidates should re-enter machine API batch");
         };
         assert_eq!(
             batch_ok.endpoint_fields.success_count + batch_ok.endpoint_fields.failure_count,

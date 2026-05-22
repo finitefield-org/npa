@@ -1927,7 +1927,7 @@ fn hash_owner_free_core_expr(expr: &Expr) -> npa_cert::Hash {
         }
     }
 
-    hash_with_domain(b"NPA-PHASE1-EXPR-0.1", &payload)
+    hash_with_domain(b"NPA-KERNEL-CORE-EXPR-0.1", &payload)
 }
 
 fn hash_contextual_core_expr(
@@ -2042,7 +2042,7 @@ fn hash_contextual_core_expr_with_refs(
     }
 
     Ok(hash_with_domain(
-        b"NPA-PHASE3-MACHINE-TERM-CONTEXT-0.1",
+        b"NPA-FRONTEND-MACHINE-TERM-CONTEXT-0.1",
         &payload,
     ))
 }
@@ -4070,7 +4070,7 @@ mod tests {
     }
 
     #[test]
-    fn frontend_compile_boundary_stays_separate_from_phase2_producer_candidates() {
+    fn frontend_compile_boundary_stays_separate_from_certificate_producer_candidates() {
         let _: fn(
             FileId,
             npa_cert::ModuleName,

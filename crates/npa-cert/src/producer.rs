@@ -634,7 +634,7 @@ pub struct CandidateHashPreview {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
-// Phase 2 specifies a by-value accepted token; do not box the public API boundary.
+// Certificate producer specifies a by-value accepted token; do not box the public API boundary.
 #[allow(clippy::large_enum_variant)]
 pub enum CandidateStatus {
     /// Candidate passed producer precheck and became an opaque token.
@@ -1200,7 +1200,7 @@ fn precheck_decl_with_fuel(
             Ok(())
         }
         Decl::Inductive { name, .. } => Err(CertError::Kernel(Error::InvalidInductive(format!(
-            "{name} inductive candidate precheck is not part of the Phase 2 AI MVP"
+            "{name} inductive candidate precheck is not part of the certificate AI MVP"
         )))),
         Decl::Constructor { .. } | Decl::Recursor { .. } => Err(CertError::UnknownDependency {
             name: crate::Name::from_dotted(decl.name()),

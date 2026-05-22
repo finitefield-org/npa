@@ -4,7 +4,8 @@ use crate::{HumanBinderInfo, HumanSourceBinderMetadata};
 use npa_cert::{Hash, ModuleName, Name};
 use sha2::{Digest, Sha256};
 
-const CALLABLE_INTERFACE_TABLE_TAG: &str = "npa.phase5.machine-surface-callable-interface-table.v1";
+const CALLABLE_INTERFACE_TABLE_TAG: &str =
+    "npa.machine-api.machine-surface-callable-interface-table.v1";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MachineCallableBinderVisibility {

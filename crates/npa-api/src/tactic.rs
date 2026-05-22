@@ -10,9 +10,9 @@ use npa_tactic::{
 };
 
 use crate::adapter::{
-    phase4_run_machine_tactic_with_budget, phase4_validate_machine_tactic_candidate,
-    MachineApiDiagnosticPhase, MachineApiDiagnosticProjection, MachineApiTacticKind,
-    Phase4AdapterError,
+    machine_tactic_run_machine_tactic_with_budget,
+    machine_tactic_validate_machine_tactic_candidate, MachineApiDiagnosticPhase,
+    MachineApiDiagnosticProjection, MachineApiTacticKind, MachineTacticAdapterError,
 };
 use crate::json::{JsonDocument, JsonMember, JsonValue, JsonValueKind};
 use crate::snapshot::{
@@ -31,7 +31,7 @@ use crate::validation::{
     DelayedJsonPayload, FieldSpec, JsonFieldType, JsonPath, JsonPathElement, MachineApiErrorKind,
     MachineApiRequestError, MachineApiRequestErrorReason, ObjectSchema, StrictUnsignedIntegerError,
 };
-use crate::{MachineApiResponseEnvelope, Phase5UpstreamDiagnostic};
+use crate::{MachineApiResponseEnvelope, MachineApiUpstreamDiagnostic};
 
 const BUDGET_FIELDS: &[FieldSpec] = &[
     FieldSpec::required(
@@ -641,8 +641,8 @@ fn run_machine_tactic_request_parsed(
         ));
     }
 
-    let validated =
-        phase4_validate_machine_tactic_candidate(request.goal_id, candidate).map_err(|error| {
+    let validated = machine_tactic_validate_machine_tactic_candidate(request.goal_id, candidate)
+        .map_err(|error| {
             adapter_error(
                 error,
                 request.state_fingerprint,
@@ -658,7 +658,7 @@ fn run_machine_tactic_request_parsed(
     }
     let tactic_kind = validated.tactic_kind;
     let candidate_hash = validated.candidate_hash;
-    let run = phase4_run_machine_tactic_with_budget(
+    let run = machine_tactic_run_machine_tactic_with_budget(
         &input_state,
         validated.tactic,
         request.deterministic_budget,
@@ -870,34 +870,35 @@ fn run_machine_tactic_batch_request_parsed(
             ));
         }
 
-        let validated = match phase4_validate_machine_tactic_candidate(request.goal_id, candidate) {
-            Ok(validated) => validated,
-            Err(error) => {
-                results.push(batch_adapter_error_item(candidate_id, error));
-                evaluated_count += 1;
-                failure_count += 1;
-                if batch_policy_stop(
-                    evaluated_count,
-                    success_count,
-                    failure_count,
-                    candidate_count,
-                    request.batch_policy,
-                ) {
-                    break;
-                }
-                if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
-                    return Ok(batch_scheduler_stop(
-                        request.state_fingerprint,
-                        deterministic_budget_hash,
-                        results,
+        let validated =
+            match machine_tactic_validate_machine_tactic_candidate(request.goal_id, candidate) {
+                Ok(validated) => validated,
+                Err(error) => {
+                    results.push(batch_adapter_error_item(candidate_id, error));
+                    evaluated_count += 1;
+                    failure_count += 1;
+                    if batch_policy_stop(
+                        evaluated_count,
                         success_count,
                         failure_count,
-                        stop,
-                    ));
+                        candidate_count,
+                        request.batch_policy,
+                    ) {
+                        break;
+                    }
+                    if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
+                        return Ok(batch_scheduler_stop(
+                            request.state_fingerprint,
+                            deterministic_budget_hash,
+                            results,
+                            success_count,
+                            failure_count,
+                            stop,
+                        ));
+                    }
+                    continue;
                 }
-                continue;
-            }
-        };
+            };
 
         if let Some(stop) = scheduler_observation.observe(request.scheduler_limits) {
             return Ok(batch_scheduler_stop(
@@ -912,7 +913,7 @@ fn run_machine_tactic_batch_request_parsed(
 
         let tactic_kind = validated.tactic_kind;
         let candidate_hash = validated.candidate_hash;
-        let run = match phase4_run_machine_tactic_with_budget(
+        let run = match machine_tactic_run_machine_tactic_with_budget(
             &input_state,
             validated.tactic,
             request.deterministic_budget,
@@ -2262,7 +2263,7 @@ fn batch_snapshot_lookup_error(error: MachineSnapshotLookupError) -> Box<Machine
 }
 
 fn adapter_error(
-    error: Box<Phase4AdapterError>,
+    error: Box<MachineTacticAdapterError>,
     unchanged_state_fingerprint: Hash,
     deterministic_budget_hash_override: Option<Hash>,
 ) -> Box<MachineTacticRunError> {
@@ -2432,7 +2433,7 @@ fn batch_candidate_request_error_item(
 
 fn batch_adapter_error_item(
     candidate_id: String,
-    error: Box<Phase4AdapterError>,
+    error: Box<MachineTacticAdapterError>,
 ) -> MachineTacticBatchItemResponse {
     batch_error_item(candidate_id, error.candidate_hash, error.diagnostic)
 }
@@ -2487,8 +2488,8 @@ fn batch_plain_item_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
-            phase4_kind_for_api_kind(kind),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
+            machine_tactic_kind_for_api_kind(kind),
             message,
         )),
     };
@@ -2501,7 +2502,7 @@ fn batch_error_item(
     diagnostic: MachineApiDiagnosticProjection,
 ) -> MachineTacticBatchItemResponse {
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("batch per-candidate diagnostics must satisfy Phase 5 wire invariants");
+        .expect("batch per-candidate diagnostics must satisfy machine API wire invariants");
     MachineTacticBatchItemResponse::Error {
         candidate_id,
         candidate_hash,
@@ -2527,13 +2528,13 @@ fn batch_plain_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
-            phase4_kind_for_api_kind(kind),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
+            machine_tactic_kind_for_api_kind(kind),
             message,
         )),
     };
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("batch top-level diagnostics must satisfy Phase 5 wire invariants");
+        .expect("batch top-level diagnostics must satisfy machine API wire invariants");
     let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
         status: MachineApiResponseStatus::Error,
         error: wire,
@@ -2590,8 +2591,8 @@ fn plain_error_projected(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(MachineTacticDiagnostic::new(
-            phase4_kind_for_api_kind(kind),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(MachineTacticDiagnostic::new(
+            machine_tactic_kind_for_api_kind(kind),
             message,
         )),
     };
@@ -2610,7 +2611,7 @@ fn error_response(
     deterministic_budget_hash: Option<Hash>,
 ) -> Box<MachineTacticRunError> {
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("run diagnostics must satisfy Phase 5 wire invariants");
+        .expect("run diagnostics must satisfy machine API wire invariants");
     let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
         status: MachineApiResponseStatus::Error,
         error: MachineTacticRunErrorObject {
@@ -2628,7 +2629,7 @@ fn error_response(
     })
 }
 
-fn phase4_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosticKind {
+fn machine_tactic_kind_for_api_kind(kind: MachineApiErrorKind) -> MachineTacticDiagnosticKind {
     match kind {
         MachineApiErrorKind::GoalNotOpen => MachineTacticDiagnosticKind::UnknownGoal,
         MachineApiErrorKind::InvalidCandidate => MachineTacticDiagnosticKind::InvalidMachineTactic,

@@ -720,7 +720,7 @@ pub fn compile_human_source_to_certificate_output_with_source_interfaces(
         HumanDiagnostic::error(
             HumanDiagnosticKind::KernelRejected,
             source_span(file_id, source),
-            format!("Phase 2 certificate handoff rejected Human source: {err:?}"),
+            format!("certificate certificate handoff rejected Human source: {err:?}"),
         )
         .with_phase(HumanDiagnosticPhase::CertificateHandoff)
     })?;
@@ -728,7 +728,7 @@ pub fn compile_human_source_to_certificate_output_with_source_interfaces(
         HumanDiagnostic::error(
             HumanDiagnosticKind::KernelRejected,
             source_span(file_id, source),
-            format!("Phase 2 certificate encoding rejected Human source: {err:?}"),
+            format!("certificate certificate encoding rejected Human source: {err:?}"),
         )
         .with_phase(HumanDiagnosticPhase::CertificateHandoff)
     })?;
@@ -741,7 +741,7 @@ pub fn compile_human_source_to_certificate_output_with_source_interfaces(
             HumanDiagnostic::error(
                 HumanDiagnosticKind::KernelRejected,
                 source_span(file_id, source),
-                format!("Phase 2 certificate verification rejected Human source: {err:?}"),
+                format!("certificate certificate verification rejected Human source: {err:?}"),
             )
             .with_phase(HumanDiagnosticPhase::CertificateHandoff)
         },
@@ -5031,7 +5031,7 @@ fn human_certificate_import_diagnostic(
         kind,
         primary_span,
         format!(
-            "Phase 2 certificate import closure rejected Human source: {}",
+            "certificate certificate import closure rejected Human source: {}",
             err.message
         ),
     )
@@ -5593,7 +5593,7 @@ impl<'a> HumanToMachineLowering<'a> {
                         let Some(proof) = by_proofs.get(&source_index) else {
                             return Err(HumanDiagnostic::unsupported_tactic(
                                 block.span,
-                                "by proof block elaboration is reserved for the Phase 4 Human tactic bridge",
+                                "by proof block elaboration is reserved for the Human tactic tactic bridge",
                             )
                             .with_phase(HumanDiagnosticPhase::Elaborator));
                         };
@@ -5819,7 +5819,7 @@ impl<'a> HumanToMachineLowering<'a> {
             HumanDeclValue::ProofBlock(block) => {
                 return Err(HumanDiagnostic::unsupported_tactic(
                     block.span,
-                    "by proof block elaboration is reserved for the Phase 4 Human tactic bridge",
+                    "by proof block elaboration is reserved for the Human tactic tactic bridge",
                 )
                 .with_phase(HumanDiagnosticPhase::Elaborator));
             }
@@ -6520,7 +6520,7 @@ theorem use : P := p",
             &[],
             &HumanCompileOptions::default(),
         )
-        .expect("Human axiom source should build a Phase 2 certificate");
+        .expect("Human axiom source should build a certificate certificate");
 
         assert_eq!(cert.axiom_report.module_axioms.len(), 1);
         let axiom_ref = &cert.axiom_report.module_axioms[0];
@@ -6661,7 +6661,7 @@ inductive Nat : Type where
             &[],
             &HumanCompileOptions::default(),
         )
-        .expect("Human simple inductive should build a Phase 2 certificate");
+        .expect("Human simple inductive should build a certificate certificate");
 
         assert!(cert.export_block.iter().any(|entry| {
             entry.kind == npa_cert::ExportKind::Constructor

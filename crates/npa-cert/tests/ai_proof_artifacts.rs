@@ -157,7 +157,7 @@ fn ai_certificates_match_manifest_and_verify() {
         let block = manifest_block(&manifest, expected.module);
         assert_eq!(
             quoted_value(block, "trusted_status"),
-            "verified_by_phase2_certificate"
+            "verified_by_certificate"
         );
         assert_eq!(quoted_value(block, "source"), expected.source);
         assert_eq!(quoted_value(block, "certificate"), expected.certificate);
@@ -209,7 +209,7 @@ fn ai_certificates_match_manifest_and_verify() {
 
         let meta = read_to_string(root.join(expected.meta));
         assert!(meta.contains(&format!("\"certificate_hash\": \"{certificate_hash}\"")));
-        assert!(meta.contains("\"trusted_status\": \"verified_by_phase2_certificate\""));
+        assert!(meta.contains("\"trusted_status\": \"verified_by_certificate\""));
         for import in expected.imports {
             assert!(meta.contains(&format!("\"{import}\"")));
         }

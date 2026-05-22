@@ -542,7 +542,7 @@ impl Env {
         }
         if domains.len() != rules.major_index + 1 {
             return Err(Error::InvalidInductive(format!(
-                "{} recursor major premise must be the final binder in Phase 1",
+                "{} recursor major premise must be the final binder in kernel core",
                 recursor.name
             )));
         }
@@ -661,7 +661,7 @@ impl Env {
         let (motive_domains, motive_result) = peel_pi_domains(motive_domain);
         if motive_domains.len() != 1 {
             return Err(Error::InvalidInductive(format!(
-                "{} motive must take one major premise in Phase 1",
+                "{} motive must take one major premise in kernel core",
                 recursor.name
             )));
         }

@@ -140,7 +140,7 @@ impl HumanDiagnostic {
         Self::error(
             HumanDiagnosticKind::NotImplemented,
             primary_span,
-            format!("{operation} is reserved for the Phase 3 Human frontend"),
+            format!("{operation} is reserved for the Human frontend frontend"),
         )
     }
 
@@ -318,13 +318,13 @@ mod tests {
         assert_eq!(diagnostic.kind, HumanDiagnosticKind::NotImplemented);
         assert_eq!(diagnostic.severity, HumanDiagnosticSeverity::Error);
         assert_eq!(diagnostic.primary_span, Span::empty(FileId(2)));
-        assert!(diagnostic.message.contains("Phase 3 Human"));
+        assert!(diagnostic.message.contains("Human frontend"));
         assert_eq!(
             diagnostic
                 .payload
                 .as_ref()
                 .and_then(|payload| payload.detail.as_deref()),
-            Some("parse_human_module is reserved for the Phase 3 Human frontend")
+            Some("parse_human_module is reserved for the Human frontend frontend")
         );
     }
 

@@ -1,4 +1,4 @@
-//! Phase 2 canonical certificate construction, hashing, encoding, and verification.
+//! Canonical certificate construction, hashing, encoding, and verification.
 //!
 //! This crate treats parser, elaborator, tactics, and automation output as untrusted. Its public
 //! API accepts already elaborated kernel declarations, emits deterministic canonical certificates,
@@ -36,7 +36,7 @@ pub(crate) use verify::*;
 pub(crate) const FORMAT: &str = "NPA-CERT-0.1";
 pub(crate) const CORE_SPEC: &str = "NPA-Core-0.1";
 
-/// Build a canonical Phase 2 module certificate from already elaborated core declarations.
+/// Build a canonical module certificate from already elaborated core declarations.
 ///
 /// `imports` must be `VerifiedModule` values returned by this crate's verifier. The resulting
 /// certificate contains only trusted canonical payload: source maps, diagnostics, tactic traces,
@@ -88,7 +88,7 @@ pub fn term_hash(cert: &ModuleCert, term: TermId) -> Result<Hash> {
 
 /// Return canonical bytes for a raw kernel expression.
 ///
-/// This is the Phase 1 core expression view used by higher-level machine APIs before a term is
+/// This is the kernel core expression view used by higher-level machine APIs before a term is
 /// embedded in a certificate module and resolved to certificate `GlobalRef`s.
 pub fn core_expr_canonical_bytes(expr: &npa_kernel::Expr) -> Vec<u8> {
     hash::core_expr_canonical_bytes_impl(expr)

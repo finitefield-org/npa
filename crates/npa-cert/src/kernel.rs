@@ -341,13 +341,13 @@ pub(crate) fn add_decl_to_env(env: &mut Env, decl: Decl) -> Result<()> {
 /// Return the canonical interface hash for a declaration supplied by the builtin checker profile.
 pub fn builtin_decl_interface_hash(name: &Name) -> Option<Hash> {
     let tag = match name.as_dotted().as_str() {
-        BUILTIN_NAT => "npa.phase4.builtin.nat.v1",
-        BUILTIN_NAT_ZERO => "npa.phase4.builtin.nat.zero.v1",
-        BUILTIN_NAT_SUCC => "npa.phase4.builtin.nat.succ.v1",
-        BUILTIN_NAT_REC => "npa.phase4.builtin.nat.rec.v1",
-        BUILTIN_EQ => "npa.phase4.builtin.eq.v1",
-        BUILTIN_EQ_REFL => "npa.phase4.builtin.eq.refl.v1",
-        BUILTIN_EQ_REC => "npa.phase4.builtin.eq.rec.v1",
+        BUILTIN_NAT => "npa.machine-tactic.builtin.nat.v1",
+        BUILTIN_NAT_ZERO => "npa.machine-tactic.builtin.nat.zero.v1",
+        BUILTIN_NAT_SUCC => "npa.machine-tactic.builtin.nat.succ.v1",
+        BUILTIN_NAT_REC => "npa.machine-tactic.builtin.nat.rec.v1",
+        BUILTIN_EQ => "npa.machine-tactic.builtin.eq.v1",
+        BUILTIN_EQ_REFL => "npa.machine-tactic.builtin.eq.refl.v1",
+        BUILTIN_EQ_REC => "npa.machine-tactic.builtin.eq.rec.v1",
         _ => return None,
     };
     Some(hash_with_domain(

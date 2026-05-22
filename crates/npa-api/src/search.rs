@@ -10,7 +10,7 @@ use npa_tactic::{
 use sha2::{Digest, Sha256};
 
 use crate::adapter::{
-    phase4_validate_machine_tactic_candidate, MachineApiDiagnosticPhase,
+    machine_tactic_validate_machine_tactic_candidate, MachineApiDiagnosticPhase,
     MachineApiDiagnosticProjection,
 };
 use crate::current::{
@@ -19,8 +19,8 @@ use crate::current::{
 use crate::json::{JsonValue, JsonValueKind};
 use crate::projection::VerifiedModuleContextEntry;
 use crate::renderer::{
-    render_machine_expr_view, MachineDisplayRenderScope, MachineDisplayRenderScopeEntry,
-    MachineExprRendererContext, MachineGlobalRefView, Phase5ResolvedDisplayCoreRefOwner,
+    render_machine_expr_view, MachineApiResolvedDisplayCoreRefOwner, MachineDisplayRenderScope,
+    MachineDisplayRenderScopeEntry, MachineExprRendererContext, MachineGlobalRefView,
 };
 use crate::snapshot::{MachineSnapshotLookupError, MachineSnapshotMaterializationContext};
 use crate::types::{
@@ -34,8 +34,8 @@ use crate::validation::{
     MachineApiRequestErrorReason, ObjectSchema, StrictUnsignedIntegerError,
 };
 use crate::{
-    phase5_name_canonical_bytes, validate_machine_endpoint_envelope, MachineApiVersion,
-    Phase5UpstreamDiagnostic,
+    machine_api_name_canonical_bytes, validate_machine_endpoint_envelope,
+    MachineApiUpstreamDiagnostic, MachineApiVersion,
 };
 
 pub(crate) const THEOREM_INDEX_SCHEMA_VERSION: &str =
@@ -570,7 +570,7 @@ fn validate_suggested_candidate(
     if !candidate_head_and_rule_resolve(state, &candidate, rule, global_ref) {
         return Ok(None);
     }
-    let validated = phase4_validate_machine_tactic_candidate(goal_id, candidate.clone())
+    let validated = machine_tactic_validate_machine_tactic_candidate(goal_id, candidate.clone())
         .map_err(|_| TheoremSearchBuildError::SuggestedCandidateInvalid)?;
     Ok(Some(MachineSuggestedCandidate {
         status: MachineSuggestedCandidateStatus::Validated,
@@ -916,7 +916,7 @@ fn push_statement_display_entry(
     let callable_ref = display_callable_ref_for_view(&view)?;
     let entry = MachineDisplayRenderScopeEntry::new(
         view.clone(),
-        Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+        MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
             owner_module: owner.key.module.clone(),
             owner_export_hash: owner.key.export_hash,
         },
@@ -1392,7 +1392,8 @@ pub(crate) fn parse_theorem_filters(
                 })?;
                 modules.push(module);
             }
-            modules.sort_by_key(|module| phase5_name_canonical_bytes(module).unwrap_or_default());
+            modules
+                .sort_by_key(|module| machine_api_name_canonical_bytes(module).unwrap_or_default());
             modules.dedup();
             MachineAllowedModulesFilter::Explicit(modules)
         }
@@ -1414,7 +1415,8 @@ pub(crate) fn canonicalize_allowed_modules_for_session(
         .into_iter()
         .map(|entry| entry.key.module.clone())
         .collect::<Vec<_>>();
-    direct_modules.sort_by_key(|module| phase5_name_canonical_bytes(module).unwrap_or_default());
+    direct_modules
+        .sort_by_key(|module| machine_api_name_canonical_bytes(module).unwrap_or_default());
     direct_modules.dedup();
 
     if let MachineAllowedModulesFilter::Explicit(modules) = &mut filters.allowed_modules {
@@ -1460,7 +1462,7 @@ fn request_error(
 
 fn theorem_index_fingerprint(session: &MachineProofSession, entries: &[TheoremIndexEntry]) -> Hash {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.theorem-index.v1");
+    encode_string(&mut out, "npa.machine-api.theorem-index.v1");
     encode_string(&mut out, session.protocol_version.as_str());
     out.extend(session.session_root_hash);
     encode_string(&mut out, THEOREM_INDEX_SCHEMA_VERSION);
@@ -1480,7 +1482,7 @@ fn theorem_index_entry_canonical_bytes(
     modes: &[MachineTheoremMode],
 ) -> Vec<u8> {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.theorem-index-entry.v1");
+    encode_string(&mut out, "npa.machine-api.theorem-index-entry.v1");
     encode_theorem_global_ref(&mut out, global_ref);
     encode_list_len(&mut out, universe_params.len());
     for param in universe_params {
@@ -1509,7 +1511,7 @@ struct QueryFingerprintInput<'a> {
 
 fn theorem_query_fingerprint(input: QueryFingerprintInput<'_>) -> Hash {
     let mut out = Vec::new();
-    encode_string(&mut out, "npa.phase5.theorem-query.v1");
+    encode_string(&mut out, "npa.machine-api.theorem-query.v1");
     encode_string(&mut out, input.protocol_version.as_str());
     out.extend(input.state_fingerprint);
     out.extend(npa_tactic::goal_id_canonical_bytes(input.goal_id));
@@ -1527,7 +1529,7 @@ fn theorem_query_fingerprint(input: QueryFingerprintInput<'_>) -> Hash {
 }
 
 fn encode_filters(out: &mut Vec<u8>, filters: &MachineTheoremFilters) {
-    encode_string(out, "npa.phase5.theorem-filters.v1");
+    encode_string(out, "npa.machine-api.theorem-filters.v1");
     encode_bool(out, filters.exclude_axioms);
     match &filters.allowed_modules {
         MachineAllowedModulesFilter::AllDirect => out.push(0x00),
@@ -1775,13 +1777,15 @@ fn search_error(
         expected_hash: None,
         actual_hash: None,
         source_message: message.clone(),
-        upstream: Phase5UpstreamDiagnostic::Phase4(npa_tactic::MachineTacticDiagnostic::new(
-            npa_tactic::MachineTacticDiagnosticKind::InvalidMachineProofState,
-            message,
-        )),
+        upstream: MachineApiUpstreamDiagnostic::MachineTactic(
+            npa_tactic::MachineTacticDiagnostic::new(
+                npa_tactic::MachineTacticDiagnosticKind::InvalidMachineProofState,
+                message,
+            ),
+        ),
     };
     let wire = MachineApiErrorWire::from_projection(&diagnostic)
-        .expect("search diagnostics must satisfy Phase 5 wire invariants");
+        .expect("search diagnostics must satisfy machine API wire invariants");
     let response = MachineApiResponseEnvelope::Error(Box::new(MachineApiErrorResponse {
         status: MachineApiResponseStatus::Error,
         error: wire,
@@ -1819,9 +1823,10 @@ mod tests {
     use super::*;
     use crate::{
         create_machine_session, format_hash_string, project_import_certificate_context,
-        run_machine_tactic_batch_request, run_machine_tactic_request, MachineDisplayRenderScope,
+        run_machine_tactic_batch_request, run_machine_tactic_request,
+        MachineApiResolvedDisplayCoreRefOwner, MachineDisplayRenderScope,
         MachineDisplayRenderScopeEntry, MachineTacticBatchItemResponse, MachineTacticRunResultKind,
-        Phase5ResolvedDisplayCoreRefOwner, VerifiedImportKey, VerifiedModuleCertificateInput,
+        VerifiedImportKey, VerifiedModuleCertificateInput,
     };
     use npa_cert::{
         build_module_cert, encode_module_cert, verify_module_cert, AxiomPolicy, CoreModule,
@@ -2012,7 +2017,7 @@ mod tests {
         )
     }
 
-    fn phase7_retrieval_options_json(
+    fn ai_search_retrieval_options_json(
         eq: &FixtureModule,
         rule: &FixtureModule,
         allow_axioms: &str,
@@ -2141,13 +2146,13 @@ mod tests {
         )
     }
 
-    fn phase7_retrieval_session() -> MachineProofSession {
+    fn ai_search_retrieval_session() -> MachineProofSession {
         let nat = nat_fixture_module();
         let eq = eq_fixture_module();
         let list = list_fixture_module();
         let simp = retrieval_fixture_module(&[nat.verified.clone(), eq.verified.clone()]);
         let allow_axioms = eq_rec_allow_axioms_json(&eq);
-        let options = phase7_retrieval_options_json(&eq, &simp, &allow_axioms);
+        let options = ai_search_retrieval_options_json(&eq, &simp, &allow_axioms);
         create_machine_session(&session_json_for_modules(
             "Eq.{1} Nat Lib.one Nat.zero",
             &[&nat, &eq, &list, &simp],
@@ -2158,7 +2163,7 @@ mod tests {
         .session
     }
 
-    fn phase7_exact_session(theorem_type: &str) -> MachineProofSession {
+    fn ai_search_exact_session(theorem_type: &str) -> MachineProofSession {
         let nat = nat_fixture_module();
         let eq = eq_fixture_module();
         let list = list_fixture_module();
@@ -2342,7 +2347,7 @@ mod tests {
         };
         MachineDisplayRenderScope::from_entries([MachineDisplayRenderScopeEntry::new(
             view,
-            Phase5ResolvedDisplayCoreRefOwner::VerifiedImportedModule {
+            MachineApiResolvedDisplayCoreRefOwner::VerifiedImportedModule {
                 owner_module: entry.key.module.clone(),
                 owner_export_hash: entry.key.export_hash,
             },
@@ -2393,7 +2398,7 @@ mod tests {
         )
     }
 
-    fn phase7_budget_json() -> &'static str {
+    fn ai_search_budget_json() -> &'static str {
         r#"{
           "max_tactic_steps":100,
           "max_whnf_steps":100,
@@ -2404,7 +2409,7 @@ mod tests {
         }"#
     }
 
-    fn phase7_run_json(session: &MachineProofSession, candidate: &str) -> String {
+    fn ai_search_run_json(session: &MachineProofSession, candidate: &str) -> String {
         format!(
             r#"{{
               "session_id":"{}",
@@ -2418,11 +2423,11 @@ mod tests {
             session.initial_snapshot.snapshot_id.wire(),
             format_hash_string(&session.initial_snapshot.state_fingerprint),
             candidate,
-            phase7_budget_json(),
+            ai_search_budget_json(),
         )
     }
 
-    fn phase7_batch_json(session: &MachineProofSession, candidates: &str) -> String {
+    fn ai_search_batch_json(session: &MachineProofSession, candidates: &str) -> String {
         format!(
             r#"{{
               "session_id":"{}",
@@ -2441,7 +2446,7 @@ mod tests {
             session.initial_snapshot.snapshot_id.wire(),
             format_hash_string(&session.initial_snapshot.state_fingerprint),
             candidates,
-            phase7_budget_json(),
+            ai_search_budget_json(),
         )
     }
 
@@ -2483,7 +2488,7 @@ mod tests {
                         .join(",")
                 )
             }
-            _ => panic!("phase7 fixture serializes only rw/simp search suggestions"),
+            _ => panic!("ai_search fixture serializes only rw/simp search suggestions"),
         }
     }
 
@@ -2497,14 +2502,14 @@ mod tests {
                 name.as_dotted(),
                 format_hash_string(decl_interface_hash),
             ),
-            _ => panic!("phase7 fixture expects imported tactic heads"),
+            _ => panic!("ai_search fixture expects imported tactic heads"),
         }
     }
 
     fn apply_arg_json(arg: &CandidateApplyArg) -> String {
         match arg {
             CandidateApplyArg::InferFromTarget => r#"{"mode":"infer_from_target"}"#.to_owned(),
-            _ => panic!("phase7 fixture expects infer_from_target rw args"),
+            _ => panic!("ai_search fixture expects infer_from_target rw args"),
         }
     }
 
@@ -2532,29 +2537,29 @@ mod tests {
     }
 
     #[test]
-    fn phase7_nat_and_list_exact_fixtures_must_reenter_phase5_run() {
-        let mut nat_session = phase7_exact_session("Nat");
+    fn ai_search_nat_and_list_exact_fixtures_must_reenter_machine_api_run() {
+        let mut nat_session = ai_search_exact_session("Nat");
         let nat_run = run_machine_tactic_request(
-            &phase7_run_json(&nat_session, &exact_candidate_json("Nat.zero")),
+            &ai_search_run_json(&nat_session, &exact_candidate_json("Nat.zero")),
             &mut nat_session,
         )
         .unwrap();
         let MachineApiResponseEnvelope::Ok(nat_ok) = nat_run else {
-            panic!("Nat exact candidate should close through Phase 5 run");
+            panic!("Nat exact candidate should close through machine API run");
         };
         assert_eq!(
             nat_ok.endpoint_fields.result.kind,
             MachineTacticRunResultKind::Closed
         );
 
-        let mut list_session = phase7_exact_session("List.{1} Nat");
+        let mut list_session = ai_search_exact_session("List.{1} Nat");
         let list_run = run_machine_tactic_request(
-            &phase7_run_json(&list_session, &exact_candidate_json("@List.nil.{1} Nat")),
+            &ai_search_run_json(&list_session, &exact_candidate_json("@List.nil.{1} Nat")),
             &mut list_session,
         )
         .unwrap();
         let MachineApiResponseEnvelope::Ok(list_ok) = list_run else {
-            panic!("List exact candidate should close through Phase 5 run");
+            panic!("List exact candidate should close through machine API run");
         };
         assert_eq!(
             list_ok.endpoint_fields.result.kind,
@@ -2563,8 +2568,8 @@ mod tests {
     }
 
     #[test]
-    fn phase7_retrieval_fixtures_reproduce_rw_and_simp_candidate_sources() {
-        let session = phase7_retrieval_session();
+    fn ai_search_retrieval_fixtures_reproduce_rw_and_simp_candidate_sources() {
+        let session = ai_search_retrieval_session();
         let filters = r#"{"exclude_axioms":false,"allowed_modules":["Lib.Simp"]}"#;
         let first =
             search_machine_theorems_for_goal(&search_json(&session, filters), &session).unwrap();
@@ -2575,7 +2580,7 @@ mod tests {
             (MachineApiResponseEnvelope::Ok(first), MachineApiResponseEnvelope::Ok(second)) => {
                 (first.endpoint_fields, second.endpoint_fields)
             }
-            _ => panic!("phase7 retrieval search should succeed"),
+            _ => panic!("ai_search retrieval search should succeed"),
         };
 
         assert_eq!(
@@ -2588,11 +2593,11 @@ mod tests {
         );
         assert_eq!(
             format_hash_string(&first_fields.query_fingerprint),
-            "sha256:54c9cd9ef4160f920a39a439eb6e7ef9a56246d889ac399946943e87604d0001"
+            "sha256:48e261c6a1898a7aa79f6e715dfbbf649d7a24a2609cd23ea5eec4c4f6238e55"
         );
         assert_eq!(
             format_hash_string(&first_fields.theorem_index_fingerprint),
-            "sha256:33cc4a517a53611f0cbc79b9b9d3ae3ea3b680b23882aa4992ca8e9744b88ab6"
+            "sha256:f6d6a5b6391db4d11001d0e5ae0ddf845f5c02e88d86479a566d9f831952c88b"
         );
         assert_eq!(first_fields.results, second_fields.results);
         assert_eq!(first_fields.results.len(), 1);
@@ -2641,14 +2646,14 @@ mod tests {
             })
             .collect::<Vec<_>>()
             .join(",");
-        let mut batch_session = phase7_retrieval_session();
+        let mut batch_session = ai_search_retrieval_session();
         let batch_response = run_machine_tactic_batch_request(
-            &phase7_batch_json(&batch_session, &format!("[{batch_candidates}]")),
+            &ai_search_batch_json(&batch_session, &format!("[{batch_candidates}]")),
             &mut batch_session,
         )
         .unwrap();
         let MachineApiResponseEnvelope::Ok(batch_ok) = batch_response else {
-            panic!("phase7 suggested candidates should re-enter Phase 5 batch");
+            panic!("ai_search suggested candidates should re-enter machine API batch");
         };
         assert_eq!(
             batch_ok.endpoint_fields.success_count + batch_ok.endpoint_fields.failure_count,
@@ -2674,13 +2679,13 @@ mod tests {
     }
 
     #[test]
-    fn phase7_stale_global_ref_candidate_is_rejected_by_phase5_batch() {
-        let session = phase7_retrieval_session();
+    fn ai_search_stale_global_ref_candidate_is_rejected_by_machine_api_batch() {
+        let session = ai_search_retrieval_session();
         let filters = r#"{"exclude_axioms":false,"allowed_modules":["Lib.Simp"]}"#;
         let response =
             search_machine_theorems_for_goal(&search_json(&session, filters), &session).unwrap();
         let MachineApiResponseEnvelope::Ok(ok) = response else {
-            panic!("phase7 retrieval search should succeed");
+            panic!("ai_search retrieval search should succeed");
         };
         let result = &ok.endpoint_fields.results[0];
         let mut candidate = result.suggested_candidates[0].candidate.clone();
@@ -2696,9 +2701,9 @@ mod tests {
         };
         decl_interface_hash[0] ^= 0x80;
         let stale_candidate = suggested_candidate_json(&candidate);
-        let mut batch_session = phase7_retrieval_session();
+        let mut batch_session = ai_search_retrieval_session();
         let batch_response = run_machine_tactic_batch_request(
-            &phase7_batch_json(
+            &ai_search_batch_json(
                 &batch_session,
                 &format!("[{}]", batch_candidate_json("stale", &stale_candidate)),
             ),

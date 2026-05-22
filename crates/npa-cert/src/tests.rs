@@ -1931,7 +1931,7 @@ fn transparent_def_body_change_changes_interface_and_export_hashes() {
 }
 
 #[test]
-fn decl_interface_hash_def_payload_order_matches_phase2_contract() {
+fn decl_interface_hash_def_payload_order_matches_certificate_contract() {
     let fixture = hash_contract_def_fixture();
     let hashes = compute_decl_hashes(
         &fixture.decl,
