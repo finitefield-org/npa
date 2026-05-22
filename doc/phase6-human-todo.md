@@ -387,18 +387,18 @@ P6H-04
 
 実装タスク:
 
-- [ ] `Std.List` source module を作り、direct imports を `Std.Logic` と `Std.Nat` にする。
-- [ ] `List` inductive、`List.nil`、`List.cons`、generated recursor を public export する。
-- [ ] `List.append` を第1引数再帰として定義する。
-- [ ] `List.nil_append` と `List.cons_append` を refl で証明する。
-- [ ] `List.append_nil` と `List.append_assoc` を induction / simp-lite で証明する。
-- [ ] `List.append_assoc` は simp に入れず、AI rewrite profile では exact `RwOnly` として扱う。
+- [x] `Std.List` source module を作り、direct imports を `Std.Logic` と `Std.Nat` にする。
+- [x] `List` inductive、`List.nil`、`List.cons`、generated recursor を public export する。
+- [x] `List.append` を第1引数再帰として定義する。
+- [x] `List.nil_append` と `List.cons_append` を refl で証明する。
+- [x] `List.append_nil` と `List.append_assoc` を induction / simp-lite で証明する。
+- [x] `List.append_assoc` は simp に入れず、AI rewrite profile では exact `RwOnly` として扱う。
 
 受け入れ条件:
 
-- [ ] `[] ++ ys` と `(x :: xs) ++ ys` の definitional equality tests が通る。
-- [ ] `List.nil_append` / `List.cons_append` / `List.append_nil` が simp-safe rule として動く。
-- [ ] `std.list.simp` が `Std.Nat` rewrite rule source を含まない。
+- [x] `[] ++ ys` と `(x :: xs) ++ ys` の definitional equality tests が通る。
+- [x] `List.nil_append` / `List.cons_append` / `List.append_nil` が simp-safe rule として動く。
+- [x] `std.list.simp` が `Std.Nat` rewrite rule source を含まない。
 
 検証:
 

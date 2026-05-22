@@ -5500,21 +5500,24 @@ fn allowed_intro_heads(
     loaded: &MachineStdLoadedRelease,
     source: &MachineStdGlobalRef,
 ) -> Result<BTreeSet<Vec<u8>>, MachineStdRewriteProfileError> {
-    let labels: &[&str] =
+    let labels: &[(&str, &str)] =
         if mvp_source_matches_public_theorem(loaded, source, "Std.Nat", "Nat.mul_succ") {
-            &["Nat.add"]
+            &[("Std.Nat", "Nat.add")]
+        } else if mvp_source_matches_public_theorem(loaded, source, "Std.List", "List.cons_append")
+        {
+            &[("Std.List", "List.cons")]
         } else if mvp_source_matches_public_theorem(loaded, source, "Std.List", "List.length_nil") {
-            &["Nat.zero"]
+            &[("Std.Nat", "Nat.zero")]
         } else if mvp_source_matches_public_theorem(loaded, source, "Std.List", "List.length_cons")
         {
-            &["Nat.succ"]
+            &[("Std.Nat", "Nat.succ")]
         } else {
             &[]
         };
     let mut out = BTreeSet::new();
-    for label in labels {
+    for (module_name, label) in labels {
         let name = Name::from_dotted(label);
-        let Some(module) = loaded.module(&Name::from_dotted("Std.Nat")) else {
+        let Some(module) = loaded.module(&Name::from_dotted(module_name)) else {
             return Ok(BTreeSet::new());
         };
         let Some(export) = unique_public_export_by_name(module, &name) else {
@@ -9745,7 +9748,8 @@ mod tests {
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
     use npa_kernel::{
         eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
-        Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, Reducibility,
+        Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, RecursorDecl,
+        Reducibility,
     };
     use npa_tactic::{CandidateApplyArg, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
@@ -9977,6 +9981,57 @@ mod tests {
             vec!["Eq.rec"],
             "Std.Nat may only depend on the standard Eq.rec axiom from Std.Logic"
         );
+
+        let list_module = loaded.module(&Name::from_dotted("Std.List")).unwrap();
+        assert_eq!(
+            list_module
+                .imports
+                .iter()
+                .map(|import| import.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat"]
+        );
+        assert_eq!(
+            export_entry(list_module, "List").kind,
+            ExportKind::Inductive
+        );
+        assert_eq!(
+            export_entry(list_module, "List.nil").kind,
+            ExportKind::Constructor
+        );
+        assert_eq!(
+            export_entry(list_module, "List.cons").kind,
+            ExportKind::Constructor
+        );
+        assert_eq!(
+            export_entry(list_module, "List.rec").kind,
+            ExportKind::Recursor
+        );
+        assert_eq!(
+            export_entry(list_module, "List.append").kind,
+            ExportKind::Def
+        );
+        for theorem in ["List.nil_append", "List.cons_append"] {
+            let entry = export_entry(list_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert!(
+                entry.axiom_dependencies.is_empty(),
+                "{theorem} must be proved by definitional equality without new axioms"
+            );
+        }
+        for theorem in ["List.append_nil", "List.append_assoc"] {
+            let entry = export_entry(list_module, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert_eq!(
+                entry
+                    .axiom_dependencies
+                    .iter()
+                    .map(|axiom| list_module.verified_module.name_table()[axiom.name].as_dotted())
+                    .collect::<Vec<_>>(),
+                vec!["Eq.rec"],
+                "{theorem} should only depend on the standard Eq.rec axiom through induction/rewrite proof terms"
+            );
+        }
     }
 
     #[test]
@@ -10594,6 +10649,58 @@ mod tests {
     }
 
     #[test]
+    fn std_list_append_reduces_on_first_argument() {
+        let u = Level::param("u");
+        let mut env = Env::new();
+        env.add_inductive(list_inductive_with_rec()).unwrap();
+        env.add_def(
+            "List.append",
+            vec!["u".to_owned()],
+            list_append_type(u.clone()),
+            list_append_value(u.clone()),
+            Reducibility::Reducible,
+        )
+        .unwrap();
+
+        let mut ctx = Ctx::new();
+        ctx.push_assumption("A", Expr::sort(u.clone()));
+        ctx.push_assumption("x", Expr::bvar(0));
+        ctx.push_assumption("xs", list(u.clone(), Expr::bvar(1)));
+        ctx.push_assumption("ys", list(u.clone(), Expr::bvar(2)));
+
+        let a = Expr::bvar(3);
+        let x = Expr::bvar(2);
+        let xs = Expr::bvar(1);
+        let ys = Expr::bvar(0);
+        assert!(env
+            .is_defeq(
+                &ctx,
+                &["u".to_owned()],
+                &list_append(
+                    u.clone(),
+                    a.clone(),
+                    list_nil(u.clone(), a.clone()),
+                    ys.clone()
+                ),
+                &ys,
+            )
+            .unwrap());
+        assert!(env
+            .is_defeq(
+                &ctx,
+                &["u".to_owned()],
+                &list_append(
+                    u.clone(),
+                    a.clone(),
+                    list_cons(u.clone(), a.clone(), x.clone(), xs.clone()),
+                    ys.clone(),
+                ),
+                &list_cons(u.clone(), a.clone(), x, list_append(u, a, xs, ys),),
+            )
+            .unwrap());
+    }
+
+    #[test]
     fn classifies_std_nat_add_rules_as_simp_safe_or_rw_only() {
         let package = TestPackage::new("std_nat_add_profile_classification");
         let certs = mvp_certificate_bytes_with_m5_profiles();
@@ -10668,6 +10775,80 @@ mod tests {
                 "{name} must not enter the Nat simp profile"
             );
         }
+    }
+
+    #[test]
+    fn classifies_std_list_append_rules_and_keeps_list_simp_nat_free() {
+        let package = TestPackage::new("std_list_append_profile_classification");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        let theorem_index = generate_machine_std_mvp_final_theorem_index(
+            &loaded,
+            &rewrite_profiles,
+            &simp_profiles,
+        )
+        .unwrap();
+        let list_rw = rewrite_profile(&rewrite_profiles, STD_LIST_RW_PROFILE_ID);
+        let list_simp = simp_profile(&simp_profiles, STD_LIST_SIMP_PROFILE_ID);
+        let safety_by_name = list_rw
+            .descriptors
+            .iter()
+            .map(|descriptor| (descriptor.source.name.as_dotted(), descriptor.safety))
+            .collect::<BTreeMap<_, _>>();
+
+        for name in ["List.nil_append", "List.cons_append", "List.append_nil"] {
+            assert_eq!(
+                safety_by_name.get(name),
+                Some(&MachineStdRewriteSafety::SimpSafe),
+                "{name} should be a simp-safe List rewrite"
+            );
+        }
+        assert_eq!(
+            safety_by_name.get("List.append_assoc"),
+            Some(&MachineStdRewriteSafety::RwOnly),
+            "List.append_assoc should be rw-only and excluded from simp"
+        );
+
+        let list_simp_names = list_simp
+            .rules
+            .iter()
+            .map(|rule| rule.name.as_dotted())
+            .collect::<BTreeSet<_>>();
+        for name in ["List.nil_append", "List.cons_append", "List.append_nil"] {
+            assert!(
+                list_simp_names.contains(name),
+                "{name} should be present in the List simp profile"
+            );
+        }
+        assert!(
+            !list_simp_names.contains("List.append_assoc"),
+            "List.append_assoc must not enter the List simp profile"
+        );
+        assert!(
+            list_rw
+                .descriptors
+                .iter()
+                .all(|descriptor| descriptor.source.module != Name::from_dotted("Std.Nat")),
+            "std.list.simp must not include Std.Nat rewrite rule sources"
+        );
+
+        let append_assoc = theorem_index_entry(&theorem_index, "List.append_assoc");
+        assert!(
+            append_assoc.modes.contains(&MachineTheoremMode::Exact)
+                && append_assoc.modes.contains(&MachineTheoremMode::Apply)
+                && append_assoc.modes.contains(&MachineTheoremMode::Rw),
+            "List.append_assoc should remain searchable and rw-capable"
+        );
+        assert!(
+            !append_assoc.modes.contains(&MachineTheoremMode::Simp),
+            "List.append_assoc must not be finalized as simp metadata"
+        );
     }
 
     #[test]
@@ -12667,7 +12848,7 @@ mod tests {
         let nat_verified = verify_module_cert(&nat, &mut session, &policy).unwrap();
 
         let list_cert = build_module_cert(
-            empty_module("Std.List"),
+            list_append_module(),
             &[logic_verified.clone(), nat_verified.clone()],
         )
         .unwrap();
@@ -15489,6 +15670,446 @@ mod tests {
         }
     }
 
+    fn list_append_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Std.List"),
+            declarations: list_append_declarations(),
+        }
+    }
+
+    fn list_append_declarations() -> Vec<Decl> {
+        vec![
+            list_inductive_decl(),
+            list_append_def(),
+            list_nil_append_theorem(),
+            list_cons_append_theorem(),
+            list_append_nil_theorem(),
+            list_append_assoc_theorem(),
+        ]
+    }
+
+    fn list_inductive_decl() -> Decl {
+        let u = Level::param("u");
+        Decl::Inductive {
+            name: "List".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u)),
+            data: Box::new(list_inductive_with_rec()),
+        }
+    }
+
+    fn list_inductive_with_rec() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "List",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![
+                ConstructorDecl::new("List.nil", list_nil_type(u.clone())),
+                ConstructorDecl::new("List.cons", list_cons_type(u.clone())),
+            ],
+            Some(RecursorDecl::new(
+                "List.rec",
+                vec!["u".to_owned(), "v".to_owned()],
+                list_rec_type(u, Level::param("v")),
+            )),
+        )
+    }
+
+    fn list_nil_type(u: Level) -> Expr {
+        Expr::pi("A", Expr::sort(u.clone()), list(u, Expr::bvar(0)))
+    }
+
+    fn list_cons_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "x",
+                Expr::bvar(0),
+                Expr::pi("xs", list(u.clone(), Expr::bvar(1)), list(u, Expr::bvar(2))),
+            ),
+        )
+    }
+
+    fn list_rec_type(u: Level, v: Level) -> Expr {
+        let motive_ty = Expr::pi("_", list(u.clone(), Expr::bvar(0)), Expr::sort(v));
+        let nil_ty = Expr::app(Expr::bvar(0), list_nil(u.clone(), Expr::bvar(1)));
+        let cons_ty = Expr::pi(
+            "x",
+            Expr::bvar(2),
+            Expr::pi(
+                "xs",
+                list(u.clone(), Expr::bvar(3)),
+                Expr::pi(
+                    "ih",
+                    Expr::app(Expr::bvar(3), Expr::bvar(0)),
+                    Expr::app(
+                        Expr::bvar(4),
+                        list_cons(u.clone(), Expr::bvar(5), Expr::bvar(2), Expr::bvar(1)),
+                    ),
+                ),
+            ),
+        );
+
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "motive",
+                motive_ty,
+                Expr::pi(
+                    "nil",
+                    nil_ty,
+                    Expr::pi(
+                        "cons",
+                        cons_ty,
+                        Expr::pi(
+                            "xs",
+                            list(u, Expr::bvar(3)),
+                            Expr::app(Expr::bvar(3), Expr::bvar(0)),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn list_append_def() -> Decl {
+        let u = Level::param("u");
+        Decl::Def {
+            name: "List.append".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: list_append_type(u.clone()),
+            value: list_append_value(u),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn list_append_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "xs",
+                list(u.clone(), Expr::bvar(0)),
+                Expr::pi("ys", list(u.clone(), Expr::bvar(1)), list(u, Expr::bvar(2))),
+            ),
+        )
+    }
+
+    fn list_append_value(u: Level) -> Expr {
+        let motive = Expr::lam(
+            "_",
+            list(u.clone(), Expr::bvar(2)),
+            list(u.clone(), Expr::bvar(3)),
+        );
+        let step = Expr::lam(
+            "x",
+            Expr::bvar(2),
+            Expr::lam(
+                "xs",
+                list(u.clone(), Expr::bvar(3)),
+                Expr::lam(
+                    "ih",
+                    list(u.clone(), Expr::bvar(4)),
+                    list_cons(u.clone(), Expr::bvar(5), Expr::bvar(2), Expr::bvar(0)),
+                ),
+            ),
+        );
+        let rec = Expr::apps(
+            Expr::konst("List.rec", vec![u.clone(), u.clone()]),
+            vec![Expr::bvar(2), motive, Expr::bvar(0), step, Expr::bvar(1)],
+        );
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "xs",
+                list(u.clone(), Expr::bvar(0)),
+                Expr::lam("ys", list(u, Expr::bvar(1)), rec),
+            ),
+        )
+    }
+
+    fn list_nil_append_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "List.nil_append".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi("xs", list(u.clone(), Expr::bvar(0)), {
+                    list_nil_append_prop(u.clone(), Expr::bvar(1), Expr::bvar(0))
+                }),
+            ),
+            proof: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "xs",
+                    list(u.clone(), Expr::bvar(0)),
+                    eq_refl(u.clone(), list(u, Expr::bvar(1)), Expr::bvar(0)),
+                ),
+            ),
+        }
+    }
+
+    fn list_cons_append_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "List.cons_append".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "x",
+                    Expr::bvar(0),
+                    Expr::pi(
+                        "xs",
+                        list(u.clone(), Expr::bvar(1)),
+                        Expr::pi("ys", list(u.clone(), Expr::bvar(2)), {
+                            list_cons_append_prop(
+                                u.clone(),
+                                Expr::bvar(3),
+                                Expr::bvar(2),
+                                Expr::bvar(1),
+                                Expr::bvar(0),
+                            )
+                        }),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "x",
+                    Expr::bvar(0),
+                    Expr::lam(
+                        "xs",
+                        list(u.clone(), Expr::bvar(1)),
+                        Expr::lam(
+                            "ys",
+                            list(u.clone(), Expr::bvar(2)),
+                            eq_refl(
+                                u.clone(),
+                                list(u.clone(), Expr::bvar(3)),
+                                list_cons(
+                                    u.clone(),
+                                    Expr::bvar(3),
+                                    Expr::bvar(2),
+                                    list_append(
+                                        u.clone(),
+                                        Expr::bvar(3),
+                                        Expr::bvar(1),
+                                        Expr::bvar(0),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn list_append_nil_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "List.append_nil".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "xs",
+                    list(u.clone(), Expr::bvar(0)),
+                    list_append_nil_prop(u.clone(), Expr::bvar(1), Expr::bvar(0)),
+                ),
+            ),
+            proof: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "xs",
+                    list(u.clone(), Expr::bvar(0)),
+                    Expr::apps(
+                        Expr::konst("List.rec", vec![u.clone(), Level::zero()]),
+                        vec![
+                            Expr::bvar(1),
+                            Expr::lam(
+                                "xs",
+                                list(u.clone(), Expr::bvar(1)),
+                                list_append_nil_prop(u.clone(), Expr::bvar(2), Expr::bvar(0)),
+                            ),
+                            eq_refl(
+                                u.clone(),
+                                list(u.clone(), Expr::bvar(1)),
+                                list_nil(u.clone(), Expr::bvar(1)),
+                            ),
+                            Expr::lam(
+                                "x",
+                                Expr::bvar(1),
+                                Expr::lam(
+                                    "xs",
+                                    list(u.clone(), Expr::bvar(2)),
+                                    Expr::lam(
+                                        "ih",
+                                        list_append_nil_prop(
+                                            u.clone(),
+                                            Expr::bvar(3),
+                                            Expr::bvar(0),
+                                        ),
+                                        eq_congr_list_cons_tail(
+                                            u.clone(),
+                                            Expr::bvar(4),
+                                            Expr::bvar(2),
+                                            list_append(
+                                                u.clone(),
+                                                Expr::bvar(4),
+                                                Expr::bvar(1),
+                                                list_nil(u.clone(), Expr::bvar(4)),
+                                            ),
+                                            Expr::bvar(1),
+                                            Expr::bvar(0),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn list_append_assoc_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "List.append_assoc".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "xs",
+                    list(u.clone(), Expr::bvar(0)),
+                    Expr::pi(
+                        "ys",
+                        list(u.clone(), Expr::bvar(1)),
+                        Expr::pi(
+                            "zs",
+                            list(u.clone(), Expr::bvar(2)),
+                            list_append_assoc_prop(
+                                u.clone(),
+                                Expr::bvar(3),
+                                Expr::bvar(2),
+                                Expr::bvar(1),
+                                Expr::bvar(0),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "xs",
+                    list(u.clone(), Expr::bvar(0)),
+                    Expr::lam(
+                        "ys",
+                        list(u.clone(), Expr::bvar(1)),
+                        Expr::lam(
+                            "zs",
+                            list(u.clone(), Expr::bvar(2)),
+                            Expr::apps(
+                                Expr::konst("List.rec", vec![u.clone(), Level::zero()]),
+                                vec![
+                                    Expr::bvar(3),
+                                    Expr::lam(
+                                        "xs",
+                                        list(u.clone(), Expr::bvar(3)),
+                                        list_append_assoc_prop(
+                                            u.clone(),
+                                            Expr::bvar(4),
+                                            Expr::bvar(0),
+                                            Expr::bvar(2),
+                                            Expr::bvar(1),
+                                        ),
+                                    ),
+                                    eq_refl(
+                                        u.clone(),
+                                        list(u.clone(), Expr::bvar(3)),
+                                        list_append(
+                                            u.clone(),
+                                            Expr::bvar(3),
+                                            Expr::bvar(1),
+                                            Expr::bvar(0),
+                                        ),
+                                    ),
+                                    Expr::lam(
+                                        "x",
+                                        Expr::bvar(3),
+                                        Expr::lam(
+                                            "xs",
+                                            list(u.clone(), Expr::bvar(4)),
+                                            Expr::lam(
+                                                "ih",
+                                                list_append_assoc_prop(
+                                                    u.clone(),
+                                                    Expr::bvar(5),
+                                                    Expr::bvar(0),
+                                                    Expr::bvar(3),
+                                                    Expr::bvar(2),
+                                                ),
+                                                eq_congr_list_cons_tail(
+                                                    u.clone(),
+                                                    Expr::bvar(6),
+                                                    Expr::bvar(2),
+                                                    list_append(
+                                                        u.clone(),
+                                                        Expr::bvar(6),
+                                                        list_append(
+                                                            u.clone(),
+                                                            Expr::bvar(6),
+                                                            Expr::bvar(1),
+                                                            Expr::bvar(4),
+                                                        ),
+                                                        Expr::bvar(3),
+                                                    ),
+                                                    list_append(
+                                                        u.clone(),
+                                                        Expr::bvar(6),
+                                                        Expr::bvar(1),
+                                                        list_append(
+                                                            u.clone(),
+                                                            Expr::bvar(6),
+                                                            Expr::bvar(4),
+                                                            Expr::bvar(3),
+                                                        ),
+                                                    ),
+                                                    Expr::bvar(0),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Expr::bvar(2),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
     fn nat_add_zero_prop(n: Expr) -> Expr {
         eq(type0(), nat(), nat_add(n.clone(), nat_zero()), n)
     }
@@ -15567,12 +16188,74 @@ mod tests {
         )
     }
 
+    fn list_nil_append_prop(u: Level, a: Expr, xs: Expr) -> Expr {
+        eq(
+            u.clone(),
+            list(u.clone(), a.clone()),
+            list_append(u.clone(), a.clone(), list_nil(u.clone(), a), xs.clone()),
+            xs,
+        )
+    }
+
+    fn list_cons_append_prop(u: Level, a: Expr, x: Expr, xs: Expr, ys: Expr) -> Expr {
+        eq(
+            u.clone(),
+            list(u.clone(), a.clone()),
+            list_append(
+                u.clone(),
+                a.clone(),
+                list_cons(u.clone(), a.clone(), x.clone(), xs.clone()),
+                ys.clone(),
+            ),
+            list_cons(u.clone(), a.clone(), x, list_append(u, a, xs, ys)),
+        )
+    }
+
+    fn list_append_nil_prop(u: Level, a: Expr, xs: Expr) -> Expr {
+        eq(
+            u.clone(),
+            list(u.clone(), a.clone()),
+            list_append(u.clone(), a.clone(), xs.clone(), list_nil(u.clone(), a)),
+            xs,
+        )
+    }
+
+    fn list_append_assoc_prop(u: Level, a: Expr, xs: Expr, ys: Expr, zs: Expr) -> Expr {
+        eq(
+            u.clone(),
+            list(u.clone(), a.clone()),
+            list_append(
+                u.clone(),
+                a.clone(),
+                list_append(u.clone(), a.clone(), xs.clone(), ys.clone()),
+                zs.clone(),
+            ),
+            list_append(u.clone(), a.clone(), xs, list_append(u, a, ys, zs)),
+        )
+    }
+
     fn nat_add(lhs: Expr, rhs: Expr) -> Expr {
         Expr::apps(Expr::konst("Nat.add", vec![]), vec![lhs, rhs])
     }
 
     fn nat_mul(lhs: Expr, rhs: Expr) -> Expr {
         Expr::apps(Expr::konst("Nat.mul", vec![]), vec![lhs, rhs])
+    }
+
+    fn list(u: Level, elem_ty: Expr) -> Expr {
+        Expr::app(Expr::konst("List", vec![u]), elem_ty)
+    }
+
+    fn list_nil(u: Level, elem_ty: Expr) -> Expr {
+        Expr::app(Expr::konst("List.nil", vec![u]), elem_ty)
+    }
+
+    fn list_cons(u: Level, elem_ty: Expr, head: Expr, tail: Expr) -> Expr {
+        Expr::apps(Expr::konst("List.cons", vec![u]), vec![elem_ty, head, tail])
+    }
+
+    fn list_append(u: Level, elem_ty: Expr, lhs: Expr, rhs: Expr) -> Expr {
+        Expr::apps(Expr::konst("List.append", vec![u]), vec![elem_ty, lhs, rhs])
     }
 
     fn eq_congr_succ(lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
@@ -15617,6 +16300,36 @@ mod tests {
         )
     }
 
+    fn eq_congr_list_cons_tail(
+        u: Level,
+        elem_ty: Expr,
+        head: Expr,
+        lhs_tail: Expr,
+        rhs_tail: Expr,
+        proof: Expr,
+    ) -> Expr {
+        Expr::apps(
+            Expr::konst("Eq.congrArg", vec![u.clone(), u.clone()]),
+            vec![
+                list(u.clone(), elem_ty.clone()),
+                list(u.clone(), elem_ty.clone()),
+                Expr::lam(
+                    "tail",
+                    list(u.clone(), elem_ty.clone()),
+                    list_cons(
+                        u,
+                        shift_expr(elem_ty, 1),
+                        shift_expr(head, 1),
+                        Expr::bvar(0),
+                    ),
+                ),
+                lhs_tail,
+                rhs_tail,
+                proof,
+            ],
+        )
+    }
+
     fn eq_symm_nat(lhs: Expr, rhs: Expr, proof: Expr) -> Expr {
         Expr::apps(
             Expr::konst("Eq.symm", vec![type0()]),
@@ -15643,12 +16356,10 @@ mod tests {
     }
 
     fn list_m5_profile_module() -> CoreModule {
-        let mut declarations = vec![profile_helper_def("List.m5_lhs")];
+        let mut declarations = list_append_declarations();
+        declarations.push(profile_helper_def("List.m5_lhs"));
         declarations.extend(
             [
-                "List.nil_append",
-                "List.cons_append",
-                "List.append_nil",
                 "List.length_nil",
                 "List.length_cons",
                 "List.map_nil",
@@ -15656,7 +16367,6 @@ mod tests {
                 "List.map_id",
                 "List.foldr_nil",
                 "List.foldr_cons",
-                "List.append_assoc",
                 "List.length_append",
             ]
             .into_iter()
