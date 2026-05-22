@@ -547,17 +547,17 @@ P6H-09
 
 実装タスク:
 
-- [ ] Human source の `simp` / `rw` intent から、Phase 6 AI MVP の exact SimpSafe / RwOnly fixed sets との照合 test を追加する。
-- [ ] Nat SimpSafe set を `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` / `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` / `Nat.pred_zero` / `Nat.pred_succ` に固定する。
-- [ ] List SimpSafe set を `List.nil_append` / `List.cons_append` / `List.append_nil` / `List.length_nil` / `List.length_cons` / `List.map_nil` / `List.map_cons` / `List.map_id` / `List.foldr_nil` / `List.foldr_cons` に固定する。
-- [ ] RwOnly set を `Nat.add_comm` / `Nat.add_assoc` / `List.append_assoc` / `List.length_append` に固定する。
-- [ ] `Nat.mul_comm` / `Nat.mul_assoc` / `List.map_comp` が AI MVP rewrite profile に出ない regression を追加する。
+- [x] Human source の `simp` / `rw` intent から、Phase 6 AI MVP の exact SimpSafe / RwOnly fixed sets との照合 test を追加する。
+- [x] Nat SimpSafe set を `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` / `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` / `Nat.pred_zero` / `Nat.pred_succ` に固定する。
+- [x] List SimpSafe set を `List.nil_append` / `List.cons_append` / `List.append_nil` / `List.length_nil` / `List.length_cons` / `List.map_nil` / `List.map_cons` / `List.map_id` / `List.foldr_nil` / `List.foldr_cons` に固定する。
+- [x] RwOnly set を `Nat.add_comm` / `Nat.add_assoc` / `List.append_assoc` / `List.length_append` に固定する。
+- [x] `Nat.mul_comm` / `Nat.mul_assoc` / `List.map_comp` が AI MVP rewrite profile に出ない regression を追加する。
 
 受け入れ条件:
 
-- [ ] `std.logic.simp` は empty であり、`Eq.refl` は SimpRuleRef として emit されない。
-- [ ] `std.list.simp` は `Std.Nat` rule source を含まない。
-- [ ] `std.all.simp` と `std.all.rw` は source profile の semantic union として再検証される。
+- [x] `std.logic.simp` は empty であり、`Eq.refl` は SimpRuleRef として emit されない。
+- [x] `std.list.simp` は `Std.Nat` rule source を含まない。
+- [x] `std.all.simp` と `std.all.rw` は source profile の semantic union として再検証される。
 
 検証:
 

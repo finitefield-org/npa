@@ -11244,6 +11244,150 @@ mod tests {
     }
 
     #[test]
+    fn human_source_simp_rw_intent_matches_ai_profile_fixed_sets() {
+        let package = TestPackage::new("human_source_profile_intent_matches_ai_fixed_sets");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+
+        let expected_nat_simp = human_source_simp_intent(STD_NAT_SIMP_PROFILE_ID);
+        let expected_list_simp = human_source_simp_intent(STD_LIST_SIMP_PROFILE_ID);
+        let expected_all_simp = human_source_simp_intent(STD_ALL_SIMP_PROFILE_ID);
+        let expected_nat_rw_only = human_source_rw_only_intent(STD_NAT_RW_PROFILE_ID);
+        let expected_list_rw_only = human_source_rw_only_intent(STD_LIST_RW_PROFILE_ID);
+        let expected_all_rw_only = human_source_rw_only_intent(STD_ALL_RW_PROFILE_ID);
+
+        assert!(simp_profile(&simp_profiles, STD_LOGIC_SIMP_PROFILE_ID)
+            .rules
+            .is_empty());
+        assert!(rewrite_profile(&rewrite_profiles, STD_LOGIC_RW_PROFILE_ID)
+            .descriptors
+            .is_empty());
+        assert!(simp_profiles
+            .profiles
+            .iter()
+            .flat_map(|profile| &profile.rules)
+            .all(|rule| rule.name != Name::from_dotted("Eq.refl")));
+
+        let nat_rw = rewrite_profile(&rewrite_profiles, STD_NAT_RW_PROFILE_ID);
+        assert_eq!(
+            rewrite_profile_rule_names_by_safety(nat_rw, MachineStdRewriteSafety::SimpSafe),
+            expected_nat_simp
+        );
+        assert_eq!(
+            rewrite_profile_rule_names_by_safety(nat_rw, MachineStdRewriteSafety::RwOnly),
+            expected_nat_rw_only
+        );
+        assert_eq!(
+            simp_profile_rule_names(simp_profile(&simp_profiles, STD_NAT_SIMP_PROFILE_ID)),
+            human_source_simp_intent(STD_NAT_SIMP_PROFILE_ID)
+        );
+
+        let list_rw = rewrite_profile(&rewrite_profiles, STD_LIST_RW_PROFILE_ID);
+        let list_simp = simp_profile(&simp_profiles, STD_LIST_SIMP_PROFILE_ID);
+        assert_eq!(
+            rewrite_profile_rule_names_by_safety(list_rw, MachineStdRewriteSafety::SimpSafe),
+            expected_list_simp
+        );
+        assert_eq!(
+            rewrite_profile_rule_names_by_safety(list_rw, MachineStdRewriteSafety::RwOnly),
+            expected_list_rw_only
+        );
+        assert_eq!(simp_profile_rule_names(list_simp), expected_list_simp);
+        assert_eq!(
+            simp_profile_rule_source_modules(list_simp, list_rw),
+            string_set(&["Std.List"]),
+            "std.list.simp must not include Std.Nat rule sources"
+        );
+
+        let all_rw = rewrite_profile(&rewrite_profiles, STD_ALL_RW_PROFILE_ID);
+        let all_simp = simp_profile(&simp_profiles, STD_ALL_SIMP_PROFILE_ID);
+        assert_eq!(
+            rewrite_profile_rule_names_by_safety(all_rw, MachineStdRewriteSafety::SimpSafe),
+            expected_all_simp
+        );
+        assert_eq!(
+            rewrite_profile_rule_names_by_safety(all_rw, MachineStdRewriteSafety::RwOnly),
+            expected_all_rw_only
+        );
+        assert_eq!(simp_profile_rule_names(all_simp), expected_all_simp);
+
+        let profile_set_rewrite_names = rewrite_profiles
+            .profiles
+            .iter()
+            .flat_map(|profile| &profile.descriptors)
+            .map(|descriptor| descriptor.source.name.as_dotted())
+            .collect::<BTreeSet<_>>();
+        let profile_set_simp_names = simp_profiles
+            .profiles
+            .iter()
+            .flat_map(|profile| &profile.rules)
+            .map(|rule| rule.name.as_dotted())
+            .collect::<BTreeSet<_>>();
+        for excluded in ["Nat.mul_comm", "Nat.mul_assoc", "List.map_comp"] {
+            assert!(
+                !profile_set_rewrite_names.contains(excluded),
+                "{excluded} must not be emitted in MVP rewrite profiles"
+            );
+            assert!(
+                !profile_set_simp_names.contains(excluded),
+                "{excluded} must not be emitted in MVP simp profiles"
+            );
+        }
+    }
+
+    #[test]
+    fn std_all_simp_and_rw_profiles_are_reverified_semantic_unions() {
+        let package = TestPackage::new("std_all_profiles_semantic_union");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let rewrite_profiles = generate_machine_std_mvp_rewrite_profile_set(&loaded).unwrap();
+        validate_machine_std_mvp_rewrite_profile_set(&rewrite_profiles, &rewrite_profiles).unwrap();
+        let simp_profiles =
+            generate_machine_std_mvp_simp_profile_set(&loaded, &rewrite_profiles).unwrap();
+        validate_machine_std_mvp_simp_profile_set(
+            &simp_profiles,
+            &simp_profiles,
+            &rewrite_profiles,
+        )
+        .unwrap();
+
+        let nat_rw = rewrite_profile(&rewrite_profiles, STD_NAT_RW_PROFILE_ID);
+        let list_rw = rewrite_profile(&rewrite_profiles, STD_LIST_RW_PROFILE_ID);
+        let all_rw = rewrite_profile(&rewrite_profiles, STD_ALL_RW_PROFILE_ID);
+        let expected_rw_union = canonical_rewrite_descriptor_union(&[nat_rw, list_rw]);
+        let actual_all_rw = canonical_rewrite_descriptor_sequence(all_rw);
+        assert_eq!(
+            actual_all_rw, expected_rw_union,
+            "std.all.rw must be the canonical semantic union of Nat and List rw profiles"
+        );
+
+        let nat_simp = simp_profile(&simp_profiles, STD_NAT_SIMP_PROFILE_ID);
+        let list_simp = simp_profile(&simp_profiles, STD_LIST_SIMP_PROFILE_ID);
+        let all_simp = simp_profile(&simp_profiles, STD_ALL_SIMP_PROFILE_ID);
+        let expected_simp_union = canonical_simp_rule_union(&[nat_simp, list_simp]);
+        let actual_all_simp = canonical_simp_rule_sequence(all_simp);
+        assert_eq!(
+            actual_all_simp, expected_simp_union,
+            "std.all.simp must be the canonical semantic union of Nat and List simp profiles"
+        );
+
+        let mut source_targets = simp_rule_target_map(nat_simp, nat_rw);
+        source_targets.extend(simp_rule_target_map(list_simp, list_rw));
+        assert_eq!(
+            simp_rule_target_map(all_simp, all_rw),
+            source_targets,
+            "std.all.simp rules must resolve to the same certificate-bound theorem targets"
+        );
+    }
+
+    #[test]
     fn registers_std_nat_pred_rules_as_simp_safe_candidates() {
         let package = TestPackage::new("std_nat_pred_simp_safe_candidates");
         write_valid_mvp_package(package.path());
@@ -20056,6 +20200,162 @@ import Std.Nat
             .iter()
             .find(|profile| profile.profile_id == profile_id)
             .unwrap()
+    }
+
+    fn human_source_simp_intent(profile_id: &str) -> BTreeSet<String> {
+        match profile_id {
+            STD_NAT_SIMP_PROFILE_ID => string_set(&[
+                "Nat.add_zero",
+                "Nat.add_succ",
+                "Nat.zero_add",
+                "Nat.mul_zero",
+                "Nat.mul_succ",
+                "Nat.zero_mul",
+                "Nat.pred_zero",
+                "Nat.pred_succ",
+            ]),
+            STD_LIST_SIMP_PROFILE_ID => string_set(&[
+                "List.nil_append",
+                "List.cons_append",
+                "List.append_nil",
+                "List.length_nil",
+                "List.length_cons",
+                "List.map_nil",
+                "List.map_cons",
+                "List.map_id",
+                "List.foldr_nil",
+                "List.foldr_cons",
+            ]),
+            STD_LOGIC_SIMP_PROFILE_ID => BTreeSet::new(),
+            STD_ALL_SIMP_PROFILE_ID => {
+                let mut rules = human_source_simp_intent(STD_NAT_SIMP_PROFILE_ID);
+                rules.extend(human_source_simp_intent(STD_LIST_SIMP_PROFILE_ID));
+                rules
+            }
+            _ => panic!("unexpected simp profile id: {profile_id}"),
+        }
+    }
+
+    fn human_source_rw_only_intent(profile_id: &str) -> BTreeSet<String> {
+        match profile_id {
+            STD_NAT_RW_PROFILE_ID => string_set(&["Nat.add_comm", "Nat.add_assoc"]),
+            STD_LIST_RW_PROFILE_ID => string_set(&["List.append_assoc", "List.length_append"]),
+            STD_LOGIC_RW_PROFILE_ID => BTreeSet::new(),
+            STD_ALL_RW_PROFILE_ID => {
+                let mut rules = human_source_rw_only_intent(STD_NAT_RW_PROFILE_ID);
+                rules.extend(human_source_rw_only_intent(STD_LIST_RW_PROFILE_ID));
+                rules
+            }
+            _ => panic!("unexpected rewrite profile id: {profile_id}"),
+        }
+    }
+
+    fn string_set(values: &[&str]) -> BTreeSet<String> {
+        values.iter().map(|value| (*value).to_owned()).collect()
+    }
+
+    fn rewrite_profile_rule_names_by_safety(
+        profile: &MachineStdRewriteProfile,
+        safety: MachineStdRewriteSafety,
+    ) -> BTreeSet<String> {
+        profile
+            .descriptors
+            .iter()
+            .filter(|descriptor| descriptor.safety == safety)
+            .map(|descriptor| descriptor.source.name.as_dotted())
+            .collect()
+    }
+
+    fn simp_profile_rule_names(profile: &MachineStdSimpProfile) -> BTreeSet<String> {
+        profile
+            .rules
+            .iter()
+            .map(|rule| rule.name.as_dotted())
+            .collect()
+    }
+
+    fn simp_profile_rule_source_modules(
+        profile: &MachineStdSimpProfile,
+        paired_profile: &MachineStdRewriteProfile,
+    ) -> BTreeSet<String> {
+        profile
+            .rules
+            .iter()
+            .map(|rule| {
+                paired_simp_descriptor(rule, paired_profile)
+                    .source
+                    .module
+                    .as_dotted()
+            })
+            .collect()
+    }
+
+    fn paired_simp_descriptor<'a>(
+        rule: &SimpRuleRef,
+        paired_profile: &'a MachineStdRewriteProfile,
+    ) -> &'a MachineStdRewriteDescriptor {
+        paired_profile
+            .descriptors
+            .iter()
+            .find(|descriptor| {
+                descriptor.safety == MachineStdRewriteSafety::SimpSafe
+                    && descriptor.source.name == rule.name
+                    && descriptor.source.decl_interface_hash == rule.decl_interface_hash
+                    && descriptor.direction == rule.direction
+            })
+            .unwrap()
+    }
+
+    fn canonical_rewrite_descriptor_sequence(profile: &MachineStdRewriteProfile) -> Vec<Vec<u8>> {
+        profile
+            .descriptors
+            .iter()
+            .map(|descriptor| machine_std_rewrite_descriptor_canonical_bytes(descriptor).unwrap())
+            .collect()
+    }
+
+    fn canonical_rewrite_descriptor_union(profiles: &[&MachineStdRewriteProfile]) -> Vec<Vec<u8>> {
+        profiles
+            .iter()
+            .flat_map(|profile| &profile.descriptors)
+            .map(|descriptor| machine_std_rewrite_descriptor_canonical_bytes(descriptor).unwrap())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect()
+    }
+
+    fn canonical_simp_rule_sequence(profile: &MachineStdSimpProfile) -> Vec<Vec<u8>> {
+        profile
+            .rules
+            .iter()
+            .map(|rule| simp_rule_ref_canonical_bytes(rule).unwrap())
+            .collect()
+    }
+
+    fn canonical_simp_rule_union(profiles: &[&MachineStdSimpProfile]) -> Vec<Vec<u8>> {
+        profiles
+            .iter()
+            .flat_map(|profile| &profile.rules)
+            .map(|rule| simp_rule_ref_canonical_bytes(rule).unwrap())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect()
+    }
+
+    fn simp_rule_target_map(
+        profile: &MachineStdSimpProfile,
+        paired_profile: &MachineStdRewriteProfile,
+    ) -> BTreeMap<Vec<u8>, MachineStdGlobalRef> {
+        profile
+            .rules
+            .iter()
+            .map(|rule| {
+                (
+                    simp_rule_ref_canonical_bytes(rule).unwrap(),
+                    paired_simp_descriptor(rule, paired_profile).source.clone(),
+                )
+            })
+            .collect()
     }
 
     fn refresh_theorem_index_hash(theorem_index: &mut MachineStdTheoremIndex) {
