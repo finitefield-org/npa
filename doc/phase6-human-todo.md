@@ -419,17 +419,17 @@ P6H-05
 
 実装タスク:
 
-- [ ] `List.length`、`List.map`、`List.foldr` を source に追加する。
-- [ ] `List.length_nil` / `List.length_cons` / `List.map_nil` / `List.map_cons` / `List.foldr_nil` / `List.foldr_cons` を refl で証明する。
-- [ ] `List.length_append`、`List.map_id`、`List.map_comp` を induction / simp-lite で証明する。
-- [ ] `List.length_append` は AI `RwOnly` に含め、`List.map_comp` は AI MVP rewrite profile に含めない。
-- [ ] `foldl` と list literal `[a, b, c]` は MVP に入れない。
+- [x] `List.length`、`List.map`、`List.foldr` を source に追加する。
+- [x] `List.length_nil` / `List.length_cons` / `List.map_nil` / `List.map_cons` / `List.foldr_nil` / `List.foldr_cons` を refl で証明する。
+- [x] `List.length_append`、`List.map_id`、`List.map_comp` を induction / simp-lite で証明する。
+- [x] `List.length_append` は AI `RwOnly` に含め、`List.map_comp` は AI MVP rewrite profile に含めない。
+- [x] `foldl` と list literal `[a, b, c]` は MVP に入れない。
 
 受け入れ条件:
 
-- [ ] List simp-safe exact set が Phase 6 Human / AI Profile と一致する。
-- [ ] `List.length_append` は rw 候補だが simp 候補ではない。
-- [ ] `List.map_comp` は theorem として存在しても AI MVP rewrite / simp profile に出ない。
+- [x] List simp-safe exact set が Phase 6 Human / AI Profile と一致する。
+- [x] `List.length_append` は rw 候補だが simp 候補ではない。
+- [x] `List.map_comp` は theorem として存在しても AI MVP rewrite / simp profile に出ない。
 
 検証:
 
