@@ -267,11 +267,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `HumanProofSession`、`HumanDocumentId`、`HumanDocumentVersion`、`HumanSessionId` を追加する。
-- [ ] `HumanDocumentSnapshot` に source text、module name、verified imports、Human imported source interfaces、options を保持する。
-- [ ] `POST /sessions` 相当の library API を追加し、Human source を parse / collect して初期 messages を返す。
-- [ ] `POST /documents/update` 相当の library API を追加し、document version を単調増加させる。
-- [ ] session store は in-memory library data structure として実装し、kernel crate には入れない。
+- [x] `HumanProofSession`、`HumanDocumentId`、`HumanDocumentVersion`、`HumanSessionId` を追加する。
+- [x] `HumanDocumentSnapshot` に source text、module name、verified imports、Human imported source interfaces、options を保持する。
+- [x] `POST /sessions` 相当の library API を追加し、Human source を parse / collect して初期 messages を返す。
+- [x] `POST /documents/update` 相当の library API を追加し、document version を単調増加させる。
+- [x] session store は in-memory library data structure として実装し、kernel crate には入れない。
 
 依存:
 
@@ -296,9 +296,9 @@ crates/npa-api/src/lib.rs
 
 Acceptance criteria:
 
-- [ ] Human source から `session_id`、`document_id`、`document_version = 1` を持つ open session を作れる。
-- [ ] update 後に古い `document_version` を指定した state request を stale request として構造化 error にできる。
-- [ ] verified imports と imported Human source interfaces は request で明示され、filesystem / network lookup は行わない。
+- [x] Human source から `session_id`、`document_id`、`document_version = 1` を持つ open session を作れる。
+- [x] update 後に古い `document_version` を指定した state request を stale request として構造化 error にできる。
+- [x] verified imports と imported Human source interfaces は request で明示され、filesystem / network lookup は行わない。
 
 Verification:
 
@@ -309,7 +309,7 @@ cargo test -p npa-api human
 
 AI 速度ガード:
 
-- [ ] Human session store を `MachineProofSession` に統合しない。
+- [x] Human session store を `MachineProofSession` に統合しない。
 
 ---
 

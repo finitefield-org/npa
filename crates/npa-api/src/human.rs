@@ -3,14 +3,18 @@ use std::collections::BTreeMap;
 use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
-    HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource, HumanExactTacticOk,
-    HumanExactTacticRequest, HumanInductionTacticError, HumanInductionTacticOk,
+    HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource, HumanDocumentSnapshot,
+    HumanDocumentUpdateError, HumanDocumentUpdateOk, HumanDocumentUpdateRequest,
+    HumanExactTacticOk, HumanExactTacticRequest, HumanInductionTacticError, HumanInductionTacticOk,
     HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
-    HumanIntroTacticRequest, HumanRewriteTacticError, HumanRewriteTacticOk,
-    HumanRewriteTacticRequest, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
-    HumanSimpLiteTacticRequest, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
-    HumanTacticScriptError, HumanTacticScriptRunOk, HumanTacticScriptRunRequest,
-    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanIntroTacticRequest, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
+    HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
+    HumanSessionCreateError, HumanSessionCreateOk, HumanSessionCreateRequest,
+    HumanSimpLiteTacticError, HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest,
+    HumanStartProofError, HumanStartProofOk, HumanStartProofRequest, HumanStateRequestError,
+    HumanStateRequestHeader, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanTacticScriptRunRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
+    HumanTacticTermError,
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
@@ -103,6 +107,149 @@ pub fn compile_human_source_to_certificate(
     })
 }
 
+/// Create a Human IDE proof session from explicit source and imports.
+///
+/// This is the library equivalent of Phase 5 Human `POST /sessions`. It stores
+/// the caller-provided source text, module, verified imports, Human source
+/// interfaces, and options in an in-memory `HumanProofSessionStore`. It does
+/// not read from the filesystem, perform network lookup, or create a
+/// `MachineProofSession`.
+pub fn create_human_session(
+    store: &mut HumanProofSessionStore,
+    request: HumanSessionCreateRequest<'_, '_>,
+) -> Result<HumanSessionCreateOk, HumanSessionCreateError> {
+    let (session_id, document_id) = store.allocate_session_ids()?;
+    let document = HumanDocumentSnapshot {
+        document_id: document_id.clone(),
+        document_version: crate::HumanDocumentVersion::initial(),
+        current_module: request.current_module,
+        file_id: request.current_source.file_id,
+        source: request.current_source.source.to_owned(),
+        verified_modules: request.verified_modules.to_vec(),
+        imported_source_interfaces: request.imported_source_interfaces.to_vec(),
+        options: request.options,
+    };
+    let collected = collect_human_session_document(&document);
+    let messages = collected.messages.clone();
+    let session = HumanProofSession {
+        session_id: session_id.clone(),
+        status: HumanProofSessionStatus::Open,
+        document,
+        source_interface: collected.source_interface,
+        active_imported_source_interfaces: collected.active_imports,
+        messages: collected.messages,
+    };
+    store.insert_session(session);
+
+    Ok(HumanSessionCreateOk {
+        session_id,
+        document_id,
+        document_version: crate::HumanDocumentVersion::initial(),
+        status: HumanProofSessionStatus::Open,
+        messages,
+    })
+}
+
+/// Replace the current Human document snapshot for an open Human session.
+///
+/// This is the library equivalent of Phase 5 Human `POST /documents/update`.
+/// The document id remains stable and the document version increases
+/// monotonically. Imports and source interfaces are always supplied explicitly
+/// by the request; this function performs no filesystem or network lookup.
+pub fn update_human_document(
+    store: &mut HumanProofSessionStore,
+    request: HumanDocumentUpdateRequest<'_, '_>,
+) -> Result<HumanDocumentUpdateOk, HumanDocumentUpdateError> {
+    let (document_id, current_version) = {
+        let session = store.session(&request.session_id).ok_or_else(|| {
+            HumanDocumentUpdateError::UnknownSession {
+                session_id: request.session_id.clone(),
+            }
+        })?;
+        (
+            session.document.document_id.clone(),
+            session.document.document_version,
+        )
+    };
+    let next_version = current_version.next().ok_or_else(|| {
+        HumanDocumentUpdateError::DocumentVersionOverflow {
+            session_id: request.session_id.clone(),
+            document_id: document_id.clone(),
+            current: current_version,
+        }
+    })?;
+    let document = HumanDocumentSnapshot {
+        document_id: document_id.clone(),
+        document_version: next_version,
+        current_module: request.current_module,
+        file_id: request.current_source.file_id,
+        source: request.current_source.source.to_owned(),
+        verified_modules: request.verified_modules.to_vec(),
+        imported_source_interfaces: request.imported_source_interfaces.to_vec(),
+        options: request.options,
+    };
+    let collected = collect_human_session_document(&document);
+    let messages = collected.messages.clone();
+    let session = store
+        .session_mut(&request.session_id)
+        .expect("session was checked before document collection");
+    session.status = HumanProofSessionStatus::Open;
+    session.document = document;
+    session.source_interface = collected.source_interface;
+    session.active_imported_source_interfaces = collected.active_imports;
+    session.messages = collected.messages;
+
+    Ok(HumanDocumentUpdateOk {
+        session_id: request.session_id,
+        document_id,
+        document_version: next_version,
+        status: HumanProofSessionStatus::Open,
+        messages,
+    })
+}
+
+/// Validate the document identity/version portion common to future Human state requests.
+///
+/// P5H-01 does not materialize proof states yet; it only fixes the stale
+/// document-version guard that `/state/*` APIs must apply before returning any
+/// session state.
+pub fn validate_human_state_request_document(
+    store: &HumanProofSessionStore,
+    request: HumanStateRequestHeader,
+) -> Result<(), HumanStateRequestError> {
+    let session = store.session(&request.session_id).ok_or_else(|| {
+        HumanStateRequestError::UnknownSession {
+            session_id: request.session_id.clone(),
+        }
+    })?;
+    let current_document_id = &session.document.document_id;
+    if current_document_id != &request.document_id {
+        return Err(HumanStateRequestError::DocumentMismatch {
+            session_id: request.session_id,
+            requested: request.document_id,
+            current: current_document_id.clone(),
+        });
+    }
+    let current_version = session.document.document_version;
+    if request.document_version < current_version {
+        return Err(HumanStateRequestError::StaleDocumentVersion {
+            session_id: request.session_id,
+            document_id: request.document_id,
+            requested: request.document_version,
+            current: current_version,
+        });
+    }
+    if request.document_version > current_version {
+        return Err(HumanStateRequestError::FutureDocumentVersion {
+            session_id: request.session_id,
+            document_id: request.document_id,
+            requested: request.document_version,
+            current: current_version,
+        });
+    }
+    Ok(())
+}
+
 pub fn start_human_proof(
     request: HumanStartProofRequest<'_, '_>,
 ) -> Result<HumanStartProofOk, HumanStartProofError> {
@@ -122,6 +269,43 @@ pub fn start_human_proof(
         &frontend_options,
     )?;
     start_human_proof_from_prepared(prepared, request.verified_modules, request.options)
+}
+
+#[derive(Clone, Debug)]
+struct HumanSessionDocumentCollection {
+    source_interface: Option<npa_frontend::HumanSourceInterface>,
+    active_imports: Vec<npa_frontend::HumanImportedSourceInterface>,
+    messages: Vec<npa_frontend::HumanDiagnostic>,
+}
+
+fn collect_human_session_document(
+    document: &HumanDocumentSnapshot,
+) -> HumanSessionDocumentCollection {
+    let frontend_options = npa_frontend::HumanCompileOptions::from(&document.options);
+    let verified_imports: Vec<_> = document
+        .verified_modules
+        .iter()
+        .map(npa_frontend::VerifiedImport::from)
+        .collect();
+    match npa_frontend::collect_human_by_proof_targets_with_source_interfaces(
+        document.file_id,
+        document.current_module.clone(),
+        &document.source,
+        &verified_imports,
+        &document.imported_source_interfaces,
+        &frontend_options,
+    ) {
+        Ok(output) => HumanSessionDocumentCollection {
+            source_interface: Some(output.source_interface),
+            active_imports: output.active_imports,
+            messages: Vec::new(),
+        },
+        Err(diagnostic) => HumanSessionDocumentCollection {
+            source_interface: None,
+            active_imports: Vec::new(),
+            messages: vec![diagnostic],
+        },
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -2324,7 +2508,10 @@ fn active_human_verified_import_refs(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{create_machine_session, HumanCurrentModuleSource};
+    use crate::{
+        create_machine_session, HumanCurrentModuleSource, HumanDocumentVersion,
+        HumanProofSessionStore, HumanStateRequestHeader,
+    };
 
     fn human_payload(
         diagnostic: &npa_frontend::HumanDiagnostic,
@@ -2361,6 +2548,196 @@ mod tests {
         .expect("Human API certificate should verify with normal axiom policy");
 
         assert_eq!(verified.module(), &npa_cert::Name::from_dotted("Api.Human"));
+    }
+
+    #[test]
+    fn human_session_create_returns_open_session_with_initial_document_version() {
+        let mut store = HumanProofSessionStore::new();
+
+        let ok = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.Session"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(11),
+                    source: "axiom P : Prop",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session id allocation should succeed");
+
+        assert_eq!(ok.document_version, HumanDocumentVersion::initial());
+        assert_eq!(ok.status, HumanProofSessionStatus::Open);
+        assert!(ok.messages.is_empty());
+        let session = store
+            .session(&ok.session_id)
+            .expect("created Human session should be stored");
+        assert_eq!(session.session_id, ok.session_id);
+        assert_eq!(session.document.document_id, ok.document_id);
+        assert_eq!(session.document.document_version, ok.document_version);
+        assert_eq!(session.document.file_id, npa_frontend::FileId(11));
+        assert_eq!(session.document.source, "axiom P : Prop");
+        assert_eq!(
+            session.document.current_module,
+            npa_cert::Name::from_dotted("Api.Session")
+        );
+        assert!(session.source_interface.is_some());
+        assert!(session.active_imported_source_interfaces.is_empty());
+        assert!(session.messages.is_empty());
+    }
+
+    #[test]
+    fn human_session_create_returns_initial_parse_messages_without_closing_session() {
+        let mut store = HumanProofSessionStore::new();
+
+        let ok = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.SessionDiagnostics"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(15),
+                    source: "def bad : Type :=",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should still open with source diagnostics");
+
+        assert_eq!(ok.status, HumanProofSessionStatus::Open);
+        assert_eq!(ok.messages.len(), 1);
+        assert_eq!(store.session_count(), 1);
+        let session = store
+            .session(&ok.session_id)
+            .expect("diagnostic session should be stored");
+        assert_eq!(session.messages, ok.messages);
+        assert!(session.source_interface.is_none());
+    }
+
+    #[test]
+    fn human_session_document_update_increments_version_and_rejects_stale_state_request() {
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.Update"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(12),
+                    source: "axiom P : Prop",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+
+        let updated = update_human_document(
+            &mut store,
+            HumanDocumentUpdateRequest {
+                session_id: created.session_id.clone(),
+                current_module: npa_cert::Name::from_dotted("Api.Update"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(12),
+                    source: "axiom P : Prop\naxiom q : P",
+                },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human document update should succeed");
+
+        assert_eq!(updated.document_id, created.document_id);
+        assert_eq!(updated.document_version.as_u64(), 2);
+        let err = validate_human_state_request_document(
+            &store,
+            HumanStateRequestHeader {
+                session_id: created.session_id.clone(),
+                document_id: created.document_id.clone(),
+                document_version: created.document_version,
+            },
+        )
+        .expect_err("old document version should be stale after update");
+        assert_eq!(
+            err,
+            HumanStateRequestError::StaleDocumentVersion {
+                session_id: created.session_id.clone(),
+                document_id: created.document_id.clone(),
+                requested: HumanDocumentVersion::initial(),
+                current: updated.document_version,
+            }
+        );
+
+        validate_human_state_request_document(
+            &store,
+            HumanStateRequestHeader {
+                session_id: updated.session_id,
+                document_id: updated.document_id,
+                document_version: updated.document_version,
+            },
+        )
+        .expect("current document version should validate");
+    }
+
+    #[test]
+    fn human_session_stores_explicit_imports_without_machine_session_integration() {
+        let producer = compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.SessionLib"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(13),
+                source: "axiom A : Type",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("producer Human API request should compile");
+        let bytes =
+            npa_cert::encode_module_cert(&producer.certificate).expect("producer cert encodes");
+        let verified = npa_cert::verify_module_cert(
+            &bytes,
+            &mut npa_cert::VerifierSession::new(),
+            &npa_cert::AxiomPolicy::normal(),
+        )
+        .expect("producer cert verifies");
+        let import = npa_frontend::VerifiedImport::from(&verified);
+        let source_interface = npa_frontend::HumanImportedSourceInterface {
+            module: import.module.clone(),
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            source_interface: producer.source_interface,
+        };
+
+        let mut store = HumanProofSessionStore::new();
+        let ok = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.SessionUser"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(14),
+                    source: "axiom B : Type",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should store explicit import inputs");
+        let session = store
+            .session(&ok.session_id)
+            .expect("created session should be stored");
+
+        assert_eq!(session.document.verified_modules, vec![verified]);
+        assert_eq!(
+            session.document.imported_source_interfaces,
+            vec![source_interface]
+        );
+        assert_eq!(store.session_count(), 1);
     }
 
     #[test]

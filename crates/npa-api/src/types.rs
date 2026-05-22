@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
@@ -87,6 +87,221 @@ pub struct HumanCompileCertificateRequest<'src, 'imports> {
     pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
     /// Frontend and tactic options for this request; no Machine session state is implied.
     pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanSessionCreateRequest<'src, 'imports> {
+    /// Current module identity supplied by the Human API caller.
+    pub current_module: ModuleName,
+    /// Full Human source for the initial document snapshot.
+    pub current_source: HumanCurrentModuleSource<'src>,
+    /// Explicit verified imports available to this Human session.
+    pub verified_modules: &'imports [VerifiedModule],
+    /// Human source metadata for the verified imports above.
+    pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
+    /// Frontend and tactic options for this Human session; no Machine session state is implied.
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanDocumentUpdateRequest<'src, 'imports> {
+    pub session_id: HumanSessionId,
+    /// Current module identity supplied by the Human API caller for the new snapshot.
+    pub current_module: ModuleName,
+    /// Full Human source for the replacement document snapshot.
+    pub current_source: HumanCurrentModuleSource<'src>,
+    /// Explicit verified imports available to this Human session after the update.
+    pub verified_modules: &'imports [VerifiedModule],
+    /// Human source metadata for the verified imports above.
+    pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
+    /// Frontend and tactic options for the new document snapshot.
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStateRequestHeader {
+    pub session_id: HumanSessionId,
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSessionCreateOk {
+    pub session_id: HumanSessionId,
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+    pub status: HumanProofSessionStatus,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDocumentUpdateOk {
+    pub session_id: HumanSessionId,
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+    pub status: HumanProofSessionStatus,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanProofSession {
+    pub session_id: HumanSessionId,
+    pub status: HumanProofSessionStatus,
+    pub document: HumanDocumentSnapshot,
+    pub source_interface: Option<HumanSourceInterface>,
+    pub active_imported_source_interfaces: Vec<HumanImportedSourceInterface>,
+    pub messages: Vec<HumanDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDocumentSnapshot {
+    pub document_id: HumanDocumentId,
+    pub document_version: HumanDocumentVersion,
+    pub current_module: ModuleName,
+    pub file_id: FileId,
+    pub source: String,
+    pub verified_modules: Vec<VerifiedModule>,
+    pub imported_source_interfaces: Vec<HumanImportedSourceInterface>,
+    pub options: HumanApiCompileOptions,
+}
+
+impl HumanDocumentSnapshot {
+    pub fn current_source(&self) -> HumanCurrentModuleSource<'_> {
+        HumanCurrentModuleSource {
+            file_id: self.file_id,
+            source: &self.source,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanProofSessionStatus {
+    Open,
+}
+
+impl HumanProofSessionStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Open => "open",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanProofSessionStore {
+    sessions: BTreeMap<HumanSessionId, HumanProofSession>,
+    next_session_index: u64,
+    next_document_index: u64,
+}
+
+impl HumanProofSessionStore {
+    pub fn new() -> Self {
+        Self {
+            sessions: BTreeMap::new(),
+            next_session_index: 1,
+            next_document_index: 1,
+        }
+    }
+
+    pub fn session(&self, session_id: &HumanSessionId) -> Option<&HumanProofSession> {
+        self.sessions.get(session_id)
+    }
+
+    pub fn session_count(&self) -> usize {
+        self.sessions.len()
+    }
+
+    pub(crate) fn session_mut(
+        &mut self,
+        session_id: &HumanSessionId,
+    ) -> Option<&mut HumanProofSession> {
+        self.sessions.get_mut(session_id)
+    }
+
+    pub(crate) fn allocate_session_ids(
+        &mut self,
+    ) -> Result<(HumanSessionId, HumanDocumentId), HumanSessionCreateError> {
+        let session_index = self
+            .next_session_index
+            .checked_add(1)
+            .ok_or(HumanSessionCreateError::IdSpaceExhausted)?;
+        let document_index = self
+            .next_document_index
+            .checked_add(1)
+            .ok_or(HumanSessionCreateError::IdSpaceExhausted)?;
+        let session_id =
+            HumanSessionId::new_unchecked(format!("hsess_{}", self.next_session_index));
+        let document_id =
+            HumanDocumentId::new_unchecked(format!("hdoc_{}", self.next_document_index));
+        self.next_session_index = session_index;
+        self.next_document_index = document_index;
+        Ok((session_id, document_id))
+    }
+
+    pub(crate) fn insert_session(&mut self, session: HumanProofSession) {
+        self.sessions.insert(session.session_id.clone(), session);
+    }
+}
+
+impl Default for HumanProofSessionStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanSessionId(String);
+
+impl HumanSessionId {
+    pub fn new_unchecked(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn wire(&self) -> &str {
+        self.as_str()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanDocumentId(String);
+
+impl HumanDocumentId {
+    pub fn new_unchecked(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn wire(&self) -> &str {
+        self.as_str()
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HumanDocumentVersion(u64);
+
+impl HumanDocumentVersion {
+    pub const fn initial() -> Self {
+        Self(1)
+    }
+
+    pub const fn new_unchecked(value: u64) -> Self {
+        Self(value)
+    }
+
+    pub const fn as_u64(self) -> u64 {
+        self.0
+    }
+
+    pub fn next(self) -> Option<Self> {
+        self.0.checked_add(1).map(Self)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -242,6 +457,47 @@ pub struct HumanTacticScriptRunOk {
     pub state: MachineProofState,
     pub deltas: Vec<MachineProofDelta>,
     pub proof: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanSessionCreateError {
+    IdSpaceExhausted,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanDocumentUpdateError {
+    UnknownSession {
+        session_id: HumanSessionId,
+    },
+    DocumentVersionOverflow {
+        session_id: HumanSessionId,
+        document_id: HumanDocumentId,
+        current: HumanDocumentVersion,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanStateRequestError {
+    UnknownSession {
+        session_id: HumanSessionId,
+    },
+    DocumentMismatch {
+        session_id: HumanSessionId,
+        requested: HumanDocumentId,
+        current: HumanDocumentId,
+    },
+    StaleDocumentVersion {
+        session_id: HumanSessionId,
+        document_id: HumanDocumentId,
+        requested: HumanDocumentVersion,
+        current: HumanDocumentVersion,
+    },
+    FutureDocumentVersion {
+        session_id: HumanSessionId,
+        document_id: HumanDocumentId,
+        requested: HumanDocumentVersion,
+        current: HumanDocumentVersion,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
