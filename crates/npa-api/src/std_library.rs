@@ -10779,6 +10779,61 @@ mod tests {
     }
 
     #[test]
+    fn docs_pin_human_ai_stdlib_release_contracts() {
+        let readme = include_str!(concat!("../../../", "README.md"));
+        let human_doc = include_str!(concat!("../../../doc/", "pha", "se6-human.md"));
+        let ai_doc = include_str!(concat!("../../../doc/", "pha", "se6-ai.md"));
+
+        for module in ["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"] {
+            assert_doc_contains(readme, module);
+            assert_doc_contains(human_doc, module);
+            assert_doc_contains(ai_doc, module);
+        }
+
+        for name in human_source_simp_intent(STD_NAT_SIMP_PROFILE_ID)
+            .into_iter()
+            .chain(human_source_simp_intent(STD_LIST_SIMP_PROFILE_ID))
+        {
+            assert_doc_contains(human_doc, &name);
+            assert_doc_contains(ai_doc, &name);
+        }
+        for name in human_source_rw_only_intent(STD_ALL_RW_PROFILE_ID) {
+            assert_doc_contains(human_doc, &name);
+            assert_doc_contains(ai_doc, &name);
+        }
+
+        for text in ["Eq.rec", "Std.Nat.Basic", "Std.Logic.Eq"] {
+            assert_doc_contains(human_doc, text);
+            assert_doc_contains(ai_doc, text);
+        }
+        for text in [
+            "Std.machine-release.json",
+            "Std.machine-import-bundles.json",
+            "Std.machine-theorem-index.json",
+            "release/build artifact",
+            "source_built_std_artifacts_feed_machine_release_sessions_retrieval_and_audit",
+        ] {
+            assert_doc_contains(human_doc, text);
+        }
+        for text in [
+            "Std.machine-release.json",
+            "Std.machine-import-bundles.json",
+            "Std.machine-theorem-index.json",
+            "release/build artifact",
+        ] {
+            assert_doc_contains(ai_doc, text);
+        }
+        for text in [
+            "std.nat.mvp",
+            "std.list.mvp",
+            "std.all.mvp",
+            "release/build artifact",
+        ] {
+            assert_doc_contains(readme, text);
+        }
+    }
+
+    #[test]
     fn machine_release_identity_ignores_human_source_layout_and_debug_views() {
         let package = TestPackage::new("human_source_ignored_by_machine_release");
         write_valid_mvp_package(package.path());
@@ -21156,6 +21211,10 @@ import Std.Nat
 
     fn string_set(values: &[&str]) -> BTreeSet<String> {
         values.iter().map(|value| (*value).to_owned()).collect()
+    }
+
+    fn assert_doc_contains(doc: &str, needle: &str) {
+        assert!(doc.contains(needle), "stdlib doc missing text: {needle}");
     }
 
     fn rewrite_profile_rule_names_by_safety(

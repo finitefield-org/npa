@@ -111,6 +111,35 @@ Phase 6 AI MVP の wire artifact set は `doc/phase6-ai.md` の `Std.machine-*.j
 AI 向け import bundle / theorem index / simp profile / rewrite profile は release-wide artifact から読みます。
 AI 探索経路が Human source file layout や per-module debug JSON を読むことを必須にしてはいけません。
 
+AI Profile の release-wide generated artifact は次です。
+
+```text
+Std.machine-release.json
+Std.machine-import-bundles.json
+Std.machine-theorem-index.json
+Std.machine-simp-profiles.json
+Std.machine-rewrite-profiles.json
+Std.machine-axiom-report.json
+Std.machine-prompt-metadata.json  optional
+```
+
+## 1.1 artifact の扱い
+
+このリポジトリで正本として commit するのは、Human source / Rust implementation / tests / docs です。
+source package から生成される `.npcert`、per-module debug JSON、release-wide `Std.machine-*.json` は
+deterministic release/build artifact です。
+
+release package や CI artifact として publish してよいですが、通常の開発差分では generated artifact を
+手書き・手動更新して commit しません。
+tests は temp package に `Std/Logic.npa` などの source skeleton を配置し、そこから raw `.npcert` と
+machine sidecar を再生成して検証します。
+stale artifact が working tree に残った場合は、source / implementation の変更ではなく build output として扱い、
+commit 前に削除または再生成元を確認します。
+
+AI 向け経路は release-wide machine artifact を読みます。
+Human debug view、pretty statement、source layout は説明・診断用であり、Phase 7 retrieval や Phase 5 session create の
+必須入力ではありません。
+
 Phase 6 の完了条件は：
 
 ```text
@@ -1221,6 +1250,14 @@ Std.List
 Std.Algebra.Basic
 ```
 
+この4つだけが MVP release module です。
+過去の Human/frontend compatibility fixture で使う `Std.Nat.Basic` や `Std.Logic.Eq` は、
+release module でも source package root でもありません。
+同様に `Std/Nat/Basic.npa` や `Std/Logic/Eq.npa` は、legacy fixture が存在しても
+`npa.stdlib.mvp.v1` の package locator table には入りません。
+release package の source / certificate path は `Std/Nat.npa` / `Std/Nat.npcert` と
+`Std/Logic.npa` / `Std/Logic.npcert` のような fixed 4-module layout に限ります。
+
 内部 import：
 
 ```text
@@ -1681,6 +1718,33 @@ Phase 6 が完了したと言える条件はこれです。
 - simp-lite が Nat/List の基本ゴールを閉じられる
 - theorem search が exact/apply/rw/simp 候補を返せる
 - Phase 4 tactic だけで基本定理の再証明テストが通る
+```
+
+実装上は、主に次の regression で trace します。
+
+```text
+source package / certificate:
+  builds_mvp_certificate_artifacts_from_source_package
+  source_built_std_artifacts_feed_machine_release_sessions_retrieval_and_audit
+
+release identity / generated artifact boundary:
+  machine_release_identity_ignores_human_source_layout_and_debug_views
+  source_built_std_release_rejects_stale_machine_artifact_refs
+
+fixed module and legacy fixture boundary:
+  fixes_mvp_source_layout_without_expanding_release_modules
+  docs_pin_human_ai_stdlib_release_contracts
+
+simp / rw / axiom policy:
+  classifies_std_nat_add_rules_as_simp_safe_or_rw_only
+  classifies_std_list_rules_and_keeps_late_map_theorems_out_of_mvp_profiles
+  mvp_certificate_loader_rejects_custom_axioms
+  mvp_certificate_loader_rejects_nonstandard_eq_rec_exception
+
+tactic / search handoff:
+  phase6_human_real_stdlib_phase4_tactic_regressions_compile
+  phase7_human_real_stdlib_search_missing_result_regressions
+  std_library_release_artifacts_drive_m8_search_candidates_through_machine_api_batch
 ```
 
 ---

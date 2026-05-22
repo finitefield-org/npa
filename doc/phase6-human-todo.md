@@ -638,17 +638,17 @@ P6H-12
 
 実装タスク:
 
-- [ ] README の実装状況に Phase 6 Human standard-library source / artifact handoff の状態を反映する。
-- [ ] `doc/phase6-human.md` と `doc/phase6-ai.md` の module set、simp set、RwOnly set、axiom exception が一致していることを確認する。
-- [ ] legacy fixture module names と release module names の関係を docs / tests で明確にする。
-- [ ] final regression gate として formatting、clippy、workspace tests、Phase 9 regression script を実行する。
-- [ ] generated artifacts が commit 対象か build artifact かを docs に明記する。
+- [x] README の実装状況に Phase 6 Human standard-library source / artifact handoff の状態を反映する。
+- [x] `doc/phase6-human.md` と `doc/phase6-ai.md` の module set、simp set、RwOnly set、axiom exception が一致していることを確認する。
+- [x] legacy fixture module names と release module names の関係を docs / tests で明確にする。
+- [x] final regression gate として formatting、clippy、workspace tests、Phase 9 regression script を実行する。
+- [x] generated artifacts が commit 対象か build artifact かを docs に明記する。
 
 受け入れ条件:
 
-- [ ] Phase 6 Human 完了条件が docs と tests で trace できる。
-- [ ] `./scripts/phase9-regression.sh` が通る。
-- [ ] working tree に generated junk や stale fixture artifact が残らない。
+- [x] Phase 6 Human 完了条件が docs と tests で trace できる。
+- [x] `./scripts/phase9-regression.sh` が通る。
+- [x] working tree に generated junk や stale fixture artifact が残らない。
 
 検証:
 

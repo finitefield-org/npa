@@ -104,6 +104,19 @@ Std.machine-axiom-report.json
 Std.machine-prompt-metadata.json  optional
 ```
 
+## 2.1 generated artifact policy
+
+`Std/*.npcert` と `Std.machine-*.json` は release/build artifact です。
+この repository では、通常の開発差分として generated artifact を直接 commit しません。
+source package、Rust generator / validator、regression tests、docs を正本にし、tests は temp package 上で
+raw `.npcert` と release sidecar を再生成して検証します。
+
+release package を配布する場合は、上の generated artifact set を package artifact として含めてよいです。
+その場合も artifact identity は file timestamp や JSON formatting ではなく、この文書の canonical bytes と
+hash validation order だけで決まります。
+Human Profile の per-module debug JSON、source comments、pretty statement、prompt metadata は
+`std_library_release_hash` の入力ではありません。
+
 `npa.stdlib.mvp.v1` の certificate artifact path は次の table に固定します。
 この table にない release module や別 path に置かれた同名 module は MVP release artifact として invalid です。
 filesystem path は packaging locator であり、canonical bytes には入りません。
@@ -120,6 +133,11 @@ MVP release module membership is exact.
 locator must provide each module at the path shown above.
 Missing modules, extra modules, duplicate modules, non-canonical module order, or a path mismatch for one of these fixed module names
 are `InvalidStdLibraryRelease`.
+
+Legacy Human/frontend fixture module names such as `Std.Nat.Basic` and `Std.Logic.Eq` are not MVP release modules.
+They may remain in parser, resolver, or compatibility tests, but the release loader must reject them if they appear as
+`MachineStdLibraryRelease.modules`, source package members, fixed certificate locators, import bundle roots, or theorem-index owners.
+The only MVP release module names are the four names in the fixed table above.
 
 The package locator is a validation input, not trusted payload.
 For the MVP filesystem package, the validator receives one package root directory and resolves only the fixed POSIX relative paths

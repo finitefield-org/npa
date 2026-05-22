@@ -122,6 +122,14 @@ optional assistant payload を提供します。Phase 5 Human の統合 fixture 
 session create、state lookup、tactic run、search、display、verify を通し、同時に
 Human path が Phase 7 Machine API の candidate hash / state fingerprint を変えないことを
 regression として固定しています。
+Phase 6 Human / AI の標準ライブラリ handoff も `crates/npa-api` で実装済みです。
+Human 側は `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` の source package layout と
+certificate build boundary を固定し、AI 側は同じ raw `.npcert` から release manifest、
+import bundles、theorem index、rewrite / simp profiles、axiom report を再生成します。
+`std.nat.mvp` / `std.list.mvp` / `std.all.mvp` は Phase 5 `/machine/sessions` 相当の request に展開して
+再検証され、Phase 7 retrieval 候補は必ず Phase 5 batch / replay / verify に戻してから採用する
+regression として固定されています。生成される `.npcert` と `Std.machine-*.json` は release/build artifact であり、
+このリポジトリでは source と tests を正本として temp package 上で再生成します。
 同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
 Phase 9 advanced automation endpoint substrate も実装されています。
 これらの `npa-api` automation / library API は候補生成、検査要求の構成、
