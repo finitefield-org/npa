@@ -1,3 +1,13 @@
+//! Phase 6 standard-library machine boundary.
+//!
+//! The Human profile owns source text, notation, pretty statements, and
+//! human-facing attributes used to author the library. This module owns the
+//! Machine/AI release boundary: fixed `.npcert` locators, release-wide
+//! `Std.machine-*.json` artifacts, and identities derived from verified
+//! certificates. Human source files, per-module debug JSON, and attribute
+//! tables may exist beside a package as build/debug inputs, but they are not
+//! read by the AI fast path and are never release hash inputs.
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs, io,
@@ -41,6 +51,11 @@ const STD_LOGIC_PATH: &str = "Std/Logic.npcert";
 const STD_NAT_PATH: &str = "Std/Nat.npcert";
 const STD_LIST_PATH: &str = "Std/List.npcert";
 const STD_ALGEBRA_BASIC_PATH: &str = "Std/Algebra/Basic.npcert";
+const STD_SOURCE_PACKAGE_ROOT: &str = "Std";
+const STD_LOGIC_SOURCE_PATH: &str = "Std/Logic.npa";
+const STD_NAT_SOURCE_PATH: &str = "Std/Nat.npa";
+const STD_LIST_SOURCE_PATH: &str = "Std/List.npa";
+const STD_ALGEBRA_BASIC_SOURCE_PATH: &str = "Std/Algebra/Basic.npa";
 const STD_MACHINE_RELEASE_JSON_PATH: &str = "Std.machine-release.json";
 const STD_MACHINE_IMPORT_BUNDLES_JSON_PATH: &str = "Std.machine-import-bundles.json";
 const STD_MACHINE_THEOREM_INDEX_JSON_PATH: &str = "Std.machine-theorem-index.json";
@@ -114,6 +129,27 @@ impl MachineStdModuleLocator {
         Self {
             module,
             relative_path: relative_path.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MachineStdSourcePackageEntry {
+    pub module: Name,
+    pub source_relative_path: String,
+    pub certificate_relative_path: String,
+}
+
+impl MachineStdSourcePackageEntry {
+    pub fn new(
+        module: Name,
+        source_relative_path: impl Into<String>,
+        certificate_relative_path: impl Into<String>,
+    ) -> Self {
+        Self {
+            module,
+            source_relative_path: source_relative_path.into(),
+            certificate_relative_path: certificate_relative_path.into(),
         }
     }
 }
@@ -1178,6 +1214,35 @@ pub fn machine_std_mvp_module_locators() -> Vec<MachineStdModuleLocator> {
         MachineStdModuleLocator::new(Name::from_dotted("Std.Logic"), STD_LOGIC_PATH),
         MachineStdModuleLocator::new(
             Name::from_dotted("Std.Algebra.Basic"),
+            STD_ALGEBRA_BASIC_PATH,
+        ),
+    ]
+}
+
+pub fn machine_std_mvp_source_package_root() -> &'static str {
+    STD_SOURCE_PACKAGE_ROOT
+}
+
+pub fn machine_std_mvp_source_package_layout() -> Vec<MachineStdSourcePackageEntry> {
+    vec![
+        MachineStdSourcePackageEntry::new(
+            Name::from_dotted("Std.Logic"),
+            STD_LOGIC_SOURCE_PATH,
+            STD_LOGIC_PATH,
+        ),
+        MachineStdSourcePackageEntry::new(
+            Name::from_dotted("Std.Nat"),
+            STD_NAT_SOURCE_PATH,
+            STD_NAT_PATH,
+        ),
+        MachineStdSourcePackageEntry::new(
+            Name::from_dotted("Std.List"),
+            STD_LIST_SOURCE_PATH,
+            STD_LIST_PATH,
+        ),
+        MachineStdSourcePackageEntry::new(
+            Name::from_dotted("Std.Algebra.Basic"),
+            STD_ALGEBRA_BASIC_SOURCE_PATH,
             STD_ALGEBRA_BASIC_PATH,
         ),
     ]
@@ -9552,6 +9617,113 @@ mod tests {
     }
 
     #[test]
+    fn fixes_mvp_source_layout_without_expanding_release_modules() {
+        assert_eq!(machine_std_mvp_source_package_root(), "Std");
+
+        let source_layout = machine_std_mvp_source_package_layout();
+        assert_eq!(
+            source_layout
+                .iter()
+                .map(|entry| entry.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"]
+        );
+        assert_eq!(
+            source_layout
+                .iter()
+                .map(|entry| entry.source_relative_path.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                "Std/Logic.npa",
+                "Std/Nat.npa",
+                "Std/List.npa",
+                "Std/Algebra/Basic.npa"
+            ]
+        );
+        assert_eq!(
+            source_layout
+                .iter()
+                .map(|entry| entry.certificate_relative_path.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                "Std/Logic.npcert",
+                "Std/Nat.npcert",
+                "Std/List.npcert",
+                "Std/Algebra/Basic.npcert"
+            ]
+        );
+
+        let release_modules = machine_std_mvp_module_locators()
+            .iter()
+            .map(|locator| locator.module.as_dotted())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            release_modules,
+            vec!["Std.Nat", "Std.List", "Std.Logic", "Std.Algebra.Basic"]
+        );
+
+        let source_modules = source_layout
+            .iter()
+            .map(|entry| entry.module.as_dotted())
+            .collect::<Vec<_>>();
+        assert_ne!(source_modules, release_modules);
+
+        // `Std.Nat.Basic` and `Std.Logic.Eq` are legacy Human/frontend fixture
+        // module names. They may appear in tests, but not as Phase 6 release
+        // modules or source-package roots.
+        for legacy_fixture in ["Std.Nat.Basic", "Std.Logic.Eq"] {
+            assert!(!release_modules.contains(&legacy_fixture.to_owned()));
+            assert!(!source_modules.contains(&legacy_fixture.to_owned()));
+        }
+    }
+
+    #[test]
+    fn machine_release_identity_ignores_human_source_layout_and_debug_views() {
+        let package = TestPackage::new("human_source_ignored_by_machine_release");
+        write_valid_mvp_package(package.path());
+        let loaded_before = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let import_bundles = generate_machine_std_mvp_import_bundle_set(&loaded_before).unwrap();
+        let mut axiom_report = empty_axiom_report_for(&loaded_before);
+        axiom_report.axiom_report_hash = machine_std_axiom_report_hash(&axiom_report).unwrap();
+        let release_before = release_manifest_for(&loaded_before, axiom_report.axiom_report_hash);
+        let release_hash_before = machine_std_library_release_hash(&release_before).unwrap();
+        let release_json = release_manifest_json(&release_before);
+        let import_bundles_json = import_bundle_set_json(&import_bundles);
+        let axiom_report_json = axiom_report_json(&axiom_report);
+
+        write_poison_human_std_source_and_debug_files(package.path());
+
+        let loaded_after = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let mut axiom_report_after = empty_axiom_report_for(&loaded_after);
+        axiom_report_after.axiom_report_hash =
+            machine_std_axiom_report_hash(&axiom_report_after).unwrap();
+        let release_after =
+            release_manifest_for(&loaded_after, axiom_report_after.axiom_report_hash);
+        assert_eq!(
+            machine_std_library_release_hash(&release_after).unwrap(),
+            release_hash_before
+        );
+
+        let validated = load_machine_std_mvp_release_with_import_bundles_from_json(
+            package.path(),
+            &release_json,
+            &import_bundles_json,
+            &axiom_report_json,
+        )
+        .unwrap();
+        assert_eq!(validated.std_library_release_hash, release_hash_before);
+        assert_eq!(
+            validated
+                .loaded
+                .modules()
+                .iter()
+                .map(|module| module.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Nat", "Std.List", "Std.Logic", "Std.Algebra.Basic"]
+        );
+    }
+
+    #[test]
     fn rejects_bad_mvp_locator_membership_order_and_path() {
         let mut missing = machine_std_mvp_module_locators();
         missing.pop();
@@ -9619,25 +9791,27 @@ mod tests {
 
     #[test]
     fn rejects_core_or_prelude_import_entry_as_unresolved_release_import() {
-        let package = TestPackage::new("core_import_entry");
-        let mut certs = mvp_certificate_bytes();
-        let mut logic = decode_module_cert(certs.logic.as_slice()).unwrap();
-        logic.imports.push(ImportEntry {
-            module: Name::from_dotted("Core"),
-            export_hash: [0; 32],
-            certificate_hash: Some([0; 32]),
-        });
-        certs.logic = encode_module_cert(&logic).unwrap();
-        write_mvp_package(package.path(), &certs);
+        for imported in ["Core", "Prelude"] {
+            let package = TestPackage::new(&format!("{}_import_entry", imported.to_lowercase()));
+            let mut certs = mvp_certificate_bytes();
+            let mut logic = decode_module_cert(certs.logic.as_slice()).unwrap();
+            logic.imports.push(ImportEntry {
+                module: Name::from_dotted(imported),
+                export_hash: [0; 32],
+                certificate_hash: Some([0; 32]),
+            });
+            certs.logic = encode_module_cert(&logic).unwrap();
+            write_mvp_package(package.path(), &certs);
 
-        let err = load_machine_std_mvp_certificates(package.path()).unwrap_err();
-        assert!(matches!(
-            err,
-            MachineStdReleaseLoaderError::UnresolvedImport {
-                imported_module,
-                ..
-            } if imported_module == Name::from_dotted("Core")
-        ));
+            let err = load_machine_std_mvp_certificates(package.path()).unwrap_err();
+            assert!(matches!(
+                err,
+                MachineStdReleaseLoaderError::UnresolvedImport {
+                    imported_module,
+                    ..
+                } if imported_module == Name::from_dotted(imported)
+            ));
+        }
     }
 
     #[test]
@@ -11904,6 +12078,52 @@ mod tests {
         let path = join_posix_relative_path(root, relative_path);
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, bytes).unwrap();
+    }
+
+    fn write_text_artifact(root: &Path, relative_path: &str, contents: &str) {
+        let path = join_posix_relative_path(root, relative_path);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, contents).unwrap();
+    }
+
+    fn write_poison_human_std_source_and_debug_files(root: &Path) {
+        for entry in machine_std_mvp_source_package_layout() {
+            write_text_artifact(
+                root,
+                &entry.source_relative_path,
+                "not valid Human NPA source and not a Machine input",
+            );
+        }
+        for relative_path in [
+            "Std/Logic.index.json",
+            "Std/Logic.axioms.json",
+            "Std/Logic.graph.json",
+            "Std/Logic.attributes.json",
+            "Std/Nat.index.json",
+            "Std/Nat.axioms.json",
+            "Std/Nat.graph.json",
+            "Std/Nat.attributes.json",
+            "Std/List.index.json",
+            "Std/List.axioms.json",
+            "Std/List.graph.json",
+            "Std/List.attributes.json",
+            "Std/Algebra/Basic.index.json",
+            "Std/Algebra/Basic.axioms.json",
+            "Std/Algebra/Basic.graph.json",
+            "Std/Algebra/Basic.attributes.json",
+        ] {
+            write_text_artifact(root, relative_path, "{not valid json");
+        }
+        write_text_artifact(
+            root,
+            "Std/Nat/Basic.npa",
+            "legacy fixture source must not create a release module",
+        );
+        write_text_artifact(
+            root,
+            "Std/Logic/Eq.npa",
+            "legacy fixture source must not create a release module",
+        );
     }
 
     fn empty_module(name: &str) -> CoreModule {

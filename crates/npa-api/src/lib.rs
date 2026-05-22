@@ -489,7 +489,8 @@ pub use std_library::{
     machine_std_import_bundle_hash, machine_std_import_bundle_set_canonical_bytes,
     machine_std_import_bundle_set_hash, machine_std_library_release_canonical_bytes,
     machine_std_library_release_hash, machine_std_module_artifact_canonical_bytes,
-    machine_std_mvp_module_locators, machine_std_prompt_example_canonical_bytes,
+    machine_std_mvp_module_locators, machine_std_mvp_source_package_layout,
+    machine_std_mvp_source_package_root, machine_std_prompt_example_canonical_bytes,
     machine_std_prompt_metadata_canonical_bytes, machine_std_prompt_metadata_hash,
     machine_std_prompt_metadata_set_canonical_bytes,
     machine_std_rewrite_descriptor_canonical_bytes, machine_std_rewrite_profile_canonical_bytes,
@@ -522,9 +523,9 @@ pub use std_library::{
     MachineStdReleaseLoaderError, MachineStdReleaseSidecarJson, MachineStdRewriteDescriptor,
     MachineStdRewriteProfile, MachineStdRewriteProfileError, MachineStdRewriteProfileSet,
     MachineStdRewriteSafety, MachineStdSimpProfile, MachineStdSimpProfileError,
-    MachineStdSimpProfileSet, MachineStdTacticOptionsRecipe, MachineStdTheoremEntry,
-    MachineStdTheoremIndex, MachineStdTheoremIndexError, MachineStdTheoremKind,
-    MachineStdValidatedRelease,
+    MachineStdSimpProfileSet, MachineStdSourcePackageEntry, MachineStdTacticOptionsRecipe,
+    MachineStdTheoremEntry, MachineStdTheoremIndex, MachineStdTheoremIndexError,
+    MachineStdTheoremKind, MachineStdValidatedRelease,
 };
 pub use tactic::{
     parse_machine_tactic_batch_request, parse_machine_tactic_run_request,

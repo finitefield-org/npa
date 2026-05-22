@@ -201,18 +201,18 @@ cargo test --workspace
 
 実装タスク:
 
-- [ ] `doc/phase6-human.md`、`doc/phase6-ai.md`、README の境界を実装コメントまたは module docs に反映する。
-- [ ] standard-library source package root を固定する。public release module name は `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` のみとする。
-- [ ] source package root は Phase 6 design の `Std/...` layout を materialize し、source path と `.npcert` artifact path の対応を docs / tests に固定する。
-- [ ] Human source layout から machine release identity を推測しない regression を追加する。
-- [ ] AI fast path が Human source parser / per-module debug JSON / Human attribute table を読まない regression を追加する。
-- [ ] legacy fixture module name `Std.Nat.Basic` / `Std.Logic.Eq` を Phase 6 release module と混同しない方針を test comment に明記する。
+- [x] `doc/phase6-human.md`、`doc/phase6-ai.md`、README の境界を実装コメントまたは module docs に反映する。
+- [x] standard-library source package root を固定する。public release module name は `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` のみとする。
+- [x] source package root は Phase 6 design の `Std/...` layout を materialize し、source path と `.npcert` artifact path の対応を docs / tests に固定する。
+- [x] Human source layout から machine release identity を推測しない regression を追加する。
+- [x] AI fast path が Human source parser / per-module debug JSON / Human attribute table を読まない regression を追加する。
+- [x] legacy fixture module name `Std.Nat.Basic` / `Std.Logic.Eq` を Phase 6 release module と混同しない方針を test comment に明記する。
 
 受け入れ条件:
 
-- [ ] Phase 6 release module membership が exactly four modules として test で固定されている。
-- [ ] `Core` / prelude が Phase 2 ImportEntry として出た場合に reject される境界が維持されている。
-- [ ] Human integration の前後で Machine API candidate identity / state fingerprint が変わらない regression が通る。
+- [x] Phase 6 release module membership が exactly four modules として test で固定されている。
+- [x] `Core` / prelude が Phase 2 ImportEntry として出た場合に reject される境界が維持されている。
+- [x] Human integration の前後で Machine API candidate identity / state fingerprint が変わらない regression が通る。
 
 検証:
 
