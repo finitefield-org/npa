@@ -21,6 +21,8 @@ Current bundles:
 - `Proofs/Ai/Algebra/Square/`: square API and square-expansion theorem targets importing
   `Std.Logic.Eq` and `Proofs.Ai.Algebra.Ring`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
+- `Proofs/Ai/OrderedField/`: order and square-root API theorem targets importing `Std.Logic.Eq`,
+  `Proofs.Ai.Algebra.Ring`, and `Proofs.Ai.Algebra.Square`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
@@ -308,9 +310,44 @@ Theorem targets:
 | `sq_sub` | `sq (a - b) = sq a - 2 * a * b + sq b` |
 | `sum_two_squares_comm` | `sq a + sq b = sq b + sq a` |
 | `sq_eq_sq_of_eq_or_neg_eq` | square equality from an equality-or-negated-equality witness shape |
-| `square_nonneg` | predicate-generic bridge `Nonneg 0 -> Nonneg (sq a)` before P11 introduces `le` |
+| `square_nonneg` | predicate-generic bridge `Nonneg 0 -> Nonneg (sq a)`; P11 adds the concrete `le_square_nonneg` version |
 
-### P11+: Pythagorean Theorem Roadmap
+### P11: Ordered Field Corpus
+
+Module: `Proofs.Ai.OrderedField`
+
+Build on `Proofs.Ai.Algebra.Ring` and `Proofs.Ai.Algebra.Square` with the first order and
+square-root API targets needed by the later metric form of Pythagoras. This layer remains a
+concrete singleton-carrier corpus: `le`, `lt`, and `sqrt` are API declarations, while the order
+and square-root facts are certificate-checked theorem targets. `le`/`lt` are currently trivial
+relations over the singleton scalar carrier; later abstract ordered-field work can replace this
+with structure fields without changing the trusted boundary.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `le` | non-strict order relation API |
+| `lt` | strict order relation API |
+| `sqrt` | square-root API for the later metric form |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `le_refl` | `a <= a` |
+| `le_trans` | `a <= b -> b <= c -> a <= c` |
+| `add_nonneg` | `0 <= a -> 0 <= b -> 0 <= a + b` |
+| `mul_nonneg` | `0 <= a -> 0 <= b -> 0 <= a * b` |
+| `le_square_nonneg` | concrete `le` version of `0 <= sq a`; named separately from P10's imported `square_nonneg` |
+| `sqrt_nonneg` | `0 <= sqrt a` |
+| `sqrt_square_of_nonneg` | `0 <= a -> sqrt (sq a) = a` |
+| `sqrt_mul_self` | `0 <= a -> sqrt (a * a) = a` |
+| `eq_of_square_eq_square_nonneg` | nonnegative equality from equal squares |
+
+### P12+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -338,10 +375,11 @@ Completed prerequisite:
   ring-shaped law targets over a concrete singleton carrier.
 - P10 `Proofs.Ai.Algebra.Square` supplies `two`, `sq`, and square-expansion theorem targets over
   the same concrete scalar carrier.
+- P11 `Proofs.Ai.OrderedField` supplies `le`, `lt`, `sqrt`, and the nonnegative square-root theorem
+  targets needed by later metric statements.
 
 | Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P11 | `Proofs.Ai.OrderedField` | `le`, `lt`, `sqrt` | `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_square_of_nonneg` for the later unsquared metric form | `sqrt_mul_self`, `dist_nonneg`, `eq_of_square_eq_square_nonneg` |
 | P12 | `Proofs.Ai.Vector.Basic` | `Vec`, `vec_zero`, `vec_add`, `vec_neg`, `vec_sub` | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
 | P13 | `Proofs.Ai.Vector.Dot` | `dot`, `normSq`, `distSq` | `norm_sq_def`, `dist_sq_def`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `dot_comm` | `parallelogram_law`, `polarization_identity`, `norm_sq_nonneg`, `dot_self_eq_norm_sq` |
 | P14 | `Proofs.Ai.Geometry.RightTriangle` | `Perp`, `RightTriangle` | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `hypotenuse_vector_eq_sub_legs`, `norm_sq_add_of_dot_zero`, `pythagorean_distance_sq` | `law_of_cosines`, `thales_theorem`, `right_triangle_area`, `median_to_hypotenuse`, `altitude_on_hypotenuse` |
@@ -450,7 +488,7 @@ Theorem targets:
 
 #### `Proofs.Ai.OrderedField`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
@@ -466,7 +504,7 @@ Theorem targets:
 | `le_trans` | `a <= b -> b <= c -> a <= c` |
 | `add_nonneg` | `0 <= a -> 0 <= b -> 0 <= a + b` |
 | `mul_nonneg` | `0 <= a -> 0 <= b -> 0 <= a * b` |
-| `square_nonneg` | `0 <= sq a` if it is not imported from `Algebra.Square` |
+| `le_square_nonneg` | `0 <= sq a` over the ordered singleton scalar carrier; avoids colliding with P10's imported `square_nonneg` bridge |
 | `sqrt_nonneg` | `0 <= sqrt a` |
 | `sqrt_square_of_nonneg` | `0 <= a -> sqrt (sq a) = a` |
 | `sqrt_mul_self` | `0 <= a -> sqrt (a * a) = a` |

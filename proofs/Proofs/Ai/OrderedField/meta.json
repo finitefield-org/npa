@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.OrderedField",
+  "source": "Proofs/Ai/OrderedField/source.npa",
+  "certificate": "Proofs/Ai/OrderedField/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c78c137f0a3e9e8c12dcb24a6a1dab306bc2e03a649cebe4bc90f8680a24e118",
+  "certificate_file_sha256": "sha256:fb3037a621581cfdea3b7994424e7681decda1b02f0c5e6ddc1031d629e12764",
+  "export_hash": "sha256:d6b08e865fb570cb11e57e903463edcd77f6f821126d9375dde24d73055ebf3f",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:5c2ecc235395712e11cc37d08e5dcbc6b2529f7f46a0cc7468c8afdc4de24d8a",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square"],
+  "axioms": [],
+  "declarations": [
+    { "name": "le", "kind": "def" },
+    { "name": "lt", "kind": "def" },
+    { "name": "sqrt", "kind": "def" },
+    { "name": "le_refl", "kind": "theorem" },
+    { "name": "le_trans", "kind": "theorem" },
+    { "name": "add_nonneg", "kind": "theorem" },
+    { "name": "mul_nonneg", "kind": "theorem" },
+    { "name": "le_square_nonneg", "kind": "theorem" },
+    { "name": "sqrt_nonneg", "kind": "theorem" },
+    { "name": "sqrt_square_of_nonneg", "kind": "theorem" },
+    { "name": "sqrt_mul_self", "kind": "theorem" },
+    { "name": "eq_of_square_eq_square_nonneg", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

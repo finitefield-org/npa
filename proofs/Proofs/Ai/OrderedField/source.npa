@@ -1,0 +1,52 @@
+import Std.Logic.Eq
+import Proofs.Ai.Algebra.Ring
+import Proofs.Ai.Algebra.Square
+
+def le :
+  forall (a : RingElem), forall (b : RingElem), Prop :=
+  fun a => fun b => @Eq.{1} RingElem RingElem.unit RingElem.unit
+
+def lt :
+  forall (a : RingElem), forall (b : RingElem), Prop :=
+  fun a => fun b => @Eq.{1} RingElem RingElem.unit RingElem.unit
+
+def sqrt :
+  forall (a : RingElem), RingElem :=
+  fun a => a
+
+theorem le_refl :
+  forall (a : RingElem), le a a :=
+  fun a => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem le_trans :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), forall (hab : le a b), forall (hbc : le b c), le a c :=
+  fun a => fun b => fun c => fun hab => fun hbc => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem add_nonneg :
+  forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), le zero (add a b) :=
+  fun a => fun b => fun ha => fun hb => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem mul_nonneg :
+  forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), le zero (mul a b) :=
+  fun a => fun b => fun ha => fun hb => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem le_square_nonneg :
+  forall (a : RingElem), le zero (sq a) :=
+  fun a => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem sqrt_nonneg :
+  forall (a : RingElem), le zero (sqrt a) :=
+  fun a => @Eq.refl.{1} RingElem RingElem.unit
+
+theorem sqrt_square_of_nonneg :
+  forall (a : RingElem), forall (ha : le zero a), @Eq.{1} RingElem (sqrt (sq a)) a :=
+  fun a => fun ha => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a
+
+theorem sqrt_mul_self :
+  forall (a : RingElem), forall (ha : le zero a), @Eq.{1} RingElem (sqrt (mul a a)) a :=
+  fun a => fun ha => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a
+
+theorem eq_of_square_eq_square_nonneg :
+  forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), forall (hsq : @Eq.{1} RingElem (sq a) (sq b)), @Eq.{1} RingElem a b :=
+  fun a => fun b => fun ha => fun hb => fun hsq => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x b) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) b) a
+

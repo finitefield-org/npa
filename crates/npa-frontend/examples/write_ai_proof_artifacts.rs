@@ -159,6 +159,23 @@ const SQUARE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.OrderedField",
+    source_path: "Proofs/Ai/OrderedField/source.npa",
+    certificate_path: "Proofs/Ai/OrderedField/certificate.npcert",
+    meta_path: "Proofs/Ai/OrderedField/meta.json",
+    replay_path: "Proofs/Ai/OrderedField/replay.json",
+    imports: &[
+        "Std.Logic.Eq",
+        "Proofs.Ai.Algebra.Ring",
+        "Proofs.Ai.Algebra.Square",
+    ],
+    inductives: &[],
+    definitions: ORDERED_FIELD_DEFINITIONS,
+    theorems: ORDERED_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -919,6 +936,96 @@ const SQUARE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "le",
+        universe_params: &[],
+        ty: "forall (a : RingElem), forall (b : RingElem), Prop",
+        value: "fun a => fun b => @Eq.{1} RingElem RingElem.unit RingElem.unit",
+    },
+    DefinitionArtifact {
+        name: "lt",
+        universe_params: &[],
+        ty: "forall (a : RingElem), forall (b : RingElem), Prop",
+        value: "fun a => fun b => @Eq.{1} RingElem RingElem.unit RingElem.unit",
+    },
+    DefinitionArtifact {
+        name: "sqrt",
+        universe_params: &[],
+        ty: "forall (a : RingElem), RingElem",
+        value: "fun a => a",
+    },
+];
+
+const ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "le_refl",
+        universe_params: &[],
+        statement: "forall (a : RingElem), le a a",
+        proof: "fun a => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "le_trans",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), forall (hab : le a b), forall (hbc : le b c), le a c",
+        proof:
+            "fun a => fun b => fun c => fun hab => fun hbc => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "add_nonneg",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), le zero (add a b)",
+        proof:
+            "fun a => fun b => fun ha => fun hb => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "mul_nonneg",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), le zero (mul a b)",
+        proof:
+            "fun a => fun b => fun ha => fun hb => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "le_square_nonneg",
+        universe_params: &[],
+        statement: "forall (a : RingElem), le zero (sq a)",
+        proof: "fun a => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "sqrt_nonneg",
+        universe_params: &[],
+        statement: "forall (a : RingElem), le zero (sqrt a)",
+        proof: "fun a => @Eq.refl.{1} RingElem RingElem.unit",
+    },
+    TheoremArtifact {
+        name: "sqrt_square_of_nonneg",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (ha : le zero a), @Eq.{1} RingElem (sqrt (sq a)) a",
+        proof:
+            "fun a => fun ha => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a",
+    },
+    TheoremArtifact {
+        name: "sqrt_mul_self",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (ha : le zero a), @Eq.{1} RingElem (sqrt (mul a a)) a",
+        proof:
+            "fun a => fun ha => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a",
+    },
+    TheoremArtifact {
+        name: "eq_of_square_eq_square_nonneg",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), forall (hsq : @Eq.{1} RingElem (sq a) (sq b)), @Eq.{1} RingElem a b",
+        proof:
+            "fun a => fun b => fun ha => fun hb => fun hsq => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x b) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) b) a",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -992,10 +1099,37 @@ fn run() -> Result<(), String> {
         &square_imports,
         &square_source_interfaces,
     )?;
+    let ordered_field_imports = vec![
+        eq_import.clone(),
+        ring.verified_module.clone(),
+        square.verified_module.clone(),
+    ];
+    let ordered_field_source_interfaces = vec![
+        eq_source_interface.clone(),
+        ring.source_interface.clone(),
+        square.source_interface.clone(),
+    ];
+    let ordered_field = build_and_write_module(
+        &proof_root,
+        &ORDERED_FIELD_MODULE,
+        &ordered_field_imports,
+        &ordered_field_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq, nat, prop, reduction, eq_reasoning, ring, square]).as_bytes(),
+        manifest_toml(&[
+            basic,
+            eq,
+            nat,
+            prop,
+            reduction,
+            eq_reasoning,
+            ring,
+            square,
+            ordered_field,
+        ])
+        .as_bytes(),
     )?;
 
     Ok(())

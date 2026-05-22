@@ -144,3 +144,21 @@ imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring"]
 definitions = ["two", "sq"]
 theorems = ["square_def", "mul_self_eq_square", "sq_zero", "sq_one", "sq_neg", "two_mul", "sq_add", "sq_sub", "sum_two_squares_comm", "sq_eq_sq_of_eq_or_neg_eq", "square_nonneg"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.OrderedField"
+source = "Proofs/Ai/OrderedField/source.npa"
+certificate = "Proofs/Ai/OrderedField/certificate.npcert"
+meta = "Proofs/Ai/OrderedField/meta.json"
+replay = "Proofs/Ai/OrderedField/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:c78c137f0a3e9e8c12dcb24a6a1dab306bc2e03a649cebe4bc90f8680a24e118"
+certificate_file_sha256 = "sha256:fb3037a621581cfdea3b7994424e7681decda1b02f0c5e6ddc1031d629e12764"
+export_hash = "sha256:d6b08e865fb570cb11e57e903463edcd77f6f821126d9375dde24d73055ebf3f"
+axiom_report_hash = "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07"
+certificate_hash = "sha256:5c2ecc235395712e11cc37d08e5dcbc6b2529f7f46a0cc7468c8afdc4de24d8a"
+imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square"]
+definitions = ["le", "lt", "sqrt"]
+theorems = ["le_refl", "le_trans", "add_nonneg", "mul_nonneg", "le_square_nonneg", "sqrt_nonneg", "sqrt_square_of_nonneg", "sqrt_mul_self", "eq_of_square_eq_square_nonneg"]
+axioms = []

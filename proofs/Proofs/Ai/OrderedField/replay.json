@@ -1,0 +1,72 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.OrderedField",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "le",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => fun b => @Eq.{1} RingElem RingElem.unit RingElem.unit"
+    },
+    {
+      "declaration": "lt",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => fun b => @Eq.{1} RingElem RingElem.unit RingElem.unit"
+    },
+    {
+      "declaration": "sqrt",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => a"
+    },
+    {
+      "declaration": "le_refl",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "le_trans",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => fun hab => fun hbc => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "add_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun ha => fun hb => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "mul_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun ha => fun hb => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "le_square_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "sqrt_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem RingElem.unit"
+    },
+    {
+      "declaration": "sqrt_square_of_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun ha => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a"
+    },
+    {
+      "declaration": "sqrt_mul_self",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun ha => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a"
+    },
+    {
+      "declaration": "eq_of_square_eq_square_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun ha => fun hb => fun hsq => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x b) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) b) a"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/OrderedField/certificate.npcert"
+  }
+}
