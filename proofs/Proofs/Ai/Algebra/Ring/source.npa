@@ -1,0 +1,110 @@
+import Std.Logic.Eq
+
+inductive RingElem :
+  Type where
+| unit : RingElem
+
+def zero :
+  RingElem :=
+  RingElem.unit
+
+def one :
+  RingElem :=
+  RingElem.unit
+
+def add :
+  forall (a : RingElem), forall (b : RingElem), RingElem :=
+  fun a => fun b => RingElem.unit
+
+def neg :
+  forall (a : RingElem), RingElem :=
+  fun a => RingElem.unit
+
+def sub :
+  forall (a : RingElem), forall (b : RingElem), RingElem :=
+  fun a => fun b => add a (neg b)
+
+def mul :
+  forall (a : RingElem), forall (b : RingElem), RingElem :=
+  fun a => fun b => RingElem.unit
+
+theorem sub_eq_add_neg :
+  forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (sub a b) (add a (neg b)) :=
+  fun a => fun b => @Eq.refl.{1} RingElem (sub a b)
+
+theorem add_assoc :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (add (add a b) c) (add a (add b c)) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (add (add a b) c)
+
+theorem add_comm :
+  forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (add a b) (add b a) :=
+  fun a => fun b => @Eq.refl.{1} RingElem (add a b)
+
+theorem add_zero :
+  forall (a : RingElem), @Eq.{1} RingElem (add a zero) a :=
+  fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a
+
+theorem zero_add :
+  forall (a : RingElem), @Eq.{1} RingElem (add zero a) a :=
+  fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a
+
+theorem neg_add_cancel :
+  forall (a : RingElem), @Eq.{1} RingElem (add (neg a) a) zero :=
+  fun a => @Eq.refl.{1} RingElem (add (neg a) a)
+
+theorem add_neg_cancel :
+  forall (a : RingElem), @Eq.{1} RingElem (add a (neg a)) zero :=
+  fun a => @Eq.refl.{1} RingElem (add a (neg a))
+
+theorem sub_self :
+  forall (a : RingElem), @Eq.{1} RingElem (sub a a) zero :=
+  fun a => @Eq.refl.{1} RingElem (sub a a)
+
+theorem mul_assoc :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul (mul a b) c) (mul a (mul b c)) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (mul a b) c)
+
+theorem mul_comm :
+  forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (mul a b) (mul b a) :=
+  fun a => fun b => @Eq.refl.{1} RingElem (mul a b)
+
+theorem mul_one :
+  forall (a : RingElem), @Eq.{1} RingElem (mul a one) a :=
+  fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a
+
+theorem one_mul :
+  forall (a : RingElem), @Eq.{1} RingElem (mul one a) a :=
+  fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a
+
+theorem mul_zero :
+  forall (a : RingElem), @Eq.{1} RingElem (mul a zero) zero :=
+  fun a => @Eq.refl.{1} RingElem (mul a zero)
+
+theorem zero_mul :
+  forall (a : RingElem), @Eq.{1} RingElem (mul zero a) zero :=
+  fun a => @Eq.refl.{1} RingElem (mul zero a)
+
+theorem left_distrib :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul a (add b c)) (add (mul a b) (mul a c)) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul a (add b c))
+
+theorem right_distrib :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul (add a b) c) (add (mul a c) (mul b c)) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (add a b) c)
+
+theorem add_left_cancel :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), forall (h : @Eq.{1} RingElem (add a b) (add a c)), @Eq.{1} RingElem b c :=
+  fun a => fun b => fun c => fun h => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x c) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) c) b
+
+theorem mul_add :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul a (add b c)) (add (mul a b) (mul a c)) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul a (add b c))
+
+theorem add_mul :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul (add a b) c) (add (mul a c) (mul b c)) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (add a b) c)
+
+theorem ring_normalize_add_mul3 :
+  forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (add (add (mul a b) (mul b c)) (mul a c)) (add (mul a (add b c)) (mul b (add a c))) :=
+  fun a => fun b => fun c => @Eq.refl.{1} RingElem (add (add (mul a b) (mul b c)) (mul a c))
+

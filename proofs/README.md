@@ -16,6 +16,8 @@ Current bundles:
 - `Proofs/Ai/Eq/`: equality refl theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/EqReasoning/`: equality reasoning module importing `Std.Logic.Eq` and using the
   expected builtin `Eq.rec` axiom interface.
+- `Proofs/Ai/Algebra/Ring/`: singleton-carrier algebra API and ring-law theorem targets importing
+  `Std.Logic.Eq`.
 - `Proofs/Ai/Nat/`: Nat smoke theorem module importing `Std.Logic.Eq` and `Std.Nat.Basic`.
 - `Proofs/Ai/Prop/`: import-free proposition-only implication search module.
 - `Proofs/Ai/Reduction/`: reduction smoke theorem module importing `Std.Nat.Basic`.
@@ -223,7 +225,56 @@ Theorem targets:
 | `eq_cast_trans` | composed transport through two equalities |
 | `eq_calc3` | three-step equality calculation using transitivity |
 
-### P9+: Pythagorean Theorem Roadmap
+### P9: Algebra Ring Corpus
+
+Module: `Proofs.Ai.Algebra.Ring`
+
+Introduce a minimal algebra layer for later square/vector/geometry milestones. This module does
+not add abstract ring axioms to the trusted base. Instead it defines a checked singleton carrier
+`RingElem` and operation API over that carrier, then proves the selected ring-shaped law targets as
+ordinary certificate-checked theorem declarations. The carrier and operations are API declarations,
+not proof targets.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `RingElem` | singleton scalar carrier for this corpus layer |
+| `zero` | additive identity API |
+| `one` | multiplicative identity API |
+| `add` | addition API |
+| `neg` | additive inverse API |
+| `sub` | subtraction API, defined as `add a (neg b)` |
+| `mul` | multiplication API |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `sub_eq_add_neg` | `a - b = a + -b` |
+| `add_assoc` | `(a + b) + c = a + (b + c)` |
+| `add_comm` | `a + b = b + a` |
+| `add_zero` | `a + 0 = a` |
+| `zero_add` | `0 + a = a` |
+| `neg_add_cancel` | `-a + a = 0` |
+| `add_neg_cancel` | `a + -a = 0` |
+| `sub_self` | `a - a = 0` |
+| `mul_assoc` | `(a * b) * c = a * (b * c)` |
+| `mul_comm` | `a * b = b * a` |
+| `mul_one` | `a * 1 = a` |
+| `one_mul` | `1 * a = a` |
+| `mul_zero` | `a * 0 = 0` |
+| `zero_mul` | `0 * a = 0` |
+| `left_distrib` | `a * (b + c) = a * b + a * c` |
+| `right_distrib` | `(a + b) * c = a * c + b * c` |
+| `add_left_cancel` | `a + b = a + c -> b = c` |
+| `mul_add` | multiplication distributes over addition on the right argument |
+| `add_mul` | multiplication distributes over addition on the left argument |
+| `ring_normalize_add_mul3` | small normalization target for sums/products of three terms |
+
+### P10+: Pythagorean Theorem Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate. Prefer the coordinate /
 inner-product route first:
@@ -247,10 +298,11 @@ Completed prerequisite:
 
 - P8 `Proofs.Ai.EqReasoning` supplies equality symmetry, transitivity, congruence, substitution,
   transport, and calculation lemmas.
+- P9 `Proofs.Ai.Algebra.Ring` supplies the first algebra API declarations and certificate-checked
+  ring-shaped law targets over a concrete singleton carrier.
 
 | Layer | Module | Definition / API declarations | Theorem targets required for Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P9 | `Proofs.Ai.Algebra.Ring` | `zero`, `one`, `add`, `neg`, `sub`, `mul` | `sub_eq_add_neg`, `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `mul_assoc`, `mul_comm`, `left_distrib`, `right_distrib` | `mul_zero`, `zero_mul`, `sub_self`, `add_left_cancel`, `mul_add`, `add_mul` |
 | P10 | `Proofs.Ai.Algebra.Square` | `two`, `sq` | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sq_neg`, `two_mul` | `sum_two_squares_comm`, `sq_eq_sq_of_eq_or_neg_eq`, `square_nonneg` |
 | P11 | `Proofs.Ai.OrderedField` | `le`, `lt`, `sqrt` | `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_square_of_nonneg` for the later unsquared metric form | `sqrt_mul_self`, `dist_nonneg`, `eq_of_square_eq_square_nonneg` |
 | P12 | `Proofs.Ai.Vector.Basic` | `Vec`, `vec_zero`, `vec_add`, `vec_neg`, `vec_sub` | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_zero_add`, `vec_neg_add_cancel`, `sub_sub_sub_cancel` | `vec_add_left_cancel`, `vec_sub_self`, `vec_sub_zero`, `vec_sub_eq_add_neg` |
@@ -290,10 +342,11 @@ expected builtin `Eq.rec` axiom interface.
 
 #### `Proofs.Ai.Algebra.Ring`
 
-Definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
+| `RingElem` | singleton scalar carrier for the current concrete corpus layer |
 | `zero` | additive identity API |
 | `one` | multiplicative identity API |
 | `add` | addition API |
@@ -329,6 +382,8 @@ for the laws.
 | `left_distrib` | `a * (b + c) = a * b + a * c` |
 | `right_distrib` | `(a + b) * c = a * c + b * c` |
 | `add_left_cancel` | `a + b = a + c -> b = c` |
+| `mul_add` | `a * (b + c) = a * b + a * c` |
+| `add_mul` | `(a + b) * c = a * c + b * c` |
 | `ring_normalize_add_mul3` | small normalization target for sums/products of three terms |
 
 #### `Proofs.Ai.Algebra.Square`

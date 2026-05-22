@@ -11,9 +11,22 @@ struct ModuleArtifact {
     meta_path: &'static str,
     replay_path: &'static str,
     imports: &'static [&'static str],
+    inductives: &'static [InductiveArtifact],
     definitions: &'static [DefinitionArtifact],
     theorems: &'static [TheoremArtifact],
     expected_axioms: &'static [&'static str],
+}
+
+struct InductiveArtifact {
+    name: &'static str,
+    universe_params: &'static [&'static str],
+    ty: &'static str,
+    constructors: &'static [ConstructorArtifact],
+}
+
+struct ConstructorArtifact {
+    name: &'static str,
+    ty: &'static str,
 }
 
 struct DefinitionArtifact {
@@ -47,6 +60,7 @@ const BASIC_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Basic/meta.json",
     replay_path: "Proofs/Ai/Basic/replay.json",
     imports: &[],
+    inductives: &[],
     definitions: &[],
     theorems: BASIC_THEOREMS,
     expected_axioms: &[],
@@ -59,6 +73,7 @@ const EQ_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Eq/meta.json",
     replay_path: "Proofs/Ai/Eq/replay.json",
     imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+    inductives: &[],
     definitions: &[],
     theorems: EQ_THEOREMS,
     expected_axioms: &[],
@@ -71,6 +86,7 @@ const NAT_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Nat/meta.json",
     replay_path: "Proofs/Ai/Nat/replay.json",
     imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+    inductives: &[],
     definitions: &[],
     theorems: NAT_THEOREMS,
     expected_axioms: &[],
@@ -83,6 +99,7 @@ const PROP_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Prop/meta.json",
     replay_path: "Proofs/Ai/Prop/replay.json",
     imports: &[],
+    inductives: &[],
     definitions: &[],
     theorems: PROP_THEOREMS,
     expected_axioms: &[],
@@ -95,6 +112,7 @@ const REDUCTION_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/Reduction/meta.json",
     replay_path: "Proofs/Ai/Reduction/replay.json",
     imports: &["Std.Nat.Basic"],
+    inductives: &[],
     definitions: REDUCTION_DEFINITIONS,
     theorems: REDUCTION_THEOREMS,
     expected_axioms: &[],
@@ -107,9 +125,23 @@ const EQ_REASONING_MODULE: ModuleArtifact = ModuleArtifact {
     meta_path: "Proofs/Ai/EqReasoning/meta.json",
     replay_path: "Proofs/Ai/EqReasoning/replay.json",
     imports: &["Std.Logic.Eq"],
+    inductives: &[],
     definitions: &[],
     theorems: EQ_REASONING_THEOREMS,
     expected_axioms: &["Eq.rec"],
+};
+
+const RING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.Ring",
+    source_path: "Proofs/Ai/Algebra/Ring/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/Ring/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/Ring/meta.json",
+    replay_path: "Proofs/Ai/Algebra/Ring/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: RING_INDUCTIVES,
+    definitions: RING_DEFINITIONS,
+    theorems: RING_THEOREMS,
+    expected_axioms: &[],
 };
 
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
@@ -580,6 +612,205 @@ const EQ_REASONING_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const RING_ELEM_CONSTRUCTORS: &[ConstructorArtifact] = &[ConstructorArtifact {
+    name: "unit",
+    ty: "RingElem",
+}];
+
+const RING_INDUCTIVES: &[InductiveArtifact] = &[InductiveArtifact {
+    name: "RingElem",
+    universe_params: &[],
+    ty: "Type",
+    constructors: RING_ELEM_CONSTRUCTORS,
+}];
+
+const RING_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "zero",
+        universe_params: &[],
+        ty: "RingElem",
+        value: "RingElem.unit",
+    },
+    DefinitionArtifact {
+        name: "one",
+        universe_params: &[],
+        ty: "RingElem",
+        value: "RingElem.unit",
+    },
+    DefinitionArtifact {
+        name: "add",
+        universe_params: &[],
+        ty: "forall (a : RingElem), forall (b : RingElem), RingElem",
+        value: "fun a => fun b => RingElem.unit",
+    },
+    DefinitionArtifact {
+        name: "neg",
+        universe_params: &[],
+        ty: "forall (a : RingElem), RingElem",
+        value: "fun a => RingElem.unit",
+    },
+    DefinitionArtifact {
+        name: "sub",
+        universe_params: &[],
+        ty: "forall (a : RingElem), forall (b : RingElem), RingElem",
+        value: "fun a => fun b => add a (neg b)",
+    },
+    DefinitionArtifact {
+        name: "mul",
+        universe_params: &[],
+        ty: "forall (a : RingElem), forall (b : RingElem), RingElem",
+        value: "fun a => fun b => RingElem.unit",
+    },
+];
+
+const RING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "sub_eq_add_neg",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (sub a b) (add a (neg b))",
+        proof: "fun a => fun b => @Eq.refl.{1} RingElem (sub a b)",
+    },
+    TheoremArtifact {
+        name: "add_assoc",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (add (add a b) c) (add a (add b c))",
+        proof: "fun a => fun b => fun c => @Eq.refl.{1} RingElem (add (add a b) c)",
+    },
+    TheoremArtifact {
+        name: "add_comm",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (add a b) (add b a)",
+        proof: "fun a => fun b => @Eq.refl.{1} RingElem (add a b)",
+    },
+    TheoremArtifact {
+        name: "add_zero",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (add a zero) a",
+        proof:
+            "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a",
+    },
+    TheoremArtifact {
+        name: "zero_add",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (add zero a) a",
+        proof:
+            "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a",
+    },
+    TheoremArtifact {
+        name: "neg_add_cancel",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (add (neg a) a) zero",
+        proof: "fun a => @Eq.refl.{1} RingElem (add (neg a) a)",
+    },
+    TheoremArtifact {
+        name: "add_neg_cancel",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (add a (neg a)) zero",
+        proof: "fun a => @Eq.refl.{1} RingElem (add a (neg a))",
+    },
+    TheoremArtifact {
+        name: "sub_self",
+        universe_params: &[],
+        statement: "forall (a : RingElem), @Eq.{1} RingElem (sub a a) zero",
+        proof: "fun a => @Eq.refl.{1} RingElem (sub a a)",
+    },
+    TheoremArtifact {
+        name: "mul_assoc",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul (mul a b) c) (mul a (mul b c))",
+        proof: "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (mul a b) c)",
+    },
+    TheoremArtifact {
+        name: "mul_comm",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), @Eq.{1} RingElem (mul a b) (mul b a)",
+        proof: "fun a => fun b => @Eq.refl.{1} RingElem (mul a b)",
+    },
+    TheoremArtifact {
+        name: "mul_one",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (mul a one) a",
+        proof:
+            "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a",
+    },
+    TheoremArtifact {
+        name: "one_mul",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (mul one a) a",
+        proof:
+            "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a",
+    },
+    TheoremArtifact {
+        name: "mul_zero",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (mul a zero) zero",
+        proof: "fun a => @Eq.refl.{1} RingElem (mul a zero)",
+    },
+    TheoremArtifact {
+        name: "zero_mul",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), @Eq.{1} RingElem (mul zero a) zero",
+        proof: "fun a => @Eq.refl.{1} RingElem (mul zero a)",
+    },
+    TheoremArtifact {
+        name: "left_distrib",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul a (add b c)) (add (mul a b) (mul a c))",
+        proof: "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul a (add b c))",
+    },
+    TheoremArtifact {
+        name: "right_distrib",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul (add a b) c) (add (mul a c) (mul b c))",
+        proof: "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (add a b) c)",
+    },
+    TheoremArtifact {
+        name: "add_left_cancel",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), forall (h : @Eq.{1} RingElem (add a b) (add a c)), @Eq.{1} RingElem b c",
+        proof:
+            "fun a => fun b => fun c => fun h => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x c) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) c) b",
+    },
+    TheoremArtifact {
+        name: "mul_add",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul a (add b c)) (add (mul a b) (mul a c))",
+        proof: "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul a (add b c))",
+    },
+    TheoremArtifact {
+        name: "add_mul",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (mul (add a b) c) (add (mul a c) (mul b c))",
+        proof: "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (add a b) c)",
+    },
+    TheoremArtifact {
+        name: "ring_normalize_add_mul3",
+        universe_params: &[],
+        statement:
+            "forall (a : RingElem), forall (b : RingElem), forall (c : RingElem), @Eq.{1} RingElem (add (add (mul a b) (mul b c)) (mul a c)) (add (mul a (add b c)) (mul b (add a c)))",
+        proof:
+            "fun a => fun b => fun c => @Eq.refl.{1} RingElem (add (add (mul a b) (mul b c)) (mul a c))",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -611,6 +842,8 @@ fn run() -> Result<(), String> {
     let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let eq_reasoning_imports = vec![eq_import.clone()];
     let eq_reasoning_source_interfaces = vec![eq_source_interface.clone()];
+    let ring_imports = vec![eq_import.clone()];
+    let ring_source_interfaces = vec![eq_source_interface.clone()];
     let nat_imports = vec![eq_import.clone(), nat_import.clone()];
     let nat_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let reduction_imports = vec![nat_import];
@@ -637,10 +870,16 @@ fn run() -> Result<(), String> {
         &eq_reasoning_imports,
         &eq_reasoning_source_interfaces,
     )?;
+    let ring = build_and_write_module(
+        &proof_root,
+        &RING_MODULE,
+        &ring_imports,
+        &ring_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
-        manifest_toml(&[basic, eq, nat, prop, reduction, eq_reasoning]).as_bytes(),
+        manifest_toml(&[basic, eq, nat, prop, reduction, eq_reasoning, ring]).as_bytes(),
     )?;
 
     Ok(())
@@ -794,6 +1033,26 @@ fn module_source(config: &ModuleArtifact) -> String {
     if !config.imports.is_empty() {
         source.push('\n');
     }
+    for inductive in config.inductives {
+        source.push_str("inductive ");
+        source.push_str(inductive.name);
+        if !inductive.universe_params.is_empty() {
+            source.push_str(".{");
+            source.push_str(&inductive.universe_params.join(","));
+            source.push('}');
+        }
+        source.push_str(" :\n  ");
+        source.push_str(inductive.ty);
+        source.push_str(" where\n");
+        for constructor in inductive.constructors {
+            source.push_str("| ");
+            source.push_str(constructor.name);
+            source.push_str(" : ");
+            source.push_str(constructor.ty);
+            source.push('\n');
+        }
+        source.push('\n');
+    }
     for definition in config.definitions {
         source.push_str("def ");
         source.push_str(definition.name);
@@ -875,6 +1134,19 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
             "imports = [{}]\n",
             quoted_items(module.config.imports)
         ));
+        if !module.config.inductives.is_empty() {
+            manifest.push_str(&format!(
+                "inductives = [{}]\n",
+                quoted_items(
+                    &module
+                        .config
+                        .inductives
+                        .iter()
+                        .map(|inductive| inductive.name)
+                        .collect::<Vec<_>>()
+                )
+            ));
+        }
         manifest.push_str(&format!(
             "definitions = [{}]\n",
             quoted_items(
@@ -906,6 +1178,12 @@ fn manifest_toml(modules: &[GeneratedModule]) -> String {
 }
 
 fn meta_json(module: &GeneratedModule) -> String {
+    let inductives = module.config.inductives.iter().map(|inductive| {
+        format!(
+            "    {{ \"name\": \"{}\", \"kind\": \"inductive\" }}",
+            inductive.name
+        )
+    });
     let definitions = module.config.definitions.iter().map(|definition| {
         format!(
             "    {{ \"name\": \"{}\", \"kind\": \"def\" }}",
@@ -918,7 +1196,11 @@ fn meta_json(module: &GeneratedModule) -> String {
             theorem.name
         )
     });
-    let declarations = definitions.chain(theorems).collect::<Vec<_>>().join(",\n");
+    let declarations = inductives
+        .chain(definitions)
+        .chain(theorems)
+        .collect::<Vec<_>>()
+        .join(",\n");
     format!(
         "\
 {{
@@ -956,6 +1238,10 @@ fn meta_json(module: &GeneratedModule) -> String {
 }
 
 fn replay_json(config: &ModuleArtifact) -> String {
+    let inductive_steps = config.inductives.iter().map(|inductive| {
+        let term = inductive_replay_term(inductive);
+        replay_step_json(inductive.name, "inductive_decl", &term)
+    });
     let definition_steps = config.definitions.iter().map(|definition| {
         replay_step_json(definition.name, "explicit_def_value", definition.value)
     });
@@ -963,7 +1249,8 @@ fn replay_json(config: &ModuleArtifact) -> String {
         .theorems
         .iter()
         .map(|theorem| replay_step_json(theorem.name, "explicit_term", theorem.proof));
-    let steps = definition_steps
+    let steps = inductive_steps
+        .chain(definition_steps)
         .chain(theorem_steps)
         .collect::<Vec<_>>()
         .join(",\n");
@@ -984,6 +1271,24 @@ fn replay_json(config: &ModuleArtifact) -> String {
 }}
 ",
         config.module, steps, config.certificate_path
+    )
+}
+
+fn inductive_replay_term(inductive: &InductiveArtifact) -> String {
+    let universe_params = if inductive.universe_params.is_empty() {
+        String::new()
+    } else {
+        format!(".{{{}}}", inductive.universe_params.join(","))
+    };
+    let constructors = inductive
+        .constructors
+        .iter()
+        .map(|constructor| format!("| {} : {}", constructor.name, constructor.ty))
+        .collect::<Vec<_>>()
+        .join(" ");
+    format!(
+        "inductive {}{} : {} where {}",
+        inductive.name, universe_params, inductive.ty, constructors
     )
 }
 

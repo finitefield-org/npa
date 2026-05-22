@@ -107,3 +107,22 @@ imports = ["Std.Logic.Eq"]
 definitions = []
 theorems = ["eq_symm", "eq_trans", "eq_congr_arg", "eq_congr_fun", "eq_congr2", "eq_subst", "eq_transport_const", "eq_rewrite_left", "eq_rewrite_right", "eq_cast_trans", "eq_calc3"]
 axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.Ring"
+source = "Proofs/Ai/Algebra/Ring/source.npa"
+certificate = "Proofs/Ai/Algebra/Ring/certificate.npcert"
+meta = "Proofs/Ai/Algebra/Ring/meta.json"
+replay = "Proofs/Ai/Algebra/Ring/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:11a390c4500a45c5ceabdb73d88385b518125c3a0c0413bea03f30ac28a30759"
+certificate_file_sha256 = "sha256:f0647517572006816114faf806c4cd6bca4b7aef1e79148f469ba68fafb5e340"
+export_hash = "sha256:31b1b21b1c480f86e1c9c806d9148af51e770b9f99a4353dee8608072342ed7b"
+axiom_report_hash = "sha256:2eb8901dcadbaffb969aabfd5e10172a4e17abc50558a0954952232d438fa2ed"
+certificate_hash = "sha256:b48461da835c8d5d53ded5d485577c0218abe7b84532ad5cbf11e6e5e78ebe17"
+imports = ["Std.Logic.Eq"]
+inductives = ["RingElem"]
+definitions = ["zero", "one", "add", "neg", "sub", "mul"]
+theorems = ["sub_eq_add_neg", "add_assoc", "add_comm", "add_zero", "zero_add", "neg_add_cancel", "add_neg_cancel", "sub_self", "mul_assoc", "mul_comm", "mul_one", "one_mul", "mul_zero", "zero_mul", "left_distrib", "right_distrib", "add_left_cancel", "mul_add", "add_mul", "ring_normalize_add_mul3"]
+axioms = []

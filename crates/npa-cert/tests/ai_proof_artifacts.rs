@@ -14,6 +14,7 @@ struct ExpectedModule {
     meta: &'static str,
     replay: &'static str,
     imports: &'static [&'static str],
+    inductives: &'static [&'static str],
     definitions: &'static [&'static str],
     theorems: &'static [&'static str],
     axioms: &'static [&'static str],
@@ -104,6 +105,33 @@ const EQ_REASONING_THEOREMS: &[&str] = &[
     "eq_calc3",
 ];
 
+const RING_INDUCTIVES: &[&str] = &["RingElem"];
+
+const RING_DEFINITIONS: &[&str] = &["zero", "one", "add", "neg", "sub", "mul"];
+
+const RING_THEOREMS: &[&str] = &[
+    "sub_eq_add_neg",
+    "add_assoc",
+    "add_comm",
+    "add_zero",
+    "zero_add",
+    "neg_add_cancel",
+    "add_neg_cancel",
+    "sub_self",
+    "mul_assoc",
+    "mul_comm",
+    "mul_one",
+    "one_mul",
+    "mul_zero",
+    "zero_mul",
+    "left_distrib",
+    "right_distrib",
+    "add_left_cancel",
+    "mul_add",
+    "add_mul",
+    "ring_normalize_add_mul3",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -112,6 +140,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Basic/meta.json",
         replay: "Proofs/Ai/Basic/replay.json",
         imports: &[],
+        inductives: &[],
         definitions: &[],
         theorems: BASIC_THEOREMS,
         axioms: &[],
@@ -123,6 +152,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Eq/meta.json",
         replay: "Proofs/Ai/Eq/replay.json",
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+        inductives: &[],
         definitions: &[],
         theorems: EQ_THEOREMS,
         axioms: &[],
@@ -134,6 +164,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Nat/meta.json",
         replay: "Proofs/Ai/Nat/replay.json",
         imports: &["Std.Logic.Eq", "Std.Nat.Basic"],
+        inductives: &[],
         definitions: &[],
         theorems: NAT_THEOREMS,
         axioms: &[],
@@ -145,6 +176,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Prop/meta.json",
         replay: "Proofs/Ai/Prop/replay.json",
         imports: &[],
+        inductives: &[],
         definitions: &[],
         theorems: PROP_THEOREMS,
         axioms: &[],
@@ -156,6 +188,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Reduction/meta.json",
         replay: "Proofs/Ai/Reduction/replay.json",
         imports: &["Std.Nat.Basic"],
+        inductives: &[],
         definitions: REDUCTION_DEFINITIONS,
         theorems: REDUCTION_THEOREMS,
         axioms: &[],
@@ -167,9 +200,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/EqReasoning/meta.json",
         replay: "Proofs/Ai/EqReasoning/replay.json",
         imports: &["Std.Logic.Eq"],
+        inductives: &[],
         definitions: &[],
         theorems: EQ_REASONING_THEOREMS,
         axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.Ring",
+        source: "Proofs/Ai/Algebra/Ring/source.npa",
+        certificate: "Proofs/Ai/Algebra/Ring/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/Ring/meta.json",
+        replay: "Proofs/Ai/Algebra/Ring/replay.json",
+        imports: &["Std.Logic.Eq"],
+        inductives: RING_INDUCTIVES,
+        definitions: RING_DEFINITIONS,
+        theorems: RING_THEOREMS,
+        axioms: &[],
     },
 ];
 
@@ -241,14 +287,28 @@ fn ai_certificates_match_manifest_and_verify() {
         assert_eq!(verified_axioms, expected.axioms);
 
         assert_definition_exports(&decoded, expected.definitions);
+        assert_inductive_exports(&decoded, expected.inductives);
         assert_theorem_exports(&decoded, expected.theorems);
-        assert_declarations(&decoded, expected.definitions, expected.theorems);
+        if expected.module == "Proofs.Ai.Algebra.Ring" {
+            assert_export(&decoded, "RingElem.unit", ExportKind::Constructor);
+            assert_export(&decoded, "RingElem.rec", ExportKind::Recursor);
+        }
+        assert_declarations(
+            &decoded,
+            expected.inductives,
+            expected.definitions,
+            expected.theorems,
+        );
 
         let meta = read_to_string(root.join(expected.meta));
         assert!(meta.contains(&format!("\"certificate_hash\": \"{certificate_hash}\"")));
         assert!(meta.contains("\"trusted_status\": \"verified_by_certificate\""));
         for import in expected.imports {
             assert!(meta.contains(&format!("\"{import}\"")));
+        }
+        for inductive in expected.inductives {
+            assert!(meta.contains(&format!("\"name\": \"{inductive}\"")));
+            assert!(block.contains(&format!("\"{inductive}\"")));
         }
         for definition in expected.definitions {
             assert!(meta.contains(&format!("\"name\": \"{definition}\"")));
@@ -404,6 +464,24 @@ fn assert_definition_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     assert_eq!(actual, expected);
 }
 
+fn assert_inductive_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
+    let mut actual = cert
+        .export_block
+        .iter()
+        .filter(|entry| entry.kind == ExportKind::Inductive)
+        .map(|entry| cert.name_table[entry.name].as_dotted())
+        .collect::<Vec<_>>();
+    actual.sort();
+
+    let mut expected = expected
+        .iter()
+        .map(|name| (*name).to_owned())
+        .collect::<Vec<_>>();
+    expected.sort();
+
+    assert_eq!(actual, expected);
+}
+
 fn assert_theorem_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     let mut actual = cert
         .export_block
@@ -422,23 +500,43 @@ fn assert_theorem_exports(cert: &npa_cert::ModuleCert, expected: &[&str]) {
     assert_eq!(actual, expected);
 }
 
-fn assert_declarations(cert: &npa_cert::ModuleCert, definitions: &[&str], theorems: &[&str]) {
+fn assert_export(cert: &npa_cert::ModuleCert, expected_name: &str, expected_kind: ExportKind) {
+    assert!(
+        cert.export_block.iter().any(|entry| {
+            entry.kind == expected_kind && cert.name_table[entry.name].as_dotted() == expected_name
+        }),
+        "expected export {expected_name} with kind {expected_kind:?}"
+    );
+}
+
+fn assert_declarations(
+    cert: &npa_cert::ModuleCert,
+    inductives: &[&str],
+    definitions: &[&str],
+    theorems: &[&str],
+) {
     let mut actual = cert
         .declarations
         .iter()
         .map(|decl| match &decl.decl {
+            DeclPayload::Inductive { name, .. } => {
+                (cert.name_table[*name].as_dotted(), "inductive")
+            }
             DeclPayload::Def { name, .. } => (cert.name_table[*name].as_dotted(), "def"),
             DeclPayload::Theorem { name, .. } => (cert.name_table[*name].as_dotted(), "theorem"),
             other => {
-                panic!("AI proof corpus should contain only def/theorem declarations: {other:?}")
+                panic!(
+                    "AI proof corpus should contain only inductive/def/theorem declarations: {other:?}"
+                )
             }
         })
         .collect::<Vec<_>>();
     actual.sort();
 
-    let mut expected = definitions
+    let mut expected = inductives
         .iter()
-        .map(|name| ((*name).to_owned(), "def"))
+        .map(|name| ((*name).to_owned(), "inductive"))
+        .chain(definitions.iter().map(|name| ((*name).to_owned(), "def")))
         .chain(theorems.iter().map(|name| ((*name).to_owned(), "theorem")))
         .collect::<Vec<_>>();
     expected.sort();

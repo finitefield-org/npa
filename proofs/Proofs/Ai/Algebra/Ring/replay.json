@@ -1,0 +1,147 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.Ring",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "RingElem",
+      "source_kind": "inductive_decl",
+      "term": "inductive RingElem : Type where | unit : RingElem"
+    },
+    {
+      "declaration": "zero",
+      "source_kind": "explicit_def_value",
+      "term": "RingElem.unit"
+    },
+    {
+      "declaration": "one",
+      "source_kind": "explicit_def_value",
+      "term": "RingElem.unit"
+    },
+    {
+      "declaration": "add",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => fun b => RingElem.unit"
+    },
+    {
+      "declaration": "neg",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => RingElem.unit"
+    },
+    {
+      "declaration": "sub",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => fun b => add a (neg b)"
+    },
+    {
+      "declaration": "mul",
+      "source_kind": "explicit_def_value",
+      "term": "fun a => fun b => RingElem.unit"
+    },
+    {
+      "declaration": "sub_eq_add_neg",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => @Eq.refl.{1} RingElem (sub a b)"
+    },
+    {
+      "declaration": "add_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (add (add a b) c)"
+    },
+    {
+      "declaration": "add_comm",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => @Eq.refl.{1} RingElem (add a b)"
+    },
+    {
+      "declaration": "add_zero",
+      "source_kind": "explicit_term",
+      "term": "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a"
+    },
+    {
+      "declaration": "zero_add",
+      "source_kind": "explicit_term",
+      "term": "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a"
+    },
+    {
+      "declaration": "neg_add_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (add (neg a) a)"
+    },
+    {
+      "declaration": "add_neg_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (add a (neg a))"
+    },
+    {
+      "declaration": "sub_self",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (sub a a)"
+    },
+    {
+      "declaration": "mul_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (mul a b) c)"
+    },
+    {
+      "declaration": "mul_comm",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => @Eq.refl.{1} RingElem (mul a b)"
+    },
+    {
+      "declaration": "mul_one",
+      "source_kind": "explicit_term",
+      "term": "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a"
+    },
+    {
+      "declaration": "one_mul",
+      "source_kind": "explicit_term",
+      "term": "fun a => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem RingElem.unit x) (@Eq.refl.{1} RingElem RingElem.unit) a"
+    },
+    {
+      "declaration": "mul_zero",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (mul a zero)"
+    },
+    {
+      "declaration": "zero_mul",
+      "source_kind": "explicit_term",
+      "term": "fun a => @Eq.refl.{1} RingElem (mul zero a)"
+    },
+    {
+      "declaration": "left_distrib",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul a (add b c))"
+    },
+    {
+      "declaration": "right_distrib",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (add a b) c)"
+    },
+    {
+      "declaration": "add_left_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => fun h => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x c) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) c) b"
+    },
+    {
+      "declaration": "mul_add",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul a (add b c))"
+    },
+    {
+      "declaration": "add_mul",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (mul (add a b) c)"
+    },
+    {
+      "declaration": "ring_normalize_add_mul3",
+      "source_kind": "explicit_term",
+      "term": "fun a => fun b => fun c => @Eq.refl.{1} RingElem (add (add (mul a b) (mul b c)) (mul a c))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/Ring/certificate.npcert"
+  }
+}
