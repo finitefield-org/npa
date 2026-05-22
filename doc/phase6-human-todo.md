@@ -268,16 +268,16 @@ P6H-00
 
 実装タスク:
 
-- [ ] `True` / `False` / `Not` / `And` / `Or` / `Iff` / `Exists` を `Std.Logic` source に追加する。
-- [ ] `False.elim` は MVP では `P : Prop` に限定し、large elimination を入れない。
-- [ ] `And.left` / `And.right` / `And.intro`、`Or.elim` / `Or.inl` / `Or.inr`、`Iff` 基本定理、`Exists.intro` / `Exists.elim` を証明する。
-- [ ] Human-facing `intro` / `elim` / `trans` / `congr` 属性は source metadata として保持し、AI theorem index attribute には流さない。
+- [x] `True` / `False` / `Not` / `And` / `Or` / `Iff` / `Exists` を `Std.Logic` source に追加する。
+- [x] `False.elim` は MVP では `P : Prop` に限定し、large elimination を入れない。
+- [x] `And.left` / `And.right` / `And.intro`、`Or.elim` / `Or.inl` / `Or.inr`、`Iff` 基本定理、`Exists.intro` / `Exists.elim` を証明する。
+- [x] Human-facing `intro` / `elim` / `trans` / `congr` 属性は source metadata として保持し、AI theorem index attribute には流さない。
 
 受け入れ条件:
 
-- [ ] `Std.Logic` が構成的に保たれ、`Classical.choice` / `funext` / `propext` を含まない。
-- [ ] apply search で `Eq.trans`、`And.intro`、`False.elim` が候補になる。
-- [ ] AI MVP theorem index に `Intro` / `Elim` / `Refl` / `Trans` / `Congr` attributes が出ない。
+- [x] `Std.Logic` が構成的に保たれ、`Classical.choice` / `funext` / `propext` を含まない。
+- [x] apply search で `Eq.trans`、`And.intro`、`False.elim` が候補になる。
+- [x] AI MVP theorem index に `Intro` / `Elim` / `Refl` / `Trans` / `Congr` attributes が出ない。
 
 検証:
 

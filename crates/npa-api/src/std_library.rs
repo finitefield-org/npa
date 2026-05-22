@@ -9645,8 +9645,8 @@ mod tests {
     };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
     use npa_kernel::{
-        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, type0, Decl, Expr, Level,
-        Reducibility,
+        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, type0, Binder, ConstructorDecl,
+        Decl, Expr, InductiveDecl, Level, Reducibility,
     };
     use npa_tactic::{CandidateApplyArg, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
@@ -9700,6 +9700,20 @@ mod tests {
         assert_eq!(export_entry(logic, "Eq").kind, ExportKind::Inductive);
         assert_eq!(export_entry(logic, "Eq.refl").kind, ExportKind::Constructor);
         assert_eq!(export_entry(logic, "Eq.rec").kind, ExportKind::Axiom);
+        assert_eq!(export_entry(logic, "Not").kind, ExportKind::Def);
+        for inductive in ["True", "False", "And", "Or", "Iff", "Exists"] {
+            assert_eq!(export_entry(logic, inductive).kind, ExportKind::Inductive);
+        }
+        for recursor in [
+            "True.rec",
+            "False.rec",
+            "And.rec",
+            "Or.rec",
+            "Iff.rec",
+            "Exists.rec",
+        ] {
+            assert_eq!(export_entry(logic, recursor).kind, ExportKind::Recursor);
+        }
         for theorem in ["Eq.symm", "Eq.trans", "Eq.subst", "Eq.congrArg"] {
             let entry = export_entry(logic, theorem);
             assert_eq!(entry.kind, ExportKind::Theorem);
@@ -9712,6 +9726,40 @@ mod tests {
                 vec!["Eq.rec"]
             );
         }
+        for theorem in [
+            "False.elim",
+            "absurd",
+            "not_intro",
+            "not_elim",
+            "And.left",
+            "And.right",
+            "And.intro",
+            "Or.elim",
+            "Or.inl",
+            "Or.inr",
+            "Iff.mp",
+            "Iff.mpr",
+            "Iff.refl",
+            "Iff.symm",
+            "Iff.trans",
+            "Exists.intro",
+            "Exists.elim",
+        ] {
+            let entry = export_entry(logic, theorem);
+            assert_eq!(entry.kind, ExportKind::Theorem);
+            assert!(
+                entry.axiom_dependencies.is_empty(),
+                "{theorem} must stay constructive"
+            );
+        }
+        assert!(!logic
+            .verified_module
+            .name_table()
+            .iter()
+            .any(|name| matches!(
+                name.as_dotted().as_str(),
+                "Classical.choice" | "funext" | "propext"
+            )));
 
         let axiom_report = mvp_axiom_report_for(&loaded);
         let logic_axioms = axiom_report
@@ -9733,6 +9781,14 @@ mod tests {
             .entries
             .iter()
             .any(|entry| entry.global_ref.name == Name::from_dotted("Eq.refl")));
+        for theorem in ["Eq.trans", "And.intro", "False.elim"] {
+            let entry = theorem_index_entry(&theorem_index, theorem);
+            assert!(entry.modes.contains(&MachineTheoremMode::Apply));
+        }
+        assert_eq!(
+            theorem_index_entry(&theorem_index, "False.elim").universe_params,
+            Vec::<String>::new()
+        );
     }
 
     #[test]
@@ -10577,6 +10633,28 @@ mod tests {
         assert_eq!(eq_rec.attributes, vec![MachineStdAttribute::Apply]);
         assert!(eq_rec.rewrite_descriptors.is_empty());
 
+        let human_only_attributes = [
+            MachineStdAttribute::Intro,
+            MachineStdAttribute::Elim,
+            MachineStdAttribute::Refl,
+            MachineStdAttribute::Trans,
+            MachineStdAttribute::Congr,
+        ];
+        for entry in &finalized.entries {
+            assert!(
+                entry
+                    .attributes
+                    .iter()
+                    .all(|attribute| !human_only_attributes.contains(attribute)),
+                "{} must not expose human-facing source metadata in the AI theorem index",
+                entry.global_ref.name.as_dotted()
+            );
+        }
+        for theorem in ["Eq.trans", "And.intro", "False.elim"] {
+            let entry = theorem_index_entry(&finalized, theorem);
+            assert_eq!(entry.attributes, vec![MachineStdAttribute::Apply]);
+        }
+
         let axiom_report = mvp_axiom_report_for(&loaded);
         let mut release = release_manifest_for(&loaded, axiom_report.axiom_report_hash);
         let err = validate_machine_std_mvp_release_final_sidecar_counts(
@@ -11218,6 +11296,77 @@ mod tests {
                 candidate_hash,
                 result.suggested_candidates[index].candidate_hash
             );
+        }
+    }
+
+    #[test]
+    fn exposes_std_logic_connectives_to_apply_search() {
+        let package = TestPackage::new("std_logic_connective_apply_search");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        write_machine_std_release_sidecars(
+            package.path(),
+            &release,
+            &import_bundles,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            &axiom_report,
+        );
+        let release_json = release_manifest_json(&release);
+        let import_bundles_json = import_bundle_set_json(&import_bundles);
+        let theorem_index_json = theorem_index_json(&theorem_index);
+        let rewrite_profiles_json = rewrite_profile_set_json(&rewrite_profiles);
+        let simp_profiles_json = simp_profile_set_json(&simp_profiles);
+        let axiom_report_json = axiom_report_json(&axiom_report);
+        let (validated, _) = load_machine_std_mvp_release_with_optional_prompt_metadata_from_json(
+            package.path(),
+            &release_json,
+            MachineStdReleaseSidecarJson {
+                import_bundles_json: &import_bundles_json,
+                theorem_index_json: &theorem_index_json,
+                rewrite_profiles_json: &rewrite_profiles_json,
+                simp_profiles_json: &simp_profiles_json,
+                axiom_report_json: &axiom_report_json,
+                prompt_metadata_json: None,
+            },
+        )
+        .unwrap();
+        let logic_bundle = validated
+            .import_bundles
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_LOGIC_BUNDLE_ID)
+            .unwrap();
+        let session = crate::create_machine_session(&session_create_json_for_bundle(logic_bundle))
+            .unwrap()
+            .session;
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Std.Logic"]}"#;
+        let response = search_machine_theorems_for_goal(
+            &m8_apply_search_json(&session, filters, 64),
+            &session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(ok) = response else {
+            panic!("standard library logic apply search should succeed");
+        };
+
+        let results_by_name = ok
+            .endpoint_fields
+            .results
+            .iter()
+            .map(|result| (result.global_ref.name.clone(), result))
+            .collect::<BTreeMap<_, _>>();
+        for theorem in ["Eq.trans", "And.intro", "False.elim"] {
+            let result = results_by_name
+                .get(&Name::from_dotted(theorem))
+                .unwrap_or_else(|| panic!("{theorem} should be available to apply search"));
+            assert_eq!(result.global_ref.module, Name::from_dotted("Std.Logic"));
+            assert!(result.modes.contains(&MachineTheoremMode::Apply));
         }
     }
 
@@ -12216,7 +12365,7 @@ mod tests {
             .allowlisted_axioms
             .insert(Name::from_dotted("Eq.rec"));
 
-        let logic_cert = build_module_cert(logic_eq_rec_axiom_module(), &[]).unwrap();
+        let logic_cert = build_module_cert(logic_eq_family_module(), &[]).unwrap();
         let logic = encode_module_cert(&logic_cert).unwrap();
         let logic_verified = verify_module_cert(&logic, &mut session, &policy).unwrap();
 
@@ -12358,16 +12507,18 @@ mod tests {
     }
 
     fn logic_eq_family_module() -> CoreModule {
+        let mut declarations = vec![
+            logic_eq_inductive_decl(),
+            logic_eq_rec_axiom_decl(),
+            eq_symm_theorem(),
+            eq_trans_theorem(),
+            eq_subst_theorem(),
+            eq_congr_arg_theorem(),
+        ];
+        declarations.extend(logic_connective_declarations());
         CoreModule {
             name: Name::from_dotted("Std.Logic"),
-            declarations: vec![
-                logic_eq_inductive_decl(),
-                logic_eq_rec_axiom_decl(),
-                eq_symm_theorem(),
-                eq_trans_theorem(),
-                eq_subst_theorem(),
-                eq_congr_arg_theorem(),
-            ],
+            declarations,
         }
     }
 
@@ -12761,6 +12912,1118 @@ mod tests {
                                         Expr::bvar(0),
                                     ],
                                 ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn logic_connective_declarations() -> Vec<Decl> {
+        vec![
+            true_inductive_decl(),
+            false_inductive_decl(),
+            not_def(),
+            false_elim_theorem(),
+            absurd_theorem(),
+            not_intro_theorem(),
+            not_elim_theorem(),
+            and_inductive_decl(),
+            and_left_theorem(),
+            and_right_theorem(),
+            and_intro_theorem(),
+            or_inductive_decl(),
+            or_elim_theorem(),
+            or_inl_theorem(),
+            or_inr_theorem(),
+            iff_inductive_decl(),
+            iff_mp_theorem(),
+            iff_mpr_theorem(),
+            iff_refl_theorem(),
+            iff_symm_theorem(),
+            iff_trans_theorem(),
+            exists_inductive_decl(),
+            exists_intro_theorem(),
+            exists_elim_theorem(),
+        ]
+    }
+
+    fn generated_mvp_inductive(data: InductiveDecl) -> InductiveDecl {
+        npa_cert::generate_inductive_artifacts_v1(&data).unwrap()
+    }
+
+    fn prop_sort() -> Expr {
+        Expr::sort(Level::zero())
+    }
+
+    fn true_() -> Expr {
+        Expr::konst("True", vec![])
+    }
+
+    fn false_() -> Expr {
+        Expr::konst("False", vec![])
+    }
+
+    fn not(p: Expr) -> Expr {
+        Expr::app(Expr::konst("Not", vec![]), p)
+    }
+
+    fn and(p: Expr, q: Expr) -> Expr {
+        Expr::apps(Expr::konst("And", vec![]), vec![p, q])
+    }
+
+    fn or(p: Expr, q: Expr) -> Expr {
+        Expr::apps(Expr::konst("Or", vec![]), vec![p, q])
+    }
+
+    fn iff(p: Expr, q: Expr) -> Expr {
+        Expr::apps(Expr::konst("Iff", vec![]), vec![p, q])
+    }
+
+    fn exists_(u: Level, a: Expr, p: Expr) -> Expr {
+        Expr::apps(Expr::konst("Exists", vec![u]), vec![a, p])
+    }
+
+    fn true_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "True".to_owned(),
+            universe_params: Vec::new(),
+            ty: prop_sort(),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "True",
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new("True.intro", true_())],
+                None,
+            ))),
+        }
+    }
+
+    fn false_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "False".to_owned(),
+            universe_params: Vec::new(),
+            ty: prop_sort(),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "False",
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Level::zero(),
+                Vec::new(),
+                None,
+            ))),
+        }
+    }
+
+    fn not_def() -> Decl {
+        Decl::Def {
+            name: "Not".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("P", prop_sort(), prop_sort()),
+            value: Expr::lam("P", prop_sort(), Expr::pi("_", Expr::bvar(0), false_())),
+            reducibility: Reducibility::Reducible,
+        }
+    }
+
+    fn false_elim_theorem() -> Decl {
+        Decl::Theorem {
+            name: "False.elim".to_owned(),
+            universe_params: Vec::new(),
+            ty: false_elim_type(),
+            proof: false_elim_proof(),
+        }
+    }
+
+    fn false_elim_type() -> Expr {
+        Expr::pi("P", prop_sort(), Expr::pi("_", false_(), Expr::bvar(1)))
+    }
+
+    fn false_elim_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "h",
+                false_(),
+                Expr::apps(
+                    Expr::konst("False.rec", vec![]),
+                    vec![Expr::lam("_", false_(), Expr::bvar(2)), Expr::bvar(0)],
+                ),
+            ),
+        )
+    }
+
+    fn absurd_theorem() -> Decl {
+        Decl::Theorem {
+            name: "absurd".to_owned(),
+            universe_params: Vec::new(),
+            ty: absurd_type(),
+            proof: absurd_proof(),
+        }
+    }
+
+    fn absurd_type() -> Expr {
+        Expr::pi(
+            "P",
+            prop_sort(),
+            Expr::pi(
+                "Q",
+                prop_sort(),
+                Expr::pi(
+                    "hp",
+                    Expr::bvar(1),
+                    Expr::pi("hnp", not(Expr::bvar(2)), Expr::bvar(2)),
+                ),
+            ),
+        )
+    }
+
+    fn absurd_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "hp",
+                    Expr::bvar(1),
+                    Expr::lam(
+                        "hnp",
+                        not(Expr::bvar(2)),
+                        Expr::apps(
+                            Expr::konst("False.elim", vec![]),
+                            vec![Expr::bvar(2), Expr::app(Expr::bvar(0), Expr::bvar(1))],
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn not_intro_theorem() -> Decl {
+        Decl::Theorem {
+            name: "not_intro".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "_",
+                    Expr::pi("_", Expr::bvar(0), false_()),
+                    not(Expr::bvar(1)),
+                ),
+            ),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::lam("_", Expr::pi("_", Expr::bvar(0), false_()), Expr::bvar(0)),
+            ),
+        }
+    }
+
+    fn not_elim_theorem() -> Decl {
+        Decl::Theorem {
+            name: "not_elim".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "hnp",
+                    not(Expr::bvar(0)),
+                    Expr::pi("hp", Expr::bvar(1), false_()),
+                ),
+            ),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::lam(
+                    "hnp",
+                    not(Expr::bvar(0)),
+                    Expr::lam("hp", Expr::bvar(1), Expr::app(Expr::bvar(1), Expr::bvar(0))),
+                ),
+            ),
+        }
+    }
+
+    // Keep Human-facing theorem names available to apply search when constructor
+    // names would otherwise collide with intro/inl/inr theorem exports.
+    fn and_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "And".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("P", prop_sort(), Expr::pi("Q", prop_sort(), prop_sort())),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "And",
+                Vec::new(),
+                vec![Binder::new("P", prop_sort()), Binder::new("Q", prop_sort())],
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "And.mk",
+                    Expr::pi(
+                        "P",
+                        prop_sort(),
+                        Expr::pi(
+                            "Q",
+                            prop_sort(),
+                            Expr::pi(
+                                "left",
+                                Expr::bvar(1),
+                                Expr::pi("right", Expr::bvar(1), and(Expr::bvar(3), Expr::bvar(2))),
+                            ),
+                        ),
+                    ),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn and_left_theorem() -> Decl {
+        Decl::Theorem {
+            name: "And.left".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi("h", and(Expr::bvar(1), Expr::bvar(0)), Expr::bvar(2)),
+                ),
+            ),
+            proof: and_left_proof(),
+        }
+    }
+
+    fn and_left_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "h",
+                    and(Expr::bvar(1), Expr::bvar(0)),
+                    Expr::apps(
+                        Expr::konst("And.rec", vec![]),
+                        vec![
+                            Expr::bvar(2),
+                            Expr::bvar(1),
+                            Expr::lam("_", and(Expr::bvar(2), Expr::bvar(1)), Expr::bvar(3)),
+                            Expr::lam(
+                                "left",
+                                Expr::bvar(2),
+                                Expr::lam("right", Expr::bvar(2), Expr::bvar(1)),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn and_right_theorem() -> Decl {
+        Decl::Theorem {
+            name: "And.right".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi("h", and(Expr::bvar(1), Expr::bvar(0)), Expr::bvar(1)),
+                ),
+            ),
+            proof: and_right_proof(),
+        }
+    }
+
+    fn and_right_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "h",
+                    and(Expr::bvar(1), Expr::bvar(0)),
+                    Expr::apps(
+                        Expr::konst("And.rec", vec![]),
+                        vec![
+                            Expr::bvar(2),
+                            Expr::bvar(1),
+                            Expr::lam("_", and(Expr::bvar(2), Expr::bvar(1)), Expr::bvar(2)),
+                            Expr::lam(
+                                "left",
+                                Expr::bvar(2),
+                                Expr::lam("right", Expr::bvar(2), Expr::bvar(0)),
+                            ),
+                            Expr::bvar(0),
+                        ],
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn and_intro_theorem() -> Decl {
+        Decl::Theorem {
+            name: "And.intro".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi(
+                        "left",
+                        Expr::bvar(1),
+                        Expr::pi("right", Expr::bvar(1), and(Expr::bvar(3), Expr::bvar(2))),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::lam(
+                    "Q",
+                    prop_sort(),
+                    Expr::lam(
+                        "left",
+                        Expr::bvar(1),
+                        Expr::lam(
+                            "right",
+                            Expr::bvar(1),
+                            Expr::apps(
+                                Expr::konst("And.mk", vec![]),
+                                vec![Expr::bvar(3), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)],
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn or_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "Or".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("P", prop_sort(), Expr::pi("Q", prop_sort(), prop_sort())),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "Or",
+                Vec::new(),
+                vec![Binder::new("P", prop_sort()), Binder::new("Q", prop_sort())],
+                Vec::new(),
+                Level::zero(),
+                vec![
+                    ConstructorDecl::new(
+                        "Or.mk_inl",
+                        Expr::pi(
+                            "P",
+                            prop_sort(),
+                            Expr::pi(
+                                "Q",
+                                prop_sort(),
+                                Expr::pi("left", Expr::bvar(1), or(Expr::bvar(2), Expr::bvar(1))),
+                            ),
+                        ),
+                    ),
+                    ConstructorDecl::new(
+                        "Or.mk_inr",
+                        Expr::pi(
+                            "P",
+                            prop_sort(),
+                            Expr::pi(
+                                "Q",
+                                prop_sort(),
+                                Expr::pi("right", Expr::bvar(0), or(Expr::bvar(2), Expr::bvar(1))),
+                            ),
+                        ),
+                    ),
+                ],
+                None,
+            ))),
+        }
+    }
+
+    fn or_elim_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Or.elim".to_owned(),
+            universe_params: Vec::new(),
+            ty: or_elim_type(),
+            proof: or_elim_proof(),
+        }
+    }
+
+    fn or_elim_type() -> Expr {
+        Expr::pi(
+            "P",
+            prop_sort(),
+            Expr::pi(
+                "Q",
+                prop_sort(),
+                Expr::pi(
+                    "R",
+                    prop_sort(),
+                    Expr::pi(
+                        "h",
+                        or(Expr::bvar(2), Expr::bvar(1)),
+                        Expr::pi(
+                            "left_case",
+                            Expr::pi("_", Expr::bvar(3), Expr::bvar(2)),
+                            Expr::pi(
+                                "right_case",
+                                Expr::pi("_", Expr::bvar(3), Expr::bvar(3)),
+                                Expr::bvar(3),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn or_elim_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "R",
+                    prop_sort(),
+                    Expr::lam(
+                        "h",
+                        or(Expr::bvar(2), Expr::bvar(1)),
+                        Expr::lam(
+                            "left_case",
+                            Expr::pi("_", Expr::bvar(3), Expr::bvar(2)),
+                            Expr::lam(
+                                "right_case",
+                                Expr::pi("_", Expr::bvar(3), Expr::bvar(3)),
+                                Expr::apps(
+                                    Expr::konst("Or.rec", vec![]),
+                                    vec![
+                                        Expr::bvar(5),
+                                        Expr::bvar(4),
+                                        Expr::lam(
+                                            "_",
+                                            or(Expr::bvar(5), Expr::bvar(4)),
+                                            Expr::bvar(4),
+                                        ),
+                                        Expr::lam(
+                                            "left",
+                                            Expr::bvar(5),
+                                            Expr::app(Expr::bvar(2), Expr::bvar(0)),
+                                        ),
+                                        Expr::lam(
+                                            "right",
+                                            Expr::bvar(4),
+                                            Expr::app(Expr::bvar(1), Expr::bvar(0)),
+                                        ),
+                                        Expr::bvar(2),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn or_inl_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Or.inl".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi("left", Expr::bvar(1), or(Expr::bvar(2), Expr::bvar(1))),
+                ),
+            ),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::lam(
+                    "Q",
+                    prop_sort(),
+                    Expr::lam(
+                        "left",
+                        Expr::bvar(1),
+                        Expr::apps(
+                            Expr::konst("Or.mk_inl", vec![]),
+                            vec![Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)],
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn or_inr_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Or.inr".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi("right", Expr::bvar(0), or(Expr::bvar(2), Expr::bvar(1))),
+                ),
+            ),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::lam(
+                    "Q",
+                    prop_sort(),
+                    Expr::lam(
+                        "right",
+                        Expr::bvar(0),
+                        Expr::apps(
+                            Expr::konst("Or.mk_inr", vec![]),
+                            vec![Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)],
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn iff_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "Iff".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("P", prop_sort(), Expr::pi("Q", prop_sort(), prop_sort())),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "Iff",
+                Vec::new(),
+                vec![Binder::new("P", prop_sort()), Binder::new("Q", prop_sort())],
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "Iff.intro",
+                    Expr::pi(
+                        "P",
+                        prop_sort(),
+                        Expr::pi(
+                            "Q",
+                            prop_sort(),
+                            Expr::pi(
+                                "mp",
+                                Expr::pi("_", Expr::bvar(1), Expr::bvar(1)),
+                                Expr::pi(
+                                    "mpr",
+                                    Expr::pi("_", Expr::bvar(1), Expr::bvar(3)),
+                                    iff(Expr::bvar(3), Expr::bvar(2)),
+                                ),
+                            ),
+                        ),
+                    ),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn iff_mp_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Iff.mp".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi(
+                        "h",
+                        iff(Expr::bvar(1), Expr::bvar(0)),
+                        Expr::pi("hp", Expr::bvar(2), Expr::bvar(2)),
+                    ),
+                ),
+            ),
+            proof: iff_mp_proof(),
+        }
+    }
+
+    fn iff_mp_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "h",
+                    iff(Expr::bvar(1), Expr::bvar(0)),
+                    Expr::lam(
+                        "hp",
+                        Expr::bvar(2),
+                        Expr::app(
+                            Expr::apps(
+                                Expr::konst("Iff.rec", vec![]),
+                                vec![
+                                    Expr::bvar(3),
+                                    Expr::bvar(2),
+                                    Expr::lam(
+                                        "_",
+                                        iff(Expr::bvar(3), Expr::bvar(2)),
+                                        Expr::pi("_", Expr::bvar(4), Expr::bvar(4)),
+                                    ),
+                                    Expr::lam(
+                                        "mp",
+                                        Expr::pi("_", Expr::bvar(3), Expr::bvar(3)),
+                                        Expr::lam(
+                                            "mpr",
+                                            Expr::pi("_", Expr::bvar(3), Expr::bvar(5)),
+                                            Expr::bvar(1),
+                                        ),
+                                    ),
+                                    Expr::bvar(1),
+                                ],
+                            ),
+                            Expr::bvar(0),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn iff_mpr_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Iff.mpr".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi(
+                        "h",
+                        iff(Expr::bvar(1), Expr::bvar(0)),
+                        Expr::pi("hq", Expr::bvar(1), Expr::bvar(3)),
+                    ),
+                ),
+            ),
+            proof: iff_mpr_proof(),
+        }
+    }
+
+    fn iff_mpr_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "h",
+                    iff(Expr::bvar(1), Expr::bvar(0)),
+                    Expr::lam(
+                        "hq",
+                        Expr::bvar(1),
+                        Expr::app(
+                            Expr::apps(
+                                Expr::konst("Iff.rec", vec![]),
+                                vec![
+                                    Expr::bvar(3),
+                                    Expr::bvar(2),
+                                    Expr::lam(
+                                        "_",
+                                        iff(Expr::bvar(3), Expr::bvar(2)),
+                                        Expr::pi("_", Expr::bvar(3), Expr::bvar(5)),
+                                    ),
+                                    Expr::lam(
+                                        "mp",
+                                        Expr::pi("_", Expr::bvar(3), Expr::bvar(3)),
+                                        Expr::lam(
+                                            "mpr",
+                                            Expr::pi("_", Expr::bvar(3), Expr::bvar(5)),
+                                            Expr::bvar(0),
+                                        ),
+                                    ),
+                                    Expr::bvar(1),
+                                ],
+                            ),
+                            Expr::bvar(0),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn iff_refl_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Iff.refl".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi("P", prop_sort(), iff(Expr::bvar(0), Expr::bvar(0))),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::apps(
+                    Expr::konst("Iff.intro", vec![]),
+                    vec![
+                        Expr::bvar(0),
+                        Expr::bvar(0),
+                        Expr::lam("_", Expr::bvar(0), Expr::bvar(0)),
+                        Expr::lam("_", Expr::bvar(0), Expr::bvar(0)),
+                    ],
+                ),
+            ),
+        }
+    }
+
+    fn iff_symm_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Iff.symm".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi(
+                        "h",
+                        iff(Expr::bvar(1), Expr::bvar(0)),
+                        iff(Expr::bvar(1), Expr::bvar(2)),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "P",
+                prop_sort(),
+                Expr::lam(
+                    "Q",
+                    prop_sort(),
+                    Expr::lam(
+                        "h",
+                        iff(Expr::bvar(1), Expr::bvar(0)),
+                        Expr::apps(
+                            Expr::konst("Iff.intro", vec![]),
+                            vec![
+                                Expr::bvar(1),
+                                Expr::bvar(2),
+                                Expr::apps(
+                                    Expr::konst("Iff.mpr", vec![]),
+                                    vec![Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)],
+                                ),
+                                Expr::apps(
+                                    Expr::konst("Iff.mp", vec![]),
+                                    vec![Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)],
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn iff_trans_theorem() -> Decl {
+        Decl::Theorem {
+            name: "Iff.trans".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::pi(
+                "P",
+                prop_sort(),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi(
+                        "R",
+                        prop_sort(),
+                        Expr::pi(
+                            "hpq",
+                            iff(Expr::bvar(2), Expr::bvar(1)),
+                            Expr::pi(
+                                "hqr",
+                                iff(Expr::bvar(2), Expr::bvar(1)),
+                                iff(Expr::bvar(4), Expr::bvar(2)),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            proof: iff_trans_proof(),
+        }
+    }
+
+    fn iff_trans_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "Q",
+                prop_sort(),
+                Expr::lam(
+                    "R",
+                    prop_sort(),
+                    Expr::lam(
+                        "hpq",
+                        iff(Expr::bvar(2), Expr::bvar(1)),
+                        Expr::lam(
+                            "hqr",
+                            iff(Expr::bvar(2), Expr::bvar(1)),
+                            Expr::apps(
+                                Expr::konst("Iff.intro", vec![]),
+                                vec![
+                                    Expr::bvar(4),
+                                    Expr::bvar(2),
+                                    Expr::lam(
+                                        "hp",
+                                        Expr::bvar(4),
+                                        Expr::apps(
+                                            Expr::konst("Iff.mp", vec![]),
+                                            vec![
+                                                Expr::bvar(4),
+                                                Expr::bvar(3),
+                                                Expr::bvar(1),
+                                                Expr::apps(
+                                                    Expr::konst("Iff.mp", vec![]),
+                                                    vec![
+                                                        Expr::bvar(5),
+                                                        Expr::bvar(4),
+                                                        Expr::bvar(2),
+                                                        Expr::bvar(0),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                    Expr::lam(
+                                        "hr",
+                                        Expr::bvar(2),
+                                        Expr::apps(
+                                            Expr::konst("Iff.mpr", vec![]),
+                                            vec![
+                                                Expr::bvar(5),
+                                                Expr::bvar(4),
+                                                Expr::bvar(2),
+                                                Expr::apps(
+                                                    Expr::konst("Iff.mpr", vec![]),
+                                                    vec![
+                                                        Expr::bvar(4),
+                                                        Expr::bvar(3),
+                                                        Expr::bvar(1),
+                                                        Expr::bvar(0),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn exists_inductive_decl() -> Decl {
+        let u = Level::param("u");
+        Decl::Inductive {
+            name: "Exists".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi("P", Expr::pi("_", Expr::bvar(0), prop_sort()), prop_sort()),
+            ),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "Exists",
+                vec!["u".to_owned()],
+                vec![
+                    Binder::new("A", Expr::sort(u.clone())),
+                    Binder::new("P", Expr::pi("_", Expr::bvar(0), prop_sort())),
+                ],
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "Exists.mk",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "P",
+                            Expr::pi("_", Expr::bvar(0), prop_sort()),
+                            Expr::pi(
+                                "x",
+                                Expr::bvar(1),
+                                Expr::pi(
+                                    "px",
+                                    Expr::app(Expr::bvar(1), Expr::bvar(0)),
+                                    exists_(u, Expr::bvar(3), Expr::bvar(2)),
+                                ),
+                            ),
+                        ),
+                    ),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn exists_intro_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "Exists.intro".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "P",
+                    Expr::pi("_", Expr::bvar(0), prop_sort()),
+                    Expr::pi(
+                        "x",
+                        Expr::bvar(1),
+                        Expr::pi(
+                            "px",
+                            Expr::app(Expr::bvar(1), Expr::bvar(0)),
+                            exists_(u.clone(), Expr::bvar(3), Expr::bvar(2)),
+                        ),
+                    ),
+                ),
+            ),
+            proof: Expr::lam(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::lam(
+                    "P",
+                    Expr::pi("_", Expr::bvar(0), prop_sort()),
+                    Expr::lam(
+                        "x",
+                        Expr::bvar(1),
+                        Expr::lam(
+                            "px",
+                            Expr::app(Expr::bvar(1), Expr::bvar(0)),
+                            Expr::apps(
+                                Expr::konst("Exists.mk", vec![u]),
+                                vec![Expr::bvar(3), Expr::bvar(2), Expr::bvar(1), Expr::bvar(0)],
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        }
+    }
+
+    fn exists_elim_theorem() -> Decl {
+        let u = Level::param("u");
+        Decl::Theorem {
+            name: "Exists.elim".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: exists_elim_type(u.clone()),
+            proof: exists_elim_proof(u),
+        }
+    }
+
+    fn exists_elim_type(u: Level) -> Expr {
+        Expr::pi(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "P",
+                Expr::pi("_", Expr::bvar(0), prop_sort()),
+                Expr::pi(
+                    "Q",
+                    prop_sort(),
+                    Expr::pi(
+                        "h",
+                        exists_(u, Expr::bvar(2), Expr::bvar(1)),
+                        Expr::pi(
+                            "case",
+                            Expr::pi(
+                                "x",
+                                Expr::bvar(3),
+                                Expr::pi(
+                                    "px",
+                                    Expr::app(Expr::bvar(3), Expr::bvar(0)),
+                                    Expr::bvar(3),
+                                ),
+                            ),
+                            Expr::bvar(2),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn exists_elim_proof(u: Level) -> Expr {
+        Expr::lam(
+            "A",
+            Expr::sort(u.clone()),
+            Expr::lam(
+                "P",
+                Expr::pi("_", Expr::bvar(0), prop_sort()),
+                Expr::lam(
+                    "Q",
+                    prop_sort(),
+                    Expr::lam(
+                        "h",
+                        exists_(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                        Expr::lam(
+                            "case",
+                            Expr::pi(
+                                "x",
+                                Expr::bvar(3),
+                                Expr::pi(
+                                    "px",
+                                    Expr::app(Expr::bvar(3), Expr::bvar(0)),
+                                    Expr::bvar(3),
+                                ),
+                            ),
+                            Expr::apps(
+                                Expr::konst("Exists.rec", vec![u.clone()]),
+                                vec![
+                                    Expr::bvar(4),
+                                    Expr::bvar(3),
+                                    Expr::lam(
+                                        "_",
+                                        exists_(u, Expr::bvar(4), Expr::bvar(3)),
+                                        Expr::bvar(3),
+                                    ),
+                                    Expr::lam(
+                                        "x",
+                                        Expr::bvar(4),
+                                        Expr::lam(
+                                            "px",
+                                            Expr::app(Expr::bvar(4), Expr::bvar(0)),
+                                            Expr::apps(
+                                                Expr::bvar(2),
+                                                vec![Expr::bvar(1), Expr::bvar(0)],
+                                            ),
+                                        ),
+                                    ),
+                                    Expr::bvar(1),
+                                ],
                             ),
                         ),
                     ),
@@ -13404,6 +14667,29 @@ mod tests {
             session.session_id.wire(),
             session.initial_snapshot.snapshot_id.wire(),
             format_hash_string(&session.initial_snapshot.state_fingerprint),
+            filters
+        )
+    }
+
+    fn m8_apply_search_json(
+        session: &crate::MachineProofSession,
+        filters: &str,
+        limit: u32,
+    ) -> String {
+        format!(
+            r#"{{
+              "session_id":"{}",
+              "snapshot_id":"{}",
+              "state_fingerprint":"{}",
+              "goal_id":"g0",
+              "modes":["apply"],
+              "limit":{},
+              "filters":{}
+            }}"#,
+            session.session_id.wire(),
+            session.initial_snapshot.snapshot_id.wire(),
+            format_hash_string(&session.initial_snapshot.state_fingerprint),
+            limit,
             filters
         )
     }
