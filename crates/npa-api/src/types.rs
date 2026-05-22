@@ -29,6 +29,7 @@ use crate::{
 
 pub const MACHINE_API_VERSION: &str = "npa.machine-api.v1";
 pub const MACHINE_DISPLAY_PROFILE_ID: &str = "npa.machine-api.display.v1";
+pub const HUMAN_DISPLAY_PROFILE_ID: &str = "npa.human-api.display.v1";
 pub const MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA: &str = "npa.machine_tactic_candidate.v1";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.builtin-nat-eq-rec";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
@@ -183,6 +184,113 @@ pub struct HumanStateGoalsOk {
 pub struct HumanStateGoalSummary {
     pub goal_id: HumanGoalId,
     pub pretty: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanDisplayMode {
+    Pretty,
+    Explicit,
+    Core,
+    Json,
+}
+
+impl HumanDisplayMode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Pretty => "pretty",
+            Self::Explicit => "explicit",
+            Self::Core => "core",
+            Self::Json => "json",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HumanDisplayContextOptions {
+    pub max_context_items: Option<usize>,
+    pub fold_local_def_values: bool,
+    pub relevant_first: bool,
+}
+
+impl Default for HumanDisplayContextOptions {
+    fn default() -> Self {
+        Self {
+            max_context_items: None,
+            fold_local_def_values: false,
+            relevant_first: true,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayGoalRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub mode: HumanDisplayMode,
+    pub context_options: HumanDisplayContextOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayExprRequest {
+    pub expr: StructuredExpr,
+    pub mode: HumanDisplayMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayDiffRequest {
+    pub header: HumanStateRequestHeader,
+    pub before_state_id: HumanStateId,
+    pub after_state_id: HumanStateId,
+    pub mode: HumanDisplayMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayContextRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub mode: HumanDisplayMode,
+    pub context_options: HumanDisplayContextOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayTextOk {
+    pub display_profile: &'static str,
+    pub mode: HumanDisplayMode,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayContextOk {
+    pub display_profile: &'static str,
+    pub mode: HumanDisplayMode,
+    pub text: String,
+    pub shown_count: usize,
+    pub folded_count: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanDisplayDiffOk {
+    pub display_profile: &'static str,
+    pub mode: HumanDisplayMode,
+    pub items: Vec<HumanGoalDisplayDiffItem>,
+    pub text: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanGoalDisplayDiffItem {
+    pub kind: HumanGoalDisplayDiffKind,
+    pub old_goal: Option<HumanGoalId>,
+    pub new_goals: Vec<HumanGoalId>,
+    pub text: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanGoalDisplayDiffKind {
+    GoalReplaced,
+    GoalClosed,
+    GoalAdded,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -988,6 +1096,28 @@ pub enum HumanStateApiError {
         state_id: HumanStateId,
         error: Box<HumanStructuredProofStateError>,
     },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanDisplayError {
+    State(HumanStateApiError),
+    UnknownGoal {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        goal_id: HumanGoalId,
+    },
+    MachineGoal {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        goal_id: HumanGoalId,
+        diagnostic: Box<MachineTacticDiagnostic>,
+    },
+}
+
+impl From<HumanStateApiError> for HumanDisplayError {
+    fn from(error: HumanStateApiError) -> Self {
+        Self::State(error)
+    }
 }
 
 impl From<HumanStateRequestError> for HumanStateApiError {

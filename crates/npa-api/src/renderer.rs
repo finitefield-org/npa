@@ -432,6 +432,57 @@ pub fn core_expr_metadata(
     })
 }
 
+pub fn render_kernel_core_expr(expr: &Expr) -> String {
+    match expr {
+        Expr::Sort(level) => format!("Sort({})", render_kernel_core_level(level)),
+        Expr::BVar(index) => format!("BVar({index})"),
+        Expr::Const { name, levels } => {
+            if levels.is_empty() {
+                format!("Const({name})")
+            } else {
+                format!(
+                    "Const({}.{{{}}})",
+                    name,
+                    levels
+                        .iter()
+                        .map(render_kernel_core_level)
+                        .collect::<Vec<_>>()
+                        .join(",")
+                )
+            }
+        }
+        Expr::App(func, arg) => format!(
+            "App({}, {})",
+            render_kernel_core_expr(func),
+            render_kernel_core_expr(arg)
+        ),
+        Expr::Lam { binder, ty, body } => format!(
+            "Lam({}, {}, {})",
+            binder,
+            render_kernel_core_expr(ty),
+            render_kernel_core_expr(body)
+        ),
+        Expr::Pi { binder, ty, body } => format!(
+            "Pi({}, {}, {})",
+            binder,
+            render_kernel_core_expr(ty),
+            render_kernel_core_expr(body)
+        ),
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => format!(
+            "Let({}, {}, {}, {})",
+            binder,
+            render_kernel_core_expr(ty),
+            render_kernel_core_expr(value),
+            render_kernel_core_expr(body)
+        ),
+    }
+}
+
 pub fn render_machine_expr_source(
     expr: &Expr,
     context: &MachineExprRendererContext<'_>,
@@ -1579,6 +1630,24 @@ fn is_machine_surface_reserved(value: &str) -> bool {
             | "max"
             | "imax"
     )
+}
+
+fn render_kernel_core_level(level: &Level) -> String {
+    match level {
+        Level::Zero => "0".to_owned(),
+        Level::Succ(inner) => format!("succ({})", render_kernel_core_level(inner)),
+        Level::Max(lhs, rhs) => format!(
+            "max({}, {})",
+            render_kernel_core_level(lhs),
+            render_kernel_core_level(rhs)
+        ),
+        Level::IMax(lhs, rhs) => format!(
+            "imax({}, {})",
+            render_kernel_core_level(lhs),
+            render_kernel_core_level(rhs)
+        ),
+        Level::Param(name) => format!("param({name})"),
+    }
 }
 
 fn render_level(

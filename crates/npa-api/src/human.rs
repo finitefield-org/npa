@@ -1,14 +1,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::renderer::core_expr_metadata;
+use crate::renderer::{core_expr_metadata, render_kernel_core_expr};
 use crate::types::HumanProofStateStoreMutationError;
 use crate::{
     HumanApiCompileOptions, HumanApplyTacticError, HumanApplyTacticOk, HumanApplyTacticRequest,
     HumanCompileCertificateOk, HumanCompileCertificateRequest, HumanCompileCoreOk,
-    HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource, HumanDocumentSnapshot,
-    HumanDocumentUpdateError, HumanDocumentUpdateOk, HumanDocumentUpdateRequest,
-    HumanExactTacticOk, HumanExactTacticRequest, HumanInductionTacticError, HumanInductionTacticOk,
-    HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
+    HumanCompileCoreRequest, HumanCompileError, HumanCurrentModuleSource, HumanDisplayContextOk,
+    HumanDisplayContextOptions, HumanDisplayContextRequest, HumanDisplayDiffOk,
+    HumanDisplayDiffRequest, HumanDisplayError, HumanDisplayExprRequest, HumanDisplayGoalRequest,
+    HumanDisplayMode, HumanDisplayTextOk, HumanDocumentSnapshot, HumanDocumentUpdateError,
+    HumanDocumentUpdateOk, HumanDocumentUpdateRequest, HumanExactTacticOk, HumanExactTacticRequest,
+    HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanInductionTacticError,
+    HumanInductionTacticOk, HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
     HumanIntroTacticRequest, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
     HumanProofStateEntry, HumanProofStateStartError, HumanProofStateStartOk,
     HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
@@ -22,7 +25,7 @@ use crate::{
     HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
     HumanTacticStateRecordRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
     HumanTacticTermError, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
-    StructuredHypothesis, StructuredProofState,
+    StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
 
@@ -539,6 +542,654 @@ fn human_span_contains_position(span: npa_frontend::Span, position: HumanSourceP
         return position.offset == span.start;
     }
     span.start <= position.offset && position.offset < span.end
+}
+
+pub fn display_human_goal(
+    store: &HumanProofSessionStore,
+    request: HumanDisplayGoalRequest,
+) -> Result<HumanDisplayTextOk, HumanDisplayError> {
+    validate_human_state_request_document(store, request.header.clone())
+        .map_err(HumanStateApiError::from)?;
+    let entry = human_state_entry_for_api(store, &request.header, &request.state_id)?;
+    let text = human_display_goal_text_for_entry(
+        &request.header,
+        entry,
+        &request.goal_id,
+        request.mode,
+        request.context_options,
+    )?;
+    Ok(HumanDisplayTextOk {
+        display_profile: HUMAN_DISPLAY_PROFILE_ID,
+        mode: request.mode,
+        text,
+    })
+}
+
+pub fn display_human_expr(request: HumanDisplayExprRequest) -> HumanDisplayTextOk {
+    let text = match request.mode {
+        HumanDisplayMode::Pretty | HumanDisplayMode::Explicit => request.expr.pretty.clone(),
+        HumanDisplayMode::Core => human_display_structured_expr_core_summary(&request.expr),
+        HumanDisplayMode::Json => human_display_structured_expr_json(&request.expr),
+    };
+    HumanDisplayTextOk {
+        display_profile: HUMAN_DISPLAY_PROFILE_ID,
+        mode: request.mode,
+        text,
+    }
+}
+
+pub fn display_human_context(
+    store: &HumanProofSessionStore,
+    request: HumanDisplayContextRequest,
+) -> Result<HumanDisplayContextOk, HumanDisplayError> {
+    validate_human_state_request_document(store, request.header.clone())
+        .map_err(HumanStateApiError::from)?;
+    let entry = human_state_entry_for_api(store, &request.header, &request.state_id)?;
+    let (structured, machine_goal) =
+        human_display_goal_data(&request.header, entry, &request.goal_id)?;
+    let (text, shown_count, folded_count) = human_display_context_text(
+        &structured,
+        &machine_goal,
+        request.mode,
+        request.context_options,
+    );
+    Ok(HumanDisplayContextOk {
+        display_profile: HUMAN_DISPLAY_PROFILE_ID,
+        mode: request.mode,
+        text,
+        shown_count,
+        folded_count,
+    })
+}
+
+pub fn display_human_diff(
+    store: &HumanProofSessionStore,
+    request: HumanDisplayDiffRequest,
+) -> Result<HumanDisplayDiffOk, HumanDisplayError> {
+    validate_human_state_request_document(store, request.header.clone())
+        .map_err(HumanStateApiError::from)?;
+    let before = human_state_entry_for_api(store, &request.header, &request.before_state_id)?;
+    let after = human_state_entry_for_api(store, &request.header, &request.after_state_id)?;
+    let before_goals = human_open_goal_ids(before);
+    let after_goals = human_open_goal_ids(after);
+    let before_set = before_goals.iter().cloned().collect::<BTreeSet<_>>();
+    let after_set = after_goals.iter().cloned().collect::<BTreeSet<_>>();
+    let closed = before_goals
+        .into_iter()
+        .filter(|goal_id| !after_set.contains(goal_id))
+        .collect::<Vec<_>>();
+    let added = after_goals
+        .into_iter()
+        .filter(|goal_id| !before_set.contains(goal_id))
+        .collect::<Vec<_>>();
+
+    let mut items = Vec::new();
+    if let Some((first_closed, remaining_closed)) = closed.split_first() {
+        if added.is_empty() {
+            for goal_id in std::iter::once(first_closed).chain(remaining_closed) {
+                items.push(human_display_closed_goal_diff_item(
+                    &request.header,
+                    before,
+                    goal_id,
+                    request.mode,
+                )?);
+            }
+        } else {
+            items.push(human_display_replaced_goal_diff_item(
+                &request.header,
+                before,
+                after,
+                first_closed,
+                &added,
+                request.mode,
+            )?);
+            for goal_id in remaining_closed {
+                items.push(human_display_closed_goal_diff_item(
+                    &request.header,
+                    before,
+                    goal_id,
+                    request.mode,
+                )?);
+            }
+        }
+    } else {
+        for goal_id in &added {
+            items.push(human_display_added_goal_diff_item(
+                &request.header,
+                after,
+                goal_id,
+                request.mode,
+            )?);
+        }
+    }
+
+    let text = if request.mode == HumanDisplayMode::Json {
+        human_display_diff_json(&items)
+    } else if items.is_empty() {
+        "goals unchanged".to_owned()
+    } else {
+        items
+            .iter()
+            .map(|item| item.text.clone())
+            .collect::<Vec<_>>()
+            .join("\n\n")
+    };
+
+    Ok(HumanDisplayDiffOk {
+        display_profile: HUMAN_DISPLAY_PROFILE_ID,
+        mode: request.mode,
+        items,
+        text,
+    })
+}
+
+fn human_open_goal_ids(entry: &HumanProofStateEntry) -> Vec<crate::HumanGoalId> {
+    entry
+        .state
+        .open_goals
+        .iter()
+        .filter_map(|goal_id| entry.human_goal_for_machine_goal(*goal_id).cloned())
+        .collect()
+}
+
+fn human_display_goal_text_for_entry(
+    header: &HumanStateRequestHeader,
+    entry: &HumanProofStateEntry,
+    goal_id: &crate::HumanGoalId,
+    mode: HumanDisplayMode,
+    context_options: HumanDisplayContextOptions,
+) -> Result<String, HumanDisplayError> {
+    let (structured, machine_goal) = human_display_goal_data(header, entry, goal_id)?;
+    Ok(match mode {
+        HumanDisplayMode::Pretty | HumanDisplayMode::Explicit | HumanDisplayMode::Core => {
+            let (context, _, _) =
+                human_display_context_text(&structured, &machine_goal, mode, context_options);
+            let target = human_display_target_text(&structured, &machine_goal, mode);
+            if context.is_empty() {
+                format!("|- {target}")
+            } else {
+                format!("{context}\n|- {target}")
+            }
+        }
+        HumanDisplayMode::Json => human_display_goal_json(&structured),
+    })
+}
+
+fn human_display_goal_data(
+    header: &HumanStateRequestHeader,
+    entry: &HumanProofStateEntry,
+    goal_id: &crate::HumanGoalId,
+) -> Result<(StructuredGoal, npa_tactic::MachineGoal), HumanDisplayError> {
+    let machine_goal_id = entry.machine_goal_for_human_goal(goal_id).ok_or_else(|| {
+        HumanDisplayError::UnknownGoal {
+            session_id: header.session_id.clone(),
+            state_id: entry.state_id.clone(),
+            goal_id: goal_id.clone(),
+        }
+    })?;
+    let machine_goal =
+        entry
+            .state
+            .goal(machine_goal_id)
+            .map_err(|diagnostic| HumanDisplayError::MachineGoal {
+                session_id: header.session_id.clone(),
+                state_id: entry.state_id.clone(),
+                goal_id: goal_id.clone(),
+                diagnostic: Box::new(diagnostic),
+            })?;
+    let structured =
+        materialize_human_structured_goal(entry, machine_goal_id).map_err(|error| {
+            HumanDisplayError::State(human_state_materialization_error(
+                header,
+                &entry.state_id,
+                error,
+            ))
+        })?;
+    Ok((structured, machine_goal))
+}
+
+fn human_display_context_text(
+    structured: &StructuredGoal,
+    machine_goal: &npa_tactic::MachineGoal,
+    mode: HumanDisplayMode,
+    options: HumanDisplayContextOptions,
+) -> (String, usize, usize) {
+    if mode == HumanDisplayMode::Json {
+        return (
+            human_display_context_json(&structured.context),
+            structured.context.len(),
+            0,
+        );
+    }
+
+    let projection = human_display_context_projection(structured, options);
+    let all_lines = match mode {
+        HumanDisplayMode::Pretty => structured
+            .context
+            .iter()
+            .map(|hypothesis| {
+                human_display_structured_hypothesis_text(hypothesis, options.fold_local_def_values)
+            })
+            .collect(),
+        HumanDisplayMode::Explicit => human_display_machine_context_lines(machine_goal, false),
+        HumanDisplayMode::Core => human_display_machine_context_lines(machine_goal, true),
+        HumanDisplayMode::Json => unreachable!("json mode returned above"),
+    };
+    let mut lines = Vec::new();
+    if projection.folded_count > 0 {
+        let shown_kind = if options.relevant_first {
+            "relevant hypotheses"
+        } else {
+            "hypotheses"
+        };
+        lines.push(format!(
+            "Context contains {} hypotheses. Showing {} {}.",
+            structured.context.len(),
+            projection.indices.len(),
+            shown_kind
+        ));
+    }
+    for index in &projection.indices {
+        if let Some(line) = all_lines.get(*index) {
+            lines.push(line.clone());
+        }
+    }
+    (
+        lines.join("\n"),
+        projection.indices.len(),
+        projection.folded_count,
+    )
+}
+
+fn human_display_structured_hypothesis_text(
+    hypothesis: &StructuredHypothesis,
+    fold_local_def_value: bool,
+) -> String {
+    if fold_local_def_value && hypothesis.value.is_some() {
+        format!("{} : {} := ...", hypothesis.name, hypothesis.ty.pretty)
+    } else {
+        hypothesis.pretty.clone()
+    }
+}
+
+struct HumanDisplayContextProjection {
+    indices: Vec<usize>,
+    folded_count: usize,
+}
+
+fn human_display_context_projection(
+    goal: &StructuredGoal,
+    options: HumanDisplayContextOptions,
+) -> HumanDisplayContextProjection {
+    let mut indices = if options.relevant_first {
+        let relevant = human_display_relevant_local_ids(goal);
+        let mut ordered = goal
+            .context
+            .iter()
+            .enumerate()
+            .filter_map(|(index, hypothesis)| {
+                relevant.contains(&hypothesis.local_id).then_some(index)
+            })
+            .collect::<Vec<_>>();
+        ordered.extend(
+            goal.context
+                .iter()
+                .enumerate()
+                .filter_map(|(index, hypothesis)| {
+                    (!relevant.contains(&hypothesis.local_id)).then_some(index)
+                }),
+        );
+        ordered
+    } else {
+        (0..goal.context.len()).collect()
+    };
+    let folded_count = options
+        .max_context_items
+        .filter(|max| indices.len() > *max)
+        .map_or(0, |max| {
+            let folded = indices.len() - max;
+            indices.truncate(max);
+            folded
+        });
+    HumanDisplayContextProjection {
+        indices,
+        folded_count,
+    }
+}
+
+fn human_display_relevant_local_ids(goal: &StructuredGoal) -> BTreeSet<LocalId> {
+    let mut relevant = goal
+        .target
+        .free_locals
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let mut changed = true;
+    while changed {
+        changed = false;
+        for hypothesis in &goal.context {
+            if relevant.contains(&hypothesis.local_id) {
+                for dependency in &hypothesis.depends_on {
+                    changed |= relevant.insert(*dependency);
+                }
+            }
+        }
+    }
+    relevant
+}
+
+fn human_display_machine_context_lines(
+    goal: &npa_tactic::MachineGoal,
+    core_mode: bool,
+) -> Vec<String> {
+    let mut local_names = Vec::with_capacity(goal.context.len());
+    let mut lines = Vec::with_capacity(goal.context.len());
+    for local in &goal.context {
+        let ty = if core_mode {
+            render_kernel_core_expr(&local.ty)
+        } else {
+            human_render_core_expr(&local.ty, &local_names)
+        };
+        let value = local.value.as_ref().map(|value| {
+            if core_mode {
+                render_kernel_core_expr(value)
+            } else {
+                human_render_core_expr(value, &local_names)
+            }
+        });
+        lines.push(human_state_goal_summary_hypothesis_pretty(
+            &local.name,
+            &ty,
+            value.as_deref(),
+        ));
+        local_names.push(local.name.clone());
+    }
+    lines
+}
+
+fn human_display_target_text(
+    structured: &StructuredGoal,
+    machine_goal: &npa_tactic::MachineGoal,
+    mode: HumanDisplayMode,
+) -> String {
+    match mode {
+        HumanDisplayMode::Pretty => structured.target.pretty.clone(),
+        HumanDisplayMode::Explicit => {
+            let local_names = machine_goal
+                .context
+                .iter()
+                .map(|local| local.name.clone())
+                .collect::<Vec<_>>();
+            human_render_core_expr(&machine_goal.target, &local_names)
+        }
+        HumanDisplayMode::Core => render_kernel_core_expr(&machine_goal.target),
+        HumanDisplayMode::Json => human_display_structured_expr_json(&structured.target),
+    }
+}
+
+fn human_display_closed_goal_diff_item(
+    header: &HumanStateRequestHeader,
+    before: &HumanProofStateEntry,
+    goal_id: &crate::HumanGoalId,
+    mode: HumanDisplayMode,
+) -> Result<HumanGoalDisplayDiffItem, HumanDisplayError> {
+    let before_text = human_display_goal_text_for_entry(
+        header,
+        before,
+        goal_id,
+        mode,
+        HumanDisplayContextOptions::default(),
+    )?;
+    let text = match mode {
+        HumanDisplayMode::Json => format!(
+            "{{\"kind\":\"goal_closed\",\"old_goal\":{},\"before\":{}}}",
+            human_json_string(goal_id.wire()),
+            human_json_string(&before_text)
+        ),
+        _ => format!("before:\n{before_text}\n\nafter:\nclosed"),
+    };
+    Ok(HumanGoalDisplayDiffItem {
+        kind: HumanGoalDisplayDiffKind::GoalClosed,
+        old_goal: Some(goal_id.clone()),
+        new_goals: Vec::new(),
+        text,
+    })
+}
+
+fn human_display_added_goal_diff_item(
+    header: &HumanStateRequestHeader,
+    after: &HumanProofStateEntry,
+    goal_id: &crate::HumanGoalId,
+    mode: HumanDisplayMode,
+) -> Result<HumanGoalDisplayDiffItem, HumanDisplayError> {
+    let after_text = human_display_goal_text_for_entry(
+        header,
+        after,
+        goal_id,
+        mode,
+        HumanDisplayContextOptions::default(),
+    )?;
+    let text = match mode {
+        HumanDisplayMode::Json => format!(
+            "{{\"kind\":\"goal_added\",\"new_goal\":{},\"after\":{}}}",
+            human_json_string(goal_id.wire()),
+            human_json_string(&after_text)
+        ),
+        _ => format!("added:\n{after_text}"),
+    };
+    Ok(HumanGoalDisplayDiffItem {
+        kind: HumanGoalDisplayDiffKind::GoalAdded,
+        old_goal: None,
+        new_goals: vec![goal_id.clone()],
+        text,
+    })
+}
+
+fn human_display_replaced_goal_diff_item(
+    header: &HumanStateRequestHeader,
+    before: &HumanProofStateEntry,
+    after: &HumanProofStateEntry,
+    old_goal: &crate::HumanGoalId,
+    new_goals: &[crate::HumanGoalId],
+    mode: HumanDisplayMode,
+) -> Result<HumanGoalDisplayDiffItem, HumanDisplayError> {
+    let before_text = human_display_goal_text_for_entry(
+        header,
+        before,
+        old_goal,
+        mode,
+        HumanDisplayContextOptions::default(),
+    )?;
+    let after_texts = new_goals
+        .iter()
+        .map(|goal_id| {
+            human_display_goal_text_for_entry(
+                header,
+                after,
+                goal_id,
+                mode,
+                HumanDisplayContextOptions::default(),
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let text = match mode {
+        HumanDisplayMode::Json => format!(
+            "{{\"kind\":\"goal_replaced\",\"old_goal\":{},\"new_goals\":{},\"before\":{},\"after\":{}}}",
+            human_json_string(old_goal.wire()),
+            human_json_string_array(new_goals.iter().map(|goal_id| goal_id.wire())),
+            human_json_string(&before_text),
+            human_json_string_array(after_texts.iter().map(String::as_str))
+        ),
+        _ => format!(
+            "before:\n{}\n\nafter:\n{}",
+            before_text,
+            after_texts.join("\n\n")
+        ),
+    };
+    Ok(HumanGoalDisplayDiffItem {
+        kind: HumanGoalDisplayDiffKind::GoalReplaced,
+        old_goal: Some(old_goal.clone()),
+        new_goals: new_goals.to_vec(),
+        text,
+    })
+}
+
+fn human_display_diff_json(items: &[HumanGoalDisplayDiffItem]) -> String {
+    let entries = items
+        .iter()
+        .map(|item| {
+            let old_goal = item
+                .old_goal
+                .as_ref()
+                .map(|goal_id| human_json_string(goal_id.wire()))
+                .unwrap_or_else(|| "null".to_owned());
+            format!(
+                "{{\"kind\":{},\"old_goal\":{},\"new_goals\":{},\"text\":{}}}",
+                human_json_string(human_display_diff_kind_wire(item.kind)),
+                old_goal,
+                human_json_string_array(item.new_goals.iter().map(|goal_id| goal_id.wire())),
+                human_json_string(&item.text)
+            )
+        })
+        .collect::<Vec<_>>();
+    format!("[{}]", entries.join(","))
+}
+
+fn human_display_diff_kind_wire(kind: HumanGoalDisplayDiffKind) -> &'static str {
+    match kind {
+        HumanGoalDisplayDiffKind::GoalReplaced => "goal_replaced",
+        HumanGoalDisplayDiffKind::GoalClosed => "goal_closed",
+        HumanGoalDisplayDiffKind::GoalAdded => "goal_added",
+    }
+}
+
+fn human_display_goal_json(goal: &StructuredGoal) -> String {
+    let context = goal
+        .context
+        .iter()
+        .map(human_display_hypothesis_json)
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "{{\"goal_id\":{},\"machine_goal_id\":{},\"meta_id\":{},\"name\":{},\"context_hash\":{},\"context\":[{}],\"target\":{},\"target_core_hash\":{},\"status\":{},\"pretty\":{}}}",
+        human_json_string(goal.goal_id.wire()),
+        goal.machine_goal_id.0,
+        goal.meta_id.0,
+        goal.name
+            .as_deref()
+            .map(human_json_string)
+            .unwrap_or_else(|| "null".to_owned()),
+        human_json_string(&crate::format_hash_string(&goal.context_hash)),
+        context,
+        human_display_structured_expr_json(&goal.target),
+        human_json_string(&crate::format_hash_string(&goal.target_core_hash)),
+        human_json_string(match goal.status {
+            StructuredGoalStatus::Open => "open",
+        }),
+        human_json_string(&goal.pretty)
+    )
+}
+
+fn human_display_context_json(context: &[StructuredHypothesis]) -> String {
+    let entries = context
+        .iter()
+        .map(human_display_hypothesis_json)
+        .collect::<Vec<_>>();
+    format!("[{}]", entries.join(","))
+}
+
+fn human_display_hypothesis_json(hypothesis: &StructuredHypothesis) -> String {
+    format!(
+        "{{\"local_id\":{},\"name\":{},\"ty\":{},\"value\":{},\"is_local_def\":{},\"is_implicit\":{},\"depends_on\":{},\"binder_index\":{},\"pretty\":{}}}",
+        hypothesis.local_id.0,
+        human_json_string(&hypothesis.name),
+        human_display_structured_expr_json(&hypothesis.ty),
+        hypothesis
+            .value
+            .as_ref()
+            .map(human_display_structured_expr_json)
+            .unwrap_or_else(|| "null".to_owned()),
+        hypothesis.is_local_def,
+        hypothesis.is_implicit,
+        human_json_u32_array(hypothesis.depends_on.iter().map(|local_id| local_id.0)),
+        hypothesis.binder_index,
+        human_json_string(&hypothesis.pretty)
+    )
+}
+
+fn human_display_structured_expr_json(expr: &StructuredExpr) -> String {
+    format!(
+        "{{\"core_hash\":{},\"head\":{},\"constants\":{},\"free_locals\":{},\"size\":{},\"pretty\":{}}}",
+        human_json_string(&crate::format_hash_string(&expr.core_hash)),
+        expr.head
+            .as_ref()
+            .map(|name| human_json_string(&name.as_dotted()))
+            .unwrap_or_else(|| "null".to_owned()),
+        human_json_string_array_owned(expr.constants.iter().map(npa_cert::Name::as_dotted)),
+        human_json_u32_array(expr.free_locals.iter().map(|local_id| local_id.0)),
+        expr.size,
+        human_json_string(&expr.pretty)
+    )
+}
+
+fn human_display_structured_expr_core_summary(expr: &StructuredExpr) -> String {
+    let head = expr
+        .head
+        .as_ref()
+        .map(npa_cert::Name::as_dotted)
+        .unwrap_or_else(|| "none".to_owned());
+    let constants = expr
+        .constants
+        .iter()
+        .map(npa_cert::Name::as_dotted)
+        .collect::<Vec<_>>()
+        .join(", ");
+    let free_locals = expr
+        .free_locals
+        .iter()
+        .map(|local_id| format!("l{}", local_id.0))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "core_hash: {}\nhead: {head}\nconstants: [{constants}]\nfree_locals: [{free_locals}]\nsize: {}",
+        crate::format_hash_string(&expr.core_hash),
+        expr.size
+    )
+}
+
+fn human_json_string_array<'a>(values: impl Iterator<Item = &'a str>) -> String {
+    let values = values.map(human_json_string).collect::<Vec<_>>();
+    format!("[{}]", values.join(","))
+}
+
+fn human_json_string_array_owned(values: impl Iterator<Item = String>) -> String {
+    let values = values
+        .map(|value| human_json_string(&value))
+        .collect::<Vec<_>>();
+    format!("[{}]", values.join(","))
+}
+
+fn human_json_u32_array(values: impl Iterator<Item = u32>) -> String {
+    let values = values.map(|value| value.to_string()).collect::<Vec<_>>();
+    format!("[{}]", values.join(","))
+}
+
+fn human_json_string(value: &str) -> String {
+    let mut out = String::with_capacity(value.len() + 2);
+    out.push('"');
+    for ch in value.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            ch if ch.is_control() => out.push_str(&format!("\\u{:04x}", ch as u32)),
+            ch => out.push(ch),
+        }
+    }
+    out.push('"');
+    out
 }
 
 fn materialize_human_structured_goal(
@@ -3994,6 +4645,461 @@ theorem target : forall (A : Type), forall (x : A), forall (h : Eq.{1} x x), Pro
         assert_eq!(h.ty.pretty, "x = x");
         assert_eq!(h.ty.free_locals, vec![crate::LocalId(0), crate::LocalId(1)]);
         assert_eq!(h.depends_on, vec![crate::LocalId(0), crate::LocalId(1)]);
+    }
+
+    #[test]
+    fn human_display_goal_modes_expr_and_context_folding() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem target (n : Nat) : Eq.{1} n n := by exact _";
+        let file_id = npa_frontend::FileId(27);
+        let by_offset = source.find("by").expect("source should contain by") as u32;
+        let hole_offset = source.find('_').expect("source should contain a hole") as u32;
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanDisplayGoal"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanDisplayGoal.target"),
+                source_span: Some(npa_frontend::Span::new(
+                    file_id,
+                    by_offset,
+                    source.len() as u32,
+                )),
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+        let parent = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("initial state should be stored")
+            .state
+            .clone();
+        let intro = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &parent,
+            goal_id: npa_tactic::GoalId(0),
+            name: &human_name("n", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro should expose Nat local");
+        let recorded = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: intro.state.open_goals.first().copied(),
+                state: intro.state,
+                source_span: Some(npa_frontend::Span::new(
+                    file_id,
+                    hole_offset,
+                    hole_offset + 1,
+                )),
+                messages: Vec::new(),
+            },
+        )
+        .expect("hole state should be recorded");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let by_id = get_human_state_by_id(
+            &store,
+            HumanStateByIdRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+            },
+        )
+        .expect("state/by_id should materialize the recorded state");
+        let goal_id = recorded
+            .selected_goal
+            .clone()
+            .expect("recorded state should select the open goal");
+
+        let pretty = display_human_goal(
+            &store,
+            HumanDisplayGoalRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+                goal_id: goal_id.clone(),
+                mode: HumanDisplayMode::Pretty,
+                context_options: HumanDisplayContextOptions::default(),
+            },
+        )
+        .expect("pretty display should render goal");
+        assert_eq!(pretty.display_profile, HUMAN_DISPLAY_PROFILE_ID);
+        assert!(pretty.text.contains("|- n = n"));
+        assert!(!pretty.text.contains("Eq.{"));
+
+        let explicit = display_human_goal(
+            &store,
+            HumanDisplayGoalRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+                goal_id: goal_id.clone(),
+                mode: HumanDisplayMode::Explicit,
+                context_options: HumanDisplayContextOptions::default(),
+            },
+        )
+        .expect("explicit display should render goal");
+        assert!(explicit.text.contains("Eq.{succ 0}"));
+        assert!(explicit.text.contains("Nat n n"));
+
+        let core = display_human_goal(
+            &store,
+            HumanDisplayGoalRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+                goal_id: goal_id.clone(),
+                mode: HumanDisplayMode::Core,
+                context_options: HumanDisplayContextOptions::default(),
+            },
+        )
+        .expect("core display should render goal");
+        assert!(core.text.contains("App("));
+        assert!(core.text.contains("Const(Eq.{succ(0)})"));
+        assert!(core.text.contains("BVar(0)"));
+
+        let json = display_human_goal(
+            &store,
+            HumanDisplayGoalRequest {
+                header: header.clone(),
+                state_id: recorded.state_id.clone(),
+                goal_id,
+                mode: HumanDisplayMode::Json,
+                context_options: HumanDisplayContextOptions {
+                    max_context_items: Some(0),
+                    ..HumanDisplayContextOptions::default()
+                },
+            },
+        )
+        .expect("json display should render full StructuredGoal");
+        assert!(json.text.contains("\"context\":["));
+        assert!(json.text.contains("\"name\":\"n\""));
+        assert!(json.text.contains("\"target\""));
+
+        let target = by_id.state.goals[0].target.clone();
+        let expr_core = display_human_expr(HumanDisplayExprRequest {
+            expr: target.clone(),
+            mode: HumanDisplayMode::Core,
+        });
+        assert!(expr_core.text.contains("core_hash:"));
+        assert!(expr_core.text.contains("head: Eq"));
+        let expr_json = display_human_expr(HumanDisplayExprRequest {
+            expr: target,
+            mode: HumanDisplayMode::Json,
+        });
+        assert!(expr_json.text.contains("\"core_hash\""));
+        assert!(expr_json.text.contains("\"head\":\"Eq\""));
+    }
+
+    #[test]
+    fn human_display_context_folds_without_removing_json_context() {
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![eq];
+        let imported_source_interfaces = vec![eq_interface];
+        let source = "\
+import Std.Logic.Eq
+theorem target : forall (A : Type), forall (x : A), forall (h : Eq.{1} x x), Eq.{1} x x := by simp-lite";
+        let file_id = npa_frontend::FileId(28);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanDisplayContext"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanDisplayContext.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+        let state_initial = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("initial state should be stored")
+            .state
+            .clone();
+        let intro_a = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &state_initial,
+            goal_id: state_initial.open_goals[0],
+            name: &human_name("A", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro A should succeed");
+        let state_a = intro_a.state.clone();
+        let recorded_a = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: state_a.open_goals.first().copied(),
+                state: intro_a.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("A state should be recorded");
+        let intro_x = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &state_a,
+            goal_id: state_a.open_goals[0],
+            name: &human_name("x", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro x should succeed");
+        let state_x = intro_x.state.clone();
+        let recorded_x = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: recorded_a.state_id.clone(),
+                selected_goal: state_x.open_goals.first().copied(),
+                state: intro_x.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("x state should be recorded");
+        let intro_h = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &state_x,
+            goal_id: state_x.open_goals[0],
+            name: &human_name("h", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro h should succeed");
+        let state_h = intro_h.state.clone();
+        let recorded_h = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: recorded_x.state_id.clone(),
+                selected_goal: state_h.open_goals.first().copied(),
+                state: intro_h.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("h state should be recorded");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let goal_id = recorded_h
+            .selected_goal
+            .clone()
+            .expect("recorded state should select the open goal");
+        let folded = display_human_context(
+            &store,
+            HumanDisplayContextRequest {
+                header: header.clone(),
+                state_id: recorded_h.state_id.clone(),
+                goal_id: goal_id.clone(),
+                mode: HumanDisplayMode::Pretty,
+                context_options: HumanDisplayContextOptions {
+                    max_context_items: Some(2),
+                    fold_local_def_values: false,
+                    relevant_first: true,
+                },
+            },
+        )
+        .expect("context display should fold");
+
+        assert_eq!(folded.shown_count, 2);
+        assert_eq!(folded.folded_count, 1);
+        assert!(folded
+            .text
+            .contains("Context contains 3 hypotheses. Showing 2 relevant hypotheses."));
+        assert!(folded.text.contains("A : Type"));
+        assert!(folded.text.contains("x : A"));
+        assert!(!folded.text.contains("h : x = x"));
+
+        let json_goal = display_human_goal(
+            &store,
+            HumanDisplayGoalRequest {
+                header,
+                state_id: recorded_h.state_id,
+                goal_id,
+                mode: HumanDisplayMode::Json,
+                context_options: HumanDisplayContextOptions {
+                    max_context_items: Some(1),
+                    ..HumanDisplayContextOptions::default()
+                },
+            },
+        )
+        .expect("goal json display should preserve full context");
+        assert!(json_goal.text.contains("\"name\":\"A\""));
+        assert!(json_goal.text.contains("\"name\":\"x\""));
+        assert!(json_goal.text.contains("\"name\":\"h\""));
+    }
+
+    #[test]
+    fn human_display_diff_reports_replaced_and_closed_goals() {
+        let source = "theorem target : forall (P : Prop), forall (hp : P), P := by simp-lite";
+        let file_id = npa_frontend::FileId(29);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanDisplayDiff"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &[],
+                imported_source_interfaces: &[],
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanDisplayDiff.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let initial_state = get_human_proof_state(&store, &created.session_id, &started.state_id)
+            .expect("initial state should be stored")
+            .state
+            .clone();
+        let intro_p = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &initial_state,
+            goal_id: initial_state.open_goals[0],
+            name: &human_name("P", 0, 1),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro P should succeed");
+        let state_p = intro_p.state.clone();
+        let recorded_p = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: started.state_id.clone(),
+                selected_goal: state_p.open_goals.first().copied(),
+                state: intro_p.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("P state should be recorded");
+        let replaced = display_human_diff(
+            &store,
+            HumanDisplayDiffRequest {
+                header: header.clone(),
+                before_state_id: started.state_id.clone(),
+                after_state_id: recorded_p.state_id.clone(),
+                mode: HumanDisplayMode::Pretty,
+            },
+        )
+        .expect("display diff should render intro replacement");
+        assert_eq!(replaced.items.len(), 1);
+        assert_eq!(
+            replaced.items[0].kind,
+            HumanGoalDisplayDiffKind::GoalReplaced
+        );
+        assert_eq!(replaced.items[0].old_goal, started.selected_goal.clone());
+        assert_eq!(
+            replaced.items[0].new_goals,
+            vec![recorded_p.selected_goal.clone().unwrap()]
+        );
+        assert!(replaced.text.contains("before:"));
+        assert!(replaced.text.contains("after:"));
+
+        let intro_hp = run_human_intro_tactic(HumanIntroTacticRequest {
+            state: &state_p,
+            goal_id: state_p.open_goals[0],
+            name: &human_name("hp", 0, 2),
+            budget: npa_tactic::TacticBudget::default(),
+        })
+        .expect("intro hp should succeed");
+        let state_hp = intro_hp.state.clone();
+        let recorded_hp = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: recorded_p.state_id.clone(),
+                selected_goal: state_hp.open_goals.first().copied(),
+                state: intro_hp.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("hp state should be recorded");
+        let source_interface = store
+            .session(&created.session_id)
+            .and_then(|session| session.source_interface.clone())
+            .expect("started proof should leave a source interface on the session");
+        let exact_term =
+            npa_frontend::parse_human_term(file_id, "hp").expect("hp exact term should parse");
+        let exact = run_human_exact_tactic(HumanExactTacticRequest {
+            state: &state_hp,
+            goal_id: state_hp.open_goals[0],
+            term: &exact_term,
+            current_source_interface: &source_interface,
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("exact hp should close the goal");
+        let recorded_exact = record_human_tactic_state(
+            &mut store,
+            HumanTacticStateRecordRequest {
+                session_id: created.session_id.clone(),
+                parent_state_id: recorded_hp.state_id.clone(),
+                selected_goal: exact.state.open_goals.first().copied(),
+                state: exact.state,
+                source_span: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("closed state should be recorded");
+
+        let closed = display_human_diff(
+            &store,
+            HumanDisplayDiffRequest {
+                header,
+                before_state_id: recorded_hp.state_id,
+                after_state_id: recorded_exact.state_id,
+                mode: HumanDisplayMode::Pretty,
+            },
+        )
+        .expect("display diff should render closed goal");
+        assert_eq!(closed.items.len(), 1);
+        assert_eq!(closed.items[0].kind, HumanGoalDisplayDiffKind::GoalClosed);
+        assert_eq!(closed.items[0].old_goal, recorded_hp.selected_goal);
+        assert!(closed.items[0].new_goals.is_empty());
+        assert!(closed.text.contains("closed"));
     }
 
     #[test]

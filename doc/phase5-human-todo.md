@@ -462,11 +462,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `/display/goal` 相当の API に `pretty` / `explicit` / `core` / `json` mode を追加する。
-- [ ] `/display/expr` 相当の API を追加し、StructuredExpr 単位で表示できるようにする。
-- [ ] `/display/diff` 相当の API で tactic 前後の goal replacement / closed / added goals を表示する。
-- [ ] `/display/context` 相当の API で context folding と relevant context ordering を行う。
-- [ ] display options は Human display profile として固定し、trusted payload に入れない。
+- [x] `/display/goal` 相当の API に `pretty` / `explicit` / `core` / `json` mode を追加する。
+- [x] `/display/expr` 相当の API を追加し、StructuredExpr 単位で表示できるようにする。
+- [x] `/display/diff` 相当の API で tactic 前後の goal replacement / closed / added goals を表示する。
+- [x] `/display/context` 相当の API で context folding と relevant context ordering を行う。
+- [x] display options は Human display profile として固定し、trusted payload に入れない。
 
 依存:
 
@@ -492,10 +492,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] pretty mode は notation / implicit hiding を使った人間向け表示を返せる。
-- [ ] explicit mode は implicit arguments を表示する。
-- [ ] core mode は kernel が見る core expression に近い表示を返す。
-- [ ] folding しても json / StructuredGoal には完全な context が残る。
+- [x] pretty mode は notation / implicit hiding を使った人間向け表示を返せる。
+- [x] explicit mode は implicit arguments を表示する。
+- [x] core mode は kernel が見る core expression に近い表示を返す。
+- [x] folding しても json / StructuredGoal には完全な context が残る。
 
 Verification:
 
@@ -505,7 +505,7 @@ cargo test -p npa-api human_display
 
 AI 速度ガード:
 
-- [ ] pretty renderer を Machine candidate validation / replay / verify の入力にしない。
+- [x] pretty renderer を Machine candidate validation / replay / verify の入力にしない。
 
 ---
 
