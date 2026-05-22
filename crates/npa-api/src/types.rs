@@ -571,6 +571,153 @@ pub enum HumanTheoremIndexError {
     },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremSearchOptions {
+    pub limit: usize,
+    pub axiom_policy: HumanTheoremSearchAxiomPolicy,
+}
+
+impl Default for HumanTheoremSearchOptions {
+    fn default() -> Self {
+        Self {
+            limit: 20,
+            axiom_policy: HumanTheoremSearchAxiomPolicy::Allow,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTheoremSearchAxiomPolicy {
+    Allow,
+    Penalize,
+    Exclude,
+}
+
+impl HumanTheoremSearchAxiomPolicy {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Allow => "allow",
+            Self::Penalize => "penalize",
+            Self::Exclude => "exclude",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremNameSearchRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub query: String,
+    pub options: HumanTheoremSearchOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremTypeSearchRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub pattern: String,
+    pub options: HumanTheoremSearchOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremGoalSearchRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub modes: Vec<HumanTheoremSearchMode>,
+    pub options: HumanTheoremSearchOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremRewriteSearchRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub options: HumanTheoremSearchOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremSearchOk {
+    pub session_id: HumanSessionId,
+    pub state_id: HumanStateId,
+    pub goal_id: Option<HumanGoalId>,
+    pub theorem_index_fingerprint: Hash,
+    pub results: Vec<HumanTheoremSearchResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremSearchResult {
+    pub name: Name,
+    pub module: ModuleName,
+    pub source: HumanTheoremIndexSource,
+    pub kind: HumanTheoremIndexKind,
+    pub mode: HumanTheoremSearchMode,
+    pub statement_core: Expr,
+    pub statement_pretty: String,
+    pub suggested_tactic: String,
+    pub match_info: Vec<HumanTheoremMatchBinding>,
+    pub why: String,
+    pub score: u64,
+    pub axiom_info: HumanTheoremAxiomInfo,
+    pub export_hash: Option<Hash>,
+    pub certificate_hash: Option<Hash>,
+    pub decl_interface_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremMatchBinding {
+    pub pattern: String,
+    pub value: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTheoremAxiomInfo {
+    pub uses_axioms: bool,
+    pub axiom_dependencies: Vec<MachineAxiomRefWire>,
+    pub score_penalty: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum HumanTheoremSearchMode {
+    Name,
+    ByType,
+    Exact,
+    Apply,
+    Rw,
+    Simp,
+}
+
+impl HumanTheoremSearchMode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Name => "name",
+            Self::ByType => "by_type",
+            Self::Exact => "exact",
+            Self::Apply => "apply",
+            Self::Rw => "rw",
+            Self::Simp => "simp",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanTheoremSearchError {
+    State(HumanStateApiError),
+    UnknownGoal {
+        session_id: HumanSessionId,
+        state_id: HumanStateId,
+        goal_id: HumanGoalId,
+    },
+    InvalidGoalMode {
+        mode: HumanTheoremSearchMode,
+    },
+    InvalidPattern {
+        pattern: String,
+        message: String,
+    },
+    Index(HumanTheoremIndexError),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HumanTacticSuggestionSource {
     Builtin,

@@ -667,12 +667,12 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] `/search/name` 相当の API を追加する。
-- [ ] `/search/by_type` 相当の API を追加する。
-- [ ] `/search/for_goal` 相当の API を exact / apply / rw / simp mode で追加する。
-- [ ] `/search/rewrite` 相当の API を追加する。
-- [ ] result に suggested Human tactic string、match、why、score、axiom info を含める。
-- [ ] high-trust mode では axiom 使用 theorem を penalty または filter できるようにする。
+- [x] `/search/name` 相当の API を追加する。
+- [x] `/search/by_type` 相当の API を追加する。
+- [x] `/search/for_goal` 相当の API を exact / apply / rw / simp mode で追加する。
+- [x] `/search/rewrite` 相当の API を追加する。
+- [x] result に suggested Human tactic string、match、why、score、axiom info を含める。
+- [x] high-trust mode では axiom 使用 theorem を penalty または filter できるようにする。
 
 依存:
 
@@ -698,10 +698,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] `Nat.add_zero` を名前検索できる。
-- [ ] `?x + 0 = ?x` 型パターンで matching theorem を返せる。
-- [ ] current goal `n + 0 = n` に対して `exact Nat.add_zero n` と `rw [Nat.add_zero]` の候補を返せる。
-- [ ] suggested tactic は `/tactic/run` に再投入して検査できる。
+- [x] `Nat.add_zero` を名前検索できる。
+- [x] `?x + 0 = ?x` 型パターンで matching theorem を返せる。
+- [x] current goal `n + 0 = n` に対して `exact Nat.add_zero n` と `rw [Nat.add_zero]` の候補を返せる。
+- [x] suggested tactic は `/tactic/run` に再投入して検査できる。
 
 Verification:
 
@@ -711,7 +711,7 @@ cargo test -p npa-api human_search
 
 AI 速度ガード:
 
-- [ ] Human suggested tactic string を raw `MachineTacticCandidate` の代わりに Phase 7 へ渡す API を作らない。
+- [x] Human suggested tactic string を raw `MachineTacticCandidate` の代わりに Phase 7 へ渡す API を作らない。
 
 ---
 

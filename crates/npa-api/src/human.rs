@@ -30,10 +30,14 @@ use crate::{
     HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticSuggestRequest,
     HumanTacticSuggestResponse, HumanTacticSuggestion, HumanTacticSuggestionSource,
     HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
-    HumanTheoremDependency, HumanTheoremDependencyKind, HumanTheoremIndex, HumanTheoremIndexEntry,
-    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource, LocalId,
-    StructuredExpr, StructuredGoal, StructuredGoalStatus, StructuredHypothesis,
-    StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
+    HumanTheoremAxiomInfo, HumanTheoremDependency, HumanTheoremDependencyKind,
+    HumanTheoremGoalSearchRequest, HumanTheoremIndex, HumanTheoremIndexEntry,
+    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource,
+    HumanTheoremMatchBinding, HumanTheoremNameSearchRequest, HumanTheoremRewriteSearchRequest,
+    HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError, HumanTheoremSearchMode,
+    HumanTheoremSearchOk, HumanTheoremSearchOptions, HumanTheoremSearchResult,
+    HumanTheoremTypeSearchRequest, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
+    StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_cert::{
     AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
@@ -2792,6 +2796,727 @@ pub fn build_human_theorem_index(
         fingerprint,
         entries,
     })
+}
+
+pub fn search_human_theorems_by_name(
+    store: &HumanProofSessionStore,
+    request: HumanTheoremNameSearchRequest,
+) -> Result<HumanTheoremSearchOk, HumanTheoremSearchError> {
+    let (entry, index) = human_search_index_for_state(store, &request.header, &request.state_id)?;
+    let query = request.query.trim().to_lowercase();
+    let mut results = Vec::new();
+    for theorem in &index.entries {
+        let dotted = theorem.name.as_dotted();
+        let dotted_lower = dotted.to_lowercase();
+        if !query.is_empty() && !dotted_lower.contains(&query) {
+            continue;
+        }
+        let score = if dotted_lower == query { 700 } else { 500 };
+        if let Some(result) = human_search_result_from_entry(
+            theorem,
+            HumanTheoremSearchMode::Name,
+            human_default_exact_tactic(theorem),
+            vec![HumanTheoremMatchBinding {
+                pattern: request.query.clone(),
+                value: dotted,
+            }],
+            "name contains the search query",
+            score,
+            &request.options,
+        ) {
+            results.push(result);
+        }
+    }
+    human_sort_truncate_search_results(&mut results, request.options.limit);
+
+    Ok(HumanTheoremSearchOk {
+        session_id: request.header.session_id,
+        state_id: entry.state_id.clone(),
+        goal_id: None,
+        theorem_index_fingerprint: index.fingerprint,
+        results,
+    })
+}
+
+pub fn search_human_theorems_by_type(
+    store: &HumanProofSessionStore,
+    request: HumanTheoremTypeSearchRequest,
+) -> Result<HumanTheoremSearchOk, HumanTheoremSearchError> {
+    let (entry, index) = human_search_index_for_state(store, &request.header, &request.state_id)?;
+    let pattern = human_parse_search_pattern(&request.pattern).map_err(|message| {
+        HumanTheoremSearchError::InvalidPattern {
+            pattern: request.pattern.clone(),
+            message,
+        }
+    })?;
+    let mut results = Vec::new();
+    for theorem in &index.entries {
+        let (_, conclusion) = human_theorem_conclusion(&theorem.statement_core);
+        let mut bindings = BTreeMap::new();
+        if !human_search_pattern_matches(&pattern, conclusion, &mut bindings) {
+            continue;
+        }
+        let display_binders = human_search_display_binder_names(&theorem.statement_core);
+        let match_info = bindings
+            .into_iter()
+            .map(|(pattern, value)| HumanTheoremMatchBinding {
+                pattern,
+                value: human_render_core_expr(&value, &display_binders),
+            })
+            .collect::<Vec<_>>();
+        if let Some(result) = human_search_result_from_entry(
+            theorem,
+            HumanTheoremSearchMode::ByType,
+            human_default_exact_tactic(theorem),
+            match_info,
+            "the theorem conclusion matches the type pattern",
+            800,
+            &request.options,
+        ) {
+            results.push(result);
+        }
+    }
+    human_sort_truncate_search_results(&mut results, request.options.limit);
+
+    Ok(HumanTheoremSearchOk {
+        session_id: request.header.session_id,
+        state_id: entry.state_id.clone(),
+        goal_id: None,
+        theorem_index_fingerprint: index.fingerprint,
+        results,
+    })
+}
+
+pub fn search_human_theorems_for_goal(
+    store: &HumanProofSessionStore,
+    request: HumanTheoremGoalSearchRequest,
+) -> Result<HumanTheoremSearchOk, HumanTheoremSearchError> {
+    let modes = human_goal_search_modes(&request.modes)?;
+    let (entry, index) = human_search_index_for_state(store, &request.header, &request.state_id)?;
+    let machine_goal_id = entry
+        .machine_goal_for_human_goal(&request.goal_id)
+        .ok_or_else(|| HumanTheoremSearchError::UnknownGoal {
+            session_id: request.header.session_id.clone(),
+            state_id: entry.state_id.clone(),
+            goal_id: request.goal_id.clone(),
+        })?;
+    let goal = entry.state.goal(machine_goal_id).map_err(|diagnostic| {
+        HumanTheoremSearchError::State(human_state_materialization_error(
+            &request.header,
+            &request.state_id,
+            HumanStructuredProofStateError::MachineGoal {
+                state_id: request.state_id.clone(),
+                machine_goal_id,
+                diagnostic: Box::new(diagnostic),
+            },
+        ))
+    })?;
+    let mut results = Vec::new();
+    let context = HumanGoalSearchContext {
+        store,
+        header: &request.header,
+        state_id: &request.state_id,
+        goal_id: &request.goal_id,
+        goal: &goal,
+        options: &request.options,
+    };
+    for theorem in &index.entries {
+        if !human_theorem_relevant_to_goal(theorem, &goal) {
+            continue;
+        }
+        for mode in &modes {
+            human_push_goal_search_results(&context, theorem, *mode, &mut results);
+        }
+    }
+    human_sort_truncate_search_results(&mut results, request.options.limit);
+
+    Ok(HumanTheoremSearchOk {
+        session_id: request.header.session_id,
+        state_id: entry.state_id.clone(),
+        goal_id: Some(request.goal_id),
+        theorem_index_fingerprint: index.fingerprint,
+        results,
+    })
+}
+
+pub fn search_human_theorems_for_rewrite(
+    store: &HumanProofSessionStore,
+    request: HumanTheoremRewriteSearchRequest,
+) -> Result<HumanTheoremSearchOk, HumanTheoremSearchError> {
+    search_human_theorems_for_goal(
+        store,
+        HumanTheoremGoalSearchRequest {
+            header: request.header,
+            state_id: request.state_id,
+            goal_id: request.goal_id,
+            modes: vec![HumanTheoremSearchMode::Rw],
+            options: request.options,
+        },
+    )
+}
+
+fn human_search_index_for_state<'session>(
+    store: &'session HumanProofSessionStore,
+    header: &HumanStateRequestHeader,
+    state_id: &crate::HumanStateId,
+) -> Result<(&'session HumanProofStateEntry, HumanTheoremIndex), HumanTheoremSearchError> {
+    validate_human_state_request_document(store, header.clone())
+        .map_err(|error| HumanTheoremSearchError::State(HumanStateApiError::from(error)))?;
+    let entry = human_state_entry_for_api(store, header, state_id)
+        .map_err(HumanTheoremSearchError::State)?;
+    let index = build_human_theorem_index(&entry.state).map_err(HumanTheoremSearchError::Index)?;
+    Ok((entry, index))
+}
+
+fn human_goal_search_modes(
+    modes: &[HumanTheoremSearchMode],
+) -> Result<Vec<HumanTheoremSearchMode>, HumanTheoremSearchError> {
+    let modes = if modes.is_empty() {
+        vec![
+            HumanTheoremSearchMode::Exact,
+            HumanTheoremSearchMode::Apply,
+            HumanTheoremSearchMode::Rw,
+            HumanTheoremSearchMode::Simp,
+        ]
+    } else {
+        modes.to_vec()
+    };
+    for mode in &modes {
+        if !matches!(
+            mode,
+            HumanTheoremSearchMode::Exact
+                | HumanTheoremSearchMode::Apply
+                | HumanTheoremSearchMode::Rw
+                | HumanTheoremSearchMode::Simp
+        ) {
+            return Err(HumanTheoremSearchError::InvalidGoalMode { mode: *mode });
+        }
+    }
+    let mut deduped = modes;
+    deduped.sort();
+    deduped.dedup();
+    Ok(deduped)
+}
+
+struct HumanGoalSearchContext<'a> {
+    store: &'a HumanProofSessionStore,
+    header: &'a HumanStateRequestHeader,
+    state_id: &'a crate::HumanStateId,
+    goal_id: &'a crate::HumanGoalId,
+    goal: &'a npa_tactic::MachineGoal,
+    options: &'a HumanTheoremSearchOptions,
+}
+
+fn human_push_goal_search_results(
+    context: &HumanGoalSearchContext<'_>,
+    theorem: &HumanTheoremIndexEntry,
+    mode: HumanTheoremSearchMode,
+    results: &mut Vec<HumanTheoremSearchResult>,
+) {
+    let candidates = match mode {
+        HumanTheoremSearchMode::Exact => human_exact_tactic_candidates(theorem, context.goal),
+        HumanTheoremSearchMode::Apply => vec![format!("apply {}", theorem.name.as_dotted())],
+        HumanTheoremSearchMode::Rw => {
+            if !human_theorem_has_eq_conclusion(theorem) {
+                return;
+            }
+            vec![format!("rw [{}]", theorem.name.as_dotted())]
+        }
+        HumanTheoremSearchMode::Simp => vec!["simp-lite".to_owned()],
+        HumanTheoremSearchMode::Name | HumanTheoremSearchMode::ByType => return,
+    };
+
+    for tactic in candidates {
+        let check = check_human_tactic(
+            context.store,
+            HumanTacticCheckRequest {
+                header: context.header.clone(),
+                state_id: context.state_id.clone(),
+                goal_id: context.goal_id.clone(),
+                tactic: tactic.clone(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        if !human_goal_search_check_accepts(mode, check.status, check.error.as_ref()) {
+            continue;
+        }
+        let match_info = human_goal_search_match_info(mode, theorem, context.goal, &tactic);
+        if let Some(result) = human_search_result_from_entry(
+            theorem,
+            mode,
+            tactic,
+            match_info,
+            human_goal_search_why(mode),
+            human_goal_search_base_score(mode),
+            context.options,
+        ) {
+            results.push(result);
+        }
+        break;
+    }
+}
+
+fn human_goal_search_check_accepts(
+    mode: HumanTheoremSearchMode,
+    status: HumanTacticRunStatus,
+    error: Option<&HumanTacticRunErrorReport>,
+) -> bool {
+    if error.is_some()
+        || matches!(
+            status,
+            HumanTacticRunStatus::Error
+                | HumanTacticRunStatus::Timeout
+                | HumanTacticRunStatus::Unsafe
+        )
+    {
+        return false;
+    }
+    if mode == HumanTheoremSearchMode::Exact {
+        return matches!(
+            status,
+            HumanTacticRunStatus::Closed | HumanTacticRunStatus::Success
+        );
+    }
+    true
+}
+
+fn human_goal_search_base_score(mode: HumanTheoremSearchMode) -> u64 {
+    match mode {
+        HumanTheoremSearchMode::Exact => 1000,
+        HumanTheoremSearchMode::Rw => 900,
+        HumanTheoremSearchMode::Apply => 700,
+        HumanTheoremSearchMode::Simp => 600,
+        HumanTheoremSearchMode::ByType => 800,
+        HumanTheoremSearchMode::Name => 500,
+    }
+}
+
+fn human_goal_search_why(mode: HumanTheoremSearchMode) -> &'static str {
+    match mode {
+        HumanTheoremSearchMode::Exact => {
+            "the suggested exact tactic was checked against the current goal"
+        }
+        HumanTheoremSearchMode::Apply => {
+            "the suggested apply tactic was checked against the current goal"
+        }
+        HumanTheoremSearchMode::Rw => {
+            "the suggested rewrite tactic was checked against the current goal"
+        }
+        HumanTheoremSearchMode::Simp => {
+            "simp-lite was checked against the current goal with this theorem in scope"
+        }
+        HumanTheoremSearchMode::Name => "name contains the search query",
+        HumanTheoremSearchMode::ByType => "the theorem conclusion matches the type pattern",
+    }
+}
+
+fn human_goal_search_match_info(
+    mode: HumanTheoremSearchMode,
+    theorem: &HumanTheoremIndexEntry,
+    goal: &npa_tactic::MachineGoal,
+    tactic: &str,
+) -> Vec<HumanTheoremMatchBinding> {
+    match mode {
+        HumanTheoremSearchMode::Exact => {
+            let (_, names) = human_exact_tactic_base_and_args(tactic);
+            let binder_names = human_search_display_binder_names(&theorem.statement_core);
+            names
+                .into_iter()
+                .enumerate()
+                .map(|(index, value)| HumanTheoremMatchBinding {
+                    pattern: binder_names
+                        .get(index)
+                        .cloned()
+                        .unwrap_or_else(|| format!("arg{index}")),
+                    value,
+                })
+                .collect()
+        }
+        HumanTheoremSearchMode::Rw => vec![HumanTheoremMatchBinding {
+            pattern: "target".to_owned(),
+            value: human_structured_expr_pretty(
+                &goal.target,
+                &goal
+                    .context
+                    .iter()
+                    .map(|local| local.name.clone())
+                    .collect::<Vec<_>>(),
+            ),
+        }],
+        HumanTheoremSearchMode::Apply | HumanTheoremSearchMode::Simp => Vec::new(),
+        HumanTheoremSearchMode::Name | HumanTheoremSearchMode::ByType => Vec::new(),
+    }
+}
+
+fn human_search_result_from_entry(
+    theorem: &HumanTheoremIndexEntry,
+    mode: HumanTheoremSearchMode,
+    suggested_tactic: String,
+    match_info: Vec<HumanTheoremMatchBinding>,
+    why: impl Into<String>,
+    base_score: u64,
+    options: &HumanTheoremSearchOptions,
+) -> Option<HumanTheoremSearchResult> {
+    let axiom_info = human_search_axiom_info(theorem, options)?;
+    let score = base_score.saturating_sub(axiom_info.score_penalty);
+    Some(HumanTheoremSearchResult {
+        name: theorem.name.clone(),
+        module: theorem.module.clone(),
+        source: theorem.source.clone(),
+        kind: theorem.kind,
+        mode,
+        statement_core: theorem.statement_core.clone(),
+        statement_pretty: theorem.statement_pretty.clone(),
+        suggested_tactic,
+        match_info,
+        why: why.into(),
+        score,
+        axiom_info,
+        export_hash: theorem.export_hash,
+        certificate_hash: theorem.certificate_hash,
+        decl_interface_hash: theorem.decl_interface_hash,
+    })
+}
+
+fn human_search_axiom_info(
+    theorem: &HumanTheoremIndexEntry,
+    options: &HumanTheoremSearchOptions,
+) -> Option<HumanTheoremAxiomInfo> {
+    let uses_axioms = !theorem.axiom_dependencies.is_empty();
+    if uses_axioms && options.axiom_policy == HumanTheoremSearchAxiomPolicy::Exclude {
+        return None;
+    }
+    let score_penalty =
+        if uses_axioms && options.axiom_policy == HumanTheoremSearchAxiomPolicy::Penalize {
+            200
+        } else {
+            0
+        };
+    Some(HumanTheoremAxiomInfo {
+        uses_axioms,
+        axiom_dependencies: theorem.axiom_dependencies.clone(),
+        score_penalty,
+    })
+}
+
+fn human_sort_truncate_search_results(results: &mut Vec<HumanTheoremSearchResult>, limit: usize) {
+    results.sort_by(|left, right| {
+        right
+            .score
+            .cmp(&left.score)
+            .then_with(|| left.name.as_dotted().cmp(&right.name.as_dotted()))
+            .then_with(|| left.mode.cmp(&right.mode))
+            .then_with(|| left.decl_interface_hash.cmp(&right.decl_interface_hash))
+    });
+    results.truncate(limit);
+}
+
+fn human_default_exact_tactic(theorem: &HumanTheoremIndexEntry) -> String {
+    let mut parts = vec!["exact".to_owned(), theorem.name.as_dotted()];
+    parts.extend(human_search_display_binder_names(&theorem.statement_core));
+    parts.join(" ")
+}
+
+fn human_search_display_binder_names(expr: &Expr) -> Vec<String> {
+    human_search_display_names(human_theorem_binder_names(expr))
+}
+
+fn human_search_display_names(names: Vec<String>) -> Vec<String> {
+    names
+        .into_iter()
+        .enumerate()
+        .map(|(index, name)| {
+            if name.trim().is_empty() || name == "_" {
+                human_default_display_binder_name(index)
+            } else {
+                name
+            }
+        })
+        .collect()
+}
+
+fn human_default_display_binder_name(index: usize) -> String {
+    match index {
+        0 => "n".to_owned(),
+        1 => "m".to_owned(),
+        2 => "k".to_owned(),
+        _ => format!("arg{index}"),
+    }
+}
+
+fn human_exact_tactic_candidates(
+    theorem: &HumanTheoremIndexEntry,
+    goal: &npa_tactic::MachineGoal,
+) -> Vec<String> {
+    let binder_count = human_theorem_binder_names(&theorem.statement_core).len();
+    let local_names = goal
+        .context
+        .iter()
+        .map(|local| local.name.clone())
+        .collect::<Vec<_>>();
+    let max_args = binder_count.min(local_names.len());
+    let mut candidates = Vec::new();
+    for count in (0..=max_args).rev() {
+        let mut parts = vec!["exact".to_owned(), theorem.name.as_dotted()];
+        parts.extend(local_names.iter().take(count).cloned());
+        candidates.push(parts.join(" "));
+    }
+    candidates.sort();
+    candidates.dedup();
+    candidates.sort_by_key(|candidate| {
+        std::cmp::Reverse(human_exact_tactic_base_and_args(candidate).1.len())
+    });
+    candidates
+}
+
+fn human_exact_tactic_base_and_args(tactic: &str) -> (Option<String>, Vec<String>) {
+    let parts = tactic.split_whitespace().collect::<Vec<_>>();
+    if parts.len() < 2 || parts[0] != "exact" {
+        return (None, Vec::new());
+    }
+    (
+        Some(parts[1].to_owned()),
+        parts
+            .iter()
+            .skip(2)
+            .map(|part| (*part).to_owned())
+            .collect(),
+    )
+}
+
+fn human_theorem_relevant_to_goal(
+    theorem: &HumanTheoremIndexEntry,
+    goal: &npa_tactic::MachineGoal,
+) -> bool {
+    let (_, conclusion) = human_theorem_conclusion(&theorem.statement_core);
+    let mut theorem_constants = BTreeSet::new();
+    human_collect_expr_constants(conclusion, &mut theorem_constants);
+    let mut goal_constants = BTreeSet::new();
+    human_collect_expr_constants(&goal.target, &mut goal_constants);
+    if !theorem_constants.is_disjoint(&goal_constants) {
+        return true;
+    }
+    let theorem_head = human_expr_head_name(conclusion);
+    let goal_head = human_expr_head_name(&goal.target);
+    theorem_head.is_some() && theorem_head == goal_head
+}
+
+fn human_theorem_has_eq_conclusion(theorem: &HumanTheoremIndexEntry) -> bool {
+    let (_, conclusion) = human_theorem_conclusion(&theorem.statement_core);
+    human_eq_app_sides(conclusion).is_some()
+}
+
+fn human_expr_head_name(expr: &Expr) -> Option<Name> {
+    let (head, _) = human_app_head_and_args(expr);
+    let Expr::Const { name, .. } = head else {
+        return None;
+    };
+    Some(Name::from_dotted(name))
+}
+
+fn human_theorem_conclusion(expr: &Expr) -> (Vec<String>, &Expr) {
+    let mut binders = Vec::new();
+    let mut current = expr;
+    while let Expr::Pi { binder, body, .. } = current {
+        binders.push(binder.clone());
+        current = body;
+    }
+    (binders, current)
+}
+
+fn human_theorem_binder_names(expr: &Expr) -> Vec<String> {
+    human_theorem_conclusion(expr).0
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum HumanSearchPattern {
+    Hole(String),
+    Const(Name),
+    Add(Box<HumanSearchPattern>, Box<HumanSearchPattern>),
+    Eq(Box<HumanSearchPattern>, Box<HumanSearchPattern>),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum HumanSearchPatternToken {
+    Hole(String),
+    Ident(String),
+    Zero,
+    Plus,
+    Equals,
+    LParen,
+    RParen,
+}
+
+struct HumanSearchPatternParser {
+    tokens: Vec<HumanSearchPatternToken>,
+    pos: usize,
+}
+
+fn human_parse_search_pattern(source: &str) -> Result<HumanSearchPattern, String> {
+    let tokens = human_search_pattern_tokens(source)?;
+    let mut parser = HumanSearchPatternParser { tokens, pos: 0 };
+    let pattern = parser.parse_eq()?;
+    if parser.peek().is_some() {
+        return Err("unexpected trailing tokens in type pattern".to_owned());
+    }
+    Ok(pattern)
+}
+
+fn human_search_pattern_tokens(source: &str) -> Result<Vec<HumanSearchPatternToken>, String> {
+    let chars = source.chars().collect::<Vec<_>>();
+    let mut tokens = Vec::new();
+    let mut pos = 0;
+    while pos < chars.len() {
+        let ch = chars[pos];
+        if ch.is_whitespace() {
+            pos += 1;
+            continue;
+        }
+        match ch {
+            '?' => {
+                pos += 1;
+                let start = pos;
+                while pos < chars.len()
+                    && (chars[pos].is_ascii_alphanumeric()
+                        || chars[pos] == '_'
+                        || chars[pos] == '\'')
+                {
+                    pos += 1;
+                }
+                if start == pos {
+                    return Err("hole marker `?` must be followed by a name".to_owned());
+                }
+                tokens.push(HumanSearchPatternToken::Hole(format!(
+                    "?{}",
+                    chars[start..pos].iter().collect::<String>()
+                )));
+            }
+            '0' => {
+                tokens.push(HumanSearchPatternToken::Zero);
+                pos += 1;
+            }
+            '+' => {
+                tokens.push(HumanSearchPatternToken::Plus);
+                pos += 1;
+            }
+            '=' => {
+                tokens.push(HumanSearchPatternToken::Equals);
+                pos += 1;
+            }
+            '(' => {
+                tokens.push(HumanSearchPatternToken::LParen);
+                pos += 1;
+            }
+            ')' => {
+                tokens.push(HumanSearchPatternToken::RParen);
+                pos += 1;
+            }
+            ch if ch.is_ascii_alphabetic() => {
+                let start = pos;
+                pos += 1;
+                while pos < chars.len()
+                    && (chars[pos].is_ascii_alphanumeric()
+                        || chars[pos] == '_'
+                        || chars[pos] == '\''
+                        || chars[pos] == '.')
+                {
+                    pos += 1;
+                }
+                tokens.push(HumanSearchPatternToken::Ident(
+                    chars[start..pos].iter().collect(),
+                ));
+            }
+            _ => return Err(format!("unsupported token `{ch}` in type pattern")),
+        }
+    }
+    Ok(tokens)
+}
+
+impl HumanSearchPatternParser {
+    fn peek(&self) -> Option<&HumanSearchPatternToken> {
+        self.tokens.get(self.pos)
+    }
+
+    fn advance(&mut self) -> Option<HumanSearchPatternToken> {
+        let token = self.peek()?.clone();
+        self.pos += 1;
+        Some(token)
+    }
+
+    fn parse_eq(&mut self) -> Result<HumanSearchPattern, String> {
+        let lhs = self.parse_add()?;
+        if !matches!(self.peek(), Some(HumanSearchPatternToken::Equals)) {
+            return Ok(lhs);
+        }
+        self.advance();
+        let rhs = self.parse_add()?;
+        Ok(HumanSearchPattern::Eq(Box::new(lhs), Box::new(rhs)))
+    }
+
+    fn parse_add(&mut self) -> Result<HumanSearchPattern, String> {
+        let mut lhs = self.parse_atom()?;
+        while matches!(self.peek(), Some(HumanSearchPatternToken::Plus)) {
+            self.advance();
+            let rhs = self.parse_atom()?;
+            lhs = HumanSearchPattern::Add(Box::new(lhs), Box::new(rhs));
+        }
+        Ok(lhs)
+    }
+
+    fn parse_atom(&mut self) -> Result<HumanSearchPattern, String> {
+        match self.advance() {
+            Some(HumanSearchPatternToken::Hole(name)) => Ok(HumanSearchPattern::Hole(name)),
+            Some(HumanSearchPatternToken::Ident(name)) => {
+                Ok(HumanSearchPattern::Const(Name::from_dotted(&name)))
+            }
+            Some(HumanSearchPatternToken::Zero) => {
+                Ok(HumanSearchPattern::Const(Name::from_dotted("Nat.zero")))
+            }
+            Some(HumanSearchPatternToken::LParen) => {
+                let pattern = self.parse_eq()?;
+                if !matches!(self.advance(), Some(HumanSearchPatternToken::RParen)) {
+                    return Err("missing closing `)` in type pattern".to_owned());
+                }
+                Ok(pattern)
+            }
+            Some(other) => Err(format!("unexpected token {other:?} in type pattern")),
+            None => Err("unexpected end of type pattern".to_owned()),
+        }
+    }
+}
+
+fn human_search_pattern_matches(
+    pattern: &HumanSearchPattern,
+    expr: &Expr,
+    bindings: &mut BTreeMap<String, Expr>,
+) -> bool {
+    match pattern {
+        HumanSearchPattern::Hole(name) => match bindings.get(name) {
+            Some(bound) => bound == expr,
+            None => {
+                bindings.insert(name.clone(), expr.clone());
+                true
+            }
+        },
+        HumanSearchPattern::Const(name) => matches!(
+            expr,
+            Expr::Const { name: expr_name, .. } if expr_name == &name.as_dotted()
+        ),
+        HumanSearchPattern::Add(lhs, rhs) => {
+            let (head, args) = human_app_head_and_args(expr);
+            matches!(head, Expr::Const { name, .. } if name == "Nat.add")
+                && args.len() == 2
+                && human_search_pattern_matches(lhs, args[0], bindings)
+                && human_search_pattern_matches(rhs, args[1], bindings)
+        }
+        HumanSearchPattern::Eq(lhs, rhs) => {
+            let Some((expr_lhs, expr_rhs)) = human_eq_app_sides(expr) else {
+                return false;
+            };
+            human_search_pattern_matches(lhs, expr_lhs, bindings)
+                && human_search_pattern_matches(rhs, expr_rhs, bindings)
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -7347,6 +8072,222 @@ theorem later : P := hp";
     }
 
     #[test]
+    fn human_search_name_and_type_find_nat_add_zero() {
+        let (store, header, state_id, _goal_id) = human_search_nat_add_zero_fixture();
+
+        let name = search_human_theorems_by_name(
+            &store,
+            HumanTheoremNameSearchRequest {
+                header: header.clone(),
+                state_id: state_id.clone(),
+                query: "add_zero".to_owned(),
+                options: HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("name search should succeed");
+        let name_result = name
+            .results
+            .iter()
+            .find(|result| result.name == npa_cert::Name::from_dotted("Nat.add_zero"))
+            .expect("name search should find Nat.add_zero");
+        assert_eq!(name_result.mode, HumanTheoremSearchMode::Name);
+        assert_eq!(name_result.suggested_tactic, "exact Nat.add_zero n");
+        assert!(!name_result.axiom_info.uses_axioms);
+
+        let by_type = search_human_theorems_by_type(
+            &store,
+            HumanTheoremTypeSearchRequest {
+                header,
+                state_id,
+                pattern: "?x + 0 = ?x".to_owned(),
+                options: HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("type search should parse and match the Nat.add_zero pattern");
+        let type_result = by_type
+            .results
+            .iter()
+            .find(|result| result.name == npa_cert::Name::from_dotted("Nat.add_zero"))
+            .expect("type search should find Nat.add_zero");
+        assert_eq!(type_result.mode, HumanTheoremSearchMode::ByType);
+        assert_eq!(type_result.suggested_tactic, "exact Nat.add_zero n");
+        assert!(type_result
+            .match_info
+            .iter()
+            .any(|binding| binding.pattern == "?x" && binding.value == "n"));
+    }
+
+    #[test]
+    fn human_search_for_goal_returns_checked_exact_and_rw_tactics() {
+        let (store, header, state_id, goal_id) = human_search_nat_add_zero_fixture();
+
+        let for_goal = search_human_theorems_for_goal(
+            &store,
+            HumanTheoremGoalSearchRequest {
+                header: header.clone(),
+                state_id: state_id.clone(),
+                goal_id: goal_id.clone(),
+                modes: vec![
+                    HumanTheoremSearchMode::Exact,
+                    HumanTheoremSearchMode::Apply,
+                    HumanTheoremSearchMode::Rw,
+                    HumanTheoremSearchMode::Simp,
+                ],
+                options: HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("goal search should succeed");
+        let exact = for_goal
+            .results
+            .iter()
+            .find(|result| {
+                result.name == npa_cert::Name::from_dotted("Nat.add_zero")
+                    && result.mode == HumanTheoremSearchMode::Exact
+            })
+            .expect("goal search should suggest exact Nat.add_zero");
+        assert_eq!(exact.suggested_tactic, "exact Nat.add_zero n");
+        let rewrite = for_goal
+            .results
+            .iter()
+            .find(|result| {
+                result.name == npa_cert::Name::from_dotted("Nat.add_zero")
+                    && result.mode == HumanTheoremSearchMode::Rw
+            })
+            .expect("goal search should suggest rw Nat.add_zero");
+        assert_eq!(rewrite.suggested_tactic, "rw [Nat.add_zero]");
+
+        let rewrite_only = search_human_theorems_for_rewrite(
+            &store,
+            HumanTheoremRewriteSearchRequest {
+                header: header.clone(),
+                state_id: state_id.clone(),
+                goal_id: goal_id.clone(),
+                options: HumanTheoremSearchOptions::default(),
+            },
+        )
+        .expect("rewrite search should succeed");
+        assert!(rewrite_only
+            .results
+            .iter()
+            .all(|result| result.mode == HumanTheoremSearchMode::Rw));
+        assert!(rewrite_only
+            .results
+            .iter()
+            .any(|result| result.suggested_tactic == "rw [Nat.add_zero]"));
+
+        let mut exact_store = store.clone();
+        let exact_run = run_human_tactic(
+            &mut exact_store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: state_id.clone(),
+                goal_id: goal_id.clone(),
+                tactic: exact.suggested_tactic.clone(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(exact_run.status, HumanTacticRunStatus::Closed);
+        assert!(exact_run.error.is_none());
+
+        let mut rw_store = store.clone();
+        let rw_run = run_human_tactic(
+            &mut rw_store,
+            HumanTacticRunRequest {
+                header,
+                state_id,
+                goal_id,
+                tactic: rewrite.suggested_tactic.clone(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(rw_run.status, HumanTacticRunStatus::Partial);
+        assert!(rw_run.error.is_none());
+    }
+
+    #[test]
+    fn human_search_high_trust_penalizes_and_filters_axiom_dependencies() {
+        let (verified, source_interface) = verified_human_import(
+            "Lib.HumanSearchAxioms",
+            "\
+axiom P : Prop
+axiom hp : P
+theorem p_thm : P := hp",
+        );
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanSearchAxioms"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(41),
+                    source: "\
+import Lib.HumanSearchAxioms
+theorem target : P := by simp-lite",
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human axiom search session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanSearchAxioms.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human axiom search proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id,
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+
+        let penalized = search_human_theorems_by_name(
+            &store,
+            HumanTheoremNameSearchRequest {
+                header: header.clone(),
+                state_id: started.state_id.clone(),
+                query: "p_thm".to_owned(),
+                options: HumanTheoremSearchOptions {
+                    limit: 10,
+                    axiom_policy: HumanTheoremSearchAxiomPolicy::Penalize,
+                },
+            },
+        )
+        .expect("penalized search should succeed");
+        let p_thm = penalized
+            .results
+            .iter()
+            .find(|result| result.name.as_dotted().ends_with("p_thm"))
+            .expect("penalized search should retain the axiom-dependent theorem");
+        assert!(p_thm.axiom_info.uses_axioms);
+        assert!(p_thm.axiom_info.score_penalty > 0);
+
+        let excluded = search_human_theorems_by_name(
+            &store,
+            HumanTheoremNameSearchRequest {
+                header,
+                state_id: started.state_id,
+                query: "p_thm".to_owned(),
+                options: HumanTheoremSearchOptions {
+                    limit: 10,
+                    axiom_policy: HumanTheoremSearchAxiomPolicy::Exclude,
+                },
+            },
+        )
+        .expect("exclude-axiom search should succeed");
+        assert!(!excluded
+            .results
+            .iter()
+            .any(|result| result.name.as_dotted().ends_with("p_thm")));
+    }
+
+    #[test]
     fn human_tactic_run_intro_exact_and_expected_pi_error_are_transactional() {
         let (nat, nat_interface) = verified_nat_human_import();
         let (eq, eq_interface) = verified_eq_human_import();
@@ -10314,6 +11255,78 @@ inductive Nat : Type where
             "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a",
+        )
+    }
+
+    fn human_search_nat_add_zero_fixture() -> (
+        HumanProofSessionStore,
+        HumanStateRequestHeader,
+        crate::HumanStateId,
+        HumanGoalId,
+    ) {
+        let (verified, source_interface) = verified_human_import(
+            "Std.Nat.Search",
+            "\
+inductive Nat : Type where
+| zero : Nat
+| succ : forall (n : Nat), Nat
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq.{u} a a
+def Nat.add (n : Nat) (m : Nat) : Nat := n
+theorem Nat.add_zero (n : Nat) : Eq.{1} (Nat.add n Nat.zero) n := Eq.refl n",
+        );
+        let source = "\
+import Std.Nat.Search
+theorem target (n : Nat) : Eq.{1} (Nat.add n Nat.zero) n := by simp-lite";
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanSearchNat"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: npa_frontend::FileId(40),
+                    source,
+                },
+                verified_modules: std::slice::from_ref(&verified),
+                imported_source_interfaces: std::slice::from_ref(&source_interface),
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human search session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanSearchNat.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human search proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id,
+            document_version: created.document_version,
+        };
+        let intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "intro n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro.status, HumanTacticRunStatus::Partial);
+        (
+            store,
+            header,
+            intro.new_state_id.expect("intro should record a new state"),
+            intro
+                .selected_goal
+                .expect("intro should select the body goal"),
         )
     }
 
