@@ -9748,6 +9748,7 @@ mod tests {
         MachineTacticBatchItemResponse,
     };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
+    use npa_frontend::{parse_human_module, FileId, HumanItem};
     use npa_kernel::{
         eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
         Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, RecursorDecl,
@@ -12782,6 +12783,159 @@ mod tests {
     }
 
     #[test]
+    fn builds_mvp_certificate_artifacts_from_source_package() {
+        let package = TestPackage::new("source_package_build_artifacts");
+        write_valid_mvp_source_package(package.path());
+
+        let artifacts = build_mvp_source_package_artifacts(package.path()).unwrap();
+        assert_eq!(
+            artifacts
+                .iter()
+                .map(|artifact| artifact.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"]
+        );
+        assert_eq!(
+            artifacts
+                .iter()
+                .map(|artifact| artifact.source_relative_path.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                "Std/Logic.npa",
+                "Std/Nat.npa",
+                "Std/List.npa",
+                "Std/Algebra/Basic.npa"
+            ]
+        );
+        assert_eq!(
+            artifacts
+                .iter()
+                .map(|artifact| artifact.certificate_relative_path.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                "Std/Logic.npcert",
+                "Std/Nat.npcert",
+                "Std/List.npcert",
+                "Std/Algebra/Basic.npcert"
+            ]
+        );
+
+        for artifact in &artifacts {
+            let path =
+                join_posix_relative_path(package.path(), &artifact.certificate_relative_path);
+            let bytes = fs::read(path).unwrap();
+            assert_eq!(bytes, artifact.certificate_bytes);
+            let cert = decode_module_cert(&artifact.certificate_bytes).unwrap();
+            assert_eq!(cert.header.module, artifact.module);
+            assert_eq!(cert.hashes.export_hash, artifact.export_hash);
+            assert_eq!(cert.hashes.certificate_hash, artifact.certificate_hash);
+            assert_eq!(cert.hashes.axiom_report_hash, artifact.axiom_report_hash);
+            for export in &cert.export_block {
+                let name = cert.name_table[export.name].as_dotted();
+                assert!(
+                    !name.starts_with(&format!("{}.", artifact.module.as_dotted())),
+                    "ExportEntry.name must be the declaration name, not a synthetic module-prefixed name"
+                );
+            }
+        }
+
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        assert_eq!(
+            loaded
+                .verification_order()
+                .iter()
+                .map(Name::as_dotted)
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"]
+        );
+        let axiom_report = mvp_axiom_report_for(&loaded);
+        for module in &axiom_report.modules {
+            assert!(
+                module
+                    .module_axioms
+                    .iter()
+                    .all(|axiom| axiom.name == Name::from_dotted("Eq.rec")),
+                "source package build may only report the exact Eq.rec exception"
+            );
+            assert!(
+                module
+                    .transitive_axioms
+                    .iter()
+                    .all(|axiom| axiom.name == Name::from_dotted("Eq.rec")),
+                "source package build may only report the exact Eq.rec exception transitively"
+            );
+        }
+    }
+
+    #[test]
+    fn source_package_build_rejects_core_or_prelude_import_source_member() {
+        for imported in ["Core", "Prelude"] {
+            let package = TestPackage::new(&format!(
+                "source_package_{}_import",
+                imported.to_lowercase()
+            ));
+            write_valid_mvp_source_package(package.path());
+            write_text_artifact(
+                package.path(),
+                STD_LOGIC_SOURCE_PATH,
+                &format!("import {imported}\n"),
+            );
+
+            let err = build_mvp_source_package_artifacts(package.path()).unwrap_err();
+            assert!(matches!(
+                err,
+                MvpSourcePackageBuildError::ForbiddenSourceImport {
+                    ref module,
+                    ref imported_module,
+                } if *module == Name::from_dotted("Std.Logic")
+                    && *imported_module == Name::from_dotted(imported)
+            ));
+        }
+    }
+
+    #[test]
+    fn source_package_build_fails_on_import_hash_mismatch() {
+        let certs = mvp_certificate_bytes();
+        let mut session = VerifierSession::new();
+        let policy = high_trust_policy_allowing_std_mvp_axioms();
+        let logic = verify_module_cert(&certs.logic, &mut session, &policy).unwrap();
+        let mut nat = decode_module_cert(&certs.nat).unwrap();
+
+        nat.imports[0].export_hash = test_hash(201);
+        let err = validate_source_build_import_entries(
+            &Name::from_dotted("Std.Nat"),
+            &nat.imports,
+            std::slice::from_ref(&logic),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MvpSourcePackageBuildError::ImportExportHashMismatch {
+                ref owner,
+                ref imported_module,
+            } if *owner == Name::from_dotted("Std.Nat")
+                && *imported_module == Name::from_dotted("Std.Logic")
+        ));
+
+        nat.imports[0].export_hash = logic.export_hash();
+        nat.imports[0].certificate_hash = Some(test_hash(202));
+        let err = validate_source_build_import_entries(
+            &Name::from_dotted("Std.Nat"),
+            &nat.imports,
+            std::slice::from_ref(&logic),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            MvpSourcePackageBuildError::ImportCertificateHashMismatch {
+                ref owner,
+                ref imported_module,
+            } if *owner == Name::from_dotted("Std.Nat")
+                && *imported_module == Name::from_dotted("Std.Logic")
+        ));
+    }
+
+    #[test]
     fn rejects_missing_extra_duplicate_or_reordered_import_bundle_ids() {
         let package = TestPackage::new("bad_import_bundle_membership");
         write_valid_mvp_package(package.path());
@@ -13260,6 +13414,257 @@ mod tests {
         algebra_basic: Vec<u8>,
     }
 
+    #[derive(Debug)]
+    struct BuiltMvpSourceArtifact {
+        module: Name,
+        source_relative_path: String,
+        certificate_relative_path: String,
+        certificate_bytes: Vec<u8>,
+        export_hash: Hash,
+        certificate_hash: Hash,
+        axiom_report_hash: Hash,
+    }
+
+    #[allow(dead_code)]
+    #[derive(Debug)]
+    enum MvpSourcePackageBuildError {
+        MissingSource {
+            module: Name,
+            path: PathBuf,
+        },
+        ReadSource {
+            module: Name,
+            path: PathBuf,
+        },
+        InvalidSource {
+            module: Name,
+        },
+        ForbiddenSourceImport {
+            module: Name,
+            imported_module: Name,
+        },
+        SourceImportMismatch {
+            module: Name,
+            expected: Vec<Name>,
+            actual: Vec<Name>,
+        },
+        MissingCompiledImport {
+            module: Name,
+            imported_module: Name,
+        },
+        CertificateBuild {
+            module: Name,
+        },
+        CertificateEncoding {
+            module: Name,
+        },
+        ImportEntryCountMismatch {
+            owner: Name,
+        },
+        ImportExportHashMismatch {
+            owner: Name,
+            imported_module: Name,
+        },
+        ImportCertificateHashMismatch {
+            owner: Name,
+            imported_module: Name,
+        },
+        ForbiddenCertificateImport {
+            owner: Name,
+            imported_module: Name,
+        },
+        Verify {
+            module: Name,
+        },
+        LoadBuiltArtifacts,
+    }
+
+    fn build_mvp_source_package_artifacts(
+        root: &Path,
+    ) -> Result<Vec<BuiltMvpSourceArtifact>, MvpSourcePackageBuildError> {
+        let mut session = VerifierSession::new();
+        let policy = high_trust_policy_allowing_std_mvp_axioms();
+        let mut verified_by_module = BTreeMap::<Name, VerifiedModule>::new();
+
+        for (source_index, entry) in machine_std_mvp_source_package_layout()
+            .into_iter()
+            .enumerate()
+        {
+            let source = read_mvp_source_member(root, &entry)?;
+            validate_mvp_source_member(source_index, &entry, &source)?;
+            let imports = compiled_source_imports(&entry.module, &verified_by_module)?;
+            let core = mvp_core_module_for_source(&entry.module);
+            let cert = build_module_cert(core, &imports).map_err(|_| {
+                MvpSourcePackageBuildError::CertificateBuild {
+                    module: entry.module.clone(),
+                }
+            })?;
+            validate_source_build_import_entries(&entry.module, &cert.imports, &imports)?;
+            let bytes = encode_module_cert(&cert).map_err(|_| {
+                MvpSourcePackageBuildError::CertificateEncoding {
+                    module: entry.module.clone(),
+                }
+            })?;
+            let verified = verify_module_cert(&bytes, &mut session, &policy).map_err(|_| {
+                MvpSourcePackageBuildError::Verify {
+                    module: entry.module.clone(),
+                }
+            })?;
+            write_cert(root, &entry.certificate_relative_path, &bytes);
+            verified_by_module.insert(entry.module, verified);
+        }
+
+        let loaded = load_machine_std_mvp_certificates(root)
+            .map_err(|_| MvpSourcePackageBuildError::LoadBuiltArtifacts)?;
+        validate_loaded_mvp_axiom_policy(&loaded)
+            .map_err(|_| MvpSourcePackageBuildError::LoadBuiltArtifacts)?;
+        machine_std_mvp_source_package_layout()
+            .into_iter()
+            .map(|entry| {
+                let loaded_module = loaded
+                    .module(&entry.module)
+                    .expect("loaded source-built package should contain every MVP module");
+                Ok(BuiltMvpSourceArtifact {
+                    module: entry.module,
+                    source_relative_path: entry.source_relative_path,
+                    certificate_relative_path: entry.certificate_relative_path,
+                    certificate_bytes: loaded_module.certificate_bytes.clone(),
+                    export_hash: loaded_module.expected_export_hash,
+                    certificate_hash: loaded_module.expected_certificate_hash,
+                    axiom_report_hash: loaded_module.axiom_report_hash,
+                })
+            })
+            .collect()
+    }
+
+    fn read_mvp_source_member(
+        root: &Path,
+        entry: &MachineStdSourcePackageEntry,
+    ) -> Result<String, MvpSourcePackageBuildError> {
+        let path = join_posix_relative_path(root, &entry.source_relative_path);
+        fs::read_to_string(&path).map_err(|source| {
+            if source.kind() == io::ErrorKind::NotFound {
+                MvpSourcePackageBuildError::MissingSource {
+                    module: entry.module.clone(),
+                    path,
+                }
+            } else {
+                MvpSourcePackageBuildError::ReadSource {
+                    module: entry.module.clone(),
+                    path,
+                }
+            }
+        })
+    }
+
+    fn validate_mvp_source_member(
+        source_index: usize,
+        entry: &MachineStdSourcePackageEntry,
+        source: &str,
+    ) -> Result<(), MvpSourcePackageBuildError> {
+        let module = parse_human_module(FileId(source_index as u32), source).map_err(|_| {
+            MvpSourcePackageBuildError::InvalidSource {
+                module: entry.module.clone(),
+            }
+        })?;
+        let actual = module
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                HumanItem::Import { module, .. } => Some(Name::from_dotted(module.as_dotted())),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        for imported_module in &actual {
+            if matches!(imported_module.as_dotted().as_str(), "Core" | "Prelude") {
+                return Err(MvpSourcePackageBuildError::ForbiddenSourceImport {
+                    module: entry.module.clone(),
+                    imported_module: imported_module.clone(),
+                });
+            }
+        }
+        let expected = expected_mvp_source_imports(&entry.module);
+        if actual != expected {
+            return Err(MvpSourcePackageBuildError::SourceImportMismatch {
+                module: entry.module.clone(),
+                expected,
+                actual,
+            });
+        }
+        Ok(())
+    }
+
+    fn expected_mvp_source_imports(module: &Name) -> Vec<Name> {
+        match module.as_dotted().as_str() {
+            "Std.Logic" => Vec::new(),
+            "Std.Nat" => vec![Name::from_dotted("Std.Logic")],
+            "Std.List" => vec![Name::from_dotted("Std.Logic"), Name::from_dotted("Std.Nat")],
+            "Std.Algebra.Basic" => vec![Name::from_dotted("Std.Logic")],
+            _ => panic!("unexpected standard source module {}", module.as_dotted()),
+        }
+    }
+
+    fn compiled_source_imports(
+        module: &Name,
+        verified_by_module: &BTreeMap<Name, VerifiedModule>,
+    ) -> Result<Vec<VerifiedModule>, MvpSourcePackageBuildError> {
+        expected_mvp_source_imports(module)
+            .into_iter()
+            .map(|imported_module| {
+                verified_by_module
+                    .get(&imported_module)
+                    .cloned()
+                    .ok_or_else(|| MvpSourcePackageBuildError::MissingCompiledImport {
+                        module: module.clone(),
+                        imported_module,
+                    })
+            })
+            .collect()
+    }
+
+    fn mvp_core_module_for_source(module: &Name) -> CoreModule {
+        match module.as_dotted().as_str() {
+            "Std.Logic" => logic_eq_family_module(),
+            "Std.Nat" => nat_basic_module(),
+            "Std.List" => list_append_module(),
+            "Std.Algebra.Basic" => algebra_basic_module(),
+            _ => panic!("unexpected standard source module {}", module.as_dotted()),
+        }
+    }
+
+    fn validate_source_build_import_entries(
+        owner: &Name,
+        imports: &[ImportEntry],
+        expected_imports: &[VerifiedModule],
+    ) -> Result<(), MvpSourcePackageBuildError> {
+        if imports.len() != expected_imports.len() {
+            return Err(MvpSourcePackageBuildError::ImportEntryCountMismatch {
+                owner: owner.clone(),
+            });
+        }
+        for (import, expected) in imports.iter().zip(expected_imports) {
+            if matches!(import.module.as_dotted().as_str(), "Core" | "Prelude") {
+                return Err(MvpSourcePackageBuildError::ForbiddenCertificateImport {
+                    owner: owner.clone(),
+                    imported_module: import.module.clone(),
+                });
+            }
+            if import.module != *expected.module() || import.export_hash != expected.export_hash() {
+                return Err(MvpSourcePackageBuildError::ImportExportHashMismatch {
+                    owner: owner.clone(),
+                    imported_module: import.module.clone(),
+                });
+            }
+            if import.certificate_hash != Some(expected.certificate_hash()) {
+                return Err(MvpSourcePackageBuildError::ImportCertificateHashMismatch {
+                    owner: owner.clone(),
+                    imported_module: import.module.clone(),
+                });
+            }
+        }
+        Ok(())
+    }
+
     fn mvp_certificate_bytes() -> MvpCertificateBytes {
         let mut session = VerifierSession::new();
         let policy = high_trust_policy_allowing_std_mvp_axioms();
@@ -13478,6 +13883,50 @@ mod tests {
     fn write_valid_mvp_package(root: &Path) {
         let certs = mvp_certificate_bytes();
         write_mvp_package(root, &certs);
+    }
+
+    fn write_valid_mvp_source_package(root: &Path) {
+        for entry in machine_std_mvp_source_package_layout() {
+            write_text_artifact(
+                root,
+                &entry.source_relative_path,
+                valid_mvp_source_text(&entry.module),
+            );
+        }
+    }
+
+    fn valid_mvp_source_text(module: &Name) -> &'static str {
+        match module.as_dotted().as_str() {
+            "Std.Logic" => {
+                "-- npa std source package v1
+-- module: Std.Logic
+-- declarations: Eq, Eq.rec, Eq.symm, Eq.trans, Eq.subst, Eq.congrArg, True, False, Not, And, Or, Iff, Exists
+"
+            }
+            "Std.Nat" => {
+                "import Std.Logic
+-- npa std source package v1
+-- module: Std.Nat
+-- declarations: Nat, Nat.one, Nat.pred, Nat.add, Nat.mul, add/mul/pred basic theorems
+"
+            }
+            "Std.List" => {
+                "import Std.Logic
+import Std.Nat
+-- npa std source package v1
+-- module: Std.List
+-- declarations: List, append, length, map, foldr, and basic theorems
+"
+            }
+            "Std.Algebra.Basic" => {
+                "import Std.Logic
+-- npa std source package v1
+-- module: Std.Algebra.Basic
+-- declarations: unbundled algebraic properties, IsSemigroup, IsMonoid, IsCommMonoid
+"
+            }
+            _ => panic!("unexpected standard source module {}", module.as_dotted()),
+        }
     }
 
     fn write_mvp_package(root: &Path, certs: &MvpCertificateBytes) {

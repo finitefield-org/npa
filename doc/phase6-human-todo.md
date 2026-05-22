@@ -480,17 +480,17 @@ P6H-02
 
 実装タスク:
 
-- [ ] standard-library source package を deterministic order で compile する build entrypoint を追加する。
-- [ ] 各 module の raw `.npcert` bytes、export_hash、certificate_hash、module-level axiom_report_hash を生成する。
-- [ ] import entries の export_hash mismatch を build failure にし、高信頼モードでは certificate_hash mismatch も failure にする。
-- [ ] `ExportEntry.name` は declaration name そのものとし、module name と連結した synthetic name を作らない。
-- [ ] `Core` / prelude を ordinary ImportEntry として出す source artifact を reject する。
+- [x] standard-library source package を deterministic order で compile する build entrypoint を追加する。
+- [x] 各 module の raw `.npcert` bytes、export_hash、certificate_hash、module-level axiom_report_hash を生成する。
+- [x] import entries の export_hash mismatch を build failure にし、高信頼モードでは certificate_hash mismatch も failure にする。
+- [x] `ExportEntry.name` は declaration name そのものとし、module name と連結した synthetic name を作らない。
+- [x] `Core` / prelude を ordinary ImportEntry として出す source artifact を reject する。
 
 受け入れ条件:
 
-- [ ] `Std/Logic.npcert`、`Std/Nat.npcert`、`Std/List.npcert`、`Std/Algebra/Basic.npcert` 相当の artifact が raw Phase 2 certificate bytes として生成される。
-- [ ] 全 module が source なしで certificate verifier により再検査できる。
-- [ ] axiom report は empty または exact `Eq.rec` exception のみである。
+- [x] `Std/Logic.npcert`、`Std/Nat.npcert`、`Std/List.npcert`、`Std/Algebra/Basic.npcert` 相当の artifact が raw Phase 2 certificate bytes として生成される。
+- [x] 全 module が source なしで certificate verifier により再検査できる。
+- [x] axiom report は empty または exact `Eq.rec` exception のみである。
 
 検証:
 
