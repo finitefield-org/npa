@@ -513,11 +513,11 @@ AI 速度ガード:
 
 実装タスク:
 
-- [ ] Human text tactic request を parse し、既存 `run_human_*_tactic` に dispatch する。
-- [ ] `state_id` / `goal_id` / `tactic` / `budget` の request validation を追加する。
-- [ ] success / closed / partial / error / timeout / unsafe の response shape を固定する。
-- [ ] tactic 成功時は new state を `HumanProofStateStore` に追加し、old state を保持する。
-- [ ] tactic 失敗時は old state id、structured error、expected / actual hash、span、suggestions を返す。
+- [x] Human text tactic request を parse し、既存 `run_human_*_tactic` に dispatch する。
+- [x] `state_id` / `goal_id` / `tactic` / `budget` の request validation を追加する。
+- [x] success / closed / partial / error / timeout / unsafe の response shape を固定する。
+- [x] tactic 成功時は new state を `HumanProofStateStore` に追加し、old state を保持する。
+- [x] tactic 失敗時は old state id、structured error、expected / actual hash、span、suggestions を返す。
 
 依存:
 
@@ -543,11 +543,11 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [ ] `intro n` が Pi target を subgoal に変換し、new state id を返す。
-- [ ] `exact n` が matching local を使って goal を閉じる。
-- [ ] `apply Eq.trans` が expected subgoals を返す。
-- [ ] `rw [Nat.add_zero]` と `simp-lite` は proof-producing path だけを使う。
-- [ ] `intro h` を equality target に投げると `expected_pi_type` 相当の structured error になる。
+- [x] `intro n` が Pi target を subgoal に変換し、new state id を返す。
+- [x] `exact n` が matching local を使って goal を閉じる。
+- [x] `apply Eq.trans` が expected subgoals を返す。
+- [x] `rw [Nat.add_zero]` と `simp-lite` は proof-producing path だけを使う。
+- [x] `intro h` を equality target に投げると `expected_pi_type` 相当の structured error になる。
 
 Verification:
 
@@ -558,7 +558,7 @@ cargo test -p npa-api human
 
 AI 速度ガード:
 
-- [ ] `/machine/tactics/batch` は Human `/tactic/run` を呼ばない。
+- [x] `/machine/tactics/batch` は Human `/tactic/run` を呼ばない。
 
 ---
 

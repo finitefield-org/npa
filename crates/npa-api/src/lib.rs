@@ -191,8 +191,8 @@ pub use human::{
     get_human_state_by_id, get_human_state_goals, human_api_default_compile_options,
     materialize_human_proof_state, record_human_tactic_state, run_human_apply_tactic,
     run_human_exact_tactic, run_human_induction_tactic, run_human_intro_tactic,
-    run_human_rewrite_tactic, run_human_simp_lite_tactic, run_human_tactic_script,
-    start_human_proof, start_human_session_proof, update_human_document,
+    run_human_rewrite_tactic, run_human_simp_lite_tactic, run_human_tactic,
+    run_human_tactic_script, start_human_proof, start_human_session_proof, update_human_document,
     validate_human_state_request_document,
 };
 pub use human_ide::{
@@ -561,7 +561,9 @@ pub use types::{
     HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest, HumanStateCurrentRequest,
     HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest, HumanStateId,
     HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
-    HumanStructuredProofStateError, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanStructuredProofStateError, HumanTacticRunErrorKind, HumanTacticRunErrorReport,
+    HumanTacticRunRequest, HumanTacticRunResponse, HumanTacticRunStatus, HumanTacticRunSuggestion,
+    HumanTacticRunSuggestionKind, HumanTacticScriptError, HumanTacticScriptRunOk,
     HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
     HumanTacticStateRecordRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
     HumanTacticTermError, KernelCheckProfileId, MachineApiCompactErrorWire, MachineApiEndpoint,

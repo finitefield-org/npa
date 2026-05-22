@@ -294,6 +294,115 @@ pub enum HumanGoalDisplayDiffKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticRunRequest {
+    pub header: HumanStateRequestHeader,
+    pub state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub tactic: String,
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticRunResponse {
+    pub status: HumanTacticRunStatus,
+    pub session_id: HumanSessionId,
+    pub parent_state_id: HumanStateId,
+    pub new_state_id: Option<HumanStateId>,
+    pub selected_goal: Option<HumanGoalId>,
+    pub closed_goals: Vec<HumanGoalId>,
+    pub new_goals: Vec<StructuredGoal>,
+    pub proof_deltas: Vec<MachineProofDelta>,
+    pub messages: Vec<HumanDiagnostic>,
+    pub error: Option<HumanTacticRunErrorReport>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTacticRunStatus {
+    Success,
+    Closed,
+    Partial,
+    Error,
+    Timeout,
+    Unsafe,
+}
+
+impl HumanTacticRunStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Success => "success",
+            Self::Closed => "closed",
+            Self::Partial => "partial",
+            Self::Error => "error",
+            Self::Timeout => "timeout",
+            Self::Unsafe => "unsafe",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticRunErrorReport {
+    pub kind: HumanTacticRunErrorKind,
+    pub old_state_id: HumanStateId,
+    pub goal_id: HumanGoalId,
+    pub message: String,
+    pub diagnostic: Option<HumanDiagnostic>,
+    pub machine_diagnostic: Option<Box<MachineTacticDiagnostic>>,
+    pub state_error: Option<Box<HumanStateApiError>>,
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Option<Hash>,
+    pub span: Option<Span>,
+    pub suggestions: Vec<HumanTacticRunSuggestion>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTacticRunErrorKind {
+    StateValidation,
+    UnknownGoal,
+    ParseError,
+    ExpectedPiType,
+    TypeMismatch,
+    Timeout,
+    Unsafe,
+    TacticExecution,
+    StateRecord,
+}
+
+impl HumanTacticRunErrorKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::StateValidation => "state_validation",
+            Self::UnknownGoal => "unknown_goal",
+            Self::ParseError => "parse_error",
+            Self::ExpectedPiType => "expected_pi_type",
+            Self::TypeMismatch => "type_mismatch",
+            Self::Timeout => "timeout",
+            Self::Unsafe => "unsafe",
+            Self::TacticExecution => "tactic_execution",
+            Self::StateRecord => "state_record",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTacticRunSuggestion {
+    pub kind: HumanTacticRunSuggestionKind,
+    pub tactic: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTacticRunSuggestionKind {
+    TryTactic,
+}
+
+impl HumanTacticRunSuggestionKind {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::TryTactic => "try_tactic",
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanSessionCreateOk {
     pub session_id: HumanSessionId,
     pub document_id: HumanDocumentId,

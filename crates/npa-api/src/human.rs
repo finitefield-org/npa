@@ -21,7 +21,9 @@ use crate::{
     HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
     HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
     HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
-    HumanStructuredProofStateError, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanStructuredProofStateError, HumanTacticRunErrorKind, HumanTacticRunErrorReport,
+    HumanTacticRunRequest, HumanTacticRunResponse, HumanTacticRunStatus, HumanTacticRunSuggestion,
+    HumanTacticRunSuggestionKind, HumanTacticScriptError, HumanTacticScriptRunOk,
     HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
     HumanTacticStateRecordRequest, HumanTacticTermCheckOk, HumanTacticTermCheckRequest,
     HumanTacticTermError, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
@@ -681,6 +683,666 @@ pub fn display_human_diff(
         items,
         text,
     })
+}
+
+pub fn run_human_tactic(
+    store: &mut HumanProofSessionStore,
+    request: HumanTacticRunRequest,
+) -> HumanTacticRunResponse {
+    let session_id = request.header.session_id.clone();
+    let parent_state_id = request.state_id.clone();
+    let requested_goal_id = request.goal_id.clone();
+
+    if let Err(error) = validate_human_state_request_document(store, request.header.clone()) {
+        let state_error = HumanStateApiError::from(error);
+        return human_tactic_run_state_error_response(
+            session_id,
+            parent_state_id,
+            requested_goal_id,
+            state_error,
+        );
+    }
+
+    let context = match human_tactic_run_context(store, &request) {
+        Ok(context) => context,
+        Err(response) => return *response,
+    };
+    let tactic = match human_parse_single_tactic(
+        context.file_id,
+        &request.tactic,
+        &context.imported_source_interfaces,
+    ) {
+        Ok(tactic) => tactic,
+        Err(diagnostic) => {
+            return human_tactic_run_human_error_response(
+                context.session_id,
+                context.parent_state_id,
+                context.human_goal_id,
+                Some(&context.before_goal),
+                diagnostic,
+            );
+        }
+    };
+
+    let execution = human_tactic_run_execute(
+        &context.parent_state,
+        context.machine_goal_id,
+        &tactic,
+        &context.current_source_interface,
+        &context.imported_source_interfaces,
+        context.options.clone(),
+        request.budget,
+    );
+    let execution = match execution {
+        Ok(execution) => execution,
+        Err(HumanTacticScriptError::Human(HumanCompileError { diagnostic })) => {
+            return human_tactic_run_human_error_response(
+                context.session_id,
+                context.parent_state_id,
+                context.human_goal_id,
+                Some(&context.before_goal),
+                diagnostic,
+            );
+        }
+        Err(HumanTacticScriptError::Machine(diagnostic)) => {
+            return human_tactic_run_machine_error_response(
+                context.session_id,
+                context.parent_state_id,
+                context.human_goal_id,
+                Some(&context.before_goal),
+                tactic.span(),
+                diagnostic,
+            );
+        }
+    };
+
+    let parent_open_goals = context
+        .parent_state
+        .open_goals
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let selected_goal = execution
+        .deltas
+        .iter()
+        .rev()
+        .flat_map(|delta| delta.added_goals.iter().rev())
+        .copied()
+        .find(|goal_id| execution.state.open_goals.contains(goal_id))
+        .or_else(|| execution.state.open_goals.first().copied());
+    let closed_goals = (!execution
+        .state
+        .open_goals
+        .contains(&context.machine_goal_id))
+    .then_some(context.human_goal_id.clone())
+    .into_iter()
+    .collect::<Vec<_>>();
+
+    let recorded = match record_human_tactic_state(
+        store,
+        HumanTacticStateRecordRequest {
+            session_id: context.session_id.clone(),
+            parent_state_id: context.parent_state_id.clone(),
+            selected_goal,
+            state: execution.state,
+            source_span: context.parent_source_span,
+            messages: Vec::new(),
+        },
+    ) {
+        Ok(recorded) => recorded,
+        Err(error) => {
+            return human_tactic_run_record_error_response(
+                context.session_id,
+                context.parent_state_id,
+                context.human_goal_id,
+                error,
+            );
+        }
+    };
+
+    let new_entry = get_human_proof_state(store, &context.session_id, &recorded.state_id).expect(
+        "record_human_tactic_state returned a state id that should be stored in the session",
+    );
+    let mut new_goals = Vec::new();
+    for machine_goal_id in &new_entry.state.open_goals {
+        if parent_open_goals.contains(machine_goal_id) {
+            continue;
+        }
+        match materialize_human_structured_goal(new_entry, *machine_goal_id) {
+            Ok(goal) => new_goals.push(goal),
+            Err(error) => {
+                return human_tactic_run_state_error_response(
+                    context.session_id,
+                    context.parent_state_id,
+                    context.human_goal_id,
+                    human_state_materialization_error(&request.header, &recorded.state_id, error),
+                );
+            }
+        }
+    }
+    let status = if !new_goals.is_empty() {
+        HumanTacticRunStatus::Partial
+    } else if !closed_goals.is_empty() {
+        HumanTacticRunStatus::Closed
+    } else {
+        HumanTacticRunStatus::Success
+    };
+
+    HumanTacticRunResponse {
+        status,
+        session_id: context.session_id,
+        parent_state_id: context.parent_state_id,
+        new_state_id: Some(recorded.state_id),
+        selected_goal: recorded.selected_goal,
+        closed_goals,
+        new_goals,
+        proof_deltas: execution.deltas,
+        messages: recorded.messages,
+        error: None,
+    }
+}
+
+#[derive(Clone, Debug)]
+struct HumanTacticRunContext {
+    session_id: crate::HumanSessionId,
+    parent_state_id: crate::HumanStateId,
+    human_goal_id: crate::HumanGoalId,
+    machine_goal_id: npa_tactic::GoalId,
+    parent_state: npa_tactic::MachineProofState,
+    before_goal: npa_tactic::MachineGoal,
+    parent_source_span: Option<npa_frontend::Span>,
+    file_id: npa_frontend::FileId,
+    current_source_interface: npa_frontend::HumanSourceInterface,
+    imported_source_interfaces: Vec<npa_frontend::HumanImportedSourceInterface>,
+    options: HumanApiCompileOptions,
+}
+
+fn human_tactic_run_context(
+    store: &HumanProofSessionStore,
+    request: &HumanTacticRunRequest,
+) -> Result<HumanTacticRunContext, Box<HumanTacticRunResponse>> {
+    let session = store
+        .session(&request.header.session_id)
+        .expect("Human tactic run document validation checked session existence");
+    let entry = match human_state_entry_for_api(store, &request.header, &request.state_id) {
+        Ok(entry) => entry,
+        Err(error) => {
+            return Err(Box::new(human_tactic_run_state_error_response(
+                request.header.session_id.clone(),
+                request.state_id.clone(),
+                request.goal_id.clone(),
+                error,
+            )));
+        }
+    };
+    let Some(machine_goal_id) = entry.machine_goal_for_human_goal(&request.goal_id) else {
+        return Err(Box::new(human_tactic_run_error_response(
+            HumanTacticRunErrorResponseInput {
+                status: HumanTacticRunStatus::Error,
+                kind: HumanTacticRunErrorKind::UnknownGoal,
+                session_id: request.header.session_id.clone(),
+                old_state_id: request.state_id.clone(),
+                goal_id: request.goal_id.clone(),
+                message: format!(
+                    "unknown Human goal {} in state {}",
+                    request.goal_id.wire(),
+                    request.state_id.wire()
+                ),
+                diagnostic: None,
+                machine_diagnostic: None,
+                state_error: None,
+                expected_hash: None,
+                actual_hash: None,
+                span: None,
+                suggestions: Vec::new(),
+                messages: Vec::new(),
+            },
+        )));
+    };
+    let before_goal = match entry.state.goal(machine_goal_id) {
+        Ok(goal) => goal,
+        Err(diagnostic) => {
+            return Err(Box::new(human_tactic_run_machine_error_response(
+                request.header.session_id.clone(),
+                request.state_id.clone(),
+                request.goal_id.clone(),
+                None,
+                npa_frontend::Span::empty(session.document.file_id),
+                diagnostic,
+            )));
+        }
+    };
+    let Some(current_source_interface) = session.source_interface.clone() else {
+        return Err(Box::new(human_tactic_run_error_response(
+            HumanTacticRunErrorResponseInput {
+                status: HumanTacticRunStatus::Error,
+                kind: HumanTacticRunErrorKind::StateValidation,
+                session_id: request.header.session_id.clone(),
+                old_state_id: request.state_id.clone(),
+                goal_id: request.goal_id.clone(),
+                message: "Human tactic run requires a collected source interface for the session"
+                    .to_owned(),
+                diagnostic: None,
+                machine_diagnostic: None,
+                state_error: None,
+                expected_hash: None,
+                actual_hash: None,
+                span: None,
+                suggestions: Vec::new(),
+                messages: Vec::new(),
+            },
+        )));
+    };
+    Ok(HumanTacticRunContext {
+        session_id: request.header.session_id.clone(),
+        parent_state_id: entry.state_id.clone(),
+        human_goal_id: request.goal_id.clone(),
+        machine_goal_id,
+        parent_state: entry.state.clone(),
+        before_goal,
+        parent_source_span: entry.source_span,
+        file_id: session.document.file_id,
+        current_source_interface,
+        imported_source_interfaces: session.active_imported_source_interfaces.clone(),
+        options: session.document.options.clone(),
+    })
+}
+
+#[derive(Clone, Debug)]
+struct HumanTacticRunExecutionOk {
+    state: npa_tactic::MachineProofState,
+    deltas: Vec<npa_tactic::MachineProofDelta>,
+}
+
+fn human_tactic_run_execute(
+    state: &npa_tactic::MachineProofState,
+    goal_id: npa_tactic::GoalId,
+    tactic: &npa_frontend::HumanTacticSyntax,
+    current_source_interface: &npa_frontend::HumanSourceInterface,
+    imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+    options: HumanApiCompileOptions,
+    budget: npa_tactic::TacticBudget,
+) -> Result<HumanTacticRunExecutionOk, HumanTacticScriptError> {
+    match tactic {
+        npa_frontend::HumanTacticSyntax::Intro { name, .. } => {
+            let ok = run_human_intro_tactic(HumanIntroTacticRequest {
+                state,
+                goal_id,
+                name,
+                budget,
+            })
+            .map_err(human_script_intro_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: vec![ok.delta],
+            })
+        }
+        npa_frontend::HumanTacticSyntax::Exact { term, .. } => {
+            let ok = run_human_exact_tactic(HumanExactTacticRequest {
+                state,
+                goal_id,
+                term,
+                current_source_interface,
+                imported_source_interfaces,
+                options,
+            })
+            .map_err(human_script_term_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: vec![ok.delta],
+            })
+        }
+        npa_frontend::HumanTacticSyntax::Apply { term, .. } => {
+            let ok = run_human_apply_tactic(HumanApplyTacticRequest {
+                state,
+                goal_id,
+                term,
+                current_source_interface,
+                imported_source_interfaces,
+                budget,
+            })
+            .map_err(human_script_apply_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: vec![ok.delta],
+            })
+        }
+        npa_frontend::HumanTacticSyntax::Rewrite { rules, span } => {
+            let ok = run_human_rewrite_tactic(HumanRewriteTacticRequest {
+                state,
+                goal_id,
+                rules,
+                span: *span,
+                current_source_interface,
+                imported_source_interfaces,
+                budget,
+            })
+            .map_err(human_script_rewrite_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: ok.deltas,
+            })
+        }
+        npa_frontend::HumanTacticSyntax::SimpLite { span } => {
+            let ok = run_human_simp_lite_tactic(HumanSimpLiteTacticRequest {
+                state,
+                goal_id,
+                span: *span,
+                budget,
+            })
+            .map_err(human_script_simp_lite_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: vec![ok.delta],
+            })
+        }
+        npa_frontend::HumanTacticSyntax::Induction { name, span } => {
+            let ok = run_human_induction_tactic(HumanInductionTacticRequest {
+                state,
+                goal_id,
+                name,
+                span: *span,
+                budget,
+            })
+            .map_err(human_script_induction_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: vec![ok.delta],
+            })
+        }
+    }
+}
+
+fn human_parse_single_tactic(
+    file_id: npa_frontend::FileId,
+    tactic_text: &str,
+    imported_source_interfaces: &[npa_frontend::HumanImportedSourceInterface],
+) -> Result<npa_frontend::HumanTacticSyntax, npa_frontend::HumanDiagnostic> {
+    if tactic_text.trim().is_empty() {
+        let len = u32::try_from(tactic_text.len()).unwrap_or(u32::MAX);
+        return Err(npa_frontend::HumanDiagnostic::parse(
+            npa_frontend::Span::new(file_id, 0, len),
+            "expected one Human tactic",
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticParse));
+    }
+
+    let prefix = "theorem TacticRunDummy : Prop := by\n";
+    let source = format!("{prefix}{tactic_text}");
+    let parsed = npa_frontend::parse_human_module_with_source_interfaces(
+        file_id,
+        &source,
+        imported_source_interfaces,
+    )?;
+    let Some(npa_frontend::HumanItem::Theorem(decl)) = parsed.items.first() else {
+        return Err(npa_frontend::HumanDiagnostic::parse(
+            npa_frontend::Span::new(file_id, 0, source.len() as u32),
+            "expected one Human tactic",
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticParse));
+    };
+    let npa_frontend::HumanDeclValue::ProofBlock(block) = &decl.value else {
+        return Err(npa_frontend::HumanDiagnostic::parse(
+            decl.value.span(),
+            "expected tactic proof block",
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticParse));
+    };
+    if parsed.items.len() != 1 || block.script.tactics.len() != 1 {
+        return Err(npa_frontend::HumanDiagnostic::parse(
+            block.script.span,
+            "Human /tactic/run accepts exactly one tactic",
+        )
+        .with_phase(npa_frontend::HumanDiagnosticPhase::TacticParse));
+    }
+    Ok(block.script.tactics[0].clone())
+}
+
+struct HumanTacticRunErrorResponseInput {
+    status: HumanTacticRunStatus,
+    kind: HumanTacticRunErrorKind,
+    session_id: crate::HumanSessionId,
+    old_state_id: crate::HumanStateId,
+    goal_id: crate::HumanGoalId,
+    message: String,
+    diagnostic: Option<npa_frontend::HumanDiagnostic>,
+    machine_diagnostic: Option<npa_tactic::MachineTacticDiagnostic>,
+    state_error: Option<HumanStateApiError>,
+    expected_hash: Option<npa_cert::Hash>,
+    actual_hash: Option<npa_cert::Hash>,
+    span: Option<npa_frontend::Span>,
+    suggestions: Vec<HumanTacticRunSuggestion>,
+    messages: Vec<npa_frontend::HumanDiagnostic>,
+}
+
+fn human_tactic_run_error_response(
+    input: HumanTacticRunErrorResponseInput,
+) -> HumanTacticRunResponse {
+    HumanTacticRunResponse {
+        status: input.status,
+        session_id: input.session_id,
+        parent_state_id: input.old_state_id.clone(),
+        new_state_id: None,
+        selected_goal: Some(input.goal_id.clone()),
+        closed_goals: Vec::new(),
+        new_goals: Vec::new(),
+        proof_deltas: Vec::new(),
+        messages: input.messages,
+        error: Some(HumanTacticRunErrorReport {
+            kind: input.kind,
+            old_state_id: input.old_state_id,
+            goal_id: input.goal_id,
+            message: input.message,
+            diagnostic: input.diagnostic,
+            machine_diagnostic: input.machine_diagnostic.map(Box::new),
+            state_error: input.state_error.map(Box::new),
+            expected_hash: input.expected_hash,
+            actual_hash: input.actual_hash,
+            span: input.span,
+            suggestions: input.suggestions,
+        }),
+    }
+}
+
+fn human_tactic_run_state_error_response(
+    session_id: crate::HumanSessionId,
+    old_state_id: crate::HumanStateId,
+    goal_id: crate::HumanGoalId,
+    error: HumanStateApiError,
+) -> HumanTacticRunResponse {
+    human_tactic_run_error_response(HumanTacticRunErrorResponseInput {
+        status: HumanTacticRunStatus::Error,
+        kind: HumanTacticRunErrorKind::StateValidation,
+        session_id,
+        old_state_id,
+        goal_id,
+        message: format!("Human tactic run state validation failed: {error:?}"),
+        diagnostic: None,
+        machine_diagnostic: None,
+        state_error: Some(error),
+        expected_hash: None,
+        actual_hash: None,
+        span: None,
+        suggestions: Vec::new(),
+        messages: Vec::new(),
+    })
+}
+
+fn human_tactic_run_record_error_response(
+    session_id: crate::HumanSessionId,
+    old_state_id: crate::HumanStateId,
+    goal_id: crate::HumanGoalId,
+    error: HumanTacticStateRecordError,
+) -> HumanTacticRunResponse {
+    human_tactic_run_error_response(HumanTacticRunErrorResponseInput {
+        status: HumanTacticRunStatus::Error,
+        kind: HumanTacticRunErrorKind::StateRecord,
+        session_id,
+        old_state_id,
+        goal_id,
+        message: format!("Human tactic run could not record the transition state: {error:?}"),
+        diagnostic: None,
+        machine_diagnostic: None,
+        state_error: None,
+        expected_hash: None,
+        actual_hash: None,
+        span: None,
+        suggestions: Vec::new(),
+        messages: Vec::new(),
+    })
+}
+
+fn human_tactic_run_human_error_response(
+    session_id: crate::HumanSessionId,
+    old_state_id: crate::HumanStateId,
+    goal_id: crate::HumanGoalId,
+    goal: Option<&npa_tactic::MachineGoal>,
+    diagnostic: npa_frontend::HumanDiagnostic,
+) -> HumanTacticRunResponse {
+    let (status, kind) = human_tactic_run_human_error_status(&diagnostic);
+    let suggestions = goal.map(human_tactic_run_suggestions).unwrap_or_default();
+    human_tactic_run_error_response(HumanTacticRunErrorResponseInput {
+        status,
+        kind,
+        session_id,
+        old_state_id,
+        goal_id,
+        message: diagnostic.message.clone(),
+        diagnostic: Some(diagnostic.clone()),
+        machine_diagnostic: None,
+        state_error: None,
+        expected_hash: None,
+        actual_hash: None,
+        span: Some(diagnostic.primary_span),
+        suggestions,
+        messages: vec![diagnostic],
+    })
+}
+
+fn human_tactic_run_machine_error_response(
+    session_id: crate::HumanSessionId,
+    old_state_id: crate::HumanStateId,
+    goal_id: crate::HumanGoalId,
+    goal: Option<&npa_tactic::MachineGoal>,
+    span: npa_frontend::Span,
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+) -> HumanTacticRunResponse {
+    let (status, kind) = human_tactic_run_machine_error_status(&diagnostic);
+    let expected_hash = diagnostic.expected_hash.as_deref().copied();
+    let actual_hash = diagnostic.actual_hash.as_deref().copied();
+    let suggestions = goal.map(human_tactic_run_suggestions).unwrap_or_default();
+    human_tactic_run_error_response(HumanTacticRunErrorResponseInput {
+        status,
+        kind,
+        session_id,
+        old_state_id,
+        goal_id,
+        message: diagnostic.message.to_string(),
+        diagnostic: None,
+        machine_diagnostic: Some(diagnostic),
+        state_error: None,
+        expected_hash,
+        actual_hash,
+        span: Some(span),
+        suggestions,
+        messages: Vec::new(),
+    })
+}
+
+fn human_tactic_run_human_error_status(
+    diagnostic: &npa_frontend::HumanDiagnostic,
+) -> (HumanTacticRunStatus, HumanTacticRunErrorKind) {
+    match &diagnostic.kind {
+        npa_frontend::HumanDiagnosticKind::ParseError => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::ParseError,
+        ),
+        npa_frontend::HumanDiagnosticKind::ExpectedFunctionType => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::ExpectedPiType,
+        ),
+        npa_frontend::HumanDiagnosticKind::TypeMismatch => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::TypeMismatch,
+        ),
+        npa_frontend::HumanDiagnosticKind::UnsupportedTactic
+        | npa_frontend::HumanDiagnosticKind::UnsupportedSyntax => (
+            HumanTacticRunStatus::Unsafe,
+            HumanTacticRunErrorKind::Unsafe,
+        ),
+        _ => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::TacticExecution,
+        ),
+    }
+}
+
+fn human_tactic_run_machine_error_status(
+    diagnostic: &npa_tactic::MachineTacticDiagnostic,
+) -> (HumanTacticRunStatus, HumanTacticRunErrorKind) {
+    match &diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::TacticFuelExhausted { .. } => (
+            HumanTacticRunStatus::Timeout,
+            HumanTacticRunErrorKind::Timeout,
+        ),
+        npa_tactic::MachineTacticDiagnosticKind::UnsupportedMachineTactic
+        | npa_tactic::MachineTacticDiagnosticKind::TacticPrimitiveUnavailable
+        | npa_tactic::MachineTacticDiagnosticKind::InvalidMachineTactic => (
+            HumanTacticRunStatus::Unsafe,
+            HumanTacticRunErrorKind::Unsafe,
+        ),
+        npa_tactic::MachineTacticDiagnosticKind::ExpectedFunctionType
+        | npa_tactic::MachineTacticDiagnosticKind::ExpectedPiTarget => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::ExpectedPiType,
+        ),
+        npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
+        | npa_tactic::MachineTacticDiagnosticKind::ProofExprTypeMismatch => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::TypeMismatch,
+        ),
+        _ => (
+            HumanTacticRunStatus::Error,
+            HumanTacticRunErrorKind::TacticExecution,
+        ),
+    }
+}
+
+fn human_tactic_run_suggestions(goal: &npa_tactic::MachineGoal) -> Vec<HumanTacticRunSuggestion> {
+    let mut suggestions = Vec::new();
+    if let Some(local) = goal
+        .context
+        .iter()
+        .rev()
+        .find(|local| local.ty == goal.target)
+    {
+        suggestions.push(HumanTacticRunSuggestion {
+            kind: HumanTacticRunSuggestionKind::TryTactic,
+            tactic: format!("exact {}", local.name),
+        });
+    }
+
+    let local_names = goal
+        .context
+        .iter()
+        .map(|local| local.name.clone())
+        .collect::<Vec<_>>();
+    if let Some((lhs, rhs)) = human_eq_app_sides(&goal.target) {
+        if lhs == rhs {
+            suggestions.push(HumanTacticRunSuggestion {
+                kind: HumanTacticRunSuggestionKind::TryTactic,
+                tactic: format!(
+                    "exact Eq.refl {}",
+                    human_render_core_expr(lhs, &local_names)
+                ),
+            });
+            suggestions.push(HumanTacticRunSuggestion {
+                kind: HumanTacticRunSuggestionKind::TryTactic,
+                tactic: "simp-lite".to_owned(),
+            });
+        }
+    }
+    suggestions
 }
 
 fn human_open_goal_ids(entry: &HumanProofStateEntry) -> Vec<crate::HumanGoalId> {
@@ -3246,8 +3908,14 @@ fn human_apply_args_for_type(
         let is_implicit = implicit_profile.get(args.len()).is_some_and(|visibility| {
             *visibility == npa_frontend::MachineCallableBinderVisibility::Implicit
         });
-        let is_proof_relevant =
-            human_apply_domain_is_proof_relevant(state, goal, &ctx, &domain, span)?;
+        let is_proof_relevant = human_apply_domain_is_proof_relevant(
+            state, goal, &ctx, &domain, span,
+        )
+        .or_else(|error| {
+            human_apply_eq_premise_fallback(&domain)
+                .then_some(true)
+                .ok_or(error)
+        })?;
         let arg = if !is_proof_relevant {
             if human_apply_body_returns_current_binder(body.as_ref()) {
                 human_apply_nonproof_arg_from_target(goal)
@@ -3326,6 +3994,11 @@ fn human_apply_domain_is_proof_relevant(
             )
         })?;
     Ok(matches!(sort, Expr::Sort(level) if level == npa_kernel::prop()))
+}
+
+fn human_apply_eq_premise_fallback(domain: &Expr) -> bool {
+    let (head, _) = human_app_head_and_args(domain);
+    matches!(head, Expr::Const { name, .. } if name == "Eq")
 }
 
 fn human_apply_placeholder(arg: &npa_tactic::ApplyArg, goal: &npa_tactic::MachineGoal) -> Expr {
@@ -5100,6 +5773,353 @@ theorem target : forall (A : Type), forall (x : A), forall (h : Eq.{1} x x), Eq.
         assert_eq!(closed.items[0].old_goal, recorded_hp.selected_goal);
         assert!(closed.items[0].new_goals.is_empty());
         assert!(closed.text.contains("closed"));
+    }
+
+    #[test]
+    fn human_tactic_run_intro_exact_and_expected_pi_error_are_transactional() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem id_nat : forall (n : Nat), Nat := by simp-lite";
+        let file_id = npa_frontend::FileId(30);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanTacticRunIntroExact"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanTacticRunIntroExact.id_nat"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let root_goal = started
+            .selected_goal
+            .clone()
+            .expect("initial state should select the root goal");
+
+        let intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id.clone(),
+                goal_id: root_goal.clone(),
+                tactic: "intro n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro.status, HumanTacticRunStatus::Partial);
+        assert_eq!(intro.parent_state_id, started.state_id);
+        assert_eq!(intro.closed_goals, vec![root_goal]);
+        assert_eq!(intro.new_goals.len(), 1);
+        assert_eq!(intro.new_goals[0].context[0].name, "n");
+        assert_eq!(intro.new_goals[0].target.pretty, "Nat");
+        assert_eq!(intro.proof_deltas.len(), 1);
+        assert!(intro.error.is_none());
+        let intro_state_id = intro
+            .new_state_id
+            .clone()
+            .expect("intro should record a new state");
+        let intro_goal = intro
+            .selected_goal
+            .clone()
+            .expect("intro response should select the new goal");
+        let parent_after_intro =
+            get_human_proof_state(&store, &created.session_id, &started.state_id)
+                .expect("parent state should remain available after intro");
+        assert_eq!(
+            parent_after_intro.state.open_goals,
+            vec![npa_tactic::GoalId(0)]
+        );
+
+        let exact = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: intro_state_id.clone(),
+                goal_id: intro_goal.clone(),
+                tactic: "exact n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(exact.status, HumanTacticRunStatus::Closed);
+        assert_eq!(exact.closed_goals, vec![intro_goal]);
+        assert!(exact.new_goals.is_empty());
+        assert_eq!(exact.proof_deltas.len(), 1);
+        assert!(exact.error.is_none());
+        let exact_state_id = exact
+            .new_state_id
+            .clone()
+            .expect("exact should record a closed state");
+        let exact_entry = get_human_proof_state(&store, &created.session_id, &exact_state_id)
+            .expect("exact state should be recorded");
+        assert!(exact_entry.state.open_goals.is_empty());
+
+        let eq_source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem self_eq (n : Nat) : Eq.{1} n n := by exact _";
+        let eq_file_id = npa_frontend::FileId(31);
+        let eq_created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanTacticRunExpectedPi"),
+                current_source: HumanCurrentModuleSource {
+                    file_id: eq_file_id,
+                    source: eq_source,
+                },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human eq session should be created");
+        let eq_started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: eq_created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanTacticRunExpectedPi.self_eq"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human eq proof should start");
+        let eq_header = HumanStateRequestHeader {
+            session_id: eq_created.session_id.clone(),
+            document_id: eq_created.document_id.clone(),
+            document_version: eq_created.document_version,
+        };
+        let eq_intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: eq_header.clone(),
+                state_id: eq_started.state_id.clone(),
+                goal_id: eq_started.selected_goal.clone().unwrap(),
+                tactic: "intro n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(eq_intro.status, HumanTacticRunStatus::Partial);
+        let eq_state_id = eq_intro.new_state_id.clone().unwrap();
+        let eq_goal_id = eq_intro.selected_goal.clone().unwrap();
+        let state_count_before_error = store
+            .session(&eq_created.session_id)
+            .expect("eq session should exist")
+            .proof_states
+            .state_count();
+
+        let bad_intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: eq_header,
+                state_id: eq_state_id.clone(),
+                goal_id: eq_goal_id.clone(),
+                tactic: "intro h".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(bad_intro.status, HumanTacticRunStatus::Error);
+        assert_eq!(bad_intro.new_state_id, None);
+        let error = bad_intro
+            .error
+            .expect("bad intro should return an error report");
+        assert_eq!(error.kind, HumanTacticRunErrorKind::ExpectedPiType);
+        assert_eq!(error.old_state_id, eq_state_id);
+        assert_eq!(error.goal_id, eq_goal_id);
+        assert!(error.span.is_some());
+        assert!(error
+            .suggestions
+            .iter()
+            .any(|suggestion| suggestion.tactic == "simp-lite"));
+        let state_count_after_error = store
+            .session(&eq_created.session_id)
+            .expect("eq session should exist")
+            .proof_states
+            .state_count();
+        assert_eq!(state_count_after_error, state_count_before_error);
+    }
+
+    #[test]
+    fn human_tactic_run_apply_eq_trans_returns_expected_subgoals() {
+        let (eq, eq_interface) = verified_eq_trans_human_import();
+        let verified_modules = vec![eq];
+        let imported_source_interfaces = vec![eq_interface];
+        let source = "\
+import Std.Logic.Eq
+theorem target (A : Type) (x y z : A) : Eq.{1} x z := by simp-lite";
+        let file_id = npa_frontend::FileId(32);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanTacticRunApply"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human apply session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanTacticRunApply.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human apply proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let mut state_id = started.state_id;
+        let mut goal_id = started.selected_goal.unwrap();
+        for tactic in ["intro A", "intro x", "intro y", "intro z"] {
+            let response = run_human_tactic(
+                &mut store,
+                HumanTacticRunRequest {
+                    header: header.clone(),
+                    state_id: state_id.clone(),
+                    goal_id,
+                    tactic: tactic.to_owned(),
+                    budget: npa_tactic::TacticBudget::default(),
+                },
+            );
+            assert_eq!(response.status, HumanTacticRunStatus::Partial);
+            state_id = response.new_state_id.expect("intro should record state");
+            goal_id = response.selected_goal.expect("intro should select goal");
+        }
+
+        let applied = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header,
+                state_id,
+                goal_id,
+                tactic: "apply Eq.trans".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(applied.status, HumanTacticRunStatus::Partial);
+        assert_eq!(applied.new_goals.len(), 2);
+        assert!(applied.error.is_none());
+        assert_eq!(applied.proof_deltas.len(), 1);
+        assert!(applied
+            .new_goals
+            .iter()
+            .all(|goal| goal.target.pretty.contains('=')));
+    }
+
+    #[test]
+    fn human_tactic_run_rw_nat_add_zero_and_simp_lite_use_proof_deltas() {
+        let (nat, nat_interface) = verified_nat_human_import();
+        let (eq, eq_interface) = verified_eq_human_import();
+        let verified_modules = vec![nat, eq];
+        let imported_source_interfaces = vec![nat_interface, eq_interface];
+        let source = "\
+import Std.Nat.Basic
+import Std.Logic.Eq
+theorem Nat.add_zero (n : Nat) : Eq.{1} n n := Eq.refl n
+theorem target (n : Nat) : Eq.{1} n n := by simp-lite";
+        let file_id = npa_frontend::FileId(33);
+        let mut store = HumanProofSessionStore::new();
+        let created = create_human_session(
+            &mut store,
+            HumanSessionCreateRequest {
+                current_module: npa_cert::Name::from_dotted("Api.HumanTacticRunRwSimp"),
+                current_source: HumanCurrentModuleSource { file_id, source },
+                verified_modules: &verified_modules,
+                imported_source_interfaces: &imported_source_interfaces,
+                options: human_api_default_compile_options(),
+            },
+        )
+        .expect("Human rw/simp session should be created");
+        let started = start_human_session_proof(
+            &mut store,
+            HumanProofStateStartRequest {
+                session_id: created.session_id.clone(),
+                theorem_name: npa_cert::Name::from_dotted("Api.HumanTacticRunRwSimp.target"),
+                source_span: None,
+                selected_goal: None,
+                messages: Vec::new(),
+            },
+        )
+        .expect("Human rw/simp proof should start");
+        let header = HumanStateRequestHeader {
+            session_id: created.session_id.clone(),
+            document_id: created.document_id.clone(),
+            document_version: created.document_version,
+        };
+        let intro = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: started.state_id,
+                goal_id: started.selected_goal.unwrap(),
+                tactic: "intro n".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(intro.status, HumanTacticRunStatus::Partial);
+        let intro_state_id = intro.new_state_id.clone().unwrap();
+        let intro_goal_id = intro.selected_goal.clone().unwrap();
+
+        let rewrite = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header: header.clone(),
+                state_id: intro_state_id.clone(),
+                goal_id: intro_goal_id.clone(),
+                tactic: "rw [Nat.add_zero]".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(rewrite.status, HumanTacticRunStatus::Partial);
+        assert!(rewrite.error.is_none());
+        assert!(!rewrite.proof_deltas.is_empty());
+        assert_eq!(rewrite.closed_goals, vec![intro_goal_id.clone()]);
+        assert_eq!(rewrite.new_goals.len(), 1);
+
+        let simp = run_human_tactic(
+            &mut store,
+            HumanTacticRunRequest {
+                header,
+                state_id: intro_state_id,
+                goal_id: intro_goal_id,
+                tactic: "simp-lite".to_owned(),
+                budget: npa_tactic::TacticBudget::default(),
+            },
+        );
+        assert_eq!(simp.status, HumanTacticRunStatus::Closed);
+        assert!(simp.error.is_none());
+        assert_eq!(simp.proof_deltas.len(), 1);
+        assert!(simp.new_goals.is_empty());
     }
 
     #[test]
@@ -7336,6 +8356,19 @@ inductive Nat : Type where
             "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a",
+        )
+    }
+
+    fn verified_eq_trans_human_import() -> (
+        npa_cert::VerifiedModule,
+        npa_frontend::HumanImportedSourceInterface,
+    ) {
+        verified_human_import(
+            "Std.Logic.Eq",
+            "\
+inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
+| refl : Eq.{u} a a
+axiom Eq.trans {A : Type} {x : A} {z : A} (h1 : Eq.{1} x z) (h2 : Eq.{1} x z) : Eq.{1} x z",
         )
     }
 
