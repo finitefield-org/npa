@@ -517,17 +517,17 @@ P6H-08
 
 実装タスク:
 
-- [ ] Human-facing theorem search view を certificate verifier output から生成する。
-- [ ] per-module `index` / `axioms` / minimal dependency graph debug view を生成する。
-- [ ] `proof_term_size` は AI MVP artifact では null にし、Human debug view の任意情報と混同しない。
-- [ ] Human source attributes から `simp` / `rw` / `apply` / `intro` / `elim` 表示を作る場合も、certificate-derived identity に bind する。
-- [ ] Human theorem search の suggested tactic string は Human UI 用に限定する。
+- [x] Human-facing theorem search view を certificate verifier output から生成する。
+- [x] per-module `index` / `axioms` / minimal dependency graph debug view を生成する。
+- [x] `proof_term_size` は AI MVP artifact では null にし、Human debug view の任意情報と混同しない。
+- [x] Human source attributes から `simp` / `rw` / `apply` / `intro` / `elim` 表示を作る場合も、certificate-derived identity に bind する。
+- [x] Human theorem search の suggested tactic string は Human UI 用に限定する。
 
 受け入れ条件:
 
-- [ ] Human search で `Nat.add_zero`、`List.append_nil`、`Eq.trans` が期待カテゴリに出る。
-- [ ] debug view は source text や pretty statement を trusted hash input にしない。
-- [ ] AI `MachineStdTheoremIndex` schema と Human debug schema の責務が test / docs で分離されている。
+- [x] Human search で `Nat.add_zero`、`List.append_nil`、`Eq.trans` が期待カテゴリに出る。
+- [x] debug view は source text や pretty statement を trusted hash input にしない。
+- [x] AI `MachineStdTheoremIndex` schema と Human debug schema の責務が test / docs で分離されている。
 
 検証:
 

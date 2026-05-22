@@ -84,6 +84,12 @@ const STD_AXIOM_REPORT_TAG: &str = "npa.std-library.std-axiom-report.v1";
 const STD_THEOREM_INDEX_TAG: &str = "npa.std-library.std-theorem-index.v1";
 const STD_GLOBAL_REF_TAG: &str = "npa.std-library.std-global-ref.v1";
 const STD_GLOBAL_REF_VIEW_TAG: &str = "npa.std-library.std-global-ref-view.v1";
+const STD_HUMAN_THEOREM_SEARCH_VIEW_TAG: &str = "npa.std-library.human-theorem-search-view.v1";
+const STD_HUMAN_THEOREM_SEARCH_ENTRY_TAG: &str = "npa.std-library.human-theorem-search-entry.v1";
+const STD_HUMAN_MODULE_INDEX_DEBUG_TAG: &str = "npa.std-library.human-module-index-debug.v1";
+const STD_HUMAN_MODULE_AXIOMS_DEBUG_TAG: &str = "npa.std-library.human-module-axioms-debug.v1";
+const STD_HUMAN_MODULE_GRAPH_DEBUG_TAG: &str = "npa.std-library.human-module-graph-debug.v1";
+const STD_HUMAN_MODULE_GRAPH_EDGE_TAG: &str = "npa.std-library.human-module-graph-edge.v1";
 const STD_RULE_TELESCOPE_TAG: &str = "npa.std-library.std-rule-telescope.v1";
 const STD_REWRITE_PROFILE_TAG: &str = "npa.std-library.std-rewrite-profile.v1";
 const STD_REWRITE_PROFILE_SET_TAG: &str = "npa.std-library.std-rewrite-profile-set.v1";
@@ -263,6 +269,98 @@ pub struct MachineStdTheoremEntry {
     pub rewrite_descriptors: Vec<MachineStdRewriteDescriptor>,
     pub axiom_dependencies: Vec<MachineStdAxiomRef>,
     pub proof_term_size: Option<u64>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdTheoremSearchView {
+    pub library_profile_id: String,
+    pub entries: Vec<HumanStdTheoremSearchEntry>,
+    pub debug_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdTheoremSearchEntry {
+    pub global_ref: MachineStdGlobalRef,
+    pub kind: MachineStdTheoremKind,
+    pub categories: Vec<HumanStdTheoremCategory>,
+    pub display_attributes: Vec<HumanStdTheoremDisplayAttribute>,
+    pub statement_core_hash: Hash,
+    pub statement_head: Option<MachineStdGlobalRefView>,
+    pub constants: Vec<MachineStdGlobalRefView>,
+    pub axiom_dependencies: Vec<MachineStdAxiomRef>,
+    pub proof_term_size: Option<u64>,
+    pub suggested_tactics: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum HumanStdTheoremCategory {
+    Exact,
+    Apply,
+    Rw,
+    Simp,
+    Intro,
+    Elim,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum HumanStdTheoremDisplayAttribute {
+    Simp,
+    Rw,
+    Apply,
+    Intro,
+    Elim,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdModuleDebugViews {
+    pub module: Name,
+    pub index: HumanStdModuleIndexDebugView,
+    pub axioms: HumanStdModuleAxiomsDebugView,
+    pub graph: HumanStdModuleGraphDebugView,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdModuleIndexDebugView {
+    pub module: Name,
+    pub entries: Vec<HumanStdTheoremSearchEntry>,
+    pub debug_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdModuleAxiomsDebugView {
+    pub module: Name,
+    pub export_hash: Hash,
+    pub certificate_hash: Hash,
+    pub module_axioms: Vec<MachineStdAxiomRef>,
+    pub transitive_axioms: Vec<MachineStdAxiomRef>,
+    pub debug_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdModuleGraphDebugView {
+    pub module: Name,
+    pub edges: Vec<HumanStdDependencyEdge>,
+    pub debug_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanStdDependencyEdge {
+    pub source: MachineStdGlobalRef,
+    pub kind: HumanStdDependencyKind,
+    pub target: HumanStdDependencyTarget,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanStdDependencyKind {
+    StatementHead,
+    StatementConstant,
+    AxiomDependency,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanStdDependencyTarget {
+    GlobalRef(MachineStdGlobalRefView),
+    Axiom(MachineStdAxiomRef),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -3119,6 +3217,79 @@ pub fn generate_machine_std_mvp_final_theorem_index(
     finalize_machine_std_mvp_theorem_index(&base, rewrite_profiles, simp_profiles)
 }
 
+pub fn generate_human_std_theorem_search_view(
+    loaded: &MachineStdLoadedRelease,
+    theorem_index: &MachineStdTheoremIndex,
+) -> Result<HumanStdTheoremSearchView, MachineStdTheoremIndexError> {
+    let mut entries = Vec::with_capacity(theorem_index.entries.len());
+    for entry in &theorem_index.entries {
+        if entry.proof_term_size.is_some() {
+            return Err(MachineStdTheoremIndexError::NonNullProofTermSize {
+                global_ref: Box::new(entry.global_ref.clone()),
+            });
+        }
+        let categories = human_std_theorem_categories(entry);
+        let display_attributes = human_std_display_attributes(&categories);
+        let suggested_tactics = human_std_suggested_tactics(entry, &categories);
+        entries.push(HumanStdTheoremSearchEntry {
+            global_ref: entry.global_ref.clone(),
+            kind: entry.kind,
+            categories,
+            display_attributes,
+            statement_core_hash: entry.statement_core_hash,
+            statement_head: entry.statement_head.clone(),
+            constants: entry.constants.clone(),
+            axiom_dependencies: entry.axiom_dependencies.clone(),
+            proof_term_size: human_std_proof_term_size(loaded, entry)?,
+            suggested_tactics,
+        });
+    }
+
+    let mut view = HumanStdTheoremSearchView {
+        library_profile_id: theorem_index.library_profile_id.clone(),
+        entries,
+        debug_hash: [0; 32],
+    };
+    view.debug_hash = human_std_theorem_search_view_hash(&view)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    Ok(view)
+}
+
+pub fn generate_human_std_module_debug_views(
+    loaded: &MachineStdLoadedRelease,
+    theorem_view: &HumanStdTheoremSearchView,
+    axiom_report: &MachineStdAxiomReport,
+) -> Result<Vec<HumanStdModuleDebugViews>, MachineStdTheoremIndexError> {
+    loaded
+        .verification_order()
+        .iter()
+        .map(|module| {
+            let module_axioms = axiom_report
+                .modules
+                .iter()
+                .find(|entry| &entry.module == module)
+                .ok_or_else(|| MachineStdTheoremIndexError::InvalidGlobalRef {
+                    module: module.clone(),
+                })?;
+            let entries = theorem_view
+                .entries
+                .iter()
+                .filter(|entry| &entry.global_ref.module == module)
+                .cloned()
+                .collect::<Vec<_>>();
+            let index = human_std_module_index_debug_view(module.clone(), entries)?;
+            let axioms = human_std_module_axioms_debug_view(module_axioms)?;
+            let graph = human_std_module_graph_debug_view(module.clone(), &index.entries)?;
+            Ok(HumanStdModuleDebugViews {
+                module: module.clone(),
+                index,
+                axioms,
+                graph,
+            })
+        })
+        .collect()
+}
+
 pub fn validate_machine_std_mvp_final_theorem_index(
     actual: &MachineStdTheoremIndex,
     expected: &MachineStdTheoremIndex,
@@ -3197,6 +3368,206 @@ pub fn validate_machine_std_mvp_release_final_sidecar_counts(
         .map_err(MachineStdReleaseArtifactError::InvalidStdLibraryRelease)?;
     }
     Ok(())
+}
+
+pub fn human_std_theorem_search_view_canonical_bytes(
+    view: &HumanStdTheoremSearchView,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_HUMAN_THEOREM_SEARCH_VIEW_TAG);
+    encode_string(&mut out, &view.library_profile_id);
+    encode_uvar(&mut out, view.entries.len() as u64);
+    for entry in &view.entries {
+        out.extend(human_std_theorem_search_entry_canonical_bytes(entry)?);
+    }
+    Ok(out)
+}
+
+pub fn human_std_theorem_search_view_hash(
+    view: &HumanStdTheoremSearchView,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    Ok(sha256(&human_std_theorem_search_view_canonical_bytes(
+        view,
+    )?))
+}
+
+fn human_std_theorem_search_entry_canonical_bytes(
+    entry: &HumanStdTheoremSearchEntry,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_HUMAN_THEOREM_SEARCH_ENTRY_TAG);
+    out.extend(machine_std_global_ref_canonical_bytes(&entry.global_ref)?);
+    out.push(theorem_kind_byte(entry.kind));
+    encode_uvar(&mut out, entry.categories.len() as u64);
+    for category in &entry.categories {
+        out.push(human_std_theorem_category_byte(*category));
+    }
+    encode_uvar(&mut out, entry.display_attributes.len() as u64);
+    for attribute in &entry.display_attributes {
+        out.push(human_std_display_attribute_byte(*attribute));
+    }
+    encode_hash(&mut out, &entry.statement_core_hash);
+    encode_option_global_ref_view(&mut out, entry.statement_head.as_ref())?;
+    encode_uvar(&mut out, entry.constants.len() as u64);
+    for constant in &entry.constants {
+        out.extend(machine_std_global_ref_view_canonical_bytes(constant)?);
+    }
+    encode_uvar(&mut out, entry.axiom_dependencies.len() as u64);
+    for axiom in &entry.axiom_dependencies {
+        out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
+    }
+    encode_option_u64(&mut out, entry.proof_term_size);
+    encode_uvar(&mut out, entry.suggested_tactics.len() as u64);
+    for tactic in &entry.suggested_tactics {
+        encode_string(&mut out, tactic);
+    }
+    Ok(out)
+}
+
+fn human_std_module_index_debug_view(
+    module: Name,
+    entries: Vec<HumanStdTheoremSearchEntry>,
+) -> Result<HumanStdModuleIndexDebugView, MachineStdTheoremIndexError> {
+    let mut view = HumanStdModuleIndexDebugView {
+        module,
+        entries,
+        debug_hash: [0; 32],
+    };
+    view.debug_hash = human_std_module_index_debug_hash(&view)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    Ok(view)
+}
+
+fn human_std_module_axioms_debug_view(
+    module_axioms: &MachineStdModuleAxiomReport,
+) -> Result<HumanStdModuleAxiomsDebugView, MachineStdTheoremIndexError> {
+    let mut view = HumanStdModuleAxiomsDebugView {
+        module: module_axioms.module.clone(),
+        export_hash: module_axioms.export_hash,
+        certificate_hash: module_axioms.certificate_hash,
+        module_axioms: module_axioms.module_axioms.clone(),
+        transitive_axioms: module_axioms.transitive_axioms.clone(),
+        debug_hash: [0; 32],
+    };
+    view.debug_hash = human_std_module_axioms_debug_hash(&view)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    Ok(view)
+}
+
+fn human_std_module_graph_debug_view(
+    module: Name,
+    entries: &[HumanStdTheoremSearchEntry],
+) -> Result<HumanStdModuleGraphDebugView, MachineStdTheoremIndexError> {
+    let mut edges = Vec::new();
+    for entry in entries {
+        if let Some(head) = &entry.statement_head {
+            edges.push(HumanStdDependencyEdge {
+                source: entry.global_ref.clone(),
+                kind: HumanStdDependencyKind::StatementHead,
+                target: HumanStdDependencyTarget::GlobalRef(head.clone()),
+            });
+        }
+        for constant in &entry.constants {
+            edges.push(HumanStdDependencyEdge {
+                source: entry.global_ref.clone(),
+                kind: HumanStdDependencyKind::StatementConstant,
+                target: HumanStdDependencyTarget::GlobalRef(constant.clone()),
+            });
+        }
+        for axiom in &entry.axiom_dependencies {
+            edges.push(HumanStdDependencyEdge {
+                source: entry.global_ref.clone(),
+                kind: HumanStdDependencyKind::AxiomDependency,
+                target: HumanStdDependencyTarget::Axiom(axiom.clone()),
+            });
+        }
+    }
+    let mut keyed_edges = edges
+        .into_iter()
+        .map(|edge| {
+            Ok((
+                human_std_dependency_edge_canonical_bytes(&edge)
+                    .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?,
+                edge,
+            ))
+        })
+        .collect::<Result<Vec<_>, MachineStdTheoremIndexError>>()?;
+    keyed_edges.sort_by_cached_key(|(key, _)| key.clone());
+    keyed_edges.dedup_by(|left, right| left.0 == right.0);
+
+    let mut view = HumanStdModuleGraphDebugView {
+        module,
+        edges: keyed_edges.into_iter().map(|(_, edge)| edge).collect(),
+        debug_hash: [0; 32],
+    };
+    view.debug_hash = human_std_module_graph_debug_hash(&view)
+        .map_err(|source| MachineStdTheoremIndexError::CanonicalBytes { source })?;
+    Ok(view)
+}
+
+fn human_std_module_index_debug_hash(
+    view: &HumanStdModuleIndexDebugView,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_HUMAN_MODULE_INDEX_DEBUG_TAG);
+    encode_name(&mut out, &view.module)?;
+    encode_uvar(&mut out, view.entries.len() as u64);
+    for entry in &view.entries {
+        out.extend(human_std_theorem_search_entry_canonical_bytes(entry)?);
+    }
+    Ok(sha256(&out))
+}
+
+fn human_std_module_axioms_debug_hash(
+    view: &HumanStdModuleAxiomsDebugView,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_HUMAN_MODULE_AXIOMS_DEBUG_TAG);
+    encode_name(&mut out, &view.module)?;
+    encode_hash(&mut out, &view.export_hash);
+    encode_hash(&mut out, &view.certificate_hash);
+    encode_uvar(&mut out, view.module_axioms.len() as u64);
+    for axiom in &view.module_axioms {
+        out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
+    }
+    encode_uvar(&mut out, view.transitive_axioms.len() as u64);
+    for axiom in &view.transitive_axioms {
+        out.extend(machine_std_axiom_ref_canonical_bytes(axiom)?);
+    }
+    Ok(sha256(&out))
+}
+
+fn human_std_module_graph_debug_hash(
+    view: &HumanStdModuleGraphDebugView,
+) -> Result<Hash, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_HUMAN_MODULE_GRAPH_DEBUG_TAG);
+    encode_name(&mut out, &view.module)?;
+    encode_uvar(&mut out, view.edges.len() as u64);
+    for edge in &view.edges {
+        out.extend(human_std_dependency_edge_canonical_bytes(edge)?);
+    }
+    Ok(sha256(&out))
+}
+
+fn human_std_dependency_edge_canonical_bytes(
+    edge: &HumanStdDependencyEdge,
+) -> Result<Vec<u8>, MachineStdCanonicalBytesError> {
+    let mut out = Vec::new();
+    encode_string(&mut out, STD_HUMAN_MODULE_GRAPH_EDGE_TAG);
+    out.extend(machine_std_global_ref_canonical_bytes(&edge.source)?);
+    out.push(human_std_dependency_kind_byte(edge.kind));
+    match &edge.target {
+        HumanStdDependencyTarget::GlobalRef(target) => {
+            out.push(0x00);
+            out.extend(machine_std_global_ref_view_canonical_bytes(target)?);
+        }
+        HumanStdDependencyTarget::Axiom(target) => {
+            out.push(0x01);
+            out.extend(machine_std_axiom_ref_canonical_bytes(target)?);
+        }
+    }
+    Ok(out)
 }
 
 pub fn validate_machine_std_mvp_optional_prompt_metadata(
@@ -3530,6 +3901,149 @@ fn finalized_theorem_attributes(modes: &[MachineTheoremMode]) -> Vec<MachineStdA
         attributes.push(MachineStdAttribute::Apply);
     }
     attributes
+}
+
+fn human_std_theorem_categories(entry: &MachineStdTheoremEntry) -> Vec<HumanStdTheoremCategory> {
+    let mut categories = Vec::new();
+    if entry.modes.contains(&MachineTheoremMode::Exact) {
+        categories.push(HumanStdTheoremCategory::Exact);
+    }
+    if entry.modes.contains(&MachineTheoremMode::Apply) {
+        categories.push(HumanStdTheoremCategory::Apply);
+    }
+    if entry.modes.contains(&MachineTheoremMode::Rw) {
+        categories.push(HumanStdTheoremCategory::Rw);
+    }
+    if entry.modes.contains(&MachineTheoremMode::Simp) {
+        categories.push(HumanStdTheoremCategory::Simp);
+    }
+    let name = entry.global_ref.name.as_dotted();
+    if human_std_intro_theorem_name(&name) {
+        categories.push(HumanStdTheoremCategory::Intro);
+    }
+    if human_std_elim_theorem_name(&name) {
+        categories.push(HumanStdTheoremCategory::Elim);
+    }
+    categories.sort();
+    categories.dedup();
+    categories
+}
+
+fn human_std_intro_theorem_name(name: &str) -> bool {
+    name.ends_with(".intro")
+}
+
+fn human_std_elim_theorem_name(name: &str) -> bool {
+    name.ends_with(".elim") || name == "absurd"
+}
+
+fn human_std_display_attributes(
+    categories: &[HumanStdTheoremCategory],
+) -> Vec<HumanStdTheoremDisplayAttribute> {
+    let mut attributes = Vec::new();
+    if categories.contains(&HumanStdTheoremCategory::Simp) {
+        attributes.push(HumanStdTheoremDisplayAttribute::Simp);
+    }
+    if categories.contains(&HumanStdTheoremCategory::Rw) {
+        attributes.push(HumanStdTheoremDisplayAttribute::Rw);
+    }
+    if categories.contains(&HumanStdTheoremCategory::Apply) {
+        attributes.push(HumanStdTheoremDisplayAttribute::Apply);
+    }
+    if categories.contains(&HumanStdTheoremCategory::Intro) {
+        attributes.push(HumanStdTheoremDisplayAttribute::Intro);
+    }
+    if categories.contains(&HumanStdTheoremCategory::Elim) {
+        attributes.push(HumanStdTheoremDisplayAttribute::Elim);
+    }
+    attributes
+}
+
+fn human_std_suggested_tactics(
+    entry: &MachineStdTheoremEntry,
+    categories: &[HumanStdTheoremCategory],
+) -> Vec<String> {
+    let name = entry.global_ref.name.as_dotted();
+    let mut tactics = Vec::new();
+    for category in categories {
+        match category {
+            HumanStdTheoremCategory::Exact => {}
+            HumanStdTheoremCategory::Apply
+            | HumanStdTheoremCategory::Intro
+            | HumanStdTheoremCategory::Elim => tactics.push(format!("apply {name}")),
+            HumanStdTheoremCategory::Rw => tactics.push(format!("rw [{name}]")),
+            HumanStdTheoremCategory::Simp => tactics.push("simp-lite".to_owned()),
+        }
+    }
+    tactics.sort();
+    tactics.dedup();
+    tactics
+}
+
+fn human_std_proof_term_size(
+    loaded: &MachineStdLoadedRelease,
+    entry: &MachineStdTheoremEntry,
+) -> Result<Option<u64>, MachineStdTheoremIndexError> {
+    let Some(module) = loaded.module(&entry.global_ref.module) else {
+        return Err(MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: entry.global_ref.module.clone(),
+        });
+    };
+    let Some(decl) = module.verified_module.declarations().iter().find(|decl| {
+        decl.hashes.decl_interface_hash == entry.global_ref.decl_interface_hash
+            && std_library_decl_name(module, decl).as_ref() == Some(&entry.global_ref.name)
+    }) else {
+        return Err(MachineStdTheoremIndexError::InvalidGlobalRef {
+            module: entry.global_ref.module.clone(),
+        });
+    };
+    let DeclPayload::Theorem { proof, .. } = &decl.decl else {
+        return Ok(None);
+    };
+    human_std_reachable_term_size(module, *proof).map(Some)
+}
+
+fn human_std_reachable_term_size(
+    module: &MachineStdLoadedModule,
+    root: TermId,
+) -> Result<u64, MachineStdTheoremIndexError> {
+    fn visit(
+        module: &MachineStdLoadedModule,
+        term: TermId,
+        seen: &mut BTreeSet<TermId>,
+    ) -> Result<(), MachineStdTheoremIndexError> {
+        if !seen.insert(term) {
+            return Ok(());
+        }
+        let node = module
+            .verified_module
+            .term_table()
+            .get(term)
+            .ok_or_else(|| MachineStdTheoremIndexError::InvalidTermRef {
+                module: module.module.clone(),
+            })?;
+        match node {
+            TermNode::Sort(_) | TermNode::BVar(_) | TermNode::Const { .. } => {}
+            TermNode::App(fun, arg) => {
+                visit(module, *fun, seen)?;
+                visit(module, *arg, seen)?;
+            }
+            TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+                visit(module, *ty, seen)?;
+                visit(module, *body, seen)?;
+            }
+            TermNode::Let { ty, value, body } => {
+                visit(module, *ty, seen)?;
+                visit(module, *value, seen)?;
+                visit(module, *body, seen)?;
+            }
+        }
+        Ok(())
+    }
+
+    let mut seen = BTreeSet::new();
+    visit(module, root, &mut seen)?;
+    Ok(seen.len() as u64)
 }
 
 fn generate_machine_std_theorem_entry(
@@ -9487,6 +10001,35 @@ fn theorem_attribute_byte(attribute: MachineStdAttribute) -> u8 {
     }
 }
 
+fn human_std_theorem_category_byte(category: HumanStdTheoremCategory) -> u8 {
+    match category {
+        HumanStdTheoremCategory::Exact => 0x00,
+        HumanStdTheoremCategory::Apply => 0x01,
+        HumanStdTheoremCategory::Rw => 0x02,
+        HumanStdTheoremCategory::Simp => 0x03,
+        HumanStdTheoremCategory::Intro => 0x04,
+        HumanStdTheoremCategory::Elim => 0x05,
+    }
+}
+
+fn human_std_display_attribute_byte(attribute: HumanStdTheoremDisplayAttribute) -> u8 {
+    match attribute {
+        HumanStdTheoremDisplayAttribute::Simp => 0x00,
+        HumanStdTheoremDisplayAttribute::Rw => 0x01,
+        HumanStdTheoremDisplayAttribute::Apply => 0x02,
+        HumanStdTheoremDisplayAttribute::Intro => 0x03,
+        HumanStdTheoremDisplayAttribute::Elim => 0x04,
+    }
+}
+
+fn human_std_dependency_kind_byte(kind: HumanStdDependencyKind) -> u8 {
+    match kind {
+        HumanStdDependencyKind::StatementHead => 0x00,
+        HumanStdDependencyKind::StatementConstant => 0x01,
+        HumanStdDependencyKind::AxiomDependency => 0x02,
+    }
+}
+
 fn rewrite_safety_byte(safety: MachineStdRewriteSafety) -> u8 {
     match safety {
         MachineStdRewriteSafety::SimpSafe => 0x00,
@@ -11684,6 +12227,166 @@ mod tests {
         .unwrap();
         assert_eq!(module_artifact(&release, "Std.Nat").simp_rule_count, 8);
         assert_eq!(module_artifact(&release, "Std.List").simp_rule_count, 10);
+    }
+
+    #[test]
+    fn human_theorem_index_search_view_derives_categories_from_verified_std_artifacts() {
+        let package = TestPackage::new("human_theorem_index_search_view_categories");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (_, _, theorem_index, _, _, _) = final_sidecar_artifacts_for_loaded(&loaded);
+
+        let human_view = generate_human_std_theorem_search_view(&loaded, &theorem_index).unwrap();
+        assert_eq!(human_view.library_profile_id, STD_LIBRARY_PROFILE_ID);
+        assert_eq!(
+            human_view.debug_hash,
+            human_std_theorem_search_view_hash(&human_view).unwrap()
+        );
+
+        let nat_add_zero = human_theorem_search_entry(&human_view, "Nat.add_zero");
+        assert_eq!(
+            nat_add_zero.global_ref,
+            theorem_index_entry(&theorem_index, "Nat.add_zero").global_ref
+        );
+        for category in [
+            HumanStdTheoremCategory::Exact,
+            HumanStdTheoremCategory::Rw,
+            HumanStdTheoremCategory::Simp,
+        ] {
+            assert!(nat_add_zero.categories.contains(&category));
+        }
+        assert!(nat_add_zero
+            .display_attributes
+            .contains(&HumanStdTheoremDisplayAttribute::Simp));
+        assert!(nat_add_zero
+            .suggested_tactics
+            .contains(&"rw [Nat.add_zero]".to_owned()));
+        assert!(nat_add_zero
+            .suggested_tactics
+            .contains(&"simp-lite".to_owned()));
+        assert!(nat_add_zero.proof_term_size.is_some_and(|size| size > 0));
+        assert_eq!(
+            theorem_index_entry(&theorem_index, "Nat.add_zero").proof_term_size,
+            None,
+            "AI theorem index keeps proof_term_size null"
+        );
+
+        let list_append_nil = human_theorem_search_entry(&human_view, "List.append_nil");
+        for category in [
+            HumanStdTheoremCategory::Exact,
+            HumanStdTheoremCategory::Rw,
+            HumanStdTheoremCategory::Simp,
+        ] {
+            assert!(list_append_nil.categories.contains(&category));
+        }
+        assert!(list_append_nil
+            .suggested_tactics
+            .contains(&"rw [List.append_nil]".to_owned()));
+        assert!(list_append_nil
+            .suggested_tactics
+            .contains(&"simp-lite".to_owned()));
+
+        let eq_trans = human_theorem_search_entry(&human_view, "Eq.trans");
+        assert!(eq_trans
+            .categories
+            .contains(&HumanStdTheoremCategory::Apply));
+        assert!(!eq_trans.categories.contains(&HumanStdTheoremCategory::Rw));
+        assert!(!eq_trans.categories.contains(&HumanStdTheoremCategory::Simp));
+        assert_eq!(eq_trans.suggested_tactics, vec!["apply Eq.trans"]);
+
+        let false_elim = human_theorem_search_entry(&human_view, "False.elim");
+        assert!(false_elim
+            .categories
+            .contains(&HumanStdTheoremCategory::Elim));
+        assert!(false_elim
+            .display_attributes
+            .contains(&HumanStdTheoremDisplayAttribute::Elim));
+        assert!(false_elim
+            .suggested_tactics
+            .contains(&"apply False.elim".to_owned()));
+    }
+
+    #[test]
+    fn human_theorem_index_debug_views_are_per_module_and_do_not_extend_machine_schema() {
+        let package = TestPackage::new("human_theorem_index_debug_views");
+        let certs = mvp_certificate_bytes_with_m5_profiles();
+        write_mvp_package(package.path(), &certs);
+        let loaded =
+            load_machine_std_mvp_certificates_for_manifest_validation(package.path()).unwrap();
+        let (release, _, theorem_index, _, _, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        let release_hash = machine_std_library_release_hash(&release).unwrap();
+        let human_view = generate_human_std_theorem_search_view(&loaded, &theorem_index).unwrap();
+        let debug_views =
+            generate_human_std_module_debug_views(&loaded, &human_view, &axiom_report).unwrap();
+
+        assert_eq!(
+            debug_views
+                .iter()
+                .map(|view| view.module.as_dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"]
+        );
+        let nat_debug = human_module_debug_view(&debug_views, "Std.Nat");
+        assert!(nat_debug
+            .index
+            .entries
+            .iter()
+            .any(|entry| entry.global_ref.name == Name::from_dotted("Nat.add_zero")));
+        assert!(nat_debug.graph.edges.iter().any(|edge| {
+            edge.source.name == Name::from_dotted("Nat.add_zero")
+                && matches!(
+                    edge.kind,
+                    HumanStdDependencyKind::StatementHead
+                        | HumanStdDependencyKind::StatementConstant
+                        | HumanStdDependencyKind::AxiomDependency
+                )
+        }));
+        for view in &debug_views {
+            assert_ne!(view.index.debug_hash, [0; 32]);
+            assert_ne!(view.axioms.debug_hash, [0; 32]);
+            assert_ne!(view.graph.debug_hash, [0; 32]);
+            assert!(view
+                .axioms
+                .module_axioms
+                .iter()
+                .chain(view.axioms.transitive_axioms.iter())
+                .all(|axiom| axiom.name == Name::from_dotted("Eq.rec")));
+        }
+
+        let theorem_index_json = theorem_index_json(&theorem_index);
+        for human_only_field in ["categories", "suggested_tactics", "debug_hash"] {
+            assert!(
+                !theorem_index_json.contains(human_only_field),
+                "MachineStdTheoremIndex JSON must stay separate from Human debug schema"
+            );
+        }
+        assert!(human_view
+            .entries
+            .iter()
+            .any(|entry| !entry.suggested_tactics.is_empty()));
+
+        write_poison_human_std_source_and_debug_files(package.path());
+        let loaded_after = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let (release_after, _, theorem_index_after, _, _, axiom_report_after) =
+            final_sidecar_artifacts_for_loaded(&loaded_after);
+        let human_view_after =
+            generate_human_std_theorem_search_view(&loaded_after, &theorem_index_after).unwrap();
+        let debug_views_after = generate_human_std_module_debug_views(
+            &loaded_after,
+            &human_view_after,
+            &axiom_report_after,
+        )
+        .unwrap();
+        assert_eq!(
+            machine_std_library_release_hash(&release_after).unwrap(),
+            release_hash,
+            "Human debug/source files must not become trusted release hash inputs"
+        );
+        assert_eq!(human_view_after.debug_hash, human_view.debug_hash);
+        assert_eq!(debug_views_after, debug_views);
     }
 
     #[test]
@@ -19237,6 +19940,26 @@ import Std.Nat
             .entries
             .iter()
             .position(|entry| entry.global_ref.name == Name::from_dotted(name))
+            .unwrap()
+    }
+
+    fn human_theorem_search_entry<'a>(
+        view: &'a HumanStdTheoremSearchView,
+        name: &str,
+    ) -> &'a HumanStdTheoremSearchEntry {
+        view.entries
+            .iter()
+            .find(|entry| entry.global_ref.name == Name::from_dotted(name))
+            .unwrap()
+    }
+
+    fn human_module_debug_view<'a>(
+        views: &'a [HumanStdModuleDebugViews],
+        module: &str,
+    ) -> &'a HumanStdModuleDebugViews {
+        views
+            .iter()
+            .find(|view| view.module == Name::from_dotted(module))
             .unwrap()
     }
 
