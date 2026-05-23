@@ -344,18 +344,18 @@ hash helper の機械的な codec fixture 共有は許容するが、fast verifi
 
 実装タスク:
 
-- [ ] import certificate store を source-free bytes / checked module interface から構築する。
-- [ ] normal mode で import `export_hash` を検査する。
-- [ ] high-trust mode で import `certificate_hash` と same-checker checked status を検査する。
-- [ ] import public environment を canonical order で現在 module environment に追加する。
-- [ ] missing import、export hash mismatch、certificate hash mismatch、duplicate import を deterministic error にする。
+- [x] import certificate store を source-free bytes / checked module interface から構築する。
+- [x] normal mode で import `export_hash` を検査する。
+- [x] high-trust mode で import `certificate_hash` と same-checker checked status を検査する。
+- [x] import public environment を canonical order で現在 module environment に追加する。
+- [x] missing import、export hash mismatch、certificate hash mismatch、duplicate import を deterministic error にする。
 
 受け入れ条件:
 
-- [ ] import name だけで解決しない。必ず `export_hash` を binding として使う。
-- [ ] high-trust mode では unchecked imported certificate を使えない。
-- [ ] import store は network、filesystem package discovery、remote import を実行しない。
-- [ ] imported axiom dependencies は hidden/private export filtering で消えない。
+- [x] import name だけで解決しない。必ず `export_hash` を binding として使う。
+- [x] high-trust mode では unchecked imported certificate を使えない。
+- [x] import store は network、filesystem package discovery、remote import を実行しない。
+- [x] imported axiom dependencies は hidden/private export filtering で消えない。
 
 検証:
 

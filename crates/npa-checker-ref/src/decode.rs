@@ -3,10 +3,12 @@ use std::collections::BTreeSet;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    ReferenceCertificateHeader, ReferenceCertificateSection, ReferenceCheckError,
-    ReferenceCheckReason, ReferenceDecodedCertificate, ReferenceDecodedCertificateCounts,
-    ReferenceHash, ReferenceHashObject, ReferenceModuleHashes, ReferenceModuleName,
-    REFERENCE_CERTIFICATE_FORMAT, REFERENCE_CORE_SPEC,
+    ReferenceAxiomDependency, ReferenceCertificateHeader, ReferenceCertificateSection,
+    ReferenceCheckError, ReferenceCheckReason, ReferenceCheckerPolicy, ReferenceDecodedCertificate,
+    ReferenceDecodedCertificateCounts, ReferenceExportKind, ReferenceHash, ReferenceHashObject,
+    ReferenceImportEntry, ReferenceImportEnvironment, ReferenceImportStore, ReferenceModuleHashes,
+    ReferenceModuleName, ReferencePublicEnvironment, ReferencePublicExport,
+    ReferenceResolvedImport, ReferenceTrustMode, REFERENCE_CERTIFICATE_FORMAT, REFERENCE_CORE_SPEC,
 };
 
 type DecodeResult<T> = Result<T, ReferenceCheckError>;
@@ -21,6 +23,24 @@ pub(crate) fn verify_certificate_hashes_impl(
     let cert = decode_module_certificate(bytes)?;
     cert.verify_hashes(bytes)?;
     Ok(cert.summary())
+}
+
+pub(crate) fn import_entry_from_source_free_certificate_impl(
+    bytes: &[u8],
+) -> DecodeResult<ReferenceImportEntry> {
+    let cert = decode_module_certificate(bytes)?;
+    cert.verify_hashes(bytes)?;
+    Ok(cert.import_entry(false))
+}
+
+pub(crate) fn build_import_environment_impl(
+    bytes: &[u8],
+    import_store: &ReferenceImportStore,
+    policy: &ReferenceCheckerPolicy,
+) -> DecodeResult<ReferenceImportEnvironment> {
+    let cert = decode_module_certificate(bytes)?;
+    cert.verify_hashes(bytes)?;
+    cert.build_import_environment(import_store, policy)
 }
 
 fn decode_module_certificate(bytes: &[u8]) -> DecodeResult<DecodedModuleCertificate> {
@@ -95,6 +115,72 @@ impl DecodedModuleCertificate {
             },
             self.hashes,
         )
+    }
+
+    fn import_entry(&self, checked_by_reference_checker: bool) -> ReferenceImportEntry {
+        ReferenceImportEntry::new(
+            self.header.module.clone(),
+            self.hashes.export_hash,
+            self.hashes.axiom_report_hash,
+            self.hashes.certificate_hash,
+            self.public_environment(),
+            checked_by_reference_checker,
+        )
+    }
+
+    fn public_environment(&self) -> ReferencePublicEnvironment {
+        let exports = self
+            .export_block
+            .iter()
+            .map(|entry| {
+                let entry = &entry.value;
+                ReferencePublicExport {
+                    name: self.name_table[entry.name].value.clone(),
+                    kind: match entry.kind {
+                        ExportKind::Axiom => ReferenceExportKind::Axiom,
+                        ExportKind::Def => ReferenceExportKind::Def,
+                        ExportKind::Theorem => ReferenceExportKind::Theorem,
+                        ExportKind::Inductive => ReferenceExportKind::Inductive,
+                        ExportKind::Constructor => ReferenceExportKind::Constructor,
+                        ExportKind::Recursor => ReferenceExportKind::Recursor,
+                    },
+                    decl_interface_hash: entry.decl_interface_hash,
+                    axiom_dependencies: self.public_axiom_dependencies(&entry.axiom_dependencies),
+                }
+            })
+            .collect();
+        ReferencePublicEnvironment::new(
+            exports,
+            self.public_axiom_dependencies(&self.axiom_report.module_axioms),
+        )
+    }
+
+    fn public_axiom_dependencies(&self, axioms: &[AxiomRef]) -> Vec<ReferenceAxiomDependency> {
+        axioms
+            .iter()
+            .map(|axiom| ReferenceAxiomDependency {
+                name: self.name_table[axiom.name].value.clone(),
+                decl_interface_hash: axiom.decl_interface_hash,
+            })
+            .collect()
+    }
+
+    fn build_import_environment(
+        &self,
+        import_store: &ReferenceImportStore,
+        policy: &ReferenceCheckerPolicy,
+    ) -> DecodeResult<ReferenceImportEnvironment> {
+        let mut resolved = Vec::with_capacity(self.imports.len());
+        for requested in &self.imports {
+            let entry = resolve_import(requested, import_store, policy)?;
+            resolved.push(ReferenceResolvedImport {
+                module: entry.module().clone(),
+                export_hash: *entry.export_hash(),
+                certificate_hash: *entry.certificate_hash(),
+                public_environment: entry.public_environment().clone(),
+            });
+        }
+        Ok(ReferenceImportEnvironment::new(resolved))
     }
 
     fn verify_hashes(&self, bytes: &[u8]) -> DecodeResult<()> {
@@ -322,6 +408,16 @@ impl DecodedModuleCertificate {
     }
 
     fn validate_import_order(&self) -> DecodeResult<()> {
+        let mut seen = BTreeSet::new();
+        for import in &self.imports {
+            if !seen.insert((import.value.module.clone(), import.value.export_hash)) {
+                return Err(ReferenceCheckError::import_resolution(
+                    ReferenceCertificateSection::Imports,
+                    import.offset,
+                    ReferenceCheckReason::DuplicateImport,
+                ));
+            }
+        }
         for pair in self.imports.windows(2) {
             let previous = import_order_key(&pair[0].value);
             let current = import_order_key(&pair[1].value);
@@ -1173,6 +1269,81 @@ impl DecodedModuleCertificate {
             ))
         }
     }
+}
+
+fn resolve_import<'a>(
+    requested: &Located<ImportEntry>,
+    import_store: &'a ReferenceImportStore,
+    policy: &ReferenceCheckerPolicy,
+) -> DecodeResult<&'a ReferenceImportEntry> {
+    let same_module = import_store
+        .entries()
+        .iter()
+        .filter(|entry| entry.module() == &requested.value.module)
+        .collect::<Vec<_>>();
+    if same_module.is_empty() {
+        return Err(ReferenceCheckError::import_resolution(
+            ReferenceCertificateSection::Imports,
+            requested.offset,
+            ReferenceCheckReason::MissingImport,
+        ));
+    }
+
+    let same_export = same_module
+        .into_iter()
+        .filter(|entry| *entry.export_hash() == requested.value.export_hash)
+        .collect::<Vec<_>>();
+    if same_export.is_empty() {
+        return Err(ReferenceCheckError::import_resolution(
+            ReferenceCertificateSection::Imports,
+            requested.offset,
+            ReferenceCheckReason::ImportExportHashMismatch,
+        ));
+    }
+    if same_export.len() > 1 {
+        return Err(ReferenceCheckError::import_resolution(
+            ReferenceCertificateSection::Imports,
+            requested.offset,
+            ReferenceCheckReason::DuplicateImport,
+        ));
+    }
+
+    let entry = same_export[0];
+    if let Some(certificate_hash) = requested.value.certificate_hash {
+        if *entry.certificate_hash() != certificate_hash {
+            return Err(ReferenceCheckError::import_resolution(
+                ReferenceCertificateSection::Imports,
+                requested.offset,
+                ReferenceCheckReason::ImportCertificateHashMismatch,
+            ));
+        }
+    }
+
+    if policy.trust_mode == ReferenceTrustMode::HighTrust {
+        let Some(certificate_hash) = requested.value.certificate_hash else {
+            return Err(ReferenceCheckError::import_resolution(
+                ReferenceCertificateSection::Imports,
+                requested.offset,
+                ReferenceCheckReason::MissingImportCertificateHash,
+            ));
+        };
+        if *entry.certificate_hash() != certificate_hash {
+            return Err(ReferenceCheckError::import_resolution(
+                ReferenceCertificateSection::Imports,
+                requested.offset,
+                ReferenceCheckReason::ImportCertificateHashMismatch,
+            ));
+        }
+        if !entry.checked_by_reference_checker() {
+            return Err(ReferenceCheckError::import_resolution(
+                ReferenceCertificateSection::Imports,
+                requested.offset,
+                ReferenceCheckReason::UncheckedImport,
+            ));
+        }
+    }
+
+    Ok(entry)
 }
 
 #[derive(Default)]
