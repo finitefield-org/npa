@@ -10783,6 +10783,7 @@ mod tests {
         let readme = include_str!(concat!("../../../", "README.md"));
         let human_doc = include_str!(concat!("../../../doc/", "pha", "se6-human.md"));
         let ai_doc = include_str!(concat!("../../../doc/", "pha", "se6-ai.md"));
+        let todo_doc = include_str!(concat!("../../../doc/", "pha", "se6-human-todo.md"));
 
         for module in ["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"] {
             assert_doc_contains(readme, module);
@@ -10803,6 +10804,14 @@ mod tests {
         }
 
         for text in ["Eq.rec", "Std.Nat.Basic", "Std.Logic.Eq"] {
+            assert_doc_contains(human_doc, text);
+            assert_doc_contains(ai_doc, text);
+        }
+        for text in [
+            "imported Std.Logic Eq.rec",
+            "module_axioms",
+            "transitive_axioms",
+        ] {
             assert_doc_contains(human_doc, text);
             assert_doc_contains(ai_doc, text);
         }
@@ -10828,9 +10837,18 @@ mod tests {
             "std.list.mvp",
             "std.all.mvp",
             "release/build artifact",
+            "source layout fixtures",
         ] {
             assert_doc_contains(readme, text);
         }
+        for text in [
+            "source skeleton",
+            "Rust core-module builders",
+            "module membership / import intent",
+        ] {
+            assert_doc_contains(human_doc, text);
+        }
+        assert_doc_contains(todo_doc, "source package skeleton");
     }
 
     #[test]

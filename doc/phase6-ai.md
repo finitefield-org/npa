@@ -2302,14 +2302,14 @@ Std.Logic:
   module_axioms = [] or [Eq.rec] when Eq.rec is emitted as the kernel standard axiom export
   transitive_axioms = [] or [Eq.rec] when Eq.rec is emitted as the kernel standard axiom export
 Std.Nat:
-  module_axioms = []
-  transitive_axioms = [] or [Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
+  module_axioms = [] or [imported Std.Logic Eq.rec] when the module's checked proof terms use the kernel standard axiom
+  transitive_axioms = [] or [imported Std.Logic Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
 Std.List:
-  module_axioms = []
-  transitive_axioms = [] or [Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
+  module_axioms = [] or [imported Std.Logic Eq.rec] when the module's checked proof terms use the kernel standard axiom
+  transitive_axioms = [] or [imported Std.Logic Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
 Std.Algebra.Basic:
-  module_axioms = []
-  transitive_axioms = [] or [Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
+  module_axioms = [] or [imported Std.Logic Eq.rec] when the module's checked proof terms use the kernel standard axiom
+  transitive_axioms = [] or [imported Std.Logic Eq.rec] when Std.Logic exports Eq.rec as the kernel standard axiom
 ```
 
 Any other `AxiomDecl` in these modules is invalid unless the module is explicitly listed as an axiom module in the release profile.
@@ -2334,7 +2334,8 @@ transitive_axioms:
 Both lists use `MachineStdAxiomRef canonical order`.
 Duplicate or non-canonical `module_axioms` / `transitive_axioms` arrays are `InvalidStdAxiomPolicy`.
 Validators must not sort or deduplicate a malformed axiom report before recomputing `axiom_report_hash`.
-MVP no-custom-axiom validation requires both `module_axioms` and `transitive_axioms` to be `[]` for every release module.
+MVP no-custom-axiom validation requires both `module_axioms` and `transitive_axioms` to contain no axiom except the exact
+kernel-standard `Std.Logic` `Eq.rec` exception and verifier-derived imported projections of that same axiom.
 Any mismatch with verifier-derived projection is `InvalidStdAxiomPolicy`.
 `module_axioms` is not recomputed from public exports, owned `AxiomDecl` declarations, theorem-index entries, or prompt metadata.
 It is derived from the verifier's module-level axiom report payload so imported/private axiom dependencies used by the module
@@ -2624,7 +2625,7 @@ Audit checks:
 - SimpSafe descriptors satisfy the fixed Phase 6 simp lint and RwOnly descriptors are excluded from simp profiles
 - std.all.rw and std.all.simp revalidate under std.all.mvp and match their source-profile targets
 - constructive bundles have no custom allow_axioms, with only the standard Eq.rec exception when applicable
-- every module in a constructive bundle closure has empty module_axioms and transitive_axioms, except the transitive standard Eq.rec exception when applicable
+- every module in a constructive bundle closure has no custom module_axioms or transitive_axioms; the only allowed entry is the exact standard Eq.rec exception when applicable
 - import bundles are minimal transitive closures
 ```
 
@@ -2718,8 +2719,8 @@ no axiom:
   axiom report modules exactly match release modules
   reordered or duplicate axiom report modules are rejected as InvalidStdAxiomPolicy
   duplicate or non-canonical module_axioms/transitive_axioms arrays are rejected as InvalidStdAxiomPolicy
-  module_axioms and transitive_axioms are both empty for every MVP module,
-  except the exact kernel-standard Std.Logic Eq.rec exception and its transitive projection when applicable
+  module_axioms and transitive_axioms contain no custom axiom for every MVP module,
+  except the exact kernel-standard Std.Logic Eq.rec exception and verifier-derived imported/transitive projections when applicable
   transitive_axioms mismatch with verifier-derived import closure rejects release
 
 simp profile:
@@ -3004,7 +3005,7 @@ Implementation entrypoints:
 ```text
 - protocol_version / library_profile_id / core_spec_id / kernel_semantics_profile_id mismatch を拒否できる
 - MachineStdLibraryRelease が std_library_release_hash field を持つ場合に unknown field として拒否できる
-- module_axioms と transitive_axioms が MVP では全 module で空であることを検査できる
+- module_axioms と transitive_axioms が MVP では exact Std.Logic Eq.rec exception 以外を含まないことを検査できる
 - stale MachineStdAxiomReport.axiom_report_hash を InvalidStdAxiomPolicy として manifest comparison 前に拒否できる
 - manifest-bound sidecar hash mismatch を InvalidStdLibraryRelease として分類できる
 ```
