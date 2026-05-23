@@ -3851,6 +3851,18 @@ impl IndependentCheckerNormalizedDisagreement {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerNormalizedDisagreementReport {
+    pub normalized_result_hash: Hash,
+    pub module: String,
+    pub declaration: Option<String>,
+    pub field: String,
+    pub checker_profile: String,
+    pub baseline_checker_profile: Option<String>,
+    pub certificate_hash: Hash,
+    pub comparison_status: IndependentCheckerNormalizedComparisonStatus,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndependentCheckerNormalizedStatusReason {
     pub kind: String,
     pub error_kind: String,
@@ -9468,6 +9480,73 @@ pub fn independent_checker_compare_normalized_result(
     }
 }
 
+pub fn independent_checker_normalized_result_passes_ci_gate(
+    policy: &IndependentCheckerRunnerPolicy,
+    normalized_result: &IndependentCheckerNormalizedCheckResult,
+    machine_results: &[IndependentCheckerMachineCheckResult],
+) -> bool {
+    let validation = independent_checker_compare_normalized_result(policy, normalized_result);
+    if validation.status != IndependentCheckerCompareValidationStatus::Valid
+        || validation.recomputed_comparison_status
+            != Some(IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked)
+    {
+        return false;
+    }
+    normalized_result.results.iter().all(|entry| {
+        machine_results
+            .iter()
+            .filter(|result| {
+                independent_checker_normalized_entry_matches_machine_result(entry, result)
+            })
+            .count()
+            == 1
+    })
+}
+
+pub fn independent_checker_normalized_disagreement_reports(
+    normalized_result: &IndependentCheckerNormalizedCheckResult,
+) -> Vec<IndependentCheckerNormalizedDisagreementReport> {
+    let normalized_result_hash = normalized_result.normalized_result_hash();
+    normalized_result
+        .comparison
+        .disagreements
+        .iter()
+        .map(|disagreement| {
+            let actual_entry = normalized_result
+                .results
+                .iter()
+                .find(|entry| entry.checker_profile == disagreement.checker_profile);
+            let baseline_entry =
+                disagreement
+                    .baseline_checker_profile
+                    .as_ref()
+                    .and_then(|profile| {
+                        normalized_result
+                            .results
+                            .iter()
+                            .find(|entry| &entry.checker_profile == profile)
+                    });
+            IndependentCheckerNormalizedDisagreementReport {
+                normalized_result_hash,
+                module: normalized_result.artifact.module.clone(),
+                declaration: actual_entry
+                    .and_then(independent_checker_normalized_entry_declaration)
+                    .or_else(|| {
+                        baseline_entry.and_then(independent_checker_normalized_entry_declaration)
+                    }),
+                field: disagreement.field.clone(),
+                checker_profile: disagreement.checker_profile.clone(),
+                baseline_checker_profile: disagreement.baseline_checker_profile.clone(),
+                certificate_hash: actual_entry
+                    .and_then(|entry| entry.certificate_hash)
+                    .or_else(|| baseline_entry.and_then(|entry| entry.certificate_hash))
+                    .unwrap_or(normalized_result.artifact.expected_certificate_hash),
+                comparison_status: normalized_result.comparison.status,
+            }
+        })
+        .collect()
+}
+
 pub fn parse_independent_checker_release_policy(
     source: &str,
 ) -> Result<IndependentCheckerReleasePolicy, IndependentCheckerPolicyValidationError> {
@@ -12035,6 +12114,30 @@ fn independent_checker_normalized_entry_from_machine_result(
         error: result.error.clone(),
         failure_key,
     }
+}
+
+fn independent_checker_normalized_entry_matches_machine_result(
+    entry: &IndependentCheckerNormalizedCheckResultEntry,
+    result: &IndependentCheckerMachineCheckResult,
+) -> bool {
+    let expected =
+        independent_checker_normalized_entry_from_machine_result(result, entry.artifact_hash);
+    entry == &expected
+}
+
+fn independent_checker_normalized_entry_declaration(
+    entry: &IndependentCheckerNormalizedCheckResultEntry,
+) -> Option<String> {
+    entry
+        .failure_key
+        .as_ref()
+        .and_then(|failure_key| failure_key.declaration.clone())
+        .or_else(|| {
+            entry
+                .error
+                .as_ref()
+                .and_then(|error| error.declaration.clone())
+        })
 }
 
 fn independent_checker_assert_normalized_entry_source_copy(
@@ -30242,6 +30345,290 @@ mod tests {
             Some(IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked)
         );
         assert!(!failed.canonical_json().contains("\"result_hash\":"));
+    }
+
+    #[test]
+    fn independent_checker_normalized_p8h11_ci_gate_required_order_and_optional_missing() {
+        let policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_p8h11_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_p8h11_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_p8h11_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_p8h11_fast");
+        let reference_result = m4_checked_result(&reference.request, &policy, "mchkres_p8h11_ref");
+        let external_result = m4_checked_result(&external.request, &policy, "mchkres_p8h11_ext");
+        let machine_results = vec![
+            external_result.clone(),
+            reference_result.clone(),
+            fast_result.clone(),
+        ];
+        let normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_ci",
+            "normerr_Std.Nat_p8h11_ci",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &machine_results,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized
+                .results
+                .iter()
+                .map(|entry| entry.checker_profile.as_str())
+                .collect::<Vec<_>>(),
+            vec!["fast-kernel", "reference", "external"]
+        );
+        assert_eq!(
+            normalized.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked
+        );
+        assert!(independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &normalized,
+            &machine_results
+        ));
+
+        let pr_policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        let pr_reference = m4_stored_request(&pr_policy, "reference", "mchkreq_p8h11_pr_ref");
+        let pr_request_store = m4_request_store_manifest(std::slice::from_ref(&pr_reference));
+        let pr_reference_result =
+            m4_checked_result(&pr_reference.request, &pr_policy, "mchkres_p8h11_pr_ref");
+        let pr_normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_pr",
+            "normerr_Std.Nat_p8h11_pr",
+            &pr_policy,
+            &pr_request_store,
+            std::slice::from_ref(&pr_reference),
+            std::slice::from_ref(&pr_reference_result),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            pr_normalized.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked
+        );
+        assert!(independent_checker_normalized_result_passes_ci_gate(
+            &pr_policy,
+            &pr_normalized,
+            std::slice::from_ref(&pr_reference_result)
+        ));
+
+        let pr_external = m4_stored_request(&pr_policy, "external", "mchkreq_p8h11_pr_ext");
+        let pr_external_store = m4_request_store_manifest(std::slice::from_ref(&pr_external));
+        let pr_external_result =
+            m4_checked_result(&pr_external.request, &pr_policy, "mchkres_p8h11_pr_ext");
+        let missing_required = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_missing",
+            "normerr_Std.Nat_p8h11_missing",
+            &pr_policy,
+            &pr_external_store,
+            std::slice::from_ref(&pr_external),
+            std::slice::from_ref(&pr_external_result),
+            Some(IndependentCheckerArtifactSelector {
+                module: "Std.Nat".to_owned(),
+                request_hash: pr_external.request.request_hash(),
+            }),
+        )
+        .unwrap();
+        assert_eq!(
+            missing_required.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::MissingCheckerResult
+        );
+        assert_eq!(
+            missing_required.comparison.missing_checker_profiles,
+            vec!["reference".to_owned()]
+        );
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &pr_policy,
+            &missing_required,
+            std::slice::from_ref(&pr_external_result)
+        ));
+    }
+
+    #[test]
+    fn independent_checker_normalized_p8h11_hash_mismatch_and_status_override_do_not_pass() {
+        let policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_p8h11_hash_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_p8h11_hash_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_p8h11_hash_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_p8h11_hash_fast");
+        let reference_result =
+            m4_checked_result(&reference.request, &policy, "mchkres_p8h11_hash_ref");
+        let external_result =
+            m4_checked_result(&external.request, &policy, "mchkres_p8h11_hash_ext");
+        let machine_results = vec![
+            fast_result.clone(),
+            reference_result.clone(),
+            external_result.clone(),
+        ];
+        let normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_hash",
+            "normerr_Std.Nat_p8h11_hash",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &machine_results,
+            None,
+        )
+        .unwrap();
+        assert!(independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &normalized,
+            &machine_results
+        ));
+
+        let mut tampered_result_hash = normalized.clone();
+        tampered_result_hash.results[0].result_hash = test_hash(201);
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &tampered_result_hash,
+            &machine_results
+        ));
+
+        let mut tampered_policy_hash = normalized.clone();
+        tampered_policy_hash.policy.hash = test_hash(202);
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &tampered_policy_hash,
+            &machine_results
+        ));
+
+        let mut ai_overridden_status = normalized.clone();
+        ai_overridden_status.comparison.status =
+            IndependentCheckerNormalizedComparisonStatus::Inconclusive;
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &ai_overridden_status,
+            &machine_results
+        ));
+
+        let mut divergent_reference_result = reference_result.clone();
+        divergent_reference_result.certificate_hash = Some(test_hash(204));
+        let divergent_machine_results = vec![
+            fast_result.clone(),
+            divergent_reference_result,
+            external_result.clone(),
+        ];
+        let mut sidecar_overridden_fields = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_source_copy",
+            "normerr_Std.Nat_p8h11_source_copy",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &divergent_machine_results,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            sidecar_overridden_fields.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &sidecar_overridden_fields,
+            &divergent_machine_results
+        ));
+        {
+            let reference_entry = sidecar_overridden_fields
+                .results
+                .iter_mut()
+                .find(|entry| entry.checker_profile == "reference")
+                .unwrap();
+            reference_entry.certificate_hash = fast_result.certificate_hash;
+        }
+        sidecar_overridden_fields.comparison =
+            independent_checker_build_normalized_comparison(&policy, &sidecar_overridden_fields);
+        assert_eq!(
+            sidecar_overridden_fields.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked
+        );
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &sidecar_overridden_fields,
+            &divergent_machine_results
+        ));
+
+        let mut wrong_request_hash = reference_result.clone();
+        wrong_request_hash.request_hash = test_hash(203);
+        let err = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_bad_request",
+            "normerr_Std.Nat_p8h11_bad_request",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &[fast_result, wrong_request_hash, external_result],
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err.error().reason_code, "request_hash_not_found");
+    }
+
+    #[test]
+    fn phase9_independent_checker_normalized_p8h11_disagreement_report_has_repro_fields() {
+        let policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_p8h11_report_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_p8h11_report_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_p8h11_report_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+        let fast_result = m4_checked_result(&fast.request, &policy, "mchkres_p8h11_report_fast");
+        let reference_result = m5_failed_result(
+            &reference.request,
+            &policy,
+            "mchkres_p8h11_report_ref",
+            "Std.Nat.add_zero",
+        );
+        let external_result =
+            m4_checked_result(&external.request, &policy, "mchkres_p8h11_report_ext");
+        let machine_results = vec![fast_result, reference_result, external_result];
+        let normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_p8h11_report",
+            "normerr_Std.Nat_p8h11_report",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &machine_results,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            normalized.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &normalized,
+            &machine_results
+        ));
+        let reports = independent_checker_normalized_disagreement_reports(&normalized);
+        assert_eq!(reports.len(), 1);
+        assert_eq!(
+            reports[0].normalized_result_hash,
+            normalized.normalized_result_hash()
+        );
+        assert_eq!(reports[0].module, "Std.Nat");
+        assert_eq!(reports[0].declaration.as_deref(), Some("Std.Nat.add_zero"));
+        assert_eq!(reports[0].field, "status");
+        assert_eq!(reports[0].checker_profile, "reference");
+        assert_eq!(
+            reports[0].baseline_checker_profile.as_deref(),
+            Some("fast-kernel")
+        );
+        assert_eq!(reports[0].certificate_hash, test_hash(70));
+        assert_eq!(
+            reports[0].comparison_status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
     }
 
     fn m6_input_policy_json(
