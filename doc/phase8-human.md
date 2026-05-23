@@ -151,6 +151,50 @@ checker が読まないもの：
 checker が比較する対象は表示文字列ではなく、`statement_core_hash` と canonical core AST です。
 受理される certificate 側では `0` は `Nat.zero` への canonical `Const` 参照まで elaboration 済みでなければいけません。
 
+## 3.1 AI fast path との性能境界
+
+Phase 8 の independent checker / audit は、Phase 5 / Phase 7 の AI 向け候補生成 hot path に同期挿入しません。
+
+AI 向けの高速経路は次のままです。
+
+```text
+Machine Surface request
+  ↓
+Phase 5 machine session / tactic batch / replay / verify
+  ↓
+Phase 7 candidate ranking / repair / minimization
+  ↓
+closed certificate candidate
+```
+
+Phase 8 の reference / external checker、audit bundle、challenge replay、AI sidecar triage は次の場所で実行します。
+
+```text
+- CI / nightly / release / high-trust audit
+- explicit post-acceptance audit
+- background or cached audit sidecar generation
+- deterministic benchmark job
+```
+
+禁止すること：
+
+```text
+- tactic candidate expansion ごとに reference / external checker を同期実行する
+- Phase 5 verify response の前に AI sidecar / challenge generation を必須化する
+- search loop 内で Human source、audit bundle、external checker output を読む
+- premise retrieval を未生成の Phase 8 audit result で block する
+```
+
+許すこと：
+
+```text
+- 既に materialize 済みの certificate hash / NormalizedCheckResult / audit summary を cache key や ranking feature に使う
+- fast path で閉じた candidate を、後続の audit job に渡す
+- release / high-trust mode で Phase 8 audit 不一致を failure にする
+```
+
+この境界により、Phase 8 は accepted artifact の保証を強くしますが、AI 候補生成・batch replay・verify の通常 latency は増やしません。
+
 ---
 
 # 4. Reference checker
@@ -728,6 +772,10 @@ checker は policy file を受け取ります。
 }
 ```
 
+ただし現在の kernel が `Std.Logic.Eq.rec` を標準 recursor axiom として `AxiomDecl` 表現する場合だけ、
+高信頼標準ライブラリの policy はその exact `Std.Logic.Eq.rec` を標準例外として許可します。
+これは custom axiom を許す設定ではありません。
+
 検査結果：
 
 ```json
@@ -737,6 +785,10 @@ checker は policy file を受け取ります。
   "safe_for_high_trust": true
 }
 ```
+
+この例の `axioms_used = []` は no-custom-axiom の最小形です。
+現在の kernel が標準 `Eq.rec` を `AxiomDecl` として emit する場合、`axioms_used` は exact
+`Std.Logic.Eq.rec` だけを含んでよく、それ以外の axiom は failure です。
 
 禁止公理がある場合：
 
@@ -848,6 +900,10 @@ external checker の入力は限定します。
   ]
 }
 ```
+
+`allowed_axioms` は challenge owner が固定する policy です。
+標準 `Eq.rec` を axiom 表現する kernel で、その certificate が `Eq.rec` に依存する場合だけ、
+ここにも exact `Std.Logic.Eq.rec` を入れてよいです。
 
 external checker は、証明 certificate の theorem statement が challenge と一致するか検査します。
 
@@ -1117,6 +1173,7 @@ npa audit axioms build/Std/Nat.npcert --policy policies/std.json
 
 ```text
 allowed axioms = []
+or exactly [Std.Logic.Eq.rec] when the current kernel emits Eq.rec as the standard recursor axiom
 ```
 
 fail 条件：
@@ -1138,6 +1195,10 @@ fail 条件：
   "safe_for_high_trust": true
 }
 ```
+
+この出力例も no-custom-axiom の最小形です。
+標準 `Eq.rec` を `AxiomDecl` として emit する kernel では、exact `Std.Logic.Eq.rec` だけが
+`axioms_used` に出てよい標準例外です。
 
 ---
 
@@ -1269,10 +1330,11 @@ CI policy：
 
 ```text
 PR:
-  大幅な性能劣化があれば警告またはfail
+  fast kernel / Machine API / theorem index build / AI benchmark の大幅な性能劣化があれば警告またはfail
+  reference / external checker benchmark は PR の同期必須 job に入れず、別 job または cached audit result として扱う
 
 nightly:
-  詳細ベンチマークを記録
+  reference / external checker を含む詳細ベンチマークを記録
 
 release:
   基準値を超えたらfail
@@ -1320,10 +1382,13 @@ audit/Std.Nat/
 - reverse dependencies
 - fast kernel check
 - reference checker on changed certs
-- external checker on changed certs
+- external checker optional / on-demand only
 - axiom policy
 - basic tactic regression
 ```
+
+PR mode の required checker profile は速度重視で `reference` だけにし、external checker は nightly / release /
+high-trust mode の required profile として扱います。
 
 ## 14.2 Nightly mode
 
@@ -1365,7 +1430,7 @@ audit/Std.Nat/
 - source ignored
 - no network
 - no plugin
-- no custom axiom
+- no custom axiom; exact standard `Std.Logic.Eq.rec` exception only when the kernel emits it as a recursor axiom
 - no sorry
 - all imports recursively checked
 - at least two independent checkers required
@@ -1511,6 +1576,9 @@ POST /check/certificate
 }
 ```
 
+標準 `Eq.rec` を axiom 表現する kernel で `Std.Nat` certificate を検査する場合、この policy も
+exact `Std.Logic.Eq.rec` だけを許可できます。
+
 レスポンス：
 
 ```json
@@ -1551,7 +1619,13 @@ POST /check/audit_bundle
 
 # 18. 最小コマンド群
 
-Phase 8 MVP で用意するCLI：
+Phase 8 MVP で用意する target CLI contract：
+
+```text
+現リポジトリでは、同じ checker audit / normalization / release-audit contract を
+crates/npa-api の library API と deterministic tests で固定している。
+standalone `npa-checker-ref` / `npa-checker-ext` binary は後続 integration target。
+```
 
 ```bash
 npa cert check build/Std/Nat.npcert
@@ -1638,7 +1712,8 @@ Std.Algebra.Basic.npcert
 fast kernel OK
 reference checker OK
 external checker OK
-axioms_used = []
+axioms_used = [] or exact standard Std.Logic.Eq.rec only
+custom axioms = []
 ```
 
 ## 20.2 hash 改ざん
