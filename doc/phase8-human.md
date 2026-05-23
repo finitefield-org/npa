@@ -13,12 +13,13 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
 
 ```text
 - この文書は Phase 8 Human Profile の最終ターゲット設計を記述する
-- 現リポジトリで実装済みなのは crates/npa-api の Phase 8 checker audit automation
-  library substrate と、その deterministic fixture 群である
-- standalone reference / external checker binary、verified_high_trust artifact、
+- 現リポジトリで実装済みなのは crates/npa-checker-ref の standalone reference checker binary、
+  crates/npa-api の Phase 8 checker audit automation library substrate、
+  Phase 8 Release Audit fixture workflow である
+- standalone external checker binary、verified_high_trust artifact、
   full independent checker comparison CI はまだこの文書の integration target として扱う
 - 既存 GitHub Actions の Phase 9 Regression は Phase 9 完了後の回帰ゲートであり、
-  この文書が要求する full Phase 8 release audit CI の代替ではない
+  Phase 8 Release Audit fixture workflow の代替ではない
 - Phase 8 の automation が crates/npa-api に存在しても、trusted boundary は
   canonical certificate と checker result にあり、audit automation 自体は trusted base ではない
 ```
@@ -830,6 +831,10 @@ external checker は「運用上、本体から切り離されている検査器
 
 ## 10.2 external checker のCLI
 
+target integration の standalone external checker binary は次の contract です。
+現リポジトリでは `npa-checker-ext` binary はまだなく、`crates/npa-api` の
+`external` checker profile と release audit fixtures で runner contract を固定します。
+
 ```bash
 npa-checker-ext \
   --cert build/Std/Nat.npcert \
@@ -1120,10 +1125,11 @@ npa check build/Std/Nat.npcert
 ## Stage 4: reference checker check
 
 ```bash
-npa-checker-ref \
+cargo run -p npa-checker-ref -- \
   --cert build/Std/Nat.npcert \
   --import-dir build \
-  --policy policies/std.json
+  --policy policies/std.json \
+  --output json
 ```
 
 PR では変更モジュールとその依存先を検査します。
@@ -1141,6 +1147,10 @@ nightly では全モジュールを検査します。
 ---
 
 ## Stage 5: external checker check
+
+target integration の standalone external checker command は次です。
+現リポジトリの CI fixture では `external` profile の `MachineCheckResult` を
+`crates/npa-api` の normalization / comparison / release bundle tests で固定します。
 
 ```bash
 npa-checker-ext \
@@ -1449,6 +1459,22 @@ PR の同期必須 benchmark は fast kernel、Machine API、theorem index build
 reference / external checker benchmark は background または cached audit result として扱います。
 これらの performance gate は regression gate / release policy であり、proof acceptance boundary ではありません。
 
+現リポジトリの workflow 名は次です。
+
+```text
+Phase 8 Release Audit / phase8-release-audit:
+  scripts/phase8-release-audit.sh を実行する。source-free reference checker binary、
+  independent checker audit substrate、standard-library release audit fixture、
+  AI fast path boundary を固定する。
+
+Phase 9 Regression / phase9-regression:
+  scripts/phase9-regression.sh を実行する。Phase 9 fixture、fmt、clippy、
+  workspace 全体の regression を固定する。
+```
+
+Phase 8 Release Audit は release audit fixture の狭い gate です。
+Phase 9 Regression は後続 phase を含む広い回帰 gate であり、full external checker release audit の代替ではありません。
+
 ---
 
 # 15. Fuzzing and mutation tests
@@ -1632,32 +1658,59 @@ POST /check/audit_bundle
 
 # 18. 最小コマンド群
 
-Phase 8 MVP で用意する target CLI contract：
+現リポジトリで実行できる Phase 8 gate：
+
+```bash
+cargo test -p npa-checker-ref
+cargo test -p npa-api independent_checker
+cargo test -p npa-api ai_search
+./scripts/phase8-release-audit.sh
+```
+
+standalone reference checker binary の source-free check command：
+
+```bash
+cargo run -p npa-checker-ref -- \
+  --cert build/certs/Std/Nat.npcert \
+  --import-dir build/certs \
+  --policy policies/std.json \
+  --output json
+```
+
+external checker runner / release blocker fixture は `crates/npa-api` で固定します。
+
+```bash
+cargo test -p npa-api independent_checker::tests::p8h00_pr_mode_requires_reference_and_keeps_external_on_demand_only
+cargo test -p npa-api independent_checker::tests::independent_checker_challenge_p8h13_differential_disagreements_fail_ci
+cargo test -p npa-api independent_checker::tests::m12_release_bundle_generates_manifest_and_validation_auxiliary_passes
+```
+
+`npa-check ...`、`npa cert ...`、`npa audit ...` は Phase 8 AI document の normative command contract です。
+現リポジトリでは standalone `npa-check` CLI と `npa-checker-ext` binary はまだ target integration であり、
+同じ semantics を library API、`npa-checker-ref` binary、deterministic tests、CI fixture workflow で固定します。
+
+release / high-trust audit artifact の保存場所と generated artifact policy：
 
 ```text
-現リポジトリでは、同じ checker audit / normalization / release-audit contract を
-crates/npa-api の library API と deterministic tests で固定している。
-standalone `npa-checker-ref` / `npa-checker-ext` binary は後続 integration target。
+bundle root:
+  build/release-audit/<module>/
+
+manifest:
+  build/release-audit/<module>/manifest.json
+
+bundle-local artifact:
+  build/release-audit/<module>/artifacts/<kind>/<file_hash_without_sha256_prefix>.json
+
+post-bundle audit result:
+  build/aux/<module>.audit-bundle.json
 ```
 
-```bash
-npa cert check build/Std/Nat.npcert
-npa cert hash build/Std/Nat.npcert
-npa cert axioms build/Std/Nat.npcert
-npa audit bundle --module Std.Nat --out audit/Std.Nat
-
-npa-checker-ref --cert build/Std/Nat.npcert --import-dir build
-npa-checker-ext --cert build/Std/Nat.npcert --import-dir build
-```
-
-CIでは：
-
-```bash
-npa build --emit-cert --locked
-npa-checker-ref --cert build/Std/Nat.npcert --import-dir build --policy policies/std.json
-npa-checker-ext --cert build/Std/Nat.npcert --import-dir build --policy policies/std.json
-npa audit axioms build/Std/Nat.npcert --policy policies/std.json
-```
+`ReleaseAuditBundleManifest` には `bundle_root` からの workspace-relative path だけを記録します。
+artifact file は content-addressed で、filename の hash と file bytes hash が一致しなければ bundle invalid です。
+generated artifact は commit する正本ではなく、source fixture / Rust builder / deterministic test / CI から再生成します。
+release / high-trust pass の根拠は generated artifact の存在そのものではなく、canonical certificate、
+checker result、NormalizedCheckResult comparison、required AuxiliaryResult、ReleaseAuditBundleManifest validation です。
+AI sidecar は metadata / diagnostic artifact として保存してよいですが、trust boundary には入りません。
 
 ---
 
@@ -1829,23 +1882,24 @@ Nat / Eq / List / basic theorem
 
 # 22. Phase 8 の完了条件
 
-Phase 8 が完了したと言える条件はこれです。
+Phase 8 が完了したと言える条件と、現リポジトリで固定している gate はこれです。
 
-```text
-- .npcert を source なしで検査できる
-- reference checker が fast kernel と独立している
-- external checker が別プロセスで動く
-- import の export_hash / high-trust 時の certificate_hash を検査できる
-- declaration hash を再計算できる
-- export_hash / certificate_hash / axiom_report_hash を再計算できる
-- axiom report を再計算できる
-- forbidden axiom / sorry を拒否できる
-- Nat / Eq / List / Std.Algebra.Basic の証明を再検査できる
-- fast kernel / reference / external checker がCIで比較される
-- checker不一致時にCIがfailする
-- audit bundle を生成・検査できる
-- release時に full independent check が走る
-```
+| 条件 | 現リポジトリの固定点 |
+| --- | --- |
+| `.npcert` を source なしで reference checker が検査できる | `cargo test -p npa-checker-ref`、`cargo run -p npa-checker-ref -- --cert ... --output json` |
+| external checker runner が source / tactic / AI trace を読まない | `cargo test -p npa-api independent_checker` の runner policy / forbidden input tests |
+| import の `export_hash` / high-trust `certificate_hash` を検査できる | `cargo test --workspace` の `npa-cert` / `npa-checker-ref` high-trust import tests |
+| declaration / export / certificate / axiom report hash を再計算できる | `cargo test -p npa-checker-ref` と `cargo test -p npa-api independent_checker` |
+| forbidden axiom / sorry を拒否できる | `cargo test -p npa-checker-ref`、`cargo test -p npa-api independent_checker` |
+| `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` を source なしで再検査できる | `cargo test -p npa-api --lib std_library::tests::audits_mvp_release_artifacts_for_independent_checker` |
+| fast kernel / reference / external profile の比較不一致が release blocker になる | `cargo test -p npa-api independent_checker::tests::independent_checker_challenge_p8h13_differential_disagreements_fail_ci` |
+| audit bundle を生成・検査できる | `cargo test -p npa-api independent_checker::tests::m12_release_bundle_generates_manifest_and_validation_auxiliary_passes` |
+| release profile の full independent check 要件が固定されている | `IndependentCheckerTrustMode::Release.ci_commands()` / `ci_pass_requirements()` と P8H-14 release/high-trust tests、`./scripts/phase8-release-audit.sh` |
+| Phase 8 audit が AI candidate hot path の通常 latency を増やさない | `cargo test -p npa-api ai_search` と Phase 8 Release Audit の step 4 |
+
+現リポジトリの `Phase 8 Release Audit / phase8-release-audit` は fixture gate です。
+standalone `npa-checker-ext` binary と full external-checker release audit CI は target integration として残ります。
+AI sidecar は diagnostic / metadata であり、Phase 8 完了条件や release blocker の根拠には含めません。
 
 ---
 

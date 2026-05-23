@@ -1,0 +1,36 @@
+name: Phase 8 Release Audit
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase8-release-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  phase8-release-audit:
+    name: phase8-release-audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+
+      - name: Select Rust toolchain
+        run: rustup default stable
+
+      - name: Run Phase 8 release audit fixture gate
+        run: ./scripts/phase8-release-audit.sh

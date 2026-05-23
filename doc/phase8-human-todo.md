@@ -752,18 +752,18 @@ benchmark policy は proof acceptance boundary ではない。性能結果は re
 
 実装タスク:
 
-- [ ] README、`doc/phase8-human.md`、`doc/phase8-ai.md` の実装済み境界を更新する。
-- [ ] standalone checker binary、external checker runner、CI audit の command examples を実コマンドに合わせる。
-- [ ] Phase 8 completion criteria を test / script / CI workflow 名に紐づける。
-- [ ] Phase 9 regression と Phase 8 release audit CI の役割差分を文書化する。
-- [ ] release / high-trust audit artifact の保存場所と generated artifact policy を明記する。
+- [x] README、`doc/phase8-human.md`、`doc/phase8-ai.md` の実装済み境界を更新する。
+- [x] standalone checker binary、external checker runner、CI audit の command examples を実コマンドに合わせる。
+- [x] Phase 8 completion criteria を test / script / CI workflow 名に紐づける。
+- [x] Phase 9 regression と Phase 8 release audit CI の役割差分を文書化する。
+- [x] release / high-trust audit artifact の保存場所と generated artifact policy を明記する。
 
 受け入れ条件:
 
-- [ ] `.npcert` を source なしで reference / external checker が検査できることが docs と tests で一致している。
-- [ ] fast kernel / reference / external checker comparison failure が release blocker として文書化されている。
-- [ ] current repository status と target design の違いが stale になっていない。
-- [ ] Phase 8 docs は AI sidecar を trust boundary に入れない。
+- [x] `.npcert` を source なしで reference / external checker が検査できることが docs と tests で一致している。
+- [x] fast kernel / reference / external checker comparison failure が release blocker として文書化されている。
+- [x] current repository status と target design の違いが stale になっていない。
+- [x] Phase 8 docs は AI sidecar を trust boundary に入れない。
 
 検証:
 

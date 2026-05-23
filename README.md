@@ -77,9 +77,12 @@ canonical certificate を検査します。
 │   │   └── src/
 │   ├── npa-tactic/
 │   │   └── src/
+│   ├── npa-checker-ref/
+│   │   └── src/
 │   └── npa-api/
 │       └── src/
 ├── scripts/
+│   ├── phase8-release-audit.sh
 │   └── phase9-regression.sh
 └── doc/
     ├── core-spec-v0.1.md
@@ -132,6 +135,11 @@ regression として固定されています。生成される `.npcert` と `St
 このリポジトリでは source layout fixtures、Rust builders、tests を正本として temp package 上で再生成します。
 同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
 Phase 9 advanced automation endpoint substrate も実装されています。
+Phase 8 では `crates/npa-checker-ref` の `npa-checker-ref` binary が `.npcert` を
+source なしで検査し、`crates/npa-api` が checker request / result の正規化、
+release audit bundle、challenge replay、AI sidecar validation の非信頼 orchestration を固定します。
+standalone `npa-checker-ext` binary と full external-checker release audit workflow は target integration で、
+現リポジトリでは external checker profile と disagreement gate を deterministic tests で固定しています。
 これらの `npa-api` automation / library API は候補生成、検査要求の構成、
 監査 artifact の正規化、回帰 fixture の実行を担う非信頼層です。
 trusted base は広げません。証明の受理根拠は引き続き canonical certificate と、
@@ -157,6 +165,18 @@ Phase 9 完了後の回帰確認は次の固定ゲートで行います。
 `clippy -D warnings`、workspace 全体の test を通します。
 同じゲートは GitHub Actions の `Phase 9 Regression / phase9-regression`
 として、PR と `main` への push でも実行されます。
+
+Phase 8 の release audit fixture gate は次です。
+
+```sh
+./scripts/phase8-release-audit.sh
+```
+
+このゲートは `cargo test -p npa-checker-ref`、`cargo test -p npa-api independent_checker`、
+標準ライブラリ release audit fixture、`cargo test -p npa-api ai_search` を実行します。
+GitHub Actions では `Phase 8 Release Audit / phase8-release-audit` として走ります。
+Phase 8 gate は source-free checker / release audit / AI fast path 境界を確認する狭い gate で、
+Phase 9 Regression は workspace 全体の後続機能まで含む広い回帰 gate です。
 
 ## 参考資料
 
