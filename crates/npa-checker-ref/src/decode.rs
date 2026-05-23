@@ -5,13 +5,25 @@ use sha2::{Digest, Sha256};
 use crate::{
     ReferenceCertificateHeader, ReferenceCertificateSection, ReferenceCheckError,
     ReferenceCheckReason, ReferenceDecodedCertificate, ReferenceDecodedCertificateCounts,
-    ReferenceHash, ReferenceModuleHashes, ReferenceModuleName, REFERENCE_CERTIFICATE_FORMAT,
-    REFERENCE_CORE_SPEC,
+    ReferenceHash, ReferenceHashObject, ReferenceModuleHashes, ReferenceModuleName,
+    REFERENCE_CERTIFICATE_FORMAT, REFERENCE_CORE_SPEC,
 };
 
 type DecodeResult<T> = Result<T, ReferenceCheckError>;
 
 pub(crate) fn decode_certificate_impl(bytes: &[u8]) -> DecodeResult<ReferenceDecodedCertificate> {
+    decode_module_certificate(bytes).map(DecodedModuleCertificate::summary)
+}
+
+pub(crate) fn verify_certificate_hashes_impl(
+    bytes: &[u8],
+) -> DecodeResult<ReferenceDecodedCertificate> {
+    let cert = decode_module_certificate(bytes)?;
+    cert.verify_hashes(bytes)?;
+    Ok(cert.summary())
+}
+
+fn decode_module_certificate(bytes: &[u8]) -> DecodeResult<DecodedModuleCertificate> {
     if bytes.is_empty() {
         return Err(ReferenceCheckError::empty());
     }
@@ -26,7 +38,7 @@ pub(crate) fn decode_certificate_impl(bytes: &[u8]) -> DecodeResult<ReferenceDec
         ));
     }
     cert.validate()?;
-    Ok(cert.summary())
+    Ok(cert)
 }
 
 #[derive(Clone, Debug)]
@@ -46,6 +58,7 @@ struct DecodedModuleCertificate {
     export_block: Vec<Located<ExportEntry>>,
     axiom_report: AxiomReport,
     hashes: ReferenceModuleHashes,
+    hash_offsets: ModuleHashOffsets,
 }
 
 impl DecodedModuleCertificate {
@@ -82,6 +95,230 @@ impl DecodedModuleCertificate {
             },
             self.hashes,
         )
+    }
+
+    fn verify_hashes(&self, bytes: &[u8]) -> DecodeResult<()> {
+        let level_hashes = self.compute_level_hashes()?;
+        let term_hashes = self.compute_term_hashes(&level_hashes)?;
+        for declaration in &self.declarations {
+            let expected = compute_decl_hashes(
+                &declaration.value.decl,
+                &declaration.value.dependencies,
+                &declaration.value.axiom_dependencies,
+                &self.term_table,
+                &level_hashes,
+                &term_hashes,
+                &self.name_table,
+            )?;
+            if expected.decl_interface_hash != declaration.value.hashes.decl_interface_hash {
+                return Err(ReferenceCheckError::hash_mismatch(
+                    ReferenceCertificateSection::Declarations,
+                    declaration.value.hashes.decl_interface_hash_offset,
+                    ReferenceHashObject::DeclInterface,
+                ));
+            }
+            if expected.decl_certificate_hash != declaration.value.hashes.decl_certificate_hash {
+                return Err(ReferenceCheckError::hash_mismatch(
+                    ReferenceCertificateSection::Declarations,
+                    declaration.value.hashes.decl_certificate_hash_offset,
+                    ReferenceHashObject::DeclCertificate,
+                ));
+            }
+        }
+
+        let expected_export_block = self.build_export_block(&term_hashes)?;
+        let actual_export_block = self
+            .export_block
+            .iter()
+            .map(|entry| entry.value.clone())
+            .collect::<Vec<_>>();
+        let expected_export_hash = hash_with_domain(
+            b"NPA-MODULE-EXPORT-0.1",
+            &encode_export_block(&expected_export_block),
+        );
+        if expected_export_block != actual_export_block
+            || expected_export_hash != self.hashes.export_hash
+        {
+            return Err(ReferenceCheckError::hash_mismatch(
+                ReferenceCertificateSection::Hashes,
+                self.hash_offsets.export_hash_offset,
+                ReferenceHashObject::ExportBlock,
+            ));
+        }
+
+        let expected_axiom_report_hash = hash_with_domain(
+            b"NPA-AXIOM-REPORT-0.1",
+            &encode_axiom_report(&self.axiom_report),
+        );
+        if expected_axiom_report_hash != self.hashes.axiom_report_hash {
+            return Err(ReferenceCheckError::hash_mismatch(
+                ReferenceCertificateSection::Hashes,
+                self.hash_offsets.axiom_report_hash_offset,
+                ReferenceHashObject::AxiomReport,
+            ));
+        }
+
+        let hash_input = bytes
+            .get(..self.hash_offsets.certificate_hash_offset)
+            .ok_or_else(|| {
+                ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Hashes,
+                    self.hash_offsets.certificate_hash_offset,
+                    ReferenceCheckReason::UnexpectedEof,
+                )
+            })?;
+        let expected_certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", hash_input);
+        if expected_certificate_hash != self.hashes.certificate_hash {
+            return Err(ReferenceCheckError::hash_mismatch(
+                ReferenceCertificateSection::Hashes,
+                self.hash_offsets.certificate_hash_offset,
+                ReferenceHashObject::ModuleCertificate,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn compute_level_hashes(&self) -> DecodeResult<Vec<ReferenceHash>> {
+        let mut hashes = Vec::with_capacity(self.level_table.len());
+        for located in &self.level_table {
+            let key = level_node_key(&located.value, &hashes, &self.name_table)?;
+            hashes.push(hash_with_domain(b"NPA-LEVEL-0.1", &key));
+        }
+        Ok(hashes)
+    }
+
+    fn compute_term_hashes(
+        &self,
+        level_hashes: &[ReferenceHash],
+    ) -> DecodeResult<Vec<ReferenceHash>> {
+        let mut hashes = Vec::with_capacity(self.term_table.len());
+        for located in &self.term_table {
+            let key = term_node_key(&located.value, &hashes, level_hashes)?;
+            hashes.push(hash_with_domain(b"NPA-TERM-0.1", &key));
+        }
+        Ok(hashes)
+    }
+
+    fn build_export_block(&self, term_hashes: &[ReferenceHash]) -> DecodeResult<Vec<ExportEntry>> {
+        let mut entries = Vec::new();
+        for located in &self.declarations {
+            let decl = &located.value;
+            match &decl.decl {
+                DeclPayload::Axiom {
+                    name,
+                    universe_params,
+                    ty,
+                } => entries.push(ExportEntry {
+                    name: *name,
+                    kind: ExportKind::Axiom,
+                    universe_params: universe_params.clone(),
+                    ty: *ty,
+                    body: None,
+                    type_hash: term_hashes[*ty],
+                    body_hash: None,
+                    reducibility: None,
+                    opacity: None,
+                    decl_interface_hash: decl.hashes.decl_interface_hash,
+                    axiom_dependencies: decl.axiom_dependencies.clone(),
+                }),
+                DeclPayload::Def {
+                    name,
+                    universe_params,
+                    ty,
+                    value,
+                    reducibility,
+                } => entries.push(ExportEntry {
+                    name: *name,
+                    kind: ExportKind::Def,
+                    universe_params: universe_params.clone(),
+                    ty: *ty,
+                    body: (*reducibility == CertReducibility::Reducible).then_some(*value),
+                    type_hash: term_hashes[*ty],
+                    body_hash: (*reducibility == CertReducibility::Reducible)
+                        .then_some(term_hashes[*value]),
+                    reducibility: Some(*reducibility),
+                    opacity: None,
+                    decl_interface_hash: decl.hashes.decl_interface_hash,
+                    axiom_dependencies: decl.axiom_dependencies.clone(),
+                }),
+                DeclPayload::Theorem {
+                    name,
+                    universe_params,
+                    ty,
+                    ..
+                } => entries.push(ExportEntry {
+                    name: *name,
+                    kind: ExportKind::Theorem,
+                    universe_params: universe_params.clone(),
+                    ty: *ty,
+                    body: None,
+                    type_hash: term_hashes[*ty],
+                    body_hash: None,
+                    reducibility: None,
+                    opacity: Some(Opacity::Opaque),
+                    decl_interface_hash: decl.hashes.decl_interface_hash,
+                    axiom_dependencies: decl.axiom_dependencies.clone(),
+                }),
+                DeclPayload::Inductive {
+                    name,
+                    universe_params,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor,
+                } => {
+                    let ty =
+                        inductive_export_type_term_id(&self.term_table, params, indices, *sort)?;
+                    entries.push(ExportEntry {
+                        name: *name,
+                        kind: ExportKind::Inductive,
+                        universe_params: universe_params.clone(),
+                        ty,
+                        body: None,
+                        type_hash: term_hashes[ty],
+                        body_hash: None,
+                        reducibility: None,
+                        opacity: None,
+                        decl_interface_hash: decl.hashes.decl_interface_hash,
+                        axiom_dependencies: decl.axiom_dependencies.clone(),
+                    });
+                    for constructor in constructors {
+                        entries.push(ExportEntry {
+                            name: constructor.name,
+                            kind: ExportKind::Constructor,
+                            universe_params: universe_params.clone(),
+                            ty: constructor.ty,
+                            body: None,
+                            type_hash: term_hashes[constructor.ty],
+                            body_hash: None,
+                            reducibility: None,
+                            opacity: None,
+                            decl_interface_hash: decl.hashes.decl_interface_hash,
+                            axiom_dependencies: decl.axiom_dependencies.clone(),
+                        });
+                    }
+                    if let Some(recursor) = recursor {
+                        entries.push(ExportEntry {
+                            name: recursor.name,
+                            kind: ExportKind::Recursor,
+                            universe_params: recursor.universe_params.clone(),
+                            ty: recursor.ty,
+                            body: None,
+                            type_hash: term_hashes[recursor.ty],
+                            body_hash: None,
+                            reducibility: None,
+                            opacity: None,
+                            decl_interface_hash: decl.hashes.decl_interface_hash,
+                            axiom_dependencies: decl.axiom_dependencies.clone(),
+                        });
+                    }
+                }
+            }
+        }
+        entries.sort_by_key(|entry| entry.name);
+        Ok(entries)
     }
 
     fn validate_import_order(&self) -> DecodeResult<()> {
@@ -353,7 +590,7 @@ impl DecodedModuleCertificate {
                 universe_params,
                 ty,
                 value,
-                _reducibility: _,
+                reducibility: _,
             } => {
                 self.collect_name_id(
                     *name,
@@ -377,7 +614,7 @@ impl DecodedModuleCertificate {
                 universe_params,
                 ty,
                 proof,
-                _opacity: _,
+                opacity: _,
             } => {
                 self.collect_name_id(
                     *name,
@@ -1028,7 +1265,7 @@ struct DeclCert {
     decl: DeclPayload,
     dependencies: Vec<DependencyEntry>,
     axiom_dependencies: Vec<AxiomRef>,
-    _hashes: DeclHashes,
+    hashes: DeclHashes,
 }
 
 #[derive(Clone, Debug)]
@@ -1043,14 +1280,14 @@ enum DeclPayload {
         universe_params: Vec<usize>,
         ty: usize,
         value: usize,
-        _reducibility: CertReducibility,
+        reducibility: CertReducibility,
     },
     Theorem {
         name: usize,
         universe_params: Vec<usize>,
         ty: usize,
         proof: usize,
-        _opacity: Opacity,
+        opacity: Opacity,
     },
     Inductive {
         name: usize,
@@ -1095,17 +1332,17 @@ struct RecursorSpec {
 
 #[derive(Clone, Copy, Debug)]
 struct RecursorRulesSpec {
-    _minor_start: usize,
-    _major_index: usize,
+    minor_start: usize,
+    major_index: usize,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum CertReducibility {
     Reducible,
     Opaque,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Opacity {
     Opaque,
 }
@@ -1125,26 +1362,28 @@ struct AxiomRef {
 
 #[derive(Clone, Debug)]
 struct DeclHashes {
-    _decl_interface_hash: ReferenceHash,
-    _decl_certificate_hash: ReferenceHash,
+    decl_interface_hash: ReferenceHash,
+    decl_certificate_hash: ReferenceHash,
+    decl_interface_hash_offset: usize,
+    decl_certificate_hash_offset: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct ExportEntry {
     name: usize,
-    _kind: ExportKind,
+    kind: ExportKind,
     universe_params: Vec<usize>,
     ty: usize,
     body: Option<usize>,
-    _type_hash: ReferenceHash,
-    _body_hash: Option<ReferenceHash>,
-    _reducibility: Option<CertReducibility>,
-    _opacity: Option<Opacity>,
-    _decl_interface_hash: ReferenceHash,
+    type_hash: ReferenceHash,
+    body_hash: Option<ReferenceHash>,
+    reducibility: Option<CertReducibility>,
+    opacity: Option<Opacity>,
+    decl_interface_hash: ReferenceHash,
     axiom_dependencies: Vec<AxiomRef>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ExportKind {
     Axiom,
     Def,
@@ -1167,6 +1406,13 @@ struct DeclAxiomReport {
     direct_axioms: Vec<AxiomRef>,
     transitive_axioms: Vec<AxiomRef>,
     offset: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ModuleHashOffsets {
+    export_hash_offset: usize,
+    axiom_report_hash_offset: usize,
+    certificate_hash_offset: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -1286,10 +1532,21 @@ impl<'a> Decoder<'a> {
         let declarations = self.declarations()?;
         let export_block = self.export_block()?;
         let axiom_report = self.axiom_report()?;
+        let export_hash_offset = self.offset;
+        let export_hash = self.hash(ReferenceCertificateSection::Hashes)?;
+        let axiom_report_hash_offset = self.offset;
+        let axiom_report_hash = self.hash(ReferenceCertificateSection::Hashes)?;
+        let certificate_hash_offset = self.offset;
+        let certificate_hash = self.hash(ReferenceCertificateSection::Hashes)?;
         let hashes = ReferenceModuleHashes {
-            export_hash: self.hash(ReferenceCertificateSection::Hashes)?,
-            axiom_report_hash: self.hash(ReferenceCertificateSection::Hashes)?,
-            certificate_hash: self.hash(ReferenceCertificateSection::Hashes)?,
+            export_hash,
+            axiom_report_hash,
+            certificate_hash,
+        };
+        let hash_offsets = ModuleHashOffsets {
+            export_hash_offset,
+            axiom_report_hash_offset,
+            certificate_hash_offset,
         };
         Ok(DecodedModuleCertificate {
             header,
@@ -1301,6 +1558,7 @@ impl<'a> Decoder<'a> {
             export_block,
             axiom_report,
             hashes,
+            hash_offsets,
         })
     }
 
@@ -1438,18 +1696,24 @@ impl<'a> Decoder<'a> {
         let mut declarations = Vec::with_capacity(len);
         for _ in 0..len {
             let offset = self.offset;
+            let decl = self.decl_payload()?;
+            let dependencies =
+                self.dependency_entries(ReferenceCertificateSection::Declarations)?;
+            let axiom_dependencies = self.axiom_refs(ReferenceCertificateSection::Declarations)?;
+            let decl_interface_hash_offset = self.offset;
+            let decl_interface_hash = self.hash(ReferenceCertificateSection::Declarations)?;
+            let decl_certificate_hash_offset = self.offset;
+            let decl_certificate_hash = self.hash(ReferenceCertificateSection::Declarations)?;
             declarations.push(Located {
                 value: DeclCert {
-                    decl: self.decl_payload()?,
-                    dependencies: self
-                        .dependency_entries(ReferenceCertificateSection::Declarations)?,
-                    axiom_dependencies: self
-                        .axiom_refs(ReferenceCertificateSection::Declarations)?,
-                    _hashes: DeclHashes {
-                        _decl_interface_hash: self
-                            .hash(ReferenceCertificateSection::Declarations)?,
-                        _decl_certificate_hash: self
-                            .hash(ReferenceCertificateSection::Declarations)?,
+                    decl,
+                    dependencies,
+                    axiom_dependencies,
+                    hashes: DeclHashes {
+                        decl_interface_hash,
+                        decl_certificate_hash,
+                        decl_interface_hash_offset,
+                        decl_certificate_hash_offset,
                     },
                 },
                 offset,
@@ -1472,14 +1736,14 @@ impl<'a> Decoder<'a> {
                 universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
                 ty: self.usize(ReferenceCertificateSection::Declarations)?,
                 value: self.usize(ReferenceCertificateSection::Declarations)?,
-                _reducibility: self.reducibility(ReferenceCertificateSection::Declarations)?,
+                reducibility: self.reducibility(ReferenceCertificateSection::Declarations)?,
             },
             0x02 => DeclPayload::Theorem {
                 name: self.usize(ReferenceCertificateSection::Declarations)?,
                 universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
                 ty: self.usize(ReferenceCertificateSection::Declarations)?,
                 proof: self.usize(ReferenceCertificateSection::Declarations)?,
-                _opacity: self.opacity(ReferenceCertificateSection::Declarations)?,
+                opacity: self.opacity(ReferenceCertificateSection::Declarations)?,
             },
             0x03 => {
                 let name = self.usize(ReferenceCertificateSection::Declarations)?;
@@ -1505,8 +1769,8 @@ impl<'a> Decoder<'a> {
                             .usize_vec(ReferenceCertificateSection::Declarations)?,
                         ty: self.usize(ReferenceCertificateSection::Declarations)?,
                         rules: RecursorRulesSpec {
-                            _minor_start: self.usize(ReferenceCertificateSection::Declarations)?,
-                            _major_index: self.usize(ReferenceCertificateSection::Declarations)?,
+                            minor_start: self.usize(ReferenceCertificateSection::Declarations)?,
+                            major_index: self.usize(ReferenceCertificateSection::Declarations)?,
                         },
                     }),
                     tag => {
@@ -1573,16 +1837,16 @@ impl<'a> Decoder<'a> {
             exports.push(Located {
                 value: ExportEntry {
                     name,
-                    _kind: kind,
+                    kind,
                     universe_params: self.usize_vec(ReferenceCertificateSection::ExportBlock)?,
                     ty: self.usize(ReferenceCertificateSection::ExportBlock)?,
                     body: self.option_usize(ReferenceCertificateSection::ExportBlock)?,
-                    _type_hash: self.hash(ReferenceCertificateSection::ExportBlock)?,
-                    _body_hash: self.option_hash(ReferenceCertificateSection::ExportBlock)?,
-                    _reducibility: self
+                    type_hash: self.hash(ReferenceCertificateSection::ExportBlock)?,
+                    body_hash: self.option_hash(ReferenceCertificateSection::ExportBlock)?,
+                    reducibility: self
                         .option_reducibility(ReferenceCertificateSection::ExportBlock)?,
-                    _opacity: self.option_opacity(ReferenceCertificateSection::ExportBlock)?,
-                    _decl_interface_hash: self.hash(ReferenceCertificateSection::ExportBlock)?,
+                    opacity: self.option_opacity(ReferenceCertificateSection::ExportBlock)?,
+                    decl_interface_hash: self.hash(ReferenceCertificateSection::ExportBlock)?,
                     axiom_dependencies: self
                         .axiom_refs(ReferenceCertificateSection::ExportBlock)?,
                 },
@@ -2054,6 +2318,469 @@ fn term_node_key(
         }
     }
     Ok(payload)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ComputedDeclHashes {
+    decl_interface_hash: ReferenceHash,
+    decl_certificate_hash: ReferenceHash,
+}
+
+fn compute_decl_hashes(
+    decl: &DeclPayload,
+    dependencies: &[DependencyEntry],
+    axiom_dependencies: &[AxiomRef],
+    term_table: &[Located<TermNode>],
+    level_hashes: &[ReferenceHash],
+    term_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) -> DecodeResult<ComputedDeclHashes> {
+    let interface_dependencies = interface_dependencies_for_decl(decl, dependencies, term_table)?;
+    let interface_hash = hash_with_domain(
+        b"NPA-DECL-IFACE-0.1",
+        &decl_interface_payload(
+            decl,
+            &interface_dependencies,
+            axiom_dependencies,
+            level_hashes,
+            term_hashes,
+            names,
+        )?,
+    );
+    let certificate_hash = hash_with_domain(
+        b"NPA-DECL-CERT-0.1",
+        &decl_certificate_payload(
+            decl,
+            interface_hash,
+            dependencies,
+            axiom_dependencies,
+            term_hashes,
+        )?,
+    );
+    Ok(ComputedDeclHashes {
+        decl_interface_hash: interface_hash,
+        decl_certificate_hash: certificate_hash,
+    })
+}
+
+fn decl_interface_payload(
+    decl: &DeclPayload,
+    interface_dependencies: &[DependencyEntry],
+    axiom_dependencies: &[AxiomRef],
+    level_hashes: &[ReferenceHash],
+    term_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) -> DecodeResult<Vec<u8>> {
+    let mut out = Vec::new();
+    match decl {
+        DeclPayload::Axiom {
+            name,
+            universe_params,
+            ty,
+        } => {
+            out.push(0x00);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            out.extend(term_hashes[*ty]);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+        }
+        DeclPayload::Def {
+            name,
+            universe_params,
+            ty,
+            value,
+            reducibility,
+        } => {
+            out.push(0x01);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            out.extend(term_hashes[*ty]);
+            encode_reducibility_to(&mut out, *reducibility);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+            if *reducibility == CertReducibility::Reducible {
+                out.extend(term_hashes[*value]);
+            }
+        }
+        DeclPayload::Theorem {
+            name,
+            universe_params,
+            ty,
+            opacity,
+            ..
+        } => {
+            out.push(0x02);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            out.extend(term_hashes[*ty]);
+            encode_opacity_to(&mut out, *opacity);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::Inductive {
+            name,
+            universe_params,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+        } => {
+            out.push(0x03);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            encode_uvar_to(&mut out, params.len() as u64);
+            for param in params {
+                out.extend(term_hashes[param.ty]);
+            }
+            encode_uvar_to(&mut out, indices.len() as u64);
+            for index in indices {
+                out.extend(term_hashes[index.ty]);
+            }
+            out.extend(level_hashes[*sort]);
+            encode_constructor_specs_to(&mut out, constructors, term_hashes, names);
+            out.extend(generated_recursor_signature_hash(
+                recursor.as_ref(),
+                term_hashes,
+                names,
+            ));
+            out.extend(generated_computation_rule_hash(recursor.as_ref()));
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+    }
+    Ok(out)
+}
+
+fn decl_certificate_payload(
+    decl: &DeclPayload,
+    interface_hash: ReferenceHash,
+    dependencies: &[DependencyEntry],
+    axiom_dependencies: &[AxiomRef],
+    term_hashes: &[ReferenceHash],
+) -> DecodeResult<Vec<u8>> {
+    let mut out = Vec::new();
+    out.extend(interface_hash);
+    match decl {
+        DeclPayload::Axiom { .. } => encode_axiom_refs_to(&mut out, axiom_dependencies),
+        DeclPayload::Def { value, .. } => {
+            out.extend(term_hashes[*value]);
+            encode_dependency_entries_to(&mut out, dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::Inductive { .. } => {
+            encode_dependency_entries_to(&mut out, dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::Theorem { proof, .. } => {
+            out.extend(term_hashes[*proof]);
+            encode_dependency_entries_to(&mut out, dependencies);
+        }
+    }
+    Ok(out)
+}
+
+fn interface_dependencies_for_decl(
+    decl: &DeclPayload,
+    dependencies: &[DependencyEntry],
+    term_table: &[Located<TermNode>],
+) -> DecodeResult<Vec<DependencyEntry>> {
+    let mut refs = BTreeSet::new();
+    for term in interface_term_ids(decl) {
+        collect_global_refs_from_term(term_table, term, &mut refs)?;
+    }
+    Ok(dependencies
+        .iter()
+        .filter(|dependency| refs.contains(&dependency.global_ref))
+        .cloned()
+        .collect())
+}
+
+fn interface_term_ids(decl: &DeclPayload) -> Vec<usize> {
+    match decl {
+        DeclPayload::Axiom { ty, .. } => vec![*ty],
+        DeclPayload::Def {
+            ty,
+            value,
+            reducibility,
+            ..
+        } => {
+            let mut terms = vec![*ty];
+            if *reducibility == CertReducibility::Reducible {
+                terms.push(*value);
+            }
+            terms
+        }
+        DeclPayload::Theorem { ty, .. } => vec![*ty],
+        DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        } => params
+            .iter()
+            .map(|param| param.ty)
+            .chain(indices.iter().map(|index| index.ty))
+            .chain(constructors.iter().map(|constructor| constructor.ty))
+            .chain(recursor.iter().map(|recursor| recursor.ty))
+            .collect(),
+    }
+}
+
+fn collect_global_refs_from_term(
+    terms: &[Located<TermNode>],
+    term: usize,
+    refs: &mut BTreeSet<GlobalRef>,
+) -> DecodeResult<()> {
+    match &terms[term].value {
+        TermNode::Sort(_) | TermNode::BVar(_) => {}
+        TermNode::Const { global_ref, .. } => {
+            refs.insert(global_ref.clone());
+        }
+        TermNode::App(fun, arg) => {
+            collect_global_refs_from_term(terms, *fun, refs)?;
+            collect_global_refs_from_term(terms, *arg, refs)?;
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            collect_global_refs_from_term(terms, *ty, refs)?;
+            collect_global_refs_from_term(terms, *body, refs)?;
+        }
+        TermNode::Let { ty, value, body } => {
+            collect_global_refs_from_term(terms, *ty, refs)?;
+            collect_global_refs_from_term(terms, *value, refs)?;
+            collect_global_refs_from_term(terms, *body, refs)?;
+        }
+    }
+    Ok(())
+}
+
+fn inductive_export_type_term_id(
+    term_table: &[Located<TermNode>],
+    params: &[BinderType],
+    indices: &[BinderType],
+    sort: usize,
+) -> DecodeResult<usize> {
+    let mut body = term_table
+        .iter()
+        .position(|term| matches!(term.value, TermNode::Sort(level) if level == sort))
+        .ok_or_else(|| {
+            ReferenceCheckError::malformed(
+                ReferenceCertificateSection::TermTable,
+                term_table.last().map_or(0, |entry| entry.offset),
+                ReferenceCheckReason::DanglingReference,
+            )
+        })?;
+    for binder in params.iter().chain(indices).rev() {
+        body = term_table
+            .iter()
+            .position(|term| {
+                matches!(
+                    term.value,
+                    TermNode::Pi { ty, body: pi_body } if ty == binder.ty && pi_body == body
+                )
+            })
+            .ok_or_else(|| {
+                ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::TermTable,
+                    term_table.last().map_or(0, |entry| entry.offset),
+                    ReferenceCheckReason::DanglingReference,
+                )
+            })?;
+    }
+    Ok(body)
+}
+
+fn encode_constructor_specs_to(
+    out: &mut Vec<u8>,
+    constructors: &[ConstructorSpec],
+    term_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) {
+    encode_uvar_to(out, constructors.len() as u64);
+    for constructor in constructors {
+        encode_name_id_to(out, names, constructor.name);
+        out.extend(term_hashes[constructor.ty]);
+    }
+}
+
+fn generated_recursor_signature_hash(
+    recursor: Option<&RecursorSpec>,
+    term_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) -> ReferenceHash {
+    hash_with_domain(
+        b"NPA-GEN-REC-SIG-0.1",
+        &generated_recursor_signature_payload(recursor, term_hashes, names),
+    )
+}
+
+fn generated_recursor_signature_payload(
+    recursor: Option<&RecursorSpec>,
+    term_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) -> Vec<u8> {
+    let mut out = Vec::new();
+    match recursor {
+        Some(recursor) => {
+            out.push(0x01);
+            encode_name_id_to(&mut out, names, recursor.name);
+            encode_name_ids_to(&mut out, names, &recursor.universe_params);
+            out.extend(term_hashes[recursor.ty]);
+        }
+        None => out.push(0x00),
+    }
+    out
+}
+
+fn generated_computation_rule_hash(recursor: Option<&RecursorSpec>) -> ReferenceHash {
+    hash_with_domain(
+        b"NPA-GEN-COMP-RULE-0.1",
+        &generated_computation_rule_payload(recursor),
+    )
+}
+
+fn generated_computation_rule_payload(recursor: Option<&RecursorSpec>) -> Vec<u8> {
+    let mut out = Vec::new();
+    match recursor {
+        Some(recursor) => {
+            out.push(0x01);
+            encode_recursor_rules_to(&mut out, &recursor.rules);
+        }
+        None => out.push(0x00),
+    }
+    out
+}
+
+fn encode_recursor_rules_to(out: &mut Vec<u8>, rules: &RecursorRulesSpec) {
+    encode_uvar_to(out, rules.minor_start as u64);
+    encode_uvar_to(out, rules.major_index as u64);
+}
+
+fn encode_export_block(block: &[ExportEntry]) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, block.len() as u64);
+    for entry in block {
+        encode_uvar_to(&mut out, entry.name as u64);
+        out.push(match entry.kind {
+            ExportKind::Axiom => 0x00,
+            ExportKind::Def => 0x01,
+            ExportKind::Theorem => 0x02,
+            ExportKind::Inductive => 0x03,
+            ExportKind::Constructor => 0x04,
+            ExportKind::Recursor => 0x05,
+        });
+        encode_usize_vec(&mut out, &entry.universe_params);
+        encode_uvar_to(&mut out, entry.ty as u64);
+        encode_option_usize_to(&mut out, entry.body);
+        out.extend(entry.type_hash);
+        encode_option_hash_to(&mut out, entry.body_hash.as_ref());
+        encode_option_reducibility_to(&mut out, entry.reducibility);
+        encode_option_opacity_to(&mut out, entry.opacity);
+        out.extend(entry.decl_interface_hash);
+        encode_axiom_refs_to(&mut out, &entry.axiom_dependencies);
+    }
+    out
+}
+
+fn encode_axiom_report(report: &AxiomReport) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, report.per_declaration.len() as u64);
+    for entry in &report.per_declaration {
+        encode_uvar_to(&mut out, entry.decl_index as u64);
+        encode_axiom_refs_to(&mut out, &entry.direct_axioms);
+        encode_axiom_refs_to(&mut out, &entry.transitive_axioms);
+    }
+    encode_axiom_refs_to(&mut out, &report.module_axioms);
+    out
+}
+
+fn encode_dependency_entries_to(out: &mut Vec<u8>, entries: &[DependencyEntry]) {
+    encode_uvar_to(out, entries.len() as u64);
+    for entry in entries {
+        encode_global_ref_to(out, &entry.global_ref);
+        out.extend(entry.decl_interface_hash);
+    }
+}
+
+fn encode_axiom_refs_to(out: &mut Vec<u8>, axioms: &[AxiomRef]) {
+    encode_uvar_to(out, axioms.len() as u64);
+    for axiom in axioms {
+        encode_global_ref_to(out, &axiom.global_ref);
+        encode_uvar_to(out, axiom.name as u64);
+        out.extend(axiom.decl_interface_hash);
+    }
+}
+
+fn encode_name_id_to(out: &mut Vec<u8>, names: &[Located<ReferenceModuleName>], name: usize) {
+    encode_name_to(out, &names[name].value);
+}
+
+fn encode_name_ids_to(out: &mut Vec<u8>, names: &[Located<ReferenceModuleName>], values: &[usize]) {
+    encode_uvar_to(out, values.len() as u64);
+    for value in values {
+        encode_name_id_to(out, names, *value);
+    }
+}
+
+fn encode_usize_vec(out: &mut Vec<u8>, values: &[usize]) {
+    encode_uvar_to(out, values.len() as u64);
+    for value in values {
+        encode_uvar_to(out, *value as u64);
+    }
+}
+
+fn encode_reducibility_to(out: &mut Vec<u8>, value: CertReducibility) {
+    out.push(match value {
+        CertReducibility::Reducible => 0x00,
+        CertReducibility::Opaque => 0x01,
+    });
+}
+
+fn encode_option_reducibility_to(out: &mut Vec<u8>, value: Option<CertReducibility>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_reducibility_to(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn encode_opacity_to(out: &mut Vec<u8>, value: Opacity) {
+    match value {
+        Opacity::Opaque => out.push(0x00),
+    }
+}
+
+fn encode_option_opacity_to(out: &mut Vec<u8>, value: Option<Opacity>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_opacity_to(out, value);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn encode_option_usize_to(out: &mut Vec<u8>, value: Option<usize>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            encode_uvar_to(out, value as u64);
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn encode_option_hash_to(out: &mut Vec<u8>, hash: Option<&ReferenceHash>) {
+    match hash {
+        Some(hash) => {
+            out.push(0x01);
+            out.extend(hash);
+        }
+        None => out.push(0x00),
+    }
 }
 
 fn encode_global_ref_to(out: &mut Vec<u8>, global_ref: &GlobalRef) {

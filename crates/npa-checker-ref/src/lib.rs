@@ -6,9 +6,9 @@
 //! policy. It cannot receive `.npa` source, tactic scripts, AI traces, or a
 //! theorem-search index.
 //!
-//! P8H-02 adds the source-free canonical certificate decoder. Later milestones
-//! fill in hash verification, type checking, conversion checking, inductive
-//! checking, and axiom report recomputation.
+//! P8H-03 adds source-free canonical certificate hash verification. Later
+//! milestones fill in type checking, conversion checking, inductive checking,
+//! and axiom report recomputation.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -180,6 +180,21 @@ pub struct ReferenceModuleHashes {
     pub certificate_hash: ReferenceHash,
 }
 
+/// Hash role used in structured reference checker hash mismatch errors.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReferenceHashObject {
+    /// Declaration interface hash.
+    DeclInterface,
+    /// Declaration certificate hash.
+    DeclCertificate,
+    /// Export block hash.
+    ExportBlock,
+    /// Axiom report hash.
+    AxiomReport,
+    /// Full module certificate hash.
+    ModuleCertificate,
+}
+
 impl ReferenceDecodedCertificate {
     /// Builds a decoded certificate summary from decoder-owned data.
     pub(crate) const fn new(
@@ -327,7 +342,9 @@ pub enum ReferenceCheckErrorKind {
     EmptyCertificate,
     /// The certificate was malformed or not canonical.
     MalformedCertificate,
-    /// The P8H-02 decoder accepted the bytes but semantic checking is pending.
+    /// A stored hash did not match the reference checker recomputation.
+    HashMismatch,
+    /// The P8H-03 decoder/hash verifier accepted the bytes but semantic checking is pending.
     UnsupportedSkeleton,
 }
 
@@ -404,8 +421,28 @@ pub enum ReferenceCheckReason {
     UnusedTableEntry,
     /// Extra bytes remained after the canonical certificate sections.
     TrailingBytes,
-    /// The P8H-02 decoder intentionally has no semantic checker body.
+    /// A stored hash did not match the reference checker recomputation.
+    HashMismatch {
+        /// Hash role that mismatched.
+        object: ReferenceHashObject,
+    },
+    /// The P8H-03 decoder/hash verifier intentionally has no semantic checker body.
     ReferenceCheckerBodyUnimplemented,
+}
+
+impl ReferenceCheckError {
+    pub(crate) fn hash_mismatch(
+        section: ReferenceCertificateSection,
+        offset: usize,
+        object: ReferenceHashObject,
+    ) -> Self {
+        Self {
+            kind: ReferenceCheckErrorKind::HashMismatch,
+            section,
+            offset,
+            reason: Some(ReferenceCheckReason::HashMismatch { object }),
+        }
+    }
 }
 
 /// Decode a source-free canonical certificate without semantic checking.
@@ -420,10 +457,21 @@ pub fn decode_certificate(
     decode::decode_certificate_impl(cert_bytes)
 }
 
+/// Decode and verify all stored canonical hashes without semantic checking.
+///
+/// This recomputes term, declaration, export, axiom-report, and full
+/// certificate hashes inside the reference checker boundary. It does not resolve
+/// imports, type check declarations, or validate any AI sidecar.
+pub fn verify_certificate_hashes(
+    cert_bytes: &[u8],
+) -> Result<ReferenceDecodedCertificate, ReferenceCheckError> {
+    decode::verify_certificate_hashes_impl(cert_bytes)
+}
+
 /// Check a canonical certificate with the Phase 8 reference-checker API.
 ///
-/// The P8H-02 implementation decodes canonical source-free certificate bytes
-/// but intentionally does not call the fast Rust kernel or
+/// The P8H-03 implementation decodes canonical source-free certificate bytes
+/// and verifies stored hashes, but intentionally does not call the fast Rust kernel or
 /// `npa_cert::verify_module_cert`, and it does not yet accept certificates as
 /// checked.
 pub fn check_certificate(
@@ -436,7 +484,7 @@ pub fn check_certificate(
         return ReferenceCheckResult::Rejected(ReferenceCheckError::empty());
     }
 
-    match decode_certificate(cert_bytes) {
+    match verify_certificate_hashes(cert_bytes) {
         Ok(_) => ReferenceCheckResult::Rejected(ReferenceCheckError::unsupported(cert_bytes.len())),
         Err(error) => ReferenceCheckResult::Rejected(error),
     }
@@ -491,6 +539,41 @@ mod tests {
         hasher.finalize().into()
     }
 
+    fn encode_usize_vec(out: &mut Vec<u8>, values: &[usize]) {
+        out.extend(encode_uvar(values.len() as u64));
+        for value in values {
+            out.extend(encode_uvar(*value as u64));
+        }
+    }
+
+    fn encode_option_usize(out: &mut Vec<u8>, value: Option<usize>) {
+        match value {
+            Some(value) => {
+                out.push(0x01);
+                out.extend(encode_uvar(value as u64));
+            }
+            None => out.push(0x00),
+        }
+    }
+
+    fn encode_option_hash(out: &mut Vec<u8>, value: Option<&ReferenceHash>) {
+        match value {
+            Some(value) => {
+                out.push(0x01);
+                out.extend(value);
+            }
+            None => out.push(0x00),
+        }
+    }
+
+    fn encode_dependency_entries_empty(out: &mut Vec<u8>) {
+        out.extend(encode_uvar(0));
+    }
+
+    fn encode_axiom_refs_empty(out: &mut Vec<u8>) {
+        out.extend(encode_uvar(0));
+    }
+
     fn append_common_empty_suffix(bytes: &mut Vec<u8>) {
         bytes.extend(encode_uvar(0)); // level table
         bytes.extend(encode_uvar(0)); // term table
@@ -526,6 +609,127 @@ mod tests {
         }
         append_common_empty_suffix(&mut bytes);
         bytes
+    }
+
+    #[derive(Clone, Debug)]
+    struct AxiomCertificateFixture {
+        bytes: Vec<u8>,
+        decl_interface_hash_offset: usize,
+        decl_certificate_hash_offset: usize,
+        export_hash_offset: usize,
+        axiom_report_hash_offset: usize,
+        certificate_hash_offset: usize,
+        export_hash: ReferenceHash,
+        axiom_report_hash: ReferenceHash,
+        certificate_hash: ReferenceHash,
+    }
+
+    fn axiom_certificate_fixture() -> AxiomCertificateFixture {
+        let mut bytes = header_bytes();
+        bytes.extend(encode_uvar(0)); // imports
+        bytes.extend(encode_uvar(2)); // name table: A, Std.Nat
+        encode_name(&mut bytes, &["A"]);
+        encode_name(&mut bytes, &["Std", "Nat"]);
+
+        bytes.extend(encode_uvar(1)); // level table
+        bytes.push(0x00); // Zero
+
+        let level_hash = hash_with_domain(b"NPA-LEVEL-0.1", &[0x00]);
+        let mut term_payload = Vec::new();
+        term_payload.push(0x00); // Sort
+        term_payload.extend(level_hash);
+        let term_hash = hash_with_domain(b"NPA-TERM-0.1", &term_payload);
+
+        bytes.extend(encode_uvar(1)); // term table
+        bytes.push(0x00); // Sort
+        bytes.extend(encode_uvar(0)); // level 0
+
+        bytes.extend(encode_uvar(1)); // declarations
+        bytes.push(0x00); // Axiom
+        bytes.extend(encode_uvar(0)); // name A
+        encode_usize_vec(&mut bytes, &[]); // universe params
+        bytes.extend(encode_uvar(0)); // ty term
+        encode_dependency_entries_empty(&mut bytes);
+        encode_axiom_refs_empty(&mut bytes);
+
+        let mut iface_payload = Vec::new();
+        iface_payload.push(0x00); // Axiom
+        encode_name(&mut iface_payload, &["A"]);
+        encode_usize_vec(&mut iface_payload, &[]);
+        iface_payload.extend(term_hash);
+        encode_dependency_entries_empty(&mut iface_payload);
+        let decl_interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &iface_payload);
+
+        let mut decl_cert_payload = Vec::new();
+        decl_cert_payload.extend(decl_interface_hash);
+        encode_axiom_refs_empty(&mut decl_cert_payload);
+        let decl_certificate_hash = hash_with_domain(b"NPA-DECL-CERT-0.1", &decl_cert_payload);
+
+        let decl_interface_hash_offset = bytes.len();
+        bytes.extend(decl_interface_hash);
+        let decl_certificate_hash_offset = bytes.len();
+        bytes.extend(decl_certificate_hash);
+
+        let mut export_block = Vec::new();
+        export_block.extend(encode_uvar(1));
+        export_block.extend(encode_uvar(0)); // name A
+        export_block.push(0x00); // Axiom export
+        encode_usize_vec(&mut export_block, &[]);
+        export_block.extend(encode_uvar(0)); // ty term
+        encode_option_usize(&mut export_block, None);
+        export_block.extend(term_hash);
+        encode_option_hash(&mut export_block, None);
+        export_block.push(0x00); // no reducibility
+        export_block.push(0x00); // no opacity
+        export_block.extend(decl_interface_hash);
+        encode_axiom_refs_empty(&mut export_block);
+
+        let mut axiom_report = Vec::new();
+        axiom_report.extend(encode_uvar(1));
+        axiom_report.extend(encode_uvar(0)); // decl index
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report); // module axioms
+
+        bytes.extend(&export_block);
+        bytes.extend(&axiom_report);
+
+        let export_hash = hash_with_domain(b"NPA-MODULE-EXPORT-0.1", &export_block);
+        let axiom_report_hash = hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &axiom_report);
+        let export_hash_offset = bytes.len();
+        bytes.extend(export_hash);
+        let axiom_report_hash_offset = bytes.len();
+        bytes.extend(axiom_report_hash);
+        let certificate_hash_offset = bytes.len();
+        let certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", &bytes);
+        bytes.extend(certificate_hash);
+
+        AxiomCertificateFixture {
+            bytes,
+            decl_interface_hash_offset,
+            decl_certificate_hash_offset,
+            export_hash_offset,
+            axiom_report_hash_offset,
+            certificate_hash_offset,
+            export_hash,
+            axiom_report_hash,
+            certificate_hash,
+        }
+    }
+
+    fn assert_hash_mismatch(
+        error: ReferenceCheckError,
+        section: ReferenceCertificateSection,
+        offset: usize,
+        object: ReferenceHashObject,
+    ) {
+        assert_eq!(error.kind, ReferenceCheckErrorKind::HashMismatch);
+        assert_eq!(error.section, section);
+        assert_eq!(error.offset, offset);
+        assert_eq!(
+            error.reason,
+            Some(ReferenceCheckReason::HashMismatch { object })
+        );
     }
 
     #[test]
@@ -617,6 +821,125 @@ mod tests {
         assert_eq!(decoded.declarations_len(), 0);
         assert_eq!(decoded.export_block_len(), 0);
         assert_ne!(decoded.hashes().certificate_hash, [0; 32]);
+    }
+
+    #[test]
+    fn hash_verifier_accepts_golden_axiom_certificate_without_source_sections() {
+        let fixture = axiom_certificate_fixture();
+
+        let verified =
+            verify_certificate_hashes(&fixture.bytes).expect("golden axiom certificate verifies");
+
+        assert_eq!(verified.header().module.dotted(), "Std.Nat");
+        assert_eq!(verified.declarations_len(), 1);
+        assert_eq!(verified.hashes().export_hash, fixture.export_hash);
+        assert_eq!(
+            verified.hashes().axiom_report_hash,
+            fixture.axiom_report_hash
+        );
+        assert_eq!(verified.hashes().certificate_hash, fixture.certificate_hash);
+    }
+
+    #[test]
+    fn hash_verifier_rejects_decl_interface_hash_mismatch_by_object() {
+        let fixture = axiom_certificate_fixture();
+        let mut cert = fixture.bytes;
+        cert[fixture.decl_interface_hash_offset] ^= 0x01;
+
+        let error =
+            verify_certificate_hashes(&cert).expect_err("decl interface hash mismatch rejects");
+
+        assert_hash_mismatch(
+            error,
+            ReferenceCertificateSection::Declarations,
+            fixture.decl_interface_hash_offset,
+            ReferenceHashObject::DeclInterface,
+        );
+    }
+
+    #[test]
+    fn hash_verifier_rejects_decl_certificate_hash_mismatch_by_object() {
+        let fixture = axiom_certificate_fixture();
+        let mut cert = fixture.bytes;
+        cert[fixture.decl_certificate_hash_offset] ^= 0x01;
+
+        let error =
+            verify_certificate_hashes(&cert).expect_err("decl certificate hash mismatch rejects");
+
+        assert_hash_mismatch(
+            error,
+            ReferenceCertificateSection::Declarations,
+            fixture.decl_certificate_hash_offset,
+            ReferenceHashObject::DeclCertificate,
+        );
+    }
+
+    #[test]
+    fn hash_verifier_rejects_export_hash_mismatch_by_object() {
+        let fixture = axiom_certificate_fixture();
+        let mut cert = fixture.bytes;
+        cert[fixture.export_hash_offset] ^= 0x01;
+
+        let error = verify_certificate_hashes(&cert).expect_err("export hash mismatch rejects");
+
+        assert_hash_mismatch(
+            error,
+            ReferenceCertificateSection::Hashes,
+            fixture.export_hash_offset,
+            ReferenceHashObject::ExportBlock,
+        );
+    }
+
+    #[test]
+    fn hash_verifier_rejects_axiom_report_hash_mismatch_by_object() {
+        let fixture = axiom_certificate_fixture();
+        let mut cert = fixture.bytes;
+        cert[fixture.axiom_report_hash_offset] ^= 0x01;
+
+        let error =
+            verify_certificate_hashes(&cert).expect_err("axiom report hash mismatch rejects");
+
+        assert_hash_mismatch(
+            error,
+            ReferenceCertificateSection::Hashes,
+            fixture.axiom_report_hash_offset,
+            ReferenceHashObject::AxiomReport,
+        );
+    }
+
+    #[test]
+    fn hash_verifier_rejects_certificate_hash_mismatch_by_object() {
+        let fixture = axiom_certificate_fixture();
+        let mut cert = fixture.bytes;
+        cert[fixture.certificate_hash_offset] ^= 0x01;
+
+        let error =
+            verify_certificate_hashes(&cert).expect_err("certificate hash mismatch rejects");
+
+        assert_hash_mismatch(
+            error,
+            ReferenceCertificateSection::Hashes,
+            fixture.certificate_hash_offset,
+            ReferenceHashObject::ModuleCertificate,
+        );
+    }
+
+    #[test]
+    fn check_certificate_runs_hash_verifier_before_semantic_skeleton() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let fixture = axiom_certificate_fixture();
+        let mut cert = fixture.bytes;
+        cert[fixture.certificate_hash_offset] ^= 0x01;
+
+        let result = check_certificate(&cert, &imports, &policy);
+
+        assert_hash_mismatch(
+            result.error().unwrap().clone(),
+            ReferenceCertificateSection::Hashes,
+            fixture.certificate_hash_offset,
+            ReferenceHashObject::ModuleCertificate,
+        );
     }
 
     #[test]

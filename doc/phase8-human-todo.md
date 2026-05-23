@@ -308,18 +308,18 @@ P8H-02 は semantic check をしない。decode / canonical shape / table reacha
 
 実装タスク:
 
-- [ ] term hash を reference checker 内で再計算する。
-- [ ] declaration interface / declaration certificate hash を再計算する。
-- [ ] export hash / certificate hash / axiom report hash を再計算する。
-- [ ] domain separation tag を `doc/core-spec-v0.1.md` / `doc/phase2.md` と照合する。
-- [ ] stored hash を信じず、再計算結果との mismatch を structured error にする。
+- [x] term hash を reference checker 内で再計算する。
+- [x] declaration interface / declaration certificate hash を再計算する。
+- [x] export hash / certificate hash / axiom report hash を再計算する。
+- [x] domain separation tag を `doc/core-spec-v0.1.md` / `doc/phase2.md` と照合する。
+- [x] stored hash を信じず、再計算結果との mismatch を structured error にする。
 
 受け入れ条件:
 
-- [ ] hash mismatch の対象 object が deterministic に分類される。
-- [ ] timestamp、path、source text、checker version は certificate hash 入力に入らない。
-- [ ] fast verifier と同じ golden certificate hash を得るが、fast verifier の hash helper を verdict として使わない。
-- [ ] hash verifier は type correctness を acceptance 根拠にしない。
+- [x] hash mismatch の対象 object が deterministic に分類される。
+- [x] timestamp、path、source text、checker version は certificate hash 入力に入らない。
+- [x] fast verifier と同じ golden certificate hash を得るが、fast verifier の hash helper を verdict として使わない。
+- [x] hash verifier は type correctness を acceptance 根拠にしない。
 
 検証:
 
