@@ -32649,6 +32649,293 @@ mod tests {
         assert_eq!(err.reason_code.as_ref(), "normalized_result_not_found");
     }
 
+    #[test]
+    fn independent_checker_challenge_p8h13_corpus_records_seed_and_artifact_hashes() {
+        let corpus = [
+            (
+                IndependentCheckerChallengeMutationKind::DropAxiomReportEntry,
+                "Std.Nat.foo",
+                test_hash(151),
+                "pch_p8h13_axiom_report",
+            ),
+            (
+                IndependentCheckerChallengeMutationKind::ReplaceImportExportHash,
+                "Std.Nat",
+                test_hash(152),
+                "pch_p8h13_import_hash",
+            ),
+            (
+                IndependentCheckerChallengeMutationKind::ReorderDeclarations,
+                "$whole_certificate",
+                test_hash(153),
+                "pch_p8h13_noncanonical_table",
+            ),
+        ];
+        let mut existing_store = None;
+        let mut file_hashes = Vec::new();
+        for (kind, target, seed, challenge_id) in corpus {
+            let (mut request, policy, base_certificate_bytes, imports_json) =
+                m8_generation_request(kind, target, seed);
+            request.challenge_id = challenge_id.to_owned();
+            request.output.manifest_path = format!("build/challenges/{challenge_id}/manifest.json");
+            request.output.mutated_certificate_path =
+                format!("build/challenges/{challenge_id}/mutated.npcert");
+
+            let generated = independent_checker_challenge_generate(
+                &request,
+                &policy,
+                &base_certificate_bytes,
+                imports_json.as_bytes(),
+                existing_store.as_ref(),
+            )
+            .unwrap();
+
+            assert_eq!(generated.manifest.mutation.seed, seed);
+            assert_eq!(generated.manifest.mutation.kind, kind.as_str());
+            assert_eq!(generated.manifest.mutation.target, target);
+            assert_eq!(generated.manifest.outcome_hint.status, "should_fail");
+            assert_eq!(
+                generated.manifest.mutated_certificate.file_hash,
+                independent_checker_file_hash(&generated.mutated_certificate_bytes)
+            );
+            assert_eq!(generated.manifest.replay.args_hash, request.request_hash());
+            assert_eq!(
+                generated
+                    .challenge_store
+                    .entries
+                    .last()
+                    .unwrap()
+                    .challenge_id,
+                challenge_id
+            );
+            file_hashes.push(generated.manifest.mutated_certificate.file_hash);
+            existing_store = Some(generated.challenge_store);
+        }
+
+        let challenge_store = existing_store.expect("challenge corpus store exists");
+        assert_eq!(
+            challenge_store
+                .entries
+                .iter()
+                .map(|entry| entry.challenge_id.as_str())
+                .collect::<Vec<_>>(),
+            vec![
+                "pch_p8h13_axiom_report",
+                "pch_p8h13_import_hash",
+                "pch_p8h13_noncanonical_table"
+            ]
+        );
+        let mut unique_hashes = file_hashes.clone();
+        unique_hashes.sort();
+        unique_hashes.dedup();
+        assert_eq!(unique_hashes.len(), file_hashes.len());
+
+        let (mut invalid_request, policy, base_certificate_bytes, imports_json) =
+            m8_generation_request(
+                IndependentCheckerChallengeMutationKind::DropAxiomReportEntry,
+                "Std..Nat",
+                test_hash(154),
+            );
+        invalid_request.challenge_id = "pch_p8h13_invalid_target".to_owned();
+        let err = independent_checker_challenge_generate(
+            &invalid_request,
+            &policy,
+            &base_certificate_bytes,
+            imports_json.as_bytes(),
+            Some(&challenge_store),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.reason_code.as_ref(),
+            "generation_request_schema_invalid"
+        );
+        assert_eq!(err.field.as_deref(), Some("mutation.target"));
+    }
+
+    #[test]
+    fn independent_checker_challenge_p8h13_outcome_hint_is_not_checker_oracle() {
+        let (policy, generated, materialized) = m9_generated_challenge();
+        assert_eq!(generated.manifest.outcome_hint.status, "should_fail");
+        assert!(!generated.manifest.outcome_hint.error_kinds.is_empty());
+
+        let stored_requests = m9_stored_requests(&materialized);
+        let checked = m4_checked_result(
+            &materialized.requests[0],
+            &policy,
+            "mchkres_p8h13_unexpected_accept",
+        );
+        let result_store = m9_result_store(&checked, "build/results/p8h13-checked.json");
+        let normalized = independent_checker_normalize_results(
+            "norm_challenge_p8h13_checked",
+            "normerr_challenge_p8h13_checked",
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            std::slice::from_ref(&checked),
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            normalized.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked
+        );
+        let normalized_store = m9_normalized_store(&normalized);
+
+        let replay = independent_checker_challenge_replay_aggregate(
+            "chreplay_p8h13_checked",
+            &generated.manifest,
+            generated.manifest.manifest_hash(),
+            &policy,
+            &materialized.request_store,
+            &stored_requests,
+            &result_store,
+            std::slice::from_ref(&checked),
+            Some(&normalized_store),
+            std::slice::from_ref(&normalized),
+            true,
+            "build/challenge-replays/p8h13-checked.json",
+            None,
+        )
+        .unwrap();
+        assert!(replay.result.observed_error_kinds.is_empty());
+        assert_eq!(
+            replay.result.comparison_status,
+            Some(IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked)
+        );
+
+        let target_normalized = m9_target_normalized_result(&policy);
+        let missing_oracle = independent_checker_challenge_coverage_summary(
+            &policy,
+            &target_normalized,
+            &generated.challenge_store,
+            std::slice::from_ref(&generated.manifest),
+            &replay.replay_store,
+            std::slice::from_ref(&replay.result),
+            &result_store,
+            &[],
+        )
+        .unwrap_err();
+        assert_eq!(
+            missing_oracle.reason_code.as_ref(),
+            "coverage_summary_generation_failed"
+        );
+        assert_eq!(
+            missing_oracle.field.as_deref(),
+            Some("machine_results[].run_artifact_hash")
+        );
+
+        let coverage = independent_checker_challenge_coverage_summary(
+            &policy,
+            &target_normalized,
+            &generated.challenge_store,
+            std::slice::from_ref(&generated.manifest),
+            &replay.replay_store,
+            std::slice::from_ref(&replay.result),
+            &result_store,
+            std::slice::from_ref(&checked),
+        )
+        .unwrap();
+        assert_eq!(coverage.unexpected_acceptances, 1);
+        assert!(!coverage.passes_release_coverage_condition());
+    }
+
+    #[test]
+    fn independent_checker_challenge_p8h13_differential_disagreements_fail_ci() {
+        let policy = parse_independent_checker_runner_policy(&m4_runner_policy_json()).unwrap();
+        let fast = m4_stored_request(&policy, "fast-kernel", "mchkreq_p8h13_fast");
+        let reference = m4_stored_request(&policy, "reference", "mchkreq_p8h13_ref");
+        let external = m4_stored_request(&policy, "external", "mchkreq_p8h13_ext");
+        let stored_requests = vec![fast.clone(), reference.clone(), external.clone()];
+        let request_store = m4_request_store_manifest(&stored_requests);
+
+        let fast_checked = m4_checked_result(&fast.request, &policy, "mchkres_p8h13_fast_ok");
+        let reference_failed = m5_failed_result(
+            &reference.request,
+            &policy,
+            "mchkres_p8h13_ref_ng",
+            "Std.Nat",
+        );
+        let external_failed = m5_failed_result(
+            &external.request,
+            &policy,
+            "mchkres_p8h13_ext_ng",
+            "Std.Nat",
+        );
+        let fast_ok_reference_ng = independent_checker_normalize_results(
+            "norm_p8h13_fast_ok_reference_ng",
+            "normerr_p8h13_fast_ok_reference_ng",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &[
+                fast_checked.clone(),
+                reference_failed.clone(),
+                external_failed.clone(),
+            ],
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            fast_ok_reference_ng.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &fast_ok_reference_ng,
+            &[fast_checked.clone(), reference_failed, external_failed]
+        ));
+        let reports = independent_checker_normalized_disagreement_reports(&fast_ok_reference_ng);
+        assert!(reports.iter().any(|report| {
+            report.field == "status"
+                && report.checker_profile == "reference"
+                && report.baseline_checker_profile.as_deref() == Some("fast-kernel")
+        }));
+
+        let reference_checked =
+            m4_checked_result(&reference.request, &policy, "mchkres_p8h13_ref_ok");
+        let external_failed = m5_failed_result(
+            &external.request,
+            &policy,
+            "mchkres_p8h13_ext_still_ng",
+            "Std.Nat",
+        );
+        let reference_ok_external_ng = independent_checker_normalize_results(
+            "norm_p8h13_reference_ok_external_ng",
+            "normerr_p8h13_reference_ok_external_ng",
+            &policy,
+            &request_store,
+            &stored_requests,
+            &[
+                fast_checked.clone(),
+                reference_checked.clone(),
+                external_failed.clone(),
+            ],
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            reference_ok_external_ng.comparison.status,
+            IndependentCheckerNormalizedComparisonStatus::Disagreement
+        );
+        assert!(!independent_checker_normalized_result_passes_ci_gate(
+            &policy,
+            &reference_ok_external_ng,
+            &[fast_checked, reference_checked, external_failed]
+        ));
+        let reports =
+            independent_checker_normalized_disagreement_reports(&reference_ok_external_ng);
+        assert!(reports.iter().any(|report| {
+            report.field == "status"
+                && report.checker_profile == "external"
+                && report.baseline_checker_profile.as_deref() == Some("fast-kernel")
+        }));
+        assert_eq!(
+            independent_checker_compare_normalized_result(&policy, &reference_ok_external_ng)
+                .status,
+            IndependentCheckerCompareValidationStatus::Valid
+        );
+    }
+
     fn m10_single_failed_diagnostic_context() -> (
         IndependentCheckerRunnerPolicy,
         IndependentCheckerMachineCheckResult,

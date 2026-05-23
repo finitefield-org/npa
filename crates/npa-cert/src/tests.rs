@@ -2643,6 +2643,133 @@ fn rejects_tampered_theorem_proof_body_even_if_certificate_rehashed() {
     ));
 }
 
+fn p8h13_mutation_artifact_hash(seed: &[u8], label: &str, bytes: &[u8]) -> Hash {
+    let mut payload = Vec::new();
+    payload.extend(seed);
+    payload.push(0);
+    payload.extend(label.as_bytes());
+    payload.push(0);
+    payload.extend(bytes);
+    hash_with_domain(b"NPA-P8H13-CERT-MUTATION-0.1", &payload)
+}
+
+#[test]
+fn mutation_p8h13_fixture_records_hashes_and_rejects_core_mutation_classes() {
+    const SEED: &[u8] = b"p8h13-cert-mutation-seed-0001";
+    let mut artifact_hashes = Vec::new();
+
+    let mut proof_cert = build_module_cert(two_id_theorems_module(), &[]).unwrap();
+    match &mut proof_cert.declarations[1].decl {
+        DeclPayload::Theorem { proof, ty, .. } => *proof = *ty,
+        _ => panic!("expected theorem"),
+    }
+    rehash_cert_after_decl_change(&mut proof_cert);
+    let proof_bytes = encode_module_cert(&proof_cert).unwrap();
+    artifact_hashes.push(p8h13_mutation_artifact_hash(
+        SEED,
+        "proof_term",
+        &proof_bytes,
+    ));
+    let err = verify_module_cert(
+        &proof_bytes,
+        &mut VerifierSession::new(),
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::Kernel(_)));
+
+    let mut axiom_report_cert = build_module_cert(axiom_module(), &[]).unwrap();
+    axiom_report_cert.axiom_report.module_axioms.clear();
+    axiom_report_cert.hashes.axiom_report_hash = hash_with_domain(
+        b"NPA-AXIOM-REPORT-0.1",
+        &encode_axiom_report(&axiom_report_cert.axiom_report),
+    );
+    axiom_report_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&axiom_report_cert),
+    );
+    let axiom_report_bytes = encode_module_cert(&axiom_report_cert).unwrap();
+    artifact_hashes.push(p8h13_mutation_artifact_hash(
+        SEED,
+        "axiom_report",
+        &axiom_report_bytes,
+    ));
+    let err = verify_module_cert(
+        &axiom_report_bytes,
+        &mut VerifierSession::new(),
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(err, CertError::AxiomReportMismatch { .. }));
+
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified_id = verify_module_cert(&id_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+    let mut import_hash_cert = build_module_cert(use_id_module(), &[verified_id]).unwrap();
+    import_hash_cert.imports[0].export_hash[0] ^= 0x01;
+    import_hash_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&import_hash_cert),
+    );
+    let import_hash_bytes = encode_module_cert(&import_hash_cert).unwrap();
+    artifact_hashes.push(p8h13_mutation_artifact_hash(
+        SEED,
+        "import_hash",
+        &import_hash_bytes,
+    ));
+    let err =
+        verify_module_cert(&import_hash_bytes, &mut session, &AxiomPolicy::normal()).unwrap_err();
+    assert!(matches!(err, CertError::ImportHashMismatch { .. }));
+
+    let mut noncanonical_table_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    noncanonical_table_cert
+        .term_table
+        .push(noncanonical_table_cert.term_table[0].clone());
+    noncanonical_table_cert.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&noncanonical_table_cert),
+    );
+    let noncanonical_table_bytes = encode_module_cert(&noncanonical_table_cert).unwrap();
+    artifact_hashes.push(p8h13_mutation_artifact_hash(
+        SEED,
+        "noncanonical_term_table",
+        &noncanonical_table_bytes,
+    ));
+    let err = verify_module_cert(
+        &noncanonical_table_bytes,
+        &mut VerifierSession::new(),
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "TermTable"
+        }
+    ));
+
+    let unique_hashes = artifact_hashes
+        .iter()
+        .copied()
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(unique_hashes.len(), artifact_hashes.len());
+    assert!(unique_hashes.iter().all(|hash| *hash != [0; 32]));
+    let repeated_hashes = [
+        ("proof_term", proof_bytes.as_slice()),
+        ("axiom_report", axiom_report_bytes.as_slice()),
+        ("import_hash", import_hash_bytes.as_slice()),
+        (
+            "noncanonical_term_table",
+            noncanonical_table_bytes.as_slice(),
+        ),
+    ]
+    .into_iter()
+    .map(|(label, bytes)| p8h13_mutation_artifact_hash(SEED, label, bytes))
+    .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(unique_hashes, repeated_hashes);
+}
+
 #[test]
 fn rejects_non_minimal_uleb128_in_canonical_binary() {
     let cert = build_module_cert(id_module("A", "x"), &[]).unwrap();

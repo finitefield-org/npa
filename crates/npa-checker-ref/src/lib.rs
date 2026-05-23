@@ -3658,4 +3658,94 @@ mod tests {
         assert_eq!(name.components(), ["Std", "Nat"]);
         assert_eq!(name.dotted(), "Std.Nat");
     }
+
+    fn p8h13_fuzz_artifact_hash(seed: &str, bytes: &[u8]) -> ReferenceHash {
+        let mut hasher = Sha256::new();
+        hasher.update(b"NPA-P8H13-REFERENCE-FUZZ-0.1");
+        hasher.update(seed.as_bytes());
+        hasher.update([0]);
+        hasher.update(bytes);
+        hasher.finalize().into()
+    }
+
+    #[test]
+    fn fuzz_p8h13_rejects_malformed_certificate_corpus_without_panic() {
+        const SEED: &str = "p8h13-reference-fuzz-seed-0001";
+        let mut noncanonical_uvar = header_bytes();
+        noncanonical_uvar.extend([0x80, 0x00]);
+
+        let mut unknown_level_tag = header_bytes();
+        unknown_level_tag.extend(encode_uvar(0)); // imports
+        unknown_level_tag.extend(encode_uvar(1));
+        encode_name(&mut unknown_level_tag, &["Std", "Nat"]);
+        unknown_level_tag.extend(encode_uvar(1)); // one level entry
+        unknown_level_tag.push(0xff);
+
+        let mut dangling_level = header_bytes();
+        dangling_level.extend(encode_uvar(0)); // imports
+        dangling_level.extend(encode_uvar(1)); // name table
+        encode_name(&mut dangling_level, &["Std", "Nat"]);
+        dangling_level.extend(encode_uvar(1)); // level table
+        dangling_level.push(0x04); // Param
+        dangling_level.extend(encode_uvar(1)); // missing name id
+        dangling_level.extend(encode_uvar(0)); // term table
+        dangling_level.extend(encode_uvar(0)); // declarations
+        dangling_level.extend(encode_uvar(0)); // export block
+        dangling_level.extend(encode_uvar(0)); // axiom report per-declaration
+        dangling_level.extend(encode_uvar(0)); // module axioms
+        dangling_level.extend([0; 96]);
+
+        let mut trailing_bytes = empty_module_certificate();
+        trailing_bytes.push(0);
+
+        let duplicate: &[&str] = &["Std", "Nat"];
+        let cases = vec![
+            ("empty", Vec::new()),
+            ("invalid_utf8_header", vec![0x01, 0xff]),
+            ("noncanonical_uvar", noncanonical_uvar),
+            ("unknown_level_tag", unknown_level_tag),
+            ("dangling_level", dangling_level),
+            ("trailing_bytes", trailing_bytes),
+            (
+                "duplicate_name_table_entry",
+                certificate_with_name_table(&[duplicate, duplicate]),
+            ),
+        ];
+
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let mut observed = Vec::new();
+
+        for (name, bytes) in cases {
+            let artifact_hash = p8h13_fuzz_artifact_hash(SEED, &bytes);
+            assert_ne!(artifact_hash, [0; 32], "{name}");
+
+            let decoded = std::panic::catch_unwind(|| decode_certificate(&bytes));
+            assert!(decoded.is_ok(), "{name} panicked during decode");
+            assert!(decoded.unwrap().is_err(), "{name} unexpectedly decoded");
+
+            let checked = std::panic::catch_unwind(|| check_certificate(&bytes, &imports, &policy));
+            assert!(checked.is_ok(), "{name} panicked during check");
+            let ReferenceCheckResult::Rejected(error) = checked.unwrap() else {
+                panic!("{name} unexpectedly checked");
+            };
+            observed.push((name, artifact_hash, error.kind, error.reason));
+        }
+
+        let mut sorted_hashes = observed
+            .iter()
+            .map(|(_, hash, _, _)| *hash)
+            .collect::<Vec<_>>();
+        sorted_hashes.sort();
+        sorted_hashes.dedup();
+        assert_eq!(sorted_hashes.len(), observed.len());
+        assert!(observed.iter().any(|(_, _, kind, reason)| {
+            *kind == ReferenceCheckErrorKind::MalformedCertificate
+                && *reason == Some(ReferenceCheckReason::NonCanonicalUvar)
+        }));
+        assert!(observed.iter().any(|(_, _, kind, reason)| {
+            *kind == ReferenceCheckErrorKind::MalformedCertificate
+                && *reason == Some(ReferenceCheckReason::TrailingBytes)
+        }));
+    }
 }
