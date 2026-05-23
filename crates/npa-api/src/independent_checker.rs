@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
-use npa_cert::Hash;
+use npa_cert::{ExportKind, Hash};
 use sha2::{Digest, Sha256};
 
 use crate::json::{JsonDocument, JsonMember, JsonParseErrorKind, JsonValue, JsonValueKind};
@@ -2078,6 +2078,8 @@ pub struct IndependentCheckerChallengeGenerationRequest {
     pub challenge_id: String,
     pub policy_hash: Hash,
     pub module: String,
+    pub statement_core_hash: Hash,
+    pub allowed_axioms: Vec<String>,
     pub imports: IndependentCheckerChallengeImports,
     pub base_certificate: IndependentCheckerChallengeBaseCertificate,
     pub mutation: IndependentCheckerChallengeMutation,
@@ -2110,6 +2112,10 @@ impl IndependentCheckerChallengeGenerationRequest {
     fn canonical_json_pairs_without_request_identity(&self) -> Vec<(String, String)> {
         vec![
             (
+                "allowed_axioms".to_owned(),
+                independent_checker_json_string_array(&self.allowed_axioms),
+            ),
+            (
                 "base_certificate".to_owned(),
                 self.base_certificate.canonical_json(),
             ),
@@ -2137,6 +2143,10 @@ impl IndependentCheckerChallengeGenerationRequest {
                 independent_checker_json_string_literal(
                     INDEPENDENT_CHECKER_CHALLENGE_GENERATION_REQUEST_SCHEMA,
                 ),
+            ),
+            (
+                "statement_core_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.statement_core_hash),
             ),
         ]
     }
@@ -2199,6 +2209,8 @@ pub struct IndependentCheckerChallengeManifest {
     pub challenge_id: String,
     pub policy_hash: Hash,
     pub module: String,
+    pub statement_core_hash: Hash,
+    pub allowed_axioms: Vec<String>,
     pub imports: IndependentCheckerChallengeImports,
     pub base_certificate: IndependentCheckerChallengeBaseCertificate,
     pub mutated_certificate: IndependentCheckerChallengeMutatedCertificate,
@@ -2211,6 +2223,10 @@ pub struct IndependentCheckerChallengeManifest {
 impl IndependentCheckerChallengeManifest {
     pub fn canonical_json(&self) -> String {
         canonical_json_object_from_pairs(vec![
+            (
+                "allowed_axioms".to_owned(),
+                independent_checker_json_string_array(&self.allowed_axioms),
+            ),
             (
                 "base_certificate".to_owned(),
                 self.base_certificate.canonical_json(),
@@ -2247,6 +2263,10 @@ impl IndependentCheckerChallengeManifest {
                 independent_checker_json_string_literal(
                     INDEPENDENT_CHECKER_CHALLENGE_MANIFEST_SCHEMA,
                 ),
+            ),
+            (
+                "statement_core_hash".to_owned(),
+                independent_checker_hash_json_literal(&self.statement_core_hash),
             ),
         ])
     }
@@ -4197,6 +4217,8 @@ pub enum IndependentCheckerReleaseBundleArtifactKind {
     RunnerPolicy,
     CheckerIdentityManifest,
     ImportLock,
+    ProofCertificate,
+    ImportCertificate,
     MachineCheckRequest,
     MachineCheckResult,
     NormalizedCheckResult,
@@ -4221,6 +4243,8 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             Self::RunnerPolicy => "runner_policy",
             Self::CheckerIdentityManifest => "checker_identity_manifest",
             Self::ImportLock => "import_lock",
+            Self::ProofCertificate => "proof_certificate",
+            Self::ImportCertificate => "import_certificate",
             Self::MachineCheckRequest => "machine_check_request",
             Self::MachineCheckResult => "machine_check_result",
             Self::NormalizedCheckResult => "normalized_check_result",
@@ -4245,6 +4269,8 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             "runner_policy" => Some(Self::RunnerPolicy),
             "checker_identity_manifest" => Some(Self::CheckerIdentityManifest),
             "import_lock" => Some(Self::ImportLock),
+            "proof_certificate" => Some(Self::ProofCertificate),
+            "import_certificate" => Some(Self::ImportCertificate),
             "machine_check_request" => Some(Self::MachineCheckRequest),
             "machine_check_result" => Some(Self::MachineCheckResult),
             "normalized_check_result" => Some(Self::NormalizedCheckResult),
@@ -4288,6 +4314,8 @@ impl IndependentCheckerReleaseBundleArtifactKind {
                     | Self::RunnerPolicy
                     | Self::CheckerIdentityManifest
                     | Self::ImportLock
+                    | Self::ProofCertificate
+                    | Self::ImportCertificate
                     | Self::ChallengeManifest
                     | Self::ChallengeReplayResult
                     | Self::ChallengeCoverageSummary
@@ -4311,6 +4339,8 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             | Self::ChallengeManifest
             | Self::ChallengeOutputStoreManifest => &["manifest_hash"],
             Self::MachineCheckRequest => &["request_hash"],
+            Self::ProofCertificate => &["certificate_hash", "statement_core_hash"],
+            Self::ImportCertificate => &["certificate_hash", "export_hash"],
             Self::MachineCheckResult => &["result_hash", "run_artifact_hash"],
             Self::NormalizedCheckResult => &["artifact_hash", "normalized_result_hash"],
             Self::ChallengeReplayResult | Self::AuxiliaryResult => &["result_hash"],
@@ -4320,6 +4350,10 @@ impl IndependentCheckerReleaseBundleArtifactKind {
             | Self::CompareValidationResponse
             | Self::AuditSidecarValidationResponse => &[],
         }
+    }
+
+    const fn is_binary_certificate_artifact(self) -> bool {
+        matches!(self, Self::ProofCertificate | Self::ImportCertificate)
     }
 }
 
@@ -7634,6 +7668,8 @@ pub fn independent_checker_challenge_generate(
         challenge_id: request.challenge_id.clone(),
         policy_hash: request.policy_hash,
         module: request.module.clone(),
+        statement_core_hash: request.statement_core_hash,
+        allowed_axioms: request.allowed_axioms.clone(),
         imports: request.imports.clone(),
         base_certificate: request.base_certificate.clone(),
         mutated_certificate: IndependentCheckerChallengeMutatedCertificate {
@@ -9685,6 +9721,22 @@ pub fn independent_checker_release_stage_bundle_inputs(
                 input.file_hash,
                 actual_file_hash,
             ));
+        }
+        if input.kind.is_binary_certificate_artifact() {
+            independent_checker_release_validate_direct_certificate_artifact(
+                input,
+                index,
+                source_bytes,
+            )?;
+            independent_checker_release_stage_file(
+                input.kind,
+                input.file_hash,
+                source_bytes,
+                existing_bundle_files,
+                &mut staged_files,
+                &mut staged_artifacts,
+            )?;
+            continue;
         }
         let input_json_reason = if input.kind.is_store_source_manifest()
             || input.kind
@@ -16564,6 +16616,14 @@ fn parse_independent_checker_challenge_generation_request_value(
             "invalid_name_format",
         ));
     }
+    let statement_core_hash = required_hash_field(
+        members,
+        "statement_core_hash",
+        "statement_core_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let allowed_axioms =
+        required_string_array_field(members, "allowed_axioms", "allowed_axioms", "axiom_name")?;
     let imports = parse_independent_checker_challenge_imports_field(members, "imports")?;
     let base_certificate =
         parse_independent_checker_challenge_base_certificate_field(members, "base_certificate")?;
@@ -16577,6 +16637,8 @@ fn parse_independent_checker_challenge_generation_request_value(
         challenge_id,
         policy_hash,
         module,
+        statement_core_hash,
+        allowed_axioms,
         imports,
         base_certificate,
         mutation,
@@ -16639,6 +16701,22 @@ fn parse_independent_checker_challenge_manifest_value(
             "invalid_name_format",
         ));
     }
+    let statement_core_hash = required_hash_field(
+        members,
+        "statement_core_hash",
+        &independent_checker_join_json_path(root_path, "statement_core_hash"),
+        "sha256:<lower-hex>",
+    )?;
+    let allowed_axioms = required_string_array_field(
+        members,
+        "allowed_axioms",
+        &independent_checker_join_json_path(root_path, "allowed_axioms"),
+        "axiom_name",
+    )?;
+    validate_challenge_allowed_axioms(
+        &allowed_axioms,
+        &independent_checker_join_json_path(root_path, "allowed_axioms"),
+    )?;
     let imports = parse_independent_checker_challenge_imports_field(
         members,
         &independent_checker_join_json_path(root_path, "imports"),
@@ -16673,6 +16751,8 @@ fn parse_independent_checker_challenge_manifest_value(
         challenge_id,
         policy_hash,
         module,
+        statement_core_hash,
+        allowed_axioms,
         imports,
         base_certificate,
         mutated_certificate,
@@ -18374,6 +18454,8 @@ const CHALLENGE_GENERATION_REQUEST_FIELDS: &[&str] = &[
     "challenge_id",
     "policy_hash",
     "module",
+    "statement_core_hash",
+    "allowed_axioms",
     "imports",
     "base_certificate",
     "mutation",
@@ -18385,6 +18467,8 @@ const CHALLENGE_MANIFEST_FIELDS: &[&str] = &[
     "challenge_id",
     "policy_hash",
     "module",
+    "statement_core_hash",
+    "allowed_axioms",
     "imports",
     "base_certificate",
     "mutated_certificate",
@@ -18967,6 +19051,10 @@ fn independent_checker_release_validate_direct_artifact(
                 input.file_hash,
             )
         }
+        IndependentCheckerReleaseBundleArtifactKind::ProofCertificate
+        | IndependentCheckerReleaseBundleArtifactKind::ImportCertificate => {
+            unreachable!("binary certificate artifacts are validated before JSON dispatch")
+        }
         IndependentCheckerReleaseBundleArtifactKind::MachineCheckRequest => {
             let request =
                 parse_independent_checker_machine_check_request(source).map_err(|error| {
@@ -19208,6 +19296,64 @@ fn independent_checker_release_validate_direct_artifact(
                 format!("inputs[{index}].artifact"),
             )
         }
+    }
+}
+
+fn independent_checker_release_validate_direct_certificate_artifact(
+    input: &IndependentCheckerReleaseBundleStagingInput,
+    index: usize,
+    bytes: &[u8],
+) -> Result<(), IndependentCheckerCommandError> {
+    let facts = independent_checker_certificate_artifact_facts(bytes).map_err(|_| {
+        independent_checker_release_stage_value_error(
+            "input_certificate_invalid",
+            format!("inputs[{index}].path"),
+            "canonical_npcert",
+            "decode_failed",
+        )
+    })?;
+    independent_checker_release_validate_planned_hash(
+        input,
+        index,
+        "certificate_hash",
+        facts.certificate_hash,
+    )?;
+    match input.kind {
+        IndependentCheckerReleaseBundleArtifactKind::ProofCertificate => {
+            let statement_core_hash = independent_checker_single_theorem_statement_hash(
+                &facts,
+                format!("inputs[{index}].statement_core_hash"),
+            )
+            .map_err(|error| {
+                independent_checker_release_stage_value_error(
+                    "input_certificate_invalid",
+                    error.field,
+                    error
+                        .expected_value
+                        .map(|value| value.into_string())
+                        .unwrap_or_else(|| "exactly_one_theorem_statement".to_owned()),
+                    error
+                        .actual_value
+                        .map(|value| value.into_string())
+                        .unwrap_or_else(|| "invalid".to_owned()),
+                )
+            })?;
+            independent_checker_release_validate_planned_hash(
+                input,
+                index,
+                "statement_core_hash",
+                statement_core_hash,
+            )
+        }
+        IndependentCheckerReleaseBundleArtifactKind::ImportCertificate => {
+            independent_checker_release_validate_planned_hash(
+                input,
+                index,
+                "export_hash",
+                facts.export_hash,
+            )
+        }
+        _ => unreachable!("certificate artifact validation only called for certificate artifacts"),
     }
 }
 
@@ -19608,7 +19754,56 @@ fn independent_checker_release_bundle_artifact_path(
     let hash_hex = formatted
         .strip_prefix("sha256:")
         .expect("hash formatter emits sha256 prefix");
-    format!("artifacts/{}/{hash_hex}.json", kind.as_str())
+    let extension = if kind.is_binary_certificate_artifact() {
+        "npcert"
+    } else {
+        "json"
+    };
+    format!("artifacts/{}/{hash_hex}.{extension}", kind.as_str())
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct IndependentCheckerCertificateArtifactFacts {
+    module: String,
+    certificate_hash: Hash,
+    export_hash: Hash,
+    theorem_statement_hashes: Vec<Hash>,
+}
+
+fn independent_checker_certificate_artifact_facts(
+    bytes: &[u8],
+) -> Result<IndependentCheckerCertificateArtifactFacts, ()> {
+    let certificate = npa_cert::decode_module_cert(bytes).map_err(|_| ())?;
+    let theorem_statement_hashes = certificate
+        .export_block
+        .iter()
+        .filter_map(|export| (export.kind == ExportKind::Theorem).then_some(export.type_hash))
+        .collect();
+    Ok(IndependentCheckerCertificateArtifactFacts {
+        module: certificate.header.module.as_dotted(),
+        certificate_hash: certificate.hashes.certificate_hash,
+        export_hash: certificate.hashes.export_hash,
+        theorem_statement_hashes,
+    })
+}
+
+fn independent_checker_single_theorem_statement_hash(
+    facts: &IndependentCheckerCertificateArtifactFacts,
+    field: impl Into<String>,
+) -> Result<Hash, IndependentCheckerReleaseAuditBundleError> {
+    match facts.theorem_statement_hashes.as_slice() {
+        [hash] => Ok(*hash),
+        [] => Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            field,
+            "exactly_one_theorem_statement",
+            "missing",
+        )),
+        hashes => Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            field,
+            "exactly_one_theorem_statement",
+            format!("count:{}", hashes.len()),
+        )),
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -19690,6 +19885,9 @@ struct IndependentCheckerReleaseBundleNormalizedEntryView {
 struct IndependentCheckerReleaseBundleNormalizedResultView {
     normalized_result_hash: Hash,
     artifact_hash: Hash,
+    module: String,
+    input_file_hash: Hash,
+    expected_certificate_hash: Hash,
     policy_hash: Hash,
     import_lock_hash: Hash,
     comparison_status: IndependentCheckerNormalizedComparisonStatus,
@@ -20151,6 +20349,21 @@ fn independent_checker_validate_release_audit_bundle_artifact_files(
                 actual_file_hash,
             ));
         }
+        if artifact.kind.is_binary_certificate_artifact() {
+            let actual_hashes = independent_checker_release_bundle_certificate_artifact_hashes(
+                artifact.kind,
+                bytes,
+                index,
+            )?;
+            if actual_hashes != artifact.hashes {
+                return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                    format!("artifacts[{index}].hashes"),
+                    independent_checker_hashes_canonical_json(&actual_hashes),
+                    independent_checker_hashes_canonical_json(&artifact.hashes),
+                ));
+            }
+            continue;
+        }
         let source =
             independent_checker_release_bundle_utf8(bytes, format!("artifacts[{index}].path"))?;
         let actual_hashes =
@@ -20164,6 +20377,38 @@ fn independent_checker_validate_release_audit_bundle_artifact_files(
         }
     }
     Ok(())
+}
+
+fn independent_checker_release_bundle_certificate_artifact_hashes(
+    kind: IndependentCheckerReleaseBundleArtifactKind,
+    bytes: &[u8],
+    index: usize,
+) -> Result<BTreeMap<String, Hash>, IndependentCheckerReleaseAuditBundleError> {
+    let facts = independent_checker_certificate_artifact_facts(bytes).map_err(|_| {
+        IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].path"),
+            "canonical_npcert",
+            "decode_failed",
+        )
+    })?;
+    let mut hashes = BTreeMap::new();
+    hashes.insert("certificate_hash".to_owned(), facts.certificate_hash);
+    match kind {
+        IndependentCheckerReleaseBundleArtifactKind::ProofCertificate => {
+            hashes.insert(
+                "statement_core_hash".to_owned(),
+                independent_checker_single_theorem_statement_hash(
+                    &facts,
+                    format!("artifacts[{index}].hashes.statement_core_hash"),
+                )?,
+            );
+        }
+        IndependentCheckerReleaseBundleArtifactKind::ImportCertificate => {
+            hashes.insert("export_hash".to_owned(), facts.export_hash);
+        }
+        _ => unreachable!("certificate hash extraction only called for certificate artifacts"),
+    }
+    Ok(hashes)
 }
 
 fn independent_checker_release_bundle_utf8(
@@ -20215,6 +20460,10 @@ fn independent_checker_release_bundle_artifact_hashes(
                 "manifest_hash".to_owned(),
                 independent_checker_file_hash(source.as_bytes()),
             );
+        }
+        IndependentCheckerReleaseBundleArtifactKind::ProofCertificate
+        | IndependentCheckerReleaseBundleArtifactKind::ImportCertificate => {
+            unreachable!("binary certificate artifacts are hashed before JSON dispatch")
         }
         IndependentCheckerReleaseBundleArtifactKind::MachineCheckRequest => {
             let request =
@@ -20807,6 +21056,12 @@ fn independent_checker_validate_release_audit_bundle_closed_set(
         &requests,
         target,
     )?;
+    independent_checker_release_bundle_validate_certificate_artifacts(
+        manifest,
+        bundle_files,
+        &release_policy,
+        target,
+    )?;
     independent_checker_release_bundle_validate_auxiliary_results(
         manifest,
         bundle_files,
@@ -20868,14 +21123,40 @@ fn independent_checker_release_bundle_artifact_source<'a>(
     bundle_files: &'a BTreeMap<String, Vec<u8>>,
     index: usize,
 ) -> Result<&'a str, IndependentCheckerReleaseAuditBundleError> {
-    let bytes = bundle_files.get(&artifact.path).ok_or_else(|| {
-        IndependentCheckerReleaseAuditBundleError::missing_value(
-            format!("artifacts[{index}].path"),
-            "readable_bundle_file",
-            "missing",
-        )
-    })?;
+    let bytes = independent_checker_release_bundle_artifact_bytes(artifact, bundle_files, index)?;
     independent_checker_release_bundle_utf8(bytes, format!("artifacts[{index}].path"))
+}
+
+fn independent_checker_release_bundle_artifact_bytes<'a>(
+    artifact: &IndependentCheckerReleaseAuditBundleArtifact,
+    bundle_files: &'a BTreeMap<String, Vec<u8>>,
+    index: usize,
+) -> Result<&'a [u8], IndependentCheckerReleaseAuditBundleError> {
+    bundle_files
+        .get(&artifact.path)
+        .map(Vec::as_slice)
+        .ok_or_else(|| {
+            IndependentCheckerReleaseAuditBundleError::missing_value(
+                format!("artifacts[{index}].path"),
+                "readable_bundle_file",
+                "missing",
+            )
+        })
+}
+
+fn independent_checker_release_bundle_certificate_facts_for_artifact(
+    artifact: &IndependentCheckerReleaseAuditBundleArtifact,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    index: usize,
+) -> Result<IndependentCheckerCertificateArtifactFacts, IndependentCheckerReleaseAuditBundleError> {
+    let bytes = independent_checker_release_bundle_artifact_bytes(artifact, bundle_files, index)?;
+    independent_checker_certificate_artifact_facts(bytes).map_err(|_| {
+        IndependentCheckerReleaseAuditBundleError::invalid_value(
+            format!("artifacts[{index}].path"),
+            "canonical_npcert",
+            "decode_failed",
+        )
+    })
 }
 
 fn independent_checker_release_bundle_hash(
@@ -21321,6 +21602,20 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
     let members = object_members_or_policy_error(document.root(), "$", "object")?;
     let artifact_value = required_field_value(members, "artifact", "artifact", "object")?;
     let artifact_members = object_members_or_policy_error(artifact_value, "artifact", "object")?;
+    let module =
+        required_string_field(artifact_members, "module", "artifact.module", "module_name")?;
+    let input_file_hash = required_hash_field(
+        artifact_members,
+        "input_file_hash",
+        "artifact.input_file_hash",
+        "sha256:<lower-hex>",
+    )?;
+    let expected_certificate_hash = required_hash_field(
+        artifact_members,
+        "expected_certificate_hash",
+        "artifact.expected_certificate_hash",
+        "sha256:<lower-hex>",
+    )?;
     let import_lock_hash = required_hash_field(
         artifact_members,
         "import_lock_hash",
@@ -21449,6 +21744,9 @@ fn parse_independent_checker_release_bundle_normalized_result_view(
     Ok(IndependentCheckerReleaseBundleNormalizedResultView {
         normalized_result_hash: summary.normalized_result_hash,
         artifact_hash: summary.artifact_hash,
+        module,
+        input_file_hash,
+        expected_certificate_hash,
         policy_hash,
         import_lock_hash,
         comparison_status,
@@ -21592,6 +21890,198 @@ fn independent_checker_release_bundle_validate_import_locks(
             return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
                 "artifacts[import_lock]",
                 format!("manifest_hash:{}", format_hash_string(expected_hash)),
+                "missing",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn independent_checker_release_bundle_validate_certificate_artifacts(
+    manifest: &IndependentCheckerReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+    release_policy: &IndependentCheckerReleasePolicy,
+    target: &IndependentCheckerReleaseBundleNormalizedResultView,
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let proof_indices = independent_checker_release_bundle_indices(
+        &manifest.artifacts,
+        IndependentCheckerReleaseBundleArtifactKind::ProofCertificate,
+    );
+    let challenge_indices = independent_checker_release_bundle_indices(
+        &manifest.artifacts,
+        IndependentCheckerReleaseBundleArtifactKind::ChallengeManifest,
+    );
+    if proof_indices.len() > 1 {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            "artifacts[proof_certificate]",
+            "exactly_one:proof_certificate",
+            format!("count:{}", proof_indices.len()),
+        ));
+    }
+    if (release_policy.mode == IndependentCheckerReleaseMode::HighTrust
+        || !challenge_indices.is_empty())
+        && proof_indices.is_empty()
+    {
+        return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+            "artifacts[proof_certificate]",
+            "exactly_one:proof_certificate",
+            "missing",
+        ));
+    }
+
+    let mut proof_statement_core_hash = None;
+    if let Some(index) = proof_indices.first().copied() {
+        let artifact = &manifest.artifacts[index];
+        let facts = independent_checker_release_bundle_certificate_facts_for_artifact(
+            artifact,
+            bundle_files,
+            index,
+        )?;
+        if facts.module != target.module {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.module"),
+                &target.module,
+                facts.module,
+            ));
+        }
+        if artifact.file_hash != target.input_file_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].file_hash"),
+                target.input_file_hash,
+                artifact.file_hash,
+            ));
+        }
+        if facts.certificate_hash != target.expected_certificate_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].hashes.certificate_hash"),
+                target.expected_certificate_hash,
+                facts.certificate_hash,
+            ));
+        }
+        proof_statement_core_hash = Some(independent_checker_single_theorem_statement_hash(
+            &facts,
+            format!("artifacts[{index}].hashes.statement_core_hash"),
+        )?);
+    }
+
+    if let Some(proof_statement_core_hash) = proof_statement_core_hash {
+        for index in challenge_indices {
+            let artifact = &manifest.artifacts[index];
+            let source =
+                independent_checker_release_bundle_artifact_source(artifact, bundle_files, index)?;
+            let challenge =
+                parse_independent_checker_challenge_manifest(source).map_err(|error| {
+                    independent_checker_release_bundle_request_error(index, artifact.kind, error)
+                })?;
+            if challenge.statement_core_hash != proof_statement_core_hash {
+                return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                    format!("artifacts[{index}].artifact.statement_core_hash"),
+                    challenge.statement_core_hash,
+                    proof_statement_core_hash,
+                ));
+            }
+        }
+    }
+
+    if release_policy.mode == IndependentCheckerReleaseMode::HighTrust {
+        independent_checker_release_bundle_validate_import_certificate_artifacts(
+            manifest,
+            bundle_files,
+        )?;
+    }
+    Ok(())
+}
+
+fn independent_checker_release_bundle_validate_import_certificate_artifacts(
+    manifest: &IndependentCheckerReleaseAuditBundleManifest,
+    bundle_files: &BTreeMap<String, Vec<u8>>,
+) -> Result<(), IndependentCheckerReleaseAuditBundleError> {
+    let mut expected_by_file_hash = BTreeMap::<Hash, (String, Hash, Hash)>::new();
+    for lock_index in independent_checker_release_bundle_indices(
+        &manifest.artifacts,
+        IndependentCheckerReleaseBundleArtifactKind::ImportLock,
+    ) {
+        let artifact = &manifest.artifacts[lock_index];
+        let source =
+            independent_checker_release_bundle_artifact_source(artifact, bundle_files, lock_index)?;
+        let import_lock =
+            parse_independent_checker_import_lock_manifest(source).map_err(|error| {
+                independent_checker_release_bundle_request_error(lock_index, artifact.kind, error)
+            })?;
+        for import in import_lock.imports {
+            let expected = (
+                import.module,
+                import.export_hash,
+                import.certificate.certificate_hash,
+            );
+            if let Some(existing) =
+                expected_by_file_hash.insert(import.certificate.file_hash, expected.clone())
+            {
+                if existing != expected {
+                    return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                        "import_lock.artifact.imports[].certificate.file_hash",
+                        "unique_certificate_file_hash_mapping",
+                        "conflict",
+                    ));
+                }
+            }
+        }
+    }
+
+    let mut actual_file_hashes = BTreeSet::new();
+    for index in independent_checker_release_bundle_indices(
+        &manifest.artifacts,
+        IndependentCheckerReleaseBundleArtifactKind::ImportCertificate,
+    ) {
+        let artifact = &manifest.artifacts[index];
+        let facts = independent_checker_release_bundle_certificate_facts_for_artifact(
+            artifact,
+            bundle_files,
+            index,
+        )?;
+        let Some((expected_module, expected_export_hash, expected_certificate_hash)) =
+            expected_by_file_hash.get(&artifact.file_hash)
+        else {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].path"),
+                "referenced_by_import_lock",
+                "extra",
+            ));
+        };
+        if !actual_file_hashes.insert(artifact.file_hash) {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].file_hash"),
+                "unique_import_certificate_file_hash",
+                "duplicate",
+            ));
+        }
+        if &facts.module != expected_module {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                format!("artifacts[{index}].artifact.module"),
+                expected_module,
+                facts.module,
+            ));
+        }
+        if facts.export_hash != *expected_export_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].hashes.export_hash"),
+                *expected_export_hash,
+                facts.export_hash,
+            ));
+        }
+        if facts.certificate_hash != *expected_certificate_hash {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_hash(
+                format!("artifacts[{index}].hashes.certificate_hash"),
+                *expected_certificate_hash,
+                facts.certificate_hash,
+            ));
+        }
+    }
+    for expected_file_hash in expected_by_file_hash.keys() {
+        if !actual_file_hashes.contains(expected_file_hash) {
+            return Err(IndependentCheckerReleaseAuditBundleError::invalid_value(
+                "artifacts[import_certificate]",
+                format!("file_hash:{}", format_hash_string(expected_file_hash)),
                 "missing",
             ));
         }
@@ -25917,6 +26407,7 @@ fn validate_independent_checker_challenge_generation_request_domain(
             "invalid_enum",
         ));
     }
+    validate_challenge_allowed_axioms(&request.allowed_axioms, "allowed_axioms")?;
     for (field, path) in [
         ("imports.manifest", request.imports.manifest.as_str()),
         (
@@ -25989,6 +26480,28 @@ fn validate_independent_checker_challenge_generation_request_domain(
             ))
         }
         _ => {}
+    }
+    Ok(())
+}
+
+fn validate_challenge_allowed_axioms(
+    allowed_axioms: &[String],
+    field: &str,
+) -> Result<(), IndependentCheckerRequestValidationError> {
+    validate_string_set_sorted_unique(
+        allowed_axioms,
+        field,
+        "axiom_name_bytewise_ascending",
+        "duplicate_axiom_name",
+    )?;
+    for (index, axiom) in allowed_axioms.iter().enumerate() {
+        if !independent_checker_valid_dotted_name(axiom) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                format!("{field}[{index}]"),
+                "axiom_name",
+                "invalid_name_format",
+            ));
+        }
     }
     Ok(())
 }
@@ -31448,6 +31961,8 @@ mod tests {
             challenge_id: "pch_001".to_owned(),
             policy_hash: policy.policy_hash(),
             module: "Std.Nat".to_owned(),
+            statement_core_hash: test_hash(242),
+            allowed_axioms: vec!["Std.Logic.Eq.rec".to_owned()],
             imports: IndependentCheckerChallengeImports {
                 mode: "locked_store".to_owned(),
                 manifest: "build/certs/import-lock.json".to_owned(),
@@ -31510,6 +32025,11 @@ mod tests {
         .unwrap();
         assert_eq!(generated.manifest.challenge_id, request.challenge_id);
         assert_eq!(generated.manifest.policy_hash, policy.policy_hash());
+        assert_eq!(
+            generated.manifest.statement_core_hash,
+            request.statement_core_hash
+        );
+        assert_eq!(generated.manifest.allowed_axioms, request.allowed_axioms);
         assert_eq!(generated.manifest.imports, request.imports);
         assert_eq!(generated.manifest.replay.args_hash, request.request_hash());
         assert_eq!(generated.result.status, "written");
@@ -32985,6 +33505,85 @@ mod tests {
         artifact
     }
 
+    fn m12_add_artifact_bytes(
+        kind: IndependentCheckerReleaseBundleArtifactKind,
+        bytes: Vec<u8>,
+        hashes: &[(&str, Hash)],
+        artifacts: &mut Vec<IndependentCheckerReleaseAuditBundleArtifact>,
+        files: &mut BTreeMap<String, Vec<u8>>,
+    ) -> IndependentCheckerReleaseAuditBundleArtifact {
+        let file_hash = independent_checker_file_hash(&bytes);
+        let path = independent_checker_release_bundle_artifact_path(kind, file_hash);
+        files.insert(path.clone(), bytes);
+        let artifact = IndependentCheckerReleaseAuditBundleArtifact {
+            kind,
+            path,
+            file_hash,
+            hashes: hashes
+                .iter()
+                .map(|(field, hash)| ((*field).to_owned(), *hash))
+                .collect(),
+        };
+        artifacts.push(artifact.clone());
+        artifact
+    }
+
+    struct M12RealCertificate {
+        bytes: Vec<u8>,
+        file_hash: Hash,
+        certificate_hash: Hash,
+        export_hash: Hash,
+        statement_core_hash: Hash,
+    }
+
+    fn m12_id_type() -> npa_kernel::Expr {
+        let u = npa_kernel::Level::param("u");
+        npa_kernel::Expr::pi(
+            "A",
+            npa_kernel::Expr::sort(u),
+            npa_kernel::Expr::pi("x", npa_kernel::Expr::bvar(0), npa_kernel::Expr::bvar(1)),
+        )
+    }
+
+    fn m12_id_value() -> npa_kernel::Expr {
+        let u = npa_kernel::Level::param("u");
+        npa_kernel::Expr::lam(
+            "A",
+            npa_kernel::Expr::sort(u),
+            npa_kernel::Expr::lam("x", npa_kernel::Expr::bvar(0), npa_kernel::Expr::bvar(0)),
+        )
+    }
+
+    fn m12_real_theorem_certificate(module: &str, theorem: &str) -> M12RealCertificate {
+        let cert = npa_cert::build_module_cert(
+            npa_cert::CoreModule {
+                name: npa_cert::Name::from_dotted(module),
+                declarations: vec![npa_kernel::Decl::Theorem {
+                    name: theorem.to_owned(),
+                    universe_params: vec!["u".to_owned()],
+                    ty: m12_id_type(),
+                    proof: m12_id_value(),
+                }],
+            },
+            &[],
+        )
+        .unwrap();
+        let statement_core_hash = cert
+            .export_block
+            .iter()
+            .find(|export| export.kind == ExportKind::Theorem)
+            .unwrap()
+            .type_hash;
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+        M12RealCertificate {
+            file_hash: independent_checker_file_hash(&bytes),
+            bytes,
+            certificate_hash: cert.hashes.certificate_hash,
+            export_hash: cert.hashes.export_hash,
+            statement_core_hash,
+        }
+    }
+
     fn m12_fixture(include_all_required_profiles: bool) -> M12BundleFixture {
         let identity_json = m12_identity_manifest_json();
         let identity_hash = independent_checker_file_hash(identity_json.as_bytes());
@@ -33461,6 +34060,290 @@ mod tests {
             err.expected_value.as_deref(),
             Some("referenced_by_machine_check_result")
         );
+    }
+
+    #[test]
+    fn p8h12_challenge_schema_fixes_statement_hash_and_allowed_axioms() {
+        let (mut request, _, _, _) = m8_generation_request(
+            IndependentCheckerChallengeMutationKind::InsertUnsupportedSchemaVersion,
+            "$whole_certificate",
+            test_hash(240),
+        );
+        request.allowed_axioms = vec![
+            "Std.Logic.propExt".to_owned(),
+            "Std.Logic.choice".to_owned(),
+        ];
+        let err = parse_independent_checker_challenge_generation_request(&request.canonical_json())
+            .unwrap_err();
+        assert_eq!(err.field.as_ref(), "allowed_axioms[1]");
+        assert_eq!(err.actual_value.as_deref(), Some("order_violation"));
+    }
+
+    #[test]
+    fn p8h12_certificate_artifact_hashes_are_derived_from_canonical_npcert() {
+        let proof = m12_real_theorem_certificate("Audit.Target", "id_thm");
+        let mut artifacts = Vec::new();
+        let mut files = BTreeMap::new();
+        m12_add_artifact_bytes(
+            IndependentCheckerReleaseBundleArtifactKind::ProofCertificate,
+            proof.bytes.clone(),
+            &[
+                ("certificate_hash", proof.certificate_hash),
+                ("statement_core_hash", proof.statement_core_hash),
+            ],
+            &mut artifacts,
+            &mut files,
+        );
+        independent_checker_validate_release_audit_bundle_artifact_files(&artifacts, &files)
+            .unwrap();
+
+        artifacts[0]
+            .hashes
+            .insert("statement_core_hash".to_owned(), test_hash(250));
+        let err =
+            independent_checker_validate_release_audit_bundle_artifact_files(&artifacts, &files)
+                .unwrap_err();
+        assert_eq!(err.field.as_ref(), "artifacts[0].hashes");
+    }
+
+    #[test]
+    fn p8h12_challenge_statement_mismatch_is_source_free_bundle_failure() {
+        let proof = m12_real_theorem_certificate("Audit.Target", "id_thm");
+        let mut artifacts = Vec::new();
+        let mut files = BTreeMap::new();
+        m12_add_artifact_bytes(
+            IndependentCheckerReleaseBundleArtifactKind::ProofCertificate,
+            proof.bytes.clone(),
+            &[
+                ("certificate_hash", proof.certificate_hash),
+                ("statement_core_hash", proof.statement_core_hash),
+            ],
+            &mut artifacts,
+            &mut files,
+        );
+        let challenge = IndependentCheckerChallengeManifest {
+            challenge_id: "pch_p8h12_statement".to_owned(),
+            policy_hash: test_hash(2),
+            module: "Audit.Target".to_owned(),
+            statement_core_hash: test_hash(251),
+            allowed_axioms: Vec::new(),
+            imports: IndependentCheckerChallengeImports {
+                mode: "locked_store".to_owned(),
+                manifest: "build/import-lock.json".to_owned(),
+                manifest_hash: test_hash(252),
+            },
+            base_certificate: IndependentCheckerChallengeBaseCertificate {
+                path: "build/proof.npcert".to_owned(),
+                file_hash: proof.file_hash,
+                claimed_certificate_hash: proof.certificate_hash,
+            },
+            mutated_certificate: IndependentCheckerChallengeMutatedCertificate {
+                path: "build/challenges/pch_p8h12_statement/mutated.npcert".to_owned(),
+                file_hash: test_hash(253),
+                claimed_certificate_hash: None,
+            },
+            mutation: IndependentCheckerChallengeMutation {
+                kind: IndependentCheckerChallengeMutationKind::InsertUnsupportedSchemaVersion
+                    .as_str()
+                    .to_owned(),
+                target: "$whole_certificate".to_owned(),
+                seed: test_hash(254),
+            },
+            outcome_hint: IndependentCheckerChallengeOutcomeHint {
+                status: "should_fail".to_owned(),
+                error_kinds: vec!["unsupported_schema_version".to_owned()],
+            },
+            replay: IndependentCheckerChallengeReplayMetadata {
+                generator: "unit-test".to_owned(),
+                generator_version: "0.0.0".to_owned(),
+                generator_build_hash: test_hash(255),
+                args_hash: test_hash(1),
+            },
+            generated_by: IndependentCheckerChallengeGeneratedBy {
+                kind: IndependentCheckerChallengeGeneratedByKind::Ci,
+                prompt_hash: None,
+            },
+        };
+        m12_add_artifact(
+            IndependentCheckerReleaseBundleArtifactKind::ChallengeManifest,
+            challenge.canonical_json(),
+            &[("manifest_hash", challenge.manifest_hash())],
+            &mut artifacts,
+            &mut files,
+        );
+        let manifest = IndependentCheckerReleaseAuditBundleManifest::new(
+            test_hash(1),
+            test_hash(2),
+            artifacts,
+        );
+        let target = IndependentCheckerReleaseBundleNormalizedResultView {
+            normalized_result_hash: test_hash(3),
+            artifact_hash: test_hash(2),
+            module: "Audit.Target".to_owned(),
+            input_file_hash: proof.file_hash,
+            expected_certificate_hash: proof.certificate_hash,
+            policy_hash: test_hash(4),
+            import_lock_hash: test_hash(5),
+            comparison_status: IndependentCheckerNormalizedComparisonStatus::AllAgreeChecked,
+            comparison_missing_checker_profiles: Vec::new(),
+            comparison_disagreements_len: 0,
+            comparison_status_reasons_len: 0,
+            results: Vec::new(),
+        };
+        let release_policy = m7_release_policy(IndependentCheckerReleaseMode::Release);
+        let err = independent_checker_release_bundle_validate_certificate_artifacts(
+            &manifest,
+            &files,
+            &release_policy,
+            &target,
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.field.as_ref(),
+            "artifacts[1].artifact.statement_core_hash"
+        );
+        assert_eq!(err.expected_hash, Some(Box::new(test_hash(251))));
+        assert_eq!(err.actual_hash, Some(Box::new(proof.statement_core_hash)));
+    }
+
+    #[test]
+    fn p8h12_high_trust_import_certificate_artifacts_follow_import_lock() {
+        let import = m12_real_theorem_certificate("Audit.Import", "id_thm");
+        let import_lock = IndependentCheckerImportLockManifest {
+            imports: vec![IndependentCheckerImportLockEntry {
+                module: "Audit.Import".to_owned(),
+                export_hash: import.export_hash,
+                certificate: IndependentCheckerImportLockCertificate {
+                    path: "build/import.npcert".to_owned(),
+                    file_hash: import.file_hash,
+                    certificate_hash: import.certificate_hash,
+                },
+            }],
+        };
+        let mut artifacts = Vec::new();
+        let mut files = BTreeMap::new();
+        let import_lock_json = import_lock.canonical_json();
+        m12_add_artifact(
+            IndependentCheckerReleaseBundleArtifactKind::ImportLock,
+            import_lock_json.clone(),
+            &[(
+                "manifest_hash",
+                independent_checker_file_hash(import_lock_json.as_bytes()),
+            )],
+            &mut artifacts,
+            &mut files,
+        );
+        let manifest = IndependentCheckerReleaseAuditBundleManifest::new(
+            test_hash(1),
+            test_hash(2),
+            artifacts.clone(),
+        );
+        let missing = independent_checker_release_bundle_validate_import_certificate_artifacts(
+            &manifest, &files,
+        )
+        .unwrap_err();
+        assert_eq!(missing.field.as_ref(), "artifacts[import_certificate]");
+
+        m12_add_artifact_bytes(
+            IndependentCheckerReleaseBundleArtifactKind::ImportCertificate,
+            import.bytes.clone(),
+            &[
+                ("certificate_hash", import.certificate_hash),
+                ("export_hash", import.export_hash),
+            ],
+            &mut artifacts,
+            &mut files,
+        );
+        let mut wrong_lock = import_lock;
+        wrong_lock.imports[0].certificate.certificate_hash = test_hash(3);
+        let wrong_lock_json = wrong_lock.canonical_json();
+        let lock_index = artifacts
+            .iter()
+            .position(|artifact| {
+                artifact.kind == IndependentCheckerReleaseBundleArtifactKind::ImportLock
+            })
+            .unwrap();
+        files.remove(&artifacts[lock_index].path);
+        let wrong_lock_hash = independent_checker_file_hash(wrong_lock_json.as_bytes());
+        let wrong_lock_path = independent_checker_release_bundle_artifact_path(
+            IndependentCheckerReleaseBundleArtifactKind::ImportLock,
+            wrong_lock_hash,
+        );
+        files.insert(wrong_lock_path.clone(), wrong_lock_json.into_bytes());
+        artifacts[lock_index] = IndependentCheckerReleaseAuditBundleArtifact {
+            kind: IndependentCheckerReleaseBundleArtifactKind::ImportLock,
+            path: wrong_lock_path,
+            file_hash: wrong_lock_hash,
+            hashes: BTreeMap::from([("manifest_hash".to_owned(), wrong_lock_hash)]),
+        };
+        let manifest = IndependentCheckerReleaseAuditBundleManifest::new(
+            test_hash(1),
+            test_hash(2),
+            artifacts,
+        );
+        let wrong = independent_checker_release_bundle_validate_import_certificate_artifacts(
+            &manifest, &files,
+        )
+        .unwrap_err();
+        assert!(wrong.field.as_ref().ends_with(".hashes.certificate_hash"));
+        assert_eq!(wrong.expected_hash, Some(Box::new(test_hash(3))));
+        assert_eq!(wrong.actual_hash, Some(Box::new(import.certificate_hash)));
+    }
+
+    #[test]
+    fn p8h12_audit_bundle_validation_rejects_forbidden_axiom_auxiliary_failure() {
+        let mut fixture = m12_fixture(true);
+        let axiom_aux_index = fixture
+            .artifacts
+            .iter()
+            .position(|artifact| {
+                if artifact.kind != IndependentCheckerReleaseBundleArtifactKind::AuxiliaryResult {
+                    return false;
+                }
+                let source =
+                    std::str::from_utf8(fixture.files.get(&artifact.path).unwrap()).unwrap();
+                parse_independent_checker_auxiliary_result(source)
+                    .map(|result| result.kind == IndependentCheckerAuxiliaryResultKind::AxiomPolicy)
+                    .unwrap_or(false)
+            })
+            .unwrap();
+        let old_path = fixture.artifacts[axiom_aux_index].path.clone();
+        let old_source = std::str::from_utf8(fixture.files.get(&old_path).unwrap()).unwrap();
+        let old = parse_independent_checker_auxiliary_result(old_source).unwrap();
+        fixture.files.remove(&old_path);
+        fixture.artifacts.remove(axiom_aux_index);
+        let failed = IndependentCheckerAuxiliaryResult::failed(
+            old.result_id,
+            old.kind,
+            old.policy_hash,
+            old.artifact_hash,
+            old.selector,
+            IndependentCheckerAuxiliaryError::value(
+                IndependentCheckerAuxiliaryReasonCode::AxiomPolicyFailed,
+                "axiom_report.axioms[0].name",
+                "allowed_axiom",
+                "Std.Logic.choice",
+            ),
+        );
+        m12_add_artifact(
+            IndependentCheckerReleaseBundleArtifactKind::AuxiliaryResult,
+            failed.canonical_json(),
+            &[("result_hash", failed.result_hash())],
+            &mut fixture.artifacts,
+            &mut fixture.files,
+        );
+
+        let err = independent_checker_release_bundle(
+            "dist/release-bundle",
+            "dist/release-bundle/manifest.json",
+            fixture.artifact_hash,
+            &fixture.artifacts,
+            &fixture.files,
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(err.reason_code.as_ref(), "release_bundle_generation_failed");
+        assert!(err.field.as_deref().unwrap().ends_with(".artifact.status"));
     }
 
     fn m13_training_stores() -> (
