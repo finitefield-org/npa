@@ -235,18 +235,18 @@ None
 
 実装タスク:
 
-- [ ] reference checker の置き場所を固定する。候補は新規 `crates/npa-checker-ref` または同等の独立 crate。
-- [ ] public API を `check_certificate(cert_bytes, import_store, policy) -> ReferenceCheckResult` 形で固定する。
-- [ ] reference checker が `.npa` source、tactic script、AI trace、theorem index を受け取れない型にする。
-- [ ] fast kernel / `npa_cert::verify_module_cert` を呼ばずに result を返す skeleton を作る。
-- [ ] error enum を structured / deterministic にし、human string だけに依存しない test を追加する。
+- [x] reference checker の置き場所を固定する。候補は新規 `crates/npa-checker-ref` または同等の独立 crate。
+- [x] public API を `check_certificate(cert_bytes, import_store, policy) -> ReferenceCheckResult` 形で固定する。
+- [x] reference checker が `.npa` source、tactic script、AI trace、theorem index を受け取れない型にする。
+- [x] fast kernel / `npa_cert::verify_module_cert` を呼ばずに result を返す skeleton を作る。
+- [x] error enum を structured / deterministic にし、human string だけに依存しない test を追加する。
 
 受け入れ条件:
 
-- [ ] reference checker crate は `npa-api` に依存しない。
-- [ ] reference checker crate は `npa-tactic` / `npa-frontend` に依存しない。
-- [ ] skeleton は source-free empty / malformed certificate を deterministic error として返す。
-- [ ] `unsafe` を使わない。必要になった場合は境界と代替案を文書化する。
+- [x] reference checker crate は `npa-api` に依存しない。
+- [x] reference checker crate は `npa-tactic` / `npa-frontend` に依存しない。
+- [x] skeleton は source-free empty / malformed certificate を deterministic error として返す。
+- [x] `unsafe` を使わない。必要になった場合は境界と代替案を文書化する。
 
 検証:
 
