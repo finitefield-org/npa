@@ -1436,6 +1436,19 @@ high-trust mode の required profile として扱います。
 - at least two independent checkers required
 ```
 
+## 14.5 実装固定点
+
+CI workflow は `IndependentCheckerTrustMode::ci_commands()` と
+`IndependentCheckerTrustMode::ci_pass_requirements()` の返す列を正とします。
+PR mode は changed certificate / reverse dependency selection と reference checker を必須にし、
+external checker、full recursive import check、audit artifact coverage は nightly / release /
+high-trust mode 以上で必須にします。
+
+performance benchmark の分類は `independent_checker_performance_gates()` で固定します。
+PR の同期必須 benchmark は fast kernel、Machine API、theorem index build、AI benchmark に限定し、
+reference / external checker benchmark は background または cached audit result として扱います。
+これらの performance gate は regression gate / release policy であり、proof acceptance boundary ではありません。
+
 ---
 
 # 15. Fuzzing and mutation tests

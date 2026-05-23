@@ -1246,6 +1246,146 @@ impl IndependentCheckerTrustMode {
         }
     }
 
+    pub const fn ci_commands(self) -> &'static [IndependentCheckerCiCommand] {
+        match self {
+            Self::Pr => &[
+                IndependentCheckerCiCommand::SelectChangedCertificates,
+                IndependentCheckerCiCommand::SelectReverseDependencies,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithFastKernel,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithReference,
+                IndependentCheckerCiCommand::CheckReverseDependenciesWithReference,
+                IndependentCheckerCiCommand::ValidateAxiomPolicy,
+                IndependentCheckerCiCommand::RunBasicTacticRegression,
+            ],
+            Self::Nightly => &[
+                IndependentCheckerCiCommand::SelectChangedCertificates,
+                IndependentCheckerCiCommand::SelectReverseDependencies,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithFastKernel,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithReference,
+                IndependentCheckerCiCommand::CheckReverseDependenciesWithReference,
+                IndependentCheckerCiCommand::ValidateAxiomPolicy,
+                IndependentCheckerCiCommand::RunBasicTacticRegression,
+                IndependentCheckerCiCommand::FullLibraryFastKernelCheck,
+                IndependentCheckerCiCommand::FullLibraryReferenceChecker,
+                IndependentCheckerCiCommand::FullLibraryExternalChecker,
+                IndependentCheckerCiCommand::FullRecursiveImportCheck,
+                IndependentCheckerCiCommand::FullAuditArtifactCoverage,
+                IndependentCheckerCiCommand::RunFuzzMutationCorpus,
+                IndependentCheckerCiCommand::ValidateTheoremIndex,
+                IndependentCheckerCiCommand::RunAiBenchmark,
+                IndependentCheckerCiCommand::RunPerformanceBenchmark,
+                IndependentCheckerCiCommand::CheckReproducibility,
+                IndependentCheckerCiCommand::ReplayChallengeCorpus,
+            ],
+            Self::Release => &[
+                IndependentCheckerCiCommand::SelectChangedCertificates,
+                IndependentCheckerCiCommand::SelectReverseDependencies,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithFastKernel,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithReference,
+                IndependentCheckerCiCommand::CheckReverseDependenciesWithReference,
+                IndependentCheckerCiCommand::ValidateAxiomPolicy,
+                IndependentCheckerCiCommand::RunBasicTacticRegression,
+                IndependentCheckerCiCommand::FullLibraryFastKernelCheck,
+                IndependentCheckerCiCommand::FullLibraryReferenceChecker,
+                IndependentCheckerCiCommand::FullLibraryExternalChecker,
+                IndependentCheckerCiCommand::FullRecursiveImportCheck,
+                IndependentCheckerCiCommand::FullAuditArtifactCoverage,
+                IndependentCheckerCiCommand::RunFuzzMutationCorpus,
+                IndependentCheckerCiCommand::ValidateTheoremIndex,
+                IndependentCheckerCiCommand::RunAiBenchmark,
+                IndependentCheckerCiCommand::RunPerformanceBenchmark,
+                IndependentCheckerCiCommand::CheckReproducibility,
+                IndependentCheckerCiCommand::ReplayChallengeCorpus,
+                IndependentCheckerCiCommand::RunCleanBuild,
+                IndependentCheckerCiCommand::VerifyLockedDependencies,
+                IndependentCheckerCiCommand::VerifyDeterministicRebuild,
+                IndependentCheckerCiCommand::RunFullIndependentCheck,
+                IndependentCheckerCiCommand::GenerateReleaseAuditBundle,
+                IndependentCheckerCiCommand::SignReleaseArtifacts,
+            ],
+            Self::HighTrust => &[
+                IndependentCheckerCiCommand::SelectChangedCertificates,
+                IndependentCheckerCiCommand::SelectReverseDependencies,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithFastKernel,
+                IndependentCheckerCiCommand::CheckChangedCertificatesWithReference,
+                IndependentCheckerCiCommand::CheckReverseDependenciesWithReference,
+                IndependentCheckerCiCommand::ValidateAxiomPolicy,
+                IndependentCheckerCiCommand::RunBasicTacticRegression,
+                IndependentCheckerCiCommand::FullLibraryFastKernelCheck,
+                IndependentCheckerCiCommand::FullLibraryReferenceChecker,
+                IndependentCheckerCiCommand::FullLibraryExternalChecker,
+                IndependentCheckerCiCommand::FullRecursiveImportCheck,
+                IndependentCheckerCiCommand::FullAuditArtifactCoverage,
+                IndependentCheckerCiCommand::RunFuzzMutationCorpus,
+                IndependentCheckerCiCommand::ValidateTheoremIndex,
+                IndependentCheckerCiCommand::RunAiBenchmark,
+                IndependentCheckerCiCommand::RunPerformanceBenchmark,
+                IndependentCheckerCiCommand::CheckReproducibility,
+                IndependentCheckerCiCommand::ReplayChallengeCorpus,
+                IndependentCheckerCiCommand::RunCleanBuild,
+                IndependentCheckerCiCommand::VerifyLockedDependencies,
+                IndependentCheckerCiCommand::VerifyDeterministicRebuild,
+                IndependentCheckerCiCommand::RunFullIndependentCheck,
+                IndependentCheckerCiCommand::GenerateReleaseAuditBundle,
+                IndependentCheckerCiCommand::SignReleaseArtifacts,
+                IndependentCheckerCiCommand::RequireChallengeFile,
+                IndependentCheckerCiCommand::RequireProofCertificate,
+                IndependentCheckerCiCommand::IgnoreSourceAndDisableNetworkAndPlugins,
+                IndependentCheckerCiCommand::VerifyHighTrustImportCertificateHashes,
+                IndependentCheckerCiCommand::RequireAppendOnlyCheckerResults,
+                IndependentCheckerCiCommand::RequireAtLeastTwoIndependentCheckers,
+            ],
+        }
+    }
+
+    pub const fn ci_pass_requirements(self) -> &'static [IndependentCheckerCiPassRequirement] {
+        match self {
+            Self::Pr => &[
+                IndependentCheckerCiPassRequirement::RequiredCheckerProfilesChecked,
+                IndependentCheckerCiPassRequirement::NormalizedAllAgreeChecked,
+                IndependentCheckerCiPassRequirement::AxiomPolicyPassed,
+            ],
+            Self::Nightly => &[
+                IndependentCheckerCiPassRequirement::RequiredCheckerProfilesChecked,
+                IndependentCheckerCiPassRequirement::NormalizedAllAgreeChecked,
+                IndependentCheckerCiPassRequirement::AxiomPolicyPassed,
+                IndependentCheckerCiPassRequirement::FullRecursiveImportCheckPassed,
+                IndependentCheckerCiPassRequirement::FullAuditArtifactCoverageRecorded,
+                IndependentCheckerCiPassRequirement::ReproducibilityPassed,
+                IndependentCheckerCiPassRequirement::ChallengeReplayCoverageComplete,
+                IndependentCheckerCiPassRequirement::NoUnexpectedCheckerAcceptance,
+            ],
+            Self::Release => &[
+                IndependentCheckerCiPassRequirement::RequiredCheckerProfilesChecked,
+                IndependentCheckerCiPassRequirement::NormalizedAllAgreeChecked,
+                IndependentCheckerCiPassRequirement::AxiomPolicyPassed,
+                IndependentCheckerCiPassRequirement::FullRecursiveImportCheckPassed,
+                IndependentCheckerCiPassRequirement::FullAuditArtifactCoverageRecorded,
+                IndependentCheckerCiPassRequirement::ReproducibilityPassed,
+                IndependentCheckerCiPassRequirement::ChallengeReplayCoverageComplete,
+                IndependentCheckerCiPassRequirement::NoUnexpectedCheckerAcceptance,
+                IndependentCheckerCiPassRequirement::FullIndependentCheckPassed,
+                IndependentCheckerCiPassRequirement::ReleaseAuditBundleGenerated,
+            ],
+            Self::HighTrust => &[
+                IndependentCheckerCiPassRequirement::RequiredCheckerProfilesChecked,
+                IndependentCheckerCiPassRequirement::NormalizedAllAgreeChecked,
+                IndependentCheckerCiPassRequirement::AxiomPolicyPassed,
+                IndependentCheckerCiPassRequirement::FullRecursiveImportCheckPassed,
+                IndependentCheckerCiPassRequirement::FullAuditArtifactCoverageRecorded,
+                IndependentCheckerCiPassRequirement::ReproducibilityPassed,
+                IndependentCheckerCiPassRequirement::ChallengeReplayCoverageComplete,
+                IndependentCheckerCiPassRequirement::NoUnexpectedCheckerAcceptance,
+                IndependentCheckerCiPassRequirement::FullIndependentCheckPassed,
+                IndependentCheckerCiPassRequirement::ReleaseAuditBundleGenerated,
+                IndependentCheckerCiPassRequirement::HighTrustReferenceChecked,
+                IndependentCheckerCiPassRequirement::AllImportsRecursivelyChecked,
+                IndependentCheckerCiPassRequirement::AtLeastTwoIndependentCheckers,
+                IndependentCheckerCiPassRequirement::ImportCertificateHashVerification,
+            ],
+        }
+    }
+
     fn parse(value: &str) -> Option<Self> {
         match value {
             "pr" => Some(Self::Pr),
@@ -1255,6 +1395,258 @@ impl IndependentCheckerTrustMode {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum IndependentCheckerCiCommand {
+    SelectChangedCertificates,
+    SelectReverseDependencies,
+    CheckChangedCertificatesWithFastKernel,
+    CheckChangedCertificatesWithReference,
+    CheckReverseDependenciesWithReference,
+    ValidateAxiomPolicy,
+    RunBasicTacticRegression,
+    FullLibraryFastKernelCheck,
+    FullLibraryReferenceChecker,
+    FullLibraryExternalChecker,
+    FullRecursiveImportCheck,
+    FullAuditArtifactCoverage,
+    RunFuzzMutationCorpus,
+    ValidateTheoremIndex,
+    RunAiBenchmark,
+    RunPerformanceBenchmark,
+    CheckReproducibility,
+    ReplayChallengeCorpus,
+    RunCleanBuild,
+    VerifyLockedDependencies,
+    VerifyDeterministicRebuild,
+    RunFullIndependentCheck,
+    GenerateReleaseAuditBundle,
+    SignReleaseArtifacts,
+    RequireChallengeFile,
+    RequireProofCertificate,
+    IgnoreSourceAndDisableNetworkAndPlugins,
+    VerifyHighTrustImportCertificateHashes,
+    RequireAppendOnlyCheckerResults,
+    RequireAtLeastTwoIndependentCheckers,
+}
+
+impl IndependentCheckerCiCommand {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SelectChangedCertificates => "select-changed-certificates",
+            Self::SelectReverseDependencies => "select-reverse-dependencies",
+            Self::CheckChangedCertificatesWithFastKernel => {
+                "check-changed-certificates-with-fast-kernel"
+            }
+            Self::CheckChangedCertificatesWithReference => {
+                "check-changed-certificates-with-reference"
+            }
+            Self::CheckReverseDependenciesWithReference => {
+                "check-reverse-dependencies-with-reference"
+            }
+            Self::ValidateAxiomPolicy => "validate-axiom-policy",
+            Self::RunBasicTacticRegression => "run-basic-tactic-regression",
+            Self::FullLibraryFastKernelCheck => "full-library-fast-kernel-check",
+            Self::FullLibraryReferenceChecker => "full-library-reference-checker",
+            Self::FullLibraryExternalChecker => "full-library-external-checker",
+            Self::FullRecursiveImportCheck => "full-recursive-import-check",
+            Self::FullAuditArtifactCoverage => "full-audit-artifact-coverage",
+            Self::RunFuzzMutationCorpus => "run-fuzz-mutation-corpus",
+            Self::ValidateTheoremIndex => "validate-theorem-index",
+            Self::RunAiBenchmark => "run-ai-benchmark",
+            Self::RunPerformanceBenchmark => "run-performance-benchmark",
+            Self::CheckReproducibility => "check-reproducibility",
+            Self::ReplayChallengeCorpus => "replay-challenge-corpus",
+            Self::RunCleanBuild => "run-clean-build",
+            Self::VerifyLockedDependencies => "verify-locked-dependencies",
+            Self::VerifyDeterministicRebuild => "verify-deterministic-rebuild",
+            Self::RunFullIndependentCheck => "run-full-independent-check",
+            Self::GenerateReleaseAuditBundle => "generate-release-audit-bundle",
+            Self::SignReleaseArtifacts => "sign-release-artifacts",
+            Self::RequireChallengeFile => "require-challenge-file",
+            Self::RequireProofCertificate => "require-proof-certificate",
+            Self::IgnoreSourceAndDisableNetworkAndPlugins => {
+                "ignore-source-and-disable-network-and-plugins"
+            }
+            Self::VerifyHighTrustImportCertificateHashes => {
+                "verify-high-trust-import-certificate-hashes"
+            }
+            Self::RequireAppendOnlyCheckerResults => "require-append-only-checker-results",
+            Self::RequireAtLeastTwoIndependentCheckers => {
+                "require-at-least-two-independent-checkers"
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum IndependentCheckerCiPassRequirement {
+    RequiredCheckerProfilesChecked,
+    NormalizedAllAgreeChecked,
+    AxiomPolicyPassed,
+    FullRecursiveImportCheckPassed,
+    FullAuditArtifactCoverageRecorded,
+    ReproducibilityPassed,
+    ChallengeReplayCoverageComplete,
+    NoUnexpectedCheckerAcceptance,
+    FullIndependentCheckPassed,
+    ReleaseAuditBundleGenerated,
+    HighTrustReferenceChecked,
+    AllImportsRecursivelyChecked,
+    AtLeastTwoIndependentCheckers,
+    ImportCertificateHashVerification,
+}
+
+impl IndependentCheckerCiPassRequirement {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::RequiredCheckerProfilesChecked => "required-checker-profiles-checked",
+            Self::NormalizedAllAgreeChecked => "normalized-all-agree-checked",
+            Self::AxiomPolicyPassed => "axiom-policy-passed",
+            Self::FullRecursiveImportCheckPassed => "full-recursive-import-check-passed",
+            Self::FullAuditArtifactCoverageRecorded => "full-audit-artifact-coverage-recorded",
+            Self::ReproducibilityPassed => "reproducibility-passed",
+            Self::ChallengeReplayCoverageComplete => "challenge-replay-coverage-complete",
+            Self::NoUnexpectedCheckerAcceptance => "no-unexpected-checker-acceptance",
+            Self::FullIndependentCheckPassed => "full-independent-check-passed",
+            Self::ReleaseAuditBundleGenerated => "release-audit-bundle-generated",
+            Self::HighTrustReferenceChecked => "high-trust-reference-checked",
+            Self::AllImportsRecursivelyChecked => "all-imports-recursively-checked",
+            Self::AtLeastTwoIndependentCheckers => "at-least-two-independent-checkers",
+            Self::ImportCertificateHashVerification => "import-certificate-hash-verification",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum IndependentCheckerPerformanceBenchmarkClass {
+    FastKernel,
+    MachineApi,
+    TheoremIndexBuild,
+    AiBenchmark,
+    ReferenceChecker,
+    ExternalChecker,
+}
+
+impl IndependentCheckerPerformanceBenchmarkClass {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::FastKernel => "fast-kernel",
+            Self::MachineApi => "machine-api",
+            Self::TheoremIndexBuild => "theorem-index-build",
+            Self::AiBenchmark => "ai-benchmark",
+            Self::ReferenceChecker => "reference-checker",
+            Self::ExternalChecker => "external-checker",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IndependentCheckerPerformanceGatePrPlacement {
+    SynchronousRequired,
+    BackgroundOrCachedAudit,
+}
+
+impl IndependentCheckerPerformanceGatePrPlacement {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::SynchronousRequired => "pr-synchronous-required",
+            Self::BackgroundOrCachedAudit => "background-or-cached-audit",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerPerformanceGate {
+    pub benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+    pub pr_placement: IndependentCheckerPerformanceGatePrPlacement,
+    pub nightly_records_detailed_metrics: bool,
+    pub release_failure_gate: bool,
+    pub proof_acceptance_boundary: bool,
+}
+
+pub const INDEPENDENT_CHECKER_PERFORMANCE_GATES: &[IndependentCheckerPerformanceGate] = &[
+    IndependentCheckerPerformanceGate {
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass::FastKernel,
+        pr_placement: IndependentCheckerPerformanceGatePrPlacement::SynchronousRequired,
+        nightly_records_detailed_metrics: true,
+        release_failure_gate: true,
+        proof_acceptance_boundary: false,
+    },
+    IndependentCheckerPerformanceGate {
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass::MachineApi,
+        pr_placement: IndependentCheckerPerformanceGatePrPlacement::SynchronousRequired,
+        nightly_records_detailed_metrics: true,
+        release_failure_gate: true,
+        proof_acceptance_boundary: false,
+    },
+    IndependentCheckerPerformanceGate {
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass::TheoremIndexBuild,
+        pr_placement: IndependentCheckerPerformanceGatePrPlacement::SynchronousRequired,
+        nightly_records_detailed_metrics: true,
+        release_failure_gate: true,
+        proof_acceptance_boundary: false,
+    },
+    IndependentCheckerPerformanceGate {
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass::AiBenchmark,
+        pr_placement: IndependentCheckerPerformanceGatePrPlacement::SynchronousRequired,
+        nightly_records_detailed_metrics: true,
+        release_failure_gate: true,
+        proof_acceptance_boundary: false,
+    },
+    IndependentCheckerPerformanceGate {
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass::ReferenceChecker,
+        pr_placement: IndependentCheckerPerformanceGatePrPlacement::BackgroundOrCachedAudit,
+        nightly_records_detailed_metrics: true,
+        release_failure_gate: true,
+        proof_acceptance_boundary: false,
+    },
+    IndependentCheckerPerformanceGate {
+        benchmark_class: IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+        pr_placement: IndependentCheckerPerformanceGatePrPlacement::BackgroundOrCachedAudit,
+        nightly_records_detailed_metrics: true,
+        release_failure_gate: true,
+        proof_acceptance_boundary: false,
+    },
+];
+
+pub fn independent_checker_ci_command_set(
+    mode: IndependentCheckerTrustMode,
+) -> &'static [IndependentCheckerCiCommand] {
+    mode.ci_commands()
+}
+
+pub fn independent_checker_ci_command_set_contains(
+    mode: IndependentCheckerTrustMode,
+    command: IndependentCheckerCiCommand,
+) -> bool {
+    mode.ci_commands().contains(&command)
+}
+
+pub fn independent_checker_ci_pass_requirements(
+    mode: IndependentCheckerTrustMode,
+) -> &'static [IndependentCheckerCiPassRequirement] {
+    mode.ci_pass_requirements()
+}
+
+pub fn independent_checker_ci_pass_requires(
+    mode: IndependentCheckerTrustMode,
+    requirement: IndependentCheckerCiPassRequirement,
+) -> bool {
+    mode.ci_pass_requirements().contains(&requirement)
+}
+
+pub fn independent_checker_performance_gates() -> &'static [IndependentCheckerPerformanceGate] {
+    INDEPENDENT_CHECKER_PERFORMANCE_GATES
+}
+
+pub fn independent_checker_performance_gate(
+    benchmark_class: IndependentCheckerPerformanceBenchmarkClass,
+) -> Option<&'static IndependentCheckerPerformanceGate> {
+    INDEPENDENT_CHECKER_PERFORMANCE_GATES
+        .iter()
+        .find(|gate| gate.benchmark_class == benchmark_class)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -29055,6 +29447,160 @@ mod tests {
                 "profile_set_mismatch"
             )
         );
+    }
+
+    #[test]
+    fn p8h14_ci_command_sets_fix_mode_scope_and_pr_reference_gate() {
+        let pr_commands = independent_checker_ci_command_set(IndependentCheckerTrustMode::Pr);
+        for command in [
+            IndependentCheckerCiCommand::SelectChangedCertificates,
+            IndependentCheckerCiCommand::SelectReverseDependencies,
+            IndependentCheckerCiCommand::CheckChangedCertificatesWithReference,
+            IndependentCheckerCiCommand::CheckReverseDependenciesWithReference,
+        ] {
+            assert!(
+                pr_commands.contains(&command),
+                "pr command set missing {command:?}"
+            );
+        }
+        assert_eq!(
+            IndependentCheckerTrustMode::Pr.required_checker_profiles(),
+            ["reference"]
+        );
+        for command in [
+            IndependentCheckerCiCommand::FullLibraryExternalChecker,
+            IndependentCheckerCiCommand::FullRecursiveImportCheck,
+            IndependentCheckerCiCommand::FullAuditArtifactCoverage,
+            IndependentCheckerCiCommand::GenerateReleaseAuditBundle,
+            IndependentCheckerCiCommand::RequireAtLeastTwoIndependentCheckers,
+        ] {
+            assert!(
+                !pr_commands.contains(&command),
+                "pr command set must not synchronously require {command:?}"
+            );
+        }
+
+        for mode in [
+            IndependentCheckerTrustMode::Nightly,
+            IndependentCheckerTrustMode::Release,
+            IndependentCheckerTrustMode::HighTrust,
+        ] {
+            for command in [
+                IndependentCheckerCiCommand::FullLibraryExternalChecker,
+                IndependentCheckerCiCommand::FullRecursiveImportCheck,
+                IndependentCheckerCiCommand::FullAuditArtifactCoverage,
+            ] {
+                assert!(
+                    independent_checker_ci_command_set_contains(mode, command),
+                    "{mode:?} command set missing {command:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn p8h14_performance_gates_keep_reference_external_off_pr_hot_path() {
+        let classes: Vec<_> = independent_checker_performance_gates()
+            .iter()
+            .map(|gate| gate.benchmark_class)
+            .collect();
+        assert_eq!(
+            classes,
+            [
+                IndependentCheckerPerformanceBenchmarkClass::FastKernel,
+                IndependentCheckerPerformanceBenchmarkClass::MachineApi,
+                IndependentCheckerPerformanceBenchmarkClass::TheoremIndexBuild,
+                IndependentCheckerPerformanceBenchmarkClass::AiBenchmark,
+                IndependentCheckerPerformanceBenchmarkClass::ReferenceChecker,
+                IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+            ]
+        );
+
+        for class in [
+            IndependentCheckerPerformanceBenchmarkClass::FastKernel,
+            IndependentCheckerPerformanceBenchmarkClass::MachineApi,
+            IndependentCheckerPerformanceBenchmarkClass::TheoremIndexBuild,
+            IndependentCheckerPerformanceBenchmarkClass::AiBenchmark,
+        ] {
+            let gate = independent_checker_performance_gate(class).unwrap();
+            assert_eq!(
+                gate.pr_placement,
+                IndependentCheckerPerformanceGatePrPlacement::SynchronousRequired
+            );
+            assert!(gate.nightly_records_detailed_metrics);
+            assert!(gate.release_failure_gate);
+            assert!(!gate.proof_acceptance_boundary);
+        }
+
+        for class in [
+            IndependentCheckerPerformanceBenchmarkClass::ReferenceChecker,
+            IndependentCheckerPerformanceBenchmarkClass::ExternalChecker,
+        ] {
+            let gate = independent_checker_performance_gate(class).unwrap();
+            assert_eq!(
+                gate.pr_placement,
+                IndependentCheckerPerformanceGatePrPlacement::BackgroundOrCachedAudit
+            );
+            assert!(gate.nightly_records_detailed_metrics);
+            assert!(gate.release_failure_gate);
+            assert!(!gate.proof_acceptance_boundary);
+        }
+
+        assert!(independent_checker_performance_gates()
+            .iter()
+            .all(|gate| !gate.proof_acceptance_boundary));
+    }
+
+    #[test]
+    fn p8h14_release_and_high_trust_pass_requirements_are_closed() {
+        assert!(independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::Release,
+            IndependentCheckerCiPassRequirement::FullIndependentCheckPassed
+        ));
+        assert!(independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::Release,
+            IndependentCheckerCiPassRequirement::ReleaseAuditBundleGenerated
+        ));
+        assert!(!independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::Release,
+            IndependentCheckerCiPassRequirement::AtLeastTwoIndependentCheckers
+        ));
+
+        assert!(independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::HighTrust,
+            IndependentCheckerCiPassRequirement::AllImportsRecursivelyChecked
+        ));
+        assert!(independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::HighTrust,
+            IndependentCheckerCiPassRequirement::AtLeastTwoIndependentCheckers
+        ));
+        assert!(independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::HighTrust,
+            IndependentCheckerCiPassRequirement::ImportCertificateHashVerification
+        ));
+        assert!(independent_checker_ci_command_set_contains(
+            IndependentCheckerTrustMode::HighTrust,
+            IndependentCheckerCiCommand::RequireAtLeastTwoIndependentCheckers
+        ));
+        assert!(independent_checker_ci_command_set_contains(
+            IndependentCheckerTrustMode::HighTrust,
+            IndependentCheckerCiCommand::VerifyHighTrustImportCertificateHashes
+        ));
+        assert!(
+            IndependentCheckerTrustMode::HighTrust
+                .required_checker_profiles()
+                .len()
+                >= 2
+        );
+
+        assert!(!independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::Pr,
+            IndependentCheckerCiPassRequirement::FullIndependentCheckPassed
+        ));
+        assert!(!independent_checker_ci_pass_requires(
+            IndependentCheckerTrustMode::Pr,
+            IndependentCheckerCiPassRequirement::ReleaseAuditBundleGenerated
+        ));
     }
 
     #[test]
