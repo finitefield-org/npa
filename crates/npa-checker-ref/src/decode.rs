@@ -13,6 +13,7 @@ use crate::{
 };
 
 type DecodeResult<T> = Result<T, ReferenceCheckError>;
+const PUBLIC_SELF_IMPORT_INDEX: usize = usize::MAX;
 
 pub(crate) fn decode_certificate_impl(bytes: &[u8]) -> DecodeResult<ReferenceDecodedCertificate> {
     decode_module_certificate(bytes).map(DecodedModuleCertificate::summary)
@@ -157,12 +158,17 @@ impl DecodedModuleCertificate {
     fn public_environment(&self) -> DecodeResult<ReferencePublicEnvironment> {
         let core_levels = self.core_levels()?;
         let core_terms = self.core_terms(&core_levels)?;
+        let imports = self
+            .imports
+            .iter()
+            .map(|import| (import.value.module.clone(), import.value.export_hash))
+            .collect();
         let exports = self
             .export_block
             .iter()
             .map(|entry| {
                 let entry = &entry.value;
-                ReferencePublicExport {
+                Ok(ReferencePublicExport {
                     name: self.name_table[entry.name].value.clone(),
                     kind: match entry.kind {
                         ExportKind::Axiom => ReferenceExportKind::Axiom,
@@ -175,15 +181,113 @@ impl DecodedModuleCertificate {
                     decl_interface_hash: entry.decl_interface_hash,
                     axiom_dependencies: self.public_axiom_dependencies(&entry.axiom_dependencies),
                     universe_params: self.name_ids_to_names(&entry.universe_params),
-                    ty: core_terms[entry.ty].clone(),
-                    body: entry.body.map(|body| core_terms[body].clone()),
-                }
+                    ty: self.public_expr(&core_terms[entry.ty])?,
+                    body: entry
+                        .body
+                        .map(|body| self.public_expr(&core_terms[body]))
+                        .transpose()?,
+                })
             })
-            .collect();
+            .collect::<DecodeResult<Vec<_>>>()?;
         Ok(ReferencePublicEnvironment::new(
+            imports,
             exports,
             self.public_axiom_dependencies(&self.axiom_report.module_axioms),
         ))
+    }
+
+    fn public_expr(&self, expr: &ReferenceCoreExpr) -> DecodeResult<ReferenceCoreExpr> {
+        Ok(match expr {
+            ReferenceCoreExpr::Sort(level) => ReferenceCoreExpr::Sort(level.clone()),
+            ReferenceCoreExpr::BVar(index) => ReferenceCoreExpr::BVar(*index),
+            ReferenceCoreExpr::Const { global_ref, levels } => ReferenceCoreExpr::Const {
+                global_ref: self.public_global_ref(global_ref)?,
+                levels: levels.clone(),
+            },
+            ReferenceCoreExpr::App(fun, arg) => ReferenceCoreExpr::App(
+                Box::new(self.public_expr(fun)?),
+                Box::new(self.public_expr(arg)?),
+            ),
+            ReferenceCoreExpr::Lam { ty, body } => ReferenceCoreExpr::Lam {
+                ty: Box::new(self.public_expr(ty)?),
+                body: Box::new(self.public_expr(body)?),
+            },
+            ReferenceCoreExpr::Pi { ty, body } => ReferenceCoreExpr::Pi {
+                ty: Box::new(self.public_expr(ty)?),
+                body: Box::new(self.public_expr(body)?),
+            },
+            ReferenceCoreExpr::Let { ty, value, body } => ReferenceCoreExpr::Let {
+                ty: Box::new(self.public_expr(ty)?),
+                value: Box::new(self.public_expr(value)?),
+                body: Box::new(self.public_expr(body)?),
+            },
+        })
+    }
+
+    fn public_global_ref(
+        &self,
+        global_ref: &ReferenceCoreGlobalRef,
+    ) -> DecodeResult<ReferenceCoreGlobalRef> {
+        Ok(match global_ref {
+            ReferenceCoreGlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => ReferenceCoreGlobalRef::Builtin {
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            ReferenceCoreGlobalRef::Imported {
+                import_index,
+                name,
+                decl_interface_hash,
+            } => ReferenceCoreGlobalRef::Imported {
+                import_index: *import_index,
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            ReferenceCoreGlobalRef::Local { decl_index } => {
+                let (name, decl_interface_hash) = self.local_public_ref(*decl_index)?;
+                ReferenceCoreGlobalRef::Imported {
+                    import_index: PUBLIC_SELF_IMPORT_INDEX,
+                    name,
+                    decl_interface_hash,
+                }
+            }
+            ReferenceCoreGlobalRef::LocalGenerated { decl_index, name } => {
+                let declaration = self.declarations.get(*decl_index).ok_or_else(|| {
+                    ReferenceCheckError::malformed(
+                        ReferenceCertificateSection::Declarations,
+                        0,
+                        ReferenceCheckReason::DanglingReference,
+                    )
+                })?;
+                ReferenceCoreGlobalRef::Imported {
+                    import_index: PUBLIC_SELF_IMPORT_INDEX,
+                    name: name.clone(),
+                    decl_interface_hash: declaration.value.hashes.decl_interface_hash,
+                }
+            }
+        })
+    }
+
+    fn local_public_ref(
+        &self,
+        decl_index: usize,
+    ) -> DecodeResult<(ReferenceModuleName, ReferenceHash)> {
+        let declaration = self.declarations.get(decl_index).ok_or_else(|| {
+            ReferenceCheckError::malformed(
+                ReferenceCertificateSection::Declarations,
+                0,
+                ReferenceCheckReason::DanglingReference,
+            )
+        })?;
+        let name = match &declaration.value.decl {
+            DeclPayload::Axiom { name, .. }
+            | DeclPayload::Def { name, .. }
+            | DeclPayload::Theorem { name, .. }
+            | DeclPayload::Inductive { name, .. } => self.name_table[*name].value.clone(),
+        };
+        Ok((name, declaration.value.hashes.decl_interface_hash))
     }
 
     fn public_axiom_dependencies(&self, axioms: &[AxiomRef]) -> Vec<ReferenceAxiomDependency> {
@@ -702,7 +806,13 @@ impl DecodedModuleCertificate {
                 .get(import_index)
                 .map_or(0, |located| located.offset);
             for axiom in import.public_environment.module_axioms() {
-                self.enforce_axiom_dependency_policy(policy, &import.module, axiom, offset)?;
+                self.enforce_axiom_dependency_policy(
+                    imports,
+                    policy,
+                    &import.module,
+                    axiom,
+                    offset,
+                )?;
             }
         }
 
@@ -750,13 +860,18 @@ impl DecodedModuleCertificate {
 
     fn enforce_axiom_dependency_policy(
         &self,
+        imports: &ReferenceImportEnvironment,
         policy: &ReferenceCheckerPolicy,
         module: &ReferenceModuleName,
         axiom: &ReferenceAxiomDependency,
         offset: usize,
     ) -> DecodeResult<()> {
         let raw_name = axiom.name.dotted();
-        let qualified_name = qualify_name(module, &raw_name);
+        let qualified_name =
+            import_index_exporting_axiom(imports, &axiom.name, axiom.decl_interface_hash)
+                .and_then(|import_index| imports.imports().get(import_index))
+                .map(|source| qualify_name(&source.module, &raw_name))
+                .unwrap_or_else(|| qualify_name(module, &raw_name));
         enforce_axiom_policy_name(
             policy,
             &raw_name,
@@ -2702,8 +2817,24 @@ impl<'a> TypeChecker<'a> {
                     })?;
                 Ok(TypeSignature {
                     universe_params: export.universe_params.clone(),
-                    ty: export.ty.clone(),
-                    value: export.body.clone(),
+                    ty: self.instantiate_public_expr(
+                        *import_index,
+                        &import.public_environment,
+                        &export.ty,
+                        offset,
+                    )?,
+                    value: export
+                        .body
+                        .as_ref()
+                        .map(|body| {
+                            self.instantiate_public_expr(
+                                *import_index,
+                                &import.public_environment,
+                                body,
+                                offset,
+                            )
+                        })
+                        .transpose()?,
                 })
             }
             ReferenceCoreGlobalRef::Local { decl_index } => {
@@ -2727,6 +2858,160 @@ impl<'a> TypeChecker<'a> {
                     )
                 }),
         }
+    }
+
+    fn instantiate_public_expr(
+        &self,
+        owner_import_index: usize,
+        owner_environment: &ReferencePublicEnvironment,
+        expr: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<ReferenceCoreExpr> {
+        Ok(match expr {
+            ReferenceCoreExpr::Sort(level) => ReferenceCoreExpr::Sort(level.clone()),
+            ReferenceCoreExpr::BVar(index) => ReferenceCoreExpr::BVar(*index),
+            ReferenceCoreExpr::Const { global_ref, levels } => ReferenceCoreExpr::Const {
+                global_ref: self.instantiate_public_global_ref(
+                    owner_import_index,
+                    owner_environment,
+                    global_ref,
+                    offset,
+                )?,
+                levels: levels.clone(),
+            },
+            ReferenceCoreExpr::App(fun, arg) => ReferenceCoreExpr::App(
+                Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    fun,
+                    offset,
+                )?),
+                Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    arg,
+                    offset,
+                )?),
+            ),
+            ReferenceCoreExpr::Lam { ty, body } => ReferenceCoreExpr::Lam {
+                ty: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    ty,
+                    offset,
+                )?),
+                body: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    body,
+                    offset,
+                )?),
+            },
+            ReferenceCoreExpr::Pi { ty, body } => ReferenceCoreExpr::Pi {
+                ty: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    ty,
+                    offset,
+                )?),
+                body: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    body,
+                    offset,
+                )?),
+            },
+            ReferenceCoreExpr::Let { ty, value, body } => ReferenceCoreExpr::Let {
+                ty: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    ty,
+                    offset,
+                )?),
+                value: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    value,
+                    offset,
+                )?),
+                body: Box::new(self.instantiate_public_expr(
+                    owner_import_index,
+                    owner_environment,
+                    body,
+                    offset,
+                )?),
+            },
+        })
+    }
+
+    fn instantiate_public_global_ref(
+        &self,
+        owner_import_index: usize,
+        owner_environment: &ReferencePublicEnvironment,
+        global_ref: &ReferenceCoreGlobalRef,
+        offset: usize,
+    ) -> DecodeResult<ReferenceCoreGlobalRef> {
+        Ok(match global_ref {
+            ReferenceCoreGlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => ReferenceCoreGlobalRef::Builtin {
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            ReferenceCoreGlobalRef::Imported {
+                import_index,
+                name,
+                decl_interface_hash,
+            } if *import_index == PUBLIC_SELF_IMPORT_INDEX => ReferenceCoreGlobalRef::Imported {
+                import_index: owner_import_index,
+                name: name.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            ReferenceCoreGlobalRef::Imported {
+                import_index,
+                name,
+                decl_interface_hash,
+            } => {
+                let source = owner_environment
+                    .imports
+                    .get(*import_index)
+                    .ok_or_else(|| {
+                        ReferenceCheckError::type_check(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                            ReferenceCheckReason::UnknownReference,
+                        )
+                    })?;
+                let remapped = self
+                    .imports
+                    .imports()
+                    .iter()
+                    .position(|import| {
+                        import.module == source.module && import.export_hash == source.export_hash
+                    })
+                    .ok_or_else(|| {
+                        ReferenceCheckError::type_check(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                            ReferenceCheckReason::UnknownReference,
+                        )
+                    })?;
+                ReferenceCoreGlobalRef::Imported {
+                    import_index: remapped,
+                    name: name.clone(),
+                    decl_interface_hash: *decl_interface_hash,
+                }
+            }
+            ReferenceCoreGlobalRef::Local { .. }
+            | ReferenceCoreGlobalRef::LocalGenerated { .. } => {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnknownReference,
+                ));
+            }
+        })
     }
 
     fn whnf(
@@ -2918,7 +3203,9 @@ impl<'a> TypeChecker<'a> {
         let rhs = self.whnf_with_fuel(ctx, delta, rhs, offset, fuel)?;
 
         match (&lhs, &rhs) {
-            (ReferenceCoreExpr::Sort(lhs), ReferenceCoreExpr::Sort(rhs)) => Ok(lhs == rhs),
+            (ReferenceCoreExpr::Sort(lhs), ReferenceCoreExpr::Sort(rhs)) => {
+                Ok(reference_level_defeq(lhs, rhs))
+            }
             (ReferenceCoreExpr::BVar(lhs), ReferenceCoreExpr::BVar(rhs)) => Ok(lhs == rhs),
             (
                 ReferenceCoreExpr::Const {
@@ -2978,6 +3265,65 @@ struct TypeSignature {
     universe_params: Vec<ReferenceModuleName>,
     ty: ReferenceCoreExpr,
     value: Option<ReferenceCoreExpr>,
+}
+
+fn reference_level_defeq(lhs: &ReferenceCoreLevel, rhs: &ReferenceCoreLevel) -> bool {
+    normalize_reference_level(lhs.clone()) == normalize_reference_level(rhs.clone())
+}
+
+fn normalize_reference_level(level: ReferenceCoreLevel) -> ReferenceCoreLevel {
+    match level {
+        ReferenceCoreLevel::Zero | ReferenceCoreLevel::Param(_) => level,
+        ReferenceCoreLevel::Succ(level) => {
+            ReferenceCoreLevel::Succ(Box::new(normalize_reference_level(*level)))
+        }
+        ReferenceCoreLevel::Max(lhs, rhs) => {
+            let lhs = normalize_reference_level(*lhs);
+            let rhs = normalize_reference_level(*rhs);
+            if lhs == rhs {
+                return lhs;
+            }
+            if lhs == ReferenceCoreLevel::Zero {
+                return rhs;
+            }
+            if rhs == ReferenceCoreLevel::Zero {
+                return lhs;
+            }
+            match (reference_level_as_nat(&lhs), reference_level_as_nat(&rhs)) {
+                (Some(lhs_nat), Some(rhs_nat)) => reference_level_from_nat(lhs_nat.max(rhs_nat)),
+                _ if rhs < lhs => ReferenceCoreLevel::Max(Box::new(rhs), Box::new(lhs)),
+                _ => ReferenceCoreLevel::Max(Box::new(lhs), Box::new(rhs)),
+            }
+        }
+        ReferenceCoreLevel::IMax(lhs, rhs) => {
+            let lhs = normalize_reference_level(*lhs);
+            let rhs = normalize_reference_level(*rhs);
+            match rhs {
+                ReferenceCoreLevel::Zero => ReferenceCoreLevel::Zero,
+                ReferenceCoreLevel::Succ(inner) => {
+                    normalize_reference_level(ReferenceCoreLevel::Max(
+                        Box::new(lhs),
+                        Box::new(ReferenceCoreLevel::Succ(inner)),
+                    ))
+                }
+                rhs => ReferenceCoreLevel::IMax(Box::new(lhs), Box::new(rhs)),
+            }
+        }
+    }
+}
+
+fn reference_level_as_nat(level: &ReferenceCoreLevel) -> Option<u32> {
+    match level {
+        ReferenceCoreLevel::Zero => Some(0),
+        ReferenceCoreLevel::Succ(level) => Some(reference_level_as_nat(level)? + 1),
+        _ => None,
+    }
+}
+
+fn reference_level_from_nat(n: u32) -> ReferenceCoreLevel {
+    (0..n).fold(ReferenceCoreLevel::Zero, |level, _| {
+        ReferenceCoreLevel::Succ(Box::new(level))
+    })
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

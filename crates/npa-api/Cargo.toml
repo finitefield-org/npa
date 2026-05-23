@@ -12,3 +12,6 @@ npa-kernel = { path = "../npa-kernel" }
 npa-tactic = { path = "../npa-tactic" }
 libc = "0.2"
 sha2 = "0.10"
+
+[dev-dependencies]
+npa-checker-ref = { path = "../npa-checker-ref" }

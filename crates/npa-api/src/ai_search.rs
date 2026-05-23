@@ -5996,7 +5996,7 @@ mod tests {
         ] {
             assert!(
                 !source.contains(forbidden),
-                "{label} must not synchronously carry Phase 8 audit field {forbidden}"
+                "{label} must not synchronously carry audit field {forbidden}"
             );
         }
     }

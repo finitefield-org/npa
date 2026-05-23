@@ -530,18 +530,18 @@ axiom policy は core typing rule を変えない。proof validity と release/h
 
 実装タスク:
 
-- [ ] `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` の MVP certificate fixture を reference checker に通す。
-- [ ] import closure と `export_hash` / high-trust `certificate_hash` を reference checker で検査する。
-- [ ] standard library の theorem index / rewrite profile / simp profile を checker acceptance の根拠にしない regression を追加する。
-- [ ] Phase 6 release artifacts と reference checker result の hash / axiom report を照合する。
-- [ ] source package skeleton や Human debug view が checker input に入らないことを test で固定する。
+- [x] `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` の MVP certificate fixture を reference checker に通す。
+- [x] import closure と `export_hash` / high-trust `certificate_hash` を reference checker で検査する。
+- [x] standard library の theorem index / rewrite profile / simp profile を checker acceptance の根拠にしない regression を追加する。
+- [x] Phase 6 release artifacts と reference checker result の hash / axiom report を照合する。
+- [x] source package skeleton や Human debug view が checker input に入らないことを test で固定する。
 
 受け入れ条件:
 
-- [ ] four MVP release modules は source なしで reference checker OK になる。
-- [ ] standard library module が custom axiom を含むと reject される。
-- [ ] theorem index が壊れていても certificate check result は certificate bytes だけから決まる。
-- [ ] Machine API / Phase 7 retrieval candidate hash は P8H-09 の追加で変わらない。
+- [x] four MVP release modules は source なしで reference checker OK になる。
+- [x] standard library module が custom axiom を含むと reject される。
+- [x] theorem index が壊れていても certificate check result は certificate bytes だけから決まる。
+- [x] Machine API / Phase 7 retrieval candidate hash は P8H-09 の追加で変わらない。
 
 検証:
 

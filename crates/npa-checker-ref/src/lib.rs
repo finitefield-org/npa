@@ -163,16 +163,31 @@ fn validate_unique_import_store_entries(
 /// Public environment exported by one imported certificate.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ReferencePublicEnvironment {
+    imports: Vec<ReferencePublicImport>,
     exports: Vec<ReferencePublicExport>,
     module_axioms: Vec<ReferenceAxiomDependency>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ReferencePublicImport {
+    module: ReferenceModuleName,
+    export_hash: ReferenceHash,
+}
+
 impl ReferencePublicEnvironment {
     pub(crate) fn new(
+        imports: Vec<(ReferenceModuleName, ReferenceHash)>,
         exports: Vec<ReferencePublicExport>,
         module_axioms: Vec<ReferenceAxiomDependency>,
     ) -> Self {
         Self {
+            imports: imports
+                .into_iter()
+                .map(|(module, export_hash)| ReferencePublicImport {
+                    module,
+                    export_hash,
+                })
+                .collect(),
             exports,
             module_axioms,
         }
@@ -271,7 +286,7 @@ pub struct ReferenceResolvedImport {
     pub public_environment: ReferencePublicEnvironment,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ReferenceCoreLevel {
     Zero,
     Succ(Box<ReferenceCoreLevel>),
@@ -972,11 +987,12 @@ mod tests {
     use super::*;
 
     use npa_cert::{
-        build_module_cert, encode_module_cert, generate_inductive_artifacts_v1, CoreModule, Name,
+        build_module_cert, encode_module_cert, generate_inductive_artifacts_v1, verify_module_cert,
+        AxiomPolicy, CoreModule, Name, VerifierSession,
     };
     use npa_kernel::{
-        eq_inductive, nat, nat_inductive, nat_succ, nat_zero, type0, Binder, ConstructorDecl, Ctx,
-        Decl, Env, Expr, InductiveDecl, Level,
+        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
+        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level,
     };
     use sha2::{Digest, Sha256};
 
@@ -1056,6 +1072,38 @@ mod tests {
                 }],
             },
             &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
+    }
+
+    fn std_logic_eq_certificate() -> Vec<u8> {
+        certificate_for_inductive("Std.Logic", eq_inductive())
+    }
+
+    fn std_nat_zero_eq_zero_certificate(logic_bytes: &[u8]) -> Vec<u8> {
+        let mut session = VerifierSession::new();
+        let logic = verify_module_cert(logic_bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+        let nat_data = nat_inductive();
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Std.Nat"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: nat_data.name.clone(),
+                        universe_params: nat_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&nat_data),
+                        data: Box::new(nat_data),
+                    },
+                    Decl::Theorem {
+                        name: "Nat.zero_eq_zero".to_owned(),
+                        universe_params: Vec::new(),
+                        ty: eq(type0(), nat(), nat_zero(), nat_zero()),
+                        proof: eq_refl(type0(), nat(), nat_zero()),
+                    },
+                ],
+            },
+            std::slice::from_ref(&logic),
         )
         .unwrap();
         encode_module_cert(&cert).unwrap()
@@ -3349,6 +3397,31 @@ mod tests {
 
         assert_eq!(env.len(), 1);
         assert_eq!(env.imports()[0].certificate_hash, fixture.certificate_hash);
+    }
+
+    #[test]
+    fn std_imported_public_environment_remaps_local_refs_to_imported_refs() {
+        let logic_bytes = std_logic_eq_certificate();
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            deny_custom_axioms: true,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let ReferenceCheckResult::Checked(logic) =
+            check_certificate(&logic_bytes, &imports, &policy)
+        else {
+            panic!("Std.Logic fixture must check before it can be imported");
+        };
+        let store = ReferenceImportStore::from_checked_modules([logic]).unwrap();
+        let nat_bytes = std_nat_zero_eq_zero_certificate(&logic_bytes);
+
+        let result = check_certificate(&nat_bytes, &store, &policy);
+
+        assert!(
+            result.is_checked(),
+            "imported Eq.refl type must not resolve its Eq reference as a Std.Nat local"
+        );
     }
 
     #[test]

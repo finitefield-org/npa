@@ -10293,6 +10293,11 @@ mod tests {
         MachineTacticBatchItemResponse, SnapshotId,
     };
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
+    use npa_checker_ref::{
+        check_certificate, ReferenceCheckErrorKind, ReferenceCheckReason, ReferenceCheckResult,
+        ReferenceCheckedModule, ReferenceCheckerPolicy, ReferenceImportStore, ReferenceModuleName,
+        ReferenceTrustMode,
+    };
     use npa_frontend::{canonicalize_machine_term_source, parse_human_module, FileId, HumanItem};
     use npa_kernel::{
         eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
@@ -14681,6 +14686,94 @@ theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{
     }
 
     #[test]
+    fn std_library_reference_checker_accepts_mvp_release_certificates_source_free() {
+        let package = TestPackage::new("reference_checker_std_mvp_source_free");
+        write_valid_mvp_package(package.path());
+        write_poison_human_std_source_and_debug_files(package.path());
+
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let checked = reference_check_loaded_std_release(&loaded);
+
+        assert_eq!(
+            checked
+                .iter()
+                .map(|module| module.module().dotted())
+                .collect::<Vec<_>>(),
+            vec!["Std.Logic", "Std.Nat", "Std.List", "Std.Algebra.Basic"]
+        );
+    }
+
+    #[test]
+    fn std_library_reference_checker_rejects_custom_axiom_certificate() {
+        let certs = mvp_certificate_bytes_with_logic_axiom("Std.Logic.synthetic_axiom");
+        let policy = reference_std_checker_policy();
+        let imports = ReferenceImportStore::default();
+
+        let ReferenceCheckResult::Rejected(error) =
+            check_certificate(&certs.logic, &imports, &policy)
+        else {
+            panic!("reference checker must reject custom standard-library axioms");
+        };
+        assert_eq!(error.kind, ReferenceCheckErrorKind::AxiomPolicy);
+        assert_eq!(error.reason, Some(ReferenceCheckReason::ForbiddenAxiom));
+    }
+
+    #[test]
+    fn std_library_reference_checker_ignores_broken_indexes_profiles_and_debug_inputs() {
+        let package = TestPackage::new("reference_checker_std_ignores_sidecars");
+        write_valid_mvp_package(package.path());
+        let loaded_before = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let checked_before = reference_std_check_identity(&loaded_before);
+
+        for relative_path in [
+            STD_MACHINE_THEOREM_INDEX_JSON_PATH,
+            STD_MACHINE_REWRITE_PROFILES_JSON_PATH,
+            STD_MACHINE_SIMP_PROFILES_JSON_PATH,
+            STD_MACHINE_PROMPT_METADATA_JSON_PATH,
+        ] {
+            write_text_artifact(
+                package.path(),
+                relative_path,
+                "broken sidecar that is not checker input",
+            );
+        }
+        write_poison_human_std_source_and_debug_files(package.path());
+
+        let loaded_after = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let checked_after = reference_std_check_identity(&loaded_after);
+        assert_eq!(checked_after, checked_before);
+    }
+
+    #[test]
+    fn ai_search_candidate_hashes_do_not_change_after_std_reference_checker_recheck() {
+        let package = TestPackage::new("reference_checker_std_ai_search_hashes");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        write_machine_std_release_sidecars(
+            package.path(),
+            &release,
+            &import_bundles,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            &axiom_report,
+        );
+        let validated = load_machine_std_mvp_release(package.path()).unwrap();
+
+        let before = std_nat_add_zero_retrieval_candidate_hashes(&validated);
+        reference_check_loaded_std_release(&validated.loaded);
+        let after = std_nat_add_zero_retrieval_candidate_hashes(&validated);
+
+        assert_eq!(after, before);
+        assert!(
+            !after.is_empty(),
+            "retrieval must keep producing candidate hashes"
+        );
+    }
+
+    #[test]
     fn source_package_build_rejects_core_or_prelude_import_source_member() {
         for imported in ["Core", "Prelude"] {
             let package = TestPackage::new(&format!(
@@ -15225,6 +15318,120 @@ theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{
         nat: Vec<u8>,
         list: Vec<u8>,
         algebra_basic: Vec<u8>,
+    }
+
+    fn reference_std_checker_policy() -> ReferenceCheckerPolicy {
+        ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            deny_sorry: true,
+            deny_custom_axioms: true,
+            ..ReferenceCheckerPolicy::default()
+        }
+    }
+
+    fn reference_module_name(module: &Name) -> ReferenceModuleName {
+        ReferenceModuleName::from_dotted(&module.as_dotted()).unwrap()
+    }
+
+    fn reference_check_loaded_std_release(
+        loaded: &MachineStdLoadedRelease,
+    ) -> Vec<ReferenceCheckedModule> {
+        let policy = reference_std_checker_policy();
+        let mut checked_by_name = BTreeMap::<Name, ReferenceCheckedModule>::new();
+        let mut checked_modules = Vec::new();
+
+        for module_name in loaded.verification_order() {
+            let module = loaded.module(module_name).unwrap();
+            let imports =
+                ReferenceImportStore::from_checked_modules(module.imports.iter().map(|import| {
+                    checked_by_name
+                        .get(&import.module)
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "reference checker import {} must be checked before {}",
+                                import.module.as_dotted(),
+                                module.module.as_dotted()
+                            )
+                        })
+                        .clone()
+                }))
+                .unwrap();
+            let checked = match check_certificate(&module.certificate_bytes, &imports, &policy) {
+                ReferenceCheckResult::Checked(checked) => checked,
+                ReferenceCheckResult::Rejected(error) => panic!(
+                    "reference checker rejected {}: {:?}",
+                    module.module.as_dotted(),
+                    error
+                ),
+            };
+
+            assert_eq!(checked.module(), &reference_module_name(&module.module));
+            assert_eq!(checked.export_hash(), &module.expected_export_hash);
+            assert_eq!(
+                checked.certificate_hash(),
+                &module.expected_certificate_hash
+            );
+            assert_eq!(checked.axiom_report_hash(), &module.axiom_report_hash);
+
+            checked_by_name.insert(module.module.clone(), checked.clone());
+            checked_modules.push(checked);
+        }
+
+        checked_modules
+    }
+
+    fn reference_std_check_identity(
+        loaded: &MachineStdLoadedRelease,
+    ) -> Vec<(String, Hash, Hash, Hash)> {
+        reference_check_loaded_std_release(loaded)
+            .into_iter()
+            .map(|module| {
+                (
+                    module.module().dotted(),
+                    *module.export_hash(),
+                    *module.certificate_hash(),
+                    *module.axiom_report_hash(),
+                )
+            })
+            .collect()
+    }
+
+    fn std_nat_add_zero_retrieval_candidate_hashes(
+        validated: &MachineStdValidatedRelease,
+    ) -> Vec<Hash> {
+        let nat_bundle = validated
+            .import_bundles
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_NAT_BUNDLE_ID)
+            .unwrap();
+        let theorem_type = "Eq.{1} Nat (Nat.add Nat.zero Nat.zero) Nat.zero";
+        let search_session = crate::create_machine_session(
+            &session_create_json_for_bundle_with_theorem_type(nat_bundle, theorem_type),
+        )
+        .unwrap()
+        .session;
+        let filters = r#"{"exclude_axioms":false,"allowed_modules":["Std.Nat"]}"#;
+        let search = search_machine_theorems_for_goal(
+            &m8_search_json(&search_session, filters),
+            &search_session,
+        )
+        .unwrap();
+        let MachineApiResponseEnvelope::Ok(search_ok) = search else {
+            panic!("standard-library theorem retrieval should succeed");
+        };
+        let nat_add_zero = search_ok
+            .endpoint_fields
+            .results
+            .iter()
+            .find(|result| result.global_ref.name == Name::from_dotted("Nat.add_zero"))
+            .expect("Nat.add_zero must stay available to retrieval");
+
+        nat_add_zero
+            .suggested_candidates
+            .iter()
+            .map(|candidate| candidate.candidate_hash)
+            .collect()
     }
 
     #[derive(Debug)]
