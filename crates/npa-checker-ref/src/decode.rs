@@ -4,7 +4,8 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     ReferenceAxiomDependency, ReferenceCertificateHeader, ReferenceCertificateSection,
-    ReferenceCheckError, ReferenceCheckReason, ReferenceCheckerPolicy, ReferenceDecodedCertificate,
+    ReferenceCheckError, ReferenceCheckReason, ReferenceCheckedModule, ReferenceCheckerPolicy,
+    ReferenceCoreExpr, ReferenceCoreGlobalRef, ReferenceCoreLevel, ReferenceDecodedCertificate,
     ReferenceDecodedCertificateCounts, ReferenceExportKind, ReferenceHash, ReferenceHashObject,
     ReferenceImportEntry, ReferenceImportEnvironment, ReferenceImportStore, ReferenceModuleHashes,
     ReferenceModuleName, ReferencePublicEnvironment, ReferencePublicExport,
@@ -30,7 +31,7 @@ pub(crate) fn import_entry_from_source_free_certificate_impl(
 ) -> DecodeResult<ReferenceImportEntry> {
     let cert = decode_module_certificate(bytes)?;
     cert.verify_hashes(bytes)?;
-    Ok(cert.import_entry(false))
+    cert.import_entry(false)
 }
 
 pub(crate) fn build_import_environment_impl(
@@ -41,6 +42,17 @@ pub(crate) fn build_import_environment_impl(
     let cert = decode_module_certificate(bytes)?;
     cert.verify_hashes(bytes)?;
     cert.build_import_environment(import_store, policy)
+}
+
+pub(crate) fn check_certificate_impl(
+    bytes: &[u8],
+    import_store: &ReferenceImportStore,
+    policy: &ReferenceCheckerPolicy,
+) -> DecodeResult<ReferenceCheckedModule> {
+    let cert = decode_module_certificate(bytes)?;
+    cert.verify_hashes(bytes)?;
+    let imports = cert.build_import_environment(import_store, policy)?;
+    cert.type_check(&imports)
 }
 
 fn decode_module_certificate(bytes: &[u8]) -> DecodeResult<DecodedModuleCertificate> {
@@ -117,18 +129,33 @@ impl DecodedModuleCertificate {
         )
     }
 
-    fn import_entry(&self, checked_by_reference_checker: bool) -> ReferenceImportEntry {
-        ReferenceImportEntry::new(
+    fn import_entry(
+        &self,
+        checked_by_reference_checker: bool,
+    ) -> DecodeResult<ReferenceImportEntry> {
+        Ok(ReferenceImportEntry::new(
             self.header.module.clone(),
             self.hashes.export_hash,
             self.hashes.axiom_report_hash,
             self.hashes.certificate_hash,
-            self.public_environment(),
+            self.public_environment()?,
             checked_by_reference_checker,
-        )
+        ))
     }
 
-    fn public_environment(&self) -> ReferencePublicEnvironment {
+    fn checked_module(&self) -> DecodeResult<ReferenceCheckedModule> {
+        Ok(ReferenceCheckedModule::new(
+            self.header.module.clone(),
+            self.hashes.export_hash,
+            self.hashes.axiom_report_hash,
+            self.hashes.certificate_hash,
+            self.public_environment()?,
+        ))
+    }
+
+    fn public_environment(&self) -> DecodeResult<ReferencePublicEnvironment> {
+        let core_levels = self.core_levels()?;
+        let core_terms = self.core_terms(&core_levels)?;
         let exports = self
             .export_block
             .iter()
@@ -146,13 +173,16 @@ impl DecodedModuleCertificate {
                     },
                     decl_interface_hash: entry.decl_interface_hash,
                     axiom_dependencies: self.public_axiom_dependencies(&entry.axiom_dependencies),
+                    universe_params: self.name_ids_to_names(&entry.universe_params),
+                    ty: core_terms[entry.ty].clone(),
+                    body: entry.body.map(|body| core_terms[body].clone()),
                 }
             })
             .collect();
-        ReferencePublicEnvironment::new(
+        Ok(ReferencePublicEnvironment::new(
             exports,
             self.public_axiom_dependencies(&self.axiom_report.module_axioms),
-        )
+        ))
     }
 
     fn public_axiom_dependencies(&self, axioms: &[AxiomRef]) -> Vec<ReferenceAxiomDependency> {
@@ -162,6 +192,13 @@ impl DecodedModuleCertificate {
                 name: self.name_table[axiom.name].value.clone(),
                 decl_interface_hash: axiom.decl_interface_hash,
             })
+            .collect()
+    }
+
+    fn name_ids_to_names(&self, names: &[usize]) -> Vec<ReferenceModuleName> {
+        names
+            .iter()
+            .map(|name| self.name_table[*name].value.clone())
             .collect()
     }
 
@@ -181,6 +218,14 @@ impl DecodedModuleCertificate {
             });
         }
         Ok(ReferenceImportEnvironment::new(resolved))
+    }
+
+    fn type_check(
+        &self,
+        imports: &ReferenceImportEnvironment,
+    ) -> DecodeResult<ReferenceCheckedModule> {
+        TypeChecker::new(self, imports)?.check_declarations()?;
+        self.checked_module()
     }
 
     fn verify_hashes(&self, bytes: &[u8]) -> DecodeResult<()> {
@@ -284,6 +329,101 @@ impl DecodedModuleCertificate {
             hashes.push(hash_with_domain(b"NPA-TERM-0.1", &key));
         }
         Ok(hashes)
+    }
+
+    fn core_levels(&self) -> DecodeResult<Vec<ReferenceCoreLevel>> {
+        let mut levels: Vec<ReferenceCoreLevel> = Vec::with_capacity(self.level_table.len());
+        for located in &self.level_table {
+            levels.push(match &located.value {
+                LevelNode::Zero => ReferenceCoreLevel::Zero,
+                LevelNode::Succ(inner) => {
+                    ReferenceCoreLevel::Succ(Box::new(levels[*inner].clone()))
+                }
+                LevelNode::Max(lhs, rhs) => ReferenceCoreLevel::Max(
+                    Box::new(levels[*lhs].clone()),
+                    Box::new(levels[*rhs].clone()),
+                ),
+                LevelNode::IMax(lhs, rhs) => ReferenceCoreLevel::IMax(
+                    Box::new(levels[*lhs].clone()),
+                    Box::new(levels[*rhs].clone()),
+                ),
+                LevelNode::Param(name) => {
+                    ReferenceCoreLevel::Param(self.name_table[*name].value.clone())
+                }
+            });
+        }
+        Ok(levels)
+    }
+
+    fn core_terms(
+        &self,
+        core_levels: &[ReferenceCoreLevel],
+    ) -> DecodeResult<Vec<ReferenceCoreExpr>> {
+        let mut terms: Vec<ReferenceCoreExpr> = Vec::with_capacity(self.term_table.len());
+        for located in &self.term_table {
+            terms.push(match &located.value {
+                TermNode::Sort(level) => ReferenceCoreExpr::Sort(core_levels[*level].clone()),
+                TermNode::BVar(index) => ReferenceCoreExpr::BVar(*index),
+                TermNode::Const {
+                    global_ref,
+                    levels: level_ids,
+                } => ReferenceCoreExpr::Const {
+                    global_ref: self.core_global_ref(global_ref),
+                    levels: level_ids
+                        .iter()
+                        .map(|level| core_levels[*level].clone())
+                        .collect(),
+                },
+                TermNode::App(fun, arg) => ReferenceCoreExpr::App(
+                    Box::new(terms[*fun].clone()),
+                    Box::new(terms[*arg].clone()),
+                ),
+                TermNode::Lam { ty, body } => ReferenceCoreExpr::Lam {
+                    ty: Box::new(terms[*ty].clone()),
+                    body: Box::new(terms[*body].clone()),
+                },
+                TermNode::Pi { ty, body } => ReferenceCoreExpr::Pi {
+                    ty: Box::new(terms[*ty].clone()),
+                    body: Box::new(terms[*body].clone()),
+                },
+                TermNode::Let { ty, value, body } => ReferenceCoreExpr::Let {
+                    ty: Box::new(terms[*ty].clone()),
+                    value: Box::new(terms[*value].clone()),
+                    body: Box::new(terms[*body].clone()),
+                },
+            });
+        }
+        Ok(terms)
+    }
+
+    fn core_global_ref(&self, global_ref: &GlobalRef) -> ReferenceCoreGlobalRef {
+        match global_ref {
+            GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => ReferenceCoreGlobalRef::Builtin {
+                name: self.name_table[*name].value.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            GlobalRef::Imported {
+                import_index,
+                name,
+                decl_interface_hash,
+            } => ReferenceCoreGlobalRef::Imported {
+                import_index: *import_index,
+                name: self.name_table[*name].value.clone(),
+                decl_interface_hash: *decl_interface_hash,
+            },
+            GlobalRef::Local { decl_index } => ReferenceCoreGlobalRef::Local {
+                decl_index: *decl_index,
+            },
+            GlobalRef::LocalGenerated { decl_index, name } => {
+                ReferenceCoreGlobalRef::LocalGenerated {
+                    decl_index: *decl_index,
+                    name: self.name_table[*name].value.clone(),
+                }
+            }
+        }
     }
 
     fn build_export_block(&self, term_hashes: &[ReferenceHash]) -> DecodeResult<Vec<ExportEntry>> {
@@ -1344,6 +1484,531 @@ fn resolve_import<'a>(
     }
 
     Ok(entry)
+}
+
+struct TypeChecker<'a> {
+    cert: &'a DecodedModuleCertificate,
+    imports: &'a ReferenceImportEnvironment,
+    terms: Vec<ReferenceCoreExpr>,
+    locals: Vec<TypeSignature>,
+}
+
+impl<'a> TypeChecker<'a> {
+    fn new(
+        cert: &'a DecodedModuleCertificate,
+        imports: &'a ReferenceImportEnvironment,
+    ) -> DecodeResult<Self> {
+        let levels = cert.core_levels()?;
+        let terms = cert.core_terms(&levels)?;
+        Ok(Self {
+            cert,
+            imports,
+            terms,
+            locals: Vec::new(),
+        })
+    }
+
+    fn check_declarations(&mut self) -> DecodeResult<()> {
+        for located in &self.cert.declarations {
+            let delta = self.declaration_universe_params(&located.value.decl);
+            let ctx = TypeContext::default();
+            match &located.value.decl {
+                DeclPayload::Axiom { ty, .. } => {
+                    self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
+                    self.locals.push(self.signature_for_decl(&located.value)?);
+                }
+                DeclPayload::Def { ty, value, .. } => {
+                    self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
+                    self.check(
+                        &ctx,
+                        &delta,
+                        &self.terms[*value],
+                        &self.terms[*ty],
+                        located.offset,
+                    )?;
+                    self.locals.push(self.signature_for_decl(&located.value)?);
+                }
+                DeclPayload::Theorem { ty, proof, .. } => {
+                    self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
+                    self.check(
+                        &ctx,
+                        &delta,
+                        &self.terms[*proof],
+                        &self.terms[*ty],
+                        located.offset,
+                    )?;
+                    self.locals.push(self.signature_for_decl(&located.value)?);
+                }
+                DeclPayload::Inductive { .. } => {
+                    return Err(ReferenceCheckError::unsupported(located.offset));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn declaration_universe_params(&self, decl: &DeclPayload) -> Vec<ReferenceModuleName> {
+        let params = match decl {
+            DeclPayload::Axiom {
+                universe_params, ..
+            }
+            | DeclPayload::Def {
+                universe_params, ..
+            }
+            | DeclPayload::Theorem {
+                universe_params, ..
+            }
+            | DeclPayload::Inductive {
+                universe_params, ..
+            } => universe_params,
+        };
+        self.cert.name_ids_to_names(params)
+    }
+
+    fn signature_for_decl(&self, decl: &DeclCert) -> DecodeResult<TypeSignature> {
+        Ok(match &decl.decl {
+            DeclPayload::Axiom {
+                name: _,
+                universe_params,
+                ty,
+            } => TypeSignature {
+                universe_params: self.cert.name_ids_to_names(universe_params),
+                ty: self.terms[*ty].clone(),
+            },
+            DeclPayload::Def {
+                universe_params,
+                ty,
+                ..
+            } => TypeSignature {
+                universe_params: self.cert.name_ids_to_names(universe_params),
+                ty: self.terms[*ty].clone(),
+            },
+            DeclPayload::Theorem {
+                universe_params,
+                ty,
+                ..
+            } => TypeSignature {
+                universe_params: self.cert.name_ids_to_names(universe_params),
+                ty: self.terms[*ty].clone(),
+            },
+            DeclPayload::Inductive { .. } => {
+                return Err(ReferenceCheckError::unsupported(
+                    self.cert
+                        .declarations
+                        .first()
+                        .map_or(0, |entry| entry.offset),
+                ));
+            }
+        })
+    }
+
+    fn infer(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<ReferenceCoreExpr> {
+        match term {
+            ReferenceCoreExpr::Sort(level) => {
+                ensure_level_wf(level, delta, offset)?;
+                Ok(ReferenceCoreExpr::Sort(ReferenceCoreLevel::Succ(Box::new(
+                    level.clone(),
+                ))))
+            }
+            ReferenceCoreExpr::BVar(index) => ctx.lookup_type(*index, offset),
+            ReferenceCoreExpr::Const { global_ref, levels } => {
+                for level in levels {
+                    ensure_level_wf(level, delta, offset)?;
+                }
+                let signature = self.resolve_signature(global_ref, offset)?;
+                if signature.universe_params.len() != levels.len() {
+                    return Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::BadUniverseArity,
+                    ));
+                }
+                Ok(subst_levels_expr(
+                    &signature.ty,
+                    &signature.universe_params,
+                    levels,
+                ))
+            }
+            ReferenceCoreExpr::Pi { ty, body } => {
+                let domain_sort = self.expect_sort(ctx, delta, ty, offset)?;
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_assumption((**ty).clone());
+                let body_sort = self.expect_sort(&body_ctx, delta, body, offset)?;
+                Ok(ReferenceCoreExpr::Sort(ReferenceCoreLevel::IMax(
+                    Box::new(domain_sort),
+                    Box::new(body_sort),
+                )))
+            }
+            ReferenceCoreExpr::Lam { ty, body } => {
+                self.expect_sort(ctx, delta, ty, offset)?;
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_assumption((**ty).clone());
+                let body_ty = self.infer(&body_ctx, delta, body, offset)?;
+                Ok(ReferenceCoreExpr::Pi {
+                    ty: ty.clone(),
+                    body: Box::new(body_ty),
+                })
+            }
+            ReferenceCoreExpr::App(fun, arg) => {
+                let fun_ty = self.infer(ctx, delta, fun, offset)?;
+                match fun_ty {
+                    ReferenceCoreExpr::Pi { ty, body } => {
+                        self.check(ctx, delta, arg, &ty, offset)?;
+                        instantiate(&body, arg, offset)
+                    }
+                    _ => Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::ExpectedFunction,
+                    )),
+                }
+            }
+            ReferenceCoreExpr::Let { ty, value, body } => {
+                self.expect_sort(ctx, delta, ty, offset)?;
+                self.check(ctx, delta, value, ty, offset)?;
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_definition((**ty).clone(), (**value).clone());
+                let body_ty = self.infer(&body_ctx, delta, body, offset)?;
+                instantiate(&body_ty, value, offset)
+            }
+        }
+    }
+
+    fn check(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        expected: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let actual = self.infer(ctx, delta, term, offset)?;
+        if actual == *expected {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::TypeMismatch,
+            ))
+        }
+    }
+
+    fn expect_sort(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<ReferenceCoreLevel> {
+        match self.infer(ctx, delta, term, offset)? {
+            ReferenceCoreExpr::Sort(level) => Ok(level),
+            _ => Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::ExpectedSort,
+            )),
+        }
+    }
+
+    fn resolve_signature(
+        &self,
+        global_ref: &ReferenceCoreGlobalRef,
+        offset: usize,
+    ) -> DecodeResult<TypeSignature> {
+        match global_ref {
+            ReferenceCoreGlobalRef::Builtin { .. }
+            | ReferenceCoreGlobalRef::LocalGenerated { .. } => {
+                Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnknownReference,
+                ))
+            }
+            ReferenceCoreGlobalRef::Imported {
+                import_index,
+                name,
+                decl_interface_hash,
+            } => {
+                let import = self.imports.imports().get(*import_index).ok_or_else(|| {
+                    ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::UnknownReference,
+                    )
+                })?;
+                let export = import
+                    .public_environment
+                    .exports()
+                    .iter()
+                    .find(|export| {
+                        export.name == *name && export.decl_interface_hash == *decl_interface_hash
+                    })
+                    .ok_or_else(|| {
+                        ReferenceCheckError::type_check(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                            ReferenceCheckReason::UnknownReference,
+                        )
+                    })?;
+                Ok(TypeSignature {
+                    universe_params: export.universe_params.clone(),
+                    ty: export.ty.clone(),
+                })
+            }
+            ReferenceCoreGlobalRef::Local { decl_index } => {
+                self.locals.get(*decl_index).cloned().ok_or_else(|| {
+                    ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::UnknownReference,
+                    )
+                })
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct TypeSignature {
+    universe_params: Vec<ReferenceModuleName>,
+    ty: ReferenceCoreExpr,
+}
+
+#[derive(Clone, Debug, Default)]
+struct TypeContext {
+    locals: Vec<LocalType>,
+}
+
+impl TypeContext {
+    fn push_assumption(&mut self, ty: ReferenceCoreExpr) {
+        self.locals.push(LocalType { ty, _value: None });
+    }
+
+    fn push_definition(&mut self, ty: ReferenceCoreExpr, value: ReferenceCoreExpr) {
+        self.locals.push(LocalType {
+            ty,
+            _value: Some(value),
+        });
+    }
+
+    fn lookup_type(&self, index: u32, offset: usize) -> DecodeResult<ReferenceCoreExpr> {
+        let index = index as usize;
+        let local = self
+            .locals
+            .get(self.locals.len().checked_sub(index + 1).ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                )
+            })?)
+            .ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                )
+            })?;
+        shift(&local.ty, index as i32 + 1, 0, offset)
+    }
+}
+
+#[derive(Clone, Debug)]
+struct LocalType {
+    ty: ReferenceCoreExpr,
+    _value: Option<ReferenceCoreExpr>,
+}
+
+fn ensure_level_wf(
+    level: &ReferenceCoreLevel,
+    delta: &[ReferenceModuleName],
+    offset: usize,
+) -> DecodeResult<()> {
+    match level {
+        ReferenceCoreLevel::Zero => Ok(()),
+        ReferenceCoreLevel::Succ(inner) => ensure_level_wf(inner, delta, offset),
+        ReferenceCoreLevel::Max(lhs, rhs) | ReferenceCoreLevel::IMax(lhs, rhs) => {
+            ensure_level_wf(lhs, delta, offset)?;
+            ensure_level_wf(rhs, delta, offset)
+        }
+        ReferenceCoreLevel::Param(name) => {
+            if delta.contains(name) {
+                Ok(())
+            } else {
+                Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnknownReference,
+                ))
+            }
+        }
+    }
+}
+
+fn subst_levels_expr(
+    expr: &ReferenceCoreExpr,
+    params: &[ReferenceModuleName],
+    levels: &[ReferenceCoreLevel],
+) -> ReferenceCoreExpr {
+    match expr {
+        ReferenceCoreExpr::Sort(level) => {
+            ReferenceCoreExpr::Sort(subst_level(level, params, levels))
+        }
+        ReferenceCoreExpr::BVar(index) => ReferenceCoreExpr::BVar(*index),
+        ReferenceCoreExpr::Const {
+            global_ref,
+            levels: expr_levels,
+        } => ReferenceCoreExpr::Const {
+            global_ref: global_ref.clone(),
+            levels: expr_levels
+                .iter()
+                .map(|level| subst_level(level, params, levels))
+                .collect(),
+        },
+        ReferenceCoreExpr::App(fun, arg) => ReferenceCoreExpr::App(
+            Box::new(subst_levels_expr(fun, params, levels)),
+            Box::new(subst_levels_expr(arg, params, levels)),
+        ),
+        ReferenceCoreExpr::Lam { ty, body } => ReferenceCoreExpr::Lam {
+            ty: Box::new(subst_levels_expr(ty, params, levels)),
+            body: Box::new(subst_levels_expr(body, params, levels)),
+        },
+        ReferenceCoreExpr::Pi { ty, body } => ReferenceCoreExpr::Pi {
+            ty: Box::new(subst_levels_expr(ty, params, levels)),
+            body: Box::new(subst_levels_expr(body, params, levels)),
+        },
+        ReferenceCoreExpr::Let { ty, value, body } => ReferenceCoreExpr::Let {
+            ty: Box::new(subst_levels_expr(ty, params, levels)),
+            value: Box::new(subst_levels_expr(value, params, levels)),
+            body: Box::new(subst_levels_expr(body, params, levels)),
+        },
+    }
+}
+
+fn subst_level(
+    level: &ReferenceCoreLevel,
+    params: &[ReferenceModuleName],
+    levels: &[ReferenceCoreLevel],
+) -> ReferenceCoreLevel {
+    match level {
+        ReferenceCoreLevel::Zero => ReferenceCoreLevel::Zero,
+        ReferenceCoreLevel::Succ(inner) => {
+            ReferenceCoreLevel::Succ(Box::new(subst_level(inner, params, levels)))
+        }
+        ReferenceCoreLevel::Max(lhs, rhs) => ReferenceCoreLevel::Max(
+            Box::new(subst_level(lhs, params, levels)),
+            Box::new(subst_level(rhs, params, levels)),
+        ),
+        ReferenceCoreLevel::IMax(lhs, rhs) => ReferenceCoreLevel::IMax(
+            Box::new(subst_level(lhs, params, levels)),
+            Box::new(subst_level(rhs, params, levels)),
+        ),
+        ReferenceCoreLevel::Param(name) => params
+            .iter()
+            .position(|param| param == name)
+            .map(|index| levels[index].clone())
+            .unwrap_or_else(|| ReferenceCoreLevel::Param(name.clone())),
+    }
+}
+
+fn shift(
+    expr: &ReferenceCoreExpr,
+    amount: i32,
+    cutoff: u32,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    match expr {
+        ReferenceCoreExpr::Sort(level) => Ok(ReferenceCoreExpr::Sort(level.clone())),
+        ReferenceCoreExpr::BVar(index) => {
+            if *index < cutoff {
+                Ok(ReferenceCoreExpr::BVar(*index))
+            } else {
+                let shifted = *index as i32 + amount;
+                if shifted < 0 {
+                    Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::InvalidBVar,
+                    ))
+                } else {
+                    Ok(ReferenceCoreExpr::BVar(shifted as u32))
+                }
+            }
+        }
+        ReferenceCoreExpr::Const { global_ref, levels } => Ok(ReferenceCoreExpr::Const {
+            global_ref: global_ref.clone(),
+            levels: levels.clone(),
+        }),
+        ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
+            Box::new(shift(fun, amount, cutoff, offset)?),
+            Box::new(shift(arg, amount, cutoff, offset)?),
+        )),
+        ReferenceCoreExpr::Lam { ty, body } => Ok(ReferenceCoreExpr::Lam {
+            ty: Box::new(shift(ty, amount, cutoff, offset)?),
+            body: Box::new(shift(body, amount, cutoff + 1, offset)?),
+        }),
+        ReferenceCoreExpr::Pi { ty, body } => Ok(ReferenceCoreExpr::Pi {
+            ty: Box::new(shift(ty, amount, cutoff, offset)?),
+            body: Box::new(shift(body, amount, cutoff + 1, offset)?),
+        }),
+        ReferenceCoreExpr::Let { ty, value, body } => Ok(ReferenceCoreExpr::Let {
+            ty: Box::new(shift(ty, amount, cutoff, offset)?),
+            value: Box::new(shift(value, amount, cutoff, offset)?),
+            body: Box::new(shift(body, amount, cutoff + 1, offset)?),
+        }),
+    }
+}
+
+fn substitute(
+    expr: &ReferenceCoreExpr,
+    target: u32,
+    replacement: &ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    match expr {
+        ReferenceCoreExpr::Sort(level) => Ok(ReferenceCoreExpr::Sort(level.clone())),
+        ReferenceCoreExpr::BVar(index) if *index == target => {
+            shift(replacement, target as i32, 0, offset)
+        }
+        ReferenceCoreExpr::BVar(index) if *index > target => Ok(ReferenceCoreExpr::BVar(index - 1)),
+        ReferenceCoreExpr::BVar(index) => Ok(ReferenceCoreExpr::BVar(*index)),
+        ReferenceCoreExpr::Const { global_ref, levels } => Ok(ReferenceCoreExpr::Const {
+            global_ref: global_ref.clone(),
+            levels: levels.clone(),
+        }),
+        ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
+            Box::new(substitute(fun, target, replacement, offset)?),
+            Box::new(substitute(arg, target, replacement, offset)?),
+        )),
+        ReferenceCoreExpr::Lam { ty, body } => Ok(ReferenceCoreExpr::Lam {
+            ty: Box::new(substitute(ty, target, replacement, offset)?),
+            body: Box::new(substitute(body, target + 1, replacement, offset)?),
+        }),
+        ReferenceCoreExpr::Pi { ty, body } => Ok(ReferenceCoreExpr::Pi {
+            ty: Box::new(substitute(ty, target, replacement, offset)?),
+            body: Box::new(substitute(body, target + 1, replacement, offset)?),
+        }),
+        ReferenceCoreExpr::Let { ty, value, body } => Ok(ReferenceCoreExpr::Let {
+            ty: Box::new(substitute(ty, target, replacement, offset)?),
+            value: Box::new(substitute(value, target, replacement, offset)?),
+            body: Box::new(substitute(body, target + 1, replacement, offset)?),
+        }),
+    }
+}
+
+fn instantiate(
+    body: &ReferenceCoreExpr,
+    value: &ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    substitute(body, 0, value, offset)
 }
 
 #[derive(Default)]

@@ -381,18 +381,18 @@ import store は runner が明示的に渡した certificate set だけを見る
 
 実装タスク:
 
-- [ ] Sort / Pi / Lam / App / Let / Const の inference / checking を実装する。
-- [ ] de Bruijn index / binder scope / context lookup を仕様と対応させる。
-- [ ] AxiomDecl / DefDecl / TheoremDecl の type : Sort と value/proof : type を検査する。
-- [ ] declaration order と dependency order を再検査する。
-- [ ] error は type mismatch、unknown reference、expected function、expected sort などに構造化する。
+- [x] Sort / Pi / Lam / App / Let / Const の inference / checking を実装する。
+- [x] de Bruijn index / binder scope / context lookup を仕様と対応させる。
+- [x] AxiomDecl / DefDecl / TheoremDecl の type : Sort と value/proof : type を検査する。
+- [x] declaration order と dependency order を再検査する。
+- [x] error は type mismatch、unknown reference、expected function、expected sort などに構造化する。
 
 受け入れ条件:
 
-- [ ] well-typed theorem / def は通る。
-- [ ] ill-typed application / wrong theorem proof は拒否される。
-- [ ] theorem proof は opaque export として登録され、untrusted theorem unfolding はしない。
-- [ ] checker は source pretty text、Human name shortening、notation を使わない。
+- [x] well-typed theorem / def は通る。
+- [x] ill-typed application / wrong theorem proof は拒否される。
+- [x] theorem proof は opaque export として登録され、untrusted theorem unfolding はしない。
+- [x] checker は source pretty text、Human name shortening、notation を使わない。
 
 検証:
 

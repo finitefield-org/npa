@@ -6,9 +6,9 @@
 //! policy. It cannot receive `.npa` source, tactic scripts, AI traces, or a
 //! theorem-search index.
 //!
-//! P8H-04 adds source-free import-store resolution and public import
-//! environment construction. Later milestones fill in type checking,
-//! conversion checking, inductive checking, and axiom report recomputation.
+//! P8H-05 adds minimal source-free type and declaration checking. Later
+//! milestones fill in conversion checking, inductive checking, and axiom report
+//! recomputation.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -201,6 +201,9 @@ pub struct ReferencePublicExport {
     pub decl_interface_hash: ReferenceHash,
     /// Transitive axiom dependencies committed by this export.
     pub axiom_dependencies: Vec<ReferenceAxiomDependency>,
+    universe_params: Vec<ReferenceModuleName>,
+    ty: ReferenceCoreExpr,
+    body: Option<ReferenceCoreExpr>,
 }
 
 /// Kind of an imported public export.
@@ -267,6 +270,59 @@ pub struct ReferenceResolvedImport {
     pub certificate_hash: ReferenceHash,
     /// Imported public environment.
     pub public_environment: ReferencePublicEnvironment,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum ReferenceCoreLevel {
+    Zero,
+    Succ(Box<ReferenceCoreLevel>),
+    Max(Box<ReferenceCoreLevel>, Box<ReferenceCoreLevel>),
+    IMax(Box<ReferenceCoreLevel>, Box<ReferenceCoreLevel>),
+    Param(ReferenceModuleName),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum ReferenceCoreExpr {
+    Sort(ReferenceCoreLevel),
+    BVar(u32),
+    Const {
+        global_ref: ReferenceCoreGlobalRef,
+        levels: Vec<ReferenceCoreLevel>,
+    },
+    App(Box<ReferenceCoreExpr>, Box<ReferenceCoreExpr>),
+    Lam {
+        ty: Box<ReferenceCoreExpr>,
+        body: Box<ReferenceCoreExpr>,
+    },
+    Pi {
+        ty: Box<ReferenceCoreExpr>,
+        body: Box<ReferenceCoreExpr>,
+    },
+    Let {
+        ty: Box<ReferenceCoreExpr>,
+        value: Box<ReferenceCoreExpr>,
+        body: Box<ReferenceCoreExpr>,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum ReferenceCoreGlobalRef {
+    Builtin {
+        name: ReferenceModuleName,
+        decl_interface_hash: ReferenceHash,
+    },
+    Imported {
+        import_index: usize,
+        name: ReferenceModuleName,
+        decl_interface_hash: ReferenceHash,
+    },
+    Local {
+        decl_index: usize,
+    },
+    LocalGenerated {
+        decl_index: usize,
+        name: ReferenceModuleName,
+    },
 }
 
 /// Canonical dotted module or declaration name.
@@ -515,16 +571,32 @@ pub struct ReferenceCheckedModule {
 }
 
 impl ReferenceCheckedModule {
-    #[cfg(test)]
-    pub(crate) fn from_import_entry(entry: ReferenceImportEntry) -> Self {
+    pub(crate) fn new(
+        module: ReferenceModuleName,
+        export_hash: ReferenceHash,
+        axiom_report_hash: ReferenceHash,
+        certificate_hash: ReferenceHash,
+        public_environment: ReferencePublicEnvironment,
+    ) -> Self {
         Self {
-            module: entry.module,
-            export_hash: entry.export_hash,
-            axiom_report_hash: entry.axiom_report_hash,
-            certificate_hash: entry.certificate_hash,
-            public_environment: entry.public_environment,
+            module,
+            export_hash,
+            axiom_report_hash,
+            certificate_hash,
+            public_environment,
             checked_by_reference_checker: true,
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_import_entry(entry: ReferenceImportEntry) -> Self {
+        Self::new(
+            entry.module,
+            entry.export_hash,
+            entry.axiom_report_hash,
+            entry.certificate_hash,
+            entry.public_environment,
+        )
     }
 
     fn into_import_entry(self) -> ReferenceImportEntry {
@@ -621,6 +693,19 @@ impl ReferenceCheckError {
             reason: Some(reason),
         }
     }
+
+    pub(crate) fn type_check(
+        section: ReferenceCertificateSection,
+        offset: usize,
+        reason: ReferenceCheckReason,
+    ) -> Self {
+        Self {
+            kind: ReferenceCheckErrorKind::TypeCheck,
+            section,
+            offset,
+            reason: Some(reason),
+        }
+    }
 }
 
 /// Stable top-level reference checker error kind.
@@ -634,7 +719,9 @@ pub enum ReferenceCheckErrorKind {
     HashMismatch,
     /// Import store resolution or import policy failed.
     ImportResolution,
-    /// The P8H-04 decoder/hash/import verifier accepted the bytes but semantic checking is pending.
+    /// Minimal source-free type checking failed.
+    TypeCheck,
+    /// The checked certificate used a declaration form reserved for a later milestone.
     UnsupportedSkeleton,
 }
 
@@ -725,6 +812,18 @@ pub enum ReferenceCheckReason {
     ImportCertificateHashMismatch,
     /// High-trust mode rejected an import that was not checked by this checker.
     UncheckedImport,
+    /// A constant or global reference was unavailable in the checked environment.
+    UnknownReference,
+    /// A constant was applied to the wrong number of universe levels.
+    BadUniverseArity,
+    /// A de Bruijn index was not in local scope.
+    InvalidBVar,
+    /// A term was expected to have a sort type.
+    ExpectedSort,
+    /// A term was expected to have a function type.
+    ExpectedFunction,
+    /// An inferred type did not structurally match the expected type.
+    TypeMismatch,
     /// A stored hash did not match the reference checker recomputation.
     HashMismatch {
         /// Hash role that mismatched.
@@ -790,10 +889,10 @@ pub fn build_import_environment(
 
 /// Check a canonical certificate with the Phase 8 reference-checker API.
 ///
-/// The P8H-04 implementation decodes canonical source-free certificate bytes,
-/// verifies stored hashes, and resolves explicit imports. It intentionally does
-/// not call the fast Rust kernel or `npa_cert::verify_module_cert`, and it does
-/// not yet accept certificates as checked.
+/// This decodes canonical source-free certificate bytes, verifies stored hashes,
+/// resolves explicit imports, and runs the P8H-05 minimal type/declaration
+/// checker. It intentionally does not call the fast Rust kernel or
+/// `npa_cert::verify_module_cert`.
 pub fn check_certificate(
     cert_bytes: &[u8],
     import_store: &ReferenceImportStore,
@@ -803,8 +902,8 @@ pub fn check_certificate(
         return ReferenceCheckResult::Rejected(ReferenceCheckError::empty());
     }
 
-    match build_import_environment(cert_bytes, import_store, policy) {
-        Ok(_) => ReferenceCheckResult::Rejected(ReferenceCheckError::unsupported(cert_bytes.len())),
+    match decode::check_certificate_impl(cert_bytes, import_store, policy) {
+        Ok(module) => ReferenceCheckResult::Checked(module),
         Err(error) => ReferenceCheckResult::Rejected(error),
     }
 }
@@ -989,6 +1088,419 @@ mod tests {
         bytes
     }
 
+    #[derive(Clone, Copy)]
+    enum TestTerm {
+        Sort(usize),
+        BVar(u32),
+        ConstLocal {
+            decl_index: usize,
+        },
+        App(usize, usize),
+        Lam {
+            ty: usize,
+            body: usize,
+        },
+        Pi {
+            ty: usize,
+            body: usize,
+        },
+        Let {
+            ty: usize,
+            value: usize,
+            body: usize,
+        },
+    }
+
+    #[derive(Clone, Copy)]
+    enum TestDeclKind {
+        ReducibleDef { ty: usize, value: usize },
+        Theorem { ty: usize, proof: usize },
+    }
+
+    struct DeclarationCertificateFixture {
+        bytes: Vec<u8>,
+    }
+
+    fn encode_test_terms(out: &mut Vec<u8>, terms: &[TestTerm]) {
+        out.extend(encode_uvar(terms.len() as u64));
+        for term in terms {
+            match term {
+                TestTerm::Sort(level) => {
+                    out.push(0x00);
+                    out.extend(encode_uvar(*level as u64));
+                }
+                TestTerm::BVar(index) => {
+                    out.push(0x01);
+                    out.extend(encode_uvar(u64::from(*index)));
+                }
+                TestTerm::ConstLocal { decl_index } => {
+                    out.push(0x02);
+                    out.push(0x01);
+                    out.extend(encode_uvar(*decl_index as u64));
+                    encode_usize_vec(out, &[]);
+                }
+                TestTerm::App(fun, arg) => {
+                    out.push(0x03);
+                    out.extend(encode_uvar(*fun as u64));
+                    out.extend(encode_uvar(*arg as u64));
+                }
+                TestTerm::Lam { ty, body } => {
+                    out.push(0x04);
+                    out.extend(encode_uvar(*ty as u64));
+                    out.extend(encode_uvar(*body as u64));
+                }
+                TestTerm::Pi { ty, body } => {
+                    out.push(0x05);
+                    out.extend(encode_uvar(*ty as u64));
+                    out.extend(encode_uvar(*body as u64));
+                }
+                TestTerm::Let { ty, value, body } => {
+                    out.push(0x06);
+                    out.extend(encode_uvar(*ty as u64));
+                    out.extend(encode_uvar(*value as u64));
+                    out.extend(encode_uvar(*body as u64));
+                }
+            }
+        }
+    }
+
+    fn test_term_hashes(level_hashes: &[ReferenceHash], terms: &[TestTerm]) -> Vec<ReferenceHash> {
+        let mut hashes = Vec::with_capacity(terms.len());
+        for term in terms {
+            let mut payload = Vec::new();
+            match term {
+                TestTerm::Sort(level) => {
+                    payload.push(0x00);
+                    payload.extend(level_hashes[*level]);
+                }
+                TestTerm::BVar(index) => {
+                    payload.push(0x01);
+                    payload.extend(encode_uvar(u64::from(*index)));
+                }
+                TestTerm::ConstLocal { decl_index } => {
+                    payload.push(0x02);
+                    payload.push(0x01);
+                    payload.extend(encode_uvar(*decl_index as u64));
+                    payload.extend(encode_uvar(0));
+                }
+                TestTerm::App(fun, arg) => {
+                    payload.push(0x03);
+                    payload.extend(hashes[*fun]);
+                    payload.extend(hashes[*arg]);
+                }
+                TestTerm::Lam { ty, body } => {
+                    payload.push(0x04);
+                    payload.extend(hashes[*ty]);
+                    payload.extend(hashes[*body]);
+                }
+                TestTerm::Pi { ty, body } => {
+                    payload.push(0x05);
+                    payload.extend(hashes[*ty]);
+                    payload.extend(hashes[*body]);
+                }
+                TestTerm::Let { ty, value, body } => {
+                    payload.push(0x06);
+                    payload.extend(hashes[*ty]);
+                    payload.extend(hashes[*value]);
+                    payload.extend(hashes[*body]);
+                }
+            }
+            hashes.push(hash_with_domain(b"NPA-TERM-0.1", &payload));
+        }
+        hashes
+    }
+
+    fn test_level_hashes(terms: &[TestTerm]) -> Vec<ReferenceHash> {
+        let max_sort_level = terms
+            .iter()
+            .filter_map(|term| match term {
+                TestTerm::Sort(level) => Some(*level),
+                TestTerm::BVar(_)
+                | TestTerm::ConstLocal { .. }
+                | TestTerm::App(_, _)
+                | TestTerm::Lam { .. }
+                | TestTerm::Pi { .. }
+                | TestTerm::Let { .. } => None,
+            })
+            .max()
+            .unwrap_or(0);
+        let mut hashes = vec![hash_with_domain(b"NPA-LEVEL-0.1", &[0x00])];
+        for level in 1..=max_sort_level {
+            let mut payload = vec![0x01];
+            payload.extend(hashes[level - 1]);
+            hashes.push(hash_with_domain(b"NPA-LEVEL-0.1", &payload));
+        }
+        hashes
+    }
+
+    fn encode_test_levels(out: &mut Vec<u8>, level_hashes: &[ReferenceHash]) {
+        out.extend(encode_uvar(level_hashes.len() as u64));
+        out.push(0x00);
+        for level in 1..level_hashes.len() {
+            out.push(0x01);
+            out.extend(encode_uvar((level - 1) as u64));
+        }
+    }
+
+    fn encode_option_reducibility(out: &mut Vec<u8>, is_reducible: bool) {
+        out.push(0x01);
+        out.push(if is_reducible { 0x00 } else { 0x01 });
+    }
+
+    fn encode_option_opacity(out: &mut Vec<u8>, is_opaque: bool) {
+        if is_opaque {
+            out.push(0x01);
+            out.push(0x00);
+        } else {
+            out.push(0x00);
+        }
+    }
+
+    fn declaration_certificate_fixture(
+        decl_name: &[&str],
+        terms: &[TestTerm],
+        kind: TestDeclKind,
+    ) -> DeclarationCertificateFixture {
+        let mut bytes = header_bytes();
+        bytes.extend(encode_uvar(0)); // imports
+        bytes.extend(encode_uvar(2)); // name table: decl, Std.Nat
+        encode_name(&mut bytes, decl_name);
+        encode_name(&mut bytes, &["Std", "Nat"]);
+
+        let level_hashes = test_level_hashes(terms);
+        encode_test_levels(&mut bytes, &level_hashes);
+        let term_hashes = test_term_hashes(&level_hashes, terms);
+        encode_test_terms(&mut bytes, terms);
+
+        let (decl_tag, ty, body, body_hash, reducible, opaque) = match kind {
+            TestDeclKind::ReducibleDef { ty, value } => {
+                (0x01, ty, Some(value), Some(term_hashes[value]), true, false)
+            }
+            TestDeclKind::Theorem { ty, proof } => (0x02, ty, Some(proof), None, false, true),
+        };
+
+        let mut iface_payload = Vec::new();
+        iface_payload.push(decl_tag);
+        encode_name(&mut iface_payload, decl_name);
+        encode_usize_vec(&mut iface_payload, &[]);
+        iface_payload.extend(term_hashes[ty]);
+        if reducible {
+            iface_payload.push(0x00);
+        }
+        if opaque {
+            iface_payload.push(0x00);
+        }
+        encode_dependency_entries_empty(&mut iface_payload);
+        encode_axiom_refs_empty(&mut iface_payload);
+        if reducible {
+            iface_payload.extend(body_hash.unwrap());
+        }
+        let decl_interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &iface_payload);
+
+        let mut decl_cert_payload = Vec::new();
+        decl_cert_payload.extend(decl_interface_hash);
+        if let Some(body) = body {
+            decl_cert_payload.extend(term_hashes[body]);
+        }
+        encode_dependency_entries_empty(&mut decl_cert_payload);
+        if reducible {
+            encode_axiom_refs_empty(&mut decl_cert_payload);
+        }
+        let decl_certificate_hash = hash_with_domain(b"NPA-DECL-CERT-0.1", &decl_cert_payload);
+
+        bytes.extend(encode_uvar(1)); // declarations
+        bytes.push(decl_tag);
+        bytes.extend(encode_uvar(0)); // name
+        encode_usize_vec(&mut bytes, &[]);
+        bytes.extend(encode_uvar(ty as u64));
+        match kind {
+            TestDeclKind::ReducibleDef { value, .. } => {
+                bytes.extend(encode_uvar(value as u64));
+                bytes.push(0x00);
+            }
+            TestDeclKind::Theorem { proof, .. } => {
+                bytes.extend(encode_uvar(proof as u64));
+                bytes.push(0x00);
+            }
+        }
+        encode_dependency_entries_empty(&mut bytes);
+        encode_axiom_refs_empty(&mut bytes);
+        bytes.extend(decl_interface_hash);
+        bytes.extend(decl_certificate_hash);
+
+        let mut export_block = Vec::new();
+        export_block.extend(encode_uvar(1));
+        export_block.extend(encode_uvar(0)); // name
+        export_block.push(if reducible { 0x01 } else { 0x02 });
+        encode_usize_vec(&mut export_block, &[]);
+        export_block.extend(encode_uvar(ty as u64));
+        encode_option_usize(&mut export_block, reducible.then_some(body.unwrap()));
+        export_block.extend(term_hashes[ty]);
+        encode_option_hash(&mut export_block, body_hash.as_ref());
+        if reducible {
+            encode_option_reducibility(&mut export_block, true);
+        } else {
+            export_block.push(0x00);
+        }
+        encode_option_opacity(&mut export_block, opaque);
+        export_block.extend(decl_interface_hash);
+        encode_axiom_refs_empty(&mut export_block);
+
+        let mut axiom_report = Vec::new();
+        axiom_report.extend(encode_uvar(1));
+        axiom_report.extend(encode_uvar(0)); // decl index
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report); // module axioms
+
+        bytes.extend(&export_block);
+        bytes.extend(&axiom_report);
+        let export_hash = hash_with_domain(b"NPA-MODULE-EXPORT-0.1", &export_block);
+        let axiom_report_hash = hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &axiom_report);
+        bytes.extend(export_hash);
+        bytes.extend(axiom_report_hash);
+        let certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", &bytes);
+        bytes.extend(certificate_hash);
+
+        DeclarationCertificateFixture { bytes }
+    }
+
+    fn local_const_certificate_fixture() -> DeclarationCertificateFixture {
+        let terms = [TestTerm::Sort(0), TestTerm::ConstLocal { decl_index: 0 }];
+        let level_hashes = test_level_hashes(&terms);
+        let term_hashes = test_term_hashes(&level_hashes, &terms);
+
+        let mut axiom_iface_payload = Vec::new();
+        axiom_iface_payload.push(0x00);
+        encode_name(&mut axiom_iface_payload, &["A"]);
+        encode_usize_vec(&mut axiom_iface_payload, &[]);
+        axiom_iface_payload.extend(term_hashes[0]);
+        encode_dependency_entries_empty(&mut axiom_iface_payload);
+        let axiom_interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &axiom_iface_payload);
+
+        let mut axiom_cert_payload = Vec::new();
+        axiom_cert_payload.extend(axiom_interface_hash);
+        encode_axiom_refs_empty(&mut axiom_cert_payload);
+        let axiom_certificate_hash = hash_with_domain(b"NPA-DECL-CERT-0.1", &axiom_cert_payload);
+
+        let mut theorem_iface_payload = Vec::new();
+        theorem_iface_payload.push(0x02);
+        encode_name(&mut theorem_iface_payload, &["B"]);
+        encode_usize_vec(&mut theorem_iface_payload, &[]);
+        theorem_iface_payload.extend(term_hashes[0]);
+        theorem_iface_payload.push(0x00);
+        encode_dependency_entries_empty(&mut theorem_iface_payload);
+        encode_axiom_refs_empty(&mut theorem_iface_payload);
+        let theorem_interface_hash =
+            hash_with_domain(b"NPA-DECL-IFACE-0.1", &theorem_iface_payload);
+
+        let mut theorem_cert_payload = Vec::new();
+        theorem_cert_payload.extend(theorem_interface_hash);
+        theorem_cert_payload.extend(term_hashes[1]);
+        encode_dependency_entries_empty(&mut theorem_cert_payload);
+        let theorem_certificate_hash =
+            hash_with_domain(b"NPA-DECL-CERT-0.1", &theorem_cert_payload);
+
+        let mut bytes = header_bytes();
+        bytes.extend(encode_uvar(0)); // imports
+        bytes.extend(encode_uvar(3)); // name table: A, B, Std.Nat
+        encode_name(&mut bytes, &["A"]);
+        encode_name(&mut bytes, &["B"]);
+        encode_name(&mut bytes, &["Std", "Nat"]);
+        encode_test_levels(&mut bytes, &level_hashes);
+        encode_test_terms(&mut bytes, &terms);
+
+        bytes.extend(encode_uvar(2)); // declarations
+        bytes.push(0x00); // Axiom A : Sort 0
+        bytes.extend(encode_uvar(0)); // name A
+        encode_usize_vec(&mut bytes, &[]);
+        bytes.extend(encode_uvar(0));
+        encode_dependency_entries_empty(&mut bytes);
+        encode_axiom_refs_empty(&mut bytes);
+        bytes.extend(axiom_interface_hash);
+        bytes.extend(axiom_certificate_hash);
+
+        bytes.push(0x02); // Theorem B : Sort 0 := A
+        bytes.extend(encode_uvar(1)); // name B
+        encode_usize_vec(&mut bytes, &[]);
+        bytes.extend(encode_uvar(0)); // ty
+        bytes.extend(encode_uvar(1)); // proof
+        bytes.push(0x00);
+        encode_dependency_entries_empty(&mut bytes);
+        encode_axiom_refs_empty(&mut bytes);
+        bytes.extend(theorem_interface_hash);
+        bytes.extend(theorem_certificate_hash);
+
+        let mut export_block = Vec::new();
+        export_block.extend(encode_uvar(2));
+        export_block.extend(encode_uvar(0)); // A
+        export_block.push(0x00);
+        encode_usize_vec(&mut export_block, &[]);
+        export_block.extend(encode_uvar(0));
+        encode_option_usize(&mut export_block, None);
+        export_block.extend(term_hashes[0]);
+        encode_option_hash(&mut export_block, None);
+        export_block.push(0x00);
+        export_block.push(0x00);
+        export_block.extend(axiom_interface_hash);
+        encode_axiom_refs_empty(&mut export_block);
+
+        export_block.extend(encode_uvar(1)); // B
+        export_block.push(0x02);
+        encode_usize_vec(&mut export_block, &[]);
+        export_block.extend(encode_uvar(0));
+        encode_option_usize(&mut export_block, None);
+        export_block.extend(term_hashes[0]);
+        encode_option_hash(&mut export_block, None);
+        export_block.push(0x00);
+        encode_option_opacity(&mut export_block, true);
+        export_block.extend(theorem_interface_hash);
+        encode_axiom_refs_empty(&mut export_block);
+
+        let mut axiom_report = Vec::new();
+        axiom_report.extend(encode_uvar(2));
+        axiom_report.extend(encode_uvar(0));
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+        axiom_report.extend(encode_uvar(1));
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+
+        bytes.extend(&export_block);
+        bytes.extend(&axiom_report);
+        let export_hash = hash_with_domain(b"NPA-MODULE-EXPORT-0.1", &export_block);
+        let axiom_report_hash = hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &axiom_report);
+        bytes.extend(export_hash);
+        bytes.extend(axiom_report_hash);
+        let certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", &bytes);
+        bytes.extend(certificate_hash);
+
+        DeclarationCertificateFixture { bytes }
+    }
+
+    fn well_typed_identity_terms() -> Vec<TestTerm> {
+        vec![
+            TestTerm::Sort(0),
+            TestTerm::BVar(0),
+            TestTerm::BVar(1),
+            TestTerm::Lam { ty: 1, body: 1 },
+            TestTerm::Pi { ty: 1, body: 2 },
+            TestTerm::Lam { ty: 0, body: 3 },
+            TestTerm::Pi { ty: 0, body: 4 },
+        ]
+    }
+
+    fn identity_type_only_terms() -> Vec<TestTerm> {
+        vec![
+            TestTerm::Sort(0),
+            TestTerm::BVar(0),
+            TestTerm::BVar(1),
+            TestTerm::Pi { ty: 1, body: 2 },
+            TestTerm::Pi { ty: 0, body: 3 },
+        ]
+    }
+
     #[derive(Clone, Debug)]
     struct AxiomCertificateFixture {
         bytes: Vec<u8>,
@@ -1142,6 +1654,12 @@ mod tests {
         assert_eq!(error.reason, Some(reason));
     }
 
+    fn assert_type_check(error: ReferenceCheckError, reason: ReferenceCheckReason) {
+        assert_eq!(error.kind, ReferenceCheckErrorKind::TypeCheck);
+        assert_eq!(error.section, ReferenceCertificateSection::Declarations);
+        assert_eq!(error.reason, Some(reason));
+    }
+
     #[test]
     fn public_api_is_certificate_bytes_import_store_and_policy_only() {
         let _: fn(&[u8], &ReferenceImportStore, &ReferenceCheckerPolicy) -> ReferenceCheckResult =
@@ -1197,22 +1715,14 @@ mod tests {
     }
 
     #[test]
-    fn header_only_certificate_is_not_accepted_by_the_skeleton() {
+    fn empty_module_certificate_is_checked_after_type_check() {
         let imports = ReferenceImportStore::default();
         let policy = ReferenceCheckerPolicy::default();
         let cert = empty_module_certificate();
 
         let result = check_certificate(&cert, &imports, &policy);
 
-        assert!(!result.is_checked());
-        assert_eq!(
-            result.error().unwrap().kind,
-            ReferenceCheckErrorKind::UnsupportedSkeleton
-        );
-        assert_eq!(
-            result.error().unwrap().reason,
-            Some(ReferenceCheckReason::ReferenceCheckerBodyUnimplemented)
-        );
+        assert!(result.is_checked());
     }
 
     #[test]
@@ -1335,7 +1845,7 @@ mod tests {
     }
 
     #[test]
-    fn check_certificate_runs_hash_verifier_before_semantic_skeleton() {
+    fn check_certificate_runs_hash_verifier_before_type_check() {
         let imports = ReferenceImportStore::default();
         let policy = ReferenceCheckerPolicy::default();
         let fixture = axiom_certificate_fixture();
@@ -1349,6 +1859,144 @@ mod tests {
             ReferenceCertificateSection::Hashes,
             fixture.certificate_hash_offset,
             ReferenceHashObject::ModuleCertificate,
+        );
+    }
+
+    #[test]
+    fn type_check_accepts_well_typed_reducible_def() {
+        let terms = well_typed_identity_terms();
+        let fixture = declaration_certificate_fixture(
+            &["Adef"],
+            &terms,
+            TestDeclKind::ReducibleDef { ty: 6, value: 5 },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        let ReferenceCheckResult::Checked(module) = result else {
+            panic!("well-typed def should check");
+        };
+        assert_eq!(module.module().dotted(), "Std.Nat");
+        assert_eq!(module.public_environment().exports().len(), 1);
+        assert!(module.public_environment().exports()[0].body.is_some());
+    }
+
+    #[test]
+    fn type_check_accepts_well_typed_theorem_and_keeps_proof_opaque() {
+        let terms = well_typed_identity_terms();
+        let fixture = declaration_certificate_fixture(
+            &["Athm"],
+            &terms,
+            TestDeclKind::Theorem { ty: 6, proof: 5 },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        let ReferenceCheckResult::Checked(module) = result else {
+            panic!("well-typed theorem should check");
+        };
+        let export = &module.public_environment().exports()[0];
+        assert_eq!(export.kind, ReferenceExportKind::Theorem);
+        assert!(export.body.is_none());
+    }
+
+    #[test]
+    fn type_check_accepts_let_term() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::BVar(0),
+            TestTerm::Let {
+                ty: 1,
+                value: 0,
+                body: 2,
+            },
+        ];
+        let fixture = declaration_certificate_fixture(
+            &["Alet"],
+            &terms,
+            TestDeclKind::Theorem { ty: 1, proof: 3 },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert!(result.is_checked());
+    }
+
+    #[test]
+    fn type_check_accepts_local_const_reference_after_prior_declaration() {
+        let fixture = local_const_certificate_fixture();
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        let ReferenceCheckResult::Checked(module) = result else {
+            panic!("local const reference should check after its declaration");
+        };
+        assert_eq!(module.public_environment().exports().len(), 2);
+    }
+
+    #[test]
+    fn type_check_rejects_ill_typed_application() {
+        let terms = [TestTerm::Sort(0), TestTerm::App(0, 0)];
+        let fixture = declaration_certificate_fixture(
+            &["Abad"],
+            &terms,
+            TestDeclKind::Theorem { ty: 0, proof: 1 },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::ExpectedFunction,
+        );
+    }
+
+    #[test]
+    fn type_check_rejects_wrong_theorem_proof_type() {
+        let terms = identity_type_only_terms();
+        let fixture = declaration_certificate_fixture(
+            &["Awrong"],
+            &terms,
+            TestDeclKind::Theorem { ty: 4, proof: 0 },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::TypeMismatch,
+        );
+    }
+
+    #[test]
+    fn type_check_rejects_de_bruijn_index_out_of_scope() {
+        let terms = [TestTerm::Sort(0), TestTerm::BVar(0)];
+        let fixture = declaration_certificate_fixture(
+            &["Ascope"],
+            &terms,
+            TestDeclKind::Theorem { ty: 0, proof: 1 },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::InvalidBVar,
         );
     }
 
@@ -1537,7 +2185,7 @@ mod tests {
     }
 
     #[test]
-    fn check_certificate_runs_import_resolution_before_semantic_skeleton() {
+    fn check_certificate_runs_import_resolution_before_type_check() {
         let fixture = axiom_certificate_fixture();
         let store = ReferenceImportStore::default();
         let policy = ReferenceCheckerPolicy::default();
