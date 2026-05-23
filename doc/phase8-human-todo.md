@@ -493,18 +493,18 @@ Phase 9 の advanced inductive は対象外。MVP は Nat / Eq / List / simple g
 
 実装タスク:
 
-- [ ] declaration ごとの direct / transitive axiom dependencies を再計算する。
-- [ ] module axiom report と certificate 内 report を比較する。
-- [ ] axiom report hash を再計算し、stale report を拒否する。
-- [ ] policy file の `deny_sorry` / `deny_custom_axioms` / allowed axiom set を checker boundary に接続する。
-- [ ] exact `Std.Logic.Eq.rec` standard exception を custom axiom とは別に扱う。
+- [x] declaration ごとの direct / transitive axiom dependencies を再計算する。
+- [x] module axiom report と certificate 内 report を比較する。
+- [x] axiom report hash を再計算し、stale report を拒否する。
+- [x] policy file の `deny_sorry` / `deny_custom_axioms` / allowed axiom set を checker boundary に接続する。
+- [x] exact `Std.Logic.Eq.rec` standard exception を custom axiom とは別に扱う。
 
 受け入れ条件:
 
-- [ ] axiom report から実際の dependency を削った certificate は reject される。
-- [ ] custom axiom / synthetic sorry は high-trust policy で reject される。
-- [ ] `Std.Logic.Eq.rec` 以外の classical axiom は MVP standard library policy で reject される。
-- [ ] axiom policy failure は checker result / auxiliary result のどちらでも deterministic に分類できる。
+- [x] axiom report から実際の dependency を削った certificate は reject される。
+- [x] custom axiom / synthetic sorry は high-trust policy で reject される。
+- [x] `Std.Logic.Eq.rec` 以外の classical axiom は MVP standard library policy で reject される。
+- [x] axiom policy failure は checker result / auxiliary result のどちらでも deterministic に分類できる。
 
 検証:
 

@@ -6,8 +6,8 @@
 //! policy. It cannot receive `.npa` source, tactic scripts, AI traces, or a
 //! theorem-search index.
 //!
-//! P8H-07 adds source-free β/δ/ι/ζ conversion and simple inductive/recursor
-//! checking. Later milestones fill in axiom report recomputation.
+//! P8H-08 adds source-free axiom-report recomputation and deterministic axiom
+//! policy gates.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -514,6 +514,10 @@ pub struct ReferenceCheckerPolicy {
     pub trust_mode: ReferenceTrustMode,
     /// Exact axiom names allowed by the policy.
     pub allowed_axioms: Vec<String>,
+    /// Reject declarations that depend on a synthetic `sorry` axiom.
+    pub deny_sorry: bool,
+    /// Reject every custom axiom not explicitly allowed by the policy.
+    pub deny_custom_axioms: bool,
 }
 
 impl Default for ReferenceCheckerPolicy {
@@ -521,6 +525,8 @@ impl Default for ReferenceCheckerPolicy {
         Self {
             trust_mode: ReferenceTrustMode::Normal,
             allowed_axioms: Vec::new(),
+            deny_sorry: true,
+            deny_custom_axioms: false,
         }
     }
 }
@@ -718,6 +724,10 @@ pub enum ReferenceCheckErrorKind {
     HashMismatch,
     /// Import store resolution or import policy failed.
     ImportResolution,
+    /// A stored axiom report did not match reference-checker recomputation.
+    AxiomReportMismatch,
+    /// Axiom admission policy rejected the certificate.
+    AxiomPolicy,
     /// Minimal source-free type checking failed.
     TypeCheck,
     /// The checked certificate used a declaration form reserved for a later milestone.
@@ -755,7 +765,7 @@ pub enum ReferenceCertificateSection {
     FullCertificate,
 }
 
-/// Stable reason code for malformed or unsupported certificates.
+/// Stable reason code for deterministic reference checker rejections.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ReferenceCheckReason {
     /// A varint ended after the input ended.
@@ -850,11 +860,39 @@ pub enum ReferenceCheckReason {
         /// Hash role that mismatched.
         object: ReferenceHashObject,
     },
+    /// A stored axiom report did not match reference-checker recomputation.
+    AxiomReportMismatch,
+    /// `deny_sorry` rejected a synthetic `sorry` axiom dependency.
+    SorryDenied,
+    /// A custom axiom was not in the exact allowlist or standard exception set.
+    ForbiddenAxiom,
     /// The P8H-03 decoder/hash verifier intentionally has no semantic checker body.
     ReferenceCheckerBodyUnimplemented,
 }
 
 impl ReferenceCheckError {
+    pub(crate) fn axiom_report(section: ReferenceCertificateSection, offset: usize) -> Self {
+        Self {
+            kind: ReferenceCheckErrorKind::AxiomReportMismatch,
+            section,
+            offset,
+            reason: Some(ReferenceCheckReason::AxiomReportMismatch),
+        }
+    }
+
+    pub(crate) fn axiom_policy(
+        section: ReferenceCertificateSection,
+        offset: usize,
+        reason: ReferenceCheckReason,
+    ) -> Self {
+        Self {
+            kind: ReferenceCheckErrorKind::AxiomPolicy,
+            section,
+            offset,
+            reason: Some(reason),
+        }
+    }
+
     pub(crate) fn hash_mismatch(
         section: ReferenceCertificateSection,
         offset: usize,
@@ -1559,6 +1597,142 @@ mod tests {
         DeclarationCertificateFixture { bytes }
     }
 
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+    struct TestDependencyEntry {
+        decl_index: usize,
+        decl_interface_hash: ReferenceHash,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+    struct TestAxiomRef {
+        decl_index: usize,
+        name: usize,
+        decl_interface_hash: ReferenceHash,
+    }
+
+    fn encode_test_dependency_entries(out: &mut Vec<u8>, entries: &[TestDependencyEntry]) {
+        out.extend(encode_uvar(entries.len() as u64));
+        for entry in entries {
+            encode_local_global_ref(out, entry.decl_index);
+            out.extend(entry.decl_interface_hash);
+        }
+    }
+
+    fn encode_test_axiom_refs(out: &mut Vec<u8>, axioms: &[TestAxiomRef]) {
+        out.extend(encode_uvar(axioms.len() as u64));
+        for axiom in axioms {
+            encode_local_global_ref(out, axiom.decl_index);
+            out.extend(encode_uvar(axiom.name as u64));
+            out.extend(axiom.decl_interface_hash);
+        }
+    }
+
+    fn test_decl_term_ids(declaration: TestDeclSpec) -> Vec<usize> {
+        match declaration {
+            TestDeclSpec::Axiom { ty, .. } => vec![ty],
+            TestDeclSpec::Def { ty, value, .. } => vec![ty, value],
+            TestDeclSpec::Theorem { ty, proof, .. } => vec![ty, proof],
+        }
+    }
+
+    fn test_decl_interface_term_ids(declaration: TestDeclSpec) -> Vec<usize> {
+        match declaration {
+            TestDeclSpec::Axiom { ty, .. } => vec![ty],
+            TestDeclSpec::Def {
+                ty,
+                value,
+                reducible,
+                ..
+            } => {
+                let mut terms = vec![ty];
+                if reducible {
+                    terms.push(value);
+                }
+                terms
+            }
+            TestDeclSpec::Theorem { ty, .. } => vec![ty],
+        }
+    }
+
+    fn collect_test_local_refs(terms: &[TestTerm], term_id: usize, refs: &mut BTreeSet<usize>) {
+        match terms[term_id] {
+            TestTerm::Sort(_) | TestTerm::BVar(_) => {}
+            TestTerm::ConstLocal { decl_index } => {
+                refs.insert(decl_index);
+            }
+            TestTerm::App(fun, arg) => {
+                collect_test_local_refs(terms, fun, refs);
+                collect_test_local_refs(terms, arg, refs);
+            }
+            TestTerm::Lam { ty, body } | TestTerm::Pi { ty, body } => {
+                collect_test_local_refs(terms, ty, refs);
+                collect_test_local_refs(terms, body, refs);
+            }
+            TestTerm::Let { ty, value, body } => {
+                collect_test_local_refs(terms, ty, refs);
+                collect_test_local_refs(terms, value, refs);
+                collect_test_local_refs(terms, body, refs);
+            }
+        }
+    }
+
+    fn test_dependencies_for_terms(
+        terms: &[TestTerm],
+        term_ids: &[usize],
+        current_decl_index: usize,
+        interface_hashes: &[ReferenceHash],
+    ) -> Vec<TestDependencyEntry> {
+        let mut refs = BTreeSet::new();
+        for term_id in term_ids {
+            collect_test_local_refs(terms, *term_id, &mut refs);
+        }
+        refs.into_iter()
+            .filter(|decl_index| *decl_index < current_decl_index)
+            .map(|decl_index| TestDependencyEntry {
+                decl_index,
+                decl_interface_hash: interface_hashes[decl_index],
+            })
+            .collect()
+    }
+
+    fn test_axioms_for_decl(
+        declaration: TestDeclSpec,
+        decl_index: usize,
+        dependencies: &[TestDependencyEntry],
+        declarations: &[TestDeclSpec],
+        interface_hashes: &[ReferenceHash],
+        previous_axioms: &[Vec<TestAxiomRef>],
+    ) -> (Vec<TestAxiomRef>, Vec<TestAxiomRef>) {
+        let mut direct = BTreeSet::new();
+        let mut transitive = BTreeSet::new();
+        for dependency in dependencies {
+            if matches!(
+                declarations[dependency.decl_index],
+                TestDeclSpec::Axiom { .. }
+            ) {
+                direct.insert(TestAxiomRef {
+                    decl_index: dependency.decl_index,
+                    name: dependency.decl_index,
+                    decl_interface_hash: interface_hashes[dependency.decl_index],
+                });
+            }
+            transitive.extend(previous_axioms[dependency.decl_index].iter().copied());
+        }
+        if matches!(declaration, TestDeclSpec::Axiom { .. }) {
+            let self_ref = TestAxiomRef {
+                decl_index,
+                name: decl_index,
+                decl_interface_hash: interface_hashes[decl_index],
+            };
+            direct.insert(self_ref);
+            transitive.insert(self_ref);
+        }
+        (
+            direct.into_iter().collect(),
+            transitive.into_iter().collect(),
+        )
+    }
+
     fn multi_declaration_certificate_fixture(
         terms: &[TestTerm],
         declarations: &[TestDeclSpec],
@@ -1574,8 +1748,37 @@ mod tests {
         let term_hashes = test_term_hashes(&level_hashes, terms);
         let mut interface_hashes = Vec::with_capacity(declarations.len());
         let mut certificate_hashes = Vec::with_capacity(declarations.len());
+        let mut dependencies_by_decl = Vec::with_capacity(declarations.len());
+        let mut direct_axioms_by_decl = Vec::with_capacity(declarations.len());
+        let mut transitive_axioms_by_decl = Vec::with_capacity(declarations.len());
 
-        for declaration in declarations {
+        for (decl_index, declaration) in declarations.iter().enumerate() {
+            let dependencies = test_dependencies_for_terms(
+                terms,
+                &test_decl_term_ids(*declaration),
+                decl_index,
+                &interface_hashes,
+            );
+            let interface_dependencies = test_dependencies_for_terms(
+                terms,
+                &test_decl_interface_term_ids(*declaration),
+                decl_index,
+                &interface_hashes,
+            );
+
+            let preliminary_axioms = if matches!(*declaration, TestDeclSpec::Axiom { .. }) {
+                (Vec::new(), Vec::new())
+            } else {
+                test_axioms_for_decl(
+                    *declaration,
+                    decl_index,
+                    &dependencies,
+                    declarations,
+                    &interface_hashes,
+                    &transitive_axioms_by_decl,
+                )
+            };
+
             let mut iface_payload = Vec::new();
             match *declaration {
                 TestDeclSpec::Axiom { name, ty } => {
@@ -1583,7 +1786,7 @@ mod tests {
                     encode_name(&mut iface_payload, &[name]);
                     encode_usize_vec(&mut iface_payload, &[]);
                     iface_payload.extend(term_hashes[ty]);
-                    encode_dependency_entries_empty(&mut iface_payload);
+                    encode_test_dependency_entries(&mut iface_payload, &interface_dependencies);
                 }
                 TestDeclSpec::Def {
                     name,
@@ -1596,8 +1799,8 @@ mod tests {
                     encode_usize_vec(&mut iface_payload, &[]);
                     iface_payload.extend(term_hashes[ty]);
                     iface_payload.push(if reducible { 0x00 } else { 0x01 });
-                    encode_dependency_entries_empty(&mut iface_payload);
-                    encode_axiom_refs_empty(&mut iface_payload);
+                    encode_test_dependency_entries(&mut iface_payload, &interface_dependencies);
+                    encode_test_axiom_refs(&mut iface_payload, &preliminary_axioms.1);
                     if reducible {
                         iface_payload.extend(term_hashes[value]);
                     }
@@ -1608,29 +1811,41 @@ mod tests {
                     encode_usize_vec(&mut iface_payload, &[]);
                     iface_payload.extend(term_hashes[ty]);
                     iface_payload.push(0x00);
-                    encode_dependency_entries_empty(&mut iface_payload);
-                    encode_axiom_refs_empty(&mut iface_payload);
+                    encode_test_dependency_entries(&mut iface_payload, &interface_dependencies);
+                    encode_test_axiom_refs(&mut iface_payload, &preliminary_axioms.1);
                 }
             }
             let interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &iface_payload);
+            interface_hashes.push(interface_hash);
+
+            let (direct_axioms, transitive_axioms) = test_axioms_for_decl(
+                *declaration,
+                decl_index,
+                &dependencies,
+                declarations,
+                &interface_hashes,
+                &transitive_axioms_by_decl,
+            );
 
             let mut cert_payload = Vec::new();
             cert_payload.extend(interface_hash);
             match *declaration {
                 TestDeclSpec::Axiom { .. } => {
-                    encode_axiom_refs_empty(&mut cert_payload);
+                    encode_test_axiom_refs(&mut cert_payload, &transitive_axioms);
                 }
                 TestDeclSpec::Def { value, .. } => {
                     cert_payload.extend(term_hashes[value]);
-                    encode_dependency_entries_empty(&mut cert_payload);
-                    encode_axiom_refs_empty(&mut cert_payload);
+                    encode_test_dependency_entries(&mut cert_payload, &dependencies);
+                    encode_test_axiom_refs(&mut cert_payload, &transitive_axioms);
                 }
                 TestDeclSpec::Theorem { proof, .. } => {
                     cert_payload.extend(term_hashes[proof]);
-                    encode_dependency_entries_empty(&mut cert_payload);
+                    encode_test_dependency_entries(&mut cert_payload, &dependencies);
                 }
             }
-            interface_hashes.push(interface_hash);
+            dependencies_by_decl.push(dependencies);
+            direct_axioms_by_decl.push(direct_axioms);
+            transitive_axioms_by_decl.push(transitive_axioms);
             certificate_hashes.push(hash_with_domain(b"NPA-DECL-CERT-0.1", &cert_payload));
         }
 
@@ -1675,8 +1890,8 @@ mod tests {
                     bytes.push(0x00);
                 }
             }
-            encode_dependency_entries_empty(&mut bytes);
-            encode_axiom_refs_empty(&mut bytes);
+            encode_test_dependency_entries(&mut bytes, &dependencies_by_decl[decl_index]);
+            encode_test_axiom_refs(&mut bytes, &transitive_axioms_by_decl[decl_index]);
             bytes.extend(interface_hashes[decl_index]);
             bytes.extend(certificate_hashes[decl_index]);
         }
@@ -1727,17 +1942,23 @@ mod tests {
                 }
             }
             export_block.extend(interface_hashes[decl_index]);
-            encode_axiom_refs_empty(&mut export_block);
+            encode_test_axiom_refs(&mut export_block, &transitive_axioms_by_decl[decl_index]);
         }
 
         let mut axiom_report = Vec::new();
         axiom_report.extend(encode_uvar(declarations.len() as u64));
         for decl_index in 0..declarations.len() {
             axiom_report.extend(encode_uvar(decl_index as u64));
-            encode_axiom_refs_empty(&mut axiom_report);
-            encode_axiom_refs_empty(&mut axiom_report);
+            encode_test_axiom_refs(&mut axiom_report, &direct_axioms_by_decl[decl_index]);
+            encode_test_axiom_refs(&mut axiom_report, &transitive_axioms_by_decl[decl_index]);
         }
-        encode_axiom_refs_empty(&mut axiom_report);
+        let module_axioms = transitive_axioms_by_decl
+            .iter()
+            .flat_map(|axioms| axioms.iter().copied())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        encode_test_axiom_refs(&mut axiom_report, &module_axioms);
 
         bytes.extend(&export_block);
         bytes.extend(&axiom_report);
@@ -1930,116 +2151,17 @@ mod tests {
 
     fn local_const_certificate_fixture() -> DeclarationCertificateFixture {
         let terms = [TestTerm::Sort(0), TestTerm::ConstLocal { decl_index: 0 }];
-        let level_hashes = test_level_hashes(&terms);
-        let term_hashes = test_term_hashes(&level_hashes, &terms);
-
-        let mut axiom_iface_payload = Vec::new();
-        axiom_iface_payload.push(0x00);
-        encode_name(&mut axiom_iface_payload, &["A"]);
-        encode_usize_vec(&mut axiom_iface_payload, &[]);
-        axiom_iface_payload.extend(term_hashes[0]);
-        encode_dependency_entries_empty(&mut axiom_iface_payload);
-        let axiom_interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &axiom_iface_payload);
-
-        let mut axiom_cert_payload = Vec::new();
-        axiom_cert_payload.extend(axiom_interface_hash);
-        encode_axiom_refs_empty(&mut axiom_cert_payload);
-        let axiom_certificate_hash = hash_with_domain(b"NPA-DECL-CERT-0.1", &axiom_cert_payload);
-
-        let mut theorem_iface_payload = Vec::new();
-        theorem_iface_payload.push(0x02);
-        encode_name(&mut theorem_iface_payload, &["B"]);
-        encode_usize_vec(&mut theorem_iface_payload, &[]);
-        theorem_iface_payload.extend(term_hashes[0]);
-        theorem_iface_payload.push(0x00);
-        encode_dependency_entries_empty(&mut theorem_iface_payload);
-        encode_axiom_refs_empty(&mut theorem_iface_payload);
-        let theorem_interface_hash =
-            hash_with_domain(b"NPA-DECL-IFACE-0.1", &theorem_iface_payload);
-
-        let mut theorem_cert_payload = Vec::new();
-        theorem_cert_payload.extend(theorem_interface_hash);
-        theorem_cert_payload.extend(term_hashes[1]);
-        encode_dependency_entries_empty(&mut theorem_cert_payload);
-        let theorem_certificate_hash =
-            hash_with_domain(b"NPA-DECL-CERT-0.1", &theorem_cert_payload);
-
-        let mut bytes = header_bytes();
-        bytes.extend(encode_uvar(0)); // imports
-        bytes.extend(encode_uvar(3)); // name table: A, B, Std.Nat
-        encode_name(&mut bytes, &["A"]);
-        encode_name(&mut bytes, &["B"]);
-        encode_name(&mut bytes, &["Std", "Nat"]);
-        encode_test_levels(&mut bytes, &level_hashes);
-        encode_test_terms(&mut bytes, &terms);
-
-        bytes.extend(encode_uvar(2)); // declarations
-        bytes.push(0x00); // Axiom A : Sort 0
-        bytes.extend(encode_uvar(0)); // name A
-        encode_usize_vec(&mut bytes, &[]);
-        bytes.extend(encode_uvar(0));
-        encode_dependency_entries_empty(&mut bytes);
-        encode_axiom_refs_empty(&mut bytes);
-        bytes.extend(axiom_interface_hash);
-        bytes.extend(axiom_certificate_hash);
-
-        bytes.push(0x02); // Theorem B : Sort 0 := A
-        bytes.extend(encode_uvar(1)); // name B
-        encode_usize_vec(&mut bytes, &[]);
-        bytes.extend(encode_uvar(0)); // ty
-        bytes.extend(encode_uvar(1)); // proof
-        bytes.push(0x00);
-        encode_dependency_entries_empty(&mut bytes);
-        encode_axiom_refs_empty(&mut bytes);
-        bytes.extend(theorem_interface_hash);
-        bytes.extend(theorem_certificate_hash);
-
-        let mut export_block = Vec::new();
-        export_block.extend(encode_uvar(2));
-        export_block.extend(encode_uvar(0)); // A
-        export_block.push(0x00);
-        encode_usize_vec(&mut export_block, &[]);
-        export_block.extend(encode_uvar(0));
-        encode_option_usize(&mut export_block, None);
-        export_block.extend(term_hashes[0]);
-        encode_option_hash(&mut export_block, None);
-        export_block.push(0x00);
-        export_block.push(0x00);
-        export_block.extend(axiom_interface_hash);
-        encode_axiom_refs_empty(&mut export_block);
-
-        export_block.extend(encode_uvar(1)); // B
-        export_block.push(0x02);
-        encode_usize_vec(&mut export_block, &[]);
-        export_block.extend(encode_uvar(0));
-        encode_option_usize(&mut export_block, None);
-        export_block.extend(term_hashes[0]);
-        encode_option_hash(&mut export_block, None);
-        export_block.push(0x00);
-        encode_option_opacity(&mut export_block, true);
-        export_block.extend(theorem_interface_hash);
-        encode_axiom_refs_empty(&mut export_block);
-
-        let mut axiom_report = Vec::new();
-        axiom_report.extend(encode_uvar(2));
-        axiom_report.extend(encode_uvar(0));
-        encode_axiom_refs_empty(&mut axiom_report);
-        encode_axiom_refs_empty(&mut axiom_report);
-        axiom_report.extend(encode_uvar(1));
-        encode_axiom_refs_empty(&mut axiom_report);
-        encode_axiom_refs_empty(&mut axiom_report);
-        encode_axiom_refs_empty(&mut axiom_report);
-
-        bytes.extend(&export_block);
-        bytes.extend(&axiom_report);
-        let export_hash = hash_with_domain(b"NPA-MODULE-EXPORT-0.1", &export_block);
-        let axiom_report_hash = hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &axiom_report);
-        bytes.extend(export_hash);
-        bytes.extend(axiom_report_hash);
-        let certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", &bytes);
-        bytes.extend(certificate_hash);
-
-        DeclarationCertificateFixture { bytes }
+        multi_declaration_certificate_fixture(
+            &terms,
+            &[
+                TestDeclSpec::Axiom { name: "A", ty: 0 },
+                TestDeclSpec::Theorem {
+                    name: "B",
+                    ty: 0,
+                    proof: 1,
+                },
+            ],
+        )
     }
 
     fn well_typed_identity_terms() -> Vec<TestTerm> {
@@ -2078,17 +2200,27 @@ mod tests {
     }
 
     fn axiom_certificate_fixture() -> AxiomCertificateFixture {
-        axiom_certificate_fixture_with_axiom_dependencies(false)
+        axiom_certificate_fixture_with_axiom_dependencies(true)
     }
 
     fn axiom_certificate_fixture_with_axiom_dependencies(
         include_self_axiom: bool,
     ) -> AxiomCertificateFixture {
-        let mut bytes = header_bytes();
+        named_axiom_certificate_fixture(&["Std", "Nat"], &["A"], include_self_axiom)
+    }
+
+    fn named_axiom_certificate_fixture(
+        module: &[&str],
+        axiom_name: &[&str],
+        include_self_axiom: bool,
+    ) -> AxiomCertificateFixture {
+        assert!(axiom_name < module);
+
+        let mut bytes = header_bytes_for(module);
         bytes.extend(encode_uvar(0)); // imports
-        bytes.extend(encode_uvar(2)); // name table: A, Std.Nat
-        encode_name(&mut bytes, &["A"]);
-        encode_name(&mut bytes, &["Std", "Nat"]);
+        bytes.extend(encode_uvar(2)); // name table: axiom, module
+        encode_name(&mut bytes, axiom_name);
+        encode_name(&mut bytes, module);
 
         bytes.extend(encode_uvar(1)); // level table
         bytes.push(0x00); // Zero
@@ -2105,7 +2237,7 @@ mod tests {
 
         let mut iface_payload = Vec::new();
         iface_payload.push(0x00); // Axiom
-        encode_name(&mut iface_payload, &["A"]);
+        encode_name(&mut iface_payload, axiom_name);
         encode_usize_vec(&mut iface_payload, &[]);
         iface_payload.extend(term_hash);
         encode_dependency_entries_empty(&mut iface_payload);
@@ -2222,6 +2354,28 @@ mod tests {
         assert_eq!(
             error.section,
             ReferenceCertificateSection::Declarations,
+            "{error:?}"
+        );
+        assert_eq!(error.reason, Some(reason), "{error:?}");
+    }
+
+    fn assert_axiom_report_mismatch(error: ReferenceCheckError) {
+        assert_eq!(
+            error.kind,
+            ReferenceCheckErrorKind::AxiomReportMismatch,
+            "{error:?}"
+        );
+        assert_eq!(
+            error.reason,
+            Some(ReferenceCheckReason::AxiomReportMismatch),
+            "{error:?}"
+        );
+    }
+
+    fn assert_axiom_policy(error: ReferenceCheckError, reason: ReferenceCheckReason) {
+        assert_eq!(
+            error.kind,
+            ReferenceCheckErrorKind::AxiomPolicy,
             "{error:?}"
         );
         assert_eq!(error.reason, Some(reason), "{error:?}");
@@ -2426,6 +2580,121 @@ mod tests {
             ReferenceCertificateSection::Hashes,
             fixture.certificate_hash_offset,
             ReferenceHashObject::ModuleCertificate,
+        );
+    }
+
+    #[test]
+    fn axiom_report_rejects_certificate_missing_actual_dependency() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let fixture = axiom_certificate_fixture_with_axiom_dependencies(false);
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_axiom_report_mismatch(result.error().unwrap().clone());
+    }
+
+    #[test]
+    fn axiom_report_accepts_recomputed_self_dependency_in_normal_mode() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let fixture = axiom_certificate_fixture_with_axiom_dependencies(true);
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert!(result.is_checked(), "{result:?}");
+    }
+
+    #[test]
+    fn axiom_policy_rejects_custom_axiom_in_high_trust_mode() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let fixture = axiom_certificate_fixture_with_axiom_dependencies(true);
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_axiom_policy(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::ForbiddenAxiom,
+        );
+    }
+
+    #[test]
+    fn axiom_policy_rechecks_checked_import_axioms_at_checker_boundary() {
+        let fixture = axiom_certificate_fixture_with_axiom_dependencies(true);
+        let unchecked_store =
+            ReferenceImportStore::from_source_free_certificates([fixture.bytes.as_slice()])
+                .expect("source-free import store builds");
+        let checked =
+            ReferenceCheckedModule::from_import_entry(unchecked_store.entries()[0].clone());
+        let imports =
+            ReferenceImportStore::from_checked_modules([checked]).expect("checked store builds");
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let cert = empty_module_certificate_importing_std_nat(
+            fixture.export_hash,
+            Some(fixture.certificate_hash),
+        );
+
+        let result = check_certificate(&cert, &imports, &policy);
+
+        assert_axiom_policy(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::ForbiddenAxiom,
+        );
+    }
+
+    #[test]
+    fn axiom_policy_rejects_synthetic_sorry_before_custom_axiom_gate() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let fixture = named_axiom_certificate_fixture(&["Std", "Nat"], &["A", "sorry"], true);
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_axiom_policy(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::SorryDenied,
+        );
+    }
+
+    #[test]
+    fn axiom_policy_allows_exact_std_logic_eq_rec_exception() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let fixture = named_axiom_certificate_fixture(&["Std", "Logic"], &["Eq", "rec"], true);
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert!(result.is_checked(), "{result:?}");
+    }
+
+    #[test]
+    fn axiom_policy_rejects_non_eq_rec_classical_axiom() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy {
+            trust_mode: ReferenceTrustMode::HighTrust,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let fixture =
+            named_axiom_certificate_fixture(&["Std", "Logic"], &["Classical", "choice"], true);
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_axiom_policy(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::ForbiddenAxiom,
         );
     }
 

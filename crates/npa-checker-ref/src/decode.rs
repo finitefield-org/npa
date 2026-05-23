@@ -52,6 +52,7 @@ pub(crate) fn check_certificate_impl(
     let cert = decode_module_certificate(bytes)?;
     cert.verify_hashes(bytes)?;
     let imports = cert.build_import_environment(import_store, policy)?;
+    cert.verify_axiom_report(&imports, policy)?;
     cert.type_check(&imports)
 }
 
@@ -228,6 +229,81 @@ impl DecodedModuleCertificate {
         self.checked_module()
     }
 
+    fn verify_axiom_report(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        policy: &ReferenceCheckerPolicy,
+    ) -> DecodeResult<()> {
+        let mut previous_axioms: Vec<Vec<AxiomRef>> = Vec::with_capacity(self.declarations.len());
+        let mut transitive_by_decl: Vec<Vec<AxiomRef>> =
+            Vec::with_capacity(self.declarations.len());
+
+        if self.axiom_report.per_declaration.len() != self.declarations.len() {
+            return Err(ReferenceCheckError::axiom_report(
+                ReferenceCertificateSection::AxiomReport,
+                self.axiom_report.module_axioms_offset,
+            ));
+        }
+
+        for (decl_index, declaration) in self.declarations.iter().enumerate() {
+            let expected_dependencies = self.expected_dependencies_for_decl(
+                imports,
+                decl_index,
+                &declaration.value.decl,
+                declaration.offset,
+            )?;
+            if expected_dependencies != declaration.value.dependencies {
+                return Err(ReferenceCheckError::axiom_report(
+                    ReferenceCertificateSection::Declarations,
+                    declaration.offset,
+                ));
+            }
+
+            let (direct_axioms, transitive_axioms) = self.expected_axioms_for_decl(
+                imports,
+                decl_index,
+                &declaration.value.decl,
+                &expected_dependencies,
+                &previous_axioms,
+                declaration.offset,
+            )?;
+            if transitive_axioms != declaration.value.axiom_dependencies {
+                return Err(ReferenceCheckError::axiom_report(
+                    ReferenceCertificateSection::Declarations,
+                    declaration.offset,
+                ));
+            }
+
+            let actual = &self.axiom_report.per_declaration[decl_index];
+            if actual.decl_index != decl_index
+                || actual.direct_axioms != direct_axioms
+                || actual.transitive_axioms != transitive_axioms
+            {
+                return Err(ReferenceCheckError::axiom_report(
+                    ReferenceCertificateSection::AxiomReport,
+                    actual.offset,
+                ));
+            }
+
+            previous_axioms.push(transitive_axioms.clone());
+            transitive_by_decl.push(transitive_axioms);
+        }
+
+        let expected_module_axioms = union_axioms(
+            transitive_by_decl
+                .iter()
+                .flat_map(|axioms| axioms.iter().cloned()),
+        );
+        if expected_module_axioms != self.axiom_report.module_axioms {
+            return Err(ReferenceCheckError::axiom_report(
+                ReferenceCertificateSection::AxiomReport,
+                self.axiom_report.module_axioms_offset,
+            ));
+        }
+
+        self.enforce_axiom_policy(imports, policy, &expected_module_axioms)
+    }
+
     fn verify_hashes(&self, bytes: &[u8]) -> DecodeResult<()> {
         let level_hashes = self.compute_level_hashes()?;
         let term_hashes = self.compute_term_hashes(&level_hashes)?;
@@ -308,6 +384,387 @@ impl DecodedModuleCertificate {
         }
 
         Ok(())
+    }
+
+    fn expected_dependencies_for_decl(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        decl_index: usize,
+        decl: &DeclPayload,
+        offset: usize,
+    ) -> DecodeResult<Vec<DependencyEntry>> {
+        let mut refs = BTreeSet::new();
+        for term in decl_term_ids(decl) {
+            collect_global_refs_from_term(&self.term_table, term, &mut refs)?;
+        }
+
+        let allow_self_reference = matches!(decl, DeclPayload::Inductive { .. });
+        refs.into_iter()
+            .filter(|global_ref| {
+                !matches!(
+                    global_ref,
+                    GlobalRef::Local {
+                        decl_index: referenced_decl_index,
+                    } | GlobalRef::LocalGenerated {
+                        decl_index: referenced_decl_index,
+                        ..
+                    } if allow_self_reference && *referenced_decl_index == decl_index
+                )
+            })
+            .map(|global_ref| {
+                let decl_interface_hash =
+                    self.interface_hash_for_global_ref(imports, decl_index, &global_ref, offset)?;
+                Ok(DependencyEntry {
+                    global_ref,
+                    decl_interface_hash,
+                })
+            })
+            .collect()
+    }
+
+    fn expected_axioms_for_decl(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        decl_index: usize,
+        decl: &DeclPayload,
+        dependencies: &[DependencyEntry],
+        previous_axioms: &[Vec<AxiomRef>],
+        offset: usize,
+    ) -> DecodeResult<(Vec<AxiomRef>, Vec<AxiomRef>)> {
+        let mut direct = BTreeSet::new();
+        let mut transitive = BTreeSet::new();
+
+        for dependency in dependencies {
+            match &dependency.global_ref {
+                GlobalRef::Builtin {
+                    name,
+                    decl_interface_hash,
+                } => {
+                    let name_value = &self.name_table[*name].value;
+                    if builtin_is_axiom(name_value) {
+                        let axiom = AxiomRef {
+                            global_ref: dependency.global_ref.clone(),
+                            name: *name,
+                            decl_interface_hash: *decl_interface_hash,
+                        };
+                        direct.insert(axiom.clone());
+                        transitive.insert(axiom);
+                    }
+                }
+                GlobalRef::Local {
+                    decl_index: dependency_index,
+                } => {
+                    let dep_axioms = previous_axioms.get(*dependency_index).ok_or_else(|| {
+                        ReferenceCheckError::axiom_report(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )
+                    })?;
+                    if let Some(axiom) = local_axiom_ref_for_decl(*dependency_index, dep_axioms) {
+                        direct.insert(axiom);
+                    }
+                    transitive.extend(dep_axioms.iter().cloned());
+                }
+                GlobalRef::LocalGenerated {
+                    decl_index: dependency_index,
+                    ..
+                } => {
+                    let dep_axioms = previous_axioms.get(*dependency_index).ok_or_else(|| {
+                        ReferenceCheckError::axiom_report(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )
+                    })?;
+                    transitive.extend(dep_axioms.iter().cloned());
+                }
+                GlobalRef::Imported {
+                    name,
+                    decl_interface_hash,
+                    ..
+                } => {
+                    let export = self.imported_export_for_global_ref(
+                        imports,
+                        &dependency.global_ref,
+                        offset,
+                    )?;
+                    if export.kind == ReferenceExportKind::Axiom {
+                        direct.insert(AxiomRef {
+                            global_ref: dependency.global_ref.clone(),
+                            name: *name,
+                            decl_interface_hash: *decl_interface_hash,
+                        });
+                    }
+                    for axiom in &export.axiom_dependencies {
+                        transitive
+                            .insert(self.remap_imported_axiom_dependency(imports, axiom, offset)?);
+                    }
+                }
+            }
+        }
+
+        if let DeclPayload::Axiom { name, .. } = decl {
+            let self_ref = AxiomRef {
+                global_ref: GlobalRef::Local { decl_index },
+                name: *name,
+                decl_interface_hash: self.declarations[decl_index]
+                    .value
+                    .hashes
+                    .decl_interface_hash,
+            };
+            direct.insert(self_ref.clone());
+            transitive.insert(self_ref);
+        }
+
+        Ok((
+            direct.into_iter().collect(),
+            transitive.into_iter().collect(),
+        ))
+    }
+
+    fn interface_hash_for_global_ref(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        current_decl_index: usize,
+        global_ref: &GlobalRef,
+        offset: usize,
+    ) -> DecodeResult<ReferenceHash> {
+        match global_ref {
+            GlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => {
+                let name_value = &self.name_table[*name].value;
+                if builtin_decl_interface_hash(name_value) == Some(*decl_interface_hash) {
+                    Ok(*decl_interface_hash)
+                } else {
+                    Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::UnknownReference,
+                    ))
+                }
+            }
+            GlobalRef::Imported {
+                decl_interface_hash,
+                ..
+            } => {
+                self.imported_export_for_global_ref(imports, global_ref, offset)?;
+                Ok(*decl_interface_hash)
+            }
+            GlobalRef::Local { decl_index } => {
+                if *decl_index >= current_decl_index {
+                    return Err(ReferenceCheckError::axiom_report(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    ));
+                }
+                Ok(self.declarations[*decl_index]
+                    .value
+                    .hashes
+                    .decl_interface_hash)
+            }
+            GlobalRef::LocalGenerated { decl_index, name } => {
+                if *decl_index >= current_decl_index
+                    || !self.local_generated_entry_exists(*decl_index, *name)?
+                {
+                    return Err(ReferenceCheckError::axiom_report(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    ));
+                }
+                Ok(self.declarations[*decl_index]
+                    .value
+                    .hashes
+                    .decl_interface_hash)
+            }
+        }
+    }
+
+    fn imported_export_for_global_ref(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        global_ref: &GlobalRef,
+        offset: usize,
+    ) -> DecodeResult<ReferencePublicExport> {
+        let GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } = global_ref
+        else {
+            return Err(ReferenceCheckError::axiom_report(
+                ReferenceCertificateSection::Declarations,
+                offset,
+            ));
+        };
+        let import = imports.imports().get(*import_index).ok_or_else(|| {
+            ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::UnknownReference,
+            )
+        })?;
+        let name_value = &self.name_table[*name].value;
+        import
+            .public_environment
+            .exports()
+            .iter()
+            .find(|export| {
+                export.name == *name_value && export.decl_interface_hash == *decl_interface_hash
+            })
+            .cloned()
+            .ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnknownReference,
+                )
+            })
+    }
+
+    fn remap_imported_axiom_dependency(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        axiom: &ReferenceAxiomDependency,
+        offset: usize,
+    ) -> DecodeResult<AxiomRef> {
+        let name = self.name_id_for_value(&axiom.name, offset)?;
+        if let Some(import_index) =
+            import_index_exporting_axiom(imports, &axiom.name, axiom.decl_interface_hash)
+        {
+            return Ok(AxiomRef {
+                global_ref: GlobalRef::Imported {
+                    import_index,
+                    name,
+                    decl_interface_hash: axiom.decl_interface_hash,
+                },
+                name,
+                decl_interface_hash: axiom.decl_interface_hash,
+            });
+        }
+        if builtin_is_axiom(&axiom.name)
+            && builtin_decl_interface_hash(&axiom.name) == Some(axiom.decl_interface_hash)
+        {
+            return Ok(AxiomRef {
+                global_ref: GlobalRef::Builtin {
+                    name,
+                    decl_interface_hash: axiom.decl_interface_hash,
+                },
+                name,
+                decl_interface_hash: axiom.decl_interface_hash,
+            });
+        }
+        Err(ReferenceCheckError::axiom_report(
+            ReferenceCertificateSection::AxiomReport,
+            offset,
+        ))
+    }
+
+    fn name_id_for_value(&self, name: &ReferenceModuleName, offset: usize) -> DecodeResult<usize> {
+        self.name_table
+            .iter()
+            .position(|candidate| candidate.value == *name)
+            .ok_or_else(|| {
+                ReferenceCheckError::axiom_report(ReferenceCertificateSection::AxiomReport, offset)
+            })
+    }
+
+    fn local_generated_entry_exists(&self, decl_index: usize, name: usize) -> DecodeResult<bool> {
+        let declaration = self.declarations.get(decl_index).ok_or_else(|| {
+            ReferenceCheckError::axiom_report(ReferenceCertificateSection::Declarations, 0)
+        })?;
+        Ok(match &declaration.value.decl {
+            DeclPayload::Inductive {
+                constructors,
+                recursor,
+                ..
+            } => {
+                constructors
+                    .iter()
+                    .any(|constructor| constructor.name == name)
+                    || recursor
+                        .as_ref()
+                        .is_some_and(|recursor| recursor.name == name)
+            }
+            _ => false,
+        })
+    }
+
+    fn enforce_axiom_policy(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        policy: &ReferenceCheckerPolicy,
+        module_axioms: &[AxiomRef],
+    ) -> DecodeResult<()> {
+        for (import_index, import) in imports.imports().iter().enumerate() {
+            let offset = self
+                .imports
+                .get(import_index)
+                .map_or(0, |located| located.offset);
+            for axiom in import.public_environment.module_axioms() {
+                self.enforce_axiom_dependency_policy(policy, &import.module, axiom, offset)?;
+            }
+        }
+
+        for axiom in module_axioms {
+            self.enforce_axiom_ref_policy(imports, policy, axiom)?;
+        }
+        Ok(())
+    }
+
+    fn enforce_axiom_ref_policy(
+        &self,
+        imports: &ReferenceImportEnvironment,
+        policy: &ReferenceCheckerPolicy,
+        axiom: &AxiomRef,
+    ) -> DecodeResult<()> {
+        let raw_name = self.name_table[axiom.name].value.dotted();
+        let qualified_name = match &axiom.global_ref {
+            GlobalRef::Imported { import_index, .. } => imports
+                .imports()
+                .get(*import_index)
+                .map(|import| qualify_name(&import.module, &raw_name)),
+            GlobalRef::Local { .. } | GlobalRef::LocalGenerated { .. } => {
+                Some(qualify_name(&self.header.module, &raw_name))
+            }
+            GlobalRef::Builtin { .. } => None,
+        };
+        let is_standard_exception = match &axiom.global_ref {
+            GlobalRef::Builtin { .. } => raw_name == "Eq.rec",
+            GlobalRef::Imported { .. }
+            | GlobalRef::Local { .. }
+            | GlobalRef::LocalGenerated { .. } => {
+                qualified_name.as_deref() == Some("Std.Logic.Eq.rec")
+            }
+        };
+        let offset = self.axiom_report.module_axioms_offset;
+        enforce_axiom_policy_name(
+            policy,
+            &raw_name,
+            qualified_name.as_deref(),
+            is_standard_exception,
+            ReferenceCertificateSection::AxiomReport,
+            offset,
+        )
+    }
+
+    fn enforce_axiom_dependency_policy(
+        &self,
+        policy: &ReferenceCheckerPolicy,
+        module: &ReferenceModuleName,
+        axiom: &ReferenceAxiomDependency,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let raw_name = axiom.name.dotted();
+        let qualified_name = qualify_name(module, &raw_name);
+        enforce_axiom_policy_name(
+            policy,
+            &raw_name,
+            Some(&qualified_name),
+            qualified_name == "Std.Logic.Eq.rec",
+            ReferenceCertificateSection::Imports,
+            offset,
+        )
     }
 
     fn compute_level_hashes(&self) -> DecodeResult<Vec<ReferenceHash>> {
@@ -4633,6 +5090,27 @@ fn interface_term_ids(decl: &DeclPayload) -> Vec<usize> {
     }
 }
 
+fn decl_term_ids(decl: &DeclPayload) -> Vec<usize> {
+    match decl {
+        DeclPayload::Axiom { ty, .. } => vec![*ty],
+        DeclPayload::Def { ty, value, .. } => vec![*ty, *value],
+        DeclPayload::Theorem { ty, proof, .. } => vec![*ty, *proof],
+        DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        } => params
+            .iter()
+            .map(|param| param.ty)
+            .chain(indices.iter().map(|index| index.ty))
+            .chain(constructors.iter().map(|constructor| constructor.ty))
+            .chain(recursor.iter().map(|recursor| recursor.ty))
+            .collect(),
+    }
+}
+
 fn collect_global_refs_from_term(
     terms: &[Located<TermNode>],
     term: usize,
@@ -4658,6 +5136,113 @@ fn collect_global_refs_from_term(
         }
     }
     Ok(())
+}
+
+fn local_axiom_ref_for_decl(decl_index: usize, axioms: &[AxiomRef]) -> Option<AxiomRef> {
+    axioms
+        .iter()
+        .find(|axiom| {
+            matches!(
+                axiom.global_ref,
+                GlobalRef::Local { decl_index: axiom_decl_index }
+                    if axiom_decl_index == decl_index
+            )
+        })
+        .cloned()
+}
+
+fn import_index_exporting_axiom(
+    imports: &ReferenceImportEnvironment,
+    name: &ReferenceModuleName,
+    decl_interface_hash: ReferenceHash,
+) -> Option<usize> {
+    imports
+        .imports()
+        .iter()
+        .enumerate()
+        .find_map(|(import_index, import)| {
+            import
+                .public_environment
+                .exports()
+                .iter()
+                .any(|export| {
+                    export.kind == ReferenceExportKind::Axiom
+                        && export.name == *name
+                        && export.decl_interface_hash == decl_interface_hash
+                })
+                .then_some(import_index)
+        })
+}
+
+fn union_axioms(axioms: impl IntoIterator<Item = AxiomRef>) -> Vec<AxiomRef> {
+    axioms
+        .into_iter()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
+}
+
+fn builtin_decl_interface_hash(name: &ReferenceModuleName) -> Option<ReferenceHash> {
+    let tag = match name.dotted().as_str() {
+        "Nat" => "npa.machine-tactic.builtin.nat.v1",
+        "Nat.zero" => "npa.machine-tactic.builtin.nat.zero.v1",
+        "Nat.succ" => "npa.machine-tactic.builtin.nat.succ.v1",
+        "Nat.rec" => "npa.machine-tactic.builtin.nat.rec.v1",
+        "Eq" => "npa.machine-tactic.builtin.eq.v1",
+        "Eq.refl" => "npa.machine-tactic.builtin.eq.refl.v1",
+        "Eq.rec" => "npa.machine-tactic.builtin.eq.rec.v1",
+        _ => return None,
+    };
+    Some(hash_with_domain(
+        b"NPA-BUILTIN-INTERFACE-0.1",
+        tag.as_bytes(),
+    ))
+}
+
+fn builtin_is_axiom(name: &ReferenceModuleName) -> bool {
+    name.dotted() == "Eq.rec"
+}
+
+fn qualify_name(module: &ReferenceModuleName, raw_name: &str) -> String {
+    format!("{}.{}", module.dotted(), raw_name)
+}
+
+fn enforce_axiom_policy_name(
+    policy: &ReferenceCheckerPolicy,
+    raw_name: &str,
+    qualified_name: Option<&str>,
+    is_standard_exception: bool,
+    section: ReferenceCertificateSection,
+    offset: usize,
+) -> DecodeResult<()> {
+    if policy.deny_sorry
+        && (raw_name.contains("sorry") || qualified_name.is_some_and(|name| name.contains("sorry")))
+    {
+        return Err(ReferenceCheckError::axiom_policy(
+            section,
+            offset,
+            ReferenceCheckReason::SorryDenied,
+        ));
+    }
+
+    let require_allowlist = policy.deny_custom_axioms
+        || policy.trust_mode == ReferenceTrustMode::HighTrust
+        || !policy.allowed_axioms.is_empty();
+    if !require_allowlist || is_standard_exception {
+        return Ok(());
+    }
+
+    if policy.allowed_axioms.iter().any(|allowed| {
+        allowed == raw_name || qualified_name.is_some_and(|qualified| allowed == qualified)
+    }) {
+        return Ok(());
+    }
+
+    Err(ReferenceCheckError::axiom_policy(
+        section,
+        offset,
+        ReferenceCheckReason::ForbiddenAxiom,
+    ))
 }
 
 fn inductive_export_type_term_id(
