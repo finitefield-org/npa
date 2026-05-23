@@ -418,19 +418,19 @@ P8H-05 は conversion を最小限の structural equality にしてよい。βδ
 
 実装タスク:
 
-- [ ] WHNF を reference checker 内で実装する。
-- [ ] β reduction を実装する。
-- [ ] δ reduction を reducibility metadata に従って実装する。
-- [ ] ζ reduction を実装する。
-- [ ] Pi / Lam / App / Sort / Const / BVar の definitional equality を実装する。
-- [ ] fuel / recursion bound を deterministic error として扱う。
+- [x] WHNF を reference checker 内で実装する。
+- [x] β reduction を実装する。
+- [x] δ reduction を reducibility metadata に従って実装する。
+- [x] ζ reduction を実装する。
+- [x] Pi / Lam / App / Sort / Const / BVar の definitional equality を実装する。
+- [x] fuel / recursion bound を deterministic error として扱う。
 
 受け入れ条件:
 
-- [ ] β / δ / ζ の正例と負例が test で固定されている。
-- [ ] η conversion、proof irrelevance conversion、quotient computation、untrusted theorem unfolding を入れない。
-- [ ] fast kernel と同じ certificate を受理するが、conversion implementation は共有しない。
-- [ ] conversion cache は使わないか、使う場合も semantics に影響しない deterministic optimization に限定する。
+- [x] β / δ / ζ の正例と負例が test で固定されている。
+- [x] η conversion、proof irrelevance conversion、quotient computation、untrusted theorem unfolding を入れない。
+- [x] fast kernel と同じ certificate を受理するが、conversion implementation は共有しない。
+- [x] conversion cache は使わないか、使う場合も semantics に影響しない deterministic optimization に限定する。
 
 検証:
 

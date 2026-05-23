@@ -1494,6 +1494,9 @@ struct TypeChecker<'a> {
 }
 
 impl<'a> TypeChecker<'a> {
+    const WHNF_FUEL: usize = 10_000;
+    const DEFEQ_FUEL: usize = 10_000;
+
     fn new(
         cert: &'a DecodedModuleCertificate,
         imports: &'a ReferenceImportEnvironment,
@@ -1574,14 +1577,19 @@ impl<'a> TypeChecker<'a> {
             } => TypeSignature {
                 universe_params: self.cert.name_ids_to_names(universe_params),
                 ty: self.terms[*ty].clone(),
+                value: None,
             },
             DeclPayload::Def {
                 universe_params,
                 ty,
+                value,
+                reducibility,
                 ..
             } => TypeSignature {
                 universe_params: self.cert.name_ids_to_names(universe_params),
                 ty: self.terms[*ty].clone(),
+                value: (*reducibility == CertReducibility::Reducible)
+                    .then(|| self.terms[*value].clone()),
             },
             DeclPayload::Theorem {
                 universe_params,
@@ -1590,6 +1598,7 @@ impl<'a> TypeChecker<'a> {
             } => TypeSignature {
                 universe_params: self.cert.name_ids_to_names(universe_params),
                 ty: self.terms[*ty].clone(),
+                value: None,
             },
             DeclPayload::Inductive { .. } => {
                 return Err(ReferenceCheckError::unsupported(
@@ -1657,7 +1666,7 @@ impl<'a> TypeChecker<'a> {
             }
             ReferenceCoreExpr::App(fun, arg) => {
                 let fun_ty = self.infer(ctx, delta, fun, offset)?;
-                match fun_ty {
+                match self.whnf(ctx, delta, &fun_ty, offset)? {
                     ReferenceCoreExpr::Pi { ty, body } => {
                         self.check(ctx, delta, arg, &ty, offset)?;
                         instantiate(&body, arg, offset)
@@ -1689,7 +1698,7 @@ impl<'a> TypeChecker<'a> {
         offset: usize,
     ) -> DecodeResult<()> {
         let actual = self.infer(ctx, delta, term, offset)?;
-        if actual == *expected {
+        if self.is_defeq(ctx, delta, &actual, expected, offset)? {
             Ok(())
         } else {
             Err(ReferenceCheckError::type_check(
@@ -1707,7 +1716,8 @@ impl<'a> TypeChecker<'a> {
         term: &ReferenceCoreExpr,
         offset: usize,
     ) -> DecodeResult<ReferenceCoreLevel> {
-        match self.infer(ctx, delta, term, offset)? {
+        let ty = self.infer(ctx, delta, term, offset)?;
+        match self.whnf(ctx, delta, &ty, offset)? {
             ReferenceCoreExpr::Sort(level) => Ok(level),
             _ => Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
@@ -1760,6 +1770,7 @@ impl<'a> TypeChecker<'a> {
                 Ok(TypeSignature {
                     universe_params: export.universe_params.clone(),
                     ty: export.ty.clone(),
+                    value: export.body.clone(),
                 })
             }
             ReferenceCoreGlobalRef::Local { decl_index } => {
@@ -1773,12 +1784,153 @@ impl<'a> TypeChecker<'a> {
             }
         }
     }
+
+    fn whnf(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<ReferenceCoreExpr> {
+        let mut fuel = Self::WHNF_FUEL;
+        self.whnf_with_fuel(ctx, delta, term, offset, &mut fuel)
+    }
+
+    fn whnf_with_fuel(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<ReferenceCoreExpr> {
+        let mut current = term.clone();
+        loop {
+            spend_fuel(fuel, offset)?;
+
+            match current {
+                ReferenceCoreExpr::BVar(index) => {
+                    if let Some(value) = ctx.lookup_value(index, offset)? {
+                        current = value;
+                    } else {
+                        return Ok(ReferenceCoreExpr::BVar(index));
+                    }
+                }
+                ReferenceCoreExpr::Const {
+                    ref global_ref,
+                    ref levels,
+                } => {
+                    let signature = self.resolve_signature(global_ref, offset)?;
+                    if let Some(value) = signature.value {
+                        current = subst_levels_expr(&value, &signature.universe_params, levels);
+                    } else {
+                        return Ok(current);
+                    }
+                }
+                ReferenceCoreExpr::App(fun, arg) => {
+                    let fun_whnf = self.whnf_with_fuel(ctx, delta, &fun, offset, fuel)?;
+                    if let ReferenceCoreExpr::Lam { body, .. } = fun_whnf {
+                        current = instantiate(&body, &arg, offset)?;
+                    } else {
+                        return Ok(ReferenceCoreExpr::App(Box::new(fun_whnf), arg));
+                    }
+                }
+                ReferenceCoreExpr::Let { value, body, .. } => {
+                    current = instantiate(&body, &value, offset)?;
+                }
+                _ => return Ok(current),
+            }
+            ensure_levels_wf_in_expr(&current, delta, offset)?;
+        }
+    }
+
+    fn is_defeq(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        lhs: &ReferenceCoreExpr,
+        rhs: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<bool> {
+        let mut fuel = Self::DEFEQ_FUEL;
+        self.is_defeq_with_fuel(ctx, delta, lhs, rhs, offset, &mut fuel)
+    }
+
+    fn is_defeq_with_fuel(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        lhs: &ReferenceCoreExpr,
+        rhs: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<bool> {
+        spend_fuel(fuel, offset)?;
+
+        let lhs = self.whnf_with_fuel(ctx, delta, lhs, offset, fuel)?;
+        let rhs = self.whnf_with_fuel(ctx, delta, rhs, offset, fuel)?;
+
+        match (&lhs, &rhs) {
+            (ReferenceCoreExpr::Sort(lhs), ReferenceCoreExpr::Sort(rhs)) => Ok(lhs == rhs),
+            (ReferenceCoreExpr::BVar(lhs), ReferenceCoreExpr::BVar(rhs)) => Ok(lhs == rhs),
+            (
+                ReferenceCoreExpr::Const {
+                    global_ref: lhs_ref,
+                    levels: lhs_levels,
+                },
+                ReferenceCoreExpr::Const {
+                    global_ref: rhs_ref,
+                    levels: rhs_levels,
+                },
+            ) => Ok(lhs_ref == rhs_ref && lhs_levels == rhs_levels),
+            (ReferenceCoreExpr::App(lhs_f, lhs_a), ReferenceCoreExpr::App(rhs_f, rhs_a)) => Ok(
+                self.is_defeq_with_fuel(ctx, delta, lhs_f, rhs_f, offset, fuel)?
+                    && self.is_defeq_with_fuel(ctx, delta, lhs_a, rhs_a, offset, fuel)?,
+            ),
+            (
+                ReferenceCoreExpr::Pi {
+                    ty: lhs_ty,
+                    body: lhs_body,
+                },
+                ReferenceCoreExpr::Pi {
+                    ty: rhs_ty,
+                    body: rhs_body,
+                },
+            ) => {
+                if !self.is_defeq_with_fuel(ctx, delta, lhs_ty, rhs_ty, offset, fuel)? {
+                    return Ok(false);
+                }
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_assumption((**lhs_ty).clone());
+                self.is_defeq_with_fuel(&body_ctx, delta, lhs_body, rhs_body, offset, fuel)
+            }
+            (
+                ReferenceCoreExpr::Lam {
+                    ty: lhs_ty,
+                    body: lhs_body,
+                },
+                ReferenceCoreExpr::Lam {
+                    ty: rhs_ty,
+                    body: rhs_body,
+                },
+            ) => {
+                if !self.is_defeq_with_fuel(ctx, delta, lhs_ty, rhs_ty, offset, fuel)? {
+                    return Ok(false);
+                }
+                let mut body_ctx = ctx.clone();
+                body_ctx.push_assumption((**lhs_ty).clone());
+                self.is_defeq_with_fuel(&body_ctx, delta, lhs_body, rhs_body, offset, fuel)
+            }
+            _ => Ok(false),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 struct TypeSignature {
     universe_params: Vec<ReferenceModuleName>,
     ty: ReferenceCoreExpr,
+    value: Option<ReferenceCoreExpr>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -1788,13 +1940,13 @@ struct TypeContext {
 
 impl TypeContext {
     fn push_assumption(&mut self, ty: ReferenceCoreExpr) {
-        self.locals.push(LocalType { ty, _value: None });
+        self.locals.push(LocalType { ty, value: None });
     }
 
     fn push_definition(&mut self, ty: ReferenceCoreExpr, value: ReferenceCoreExpr) {
         self.locals.push(LocalType {
             ty,
-            _value: Some(value),
+            value: Some(value),
         });
     }
 
@@ -1818,12 +1970,49 @@ impl TypeContext {
             })?;
         shift(&local.ty, index as i32 + 1, 0, offset)
     }
+
+    fn lookup_value(&self, index: u32, offset: usize) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let index = index as usize;
+        let local = self
+            .locals
+            .get(self.locals.len().checked_sub(index + 1).ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                )
+            })?)
+            .ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                )
+            })?;
+        local
+            .value
+            .as_ref()
+            .map(|value| shift(value, index as i32 + 1, 0, offset))
+            .transpose()
+    }
 }
 
 #[derive(Clone, Debug)]
 struct LocalType {
     ty: ReferenceCoreExpr,
-    _value: Option<ReferenceCoreExpr>,
+    value: Option<ReferenceCoreExpr>,
+}
+
+fn spend_fuel(fuel: &mut usize, offset: usize) -> DecodeResult<()> {
+    if *fuel == 0 {
+        return Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::ResourceLimit,
+        ));
+    }
+    *fuel -= 1;
+    Ok(())
 }
 
 fn ensure_level_wf(
@@ -1848,6 +2037,36 @@ fn ensure_level_wf(
                     ReferenceCheckReason::UnknownReference,
                 ))
             }
+        }
+    }
+}
+
+fn ensure_levels_wf_in_expr(
+    expr: &ReferenceCoreExpr,
+    delta: &[ReferenceModuleName],
+    offset: usize,
+) -> DecodeResult<()> {
+    match expr {
+        ReferenceCoreExpr::Sort(level) => ensure_level_wf(level, delta, offset),
+        ReferenceCoreExpr::BVar(_) => Ok(()),
+        ReferenceCoreExpr::Const { levels, .. } => {
+            for level in levels {
+                ensure_level_wf(level, delta, offset)?;
+            }
+            Ok(())
+        }
+        ReferenceCoreExpr::App(fun, arg) => {
+            ensure_levels_wf_in_expr(fun, delta, offset)?;
+            ensure_levels_wf_in_expr(arg, delta, offset)
+        }
+        ReferenceCoreExpr::Lam { ty, body } | ReferenceCoreExpr::Pi { ty, body } => {
+            ensure_levels_wf_in_expr(ty, delta, offset)?;
+            ensure_levels_wf_in_expr(body, delta, offset)
+        }
+        ReferenceCoreExpr::Let { ty, value, body } => {
+            ensure_levels_wf_in_expr(ty, delta, offset)?;
+            ensure_levels_wf_in_expr(value, delta, offset)?;
+            ensure_levels_wf_in_expr(body, delta, offset)
         }
     }
 }

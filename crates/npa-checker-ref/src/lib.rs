@@ -6,9 +6,8 @@
 //! policy. It cannot receive `.npa` source, tactic scripts, AI traces, or a
 //! theorem-search index.
 //!
-//! P8H-05 adds minimal source-free type and declaration checking. Later
-//! milestones fill in conversion checking, inductive checking, and axiom report
-//! recomputation.
+//! P8H-06 adds source-free β/δ/ζ conversion checking. Later milestones fill in
+//! inductive checking and axiom report recomputation.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -822,8 +821,10 @@ pub enum ReferenceCheckReason {
     ExpectedSort,
     /// A term was expected to have a function type.
     ExpectedFunction,
-    /// An inferred type did not structurally match the expected type.
+    /// An inferred type was not definitionally equal to the expected type.
     TypeMismatch,
+    /// Type checking or conversion exhausted its deterministic resource bound.
+    ResourceLimit,
     /// A stored hash did not match the reference checker recomputation.
     HashMismatch {
         /// Hash role that mismatched.
@@ -890,9 +891,9 @@ pub fn build_import_environment(
 /// Check a canonical certificate with the Phase 8 reference-checker API.
 ///
 /// This decodes canonical source-free certificate bytes, verifies stored hashes,
-/// resolves explicit imports, and runs the P8H-05 minimal type/declaration
-/// checker. It intentionally does not call the fast Rust kernel or
-/// `npa_cert::verify_module_cert`.
+/// resolves explicit imports, and runs the P8H-06 minimal type/declaration and
+/// β/δ/ζ conversion checker. It intentionally does not call the fast Rust
+/// kernel or `npa_cert::verify_module_cert`.
 pub fn check_certificate(
     cert_bytes: &[u8],
     import_store: &ReferenceImportStore,
@@ -1115,6 +1116,35 @@ mod tests {
     enum TestDeclKind {
         ReducibleDef { ty: usize, value: usize },
         Theorem { ty: usize, proof: usize },
+    }
+
+    #[derive(Clone, Copy)]
+    enum TestDeclSpec {
+        Axiom {
+            name: &'static str,
+            ty: usize,
+        },
+        Def {
+            name: &'static str,
+            ty: usize,
+            value: usize,
+            reducible: bool,
+        },
+        Theorem {
+            name: &'static str,
+            ty: usize,
+            proof: usize,
+        },
+    }
+
+    impl TestDeclSpec {
+        fn name(self) -> &'static str {
+            match self {
+                Self::Axiom { name, .. } | Self::Def { name, .. } | Self::Theorem { name, .. } => {
+                    name
+                }
+            }
+        }
     }
 
     struct DeclarationCertificateFixture {
@@ -1352,6 +1382,198 @@ mod tests {
         encode_axiom_refs_empty(&mut axiom_report);
         encode_axiom_refs_empty(&mut axiom_report);
         encode_axiom_refs_empty(&mut axiom_report); // module axioms
+
+        bytes.extend(&export_block);
+        bytes.extend(&axiom_report);
+        let export_hash = hash_with_domain(b"NPA-MODULE-EXPORT-0.1", &export_block);
+        let axiom_report_hash = hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &axiom_report);
+        bytes.extend(export_hash);
+        bytes.extend(axiom_report_hash);
+        let certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", &bytes);
+        bytes.extend(certificate_hash);
+
+        DeclarationCertificateFixture { bytes }
+    }
+
+    fn multi_declaration_certificate_fixture(
+        terms: &[TestTerm],
+        declarations: &[TestDeclSpec],
+    ) -> DeclarationCertificateFixture {
+        assert!(declarations
+            .windows(2)
+            .all(|pair| pair[0].name() < pair[1].name()));
+        assert!(declarations
+            .last()
+            .is_none_or(|declaration| declaration.name() < "Std"));
+
+        let level_hashes = test_level_hashes(terms);
+        let term_hashes = test_term_hashes(&level_hashes, terms);
+        let mut interface_hashes = Vec::with_capacity(declarations.len());
+        let mut certificate_hashes = Vec::with_capacity(declarations.len());
+
+        for declaration in declarations {
+            let mut iface_payload = Vec::new();
+            match *declaration {
+                TestDeclSpec::Axiom { name, ty } => {
+                    iface_payload.push(0x00);
+                    encode_name(&mut iface_payload, &[name]);
+                    encode_usize_vec(&mut iface_payload, &[]);
+                    iface_payload.extend(term_hashes[ty]);
+                    encode_dependency_entries_empty(&mut iface_payload);
+                }
+                TestDeclSpec::Def {
+                    name,
+                    ty,
+                    value,
+                    reducible,
+                } => {
+                    iface_payload.push(0x01);
+                    encode_name(&mut iface_payload, &[name]);
+                    encode_usize_vec(&mut iface_payload, &[]);
+                    iface_payload.extend(term_hashes[ty]);
+                    iface_payload.push(if reducible { 0x00 } else { 0x01 });
+                    encode_dependency_entries_empty(&mut iface_payload);
+                    encode_axiom_refs_empty(&mut iface_payload);
+                    if reducible {
+                        iface_payload.extend(term_hashes[value]);
+                    }
+                }
+                TestDeclSpec::Theorem { name, ty, .. } => {
+                    iface_payload.push(0x02);
+                    encode_name(&mut iface_payload, &[name]);
+                    encode_usize_vec(&mut iface_payload, &[]);
+                    iface_payload.extend(term_hashes[ty]);
+                    iface_payload.push(0x00);
+                    encode_dependency_entries_empty(&mut iface_payload);
+                    encode_axiom_refs_empty(&mut iface_payload);
+                }
+            }
+            let interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &iface_payload);
+
+            let mut cert_payload = Vec::new();
+            cert_payload.extend(interface_hash);
+            match *declaration {
+                TestDeclSpec::Axiom { .. } => {
+                    encode_axiom_refs_empty(&mut cert_payload);
+                }
+                TestDeclSpec::Def { value, .. } => {
+                    cert_payload.extend(term_hashes[value]);
+                    encode_dependency_entries_empty(&mut cert_payload);
+                    encode_axiom_refs_empty(&mut cert_payload);
+                }
+                TestDeclSpec::Theorem { proof, .. } => {
+                    cert_payload.extend(term_hashes[proof]);
+                    encode_dependency_entries_empty(&mut cert_payload);
+                }
+            }
+            interface_hashes.push(interface_hash);
+            certificate_hashes.push(hash_with_domain(b"NPA-DECL-CERT-0.1", &cert_payload));
+        }
+
+        let mut bytes = header_bytes();
+        bytes.extend(encode_uvar(0)); // imports
+        bytes.extend(encode_uvar((declarations.len() + 1) as u64)); // decl names + Std.Nat
+        for declaration in declarations {
+            encode_name(&mut bytes, &[declaration.name()]);
+        }
+        encode_name(&mut bytes, &["Std", "Nat"]);
+        encode_test_levels(&mut bytes, &level_hashes);
+        encode_test_terms(&mut bytes, terms);
+
+        bytes.extend(encode_uvar(declarations.len() as u64));
+        for (decl_index, declaration) in declarations.iter().enumerate() {
+            match *declaration {
+                TestDeclSpec::Axiom { ty, .. } => {
+                    bytes.push(0x00);
+                    bytes.extend(encode_uvar(decl_index as u64));
+                    encode_usize_vec(&mut bytes, &[]);
+                    bytes.extend(encode_uvar(ty as u64));
+                }
+                TestDeclSpec::Def {
+                    ty,
+                    value,
+                    reducible,
+                    ..
+                } => {
+                    bytes.push(0x01);
+                    bytes.extend(encode_uvar(decl_index as u64));
+                    encode_usize_vec(&mut bytes, &[]);
+                    bytes.extend(encode_uvar(ty as u64));
+                    bytes.extend(encode_uvar(value as u64));
+                    bytes.push(if reducible { 0x00 } else { 0x01 });
+                }
+                TestDeclSpec::Theorem { ty, proof, .. } => {
+                    bytes.push(0x02);
+                    bytes.extend(encode_uvar(decl_index as u64));
+                    encode_usize_vec(&mut bytes, &[]);
+                    bytes.extend(encode_uvar(ty as u64));
+                    bytes.extend(encode_uvar(proof as u64));
+                    bytes.push(0x00);
+                }
+            }
+            encode_dependency_entries_empty(&mut bytes);
+            encode_axiom_refs_empty(&mut bytes);
+            bytes.extend(interface_hashes[decl_index]);
+            bytes.extend(certificate_hashes[decl_index]);
+        }
+
+        let mut export_block = Vec::new();
+        export_block.extend(encode_uvar(declarations.len() as u64));
+        for (decl_index, declaration) in declarations.iter().enumerate() {
+            export_block.extend(encode_uvar(decl_index as u64));
+            match *declaration {
+                TestDeclSpec::Axiom { ty, .. } => {
+                    export_block.push(0x00);
+                    encode_usize_vec(&mut export_block, &[]);
+                    export_block.extend(encode_uvar(ty as u64));
+                    encode_option_usize(&mut export_block, None);
+                    export_block.extend(term_hashes[ty]);
+                    encode_option_hash(&mut export_block, None);
+                    export_block.push(0x00);
+                    export_block.push(0x00);
+                }
+                TestDeclSpec::Def {
+                    ty,
+                    value,
+                    reducible,
+                    ..
+                } => {
+                    export_block.push(0x01);
+                    encode_usize_vec(&mut export_block, &[]);
+                    export_block.extend(encode_uvar(ty as u64));
+                    encode_option_usize(&mut export_block, reducible.then_some(value));
+                    export_block.extend(term_hashes[ty]);
+                    if reducible {
+                        encode_option_hash(&mut export_block, Some(&term_hashes[value]));
+                    } else {
+                        encode_option_hash(&mut export_block, None);
+                    }
+                    encode_option_reducibility(&mut export_block, reducible);
+                    export_block.push(0x00);
+                }
+                TestDeclSpec::Theorem { ty, .. } => {
+                    export_block.push(0x02);
+                    encode_usize_vec(&mut export_block, &[]);
+                    export_block.extend(encode_uvar(ty as u64));
+                    encode_option_usize(&mut export_block, None);
+                    export_block.extend(term_hashes[ty]);
+                    encode_option_hash(&mut export_block, None);
+                    export_block.push(0x00);
+                    encode_option_opacity(&mut export_block, true);
+                }
+            }
+            export_block.extend(interface_hashes[decl_index]);
+            encode_axiom_refs_empty(&mut export_block);
+        }
+
+        let mut axiom_report = Vec::new();
+        axiom_report.extend(encode_uvar(declarations.len() as u64));
+        for decl_index in 0..declarations.len() {
+            axiom_report.extend(encode_uvar(decl_index as u64));
+            encode_axiom_refs_empty(&mut axiom_report);
+            encode_axiom_refs_empty(&mut axiom_report);
+        }
+        encode_axiom_refs_empty(&mut axiom_report);
 
         bytes.extend(&export_block);
         bytes.extend(&axiom_report);
@@ -1997,6 +2219,230 @@ mod tests {
         assert_type_check(
             result.error().unwrap().clone(),
             ReferenceCheckReason::InvalidBVar,
+        );
+    }
+
+    #[test]
+    fn conversion_accepts_beta_reduced_expected_type() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::BVar(0),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::Lam { ty: 1, body: 2 },
+            TestTerm::App(4, 0),
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[
+                TestDeclSpec::Axiom { name: "A", ty: 0 },
+                TestDeclSpec::Theorem {
+                    name: "B",
+                    ty: 5,
+                    proof: 3,
+                },
+            ],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert!(result.is_checked());
+    }
+
+    #[test]
+    fn conversion_rejects_beta_reduced_type_mismatch() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::BVar(0),
+            TestTerm::Lam { ty: 1, body: 2 },
+            TestTerm::App(3, 0),
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[TestDeclSpec::Theorem {
+                name: "A",
+                ty: 4,
+                proof: 0,
+            }],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::TypeMismatch,
+        );
+    }
+
+    #[test]
+    fn conversion_accepts_reducible_delta_expected_type() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::ConstLocal { decl_index: 1 },
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[
+                TestDeclSpec::Def {
+                    name: "A",
+                    ty: 1,
+                    value: 0,
+                    reducible: true,
+                },
+                TestDeclSpec::Axiom { name: "B", ty: 0 },
+                TestDeclSpec::Theorem {
+                    name: "C",
+                    ty: 2,
+                    proof: 3,
+                },
+            ],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert!(result.is_checked());
+    }
+
+    #[test]
+    fn conversion_rejects_opaque_delta_expected_type() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::ConstLocal { decl_index: 1 },
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[
+                TestDeclSpec::Def {
+                    name: "A",
+                    ty: 1,
+                    value: 0,
+                    reducible: false,
+                },
+                TestDeclSpec::Axiom { name: "B", ty: 0 },
+                TestDeclSpec::Theorem {
+                    name: "C",
+                    ty: 2,
+                    proof: 3,
+                },
+            ],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::TypeMismatch,
+        );
+    }
+
+    #[test]
+    fn conversion_accepts_zeta_reduced_expected_type() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::BVar(0),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::Let {
+                ty: 1,
+                value: 0,
+                body: 2,
+            },
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[
+                TestDeclSpec::Axiom { name: "A", ty: 0 },
+                TestDeclSpec::Theorem {
+                    name: "B",
+                    ty: 4,
+                    proof: 3,
+                },
+            ],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert!(result.is_checked());
+    }
+
+    #[test]
+    fn conversion_rejects_zeta_reduced_type_mismatch() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::BVar(0),
+            TestTerm::Let {
+                ty: 1,
+                value: 0,
+                body: 2,
+            },
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[TestDeclSpec::Theorem {
+                name: "A",
+                ty: 3,
+                proof: 0,
+            }],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::TypeMismatch,
+        );
+    }
+
+    #[test]
+    fn conversion_rejects_untrusted_theorem_unfolding() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::Sort(1),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::ConstLocal { decl_index: 1 },
+        ];
+        let fixture = multi_declaration_certificate_fixture(
+            &terms,
+            &[
+                TestDeclSpec::Theorem {
+                    name: "A",
+                    ty: 1,
+                    proof: 0,
+                },
+                TestDeclSpec::Axiom { name: "B", ty: 2 },
+                TestDeclSpec::Theorem {
+                    name: "C",
+                    ty: 0,
+                    proof: 3,
+                },
+            ],
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::TypeMismatch,
         );
     }
 
