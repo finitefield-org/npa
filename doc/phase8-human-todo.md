@@ -567,18 +567,18 @@ P8H-09 は standard library を拡張しない。既存の Phase 6 artifacts を
 
 実装タスク:
 
-- [ ] `npa-checker-ref` binary または同等の standalone checker binary を追加する。
-- [ ] `npa-checker-ext` runner contract を target CLI として実装または wrapper で固定する。
-- [ ] runner は policy allowlist と runner-owned binary registry だけから checker binary を選ぶ。
-- [ ] dynamic args は certificate / import dir or import lock / policy / output json に限定する。
-- [ ] runner sandbox policy として no network、read-only cert dir、no source mount、no plugin を固定する。
+- [x] `npa-checker-ref` binary または同等の standalone checker binary を追加する。
+- [x] `npa-checker-ext` runner contract を target CLI として実装または wrapper で固定する。
+- [x] runner は policy allowlist と runner-owned binary registry だけから checker binary を選ぶ。
+- [x] dynamic args は certificate / import dir or import lock / policy / output json に限定する。
+- [x] runner sandbox policy として no network、read-only cert dir、no source mount、no plugin を固定する。
 
 受け入れ条件:
 
-- [ ] AI / request が arbitrary binary path、extra flags、env vars、cwd override を指定できない。
-- [ ] raw checker output は MachineCheckResult に保存され、AI sidecar より前に materialize される。
-- [ ] process launched / exit status / checker id / binary hash が deterministic に記録される。
-- [ ] malformed raw output は checker success ではなく structured failure になる。
+- [x] AI / request が arbitrary binary path、extra flags、env vars、cwd override を指定できない。
+- [x] raw checker output は MachineCheckResult に保存され、AI sidecar より前に materialize される。
+- [x] process launched / exit status / checker id / binary hash が deterministic に記録される。
+- [x] malformed raw output は checker success ではなく structured failure になる。
 
 検証:
 

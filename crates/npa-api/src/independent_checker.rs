@@ -104,14 +104,34 @@ pub const INDEPENDENT_CHECKER_RUNNER_FIXED_ENVIRONMENT: &[(&str, &str)] =
     &[("LC_ALL", "C.UTF-8"), ("LANG", "C.UTF-8"), ("TZ", "UTC")];
 
 pub const INDEPENDENT_CHECKER_RUNNER_DYNAMIC_FLAGS: &[&str] = &[
+    "--cert",
     "--imports",
     "--imports-hash",
+    "--policy",
+    "--policy-hash",
+    "--output",
+];
+
+const INDEPENDENT_CHECKER_RUNNER_RESERVED_STATIC_ARG_FLAGS: &[&str] = &[
     "--trust-mode",
     "--axiom-policy",
     "--axiom-policy-hash",
     "--max-steps",
     "--max-memory-mb",
     "--timeout-ms",
+];
+const INDEPENDENT_CHECKER_RUNNER_FORBIDDEN_CONTROL_ARG_FLAGS: &[&str] = &[
+    "--binary",
+    "--checker-binary",
+    "--checker-path",
+    "--cwd",
+    "--workdir",
+    "--env",
+    "--source",
+    "--source-root",
+    "--plugin",
+    "--plugins",
+    "--network",
 ];
 
 const REQUEST_HASH_EXCLUDED_FIELDS: &[&str] = &["request_id", "request_hash"];
@@ -128,6 +148,7 @@ const MACHINE_CHECK_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &[
     "diagnostics",
     "axioms_used",
     "declarations_checked",
+    "raw_checker_output_hex",
 ];
 const ERROR_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &["result_id", "result_hash"];
 const AUXILIARY_RESULT_HASH_EXCLUDED_FIELDS: &[&str] = &["result_id", "result_hash", "diagnostics"];
@@ -3135,6 +3156,7 @@ pub struct IndependentCheckerMachineCheckResult {
     pub diagnostics: Vec<String>,
     pub axioms_used: Option<Vec<String>>,
     pub declarations_checked: Option<u64>,
+    pub raw_checker_output_hex: Option<String>,
 }
 
 impl IndependentCheckerMachineCheckResult {
@@ -3259,6 +3281,11 @@ impl IndependentCheckerMachineCheckResult {
                 declarations_checked.to_string(),
             ));
         }
+        push_optional_string_pair(
+            &mut pairs,
+            "raw_checker_output_hex",
+            self.raw_checker_output_hex.as_deref(),
+        );
         pairs
     }
 }
@@ -6921,12 +6948,8 @@ impl IndependentCheckerPolicyFailure {
 pub struct IndependentCheckerRunnerDynamicArgs {
     pub imports_manifest: String,
     pub imports_manifest_hash: Hash,
-    pub trust_mode: String,
-    pub axiom_policy_path: String,
-    pub axiom_policy_hash: Hash,
-    pub max_steps: u64,
-    pub max_memory_mb: u64,
-    pub timeout_ms: u64,
+    pub policy_path: String,
+    pub policy_hash: Hash,
     pub certificate_path: String,
 }
 
@@ -6935,6 +6958,16 @@ pub struct IndependentCheckerResolvedCheckerExecutable {
     pub binary_id: String,
     pub path: String,
     pub binary_hash: Hash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct IndependentCheckerRunnerSandboxPolicy {
+    pub network: String,
+    pub certificate_mount: String,
+    pub source_mount: String,
+    pub plugin_loading: String,
+    pub cwd: String,
+    pub environment: Vec<(String, String)>,
 }
 
 pub fn parse_independent_checker_runner_policy(
@@ -7082,23 +7115,18 @@ pub fn independent_checker_argv(
     let mut argv = Vec::new();
     argv.push(executable_path.to_owned());
     argv.extend(selected.allowed_args.iter().cloned());
+    argv.push("--cert".to_owned());
+    argv.push(dynamic.certificate_path.clone());
     argv.push("--imports".to_owned());
     argv.push(dynamic.imports_manifest.clone());
     argv.push("--imports-hash".to_owned());
     argv.push(format_hash_string(&dynamic.imports_manifest_hash));
-    argv.push("--trust-mode".to_owned());
-    argv.push(dynamic.trust_mode.clone());
-    argv.push("--axiom-policy".to_owned());
-    argv.push(dynamic.axiom_policy_path.clone());
-    argv.push("--axiom-policy-hash".to_owned());
-    argv.push(format_hash_string(&dynamic.axiom_policy_hash));
-    argv.push("--max-steps".to_owned());
-    argv.push(dynamic.max_steps.to_string());
-    argv.push("--max-memory-mb".to_owned());
-    argv.push(dynamic.max_memory_mb.to_string());
-    argv.push("--timeout-ms".to_owned());
-    argv.push(dynamic.timeout_ms.to_string());
-    argv.push(dynamic.certificate_path.clone());
+    argv.push("--policy".to_owned());
+    argv.push(dynamic.policy_path.clone());
+    argv.push("--policy-hash".to_owned());
+    argv.push(format_hash_string(&dynamic.policy_hash));
+    argv.push("--output".to_owned());
+    argv.push("json".to_owned());
     argv
 }
 
@@ -7107,6 +7135,17 @@ pub fn independent_checker_runner_fixed_environment() -> Vec<(String, String)> {
         .iter()
         .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
         .collect()
+}
+
+pub fn independent_checker_runner_sandbox_policy() -> IndependentCheckerRunnerSandboxPolicy {
+    IndependentCheckerRunnerSandboxPolicy {
+        network: "forbidden".to_owned(),
+        certificate_mount: "read_only".to_owned(),
+        source_mount: "forbidden".to_owned(),
+        plugin_loading: "forbidden".to_owned(),
+        cwd: "runner_owned".to_owned(),
+        environment: independent_checker_runner_fixed_environment(),
+    }
 }
 
 pub fn parse_independent_checker_import_lock_manifest(
@@ -15063,6 +15102,8 @@ fn independent_checker_machine_check_result_base(
         diagnostics,
         axioms_used: None,
         declarations_checked: None,
+        raw_checker_output_hex: (!observation.stdout.is_empty())
+            .then(|| independent_checker_hex_bytes(&observation.stdout)),
     }
 }
 
@@ -18142,6 +18183,7 @@ const MACHINE_CHECK_RESULT_FIELDS: &[&str] = &[
     "diagnostics",
     "axioms_used",
     "declarations_checked",
+    "raw_checker_output_hex",
     "result_hash",
     "run_artifact_hash",
 ];
@@ -22951,6 +22993,20 @@ fn parse_independent_checker_machine_check_result_summary(
             "invalid_name_format",
         ));
     }
+    if let Some(raw_output) = optional_string_field(
+        members,
+        "raw_checker_output_hex",
+        &independent_checker_join_json_path(root_path, "raw_checker_output_hex"),
+        "lower_hex_bytes",
+    )? {
+        if !independent_checker_valid_lower_hex_bytes(&raw_output) {
+            return Err(IndependentCheckerRequestValidationError::value_failure(
+                independent_checker_join_json_path(root_path, "raw_checker_output_hex"),
+                "lower_hex_bytes",
+                "invalid_hex",
+            ));
+        }
+    }
     reject_unknown_fields(
         checker_members,
         MACHINE_CHECK_RESULT_CHECKER_FIELDS,
@@ -24350,6 +24406,8 @@ fn validate_allowed_args_domain(
             }
             if INDEPENDENT_CHECKER_RUNNER_DYNAMIC_FLAGS
                 .iter()
+                .chain(INDEPENDENT_CHECKER_RUNNER_RESERVED_STATIC_ARG_FLAGS.iter())
+                .chain(INDEPENDENT_CHECKER_RUNNER_FORBIDDEN_CONTROL_ARG_FLAGS.iter())
                 .any(|flag| arg == flag || arg.starts_with(&format!("{flag}=")))
             {
                 return Err(IndependentCheckerPolicyValidationError::new(
@@ -27039,6 +27097,13 @@ fn independent_checker_visible_ascii_nonempty(value: &str) -> bool {
     !value.is_empty() && value.bytes().all(|byte| (0x21..=0x7e).contains(&byte))
 }
 
+fn independent_checker_valid_lower_hex_bytes(value: &str) -> bool {
+    value.len().is_multiple_of(2)
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
 fn independent_checker_printable_ascii_nonempty(value: &str) -> bool {
     !value.is_empty() && value.bytes().all(|byte| (0x20..=0x7e).contains(&byte))
 }
@@ -27630,6 +27695,15 @@ fn independent_checker_json_string_literal(value: &str) -> String {
         }
     }
     out.push('"');
+    out
+}
+
+fn independent_checker_hex_bytes(bytes: &[u8]) -> String {
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        out.push(hex_digit(byte >> 4));
+        out.push(hex_digit(byte & 0x0f));
+    }
     out
 }
 
@@ -28423,6 +28497,20 @@ mod tests {
 
         let err = parse_independent_checker_runner_policy(&valid_runner_policy_json().replace(
             r#""allowed_args":["--json","--canonical-only"]"#,
+            r#""allowed_args":["--json","--cwd=/tmp"]"#,
+        ))
+        .unwrap_err();
+        assert_eq!(
+            err,
+            IndependentCheckerPolicyValidationError::new(
+                "checker_allowlist[0].allowed_args[1]",
+                "static_checker_option_without_runner_owned_dynamic_args",
+                "reserved_dynamic_arg"
+            )
+        );
+
+        let err = parse_independent_checker_runner_policy(&valid_runner_policy_json().replace(
+            r#""allowed_args":["--json","--canonical-only"]"#,
             r#""allowed_args":["--json","--format=json"]"#,
         ))
         .unwrap_err();
@@ -28503,36 +28591,27 @@ mod tests {
         let dynamic = IndependentCheckerRunnerDynamicArgs {
             imports_manifest: "build/certs/import-lock.json".to_owned(),
             imports_manifest_hash: test_hash(40),
-            trust_mode: "pr".to_owned(),
-            axiom_policy_path: "ci/axiom-policy.toml".to_owned(),
-            axiom_policy_hash: test_hash(13),
-            max_steps: 10000000,
-            max_memory_mb: 2048,
-            timeout_ms: 60000,
             certificate_path: "build/certs/Std/Nat.npcert".to_owned(),
+            policy_path: "ci/runner-policy.json".to_owned(),
+            policy_hash: policy.policy_hash(),
         };
         let argv = independent_checker_argv(&resolved.path, selected, &dynamic);
         let expected_argv = vec![
             "tools/checkers/npa-checker-ref".to_owned(),
             "--json".to_owned(),
             "--canonical-only".to_owned(),
+            "--cert".to_owned(),
+            "build/certs/Std/Nat.npcert".to_owned(),
             "--imports".to_owned(),
             "build/certs/import-lock.json".to_owned(),
             "--imports-hash".to_owned(),
             hash_wire(40),
-            "--trust-mode".to_owned(),
-            "pr".to_owned(),
-            "--axiom-policy".to_owned(),
-            "ci/axiom-policy.toml".to_owned(),
-            "--axiom-policy-hash".to_owned(),
-            hash_wire(13),
-            "--max-steps".to_owned(),
-            "10000000".to_owned(),
-            "--max-memory-mb".to_owned(),
-            "2048".to_owned(),
-            "--timeout-ms".to_owned(),
-            "60000".to_owned(),
-            "build/certs/Std/Nat.npcert".to_owned(),
+            "--policy".to_owned(),
+            "ci/runner-policy.json".to_owned(),
+            "--policy-hash".to_owned(),
+            format_hash_string(&policy.policy_hash()),
+            "--output".to_owned(),
+            "json".to_owned(),
         ];
         assert_eq!(argv, expected_argv);
         assert_eq!(
@@ -28542,6 +28621,17 @@ mod tests {
                 ("LANG".to_owned(), "C.UTF-8".to_owned()),
                 ("TZ".to_owned(), "UTC".to_owned()),
             ]
+        );
+        assert_eq!(
+            independent_checker_runner_sandbox_policy(),
+            IndependentCheckerRunnerSandboxPolicy {
+                network: "forbidden".to_owned(),
+                certificate_mount: "read_only".to_owned(),
+                source_mount: "forbidden".to_owned(),
+                plugin_loading: "forbidden".to_owned(),
+                cwd: "runner_owned".to_owned(),
+                environment: independent_checker_runner_fixed_environment(),
+            }
         );
     }
 
@@ -28893,6 +28983,11 @@ mod tests {
         assert_eq!(result.axiom_report_hash, Some(test_hash(91)));
         assert_eq!(result.checker.id.as_deref(), Some("npa-checker-ref"));
         assert_eq!(result.checker.build_hash, Some(test_hash(11)));
+        let expected_raw_hex = independent_checker_hex_bytes(m3_raw_checked("0.8.0").as_bytes());
+        assert_eq!(
+            result.raw_checker_output_hex.as_deref(),
+            Some(expected_raw_hex.as_str())
+        );
         assert_ne!(result.result_hash(), result.run_artifact_hash());
         assert!(result
             .canonical_json()
@@ -28975,6 +29070,7 @@ mod tests {
             ]
         );
         let canonical = result.canonical_json();
+        assert!(canonical.contains(&independent_checker_hex_bytes(b"not json raw stdout text")));
         assert!(!canonical.contains("not json raw stdout text"));
         assert!(!canonical.contains("raw stderr text"));
     }
