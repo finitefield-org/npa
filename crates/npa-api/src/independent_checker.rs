@@ -1187,6 +1187,12 @@ impl From<IndependentCheckerPolicyValidationError> for IndependentCheckerRequest
     }
 }
 
+/// Phase 8 audit profile selector for runner policy and CI gates.
+///
+/// This is orchestration metadata, not a trusted checker implementation. The
+/// `npa-api` layer uses it to decide which separately produced checker results
+/// are required; proof acceptance still comes from canonical certificates and
+/// deterministic checker results.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IndependentCheckerTrustMode {
     Pr,
@@ -1366,6 +1372,12 @@ impl IndependentCheckerRunnerBudget {
     }
 }
 
+/// Runner policy for Phase 8 checker audit automation.
+///
+/// The policy owns checker selection, runner-owned dynamic arguments, budgets,
+/// import-lock paths, and axiom-policy paths. It must not be treated as a
+/// checker verdict, and AI requests for additional profiles are ignored unless
+/// the policy explicitly includes the profile as required or optional.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndependentCheckerRunnerPolicy {
     pub id: String,
@@ -1545,6 +1557,12 @@ impl IndependentCheckerMachineCheckRequestImports {
     }
 }
 
+/// Certificate-only request handed to an independent checker runner.
+///
+/// This request intentionally carries paths and hashes for canonical
+/// certificate bytes and import locks, but no `.npa` source, tactic script, AI
+/// trace, theorem-search index, or audit sidecar content. Those artifacts may
+/// explain failures outside the trust boundary, but they are not checker input.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndependentCheckerMachineCheckRequest {
     pub request_id: String,
@@ -3091,6 +3109,12 @@ impl IndependentCheckerMachineCheckResourceUsage {
     }
 }
 
+/// Saved result copied from a launched checker process.
+///
+/// This is the only Phase 8 artifact class that represents a checker verdict.
+/// AI sidecars, challenge generation results, coverage summaries, auxiliary
+/// reports, and release bundle manifests may reference or validate these
+/// results, but they cannot create a replacement `checked` status.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndependentCheckerMachineCheckResult {
     pub request_id: String,
@@ -5574,6 +5598,12 @@ impl IndependentCheckerAiAuditPolicyGatedFieldValue {
     }
 }
 
+/// AI-written audit note bound to an existing machine result or normalized
+/// comparison.
+///
+/// Sidecars are untrusted explanatory metadata. They may be schema-checked,
+/// cross-artifact checked, and used for diagnostics or training, but their text,
+/// classification, and suggested actions are never a checker verdict.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IndependentCheckerAiAuditSidecar {
     pub source: IndependentCheckerAiAuditSidecarSource,
@@ -27727,6 +27757,64 @@ mod tests {
         )
     }
 
+    fn pr_runner_policy_with_optional_external_json() -> String {
+        format!(
+            r#"{{
+              "schema":"npa.independent-checker.runner_policy.v1",
+              "id":"independent-checker-pr-on-demand",
+              "version":1,
+              "trust_mode":"pr",
+              "required_checker_profiles":["reference"],
+              "optional_checker_profiles":["external"],
+              "checker_allowlist":[
+                {{
+                  "profile":"external",
+                  "checker_id":"npa-checker-ext",
+                  "binary_id":"npa-checker-ext-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}",
+                  "allowed_args":["--json","--canonical-only"]
+                }},
+                {{
+                  "profile":"reference",
+                  "checker_id":"npa-checker-ref",
+                  "binary_id":"npa-checker-ref-macos-aarch64",
+                  "binary_hash":"{}",
+                  "build_hash":"{}",
+                  "allowed_args":["--json","--canonical-only"]
+                }}
+              ],
+              "checker_identity_manifest":{{
+                "kind":"file",
+                "path":"ci/checker-identity-manifest.json",
+                "manifest_hash":"{}"
+              }},
+              "import_policy":{{
+                "mode":"locked_store",
+                "network":"forbidden",
+                "require_import_lock_hash":true
+              }},
+              "axiom_policy":{{
+                "path":"ci/axiom-policy.toml",
+                "hash":"{}"
+              }},
+              "budgets":{{
+                "external":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}},
+                "reference":{{"max_steps":10000000,"max_memory_mb":2048,"timeout_ms":60000}}
+              }},
+              "on_resource_exhausted":"fail",
+              "on_missing_required_checker":"fail",
+              "on_profile_requested_by_ai":"ignore_unless_policy_allows"
+            }}"#,
+            hash_wire(14),
+            hash_wire(15),
+            hash_wire(10),
+            hash_wire(11),
+            hash_wire(12),
+            hash_wire(13)
+        )
+    }
+
     fn valid_identity_manifest_json() -> String {
         format!(
             r#"{{
@@ -28100,6 +28188,58 @@ mod tests {
     }
 
     #[test]
+    fn p8h00_phase8_ai_sidecar_challenge_and_audit_summary_are_not_checker_verdicts() {
+        assert!(IndependentCheckerArtifactKind::MachineCheckResult.is_checker_verdict());
+        for artifact in [
+            IndependentCheckerArtifactKind::NormalizedCheckResult,
+            IndependentCheckerArtifactKind::AuxiliaryResult,
+            IndependentCheckerArtifactKind::ChallengeReplayResult,
+            IndependentCheckerArtifactKind::ChallengeCoverageSummary,
+            IndependentCheckerArtifactKind::AiAuditSidecar,
+            IndependentCheckerArtifactKind::CompareValidationResult,
+            IndependentCheckerArtifactKind::AuditSidecarValidationResult,
+            IndependentCheckerArtifactKind::AiSidecarDiagnosticResult,
+            IndependentCheckerArtifactKind::ChallengeGenerationResult,
+            IndependentCheckerArtifactKind::ReleaseBundleStagingResult,
+        ] {
+            assert!(
+                !artifact.is_checker_verdict(),
+                "{artifact:?} must not create a checker verdict"
+            );
+            assert!(
+                !artifact.is_normalization_input(),
+                "{artifact:?} must not be a raw checker-result normalization input"
+            );
+        }
+
+        let result = m6_checked_result();
+        let input_policy_json = m6_input_policy_json(&["module", "status"], false, false);
+        let input_policy =
+            parse_independent_checker_ai_audit_input_policy(&input_policy_json).unwrap();
+        let sidecar_json = m6_machine_sidecar_json(
+            &result,
+            &input_policy,
+            test_hash(220),
+            result.result_hash(),
+            result.request_hash,
+            result.run_artifact_hash(),
+            r#""verdict":"checked""#,
+        );
+        let validation = independent_checker_validate_ai_audit_sidecar_schema_only(&sidecar_json);
+
+        assert_eq!(
+            validation.status,
+            IndependentCheckerAuditSidecarValidationStatus::Failed
+        );
+        let error = validation.error.unwrap();
+        assert_eq!(
+            error.reason_code,
+            IndependentCheckerAuditSidecarValidationReasonCode::ForbiddenSidecarField
+        );
+        assert_eq!(error.field, "verdict");
+    }
+
+    #[test]
     fn command_and_api_errors_are_transient_and_do_not_carry_result_hash() {
         let mut command = IndependentCheckerCommandError::new(
             IndependentCheckerCommandName::ChallengeMaterializeRequests,
@@ -28144,6 +28284,86 @@ mod tests {
         assert_eq!(
             independent_checker_runner_policy_hash(&policy.canonical_json()).unwrap(),
             canonical_hash
+        );
+    }
+
+    #[test]
+    fn p8h00_pr_mode_requires_reference_and_keeps_external_on_demand_only() {
+        assert_eq!(
+            IndependentCheckerTrustMode::Pr.required_checker_profiles(),
+            ["reference"]
+        );
+        assert_eq!(
+            IndependentCheckerTrustMode::Nightly.required_checker_profiles(),
+            ["reference", "external"]
+        );
+        assert_eq!(
+            IndependentCheckerTrustMode::Release.required_checker_profiles(),
+            ["fast-kernel", "reference", "external"]
+        );
+        assert_eq!(
+            IndependentCheckerTrustMode::HighTrust.required_checker_profiles(),
+            [
+                "fast-kernel",
+                "reference",
+                "external",
+                "high-trust-reference"
+            ]
+        );
+
+        let policy = parse_independent_checker_runner_policy(
+            &pr_runner_policy_with_optional_external_json(),
+        )
+        .unwrap();
+        assert_eq!(policy.trust_mode, IndependentCheckerTrustMode::Pr);
+        assert_eq!(policy.required_checker_profiles, ["reference"]);
+        assert_eq!(policy.optional_checker_profiles, ["external"]);
+        assert!(policy.selected_checker_policy("reference").is_some());
+        assert!(policy.selected_checker_policy("external").is_some());
+        assert_eq!(
+            independent_checker_policy_profiles_in_replay_order(&policy),
+            ["reference", "external"]
+        );
+
+        let imports_json = valid_import_lock_manifest_json();
+        let cert_bytes = test_raw_certificate_bytes("Std.Nat", test_hash(70));
+        let on_demand_external = independent_checker_request_materialize(
+            &policy,
+            "Std.Nat",
+            "build/certs/Std/Nat.npcert",
+            &cert_bytes,
+            "build/certs/import-lock.json",
+            imports_json.as_bytes(),
+            independent_checker_file_hash(imports_json.as_bytes()),
+            "external",
+            "mchkreq_pr_external",
+            "build/check-requests/Std.Nat.external.json",
+            None,
+        )
+        .unwrap();
+        assert_eq!(on_demand_external.request.checker_profile, "external");
+        assert_eq!(
+            on_demand_external.request.trust_mode,
+            IndependentCheckerTrustMode::Pr
+        );
+
+        let required_external_pr = pr_runner_policy_with_optional_external_json()
+            .replace(
+                r#""required_checker_profiles":["reference"]"#,
+                r#""required_checker_profiles":["reference","external"]"#,
+            )
+            .replace(
+                r#""optional_checker_profiles":["external"]"#,
+                r#""optional_checker_profiles":[]"#,
+            );
+        let err = parse_independent_checker_runner_policy(&required_external_pr).unwrap_err();
+        assert_eq!(
+            err,
+            IndependentCheckerPolicyValidationError::new(
+                "required_checker_profiles",
+                "profiles_for_trust_mode:pr",
+                "profile_set_mismatch"
+            )
         );
     }
 
@@ -30395,6 +30615,86 @@ mod tests {
         .unwrap_err();
         assert_eq!(order.field, "axiom_policy.allowed_axioms[1]");
         assert_eq!(order.actual_value, "order_violation");
+    }
+
+    #[test]
+    fn p8h00_axiom_policy_allows_only_exact_std_logic_eq_rec_exception() {
+        let axiom_policy = parse_independent_checker_axiom_policy_toml(
+            r#"
+            format = "npa.independent-checker.axiom_policy.v1"
+            allowed_axioms = ["Std.Logic.Eq.rec"]
+            "#,
+        )
+        .unwrap();
+        assert!(axiom_policy.allows("Std.Logic.Eq.rec"));
+        assert!(!axiom_policy.allows("Std.Logic.Eq.rec.custom"));
+        assert!(!axiom_policy.allows("Std.Logic.Eq.recursor"));
+        assert!(!axiom_policy.allows("User.sorry"));
+
+        let (request, policy) = m3_request_and_policy();
+        let stored = IndependentCheckerStoredMachineCheckRequest {
+            path: "build/check-requests/Std.Nat.reference.json".to_owned(),
+            file_hash: independent_checker_file_hash(request.canonical_json().as_bytes()),
+            request: request.clone(),
+        };
+        let request_store = m4_request_store_manifest(std::slice::from_ref(&stored));
+        let result = m4_checked_result(&request, &policy, "mchkres_eq_rec_policy");
+        let mut normalized = independent_checker_normalize_results(
+            "norm_Std.Nat_eq_rec_policy",
+            "normerr_Std.Nat_eq_rec_policy",
+            &policy,
+            &request_store,
+            std::slice::from_ref(&stored),
+            std::slice::from_ref(&result),
+            None,
+        )
+        .unwrap();
+
+        let exact_report = IndependentCheckerAxiomReport {
+            module: "Std.Nat".to_owned(),
+            certificate_hash: test_hash(70),
+            axioms: vec![IndependentCheckerAxiomReportEntry {
+                name: "Std.Logic.Eq.rec".to_owned(),
+            }],
+        };
+        normalized.results[0].axiom_report_hash = Some(exact_report.axiom_report_hash());
+        let passed = independent_checker_auxiliary_axiom_policy_result(
+            "aux_eq_rec_exact",
+            &policy,
+            &axiom_policy,
+            &normalized,
+            &exact_report,
+        )
+        .unwrap();
+        assert_eq!(passed.status, IndependentCheckerAuxiliaryStatus::Passed);
+
+        let custom_report = IndependentCheckerAxiomReport {
+            module: "Std.Nat".to_owned(),
+            certificate_hash: test_hash(70),
+            axioms: vec![IndependentCheckerAxiomReportEntry {
+                name: "Std.Logic.Eq.rec.custom".to_owned(),
+            }],
+        };
+        normalized.results[0].axiom_report_hash = Some(custom_report.axiom_report_hash());
+        let failed = independent_checker_auxiliary_axiom_policy_result(
+            "aux_eq_rec_custom",
+            &policy,
+            &axiom_policy,
+            &normalized,
+            &custom_report,
+        )
+        .unwrap();
+        assert_eq!(failed.status, IndependentCheckerAuxiliaryStatus::Failed);
+        let error = failed.error.as_ref().unwrap();
+        assert_eq!(
+            error.reason_code,
+            IndependentCheckerAuxiliaryReasonCode::AxiomPolicyFailed
+        );
+        assert_eq!(error.field.as_deref(), Some("axiom_report.axioms[0].name"));
+        assert_eq!(
+            error.actual_value.as_deref(),
+            Some("Std.Logic.Eq.rec.custom")
+        );
     }
 
     #[test]

@@ -199,17 +199,17 @@ cargo test --workspace
 
 実装タスク:
 
-- [ ] `doc/phase8-human.md`、`doc/phase8-ai.md`、README の境界を実装コメントまたは test 名に反映する。
-- [ ] `crates/npa-api` の checker audit automation が trusted checker ではないことを public API docs に明記する。
-- [ ] Phase 8 audit が Phase 5 / Phase 7 AI hot path に同期挿入されない regression を追加する。
-- [ ] PR / nightly / release / high-trust mode の required checker profile 差分を test fixture に固定する。
-- [ ] `Std.Logic.Eq.rec` の exact standard exception と custom axiom 禁止を Phase 8 policy docs / tests に接続する。
+- [x] `doc/phase8-human.md`、`doc/phase8-ai.md`、README の境界を実装コメントまたは test 名に反映する。
+- [x] `crates/npa-api` の checker audit automation が trusted checker ではないことを public API docs に明記する。
+- [x] Phase 8 audit が Phase 5 / Phase 7 AI hot path に同期挿入されない regression を追加する。
+- [x] PR / nightly / release / high-trust mode の required checker profile 差分を test fixture に固定する。
+- [x] `Std.Logic.Eq.rec` の exact standard exception と custom axiom 禁止を Phase 8 policy docs / tests に接続する。
 
 受け入れ条件:
 
-- [ ] AI sidecar、challenge generator、audit summary が checker verdict を作れないことが test で固定されている。
-- [ ] PR mode の required profile が `reference` だけで、external checker が optional / on-demand であることが fixture で固定されている。
-- [ ] `/machine/*` request / response schema、candidate hash、state fingerprint が Phase 8 境界追加で変わらない。
+- [x] AI sidecar、challenge generator、audit summary が checker verdict を作れないことが test で固定されている。
+- [x] PR mode の required profile が `reference` だけで、external checker が optional / on-demand であることが fixture で固定されている。
+- [x] `/machine/*` request / response schema、candidate hash、state fingerprint が Phase 8 境界追加で変わらない。
 
 検証:
 

@@ -5982,6 +5982,129 @@ mod tests {
         assert!(!payload.contains("premises"));
     }
 
+    fn assert_p8h00_phase8_audit_fields_absent(label: &str, source: &str) {
+        for forbidden in [
+            "independent_checker",
+            "checker_profile",
+            "reference",
+            "external",
+            "audit",
+            "sidecar",
+            "challenge",
+            "normalized_result",
+            "release_policy",
+        ] {
+            assert!(
+                !source.contains(forbidden),
+                "{label} must not synchronously carry Phase 8 audit field {forbidden}"
+            );
+        }
+    }
+
+    #[test]
+    fn p8h00_ai_fast_path_request_shapes_exclude_phase8_audit_metadata() {
+        let request = ai_search_test_batch_request(vec![ai_search_test_envelope(0, None)]);
+        let batch_source = ai_search_tactic_batch_request_json(&request);
+        parse_machine_tactic_batch_request(&batch_source).unwrap();
+        assert_p8h00_phase8_audit_fields_absent("tactic_batch", &batch_source);
+
+        let batch_response = ok_batch_response(
+            &request,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(40),
+                next_snapshot_id: SnapshotId::from_state_fingerprint(hash(41)),
+                next_state_fingerprint: hash(42),
+                proof_delta_hash: hash(43),
+            }],
+        );
+        let MachineApiResponseEnvelope::Ok(ok_batch) = &batch_response else {
+            panic!("test fixture must be a successful machine batch response");
+        };
+        assert_eq!(
+            ok_batch.endpoint_fields.previous_state_fingerprint,
+            request.state_fingerprint
+        );
+        assert!(matches!(
+            &ok_batch.endpoint_fields.results[0],
+            MachineTacticBatchItemResponse::Success {
+                candidate_hash,
+                next_state_fingerprint,
+                ..
+            } if *candidate_hash == hash(40) && *next_state_fingerprint == hash(42)
+        ));
+        let evaluation =
+            ai_search_evaluate_tactic_batch_response(&request, batch_response).unwrap();
+        assert_eq!(
+            evaluation.replay_steps[0].previous_state_fingerprint,
+            request.state_fingerprint
+        );
+        assert_eq!(evaluation.replay_steps[0].candidate_hash, hash(40));
+        assert_eq!(evaluation.replay_steps[0].next_state_fingerprint, hash(42));
+
+        let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+        let candidate_payload = ai_search_candidate_payload_json(&candidate);
+        assert_p8h00_phase8_audit_fields_absent("candidate_payload", &candidate_payload);
+        assert_eq!(
+            ai_search_candidate_payload_hash(&candidate),
+            ai_search_candidate_payload_hash(&MachineTacticCandidate::SimpLite {
+                rules: Vec::new()
+            })
+        );
+
+        let step = AiSearchReplayStep {
+            previous_state_fingerprint: request.state_fingerprint,
+            goal_id: request.goal_id,
+            candidate,
+            deterministic_budget: request.deterministic_budget,
+            candidate_hash: hash(40),
+            deterministic_budget_hash: tactic_budget_hash(request.deterministic_budget),
+            proof_delta_hash: hash(41),
+            next_state_fingerprint: hash(42),
+        };
+        let replay_plan = AiSearchReplayPlan {
+            protocol_version: MachineApiVersion::V1,
+            session_root_hash: hash(90),
+            initial_state_fingerprint: request.state_fingerprint,
+            steps: vec![step],
+            final_state_fingerprint: hash(42),
+        };
+        let replay_source = ai_search_replay_request_json(request.session_id.clone(), &replay_plan);
+        parse_machine_replay_request(&replay_source).unwrap();
+        assert_p8h00_phase8_audit_fields_absent("replay", &replay_source);
+
+        let verify_source = ai_search_verify_request_json(
+            request.session_id.clone(),
+            request.snapshot_id,
+            request.state_fingerprint,
+        );
+        parse_machine_verify_request(&verify_source).unwrap();
+        assert_p8h00_phase8_audit_fields_absent("verify", &verify_source);
+
+        let snapshot_source = ai_search_snapshot_get_request_json(&snapshot_request());
+        parse_machine_snapshot_get_request(&snapshot_source).unwrap();
+        assert_p8h00_phase8_audit_fields_absent("snapshot_get", &snapshot_source);
+
+        let premise_source = ai_search_mvp_premise_query_json(&AiSearchPremiseQueryRequest {
+            session_id: request.session_id.clone(),
+            snapshot_id: request.snapshot_id,
+            state_fingerprint: request.state_fingerprint,
+            goal_id: request.goal_id,
+        });
+        parse_machine_theorem_search_request(&premise_source).unwrap();
+        assert_p8h00_phase8_audit_fields_absent("premise_query", &premise_source);
+
+        let tampered_batch = batch_source.replace(
+            r#""candidates""#,
+            r#""checker_profile":"reference","candidates""#,
+        );
+        assert!(parse_machine_tactic_batch_request(&tampered_batch).is_err());
+
+        let tampered_verify =
+            verify_source.replace(r#""mode""#, r#""audit_summary":"checked","mode""#);
+        assert!(parse_machine_verify_request(&tampered_verify).is_err());
+    }
+
     #[test]
     fn candidate_payload_json_uses_canonical_object_key_order() {
         let apply = MachineTacticCandidate::Apply {
