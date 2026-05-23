@@ -1,0 +1,2124 @@
+use std::collections::BTreeSet;
+
+use sha2::{Digest, Sha256};
+
+use crate::{
+    ReferenceCertificateHeader, ReferenceCertificateSection, ReferenceCheckError,
+    ReferenceCheckReason, ReferenceDecodedCertificate, ReferenceDecodedCertificateCounts,
+    ReferenceHash, ReferenceModuleHashes, ReferenceModuleName, REFERENCE_CERTIFICATE_FORMAT,
+    REFERENCE_CORE_SPEC,
+};
+
+type DecodeResult<T> = Result<T, ReferenceCheckError>;
+
+pub(crate) fn decode_certificate_impl(bytes: &[u8]) -> DecodeResult<ReferenceDecodedCertificate> {
+    if bytes.is_empty() {
+        return Err(ReferenceCheckError::empty());
+    }
+
+    let mut decoder = Decoder::new(bytes);
+    let cert = decoder.module_certificate()?;
+    if !decoder.is_done() {
+        return Err(ReferenceCheckError::malformed(
+            ReferenceCertificateSection::FullCertificate,
+            decoder.offset(),
+            ReferenceCheckReason::TrailingBytes,
+        ));
+    }
+    cert.validate()?;
+    Ok(cert.summary())
+}
+
+#[derive(Clone, Debug)]
+struct Located<T> {
+    value: T,
+    offset: usize,
+}
+
+#[derive(Clone, Debug)]
+struct DecodedModuleCertificate {
+    header: ReferenceCertificateHeader,
+    imports: Vec<Located<ImportEntry>>,
+    name_table: Vec<Located<ReferenceModuleName>>,
+    level_table: Vec<Located<LevelNode>>,
+    term_table: Vec<Located<TermNode>>,
+    declarations: Vec<Located<DeclCert>>,
+    export_block: Vec<Located<ExportEntry>>,
+    axiom_report: AxiomReport,
+    hashes: ReferenceModuleHashes,
+}
+
+impl DecodedModuleCertificate {
+    fn validate(&self) -> DecodeResult<()> {
+        self.validate_import_order()?;
+        self.validate_name_table_order()?;
+        let level_hashes = self.validate_level_table()?;
+        self.validate_term_table(&level_hashes)?;
+        let mut used = UsedTables::new();
+        self.collect_name_roots(&mut used)?;
+        self.collect_decl_roots(&mut used)?;
+        self.collect_export_roots(&mut used)?;
+        self.collect_axiom_report_roots(&mut used)?;
+        self.collect_reachable_terms(&mut used)?;
+        self.collect_reachable_levels(&mut used)?;
+        self.validate_declaration_order()?;
+        self.validate_vector_orders()?;
+        self.validate_used_names(&used.names)?;
+        self.validate_used_levels(&used.levels)?;
+        self.validate_used_terms(&used.terms)?;
+        Ok(())
+    }
+
+    fn summary(self) -> ReferenceDecodedCertificate {
+        ReferenceDecodedCertificate::new(
+            self.header,
+            ReferenceDecodedCertificateCounts {
+                imports_len: self.imports.len(),
+                name_table_len: self.name_table.len(),
+                level_table_len: self.level_table.len(),
+                term_table_len: self.term_table.len(),
+                declarations_len: self.declarations.len(),
+                export_block_len: self.export_block.len(),
+            },
+            self.hashes,
+        )
+    }
+
+    fn validate_import_order(&self) -> DecodeResult<()> {
+        for pair in self.imports.windows(2) {
+            let previous = import_order_key(&pair[0].value);
+            let current = import_order_key(&pair[1].value);
+            if previous >= current {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Imports,
+                    pair[1].offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_name_table_order(&self) -> DecodeResult<()> {
+        for pair in self.name_table.windows(2) {
+            if pair[0].value == pair[1].value {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::NameTable,
+                    pair[1].offset,
+                    ReferenceCheckReason::DuplicateName,
+                ));
+            }
+            if pair[0].value > pair[1].value {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::NameTable,
+                    pair[1].offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_level_table(&self) -> DecodeResult<Vec<ReferenceHash>> {
+        let mut hashes = Vec::with_capacity(self.level_table.len());
+        let mut keys = Vec::with_capacity(self.level_table.len());
+        let mut raw_levels = Vec::with_capacity(self.level_table.len());
+        for (index, located) in self.level_table.iter().enumerate() {
+            self.validate_level_refs(index, located)?;
+            let raw = raw_level_from_node(&located.value, &raw_levels, &self.name_table)?;
+            if normalize_level(raw.clone()) != raw {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::LevelTable,
+                    located.offset,
+                    ReferenceCheckReason::NonNormalizedLevel,
+                ));
+            }
+            let key = level_node_key(&located.value, &hashes, &self.name_table)?;
+            let hash = hash_with_domain(b"NPA-LEVEL-0.1", &key);
+            keys.push((level_node_height(&located.value, &self.level_table)?, key));
+            hashes.push(hash);
+            raw_levels.push(raw);
+        }
+        for (index, pair) in keys.windows(2).enumerate() {
+            if pair[0] >= pair[1] {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::LevelTable,
+                    self.level_table[index + 1].offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+        }
+        Ok(hashes)
+    }
+
+    fn validate_level_refs(&self, index: usize, located: &Located<LevelNode>) -> DecodeResult<()> {
+        match &located.value {
+            LevelNode::Zero => Ok(()),
+            LevelNode::Succ(inner) => self.require_previous_level(index, *inner, located.offset),
+            LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
+                self.require_previous_level(index, *lhs, located.offset)?;
+                self.require_previous_level(index, *rhs, located.offset)
+            }
+            LevelNode::Param(name) => self.require_name(
+                *name,
+                ReferenceCertificateSection::LevelTable,
+                located.offset,
+            ),
+        }
+    }
+
+    fn validate_term_table(&self, level_hashes: &[ReferenceHash]) -> DecodeResult<()> {
+        let mut hashes = Vec::with_capacity(self.term_table.len());
+        let mut keys = Vec::with_capacity(self.term_table.len());
+        for (index, located) in self.term_table.iter().enumerate() {
+            self.validate_term_refs(index, located)?;
+            let key = term_node_key(&located.value, &hashes, level_hashes)?;
+            keys.push((
+                term_node_height(&located.value, &self.term_table)?,
+                key.clone(),
+            ));
+            hashes.push(hash_with_domain(b"NPA-TERM-0.1", &key));
+        }
+        for (index, pair) in keys.windows(2).enumerate() {
+            if pair[0] >= pair[1] {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::TermTable,
+                    self.term_table[index + 1].offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_term_refs(&self, index: usize, located: &Located<TermNode>) -> DecodeResult<()> {
+        match &located.value {
+            TermNode::Sort(level) => self.require_level(
+                *level,
+                ReferenceCertificateSection::TermTable,
+                located.offset,
+            ),
+            TermNode::BVar(_) => Ok(()),
+            TermNode::Const { global_ref, levels } => {
+                self.require_global_ref(
+                    global_ref,
+                    ReferenceCertificateSection::TermTable,
+                    located.offset,
+                )?;
+                for level in levels {
+                    self.require_level(
+                        *level,
+                        ReferenceCertificateSection::TermTable,
+                        located.offset,
+                    )?;
+                }
+                Ok(())
+            }
+            TermNode::App(fun, arg) => {
+                self.require_previous_term(index, *fun, located.offset)?;
+                self.require_previous_term(index, *arg, located.offset)
+            }
+            TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+                self.require_previous_term(index, *ty, located.offset)?;
+                self.require_previous_term(index, *body, located.offset)
+            }
+            TermNode::Let { ty, value, body } => {
+                self.require_previous_term(index, *ty, located.offset)?;
+                self.require_previous_term(index, *value, located.offset)?;
+                self.require_previous_term(index, *body, located.offset)
+            }
+        }
+    }
+
+    fn collect_name_roots(&self, used: &mut UsedTables) -> DecodeResult<()> {
+        used.names.insert(self.header.module.clone());
+        for import in &self.imports {
+            used.names.insert(import.value.module.clone());
+        }
+        Ok(())
+    }
+
+    fn collect_decl_roots(&self, used: &mut UsedTables) -> DecodeResult<()> {
+        for located in &self.declarations {
+            self.collect_decl_payload(&located.value.decl, used, located.offset)?;
+            self.collect_dependency_entries(&located.value.dependencies, used, located.offset)?;
+            self.collect_axiom_refs(
+                &located.value.axiom_dependencies,
+                used,
+                ReferenceCertificateSection::Declarations,
+                located.offset,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn collect_export_roots(&self, used: &mut UsedTables) -> DecodeResult<()> {
+        for located in &self.export_block {
+            let entry = &located.value;
+            self.collect_name_id(
+                entry.name,
+                used,
+                ReferenceCertificateSection::ExportBlock,
+                located.offset,
+            )?;
+            self.collect_name_ids(
+                &entry.universe_params,
+                used,
+                ReferenceCertificateSection::ExportBlock,
+                located.offset,
+            )?;
+            self.collect_term_root(
+                entry.ty,
+                ReferenceCertificateSection::ExportBlock,
+                located.offset,
+            )?;
+            used.terms.insert(entry.ty);
+            if let Some(body) = entry.body {
+                self.collect_term_root(
+                    body,
+                    ReferenceCertificateSection::ExportBlock,
+                    located.offset,
+                )?;
+                used.terms.insert(body);
+            }
+            self.collect_axiom_refs(
+                &entry.axiom_dependencies,
+                used,
+                ReferenceCertificateSection::ExportBlock,
+                located.offset,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn collect_axiom_report_roots(&self, used: &mut UsedTables) -> DecodeResult<()> {
+        for report in &self.axiom_report.per_declaration {
+            if report.decl_index >= self.declarations.len() {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::AxiomReport,
+                    report.offset,
+                    ReferenceCheckReason::DanglingReference,
+                ));
+            }
+            self.collect_axiom_refs(
+                &report.direct_axioms,
+                used,
+                ReferenceCertificateSection::AxiomReport,
+                report.offset,
+            )?;
+            self.collect_axiom_refs(
+                &report.transitive_axioms,
+                used,
+                ReferenceCertificateSection::AxiomReport,
+                report.offset,
+            )?;
+        }
+        self.collect_axiom_refs(
+            &self.axiom_report.module_axioms,
+            used,
+            ReferenceCertificateSection::AxiomReport,
+            self.axiom_report.module_axioms_offset,
+        )
+    }
+
+    fn collect_decl_payload(
+        &self,
+        decl: &DeclPayload,
+        used: &mut UsedTables,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        match decl {
+            DeclPayload::Axiom {
+                name,
+                universe_params,
+                ty,
+            } => {
+                self.collect_name_id(
+                    *name,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_name_ids(
+                    universe_params,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_term_root(*ty, ReferenceCertificateSection::Declarations, offset)?;
+                used.terms.insert(*ty);
+            }
+            DeclPayload::Def {
+                name,
+                universe_params,
+                ty,
+                value,
+                _reducibility: _,
+            } => {
+                self.collect_name_id(
+                    *name,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_name_ids(
+                    universe_params,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_term_root(*ty, ReferenceCertificateSection::Declarations, offset)?;
+                self.collect_term_root(*value, ReferenceCertificateSection::Declarations, offset)?;
+                used.terms.insert(*ty);
+                used.terms.insert(*value);
+            }
+            DeclPayload::Theorem {
+                name,
+                universe_params,
+                ty,
+                proof,
+                _opacity: _,
+            } => {
+                self.collect_name_id(
+                    *name,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_name_ids(
+                    universe_params,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_term_root(*ty, ReferenceCertificateSection::Declarations, offset)?;
+                self.collect_term_root(*proof, ReferenceCertificateSection::Declarations, offset)?;
+                used.terms.insert(*ty);
+                used.terms.insert(*proof);
+            }
+            DeclPayload::Inductive {
+                name,
+                universe_params,
+                params,
+                indices,
+                sort,
+                constructors,
+                recursor,
+            } => {
+                self.collect_name_id(
+                    *name,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_name_ids(
+                    universe_params,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.require_level(*sort, ReferenceCertificateSection::Declarations, offset)?;
+                used.levels.insert(*sort);
+                for binder in params.iter().chain(indices) {
+                    self.collect_term_root(
+                        binder.ty,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    used.terms.insert(binder.ty);
+                }
+                for constructor in constructors {
+                    self.collect_name_id(
+                        constructor.name,
+                        used,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    self.collect_term_root(
+                        constructor.ty,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    used.terms.insert(constructor.ty);
+                }
+                if let Some(recursor) = recursor {
+                    self.collect_name_id(
+                        recursor.name,
+                        used,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    self.collect_name_ids(
+                        &recursor.universe_params,
+                        used,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    self.collect_term_root(
+                        recursor.ty,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    used.terms.insert(recursor.ty);
+                    let _ = recursor.rules;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_dependency_entries(
+        &self,
+        entries: &[DependencyEntry],
+        used: &mut UsedTables,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        for entry in entries {
+            self.collect_global_ref(
+                &entry.global_ref,
+                used,
+                ReferenceCertificateSection::Declarations,
+                offset,
+            )?;
+        }
+        Ok(())
+    }
+
+    fn collect_axiom_refs(
+        &self,
+        axioms: &[AxiomRef],
+        used: &mut UsedTables,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        for axiom in axioms {
+            self.collect_global_ref(&axiom.global_ref, used, section, offset)?;
+            self.collect_name_id(axiom.name, used, section, offset)?;
+        }
+        Ok(())
+    }
+
+    fn collect_reachable_terms(&self, used: &mut UsedTables) -> DecodeResult<()> {
+        let mut stack = used.terms.iter().copied().collect::<Vec<_>>();
+        while let Some(term_id) = stack.pop() {
+            let located = self.term_table.get(term_id).ok_or_else(|| {
+                ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::TermTable,
+                    self.term_table.last().map_or(0, |entry| entry.offset),
+                    ReferenceCheckReason::DanglingReference,
+                )
+            })?;
+            let term = &located.value;
+            match term {
+                TermNode::Sort(level) => {
+                    used.levels.insert(*level);
+                }
+                TermNode::BVar(_) => {}
+                TermNode::Const { global_ref, levels } => {
+                    self.collect_global_ref(
+                        global_ref,
+                        used,
+                        ReferenceCertificateSection::TermTable,
+                        located.offset,
+                    )?;
+                    used.levels.extend(levels.iter().copied());
+                }
+                TermNode::App(fun, arg) => {
+                    push_term(*fun, used, &mut stack);
+                    push_term(*arg, used, &mut stack);
+                }
+                TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+                    push_term(*ty, used, &mut stack);
+                    push_term(*body, used, &mut stack);
+                }
+                TermNode::Let { ty, value, body } => {
+                    push_term(*ty, used, &mut stack);
+                    push_term(*value, used, &mut stack);
+                    push_term(*body, used, &mut stack);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_reachable_levels(&self, used: &mut UsedTables) -> DecodeResult<()> {
+        let mut stack = used.levels.iter().copied().collect::<Vec<_>>();
+        while let Some(level_id) = stack.pop() {
+            let level = &self
+                .level_table
+                .get(level_id)
+                .ok_or_else(|| {
+                    ReferenceCheckError::malformed(
+                        ReferenceCertificateSection::LevelTable,
+                        self.level_table.last().map_or(0, |entry| entry.offset),
+                        ReferenceCheckReason::DanglingReference,
+                    )
+                })?
+                .value;
+            match level {
+                LevelNode::Zero => {}
+                LevelNode::Succ(inner) => push_level(*inner, used, &mut stack),
+                LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
+                    push_level(*lhs, used, &mut stack);
+                    push_level(*rhs, used, &mut stack);
+                }
+                LevelNode::Param(name) => {
+                    self.collect_name_id(*name, used, ReferenceCertificateSection::LevelTable, 0)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_declaration_order(&self) -> DecodeResult<()> {
+        let mut local_names = Vec::with_capacity(self.declarations.len());
+        let mut seen = BTreeSet::new();
+        for located in &self.declarations {
+            let name_id = located.value.decl.name_id();
+            self.require_name(
+                name_id,
+                ReferenceCertificateSection::Declarations,
+                located.offset,
+            )?;
+            let name = self.name_table[name_id].value.clone();
+            if !seen.insert(name.clone()) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    located.offset,
+                    ReferenceCheckReason::DuplicateDeclarationName,
+                ));
+            }
+            local_names.push(name);
+        }
+
+        let dependencies = self
+            .declarations
+            .iter()
+            .enumerate()
+            .map(|(decl_index, located)| {
+                let mut deps = BTreeSet::new();
+                for dependency in &located.value.dependencies {
+                    match &dependency.global_ref {
+                        GlobalRef::Local {
+                            decl_index: dependency_index,
+                        }
+                        | GlobalRef::LocalGenerated {
+                            decl_index: dependency_index,
+                            ..
+                        } => {
+                            if *dependency_index >= decl_index {
+                                return Err(ReferenceCheckError::malformed(
+                                    ReferenceCertificateSection::Declarations,
+                                    located.offset,
+                                    ReferenceCheckReason::NonCanonicalOrder,
+                                ));
+                            }
+                            deps.insert(*dependency_index);
+                        }
+                        GlobalRef::Builtin { .. } | GlobalRef::Imported { .. } => {}
+                    }
+                }
+                Ok(deps)
+            })
+            .collect::<DecodeResult<Vec<_>>>()?;
+
+        let mut emitted = BTreeSet::new();
+        let mut remaining = (0..self.declarations.len()).collect::<BTreeSet<_>>();
+        let mut expected = Vec::with_capacity(self.declarations.len());
+        while !remaining.is_empty() {
+            let mut ready = remaining
+                .iter()
+                .copied()
+                .filter(|index| dependencies[*index].is_subset(&emitted))
+                .collect::<Vec<_>>();
+            if ready.is_empty() {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    self.declarations.first().map_or(0, |entry| entry.offset),
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+            ready.sort_by_key(|index| local_names[*index].clone());
+            for index in ready {
+                remaining.remove(&index);
+                emitted.insert(index);
+                expected.push(index);
+            }
+        }
+        if expected != (0..self.declarations.len()).collect::<Vec<_>>() {
+            let bad_index = expected
+                .iter()
+                .zip(0..self.declarations.len())
+                .find_map(|(actual, expected)| (*actual != expected).then_some(expected))
+                .unwrap_or(0);
+            return Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::Declarations,
+                self.declarations
+                    .get(bad_index)
+                    .map_or(0, |entry| entry.offset),
+                ReferenceCheckReason::NonCanonicalOrder,
+            ));
+        }
+        Ok(())
+    }
+
+    fn validate_vector_orders(&self) -> DecodeResult<()> {
+        for located in &self.declarations {
+            ensure_strict_order(
+                &located.value.dependencies,
+                ReferenceCertificateSection::Declarations,
+                located.offset,
+            )?;
+            ensure_strict_order(
+                &located.value.axiom_dependencies,
+                ReferenceCertificateSection::Declarations,
+                located.offset,
+            )?;
+        }
+        for located in &self.export_block {
+            ensure_strict_order(
+                &located.value.axiom_dependencies,
+                ReferenceCertificateSection::ExportBlock,
+                located.offset,
+            )?;
+        }
+        for report in &self.axiom_report.per_declaration {
+            ensure_strict_order(
+                &report.direct_axioms,
+                ReferenceCertificateSection::AxiomReport,
+                report.offset,
+            )?;
+            ensure_strict_order(
+                &report.transitive_axioms,
+                ReferenceCertificateSection::AxiomReport,
+                report.offset,
+            )?;
+        }
+        ensure_strict_order(
+            &self.axiom_report.module_axioms,
+            ReferenceCertificateSection::AxiomReport,
+            self.axiom_report.module_axioms_offset,
+        )
+    }
+
+    fn validate_used_names(&self, used_names: &BTreeSet<ReferenceModuleName>) -> DecodeResult<()> {
+        let actual = self
+            .name_table
+            .iter()
+            .map(|entry| entry.value.clone())
+            .collect::<Vec<_>>();
+        let expected = used_names.iter().cloned().collect::<Vec<_>>();
+        if actual == expected {
+            return Ok(());
+        }
+        for entry in &self.name_table {
+            if !used_names.contains(&entry.value) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::NameTable,
+                    entry.offset,
+                    ReferenceCheckReason::UnusedTableEntry,
+                ));
+            }
+        }
+        Err(ReferenceCheckError::malformed(
+            ReferenceCertificateSection::NameTable,
+            self.name_table.first().map_or(0, |entry| entry.offset),
+            ReferenceCheckReason::NonCanonicalOrder,
+        ))
+    }
+
+    fn validate_used_levels(&self, used_levels: &BTreeSet<usize>) -> DecodeResult<()> {
+        for (index, entry) in self.level_table.iter().enumerate() {
+            if !used_levels.contains(&index) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::LevelTable,
+                    entry.offset,
+                    ReferenceCheckReason::UnusedTableEntry,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_used_terms(&self, used_terms: &BTreeSet<usize>) -> DecodeResult<()> {
+        for (index, entry) in self.term_table.iter().enumerate() {
+            if !used_terms.contains(&index) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::TermTable,
+                    entry.offset,
+                    ReferenceCheckReason::UnusedTableEntry,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn collect_name_id(
+        &self,
+        id: usize,
+        used: &mut UsedTables,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let name = self
+            .name_table
+            .get(id)
+            .ok_or_else(|| {
+                ReferenceCheckError::malformed(
+                    section,
+                    offset,
+                    ReferenceCheckReason::DanglingReference,
+                )
+            })?
+            .value
+            .clone();
+        used.names.insert(name);
+        Ok(())
+    }
+
+    fn collect_name_ids(
+        &self,
+        ids: &[usize],
+        used: &mut UsedTables,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        for id in ids {
+            self.collect_name_id(*id, used, section, offset)?;
+        }
+        Ok(())
+    }
+
+    fn collect_term_root(
+        &self,
+        id: usize,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        self.require_term(id, section, offset)
+    }
+
+    fn collect_global_ref(
+        &self,
+        global_ref: &GlobalRef,
+        used: &mut UsedTables,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        self.require_global_ref(global_ref, section, offset)?;
+        match global_ref {
+            GlobalRef::Builtin { name, .. }
+            | GlobalRef::Imported { name, .. }
+            | GlobalRef::LocalGenerated { name, .. } => {
+                self.collect_name_id(*name, used, section, offset)?;
+            }
+            GlobalRef::Local { .. } => {}
+        }
+        Ok(())
+    }
+
+    fn require_name(
+        &self,
+        id: usize,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if id < self.name_table.len() {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::DanglingReference,
+            ))
+        }
+    }
+
+    fn require_level(
+        &self,
+        id: usize,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if id < self.level_table.len() {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::DanglingReference,
+            ))
+        }
+    }
+
+    fn require_term(
+        &self,
+        id: usize,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if id < self.term_table.len() {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::DanglingReference,
+            ))
+        }
+    }
+
+    fn require_previous_level(&self, index: usize, id: usize, offset: usize) -> DecodeResult<()> {
+        if id < index {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::LevelTable,
+                offset,
+                ReferenceCheckReason::DanglingReference,
+            ))
+        }
+    }
+
+    fn require_previous_term(&self, index: usize, id: usize, offset: usize) -> DecodeResult<()> {
+        if id < index {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::TermTable,
+                offset,
+                ReferenceCheckReason::DanglingReference,
+            ))
+        }
+    }
+
+    fn require_global_ref(
+        &self,
+        global_ref: &GlobalRef,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        match global_ref {
+            GlobalRef::Builtin { name, .. } => self.require_name(*name, section, offset),
+            GlobalRef::Imported {
+                import_index, name, ..
+            } => {
+                if *import_index >= self.imports.len() {
+                    return Err(ReferenceCheckError::malformed(
+                        section,
+                        offset,
+                        ReferenceCheckReason::DanglingReference,
+                    ));
+                }
+                self.require_name(*name, section, offset)
+            }
+            GlobalRef::Local { decl_index } => self.require_decl(*decl_index, section, offset),
+            GlobalRef::LocalGenerated { decl_index, name } => {
+                self.require_decl(*decl_index, section, offset)?;
+                self.require_name(*name, section, offset)
+            }
+        }
+    }
+
+    fn require_decl(
+        &self,
+        id: usize,
+        section: ReferenceCertificateSection,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if id < self.declarations.len() {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::DanglingReference,
+            ))
+        }
+    }
+}
+
+#[derive(Default)]
+struct UsedTables {
+    names: BTreeSet<ReferenceModuleName>,
+    levels: BTreeSet<usize>,
+    terms: BTreeSet<usize>,
+}
+
+impl UsedTables {
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+fn push_term(term: usize, used: &mut UsedTables, stack: &mut Vec<usize>) {
+    if used.terms.insert(term) {
+        stack.push(term);
+    }
+}
+
+fn push_level(level: usize, used: &mut UsedTables, stack: &mut Vec<usize>) {
+    if used.levels.insert(level) {
+        stack.push(level);
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct ImportEntry {
+    module: ReferenceModuleName,
+    export_hash: ReferenceHash,
+    certificate_hash: Option<ReferenceHash>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum LevelNode {
+    Zero,
+    Succ(usize),
+    Max(usize, usize),
+    IMax(usize, usize),
+    Param(usize),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum TermNode {
+    Sort(usize),
+    BVar(u32),
+    Const {
+        global_ref: GlobalRef,
+        levels: Vec<usize>,
+    },
+    App(usize, usize),
+    Lam {
+        ty: usize,
+        body: usize,
+    },
+    Pi {
+        ty: usize,
+        body: usize,
+    },
+    Let {
+        ty: usize,
+        value: usize,
+        body: usize,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum GlobalRef {
+    Builtin {
+        name: usize,
+        decl_interface_hash: ReferenceHash,
+    },
+    Imported {
+        import_index: usize,
+        name: usize,
+        decl_interface_hash: ReferenceHash,
+    },
+    Local {
+        decl_index: usize,
+    },
+    LocalGenerated {
+        decl_index: usize,
+        name: usize,
+    },
+}
+
+#[derive(Clone, Debug)]
+struct DeclCert {
+    decl: DeclPayload,
+    dependencies: Vec<DependencyEntry>,
+    axiom_dependencies: Vec<AxiomRef>,
+    _hashes: DeclHashes,
+}
+
+#[derive(Clone, Debug)]
+enum DeclPayload {
+    Axiom {
+        name: usize,
+        universe_params: Vec<usize>,
+        ty: usize,
+    },
+    Def {
+        name: usize,
+        universe_params: Vec<usize>,
+        ty: usize,
+        value: usize,
+        _reducibility: CertReducibility,
+    },
+    Theorem {
+        name: usize,
+        universe_params: Vec<usize>,
+        ty: usize,
+        proof: usize,
+        _opacity: Opacity,
+    },
+    Inductive {
+        name: usize,
+        universe_params: Vec<usize>,
+        params: Vec<BinderType>,
+        indices: Vec<BinderType>,
+        sort: usize,
+        constructors: Vec<ConstructorSpec>,
+        recursor: Option<RecursorSpec>,
+    },
+}
+
+impl DeclPayload {
+    fn name_id(&self) -> usize {
+        match self {
+            Self::Axiom { name, .. }
+            | Self::Def { name, .. }
+            | Self::Theorem { name, .. }
+            | Self::Inductive { name, .. } => *name,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct BinderType {
+    ty: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ConstructorSpec {
+    name: usize,
+    ty: usize,
+}
+
+#[derive(Clone, Debug)]
+struct RecursorSpec {
+    name: usize,
+    universe_params: Vec<usize>,
+    ty: usize,
+    rules: RecursorRulesSpec,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct RecursorRulesSpec {
+    _minor_start: usize,
+    _major_index: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum CertReducibility {
+    Reducible,
+    Opaque,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Opacity {
+    Opaque,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct DependencyEntry {
+    global_ref: GlobalRef,
+    decl_interface_hash: ReferenceHash,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct AxiomRef {
+    global_ref: GlobalRef,
+    name: usize,
+    decl_interface_hash: ReferenceHash,
+}
+
+#[derive(Clone, Debug)]
+struct DeclHashes {
+    _decl_interface_hash: ReferenceHash,
+    _decl_certificate_hash: ReferenceHash,
+}
+
+#[derive(Clone, Debug)]
+struct ExportEntry {
+    name: usize,
+    _kind: ExportKind,
+    universe_params: Vec<usize>,
+    ty: usize,
+    body: Option<usize>,
+    _type_hash: ReferenceHash,
+    _body_hash: Option<ReferenceHash>,
+    _reducibility: Option<CertReducibility>,
+    _opacity: Option<Opacity>,
+    _decl_interface_hash: ReferenceHash,
+    axiom_dependencies: Vec<AxiomRef>,
+}
+
+#[derive(Clone, Copy, Debug)]
+enum ExportKind {
+    Axiom,
+    Def,
+    Theorem,
+    Inductive,
+    Constructor,
+    Recursor,
+}
+
+#[derive(Clone, Debug)]
+struct AxiomReport {
+    per_declaration: Vec<DeclAxiomReport>,
+    module_axioms: Vec<AxiomRef>,
+    module_axioms_offset: usize,
+}
+
+#[derive(Clone, Debug)]
+struct DeclAxiomReport {
+    decl_index: usize,
+    direct_axioms: Vec<AxiomRef>,
+    transitive_axioms: Vec<AxiomRef>,
+    offset: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum RawLevel {
+    Zero,
+    Succ(Box<RawLevel>),
+    Max(Box<RawLevel>, Box<RawLevel>),
+    IMax(Box<RawLevel>, Box<RawLevel>),
+    Param(String),
+}
+
+fn normalize_level(level: RawLevel) -> RawLevel {
+    match level {
+        RawLevel::Zero | RawLevel::Param(_) => level,
+        RawLevel::Succ(inner) => RawLevel::Succ(Box::new(normalize_level(*inner))),
+        RawLevel::Max(lhs, rhs) => {
+            let lhs = normalize_level(*lhs);
+            let rhs = normalize_level(*rhs);
+            if lhs == rhs {
+                return lhs;
+            }
+            if lhs == RawLevel::Zero {
+                return rhs;
+            }
+            if rhs == RawLevel::Zero {
+                return lhs;
+            }
+            match (level_as_nat(&lhs), level_as_nat(&rhs)) {
+                (Some(lhs_nat), Some(rhs_nat)) => level_from_nat(lhs_nat.max(rhs_nat)),
+                _ if rhs < lhs => RawLevel::Max(Box::new(rhs), Box::new(lhs)),
+                _ => RawLevel::Max(Box::new(lhs), Box::new(rhs)),
+            }
+        }
+        RawLevel::IMax(lhs, rhs) => {
+            let lhs = normalize_level(*lhs);
+            let rhs = normalize_level(*rhs);
+            match rhs {
+                RawLevel::Zero => RawLevel::Zero,
+                RawLevel::Succ(inner) => normalize_level(RawLevel::Max(
+                    Box::new(lhs),
+                    Box::new(RawLevel::Succ(inner)),
+                )),
+                rhs => RawLevel::IMax(Box::new(lhs), Box::new(rhs)),
+            }
+        }
+    }
+}
+
+fn level_as_nat(level: &RawLevel) -> Option<u32> {
+    match level {
+        RawLevel::Zero => Some(0),
+        RawLevel::Succ(inner) => Some(level_as_nat(inner)? + 1),
+        RawLevel::Max(_, _) | RawLevel::IMax(_, _) | RawLevel::Param(_) => None,
+    }
+}
+
+fn level_from_nat(n: u32) -> RawLevel {
+    (0..n).fold(RawLevel::Zero, |level, _| RawLevel::Succ(Box::new(level)))
+}
+
+fn raw_level_from_node(
+    node: &LevelNode,
+    previous: &[RawLevel],
+    names: &[Located<ReferenceModuleName>],
+) -> DecodeResult<RawLevel> {
+    Ok(match node {
+        LevelNode::Zero => RawLevel::Zero,
+        LevelNode::Succ(inner) => RawLevel::Succ(Box::new(previous[*inner].clone())),
+        LevelNode::Max(lhs, rhs) => RawLevel::Max(
+            Box::new(previous[*lhs].clone()),
+            Box::new(previous[*rhs].clone()),
+        ),
+        LevelNode::IMax(lhs, rhs) => RawLevel::IMax(
+            Box::new(previous[*lhs].clone()),
+            Box::new(previous[*rhs].clone()),
+        ),
+        LevelNode::Param(name) => RawLevel::Param(
+            names
+                .get(*name)
+                .ok_or_else(|| {
+                    ReferenceCheckError::malformed(
+                        ReferenceCertificateSection::LevelTable,
+                        0,
+                        ReferenceCheckReason::DanglingReference,
+                    )
+                })?
+                .value
+                .dotted(),
+        ),
+    })
+}
+
+struct Decoder<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+
+impl<'a> Decoder<'a> {
+    const fn new(bytes: &'a [u8]) -> Self {
+        Self { bytes, offset: 0 }
+    }
+
+    const fn offset(&self) -> usize {
+        self.offset
+    }
+
+    fn is_done(&self) -> bool {
+        self.offset == self.bytes.len()
+    }
+
+    fn module_certificate(&mut self) -> DecodeResult<DecodedModuleCertificate> {
+        let header = self.header()?;
+        let imports = self.imports()?;
+        let name_table = self.name_table()?;
+        let level_table = self.level_table()?;
+        let term_table = self.term_table()?;
+        let declarations = self.declarations()?;
+        let export_block = self.export_block()?;
+        let axiom_report = self.axiom_report()?;
+        let hashes = ReferenceModuleHashes {
+            export_hash: self.hash(ReferenceCertificateSection::Hashes)?,
+            axiom_report_hash: self.hash(ReferenceCertificateSection::Hashes)?,
+            certificate_hash: self.hash(ReferenceCertificateSection::Hashes)?,
+        };
+        Ok(DecodedModuleCertificate {
+            header,
+            imports,
+            name_table,
+            level_table,
+            term_table,
+            declarations,
+            export_block,
+            axiom_report,
+            hashes,
+        })
+    }
+
+    fn header(&mut self) -> DecodeResult<ReferenceCertificateHeader> {
+        let format = self.string(ReferenceCertificateSection::HeaderFormat)?;
+        if format != REFERENCE_CERTIFICATE_FORMAT {
+            return Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::HeaderFormat,
+                self.offset,
+                ReferenceCheckReason::FormatMismatch,
+            ));
+        }
+        let core_spec = self.string(ReferenceCertificateSection::HeaderCoreSpec)?;
+        if core_spec != REFERENCE_CORE_SPEC {
+            return Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::HeaderCoreSpec,
+                self.offset,
+                ReferenceCheckReason::CoreSpecMismatch,
+            ));
+        }
+        let module = self.name(ReferenceCertificateSection::HeaderModule)?;
+        Ok(ReferenceCertificateHeader {
+            format,
+            core_spec,
+            module,
+        })
+    }
+
+    fn imports(&mut self) -> DecodeResult<Vec<Located<ImportEntry>>> {
+        let len = self.bounded_len(ReferenceCertificateSection::Imports)?;
+        let mut imports = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            imports.push(Located {
+                value: ImportEntry {
+                    module: self.name(ReferenceCertificateSection::Imports)?,
+                    export_hash: self.hash(ReferenceCertificateSection::Imports)?,
+                    certificate_hash: self.option_hash(ReferenceCertificateSection::Imports)?,
+                },
+                offset,
+            });
+        }
+        Ok(imports)
+    }
+
+    fn name_table(&mut self) -> DecodeResult<Vec<Located<ReferenceModuleName>>> {
+        let len = self.bounded_len(ReferenceCertificateSection::NameTable)?;
+        let mut names = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            names.push(Located {
+                value: self.name(ReferenceCertificateSection::NameTable)?,
+                offset,
+            });
+        }
+        Ok(names)
+    }
+
+    fn level_table(&mut self) -> DecodeResult<Vec<Located<LevelNode>>> {
+        let len = self.bounded_len(ReferenceCertificateSection::LevelTable)?;
+        let mut levels = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            let tag = self.byte(ReferenceCertificateSection::LevelTable)?;
+            let value = match tag {
+                0x00 => LevelNode::Zero,
+                0x01 => LevelNode::Succ(self.usize(ReferenceCertificateSection::LevelTable)?),
+                0x02 => LevelNode::Max(
+                    self.usize(ReferenceCertificateSection::LevelTable)?,
+                    self.usize(ReferenceCertificateSection::LevelTable)?,
+                ),
+                0x03 => LevelNode::IMax(
+                    self.usize(ReferenceCertificateSection::LevelTable)?,
+                    self.usize(ReferenceCertificateSection::LevelTable)?,
+                ),
+                0x04 => LevelNode::Param(self.usize(ReferenceCertificateSection::LevelTable)?),
+                tag => {
+                    return Err(ReferenceCheckError::malformed(
+                        ReferenceCertificateSection::LevelTable,
+                        offset,
+                        ReferenceCheckReason::UnknownTag { tag },
+                    ));
+                }
+            };
+            levels.push(Located { value, offset });
+        }
+        Ok(levels)
+    }
+
+    fn term_table(&mut self) -> DecodeResult<Vec<Located<TermNode>>> {
+        let len = self.bounded_len(ReferenceCertificateSection::TermTable)?;
+        let mut terms = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            let tag = self.byte(ReferenceCertificateSection::TermTable)?;
+            let value = match tag {
+                0x00 => TermNode::Sort(self.usize(ReferenceCertificateSection::TermTable)?),
+                0x01 => TermNode::BVar(self.u32(ReferenceCertificateSection::TermTable)?),
+                0x02 => TermNode::Const {
+                    global_ref: self.global_ref(ReferenceCertificateSection::TermTable)?,
+                    levels: self.usize_vec(ReferenceCertificateSection::TermTable)?,
+                },
+                0x03 => TermNode::App(
+                    self.usize(ReferenceCertificateSection::TermTable)?,
+                    self.usize(ReferenceCertificateSection::TermTable)?,
+                ),
+                0x04 => TermNode::Lam {
+                    ty: self.usize(ReferenceCertificateSection::TermTable)?,
+                    body: self.usize(ReferenceCertificateSection::TermTable)?,
+                },
+                0x05 => TermNode::Pi {
+                    ty: self.usize(ReferenceCertificateSection::TermTable)?,
+                    body: self.usize(ReferenceCertificateSection::TermTable)?,
+                },
+                0x06 => TermNode::Let {
+                    ty: self.usize(ReferenceCertificateSection::TermTable)?,
+                    value: self.usize(ReferenceCertificateSection::TermTable)?,
+                    body: self.usize(ReferenceCertificateSection::TermTable)?,
+                },
+                tag => {
+                    return Err(ReferenceCheckError::malformed(
+                        ReferenceCertificateSection::TermTable,
+                        offset,
+                        ReferenceCheckReason::UnknownTag { tag },
+                    ));
+                }
+            };
+            terms.push(Located { value, offset });
+        }
+        Ok(terms)
+    }
+
+    fn declarations(&mut self) -> DecodeResult<Vec<Located<DeclCert>>> {
+        let len = self.bounded_len(ReferenceCertificateSection::Declarations)?;
+        let mut declarations = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            declarations.push(Located {
+                value: DeclCert {
+                    decl: self.decl_payload()?,
+                    dependencies: self
+                        .dependency_entries(ReferenceCertificateSection::Declarations)?,
+                    axiom_dependencies: self
+                        .axiom_refs(ReferenceCertificateSection::Declarations)?,
+                    _hashes: DeclHashes {
+                        _decl_interface_hash: self
+                            .hash(ReferenceCertificateSection::Declarations)?,
+                        _decl_certificate_hash: self
+                            .hash(ReferenceCertificateSection::Declarations)?,
+                    },
+                },
+                offset,
+            });
+        }
+        Ok(declarations)
+    }
+
+    fn decl_payload(&mut self) -> DecodeResult<DeclPayload> {
+        let offset = self.offset;
+        let tag = self.byte(ReferenceCertificateSection::Declarations)?;
+        Ok(match tag {
+            0x00 => DeclPayload::Axiom {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+            },
+            0x01 => DeclPayload::Def {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                value: self.usize(ReferenceCertificateSection::Declarations)?,
+                _reducibility: self.reducibility(ReferenceCertificateSection::Declarations)?,
+            },
+            0x02 => DeclPayload::Theorem {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                proof: self.usize(ReferenceCertificateSection::Declarations)?,
+                _opacity: self.opacity(ReferenceCertificateSection::Declarations)?,
+            },
+            0x03 => {
+                let name = self.usize(ReferenceCertificateSection::Declarations)?;
+                let universe_params = self.usize_vec(ReferenceCertificateSection::Declarations)?;
+                let params = self.binder_types()?;
+                let indices = self.binder_types()?;
+                let sort = self.usize(ReferenceCertificateSection::Declarations)?;
+                let constructors_len =
+                    self.bounded_len(ReferenceCertificateSection::Declarations)?;
+                let mut constructors = Vec::with_capacity(constructors_len);
+                for _ in 0..constructors_len {
+                    constructors.push(ConstructorSpec {
+                        name: self.usize(ReferenceCertificateSection::Declarations)?,
+                        ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                    });
+                }
+                let recursor_offset = self.offset;
+                let recursor = match self.byte(ReferenceCertificateSection::Declarations)? {
+                    0x00 => None,
+                    0x01 => Some(RecursorSpec {
+                        name: self.usize(ReferenceCertificateSection::Declarations)?,
+                        universe_params: self
+                            .usize_vec(ReferenceCertificateSection::Declarations)?,
+                        ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                        rules: RecursorRulesSpec {
+                            _minor_start: self.usize(ReferenceCertificateSection::Declarations)?,
+                            _major_index: self.usize(ReferenceCertificateSection::Declarations)?,
+                        },
+                    }),
+                    tag => {
+                        return Err(ReferenceCheckError::malformed(
+                            ReferenceCertificateSection::Declarations,
+                            recursor_offset,
+                            ReferenceCheckReason::UnknownTag { tag },
+                        ));
+                    }
+                };
+                DeclPayload::Inductive {
+                    name,
+                    universe_params,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor,
+                }
+            }
+            tag => {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnknownTag { tag },
+                ));
+            }
+        })
+    }
+
+    fn binder_types(&mut self) -> DecodeResult<Vec<BinderType>> {
+        let len = self.bounded_len(ReferenceCertificateSection::Declarations)?;
+        let mut binders = Vec::with_capacity(len);
+        for _ in 0..len {
+            binders.push(BinderType {
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+            });
+        }
+        Ok(binders)
+    }
+
+    fn export_block(&mut self) -> DecodeResult<Vec<Located<ExportEntry>>> {
+        let len = self.bounded_len(ReferenceCertificateSection::ExportBlock)?;
+        let mut exports = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            let name = self.usize(ReferenceCertificateSection::ExportBlock)?;
+            let kind_offset = self.offset;
+            let kind = match self.byte(ReferenceCertificateSection::ExportBlock)? {
+                0x00 => ExportKind::Axiom,
+                0x01 => ExportKind::Def,
+                0x02 => ExportKind::Theorem,
+                0x03 => ExportKind::Inductive,
+                0x04 => ExportKind::Constructor,
+                0x05 => ExportKind::Recursor,
+                tag => {
+                    return Err(ReferenceCheckError::malformed(
+                        ReferenceCertificateSection::ExportBlock,
+                        kind_offset,
+                        ReferenceCheckReason::UnknownTag { tag },
+                    ));
+                }
+            };
+            exports.push(Located {
+                value: ExportEntry {
+                    name,
+                    _kind: kind,
+                    universe_params: self.usize_vec(ReferenceCertificateSection::ExportBlock)?,
+                    ty: self.usize(ReferenceCertificateSection::ExportBlock)?,
+                    body: self.option_usize(ReferenceCertificateSection::ExportBlock)?,
+                    _type_hash: self.hash(ReferenceCertificateSection::ExportBlock)?,
+                    _body_hash: self.option_hash(ReferenceCertificateSection::ExportBlock)?,
+                    _reducibility: self
+                        .option_reducibility(ReferenceCertificateSection::ExportBlock)?,
+                    _opacity: self.option_opacity(ReferenceCertificateSection::ExportBlock)?,
+                    _decl_interface_hash: self.hash(ReferenceCertificateSection::ExportBlock)?,
+                    axiom_dependencies: self
+                        .axiom_refs(ReferenceCertificateSection::ExportBlock)?,
+                },
+                offset,
+            });
+        }
+        Ok(exports)
+    }
+
+    fn axiom_report(&mut self) -> DecodeResult<AxiomReport> {
+        let len = self.bounded_len(ReferenceCertificateSection::AxiomReport)?;
+        let mut per_declaration = Vec::with_capacity(len);
+        for _ in 0..len {
+            let offset = self.offset;
+            per_declaration.push(DeclAxiomReport {
+                decl_index: self.usize(ReferenceCertificateSection::AxiomReport)?,
+                direct_axioms: self.axiom_refs(ReferenceCertificateSection::AxiomReport)?,
+                transitive_axioms: self.axiom_refs(ReferenceCertificateSection::AxiomReport)?,
+                offset,
+            });
+        }
+        let module_axioms_offset = self.offset;
+        let module_axioms = self.axiom_refs(ReferenceCertificateSection::AxiomReport)?;
+        Ok(AxiomReport {
+            per_declaration,
+            module_axioms,
+            module_axioms_offset,
+        })
+    }
+
+    fn dependency_entries(
+        &mut self,
+        section: ReferenceCertificateSection,
+    ) -> DecodeResult<Vec<DependencyEntry>> {
+        let len = self.bounded_len(section)?;
+        let mut entries = Vec::with_capacity(len);
+        for _ in 0..len {
+            entries.push(DependencyEntry {
+                global_ref: self.global_ref(section)?,
+                decl_interface_hash: self.hash(section)?,
+            });
+        }
+        Ok(entries)
+    }
+
+    fn axiom_refs(&mut self, section: ReferenceCertificateSection) -> DecodeResult<Vec<AxiomRef>> {
+        let len = self.bounded_len(section)?;
+        let mut axioms = Vec::with_capacity(len);
+        for _ in 0..len {
+            axioms.push(AxiomRef {
+                global_ref: self.global_ref(section)?,
+                name: self.usize(section)?,
+                decl_interface_hash: self.hash(section)?,
+            });
+        }
+        Ok(axioms)
+    }
+
+    fn global_ref(&mut self, section: ReferenceCertificateSection) -> DecodeResult<GlobalRef> {
+        let offset = self.offset;
+        let tag = self.byte(section)?;
+        Ok(match tag {
+            0x03 => GlobalRef::Builtin {
+                name: self.usize(section)?,
+                decl_interface_hash: self.hash(section)?,
+            },
+            0x00 => GlobalRef::Imported {
+                import_index: self.usize(section)?,
+                name: self.usize(section)?,
+                decl_interface_hash: self.hash(section)?,
+            },
+            0x01 => GlobalRef::Local {
+                decl_index: self.usize(section)?,
+            },
+            0x02 => GlobalRef::LocalGenerated {
+                decl_index: self.usize(section)?,
+                name: self.usize(section)?,
+            },
+            tag => {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    offset,
+                    ReferenceCheckReason::UnknownTag { tag },
+                ));
+            }
+        })
+    }
+
+    fn reducibility(
+        &mut self,
+        section: ReferenceCertificateSection,
+    ) -> DecodeResult<CertReducibility> {
+        let offset = self.offset;
+        Ok(match self.byte(section)? {
+            0x00 => CertReducibility::Reducible,
+            0x01 => CertReducibility::Opaque,
+            tag => {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    offset,
+                    ReferenceCheckReason::UnknownTag { tag },
+                ));
+            }
+        })
+    }
+
+    fn option_reducibility(
+        &mut self,
+        section: ReferenceCertificateSection,
+    ) -> DecodeResult<Option<CertReducibility>> {
+        let offset = self.offset;
+        match self.byte(section)? {
+            0x00 => Ok(None),
+            0x01 => Ok(Some(self.reducibility(section)?)),
+            tag => Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::UnknownTag { tag },
+            )),
+        }
+    }
+
+    fn opacity(&mut self, section: ReferenceCertificateSection) -> DecodeResult<Opacity> {
+        let offset = self.offset;
+        Ok(match self.byte(section)? {
+            0x00 => Opacity::Opaque,
+            tag => {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    offset,
+                    ReferenceCheckReason::UnknownTag { tag },
+                ));
+            }
+        })
+    }
+
+    fn option_opacity(
+        &mut self,
+        section: ReferenceCertificateSection,
+    ) -> DecodeResult<Option<Opacity>> {
+        let offset = self.offset;
+        match self.byte(section)? {
+            0x00 => Ok(None),
+            0x01 => Ok(Some(self.opacity(section)?)),
+            tag => Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::UnknownTag { tag },
+            )),
+        }
+    }
+
+    fn name(&mut self, section: ReferenceCertificateSection) -> DecodeResult<ReferenceModuleName> {
+        let len = self.bounded_len(section)?;
+        if len == 0 {
+            return Err(ReferenceCheckError::malformed(
+                section,
+                self.offset,
+                ReferenceCheckReason::EmptyModuleName,
+            ));
+        }
+        let mut components = Vec::with_capacity(len);
+        for _ in 0..len {
+            let component = self.string(section)?;
+            if component.is_empty() {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    self.offset,
+                    ReferenceCheckReason::EmptyModuleNameComponent,
+                ));
+            }
+            if component.contains('.') {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    self.offset,
+                    ReferenceCheckReason::DottedNameComponent,
+                ));
+            }
+            components.push(component);
+        }
+        ReferenceModuleName::new(components).map_err(|_| {
+            ReferenceCheckError::malformed(
+                section,
+                self.offset,
+                ReferenceCheckReason::EmptyModuleName,
+            )
+        })
+    }
+
+    fn string(&mut self, section: ReferenceCertificateSection) -> DecodeResult<String> {
+        let len = self.usize(section)?;
+        let start = self.offset;
+        let bytes = self.take(len, section)?;
+        String::from_utf8(bytes.to_vec()).map_err(|_| {
+            ReferenceCheckError::malformed(section, start, ReferenceCheckReason::InvalidUtf8)
+        })
+    }
+
+    fn usize_vec(&mut self, section: ReferenceCertificateSection) -> DecodeResult<Vec<usize>> {
+        let len = self.bounded_len(section)?;
+        let mut values = Vec::with_capacity(len);
+        for _ in 0..len {
+            values.push(self.usize(section)?);
+        }
+        Ok(values)
+    }
+
+    fn option_usize(
+        &mut self,
+        section: ReferenceCertificateSection,
+    ) -> DecodeResult<Option<usize>> {
+        let offset = self.offset;
+        match self.byte(section)? {
+            0x00 => Ok(None),
+            0x01 => Ok(Some(self.usize(section)?)),
+            tag => Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::UnknownTag { tag },
+            )),
+        }
+    }
+
+    fn option_hash(
+        &mut self,
+        section: ReferenceCertificateSection,
+    ) -> DecodeResult<Option<ReferenceHash>> {
+        let offset = self.offset;
+        match self.byte(section)? {
+            0x00 => Ok(None),
+            0x01 => Ok(Some(self.hash(section)?)),
+            tag => Err(ReferenceCheckError::malformed(
+                section,
+                offset,
+                ReferenceCheckReason::UnknownTag { tag },
+            )),
+        }
+    }
+
+    fn hash(&mut self, section: ReferenceCertificateSection) -> DecodeResult<ReferenceHash> {
+        let bytes = self.take(32, section)?;
+        let mut hash = [0; 32];
+        hash.copy_from_slice(bytes);
+        Ok(hash)
+    }
+
+    fn bounded_len(&mut self, section: ReferenceCertificateSection) -> DecodeResult<usize> {
+        let len = self.usize(section)?;
+        let remaining = self.bytes.len().saturating_sub(self.offset);
+        if len > remaining {
+            return Err(ReferenceCheckError::malformed(
+                section,
+                self.offset,
+                ReferenceCheckReason::UnexpectedEof,
+            ));
+        }
+        Ok(len)
+    }
+
+    fn u32(&mut self, section: ReferenceCertificateSection) -> DecodeResult<u32> {
+        let offset = self.offset;
+        let value = self.uvar(section)?;
+        u32::try_from(value).map_err(|_| {
+            ReferenceCheckError::malformed(section, offset, ReferenceCheckReason::LengthOverflow)
+        })
+    }
+
+    fn usize(&mut self, section: ReferenceCertificateSection) -> DecodeResult<usize> {
+        let offset = self.offset;
+        let value = self.uvar(section)?;
+        usize::try_from(value).map_err(|_| {
+            ReferenceCheckError::malformed(section, offset, ReferenceCheckReason::LengthOverflow)
+        })
+    }
+
+    fn uvar(&mut self, section: ReferenceCertificateSection) -> DecodeResult<u64> {
+        let start = self.offset;
+        let mut shift = 0u32;
+        let mut value = 0u64;
+        loop {
+            let byte = self.byte(section)?;
+            value |= u64::from(byte & 0x7f) << shift;
+            if byte & 0x80 == 0 {
+                if encode_uvar(value) != self.bytes[start..self.offset] {
+                    return Err(ReferenceCheckError::malformed(
+                        section,
+                        start,
+                        ReferenceCheckReason::NonCanonicalUvar,
+                    ));
+                }
+                return Ok(value);
+            }
+            shift += 7;
+            if shift >= 64 {
+                return Err(ReferenceCheckError::malformed(
+                    section,
+                    start,
+                    ReferenceCheckReason::UvarOverflow,
+                ));
+            }
+        }
+    }
+
+    fn byte(&mut self, section: ReferenceCertificateSection) -> DecodeResult<u8> {
+        let byte = *self.bytes.get(self.offset).ok_or_else(|| {
+            ReferenceCheckError::malformed(
+                section,
+                self.offset,
+                ReferenceCheckReason::UnexpectedEof,
+            )
+        })?;
+        self.offset += 1;
+        Ok(byte)
+    }
+
+    fn take(&mut self, len: usize, section: ReferenceCertificateSection) -> DecodeResult<&'a [u8]> {
+        let end = self.offset.checked_add(len).ok_or_else(|| {
+            ReferenceCheckError::malformed(
+                section,
+                self.offset,
+                ReferenceCheckReason::LengthOverflow,
+            )
+        })?;
+        let bytes = self.bytes.get(self.offset..end).ok_or_else(|| {
+            ReferenceCheckError::malformed(
+                section,
+                self.offset,
+                ReferenceCheckReason::UnexpectedEof,
+            )
+        })?;
+        self.offset = end;
+        Ok(bytes)
+    }
+}
+
+fn import_order_key(
+    import: &ImportEntry,
+) -> (ReferenceModuleName, ReferenceHash, Option<ReferenceHash>) {
+    (
+        import.module.clone(),
+        import.export_hash,
+        import.certificate_hash,
+    )
+}
+
+fn ensure_strict_order<T: Ord>(
+    values: &[T],
+    section: ReferenceCertificateSection,
+    offset: usize,
+) -> DecodeResult<()> {
+    if values.windows(2).all(|pair| pair[0] < pair[1]) {
+        Ok(())
+    } else {
+        Err(ReferenceCheckError::malformed(
+            section,
+            offset,
+            ReferenceCheckReason::NonCanonicalOrder,
+        ))
+    }
+}
+
+fn level_node_height(node: &LevelNode, levels: &[Located<LevelNode>]) -> DecodeResult<usize> {
+    Ok(match node {
+        LevelNode::Zero | LevelNode::Param(_) => 0,
+        LevelNode::Succ(inner) => level_node_height(&levels[*inner].value, levels)? + 1,
+        LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
+            level_node_height(&levels[*lhs].value, levels)?
+                .max(level_node_height(&levels[*rhs].value, levels)?)
+                + 1
+        }
+    })
+}
+
+fn term_node_height(node: &TermNode, terms: &[Located<TermNode>]) -> DecodeResult<usize> {
+    Ok(match node {
+        TermNode::Sort(_) | TermNode::BVar(_) | TermNode::Const { .. } => 0,
+        TermNode::App(fun, arg) => {
+            term_node_height(&terms[*fun].value, terms)?
+                .max(term_node_height(&terms[*arg].value, terms)?)
+                + 1
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            term_node_height(&terms[*ty].value, terms)?
+                .max(term_node_height(&terms[*body].value, terms)?)
+                + 1
+        }
+        TermNode::Let { ty, value, body } => {
+            term_node_height(&terms[*ty].value, terms)?
+                .max(term_node_height(&terms[*value].value, terms)?)
+                .max(term_node_height(&terms[*body].value, terms)?)
+                + 1
+        }
+    })
+}
+
+fn level_node_key(
+    level: &LevelNode,
+    child_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) -> DecodeResult<Vec<u8>> {
+    let mut payload = Vec::new();
+    match level {
+        LevelNode::Zero => payload.push(0x00),
+        LevelNode::Succ(inner) => {
+            payload.push(0x01);
+            payload.extend(child_hashes[*inner]);
+        }
+        LevelNode::Max(lhs, rhs) => {
+            payload.push(0x02);
+            payload.extend(child_hashes[*lhs]);
+            payload.extend(child_hashes[*rhs]);
+        }
+        LevelNode::IMax(lhs, rhs) => {
+            payload.push(0x03);
+            payload.extend(child_hashes[*lhs]);
+            payload.extend(child_hashes[*rhs]);
+        }
+        LevelNode::Param(name) => {
+            payload.push(0x04);
+            encode_name_to(&mut payload, &names[*name].value);
+        }
+    }
+    Ok(payload)
+}
+
+fn term_node_key(
+    term: &TermNode,
+    child_hashes: &[ReferenceHash],
+    level_hashes: &[ReferenceHash],
+) -> DecodeResult<Vec<u8>> {
+    let mut payload = Vec::new();
+    match term {
+        TermNode::Sort(level) => {
+            payload.push(0x00);
+            payload.extend(level_hashes[*level]);
+        }
+        TermNode::BVar(index) => {
+            payload.push(0x01);
+            encode_uvar_to(&mut payload, u64::from(*index));
+        }
+        TermNode::Const { global_ref, levels } => {
+            payload.push(0x02);
+            encode_global_ref_to(&mut payload, global_ref);
+            encode_uvar_to(&mut payload, levels.len() as u64);
+            for level in levels {
+                payload.extend(level_hashes[*level]);
+            }
+        }
+        TermNode::App(fun, arg) => {
+            payload.push(0x03);
+            payload.extend(child_hashes[*fun]);
+            payload.extend(child_hashes[*arg]);
+        }
+        TermNode::Lam { ty, body } => {
+            payload.push(0x04);
+            payload.extend(child_hashes[*ty]);
+            payload.extend(child_hashes[*body]);
+        }
+        TermNode::Pi { ty, body } => {
+            payload.push(0x05);
+            payload.extend(child_hashes[*ty]);
+            payload.extend(child_hashes[*body]);
+        }
+        TermNode::Let { ty, value, body } => {
+            payload.push(0x06);
+            payload.extend(child_hashes[*ty]);
+            payload.extend(child_hashes[*value]);
+            payload.extend(child_hashes[*body]);
+        }
+    }
+    Ok(payload)
+}
+
+fn encode_global_ref_to(out: &mut Vec<u8>, global_ref: &GlobalRef) {
+    match global_ref {
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x03);
+            encode_uvar_to(out, *name as u64);
+            out.extend(decl_interface_hash);
+        }
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x00);
+            encode_uvar_to(out, *import_index as u64);
+            encode_uvar_to(out, *name as u64);
+            out.extend(decl_interface_hash);
+        }
+        GlobalRef::Local { decl_index } => {
+            out.push(0x01);
+            encode_uvar_to(out, *decl_index as u64);
+        }
+        GlobalRef::LocalGenerated { decl_index, name } => {
+            out.push(0x02);
+            encode_uvar_to(out, *decl_index as u64);
+            encode_uvar_to(out, *name as u64);
+        }
+    }
+}
+
+fn encode_name_to(out: &mut Vec<u8>, name: &ReferenceModuleName) {
+    encode_uvar_to(out, name.components().len() as u64);
+    for component in name.components() {
+        encode_uvar_to(out, component.len() as u64);
+        out.extend(component.as_bytes());
+    }
+}
+
+fn hash_with_domain(domain: &[u8], payload: &[u8]) -> ReferenceHash {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    hasher.update(payload);
+    hasher.finalize().into()
+}
+
+fn encode_uvar(value: u64) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, value);
+    out
+}
+
+fn encode_uvar_to(out: &mut Vec<u8>, mut value: u64) {
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
+}

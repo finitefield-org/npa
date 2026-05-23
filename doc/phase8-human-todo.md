@@ -272,18 +272,18 @@ certificate format の仕様・golden fixtures は共有してよい。type chec
 
 実装タスク:
 
-- [ ] `.npcert` canonical binary を reference checker boundary 内で decode する。
-- [ ] magic / format version / core spec version / section order / unknown tag を検査する。
-- [ ] name / level / term / declaration table の canonical order と dangling reference を検査する。
-- [ ] unused table entry、duplicate name、non-normalized level entry を deterministic error にする。
-- [ ] source path、source map、debug JSON なしで decode test fixture を通す。
+- [x] `.npcert` canonical binary を reference checker boundary 内で decode する。
+- [x] magic / format version / core spec version / section order / unknown tag を検査する。
+- [x] name / level / term / declaration table の canonical order と dangling reference を検査する。
+- [x] unused table entry、duplicate name、non-normalized level entry を deterministic error にする。
+- [x] source path、source map、debug JSON なしで decode test fixture を通す。
 
 受け入れ条件:
 
-- [ ] valid golden certificate は decode できる。
-- [ ] noncanonical だが意味的に読める certificate は reject される。
-- [ ] decode error の kind / section / offset が test で比較可能である。
-- [ ] decoder は import 解決、type checking、AI sidecar validation をしない。
+- [x] valid golden certificate は decode できる。
+- [x] noncanonical だが意味的に読める certificate は reject される。
+- [x] decode error の kind / section / offset が test で比較可能である。
+- [x] decoder は import 解決、type checking、AI sidecar validation をしない。
 
 検証:
 

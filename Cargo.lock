@@ -85,6 +85,9 @@ dependencies = [
 [[package]]
 name = "npa-checker-ref"
 version = "0.1.0"
+dependencies = [
+ "sha2",
+]
 
 [[package]]
 name = "npa-frontend"
