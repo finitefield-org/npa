@@ -456,18 +456,18 @@ performance より仕様の読みやすさを優先する。高速化は P8H-14 
 
 実装タスク:
 
-- [ ] inductive parameter / index / result sort / constructor type を検査する。
-- [ ] constructor result が対象 inductive family を返すことを検査する。
-- [ ] MVP positivity checker を Nat / Eq / List に十分な保守的仕様で実装する。
-- [ ] generated recursor type と iota rule が declaration と一致することを検査する。
-- [ ] WHNF の ι reduction を recursor application に接続する。
+- [x] inductive parameter / index / result sort / constructor type を検査する。
+- [x] constructor result が対象 inductive family を返すことを検査する。
+- [x] MVP positivity checker を Nat / Eq / List に十分な保守的仕様で実装する。
+- [x] generated recursor type と iota rule が declaration と一致することを検査する。
+- [x] WHNF の ι reduction を recursor application に接続する。
 
 受け入れ条件:
 
-- [ ] Nat / Eq / List の valid inductive certificate が通る。
-- [ ] negative occurrence、nested inductive、mutual inductive は MVP で deterministic reject になる。
-- [ ] recursor result mismatch / constructor result mismatch が structured error になる。
-- [ ] ι reduction の正例と負例が fast kernel と differential test で比較される。
+- [x] Nat / Eq / List の valid inductive certificate が通る。
+- [x] negative occurrence、nested inductive、mutual inductive は MVP で deterministic reject になる。
+- [x] recursor result mismatch / constructor result mismatch が structured error になる。
+- [x] ι reduction の正例と負例が fast kernel と differential test で比較される。
 
 検証:
 

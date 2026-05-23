@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
 
@@ -1489,8 +1489,12 @@ fn resolve_import<'a>(
 struct TypeChecker<'a> {
     cert: &'a DecodedModuleCertificate,
     imports: &'a ReferenceImportEnvironment,
+    levels: Vec<ReferenceCoreLevel>,
     terms: Vec<ReferenceCoreExpr>,
     locals: Vec<TypeSignature>,
+    generated: BTreeMap<GeneratedKey, TypeSignature>,
+    inductives: BTreeMap<usize, ReferenceInductiveSignature>,
+    recursors: BTreeMap<GeneratedKey, ReferenceRecursorRuntime>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -1506,8 +1510,12 @@ impl<'a> TypeChecker<'a> {
         Ok(Self {
             cert,
             imports,
+            levels,
             terms,
             locals: Vec::new(),
+            generated: BTreeMap::new(),
+            inductives: BTreeMap::new(),
+            recursors: BTreeMap::new(),
         })
     }
 
@@ -1543,7 +1551,7 @@ impl<'a> TypeChecker<'a> {
                     self.locals.push(self.signature_for_decl(&located.value)?);
                 }
                 DeclPayload::Inductive { .. } => {
-                    return Err(ReferenceCheckError::unsupported(located.offset));
+                    self.check_inductive_decl(&located.value, located.offset)?;
                 }
             }
         }
@@ -1600,15 +1608,486 @@ impl<'a> TypeChecker<'a> {
                 ty: self.terms[*ty].clone(),
                 value: None,
             },
-            DeclPayload::Inductive { .. } => {
-                return Err(ReferenceCheckError::unsupported(
-                    self.cert
-                        .declarations
-                        .first()
-                        .map_or(0, |entry| entry.offset),
+            DeclPayload::Inductive {
+                universe_params,
+                params,
+                indices,
+                sort,
+                ..
+            } => TypeSignature {
+                universe_params: self.cert.name_ids_to_names(universe_params),
+                ty: self.inductive_type(params, indices, *sort),
+                value: None,
+            },
+        })
+    }
+
+    fn check_inductive_decl(&mut self, decl: &DeclCert, offset: usize) -> DecodeResult<()> {
+        let DeclPayload::Inductive {
+            name: _,
+            universe_params,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor: _,
+        } = &decl.decl
+        else {
+            return Err(ReferenceCheckError::unsupported(offset));
+        };
+
+        let decl_index = self.locals.len();
+        let universe_params = self.cert.name_ids_to_names(universe_params);
+        ensure_unique_names(&universe_params, offset)?;
+        ensure_level_wf(&self.levels[*sort], &universe_params, offset)?;
+
+        let family_ty = self.inductive_type(params, indices, *sort);
+        self.expect_sort(
+            &TypeContext::default(),
+            &universe_params,
+            &family_ty,
+            offset,
+        )?;
+
+        let data = self.inductive_signature(decl_index, universe_params.clone(), &decl.decl);
+
+        self.locals.push(TypeSignature {
+            universe_params: universe_params.clone(),
+            ty: family_ty,
+            value: None,
+        });
+        self.inductives.insert(decl_index, data.clone());
+
+        for (constructor_index, constructor) in constructors.iter().enumerate() {
+            self.check_constructor_decl(&data, constructor_index, constructor, offset)?;
+        }
+
+        for constructor in &data.constructors {
+            self.generated.insert(
+                GeneratedKey::new(decl_index, constructor.name.clone()),
+                TypeSignature {
+                    universe_params: data.universe_params.clone(),
+                    ty: constructor.ty.clone(),
+                    value: None,
+                },
+            );
+        }
+
+        if let Some(recursor) = &data.recursor {
+            ensure_unique_names(&recursor.universe_params, offset)?;
+            self.expect_sort(
+                &TypeContext::default(),
+                &recursor.universe_params,
+                &recursor.ty,
+                offset,
+            )?;
+            self.check_recursor_decl(&data, recursor, offset)?;
+            let key = GeneratedKey::new(decl_index, recursor.name.clone());
+            self.generated.insert(
+                key.clone(),
+                TypeSignature {
+                    universe_params: recursor.universe_params.clone(),
+                    ty: recursor.ty.clone(),
+                    value: None,
+                },
+            );
+            self.recursors.insert(
+                key,
+                ReferenceRecursorRuntime {
+                    inductive_decl_index: decl_index,
+                    rules: recursor.rules,
+                },
+            );
+        }
+
+        Ok(())
+    }
+
+    fn inductive_signature(
+        &self,
+        decl_index: usize,
+        universe_params: Vec<ReferenceModuleName>,
+        decl: &DeclPayload,
+    ) -> ReferenceInductiveSignature {
+        let DeclPayload::Inductive {
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+            ..
+        } = decl
+        else {
+            unreachable!("inductive_signature is only called for inductive declarations");
+        };
+        ReferenceInductiveSignature {
+            decl_index,
+            universe_params,
+            params: params
+                .iter()
+                .map(|binder| self.terms[binder.ty].clone())
+                .collect(),
+            indices: indices
+                .iter()
+                .map(|binder| self.terms[binder.ty].clone())
+                .collect(),
+            sort: self.levels[*sort].clone(),
+            constructors: constructors
+                .iter()
+                .map(|constructor| ReferenceConstructorSignature {
+                    name: self.cert.name_table[constructor.name].value.clone(),
+                    ty: self.terms[constructor.ty].clone(),
+                })
+                .collect(),
+            recursor: recursor
+                .as_ref()
+                .map(|recursor| ReferenceRecursorSignature {
+                    name: self.cert.name_table[recursor.name].value.clone(),
+                    universe_params: self.cert.name_ids_to_names(&recursor.universe_params),
+                    ty: self.terms[recursor.ty].clone(),
+                    rules: recursor.rules,
+                }),
+        }
+    }
+
+    fn inductive_type(
+        &self,
+        params: &[BinderType],
+        indices: &[BinderType],
+        sort: usize,
+    ) -> ReferenceCoreExpr {
+        let body = ReferenceCoreExpr::Sort(self.levels[sort].clone());
+        params
+            .iter()
+            .chain(indices)
+            .rev()
+            .fold(body, |body, binder| ReferenceCoreExpr::Pi {
+                ty: Box::new(self.terms[binder.ty].clone()),
+                body: Box::new(body),
+            })
+    }
+
+    fn check_constructor_decl(
+        &self,
+        data: &ReferenceInductiveSignature,
+        constructor_index: usize,
+        constructor: &ConstructorSpec,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let constructor_sig = &data.constructors[constructor_index];
+        let ty = &self.terms[constructor.ty];
+        self.expect_sort(&TypeContext::default(), &data.universe_params, ty, offset)?;
+        let (domains, result) = peel_pi_domains(ty);
+        for (domain_index, domain) in domains.iter().enumerate() {
+            self.check_constructor_domain_positive(
+                data,
+                constructor_sig,
+                domain_index,
+                domain,
+                offset,
+            )?;
+        }
+        let result = self.whnf(
+            &TypeContext::default(),
+            &data.universe_params,
+            &result,
+            offset,
+        )?;
+        self.check_constructor_result(data, constructor_sig, domains.len(), result, offset)
+    }
+
+    fn check_constructor_domain_positive(
+        &self,
+        data: &ReferenceInductiveSignature,
+        constructor: &ReferenceConstructorSignature,
+        domain_index: usize,
+        domain: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if domain_index >= data.params.len()
+            && is_direct_recursive_domain(data, domain, domain_index, offset)?
+        {
+            return Ok(());
+        }
+        if contains_inductive_const(domain, data.decl_index) {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::NonPositiveOccurrence,
+            ));
+        }
+        let _ = constructor;
+        Ok(())
+    }
+
+    fn check_constructor_result(
+        &self,
+        data: &ReferenceInductiveSignature,
+        constructor: &ReferenceConstructorSignature,
+        domain_count: usize,
+        result: ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let (head, args) = collect_apps(&result);
+        let levels = match head {
+            ReferenceCoreExpr::Const {
+                global_ref: ReferenceCoreGlobalRef::Local { decl_index },
+                levels,
+            } if *decl_index == data.decl_index => levels,
+            _ => {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadConstructorResult,
                 ));
             }
-        })
+        };
+
+        let expected_levels: Vec<_> = data
+            .universe_params
+            .iter()
+            .map(|param| ReferenceCoreLevel::Param(param.clone()))
+            .collect();
+        if *levels != expected_levels
+            || args.len() != data.params.len() + data.indices.len()
+            || domain_count < data.params.len()
+        {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadConstructorResult,
+            ));
+        }
+
+        for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+            let expected = bvar_for_abs(domain_count, param_index, offset)?;
+            if arg != &expected {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadConstructorResult,
+                ));
+            }
+        }
+
+        let _ = constructor;
+        Ok(())
+    }
+
+    fn check_recursor_decl(
+        &self,
+        data: &ReferenceInductiveSignature,
+        recursor: &ReferenceRecursorSignature,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if recursor.rules.minor_start != data.params.len() + 1 {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            ));
+        }
+        if recursor.rules.major_index != recursor.rules.minor_start + data.constructors.len() {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            ));
+        }
+
+        let (domains, result) = peel_pi_domains(&recursor.ty);
+        if domains.len() <= recursor.rules.major_index
+            || domains.len() != recursor.rules.major_index + 1
+        {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            ));
+        }
+
+        self.check_recursor_params(data, recursor, &domains, offset)?;
+
+        let motive_domain = domains.get(data.params.len()).ok_or_else(|| {
+            ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorMotive,
+            )
+        })?;
+        self.check_motive_domain(data, recursor, motive_domain, offset)?;
+
+        let major_domain = &domains[recursor.rules.major_index];
+        self.check_recursor_target(
+            data,
+            major_domain,
+            ReferenceCheckReason::BadRecursorMajor,
+            offset,
+        )?;
+        self.check_recursor_result(data, recursor, &domains, &result, offset)?;
+
+        for (constructor_index, constructor) in data.constructors.iter().enumerate() {
+            let minor_index = recursor.rules.minor_start + constructor_index;
+            let minor_domain = &domains[minor_index];
+            let expected_minor = expected_minor_type(data, constructor, constructor_index, offset)?;
+            let prefix_ctx = recursor_prefix_ctx(&domains[..minor_index]);
+            if !self.is_defeq(
+                &prefix_ctx,
+                &recursor.universe_params,
+                minor_domain,
+                &expected_minor,
+                offset,
+            )? {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorMinor,
+                ));
+            }
+        }
+
+        let expected_ty = expected_recursor_type(data, recursor, offset)?;
+        if recursor.ty != expected_ty {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorType,
+            ));
+        }
+
+        Ok(())
+    }
+
+    fn check_recursor_params(
+        &self,
+        data: &ReferenceInductiveSignature,
+        recursor: &ReferenceRecursorSignature,
+        domains: &[ReferenceCoreExpr],
+        offset: usize,
+    ) -> DecodeResult<()> {
+        if domains.len() < data.params.len() {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            ));
+        }
+
+        let mut ctx = TypeContext::default();
+        for (param_index, param_ty) in data.params.iter().enumerate() {
+            self.expect_sort(&ctx, &recursor.universe_params, param_ty, offset)?;
+            if !self.is_defeq(
+                &ctx,
+                &recursor.universe_params,
+                &domains[param_index],
+                param_ty,
+                offset,
+            )? {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorParam,
+                ));
+            }
+            ctx.push_assumption(param_ty.clone());
+        }
+
+        Ok(())
+    }
+
+    fn check_motive_domain(
+        &self,
+        data: &ReferenceInductiveSignature,
+        _recursor: &ReferenceRecursorSignature,
+        motive_domain: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let (motive_domains, motive_result) = peel_pi_domains(motive_domain);
+        if motive_domains.len() != 1 {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorMotive,
+            ));
+        }
+        self.check_recursor_target(
+            data,
+            &motive_domains[0],
+            ReferenceCheckReason::BadRecursorMotive,
+            offset,
+        )?;
+        match motive_result {
+            ReferenceCoreExpr::Sort(level) => {
+                if data.sort == ReferenceCoreLevel::Zero && level != ReferenceCoreLevel::Zero {
+                    return Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::BadRecursorMotive,
+                    ));
+                }
+            }
+            _ => {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorMotive,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn check_recursor_target(
+        &self,
+        data: &ReferenceInductiveSignature,
+        target: &ReferenceCoreExpr,
+        reason: ReferenceCheckReason,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let (head, _) = collect_apps(target);
+        match head {
+            ReferenceCoreExpr::Const {
+                global_ref: ReferenceCoreGlobalRef::Local { decl_index },
+                ..
+            } if *decl_index == data.decl_index => Ok(()),
+            _ => Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                reason,
+            )),
+        }
+    }
+
+    fn check_recursor_result(
+        &self,
+        data: &ReferenceInductiveSignature,
+        recursor: &ReferenceRecursorSignature,
+        domains: &[ReferenceCoreExpr],
+        result: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let expected = motive_app(
+            domains.len(),
+            data.params.len(),
+            bvar_for_abs(domains.len(), recursor.rules.major_index, offset)?,
+            offset,
+        )?;
+        let result_ctx = recursor_prefix_ctx(domains);
+        if self.is_defeq(
+            &result_ctx,
+            &recursor.universe_params,
+            result,
+            &expected,
+            offset,
+        )? {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorResult,
+            ))
+        }
     }
 
     fn infer(
@@ -1733,14 +2212,11 @@ impl<'a> TypeChecker<'a> {
         offset: usize,
     ) -> DecodeResult<TypeSignature> {
         match global_ref {
-            ReferenceCoreGlobalRef::Builtin { .. }
-            | ReferenceCoreGlobalRef::LocalGenerated { .. } => {
-                Err(ReferenceCheckError::type_check(
-                    ReferenceCertificateSection::Declarations,
-                    offset,
-                    ReferenceCheckReason::UnknownReference,
-                ))
-            }
+            ReferenceCoreGlobalRef::Builtin { .. } => Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::UnknownReference,
+            )),
             ReferenceCoreGlobalRef::Imported {
                 import_index,
                 name,
@@ -1782,6 +2258,17 @@ impl<'a> TypeChecker<'a> {
                     )
                 })
             }
+            ReferenceCoreGlobalRef::LocalGenerated { decl_index, name } => self
+                .generated
+                .get(&GeneratedKey::new(*decl_index, name.clone()))
+                .cloned()
+                .ok_or_else(|| {
+                    ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::UnknownReference,
+                    )
+                }),
         }
     }
 
@@ -1831,9 +2318,15 @@ impl<'a> TypeChecker<'a> {
                     let fun_whnf = self.whnf_with_fuel(ctx, delta, &fun, offset, fuel)?;
                     if let ReferenceCoreExpr::Lam { body, .. } = fun_whnf {
                         current = instantiate(&body, &arg, offset)?;
-                    } else {
-                        return Ok(ReferenceCoreExpr::App(Box::new(fun_whnf), arg));
+                        continue;
                     }
+
+                    let app = ReferenceCoreExpr::App(Box::new(fun_whnf), arg);
+                    if let Some(reduced) = self.reduce_recursor(ctx, delta, &app, offset, fuel)? {
+                        current = reduced;
+                        continue;
+                    }
+                    return Ok(app);
                 }
                 ReferenceCoreExpr::Let { value, body, .. } => {
                     current = instantiate(&body, &value, offset)?;
@@ -1842,6 +2335,103 @@ impl<'a> TypeChecker<'a> {
             }
             ensure_levels_wf_in_expr(&current, delta, offset)?;
         }
+    }
+
+    fn reduce_recursor(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let (head, args) = collect_apps(term);
+        let ReferenceCoreExpr::Const {
+            global_ref:
+                ReferenceCoreGlobalRef::LocalGenerated {
+                    decl_index,
+                    name: recursor_name,
+                },
+            levels,
+        } = head
+        else {
+            return Ok(None);
+        };
+        let recursor_key = GeneratedKey::new(*decl_index, recursor_name.clone());
+        let Some(recursor) = self.recursors.get(&recursor_key) else {
+            return Ok(None);
+        };
+        if args.len() <= recursor.rules.major_index {
+            return Ok(None);
+        }
+
+        let major = args[recursor.rules.major_index].clone();
+        let rest = args[recursor.rules.major_index + 1..].to_vec();
+        let major_whnf = self.whnf_with_fuel(ctx, delta, &major, offset, fuel)?;
+        let (ctor_head, ctor_args) = collect_apps(&major_whnf);
+        let ReferenceCoreExpr::Const {
+            global_ref:
+                ReferenceCoreGlobalRef::LocalGenerated {
+                    decl_index: ctor_decl_index,
+                    name: constructor_name,
+                },
+            ..
+        } = ctor_head
+        else {
+            return Ok(None);
+        };
+        if *ctor_decl_index != recursor.inductive_decl_index {
+            return Ok(None);
+        }
+        let Some(data) = self.inductives.get(&recursor.inductive_decl_index) else {
+            return Ok(None);
+        };
+        let Some(ctor_index) = data
+            .constructors
+            .iter()
+            .position(|constructor| constructor.name == *constructor_name)
+        else {
+            return Ok(None);
+        };
+        let Some(minor) = args.get(recursor.rules.minor_start + ctor_index).cloned() else {
+            return Ok(None);
+        };
+
+        let constructor = &data.constructors[ctor_index];
+        let (domains, _) = peel_pi_domains(&constructor.ty);
+        let param_count = data.params.len();
+        if ctor_args.len() < param_count {
+            return Ok(None);
+        }
+        let field_args = &ctor_args[param_count..];
+        let field_domains = &domains[param_count..];
+        if field_args.len() < field_domains.len() {
+            return Ok(None);
+        }
+
+        let mut reduced = minor;
+        for (field_index, (field_arg, field_domain)) in
+            field_args.iter().zip(field_domains).enumerate()
+        {
+            reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(field_arg.clone()));
+            if is_direct_recursive_domain(data, field_domain, param_count + field_index, offset)? {
+                let mut recursive_args = args[..recursor.rules.major_index].to_vec();
+                recursive_args.push(field_arg.clone());
+                let recursive_call = apps(
+                    ReferenceCoreExpr::Const {
+                        global_ref: ReferenceCoreGlobalRef::LocalGenerated {
+                            decl_index: *decl_index,
+                            name: recursor_name.clone(),
+                        },
+                        levels: levels.clone(),
+                    },
+                    recursive_args,
+                );
+                reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(recursive_call));
+            }
+        }
+
+        Ok(Some(apps(reduced, rest)))
     }
 
     fn is_defeq(
@@ -1931,6 +2521,49 @@ struct TypeSignature {
     universe_params: Vec<ReferenceModuleName>,
     ty: ReferenceCoreExpr,
     value: Option<ReferenceCoreExpr>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct GeneratedKey {
+    decl_index: usize,
+    name: ReferenceModuleName,
+}
+
+impl GeneratedKey {
+    fn new(decl_index: usize, name: ReferenceModuleName) -> Self {
+        Self { decl_index, name }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct ReferenceInductiveSignature {
+    decl_index: usize,
+    universe_params: Vec<ReferenceModuleName>,
+    params: Vec<ReferenceCoreExpr>,
+    indices: Vec<ReferenceCoreExpr>,
+    sort: ReferenceCoreLevel,
+    constructors: Vec<ReferenceConstructorSignature>,
+    recursor: Option<ReferenceRecursorSignature>,
+}
+
+#[derive(Clone, Debug)]
+struct ReferenceConstructorSignature {
+    name: ReferenceModuleName,
+    ty: ReferenceCoreExpr,
+}
+
+#[derive(Clone, Debug)]
+struct ReferenceRecursorSignature {
+    name: ReferenceModuleName,
+    universe_params: Vec<ReferenceModuleName>,
+    ty: ReferenceCoreExpr,
+    rules: RecursorRulesSpec,
+}
+
+#[derive(Clone, Debug)]
+struct ReferenceRecursorRuntime {
+    inductive_decl_index: usize,
+    rules: RecursorRulesSpec,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -2067,6 +2700,423 @@ fn ensure_levels_wf_in_expr(
             ensure_levels_wf_in_expr(ty, delta, offset)?;
             ensure_levels_wf_in_expr(value, delta, offset)?;
             ensure_levels_wf_in_expr(body, delta, offset)
+        }
+    }
+}
+
+fn ensure_unique_names(params: &[ReferenceModuleName], offset: usize) -> DecodeResult<()> {
+    let mut seen = BTreeSet::new();
+    for param in params {
+        if !seen.insert(param) {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::DuplicateUniverseParam,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn peel_pi_domains(expr: &ReferenceCoreExpr) -> (Vec<ReferenceCoreExpr>, ReferenceCoreExpr) {
+    let mut domains = Vec::new();
+    let mut current = expr.clone();
+    while let ReferenceCoreExpr::Pi { ty, body } = current {
+        domains.push(*ty);
+        current = *body;
+    }
+    (domains, current)
+}
+
+fn collect_apps(expr: &ReferenceCoreExpr) -> (&ReferenceCoreExpr, Vec<ReferenceCoreExpr>) {
+    let mut args = Vec::new();
+    let mut current = expr;
+    while let ReferenceCoreExpr::App(fun, arg) = current {
+        args.push((**arg).clone());
+        current = fun;
+    }
+    args.reverse();
+    (current, args)
+}
+
+fn apps(head: ReferenceCoreExpr, args: Vec<ReferenceCoreExpr>) -> ReferenceCoreExpr {
+    args.into_iter().fold(head, |fun, arg| {
+        ReferenceCoreExpr::App(Box::new(fun), Box::new(arg))
+    })
+}
+
+fn bvar_for_abs(ctx_len: usize, abs: usize, offset: usize) -> DecodeResult<ReferenceCoreExpr> {
+    if abs >= ctx_len {
+        return Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::InvalidBVar,
+        ));
+    }
+    Ok(ReferenceCoreExpr::BVar((ctx_len - 1 - abs) as u32))
+}
+
+fn motive_app(
+    ctx_len: usize,
+    motive_abs: usize,
+    target: ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    Ok(ReferenceCoreExpr::App(
+        Box::new(bvar_for_abs(ctx_len, motive_abs, offset)?),
+        Box::new(target),
+    ))
+}
+
+fn recursor_prefix_ctx(domains: &[ReferenceCoreExpr]) -> TypeContext {
+    let mut ctx = TypeContext::default();
+    for domain in domains {
+        ctx.push_assumption(domain.clone());
+    }
+    ctx
+}
+
+fn expected_recursor_type(
+    data: &ReferenceInductiveSignature,
+    recursor: &ReferenceRecursorSignature,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let param_count = data.params.len();
+    let mut domains = data.params.clone();
+    let motive_target = inductive_target_expr(data, domains.len(), param_count, offset)?;
+    domains.push(ReferenceCoreExpr::Pi {
+        ty: Box::new(motive_target),
+        body: Box::new(ReferenceCoreExpr::Sort(expected_motive_level(
+            data, recursor,
+        ))),
+    });
+
+    for (constructor_index, constructor) in data.constructors.iter().enumerate() {
+        domains.push(expected_minor_type(
+            data,
+            constructor,
+            constructor_index,
+            offset,
+        )?);
+    }
+
+    let major_domain = inductive_target_expr(data, domains.len(), param_count, offset)?;
+    domains.push(major_domain);
+    let body = motive_app(
+        domains.len(),
+        param_count,
+        bvar_for_abs(domains.len(), recursor.rules.major_index, offset)?,
+        offset,
+    )?;
+    Ok(mk_pi_from_domains(domains, body))
+}
+
+fn expected_motive_level(
+    data: &ReferenceInductiveSignature,
+    recursor: &ReferenceRecursorSignature,
+) -> ReferenceCoreLevel {
+    if data.sort == ReferenceCoreLevel::Zero {
+        return ReferenceCoreLevel::Zero;
+    }
+    if let Some(param) = recursor
+        .universe_params
+        .iter()
+        .rev()
+        .find(|param| !data.universe_params.contains(*param))
+    {
+        return ReferenceCoreLevel::Param(param.clone());
+    }
+    recursor
+        .universe_params
+        .last()
+        .map(|param| ReferenceCoreLevel::Param(param.clone()))
+        .unwrap_or_else(|| data.sort.clone())
+}
+
+fn inductive_target_expr(
+    data: &ReferenceInductiveSignature,
+    ctx_len: usize,
+    param_count: usize,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let levels = data
+        .universe_params
+        .iter()
+        .map(|param| ReferenceCoreLevel::Param(param.clone()))
+        .collect();
+    let args = (0..param_count)
+        .map(|param_abs| bvar_for_abs(ctx_len, param_abs, offset))
+        .collect::<DecodeResult<Vec<_>>>()?;
+    Ok(apps(
+        ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Local {
+                decl_index: data.decl_index,
+            },
+            levels,
+        },
+        args,
+    ))
+}
+
+fn mk_pi_from_domains(
+    domains: Vec<ReferenceCoreExpr>,
+    body: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    domains
+        .into_iter()
+        .rev()
+        .fold(body, |body, domain| ReferenceCoreExpr::Pi {
+            ty: Box::new(domain),
+            body: Box::new(body),
+        })
+}
+
+fn expected_minor_type(
+    data: &ReferenceInductiveSignature,
+    constructor: &ReferenceConstructorSignature,
+    constructor_index: usize,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let (constructor_domains, _) = peel_pi_domains(&constructor.ty);
+    let param_count = data.params.len();
+    if constructor_domains.len() < param_count {
+        return Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorMinor,
+        ));
+    }
+
+    let prefix_len = param_count + 1 + constructor_index;
+    let motive_abs = param_count;
+    let mut source_to_target: Vec<usize> = (0..param_count).collect();
+    let mut target_ctx_len = prefix_len;
+    let mut expected_domains = Vec::new();
+    let mut field_abs = Vec::new();
+
+    for (field_index, field_domain) in constructor_domains[param_count..].iter().enumerate() {
+        let source_ctx_len = param_count + field_index;
+        expected_domains.push(remap_bvars(
+            field_domain,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+            offset,
+        )?);
+
+        source_to_target.push(target_ctx_len);
+        field_abs.push(target_ctx_len);
+        target_ctx_len += 1;
+
+        if is_direct_recursive_domain(data, field_domain, source_ctx_len, offset)? {
+            expected_domains.push(motive_app(
+                target_ctx_len,
+                motive_abs,
+                ReferenceCoreExpr::BVar(0),
+                offset,
+            )?);
+            target_ctx_len += 1;
+        }
+    }
+
+    let mut constructor_args = Vec::with_capacity(param_count + field_abs.len());
+    for param_abs in 0..param_count {
+        constructor_args.push(bvar_for_abs(target_ctx_len, param_abs, offset)?);
+    }
+    for field_abs in field_abs {
+        constructor_args.push(bvar_for_abs(target_ctx_len, field_abs, offset)?);
+    }
+
+    let levels = data
+        .universe_params
+        .iter()
+        .map(|param| ReferenceCoreLevel::Param(param.clone()))
+        .collect();
+    let constructor_value = apps(
+        ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::LocalGenerated {
+                decl_index: data.decl_index,
+                name: constructor.name.clone(),
+            },
+            levels,
+        },
+        constructor_args,
+    );
+    let result = motive_app(target_ctx_len, motive_abs, constructor_value, offset)?;
+
+    Ok(mk_pi_from_domains(expected_domains, result))
+}
+
+fn remap_bvars(
+    expr: &ReferenceCoreExpr,
+    source_ctx_len: usize,
+    target_ctx_len: usize,
+    source_to_target: &[usize],
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    match expr {
+        ReferenceCoreExpr::Sort(level) => Ok(ReferenceCoreExpr::Sort(level.clone())),
+        ReferenceCoreExpr::BVar(index) => {
+            let index = *index as usize;
+            if index >= source_ctx_len {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                ));
+            }
+            let source_abs = source_ctx_len - 1 - index;
+            let target_abs = source_to_target.get(source_abs).copied().ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                )
+            })?;
+            bvar_for_abs(target_ctx_len, target_abs, offset)
+        }
+        ReferenceCoreExpr::Const { global_ref, levels } => Ok(ReferenceCoreExpr::Const {
+            global_ref: global_ref.clone(),
+            levels: levels.clone(),
+        }),
+        ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
+            Box::new(remap_bvars(
+                fun,
+                source_ctx_len,
+                target_ctx_len,
+                source_to_target,
+                offset,
+            )?),
+            Box::new(remap_bvars(
+                arg,
+                source_ctx_len,
+                target_ctx_len,
+                source_to_target,
+                offset,
+            )?),
+        )),
+        ReferenceCoreExpr::Lam { ty, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(ReferenceCoreExpr::Lam {
+                ty: Box::new(remap_bvars(
+                    ty,
+                    source_ctx_len,
+                    target_ctx_len,
+                    source_to_target,
+                    offset,
+                )?),
+                body: Box::new(remap_bvars(
+                    body,
+                    source_ctx_len + 1,
+                    target_ctx_len + 1,
+                    &body_map,
+                    offset,
+                )?),
+            })
+        }
+        ReferenceCoreExpr::Pi { ty, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(ReferenceCoreExpr::Pi {
+                ty: Box::new(remap_bvars(
+                    ty,
+                    source_ctx_len,
+                    target_ctx_len,
+                    source_to_target,
+                    offset,
+                )?),
+                body: Box::new(remap_bvars(
+                    body,
+                    source_ctx_len + 1,
+                    target_ctx_len + 1,
+                    &body_map,
+                    offset,
+                )?),
+            })
+        }
+        ReferenceCoreExpr::Let { ty, value, body } => {
+            let mut body_map = source_to_target.to_vec();
+            body_map.push(target_ctx_len);
+            Ok(ReferenceCoreExpr::Let {
+                ty: Box::new(remap_bvars(
+                    ty,
+                    source_ctx_len,
+                    target_ctx_len,
+                    source_to_target,
+                    offset,
+                )?),
+                value: Box::new(remap_bvars(
+                    value,
+                    source_ctx_len,
+                    target_ctx_len,
+                    source_to_target,
+                    offset,
+                )?),
+                body: Box::new(remap_bvars(
+                    body,
+                    source_ctx_len + 1,
+                    target_ctx_len + 1,
+                    &body_map,
+                    offset,
+                )?),
+            })
+        }
+    }
+}
+
+fn is_direct_recursive_domain(
+    data: &ReferenceInductiveSignature,
+    domain: &ReferenceCoreExpr,
+    ctx_len: usize,
+    offset: usize,
+) -> DecodeResult<bool> {
+    let (head, args) = collect_apps(domain);
+    let levels = match head {
+        ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Local { decl_index },
+            levels,
+        } if *decl_index == data.decl_index => levels,
+        _ => return Ok(false),
+    };
+
+    let expected_levels: Vec<_> = data
+        .universe_params
+        .iter()
+        .map(|param| ReferenceCoreLevel::Param(param.clone()))
+        .collect();
+    if *levels != expected_levels || args.len() != data.params.len() + data.indices.len() {
+        return Ok(false);
+    }
+
+    for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+        let expected = bvar_for_abs(ctx_len, param_index, offset)?;
+        if arg != &expected {
+            return Ok(false);
+        }
+    }
+
+    Ok(args
+        .iter()
+        .all(|arg| !contains_inductive_const(arg, data.decl_index)))
+}
+
+fn contains_inductive_const(expr: &ReferenceCoreExpr, decl_index: usize) -> bool {
+    match expr {
+        ReferenceCoreExpr::Sort(_) | ReferenceCoreExpr::BVar(_) => false,
+        ReferenceCoreExpr::Const { global_ref, .. } => {
+            matches!(global_ref, ReferenceCoreGlobalRef::Local { decl_index: index } if *index == decl_index)
+        }
+        ReferenceCoreExpr::App(fun, arg) => {
+            contains_inductive_const(fun, decl_index) || contains_inductive_const(arg, decl_index)
+        }
+        ReferenceCoreExpr::Lam { ty, body } | ReferenceCoreExpr::Pi { ty, body } => {
+            contains_inductive_const(ty, decl_index) || contains_inductive_const(body, decl_index)
+        }
+        ReferenceCoreExpr::Let { ty, value, body } => {
+            contains_inductive_const(ty, decl_index)
+                || contains_inductive_const(value, decl_index)
+                || contains_inductive_const(body, decl_index)
         }
     }
 }

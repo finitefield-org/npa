@@ -6,8 +6,8 @@
 //! policy. It cannot receive `.npa` source, tactic scripts, AI traces, or a
 //! theorem-search index.
 //!
-//! P8H-06 adds source-free β/δ/ζ conversion checking. Later milestones fill in
-//! inductive checking and axiom report recomputation.
+//! P8H-07 adds source-free β/δ/ι/ζ conversion and simple inductive/recursor
+//! checking. Later milestones fill in axiom report recomputation.
 
 #![deny(missing_docs)]
 #![forbid(unsafe_code)]
@@ -815,6 +815,8 @@ pub enum ReferenceCheckReason {
     UnknownReference,
     /// A constant was applied to the wrong number of universe levels.
     BadUniverseArity,
+    /// A universe-parameter telescope contained the same name more than once.
+    DuplicateUniverseParam,
     /// A de Bruijn index was not in local scope.
     InvalidBVar,
     /// A term was expected to have a sort type.
@@ -825,6 +827,24 @@ pub enum ReferenceCheckReason {
     TypeMismatch,
     /// Type checking or conversion exhausted its deterministic resource bound.
     ResourceLimit,
+    /// An inductive constructor did not return its declared family.
+    BadConstructorResult,
+    /// A constructor contains a recursive occurrence outside the MVP strictly positive shape.
+    NonPositiveOccurrence,
+    /// A generated recursor rule index did not match the declaration shape.
+    BadRecursorRule,
+    /// A generated recursor parameter binder did not match the inductive parameter telescope.
+    BadRecursorParam,
+    /// A generated recursor motive binder did not target the inductive family.
+    BadRecursorMotive,
+    /// A generated recursor major premise did not target the inductive family.
+    BadRecursorMajor,
+    /// A generated recursor minor premise did not match its constructor.
+    BadRecursorMinor,
+    /// A generated recursor result did not apply the motive to the major premise.
+    BadRecursorResult,
+    /// A generated recursor type was not the canonical type for its declaration.
+    BadRecursorType,
     /// A stored hash did not match the reference checker recomputation.
     HashMismatch {
         /// Hash role that mismatched.
@@ -891,9 +911,9 @@ pub fn build_import_environment(
 /// Check a canonical certificate with the Phase 8 reference-checker API.
 ///
 /// This decodes canonical source-free certificate bytes, verifies stored hashes,
-/// resolves explicit imports, and runs the P8H-06 minimal type/declaration and
-/// β/δ/ζ conversion checker. It intentionally does not call the fast Rust
-/// kernel or `npa_cert::verify_module_cert`.
+/// resolves explicit imports, and runs the P8H-07 minimal type/declaration,
+/// β/δ/ι/ζ conversion, and simple inductive/recursor checker. It intentionally
+/// does not call the fast Rust kernel or `npa_cert::verify_module_cert`.
 pub fn check_certificate(
     cert_bytes: &[u8],
     import_store: &ReferenceImportStore,
@@ -913,6 +933,13 @@ pub fn check_certificate(
 mod tests {
     use super::*;
 
+    use npa_cert::{
+        build_module_cert, encode_module_cert, generate_inductive_artifacts_v1, CoreModule, Name,
+    };
+    use npa_kernel::{
+        eq_inductive, nat, nat_inductive, nat_succ, nat_zero, type0, Binder, ConstructorDecl, Ctx,
+        Decl, Env, Expr, InductiveDecl, Level,
+    };
     use sha2::{Digest, Sha256};
 
     fn encode_uvar(mut value: u64) -> Vec<u8> {
@@ -960,6 +987,117 @@ mod tests {
         hasher.update(domain);
         hasher.update(payload);
         hasher.finalize().into()
+    }
+
+    fn kernel_pi_telescope(domains: Vec<Expr>, body: Expr) -> Expr {
+        domains
+            .into_iter()
+            .rev()
+            .fold(body, |body, domain| Expr::pi("_", domain, body))
+    }
+
+    fn kernel_inductive_type(data: &InductiveDecl) -> Expr {
+        let domains = data
+            .params
+            .iter()
+            .chain(&data.indices)
+            .map(|binder| binder.ty.clone())
+            .collect();
+        kernel_pi_telescope(domains, Expr::sort(data.sort.clone()))
+    }
+
+    fn certificate_for_inductive(module: &str, data: InductiveDecl) -> Vec<u8> {
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted(module),
+                declarations: vec![Decl::Inductive {
+                    name: data.name.clone(),
+                    universe_params: data.universe_params.clone(),
+                    ty: kernel_inductive_type(&data),
+                    data: Box::new(data),
+                }],
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
+    }
+
+    fn list_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        let list_a = |level: Level, a: Expr| Expr::app(Expr::konst("List", vec![level]), a);
+
+        InductiveDecl::new(
+            "List",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![
+                ConstructorDecl::new(
+                    "List.nil",
+                    Expr::pi("A", Expr::sort(u.clone()), list_a(u.clone(), Expr::bvar(0))),
+                ),
+                ConstructorDecl::new(
+                    "List.cons",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "x",
+                            Expr::bvar(0),
+                            Expr::pi(
+                                "xs",
+                                list_a(u.clone(), Expr::bvar(1)),
+                                list_a(u.clone(), Expr::bvar(2)),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn nat_rec_term(major: Expr) -> Expr {
+        let result_universe = type0();
+        let motive_universe = Level::succ(result_universe.clone());
+        let motive = Expr::lam("_", nat(), Expr::sort(result_universe.clone()));
+        let step = Expr::lam(
+            "_",
+            nat(),
+            Expr::lam("ih", Expr::sort(result_universe), nat()),
+        );
+        Expr::apps(
+            Expr::konst("Nat.rec", vec![motive_universe]),
+            vec![motive, nat(), step, major],
+        )
+    }
+
+    fn nat_iota_theorem_certificate(major: Expr) -> Vec<u8> {
+        let nat_data = nat_inductive();
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Test.NatIota"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: nat_data.name.clone(),
+                        universe_params: nat_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&nat_data),
+                        data: Box::new(nat_data),
+                    },
+                    Decl::Theorem {
+                        name: "Nat.iotaWitness".to_owned(),
+                        universe_params: vec![],
+                        ty: nat_rec_term(major),
+                        proof: nat_zero(),
+                    },
+                ],
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
     }
 
     fn encode_usize_vec(out: &mut Vec<u8>, values: &[usize]) {
@@ -1145,6 +1283,32 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[derive(Clone)]
+    struct TestInductiveSpec {
+        names: Vec<&'static [&'static str]>,
+        name: usize,
+        universe_params: Vec<usize>,
+        params: Vec<usize>,
+        indices: Vec<usize>,
+        sort: usize,
+        constructors: Vec<TestConstructorSpec>,
+        recursor: Option<TestRecursorSpec>,
+    }
+
+    #[derive(Clone, Copy)]
+    struct TestConstructorSpec {
+        name: usize,
+        ty: usize,
+    }
+
+    #[derive(Clone, Copy)]
+    struct TestRecursorSpec {
+        name: usize,
+        ty: usize,
+        minor_start: usize,
+        major_index: usize,
     }
 
     struct DeclarationCertificateFixture {
@@ -1587,6 +1751,183 @@ mod tests {
         DeclarationCertificateFixture { bytes }
     }
 
+    fn encode_name_from_table(out: &mut Vec<u8>, names: &[&[&str]], id: usize) {
+        encode_name(out, names[id]);
+    }
+
+    fn encode_name_id_list_from_table(out: &mut Vec<u8>, names: &[&[&str]], ids: &[usize]) {
+        out.extend(encode_uvar(ids.len() as u64));
+        for id in ids {
+            encode_name_from_table(out, names, *id);
+        }
+    }
+
+    fn encode_test_binders(out: &mut Vec<u8>, binders: &[usize]) {
+        out.extend(encode_uvar(binders.len() as u64));
+        for binder in binders {
+            out.extend(encode_uvar(*binder as u64));
+        }
+    }
+
+    fn single_inductive_certificate_fixture(
+        terms: &[TestTerm],
+        spec: TestInductiveSpec,
+    ) -> DeclarationCertificateFixture {
+        let level_hashes = test_level_hashes(terms);
+        let term_hashes = test_term_hashes(&level_hashes, terms);
+
+        let mut recursor_sig_payload = Vec::new();
+        let mut recursor_rule_payload = Vec::new();
+        match spec.recursor {
+            Some(recursor) => {
+                recursor_sig_payload.push(0x01);
+                encode_name_from_table(&mut recursor_sig_payload, &spec.names, recursor.name);
+                encode_name_id_list_from_table(
+                    &mut recursor_sig_payload,
+                    &spec.names,
+                    &spec.universe_params,
+                );
+                recursor_sig_payload.extend(term_hashes[recursor.ty]);
+
+                recursor_rule_payload.push(0x01);
+                recursor_rule_payload.extend(encode_uvar(recursor.minor_start as u64));
+                recursor_rule_payload.extend(encode_uvar(recursor.major_index as u64));
+            }
+            None => {
+                recursor_sig_payload.push(0x00);
+                recursor_rule_payload.push(0x00);
+            }
+        }
+        let recursor_sig_hash = hash_with_domain(b"NPA-GEN-REC-SIG-0.1", &recursor_sig_payload);
+        let recursor_rule_hash = hash_with_domain(b"NPA-GEN-COMP-RULE-0.1", &recursor_rule_payload);
+
+        let mut iface_payload = Vec::new();
+        iface_payload.push(0x03);
+        encode_name_from_table(&mut iface_payload, &spec.names, spec.name);
+        encode_name_id_list_from_table(&mut iface_payload, &spec.names, &spec.universe_params);
+        iface_payload.extend(encode_uvar(spec.params.len() as u64));
+        for param in &spec.params {
+            iface_payload.extend(term_hashes[*param]);
+        }
+        iface_payload.extend(encode_uvar(spec.indices.len() as u64));
+        for index in &spec.indices {
+            iface_payload.extend(term_hashes[*index]);
+        }
+        iface_payload.extend(level_hashes[spec.sort]);
+        iface_payload.extend(encode_uvar(spec.constructors.len() as u64));
+        for constructor in &spec.constructors {
+            encode_name_from_table(&mut iface_payload, &spec.names, constructor.name);
+            iface_payload.extend(term_hashes[constructor.ty]);
+        }
+        iface_payload.extend(recursor_sig_hash);
+        iface_payload.extend(recursor_rule_hash);
+        encode_dependency_entries_empty(&mut iface_payload);
+        encode_axiom_refs_empty(&mut iface_payload);
+        let interface_hash = hash_with_domain(b"NPA-DECL-IFACE-0.1", &iface_payload);
+
+        let mut cert_payload = Vec::new();
+        cert_payload.extend(interface_hash);
+        encode_dependency_entries_empty(&mut cert_payload);
+        encode_axiom_refs_empty(&mut cert_payload);
+        let certificate_hash = hash_with_domain(b"NPA-DECL-CERT-0.1", &cert_payload);
+
+        let mut bytes = header_bytes();
+        bytes.extend(encode_uvar(0)); // imports
+        bytes.extend(encode_uvar(spec.names.len() as u64));
+        for name in &spec.names {
+            encode_name(&mut bytes, name);
+        }
+        encode_test_levels(&mut bytes, &level_hashes);
+        encode_test_terms(&mut bytes, terms);
+
+        bytes.extend(encode_uvar(1)); // declarations
+        bytes.push(0x03);
+        bytes.extend(encode_uvar(spec.name as u64));
+        encode_usize_vec(&mut bytes, &spec.universe_params);
+        encode_test_binders(&mut bytes, &spec.params);
+        encode_test_binders(&mut bytes, &spec.indices);
+        bytes.extend(encode_uvar(spec.sort as u64));
+        bytes.extend(encode_uvar(spec.constructors.len() as u64));
+        for constructor in &spec.constructors {
+            bytes.extend(encode_uvar(constructor.name as u64));
+            bytes.extend(encode_uvar(constructor.ty as u64));
+        }
+        match spec.recursor {
+            Some(recursor) => {
+                bytes.push(0x01);
+                bytes.extend(encode_uvar(recursor.name as u64));
+                encode_usize_vec(&mut bytes, &spec.universe_params);
+                bytes.extend(encode_uvar(recursor.ty as u64));
+                bytes.extend(encode_uvar(recursor.minor_start as u64));
+                bytes.extend(encode_uvar(recursor.major_index as u64));
+            }
+            None => bytes.push(0x00),
+        }
+        encode_dependency_entries_empty(&mut bytes);
+        encode_axiom_refs_empty(&mut bytes);
+        bytes.extend(interface_hash);
+        bytes.extend(certificate_hash);
+
+        let mut export_block = Vec::new();
+        let export_len = 1 + spec.constructors.len() + usize::from(spec.recursor.is_some());
+        export_block.extend(encode_uvar(export_len as u64));
+        export_block.extend(encode_uvar(spec.name as u64));
+        export_block.push(0x03);
+        encode_usize_vec(&mut export_block, &spec.universe_params);
+        export_block.extend(encode_uvar(0)); // inductive type is Sort sort for these fixtures
+        encode_option_usize(&mut export_block, None);
+        export_block.extend(term_hashes[0]);
+        encode_option_hash(&mut export_block, None);
+        export_block.push(0x00);
+        export_block.push(0x00);
+        export_block.extend(interface_hash);
+        encode_axiom_refs_empty(&mut export_block);
+        for constructor in &spec.constructors {
+            export_block.extend(encode_uvar(constructor.name as u64));
+            export_block.push(0x04);
+            encode_usize_vec(&mut export_block, &spec.universe_params);
+            export_block.extend(encode_uvar(constructor.ty as u64));
+            encode_option_usize(&mut export_block, None);
+            export_block.extend(term_hashes[constructor.ty]);
+            encode_option_hash(&mut export_block, None);
+            export_block.push(0x00);
+            export_block.push(0x00);
+            export_block.extend(interface_hash);
+            encode_axiom_refs_empty(&mut export_block);
+        }
+        if let Some(recursor) = spec.recursor {
+            export_block.extend(encode_uvar(recursor.name as u64));
+            export_block.push(0x05);
+            encode_usize_vec(&mut export_block, &spec.universe_params);
+            export_block.extend(encode_uvar(recursor.ty as u64));
+            encode_option_usize(&mut export_block, None);
+            export_block.extend(term_hashes[recursor.ty]);
+            encode_option_hash(&mut export_block, None);
+            export_block.push(0x00);
+            export_block.push(0x00);
+            export_block.extend(interface_hash);
+            encode_axiom_refs_empty(&mut export_block);
+        }
+
+        let mut axiom_report = Vec::new();
+        axiom_report.extend(encode_uvar(1));
+        axiom_report.extend(encode_uvar(0)); // decl index
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+        encode_axiom_refs_empty(&mut axiom_report);
+
+        bytes.extend(&export_block);
+        bytes.extend(&axiom_report);
+        let export_hash = hash_with_domain(b"NPA-MODULE-EXPORT-0.1", &export_block);
+        let axiom_report_hash = hash_with_domain(b"NPA-AXIOM-REPORT-0.1", &axiom_report);
+        bytes.extend(export_hash);
+        bytes.extend(axiom_report_hash);
+        let certificate_hash = hash_with_domain(b"NPA-MODULE-CERT-0.1", &bytes);
+        bytes.extend(certificate_hash);
+
+        DeclarationCertificateFixture { bytes }
+    }
+
     fn local_const_certificate_fixture() -> DeclarationCertificateFixture {
         let terms = [TestTerm::Sort(0), TestTerm::ConstLocal { decl_index: 0 }];
         let level_hashes = test_level_hashes(&terms);
@@ -1877,9 +2218,13 @@ mod tests {
     }
 
     fn assert_type_check(error: ReferenceCheckError, reason: ReferenceCheckReason) {
-        assert_eq!(error.kind, ReferenceCheckErrorKind::TypeCheck);
-        assert_eq!(error.section, ReferenceCertificateSection::Declarations);
-        assert_eq!(error.reason, Some(reason));
+        assert_eq!(error.kind, ReferenceCheckErrorKind::TypeCheck, "{error:?}");
+        assert_eq!(
+            error.section,
+            ReferenceCertificateSection::Declarations,
+            "{error:?}"
+        );
+        assert_eq!(error.reason, Some(reason), "{error:?}");
     }
 
     #[test]
@@ -2444,6 +2789,159 @@ mod tests {
             result.error().unwrap().clone(),
             ReferenceCheckReason::TypeMismatch,
         );
+    }
+
+    #[test]
+    fn inductive_accepts_valid_nat_eq_and_list_certificates() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let cases = [
+            certificate_for_inductive("Test.Nat", nat_inductive()),
+            certificate_for_inductive("Test.Eq", eq_inductive()),
+            certificate_for_inductive(
+                "Test.List",
+                generate_inductive_artifacts_v1(&list_inductive()).unwrap(),
+            ),
+        ];
+
+        for bytes in cases {
+            let result = check_certificate(&bytes, &imports, &policy);
+            assert!(result.is_checked(), "{result:?}");
+        }
+    }
+
+    #[test]
+    fn inductive_rejects_negative_occurrence_with_structured_error() {
+        let terms = [
+            TestTerm::Sort(1),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::Pi { ty: 1, body: 1 },
+            TestTerm::Pi { ty: 2, body: 1 },
+        ];
+        let fixture = single_inductive_certificate_fixture(
+            &terms,
+            TestInductiveSpec {
+                names: vec![&["Bad"], &["Bad", "mk"], &["Std", "Nat"]],
+                name: 0,
+                universe_params: vec![],
+                params: vec![],
+                indices: vec![],
+                sort: 1,
+                constructors: vec![TestConstructorSpec { name: 1, ty: 3 }],
+                recursor: None,
+            },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::NonPositiveOccurrence,
+        );
+    }
+
+    #[test]
+    fn inductive_rejects_constructor_result_mismatch_with_structured_error() {
+        let terms = [TestTerm::Sort(1)];
+        let fixture = single_inductive_certificate_fixture(
+            &terms,
+            TestInductiveSpec {
+                names: vec![&["Bad"], &["Bad", "mk"], &["Std", "Nat"]],
+                name: 0,
+                universe_params: vec![],
+                params: vec![],
+                indices: vec![],
+                sort: 1,
+                constructors: vec![TestConstructorSpec { name: 1, ty: 0 }],
+                recursor: None,
+            },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::BadConstructorResult,
+        );
+    }
+
+    #[test]
+    fn inductive_rejects_recursor_result_mismatch_with_structured_error() {
+        let terms = [
+            TestTerm::Sort(0),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::Pi { ty: 1, body: 1 },
+            TestTerm::Pi { ty: 1, body: 0 },
+            TestTerm::Pi { ty: 3, body: 2 },
+        ];
+        let fixture = single_inductive_certificate_fixture(
+            &terms,
+            TestInductiveSpec {
+                names: vec![&["Empty"], &["Empty", "rec"], &["Std", "Nat"]],
+                name: 0,
+                universe_params: vec![],
+                params: vec![],
+                indices: vec![],
+                sort: 0,
+                constructors: vec![],
+                recursor: Some(TestRecursorSpec {
+                    name: 1,
+                    ty: 4,
+                    minor_start: 1,
+                    major_index: 1,
+                }),
+            },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::BadRecursorResult,
+        );
+    }
+
+    #[test]
+    fn iota_accepts_nat_recursor_zero_theorem_matching_fast_kernel() {
+        let mut env = Env::new();
+        env.add_inductive(nat_inductive()).unwrap();
+        let recursor_type = nat_rec_term(nat_zero());
+        assert!(env
+            .is_defeq(&Ctx::new(), &[], &recursor_type, &nat())
+            .unwrap());
+
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let bytes = nat_iota_theorem_certificate(nat_zero());
+
+        let result = check_certificate(&bytes, &imports, &policy);
+
+        assert!(result.is_checked(), "{result:?}");
+    }
+
+    #[test]
+    fn iota_accepts_nat_recursor_succ_theorem_matching_fast_kernel() {
+        let mut env = Env::new();
+        env.add_inductive(nat_inductive()).unwrap();
+        let major = nat_succ(nat_zero());
+        let recursor_type = nat_rec_term(major.clone());
+        assert!(env
+            .is_defeq(&Ctx::new(), &[], &recursor_type, &nat())
+            .unwrap());
+
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let bytes = nat_iota_theorem_certificate(major);
+
+        let result = check_certificate(&bytes, &imports, &policy);
+
+        assert!(result.is_checked(), "{result:?}");
     }
 
     #[test]
