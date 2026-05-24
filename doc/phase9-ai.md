@@ -928,13 +928,14 @@ Phase 9 AI MVP の Advanced Inductive validator は、Phase 2 の既存 `Inducti
 `inductives.len() == 1` の non-mutual declaration だけを受け付けます。
 payload outer decode 後の最初の semantic check として `inductives.len() == 1` を検査し、これを満たさない request は
 name uniqueness や constructor type check へ進みません。
-`inductives.len() != 1` の empty / mutual block は、Phase 2 に `MutualInductiveBlock` certificate schema または
-複数 `InductiveDecl` への lowering rule が追加されるまで
+`inductives.len() != 1` の empty / mutual block は、Human core / certificate 側の
+`MutualInductiveBlock` support とは別に、AI MVP profile では supported shape に入れないため
 `Rejected { error = UnsupportedFeature, feature_error = Some(AdvancedInductive(PositivityProfileUnsupported)) }`
 として拒否します。
 AI Machine MVP では nested recursive occurrence も許可しません。
-これは Human Profile の「approved strictly-positive functor 越しの nested inductive」を Phase 9 の上位目標として残しつつ、
-Machine Profile の最初の実装単位では Phase 2 の既存 `InductiveDecl` と deterministic artifact generator に合わせるためです。
+これは Human Profile の「approved strictly-positive functor 越しの nested inductive」が実装済みであっても、
+Machine Profile の最初の実装単位を Phase 2 の singleton `InductiveDecl` と deterministic artifact generator に
+合わせるためです。
 approved nested functor profile は、functoriality 証明、positivity traversal、recursor 生成、certificate hash rule を固定する
 後続 profile で有効化します。
 したがって AI Machine MVP では `options.advanced_inductive.approved_nested_type_constructors` は空でなければならず、
@@ -1258,8 +1259,10 @@ generated artifact check に渡して、同じ `base_inductive_decl_for_generati
 implementation invariant 破れなので `Error::InternalValidatorFailure` です。
 `AdvancedInductive(GeneratedArtifactMismatch)` は、caller-provided generated artifact や複数 generator profile を
 canonical payload として扱う future profile 用の予約 error であり、MVP validator は返してはいけません。
-Phase 2 側にこの profile 用 generator がまだ実装されていない場合、Advanced Inductive validator は
-candidate を受理せず
+Phase 9 Human core 側には P9H-04〜P9H-06 の indexed / mutual / approved nested artifact generator が
+実装済みです。ただし Phase 9 AI MVP profile は non-mutual / non-nested / non-large-elimination の
+狭い validation substrate に固定します。AI MVP が選択した profile 用 generator が利用できない場合、
+Advanced Inductive validator は candidate を受理せず
 `Rejected { error = UnsupportedFeature, feature_error = Some(AdvancedInductive(ArtifactGeneratorUnavailable)) }`
 を返します。
 ここでいう `ArtifactGeneratorUnavailable` は、singleton / non-nested / non-large-elimination の MVP profile を
@@ -1270,11 +1273,10 @@ generator に到達する前に
 として拒否します。
 M3 を完了とみなせるのは、non-mutual / non-nested / non-large-elimination のこの profile で
 Phase 2 generator の出力と Phase 2 verifier の generated artifact check が同じ canonical bytes に合意する場合だけです。
-Phase 9 core がまだ deterministic generator を定義していない組み合わせ
-（例: mutual recursor、nested recursor、large elimination profile）は、
-validator が独自生成を推測せず、MVP では上の `PositivityProfileUnsupported` として拒否します。
-future profile でその shape を supported profile に昇格した後、その profile 用 generator だけが未実装の場合に
-`ArtifactGeneratorUnavailable` を使います。
+Human core 側で実装済みの mutual recursor / approved nested recursor であっても、AI MVP validator が
+別 profile として明示的に有効化するまでは、validator が独自生成を推測せず、MVP では上の
+`PositivityProfileUnsupported` として拒否します。future profile でその shape を supported profile に
+昇格した後、その profile 用 generator だけが未実装の場合に `ArtifactGeneratorUnavailable` を使います。
 
 AI が出してよいもの:
 
