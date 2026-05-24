@@ -447,18 +447,18 @@ generic positivity checker は future target。P9H-06 は approved functor profi
 
 実装タスク:
 
-- [ ] `crates/npa-api` または専用 module に certificate-derived theorem graph extractor を追加する。
-- [ ] node schema、edge schema、node identity、edge identity、deterministic graph hash を固定する。
-- [ ] type / proof / transparent def body / constructor type / axiom deps に現れる `Const` を抽出する。
-- [ ] source notation、tactic script、AI sidecar を graph extraction input から除外する。
-- [ ] axiom dependency path と direct / transitive dependency query の fixtures を追加する。
+- [x] `crates/npa-api` または専用 module に certificate-derived theorem graph extractor を追加する。
+- [x] node schema、edge schema、node identity、edge identity、deterministic graph hash を固定する。
+- [x] type / proof / transparent def body / constructor type / axiom deps に現れる `Const` を抽出する。
+- [x] source notation、tactic script、AI sidecar を graph extraction input から除外する。
+- [x] axiom dependency path と direct / transitive dependency query の fixtures を追加する。
 
 受け入れ条件:
 
-- [ ] 同じ `.npcert` input から同じ graph export hash が得られる。
-- [ ] source text や Human debug metadata を変えても graph hash は変わらない。
-- [ ] axiom deps、constructor deps、recursor deps が graph に出る。
-- [ ] import `export_hash` / high-trust `certificate_hash` と graph snapshot の binding が検査できる。
+- [x] 同じ `.npcert` input から同じ graph export hash が得られる。
+- [x] source text や Human debug metadata を変えても graph hash は変わらない。
+- [x] axiom deps、constructor deps、recursor deps が graph に出る。
+- [x] import `export_hash` / high-trust `certificate_hash` と graph snapshot の binding が検査できる。
 
 検証:
 

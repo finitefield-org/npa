@@ -38,6 +38,7 @@ mod session;
 mod snapshot;
 mod std_library;
 mod tactic;
+mod theorem_graph;
 mod types;
 mod validation;
 mod verify;
@@ -555,6 +556,15 @@ pub use tactic::{
     MachineTacticRunErrorObject, MachineTacticRunRequest, MachineTacticRunResponse,
     MachineTacticRunResultKind, MachineTacticRunSchedulerFields, MachineTacticRunSuccessFields,
     MachineTacticRunSuccessResult,
+};
+pub use theorem_graph::{
+    certificate_theorem_graph_snapshot_canonical_bytes, certificate_theorem_graph_snapshot_hash,
+    extract_certificate_theorem_graph, extract_certificate_theorem_graph_from_cert,
+    CertificateTheoremGraphEdge, CertificateTheoremGraphEdgeKind, CertificateTheoremGraphError,
+    CertificateTheoremGraphExtractorVersion, CertificateTheoremGraphImportBinding,
+    CertificateTheoremGraphNode, CertificateTheoremGraphNodeId, CertificateTheoremGraphNodeKind,
+    CertificateTheoremGraphNodeScope, CertificateTheoremGraphOptions,
+    CertificateTheoremGraphSnapshot,
 };
 pub use types::{
     format_goal_id_wire, format_hash_string, format_meta_var_id_wire, is_machine_local_name,

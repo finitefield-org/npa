@@ -1322,6 +1322,44 @@ SimilarStatement
 UsedInProof
 ```
 
+P9H-07 実装では、最初の certificate-derived extractor を `crates/npa-api` に置きます。
+入力は canonical `.npcert` bytes と verified import bindings だけで、source notation、tactic script、
+Human debug metadata、AI sidecar は graph extraction input に含めません。
+
+MVP schema は次を固定します。
+
+```text
+snapshot:
+  source module + source export_hash + source certificate_hash + extractor_version
+
+node identity:
+  scope + module + name + decl_interface_hash
+
+node kinds:
+  Axiom / Definition / Theorem / Inductive / Constructor / Recursor / Builtin / Unknown
+
+edge identity:
+  from node id + to node id + edge kind
+
+edge kinds:
+  ImportsDeclaration
+  MentionsType
+  UsesConstant
+  GeneratedDeclaration
+  DependsOnDirectAxiom
+  DependsOnTransitiveAxiom
+```
+
+extractor は declaration type、theorem proof、transparent def body、inductive constructor type、
+recursor type、axiom dependency report から `Const` を抽出します。graph hash は source module、
+source `export_hash`、source `certificate_hash`、import binding、sorted node set、sorted edge set から
+deterministic に計算します。import は normal path では `export_hash`、high-trust path では
+`certificate_hash` も snapshot binding として検査します。
+
+この extractor は offline/source-free な post-certificate artifact です。AI candidate hot path や
+ranking inner loop に同期挿入せず、Phase 9 AI theorem graph query は引き続き bounded snapshot query
+として扱います。
+
 ---
 
 ## 7.3 Graph extraction
