@@ -135,10 +135,16 @@ regression として固定されています。生成される `.npcert` と `St
 このリポジトリでは source layout fixtures、Rust builders、tests を正本として temp package 上で再生成します。
 同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
 Phase 9 advanced automation endpoint substrate も実装されています。
+Phase 9 Human の target scope は、advanced inductive、universe polymorphism 強化、
+typeclass、quotient_v1、SMT certificate surface / reconstruction boundary、theorem graph、
+natural language formalization confirmation flow まで実装済みです。
 Phase 9 Human / AI 境界は `p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` と
 `p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定し、
 高度機能の sidecar / score / solver output / confidence と重い audit は AI 候補 hot path や
 checker verdict の根拠に入れません。
+Phase 9 AI は deterministic validation / replay substrate と M9 fixture matrix を実装済みですが、
+production LLM / RAG、online theorem graph store、external SMT solver service、非空 solver-native
+SMT success profile は target integration であり、このリポジトリでは実装済みとは扱いません。
 Phase 8 では `crates/npa-checker-ref` の `npa-checker-ref` binary が `.npcert` を
 source なしで検査し、`crates/npa-api` が checker request / result の正規化、
 release audit bundle、challenge replay、AI sidecar validation の非信頼 orchestration を固定します。
@@ -159,14 +165,16 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-Phase 9 完了後の回帰確認は次の固定ゲートで行います。
+Phase 9 Human 完了後の required release completion gate は次です。
 
 ```sh
 ./scripts/phase9-regression.sh
 ```
 
-このゲートは Phase 9 M9 fixture matrix を先に実行し、その後 `fmt --check`、
-`clippy -D warnings`、workspace 全体の test を通します。
+このゲートは Phase 9 AI M9 deterministic fixture matrix を先に実行し、その後 `fmt --check`、
+`clippy -D warnings`、workspace 全体の test を通します。release / high-trust の pass/fail は
+checker result と deterministic artifact で決まり、AI sidecar、theorem graph score、
+formalization confidence、SMT solver output は trusted boundary に入りません。
 同じゲートは GitHub Actions の `Phase 9 Regression / phase9-regression`
 として、PR と `main` への push でも実行されます。
 

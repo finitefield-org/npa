@@ -13,19 +13,19 @@ Phase 9 は、ここまで作った小さく安全な証明支援系を、実用
 - natural language formalization
 ```
 
-実装メモ（2026-05-21）:
+実装・完了メモ（2026-05-25）:
 
 ```text
-- この文書は Phase 9 Human Profile の user-facing / kernel-facing 最終ターゲット設計を記述する
-- 現リポジトリで実装済みなのは crates/npa-api の Phase 9 AI deterministic validation /
-  replay substrate と M9 fixture matrix である
-- その substrate は高度機能候補を検査境界へ戻す非信頼 automation であり、
-  Human Profile の kernel / checker-facing trusted rules を置き換えない
+- この文書は Phase 9 Human Profile の user-facing / kernel-facing 完了状態を記述する
+- 現リポジトリでは P9H-00 から P9H-15 までの Human target scope を実装済み
+- Phase 9 AI deterministic validation / replay substrate と M9 fixture matrix も実装済みだが、
+  これは高度機能候補を検査境界へ戻す非信頼 Machine Profile であり、
+  Human Profile の kernel / checker-facing rules を置き換えない
 - P9H-00 の境界 regression は
   `p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` と
   `p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定する
-- advanced inductive / quotient / typeclass / SMT / theorem graph / natural language formalization の
-  full human workflow は、この文書の後続 implementation target として扱う
+- production LLM / RAG / online theorem graph store / external SMT solver service operation は
+  target integration として残し、実装済みとは書かない
 - Phase 9 完了後の回帰確認は ./scripts/phase9-regression.sh と
   GitHub Actions の Phase 9 Regression で固定している
 ```
@@ -112,6 +112,34 @@ deterministic snapshot を検索します。SMT solver、quotient primitive、fu
 AI 側の速度要件は Phase 9 AI Profile の bounded validation / deterministic fixture matrix と対応させます。
 この対応は P9H-00 regression として、Phase 5-7 replay / verify request の candidate hash と
 state fingerprint に Phase 9 Human metadata を混ぜないことまで test 名で追跡します。
+
+## 1.2 Release completion gate と target integration の境界
+
+Phase 9 Human の完了状態は、docs、tests、release gate で同じ意味に揃えます。
+
+```text
+required completion gate:
+  ./scripts/phase9-regression.sh
+
+gate contents:
+  Phase 9 AI M9 deterministic fixture matrix
+  cargo fmt --all -- --check
+  cargo clippy --workspace --all-targets -- -D warnings
+  cargo test --workspace
+
+also wired as:
+  GitHub Actions: Phase 9 Regression / phase9-regression
+```
+
+この gate は release / high-trust の pass/fail を、checker result と deterministic artifact だけで
+決める方針を確認します。AI sidecar、theorem graph score、formalization confidence、SMT solver output は
+診断・探索・監査 metadata であり、trusted boundary には入りません。
+
+Phase 9 Human target scope はこのリポジトリ内の Rust crates と fixtures で完了しています。
+一方で、production AI orchestrator、LLM / RAG 接続、online graph store、full external SMT solver
+support、非空 solver-native SMT success profile は target integration として残します。
+これらを `./scripts/phase9-regression.sh` や PR の AI candidate enumeration に同期追加して、
+AI hot path の速度を落としてはいけません。
 
 ---
 

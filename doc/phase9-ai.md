@@ -37,11 +37,14 @@ Phase 9 AI Profile の目的は次です。
 - SMT や quotient など trusted base を広げやすい機能の検査境界を固定する
 ```
 
-実装メモ（2026-05-21）:
+実装・境界メモ（2026-05-25）:
 
 ```text
 - Phase 9 AI MVP M1-M9 は crates/npa-api の advanced automation endpoint substrate
   と deterministic fixture matrix として実装済み
+- Phase 9 Human target scope も P9H-00 から P9H-15 まで実装済みだが、
+  この文書の AI MVP は production AI / solver / graph service ではなく deterministic
+  Machine Profile validation / replay substrate を指す
 - production AI orchestrator、LLM / RAG / external SMT solver process、graph store の運用は
   まだ trusted path 外の caller / Post-MVP integration scope
 - crates/npa-api の Phase 9 endpoint substrate は candidate validation / replay の
@@ -5914,9 +5917,10 @@ P1  SMT success profile
     非空 solver-native rule registry、rule descriptor fingerprint、PayloadNode proof reconstruction、
     final_proof の kernel / Phase 8 checker success を追加する。
 
-P2  Quotient-capable checker profile
-    quotient primitive の trusted boundary、canonical certificate schema、independent checker support、
-    quotient_v1 adoption success を追加する。
+P2  Quotient profile expansion
+    P9H-12 の QuotientV1Reference opt-in profile は実装済み。
+    ここで残すのは、より大きい quotient hierarchy や external checker deployment を
+    explicit profile として増やす Post-MVP 作業。
 
 P3  Advanced inductive expansion
     mutual inductive、approved functor 越し nested inductive、large elimination、
@@ -5927,8 +5931,9 @@ P4  Theorem graph retrieval expansion
     ranking score は certificate hash と validation pass/fail には入れない。
 
 P5  Formalization orchestrator integration
-    LLM / RAG / theorem graph を caller として接続し、候補生成、逆翻訳、
-    human review workflow を実装する。
+    Human `/formalize` wrapper と intent certificate boundary は P9H-15 で実装済み。
+    ここで残すのは、LLM / RAG / theorem graph を trusted path 外の caller として接続する
+    production candidate generation / UI workflow。
 
 P6  Typeclass scalability
     memoization、priority profile、larger algebraic hierarchy support を追加する。
