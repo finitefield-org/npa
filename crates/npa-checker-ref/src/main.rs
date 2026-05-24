@@ -145,14 +145,143 @@ fn load_policy(options: &CliOptions) -> Result<ReferenceCheckerPolicy, CliError>
         }
     }
     let text = std::str::from_utf8(&bytes).map_err(|_| CliError::new("policy"))?;
+    parse_policy_text(text)
+}
+
+fn parse_policy_text(text: &str) -> Result<ReferenceCheckerPolicy, CliError> {
     let mut policy = ReferenceCheckerPolicy::default();
-    if text.contains("high-trust") {
-        policy.trust_mode = ReferenceTrustMode::HighTrust;
+
+    if let Some(mode) = find_string_field(text, &["trust_mode", "mode"])? {
+        policy.trust_mode = match mode.as_str() {
+            "normal" => ReferenceTrustMode::Normal,
+            "high-trust" | "high_trust" => ReferenceTrustMode::HighTrust,
+            _ => return Err(CliError::new("policy")),
+        };
     }
-    if text.contains("deny_custom_axioms = true") || text.contains("\"deny_custom_axioms\":true") {
-        policy.deny_custom_axioms = true;
+    if let Some(value) = find_bool_field(text, "deny_sorry")? {
+        policy.deny_sorry = value;
     }
+    if let Some(value) = find_bool_field(text, "deny_custom_axioms")? {
+        policy.deny_custom_axioms = value;
+    }
+
+    let allowed_axioms = find_string_array_field(text, "allowed_axioms")?;
+    let legacy_allow_axioms = find_string_array_field(text, "allow_axioms")?;
+    policy.allowed_axioms = match (allowed_axioms, legacy_allow_axioms) {
+        (Some(current), Some(legacy)) if current != legacy => return Err(CliError::new("policy")),
+        (Some(current), _) => current,
+        (None, Some(legacy)) => legacy,
+        (None, None) => Vec::new(),
+    };
+
     Ok(policy)
+}
+
+fn find_bool_field(source: &str, field: &str) -> Result<Option<bool>, CliError> {
+    let Some(start) = find_field_value_start(source, field) else {
+        return Ok(None);
+    };
+    if source[start..].starts_with("true") && has_policy_bool_delimiter(source, start + 4) {
+        Ok(Some(true))
+    } else if source[start..].starts_with("false") && has_policy_bool_delimiter(source, start + 5) {
+        Ok(Some(false))
+    } else {
+        Err(CliError::new("policy"))
+    }
+}
+
+fn find_string_field(source: &str, fields: &[&str]) -> Result<Option<String>, CliError> {
+    for field in fields {
+        if let Some(start) = find_field_value_start(source, field) {
+            let (value, _) = parse_json_string(source, start)?;
+            return Ok(Some(value));
+        }
+    }
+    Ok(None)
+}
+
+fn find_string_array_field(source: &str, field: &str) -> Result<Option<Vec<String>>, CliError> {
+    let Some(start) = find_field_value_start(source, field) else {
+        return Ok(None);
+    };
+    parse_string_array(source, start).map(Some)
+}
+
+fn find_field_value_start(source: &str, field: &str) -> Option<usize> {
+    let quoted = format!("\"{field}\"");
+    let bytes = source.as_bytes();
+    let mut search_start = 0;
+    while let Some(relative) = source[search_start..].find(&quoted) {
+        let index = search_start + relative + quoted.len();
+        let after_field = skip_policy_ws(bytes, index);
+        if bytes.get(after_field) == Some(&b':') {
+            return Some(skip_policy_ws(bytes, after_field + 1));
+        }
+        search_start = index;
+    }
+
+    search_start = 0;
+    while let Some(relative) = source[search_start..].find(field) {
+        let index = search_start + relative;
+        let has_left_boundary = index == 0 || !is_policy_ident_byte(bytes[index - 1]);
+        let after_name = index + field.len();
+        let has_right_boundary = bytes
+            .get(after_name)
+            .is_none_or(|byte| !is_policy_ident_byte(*byte));
+        if has_left_boundary && has_right_boundary {
+            let after_field = skip_policy_ws(bytes, after_name);
+            if bytes.get(after_field) == Some(&b'=') {
+                return Some(skip_policy_ws(bytes, after_field + 1));
+            }
+        }
+        search_start = index + 1;
+    }
+    None
+}
+
+fn is_policy_ident_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'_'
+}
+
+fn skip_policy_ws(bytes: &[u8], mut index: usize) -> usize {
+    while bytes.get(index).is_some_and(u8::is_ascii_whitespace) {
+        index += 1;
+    }
+    index
+}
+
+fn has_policy_bool_delimiter(source: &str, index: usize) -> bool {
+    source
+        .as_bytes()
+        .get(index)
+        .is_none_or(|byte| byte.is_ascii_whitespace() || matches!(*byte, b',' | b'}' | b']'))
+}
+
+fn parse_string_array(source: &str, start: usize) -> Result<Vec<String>, CliError> {
+    let bytes = source.as_bytes();
+    let start = skip_policy_ws(bytes, start);
+    if bytes.get(start) != Some(&b'[') {
+        return Err(CliError::new("policy"));
+    }
+    let mut index = start + 1;
+    let mut values = Vec::new();
+    loop {
+        index = skip_policy_ws(bytes, index);
+        match bytes.get(index) {
+            Some(b']') => return Ok(values),
+            Some(b'"') => {
+                let (value, next) = parse_json_string(source, index)?;
+                values.push(value);
+                index = skip_policy_ws(bytes, next);
+                match bytes.get(index) {
+                    Some(b',') => index += 1,
+                    Some(b']') => return Ok(values),
+                    _ => return Err(CliError::new("policy")),
+                }
+            }
+            _ => return Err(CliError::new("policy")),
+        }
+    }
 }
 
 fn load_import_store(options: &CliOptions) -> Result<ReferenceImportStore, CliError> {
@@ -544,6 +673,7 @@ mod tests {
     use super::*;
 
     use npa_cert::{build_module_cert, encode_module_cert, CoreModule, Name};
+    use npa_kernel::{Decl, Expr, Level};
 
     fn temp_dir(name: &str) -> PathBuf {
         let mut path = env::temp_dir();
@@ -558,6 +688,22 @@ mod tests {
             CoreModule {
                 name: Name::from_dotted(module),
                 declarations: Vec::new(),
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
+    }
+
+    fn custom_axiom_certificate() -> Vec<u8> {
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Policy.Custom"),
+                declarations: vec![Decl::Axiom {
+                    name: "P".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                }],
             },
             &[],
         )
@@ -603,6 +749,71 @@ mod tests {
         assert!(json.contains("\"status\":\"failed\""));
         assert!(json.contains("\"kind\":\"certificate_decode_error\""));
         let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cli_policy_pretty_json_denies_custom_axioms() {
+        let dir = temp_dir("policy-deny");
+        let cert_path = dir.join("Policy.Custom.npcert");
+        let policy_path = dir.join("policy.json");
+        fs::write(&cert_path, custom_axiom_certificate()).unwrap();
+        fs::write(
+            &policy_path,
+            r#"{
+              "deny_sorry": true,
+              "deny_custom_axioms": true,
+              "allow_axioms": []
+            }"#,
+        )
+        .unwrap();
+
+        let (json, code) = run_with_args([
+            "--cert".to_owned(),
+            cert_path.display().to_string(),
+            "--policy".to_owned(),
+            policy_path.display().to_string(),
+            "--output".to_owned(),
+            "json".to_owned(),
+        ]);
+
+        assert_eq!(code, 1);
+        assert!(json.contains("\"kind\":\"forbidden_axiom\""));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cli_policy_allowlist_accepts_exact_custom_axiom() {
+        let dir = temp_dir("policy-allow");
+        let cert_path = dir.join("Policy.Custom.npcert");
+        let policy_path = dir.join("policy.toml");
+        fs::write(&cert_path, custom_axiom_certificate()).unwrap();
+        fs::write(
+            &policy_path,
+            r#"
+              deny_custom_axioms = true
+              allowed_axioms = ["Policy.Custom.P"]
+            "#,
+        )
+        .unwrap();
+
+        let (json, code) = run_with_args([
+            "--cert".to_owned(),
+            cert_path.display().to_string(),
+            "--policy".to_owned(),
+            policy_path.display().to_string(),
+            "--output".to_owned(),
+            "json".to_owned(),
+        ]);
+
+        assert_eq!(code, 0);
+        assert!(json.contains("\"status\":\"checked\""));
+        assert!(json.contains("\"module\":\"Policy.Custom\""));
+        let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn cli_policy_rejects_malformed_bool_literal() {
+        assert!(parse_policy_text("deny_custom_axioms = trueish").is_err());
     }
 
     #[test]

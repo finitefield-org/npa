@@ -756,7 +756,7 @@ checker は policy file を受け取ります。
 {
   "deny_sorry": true,
   "deny_custom_axioms": true,
-  "allow_axioms": [
+  "allowed_axioms": [
     "Classical.choice",
     "Propext"
   ]
@@ -769,7 +769,7 @@ checker は policy file を受け取ります。
 {
   "deny_sorry": true,
   "deny_custom_axioms": true,
-  "allow_axioms": []
+  "allowed_axioms": []
 }
 ```
 
@@ -1610,7 +1610,7 @@ POST /check/certificate
   "policy": {
     "deny_sorry": true,
     "deny_custom_axioms": true,
-    "allow_axioms": []
+    "allowed_axioms": []
   }
 }
 ```
