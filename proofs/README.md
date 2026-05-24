@@ -39,6 +39,8 @@ Current bundles:
   operation, and law assumptions importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
   over explicit carrier, operation, relation, function, and law assumptions.
+- `Proofs/Ai/Algebra/AbstractSquareNormalize/`: abstract square-normalization theorem targets over
+  the P17/P18 scalar APIs and explicit law assumptions.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -552,7 +554,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P19+: General Euclidean Pythagorean Roadmap
+### P20+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -565,8 +567,9 @@ RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
 the squared `dist` form over the current concrete scalar and vector corpus. P17 starts replacing the
 singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
-abstract scalar layer with order and square-root APIs; P19+ continues the pattern through square
-normalization, vector, inner-product, affine, and metric APIs.
+abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
+normalization layer. P20+ continues the pattern through vector, inner-product, affine, and metric
+APIs.
 
 Planned contents:
 
@@ -601,8 +604,11 @@ Completed prerequisite:
 - P18 `Proofs.Ai.Algebra.AbstractOrderedField` supplies checked abstract order and square-root
   theorem targets over explicit carrier, operation, relation, function, and law assumptions without
   adding unchecked order or square-root axioms.
+- P19 `Proofs.Ai.Algebra.AbstractSquareNormalize` supplies checked abstract square-normalization
+  theorem targets over the P17/P18 scalar APIs and explicit law assumptions without adding unchecked
+  algebra or order axioms.
 
-P19+ policy:
+P20+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -613,7 +619,6 @@ P19+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P19 | `Proofs.Ai.Algebra.AbstractSquareNormalize` | no new carrier; normalization helpers over P17/P18 operations | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term` | `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq` |
 | P20 | `Proofs.Ai.Vector.AbstractSpace` | abstract vector carrier, zero, add, neg, sub, scalar multiplication, vector-space law package | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_add_zero`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_add_neg_cancel`, `sub_sub_sub_cancel` | `vec_sub_self`, `vec_sub_zero`, `vec_add_left_cancel`, `smul_add`, `add_smul`, `one_smul`, `mul_smul` |
 | P21 | `Proofs.Ai.Vector.AbstractInnerProduct` | abstract inner product, `normSq`, and `distSq` over P20 | `dot_comm`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `norm_sq_def`, `dist_sq_def`, `norm_sq_sub_of_dot_zero` | `norm_sq_add`, `norm_sq_sub`, `norm_sq_nonneg`, `dot_self_eq_norm_sq`, `parallelogram_law`, `polarization_identity`, `cauchy_schwarz` |
 | P22 | `Proofs.Ai.Geometry.Affine` | abstract point carrier and displacement map `disp A B` | `disp_self`, `disp_reverse`, `disp_comp`, `hypotenuse_vector_eq_sub_legs`, `dist_sq_points_def` | `point_ext_of_zero_disp`, `dist_sq_symm`, `dist_sq_zero_iff_eq` |
@@ -964,8 +969,13 @@ Theorem targets:
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
-No new carrier lives here; this module should provide checked normalization lemmas over the abstract
-ring and ordered-field APIs.
+No new carrier or operation definition lives here. This implemented module provides checked
+normalization theorem targets over the P17/P18 abstract scalar APIs.
+
+The checked theorem targets either close by definitional equality (`square_def`,
+`mul_self_eq_square`) or take the corresponding normalization/order law as an explicit argument and
+return it at the requested variables. This avoids adding unchecked algebra or order axioms while
+giving later vector and norm layers stable target names.
 
 | Theorem | Shape / purpose |
 | --- | --- |

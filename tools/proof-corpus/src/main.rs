@@ -288,6 +288,23 @@ const ABSTRACT_ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_SQUARE_NORMALIZE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractSquareNormalize",
+    source_path: "Proofs/Ai/Algebra/AbstractSquareNormalize/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractSquareNormalize/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractSquareNormalize/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractSquareNormalize/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ABSTRACT_SQUARE_NORMALIZE_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -2319,6 +2336,147 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "square_def",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (a : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul a) (mul a a)"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun a => @Eq.refl.{u} Scalar (@sq.{u} Scalar mul a)"
+        ),
+    },
+    TheoremArtifact {
+        name: "mul_self_eq_square",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (a : Scalar), @Eq.{u} Scalar (mul a a) (@sq.{u} Scalar mul a)"
+        ),
+        proof: abstract_ordered_field_abs!("fun a => @Eq.refl.{u} Scalar (mul a a)"),
+    },
+    TheoremArtifact {
+        name: "sq_add",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (add a b)) (add (add (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (add a b)) (add (add (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "sq_sub",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (sub a b)) (add (sub (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (sub a b)) (add (sub (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "sum_two_squares_comm",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (x : Scalar), forall (y : Scalar), @Eq.{u} Scalar (add x y) (add y x)), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)) (add (@sq.{u} Scalar mul b) (@sq.{u} Scalar mul a))"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => law (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)"
+        ),
+    },
+    TheoremArtifact {
+        name: "cancel_double_zero_term",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (x : Scalar), forall (hzero : @Eq.{u} Scalar x zero), @Eq.{u} Scalar (add a (mul (@two.{u} Scalar one add) x)) a), forall (a : Scalar), forall (x : Scalar), forall (hzero : @Eq.{u} Scalar x zero), @Eq.{u} Scalar (add a (mul (@two.{u} Scalar one add) x)) a"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun x => fun hzero => law a x hzero"
+        ),
+    },
+    TheoremArtifact {
+        name: "sq_zero",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero), @Eq.{u} Scalar (@sq.{u} Scalar mul zero) zero"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => law zero"),
+    },
+    TheoremArtifact {
+        name: "sq_one",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a), @Eq.{u} Scalar (@sq.{u} Scalar mul one) one"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => law one"),
+    },
+    TheoremArtifact {
+        name: "sq_neg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul (neg a) (neg a)) (mul a a)), forall (a : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (neg a)) (@sq.{u} Scalar mul a)"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "two_mul",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) a) (add a a)), forall (a : Scalar), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) a) (add a a)"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "sq_eq_sq_of_eq_or_neg_eq",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (h : forall (R : Prop), forall (eq_case : forall (hab : @Eq.{u} Scalar a b), R), forall (neg_case : forall (hanb : @Eq.{u} Scalar a (neg b)), R), R), @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), forall (a : Scalar), forall (b : Scalar), forall (h : forall (R : Prop), forall (eq_case : forall (hab : @Eq.{u} Scalar a b), R), forall (neg_case : forall (hanb : @Eq.{u} Scalar a (neg b)), R), R), @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun b => fun h => law a b h"),
+    },
+    TheoremArtifact {
+        name: "sq_add_eq_add_sq_add_two_mul",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (add a b)) (add (add (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (add a b)) (add (add (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "sq_sub_eq_add_sq_sub_two_mul",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (sub a b)) (add (sub (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (@sq.{u} Scalar mul (sub a b)) (add (sub (@sq.{u} Scalar mul a) (mul (mul (@two.{u} Scalar one add) a) b)) (@sq.{u} Scalar mul b))"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "add_sq_eq_zero_iff",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsum : @Eq.{u} Scalar (add (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)) zero), forall (S : Prop), forall (mk_pair : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), S), S), forall (backward : forall (hpair : forall (S : Prop), forall (mk_pair : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), S), S), @Eq.{u} Scalar (add (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)) zero), R), R), forall (a : Scalar), forall (b : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsum : @Eq.{u} Scalar (add (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)) zero), forall (S : Prop), forall (mk_pair : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), S), S), forall (backward : forall (hpair : forall (S : Prop), forall (mk_pair : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), S), S), @Eq.{u} Scalar (add (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)) zero), R), R"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun R => fun mk => law a b R mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "mul_two_zero_term",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (x : Scalar), forall (hzero : @Eq.{u} Scalar x zero), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) x) zero), forall (x : Scalar), forall (hzero : @Eq.{u} Scalar x zero), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) x) zero"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun x => fun hzero => law x hzero"),
+    },
+    TheoremArtifact {
+        name: "normalize_add_with_zero_cross_term",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), forall (hzero : @Eq.{u} Scalar x zero), @Eq.{u} Scalar (add (add a (mul (@two.{u} Scalar one add) x)) b) (add a b)), forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), forall (hzero : @Eq.{u} Scalar x zero), @Eq.{u} Scalar (add (add a (mul (@two.{u} Scalar one add) x)) b) (add a b)"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun x => fun hzero => law a b x hzero"
+        ),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -2508,6 +2666,21 @@ fn run() -> Result<(), String> {
         &abstract_ordered_field_imports,
         &abstract_ordered_field_source_interfaces,
     )?;
+    let abstract_square_normalize_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+    ];
+    let abstract_square_normalize_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+    ];
+    let abstract_square_normalize = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_SQUARE_NORMALIZE_MODULE,
+        &abstract_square_normalize_imports,
+        &abstract_square_normalize_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -2528,6 +2701,7 @@ fn run() -> Result<(), String> {
             iff,
             abstract_ring,
             abstract_ordered_field,
+            abstract_square_normalize,
         ])
         .as_bytes(),
     )?;
@@ -2796,6 +2970,11 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
         // Eq is verified as a transitive AbstractRing dependency; importing it directly here
         // duplicates the kernel Eq declaration during certificate handoff.
         &["Proofs.Ai.Algebra.AbstractRing"]
+    } else if config.module == ABSTRACT_SQUARE_NORMALIZE_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+        ]
     } else {
         config.imports
     }
