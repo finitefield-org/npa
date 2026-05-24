@@ -1252,14 +1252,17 @@ SMT certificate success は、非空の encoder table と solver-native rule reg
 ```json
 {
   "kind": "smt_certificate",
-  "format": "alethe",
+  "format": "mvp_proof_node_table_v1 | alethe_opaque_v1 | lfsc_opaque_v1 | solver_result_only_v1",
   "solver": "cvc5",
   "logic": "QF_LIA",
   "encoded_goal_hash": "sha256:...",
   "smt_problem_hash": "sha256:...",
   "proof_hash": "sha256:...",
   "reconstruction": {
-    "npa_proof_hash": "sha256:...",
+    "rule_registry_profile": "mvp_empty_registry_v1",
+    "reconstruction_plan_hash": "sha256:...",
+    "imported_theory_count": 0,
+    "step_count": 1,
     "trusted": false
   }
 }
@@ -1267,6 +1270,10 @@ SMT certificate success は、非空の encoder table と solver-native rule reg
 
 `trusted: false` でよいです。
 なぜなら最終的には NPA proof term が kernel/checker で検査されるからです。
+P9H-13 時点では、SMT-LIB problem bytes / hash、encoded problem hash、proof payload hash を deterministic に固定し、
+Alethe / LFSC は opaque proof artifact として hash / size / schema validation だけを行います。
+`solver_result_only` は明示的な structured rejection であり、solver の `unsat` だけでは success になりません。
+この schema 生成と validation は tactic adoption / audit 境界の処理であり、AI candidate enumeration の inner loop には入れません。
 
 ---
 

@@ -674,18 +674,18 @@ P9H-12 は quotient-capable profile の導入。production full external checker
 
 実装タスク:
 
-- [ ] SMT certificate schema に format、solver、logic、encoded_goal_hash、smt_problem_hash、proof_hash、reconstruction metadata を追加する。
-- [ ] QF propositional / EUF / simple LIA の encoding table と Nat-to-Int side condition 表現を実装する。
-- [ ] SMT-LIB problem bytes と encoding hash を deterministic に生成する。
-- [ ] Alethe / LFSC 等の proof payload を opaque artifact として hash / size / schema validation できるようにする。
-- [ ] unsupported fragment、solver result only、hash mismatch、malformed proof payload を structured error にする。
+- [x] SMT certificate schema に format、solver、logic、encoded_goal_hash、smt_problem_hash、proof_hash、reconstruction metadata を追加する。
+- [x] QF propositional / EUF / simple LIA の encoding table と Nat-to-Int side condition 表現を実装する。
+- [x] SMT-LIB problem bytes と encoding hash を deterministic に生成する。
+- [x] Alethe / LFSC 等の proof payload を opaque artifact として hash / size / schema validation できるようにする。
+- [x] unsupported fragment、solver result only、hash mismatch、malformed proof payload を structured error にする。
 
 受け入れ条件:
 
-- [ ] QF propositional / EUF / simple LIA の supported fragment 判定が deterministic である。
-- [ ] SMT solver の unsat 結果だけでは success にならない。
-- [ ] encoded problem hash、SMT problem hash、proof payload hash が stable である。
-- [ ] Phase 9 AI SMT deterministic rejection fixtures と Human SMT schema が矛盾しない。
+- [x] QF propositional / EUF / simple LIA の supported fragment 判定が deterministic である。
+- [x] SMT solver の unsat 結果だけでは success にならない。
+- [x] encoded problem hash、SMT problem hash、proof payload hash が stable である。
+- [x] Phase 9 AI SMT deterministic rejection fixtures と Human SMT schema が矛盾しない。
 
 検証:
 

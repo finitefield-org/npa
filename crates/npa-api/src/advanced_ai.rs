@@ -47,7 +47,13 @@ const THEOREM_GRAPH_QUERY_FEATURES_HASH_TAG: &str =
     "npa.advanced-ai.theorem_graph.query_features.v1";
 const SMT_PROBLEM_HASH_TAG: &str = "npa.advanced-ai.smt.problem.v1";
 const SMT_ENCODING_HASH_TAG: &str = "npa.advanced-ai.smt.encoding.v1";
+const SMT_LIB_PROBLEM_HASH_TAG: &str = "npa.advanced-ai.smt.smtlib_problem.v1";
 const SMT_PROOF_PAYLOAD_HASH_TAG: &str = "npa.advanced-ai.smt.proof_payload.v1";
+const SMT_OPAQUE_PROOF_PAYLOAD_HASH_TAG: &str = "npa.advanced-ai.smt.opaque_proof_payload.v1";
+const SMT_RECONSTRUCTION_PLAN_HASH_TAG: &str = "npa.advanced-ai.smt.reconstruction_plan.v1";
+const SMT_CERTIFICATE_METADATA_HASH_TAG: &str = "npa.advanced-ai.smt.certificate_metadata.v1";
+const SMT_NAT_TO_INT_SIDE_CONDITION_HASH_TAG: &str =
+    "npa.advanced-ai.smt.nat_to_int_side_condition.v1";
 const SMT_COMMAND_ID_HASH_TAG: &str = "npa.advanced-ai.smt.command_id.v1";
 const SMT_SYMBOL_HASH_TAG: &str = "npa.advanced-ai.smt.symbol.v1";
 const FORMALIZATION_SOURCE_DOCUMENT_HASH_TAG: &str =
@@ -304,6 +310,7 @@ pub struct AdvancedSmtOptions {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AdvancedMachineSmtCertificateCandidate {
     pub goal: AdvancedAiGoal,
+    pub solver: AdvancedSmtSolver,
     pub logic: AdvancedSmtLogic,
     pub encoded_problem: AdvancedMachineSmtProblemRef,
     pub certificate_format: AdvancedSmtCertificateFormat,
@@ -335,6 +342,35 @@ pub struct AdvancedMachineSmtEncodedProblem {
     pub logic: AdvancedSmtLogic,
     pub command_profile: AdvancedSmtCommandProfile,
     pub commands: Vec<AdvancedSmtEncodedCommand>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AdvancedSmtSolver {
+    Cvc5,
+    Z3,
+    VeriT,
+    OpaqueExternal,
+}
+
+impl AdvancedSmtSolver {
+    fn tag(self) -> u8 {
+        match self {
+            Self::Cvc5 => 0,
+            Self::Z3 => 1,
+            Self::VeriT => 2,
+            Self::OpaqueExternal => 3,
+        }
+    }
+
+    fn from_tag(tag: u8) -> Option<Self> {
+        match tag {
+            0 => Some(Self::Cvc5),
+            1 => Some(Self::Z3),
+            2 => Some(Self::VeriT),
+            3 => Some(Self::OpaqueExternal),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -409,21 +445,81 @@ impl AdvancedSmtEncoderVersion {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AdvancedSmtCertificateFormat {
     MvpProofNodeTableV1,
+    AletheOpaqueV1,
+    LfscOpaqueV1,
+    SolverResultOnlyV1,
 }
 
 impl AdvancedSmtCertificateFormat {
     fn tag(self) -> u8 {
         match self {
             Self::MvpProofNodeTableV1 => 0,
+            Self::AletheOpaqueV1 => 1,
+            Self::LfscOpaqueV1 => 2,
+            Self::SolverResultOnlyV1 => 3,
         }
     }
 
     fn from_tag(tag: u8) -> Option<Self> {
         match tag {
             0 => Some(Self::MvpProofNodeTableV1),
+            1 => Some(Self::AletheOpaqueV1),
+            2 => Some(Self::LfscOpaqueV1),
+            3 => Some(Self::SolverResultOnlyV1),
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AdvancedSmtSupportedFragment {
+    QfPropositional,
+    QfEuf,
+    QfSimpleLia,
+    QfEufLia,
+}
+
+impl AdvancedSmtSupportedFragment {
+    fn smtlib_logic(self) -> &'static str {
+        match self {
+            Self::QfPropositional => "QF_UF",
+            Self::QfEuf => "QF_UF",
+            Self::QfSimpleLia => "QF_LIA",
+            Self::QfEufLia => "QF_UFLIA",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AdvancedSmtEncodingError {
+    UnsupportedFragment,
+    NonCanonicalPayload,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdvancedSmtCertificateMetadata {
+    pub format: AdvancedSmtCertificateFormat,
+    pub solver: AdvancedSmtSolver,
+    pub logic: AdvancedSmtLogic,
+    pub encoded_goal_hash: Hash,
+    pub smt_problem_hash: Hash,
+    pub proof_hash: Hash,
+    pub reconstruction: AdvancedSmtReconstructionMetadata,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdvancedSmtReconstructionMetadata {
+    pub rule_registry_profile: AdvancedSmtRuleRegistryProfile,
+    pub reconstruction_plan_hash: Hash,
+    pub imported_theory_count: u64,
+    pub step_count: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdvancedSmtNatToIntSideCondition {
+    pub source_core_expr: Expr,
+    pub int_symbol: AdvancedSmtSymbol,
+    pub nonnegative_assertion: AdvancedSmtExpr,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1113,6 +1209,9 @@ pub enum AdvancedSmtCertificateError {
     ReconstructionPremiseMismatch,
     PublicInterfaceMismatch,
     TheoryRefMismatch,
+    UnsupportedFragment,
+    SolverResultOnly,
+    MalformedProofPayload,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1623,6 +1722,283 @@ pub fn advanced_ai_smt_proof_payload_hash(
     ))
 }
 
+pub fn advanced_ai_smt_opaque_proof_payload_hash(
+    format: AdvancedSmtCertificateFormat,
+    payload_bytes: &[u8],
+) -> std::result::Result<Hash, AdvancedSmtEncodingError> {
+    if !matches!(
+        format,
+        AdvancedSmtCertificateFormat::AletheOpaqueV1
+            | AdvancedSmtCertificateFormat::LfscOpaqueV1
+            | AdvancedSmtCertificateFormat::SolverResultOnlyV1
+    ) || payload_bytes.is_empty()
+        || (format == AdvancedSmtCertificateFormat::SolverResultOnlyV1
+            && payload_bytes != b"unsat\n")
+    {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+    let mut out = Vec::new();
+    out.push(format.tag());
+    encode_bytes_to(&mut out, payload_bytes);
+    Ok(hash_with_domain(SMT_OPAQUE_PROOF_PAYLOAD_HASH_TAG, &out))
+}
+
+pub fn advanced_ai_smt_reconstruction_plan_canonical_bytes(
+    plan: &AdvancedMachineSmtReconstructionPlan,
+) -> std::result::Result<Vec<u8>, AdvancedAiCanonicalError> {
+    let mut out = Vec::new();
+    encode_smt_reconstruction_plan_to(&mut out, plan)?;
+    Ok(out)
+}
+
+pub fn advanced_ai_smt_reconstruction_plan_hash(
+    plan: &AdvancedMachineSmtReconstructionPlan,
+) -> std::result::Result<Hash, AdvancedAiCanonicalError> {
+    Ok(hash_with_domain(
+        SMT_RECONSTRUCTION_PLAN_HASH_TAG,
+        &advanced_ai_smt_reconstruction_plan_canonical_bytes(plan)?,
+    ))
+}
+
+pub fn advanced_ai_smt_certificate_metadata(
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<AdvancedSmtCertificateMetadata, AdvancedSmtEncodingError> {
+    if problem.logic != candidate.logic {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+    let proof_hash = match &candidate.proof_payload {
+        AdvancedMachineSmtProofPayloadRef::Inline { payload_hash, .. }
+        | AdvancedMachineSmtProofPayloadRef::Artifact { payload_hash, .. } => *payload_hash,
+    };
+    let reconstruction_plan_hash =
+        advanced_ai_smt_reconstruction_plan_hash(&candidate.reconstruction_plan)
+            .map_err(|_| AdvancedSmtEncodingError::NonCanonicalPayload)?;
+    Ok(AdvancedSmtCertificateMetadata {
+        format: candidate.certificate_format,
+        solver: candidate.solver,
+        logic: candidate.logic,
+        encoded_goal_hash: problem.goal_fingerprint,
+        smt_problem_hash: advanced_ai_smt_lib_problem_hash(problem)?,
+        proof_hash,
+        reconstruction: AdvancedSmtReconstructionMetadata {
+            rule_registry_profile: candidate.rule_registry_profile,
+            reconstruction_plan_hash,
+            imported_theory_count: candidate.reconstruction_plan.imported_theory_refs.len() as u64,
+            step_count: candidate.reconstruction_plan.steps.len() as u64,
+        },
+    })
+}
+
+pub fn advanced_ai_smt_certificate_metadata_canonical_bytes(
+    metadata: &AdvancedSmtCertificateMetadata,
+) -> Vec<u8> {
+    let mut out = Vec::new();
+    out.push(metadata.format.tag());
+    out.push(metadata.solver.tag());
+    out.push(metadata.logic.tag());
+    encode_hash_to(&mut out, &metadata.encoded_goal_hash);
+    encode_hash_to(&mut out, &metadata.smt_problem_hash);
+    encode_hash_to(&mut out, &metadata.proof_hash);
+    out.push(metadata.reconstruction.rule_registry_profile.tag());
+    encode_hash_to(&mut out, &metadata.reconstruction.reconstruction_plan_hash);
+    encode_u64_to(&mut out, metadata.reconstruction.imported_theory_count);
+    encode_u64_to(&mut out, metadata.reconstruction.step_count);
+    out
+}
+
+pub fn advanced_ai_smt_certificate_metadata_hash(
+    metadata: &AdvancedSmtCertificateMetadata,
+) -> Hash {
+    hash_with_domain(
+        SMT_CERTIFICATE_METADATA_HASH_TAG,
+        &advanced_ai_smt_certificate_metadata_canonical_bytes(metadata),
+    )
+}
+
+pub fn advanced_ai_smt_nat_to_int_side_condition(
+    source_core_expr: Expr,
+    int_symbol: AdvancedSmtSymbol,
+) -> AdvancedSmtNatToIntSideCondition {
+    let int_var = AdvancedSmtExpr::Var {
+        symbol: int_symbol.clone(),
+        sort: AdvancedSmtSortExpr::Int,
+    };
+    AdvancedSmtNatToIntSideCondition {
+        source_core_expr,
+        int_symbol,
+        nonnegative_assertion: AdvancedSmtExpr::BuiltinApp {
+            op: AdvancedSmtBuiltinOp::IntGe,
+            args: vec![int_var, AdvancedSmtExpr::IntLit(0)],
+            result_sort: AdvancedSmtSortExpr::Bool,
+        },
+    }
+}
+
+pub fn advanced_ai_smt_nat_to_int_side_condition_canonical_bytes(
+    side_condition: &AdvancedSmtNatToIntSideCondition,
+) -> Vec<u8> {
+    let mut out = Vec::new();
+    encode_expr_to(&mut out, &side_condition.source_core_expr);
+    encode_smt_symbol_to(&mut out, &side_condition.int_symbol);
+    encode_smt_expr_to(&mut out, &side_condition.nonnegative_assertion);
+    out
+}
+
+pub fn advanced_ai_smt_nat_to_int_side_condition_hash(
+    side_condition: &AdvancedSmtNatToIntSideCondition,
+) -> Hash {
+    hash_with_domain(
+        SMT_NAT_TO_INT_SIDE_CONDITION_HASH_TAG,
+        &advanced_ai_smt_nat_to_int_side_condition_canonical_bytes(side_condition),
+    )
+}
+
+pub fn advanced_ai_smt_classify_supported_fragment(
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<AdvancedSmtSupportedFragment, AdvancedSmtEncodingError> {
+    if problem.encoder_version != AdvancedSmtEncoderVersion::MvpNormalizedQfV1
+        || problem.command_profile != AdvancedSmtCommandProfile::MvpNormalizedQf
+        || matches!(
+            problem.logic,
+            AdvancedSmtLogic::MvpQfBv | AdvancedSmtLogic::MvpQfUfLiaBv
+        )
+    {
+        return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+    }
+
+    let mut features = AdvancedSmtFragmentFeatures::default();
+    let mut context = AdvancedSmtCommandContext::default();
+    let mut previous_key: Option<Vec<u8>> = None;
+    let mut target_assertions = 0usize;
+    let mut final_checks = 0usize;
+    for command in &problem.commands {
+        if !advanced_ai_smt_command_phase_matches_payload(command.phase, &command.payload) {
+            return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+        }
+        let expected_id = advanced_ai_smt_command_id(command)
+            .map_err(|_| AdvancedSmtEncodingError::NonCanonicalPayload)?;
+        if command.command_id != expected_id {
+            return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+        }
+        let key = advanced_ai_smt_command_order_key(command)
+            .map_err(|_| AdvancedSmtEncodingError::NonCanonicalPayload)?;
+        if previous_key
+            .as_ref()
+            .is_some_and(|previous| previous >= &key)
+        {
+            return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+        }
+        previous_key = Some(key);
+
+        match &command.payload {
+            AdvancedSmtCommandPayload::SortDecl { symbol, arity } => {
+                if !advanced_ai_smt_decl_symbol_is_valid(symbol) {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+                if context
+                    .sort_arities
+                    .insert(symbol.ascii.clone(), *arity)
+                    .is_some()
+                {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+                features.has_euf = true;
+            }
+            AdvancedSmtCommandPayload::FunctionDecl {
+                symbol,
+                args,
+                result,
+            } => {
+                if !advanced_ai_smt_decl_symbol_is_valid(symbol) {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+                features.has_euf = true;
+                for arg in args {
+                    advanced_ai_smt_scan_sort_for_fragment(
+                        problem.logic,
+                        arg,
+                        &mut features,
+                        &context,
+                    )?;
+                }
+                advanced_ai_smt_scan_sort_for_fragment(
+                    problem.logic,
+                    result,
+                    &mut features,
+                    &context,
+                )?;
+                if context
+                    .functions
+                    .insert(symbol.ascii.clone(), (args.clone(), result.clone()))
+                    .is_some()
+                {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+            }
+            AdvancedSmtCommandPayload::DatatypeDecl { .. } => {
+                return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+            }
+            AdvancedSmtCommandPayload::ContextAssumption { encoded_expr, .. }
+            | AdvancedSmtCommandPayload::TargetAssertion { encoded_expr, .. } => {
+                if matches!(
+                    &command.payload,
+                    AdvancedSmtCommandPayload::TargetAssertion { .. }
+                ) {
+                    target_assertions += 1;
+                }
+                advanced_ai_smt_scan_expr_for_fragment(
+                    problem.logic,
+                    encoded_expr,
+                    &mut features,
+                    &context,
+                )?;
+            }
+            AdvancedSmtCommandPayload::FinalCheck => {
+                final_checks += 1;
+            }
+        }
+    }
+    if target_assertions != 1
+        || final_checks != 1
+        || !matches!(
+            problem.commands.last().map(|command| command.phase),
+            Some(AdvancedSmtCommandPhase::FinalCheck)
+        )
+    {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+
+    Ok(match (features.has_euf, features.has_lia) {
+        (false, false) => AdvancedSmtSupportedFragment::QfPropositional,
+        (true, false) => AdvancedSmtSupportedFragment::QfEuf,
+        (false, true) => AdvancedSmtSupportedFragment::QfSimpleLia,
+        (true, true) => AdvancedSmtSupportedFragment::QfEufLia,
+    })
+}
+
+pub fn advanced_ai_smt_lib_problem_bytes(
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<Vec<u8>, AdvancedSmtEncodingError> {
+    let fragment = advanced_ai_smt_classify_supported_fragment(problem)?;
+    let mut out = Vec::new();
+    out.extend_from_slice(b"(set-option :produce-proofs true)\n");
+    out.extend_from_slice(format!("(set-logic {})\n", fragment.smtlib_logic()).as_bytes());
+    for command in &problem.commands {
+        advanced_ai_smt_lib_render_command(&mut out, command)?;
+    }
+    Ok(out)
+}
+
+pub fn advanced_ai_smt_lib_problem_hash(
+    problem: &AdvancedMachineSmtEncodedProblem,
+) -> std::result::Result<Hash, AdvancedSmtEncodingError> {
+    Ok(hash_with_domain(
+        SMT_LIB_PROBLEM_HASH_TAG,
+        &advanced_ai_smt_lib_problem_bytes(problem)?,
+    ))
+}
+
 pub fn advanced_ai_smt_symbol_canonical_bytes(symbol: &AdvancedSmtSymbol) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(SMT_SYMBOL_HASH_TAG.as_bytes());
@@ -1637,6 +2013,406 @@ pub fn advanced_ai_smt_command_id(
     out.push(command.phase.tag());
     out.extend_from_slice(&advanced_ai_smt_command_id_source_key(&command.payload)?);
     Ok(hash_with_domain(SMT_COMMAND_ID_HASH_TAG, &out))
+}
+
+#[derive(Default)]
+struct AdvancedSmtFragmentFeatures {
+    has_euf: bool,
+    has_lia: bool,
+}
+
+fn advanced_ai_smt_scan_sort_for_fragment(
+    logic: AdvancedSmtLogic,
+    sort: &AdvancedSmtSortExpr,
+    features: &mut AdvancedSmtFragmentFeatures,
+    context: &AdvancedSmtCommandContext,
+) -> std::result::Result<(), AdvancedSmtEncodingError> {
+    match sort {
+        AdvancedSmtSortExpr::Bool => Ok(()),
+        AdvancedSmtSortExpr::Int => {
+            if logic == AdvancedSmtLogic::MvpQfLia {
+                features.has_lia = true;
+                Ok(())
+            } else {
+                Err(AdvancedSmtEncodingError::UnsupportedFragment)
+            }
+        }
+        AdvancedSmtSortExpr::BitVec { .. } => Err(AdvancedSmtEncodingError::UnsupportedFragment),
+        AdvancedSmtSortExpr::User { symbol, args } => {
+            let Some(arity) = context.sort_arities.get(&symbol.ascii) else {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            };
+            if *arity != args.len() as u32 {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            features.has_euf = true;
+            for arg in args {
+                advanced_ai_smt_scan_sort_for_fragment(logic, arg, features, context)?;
+            }
+            Ok(())
+        }
+    }
+}
+
+fn advanced_ai_smt_scan_expr_for_fragment(
+    logic: AdvancedSmtLogic,
+    expr: &AdvancedSmtExpr,
+    features: &mut AdvancedSmtFragmentFeatures,
+    context: &AdvancedSmtCommandContext,
+) -> std::result::Result<AdvancedSmtSortExpr, AdvancedSmtEncodingError> {
+    match expr {
+        AdvancedSmtExpr::Var { symbol, sort } => {
+            if !advanced_ai_smt_var_symbol_is_valid(symbol) {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            advanced_ai_smt_scan_sort_for_fragment(logic, sort, features, context)?;
+            Ok(sort.clone())
+        }
+        AdvancedSmtExpr::BoolLit(_) => Ok(AdvancedSmtSortExpr::Bool),
+        AdvancedSmtExpr::IntLit(_) => {
+            if logic == AdvancedSmtLogic::MvpQfLia {
+                features.has_lia = true;
+                Ok(AdvancedSmtSortExpr::Int)
+            } else {
+                Err(AdvancedSmtEncodingError::UnsupportedFragment)
+            }
+        }
+        AdvancedSmtExpr::BitVecLit { .. } => Err(AdvancedSmtEncodingError::UnsupportedFragment),
+        AdvancedSmtExpr::App {
+            symbol,
+            args,
+            result_sort,
+        } => {
+            let Some((expected_args, expected_result)) = context.functions.get(&symbol.ascii)
+            else {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            };
+            if expected_args.len() != args.len() || expected_result != result_sort {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            features.has_euf = true;
+            for (arg, expected_sort) in args.iter().zip(expected_args) {
+                let actual_sort =
+                    advanced_ai_smt_scan_expr_for_fragment(logic, arg, features, context)?;
+                if &actual_sort != expected_sort {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+            }
+            advanced_ai_smt_scan_sort_for_fragment(logic, result_sort, features, context)?;
+            Ok(result_sort.clone())
+        }
+        AdvancedSmtExpr::BuiltinApp {
+            op,
+            args,
+            result_sort,
+        } => {
+            let Some((expected_arity, expected_result)) =
+                advanced_ai_smt_lia_builtin_signature(*op)
+            else {
+                return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+            };
+            if logic != AdvancedSmtLogic::MvpQfLia {
+                return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+            }
+            if args.len() != expected_arity || result_sort != &expected_result {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            features.has_lia = true;
+            for arg in args {
+                let actual_sort =
+                    advanced_ai_smt_scan_expr_for_fragment(logic, arg, features, context)?;
+                if actual_sort != AdvancedSmtSortExpr::Int {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+            }
+            Ok(result_sort.clone())
+        }
+        AdvancedSmtExpr::Not(inner) => {
+            let inner_sort =
+                advanced_ai_smt_scan_expr_for_fragment(logic, inner, features, context)?;
+            if inner_sort != AdvancedSmtSortExpr::Bool {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            Ok(AdvancedSmtSortExpr::Bool)
+        }
+        AdvancedSmtExpr::And(args) | AdvancedSmtExpr::Or(args) => {
+            if args.is_empty() {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            for arg in args {
+                let sort = advanced_ai_smt_scan_expr_for_fragment(logic, arg, features, context)?;
+                if sort != AdvancedSmtSortExpr::Bool {
+                    return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+                }
+            }
+            Ok(AdvancedSmtSortExpr::Bool)
+        }
+        AdvancedSmtExpr::Eq(lhs, rhs) => {
+            let lhs_sort = advanced_ai_smt_scan_expr_for_fragment(logic, lhs, features, context)?;
+            let rhs_sort = advanced_ai_smt_scan_expr_for_fragment(logic, rhs, features, context)?;
+            if lhs_sort != rhs_sort {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            Ok(AdvancedSmtSortExpr::Bool)
+        }
+        AdvancedSmtExpr::Imp(lhs, rhs) => {
+            let lhs_sort = advanced_ai_smt_scan_expr_for_fragment(logic, lhs, features, context)?;
+            let rhs_sort = advanced_ai_smt_scan_expr_for_fragment(logic, rhs, features, context)?;
+            if lhs_sort != AdvancedSmtSortExpr::Bool || rhs_sort != AdvancedSmtSortExpr::Bool {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            Ok(AdvancedSmtSortExpr::Bool)
+        }
+        AdvancedSmtExpr::Ite {
+            cond,
+            then_expr,
+            else_expr,
+        } => {
+            let cond_sort = advanced_ai_smt_scan_expr_for_fragment(logic, cond, features, context)?;
+            if cond_sort != AdvancedSmtSortExpr::Bool {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            let then_sort =
+                advanced_ai_smt_scan_expr_for_fragment(logic, then_expr, features, context)?;
+            let else_sort =
+                advanced_ai_smt_scan_expr_for_fragment(logic, else_expr, features, context)?;
+            if then_sort != else_sort {
+                return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+            }
+            Ok(then_sort)
+        }
+    }
+}
+
+fn advanced_ai_smt_lia_builtin_signature(
+    op: AdvancedSmtBuiltinOp,
+) -> Option<(usize, AdvancedSmtSortExpr)> {
+    match op {
+        AdvancedSmtBuiltinOp::IntNeg => Some((1, AdvancedSmtSortExpr::Int)),
+        AdvancedSmtBuiltinOp::IntAdd | AdvancedSmtBuiltinOp::IntSub => {
+            Some((2, AdvancedSmtSortExpr::Int))
+        }
+        AdvancedSmtBuiltinOp::IntLe
+        | AdvancedSmtBuiltinOp::IntLt
+        | AdvancedSmtBuiltinOp::IntGe
+        | AdvancedSmtBuiltinOp::IntGt => Some((2, AdvancedSmtSortExpr::Bool)),
+        _ => None,
+    }
+}
+
+fn advanced_ai_smt_lib_render_command(
+    out: &mut Vec<u8>,
+    command: &AdvancedSmtEncodedCommand,
+) -> std::result::Result<(), AdvancedSmtEncodingError> {
+    match &command.payload {
+        AdvancedSmtCommandPayload::SortDecl { symbol, arity } => {
+            out.extend_from_slice(
+                format!(
+                    "(declare-sort {} {})\n",
+                    advanced_ai_smt_lib_decl_symbol(symbol)?,
+                    arity
+                )
+                .as_bytes(),
+            );
+        }
+        AdvancedSmtCommandPayload::FunctionDecl {
+            symbol,
+            args,
+            result,
+        } => {
+            let rendered_args = args
+                .iter()
+                .map(advanced_ai_smt_lib_render_sort)
+                .collect::<std::result::Result<Vec<_>, _>>()?
+                .join(" ");
+            out.extend_from_slice(
+                format!(
+                    "(declare-fun {} ({}) {})\n",
+                    advanced_ai_smt_lib_decl_symbol(symbol)?,
+                    rendered_args,
+                    advanced_ai_smt_lib_render_sort(result)?
+                )
+                .as_bytes(),
+            );
+        }
+        AdvancedSmtCommandPayload::DatatypeDecl { .. } => {
+            return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+        }
+        AdvancedSmtCommandPayload::ContextAssumption { encoded_expr, .. }
+        | AdvancedSmtCommandPayload::TargetAssertion { encoded_expr, .. } => {
+            out.extend_from_slice(
+                format!(
+                    "(assert {})\n",
+                    advanced_ai_smt_lib_render_expr(encoded_expr)?
+                )
+                .as_bytes(),
+            );
+        }
+        AdvancedSmtCommandPayload::FinalCheck => {
+            out.extend_from_slice(b"(check-sat)\n(get-proof)\n");
+        }
+    }
+    Ok(())
+}
+
+fn advanced_ai_smt_lib_render_sort(
+    sort: &AdvancedSmtSortExpr,
+) -> std::result::Result<String, AdvancedSmtEncodingError> {
+    Ok(match sort {
+        AdvancedSmtSortExpr::Bool => "Bool".to_owned(),
+        AdvancedSmtSortExpr::Int => "Int".to_owned(),
+        AdvancedSmtSortExpr::BitVec { .. } => {
+            return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+        }
+        AdvancedSmtSortExpr::User { symbol, args } => {
+            let rendered_symbol = advanced_ai_smt_lib_decl_symbol(symbol)?;
+            if args.is_empty() {
+                rendered_symbol
+            } else {
+                let rendered_args = args
+                    .iter()
+                    .map(advanced_ai_smt_lib_render_sort)
+                    .collect::<std::result::Result<Vec<_>, _>>()?
+                    .join(" ");
+                format!("({rendered_symbol} {rendered_args})")
+            }
+        }
+    })
+}
+
+fn advanced_ai_smt_lib_render_expr(
+    expr: &AdvancedSmtExpr,
+) -> std::result::Result<String, AdvancedSmtEncodingError> {
+    Ok(match expr {
+        AdvancedSmtExpr::Var { symbol, .. } => advanced_ai_smt_lib_var_symbol(symbol)?,
+        AdvancedSmtExpr::BoolLit(value) => {
+            if *value {
+                "true".to_owned()
+            } else {
+                "false".to_owned()
+            }
+        }
+        AdvancedSmtExpr::IntLit(value) => advanced_ai_smt_lib_int_literal(*value),
+        AdvancedSmtExpr::BitVecLit { .. } => {
+            return Err(AdvancedSmtEncodingError::UnsupportedFragment);
+        }
+        AdvancedSmtExpr::App { symbol, args, .. } => {
+            let rendered_symbol = advanced_ai_smt_lib_decl_symbol(symbol)?;
+            if args.is_empty() {
+                rendered_symbol
+            } else {
+                let rendered_args = args
+                    .iter()
+                    .map(advanced_ai_smt_lib_render_expr)
+                    .collect::<std::result::Result<Vec<_>, _>>()?
+                    .join(" ");
+                format!("({rendered_symbol} {rendered_args})")
+            }
+        }
+        AdvancedSmtExpr::BuiltinApp { op, args, .. } => {
+            let rendered_args = args
+                .iter()
+                .map(advanced_ai_smt_lib_render_expr)
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+            let op = match op {
+                AdvancedSmtBuiltinOp::IntNeg => "-",
+                AdvancedSmtBuiltinOp::IntAdd => "+",
+                AdvancedSmtBuiltinOp::IntSub => "-",
+                AdvancedSmtBuiltinOp::IntLe => "<=",
+                AdvancedSmtBuiltinOp::IntLt => "<",
+                AdvancedSmtBuiltinOp::IntGe => ">=",
+                AdvancedSmtBuiltinOp::IntGt => ">",
+                _ => return Err(AdvancedSmtEncodingError::UnsupportedFragment),
+            };
+            format!("({} {})", op, rendered_args.join(" "))
+        }
+        AdvancedSmtExpr::Not(inner) => {
+            format!("(not {})", advanced_ai_smt_lib_render_expr(inner)?)
+        }
+        AdvancedSmtExpr::And(args) => advanced_ai_smt_lib_render_nary("and", args)?,
+        AdvancedSmtExpr::Or(args) => advanced_ai_smt_lib_render_nary("or", args)?,
+        AdvancedSmtExpr::Eq(lhs, rhs) => format!(
+            "(= {} {})",
+            advanced_ai_smt_lib_render_expr(lhs)?,
+            advanced_ai_smt_lib_render_expr(rhs)?
+        ),
+        AdvancedSmtExpr::Imp(lhs, rhs) => format!(
+            "(=> {} {})",
+            advanced_ai_smt_lib_render_expr(lhs)?,
+            advanced_ai_smt_lib_render_expr(rhs)?
+        ),
+        AdvancedSmtExpr::Ite {
+            cond,
+            then_expr,
+            else_expr,
+        } => format!(
+            "(ite {} {} {})",
+            advanced_ai_smt_lib_render_expr(cond)?,
+            advanced_ai_smt_lib_render_expr(then_expr)?,
+            advanced_ai_smt_lib_render_expr(else_expr)?
+        ),
+    })
+}
+
+fn advanced_ai_smt_lib_render_nary(
+    op: &str,
+    args: &[AdvancedSmtExpr],
+) -> std::result::Result<String, AdvancedSmtEncodingError> {
+    if args.is_empty() {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+    if args.len() == 1 {
+        return advanced_ai_smt_lib_render_expr(&args[0]);
+    }
+    Ok(format!(
+        "({} {})",
+        op,
+        args.iter()
+            .map(advanced_ai_smt_lib_render_expr)
+            .collect::<std::result::Result<Vec<_>, _>>()?
+            .join(" ")
+    ))
+}
+
+fn advanced_ai_smt_lib_int_literal(value: i128) -> String {
+    if value >= 0 {
+        value.to_string()
+    } else {
+        format!("(- {})", value.unsigned_abs())
+    }
+}
+
+fn advanced_ai_smt_lib_decl_symbol(
+    symbol: &AdvancedSmtSymbol,
+) -> std::result::Result<String, AdvancedSmtEncodingError> {
+    if !advanced_ai_smt_decl_symbol_is_valid(symbol) {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+    advanced_ai_smt_lib_quoted_symbol(symbol)
+}
+
+fn advanced_ai_smt_lib_var_symbol(
+    symbol: &AdvancedSmtSymbol,
+) -> std::result::Result<String, AdvancedSmtEncodingError> {
+    if !advanced_ai_smt_var_symbol_is_valid(symbol) {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+    advanced_ai_smt_lib_quoted_symbol(symbol)
+}
+
+fn advanced_ai_smt_lib_quoted_symbol(
+    symbol: &AdvancedSmtSymbol,
+) -> std::result::Result<String, AdvancedSmtEncodingError> {
+    if !symbol
+        .ascii
+        .iter()
+        .all(|byte| byte.is_ascii_graphic() && !matches!(*byte, b'|' | b'\\'))
+    {
+        return Err(AdvancedSmtEncodingError::NonCanonicalPayload);
+    }
+    let ascii = std::str::from_utf8(&symbol.ascii)
+        .map_err(|_| AdvancedSmtEncodingError::NonCanonicalPayload)?;
+    Ok(format!("|{}|", ascii))
 }
 
 pub fn advanced_ai_typeclass_resolution_plan_canonical_bytes(
@@ -3370,15 +4146,37 @@ fn run_advanced_ai_smt_reconstruct_validated(
         Ok(payload) => payload,
         Err(response) => return response,
     };
-    if let Err(response) = advanced_ai_validate_smt_proof_table(
-        candidate_hash,
-        &proof_payload,
-        &candidate,
-        &problem,
-        &command_context,
-        verified_imports,
-    ) {
-        return response;
+    match &proof_payload {
+        AdvancedValidatedSmtProofPayload::ProofNodeTable(table) => {
+            if let Err(response) = advanced_ai_validate_smt_proof_table(
+                candidate_hash,
+                table,
+                &candidate,
+                &problem,
+                &command_context,
+                verified_imports,
+            ) {
+                return response;
+            }
+        }
+        AdvancedValidatedSmtProofPayload::Opaque {
+            format,
+            payload_hash,
+            size_bytes,
+        } => {
+            let _ = (*format, *payload_hash, *size_bytes);
+        }
+        AdvancedValidatedSmtProofPayload::SolverResultOnly {
+            payload_hash,
+            size_bytes,
+        } => {
+            let _ = (*payload_hash, *size_bytes);
+            return smt_rejected_response(
+                candidate_hash,
+                AdvancedAiValidationError::UnsupportedFeature,
+                AdvancedSmtCertificateError::SolverResultOnly,
+            );
+        }
     }
 
     if let Err(response) =
@@ -6427,6 +7225,19 @@ struct AdvancedSmtCommandContext {
     functions: BTreeMap<Vec<u8>, (Vec<AdvancedSmtSortExpr>, AdvancedSmtSortExpr)>,
 }
 
+enum AdvancedValidatedSmtProofPayload {
+    ProofNodeTable(AdvancedSmtProofNodeTable),
+    Opaque {
+        format: AdvancedSmtCertificateFormat,
+        payload_hash: Hash,
+        size_bytes: u64,
+    },
+    SolverResultOnly {
+        payload_hash: Hash,
+        size_bytes: u64,
+    },
+}
+
 fn advanced_ai_smt_problem_bytes(
     candidate_hash: Hash,
     source: &AdvancedMachineSmtProblemRef,
@@ -6596,33 +7407,90 @@ fn advanced_ai_validate_smt_proof_payload_bytes(
     candidate_hash: Hash,
     bytes: &[u8],
     candidate: &AdvancedMachineSmtCertificateCandidate,
-) -> std::result::Result<AdvancedSmtProofNodeTable, AdvancedAiEndpointResponse> {
-    let table = decode_smt_proof_node_table(bytes).map_err(|_| {
-        smt_rejected_response(
-            candidate_hash,
-            AdvancedAiValidationError::EnvelopeMalformed,
-            AdvancedSmtCertificateError::NonCanonicalPayload,
-        )
-    })?;
+) -> std::result::Result<AdvancedValidatedSmtProofPayload, AdvancedAiEndpointResponse> {
     let declared_hash = match &candidate.proof_payload {
         AdvancedMachineSmtProofPayloadRef::Inline { payload_hash, .. }
         | AdvancedMachineSmtProofPayloadRef::Artifact { payload_hash, .. } => *payload_hash,
     };
-    let payload_hash = advanced_ai_smt_proof_payload_hash(&table).map_err(|_| {
-        smt_rejected_response(
-            candidate_hash,
-            AdvancedAiValidationError::EnvelopeMalformed,
-            AdvancedSmtCertificateError::NonCanonicalPayload,
-        )
-    })?;
-    if payload_hash != declared_hash {
-        return Err(rejected_response(
-            candidate_hash,
-            AdvancedAiValidationError::PayloadHashMismatch,
-            None,
-        ));
+    match candidate.certificate_format {
+        AdvancedSmtCertificateFormat::MvpProofNodeTableV1 => {
+            let table = decode_smt_proof_node_table(bytes).map_err(|_| {
+                smt_rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::MalformedProofPayload,
+                )
+            })?;
+            let payload_hash = advanced_ai_smt_proof_payload_hash(&table).map_err(|_| {
+                smt_rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::MalformedProofPayload,
+                )
+            })?;
+            if payload_hash != declared_hash {
+                return Err(rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::PayloadHashMismatch,
+                    None,
+                ));
+            }
+            Ok(AdvancedValidatedSmtProofPayload::ProofNodeTable(table))
+        }
+        AdvancedSmtCertificateFormat::AletheOpaqueV1
+        | AdvancedSmtCertificateFormat::LfscOpaqueV1 => {
+            let payload_hash =
+                advanced_ai_smt_opaque_proof_payload_hash(candidate.certificate_format, bytes)
+                    .map_err(|_| {
+                        smt_rejected_response(
+                            candidate_hash,
+                            AdvancedAiValidationError::EnvelopeMalformed,
+                            AdvancedSmtCertificateError::MalformedProofPayload,
+                        )
+                    })?;
+            if payload_hash != declared_hash {
+                return Err(rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::PayloadHashMismatch,
+                    None,
+                ));
+            }
+            Ok(AdvancedValidatedSmtProofPayload::Opaque {
+                format: candidate.certificate_format,
+                payload_hash,
+                size_bytes: bytes.len() as u64,
+            })
+        }
+        AdvancedSmtCertificateFormat::SolverResultOnlyV1 => {
+            if bytes != b"unsat\n" {
+                return Err(smt_rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::EnvelopeMalformed,
+                    AdvancedSmtCertificateError::MalformedProofPayload,
+                ));
+            }
+            let payload_hash =
+                advanced_ai_smt_opaque_proof_payload_hash(candidate.certificate_format, bytes)
+                    .map_err(|_| {
+                        smt_rejected_response(
+                            candidate_hash,
+                            AdvancedAiValidationError::EnvelopeMalformed,
+                            AdvancedSmtCertificateError::MalformedProofPayload,
+                        )
+                    })?;
+            if payload_hash != declared_hash {
+                return Err(rejected_response(
+                    candidate_hash,
+                    AdvancedAiValidationError::PayloadHashMismatch,
+                    None,
+                ));
+            }
+            Ok(AdvancedValidatedSmtProofPayload::SolverResultOnly {
+                payload_hash,
+                size_bytes: bytes.len() as u64,
+            })
+        }
     }
-    Ok(table)
 }
 
 fn advanced_ai_resolve_smt_primitives(
@@ -7083,10 +7951,10 @@ fn advanced_ai_validate_smt_sort(
             ) {
                 Ok(())
             } else {
-                Err(rejected_response(
+                Err(smt_rejected_response(
                     candidate_hash,
                     AdvancedAiValidationError::UnsupportedFeature,
-                    None,
+                    AdvancedSmtCertificateError::UnsupportedFragment,
                 ))
             }
         }
@@ -7104,10 +7972,10 @@ fn advanced_ai_validate_smt_sort(
             ) {
                 Ok(())
             } else {
-                Err(rejected_response(
+                Err(smt_rejected_response(
                     candidate_hash,
                     AdvancedAiValidationError::UnsupportedFeature,
-                    None,
+                    AdvancedSmtCertificateError::UnsupportedFragment,
                 ))
             }
         }
@@ -7370,10 +8238,10 @@ fn advanced_ai_validate_smt_builtin_app(
                 logic,
                 AdvancedSmtLogic::MvpQfBv | AdvancedSmtLogic::MvpQfUfLiaBv
             ) {
-                return Err(rejected_response(
+                return Err(smt_rejected_response(
                     candidate_hash,
                     AdvancedAiValidationError::UnsupportedFeature,
-                    None,
+                    AdvancedSmtCertificateError::UnsupportedFragment,
                 ));
             }
             let arg_sorts = args
@@ -9264,6 +10132,7 @@ fn encode_smt_candidate_to(
     candidate: &AdvancedMachineSmtCertificateCandidate,
 ) -> std::result::Result<(), AdvancedAiCanonicalError> {
     encode_goal_to(out, &candidate.goal)?;
+    out.push(candidate.solver.tag());
     out.push(candidate.logic.tag());
     encode_smt_problem_ref_to(out, &candidate.encoded_problem);
     out.push(candidate.certificate_format.tag());
@@ -11543,6 +12412,7 @@ impl<'a> Decoder<'a> {
     ) -> std::result::Result<AdvancedMachineSmtCertificateCandidate, DecodeError> {
         Ok(AdvancedMachineSmtCertificateCandidate {
             goal: self.goal()?,
+            solver: AdvancedSmtSolver::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
             logic: AdvancedSmtLogic::from_tag(self.u8()?).ok_or(DecodeError::Malformed)?,
             encoded_problem: self.smt_problem_ref()?,
             certificate_format: AdvancedSmtCertificateFormat::from_tag(self.u8()?)
@@ -12837,6 +13707,9 @@ fn encode_feature_error_to(out: &mut Vec<u8>, feature: AdvancedAiFeatureError) {
                 AdvancedSmtCertificateError::ReconstructionPremiseMismatch => 8,
                 AdvancedSmtCertificateError::PublicInterfaceMismatch => 9,
                 AdvancedSmtCertificateError::TheoryRefMismatch => 10,
+                AdvancedSmtCertificateError::UnsupportedFragment => 11,
+                AdvancedSmtCertificateError::SolverResultOnly => 12,
+                AdvancedSmtCertificateError::MalformedProofPayload => 13,
             });
         }
         AdvancedAiFeatureError::TheoremGraphQuery(error) => {
@@ -13878,6 +14751,18 @@ mod tests {
         }
     }
 
+    fn smt_opaque_payload_ref(
+        format: AdvancedSmtCertificateFormat,
+        canonical_bytes: &[u8],
+    ) -> AdvancedMachineSmtProofPayloadRef {
+        let payload_hash =
+            advanced_ai_smt_opaque_proof_payload_hash(format, canonical_bytes).unwrap();
+        AdvancedMachineSmtProofPayloadRef::Inline {
+            payload_hash,
+            canonical_bytes: canonical_bytes.to_vec(),
+        }
+    }
+
     fn smt_proof_table() -> AdvancedSmtProofNodeTable {
         AdvancedSmtProofNodeTable {
             certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
@@ -13926,6 +14811,7 @@ mod tests {
                 local_context: Vec::new(),
                 target: smt_false(),
             },
+            solver: AdvancedSmtSolver::Cvc5,
             logic: AdvancedSmtLogic::MvpQfUf,
             encoded_problem: smt_problem_ref(smt_problem(
                 goal_fingerprint,
@@ -15104,6 +15990,254 @@ mod tests {
     }
 
     #[test]
+    fn smt_certificate_metadata_and_qf_propositional_smtlib_hash_are_stable() {
+        let candidate = smt_valid_candidate(hash(11));
+        let problem = match &candidate.encoded_problem {
+            AdvancedMachineSmtProblemRef::Inline {
+                canonical_bytes, ..
+            } => decode_smt_encoded_problem(canonical_bytes).unwrap(),
+            AdvancedMachineSmtProblemRef::Artifact { .. } => unreachable!(),
+        };
+
+        let smtlib = advanced_ai_smt_lib_problem_bytes(&problem).unwrap();
+        assert_eq!(
+            std::str::from_utf8(&smtlib).unwrap(),
+            "(set-option :produce-proofs true)\n\
+             (set-logic QF_UF)\n\
+             (assert (not false))\n\
+             (check-sat)\n\
+             (get-proof)\n"
+        );
+        assert_eq!(
+            advanced_ai_smt_classify_supported_fragment(&problem),
+            Ok(AdvancedSmtSupportedFragment::QfPropositional)
+        );
+        assert_eq!(
+            advanced_ai_smt_lib_problem_hash(&problem).unwrap(),
+            advanced_ai_smt_lib_problem_hash(&problem).unwrap()
+        );
+        let encoded_problem_hash = advanced_ai_smt_problem_hash(&problem).unwrap();
+        assert_eq!(
+            advanced_ai_smt_encoding_hash(&problem, encoded_problem_hash),
+            advanced_ai_smt_encoding_hash(&problem, encoded_problem_hash)
+        );
+        assert_eq!(
+            advanced_ai_smt_classify_supported_fragment(&smt_problem(
+                hash(12),
+                AdvancedSmtLogic::MvpQfUf,
+                vec![smt_target_command()],
+            )),
+            Err(AdvancedSmtEncodingError::NonCanonicalPayload)
+        );
+
+        let metadata = advanced_ai_smt_certificate_metadata(&candidate, &problem).unwrap();
+        assert_eq!(
+            metadata.format,
+            AdvancedSmtCertificateFormat::MvpProofNodeTableV1
+        );
+        assert_eq!(metadata.solver, AdvancedSmtSolver::Cvc5);
+        assert_eq!(metadata.logic, AdvancedSmtLogic::MvpQfUf);
+        assert_eq!(metadata.encoded_goal_hash, problem.goal_fingerprint);
+        assert_eq!(
+            metadata.reconstruction.rule_registry_profile,
+            AdvancedSmtRuleRegistryProfile::MvpEmptyRegistryV1
+        );
+        assert_eq!(
+            advanced_ai_smt_certificate_metadata_hash(&metadata),
+            advanced_ai_smt_certificate_metadata_hash(&metadata)
+        );
+    }
+
+    #[test]
+    fn smt_euf_lia_and_nat_to_int_encoding_surface_is_deterministic() {
+        let user_sort = AdvancedSmtSortExpr::User {
+            symbol: smt_symbol("smt:U"),
+            args: Vec::new(),
+        };
+        let euf_problem = smt_problem(
+            hash(12),
+            AdvancedSmtLogic::MvpQfUf,
+            vec![
+                smt_command(
+                    AdvancedSmtCommandPhase::SortDecl,
+                    AdvancedSmtCommandPayload::SortDecl {
+                        symbol: smt_symbol("smt:U"),
+                        arity: 0,
+                    },
+                ),
+                smt_command(
+                    AdvancedSmtCommandPhase::FunctionDecl,
+                    AdvancedSmtCommandPayload::FunctionDecl {
+                        symbol: smt_symbol("smt:f"),
+                        args: vec![user_sort.clone()],
+                        result: user_sort,
+                    },
+                ),
+                smt_target_command(),
+                smt_final_check_command(),
+            ],
+        );
+        assert_eq!(
+            advanced_ai_smt_classify_supported_fragment(&euf_problem),
+            Ok(AdvancedSmtSupportedFragment::QfEuf)
+        );
+        let euf_smtlib =
+            String::from_utf8(advanced_ai_smt_lib_problem_bytes(&euf_problem).unwrap()).unwrap();
+        assert!(euf_smtlib.contains("(declare-sort |smt:U| 0)\n"));
+        assert!(euf_smtlib.contains("(declare-fun |smt:f| (|smt:U|) |smt:U|)\n"));
+        let undeclared_euf_problem = smt_problem(
+            hash(14),
+            AdvancedSmtLogic::MvpQfUf,
+            vec![
+                smt_command(
+                    AdvancedSmtCommandPhase::FunctionDecl,
+                    AdvancedSmtCommandPayload::FunctionDecl {
+                        symbol: smt_symbol("smt:g"),
+                        args: vec![AdvancedSmtSortExpr::User {
+                            symbol: smt_symbol("smt:Undeclared"),
+                            args: Vec::new(),
+                        }],
+                        result: AdvancedSmtSortExpr::Bool,
+                    },
+                ),
+                smt_target_command(),
+                smt_final_check_command(),
+            ],
+        );
+        assert_eq!(
+            advanced_ai_smt_classify_supported_fragment(&undeclared_euf_problem),
+            Err(AdvancedSmtEncodingError::NonCanonicalPayload)
+        );
+
+        let lia_target = smt_command(
+            AdvancedSmtCommandPhase::TargetAssertion,
+            AdvancedSmtCommandPayload::TargetAssertion {
+                core_expr: smt_false(),
+                encoded_expr: AdvancedSmtExpr::BuiltinApp {
+                    op: AdvancedSmtBuiltinOp::IntGe,
+                    args: vec![AdvancedSmtExpr::IntLit(1), AdvancedSmtExpr::IntLit(0)],
+                    result_sort: AdvancedSmtSortExpr::Bool,
+                },
+            },
+        );
+        let lia_problem = smt_problem(
+            hash(13),
+            AdvancedSmtLogic::MvpQfLia,
+            vec![lia_target, smt_final_check_command()],
+        );
+        assert_eq!(
+            advanced_ai_smt_classify_supported_fragment(&lia_problem),
+            Ok(AdvancedSmtSupportedFragment::QfSimpleLia)
+        );
+        let lia_smtlib =
+            String::from_utf8(advanced_ai_smt_lib_problem_bytes(&lia_problem).unwrap()).unwrap();
+        assert!(lia_smtlib.contains("(set-logic QF_LIA)\n"));
+        assert!(lia_smtlib.contains("(assert (>= 1 0))\n"));
+
+        let side_condition = advanced_ai_smt_nat_to_int_side_condition(
+            Expr::konst("Nat.n", vec![]),
+            AdvancedSmtSymbol {
+                ascii: b"lc:n_smt".to_vec(),
+            },
+        );
+        assert_eq!(
+            side_condition.nonnegative_assertion,
+            AdvancedSmtExpr::BuiltinApp {
+                op: AdvancedSmtBuiltinOp::IntGe,
+                args: vec![
+                    AdvancedSmtExpr::Var {
+                        symbol: AdvancedSmtSymbol {
+                            ascii: b"lc:n_smt".to_vec(),
+                        },
+                        sort: AdvancedSmtSortExpr::Int,
+                    },
+                    AdvancedSmtExpr::IntLit(0),
+                ],
+                result_sort: AdvancedSmtSortExpr::Bool,
+            }
+        );
+        assert_eq!(
+            advanced_ai_smt_nat_to_int_side_condition_hash(&side_condition),
+            advanced_ai_smt_nat_to_int_side_condition_hash(&side_condition)
+        );
+    }
+
+    #[test]
+    fn smt_alethe_opaque_payload_is_schema_validated_but_not_trusted() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.certificate_format = AdvancedSmtCertificateFormat::AletheOpaqueV1;
+            candidate.proof_payload = smt_opaque_payload_ref(
+                AdvancedSmtCertificateFormat::AletheOpaqueV1,
+                b"(alethe-proof)\n",
+            );
+            candidate.reconstruction_plan.steps[0].rule =
+                AdvancedSmtReconstructionRule::PayloadNode {
+                    certificate_format: AdvancedSmtCertificateFormat::AletheOpaqueV1,
+                    rule_fingerprint: hash(42),
+                };
+        });
+
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_solver_result_only_is_structured_rejection() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.certificate_format = AdvancedSmtCertificateFormat::SolverResultOnlyV1;
+            candidate.proof_payload = smt_opaque_payload_ref(
+                AdvancedSmtCertificateFormat::SolverResultOnlyV1,
+                b"unsat\n",
+            );
+        });
+
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::SolverResultOnly,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_opaque_payload_hash_mismatch_is_payload_hash_mismatch() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.certificate_format = AdvancedSmtCertificateFormat::LfscOpaqueV1;
+            candidate.proof_payload = AdvancedMachineSmtProofPayloadRef::Inline {
+                payload_hash: hash(99),
+                canonical_bytes: b"(lfsc-proof)\n".to_vec(),
+            };
+        });
+
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::PayloadHashMismatch,
+            None,
+        );
+    }
+
+    #[test]
     fn smt_encoded_problem_hash_mismatch_precedes_later_validation() {
         let import = verified_smt_import();
         let request = smt_request(&import, |candidate| {
@@ -15164,7 +16298,9 @@ mod tests {
                 &workspace_root(),
             ),
             AdvancedAiValidationError::UnsupportedFeature,
-            None,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::UnsupportedFragment,
+            )),
         );
     }
 
@@ -15186,7 +16322,7 @@ mod tests {
             ),
             AdvancedAiValidationError::EnvelopeMalformed,
             Some(AdvancedAiFeatureError::SmtCertificate(
-                AdvancedSmtCertificateError::NonCanonicalPayload,
+                AdvancedSmtCertificateError::MalformedProofPayload,
             )),
         );
     }
@@ -17360,6 +18496,31 @@ mod tests {
             Some(AdvancedIndependentCheckerProfile::IndependentCheckerQuotientV1Reference)
         );
         assert_eq!(AdvancedIndependentCheckerProfile::from_tag(2), None);
+        let smt_solvers = [
+            AdvancedSmtSolver::Cvc5,
+            AdvancedSmtSolver::Z3,
+            AdvancedSmtSolver::VeriT,
+            AdvancedSmtSolver::OpaqueExternal,
+        ];
+        for (expected_tag, solver) in (0u8..).zip(smt_solvers) {
+            assert_eq!(solver.tag(), expected_tag);
+            assert_eq!(AdvancedSmtSolver::from_tag(expected_tag), Some(solver));
+        }
+        assert_eq!(AdvancedSmtSolver::from_tag(4), None);
+        let smt_formats = [
+            AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
+            AdvancedSmtCertificateFormat::AletheOpaqueV1,
+            AdvancedSmtCertificateFormat::LfscOpaqueV1,
+            AdvancedSmtCertificateFormat::SolverResultOnlyV1,
+        ];
+        for (expected_tag, format) in (0u8..).zip(smt_formats) {
+            assert_eq!(format.tag(), expected_tag);
+            assert_eq!(
+                AdvancedSmtCertificateFormat::from_tag(expected_tag),
+                Some(format)
+            );
+        }
+        assert_eq!(AdvancedSmtCertificateFormat::from_tag(4), None);
 
         let task_kinds = [
             AdvancedAiTaskKind::AdvancedInductive,
@@ -17424,6 +18585,24 @@ mod tests {
                     AdvancedSmtCertificateError::EncodingMismatch,
                 ),
                 vec![4, 0],
+            ),
+            (
+                AdvancedAiFeatureError::SmtCertificate(
+                    AdvancedSmtCertificateError::UnsupportedFragment,
+                ),
+                vec![4, 11],
+            ),
+            (
+                AdvancedAiFeatureError::SmtCertificate(
+                    AdvancedSmtCertificateError::SolverResultOnly,
+                ),
+                vec![4, 12],
+            ),
+            (
+                AdvancedAiFeatureError::SmtCertificate(
+                    AdvancedSmtCertificateError::MalformedProofPayload,
+                ),
+                vec![4, 13],
             ),
             (
                 AdvancedAiFeatureError::TheoremGraphQuery(
