@@ -255,18 +255,18 @@ defeq と cumulativity を混ぜない。cumulativity を入れる場合も別 m
 
 実装タスク:
 
-- [ ] `crates/npa-frontend` に elaboration-only universe meta を導入する。
-- [ ] universe meta constraint collection、solving、minimization、failure diagnostics を実装する。
-- [ ] solved universe args を explicit core term に反映し、certificate には meta が残らないようにする。
-- [ ] Human Surface の implicit universe inference と Machine Surface の explicit universe fast path を分離して保つ。
-- [ ] Phase 9 AI `UniverseRepair` fixture と Human elaborator の solver output が同じ canonical constraints に戻ることを確認する。
+- [x] `crates/npa-frontend` に elaboration-only universe meta を導入する。
+- [x] universe meta constraint collection、solving、minimization、failure diagnostics を実装する。
+- [x] solved universe args を explicit core term に反映し、certificate には meta が残らないようにする。
+- [x] Human Surface の implicit universe inference と Machine Surface の explicit universe fast path を分離して保つ。
+- [x] Phase 9 AI `UniverseRepair` fixture と Human elaborator の solver output が同じ canonical constraints に戻ることを確認する。
 
 受け入れ条件:
 
-- [ ] polymorphic identity / const / map 相当の theorem が explicit universe args なしの Human Surface から elaboration できる。
-- [ ] unsolved meta、ambiguous universe、constraint unsatisfied は structured diagnostic になる。
-- [ ] Machine Surface はこれまで通り explicit universe args を要求し、Human inference で candidate hash が変わらない。
-- [ ] solver result は deterministic で、同じ source / imports から同じ certificate hash になる。
+- [x] polymorphic identity / const / map 相当の theorem が explicit universe args なしの Human Surface から elaboration できる。
+- [x] unsolved meta、ambiguous universe、constraint unsatisfied は structured diagnostic になる。
+- [x] Machine Surface はこれまで通り explicit universe args を要求し、Human inference で candidate hash が変わらない。
+- [x] solver result は deterministic で、同じ source / imports から同じ certificate hash になる。
 
 検証:
 

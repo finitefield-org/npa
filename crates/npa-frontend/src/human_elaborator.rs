@@ -2279,9 +2279,401 @@ struct HumanCallableSignature {
     implicit_profile: Vec<MachineCallableBinderVisibility>,
 }
 
+const HUMAN_UNIVERSE_META_PREFIX: &str = "__npa_internal_human_universe_meta#";
+const HUMAN_SPINE_IMPLICIT_PREFIX: &str = "__npa_internal_human_spine_implicit#";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct HumanSpineImplicitId(usize);
+
 #[derive(Clone, Debug)]
-struct SyntheticImplicitMeta {
-    value: Expr,
+struct HumanSpineImplicit {
+    domain: Expr,
+    assignment: Option<Expr>,
+    span: Span,
+}
+
+#[derive(Clone, Debug)]
+enum HumanSpineArg {
+    Explicit(MachineTerm),
+    Implicit(HumanSpineImplicitId),
+}
+
+#[derive(Clone, Debug)]
+struct HumanSolvedSpine {
+    universe_args: Option<Vec<MachineLevel>>,
+    args: Vec<MachineTerm>,
+}
+
+struct HumanUniverseSpineSolver<'a> {
+    env: &'a Env,
+    locals: &'a HumanLocalContext,
+    delta: &'a [String],
+    universe_params: &'a [String],
+    universe_assignments: Vec<Option<Level>>,
+    implicit_metas: Vec<HumanSpineImplicit>,
+}
+
+impl<'a> HumanUniverseSpineSolver<'a> {
+    fn new(
+        env: &'a Env,
+        locals: &'a HumanLocalContext,
+        delta: &'a [String],
+        universe_params: &'a [String],
+        fixed_universe_args: Option<Vec<Level>>,
+    ) -> Self {
+        let universe_assignments = fixed_universe_args.map_or_else(
+            || vec![None; universe_params.len()],
+            |levels| levels.into_iter().map(Some).collect(),
+        );
+        Self {
+            env,
+            locals,
+            delta,
+            universe_params,
+            universe_assignments,
+            implicit_metas: Vec::new(),
+        }
+    }
+
+    fn decl_type_with_universe_metas(&self, ty: &Expr, span: Span) -> HumanResult<Expr> {
+        let levels = (0..self.universe_params.len())
+            .map(|index| {
+                self.universe_assignments[index]
+                    .clone()
+                    .unwrap_or_else(|| human_universe_meta_level(index))
+            })
+            .collect::<Vec<_>>();
+        let _ = span;
+        Ok(subst::subst_levels_expr(ty, self.universe_params, &levels))
+    }
+
+    fn fresh_implicit(&mut self, domain: Expr, span: Span) -> HumanSpineImplicitId {
+        let id = HumanSpineImplicitId(self.implicit_metas.len());
+        self.implicit_metas.push(HumanSpineImplicit {
+            domain,
+            assignment: None,
+            span,
+        });
+        id
+    }
+
+    fn implicit_placeholder(id: HumanSpineImplicitId) -> Expr {
+        Expr::konst(format!("{HUMAN_SPINE_IMPLICIT_PREFIX}{}", id.0), Vec::new())
+    }
+
+    fn implicit_id(expr: &Expr) -> Option<HumanSpineImplicitId> {
+        let Expr::Const { name, levels } = expr else {
+            return None;
+        };
+        if !levels.is_empty() {
+            return None;
+        }
+        name.strip_prefix(HUMAN_SPINE_IMPLICIT_PREFIX)
+            .and_then(|suffix| suffix.parse::<usize>().ok())
+            .map(HumanSpineImplicitId)
+    }
+
+    fn resolve_implicit_expr(&self, expr: Expr) -> Expr {
+        self.resolve_implicit_expr_at(expr, 0)
+    }
+
+    fn resolve_implicit_expr_at(&self, expr: Expr, depth: u32) -> Expr {
+        if let Some(id) = Self::implicit_id(&expr) {
+            return self.implicit_metas[id.0]
+                .assignment
+                .clone()
+                .map(|assignment| {
+                    let assignment = self.resolve_implicit_expr_at(assignment, 0);
+                    subst::shift(&assignment, depth as i32, 0)
+                        .expect("positive Human implicit lift must preserve de Bruijn indices")
+                })
+                .unwrap_or(expr);
+        }
+        match expr {
+            Expr::App(fun, arg) => Expr::app(
+                self.resolve_implicit_expr_at(*fun, depth),
+                self.resolve_implicit_expr_at(*arg, depth),
+            ),
+            Expr::Lam { binder, ty, body } => Expr::lam(
+                binder,
+                self.resolve_implicit_expr_at(*ty, depth),
+                self.resolve_implicit_expr_at(*body, depth + 1),
+            ),
+            Expr::Pi { binder, ty, body } => Expr::pi(
+                binder,
+                self.resolve_implicit_expr_at(*ty, depth),
+                self.resolve_implicit_expr_at(*body, depth + 1),
+            ),
+            Expr::Let {
+                binder,
+                ty,
+                value,
+                body,
+            } => Expr::let_in(
+                binder,
+                self.resolve_implicit_expr_at(*ty, depth),
+                self.resolve_implicit_expr_at(*value, depth),
+                self.resolve_implicit_expr_at(*body, depth + 1),
+            ),
+            Expr::Sort(level) => Expr::sort(self.resolve_level(level)),
+            Expr::Const { name, levels } => Expr::konst(
+                name,
+                levels
+                    .into_iter()
+                    .map(|level| self.resolve_level(level))
+                    .collect(),
+            ),
+            Expr::BVar(_) => expr,
+        }
+    }
+
+    fn resolve_level(&self, level: Level) -> Level {
+        if let Some(index) = human_universe_meta_index(&level) {
+            return self.universe_assignments[index]
+                .clone()
+                .map(|assignment| self.resolve_level(assignment))
+                .unwrap_or(level);
+        }
+        match level {
+            Level::Succ(inner) => Level::succ(self.resolve_level(*inner)),
+            Level::Max(lhs, rhs) => Level::max(self.resolve_level(*lhs), self.resolve_level(*rhs)),
+            Level::IMax(lhs, rhs) => {
+                Level::imax(self.resolve_level(*lhs), self.resolve_level(*rhs))
+            }
+            Level::Zero | Level::Param(_) => level,
+        }
+    }
+
+    fn unify_expr(&mut self, lhs: Expr, rhs: Expr, span: Span) -> HumanResult<()> {
+        let lhs = self.resolve_implicit_expr(lhs);
+        let rhs = self.resolve_implicit_expr(rhs);
+        if lhs == rhs {
+            return Ok(());
+        }
+        if let Some(id) = Self::implicit_id(&lhs) {
+            return self.assign_implicit(id, rhs, span);
+        }
+        if let Some(id) = Self::implicit_id(&rhs) {
+            return self.assign_implicit(id, lhs, span);
+        }
+
+        match (lhs, rhs) {
+            (Expr::Sort(lhs), Expr::Sort(rhs)) => self.unify_level(lhs, rhs, span),
+            (
+                Expr::Const {
+                    name: lhs_name,
+                    levels: lhs_levels,
+                },
+                Expr::Const {
+                    name: rhs_name,
+                    levels: rhs_levels,
+                },
+            ) if lhs_name == rhs_name && lhs_levels.len() == rhs_levels.len() => {
+                for (lhs, rhs) in lhs_levels.into_iter().zip(rhs_levels) {
+                    self.unify_level(lhs, rhs, span)?;
+                }
+                Ok(())
+            }
+            (Expr::App(lhs_fun, lhs_arg), Expr::App(rhs_fun, rhs_arg)) => {
+                self.unify_expr(*lhs_fun, *rhs_fun, span)?;
+                self.unify_expr(*lhs_arg, *rhs_arg, span)
+            }
+            (
+                Expr::Lam {
+                    ty: lhs_ty,
+                    body: lhs_body,
+                    ..
+                },
+                Expr::Lam {
+                    ty: rhs_ty,
+                    body: rhs_body,
+                    ..
+                },
+            )
+            | (
+                Expr::Pi {
+                    ty: lhs_ty,
+                    body: lhs_body,
+                    ..
+                },
+                Expr::Pi {
+                    ty: rhs_ty,
+                    body: rhs_body,
+                    ..
+                },
+            ) => {
+                self.unify_expr(*lhs_ty, *rhs_ty, span)?;
+                self.unify_expr(
+                    self.resolve_implicit_expr_at(*lhs_body, 1),
+                    self.resolve_implicit_expr_at(*rhs_body, 1),
+                    span,
+                )
+            }
+            (
+                Expr::Let {
+                    ty: lhs_ty,
+                    value: lhs_value,
+                    body: lhs_body,
+                    ..
+                },
+                Expr::Let {
+                    ty: rhs_ty,
+                    value: rhs_value,
+                    body: rhs_body,
+                    ..
+                },
+            ) => {
+                self.unify_expr(*lhs_ty, *rhs_ty, span)?;
+                self.unify_expr(*lhs_value, *rhs_value, span)?;
+                self.unify_expr(
+                    self.resolve_implicit_expr_at(*lhs_body, 1),
+                    self.resolve_implicit_expr_at(*rhs_body, 1),
+                    span,
+                )
+            }
+            (Expr::BVar(lhs), Expr::BVar(rhs)) if lhs == rhs => Ok(()),
+            _ => Err(human_universe_solver_error(
+                span,
+                "Human universe constraint unsatisfied while inferring implicit arguments",
+            )),
+        }
+    }
+
+    fn assign_implicit(
+        &mut self,
+        id: HumanSpineImplicitId,
+        value: Expr,
+        span: Span,
+    ) -> HumanResult<()> {
+        if expr_contains_spine_implicit(id, &value) {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::OccursCheckFailed,
+                span,
+                "Human implicit argument assignment failed the occurs check",
+            ));
+        }
+
+        if let Some(existing) = self.implicit_metas[id.0].assignment.clone() {
+            return self.unify_expr(existing, value, span);
+        }
+
+        let value_ty = self
+            .env
+            .infer(&self.locals.to_kernel_ctx(), self.delta, &value)
+            .map_err(|err| {
+                human_kernel_expr_diagnostic(span, err, "Human implicit assignment inference")
+            })?;
+        let domain = self.implicit_metas[id.0].domain.clone();
+        self.unify_expr(domain, value_ty, span)?;
+        self.implicit_metas[id.0].assignment = Some(value);
+        Ok(())
+    }
+
+    fn unify_level(&mut self, lhs: Level, rhs: Level, span: Span) -> HumanResult<()> {
+        let lhs = npa_kernel::level::normalize_level(self.resolve_level(lhs));
+        let rhs = npa_kernel::level::normalize_level(self.resolve_level(rhs));
+        if lhs == rhs {
+            return Ok(());
+        }
+        if let Some(index) = human_universe_meta_index(&lhs) {
+            return self.assign_universe(index, rhs, span);
+        }
+        if let Some(index) = human_universe_meta_index(&rhs) {
+            return self.assign_universe(index, lhs, span);
+        }
+
+        match (lhs, rhs) {
+            (Level::Succ(lhs), Level::Succ(rhs)) => self.unify_level(*lhs, *rhs, span),
+            (Level::Max(lhs_a, lhs_b), Level::Max(rhs_a, rhs_b))
+            | (Level::IMax(lhs_a, lhs_b), Level::IMax(rhs_a, rhs_b)) => {
+                self.unify_level(*lhs_a, *rhs_a, span)?;
+                self.unify_level(*lhs_b, *rhs_b, span)
+            }
+            _ => Err(human_universe_solver_error(
+                span,
+                "Human universe equality constraint is unsatisfied",
+            )),
+        }
+    }
+
+    fn assign_universe(&mut self, index: usize, value: Level, span: Span) -> HumanResult<()> {
+        if level_contains_universe_meta(index, &value) {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::OccursCheckFailed,
+                span,
+                "Human universe metavariable assignment failed the occurs check",
+            ));
+        }
+
+        let value = npa_kernel::level::normalize_level(value);
+        if let Some(existing) = self.universe_assignments[index].clone() {
+            return self.unify_level(existing, value, span);
+        }
+        self.universe_assignments[index] = Some(value);
+        Ok(())
+    }
+
+    fn materialize_implicit_arg(
+        &self,
+        id: HumanSpineImplicitId,
+        span: Span,
+    ) -> HumanResult<MachineTerm> {
+        let Some(value) = self.implicit_metas[id.0].assignment.clone() else {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::UnsolvedImplicit,
+                self.implicit_metas[id.0].span,
+                "unsolved synthetic implicit argument",
+            )
+            .with_payload(HumanDiagnosticPayload {
+                unsolved_meta: Some(HumanUnsolvedMeta {
+                    kind: HumanUnsolvedMetaKind::SyntheticImplicit,
+                    name: None,
+                }),
+                ..HumanDiagnosticPayload::default()
+            }));
+        };
+        let value = self.resolve_implicit_expr(value);
+        core_expr_to_machine_term(&value, self.locals, span).ok_or_else(|| {
+            HumanDiagnostic::error(
+                HumanDiagnosticKind::UnsolvedImplicit,
+                span,
+                "cannot materialize inferred implicit argument",
+            )
+            .with_payload(HumanDiagnosticPayload {
+                unsolved_meta: Some(HumanUnsolvedMeta {
+                    kind: HumanUnsolvedMetaKind::SyntheticImplicit,
+                    name: None,
+                }),
+                ..HumanDiagnosticPayload::default()
+            })
+        })
+    }
+
+    fn solved_universe_args(&self, span: Span) -> HumanResult<Vec<MachineLevel>> {
+        self.universe_assignments
+            .iter()
+            .enumerate()
+            .map(|(index, level)| {
+                let Some(level) = level.clone() else {
+                    return Err(human_universe_solver_error(
+                        span,
+                        "ambiguous Human universe metavariable",
+                    ));
+                };
+                if human_level_contains_any_universe_meta(&level) {
+                    return Err(human_universe_solver_error(
+                        span,
+                        "unresolved Human universe metavariable",
+                    ));
+                }
+                let _ = index;
+                Ok(core_level_to_machine_level(
+                    &npa_kernel::level::normalize_level(level),
+                    span,
+                ))
+            })
+            .collect()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -2807,6 +3199,75 @@ fn meta_level_occurs(id: HumanUniverseMetaId, value: &HumanMetaLevel) -> bool {
             meta_level_occurs(id, lhs) || meta_level_occurs(id, rhs)
         }
     }
+}
+
+fn human_universe_meta_level(index: usize) -> Level {
+    Level::param(format!("{HUMAN_UNIVERSE_META_PREFIX}{index}"))
+}
+
+fn human_universe_meta_index(level: &Level) -> Option<usize> {
+    let Level::Param(name) = level else {
+        return None;
+    };
+    name.strip_prefix(HUMAN_UNIVERSE_META_PREFIX)
+        .and_then(|suffix| suffix.parse::<usize>().ok())
+}
+
+fn human_level_contains_any_universe_meta(level: &Level) -> bool {
+    match level {
+        Level::Zero => false,
+        Level::Succ(inner) => human_level_contains_any_universe_meta(inner),
+        Level::Max(lhs, rhs) | Level::IMax(lhs, rhs) => {
+            human_level_contains_any_universe_meta(lhs)
+                || human_level_contains_any_universe_meta(rhs)
+        }
+        Level::Param(_) => human_universe_meta_index(level).is_some(),
+    }
+}
+
+fn level_contains_universe_meta(index: usize, level: &Level) -> bool {
+    match level {
+        Level::Zero => false,
+        Level::Succ(inner) => level_contains_universe_meta(index, inner),
+        Level::Max(lhs, rhs) | Level::IMax(lhs, rhs) => {
+            level_contains_universe_meta(index, lhs) || level_contains_universe_meta(index, rhs)
+        }
+        Level::Param(_) => human_universe_meta_index(level) == Some(index),
+    }
+}
+
+fn expr_contains_spine_implicit(id: HumanSpineImplicitId, expr: &Expr) -> bool {
+    if HumanUniverseSpineSolver::implicit_id(expr) == Some(id) {
+        return true;
+    }
+    match expr {
+        Expr::Sort(_) | Expr::BVar(_) | Expr::Const { .. } => false,
+        Expr::App(fun, arg) => {
+            expr_contains_spine_implicit(id, fun) || expr_contains_spine_implicit(id, arg)
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            expr_contains_spine_implicit(id, ty) || expr_contains_spine_implicit(id, body)
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            expr_contains_spine_implicit(id, ty)
+                || expr_contains_spine_implicit(id, value)
+                || expr_contains_spine_implicit(id, body)
+        }
+    }
+}
+
+fn human_universe_solver_error(span: Span, message: impl Into<String>) -> HumanDiagnostic {
+    HumanDiagnostic::error(HumanDiagnosticKind::UnsolvedUniverseMeta, span, message).with_payload(
+        HumanDiagnosticPayload {
+            unsolved_meta: Some(HumanUnsolvedMeta {
+                kind: HumanUnsolvedMetaKind::Universe,
+                name: None,
+            }),
+            ..HumanDiagnosticPayload::default()
+        },
+    )
 }
 
 fn human_meta_placeholder(id: HumanTermMetaId, span: Span) -> MachineTerm {
@@ -4516,9 +4977,10 @@ impl HumanImplicitInserter {
                 span,
             ));
         };
-        if !signature
-            .implicit_profile
-            .contains(&MachineCallableBinderVisibility::Implicit)
+        if signature.universe_params.is_empty()
+            && !signature
+                .implicit_profile
+                .contains(&MachineCallableBinderVisibility::Implicit)
         {
             return Ok(rebuild_machine_apps(
                 MachineTerm::Ident {
@@ -4532,103 +4994,153 @@ impl HumanImplicitInserter {
             ));
         }
 
-        let mut args = args.into_iter().peekable();
-        let mut expanded_args = Vec::new();
-        let mut synthetic_implicits = Vec::new();
-        for visibility in &signature.implicit_profile {
-            match visibility {
-                MachineCallableBinderVisibility::Explicit => {
-                    let Some(arg) = args.next() else {
-                        break;
-                    };
-                    expanded_args.push(arg);
-                }
-                MachineCallableBinderVisibility::Implicit => {
-                    let Some(next_explicit_arg) = args.peek() else {
-                        return Err(self.unsolved_implicit(
-                            head_span,
-                            format!(
-                                "cannot infer implicit argument for {} without a supplied explicit argument",
-                                name.as_dotted()
-                            ),
-                        ));
-                    };
-                    self.bump_insertion_step(head_span)?;
-                    let inferred_type =
-                        self.infer_machine_term_type(next_explicit_arg, locals, delta)?;
-                    let inserted = core_expr_to_machine_term(&inferred_type, locals, head_span)
-                        .ok_or_else(|| {
-                            self.unsolved_implicit(
-                                head_span,
-                                format!(
-                                    "cannot materialize inferred implicit argument for {}",
-                                    name.as_dotted()
-                                ),
-                            )
-                        })?;
-                    synthetic_implicits.push(SyntheticImplicitMeta {
-                        value: inferred_type,
-                    });
-                    expanded_args.push(inserted);
-                }
-            }
-        }
-        expanded_args.extend(args);
-
-        let universe_args = match universe_args {
-            Some(args) => Some(args),
-            None if signature.universe_params.is_empty() => None,
-            None => Some(self.infer_universe_args(
-                &signature,
-                &synthetic_implicits,
-                locals,
-                delta,
-                head_span,
-                &name,
-            )?),
-        };
+        let solved =
+            self.solve_human_spine(&name, &signature, universe_args, args, locals, delta)?;
         let head = MachineTerm::Ident {
             name,
-            universe_args,
+            universe_args: solved.universe_args,
             explicit_mode: true,
             span: head_span,
         };
-        Ok(rebuild_machine_apps(head, expanded_args, span))
+        Ok(rebuild_machine_apps(head, solved.args, span))
     }
 
-    fn infer_universe_args(
-        &self,
+    fn solve_human_spine(
+        &mut self,
+        name: &MachineName,
         signature: &HumanCallableSignature,
-        synthetic_implicits: &[SyntheticImplicitMeta],
+        universe_args: Option<Vec<MachineLevel>>,
+        args: Vec<MachineTerm>,
         locals: &HumanLocalContext,
         delta: &[String],
-        span: Span,
-        name: &MachineName,
-    ) -> HumanResult<Vec<MachineLevel>> {
-        let mut levels = Vec::with_capacity(signature.universe_params.len());
-        for synthetic in synthetic_implicits {
-            if levels.len() == signature.universe_params.len() {
-                break;
-            }
-            let inferred = self.infer_core_expr_type(&synthetic.value, locals, delta, span)?;
-            let Expr::Sort(level) = inferred else {
-                return Err(self.unsolved_implicit(
+    ) -> HumanResult<HumanSolvedSpine> {
+        let span = name.span;
+        let dotted = name.as_dotted();
+        let Some(decl) = self.env.decl(&dotted) else {
+            return Ok(HumanSolvedSpine {
+                universe_args,
+                args,
+            });
+        };
+        let decl_ty = decl.ty().clone();
+
+        let fixed_universe_args = match universe_args.as_ref() {
+            Some(args) if args.len() == signature.universe_params.len() => Some(
+                args.iter()
+                    .cloned()
+                    .map(elaborate_machine_level)
+                    .collect::<HumanResult<Vec<_>>>()?,
+            ),
+            Some(args) => {
+                return Err(human_universe_solver_error(
                     span,
                     format!(
-                        "inferred implicit argument for {} is not a type",
-                        name.as_dotted()
+                        "global name {} expects {} universe arguments, got {}",
+                        dotted,
+                        signature.universe_params.len(),
+                        args.len()
                     ),
                 ));
+            }
+            None => None,
+        };
+
+        for _ in signature
+            .implicit_profile
+            .iter()
+            .filter(|visibility| **visibility == MachineCallableBinderVisibility::Implicit)
+        {
+            self.bump_insertion_step(span)?;
+        }
+
+        let mut solver = HumanUniverseSpineSolver::new(
+            &self.env,
+            locals,
+            delta,
+            &signature.universe_params,
+            fixed_universe_args,
+        );
+        let mut current_ty = solver.decl_type_with_universe_metas(&decl_ty, span)?;
+        let mut source_args = args.into_iter();
+        let mut expanded_args = Vec::new();
+
+        for visibility in &signature.implicit_profile {
+            let (ty, body) = match current_ty.clone() {
+                Expr::Pi { ty, body, .. } => (ty, body),
+                _ => {
+                    return Err(HumanDiagnostic::error(
+                        HumanDiagnosticKind::ExpectedFunctionType,
+                        span,
+                        format!("global name {dotted} has more callable binders than its type"),
+                    ));
+                }
             };
-            levels.push(core_level_to_machine_level(&level, span));
+            match visibility {
+                MachineCallableBinderVisibility::Implicit => {
+                    let id = solver.fresh_implicit((*ty).clone(), span);
+                    let placeholder = HumanUniverseSpineSolver::implicit_placeholder(id);
+                    current_ty = subst::instantiate(&body, &placeholder).map_err(|err| {
+                        human_kernel_expr_diagnostic(
+                            span,
+                            err,
+                            "Human implicit binder instantiation",
+                        )
+                    })?;
+                    expanded_args.push(HumanSpineArg::Implicit(id));
+                }
+                MachineCallableBinderVisibility::Explicit => {
+                    let Some(arg) = source_args.next() else {
+                        break;
+                    };
+                    let arg_expr = self.elaborate_machine_term(&arg, locals, delta)?;
+                    let arg_ty = self.infer_core_expr_type(&arg_expr, locals, delta, arg.span())?;
+                    solver.unify_expr((*ty).clone(), arg_ty, arg.span())?;
+                    current_ty = subst::instantiate(&body, &arg_expr).map_err(|err| {
+                        human_kernel_expr_diagnostic(
+                            arg.span(),
+                            err,
+                            "Human explicit binder instantiation",
+                        )
+                    })?;
+                    expanded_args.push(HumanSpineArg::Explicit(arg));
+                }
+            }
         }
-        if levels.len() != signature.universe_params.len() {
-            return Err(self.unsolved_implicit(
-                span,
-                format!("cannot infer universe arguments for {}", name.as_dotted()),
-            ));
+
+        for arg in source_args {
+            let (ty, body) = match current_ty.clone() {
+                Expr::Pi { ty, body, .. } => (ty, body),
+                _ => {
+                    expanded_args.push(HumanSpineArg::Explicit(arg));
+                    continue;
+                }
+            };
+            let arg_expr = self.elaborate_machine_term(&arg, locals, delta)?;
+            let arg_ty = self.infer_core_expr_type(&arg_expr, locals, delta, arg.span())?;
+            solver.unify_expr((*ty).clone(), arg_ty, arg.span())?;
+            current_ty = subst::instantiate(&body, &arg_expr).map_err(|err| {
+                human_kernel_expr_diagnostic(arg.span(), err, "Human spine instantiation")
+            })?;
+            expanded_args.push(HumanSpineArg::Explicit(arg));
         }
-        Ok(levels)
+
+        let args = expanded_args
+            .into_iter()
+            .map(|arg| match arg {
+                HumanSpineArg::Explicit(arg) => Ok(arg),
+                HumanSpineArg::Implicit(id) => solver.materialize_implicit_arg(id, span),
+            })
+            .collect::<HumanResult<Vec<_>>>()?;
+        let universe_args = match universe_args {
+            Some(args) => Some(args),
+            None if signature.universe_params.is_empty() => None,
+            None => Some(solver.solved_universe_args(span)?),
+        };
+
+        Ok(HumanSolvedSpine {
+            universe_args,
+            args,
+        })
     }
 
     fn elaborate_machine_term(
@@ -4658,7 +5170,7 @@ impl HumanImplicitInserter {
                         .map(elaborate_machine_level)
                         .collect::<HumanResult<Vec<_>>>()?,
                     Some(args) => {
-                        return Err(self.unsolved_implicit(
+                        return Err(human_universe_solver_error(
                             *span,
                             format!(
                                 "global name {name} expects {expected} universe arguments, got {}",
@@ -4668,7 +5180,7 @@ impl HumanImplicitInserter {
                     }
                     None if expected == 0 => Vec::new(),
                     None => {
-                        return Err(self.unsolved_implicit(
+                        return Err(human_universe_solver_error(
                             *span,
                             format!("global name {name} still has unresolved universe arguments"),
                         ));
@@ -4737,16 +5249,6 @@ impl HumanImplicitInserter {
             }
             MachineTerm::Annot { expr, .. } => self.elaborate_machine_term(expr, locals, delta)?,
         })
-    }
-
-    fn infer_machine_term_type(
-        &self,
-        term: &MachineTerm,
-        locals: &HumanLocalContext,
-        delta: &[String],
-    ) -> HumanResult<Expr> {
-        let expr = self.elaborate_machine_term(term, locals, delta)?;
-        self.infer_core_expr_type(&expr, locals, delta, term.span())
     }
 
     fn infer_core_expr_type(
@@ -6730,6 +7232,142 @@ mod tests {
         }
     }
 
+    fn collect_const_level_args(expr: &Expr, target: &str, out: &mut Vec<Vec<Level>>) {
+        match expr {
+            Expr::Const { name, levels } => {
+                if name == target {
+                    out.push(levels.clone());
+                }
+            }
+            Expr::App(fun, arg) => {
+                collect_const_level_args(fun, target, out);
+                collect_const_level_args(arg, target, out);
+            }
+            Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+                collect_const_level_args(ty, target, out);
+                collect_const_level_args(body, target, out);
+            }
+            Expr::Let {
+                ty, value, body, ..
+            } => {
+                collect_const_level_args(ty, target, out);
+                collect_const_level_args(value, target, out);
+                collect_const_level_args(body, target, out);
+            }
+            Expr::Sort(_) | Expr::BVar(_) => {}
+        }
+    }
+
+    fn def_value<'a>(module: &'a npa_cert::CoreModule, target: &str) -> &'a Expr {
+        module
+            .declarations
+            .iter()
+            .find_map(|decl| match decl {
+                Decl::Def { name, value, .. } if name == target => Some(value),
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("expected def {target}"))
+    }
+
+    fn level_has_internal_human_meta(level: &Level) -> bool {
+        match level {
+            Level::Zero => false,
+            Level::Succ(inner) => level_has_internal_human_meta(inner),
+            Level::Max(lhs, rhs) | Level::IMax(lhs, rhs) => {
+                level_has_internal_human_meta(lhs) || level_has_internal_human_meta(rhs)
+            }
+            Level::Param(name) => name.starts_with(HUMAN_UNIVERSE_META_PREFIX),
+        }
+    }
+
+    fn expr_has_internal_human_meta(expr: &Expr) -> bool {
+        match expr {
+            Expr::Sort(level) => level_has_internal_human_meta(level),
+            Expr::Const { name, levels } => {
+                name.starts_with(HUMAN_SPINE_IMPLICIT_PREFIX)
+                    || levels.iter().any(level_has_internal_human_meta)
+            }
+            Expr::App(fun, arg) => {
+                expr_has_internal_human_meta(fun) || expr_has_internal_human_meta(arg)
+            }
+            Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+                expr_has_internal_human_meta(ty) || expr_has_internal_human_meta(body)
+            }
+            Expr::Let {
+                ty, value, body, ..
+            } => {
+                expr_has_internal_human_meta(ty)
+                    || expr_has_internal_human_meta(value)
+                    || expr_has_internal_human_meta(body)
+            }
+            Expr::BVar(_) => false,
+        }
+    }
+
+    fn decl_has_internal_human_meta(decl: &Decl) -> bool {
+        if decl
+            .universe_params()
+            .iter()
+            .any(|param| param.starts_with(HUMAN_UNIVERSE_META_PREFIX))
+        {
+            return true;
+        }
+        if decl.universe_constraints().iter().any(|constraint| {
+            level_has_internal_human_meta(&constraint.lhs)
+                || level_has_internal_human_meta(&constraint.rhs)
+        }) {
+            return true;
+        }
+        if expr_has_internal_human_meta(decl.ty()) {
+            return true;
+        }
+        match decl {
+            Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
+                expr_has_internal_human_meta(value)
+            }
+            Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
+                expr_has_internal_human_meta(proof)
+            }
+            Decl::Inductive { data, .. } => {
+                data.params
+                    .iter()
+                    .chain(data.indices.iter())
+                    .any(|binder| expr_has_internal_human_meta(&binder.ty))
+                    || level_has_internal_human_meta(&data.sort)
+                    || data
+                        .constructors
+                        .iter()
+                        .any(|ctor| expr_has_internal_human_meta(&ctor.ty))
+                    || data
+                        .recursor
+                        .as_ref()
+                        .is_some_and(|recursor| expr_has_internal_human_meta(&recursor.ty))
+            }
+            Decl::Axiom { .. }
+            | Decl::AxiomConstrained { .. }
+            | Decl::Constructor { .. }
+            | Decl::Recursor { .. } => false,
+        }
+    }
+
+    fn assert_core_module_has_no_internal_human_metas(module: &npa_cert::CoreModule) {
+        assert!(
+            !module.declarations.iter().any(decl_has_internal_human_meta),
+            "Human elaboration-only metas must not reach the core module"
+        );
+    }
+
+    fn assert_certificate_has_no_internal_human_metas(cert: &npa_cert::ModuleCert) {
+        assert!(
+            cert.name_table.iter().all(|name| {
+                let dotted = name.as_dotted();
+                !dotted.starts_with(HUMAN_UNIVERSE_META_PREFIX)
+                    && !dotted.starts_with(HUMAN_SPINE_IMPLICIT_PREFIX)
+            }),
+            "Human elaboration-only metas must not reach the certificate name table"
+        );
+    }
+
     #[test]
     fn compile_human_source_checks_verified_imports_before_elaboration() {
         let err = compile_human_source_to_core(
@@ -7202,6 +7840,128 @@ theorem self_eq (n : Nat) : Eq.{1} Nat n n := Eq.refl n",
     }
 
     #[test]
+    fn human_universe_solver_infers_polymorphic_id_const_and_map() {
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+def id.{u} {A : Sort u} (x : A) : A := x
+def const.{u,v} {A : Sort u} {B : Sort v} (x : A) (y : B) : A := x
+axiom map.{u} {A : Sort u} (f : forall (a : A), A) (x : A) : A
+def use_id.{u} {A : Sort u} (x : A) : A := id x
+def use_const.{u,v} {A : Sort u} {B : Sort v} (x : A) (y : B) : A := const x y
+theorem use_map.{u} {A : Sort u} (f : forall (a : A), A) (x : A) : A := map f x",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect(
+            "Human path should infer implicit universe arguments for common polymorphic spines",
+        );
+
+        let mut id_levels = Vec::new();
+        collect_const_level_args(def_value(&module, "use_id"), "id", &mut id_levels);
+        assert!(id_levels.contains(&vec![Level::param("u")]));
+
+        let mut const_levels = Vec::new();
+        collect_const_level_args(def_value(&module, "use_const"), "const", &mut const_levels);
+        assert!(const_levels.contains(&vec![Level::param("u"), Level::param("v")]));
+
+        let Decl::Theorem { proof, .. } = &module.declarations[5] else {
+            panic!("expected use_map theorem");
+        };
+        let mut map_levels = Vec::new();
+        collect_const_level_args(proof, "map", &mut map_levels);
+        assert!(map_levels.contains(&vec![Level::param("u")]));
+        assert_core_module_has_no_internal_human_metas(&module);
+    }
+
+    #[test]
+    fn human_universe_solver_reports_unsatisfied_constraint() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+def id.{u} {A : Sort u} (x : A) : A := x
+def bad.{u,v} {A : Sort u} (x : A) : A := id.{v} x",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("fixed explicit universe arguments must reject unsatisfied Human constraints");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedUniverseMeta);
+        assert_eq!(
+            err.payload
+                .as_ref()
+                .and_then(|payload| payload.unsolved_meta.as_ref())
+                .map(|meta| meta.kind),
+            Some(HumanUnsolvedMetaKind::Universe)
+        );
+    }
+
+    #[test]
+    fn human_universe_solver_is_deterministic_and_certificate_meta_free() {
+        let source = "\
+def id.{u} {A : Sort u} (x : A) : A := x
+def use_id.{u} {A : Sort u} (x : A) : A := id x";
+        let module = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human source should elaborate to meta-free core");
+        assert_core_module_has_no_internal_human_metas(&module);
+
+        let first = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("first Human certificate should build");
+        let second = compile_human_source_to_certificate(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("second Human certificate should build");
+
+        assert_eq!(
+            first.hashes.certificate_hash,
+            second.hashes.certificate_hash
+        );
+        assert_certificate_has_no_internal_human_metas(&first);
+        assert_certificate_has_no_internal_human_metas(&second);
+    }
+
+    #[test]
+    fn human_ambiguous_universe_reports_structured_diagnostic() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+axiom F.{u} : Sort u
+def bad : Type := F",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("ambiguous universe metavariable should be reported before core handoff");
+
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedUniverseMeta);
+        assert_eq!(
+            err.payload
+                .as_ref()
+                .and_then(|payload| payload.unsolved_meta.as_ref())
+                .map(|meta| meta.kind),
+            Some(HumanUnsolvedMetaKind::Universe)
+        );
+    }
+
+    #[test]
     fn human_explicit_mode_suppresses_implicit_insertion() {
         let imports = [nat_import(), eq_import()];
         let err = compile_human_source_to_core(
@@ -7307,7 +8067,14 @@ theorem bad (n : Nat) : Eq.{1} Nat n n := Eq.refl n",
         )
         .expect_err("name-only Eq.refl should not get the builtin implicit profile");
 
-        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedImplicit);
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedUniverseMeta);
+        assert_eq!(
+            err.payload
+                .as_ref()
+                .and_then(|payload| payload.unsolved_meta.as_ref())
+                .map(|meta| meta.kind),
+            Some(HumanUnsolvedMetaKind::Universe)
+        );
     }
 
     #[test]
@@ -7814,7 +8581,7 @@ def bad (n : Nat) : Nat := _",
     }
 
     #[test]
-    fn human_unresolved_implicit_meta_rejects_certificate_path_before_certificate_output() {
+    fn human_unresolved_universe_meta_rejects_certificate_path_before_certificate_output() {
         let err = compile_human_source_to_certificate(
             FileId(0),
             npa_cert::Name::from_dotted("Test"),
@@ -7824,16 +8591,15 @@ def bad : Type := F",
             &[],
             &HumanCompileOptions::default(),
         )
-        .expect_err("unresolved Human implicit meta should not reach certificate construction");
+        .expect_err("unresolved Human universe meta should not reach certificate construction");
 
-        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedImplicit);
+        assert_eq!(err.kind, HumanDiagnosticKind::UnsolvedUniverseMeta);
         let payload = err
             .payload
-            .expect("unresolved implicit meta should carry payload");
-        assert_eq!(payload.phase, Some(HumanDiagnosticPhase::Elaborator));
+            .expect("unresolved universe meta should carry payload");
         assert_eq!(
             payload.unsolved_meta.as_ref().map(|meta| meta.kind),
-            Some(HumanUnsolvedMetaKind::SyntheticImplicit)
+            Some(HumanUnsolvedMetaKind::Universe)
         );
     }
 
