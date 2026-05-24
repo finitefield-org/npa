@@ -409,18 +409,18 @@ mutual block の採用は kernel trusted base を広げるため、reason / alte
 
 実装タスク:
 
-- [ ] approved strictly-positive functor table を kernel / checker の明示 policy として実装する。
-- [ ] `List` / `Option` / `Prod` 越しの nested recursive occurrence を positivity traversal で扱う。
-- [ ] `Rose` tree の positive fixture と unknown functor / higher-order negative occurrence の rejection fixture を追加する。
-- [ ] `Prop` から `Type` への large elimination restriction と例外候補を structured policy にする。
-- [ ] recursor generation と iota rules hash を approved nested profile に対応させる。
+- [x] approved strictly-positive functor table を kernel / checker の明示 policy として実装する。
+- [x] `List` / `Option` / `Prod` 越しの nested recursive occurrence を positivity traversal で扱う。
+- [x] `Rose` tree の positive fixture と unknown functor / higher-order negative occurrence の rejection fixture を追加する。
+- [x] `Prop` から `Type` への large elimination restriction と例外候補を structured policy にする。
+- [x] recursor generation と iota rules hash を approved nested profile に対応させる。
 
 受け入れ条件:
 
-- [ ] `List (Rose A)` 相当の approved nested occurrence が通る。
-- [ ] unknown type constructor、`I -> A`、`I -> I`、higher-order negative occurrence は拒否される。
-- [ ] `I : Prop` から unrestricted `Type` motive への recursor は拒否される。
-- [ ] approved functor table が certificate / checker / docs で一致している。
+- [x] `List (Rose A)` 相当の approved nested occurrence が通る。
+- [x] unknown type constructor、`I -> A`、`I -> I`、higher-order negative occurrence は拒否される。
+- [x] `I : Prop` から unrestricted `Type` motive への recursor は拒否される。
+- [x] approved functor table が certificate / checker / docs で一致している。
 
 検証:
 

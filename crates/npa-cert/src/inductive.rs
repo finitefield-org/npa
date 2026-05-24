@@ -1,5 +1,6 @@
 use npa_kernel::expr::collect_apps;
 use npa_kernel::level::{level_eq, levels_eq};
+use npa_kernel::positivity::approved_nested_functor;
 use npa_kernel::{
     ConstructorDecl, Decl, Expr, InductiveDecl, Level, MutualInductiveBlock, RecursorDecl,
     RecursorRules,
@@ -48,20 +49,16 @@ pub fn classify_inductive_artifact_profile_v1(
     for constructor in &base.constructors {
         let (domains, _) = peel_pi_domains(&constructor.ty);
         for (domain_index, domain) in domains.iter().enumerate() {
-            if domain_index >= base.params.len()
-                && is_direct_recursive_domain(
+            let allowed = domain_index >= base.params.len()
+                && recursive_occurrences_strictly_positive(
                     &base.name,
                     &base.universe_params,
                     base.params.len(),
                     base.indices.len(),
                     domain,
                     domain_index,
-                )
-                .unwrap_or(false)
-            {
-                continue;
-            }
-            if contains_const(domain, &base.name) {
+                );
+            if !allowed && contains_const(domain, &base.name) {
                 return InductiveArtifactProfileCheckV1::UnsupportedMvpRecursorProfile(
                     UnsupportedMvpRecursorProfileV1::MutualOrNestedRecursorRequired,
                 );
@@ -120,15 +117,14 @@ pub fn generate_mutual_inductive_artifacts_v1(
         for constructor in &data.constructors {
             let (domains, _) = peel_pi_domains(&constructor.ty);
             for (domain_index, domain) in domains.iter().enumerate() {
-                if domain_index >= param_count
-                    && direct_mutual_recursive_index_args(base, domain, domain_index).is_ok()
+                let allowed = domain_index >= param_count
+                    && mutual_recursive_occurrences_strictly_positive(base, domain, domain_index);
+                if !allowed
+                    && contains_any_const(
+                        domain,
+                        base.inductives.iter().map(|data| data.name.as_str()),
+                    )
                 {
-                    continue;
-                }
-                if contains_any_const(
-                    domain,
-                    base.inductives.iter().map(|data| data.name.as_str()),
-                ) {
                     return Err(CertError::InductiveGeneratedArtifactMismatch {
                         name: Name::from_dotted(&base.name),
                     });
@@ -763,6 +759,111 @@ fn is_direct_recursive_domain(
         ctx_len,
     )
     .is_ok())
+}
+
+fn recursive_occurrences_strictly_positive(
+    inductive_name: &str,
+    universe_params: &[String],
+    param_count: usize,
+    index_count: usize,
+    domain: &Expr,
+    ctx_len: usize,
+) -> bool {
+    if direct_recursive_index_args(
+        inductive_name,
+        universe_params,
+        param_count,
+        index_count,
+        domain,
+        ctx_len,
+    )
+    .is_ok()
+    {
+        return true;
+    }
+    match domain {
+        Expr::Sort(_) | Expr::BVar(_) => true,
+        Expr::Const { name, .. } => name != inductive_name,
+        Expr::App(_, _) => {
+            let (head, args) = collect_apps(domain);
+            let Expr::Const { name, .. } = head else {
+                return !contains_const(domain, inductive_name);
+            };
+            let Some(functor) = approved_nested_functor(&name, args.len()) else {
+                return !contains_const(domain, inductive_name);
+            };
+            args.iter().enumerate().all(|(index, arg)| {
+                if functor.positive_args.contains(&index) {
+                    recursive_occurrences_strictly_positive(
+                        inductive_name,
+                        universe_params,
+                        param_count,
+                        index_count,
+                        arg,
+                        ctx_len,
+                    )
+                } else {
+                    !contains_const(arg, inductive_name)
+                }
+            })
+        }
+        Expr::Pi { ty, body, .. } => {
+            !contains_const(ty, inductive_name)
+                && recursive_occurrences_strictly_positive(
+                    inductive_name,
+                    universe_params,
+                    param_count,
+                    index_count,
+                    body,
+                    ctx_len + 1,
+                )
+        }
+        Expr::Lam { .. } | Expr::Let { .. } => !contains_const(domain, inductive_name),
+    }
+}
+
+fn mutual_recursive_occurrences_strictly_positive(
+    block: &MutualInductiveBlock,
+    domain: &Expr,
+    ctx_len: usize,
+) -> bool {
+    if direct_mutual_recursive_index_args(block, domain, ctx_len).is_ok() {
+        return true;
+    }
+    match domain {
+        Expr::Sort(_) | Expr::BVar(_) => true,
+        Expr::Const { name, .. } => !block.inductives.iter().any(|data| &data.name == name),
+        Expr::App(_, _) => {
+            let (head, args) = collect_apps(domain);
+            let Expr::Const { name, .. } = head else {
+                return !contains_any_const(
+                    domain,
+                    block.inductives.iter().map(|data| data.name.as_str()),
+                );
+            };
+            let Some(functor) = approved_nested_functor(&name, args.len()) else {
+                return !contains_any_const(
+                    domain,
+                    block.inductives.iter().map(|data| data.name.as_str()),
+                );
+            };
+            args.iter().enumerate().all(|(index, arg)| {
+                if functor.positive_args.contains(&index) {
+                    mutual_recursive_occurrences_strictly_positive(block, arg, ctx_len)
+                } else {
+                    !contains_any_const(arg, block.inductives.iter().map(|data| data.name.as_str()))
+                }
+            })
+        }
+        Expr::Pi { ty, body, .. } => {
+            !contains_any_const(ty, block.inductives.iter().map(|data| data.name.as_str()))
+                && mutual_recursive_occurrences_strictly_positive(block, body, ctx_len + 1)
+        }
+        Expr::Lam { .. } | Expr::Let { .. } => !contains_any_const(
+            domain,
+            block.inductives.iter().map(|data| data.name.as_str()),
+        ),
+    }
 }
 
 fn direct_recursive_index_args(

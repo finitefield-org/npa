@@ -13,6 +13,7 @@ use crate::{
         ensure_level_wf, ensure_universe_constraints_wf, level_eq, levels_eq,
         validate_universe_params, Level, UniverseConstraint,
     },
+    positivity::approved_nested_functor,
     subst::{instantiate, subst_levels_expr},
 };
 
@@ -731,7 +732,7 @@ impl Env {
         self.expect_sort(&Ctx::new(), delta, &constructor.ty)?;
         let (domains, result) = peel_pi_domains(&constructor.ty);
         for (domain_index, domain) in domains.iter().enumerate() {
-            check_constructor_domain_positive(data, &constructor.name, domain_index, domain)?;
+            check_constructor_domain_positive(self, data, &constructor.name, domain_index, domain)?;
         }
 
         let result = self.whnf(&Ctx::new(), delta, &result)?;
@@ -749,6 +750,7 @@ impl Env {
         let (domains, result) = peel_pi_domains(&constructor.ty);
         for (domain_index, domain) in domains.iter().enumerate() {
             check_mutual_constructor_domain_positive(
+                self,
                 block,
                 data,
                 &constructor.name,
@@ -1855,15 +1857,15 @@ fn peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
 }
 
 fn check_constructor_domain_positive(
+    env: &Env,
     data: &InductiveDecl,
     constructor: &str,
     domain_index: usize,
     domain: &Expr,
 ) -> Result<()> {
-    if domain_index >= data.params.len() && is_direct_recursive_domain(data, domain, domain_index) {
-        return Ok(());
-    }
-    if contains_const(domain, &data.name) {
+    let allowed = domain_index >= data.params.len()
+        && recursive_occurrences_strictly_positive(env, data, domain, domain_index);
+    if !allowed && contains_const(domain, &data.name) {
         return Err(Error::NonPositiveOccurrence {
             inductive: data.name.clone(),
             constructor: constructor.to_owned(),
@@ -1874,21 +1876,21 @@ fn check_constructor_domain_positive(
 }
 
 fn check_mutual_constructor_domain_positive(
+    env: &Env,
     block: &MutualInductiveBlock,
     data: &InductiveDecl,
     constructor: &str,
     domain_index: usize,
     domain: &Expr,
 ) -> Result<()> {
-    if domain_index >= data.params.len()
-        && direct_mutual_recursive_index_args_in_block(block, domain, domain_index).is_ok()
+    let allowed = domain_index >= data.params.len()
+        && mutual_recursive_occurrences_strictly_positive(env, block, domain, domain_index);
+    if !allowed
+        && contains_any_const(
+            domain,
+            block.inductives.iter().map(|data| data.name.as_str()),
+        )
     {
-        return Ok(());
-    }
-    if contains_any_const(
-        domain,
-        block.inductives.iter().map(|data| data.name.as_str()),
-    ) {
         return Err(Error::NonPositiveOccurrence {
             inductive: data.name.clone(),
             constructor: constructor.to_owned(),
@@ -1900,6 +1902,263 @@ fn check_mutual_constructor_domain_positive(
 
 fn is_direct_recursive_domain(data: &InductiveDecl, domain: &Expr, ctx_len: usize) -> bool {
     direct_recursive_index_args(data, domain, ctx_len).is_ok()
+}
+
+fn recursive_occurrences_strictly_positive(
+    env: &Env,
+    data: &InductiveDecl,
+    domain: &Expr,
+    ctx_len: usize,
+) -> bool {
+    if direct_recursive_index_args(data, domain, ctx_len).is_ok() {
+        return true;
+    }
+    match domain {
+        Expr::Sort(_) | Expr::BVar(_) => true,
+        Expr::Const { name, .. } => name != &data.name,
+        Expr::App(_, _) => {
+            let (head, args) = collect_apps(domain);
+            let Expr::Const { name, .. } = head else {
+                return !contains_const(domain, &data.name);
+            };
+            let Some(functor) = approved_nested_functor(&name, args.len()) else {
+                return !contains_const(domain, &data.name);
+            };
+            if !approved_nested_functor_decl_is_valid(env, functor.name, functor.arity) {
+                return !contains_const(domain, &data.name);
+            }
+            args.iter().enumerate().all(|(index, arg)| {
+                if functor.positive_args.contains(&index) {
+                    recursive_occurrences_strictly_positive(env, data, arg, ctx_len)
+                } else {
+                    !contains_const(arg, &data.name)
+                }
+            })
+        }
+        Expr::Pi { ty, body, .. } => {
+            !contains_const(ty, &data.name)
+                && recursive_occurrences_strictly_positive(env, data, body, ctx_len + 1)
+        }
+        Expr::Lam { .. } | Expr::Let { .. } => !contains_const(domain, &data.name),
+    }
+}
+
+fn mutual_recursive_occurrences_strictly_positive(
+    env: &Env,
+    block: &MutualInductiveBlock,
+    domain: &Expr,
+    ctx_len: usize,
+) -> bool {
+    if direct_mutual_recursive_index_args_in_block(block, domain, ctx_len).is_ok() {
+        return true;
+    }
+    match domain {
+        Expr::Sort(_) | Expr::BVar(_) => true,
+        Expr::Const { name, .. } => !block.inductives.iter().any(|data| &data.name == name),
+        Expr::App(_, _) => {
+            let (head, args) = collect_apps(domain);
+            let Expr::Const { name, .. } = head else {
+                return !contains_any_const(
+                    domain,
+                    block.inductives.iter().map(|data| data.name.as_str()),
+                );
+            };
+            let Some(functor) = approved_nested_functor(&name, args.len()) else {
+                return !contains_any_const(
+                    domain,
+                    block.inductives.iter().map(|data| data.name.as_str()),
+                );
+            };
+            if !approved_nested_functor_decl_is_valid(env, functor.name, functor.arity) {
+                return !contains_any_const(
+                    domain,
+                    block.inductives.iter().map(|data| data.name.as_str()),
+                );
+            }
+            args.iter().enumerate().all(|(index, arg)| {
+                if functor.positive_args.contains(&index) {
+                    mutual_recursive_occurrences_strictly_positive(env, block, arg, ctx_len)
+                } else {
+                    !contains_any_const(arg, block.inductives.iter().map(|data| data.name.as_str()))
+                }
+            })
+        }
+        Expr::Pi { ty, body, .. } => {
+            !contains_any_const(ty, block.inductives.iter().map(|data| data.name.as_str()))
+                && mutual_recursive_occurrences_strictly_positive(env, block, body, ctx_len + 1)
+        }
+        Expr::Lam { .. } | Expr::Let { .. } => !contains_any_const(
+            domain,
+            block.inductives.iter().map(|data| data.name.as_str()),
+        ),
+    }
+}
+
+fn approved_nested_functor_decl_is_valid(env: &Env, name: &str, arity: usize) -> bool {
+    let Some(Decl::Inductive { data, .. }) = env.decls.get(name) else {
+        return false;
+    };
+    match (name, arity) {
+        ("List", 1) => approved_list_decl(data),
+        ("Option", 1) => approved_option_decl(data),
+        ("Prod", 2) => approved_prod_decl(data),
+        _ => false,
+    }
+}
+
+fn approved_list_decl(data: &InductiveDecl) -> bool {
+    if data.name != "List"
+        || data.universe_params.len() != 1
+        || !data.universe_constraints.is_empty()
+        || data.params.len() != 1
+        || !data.indices.is_empty()
+        || data.constructors.len() != 2
+    {
+        return false;
+    }
+    let u = Level::param(data.universe_params[0].clone());
+    let list_a = |a| Expr::app(Expr::konst("List", vec![u.clone()]), a);
+    let nil_ty = Expr::pi("A", Expr::sort(u.clone()), list_a(Expr::bvar(0)));
+    let cons_ty = Expr::pi(
+        "A",
+        Expr::sort(u.clone()),
+        Expr::pi(
+            "x",
+            Expr::bvar(0),
+            Expr::pi("xs", list_a(Expr::bvar(1)), list_a(Expr::bvar(2))),
+        ),
+    );
+    data.params[0].ty == Expr::sort(u.clone())
+        && level_eq(&data.sort, &u)
+        && data.constructors[0].name == "List.nil"
+        && expr_eq_ignoring_binder_names(&data.constructors[0].ty, &nil_ty)
+        && data.constructors[1].name == "List.cons"
+        && expr_eq_ignoring_binder_names(&data.constructors[1].ty, &cons_ty)
+}
+
+fn approved_option_decl(data: &InductiveDecl) -> bool {
+    if data.name != "Option"
+        || data.universe_params.len() != 1
+        || !data.universe_constraints.is_empty()
+        || data.params.len() != 1
+        || !data.indices.is_empty()
+        || data.constructors.len() != 2
+    {
+        return false;
+    }
+    let u = Level::param(data.universe_params[0].clone());
+    let option_a = |a| Expr::app(Expr::konst("Option", vec![u.clone()]), a);
+    let none_ty = Expr::pi("A", Expr::sort(u.clone()), option_a(Expr::bvar(0)));
+    let some_ty = Expr::pi(
+        "A",
+        Expr::sort(u.clone()),
+        Expr::pi("value", Expr::bvar(0), option_a(Expr::bvar(1))),
+    );
+    data.params[0].ty == Expr::sort(u.clone())
+        && level_eq(&data.sort, &u)
+        && data.constructors[0].name == "Option.none"
+        && expr_eq_ignoring_binder_names(&data.constructors[0].ty, &none_ty)
+        && data.constructors[1].name == "Option.some"
+        && expr_eq_ignoring_binder_names(&data.constructors[1].ty, &some_ty)
+}
+
+fn approved_prod_decl(data: &InductiveDecl) -> bool {
+    if data.name != "Prod"
+        || data.universe_params.len() != 1
+        || !data.universe_constraints.is_empty()
+        || data.params.len() != 2
+        || !data.indices.is_empty()
+        || data.constructors.len() != 1
+    {
+        return false;
+    }
+    let u = Level::param(data.universe_params[0].clone());
+    let prod_ab = |a, b| Expr::apps(Expr::konst("Prod", vec![u.clone()]), vec![a, b]);
+    let mk_ty = Expr::pi(
+        "A",
+        Expr::sort(u.clone()),
+        Expr::pi(
+            "B",
+            Expr::sort(u.clone()),
+            Expr::pi(
+                "fst",
+                Expr::bvar(1),
+                Expr::pi("snd", Expr::bvar(1), prod_ab(Expr::bvar(3), Expr::bvar(2))),
+            ),
+        ),
+    );
+    data.params[0].ty == Expr::sort(u.clone())
+        && data.params[1].ty == Expr::sort(u.clone())
+        && level_eq(&data.sort, &u)
+        && data.constructors[0].name == "Prod.mk"
+        && expr_eq_ignoring_binder_names(&data.constructors[0].ty, &mk_ty)
+}
+
+fn expr_eq_ignoring_binder_names(lhs: &Expr, rhs: &Expr) -> bool {
+    match (lhs, rhs) {
+        (Expr::Sort(lhs), Expr::Sort(rhs)) => level_eq(lhs, rhs),
+        (Expr::BVar(lhs), Expr::BVar(rhs)) => lhs == rhs,
+        (
+            Expr::Const {
+                name: lhs_name,
+                levels: lhs_levels,
+            },
+            Expr::Const {
+                name: rhs_name,
+                levels: rhs_levels,
+            },
+        ) => lhs_name == rhs_name && levels_eq(lhs_levels, rhs_levels),
+        (Expr::App(lhs_fun, lhs_arg), Expr::App(rhs_fun, rhs_arg)) => {
+            expr_eq_ignoring_binder_names(lhs_fun, rhs_fun)
+                && expr_eq_ignoring_binder_names(lhs_arg, rhs_arg)
+        }
+        (
+            Expr::Lam {
+                ty: lhs_ty,
+                body: lhs_body,
+                ..
+            },
+            Expr::Lam {
+                ty: rhs_ty,
+                body: rhs_body,
+                ..
+            },
+        )
+        | (
+            Expr::Pi {
+                ty: lhs_ty,
+                body: lhs_body,
+                ..
+            },
+            Expr::Pi {
+                ty: rhs_ty,
+                body: rhs_body,
+                ..
+            },
+        ) => {
+            expr_eq_ignoring_binder_names(lhs_ty, rhs_ty)
+                && expr_eq_ignoring_binder_names(lhs_body, rhs_body)
+        }
+        (
+            Expr::Let {
+                ty: lhs_ty,
+                value: lhs_value,
+                body: lhs_body,
+                ..
+            },
+            Expr::Let {
+                ty: rhs_ty,
+                value: rhs_value,
+                body: rhs_body,
+                ..
+            },
+        ) => {
+            expr_eq_ignoring_binder_names(lhs_ty, rhs_ty)
+                && expr_eq_ignoring_binder_names(lhs_value, rhs_value)
+                && expr_eq_ignoring_binder_names(lhs_body, rhs_body)
+        }
+        _ => false,
+    }
 }
 
 fn direct_recursive_index_args(

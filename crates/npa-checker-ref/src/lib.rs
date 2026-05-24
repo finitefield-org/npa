@@ -1204,6 +1204,69 @@ mod tests {
         )
     }
 
+    fn list_type(level: Level, elem: Expr) -> Expr {
+        Expr::app(Expr::konst("List", vec![level]), elem)
+    }
+
+    fn rose_type(level: Level, elem: Expr) -> Expr {
+        Expr::app(Expr::konst("Rose", vec![level]), elem)
+    }
+
+    fn rose_nested_list_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Rose",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "Rose.node",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "value",
+                        Expr::bvar(0),
+                        Expr::pi(
+                            "children",
+                            list_type(u.clone(), rose_type(u.clone(), Expr::bvar(1))),
+                            rose_type(u, Expr::bvar(2)),
+                        ),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn certificate_for_nested_rose() -> Vec<u8> {
+        let list_data = generate_inductive_artifacts_v1(&list_inductive()).unwrap();
+        let rose_data = generate_inductive_artifacts_v1(&rose_nested_list_inductive()).unwrap();
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Test.NestedRose"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: list_data.name.clone(),
+                        universe_params: list_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&list_data),
+                        data: Box::new(list_data),
+                    },
+                    Decl::Inductive {
+                        name: rose_data.name.clone(),
+                        universe_params: rose_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&rose_data),
+                        data: Box::new(rose_data),
+                    },
+                ],
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
+    }
+
     fn vec_type(level: Level, a: Expr, n: Expr) -> Expr {
         Expr::apps(Expr::konst("Vec", vec![level]), vec![a, n])
     }
@@ -3450,6 +3513,49 @@ mod tests {
             let result = check_certificate(&bytes, &imports, &policy);
             assert!(result.is_checked(), "{result:?}");
         }
+    }
+
+    #[test]
+    fn positivity_accepts_approved_nested_rose_certificate() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let bytes = certificate_for_nested_rose();
+
+        let result = check_certificate(&bytes, &imports, &policy);
+
+        assert!(result.is_checked(), "{result:?}");
+    }
+
+    #[test]
+    fn positivity_rejects_negative_occurrence_with_structured_error() {
+        let terms = [
+            TestTerm::Sort(1),
+            TestTerm::ConstLocal { decl_index: 0 },
+            TestTerm::Pi { ty: 1, body: 1 },
+            TestTerm::Pi { ty: 2, body: 1 },
+        ];
+        let fixture = single_inductive_certificate_fixture(
+            &terms,
+            TestInductiveSpec {
+                names: vec![&["Bad"], &["Bad", "mk"], &["Std", "Nat"]],
+                name: 0,
+                universe_params: vec![],
+                params: vec![],
+                indices: vec![],
+                sort: 1,
+                constructors: vec![TestConstructorSpec { name: 1, ty: 3 }],
+                recursor: None,
+            },
+        );
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+
+        let result = check_certificate(&fixture.bytes, &imports, &policy);
+
+        assert_type_check(
+            result.error().unwrap().clone(),
+            ReferenceCheckReason::NonPositiveOccurrence,
+        );
     }
 
     #[test]

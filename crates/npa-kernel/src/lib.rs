@@ -5,6 +5,7 @@ pub mod env;
 pub mod error;
 pub mod expr;
 pub mod level;
+pub mod positivity;
 pub mod subst;
 
 pub use builtins::{
@@ -20,6 +21,7 @@ pub use env::Env;
 pub use error::{Error, ResourceLimitKind, Result};
 pub use expr::Expr;
 pub use level::{Level, UniverseConstraint, UniverseConstraintRelation};
+pub use positivity::{approved_nested_functor, ApprovedNestedFunctor, APPROVED_NESTED_FUNCTORS};
 
 #[cfg(test)]
 mod tests {
@@ -137,6 +139,31 @@ mod tests {
                     ),
                 ),
             ],
+            None,
+        )
+    }
+
+    fn negative_param_list_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        let list_a = |a| Expr::app(Expr::konst("List", vec![u.clone()]), a);
+        InductiveDecl::new(
+            "List",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "List.mk",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "f",
+                        Expr::pi("_", Expr::bvar(0), nat()),
+                        list_a(Expr::bvar(1)),
+                    ),
+                ),
+            )],
             None,
         )
     }
@@ -710,6 +737,179 @@ mod tests {
         )
     }
 
+    fn list_type(level: Level, elem: Expr) -> Expr {
+        Expr::app(Expr::konst("List", vec![level]), elem)
+    }
+
+    fn option_type(level: Level, elem: Expr) -> Expr {
+        Expr::app(Expr::konst("Option", vec![level]), elem)
+    }
+
+    fn option_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Option",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![
+                ConstructorDecl::new(
+                    "Option.none",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        option_type(u.clone(), Expr::bvar(0)),
+                    ),
+                ),
+                ConstructorDecl::new(
+                    "Option.some",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "value",
+                            Expr::bvar(0),
+                            option_type(u.clone(), Expr::bvar(1)),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn prod_type(level: Level, lhs: Expr, rhs: Expr) -> Expr {
+        Expr::apps(Expr::konst("Prod", vec![level]), vec![lhs, rhs])
+    }
+
+    fn prod_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Prod",
+            vec!["u".to_owned()],
+            vec![
+                Binder::new("A", Expr::sort(u.clone())),
+                Binder::new("B", Expr::sort(u.clone())),
+            ],
+            vec![],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "Prod.mk",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "B",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "fst",
+                            Expr::bvar(1),
+                            Expr::pi(
+                                "snd",
+                                Expr::bvar(1),
+                                prod_type(u.clone(), Expr::bvar(3), Expr::bvar(2)),
+                            ),
+                        ),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn rose_type(level: Level, elem: Expr) -> Expr {
+        Expr::app(Expr::konst("Rose", vec![level]), elem)
+    }
+
+    fn rose_inductive_with_child(child_ty: Expr) -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Rose",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "Rose.node",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "value",
+                        Expr::bvar(0),
+                        Expr::pi("children", child_ty, rose_type(u, Expr::bvar(2))),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn rose_nested_list_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        rose_inductive_with_child(list_type(u.clone(), rose_type(u, Expr::bvar(1))))
+    }
+
+    fn rose_nested_option_prod_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Rose",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "Rose.node",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "value",
+                        Expr::bvar(0),
+                        Expr::pi(
+                            "maybe",
+                            option_type(u.clone(), rose_type(u.clone(), Expr::bvar(1))),
+                            Expr::pi(
+                                "pair",
+                                prod_type(
+                                    u.clone(),
+                                    Expr::bvar(2),
+                                    rose_type(u.clone(), Expr::bvar(2)),
+                                ),
+                                rose_type(u, Expr::bvar(3)),
+                            ),
+                        ),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn rose_unknown_functor_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        rose_inductive_with_child(Expr::app(
+            Expr::konst("Box", vec![u.clone()]),
+            rose_type(u, Expr::bvar(1)),
+        ))
+    }
+
+    fn rose_negative_arrow_inductive(result_ty: Expr) -> InductiveDecl {
+        let u = Level::param("u");
+        rose_inductive_with_child(Expr::pi(
+            "_",
+            rose_type(u.clone(), Expr::bvar(1)),
+            result_ty,
+        ))
+    }
+
+    fn rose_higher_order_negative_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        let inner = Expr::pi("_", rose_type(u.clone(), Expr::bvar(1)), Expr::bvar(2));
+        rose_inductive_with_child(Expr::pi("_", inner, rose_type(u, Expr::bvar(2))))
+    }
+
     fn vec_result_family_mismatch_inductive() -> InductiveDecl {
         let u = Level::param("u");
         InductiveDecl::new(
@@ -1235,6 +1435,90 @@ mod tests {
 
         assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
         assert!(env.decl("NestedBad").is_none());
+    }
+
+    #[test]
+    fn positivity_accepts_approved_nested_list_rose_occurrence() {
+        let mut env = Env::new();
+        env.add_inductive(list_inductive()).unwrap();
+        env.add_inductive(rose_nested_list_inductive()).unwrap();
+
+        assert!(matches!(env.decl("Rose"), Some(Decl::Inductive { .. })));
+    }
+
+    #[test]
+    fn positivity_accepts_approved_nested_option_and_prod_occurrences() {
+        let mut env = Env::new();
+        env.add_inductive(option_inductive()).unwrap();
+        env.add_inductive(prod_inductive()).unwrap();
+        env.add_inductive(rose_nested_option_prod_inductive())
+            .unwrap();
+
+        assert!(matches!(env.decl("Rose"), Some(Decl::Inductive { .. })));
+    }
+
+    #[test]
+    fn positivity_rejects_unknown_nested_functor_rose_occurrence() {
+        let u = Level::param("u");
+        let mut env = Env::new();
+        env.add_axiom(
+            "Box",
+            vec!["u".to_owned()],
+            Expr::pi("A", Expr::sort(u.clone()), Expr::sort(u)),
+        )
+        .unwrap();
+        let err = env
+            .add_inductive(rose_unknown_functor_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+        assert!(env.decl("Rose").is_none());
+    }
+
+    #[test]
+    fn positivity_rejects_name_only_fake_approved_functor() {
+        let mut env = Env::with_builtins().unwrap();
+        env.add_inductive(negative_param_list_inductive()).unwrap();
+        let err = env.add_inductive(rose_nested_list_inductive()).unwrap_err();
+
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+    }
+
+    #[test]
+    fn positivity_rejects_negative_arrow_recursive_occurrences() {
+        let u = Level::param("u");
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(rose_negative_arrow_inductive(Expr::bvar(2)))
+            .unwrap_err();
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(rose_negative_arrow_inductive(rose_type(u, Expr::bvar(2))))
+            .unwrap_err();
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+    }
+
+    #[test]
+    fn positivity_rejects_higher_order_negative_occurrence() {
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(rose_higher_order_negative_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+    }
+
+    #[test]
+    fn positivity_policy_rejects_prop_large_elimination() {
+        let mut env = Env::new();
+        let err = env
+            .add_inductive(bad_prop_large_elim_inductive())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::InvalidInductive(_)));
+        assert!(env.decl("BadProp").is_none());
     }
 
     #[test]

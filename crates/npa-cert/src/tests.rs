@@ -909,6 +909,134 @@ fn box_inductive_module() -> CoreModule {
     }
 }
 
+fn list_type(level: Level, elem: Expr) -> Expr {
+    Expr::app(Expr::konst("List", vec![level]), elem)
+}
+
+fn list_inductive_base() -> InductiveDecl {
+    let u = Level::param("u");
+    InductiveDecl::new(
+        "List",
+        vec!["u".to_owned()],
+        vec![Binder::new("A", Expr::sort(u.clone()))],
+        vec![],
+        u.clone(),
+        vec![
+            ConstructorDecl::new(
+                "List.nil",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    list_type(u.clone(), Expr::bvar(0)),
+                ),
+            ),
+            ConstructorDecl::new(
+                "List.cons",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "x",
+                        Expr::bvar(0),
+                        Expr::pi(
+                            "xs",
+                            list_type(u.clone(), Expr::bvar(1)),
+                            list_type(u.clone(), Expr::bvar(2)),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+        None,
+    )
+}
+
+fn rose_type(level: Level, elem: Expr) -> Expr {
+    Expr::app(Expr::konst("Rose", vec![level]), elem)
+}
+
+fn rose_inductive_with_child(child_ty: Expr) -> InductiveDecl {
+    let u = Level::param("u");
+    InductiveDecl::new(
+        "Rose",
+        vec!["u".to_owned()],
+        vec![Binder::new("A", Expr::sort(u.clone()))],
+        vec![],
+        u.clone(),
+        vec![ConstructorDecl::new(
+            "Rose.node",
+            Expr::pi(
+                "A",
+                Expr::sort(u.clone()),
+                Expr::pi(
+                    "value",
+                    Expr::bvar(0),
+                    Expr::pi("children", child_ty, rose_type(u, Expr::bvar(2))),
+                ),
+            ),
+        )],
+        None,
+    )
+}
+
+fn rose_nested_list_base() -> InductiveDecl {
+    let u = Level::param("u");
+    rose_inductive_with_child(list_type(u.clone(), rose_type(u, Expr::bvar(1))))
+}
+
+fn rose_unknown_functor_base() -> InductiveDecl {
+    let u = Level::param("u");
+    rose_inductive_with_child(Expr::app(
+        Expr::konst("Box", vec![u.clone()]),
+        rose_type(u, Expr::bvar(1)),
+    ))
+}
+
+fn rose_negative_arrow_base(result_ty: Expr) -> InductiveDecl {
+    let u = Level::param("u");
+    rose_inductive_with_child(Expr::pi(
+        "_",
+        rose_type(u.clone(), Expr::bvar(1)),
+        result_ty,
+    ))
+}
+
+fn rose_higher_order_negative_base() -> InductiveDecl {
+    let u = Level::param("u");
+    let inner = Expr::pi("_", rose_type(u.clone(), Expr::bvar(1)), Expr::bvar(2));
+    rose_inductive_with_child(Expr::pi("_", inner, rose_type(u, Expr::bvar(2))))
+}
+
+fn nested_rose_module() -> CoreModule {
+    let list = generate_inductive_artifacts_v1(&list_inductive_base()).unwrap();
+    let rose = generate_inductive_artifacts_v1(&rose_nested_list_base()).unwrap();
+    CoreModule {
+        name: Name::from_dotted("Test.NestedRose"),
+        declarations: vec![
+            Decl::Inductive {
+                name: "List".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(Level::param("u")),
+                    Expr::sort(Level::param("u")),
+                ),
+                data: Box::new(list),
+            },
+            Decl::Inductive {
+                name: "Rose".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(Level::param("u")),
+                    Expr::sort(Level::param("u")),
+                ),
+                data: Box::new(rose),
+            },
+        ],
+    }
+}
+
 fn vec_type(level: Level, a: Expr, n: Expr) -> Expr {
     Expr::apps(Expr::konst("Vec", vec![level]), vec![a, n])
 }
@@ -2820,6 +2948,80 @@ fn mutual_inductive_rejects_block_local_scope_mismatch_even_if_rehashed() {
         ),
         "{err:?}"
     );
+}
+
+#[test]
+fn inductive_nested_rose_certificate_round_trips_and_verifies() {
+    let cert = build_module_cert(nested_rose_module(), &[]).unwrap();
+    let encoded = encode_module_cert(&cert).unwrap();
+    let decoded = decode_module_cert(&encoded).unwrap();
+
+    assert_eq!(
+        cert.hashes.certificate_hash, decoded.hashes.certificate_hash,
+        "nested Rose certificate hash must be stable after canonical decode"
+    );
+
+    let mut session = VerifierSession::new();
+    verify_module_cert(&encoded, &mut session, &AxiomPolicy::normal())
+        .expect("approved nested Rose certificate must verify");
+
+    let rose_decl = decoded
+        .declarations
+        .iter()
+        .find(|decl| matches!(decl.decl, DeclPayload::Inductive { name, .. } if decoded.name_table[name] == Name::from_dotted("Rose")))
+        .expect("Rose declaration must be present");
+    let DeclPayload::Inductive {
+        recursor: Some(recursor),
+        ..
+    } = &rose_decl.decl
+    else {
+        panic!("Rose must have a generated recursor");
+    };
+    assert_eq!(
+        decoded.name_table[recursor.name],
+        Name::from_dotted("Rose.rec")
+    );
+    assert!(generated_recursor_signature_hash(
+        Some(recursor),
+        &(0..decoded.term_table.len())
+            .map(|term| term_hash(&decoded, term))
+            .collect::<Result<Vec<_>>>()
+            .unwrap(),
+        &decoded.name_table,
+    )
+    .is_ok());
+    assert_ne!(generated_computation_rule_hash(Some(recursor)), [0; 32]);
+}
+
+#[test]
+fn inductive_nested_positivity_rejects_unknown_and_negative_functors() {
+    let err = generate_inductive_artifacts_v1(&rose_unknown_functor_base()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveGeneratedArtifactMismatch { .. }
+    ));
+
+    let err =
+        generate_inductive_artifacts_v1(&rose_negative_arrow_base(Expr::bvar(2))).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveGeneratedArtifactMismatch { .. }
+    ));
+
+    let u = Level::param("u");
+    let err =
+        generate_inductive_artifacts_v1(&rose_negative_arrow_base(rose_type(u, Expr::bvar(2))))
+            .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveGeneratedArtifactMismatch { .. }
+    ));
+
+    let err = generate_inductive_artifacts_v1(&rose_higher_order_negative_base()).unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::InductiveGeneratedArtifactMismatch { .. }
+    ));
 }
 
 #[test]

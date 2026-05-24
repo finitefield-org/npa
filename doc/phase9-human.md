@@ -311,6 +311,30 @@ nested inductive をいったん全面拒否します。
 approved functor 越しの nested inductive は、functoriality 証明、positivity traversal、recursor 生成、hash rule を固定した
 後続 profile で有効化します。
 
+P9H-06 実装では、generic positivity checker ではなく、次の approved strictly-positive functor profile に閉じて
+nested occurrence を許可します。
+
+```text
+approved nested functor table:
+  List   arity 1  positive args [0]
+  Option arity 1  positive args [0]
+  Prod   arity 2  positive args [0, 1]
+```
+
+kernel / certificate generator / source-free reference checker はこの table と同じ traversal を使います。
+recursive occurrence は direct family reference、または approved functor の positive argument 内だけ許可されます。
+Pi / function type の domain 側に recursive occurrence が現れる場合は、二重否定風の higher-order shape も含めて拒否します。
+unknown type constructor 越しの recursive occurrence も拒否します。
+
+この profile の recursor は既存の deterministic generated recursor / iota hash pipeline に接続します。
+approved nested field は constructor minor premise に field として現れ、recursor signature hash と iota rule hash は
+canonical encode / decode 後も stable です。functor contents 全体への generic induction hypothesis 生成は
+future target の generic positivity / functoriality profile に残します。
+
+AI candidate hot path には approved nested profile の source-free checker や full certificate recheck を同期挿入しません。
+AI 側の bounded candidate validation は従来通りで、nested inductive の重い検査は proof acceptance /
+post-acceptance checker 境界でのみ実行します。
+
 ---
 
 ## 2.6 Positivity checker 強化

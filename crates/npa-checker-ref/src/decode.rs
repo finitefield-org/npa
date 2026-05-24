@@ -2824,6 +2824,7 @@ impl<'a> TypeChecker<'a> {
             decl_index,
             global_ref: ReferenceCoreGlobalRef::LocalGenerated { decl_index, name },
             universe_params,
+            universe_constraints: Vec::new(),
             params: inductive
                 .params
                 .iter()
@@ -2861,7 +2862,7 @@ impl<'a> TypeChecker<'a> {
         universe_params: Vec<ReferenceModuleName>,
         decl: &DeclPayload,
     ) -> ReferenceInductiveSignature {
-        let (params, indices, sort, constructors, recursor) = match decl {
+        let (universe_constraints, params, indices, sort, constructors, recursor) = match decl {
             DeclPayload::Inductive {
                 params,
                 indices,
@@ -2869,21 +2870,30 @@ impl<'a> TypeChecker<'a> {
                 constructors,
                 recursor,
                 ..
-            }
-            | DeclPayload::InductiveConstrained {
+            } => (&[][..], params, indices, *sort, constructors, recursor),
+            DeclPayload::InductiveConstrained {
+                universe_constraints,
                 params,
                 indices,
                 sort,
                 constructors,
                 recursor,
                 ..
-            } => (params, indices, *sort, constructors, recursor),
+            } => (
+                universe_constraints.as_slice(),
+                params,
+                indices,
+                *sort,
+                constructors,
+                recursor,
+            ),
             _ => unreachable!("inductive_signature is only called for inductive declarations"),
         };
         ReferenceInductiveSignature {
             decl_index,
             global_ref: ReferenceCoreGlobalRef::Local { decl_index },
             universe_params,
+            universe_constraints: universe_constraints.to_vec(),
             params: params
                 .iter()
                 .map(|binder| self.terms[binder.ty].clone())
@@ -2969,13 +2979,16 @@ impl<'a> TypeChecker<'a> {
         self.expect_sort(&TypeContext::default(), &data.universe_params, ty, offset)?;
         let (domains, result) = peel_pi_domains(ty);
         for (domain_index, domain) in domains.iter().enumerate() {
-            if domain_index >= data.params.len()
-                && direct_mutual_recursive_index_args(block, domain, domain_index, offset)?
-                    .is_some()
-            {
-                continue;
-            }
-            if contains_any_inductive_const(domain, block) {
+            let allowed = domain_index >= data.params.len()
+                && mutual_recursive_occurrences_strictly_positive(
+                    self.cert,
+                    &self.inductives,
+                    block,
+                    domain,
+                    domain_index,
+                    offset,
+                )?;
+            if !allowed && contains_any_inductive_const(domain, block) {
                 return Err(ReferenceCheckError::type_check(
                     ReferenceCertificateSection::Declarations,
                     offset,
@@ -3000,12 +3013,16 @@ impl<'a> TypeChecker<'a> {
         domain: &ReferenceCoreExpr,
         offset: usize,
     ) -> DecodeResult<()> {
-        if domain_index >= data.params.len()
-            && is_direct_recursive_domain(data, domain, domain_index, offset)?
-        {
-            return Ok(());
-        }
-        if contains_inductive_const(domain, data) {
+        let allowed = domain_index >= data.params.len()
+            && recursive_occurrences_strictly_positive(
+                self.cert,
+                &self.inductives,
+                data,
+                domain,
+                domain_index,
+                offset,
+            )?;
+        if !allowed && contains_inductive_const(domain, data) {
             return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
                 offset,
@@ -4320,6 +4337,7 @@ struct ReferenceInductiveSignature {
     decl_index: usize,
     global_ref: ReferenceCoreGlobalRef,
     universe_params: Vec<ReferenceModuleName>,
+    universe_constraints: Vec<UniverseConstraintSpec>,
     params: Vec<ReferenceCoreExpr>,
     indices: Vec<ReferenceCoreExpr>,
     sort: ReferenceCoreLevel,
@@ -5177,6 +5195,301 @@ fn is_direct_recursive_domain(
     offset: usize,
 ) -> DecodeResult<bool> {
     Ok(direct_recursive_index_args(data, domain, ctx_len, offset).is_ok())
+}
+
+fn recursive_occurrences_strictly_positive(
+    cert: &DecodedModuleCertificate,
+    inductives: &BTreeMap<usize, ReferenceInductiveSignature>,
+    data: &ReferenceInductiveSignature,
+    domain: &ReferenceCoreExpr,
+    ctx_len: usize,
+    offset: usize,
+) -> DecodeResult<bool> {
+    if direct_recursive_index_args(data, domain, ctx_len, offset).is_ok() {
+        return Ok(true);
+    }
+    Ok(match domain {
+        ReferenceCoreExpr::Sort(_) | ReferenceCoreExpr::BVar(_) => true,
+        ReferenceCoreExpr::Const { global_ref, .. } => global_ref != &data.global_ref,
+        ReferenceCoreExpr::App(_, _) => {
+            let (head, args) = collect_apps(domain);
+            let ReferenceCoreExpr::Const { global_ref, .. } = head else {
+                return Ok(!contains_inductive_const(domain, data));
+            };
+            let Some(functor) = approved_nested_functor(cert, inductives, global_ref, args.len())
+            else {
+                return Ok(!contains_inductive_const(domain, data));
+            };
+            let mut allowed = true;
+            for (index, arg) in args.iter().enumerate() {
+                if functor.positive_args.contains(&index) {
+                    allowed &= recursive_occurrences_strictly_positive(
+                        cert, inductives, data, arg, ctx_len, offset,
+                    )?;
+                } else {
+                    allowed &= !contains_inductive_const(arg, data);
+                }
+            }
+            allowed
+        }
+        ReferenceCoreExpr::Pi { ty, body } => {
+            !contains_inductive_const(ty, data)
+                && recursive_occurrences_strictly_positive(
+                    cert,
+                    inductives,
+                    data,
+                    body,
+                    ctx_len + 1,
+                    offset,
+                )?
+        }
+        ReferenceCoreExpr::Lam { .. } | ReferenceCoreExpr::Let { .. } => {
+            !contains_inductive_const(domain, data)
+        }
+    })
+}
+
+fn mutual_recursive_occurrences_strictly_positive(
+    cert: &DecodedModuleCertificate,
+    inductives: &BTreeMap<usize, ReferenceInductiveSignature>,
+    block: &[ReferenceInductiveSignature],
+    domain: &ReferenceCoreExpr,
+    ctx_len: usize,
+    offset: usize,
+) -> DecodeResult<bool> {
+    if direct_mutual_recursive_index_args(block, domain, ctx_len, offset)?.is_some() {
+        return Ok(true);
+    }
+    Ok(match domain {
+        ReferenceCoreExpr::Sort(_) | ReferenceCoreExpr::BVar(_) => true,
+        ReferenceCoreExpr::Const { global_ref, .. } => block
+            .iter()
+            .all(|inductive| global_ref != &inductive.global_ref),
+        ReferenceCoreExpr::App(_, _) => {
+            let (head, args) = collect_apps(domain);
+            let ReferenceCoreExpr::Const { global_ref, .. } = head else {
+                return Ok(!contains_any_inductive_const(domain, block));
+            };
+            let Some(functor) = approved_nested_functor(cert, inductives, global_ref, args.len())
+            else {
+                return Ok(!contains_any_inductive_const(domain, block));
+            };
+            let mut allowed = true;
+            for (index, arg) in args.iter().enumerate() {
+                if functor.positive_args.contains(&index) {
+                    allowed &= mutual_recursive_occurrences_strictly_positive(
+                        cert, inductives, block, arg, ctx_len, offset,
+                    )?;
+                } else {
+                    allowed &= !contains_any_inductive_const(arg, block);
+                }
+            }
+            allowed
+        }
+        ReferenceCoreExpr::Pi { ty, body } => {
+            !contains_any_inductive_const(ty, block)
+                && mutual_recursive_occurrences_strictly_positive(
+                    cert,
+                    inductives,
+                    block,
+                    body,
+                    ctx_len + 1,
+                    offset,
+                )?
+        }
+        ReferenceCoreExpr::Lam { .. } | ReferenceCoreExpr::Let { .. } => {
+            !contains_any_inductive_const(domain, block)
+        }
+    })
+}
+
+struct ReferenceApprovedNestedFunctor {
+    name: &'static str,
+    arity: usize,
+    positive_args: &'static [usize],
+}
+
+const REFERENCE_UNARY_POSITIVE_ARGS: &[usize] = &[0];
+const REFERENCE_BINARY_POSITIVE_ARGS: &[usize] = &[0, 1];
+const REFERENCE_APPROVED_NESTED_FUNCTORS: &[ReferenceApprovedNestedFunctor] = &[
+    ReferenceApprovedNestedFunctor {
+        name: "List",
+        arity: 1,
+        positive_args: REFERENCE_UNARY_POSITIVE_ARGS,
+    },
+    ReferenceApprovedNestedFunctor {
+        name: "Option",
+        arity: 1,
+        positive_args: REFERENCE_UNARY_POSITIVE_ARGS,
+    },
+    ReferenceApprovedNestedFunctor {
+        name: "Prod",
+        arity: 2,
+        positive_args: REFERENCE_BINARY_POSITIVE_ARGS,
+    },
+];
+
+fn approved_nested_functor(
+    cert: &DecodedModuleCertificate,
+    inductives: &BTreeMap<usize, ReferenceInductiveSignature>,
+    global_ref: &ReferenceCoreGlobalRef,
+    arity: usize,
+) -> Option<&'static ReferenceApprovedNestedFunctor> {
+    let (name, data) = match global_ref {
+        ReferenceCoreGlobalRef::Local { decl_index } => {
+            cert.declarations.get(*decl_index).and_then(|decl| {
+                inductives.get(decl_index).map(|data| {
+                    (
+                        cert.name_table[decl.value.decl.name_id()].value.dotted(),
+                        data,
+                    )
+                })
+            })?
+        }
+        ReferenceCoreGlobalRef::Builtin { .. }
+        | ReferenceCoreGlobalRef::Imported { .. }
+        | ReferenceCoreGlobalRef::LocalGenerated { .. } => return None,
+    };
+    let functor = REFERENCE_APPROVED_NESTED_FUNCTORS
+        .iter()
+        .find(|functor| functor.name == name && functor.arity == arity)?;
+    reference_approved_functor_decl_is_valid(data, functor.name).then_some(functor)
+}
+
+fn reference_approved_functor_decl_is_valid(
+    data: &ReferenceInductiveSignature,
+    name: &str,
+) -> bool {
+    match name {
+        "List" => reference_approved_list_decl(data),
+        "Option" => reference_approved_option_decl(data),
+        "Prod" => reference_approved_prod_decl(data),
+        _ => false,
+    }
+}
+
+fn reference_level_param(data: &ReferenceInductiveSignature) -> Option<ReferenceCoreLevel> {
+    data.universe_params
+        .first()
+        .cloned()
+        .map(ReferenceCoreLevel::Param)
+}
+
+fn reference_const_app(
+    data: &ReferenceInductiveSignature,
+    level: ReferenceCoreLevel,
+    args: Vec<ReferenceCoreExpr>,
+) -> ReferenceCoreExpr {
+    apps(
+        ReferenceCoreExpr::Const {
+            global_ref: data.global_ref.clone(),
+            levels: vec![level],
+        },
+        args,
+    )
+}
+
+fn reference_sort(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    ReferenceCoreExpr::Sort(level)
+}
+
+fn reference_pi(ty: ReferenceCoreExpr, body: ReferenceCoreExpr) -> ReferenceCoreExpr {
+    ReferenceCoreExpr::Pi {
+        ty: Box::new(ty),
+        body: Box::new(body),
+    }
+}
+
+fn reference_name_eq(name: &ReferenceModuleName, dotted: &str) -> bool {
+    name.dotted() == dotted
+}
+
+fn reference_approved_list_decl(data: &ReferenceInductiveSignature) -> bool {
+    let Some(u) = reference_level_param(data) else {
+        return false;
+    };
+    data.universe_params.len() == 1
+        && data.universe_constraints.is_empty()
+        && data.params == [reference_sort(u.clone())]
+        && data.indices.is_empty()
+        && data.sort == u
+        && data.constructors.len() == 2
+        && reference_name_eq(&data.constructors[0].name, "List.nil")
+        && data.constructors[0].ty
+            == reference_pi(
+                reference_sort(u.clone()),
+                reference_const_app(data, u.clone(), vec![ReferenceCoreExpr::BVar(0)]),
+            )
+        && reference_name_eq(&data.constructors[1].name, "List.cons")
+        && data.constructors[1].ty
+            == reference_pi(
+                reference_sort(u.clone()),
+                reference_pi(
+                    ReferenceCoreExpr::BVar(0),
+                    reference_pi(
+                        reference_const_app(data, u.clone(), vec![ReferenceCoreExpr::BVar(1)]),
+                        reference_const_app(data, u, vec![ReferenceCoreExpr::BVar(2)]),
+                    ),
+                ),
+            )
+}
+
+fn reference_approved_option_decl(data: &ReferenceInductiveSignature) -> bool {
+    let Some(u) = reference_level_param(data) else {
+        return false;
+    };
+    data.universe_params.len() == 1
+        && data.universe_constraints.is_empty()
+        && data.params == [reference_sort(u.clone())]
+        && data.indices.is_empty()
+        && data.sort == u
+        && data.constructors.len() == 2
+        && reference_name_eq(&data.constructors[0].name, "Option.none")
+        && data.constructors[0].ty
+            == reference_pi(
+                reference_sort(u.clone()),
+                reference_const_app(data, u.clone(), vec![ReferenceCoreExpr::BVar(0)]),
+            )
+        && reference_name_eq(&data.constructors[1].name, "Option.some")
+        && data.constructors[1].ty
+            == reference_pi(
+                reference_sort(u.clone()),
+                reference_pi(
+                    ReferenceCoreExpr::BVar(0),
+                    reference_const_app(data, u, vec![ReferenceCoreExpr::BVar(1)]),
+                ),
+            )
+}
+
+fn reference_approved_prod_decl(data: &ReferenceInductiveSignature) -> bool {
+    let Some(u) = reference_level_param(data) else {
+        return false;
+    };
+    data.universe_params.len() == 1
+        && data.universe_constraints.is_empty()
+        && data.params == [reference_sort(u.clone()), reference_sort(u.clone())]
+        && data.indices.is_empty()
+        && data.sort == u
+        && data.constructors.len() == 1
+        && reference_name_eq(&data.constructors[0].name, "Prod.mk")
+        && data.constructors[0].ty
+            == reference_pi(
+                reference_sort(u.clone()),
+                reference_pi(
+                    reference_sort(u.clone()),
+                    reference_pi(
+                        ReferenceCoreExpr::BVar(1),
+                        reference_pi(
+                            ReferenceCoreExpr::BVar(1),
+                            reference_const_app(
+                                data,
+                                u,
+                                vec![ReferenceCoreExpr::BVar(3), ReferenceCoreExpr::BVar(2)],
+                            ),
+                        ),
+                    ),
+                ),
+            )
 }
 
 fn direct_recursive_index_args(
