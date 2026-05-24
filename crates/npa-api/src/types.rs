@@ -6,7 +6,7 @@ use npa_frontend::{
     HumanImportedSourceInterface, HumanName, HumanRewriteRuleSyntax, HumanSourceInterface,
     HumanTacticScript, MachineSurfaceCallableInterfaceTable, Span,
 };
-use npa_kernel::Expr;
+use npa_kernel::{Expr, InductiveDecl};
 use npa_tactic::{
     GoalId, MachineProofDelta, MachineProofState, MachineTacticDiagnostic, MetaVarId, TacticBudget,
 };
@@ -33,6 +33,7 @@ pub const HUMAN_DISPLAY_PROFILE_ID: &str = "npa.human-api.display.v1";
 pub const MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA: &str = "npa.machine_tactic_candidate.v1";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.builtin-nat-eq-rec";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
+pub const HUMAN_INDUCTIVE_CHECK_ENDPOINT: &str = "/inductive/check";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanApiCompileOptions {
@@ -58,6 +59,42 @@ impl From<&HumanApiCompileOptions> for HumanCompileOptions {
             max_notation_candidates: value.max_notation_candidates,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct HumanInductiveCheckRequest<'decl> {
+    pub declaration: &'decl InductiveDecl,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanInductiveCheckResponse {
+    pub status: HumanInductiveCheckStatus,
+    pub constructors: Vec<String>,
+    pub recursor: Option<String>,
+    pub positivity: HumanInductivePositivityStatus,
+    pub recursor_signature_hash: Option<Hash>,
+    pub iota_rules_hash: Option<Hash>,
+    pub diagnostic_only: bool,
+    pub error: Option<HumanInductiveCheckError>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanInductiveCheckStatus {
+    AcceptedByKernelAndCertificate,
+    Rejected,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanInductivePositivityStatus {
+    Passed,
+    Failed,
+    NotReached,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanInductiveCheckError {
+    Kernel(npa_kernel::Error),
+    Certificate(npa_cert::CertError),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

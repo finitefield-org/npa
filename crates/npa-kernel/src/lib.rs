@@ -140,6 +140,85 @@ mod tests {
         )
     }
 
+    fn vec_type(level: Level, a: Expr, n: Expr) -> Expr {
+        Expr::apps(Expr::konst("Vec", vec![level]), vec![a, n])
+    }
+
+    fn vec_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Vec",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![Binder::new("n", nat())],
+            u.clone(),
+            vec![
+                ConstructorDecl::new(
+                    "Vec.nil",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        vec_type(u.clone(), Expr::bvar(0), nat_zero()),
+                    ),
+                ),
+                ConstructorDecl::new(
+                    "Vec.cons",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "x",
+                                Expr::bvar(1),
+                                Expr::pi(
+                                    "xs",
+                                    vec_type(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                                    vec_type(u.clone(), Expr::bvar(3), nat_succ(Expr::bvar(2))),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn fin_type(n: Expr) -> Expr {
+        Expr::app(Expr::konst("Fin", vec![]), n)
+    }
+
+    fn fin_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "Fin",
+            vec![],
+            vec![],
+            vec![Binder::new("n", nat())],
+            type0(),
+            vec![
+                ConstructorDecl::new(
+                    "Fin.zero",
+                    Expr::pi("n", nat(), fin_type(nat_succ(Expr::bvar(0)))),
+                ),
+                ConstructorDecl::new(
+                    "Fin.succ",
+                    Expr::pi(
+                        "n",
+                        nat(),
+                        Expr::pi(
+                            "i",
+                            fin_type(Expr::bvar(0)),
+                            fin_type(nat_succ(Expr::bvar(1))),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
     fn negative_bad_inductive() -> InductiveDecl {
         InductiveDecl::new(
             "Bad",
@@ -377,6 +456,106 @@ mod tests {
         )
     }
 
+    fn vec_result_family_mismatch_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "BadVecFamily",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u))],
+            vec![Binder::new("n", nat())],
+            type0(),
+            vec![ConstructorDecl::new(
+                "BadVecFamily.mk",
+                Expr::pi("A", Expr::sort(type0()), nat()),
+            )],
+            None,
+        )
+    }
+
+    fn vec_result_param_mismatch_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "BadVecParam",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![Binder::new("n", nat())],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "BadVecParam.mk",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "B",
+                        Expr::sort(u.clone()),
+                        Expr::apps(
+                            Expr::konst("BadVecParam", vec![u]),
+                            vec![Expr::bvar(0), nat_zero()],
+                        ),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn vec_result_bad_index_type_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "BadVecIndex",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![Binder::new("n", nat())],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "BadVecIndex.mk",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::apps(
+                        Expr::konst("BadVecIndex", vec![u]),
+                        vec![Expr::bvar(0), Expr::bvar(0)],
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
+    fn vec_negative_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "BadVecNegative",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![Binder::new("n", nat())],
+            u.clone(),
+            vec![ConstructorDecl::new(
+                "BadVecNegative.mk",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "f",
+                        Expr::pi(
+                            "_",
+                            Expr::apps(
+                                Expr::konst("BadVecNegative", vec![u.clone()]),
+                                vec![Expr::bvar(0), nat_zero()],
+                            ),
+                            nat(),
+                        ),
+                        Expr::apps(
+                            Expr::konst("BadVecNegative", vec![u]),
+                            vec![Expr::bvar(1), nat_zero()],
+                        ),
+                    ),
+                ),
+            )],
+            None,
+        )
+    }
+
     fn extra_binder() -> Expr {
         Expr::konst("ExtraBinder", vec![])
     }
@@ -607,6 +786,46 @@ mod tests {
             env.decl("List.cons"),
             Some(Decl::Constructor { .. })
         ));
+    }
+
+    #[test]
+    fn checks_indexed_vec_and_fin_inductives() {
+        let mut env = Env::with_builtins().unwrap();
+        env.add_inductive(vec_inductive()).unwrap();
+        env.add_inductive(fin_inductive()).unwrap();
+
+        assert!(matches!(env.decl("Vec"), Some(Decl::Inductive { .. })));
+        assert!(matches!(
+            env.decl("Vec.cons"),
+            Some(Decl::Constructor { .. })
+        ));
+        assert!(matches!(env.decl("Fin"), Some(Decl::Inductive { .. })));
+        assert!(matches!(
+            env.decl("Fin.succ"),
+            Some(Decl::Constructor { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_indexed_inductive_constructor_result_failures_deterministically() {
+        let mut env = Env::with_builtins().unwrap();
+        let family = env
+            .add_inductive(vec_result_family_mismatch_inductive())
+            .unwrap_err();
+        assert!(matches!(family, Error::BadConstructorResult { .. }));
+
+        let param = env
+            .add_inductive(vec_result_param_mismatch_inductive())
+            .unwrap_err();
+        assert!(matches!(param, Error::BadConstructorResult { .. }));
+
+        let index = env
+            .add_inductive(vec_result_bad_index_type_inductive())
+            .unwrap_err();
+        assert!(matches!(index, Error::TypeMismatch { .. }));
+
+        let negative = env.add_inductive(vec_negative_inductive()).unwrap_err();
+        assert!(matches!(negative, Error::NonPositiveOccurrence { .. }));
     }
 
     #[test]

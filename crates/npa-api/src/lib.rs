@@ -190,7 +190,7 @@ pub use diagnostic::{
     MachineApiDiagnosticCanonicalizationError,
 };
 pub use human::{
-    build_human_theorem_index, check_human_tactic, check_human_tactic_term,
+    build_human_theorem_index, check_human_inductive, check_human_tactic, check_human_tactic_term,
     compile_human_source_to_certificate, compile_human_source_to_core, create_human_session,
     display_human_context, display_human_diff, display_human_expr, display_human_goal,
     get_current_human_state, get_human_proof_state, get_human_state_at, get_human_state_by_id,
@@ -581,10 +581,12 @@ pub use types::{
     HumanDocumentUpdateOk, HumanDocumentUpdateRequest, HumanDocumentVersion, HumanExactTacticOk,
     HumanExactTacticRequest, HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanGoalId,
     HumanGoalMapping, HumanInductionTacticError, HumanInductionTacticOk,
-    HumanInductionTacticRequest, HumanIntroTacticError, HumanIntroTacticOk,
-    HumanIntroTacticRequest, HumanLspCodeAction, HumanLspCodeActionKind, HumanLspCodeActionOk,
-    HumanLspCodeActionRequest, HumanLspCommand, HumanLspCompletionItem, HumanLspCompletionItemKind,
-    HumanLspCompletionOk, HumanLspCompletionRequest, HumanLspDiagnostic, HumanLspDiagnosticData,
+    HumanInductionTacticRequest, HumanInductiveCheckError, HumanInductiveCheckRequest,
+    HumanInductiveCheckResponse, HumanInductiveCheckStatus, HumanInductivePositivityStatus,
+    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanLspCodeAction,
+    HumanLspCodeActionKind, HumanLspCodeActionOk, HumanLspCodeActionRequest, HumanLspCommand,
+    HumanLspCompletionItem, HumanLspCompletionItemKind, HumanLspCompletionOk,
+    HumanLspCompletionRequest, HumanLspDiagnostic, HumanLspDiagnosticData,
     HumanLspDiagnosticSeverity, HumanLspDiagnosticsOk, HumanLspDiagnosticsRequest,
     HumanLspDocumentPayloadOk, HumanLspDocumentPayloadRequest, HumanLspDocumentSymbol,
     HumanLspGoalViewOk, HumanLspGoalViewRequest, HumanLspHoleGoal, HumanLspHoleGoalLocal,
@@ -626,8 +628,9 @@ pub use types::{
     MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
     SessionId, SnapshotId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
     StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
-    KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC, KERNEL_CHECK_PROFILE_BUILTIN_NONE,
-    MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID, MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
+    HUMAN_INDUCTIVE_CHECK_ENDPOINT, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
+    KERNEL_CHECK_PROFILE_BUILTIN_NONE, MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID,
+    MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
 };
 pub use validation::{
     delayed_json_payload, parse_request_body, parse_request_body_with_limits,

@@ -331,20 +331,20 @@ P9H-03 は standard library の universe hardening が主目的。新しい alge
 
 実装タスク:
 
-- [ ] `InductiveDecl` / certificate schema に params と indices を明確に分けた indexed family 表現を固定する。
-- [ ] constructor result が対象 family と宣言済み params に一致し、indices が well-typed であることを kernel で検査する。
-- [ ] `Vec` / `Fin` の certificate fixtures を追加する。
-- [ ] generated recursor signature hash / iota rules hash を indexed family に対応させる。
-- [ ] reference checker が fast kernel と独立に indexed family declaration を再検査する。
-- [ ] `POST /inductive/check` 相当の Human API wrapper を追加し、constructors / recursor / positivity / iota hash を返す。
+- [x] `InductiveDecl` / certificate schema に params と indices を明確に分けた indexed family 表現を固定する。
+- [x] constructor result が対象 family と宣言済み params に一致し、indices が well-typed であることを kernel で検査する。
+- [x] `Vec` / `Fin` の certificate fixtures を追加する。
+- [x] generated recursor signature hash / iota rules hash を indexed family に対応させる。
+- [x] reference checker が fast kernel と独立に indexed family declaration を再検査する。
+- [x] `POST /inductive/check` 相当の Human API wrapper を追加し、constructors / recursor / positivity / iota hash を返す。
 
 受け入れ条件:
 
-- [ ] `Vec A 0` / `Vec A (succ n)` の constructor result check が通る。
-- [ ] constructor result family mismatch、param mismatch、bad index type、negative occurrence が deterministic error になる。
-- [ ] indexed family の recursor / induction principle が checker と fast kernel で同じ hash になる。
-- [ ] `.npcert` を source なしで検査できる。
-- [ ] `/inductive/check` response は diagnostic metadata であり、proof acceptance boundary にはならない。
+- [x] `Vec A 0` / `Vec A (succ n)` の constructor result check が通る。
+- [x] constructor result family mismatch、param mismatch、bad index type、negative occurrence が deterministic error になる。
+- [x] indexed family の recursor / induction principle が checker と fast kernel で同じ hash になる。
+- [x] `.npcert` を source なしで検査できる。
+- [x] `/inductive/check` response は diagnostic metadata であり、proof acceptance boundary にはならない。
 
 検証:
 

@@ -415,6 +415,22 @@ checker:
   hash が一致するか確認
 ```
 
+P9H-04 実装では、`params` と `indices` を certificate の inductive payload に分離したまま、
+indexed family の recursor を次の canonical binder order で生成・照合します。
+
+```text
+params,
+motive : Π indices, I params indices -> Sort v,
+constructor minor premises,
+indices,
+major : I params indices
+```
+
+`Vec` / `Fin` の fixtures は fast certificate verifier と source-free reference checker の両方で再検査され、
+recursor signature hash と iota rules hash は certificate 側の deterministic hash helper から取得します。
+Human API の `/inductive/check` 相当 wrapper はこの metadata を診断として返すだけで、
+proof acceptance boundary は canonical `.npcert` verification と independent checker のままです。
+
 ---
 
 ## 2.9 Advanced inductive の完了条件
@@ -1563,9 +1579,13 @@ POST /inductive/check
   "constructors": ["Vec.nil", "Vec.cons"],
   "recursor": "Vec.rec",
   "positivity": "passed",
+  "diagnostic_only": true,
   "iota_rules_hash": "sha256:..."
 }
 ```
+
+この response は IDE / Human UI 向けの診断 metadata であり、AI candidate hot path には同期挿入しません。
+証明採用は従来どおり kernel と canonical certificate verifier、必要に応じて reference checker の判定に戻します。
 
 ---
 

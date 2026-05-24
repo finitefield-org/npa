@@ -909,6 +909,109 @@ fn box_inductive_module() -> CoreModule {
     }
 }
 
+fn vec_type(level: Level, a: Expr, n: Expr) -> Expr {
+    Expr::apps(Expr::konst("Vec", vec![level]), vec![a, n])
+}
+
+fn vec_inductive_base() -> InductiveDecl {
+    let u = Level::param("u");
+    InductiveDecl::new(
+        "Vec",
+        vec!["u".to_owned()],
+        vec![Binder::new("A", Expr::sort(u.clone()))],
+        vec![Binder::new("n", nat())],
+        u.clone(),
+        vec![
+            ConstructorDecl::new(
+                "Vec.nil",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    vec_type(u.clone(), Expr::bvar(0), nat_zero()),
+                ),
+            ),
+            ConstructorDecl::new(
+                "Vec.cons",
+                Expr::pi(
+                    "A",
+                    Expr::sort(u.clone()),
+                    Expr::pi(
+                        "n",
+                        nat(),
+                        Expr::pi(
+                            "x",
+                            Expr::bvar(1),
+                            Expr::pi(
+                                "xs",
+                                vec_type(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                                vec_type(u.clone(), Expr::bvar(3), nat_succ(Expr::bvar(2))),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+        None,
+    )
+}
+
+fn fin_type(n: Expr) -> Expr {
+    Expr::app(Expr::konst("Fin", vec![]), n)
+}
+
+fn fin_inductive_base() -> InductiveDecl {
+    InductiveDecl::new(
+        "Fin",
+        vec![],
+        vec![],
+        vec![Binder::new("n", nat())],
+        type0(),
+        vec![
+            ConstructorDecl::new(
+                "Fin.zero",
+                Expr::pi("n", nat(), fin_type(nat_succ(Expr::bvar(0)))),
+            ),
+            ConstructorDecl::new(
+                "Fin.succ",
+                Expr::pi(
+                    "n",
+                    nat(),
+                    Expr::pi(
+                        "i",
+                        fin_type(Expr::bvar(0)),
+                        fin_type(nat_succ(Expr::bvar(1))),
+                    ),
+                ),
+            ),
+        ],
+        None,
+    )
+}
+
+fn indexed_inductive_module() -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.Indexed"),
+        declarations: vec![
+            Decl::Inductive {
+                name: "Vec".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(Level::param("u")),
+                    Expr::pi("n", nat(), Expr::sort(Level::param("u"))),
+                ),
+                data: Box::new(generate_inductive_artifacts_v1(&vec_inductive_base()).unwrap()),
+            },
+            Decl::Inductive {
+                name: "Fin".to_owned(),
+                universe_params: vec![],
+                ty: Expr::pi("n", nat(), Expr::sort(type0())),
+                data: Box::new(generate_inductive_artifacts_v1(&fin_inductive_base()).unwrap()),
+            },
+        ],
+    }
+}
+
 fn unary_with_local_constructor_use_module() -> CoreModule {
     let mut module = unary_inductive_module();
     module.declarations.push(Decl::Def {
@@ -1123,8 +1226,6 @@ fn verify_cert(cert: &ModuleCert, session: &mut VerifierSession) -> VerifiedModu
 }
 
 fn recursor_artifact_hashes(cert: &ModuleCert) -> (Hash, Hash) {
-    let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table).unwrap();
-    let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes).unwrap();
     let recursor = cert
         .declarations
         .iter()
@@ -1136,6 +1237,31 @@ fn recursor_artifact_hashes(cert: &ModuleCert) -> (Hash, Hash) {
             _ => None,
         })
         .unwrap();
+    recursor_artifact_hashes_for_recursor(cert, recursor)
+}
+
+fn recursor_artifact_hashes_for(cert: &ModuleCert, name: &str) -> (Hash, Hash) {
+    let recursor = cert
+        .declarations
+        .iter()
+        .find_map(|decl| match &decl.decl {
+            DeclPayload::Inductive {
+                name: decl_name,
+                recursor: Some(recursor),
+                ..
+            } if cert.name_table[*decl_name] == Name::from_dotted(name) => Some(recursor),
+            _ => None,
+        })
+        .unwrap();
+    recursor_artifact_hashes_for_recursor(cert, recursor)
+}
+
+fn recursor_artifact_hashes_for_recursor(
+    cert: &ModuleCert,
+    recursor: &RecursorSpec,
+) -> (Hash, Hash) {
+    let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table).unwrap();
+    let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes).unwrap();
 
     (
         generated_recursor_signature_hash(Some(recursor), &term_hashes, &cert.name_table).unwrap(),
@@ -2410,6 +2536,26 @@ fn inductive_certificate_round_trips_and_verifies() {
 }
 
 #[test]
+fn indexed_inductive_certificate_round_trips_and_verifies() {
+    let cert = build_module_cert(indexed_inductive_module(), &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    assert_eq!(verified.module, Name::from_dotted("Test.Indexed"));
+    for name in [
+        "Vec", "Vec.nil", "Vec.cons", "Vec.rec", "Fin", "Fin.zero", "Fin.succ", "Fin.rec",
+    ] {
+        assert!(
+            cert.export_block
+                .iter()
+                .any(|entry| cert.name_table[entry.name] == Name::from_dotted(name)),
+            "{name} must be exported from indexed inductive fixture"
+        );
+    }
+}
+
+#[test]
 fn local_generated_constructor_can_be_referenced_after_inductive() {
     let cert = build_module_cert(unary_with_local_constructor_use_module(), &[]).unwrap();
     let def = &cert.declarations[1];
@@ -2541,6 +2687,42 @@ fn generated_recursor_artifact_hashes_are_stable_and_scoped() {
     }
     let (rules_changed_signature_hash, rules_changed_rule_hash) =
         recursor_artifact_hashes(&rules_changed);
+    assert_eq!(signature_hash, rules_changed_signature_hash);
+    assert_ne!(rule_hash, rules_changed_rule_hash);
+}
+
+#[test]
+fn indexed_inductive_generated_recursor_artifact_hashes_are_stable_and_scoped() {
+    let cert = build_module_cert(indexed_inductive_module(), &[]).unwrap();
+    let decoded = decode_module_cert(&encode_module_cert(&cert).unwrap()).unwrap();
+    assert_eq!(
+        recursor_artifact_hashes_for(&cert, "Vec"),
+        recursor_artifact_hashes_for(&decoded, "Vec")
+    );
+
+    let vec_index = cert
+        .declarations
+        .iter()
+        .position(|decl| {
+            matches!(
+                &decl.decl,
+                DeclPayload::Inductive { name, .. }
+                    if cert.name_table[*name] == Name::from_dotted("Vec")
+            )
+        })
+        .unwrap();
+    let (signature_hash, rule_hash) = recursor_artifact_hashes_for(&cert, "Vec");
+
+    let mut rules_changed = cert.clone();
+    match &mut rules_changed.declarations[vec_index].decl {
+        DeclPayload::Inductive {
+            recursor: Some(recursor),
+            ..
+        } => recursor.rules.major_index += 1,
+        _ => panic!("expected indexed inductive with recursor"),
+    }
+    let (rules_changed_signature_hash, rules_changed_rule_hash) =
+        recursor_artifact_hashes_for(&rules_changed, "Vec");
     assert_eq!(signature_hash, rules_changed_signature_hash);
     assert_ne!(rule_hash, rules_changed_rule_hash);
 }

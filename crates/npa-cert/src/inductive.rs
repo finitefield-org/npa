@@ -1,8 +1,8 @@
 use npa_kernel::expr::collect_apps;
 use npa_kernel::level::{level_eq, levels_eq};
-use npa_kernel::{ConstructorDecl, Expr, InductiveDecl, Level, RecursorDecl, RecursorRules};
+use npa_kernel::{ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, RecursorRules};
 
-use crate::{CertError, Name, Result};
+use crate::{CertError, CoreModule, DeclPayload, Hash, Name, Result};
 
 /// Result of the deterministic certificate inductive artifact profile classifier.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -24,11 +24,20 @@ pub enum UnsupportedMvpRecursorProfileV1 {
     UnsupportedEliminatorShape,
 }
 
+/// Generated inductive artifact hashes committed by canonical certificates.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InductiveGeneratedArtifactHashesV1 {
+    /// Hash of the generated recursor signature, when a recursor is present.
+    pub recursor_signature_hash: Option<Hash>,
+    /// Hash of the generated iota-rule metadata, when a recursor is present.
+    pub iota_rules_hash: Option<Hash>,
+}
+
 /// Classify whether an inductive declaration is supported by the certificate MVP artifact generator.
 pub fn classify_inductive_artifact_profile_v1(
     base: &InductiveDecl,
 ) -> InductiveArtifactProfileCheckV1 {
-    if base.recursor.is_some() || !base.indices.is_empty() {
+    if base.recursor.is_some() {
         return InductiveArtifactProfileCheckV1::UnsupportedMvpRecursorProfile(
             UnsupportedMvpRecursorProfileV1::UnsupportedEliminatorShape,
         );
@@ -70,7 +79,7 @@ pub fn generate_inductive_artifacts_v1(base: &InductiveDecl) -> Result<Inductive
     }
     let rules = RecursorRules::new(
         base.params.len() + 1,
-        base.params.len() + 1 + base.constructors.len(),
+        base.params.len() + 1 + base.constructors.len() + base.indices.len(),
     );
     let recursor_universe_params = recursor_universe_params(base);
     let recursor_ty = generated_recursor_type(base, &recursor_universe_params, &rules)?;
@@ -82,6 +91,65 @@ pub fn generate_inductive_artifacts_v1(base: &InductiveDecl) -> Result<Inductive
         rules,
     ));
     Ok(final_decl)
+}
+
+/// Return the certificate artifact hashes for a generated inductive declaration.
+pub fn inductive_generated_artifact_hashes_v1(
+    data: &InductiveDecl,
+) -> Result<InductiveGeneratedArtifactHashesV1> {
+    let final_decl = if data.recursor.is_some() {
+        data.clone()
+    } else {
+        generate_inductive_artifacts_v1(data)?
+    };
+    let cert = crate::build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("__Npa.InductiveArtifactProbe"),
+            declarations: vec![Decl::Inductive {
+                name: final_decl.name.clone(),
+                universe_params: final_decl.universe_params.clone(),
+                ty: inductive_type(&final_decl),
+                data: Box::new(final_decl),
+            }],
+        },
+        &[],
+    )?;
+    let term_hashes = (0..cert.term_table.len())
+        .map(|term| crate::term_hash(&cert, term))
+        .collect::<Result<Vec<_>>>()?;
+
+    for decl in &cert.declarations {
+        let recursor = match &decl.decl {
+            DeclPayload::Inductive { recursor, .. }
+            | DeclPayload::InductiveConstrained { recursor, .. } => recursor.as_ref(),
+            _ => None,
+        };
+        if let Some(recursor) = recursor {
+            return Ok(InductiveGeneratedArtifactHashesV1 {
+                recursor_signature_hash: Some(crate::generated_recursor_signature_hash(
+                    Some(recursor),
+                    &term_hashes,
+                    &cert.name_table,
+                )?),
+                iota_rules_hash: Some(crate::generated_computation_rule_hash(Some(recursor))),
+            });
+        }
+    }
+
+    Ok(InductiveGeneratedArtifactHashesV1 {
+        recursor_signature_hash: None,
+        iota_rules_hash: None,
+    })
+}
+
+fn inductive_type(data: &InductiveDecl) -> Expr {
+    let domains = data
+        .params
+        .iter()
+        .chain(&data.indices)
+        .map(|binder| binder.ty.clone())
+        .collect();
+    mk_pi_from_domains(domains, Expr::sort(data.sort.clone()))
 }
 
 fn recursor_universe_params(base: &InductiveDecl) -> Vec<String> {
@@ -116,17 +184,10 @@ fn generated_recursor_type(
         .iter()
         .map(|param| param.ty.clone())
         .collect::<Vec<_>>();
-    let motive_target = inductive_target_expr(
-        &base.name,
-        &base.universe_params,
-        domains.len(),
-        param_count,
-    )?;
-    domains.push(Expr::pi(
-        "_",
-        motive_target,
-        Expr::sort(expected_motive_level(base, recursor_universe_params)),
-    ));
+    domains.push(motive_domain_expr(
+        base,
+        expected_motive_level(base, recursor_universe_params),
+    )?);
 
     for (constructor_index, constructor) in base.constructors.iter().enumerate() {
         domains.push(expected_minor_type_expr(
@@ -138,16 +199,24 @@ fn generated_recursor_type(
         )?);
     }
 
+    let index_start = domains.len();
+    append_index_domains(base, &mut domains)?;
     let major_domain = inductive_target_expr(
         &base.name,
         &base.universe_params,
         domains.len(),
         param_count,
+        index_start,
+        index_count,
     )?;
     domains.push(major_domain);
+    let index_args = (0..index_count)
+        .map(|index| bvar_for_abs(domains.len(), index_start + index))
+        .collect::<Result<Vec<_>>>()?;
     let body = motive_app(
         domains.len(),
         param_count,
+        index_args,
         bvar_for_abs(domains.len(), rules.major_index)?,
     )?;
     Ok(mk_pi_from_domains(domains, body))
@@ -175,6 +244,8 @@ fn inductive_target_expr(
     universe_params: &[String],
     ctx_len: usize,
     param_count: usize,
+    index_abs_start: usize,
+    index_count: usize,
 ) -> Result<Expr> {
     let levels = universe_params
         .iter()
@@ -182,11 +253,56 @@ fn inductive_target_expr(
         .collect();
     let args = (0..param_count)
         .map(|param_abs| bvar_for_abs(ctx_len, param_abs))
+        .chain((0..index_count).map(|index| bvar_for_abs(ctx_len, index_abs_start + index)))
         .collect::<Result<Vec<_>>>()?;
     Ok(Expr::apps(
         Expr::konst(inductive_name.to_owned(), levels),
         args,
     ))
+}
+
+fn motive_domain_expr(base: &InductiveDecl, motive_level: Level) -> Result<Expr> {
+    let param_count = base.params.len();
+    let mut domains = Vec::new();
+    let mut source_to_target = (0..param_count).collect::<Vec<_>>();
+    for (index, binder) in base.indices.iter().enumerate() {
+        let source_ctx_len = param_count + index;
+        let target_ctx_len = param_count + index;
+        domains.push(remap_bvars(
+            &binder.ty,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+        )?);
+        source_to_target.push(target_ctx_len);
+    }
+    let target = inductive_target_expr(
+        &base.name,
+        &base.universe_params,
+        param_count + base.indices.len(),
+        param_count,
+        param_count,
+        base.indices.len(),
+    )?;
+    let body = Expr::pi("_", target, Expr::sort(motive_level));
+    Ok(mk_pi_from_domains(domains, body))
+}
+
+fn append_index_domains(base: &InductiveDecl, domains: &mut Vec<Expr>) -> Result<()> {
+    let param_count = base.params.len();
+    let mut source_to_target = (0..param_count).collect::<Vec<_>>();
+    for (index, binder) in base.indices.iter().enumerate() {
+        let source_ctx_len = param_count + index;
+        let target_ctx_len = domains.len();
+        domains.push(remap_bvars(
+            &binder.ty,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+        )?);
+        source_to_target.push(target_ctx_len);
+    }
+    Ok(())
 }
 
 fn expected_minor_type_expr(
@@ -196,12 +312,14 @@ fn expected_minor_type_expr(
     constructor: &ConstructorDecl,
     constructor_index: usize,
 ) -> Result<Expr> {
-    let (constructor_domains, _) = peel_pi_domains(&constructor.ty);
+    let (constructor_domains, constructor_result) = peel_pi_domains(&constructor.ty);
     if constructor_domains.len() < param_count {
         return Err(CertError::InductiveGeneratedArtifactMismatch {
             name: Name::from_dotted(&base.name),
         });
     }
+    let constructor_result_indices =
+        constructor_result_index_args(base, constructor, &constructor_result)?;
 
     let prefix_len = param_count + 1 + constructor_index;
     let motive_abs = param_count;
@@ -231,7 +349,23 @@ fn expected_minor_type_expr(
             field_domain,
             source_ctx_len,
         )? {
-            expected_domains.push(motive_app(target_ctx_len, motive_abs, Expr::bvar(0))?);
+            let index_args = direct_recursive_index_args(
+                &base.name,
+                &base.universe_params,
+                param_count,
+                index_count,
+                field_domain,
+                source_ctx_len,
+            )?
+            .into_iter()
+            .map(|arg| remap_bvars(&arg, source_ctx_len, target_ctx_len, &source_to_target))
+            .collect::<Result<Vec<_>>>()?;
+            expected_domains.push(motive_app(
+                target_ctx_len,
+                motive_abs,
+                index_args,
+                Expr::bvar(0),
+            )?);
             target_ctx_len += 1;
         }
     }
@@ -253,7 +387,23 @@ fn expected_minor_type_expr(
         Expr::konst(constructor.name.clone(), levels),
         constructor_args,
     );
-    let result = motive_app(target_ctx_len, motive_abs, constructor_value)?;
+    let result_index_args = constructor_result_indices
+        .iter()
+        .map(|arg| {
+            remap_bvars(
+                arg,
+                constructor_domains.len(),
+                target_ctx_len,
+                &source_to_target,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let result = motive_app(
+        target_ctx_len,
+        motive_abs,
+        result_index_args,
+        constructor_value,
+    )?;
 
     Ok(mk_pi_from_domains(expected_domains, result))
 }
@@ -268,8 +418,15 @@ fn peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
     (domains, current)
 }
 
-fn motive_app(ctx_len: usize, motive_abs: usize, target: Expr) -> Result<Expr> {
-    Ok(Expr::app(bvar_for_abs(ctx_len, motive_abs)?, target))
+fn motive_app(
+    ctx_len: usize,
+    motive_abs: usize,
+    index_args: Vec<Expr>,
+    target: Expr,
+) -> Result<Expr> {
+    let mut args = index_args;
+    args.push(target);
+    Ok(Expr::apps(bvar_for_abs(ctx_len, motive_abs)?, args))
 }
 
 fn bvar_for_abs(ctx_len: usize, abs: usize) -> Result<Expr> {
@@ -360,10 +517,33 @@ fn is_direct_recursive_domain(
     domain: &Expr,
     ctx_len: usize,
 ) -> Result<bool> {
+    Ok(direct_recursive_index_args(
+        inductive_name,
+        universe_params,
+        param_count,
+        index_count,
+        domain,
+        ctx_len,
+    )
+    .is_ok())
+}
+
+fn direct_recursive_index_args(
+    inductive_name: &str,
+    universe_params: &[String],
+    param_count: usize,
+    index_count: usize,
+    domain: &Expr,
+    ctx_len: usize,
+) -> Result<Vec<Expr>> {
     let (head, args) = collect_apps(domain);
     let levels = match head {
         Expr::Const { name, levels } if name == inductive_name => levels,
-        _ => return Ok(false),
+        _ => {
+            return Err(CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(inductive_name),
+            });
+        }
     };
 
     let expected_levels: Vec<_> = universe_params
@@ -371,17 +551,55 @@ fn is_direct_recursive_domain(
         .map(|param| Level::param(param.clone()))
         .collect();
     if !levels_eq(&levels, &expected_levels) || args.len() != param_count + index_count {
-        return Ok(false);
+        return Err(CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(inductive_name),
+        });
     }
 
     for (param_index, arg) in args.iter().take(param_count).enumerate() {
         let expected = bvar_for_abs(ctx_len, param_index)?;
         if arg != &expected {
-            return Ok(false);
+            return Err(CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(inductive_name),
+            });
         }
     }
 
-    Ok(args.iter().all(|arg| !contains_const(arg, inductive_name)))
+    if args.iter().all(|arg| !contains_const(arg, inductive_name)) {
+        Ok(args[param_count..].to_vec())
+    } else {
+        Err(CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(inductive_name),
+        })
+    }
+}
+
+fn constructor_result_index_args(
+    base: &InductiveDecl,
+    constructor: &ConstructorDecl,
+    result: &Expr,
+) -> Result<Vec<Expr>> {
+    let (head, args) = collect_apps(result);
+    let levels = match head {
+        Expr::Const { name, levels } if name == base.name => levels,
+        _ => {
+            return Err(CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(&constructor.name),
+            });
+        }
+    };
+    let expected_levels: Vec<_> = base
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    if !levels_eq(&levels, &expected_levels) || args.len() != base.params.len() + base.indices.len()
+    {
+        return Err(CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(&constructor.name),
+        });
+    }
+    Ok(args[base.params.len()..].to_vec())
 }
 
 fn contains_const(expr: &Expr, needle: &str) -> bool {

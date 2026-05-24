@@ -19,48 +19,50 @@ use crate::{
     HumanDocumentUpdateRequest, HumanExactTacticOk, HumanExactTacticRequest,
     HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping,
     HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
-    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanLspCodeAction,
-    HumanLspCodeActionKind, HumanLspCodeActionOk, HumanLspCodeActionRequest, HumanLspCommand,
-    HumanLspCompletionItem, HumanLspCompletionItemKind, HumanLspCompletionOk,
-    HumanLspCompletionRequest, HumanLspDiagnostic, HumanLspDiagnosticData,
-    HumanLspDiagnosticSeverity, HumanLspDiagnosticsOk, HumanLspDiagnosticsRequest,
-    HumanLspDocumentPayloadOk, HumanLspDocumentPayloadRequest, HumanLspDocumentSymbol,
-    HumanLspGoalViewOk, HumanLspGoalViewRequest, HumanLspHoleGoal, HumanLspHoleGoalLocal,
-    HumanLspHover, HumanLspHoverOk, HumanLspHoverRequest, HumanLspHoverTheorem, HumanLspInlayHint,
-    HumanLspInlayHintKind, HumanLspPosition, HumanLspRange, HumanLspSemanticToken,
-    HumanLspSemanticTokenType, HumanLspSymbolKind, HumanLspUnsolvedMeta, HumanProofSession,
-    HumanProofSessionStatus, HumanProofSessionStore, HumanProofStateEntry,
-    HumanProofStateStartError, HumanProofStateStartOk, HumanProofStateStartRequest,
-    HumanProofStateStore, HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
-    HumanSessionCreateError, HumanSessionCreateOk, HumanSessionCreateRequest,
-    HumanSessionVerifyError, HumanSessionVerifyImport, HumanSessionVerifyImportAxiom,
-    HumanSessionVerifyOk, HumanSessionVerifyRequest, HumanSessionVerifyStatus,
-    HumanSimpLiteTacticError, HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest,
-    HumanSourcePosition, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
-    HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest, HumanStateCurrentRequest,
-    HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest, HumanStateLookupOk,
-    HumanStateRequestError, HumanStateRequestHeader, HumanStructuredProofStateError,
-    HumanTacticCheckRequest, HumanTacticCheckResponse, HumanTacticRunErrorKind,
-    HumanTacticRunErrorReport, HumanTacticRunRequest, HumanTacticRunResponse, HumanTacticRunStatus,
-    HumanTacticRunSuggestion, HumanTacticRunSuggestionKind, HumanTacticScriptError,
-    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
-    HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticSuggestRequest,
-    HumanTacticSuggestResponse, HumanTacticSuggestion, HumanTacticSuggestionSource,
-    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
-    HumanTheoremAxiomInfo, HumanTheoremDependency, HumanTheoremDependencyKind,
-    HumanTheoremGoalSearchRequest, HumanTheoremIndex, HumanTheoremIndexEntry,
-    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource,
-    HumanTheoremMatchBinding, HumanTheoremNameSearchRequest, HumanTheoremRewriteSearchRequest,
-    HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError, HumanTheoremSearchMode,
-    HumanTheoremSearchOk, HumanTheoremSearchOptions, HumanTheoremSearchResult,
-    HumanTheoremTypeSearchRequest, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
-    StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
+    HumanInductiveCheckError, HumanInductiveCheckRequest, HumanInductiveCheckResponse,
+    HumanInductiveCheckStatus, HumanInductivePositivityStatus, HumanIntroTacticError,
+    HumanIntroTacticOk, HumanIntroTacticRequest, HumanLspCodeAction, HumanLspCodeActionKind,
+    HumanLspCodeActionOk, HumanLspCodeActionRequest, HumanLspCommand, HumanLspCompletionItem,
+    HumanLspCompletionItemKind, HumanLspCompletionOk, HumanLspCompletionRequest,
+    HumanLspDiagnostic, HumanLspDiagnosticData, HumanLspDiagnosticSeverity, HumanLspDiagnosticsOk,
+    HumanLspDiagnosticsRequest, HumanLspDocumentPayloadOk, HumanLspDocumentPayloadRequest,
+    HumanLspDocumentSymbol, HumanLspGoalViewOk, HumanLspGoalViewRequest, HumanLspHoleGoal,
+    HumanLspHoleGoalLocal, HumanLspHover, HumanLspHoverOk, HumanLspHoverRequest,
+    HumanLspHoverTheorem, HumanLspInlayHint, HumanLspInlayHintKind, HumanLspPosition,
+    HumanLspRange, HumanLspSemanticToken, HumanLspSemanticTokenType, HumanLspSymbolKind,
+    HumanLspUnsolvedMeta, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
+    HumanProofStateEntry, HumanProofStateStartError, HumanProofStateStartOk,
+    HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
+    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
+    HumanSessionCreateRequest, HumanSessionVerifyError, HumanSessionVerifyImport,
+    HumanSessionVerifyImportAxiom, HumanSessionVerifyOk, HumanSessionVerifyRequest,
+    HumanSessionVerifyStatus, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
+    HumanSimpLiteTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
+    HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
+    HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
+    HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
+    HumanStructuredProofStateError, HumanTacticCheckRequest, HumanTacticCheckResponse,
+    HumanTacticRunErrorKind, HumanTacticRunErrorReport, HumanTacticRunRequest,
+    HumanTacticRunResponse, HumanTacticRunStatus, HumanTacticRunSuggestion,
+    HumanTacticRunSuggestionKind, HumanTacticScriptError, HumanTacticScriptRunOk,
+    HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
+    HumanTacticStateRecordRequest, HumanTacticSuggestRequest, HumanTacticSuggestResponse,
+    HumanTacticSuggestion, HumanTacticSuggestionSource, HumanTacticTermCheckOk,
+    HumanTacticTermCheckRequest, HumanTacticTermError, HumanTheoremAxiomInfo,
+    HumanTheoremDependency, HumanTheoremDependencyKind, HumanTheoremGoalSearchRequest,
+    HumanTheoremIndex, HumanTheoremIndexEntry, HumanTheoremIndexError, HumanTheoremIndexKind,
+    HumanTheoremIndexSource, HumanTheoremMatchBinding, HumanTheoremNameSearchRequest,
+    HumanTheoremRewriteSearchRequest, HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError,
+    HumanTheoremSearchMode, HumanTheoremSearchOk, HumanTheoremSearchOptions,
+    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, LocalId, StructuredExpr,
+    StructuredGoal, StructuredGoalStatus, StructuredHypothesis, StructuredProofState,
+    HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_cert::{
     AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
     LevelNode, ModuleName, Name, NameId, TermId, TermNode, VerifiedModule,
 };
-use npa_kernel::{subst::instantiate, Ctx, Decl, Expr, Level};
+use npa_kernel::{subst::instantiate, Ctx, Decl, Env, Expr, Level};
 use sha2::{Digest, Sha256};
 
 const HUMAN_CERTIFICATE_ENCODING: &str = "npa.certificate.canonical.v0.1.hex";
@@ -152,6 +154,117 @@ pub fn compile_human_source_to_certificate(
         certificate: output.certificate,
         source_interface: output.source_interface,
     })
+}
+
+/// Check an indexed inductive declaration for Human IDE diagnostics.
+///
+/// This is the library equivalent of `POST /inductive/check`. The response is
+/// diagnostic metadata only: proof acceptance still comes from canonical
+/// certificate verification and the independent checker.
+pub fn check_human_inductive(
+    request: HumanInductiveCheckRequest<'_>,
+) -> HumanInductiveCheckResponse {
+    let constructors = request
+        .declaration
+        .constructors
+        .iter()
+        .map(|constructor| constructor.name.clone())
+        .collect::<Vec<_>>();
+
+    let base_kernel_error = check_inductive_with_kernel(request.declaration.clone()).err();
+    if let Some(error) = base_kernel_error {
+        return HumanInductiveCheckResponse {
+            status: HumanInductiveCheckStatus::Rejected,
+            constructors,
+            recursor: request
+                .declaration
+                .recursor
+                .as_ref()
+                .map(|recursor| recursor.name.clone()),
+            positivity: human_inductive_positivity_status(&error),
+            recursor_signature_hash: None,
+            iota_rules_hash: None,
+            diagnostic_only: true,
+            error: Some(HumanInductiveCheckError::Kernel(error)),
+        };
+    }
+
+    let generated = match if request.declaration.recursor.is_some() {
+        Ok(request.declaration.clone())
+    } else {
+        npa_cert::generate_inductive_artifacts_v1(request.declaration)
+    } {
+        Ok(generated) => generated,
+        Err(error) => {
+            return HumanInductiveCheckResponse {
+                status: HumanInductiveCheckStatus::Rejected,
+                constructors,
+                recursor: None,
+                positivity: HumanInductivePositivityStatus::Passed,
+                recursor_signature_hash: None,
+                iota_rules_hash: None,
+                diagnostic_only: true,
+                error: Some(HumanInductiveCheckError::Certificate(error)),
+            };
+        }
+    };
+
+    if let Err(error) = check_inductive_with_kernel(generated.clone()) {
+        return HumanInductiveCheckResponse {
+            status: HumanInductiveCheckStatus::Rejected,
+            constructors,
+            recursor: generated
+                .recursor
+                .as_ref()
+                .map(|recursor| recursor.name.clone()),
+            positivity: HumanInductivePositivityStatus::Passed,
+            recursor_signature_hash: None,
+            iota_rules_hash: None,
+            diagnostic_only: true,
+            error: Some(HumanInductiveCheckError::Kernel(error)),
+        };
+    }
+
+    match npa_cert::inductive_generated_artifact_hashes_v1(&generated) {
+        Ok(hashes) => HumanInductiveCheckResponse {
+            status: HumanInductiveCheckStatus::AcceptedByKernelAndCertificate,
+            constructors,
+            recursor: generated
+                .recursor
+                .as_ref()
+                .map(|recursor| recursor.name.clone()),
+            positivity: HumanInductivePositivityStatus::Passed,
+            recursor_signature_hash: hashes.recursor_signature_hash,
+            iota_rules_hash: hashes.iota_rules_hash,
+            diagnostic_only: true,
+            error: None,
+        },
+        Err(error) => HumanInductiveCheckResponse {
+            status: HumanInductiveCheckStatus::Rejected,
+            constructors,
+            recursor: generated
+                .recursor
+                .as_ref()
+                .map(|recursor| recursor.name.clone()),
+            positivity: HumanInductivePositivityStatus::Passed,
+            recursor_signature_hash: None,
+            iota_rules_hash: None,
+            diagnostic_only: true,
+            error: Some(HumanInductiveCheckError::Certificate(error)),
+        },
+    }
+}
+
+fn check_inductive_with_kernel(data: npa_kernel::InductiveDecl) -> npa_kernel::Result<()> {
+    let mut env = Env::with_builtins()?;
+    env.add_inductive(data)
+}
+
+fn human_inductive_positivity_status(error: &npa_kernel::Error) -> HumanInductivePositivityStatus {
+    match error {
+        npa_kernel::Error::NonPositiveOccurrence { .. } => HumanInductivePositivityStatus::Failed,
+        _ => HumanInductivePositivityStatus::NotReached,
+    }
 }
 
 /// Create a Human IDE proof session from explicit source and imports.
@@ -8166,6 +8279,52 @@ mod tests {
     }
 
     #[test]
+    fn human_inductive_check_returns_diagnostic_metadata_for_indexed_vec() {
+        let data = vec_inductive();
+        let generated = npa_cert::generate_inductive_artifacts_v1(&data).unwrap();
+        let expected_hashes = npa_cert::inductive_generated_artifact_hashes_v1(&generated).unwrap();
+
+        let response = check_human_inductive(HumanInductiveCheckRequest { declaration: &data });
+
+        assert_eq!(
+            response.status,
+            HumanInductiveCheckStatus::AcceptedByKernelAndCertificate
+        );
+        assert_eq!(response.constructors, ["Vec.nil", "Vec.cons"]);
+        assert_eq!(response.recursor.as_deref(), Some("Vec.rec"));
+        assert_eq!(response.positivity, HumanInductivePositivityStatus::Passed);
+        assert_eq!(
+            response.recursor_signature_hash,
+            expected_hashes.recursor_signature_hash
+        );
+        assert_eq!(response.iota_rules_hash, expected_hashes.iota_rules_hash);
+        assert!(response.diagnostic_only);
+        assert!(response.error.is_none());
+        assert_eq!(crate::HUMAN_INDUCTIVE_CHECK_ENDPOINT, "/inductive/check");
+    }
+
+    #[test]
+    fn human_inductive_check_reports_negative_occurrence_as_diagnostic_only_rejection() {
+        let data = negative_indexed_inductive();
+
+        let response = check_human_inductive(HumanInductiveCheckRequest { declaration: &data });
+
+        assert_eq!(response.status, HumanInductiveCheckStatus::Rejected);
+        assert_eq!(response.constructors, ["BadVec.mk"]);
+        assert_eq!(response.recursor, None);
+        assert_eq!(response.positivity, HumanInductivePositivityStatus::Failed);
+        assert_eq!(response.recursor_signature_hash, None);
+        assert_eq!(response.iota_rules_hash, None);
+        assert!(response.diagnostic_only);
+        assert!(matches!(
+            response.error,
+            Some(HumanInductiveCheckError::Kernel(
+                npa_kernel::Error::NonPositiveOccurrence { .. }
+            ))
+        ));
+    }
+
+    #[test]
     fn human_session_create_returns_open_session_with_initial_document_version() {
         let mut store = HumanProofSessionStore::new();
 
@@ -14442,5 +14601,74 @@ axiom Eq.trans {A : Type} {x : A} {z : A} (h1 : Eq.{1} x z) (h2 : Eq.{1} x z) : 
 
     fn eq_refl_nat(value: Expr) -> Expr {
         npa_kernel::eq_refl(npa_kernel::type0(), nat(), value)
+    }
+
+    fn vec_type(level: Level, a: Expr, n: Expr) -> Expr {
+        Expr::apps(Expr::konst("Vec", vec![level]), vec![a, n])
+    }
+
+    fn vec_inductive() -> npa_kernel::InductiveDecl {
+        let u = Level::param("u");
+        npa_kernel::InductiveDecl::new(
+            "Vec",
+            vec!["u".to_owned()],
+            vec![npa_kernel::Binder::new("A", Expr::sort(u.clone()))],
+            vec![npa_kernel::Binder::new("n", nat())],
+            u.clone(),
+            vec![
+                npa_kernel::ConstructorDecl::new(
+                    "Vec.nil",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        vec_type(u.clone(), Expr::bvar(0), nat_zero()),
+                    ),
+                ),
+                npa_kernel::ConstructorDecl::new(
+                    "Vec.cons",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "x",
+                                Expr::bvar(1),
+                                Expr::pi(
+                                    "xs",
+                                    vec_type(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                                    vec_type(u.clone(), Expr::bvar(3), nat_succ(Expr::bvar(2))),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn negative_indexed_inductive() -> npa_kernel::InductiveDecl {
+        npa_kernel::InductiveDecl::new(
+            "BadVec",
+            vec![],
+            vec![],
+            vec![npa_kernel::Binder::new("n", nat())],
+            npa_kernel::type0(),
+            vec![npa_kernel::ConstructorDecl::new(
+                "BadVec.mk",
+                Expr::pi(
+                    "f",
+                    Expr::pi(
+                        "_",
+                        Expr::app(Expr::konst("BadVec", vec![]), nat_zero()),
+                        nat(),
+                    ),
+                    Expr::app(Expr::konst("BadVec", vec![]), nat_zero()),
+                ),
+            )],
+            None,
+        )
     }
 }

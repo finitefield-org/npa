@@ -1079,6 +1079,40 @@ mod tests {
         encode_module_cert(&cert).unwrap()
     }
 
+    fn certificate_for_indexed_inductives() -> Vec<u8> {
+        let nat_data = nat_inductive();
+        let vec_data = generate_inductive_artifacts_v1(&vec_inductive()).unwrap();
+        let fin_data = generate_inductive_artifacts_v1(&fin_inductive()).unwrap();
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Test.Indexed"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: nat_data.name.clone(),
+                        universe_params: nat_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&nat_data),
+                        data: Box::new(nat_data),
+                    },
+                    Decl::Inductive {
+                        name: vec_data.name.clone(),
+                        universe_params: vec_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&vec_data),
+                        data: Box::new(vec_data),
+                    },
+                    Decl::Inductive {
+                        name: fin_data.name.clone(),
+                        universe_params: fin_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&fin_data),
+                        data: Box::new(fin_data),
+                    },
+                ],
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
+    }
+
     fn std_logic_eq_certificate() -> Vec<u8> {
         certificate_for_inductive("Std.Logic", eq_inductive())
     }
@@ -1160,6 +1194,85 @@ mod tests {
                                 list_a(u.clone(), Expr::bvar(1)),
                                 list_a(u.clone(), Expr::bvar(2)),
                             ),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn vec_type(level: Level, a: Expr, n: Expr) -> Expr {
+        Expr::apps(Expr::konst("Vec", vec![level]), vec![a, n])
+    }
+
+    fn vec_inductive() -> InductiveDecl {
+        let u = Level::param("u");
+        InductiveDecl::new(
+            "Vec",
+            vec!["u".to_owned()],
+            vec![Binder::new("A", Expr::sort(u.clone()))],
+            vec![Binder::new("n", nat())],
+            u.clone(),
+            vec![
+                ConstructorDecl::new(
+                    "Vec.nil",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        vec_type(u.clone(), Expr::bvar(0), nat_zero()),
+                    ),
+                ),
+                ConstructorDecl::new(
+                    "Vec.cons",
+                    Expr::pi(
+                        "A",
+                        Expr::sort(u.clone()),
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "x",
+                                Expr::bvar(1),
+                                Expr::pi(
+                                    "xs",
+                                    vec_type(u.clone(), Expr::bvar(2), Expr::bvar(1)),
+                                    vec_type(u.clone(), Expr::bvar(3), nat_succ(Expr::bvar(2))),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+            None,
+        )
+    }
+
+    fn fin_type(n: Expr) -> Expr {
+        Expr::app(Expr::konst("Fin", vec![]), n)
+    }
+
+    fn fin_inductive() -> InductiveDecl {
+        InductiveDecl::new(
+            "Fin",
+            vec![],
+            vec![],
+            vec![Binder::new("n", nat())],
+            type0(),
+            vec![
+                ConstructorDecl::new(
+                    "Fin.zero",
+                    Expr::pi("n", nat(), fin_type(nat_succ(Expr::bvar(0)))),
+                ),
+                ConstructorDecl::new(
+                    "Fin.succ",
+                    Expr::pi(
+                        "n",
+                        nat(),
+                        Expr::pi(
+                            "i",
+                            fin_type(Expr::bvar(0)),
+                            fin_type(nat_succ(Expr::bvar(1))),
                         ),
                     ),
                 ),
@@ -3142,6 +3255,7 @@ mod tests {
                 "Test.List",
                 generate_inductive_artifacts_v1(&list_inductive()).unwrap(),
             ),
+            certificate_for_indexed_inductives(),
         ];
 
         for bytes in cases {

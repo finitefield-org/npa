@@ -14846,7 +14846,7 @@ mod tests {
     }
 
     #[test]
-    fn advanced_inductive_indexed_family_result_check_runs_before_generator_rejection() {
+    fn advanced_inductive_indexed_family_candidate_returns_decl_hashes() {
         let proposal = AdvancedMachineInductiveProposal {
             block_name: None,
             expected_decl_hash: None,
@@ -14870,13 +14870,20 @@ mod tests {
         };
         let request = inductive_request(proposal);
 
-        assert_rejected(
-            run_advanced_ai_inductive_check_request(&request, &[], &workspace_root()),
-            AdvancedAiValidationError::UnsupportedFeature,
-            Some(AdvancedAiFeatureError::AdvancedInductive(
-                AdvancedInductiveError::PositivityProfileUnsupported,
-            )),
-        );
+        let (_, payload) = assert_success(run_advanced_ai_inductive_check_request(
+            &request,
+            &[],
+            &workspace_root(),
+        ));
+        let AdvancedAiSuccessPayload::AdvancedInductive {
+            decl_interface_hash,
+            decl_certificate_hash,
+        } = payload
+        else {
+            panic!("expected advanced inductive payload");
+        };
+        assert_ne!(decl_interface_hash, [0; 32]);
+        assert_ne!(decl_certificate_hash, [0; 32]);
     }
 
     #[test]

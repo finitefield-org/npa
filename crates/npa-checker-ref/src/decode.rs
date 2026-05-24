@@ -2670,7 +2670,9 @@ impl<'a> TypeChecker<'a> {
                 ReferenceCheckReason::BadRecursorRule,
             ));
         }
-        if recursor.rules.major_index != recursor.rules.minor_start + data.constructors.len() {
+        if recursor.rules.major_index
+            != recursor.rules.minor_start + data.constructors.len() + data.indices.len()
+        {
             return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
                 offset,
@@ -2700,11 +2702,15 @@ impl<'a> TypeChecker<'a> {
         })?;
         self.check_motive_domain(data, recursor, motive_domain, offset)?;
 
+        self.check_recursor_indices(data, recursor, &domains, offset)?;
+
         let major_domain = &domains[recursor.rules.major_index];
         self.check_recursor_target(
             data,
             major_domain,
             ReferenceCheckReason::BadRecursorMajor,
+            recursor.rules.major_index,
+            recursor.rules.minor_start + data.constructors.len(),
             offset,
         )?;
         self.check_recursor_result(data, recursor, &domains, &result, offset)?;
@@ -2786,17 +2792,39 @@ impl<'a> TypeChecker<'a> {
         offset: usize,
     ) -> DecodeResult<()> {
         let (motive_domains, motive_result) = peel_pi_domains(motive_domain);
-        if motive_domains.len() != 1 {
+        if motive_domains.len() != data.indices.len() + 1 {
             return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
                 offset,
                 ReferenceCheckReason::BadRecursorMotive,
             ));
         }
+        let mut source_to_target = (0..data.params.len()).collect::<Vec<_>>();
+        for (index, expected) in data.indices.iter().enumerate() {
+            let source_ctx_len = data.params.len() + index;
+            let target_ctx_len = data.params.len() + index;
+            let expected_ty = remap_bvars(
+                expected,
+                source_ctx_len,
+                target_ctx_len,
+                &source_to_target,
+                offset,
+            )?;
+            if motive_domains[index] != expected_ty {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorMotive,
+                ));
+            }
+            source_to_target.push(target_ctx_len);
+        }
         self.check_recursor_target(
             data,
-            &motive_domains[0],
+            &motive_domains[data.indices.len()],
             ReferenceCheckReason::BadRecursorMotive,
+            data.params.len() + data.indices.len(),
+            data.params.len(),
             offset,
         )?;
         match motive_result {
@@ -2820,25 +2848,107 @@ impl<'a> TypeChecker<'a> {
         Ok(())
     }
 
+    fn check_recursor_indices(
+        &self,
+        data: &ReferenceInductiveSignature,
+        recursor: &ReferenceRecursorSignature,
+        domains: &[ReferenceCoreExpr],
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let index_start = recursor.rules.minor_start + data.constructors.len();
+        let mut source_to_target = (0..data.params.len()).collect::<Vec<_>>();
+        for (index, expected) in data.indices.iter().enumerate() {
+            let domain_index = index_start + index;
+            let actual = domains.get(domain_index).ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorRule,
+                )
+            })?;
+            let source_ctx_len = data.params.len() + index;
+            let target_ctx_len = domain_index;
+            let expected_ty = remap_bvars(
+                expected,
+                source_ctx_len,
+                target_ctx_len,
+                &source_to_target,
+                offset,
+            )?;
+            let ctx = recursor_prefix_ctx(&domains[..domain_index]);
+            if !self.is_defeq(
+                &ctx,
+                &recursor.universe_params,
+                actual,
+                &expected_ty,
+                offset,
+            )? {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorParam,
+                ));
+            }
+            source_to_target.push(domain_index);
+        }
+        Ok(())
+    }
+
     fn check_recursor_target(
         &self,
         data: &ReferenceInductiveSignature,
         target: &ReferenceCoreExpr,
         reason: ReferenceCheckReason,
+        ctx_len: usize,
+        index_abs_start: usize,
         offset: usize,
     ) -> DecodeResult<()> {
-        let (head, _) = collect_apps(target);
-        match head {
+        let (head, args) = collect_apps(target);
+        let levels = match head {
             ReferenceCoreExpr::Const {
                 global_ref: ReferenceCoreGlobalRef::Local { decl_index },
+                levels,
                 ..
-            } if *decl_index == data.decl_index => Ok(()),
-            _ => Err(ReferenceCheckError::type_check(
+            } if *decl_index == data.decl_index => levels,
+            _ => {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    reason,
+                ));
+            }
+        };
+        let expected_levels: Vec<_> = data
+            .universe_params
+            .iter()
+            .map(|param| ReferenceCoreLevel::Param(param.clone()))
+            .collect();
+        if *levels != expected_levels || args.len() != data.params.len() + data.indices.len() {
+            return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
                 offset,
                 reason,
-            )),
+            ));
         }
+        for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
+            if arg != &bvar_for_abs(ctx_len, param_index, offset)? {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    reason,
+                ));
+            }
+        }
+        for (index_index, arg) in args.iter().skip(data.params.len()).enumerate() {
+            if arg != &bvar_for_abs(ctx_len, index_abs_start + index_index, offset)? {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    reason,
+                ));
+            }
+        }
+        Ok(())
     }
 
     fn check_recursor_result(
@@ -2849,9 +2959,14 @@ impl<'a> TypeChecker<'a> {
         result: &ReferenceCoreExpr,
         offset: usize,
     ) -> DecodeResult<()> {
+        let index_start = recursor.rules.minor_start + data.constructors.len();
+        let index_args = (0..data.indices.len())
+            .map(|index| bvar_for_abs(domains.len(), index_start + index, offset))
+            .collect::<DecodeResult<Vec<_>>>()?;
         let expected = motive_app(
             domains.len(),
             data.params.len(),
+            index_args,
             bvar_for_abs(domains.len(), recursor.rules.major_index, offset)?,
             offset,
         )?;
@@ -3356,6 +3471,7 @@ impl<'a> TypeChecker<'a> {
         if ctor_args.len() < param_count {
             return Ok(None);
         }
+        let index_start = recursor.rules.major_index - data.indices.len();
         let field_args = &ctor_args[param_count..];
         let field_domains = &domains[param_count..];
         if field_args.len() < field_domains.len() {
@@ -3368,7 +3484,18 @@ impl<'a> TypeChecker<'a> {
         {
             reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(field_arg.clone()));
             if is_direct_recursive_domain(data, field_domain, param_count + field_index, offset)? {
-                let mut recursive_args = args[..recursor.rules.major_index].to_vec();
+                let source_ctx_len = param_count + field_index;
+                let source_args = &ctor_args[..source_ctx_len];
+                let mut recursive_args = args[..index_start].to_vec();
+                for index_arg in
+                    direct_recursive_index_args(data, field_domain, source_ctx_len, offset)?
+                {
+                    recursive_args.push(instantiate_constructor_args(
+                        &index_arg,
+                        source_args,
+                        offset,
+                    )?);
+                }
                 recursive_args.push(field_arg.clone());
                 let recursive_call = apps(
                     ReferenceCoreExpr::Const {
@@ -3786,13 +3913,13 @@ fn bvar_for_abs(ctx_len: usize, abs: usize, offset: usize) -> DecodeResult<Refer
 fn motive_app(
     ctx_len: usize,
     motive_abs: usize,
+    index_args: Vec<ReferenceCoreExpr>,
     target: ReferenceCoreExpr,
     offset: usize,
 ) -> DecodeResult<ReferenceCoreExpr> {
-    Ok(ReferenceCoreExpr::App(
-        Box::new(bvar_for_abs(ctx_len, motive_abs, offset)?),
-        Box::new(target),
-    ))
+    let mut args = index_args;
+    args.push(target);
+    Ok(apps(bvar_for_abs(ctx_len, motive_abs, offset)?, args))
 }
 
 fn recursor_prefix_ctx(domains: &[ReferenceCoreExpr]) -> TypeContext {
@@ -3810,13 +3937,11 @@ fn expected_recursor_type(
 ) -> DecodeResult<ReferenceCoreExpr> {
     let param_count = data.params.len();
     let mut domains = data.params.clone();
-    let motive_target = inductive_target_expr(data, domains.len(), param_count, offset)?;
-    domains.push(ReferenceCoreExpr::Pi {
-        ty: Box::new(motive_target),
-        body: Box::new(ReferenceCoreExpr::Sort(expected_motive_level(
-            data, recursor,
-        ))),
-    });
+    domains.push(motive_domain_expr(
+        data,
+        expected_motive_level(data, recursor),
+        offset,
+    )?);
 
     for (constructor_index, constructor) in data.constructors.iter().enumerate() {
         domains.push(expected_minor_type(
@@ -3827,11 +3952,24 @@ fn expected_recursor_type(
         )?);
     }
 
-    let major_domain = inductive_target_expr(data, domains.len(), param_count, offset)?;
+    let index_start = domains.len();
+    append_index_domains(data, &mut domains, offset)?;
+    let major_domain = inductive_target_expr(
+        data,
+        domains.len(),
+        param_count,
+        index_start,
+        data.indices.len(),
+        offset,
+    )?;
     domains.push(major_domain);
+    let index_args = (0..data.indices.len())
+        .map(|index| bvar_for_abs(domains.len(), index_start + index, offset))
+        .collect::<DecodeResult<Vec<_>>>()?;
     let body = motive_app(
         domains.len(),
         param_count,
+        index_args,
         bvar_for_abs(domains.len(), recursor.rules.major_index, offset)?,
         offset,
     )?;
@@ -3864,6 +4002,8 @@ fn inductive_target_expr(
     data: &ReferenceInductiveSignature,
     ctx_len: usize,
     param_count: usize,
+    index_abs_start: usize,
+    index_count: usize,
     offset: usize,
 ) -> DecodeResult<ReferenceCoreExpr> {
     let levels = data
@@ -3873,6 +4013,7 @@ fn inductive_target_expr(
         .collect();
     let args = (0..param_count)
         .map(|param_abs| bvar_for_abs(ctx_len, param_abs, offset))
+        .chain((0..index_count).map(|index| bvar_for_abs(ctx_len, index_abs_start + index, offset)))
         .collect::<DecodeResult<Vec<_>>>()?;
     Ok(apps(
         ReferenceCoreExpr::Const {
@@ -3883,6 +4024,63 @@ fn inductive_target_expr(
         },
         args,
     ))
+}
+
+fn motive_domain_expr(
+    data: &ReferenceInductiveSignature,
+    motive_level: ReferenceCoreLevel,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let param_count = data.params.len();
+    let mut domains = Vec::new();
+    let mut source_to_target = (0..param_count).collect::<Vec<_>>();
+    for (index, ty) in data.indices.iter().enumerate() {
+        let source_ctx_len = param_count + index;
+        let target_ctx_len = param_count + index;
+        domains.push(remap_bvars(
+            ty,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+            offset,
+        )?);
+        source_to_target.push(target_ctx_len);
+    }
+    let target = inductive_target_expr(
+        data,
+        param_count + data.indices.len(),
+        param_count,
+        param_count,
+        data.indices.len(),
+        offset,
+    )?;
+    let body = ReferenceCoreExpr::Pi {
+        ty: Box::new(target),
+        body: Box::new(ReferenceCoreExpr::Sort(motive_level)),
+    };
+    Ok(mk_pi_from_domains(domains, body))
+}
+
+fn append_index_domains(
+    data: &ReferenceInductiveSignature,
+    domains: &mut Vec<ReferenceCoreExpr>,
+    offset: usize,
+) -> DecodeResult<()> {
+    let param_count = data.params.len();
+    let mut source_to_target = (0..param_count).collect::<Vec<_>>();
+    for (index, ty) in data.indices.iter().enumerate() {
+        let source_ctx_len = param_count + index;
+        let target_ctx_len = domains.len();
+        domains.push(remap_bvars(
+            ty,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+            offset,
+        )?);
+        source_to_target.push(target_ctx_len);
+    }
+    Ok(())
 }
 
 fn mk_pi_from_domains(
@@ -3904,7 +4102,7 @@ fn expected_minor_type(
     constructor_index: usize,
     offset: usize,
 ) -> DecodeResult<ReferenceCoreExpr> {
-    let (constructor_domains, _) = peel_pi_domains(&constructor.ty);
+    let (constructor_domains, constructor_result) = peel_pi_domains(&constructor.ty);
     let param_count = data.params.len();
     if constructor_domains.len() < param_count {
         return Err(ReferenceCheckError::type_check(
@@ -3913,6 +4111,8 @@ fn expected_minor_type(
             ReferenceCheckReason::BadRecursorMinor,
         ));
     }
+    let constructor_result_indices =
+        constructor_result_index_args(data, &constructor_result, offset)?;
 
     let prefix_len = param_count + 1 + constructor_index;
     let motive_abs = param_count;
@@ -3936,9 +4136,23 @@ fn expected_minor_type(
         target_ctx_len += 1;
 
         if is_direct_recursive_domain(data, field_domain, source_ctx_len, offset)? {
+            let index_args =
+                direct_recursive_index_args(data, field_domain, source_ctx_len, offset)?
+                    .into_iter()
+                    .map(|arg| {
+                        remap_bvars(
+                            &arg,
+                            source_ctx_len,
+                            target_ctx_len,
+                            &source_to_target,
+                            offset,
+                        )
+                    })
+                    .collect::<DecodeResult<Vec<_>>>()?;
             expected_domains.push(motive_app(
                 target_ctx_len,
                 motive_abs,
+                index_args,
                 ReferenceCoreExpr::BVar(0),
                 offset,
             )?);
@@ -3969,7 +4183,25 @@ fn expected_minor_type(
         },
         constructor_args,
     );
-    let result = motive_app(target_ctx_len, motive_abs, constructor_value, offset)?;
+    let result_index_args = constructor_result_indices
+        .iter()
+        .map(|arg| {
+            remap_bvars(
+                arg,
+                constructor_domains.len(),
+                target_ctx_len,
+                &source_to_target,
+                offset,
+            )
+        })
+        .collect::<DecodeResult<Vec<_>>>()?;
+    let result = motive_app(
+        target_ctx_len,
+        motive_abs,
+        result_index_args,
+        constructor_value,
+        offset,
+    )?;
 
     Ok(mk_pi_from_domains(expected_domains, result))
 }
@@ -4098,13 +4330,28 @@ fn is_direct_recursive_domain(
     ctx_len: usize,
     offset: usize,
 ) -> DecodeResult<bool> {
+    Ok(direct_recursive_index_args(data, domain, ctx_len, offset).is_ok())
+}
+
+fn direct_recursive_index_args(
+    data: &ReferenceInductiveSignature,
+    domain: &ReferenceCoreExpr,
+    ctx_len: usize,
+    offset: usize,
+) -> DecodeResult<Vec<ReferenceCoreExpr>> {
     let (head, args) = collect_apps(domain);
     let levels = match head {
         ReferenceCoreExpr::Const {
             global_ref: ReferenceCoreGlobalRef::Local { decl_index },
             levels,
         } if *decl_index == data.decl_index => levels,
-        _ => return Ok(false),
+        _ => {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorMinor,
+            ));
+        }
     };
 
     let expected_levels: Vec<_> = data
@@ -4113,19 +4360,170 @@ fn is_direct_recursive_domain(
         .map(|param| ReferenceCoreLevel::Param(param.clone()))
         .collect();
     if *levels != expected_levels || args.len() != data.params.len() + data.indices.len() {
-        return Ok(false);
+        return Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorMinor,
+        ));
     }
 
     for (param_index, arg) in args.iter().take(data.params.len()).enumerate() {
         let expected = bvar_for_abs(ctx_len, param_index, offset)?;
         if arg != &expected {
-            return Ok(false);
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorMinor,
+            ));
         }
     }
 
-    Ok(args
+    if args
         .iter()
-        .all(|arg| !contains_inductive_const(arg, data.decl_index)))
+        .all(|arg| !contains_inductive_const(arg, data.decl_index))
+    {
+        Ok(args[data.params.len()..].to_vec())
+    } else {
+        Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorMinor,
+        ))
+    }
+}
+
+fn constructor_result_index_args(
+    data: &ReferenceInductiveSignature,
+    result: &ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<Vec<ReferenceCoreExpr>> {
+    let (head, args) = collect_apps(result);
+    let levels = match head {
+        ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Local { decl_index },
+            levels,
+        } if *decl_index == data.decl_index => levels,
+        _ => {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorMinor,
+            ));
+        }
+    };
+    let expected_levels: Vec<_> = data
+        .universe_params
+        .iter()
+        .map(|param| ReferenceCoreLevel::Param(param.clone()))
+        .collect();
+    if *levels != expected_levels || args.len() != data.params.len() + data.indices.len() {
+        return Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorMinor,
+        ));
+    }
+    Ok(args[data.params.len()..].to_vec())
+}
+
+fn instantiate_constructor_args(
+    expr: &ReferenceCoreExpr,
+    args_by_abs: &[ReferenceCoreExpr],
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    instantiate_constructor_args_at(expr, args_by_abs, 0, offset)
+}
+
+fn instantiate_constructor_args_at(
+    expr: &ReferenceCoreExpr,
+    args_by_abs: &[ReferenceCoreExpr],
+    depth: u32,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    match expr {
+        ReferenceCoreExpr::Sort(level) => Ok(ReferenceCoreExpr::Sort(level.clone())),
+        ReferenceCoreExpr::BVar(index) => {
+            if *index < depth {
+                return Ok(ReferenceCoreExpr::BVar(*index));
+            }
+            let outer_index = (*index - depth) as usize;
+            if outer_index >= args_by_abs.len() {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::InvalidBVar,
+                ));
+            }
+            let source_abs = args_by_abs.len() - 1 - outer_index;
+            shift(&args_by_abs[source_abs], depth as i32, 0, offset)
+        }
+        ReferenceCoreExpr::Const { global_ref, levels } => Ok(ReferenceCoreExpr::Const {
+            global_ref: global_ref.clone(),
+            levels: levels.clone(),
+        }),
+        ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
+            Box::new(instantiate_constructor_args_at(
+                fun,
+                args_by_abs,
+                depth,
+                offset,
+            )?),
+            Box::new(instantiate_constructor_args_at(
+                arg,
+                args_by_abs,
+                depth,
+                offset,
+            )?),
+        )),
+        ReferenceCoreExpr::Lam { ty, body } => Ok(ReferenceCoreExpr::Lam {
+            ty: Box::new(instantiate_constructor_args_at(
+                ty,
+                args_by_abs,
+                depth,
+                offset,
+            )?),
+            body: Box::new(instantiate_constructor_args_at(
+                body,
+                args_by_abs,
+                depth + 1,
+                offset,
+            )?),
+        }),
+        ReferenceCoreExpr::Pi { ty, body } => Ok(ReferenceCoreExpr::Pi {
+            ty: Box::new(instantiate_constructor_args_at(
+                ty,
+                args_by_abs,
+                depth,
+                offset,
+            )?),
+            body: Box::new(instantiate_constructor_args_at(
+                body,
+                args_by_abs,
+                depth + 1,
+                offset,
+            )?),
+        }),
+        ReferenceCoreExpr::Let { ty, value, body } => Ok(ReferenceCoreExpr::Let {
+            ty: Box::new(instantiate_constructor_args_at(
+                ty,
+                args_by_abs,
+                depth,
+                offset,
+            )?),
+            value: Box::new(instantiate_constructor_args_at(
+                value,
+                args_by_abs,
+                depth,
+                offset,
+            )?),
+            body: Box::new(instantiate_constructor_args_at(
+                body,
+                args_by_abs,
+                depth + 1,
+                offset,
+            )?),
+        }),
+    }
 }
 
 fn contains_inductive_const(expr: &ReferenceCoreExpr, decl_index: usize) -> bool {
