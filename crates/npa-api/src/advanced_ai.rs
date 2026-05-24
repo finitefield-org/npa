@@ -1541,6 +1541,14 @@ pub struct AdvancedValidatedCommonEnvelope {
     pub options: AdvancedAiOptions,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdvancedFormalizationRequestMetadata {
+    pub candidate_hash: Hash,
+    pub candidate_statement_hash: Hash,
+    pub payload: AdvancedMachineFormalizationCheckPayload,
+    pub request_without_proof_candidate_canonical_bytes: Vec<u8>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AdvancedAiCanonicalError {
     InvalidName,
@@ -2790,6 +2798,55 @@ pub fn run_advanced_ai_formalize_check_request(
         }
         Err(response) => response,
     }
+}
+
+pub fn advanced_ai_formalization_request_metadata(
+    request_canonical_bytes: &[u8],
+    verified_imports: &[VerifiedImportRef],
+    workspace_root: &Path,
+) -> std::result::Result<AdvancedFormalizationRequestMetadata, AdvancedAiEndpointResponse> {
+    let validated = validate_advanced_ai_common_envelope(
+        request_canonical_bytes,
+        verified_imports,
+        workspace_root,
+        AdvancedAiTaskKind::NaturalLanguageFormalization,
+    )?;
+    let mut payload = decode_formalization_payload(&validated.envelope.payload).map_err(|_| {
+        rejected_response(
+            validated.candidate_hash,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            None,
+        )
+    })?;
+    if !formalization_statement_wrapper_is_valid(&payload.candidate.statement) {
+        return Err(rejected_response(
+            validated.candidate_hash,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            None,
+        ));
+    }
+    let candidate_hash = validated.candidate_hash;
+    let candidate_statement_hash =
+        advanced_ai_formalization_candidate_statement_hash(&payload.candidate.statement);
+    let original_payload = payload.clone();
+    payload.candidate.optional_proof_candidate = None;
+    let mut envelope_without_proof = validated.envelope;
+    envelope_without_proof.payload = advanced_ai_formalization_payload_canonical_bytes(&payload)
+        .map_err(|_| AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
+        })?;
+    let request_without_proof_candidate_canonical_bytes =
+        advanced_ai_candidate_envelope_canonical_bytes(&envelope_without_proof).map_err(|_| {
+            AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
+            }
+        })?;
+    Ok(AdvancedFormalizationRequestMetadata {
+        candidate_hash,
+        candidate_statement_hash,
+        payload: original_payload,
+        request_without_proof_candidate_canonical_bytes,
+    })
 }
 
 fn run_advanced_ai_formalize_check_validated(

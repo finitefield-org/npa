@@ -17,47 +17,50 @@ use crate::{
     HumanDocumentIncrementalDeclCacheEntry, HumanDocumentIncrementalDeclReuse,
     HumanDocumentSnapshot, HumanDocumentUpdateError, HumanDocumentUpdateOk,
     HumanDocumentUpdateRequest, HumanExactTacticOk, HumanExactTacticRequest,
-    HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind, HumanGoalId, HumanGoalMapping,
-    HumanInductionTacticError, HumanInductionTacticOk, HumanInductionTacticRequest,
-    HumanInductiveCheckError, HumanInductiveCheckRequest, HumanInductiveCheckResponse,
-    HumanInductiveCheckStatus, HumanInductivePositivityStatus, HumanIntroTacticError,
-    HumanIntroTacticOk, HumanIntroTacticRequest, HumanLspCodeAction, HumanLspCodeActionKind,
-    HumanLspCodeActionOk, HumanLspCodeActionRequest, HumanLspCommand, HumanLspCompletionItem,
-    HumanLspCompletionItemKind, HumanLspCompletionOk, HumanLspCompletionRequest,
-    HumanLspDiagnostic, HumanLspDiagnosticData, HumanLspDiagnosticSeverity, HumanLspDiagnosticsOk,
-    HumanLspDiagnosticsRequest, HumanLspDocumentPayloadOk, HumanLspDocumentPayloadRequest,
-    HumanLspDocumentSymbol, HumanLspGoalViewOk, HumanLspGoalViewRequest, HumanLspHoleGoal,
-    HumanLspHoleGoalLocal, HumanLspHover, HumanLspHoverOk, HumanLspHoverRequest,
-    HumanLspHoverTheorem, HumanLspInlayHint, HumanLspInlayHintKind, HumanLspPosition,
-    HumanLspRange, HumanLspSemanticToken, HumanLspSemanticTokenType, HumanLspSymbolKind,
-    HumanLspUnsolvedMeta, HumanProofSession, HumanProofSessionStatus, HumanProofSessionStore,
-    HumanProofStateEntry, HumanProofStateStartError, HumanProofStateStartOk,
-    HumanProofStateStartRequest, HumanProofStateStore, HumanRewriteTacticError,
-    HumanRewriteTacticOk, HumanRewriteTacticRequest, HumanSessionCreateError, HumanSessionCreateOk,
-    HumanSessionCreateRequest, HumanSessionVerifyError, HumanSessionVerifyImport,
-    HumanSessionVerifyImportAxiom, HumanSessionVerifyOk, HumanSessionVerifyRequest,
-    HumanSessionVerifyStatus, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
-    HumanSimpLiteTacticRequest, HumanSmtProveRequest, HumanSmtProveResponse, HumanSmtTacticOk,
-    HumanSmtTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
-    HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
-    HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
-    HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
-    HumanStructuredProofStateError, HumanTacticCheckRequest, HumanTacticCheckResponse,
-    HumanTacticRunErrorKind, HumanTacticRunErrorReport, HumanTacticRunRequest,
-    HumanTacticRunResponse, HumanTacticRunStatus, HumanTacticRunSuggestion,
-    HumanTacticRunSuggestionKind, HumanTacticScriptError, HumanTacticScriptRunOk,
-    HumanTacticScriptRunRequest, HumanTacticStateRecordError, HumanTacticStateRecordOk,
-    HumanTacticStateRecordRequest, HumanTacticSuggestRequest, HumanTacticSuggestResponse,
-    HumanTacticSuggestion, HumanTacticSuggestionSource, HumanTacticTermCheckOk,
-    HumanTacticTermCheckRequest, HumanTacticTermError, HumanTheoremAxiomInfo,
-    HumanTheoremDependency, HumanTheoremDependencyKind, HumanTheoremGoalSearchRequest,
-    HumanTheoremIndex, HumanTheoremIndexEntry, HumanTheoremIndexError, HumanTheoremIndexKind,
-    HumanTheoremIndexSource, HumanTheoremMatchBinding, HumanTheoremNameSearchRequest,
-    HumanTheoremRewriteSearchRequest, HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError,
-    HumanTheoremSearchMode, HumanTheoremSearchOk, HumanTheoremSearchOptions,
-    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, HumanTypeclassSearchError,
-    HumanTypeclassSearchOk, HumanTypeclassSearchRequest, LocalId, StructuredExpr, StructuredGoal,
-    StructuredGoalStatus, StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
+    HumanFormalizationIntentCertificate, HumanFormalizationProofSearchStatus,
+    HumanFormalizationReviewStatus, HumanFormalizeCandidateReport, HumanFormalizeCandidateRequest,
+    HumanFormalizeOk, HumanFormalizeRequest, HumanGoalDisplayDiffItem, HumanGoalDisplayDiffKind,
+    HumanGoalId, HumanGoalMapping, HumanInductionTacticError, HumanInductionTacticOk,
+    HumanInductionTacticRequest, HumanInductiveCheckError, HumanInductiveCheckRequest,
+    HumanInductiveCheckResponse, HumanInductiveCheckStatus, HumanInductivePositivityStatus,
+    HumanIntroTacticError, HumanIntroTacticOk, HumanIntroTacticRequest, HumanLspCodeAction,
+    HumanLspCodeActionKind, HumanLspCodeActionOk, HumanLspCodeActionRequest, HumanLspCommand,
+    HumanLspCompletionItem, HumanLspCompletionItemKind, HumanLspCompletionOk,
+    HumanLspCompletionRequest, HumanLspDiagnostic, HumanLspDiagnosticData,
+    HumanLspDiagnosticSeverity, HumanLspDiagnosticsOk, HumanLspDiagnosticsRequest,
+    HumanLspDocumentPayloadOk, HumanLspDocumentPayloadRequest, HumanLspDocumentSymbol,
+    HumanLspGoalViewOk, HumanLspGoalViewRequest, HumanLspHoleGoal, HumanLspHoleGoalLocal,
+    HumanLspHover, HumanLspHoverOk, HumanLspHoverRequest, HumanLspHoverTheorem, HumanLspInlayHint,
+    HumanLspInlayHintKind, HumanLspPosition, HumanLspRange, HumanLspSemanticToken,
+    HumanLspSemanticTokenType, HumanLspSymbolKind, HumanLspUnsolvedMeta, HumanProofSession,
+    HumanProofSessionStatus, HumanProofSessionStore, HumanProofStateEntry,
+    HumanProofStateStartError, HumanProofStateStartOk, HumanProofStateStartRequest,
+    HumanProofStateStore, HumanRewriteTacticError, HumanRewriteTacticOk, HumanRewriteTacticRequest,
+    HumanSessionCreateError, HumanSessionCreateOk, HumanSessionCreateRequest,
+    HumanSessionVerifyError, HumanSessionVerifyImport, HumanSessionVerifyImportAxiom,
+    HumanSessionVerifyOk, HumanSessionVerifyRequest, HumanSessionVerifyStatus,
+    HumanSimpLiteTacticError, HumanSimpLiteTacticOk, HumanSimpLiteTacticRequest,
+    HumanSmtProveRequest, HumanSmtProveResponse, HumanSmtTacticOk, HumanSmtTacticRequest,
+    HumanSourcePosition, HumanStartProofError, HumanStartProofOk, HumanStartProofRequest,
+    HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest, HumanStateCurrentRequest,
+    HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest, HumanStateLookupOk,
+    HumanStateRequestError, HumanStateRequestHeader, HumanStructuredProofStateError,
+    HumanTacticCheckRequest, HumanTacticCheckResponse, HumanTacticRunErrorKind,
+    HumanTacticRunErrorReport, HumanTacticRunRequest, HumanTacticRunResponse, HumanTacticRunStatus,
+    HumanTacticRunSuggestion, HumanTacticRunSuggestionKind, HumanTacticScriptError,
+    HumanTacticScriptRunOk, HumanTacticScriptRunRequest, HumanTacticStateRecordError,
+    HumanTacticStateRecordOk, HumanTacticStateRecordRequest, HumanTacticSuggestRequest,
+    HumanTacticSuggestResponse, HumanTacticSuggestion, HumanTacticSuggestionSource,
+    HumanTacticTermCheckOk, HumanTacticTermCheckRequest, HumanTacticTermError,
+    HumanTheoremAxiomInfo, HumanTheoremDependency, HumanTheoremDependencyKind,
+    HumanTheoremGoalSearchRequest, HumanTheoremIndex, HumanTheoremIndexEntry,
+    HumanTheoremIndexError, HumanTheoremIndexKind, HumanTheoremIndexSource,
+    HumanTheoremMatchBinding, HumanTheoremNameSearchRequest, HumanTheoremRewriteSearchRequest,
+    HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError, HumanTheoremSearchMode,
+    HumanTheoremSearchOk, HumanTheoremSearchOptions, HumanTheoremSearchResult,
+    HumanTheoremTypeSearchRequest, HumanTypeclassSearchError, HumanTypeclassSearchOk,
+    HumanTypeclassSearchRequest, LocalId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
+    StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_cert::{
     AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
@@ -5611,8 +5614,84 @@ fn human_encode_string(out: &mut Vec<u8>, value: &str) {
     out.extend(value.as_bytes());
 }
 
+fn human_encode_bytes(out: &mut Vec<u8>, value: &[u8]) {
+    human_encode_uvar(out, value.len() as u64);
+    out.extend(value);
+}
+
 fn human_encode_list_len(out: &mut Vec<u8>, len: usize) {
     human_encode_uvar(out, len as u64);
+}
+
+fn human_encode_option_u32(out: &mut Vec<u8>, value: Option<u32>) {
+    match value {
+        Some(value) => {
+            out.push(0x01);
+            human_encode_uvar(out, u64::from(value));
+        }
+        None => out.push(0x00),
+    }
+}
+
+fn human_formalization_text_hash(tag: &str, value: &str) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, tag);
+    human_encode_string(&mut out, value);
+    human_sha256(&out)
+}
+
+fn human_formalization_text_list_hash(tag: &str, values: &[String]) -> Hash {
+    let mut out = Vec::new();
+    human_encode_string(&mut out, tag);
+    human_encode_list_len(&mut out, values.len());
+    for value in values {
+        human_encode_string(&mut out, value);
+    }
+    human_sha256(&out)
+}
+
+fn human_encode_formalization_review_status(
+    out: &mut Vec<u8>,
+    status: &HumanFormalizationReviewStatus,
+) {
+    match status {
+        HumanFormalizationReviewStatus::MissingIntent => out.push(0),
+        HumanFormalizationReviewStatus::Unreviewed => out.push(1),
+        HumanFormalizationReviewStatus::Reviewed {
+            reviewer,
+            accepted_statement_hash,
+        } => {
+            out.push(2);
+            human_encode_advanced_reviewer_id(out, reviewer);
+            out.extend(accepted_statement_hash);
+        }
+        HumanFormalizationReviewStatus::Rejected {
+            reviewer,
+            rejection_reason_hash,
+        } => {
+            out.push(3);
+            human_encode_advanced_reviewer_id(out, reviewer);
+            out.extend(rejection_reason_hash);
+        }
+        HumanFormalizationReviewStatus::MalformedRequest => out.push(4),
+    }
+}
+
+fn human_encode_advanced_reviewer_id(out: &mut Vec<u8>, reviewer: &crate::AdvancedReviewerId) {
+    match reviewer {
+        crate::AdvancedReviewerId::Human { stable_id_ascii } => {
+            out.push(0);
+            human_encode_bytes(out, stable_id_ascii);
+        }
+        crate::AdvancedReviewerId::System {
+            system_id_ascii,
+            actor_id_ascii,
+        } => {
+            out.push(1);
+            human_encode_bytes(out, system_id_ascii);
+            human_encode_bytes(out, actor_id_ascii);
+        }
+    }
 }
 
 fn human_encode_uvar(out: &mut Vec<u8>, mut value: u64) {
@@ -7033,6 +7112,245 @@ pub fn run_human_smt_prove(request: HumanSmtProveRequest<'_, '_>) -> HumanSmtPro
     ) {
         Ok(hashes) => HumanSmtProveResponse::Success(hashes.into()),
         Err(response) => HumanSmtProveResponse::Diagnostic(response),
+    }
+}
+
+pub fn run_human_formalize(request: HumanFormalizeRequest<'_>) -> HumanFormalizeOk {
+    let candidates = request
+        .candidates
+        .into_iter()
+        .map(|candidate| {
+            human_formalize_candidate(candidate, request.verified_imports, request.workspace_root)
+        })
+        .collect();
+    HumanFormalizeOk { candidates }
+}
+
+fn human_formalize_candidate(
+    candidate: HumanFormalizeCandidateRequest,
+    verified_imports: &[npa_tactic::VerifiedImportRef],
+    workspace_root: &std::path::Path,
+) -> HumanFormalizeCandidateReport {
+    let fallback_candidate_hash =
+        crate::advanced_ai::advanced_ai_candidate_hash(&candidate.request_canonical_bytes);
+    let metadata = match crate::advanced_ai_formalization_request_metadata(
+        &candidate.request_canonical_bytes,
+        verified_imports,
+        workspace_root,
+    ) {
+        Ok(metadata) => metadata,
+        Err(response) => {
+            return HumanFormalizeCandidateReport {
+                candidate_hash: fallback_candidate_hash,
+                candidate_statement_hash: None,
+                formal_statement_hash: None,
+                accepted_statement_hash: None,
+                reverse_translation: candidate.reverse_translation,
+                ambiguity_report: candidate.ambiguity_report,
+                confidence_microunits: candidate.confidence_microunits,
+                review_status: HumanFormalizationReviewStatus::MalformedRequest,
+                proof_search_status: HumanFormalizationProofSearchStatus::NotRequested,
+                intent_certificate: None,
+                validation_kind: None,
+                validation_response: response,
+                verified: false,
+            };
+        }
+    };
+
+    let review_status = human_formalization_review_status(metadata.payload.intent_record.as_ref());
+    let proof_requested = metadata
+        .payload
+        .candidate
+        .optional_proof_candidate
+        .is_some();
+    let statement_validation_request = if proof_requested {
+        metadata
+            .request_without_proof_candidate_canonical_bytes
+            .as_slice()
+    } else {
+        candidate.request_canonical_bytes.as_slice()
+    };
+    let statement_validation_response = crate::run_advanced_ai_formalize_check_request(
+        statement_validation_request,
+        verified_imports,
+        workspace_root,
+    );
+    let (statement_validation_kind, statement_accepted_statement_hash) =
+        human_formalization_validation_summary(&statement_validation_response);
+    let formal_statement_hash =
+        human_confirmed_formal_statement_hash(&review_status, statement_accepted_statement_hash);
+    let intent_record_validated = matches!(
+        statement_validation_response,
+        crate::AdvancedAiEndpointResponse::Success { .. }
+    );
+    let (proof_search_status, validation_kind, accepted_statement_hash, validation_response) =
+        if !proof_requested {
+            (
+                HumanFormalizationProofSearchStatus::NotRequested,
+                statement_validation_kind,
+                statement_accepted_statement_hash,
+                statement_validation_response,
+            )
+        } else if formal_statement_hash.is_none() {
+            (
+                HumanFormalizationProofSearchStatus::BlockedUntilConfirmed,
+                statement_validation_kind,
+                statement_accepted_statement_hash,
+                statement_validation_response,
+            )
+        } else {
+            let proof_validation_response = crate::run_advanced_ai_formalize_check_request(
+                candidate.request_canonical_bytes.as_slice(),
+                verified_imports,
+                workspace_root,
+            );
+            let (proof_validation_kind, proof_accepted_statement_hash) =
+                human_formalization_validation_summary(&proof_validation_response);
+            let proof_search_status = if matches!(
+                proof_validation_kind,
+                Some(crate::AdvancedFormalizationSuccessKind::ProofBridgeChecked)
+            ) {
+                HumanFormalizationProofSearchStatus::Checked
+            } else {
+                HumanFormalizationProofSearchStatus::Rejected
+            };
+            (
+                proof_search_status,
+                proof_validation_kind,
+                proof_accepted_statement_hash.or(statement_accepted_statement_hash),
+                proof_validation_response,
+            )
+        };
+    let verified = matches!(
+        proof_search_status,
+        HumanFormalizationProofSearchStatus::Checked
+    ) && formal_statement_hash.is_some();
+    let intent_certificate = intent_record_validated
+        .then(|| {
+            metadata.payload.intent_record.as_ref().map(|intent| {
+                human_formalization_intent_certificate(
+                    intent,
+                    &review_status,
+                    &candidate.reverse_translation,
+                    &candidate.ambiguity_report,
+                    candidate.confidence_microunits,
+                )
+            })
+        })
+        .flatten();
+
+    HumanFormalizeCandidateReport {
+        candidate_hash: metadata.candidate_hash,
+        candidate_statement_hash: Some(metadata.candidate_statement_hash),
+        formal_statement_hash,
+        accepted_statement_hash,
+        reverse_translation: candidate.reverse_translation,
+        ambiguity_report: candidate.ambiguity_report,
+        confidence_microunits: candidate.confidence_microunits,
+        review_status,
+        proof_search_status,
+        intent_certificate,
+        validation_kind,
+        validation_response,
+        verified,
+    }
+}
+
+fn human_formalization_review_status(
+    intent: Option<&crate::AdvancedFormalizationIntentRecord>,
+) -> HumanFormalizationReviewStatus {
+    match intent.map(|record| &record.status) {
+        None => HumanFormalizationReviewStatus::MissingIntent,
+        Some(crate::AdvancedFormalizationIntentStatus::Unreviewed) => {
+            HumanFormalizationReviewStatus::Unreviewed
+        }
+        Some(crate::AdvancedFormalizationIntentStatus::Reviewed {
+            reviewer,
+            accepted_statement_hash,
+        }) => HumanFormalizationReviewStatus::Reviewed {
+            reviewer: reviewer.clone(),
+            accepted_statement_hash: *accepted_statement_hash,
+        },
+        Some(crate::AdvancedFormalizationIntentStatus::Rejected {
+            reviewer,
+            rejection_reason_hash,
+            ..
+        }) => HumanFormalizationReviewStatus::Rejected {
+            reviewer: reviewer.clone(),
+            rejection_reason_hash: *rejection_reason_hash,
+        },
+    }
+}
+
+fn human_formalization_validation_summary(
+    response: &crate::AdvancedAiEndpointResponse,
+) -> (
+    Option<crate::AdvancedFormalizationSuccessKind>,
+    Option<Hash>,
+) {
+    match response {
+        crate::AdvancedAiEndpointResponse::Success { payload, .. } => match payload.as_ref() {
+            crate::AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+                kind,
+                accepted_statement_hash,
+                ..
+            } => (Some(*kind), *accepted_statement_hash),
+            _ => (None, None),
+        },
+        _ => (None, None),
+    }
+}
+
+fn human_confirmed_formal_statement_hash(
+    review_status: &HumanFormalizationReviewStatus,
+    accepted_statement_hash: Option<Hash>,
+) -> Option<Hash> {
+    match review_status {
+        HumanFormalizationReviewStatus::Reviewed {
+            accepted_statement_hash: reviewed,
+            ..
+        } if Some(*reviewed) == accepted_statement_hash => Some(*reviewed),
+        _ => None,
+    }
+}
+
+fn human_formalization_intent_certificate(
+    intent: &crate::AdvancedFormalizationIntentRecord,
+    status: &HumanFormalizationReviewStatus,
+    reverse_translation: &str,
+    ambiguity_report: &[String],
+    confidence_microunits: Option<u32>,
+) -> HumanFormalizationIntentCertificate {
+    let reverse_translation_hash = human_formalization_text_hash(
+        "npa.human-api.formalization.reverse-translation.v1",
+        reverse_translation,
+    );
+    let ambiguity_report_hash = human_formalization_text_list_hash(
+        "npa.human-api.formalization.ambiguity-report.v1",
+        ambiguity_report,
+    );
+    let mut out = Vec::new();
+    human_encode_string(
+        &mut out,
+        "npa.human-api.formalization.intent-certificate.v1",
+    );
+    out.extend(intent.source_document_hash);
+    out.extend(intent.claim_span_hash);
+    out.extend(intent.candidate_statement_hash);
+    out.extend(reverse_translation_hash);
+    out.extend(ambiguity_report_hash);
+    human_encode_option_u32(&mut out, confidence_microunits);
+    human_encode_formalization_review_status(&mut out, status);
+    HumanFormalizationIntentCertificate {
+        intent_certificate_hash: human_sha256(&out),
+        source_document_hash: intent.source_document_hash,
+        claim_span_hash: intent.claim_span_hash,
+        candidate_statement_hash: intent.candidate_statement_hash,
+        reverse_translation_hash,
+        ambiguity_report_hash,
+        confidence_microunits,
+        status: status.clone(),
     }
 }
 
@@ -8497,6 +8815,629 @@ mod tests {
             .payload
             .as_deref()
             .expect("Human diagnostic should carry a structured payload")
+    }
+
+    fn human_formalize_workspace_root() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|path| path.parent())
+            .expect("npa-api should live under crates/")
+            .to_path_buf()
+    }
+
+    fn human_formalize_options_bytes() -> Vec<u8> {
+        let options = crate::AdvancedAiOptions {
+            formalization: Some(crate::AdvancedFormalizationOptions {
+                tactic_options_canonical_bytes: npa_tactic::machine_tactic_options_canonical_bytes(
+                    &npa_tactic::MachineTacticOptions::default(),
+                ),
+                tactic_budget_canonical_bytes: npa_tactic::tactic_budget_canonical_bytes(
+                    npa_tactic::TacticBudget::default(),
+                ),
+            }),
+            ..Default::default()
+        };
+        crate::advanced_ai_options_canonical_bytes(&options).unwrap()
+    }
+
+    fn human_formalize_statement(source: &str) -> crate::AdvancedMachineSurfaceTerm {
+        crate::AdvancedMachineSurfaceTerm {
+            universe_params: Vec::new(),
+            term_canonical_bytes: npa_frontend::canonicalize_machine_term_source(source)
+                .unwrap()
+                .canonical_bytes,
+        }
+    }
+
+    fn human_formalize_source(
+        source_text: &str,
+    ) -> (
+        crate::AdvancedMachineFormalizationSourceDocumentRef,
+        crate::AdvancedMachineFormalizationClaimSpan,
+        Hash,
+        Hash,
+    ) {
+        let bytes = source_text.as_bytes();
+        let source_document_hash = crate::advanced_ai_formalization_source_document_hash(bytes);
+        let claim_span_hash = crate::advanced_ai_formalization_claim_span_hash(
+            source_document_hash,
+            0,
+            bytes.len() as u64,
+            bytes,
+        );
+        (
+            crate::AdvancedMachineFormalizationSourceDocumentRef::Inline {
+                source_document_hash,
+                raw_utf8_bytes: bytes.to_vec(),
+            },
+            crate::AdvancedMachineFormalizationClaimSpan {
+                start_byte: 0,
+                end_byte: bytes.len() as u64,
+                claim_span_hash,
+            },
+            source_document_hash,
+            claim_span_hash,
+        )
+    }
+
+    fn human_formalize_payload_with(
+        source_text: &str,
+        statement_source: &str,
+        intent_record: Option<crate::AdvancedFormalizationIntentRecord>,
+        optional_proof_candidate: Option<crate::AdvancedMachineFormalizationProofCandidate>,
+    ) -> crate::AdvancedMachineFormalizationCheckPayload {
+        let (source_document, claim_span, _, _) = human_formalize_source(source_text);
+        crate::AdvancedMachineFormalizationCheckPayload {
+            candidate: crate::AdvancedMachineFormalizationCandidate {
+                source_document,
+                claim_span,
+                statement: human_formalize_statement(statement_source),
+                optional_proof_candidate,
+            },
+            intent_record,
+        }
+    }
+
+    fn human_formalize_request(
+        payload: crate::AdvancedMachineFormalizationCheckPayload,
+        options_bytes: Vec<u8>,
+    ) -> Vec<u8> {
+        let options_hash = crate::advanced_ai_options_hash(&options_bytes);
+        let imports = Vec::new();
+        let env_fingerprint = crate::advanced_ai_env_fingerprint(
+            crate::AdvancedAiProfileVersion::MvpV1,
+            crate::AdvancedAiTaskKind::NaturalLanguageFormalization,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let envelope = crate::AdvancedAiCandidateEnvelope {
+            profile_version: crate::AdvancedAiProfileVersion::MvpV1,
+            task_kind: crate::AdvancedAiTaskKind::NaturalLanguageFormalization,
+            target: crate::AdvancedAiTarget {
+                env_fingerprint,
+                target_decl_hash: None,
+                goal_fingerprint: None,
+            },
+            imports,
+            options: crate::AdvancedAiOptionsRef::Inline {
+                options_hash,
+                canonical_bytes: options_bytes,
+            },
+            payload: crate::advanced_ai_formalization_payload_canonical_bytes(&payload).unwrap(),
+        };
+        crate::advanced_ai_candidate_envelope_canonical_bytes(&envelope).unwrap()
+    }
+
+    fn human_formalize_accepted_statement_hash_for_options(
+        options_bytes: &[u8],
+        statement_source: &str,
+    ) -> Hash {
+        let imports = Vec::new();
+        let options_hash = crate::advanced_ai_options_hash(options_bytes);
+        let env_fingerprint = crate::advanced_ai_env_fingerprint(
+            crate::AdvancedAiProfileVersion::MvpV1,
+            crate::AdvancedAiTaskKind::NaturalLanguageFormalization,
+            &imports,
+            options_hash,
+        )
+        .unwrap();
+        let statement = human_formalize_statement(statement_source);
+        let ast =
+            npa_frontend::decode_machine_term_source_canonical(&statement.term_canonical_bytes)
+                .unwrap();
+        let context = npa_frontend::MachineTermElabContext::from_verified_modules(
+            &[],
+            &[],
+            Vec::new(),
+            Vec::new(),
+        )
+        .unwrap();
+        let options = npa_frontend::MachineCompileOptions {
+            mode: npa_frontend::MachineSurfaceMode::Complete,
+            allow_universe_meta: false,
+        };
+        let (accepted, _) =
+            npa_frontend::elaborate_machine_term_infer_from_ast(&ast, &context, &options).unwrap();
+        crate::advanced_ai_formalization_accepted_statement_hash(env_fingerprint, &[], &accepted)
+    }
+
+    fn human_formalize_intent_record_for(
+        source_text: &str,
+        statement: &crate::AdvancedMachineSurfaceTerm,
+        status: crate::AdvancedFormalizationIntentStatus,
+    ) -> crate::AdvancedFormalizationIntentRecord {
+        let (_, _, source_document_hash, claim_span_hash) = human_formalize_source(source_text);
+        crate::AdvancedFormalizationIntentRecord {
+            source_document_hash,
+            claim_span_hash,
+            candidate_statement_hash: crate::advanced_ai_formalization_candidate_statement_hash(
+                statement,
+            ),
+            status,
+        }
+    }
+
+    fn human_formalize_exact_proof_candidate(
+        statement: &crate::AdvancedMachineSurfaceTerm,
+        proof_source: &str,
+    ) -> crate::AdvancedMachineFormalizationProofCandidate {
+        crate::AdvancedMachineFormalizationProofCandidate {
+            candidate_statement_hash: crate::advanced_ai_formalization_candidate_statement_hash(
+                statement,
+            ),
+            tactic: npa_tactic::MachineTacticCandidate::Exact {
+                term: npa_tactic::RawMachineTerm::new(proof_source),
+            },
+        }
+    }
+
+    fn human_formalize_success_payload(
+        report: &HumanFormalizeCandidateReport,
+    ) -> (
+        crate::AdvancedFormalizationSuccessKind,
+        Option<Hash>,
+        Option<Hash>,
+    ) {
+        let crate::AdvancedAiEndpointResponse::Success { payload, .. } =
+            &report.validation_response
+        else {
+            panic!("expected Human formalize validation success");
+        };
+        let crate::AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+            kind,
+            accepted_statement_hash,
+            formalization_proof_root_hash,
+        } = payload.as_ref()
+        else {
+            panic!("expected Human formalize payload");
+        };
+        (
+            *kind,
+            *accepted_statement_hash,
+            *formalization_proof_root_hash,
+        )
+    }
+
+    #[test]
+    fn human_formalize_returns_multiple_candidates_without_verifying_unconfirmed() {
+        let options_bytes = human_formalize_options_bytes();
+        let first_request = human_formalize_request(
+            human_formalize_payload_with("claim: proposition", "Prop", None, None),
+            options_bytes.clone(),
+        );
+        let second_request = human_formalize_request(
+            human_formalize_payload_with("claim: universe", "Type", None, None),
+            options_bytes,
+        );
+        let workspace_root = human_formalize_workspace_root();
+
+        let ok = run_human_formalize(HumanFormalizeRequest {
+            candidates: vec![
+                HumanFormalizeCandidateRequest {
+                    request_canonical_bytes: first_request,
+                    reverse_translation: "the claim is a proposition".to_owned(),
+                    ambiguity_report: vec!["source does not name a theorem".to_owned()],
+                    confidence_microunits: Some(250_000),
+                },
+                HumanFormalizeCandidateRequest {
+                    request_canonical_bytes: second_request,
+                    reverse_translation: "the claim is a universe-level statement".to_owned(),
+                    ambiguity_report: vec![
+                        "source uses informal universe wording".to_owned(),
+                        "candidate must be reviewed before proof search".to_owned(),
+                    ],
+                    confidence_microunits: Some(900_000),
+                },
+            ],
+            verified_imports: &[],
+            workspace_root: &workspace_root,
+        });
+
+        assert_eq!(crate::HUMAN_FORMALIZE_ENDPOINT, "/formalize");
+        assert_eq!(ok.candidates.len(), 2);
+        let first = &ok.candidates[0];
+        assert_eq!(first.reverse_translation, "the claim is a proposition");
+        assert_eq!(
+            first.ambiguity_report,
+            vec!["source does not name a theorem".to_owned()]
+        );
+        assert_eq!(first.confidence_microunits, Some(250_000));
+        assert!(first.candidate_statement_hash.is_some());
+        assert!(first.accepted_statement_hash.is_some());
+        assert_eq!(first.formal_statement_hash, None);
+        assert_eq!(
+            first.review_status,
+            HumanFormalizationReviewStatus::MissingIntent
+        );
+        assert_eq!(
+            first.proof_search_status,
+            HumanFormalizationProofSearchStatus::NotRequested
+        );
+        assert_eq!(
+            first.validation_kind,
+            Some(crate::AdvancedFormalizationSuccessKind::CandidateStatementChecked)
+        );
+        assert!(!first.verified);
+
+        let second = &ok.candidates[1];
+        assert_eq!(
+            second.ambiguity_report,
+            vec![
+                "source uses informal universe wording".to_owned(),
+                "candidate must be reviewed before proof search".to_owned()
+            ]
+        );
+        assert!(second.candidate_statement_hash.is_some());
+        assert!(second.accepted_statement_hash.is_some());
+        assert_eq!(second.formal_statement_hash, None);
+        assert_eq!(
+            second.review_status,
+            HumanFormalizationReviewStatus::MissingIntent
+        );
+        assert_eq!(
+            second.proof_search_status,
+            HumanFormalizationProofSearchStatus::NotRequested
+        );
+        assert!(!second.verified);
+    }
+
+    #[test]
+    fn human_formalize_blocks_unconfirmed_proof_search_until_reviewed() {
+        let statement = human_formalize_statement("Type");
+        let request = human_formalize_request(
+            human_formalize_payload_with(
+                "claim: Type",
+                "Type",
+                None,
+                Some(human_formalize_exact_proof_candidate(&statement, "Prop")),
+            ),
+            human_formalize_options_bytes(),
+        );
+        let workspace_root = human_formalize_workspace_root();
+
+        let ok = run_human_formalize(HumanFormalizeRequest {
+            candidates: vec![HumanFormalizeCandidateRequest {
+                request_canonical_bytes: request,
+                reverse_translation: "the informal claim maps to Type".to_owned(),
+                ambiguity_report: vec!["review is required before proof search".to_owned()],
+                confidence_microunits: Some(990_000),
+            }],
+            verified_imports: &[],
+            workspace_root: &workspace_root,
+        });
+
+        let report = &ok.candidates[0];
+        assert_eq!(
+            report.review_status,
+            HumanFormalizationReviewStatus::MissingIntent
+        );
+        assert_eq!(
+            report.proof_search_status,
+            HumanFormalizationProofSearchStatus::BlockedUntilConfirmed
+        );
+        assert_eq!(
+            report.validation_kind,
+            Some(crate::AdvancedFormalizationSuccessKind::CandidateStatementChecked)
+        );
+        assert!(report.accepted_statement_hash.is_some());
+        assert_eq!(report.formal_statement_hash, None);
+        assert!(!report.verified);
+
+        let (kind, accepted_statement_hash, proof_root_hash) =
+            human_formalize_success_payload(report);
+        assert_eq!(
+            kind,
+            crate::AdvancedFormalizationSuccessKind::CandidateStatementChecked
+        );
+        assert!(accepted_statement_hash.is_some());
+        assert_eq!(proof_root_hash, None);
+    }
+
+    #[test]
+    fn human_formalize_blocks_proof_search_when_reviewed_hash_is_not_confirmed() {
+        let options_bytes = human_formalize_options_bytes();
+        let statement = human_formalize_statement("Type");
+        let wrong_reviewed_hash =
+            human_formalize_accepted_statement_hash_for_options(&options_bytes, "Prop");
+        let intent = human_formalize_intent_record_for(
+            "claim: Type",
+            &statement,
+            crate::AdvancedFormalizationIntentStatus::Reviewed {
+                reviewer: crate::AdvancedReviewerId::Human {
+                    stable_id_ascii: b"reviewer-1".to_vec(),
+                },
+                accepted_statement_hash: wrong_reviewed_hash,
+            },
+        );
+        let request = human_formalize_request(
+            human_formalize_payload_with(
+                "claim: Type",
+                "Type",
+                Some(intent),
+                Some(human_formalize_exact_proof_candidate(&statement, "Prop")),
+            ),
+            options_bytes,
+        );
+        let workspace_root = human_formalize_workspace_root();
+
+        let ok = run_human_formalize(HumanFormalizeRequest {
+            candidates: vec![HumanFormalizeCandidateRequest {
+                request_canonical_bytes: request,
+                reverse_translation: "the reviewer hash does not match this statement".to_owned(),
+                ambiguity_report: Vec::new(),
+                confidence_microunits: None,
+            }],
+            verified_imports: &[],
+            workspace_root: &workspace_root,
+        });
+
+        let report = &ok.candidates[0];
+        assert_eq!(
+            report.proof_search_status,
+            HumanFormalizationProofSearchStatus::BlockedUntilConfirmed
+        );
+        assert_eq!(
+            report.validation_kind,
+            Some(crate::AdvancedFormalizationSuccessKind::IntentRecordOnly)
+        );
+        assert_eq!(report.accepted_statement_hash, None);
+        assert_eq!(report.formal_statement_hash, None);
+        assert!(!report.verified);
+
+        let (kind, _, proof_root_hash) = human_formalize_success_payload(report);
+        assert_eq!(
+            kind,
+            crate::AdvancedFormalizationSuccessKind::IntentRecordOnly
+        );
+        assert_eq!(proof_root_hash, None);
+    }
+
+    #[test]
+    fn human_formalize_reviewed_proof_separates_intent_certificate_from_proof_certificate() {
+        let options_bytes = human_formalize_options_bytes();
+        let statement = human_formalize_statement("Type");
+        let accepted_hash =
+            human_formalize_accepted_statement_hash_for_options(&options_bytes, "Type");
+        let intent = human_formalize_intent_record_for(
+            "claim: Type",
+            &statement,
+            crate::AdvancedFormalizationIntentStatus::Reviewed {
+                reviewer: crate::AdvancedReviewerId::System {
+                    system_id_ascii: b"review-ui".to_vec(),
+                    actor_id_ascii: b"user-123".to_vec(),
+                },
+                accepted_statement_hash: accepted_hash,
+            },
+        );
+        let request = human_formalize_request(
+            human_formalize_payload_with(
+                "claim: Type",
+                "Type",
+                Some(intent),
+                Some(human_formalize_exact_proof_candidate(&statement, "Prop")),
+            ),
+            options_bytes,
+        );
+        let workspace_root = human_formalize_workspace_root();
+
+        let ok = run_human_formalize(HumanFormalizeRequest {
+            candidates: vec![
+                HumanFormalizeCandidateRequest {
+                    request_canonical_bytes: request.clone(),
+                    reverse_translation: "the claim is Type".to_owned(),
+                    ambiguity_report: Vec::new(),
+                    confidence_microunits: Some(100_000),
+                },
+                HumanFormalizeCandidateRequest {
+                    request_canonical_bytes: request,
+                    reverse_translation: "same formal claim with different explanation".to_owned(),
+                    ambiguity_report: vec!["wording changed after review".to_owned()],
+                    confidence_microunits: Some(950_000),
+                },
+            ],
+            verified_imports: &[],
+            workspace_root: &workspace_root,
+        });
+
+        let first = &ok.candidates[0];
+        let second = &ok.candidates[1];
+        assert_eq!(
+            first.proof_search_status,
+            HumanFormalizationProofSearchStatus::Checked
+        );
+        assert_eq!(
+            second.proof_search_status,
+            HumanFormalizationProofSearchStatus::Checked
+        );
+        assert!(first.verified);
+        assert!(second.verified);
+        assert_eq!(first.formal_statement_hash, Some(accepted_hash));
+        assert_eq!(second.formal_statement_hash, Some(accepted_hash));
+        assert_eq!(first.accepted_statement_hash, Some(accepted_hash));
+        assert_eq!(second.accepted_statement_hash, Some(accepted_hash));
+        assert_eq!(
+            first.candidate_statement_hash,
+            second.candidate_statement_hash
+        );
+
+        let first_intent = first.intent_certificate.as_ref().unwrap();
+        let second_intent = second.intent_certificate.as_ref().unwrap();
+        assert_ne!(
+            first_intent.intent_certificate_hash,
+            second_intent.intent_certificate_hash
+        );
+        assert_eq!(
+            first_intent.candidate_statement_hash,
+            second_intent.candidate_statement_hash
+        );
+
+        let (first_kind, first_accepted, first_proof_root) = human_formalize_success_payload(first);
+        let (second_kind, second_accepted, second_proof_root) =
+            human_formalize_success_payload(second);
+        assert_eq!(
+            first_kind,
+            crate::AdvancedFormalizationSuccessKind::ProofBridgeChecked
+        );
+        assert_eq!(
+            second_kind,
+            crate::AdvancedFormalizationSuccessKind::ProofBridgeChecked
+        );
+        assert_eq!(first_accepted, Some(accepted_hash));
+        assert_eq!(second_accepted, Some(accepted_hash));
+        assert_eq!(first_proof_root, second_proof_root);
+        assert!(first_proof_root.is_some());
+    }
+
+    #[test]
+    fn human_formalize_intent_status_fixtures_are_deterministic() {
+        let options_bytes = human_formalize_options_bytes();
+        let reviewed_statement = human_formalize_statement("Prop");
+        let reviewed_hash =
+            human_formalize_accepted_statement_hash_for_options(&options_bytes, "Prop");
+        let rejected_statement = human_formalize_statement("MissingFormalizationName");
+        let rejection_reason = b"not the intended theorem".to_vec();
+        let rejection_reason_hash =
+            crate::advanced_ai_formalization_rejection_reason_hash(&rejection_reason);
+
+        let unreviewed = human_formalize_intent_record_for(
+            "claim: unreviewed",
+            &reviewed_statement,
+            crate::AdvancedFormalizationIntentStatus::Unreviewed,
+        );
+        let reviewed = human_formalize_intent_record_for(
+            "claim: reviewed",
+            &reviewed_statement,
+            crate::AdvancedFormalizationIntentStatus::Reviewed {
+                reviewer: crate::AdvancedReviewerId::Human {
+                    stable_id_ascii: b"reviewer-1".to_vec(),
+                },
+                accepted_statement_hash: reviewed_hash,
+            },
+        );
+        let rejected = human_formalize_intent_record_for(
+            "claim: rejected",
+            &rejected_statement,
+            crate::AdvancedFormalizationIntentStatus::Rejected {
+                reviewer: crate::AdvancedReviewerId::Human {
+                    stable_id_ascii: b"reviewer-2".to_vec(),
+                },
+                rejection_reason: crate::AdvancedMachineFormalizationRejectionReasonRef::Inline {
+                    rejection_reason_hash,
+                    raw_utf8_bytes: rejection_reason,
+                },
+                rejection_reason_hash,
+            },
+        );
+        let requests = vec![
+            HumanFormalizeCandidateRequest {
+                request_canonical_bytes: human_formalize_request(
+                    human_formalize_payload_with(
+                        "claim: unreviewed",
+                        "Prop",
+                        Some(unreviewed),
+                        None,
+                    ),
+                    options_bytes.clone(),
+                ),
+                reverse_translation: "unreviewed candidate".to_owned(),
+                ambiguity_report: vec!["pending reviewer".to_owned()],
+                confidence_microunits: Some(500_000),
+            },
+            HumanFormalizeCandidateRequest {
+                request_canonical_bytes: human_formalize_request(
+                    human_formalize_payload_with("claim: reviewed", "Prop", Some(reviewed), None),
+                    options_bytes.clone(),
+                ),
+                reverse_translation: "reviewed candidate".to_owned(),
+                ambiguity_report: Vec::new(),
+                confidence_microunits: Some(600_000),
+            },
+            HumanFormalizeCandidateRequest {
+                request_canonical_bytes: human_formalize_request(
+                    human_formalize_payload_with(
+                        "claim: rejected",
+                        "MissingFormalizationName",
+                        Some(rejected),
+                        None,
+                    ),
+                    options_bytes,
+                ),
+                reverse_translation: "rejected candidate".to_owned(),
+                ambiguity_report: vec!["reviewer rejected this mapping".to_owned()],
+                confidence_microunits: Some(700_000),
+            },
+        ];
+        let workspace_root = human_formalize_workspace_root();
+
+        let first = run_human_formalize(HumanFormalizeRequest {
+            candidates: requests.clone(),
+            verified_imports: &[],
+            workspace_root: &workspace_root,
+        });
+        let second = run_human_formalize(HumanFormalizeRequest {
+            candidates: requests,
+            verified_imports: &[],
+            workspace_root: &workspace_root,
+        });
+
+        assert_eq!(first, second);
+        let unreviewed = &first.candidates[0];
+        assert_eq!(
+            unreviewed.review_status,
+            HumanFormalizationReviewStatus::Unreviewed
+        );
+        assert_eq!(
+            unreviewed.validation_kind,
+            Some(crate::AdvancedFormalizationSuccessKind::CandidateStatementChecked)
+        );
+        assert_eq!(unreviewed.formal_statement_hash, None);
+        assert!(unreviewed.intent_certificate.is_some());
+        assert!(!unreviewed.verified);
+
+        let reviewed = &first.candidates[1];
+        assert!(matches!(
+            reviewed.review_status,
+            HumanFormalizationReviewStatus::Reviewed { .. }
+        ));
+        assert_eq!(reviewed.formal_statement_hash, Some(reviewed_hash));
+        assert_eq!(reviewed.accepted_statement_hash, Some(reviewed_hash));
+        assert!(reviewed.intent_certificate.is_some());
+        assert!(!reviewed.verified);
+
+        let rejected = &first.candidates[2];
+        assert!(matches!(
+            rejected.review_status,
+            HumanFormalizationReviewStatus::Rejected { .. }
+        ));
+        assert_eq!(
+            rejected.validation_kind,
+            Some(crate::AdvancedFormalizationSuccessKind::IntentRecordOnly)
+        );
+        assert_eq!(rejected.accepted_statement_hash, None);
+        assert_eq!(rejected.formal_statement_hash, None);
+        assert!(rejected.intent_certificate.is_some());
+        assert!(!rejected.verified);
     }
 
     #[test]

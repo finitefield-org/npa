@@ -13,7 +13,10 @@ use npa_tactic::{
     VerifiedImportRef,
 };
 
-use crate::advanced_ai::{AdvancedAiEndpointResponse, AdvancedSmtProveHashes};
+use crate::advanced_ai::{
+    AdvancedAiEndpointResponse, AdvancedFormalizationSuccessKind, AdvancedReviewerId,
+    AdvancedSmtProveHashes,
+};
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
 use crate::projection::{MachineImportCertificateContext, VerifiedImportKey};
@@ -39,6 +42,7 @@ pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-non
 pub const HUMAN_INDUCTIVE_CHECK_ENDPOINT: &str = "/inductive/check";
 pub const HUMAN_TYPECLASS_SEARCH_ENDPOINT: &str = "/typeclass/search";
 pub const HUMAN_SMT_PROVE_ENDPOINT: &str = "/smt/prove";
+pub const HUMAN_FORMALIZE_ENDPOINT: &str = "/formalize";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanApiCompileOptions {
@@ -199,6 +203,78 @@ impl From<AdvancedSmtProveHashes> for HumanSmtProveOk {
 pub enum HumanSmtProveResponse {
     Success(HumanSmtProveOk),
     Diagnostic(AdvancedAiEndpointResponse),
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanFormalizeRequest<'imports> {
+    pub candidates: Vec<HumanFormalizeCandidateRequest>,
+    pub verified_imports: &'imports [VerifiedImportRef],
+    pub workspace_root: &'imports Path,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanFormalizeCandidateRequest {
+    pub request_canonical_bytes: Vec<u8>,
+    pub reverse_translation: String,
+    pub ambiguity_report: Vec<String>,
+    pub confidence_microunits: Option<u32>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanFormalizeOk {
+    pub candidates: Vec<HumanFormalizeCandidateReport>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanFormalizeCandidateReport {
+    pub candidate_hash: Hash,
+    pub candidate_statement_hash: Option<Hash>,
+    pub formal_statement_hash: Option<Hash>,
+    pub accepted_statement_hash: Option<Hash>,
+    pub reverse_translation: String,
+    pub ambiguity_report: Vec<String>,
+    pub confidence_microunits: Option<u32>,
+    pub review_status: HumanFormalizationReviewStatus,
+    pub proof_search_status: HumanFormalizationProofSearchStatus,
+    pub intent_certificate: Option<HumanFormalizationIntentCertificate>,
+    pub validation_kind: Option<AdvancedFormalizationSuccessKind>,
+    pub validation_response: AdvancedAiEndpointResponse,
+    pub verified: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanFormalizationIntentCertificate {
+    pub intent_certificate_hash: Hash,
+    pub source_document_hash: Hash,
+    pub claim_span_hash: Hash,
+    pub candidate_statement_hash: Hash,
+    pub reverse_translation_hash: Hash,
+    pub ambiguity_report_hash: Hash,
+    pub confidence_microunits: Option<u32>,
+    pub status: HumanFormalizationReviewStatus,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanFormalizationReviewStatus {
+    MissingIntent,
+    Unreviewed,
+    Reviewed {
+        reviewer: AdvancedReviewerId,
+        accepted_statement_hash: Hash,
+    },
+    Rejected {
+        reviewer: AdvancedReviewerId,
+        rejection_reason_hash: Hash,
+    },
+    MalformedRequest,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanFormalizationProofSearchStatus {
+    NotRequested,
+    BlockedUntilConfirmed,
+    Checked,
+    Rejected,
 }
 
 #[derive(Clone, Debug)]

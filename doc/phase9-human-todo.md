@@ -751,18 +751,18 @@ P9H-13
 
 実装タスク:
 
-- [ ] `/formalize` 相当の Human API wrapper を追加し、複数 formal candidates、reverse translation、ambiguity report を返す。
-- [ ] formal statement hash、candidate statement hash、accepted statement hash、intent certificate を分離して保存する。
-- [ ] user confirmation / formalization verifier の reviewer identity と status を structured metadata にする。
-- [ ] proof search は confirmed formal statement hash の後でのみ起動する flow にする。
-- [ ] unconfirmed formalization を verified と呼ばない UI / API / docs regression を追加する。
+- [x] `/formalize` 相当の Human API wrapper を追加し、複数 formal candidates、reverse translation、ambiguity report を返す。
+- [x] formal statement hash、candidate statement hash、accepted statement hash、intent certificate を分離して保存する。
+- [x] user confirmation / formalization verifier の reviewer identity と status を structured metadata にする。
+- [x] proof search は confirmed formal statement hash の後でのみ起動する flow にする。
+- [x] unconfirmed formalization を verified と呼ばない UI / API / docs regression を追加する。
 
 受け入れ条件:
 
-- [ ] 自然言語 source text や confidence score だけでは theorem statement を定義できない。
-- [ ] candidate statement は Machine Surface / Human elaboration を通って canonical core statement hash になる。
-- [ ] intent certificate と proof certificate は別 artifact で、kernel proof certificate hash に natural language text は混ざらない。
-- [ ] rejected / unreviewed / reviewed formalization の fixtures が deterministic である。
+- [x] 自然言語 source text や confidence score だけでは theorem statement を定義できない。
+- [x] candidate statement は Machine Surface / Human elaboration を通って canonical core statement hash になる。
+- [x] intent certificate と proof certificate は別 artifact で、kernel proof certificate hash に natural language text は混ざらない。
+- [x] rejected / unreviewed / reviewed formalization の fixtures が deterministic である。
 
 検証:
 
