@@ -227,18 +227,21 @@ impl AdvancedAiOptionsVersion {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AdvancedIndependentCheckerProfile {
     IndependentCheckerMvpReference,
+    IndependentCheckerQuotientV1Reference,
 }
 
 impl AdvancedIndependentCheckerProfile {
     fn tag(self) -> u8 {
         match self {
             Self::IndependentCheckerMvpReference => 0,
+            Self::IndependentCheckerQuotientV1Reference => 1,
         }
     }
 
     fn from_tag(tag: u8) -> Option<Self> {
         match tag {
             0 => Some(Self::IndependentCheckerMvpReference),
+            1 => Some(Self::IndependentCheckerQuotientV1Reference),
             _ => None,
         }
     }
@@ -3219,11 +3222,21 @@ fn run_advanced_ai_quotient_check_validated(
         }
     }
 
-    rejected_response(
-        candidate_hash,
-        AdvancedAiValidationError::UnsupportedFeature,
-        None,
-    )
+    match validated.options.independent_checker.profile {
+        AdvancedIndependentCheckerProfile::IndependentCheckerMvpReference => rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::UnsupportedFeature,
+            None,
+        ),
+        AdvancedIndependentCheckerProfile::IndependentCheckerQuotientV1Reference => {
+            success_response(
+                candidate_hash,
+                AdvancedAiSuccessPayload::QuotientConstruction {
+                    decl_certificate_hash: decl_hash,
+                },
+            )
+        }
+    }
 }
 
 fn run_advanced_ai_smt_reconstruct_validated(
@@ -14890,7 +14903,7 @@ mod tests {
     }
 
     #[test]
-    fn quotient_valid_request_is_unsupported_before_independent_checker_adoption() {
+    fn quotient_valid_request_stays_unsupported_for_phase8_mvp_reference_profile() {
         let import = verified_quotient_import();
         let request = quotient_request(&import, quotient_candidate(), None);
 
@@ -14903,6 +14916,28 @@ mod tests {
             AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
+    }
+
+    #[test]
+    fn quotient_valid_request_succeeds_with_quotient_v1_reference_profile() {
+        let import = verified_quotient_import();
+        let mut options = AdvancedAiOptions::default();
+        options.independent_checker.profile =
+            AdvancedIndependentCheckerProfile::IndependentCheckerQuotientV1Reference;
+        let request = quotient_request(&import, quotient_candidate(), Some(options));
+
+        let (_, payload) = assert_success(run_advanced_ai_quotient_check_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        ));
+        let AdvancedAiSuccessPayload::QuotientConstruction {
+            decl_certificate_hash,
+        } = payload
+        else {
+            panic!("expected quotient construction success");
+        };
+        assert_ne!(decl_certificate_hash, [0; 32]);
     }
 
     #[test]
@@ -17168,6 +17203,26 @@ mod tests {
             AdvancedAiValidationError::UnsupportedFeature,
             None,
         );
+        let mut quotient_v1_options = AdvancedAiOptions::default();
+        quotient_v1_options.independent_checker.profile =
+            AdvancedIndependentCheckerProfile::IndependentCheckerQuotientV1Reference;
+        let (_, quotient_payload) = assert_advanced_ai_m9_success_fixture(
+            "advanced_ai_m9_quotient_check_success_quotient_v1_reference_profile",
+            ADVANCED_AI_QUOTIENT_CHECK_ENDPOINT,
+            run_advanced_ai_quotient_check_request(
+                &quotient_request(
+                    &quotient_import,
+                    quotient_candidate(),
+                    Some(quotient_v1_options),
+                ),
+                std::slice::from_ref(&quotient_import),
+                &workspace_root(),
+            ),
+        );
+        assert!(matches!(
+            quotient_payload,
+            AdvancedAiSuccessPayload::QuotientConstruction { .. }
+        ));
 
         let smt_import = verified_smt_import();
         assert_advanced_ai_m9_rejected_fixture(
@@ -17296,7 +17351,15 @@ mod tests {
             AdvancedIndependentCheckerProfile::from_tag(0),
             Some(AdvancedIndependentCheckerProfile::IndependentCheckerMvpReference)
         );
-        assert_eq!(AdvancedIndependentCheckerProfile::from_tag(1), None);
+        assert_eq!(
+            AdvancedIndependentCheckerProfile::IndependentCheckerQuotientV1Reference.tag(),
+            1
+        );
+        assert_eq!(
+            AdvancedIndependentCheckerProfile::from_tag(1),
+            Some(AdvancedIndependentCheckerProfile::IndependentCheckerQuotientV1Reference)
+        );
+        assert_eq!(AdvancedIndependentCheckerProfile::from_tag(2), None);
 
         let task_kinds = [
             AdvancedAiTaskKind::AdvancedInductive,

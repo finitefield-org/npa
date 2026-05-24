@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
+};
 
 use sha2::{Digest, Sha256};
 
@@ -4075,6 +4078,16 @@ impl<'a> TypeChecker<'a> {
                         current = reduced;
                         continue;
                     }
+                    if let Some(reduced) = self.reduce_rel_equiv_witness(&app, offset)? {
+                        current = reduced;
+                        continue;
+                    }
+                    if let Some(reduced) =
+                        self.reduce_setoid_relation(ctx, delta, &app, offset, fuel)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
                     if let Some(reduced) =
                         self.reduce_quotient_lift(ctx, delta, &app, offset, fuel)?
                     {
@@ -4241,6 +4254,66 @@ impl<'a> TypeChecker<'a> {
         }
 
         Ok(Some(apps(reduced, rest)))
+    }
+
+    fn reduce_rel_equiv_witness(
+        &self,
+        term: &ReferenceCoreExpr,
+        offset: usize,
+    ) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let (head, args) = collect_apps(term);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name, .. },
+            ..
+        } = head
+        else {
+            return Ok(None);
+        };
+        if name.dotted() != "RelEquiv" || args.len() != 2 {
+            return Ok(None);
+        }
+        Ok(Some(reference_rel_equiv_witness_type(
+            &args[0], &args[1], offset,
+        )?))
+    }
+
+    fn reduce_setoid_relation(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let (head, args) = collect_apps(term);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name, .. },
+            ..
+        } = head
+        else {
+            return Ok(None);
+        };
+        if name.dotted() != "Setoid.r" || args.len() < 4 {
+            return Ok(None);
+        }
+
+        let setoid_whnf = self.whnf_with_fuel(ctx, delta, &args[1], offset, fuel)?;
+        let (mk_head, mk_args) = collect_apps(&setoid_whnf);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name: mk_name, .. },
+            ..
+        } = mk_head
+        else {
+            return Ok(None);
+        };
+        if mk_name.dotted() != "Setoid.mk" || mk_args.len() != 3 || mk_args[0] != args[0] {
+            return Ok(None);
+        }
+
+        Ok(Some(apps(
+            apps(mk_args[1].clone(), vec![args[2].clone(), args[3].clone()]),
+            args[4..].to_vec(),
+        )))
     }
 
     fn reduce_quotient_lift(
@@ -4738,6 +4811,53 @@ fn reference_quotient_lift_type(
             ),
         ),
     )
+}
+
+fn reference_rel_equiv_witness_type(
+    carrier: &ReferenceCoreExpr,
+    relation: &ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let relation_at =
+        |depth: i32, lhs: ReferenceCoreExpr, rhs: ReferenceCoreExpr| -> DecodeResult<_> {
+            Ok(apps(shift(relation, depth, 0, offset)?, vec![lhs, rhs]))
+        };
+
+    let refl_ty = rpi(carrier.clone(), relation_at(1, rbvar(0), rbvar(0))?);
+    let symm_ty = rpi(
+        carrier.clone(),
+        rpi(
+            shift(carrier, 1, 0, offset)?,
+            rpi(
+                relation_at(2, rbvar(1), rbvar(0))?,
+                relation_at(3, rbvar(1), rbvar(2))?,
+            ),
+        ),
+    );
+    let trans_ty = rpi(
+        carrier.clone(),
+        rpi(
+            shift(carrier, 1, 0, offset)?,
+            rpi(
+                shift(carrier, 2, 0, offset)?,
+                rpi(
+                    relation_at(3, rbvar(2), rbvar(1))?,
+                    rpi(
+                        relation_at(4, rbvar(2), rbvar(1))?,
+                        relation_at(5, rbvar(4), rbvar(2))?,
+                    ),
+                ),
+            ),
+        ),
+    );
+    let eliminator_ty = rpi(
+        shift(&refl_ty, 1, 0, offset)?,
+        rpi(
+            shift(&symm_ty, 2, 0, offset)?,
+            rpi(shift(&trans_ty, 3, 0, offset)?, rbvar(3)),
+        ),
+    );
+    Ok(rpi(rsort(rzero()), rpi(eliminator_ty, rbvar(1))))
 }
 
 fn reference_level_defeq(lhs: &ReferenceCoreLevel, rhs: &ReferenceCoreLevel) -> bool {
@@ -6420,7 +6540,7 @@ enum TermNode {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum GlobalRef {
     Builtin {
         name: usize,
@@ -6438,6 +6558,18 @@ enum GlobalRef {
         decl_index: usize,
         name: usize,
     },
+}
+
+impl Ord for GlobalRef {
+    fn cmp(&self, other: &Self) -> Ordering {
+        global_ref_order_key(self).cmp(&global_ref_order_key(other))
+    }
+}
+
+impl PartialOrd for GlobalRef {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -6593,17 +6725,41 @@ enum Opacity {
     Opaque,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct DependencyEntry {
     global_ref: GlobalRef,
     decl_interface_hash: ReferenceHash,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+impl Ord for DependencyEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        dependency_entry_order_key(self).cmp(&dependency_entry_order_key(other))
+    }
+}
+
+impl PartialOrd for DependencyEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct AxiomRef {
     global_ref: GlobalRef,
     name: usize,
     decl_interface_hash: ReferenceHash,
+}
+
+impl Ord for AxiomRef {
+    fn cmp(&self, other: &Self) -> Ordering {
+        axiom_ref_order_key(self).cmp(&axiom_ref_order_key(other))
+    }
+}
+
+impl PartialOrd for AxiomRef {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -7639,6 +7795,67 @@ fn import_order_key(
         import.export_hash,
         import.certificate_hash,
     )
+}
+
+fn dependency_entry_order_key(entry: &DependencyEntry) -> Vec<u8> {
+    let mut out = global_ref_order_key(&entry.global_ref);
+    out.extend(entry.decl_interface_hash);
+    out
+}
+
+fn axiom_ref_order_key(axiom: &AxiomRef) -> Vec<u8> {
+    let mut out = global_ref_order_key(&axiom.global_ref);
+    encode_order_uvar_to(&mut out, axiom.name);
+    out.extend(axiom.decl_interface_hash);
+    out
+}
+
+fn global_ref_order_key(global_ref: &GlobalRef) -> Vec<u8> {
+    let mut out = Vec::new();
+    match global_ref {
+        GlobalRef::Imported {
+            import_index,
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x00);
+            encode_order_uvar_to(&mut out, *import_index);
+            encode_order_uvar_to(&mut out, *name);
+            out.extend(decl_interface_hash);
+        }
+        GlobalRef::Local { decl_index } => {
+            out.push(0x01);
+            encode_order_uvar_to(&mut out, *decl_index);
+        }
+        GlobalRef::LocalGenerated { decl_index, name } => {
+            out.push(0x02);
+            encode_order_uvar_to(&mut out, *decl_index);
+            encode_order_uvar_to(&mut out, *name);
+        }
+        GlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        } => {
+            out.push(0x03);
+            encode_order_uvar_to(&mut out, *name);
+            out.extend(decl_interface_hash);
+        }
+    }
+    out
+}
+
+fn encode_order_uvar_to(out: &mut Vec<u8>, mut value: usize) {
+    loop {
+        let mut byte = (value & 0x7f) as u8;
+        value >>= 7;
+        if value != 0 {
+            byte |= 0x80;
+        }
+        out.push(byte);
+        if value == 0 {
+            break;
+        }
+    }
 }
 
 fn ensure_strict_order<T: Ord>(

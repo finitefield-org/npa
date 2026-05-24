@@ -1090,6 +1090,20 @@ primitive interface / `Quotient.lift` 計算規則を実装する境界を採用
 この primitive を証明受理条件にできず、canonical certificate の feature report と checker profile だけが
 受理境界です。
 
+P9H-12 では、この境界を `quotient_v1` opt-in として実装します。
+
+```text
+- fast kernel と source-free reference checker は `RelEquiv A r` を equivalence witness 型へ展開する
+- `Setoid.r A (Setoid.mk A r h) a b` は `r a b` に WHNF reduction する
+- `Quotient.lift A B s f h (Quotient.mk A s a)` は `f a` に WHNF reduction する
+- `Std.Quotient` example certificate は Nat × Nat の `IntPair`、`Setoid`、`Quotient.mk`、
+  `Quotient.sound`、`Quotient.lift` を custom axiom / sorry なしで使う
+```
+
+この成功経路は `quotient_v1` を許可した checker profile だけで有効です。Phase 9 AI の既定
+`Phase8MvpReference` profile は quotient を引き続き deterministic `UnsupportedFeature` として扱うため、
+AI candidate hot path、MVP certificate identity、既存 stdlib release profile には同期的な追加検査を入れません。
+
 ---
 
 ## 5.6 Quotient 完了条件

@@ -507,9 +507,14 @@ Phase 1 の仕様：
 ```text
 η conversion
 proof irrelevance conversion
-quotient computation
+quotient computation in Phase8MvpReference / default profile
 untrusted theorem unfolding
 ```
+
+P9H-12 以降、`quotient_v1` を明示的に許可した quotient-capable profile では
+`Setoid.r` projection と `Quotient.lift` computation を fast kernel と reference checker の両方に実装します。
+ただし Phase 8 MVP reference profile は引き続き quotient certificate を `UnsupportedCoreFeature` として拒否し、
+AI fast path や通常 verify response の既定 latency には入れません。
 
 ---
 
@@ -1862,7 +1867,7 @@ MVPでは後回しでよいもの：
 ```text
 - 形式検証済み checker
 - 複雑な mutual/nested inductive の検査
-- quotient computation
+- Phase8MvpReference / default profile での quotient computation
 - proof irrelevance conversion
 - η conversion
 - external SMT certificate checker

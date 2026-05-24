@@ -18,7 +18,7 @@ use crate::{
         validate_universe_params, Level, UniverseConstraint,
     },
     positivity::approved_nested_functor,
-    subst::{instantiate, subst_levels_expr},
+    subst::{instantiate, shift, subst_levels_expr},
 };
 
 #[derive(Clone, Debug, Default)]
@@ -1333,6 +1333,16 @@ impl Env {
                         current = reduced;
                         continue;
                     }
+                    if let Some(reduced) = self.reduce_rel_equiv_witness(&app)? {
+                        current = reduced;
+                        continue;
+                    }
+                    if let Some(reduced) =
+                        self.reduce_setoid_relation(ctx, delta, &app, fuel, kind)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
                     if let Some(reduced) =
                         self.reduce_quotient_lift(ctx, delta, &app, fuel, kind)?
                     {
@@ -1481,6 +1491,48 @@ impl Env {
         }
 
         Ok(Some(Expr::apps(reduced, rest)))
+    }
+
+    fn reduce_rel_equiv_witness(&self, term: &Expr) -> Result<Option<Expr>> {
+        let (head, args) = collect_apps(term);
+        let Expr::Const { name, .. } = head else {
+            return Ok(None);
+        };
+        if name != "RelEquiv" || args.len() != 2 {
+            return Ok(None);
+        }
+        Ok(Some(rel_equiv_witness_type(&args[0], &args[1])?))
+    }
+
+    fn reduce_setoid_relation(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        fuel: &mut usize,
+        kind: ResourceLimitKind,
+    ) -> Result<Option<Expr>> {
+        let (head, args) = collect_apps(term);
+        let Expr::Const { name, .. } = head else {
+            return Ok(None);
+        };
+        if name != "Setoid.r" || args.len() < 4 {
+            return Ok(None);
+        }
+
+        let setoid_whnf = self.whnf_with_remaining_fuel(ctx, delta, &args[1], fuel, kind)?;
+        let (mk_head, mk_args) = collect_apps(&setoid_whnf);
+        let Expr::Const { name: mk_name, .. } = mk_head else {
+            return Ok(None);
+        };
+        if mk_name != "Setoid.mk" || mk_args.len() != 3 || mk_args[0] != args[0] {
+            return Ok(None);
+        }
+
+        Ok(Some(Expr::apps(
+            Expr::apps(mk_args[1].clone(), vec![args[2].clone(), args[3].clone()]),
+            args[4..].to_vec(),
+        )))
     }
 
     fn reduce_quotient_lift(
@@ -2011,6 +2063,67 @@ fn check_mutual_constructor_domain_positive(
 
 fn is_direct_recursive_domain(data: &InductiveDecl, domain: &Expr, ctx_len: usize) -> bool {
     direct_recursive_index_args(data, domain, ctx_len).is_ok()
+}
+
+fn rel_equiv_witness_type(carrier: &Expr, relation: &Expr) -> Result<Expr> {
+    let relation_at = |depth: i32, lhs: Expr, rhs: Expr| -> Result<Expr> {
+        Ok(Expr::apps(shift(relation, depth, 0)?, vec![lhs, rhs]))
+    };
+
+    let refl_ty = Expr::pi(
+        "x",
+        carrier.clone(),
+        relation_at(1, Expr::bvar(0), Expr::bvar(0))?,
+    );
+    let symm_ty = Expr::pi(
+        "x",
+        carrier.clone(),
+        Expr::pi(
+            "y",
+            shift(carrier, 1, 0)?,
+            Expr::pi(
+                "p",
+                relation_at(2, Expr::bvar(1), Expr::bvar(0))?,
+                relation_at(3, Expr::bvar(1), Expr::bvar(2))?,
+            ),
+        ),
+    );
+    let trans_ty = Expr::pi(
+        "x",
+        carrier.clone(),
+        Expr::pi(
+            "y",
+            shift(carrier, 1, 0)?,
+            Expr::pi(
+                "z",
+                shift(carrier, 2, 0)?,
+                Expr::pi(
+                    "p",
+                    relation_at(3, Expr::bvar(2), Expr::bvar(1))?,
+                    Expr::pi(
+                        "q",
+                        relation_at(4, Expr::bvar(2), Expr::bvar(1))?,
+                        relation_at(5, Expr::bvar(4), Expr::bvar(2))?,
+                    ),
+                ),
+            ),
+        ),
+    );
+
+    let eliminator_ty = Expr::pi(
+        "refl",
+        shift(&refl_ty, 1, 0)?,
+        Expr::pi(
+            "symm",
+            shift(&symm_ty, 2, 0)?,
+            Expr::pi("trans", shift(&trans_ty, 3, 0)?, Expr::bvar(3)),
+        ),
+    );
+    Ok(Expr::pi(
+        "P",
+        Expr::sort(Level::zero()),
+        Expr::pi("intro", eliminator_ty, Expr::bvar(1)),
+    ))
 }
 
 fn recursive_occurrences_strictly_positive(

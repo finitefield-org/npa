@@ -636,18 +636,18 @@ kernel trusted base を広げる milestone。理由、代替案、checker 境界
 
 実装タスク:
 
-- [ ] `Std.Quotient` に `Setoid`、relation notation、quotient helper definitions を追加する。
-- [ ] quotient-capable independent checker profile を Phase 8 / Phase 9 API policy に追加する。
-- [ ] Phase 9 AI `QuotientConstruction` の deterministic rejection surface を quotient success profile と衝突しないように更新する。
-- [ ] `Nat × Nat` から簡易 `Int` を作る example certificate を追加する。
-- [ ] `Quotient.lift` の well-defined proof obligation と compatibility proof mismatch の fixtures を追加する。
+- [x] `Std.Quotient` に `Setoid`、relation notation、quotient helper definitions を追加する。
+- [x] quotient-capable independent checker profile を Phase 8 / Phase 9 API policy に追加する。
+- [x] Phase 9 AI `QuotientConstruction` の deterministic rejection surface を quotient success profile と衝突しないように更新する。
+- [x] `Nat × Nat` から簡易 `Int` を作る example certificate を追加する。
+- [x] `Quotient.lift` の well-defined proof obligation と compatibility proof mismatch の fixtures を追加する。
 
 受け入れ条件:
 
-- [ ] `Setoid`、`Quotient.mk`、`Quotient.sound`、`Quotient.lift` を使った証明が source-free checker で通る。
-- [ ] relation equivalence proof や compatibility proof が間違っている場合は kernel / checker が拒否する。
-- [ ] Phase 9 AI MVP の `Phase8MvpReference` unsupported fixture は、new profile 追加後も意味が stale にならない。
-- [ ] quotient examples は custom axiom / sorry に依存しない。
+- [x] `Setoid`、`Quotient.mk`、`Quotient.sound`、`Quotient.lift` を使った証明が source-free checker で通る。
+- [x] relation equivalence proof や compatibility proof が間違っている場合は kernel / checker が拒否する。
+- [x] Phase 9 AI MVP の `Phase8MvpReference` unsupported fixture は、new profile 追加後も意味が stale にならない。
+- [x] quotient examples は custom axiom / sorry に依存しない。
 
 検証:
 

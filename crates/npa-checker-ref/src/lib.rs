@@ -1044,9 +1044,9 @@ mod tests {
         VerifierSession,
     };
     use npa_kernel::{
-        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, prop, quotient, setoid,
-        type0, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level,
-        MutualInductiveBlock, UniverseConstraint,
+        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, prop, quotient,
+        quotient_mk, setoid, type0, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl,
+        Level, MutualInductiveBlock, Reducibility, UniverseConstraint,
     };
     use sha2::{Digest, Sha256};
 
@@ -4294,6 +4294,261 @@ mod tests {
         }
     }
 
+    fn quotient_source_free_module() -> CoreModule {
+        CoreModule {
+            name: Name::from_dotted("Test.ReferenceQuotientSourceFree"),
+            declarations: vec![
+                test_quotient_true_inductive_decl(),
+                Decl::Def {
+                    name: "Test.ReferenceQuotientSourceFree.rel".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: test_quotient_relation_type(),
+                    value: Expr::lam("lhs", nat(), Expr::lam("rhs", nat(), test_quotient_true())),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Test.ReferenceQuotientSourceFree.nat_setoid".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: setoid(Level::zero(), nat()),
+                    value: Expr::apps(
+                        Expr::konst("Setoid.mk", vec![Level::zero()]),
+                        vec![nat(), test_quotient_rel(), test_quotient_rel_equiv_proof()],
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Test.ReferenceQuotientSourceFree.Q".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(type0()),
+                    value: quotient(Level::zero(), nat(), test_quotient_setoid()),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Test.ReferenceQuotientSourceFree.lift_zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("q", test_quotient_q(), nat()),
+                    value: Expr::lam(
+                        "q",
+                        test_quotient_q(),
+                        Expr::apps(
+                            Expr::konst("Quotient.lift", vec![Level::zero(), Level::zero()]),
+                            vec![
+                                nat(),
+                                nat(),
+                                test_quotient_setoid(),
+                                Expr::lam("n", nat(), nat_zero()),
+                                test_quotient_lift_compatibility_proof(),
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Test.ReferenceQuotientSourceFree.mk".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("n", nat(), test_quotient_q()),
+                    value: Expr::lam(
+                        "n",
+                        nat(),
+                        quotient_mk(Level::zero(), nat(), test_quotient_setoid(), Expr::bvar(0)),
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Theorem {
+                    name: "Test.ReferenceQuotientSourceFree.lift_mk_zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi(
+                        "n",
+                        nat(),
+                        eq(
+                            type0(),
+                            nat(),
+                            Expr::app(
+                                test_quotient_lift_zero(),
+                                Expr::app(test_quotient_mk(), Expr::bvar(0)),
+                            ),
+                            nat_zero(),
+                        ),
+                    ),
+                    proof: Expr::lam("n", nat(), eq_refl(type0(), nat(), nat_zero())),
+                },
+            ],
+        }
+    }
+
+    fn test_quotient_true_inductive_decl() -> Decl {
+        let base = InductiveDecl::new(
+            "Test.ReferenceQuotientSourceFree.True",
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            prop(),
+            vec![ConstructorDecl::new(
+                "Test.ReferenceQuotientSourceFree.True.intro",
+                test_quotient_true(),
+            )],
+            None,
+        );
+        Decl::Inductive {
+            name: "Test.ReferenceQuotientSourceFree.True".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::sort(prop()),
+            data: Box::new(generate_inductive_artifacts_v1(&base).unwrap()),
+        }
+    }
+
+    fn test_quotient_true() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.True", vec![])
+    }
+
+    fn test_quotient_true_intro() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.True.intro", vec![])
+    }
+
+    fn test_quotient_rel() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.rel", vec![])
+    }
+
+    fn test_quotient_setoid() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.nat_setoid", vec![])
+    }
+
+    fn test_quotient_q() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.Q", vec![])
+    }
+
+    fn test_quotient_mk() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.mk", vec![])
+    }
+
+    fn test_quotient_lift_zero() -> Expr {
+        Expr::konst("Test.ReferenceQuotientSourceFree.lift_zero", vec![])
+    }
+
+    fn test_quotient_relation_type() -> Expr {
+        Expr::pi("lhs", nat(), Expr::pi("rhs", nat(), Expr::sort(prop())))
+    }
+
+    fn test_quotient_rel_equiv_intro_type() -> Expr {
+        Expr::pi(
+            "refl",
+            test_quotient_refl_proof_type(),
+            Expr::pi(
+                "symm",
+                test_quotient_symm_proof_type(),
+                Expr::pi("trans", test_quotient_trans_proof_type(), Expr::bvar(3)),
+            ),
+        )
+    }
+
+    fn test_quotient_refl_proof_type() -> Expr {
+        Expr::pi("x", nat(), test_quotient_true())
+    }
+
+    fn test_quotient_symm_proof_type() -> Expr {
+        Expr::pi(
+            "x",
+            nat(),
+            Expr::pi(
+                "y",
+                nat(),
+                Expr::pi("p", test_quotient_true(), test_quotient_true()),
+            ),
+        )
+    }
+
+    fn test_quotient_trans_proof_type() -> Expr {
+        Expr::pi(
+            "x",
+            nat(),
+            Expr::pi(
+                "y",
+                nat(),
+                Expr::pi(
+                    "z",
+                    nat(),
+                    Expr::pi(
+                        "p",
+                        test_quotient_true(),
+                        Expr::pi("q", test_quotient_true(), test_quotient_true()),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn test_quotient_refl_proof() -> Expr {
+        Expr::lam("x", nat(), test_quotient_true_intro())
+    }
+
+    fn test_quotient_symm_proof() -> Expr {
+        Expr::lam(
+            "x",
+            nat(),
+            Expr::lam(
+                "y",
+                nat(),
+                Expr::lam("p", test_quotient_true(), test_quotient_true_intro()),
+            ),
+        )
+    }
+
+    fn test_quotient_trans_proof() -> Expr {
+        Expr::lam(
+            "x",
+            nat(),
+            Expr::lam(
+                "y",
+                nat(),
+                Expr::lam(
+                    "z",
+                    nat(),
+                    Expr::lam(
+                        "p",
+                        test_quotient_true(),
+                        Expr::lam("q", test_quotient_true(), test_quotient_true_intro()),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn test_quotient_rel_equiv_proof() -> Expr {
+        Expr::lam(
+            "P",
+            Expr::sort(prop()),
+            Expr::lam(
+                "intro",
+                test_quotient_rel_equiv_intro_type(),
+                Expr::apps(
+                    Expr::bvar(0),
+                    vec![
+                        test_quotient_refl_proof(),
+                        test_quotient_symm_proof(),
+                        test_quotient_trans_proof(),
+                    ],
+                ),
+            ),
+        )
+    }
+
+    fn test_quotient_lift_compatibility_proof() -> Expr {
+        Expr::lam(
+            "lhs",
+            nat(),
+            Expr::lam(
+                "rhs",
+                nat(),
+                Expr::lam(
+                    "rel",
+                    test_quotient_true(),
+                    eq_refl(type0(), nat(), nat_zero()),
+                ),
+            ),
+        )
+    }
+
     #[test]
     fn quotient_feature_is_rejected_without_reference_checker_support() {
         let cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
@@ -4324,6 +4579,21 @@ mod tests {
         };
 
         assert!(check_certificate(&bytes, &ReferenceImportStore::default(), &policy).is_checked());
+    }
+
+    #[test]
+    fn quotient_source_free_setoid_lift_example_is_checked() {
+        let cert = build_module_cert(quotient_source_free_module(), &[]).unwrap();
+        assert!(cert.axiom_report.module_axioms.is_empty());
+        let bytes = encode_module_cert(&cert).unwrap();
+        let policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![ReferenceCoreFeature::QuotientV1],
+            deny_custom_axioms: true,
+            ..ReferenceCheckerPolicy::default()
+        };
+
+        let checked = check_certificate(&bytes, &ReferenceImportStore::default(), &policy);
+        assert!(checked.is_checked(), "{checked:?}");
     }
 
     #[test]

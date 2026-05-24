@@ -6683,6 +6683,9 @@ fn high_trust_policy_for_import_bundle(bundle: &MachineStdImportBundle) -> Axiom
             policy
                 .allowlisted_axioms
                 .extend(cert.name_table.into_iter().filter(Name::is_canonical));
+            policy
+                .supported_core_features
+                .extend(cert.axiom_report.core_features);
         }
     }
     policy
@@ -10304,17 +10307,17 @@ mod tests {
         MachineApiResponseEnvelope, MachineSuggestedCandidateStatus,
         MachineTacticBatchItemResponse, SnapshotId,
     };
-    use npa_cert::{build_module_cert, encode_module_cert, CoreModule};
+    use npa_cert::{build_module_cert, encode_module_cert, CoreFeature, CoreModule};
     use npa_checker_ref::{
         check_certificate, ReferenceCheckErrorKind, ReferenceCheckReason, ReferenceCheckResult,
-        ReferenceCheckedModule, ReferenceCheckerPolicy, ReferenceImportStore, ReferenceModuleName,
-        ReferenceTrustMode,
+        ReferenceCheckedModule, ReferenceCheckerPolicy, ReferenceCoreFeature, ReferenceImportStore,
+        ReferenceModuleName, ReferenceTrustMode,
     };
     use npa_frontend::{canonicalize_machine_term_source, parse_human_module, FileId, HumanItem};
     use npa_kernel::{
-        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0,
-        Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, RecursorDecl,
-        Reducibility,
+        eq, eq_inductive, eq_rec_type, eq_refl, nat, nat_inductive, nat_succ, nat_zero, quotient,
+        quotient_mk, setoid, type0, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl,
+        Level, RecursorDecl, Reducibility,
     };
     use npa_tactic::{CandidateApplyArg, GoalId, MachineTacticCandidate, RewriteSite, TacticHead};
     use std::{
@@ -14730,6 +14733,41 @@ theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{
     }
 
     #[test]
+    fn std_quotient_examples_source_free_checker_accepts_quotient_v1() {
+        let cert = build_module_cert(std_quotient_example_module(false, false), &[]).unwrap();
+        assert_eq!(cert.header.module, Name::from_dotted("Std.Quotient"));
+        assert_eq!(
+            cert.axiom_report.core_features,
+            vec![CoreFeature::QuotientV1]
+        );
+        assert!(cert.axiom_report.module_axioms.is_empty());
+
+        let bytes = encode_module_cert(&cert).unwrap();
+        let mut session = VerifierSession::new();
+        let verified = verify_module_cert(
+            &bytes,
+            &mut session,
+            &AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1),
+        )
+        .unwrap();
+        assert!(verified.axiom_report().module_axioms.is_empty());
+
+        let policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![ReferenceCoreFeature::QuotientV1],
+            deny_custom_axioms: true,
+            ..ReferenceCheckerPolicy::default()
+        };
+        let checked = check_certificate(&bytes, &ReferenceImportStore::default(), &policy);
+        assert!(checked.is_checked(), "{checked:?}");
+    }
+
+    #[test]
+    fn std_quotient_examples_reject_bad_equivalence_and_compatibility_proofs() {
+        assert!(build_module_cert(std_quotient_example_module(true, false), &[]).is_err());
+        assert!(build_module_cert(std_quotient_example_module(false, true), &[]).is_err());
+    }
+
+    #[test]
     fn std_polymorphic_universe_exports_are_release_and_index_hash_bound() {
         let package = TestPackage::new("std_polymorphic_universe_hash_binding");
         write_valid_mvp_package(package.path());
@@ -16189,6 +16227,351 @@ import Std.Nat
             name: Name::from_dotted(name),
             declarations: Vec::new(),
         }
+    }
+
+    fn std_quotient_example_module(
+        bad_equivalence_proof: bool,
+        bad_compatibility_proof: bool,
+    ) -> CoreModule {
+        let equivalence_proof = if bad_equivalence_proof {
+            std_quotient_true_intro()
+        } else {
+            std_quotient_rel_equiv_proof()
+        };
+        let compatibility_proof = if bad_compatibility_proof {
+            std_quotient_true_intro()
+        } else {
+            std_quotient_lift_compatibility_proof()
+        };
+        CoreModule {
+            name: Name::from_dotted("Std.Quotient"),
+            declarations: vec![
+                std_quotient_pair_inductive_decl(),
+                std_quotient_true_inductive_decl(),
+                Decl::Def {
+                    name: "Std.Quotient.rel".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: std_quotient_relation_type(),
+                    value: Expr::lam(
+                        "lhs",
+                        std_quotient_pair(),
+                        Expr::lam("rhs", std_quotient_pair(), std_quotient_true()),
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Std.Quotient.int_setoid".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: setoid(Level::zero(), std_quotient_pair()),
+                    value: Expr::apps(
+                        Expr::konst("Setoid.mk", vec![Level::zero()]),
+                        vec![std_quotient_pair(), std_quotient_rel(), equivalence_proof],
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Std.Quotient.Int".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(type0()),
+                    value: quotient(Level::zero(), std_quotient_pair(), std_quotient_setoid()),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Std.Quotient.lift_zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("q", std_quotient_int(), nat()),
+                    value: Expr::lam(
+                        "q",
+                        std_quotient_int(),
+                        Expr::apps(
+                            Expr::konst("Quotient.lift", vec![Level::zero(), Level::zero()]),
+                            vec![
+                                std_quotient_pair(),
+                                nat(),
+                                std_quotient_setoid(),
+                                Expr::lam("pair", std_quotient_pair(), nat_zero()),
+                                compatibility_proof,
+                                Expr::bvar(0),
+                            ],
+                        ),
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Def {
+                    name: "Std.Quotient.mk".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi("pair", std_quotient_pair(), std_quotient_int()),
+                    value: Expr::lam(
+                        "pair",
+                        std_quotient_pair(),
+                        quotient_mk(
+                            Level::zero(),
+                            std_quotient_pair(),
+                            std_quotient_setoid(),
+                            Expr::bvar(0),
+                        ),
+                    ),
+                    reducibility: Reducibility::Reducible,
+                },
+                Decl::Theorem {
+                    name: "Std.Quotient.lift_mk_zero".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi(
+                        "pair",
+                        std_quotient_pair(),
+                        eq(
+                            type0(),
+                            nat(),
+                            Expr::app(
+                                std_quotient_lift_zero(),
+                                Expr::app(std_quotient_mk(), Expr::bvar(0)),
+                            ),
+                            nat_zero(),
+                        ),
+                    ),
+                    proof: Expr::lam(
+                        "pair",
+                        std_quotient_pair(),
+                        eq_refl(type0(), nat(), nat_zero()),
+                    ),
+                },
+                Decl::Theorem {
+                    name: "Std.Quotient.sound_all".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::pi(
+                        "lhs",
+                        std_quotient_pair(),
+                        Expr::pi(
+                            "rhs",
+                            std_quotient_pair(),
+                            eq(
+                                type0(),
+                                std_quotient_int(),
+                                Expr::app(std_quotient_mk(), Expr::bvar(1)),
+                                Expr::app(std_quotient_mk(), Expr::bvar(0)),
+                            ),
+                        ),
+                    ),
+                    proof: Expr::lam(
+                        "lhs",
+                        std_quotient_pair(),
+                        Expr::lam(
+                            "rhs",
+                            std_quotient_pair(),
+                            Expr::apps(
+                                Expr::konst("Quotient.sound", vec![Level::zero()]),
+                                vec![
+                                    std_quotient_pair(),
+                                    std_quotient_setoid(),
+                                    Expr::bvar(1),
+                                    Expr::bvar(0),
+                                    std_quotient_true_intro(),
+                                ],
+                            ),
+                        ),
+                    ),
+                },
+            ],
+        }
+    }
+
+    fn std_quotient_true_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "Std.Quotient.True".to_owned(),
+            universe_params: Vec::new(),
+            ty: prop_sort(),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "Std.Quotient.True",
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                Level::zero(),
+                vec![ConstructorDecl::new(
+                    "Std.Quotient.True.intro",
+                    std_quotient_true(),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn std_quotient_pair_inductive_decl() -> Decl {
+        Decl::Inductive {
+            name: "Std.Quotient.IntPair".to_owned(),
+            universe_params: Vec::new(),
+            ty: Expr::sort(type0()),
+            data: Box::new(generated_mvp_inductive(InductiveDecl::new(
+                "Std.Quotient.IntPair",
+                Vec::new(),
+                Vec::new(),
+                Vec::new(),
+                type0(),
+                vec![ConstructorDecl::new(
+                    "Std.Quotient.IntPair.mk",
+                    Expr::pi("pos", nat(), Expr::pi("neg", nat(), std_quotient_pair())),
+                )],
+                None,
+            ))),
+        }
+    }
+
+    fn std_quotient_true() -> Expr {
+        Expr::konst("Std.Quotient.True", vec![])
+    }
+
+    fn std_quotient_true_intro() -> Expr {
+        Expr::konst("Std.Quotient.True.intro", vec![])
+    }
+
+    fn std_quotient_pair() -> Expr {
+        Expr::konst("Std.Quotient.IntPair", vec![])
+    }
+
+    fn std_quotient_rel() -> Expr {
+        Expr::konst("Std.Quotient.rel", vec![])
+    }
+
+    fn std_quotient_setoid() -> Expr {
+        Expr::konst("Std.Quotient.int_setoid", vec![])
+    }
+
+    fn std_quotient_int() -> Expr {
+        Expr::konst("Std.Quotient.Int", vec![])
+    }
+
+    fn std_quotient_mk() -> Expr {
+        Expr::konst("Std.Quotient.mk", vec![])
+    }
+
+    fn std_quotient_lift_zero() -> Expr {
+        Expr::konst("Std.Quotient.lift_zero", vec![])
+    }
+
+    fn std_quotient_relation_type() -> Expr {
+        Expr::pi(
+            "lhs",
+            std_quotient_pair(),
+            Expr::pi("rhs", std_quotient_pair(), prop_sort()),
+        )
+    }
+
+    fn std_quotient_rel_equiv_intro_type() -> Expr {
+        Expr::pi(
+            "refl",
+            std_quotient_refl_proof_type(),
+            Expr::pi(
+                "symm",
+                std_quotient_symm_proof_type(),
+                Expr::pi("trans", std_quotient_trans_proof_type(), Expr::bvar(3)),
+            ),
+        )
+    }
+
+    fn std_quotient_refl_proof_type() -> Expr {
+        Expr::pi("x", std_quotient_pair(), std_quotient_true())
+    }
+
+    fn std_quotient_symm_proof_type() -> Expr {
+        Expr::pi(
+            "x",
+            std_quotient_pair(),
+            Expr::pi(
+                "y",
+                std_quotient_pair(),
+                Expr::pi("p", std_quotient_true(), std_quotient_true()),
+            ),
+        )
+    }
+
+    fn std_quotient_trans_proof_type() -> Expr {
+        Expr::pi(
+            "x",
+            std_quotient_pair(),
+            Expr::pi(
+                "y",
+                std_quotient_pair(),
+                Expr::pi(
+                    "z",
+                    std_quotient_pair(),
+                    Expr::pi(
+                        "p",
+                        std_quotient_true(),
+                        Expr::pi("q", std_quotient_true(), std_quotient_true()),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn std_quotient_refl_proof() -> Expr {
+        Expr::lam("x", std_quotient_pair(), std_quotient_true_intro())
+    }
+
+    fn std_quotient_symm_proof() -> Expr {
+        Expr::lam(
+            "x",
+            std_quotient_pair(),
+            Expr::lam(
+                "y",
+                std_quotient_pair(),
+                Expr::lam("p", std_quotient_true(), std_quotient_true_intro()),
+            ),
+        )
+    }
+
+    fn std_quotient_trans_proof() -> Expr {
+        Expr::lam(
+            "x",
+            std_quotient_pair(),
+            Expr::lam(
+                "y",
+                std_quotient_pair(),
+                Expr::lam(
+                    "z",
+                    std_quotient_pair(),
+                    Expr::lam(
+                        "p",
+                        std_quotient_true(),
+                        Expr::lam("q", std_quotient_true(), std_quotient_true_intro()),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn std_quotient_rel_equiv_proof() -> Expr {
+        Expr::lam(
+            "P",
+            prop_sort(),
+            Expr::lam(
+                "intro",
+                std_quotient_rel_equiv_intro_type(),
+                Expr::apps(
+                    Expr::bvar(0),
+                    vec![
+                        std_quotient_refl_proof(),
+                        std_quotient_symm_proof(),
+                        std_quotient_trans_proof(),
+                    ],
+                ),
+            ),
+        )
+    }
+
+    fn std_quotient_lift_compatibility_proof() -> Expr {
+        Expr::lam(
+            "lhs",
+            std_quotient_pair(),
+            Expr::lam(
+                "rhs",
+                std_quotient_pair(),
+                Expr::lam(
+                    "rel",
+                    std_quotient_true(),
+                    eq_refl(type0(), nat(), nat_zero()),
+                ),
+            ),
+        )
     }
 
     fn logic_axiom_module(axiom_name: &str) -> CoreModule {
