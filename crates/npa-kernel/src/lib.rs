@@ -10,7 +10,9 @@ pub mod subst;
 
 pub use builtins::{
     eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, eq_type, nat, nat_inductive,
-    nat_rec_type, nat_succ, nat_zero, prop, type0,
+    nat_rec_type, nat_succ, nat_zero, prop, quotient, quotient_lift_type, quotient_mk,
+    quotient_mk_type, quotient_sound_type, quotient_type, rel_equiv, rel_equiv_type, setoid,
+    setoid_mk_type, setoid_relation, setoid_relation_type, setoid_type, type0,
 };
 pub use context::Ctx;
 pub use decl::{
@@ -1608,6 +1610,134 @@ mod tests {
         assert!(env
             .is_defeq(&Ctx::new(), &[], &reduced, &nat_zero())
             .unwrap());
+    }
+
+    #[test]
+    fn quotient_builtin_interface_typechecks() {
+        let mut env = Env::new();
+        env.add_quotient_builtins().unwrap();
+
+        let u = Level::zero();
+        env.check(
+            &Ctx::new(),
+            &[],
+            &Expr::konst("Quotient", vec![u.clone()]),
+            &quotient_type(u.clone()),
+        )
+        .unwrap();
+        env.check(
+            &Ctx::new(),
+            &[],
+            &Expr::konst("Quotient.mk", vec![u.clone()]),
+            &quotient_mk_type(u.clone()),
+        )
+        .unwrap();
+        env.check(
+            &Ctx::new(),
+            &[],
+            &Expr::konst("Quotient.sound", vec![u.clone()]),
+            &quotient_sound_type(u),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn quotient_lift_reduces_only_mk_major() {
+        let mut env = Env::new();
+        env.add_quotient_builtins().unwrap();
+
+        let u = Level::zero();
+        let v = Level::zero();
+        let carrier = Expr::konst("A", vec![]);
+        let result = Expr::konst("B", vec![]);
+        let setoid_value = Expr::konst("s", vec![]);
+        let raw = Expr::konst("f", vec![]);
+        let compat = Expr::konst("h", vec![]);
+        let value = Expr::konst("a", vec![]);
+        let quotient_value = quotient_mk(
+            u.clone(),
+            carrier.clone(),
+            setoid_value.clone(),
+            value.clone(),
+        );
+        let lifted = Expr::apps(
+            Expr::konst("Quotient.lift", vec![u, v]),
+            vec![
+                carrier,
+                result,
+                setoid_value,
+                raw.clone(),
+                compat,
+                quotient_value,
+            ],
+        );
+
+        assert!(env
+            .is_defeq(&Ctx::new(), &[], &lifted, &Expr::app(raw, value))
+            .unwrap());
+    }
+
+    #[test]
+    fn quotient_sound_is_proof_term_not_equality_normalization() {
+        let mut env = Env::new();
+        env.add_quotient_builtins().unwrap();
+
+        let u = Level::zero();
+        let carrier = Expr::konst("A", vec![]);
+        let setoid_value = Expr::konst("s", vec![]);
+        let lhs_value = Expr::konst("a", vec![]);
+        let rhs_value = Expr::konst("b", vec![]);
+        env.add_axiom("A", vec![], Expr::sort(Level::succ(u.clone())))
+            .unwrap();
+        env.add_axiom("s", vec![], setoid(u.clone(), carrier.clone()))
+            .unwrap();
+        env.add_axiom("a", vec![], carrier.clone()).unwrap();
+        env.add_axiom("b", vec![], carrier.clone()).unwrap();
+        env.add_axiom(
+            "p",
+            vec![],
+            setoid_relation(
+                u.clone(),
+                carrier.clone(),
+                setoid_value.clone(),
+                lhs_value.clone(),
+                rhs_value.clone(),
+            ),
+        )
+        .unwrap();
+
+        let lhs = quotient_mk(
+            u.clone(),
+            carrier.clone(),
+            setoid_value.clone(),
+            lhs_value.clone(),
+        );
+        let rhs = quotient_mk(
+            u.clone(),
+            carrier.clone(),
+            setoid_value.clone(),
+            rhs_value.clone(),
+        );
+        let proof = Expr::apps(
+            Expr::konst("Quotient.sound", vec![u.clone()]),
+            vec![
+                carrier.clone(),
+                setoid_value.clone(),
+                lhs_value,
+                rhs_value,
+                Expr::konst("p", vec![]),
+            ],
+        );
+        let expected_proof_ty = eq(
+            Level::succ(u.clone()),
+            quotient(u, carrier, setoid_value),
+            lhs.clone(),
+            rhs.clone(),
+        );
+
+        env.check(&Ctx::new(), &[], &proof, &expected_proof_ty)
+            .unwrap();
+        assert!(!env.is_defeq(&Ctx::new(), &[], &lhs, &rhs).unwrap());
     }
 
     #[test]

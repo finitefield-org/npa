@@ -160,6 +160,11 @@ pub(crate) fn build_module_cert_impl(
         }
     }
     ensure_unique_names(&local_public_names)?;
+    for name in &local_public_names {
+        if reserved_core_primitive_name(name) {
+            return Err(CertError::ReservedCorePrimitive { name: name.clone() });
+        }
+    }
     let local_name_to_index: BTreeMap<_, _> = local_names
         .iter()
         .cloned()
@@ -285,6 +290,7 @@ pub(crate) fn build_module_cert_impl(
     let axiom_report = AxiomReport {
         per_declaration,
         module_axioms,
+        core_features: core_features_from_builtins(&referenced_builtins),
     };
 
     let export_hash = hash_with_domain(
@@ -852,6 +858,11 @@ pub(crate) fn canonical_declaration_order(declarations: Vec<Decl>) -> Result<Vec
         }
     }
     ensure_unique_names(&public_names)?;
+    for name in &public_names {
+        if reserved_core_primitive_name(name) {
+            return Err(CertError::ReservedCorePrimitive { name: name.clone() });
+        }
+    }
 
     let dependencies = declarations
         .iter()

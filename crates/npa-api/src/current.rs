@@ -3939,6 +3939,7 @@ mod tests {
                 mode: TrustMode::HighTrust,
                 allowlisted_axioms: BTreeSet::new(),
                 deny_sorry: true,
+                supported_core_features: BTreeSet::new(),
             },
         )
         .unwrap()
@@ -4210,6 +4211,7 @@ mod tests {
                 mode: TrustMode::HighTrust,
                 allowlisted_axioms,
                 deny_sorry: true,
+                supported_core_features: BTreeSet::new(),
             },
         )
         .unwrap();
@@ -4260,6 +4262,7 @@ mod tests {
                 mode: TrustMode::HighTrust,
                 allowlisted_axioms,
                 deny_sorry: true,
+                supported_core_features: BTreeSet::new(),
             },
         )
         .unwrap()

@@ -1,8 +1,8 @@
 use super::*;
 use npa_kernel::{
     eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, nat, nat_inductive, nat_succ, nat_zero,
-    prop, type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, MutualInductiveBlock,
-    RecursorDecl, Reducibility, UniverseConstraint,
+    prop, quotient, setoid, type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level,
+    MutualInductiveBlock, RecursorDecl, Reducibility, UniverseConstraint,
 };
 
 fn id_type(a: &str, x: &str) -> Expr {
@@ -548,6 +548,28 @@ fn use_imported_eq_rec_alias_module() -> CoreModule {
             ty: eq_rec_type(u.clone(), v.clone()),
             value: Expr::konst("eq_rec_alias", vec![u, v]),
             reducibility: Reducibility::Reducible,
+        }],
+    }
+}
+
+fn quotient_builtin_module() -> CoreModule {
+    let u = Level::param("u");
+    let carrier = Expr::bvar(0);
+    let setoid_value = Expr::bvar(0);
+    CoreModule {
+        name: Name::from_dotted("Test.QuotientBuiltin"),
+        declarations: vec![Decl::Axiom {
+            name: "uses_quotient".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: Expr::pi(
+                "A",
+                Expr::sort(Level::succ(u.clone())),
+                Expr::pi(
+                    "s",
+                    setoid(u.clone(), carrier),
+                    quotient(u, Expr::bvar(1), setoid_value),
+                ),
+            ),
         }],
     }
 }
@@ -1735,6 +1757,7 @@ fn rehash_cert_after_decl_change(cert: &mut ModuleCert) {
                 .flat_map(|report| report.transitive_axioms.iter().cloned()),
         ),
         per_declaration: reports,
+        core_features: Vec::new(),
     };
 
     for decl in &mut cert.declarations {
@@ -2401,6 +2424,77 @@ fn current_builtin_eq_rec_can_coexist_with_imported_eq_shape() {
         &AxiomPolicy::normal(),
     )
     .unwrap();
+}
+
+#[test]
+fn quotient_feature_requires_supported_checker_profile() {
+    let cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
+    assert_eq!(
+        cert.axiom_report.core_features,
+        vec![CoreFeature::QuotientV1]
+    );
+    assert!(cert.axiom_report.quotients_used());
+
+    let bytes = encode_module_cert(&cert).unwrap();
+    let err = verify_module_cert(&bytes, &mut VerifierSession::new(), &AxiomPolicy::normal())
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::UnsupportedCoreFeature { feature } if feature == "quotient_v1"
+    ));
+
+    let mut session = VerifierSession::new();
+    let policy = AxiomPolicy::normal().with_core_feature(CoreFeature::QuotientV1);
+    let verified = verify_module_cert(&bytes, &mut session, &policy).unwrap();
+    assert_eq!(
+        verified.axiom_report().core_features,
+        vec![CoreFeature::QuotientV1]
+    );
+}
+
+#[test]
+fn quotient_feature_changes_axiom_report_and_certificate_hash() {
+    let cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
+    let mut without_feature = cert.clone();
+    without_feature.axiom_report.core_features.clear();
+    without_feature.hashes.axiom_report_hash = hash_with_domain(
+        b"NPA-AXIOM-REPORT-0.1",
+        &encode_axiom_report(&without_feature.axiom_report),
+    );
+    without_feature.hashes.certificate_hash = hash_with_domain(
+        b"NPA-MODULE-CERT-0.1",
+        &encode_module_cert_without_certificate_hash(&without_feature),
+    );
+
+    assert_ne!(
+        cert.hashes.axiom_report_hash,
+        without_feature.hashes.axiom_report_hash
+    );
+    assert_ne!(
+        cert.hashes.certificate_hash,
+        without_feature.hashes.certificate_hash
+    );
+}
+
+#[test]
+fn quotient_primitive_name_cannot_be_custom_axiom() {
+    let err = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test.BadQuotientAxiom"),
+            declarations: vec![Decl::Axiom {
+                name: "Quotient".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: npa_kernel::quotient_type(Level::param("u")),
+            }],
+        },
+        &[],
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        err,
+        CertError::ReservedCorePrimitive { name } if name == Name::from_dotted("Quotient")
+    ));
 }
 
 #[test]

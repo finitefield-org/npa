@@ -7,9 +7,9 @@ use npa_kernel::{
 };
 
 use crate::types::{
-    CertError, CertHeader, CertReducibility, DeclPayload, ExportEntry, ExportKind, GlobalRef, Hash,
-    LevelId, LevelNode, ModuleCert, ModuleHashes, Name, NameId, Result, TermId, TermNode,
-    UniverseConstraintSpec, VerifiedModule,
+    CertError, CertHeader, CertReducibility, CoreFeature, DeclPayload, ExportEntry, ExportKind,
+    GlobalRef, Hash, LevelId, LevelNode, ModuleCert, ModuleHashes, Name, NameId, Result, TermId,
+    TermNode, UniverseConstraintSpec, VerifiedModule,
 };
 use crate::{hash_with_domain, CORE_SPEC, FORMAT};
 
@@ -20,6 +20,14 @@ const BUILTIN_NAT_REC: &str = "Nat.rec";
 const BUILTIN_EQ: &str = "Eq";
 const BUILTIN_EQ_REFL: &str = "Eq.refl";
 const BUILTIN_EQ_REC: &str = "Eq.rec";
+const BUILTIN_SETOID: &str = "Setoid";
+const BUILTIN_REL_EQUIV: &str = "RelEquiv";
+const BUILTIN_SETOID_MK: &str = "Setoid.mk";
+const BUILTIN_SETOID_R: &str = "Setoid.r";
+const BUILTIN_QUOTIENT: &str = "Quotient";
+const BUILTIN_QUOTIENT_MK: &str = "Quotient.mk";
+const BUILTIN_QUOTIENT_SOUND: &str = "Quotient.sound";
+const BUILTIN_QUOTIENT_LIFT: &str = "Quotient.lift";
 
 pub(crate) fn cert_to_kernel_decls(cert: &ModuleCert) -> Result<Vec<Decl>> {
     cert.declarations
@@ -643,6 +651,14 @@ pub fn builtin_decl_interface_hash(name: &Name) -> Option<Hash> {
         BUILTIN_EQ => "npa.machine-tactic.builtin.eq.v1",
         BUILTIN_EQ_REFL => "npa.machine-tactic.builtin.eq.refl.v1",
         BUILTIN_EQ_REC => "npa.machine-tactic.builtin.eq.rec.v1",
+        BUILTIN_SETOID => "npa.quotient-v1.builtin.setoid.v1",
+        BUILTIN_REL_EQUIV => "npa.quotient-v1.builtin.rel-equiv.v1",
+        BUILTIN_SETOID_MK => "npa.quotient-v1.builtin.setoid.mk.v1",
+        BUILTIN_SETOID_R => "npa.quotient-v1.builtin.setoid.r.v1",
+        BUILTIN_QUOTIENT => "npa.quotient-v1.builtin.quotient.v1",
+        BUILTIN_QUOTIENT_MK => "npa.quotient-v1.builtin.quotient.mk.v1",
+        BUILTIN_QUOTIENT_SOUND => "npa.quotient-v1.builtin.quotient.sound.v1",
+        BUILTIN_QUOTIENT_LIFT => "npa.quotient-v1.builtin.quotient.lift.v1",
         _ => return None,
     };
     Some(hash_with_domain(
@@ -653,6 +669,30 @@ pub fn builtin_decl_interface_hash(name: &Name) -> Option<Hash> {
 
 pub(crate) fn builtin_is_axiom(name: &Name) -> bool {
     name.as_dotted() == BUILTIN_EQ_REC
+}
+
+pub(crate) fn reserved_core_primitive_name(name: &Name) -> bool {
+    matches!(
+        name.as_dotted().as_str(),
+        BUILTIN_SETOID
+            | BUILTIN_REL_EQUIV
+            | BUILTIN_SETOID_MK
+            | BUILTIN_SETOID_R
+            | BUILTIN_QUOTIENT
+            | BUILTIN_QUOTIENT_MK
+            | BUILTIN_QUOTIENT_SOUND
+            | BUILTIN_QUOTIENT_LIFT
+    )
+}
+
+pub(crate) fn core_features_from_builtins(referenced: &BTreeSet<Name>) -> Vec<CoreFeature> {
+    let mut features = BTreeSet::new();
+    for name in referenced {
+        if reserved_core_primitive_name(name) {
+            features.insert(CoreFeature::QuotientV1);
+        }
+    }
+    features.into_iter().collect()
 }
 
 pub(crate) fn add_referenced_builtins_to_env(
@@ -674,6 +714,7 @@ pub(crate) fn add_referenced_builtins_to_env(
     let needs_eq_rec = referenced
         .iter()
         .any(|name| name.as_dotted() == BUILTIN_EQ_REC);
+    let needs_quotient = referenced.iter().any(reserved_core_primitive_name);
 
     if needs_nat && env.decl(BUILTIN_NAT).is_none() {
         env.add_inductive(nat_inductive())?;
@@ -687,6 +728,9 @@ pub(crate) fn add_referenced_builtins_to_env(
             vec!["u".to_owned(), "v".to_owned()],
             eq_rec_type(Level::param("u"), Level::param("v")),
         )?;
+    }
+    if needs_quotient {
+        env.add_quotient_builtins()?;
     }
     Ok(())
 }

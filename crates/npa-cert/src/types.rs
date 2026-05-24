@@ -69,6 +69,30 @@ pub enum TrustMode {
     HighTrust,
 }
 
+/// Optional core feature profile committed by a certificate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum CoreFeature {
+    /// Phase 9 quotient primitive interface and `Quotient.lift` computation rule.
+    QuotientV1,
+}
+
+impl CoreFeature {
+    /// Stable certificate feature name.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::QuotientV1 => "quotient_v1",
+        }
+    }
+
+    /// Parse a stable certificate feature name.
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "quotient_v1" => Some(Self::QuotientV1),
+            _ => None,
+        }
+    }
+}
+
 /// Axiom admission policy enforced while verifying certificates and imports.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AxiomPolicy {
@@ -79,6 +103,8 @@ pub struct AxiomPolicy {
     pub allowlisted_axioms: BTreeSet<AxiomName>,
     /// Reject declarations that depend on `sorry`.
     pub deny_sorry: bool,
+    /// Core feature profiles supported by this checker run.
+    pub supported_core_features: BTreeSet<CoreFeature>,
 }
 
 impl AxiomPolicy {
@@ -88,6 +114,7 @@ impl AxiomPolicy {
             mode: TrustMode::Normal,
             allowlisted_axioms: BTreeSet::new(),
             deny_sorry: true,
+            supported_core_features: BTreeSet::new(),
         }
     }
 
@@ -97,7 +124,14 @@ impl AxiomPolicy {
             mode: TrustMode::HighTrust,
             allowlisted_axioms: BTreeSet::new(),
             deny_sorry: true,
+            supported_core_features: BTreeSet::new(),
         }
+    }
+
+    /// Return this policy with one additional supported core feature.
+    pub fn with_core_feature(mut self, feature: CoreFeature) -> Self {
+        self.supported_core_features.insert(feature);
+        self
     }
 }
 
@@ -851,6 +885,15 @@ pub struct AxiomReport {
     pub per_declaration: Vec<DeclAxiomReport>,
     /// Union of all transitive axiom dependencies in the module.
     pub module_axioms: Vec<AxiomRef>,
+    /// Core feature profiles required by direct builtin primitive usage.
+    pub core_features: Vec<CoreFeature>,
+}
+
+impl AxiomReport {
+    /// Returns true when this report requires the quotient_v1 primitive profile.
+    pub fn quotients_used(&self) -> bool {
+        self.core_features.contains(&CoreFeature::QuotientV1)
+    }
 }
 
 /// Axiom dependency report for a single declaration.
@@ -928,6 +971,16 @@ pub enum CertError {
         format: String,
         /// Found core spec version.
         core_spec: String,
+    },
+    /// Certificate requires a core feature not supported by the active checker profile.
+    UnsupportedCoreFeature {
+        /// Unsupported feature name.
+        feature: String,
+    },
+    /// Source or certificate declaration collides with a reserved core primitive name.
+    ReservedCorePrimitive {
+        /// Reserved primitive name.
+        name: ModuleName,
     },
     /// Unknown canonical binary tag.
     UnsupportedEncoding {

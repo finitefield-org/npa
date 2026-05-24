@@ -1116,6 +1116,7 @@ fn high_trust_policy_for_imports(
         mode: TrustMode::HighTrust,
         allowlisted_axioms,
         deny_sorry: true,
+        supported_core_features: BTreeSet::new(),
     })
 }
 

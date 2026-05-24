@@ -30,8 +30,8 @@ pub(crate) use canonical::*;
 pub(crate) use hash::*;
 pub(crate) use kernel::{
     add_decl_to_env, add_referenced_builtins_to_env, builtin_is_axiom, cert_to_kernel_decls,
-    expr_from_term, level_from_node, name_to_string, universe_names,
-    verified_module_referenced_builtin_names,
+    core_features_from_builtins, expr_from_term, level_from_node, name_to_string,
+    reserved_core_primitive_name, universe_names, verified_module_referenced_builtin_names,
 };
 pub(crate) use verify::*;
 

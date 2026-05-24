@@ -1,5 +1,8 @@
 use crate::*;
 
+const MODULE_HASH_TRAILER_LEN: usize = 32 * 3;
+const CORE_FEATURE_REPORT_TAG: &str = "core_features";
+
 pub(crate) fn encode_module_cert_full(cert: &ModuleCert) -> Vec<u8> {
     let mut out = Vec::new();
     encode_header_to(&mut out, &cert.header);
@@ -394,6 +397,13 @@ pub(crate) fn encode_axiom_report(report: &AxiomReport) -> Vec<u8> {
         encode_axiom_refs_to(&mut out, &entry.transitive_axioms);
     }
     encode_axiom_refs_to(&mut out, &report.module_axioms);
+    if !report.core_features.is_empty() {
+        encode_string_to(&mut out, CORE_FEATURE_REPORT_TAG);
+        encode_uvar_to(&mut out, report.core_features.len() as u64);
+        for feature in &report.core_features {
+            encode_string_to(&mut out, feature.as_str());
+        }
+    }
     out
 }
 
@@ -556,6 +566,18 @@ impl<'a> Decoder<'a> {
         self.offset == self.bytes.len()
     }
 
+    fn remaining_len(&self) -> usize {
+        self.bytes.len().saturating_sub(self.offset)
+    }
+
+    fn has_core_feature_report(&self) -> bool {
+        let feature_report_len = self.remaining_len().saturating_sub(MODULE_HASH_TRAILER_LEN);
+        let tag = CORE_FEATURE_REPORT_TAG.as_bytes();
+        feature_report_len > tag.len()
+            && self.bytes.get(self.offset) == Some(&(tag.len() as u8))
+            && self.bytes.get(self.offset + 1..self.offset + 1 + tag.len()) == Some(tag)
+    }
+
     pub(crate) fn module_cert(&mut self) -> Result<ModuleCert> {
         let header = self.header()?;
         let imports = self.imports()?;
@@ -564,7 +586,10 @@ impl<'a> Decoder<'a> {
         let term_table = self.term_table()?;
         let declarations = self.declarations()?;
         let export_block = self.export_block()?;
-        let axiom_report = self.axiom_report()?;
+        let mut axiom_report = self.axiom_report()?;
+        if self.has_core_feature_report() {
+            axiom_report.core_features = self.core_features()?;
+        }
         let hashes = ModuleHashes {
             export_hash: self.hash()?,
             axiom_report_hash: self.hash()?,
@@ -919,7 +944,36 @@ impl<'a> Decoder<'a> {
         Ok(AxiomReport {
             per_declaration,
             module_axioms,
+            core_features: Vec::new(),
         })
+    }
+
+    fn core_features(&mut self) -> Result<Vec<CoreFeature>> {
+        let tag = self.string()?;
+        if tag != CORE_FEATURE_REPORT_TAG {
+            return Err(CertError::NonCanonicalEncoding {
+                object: "CoreFeatureReport",
+            });
+        }
+        let len = self.bounded_len()?;
+        if len == 0 {
+            return Err(CertError::NonCanonicalEncoding {
+                object: "CoreFeatureReport",
+            });
+        }
+        let mut features = Vec::with_capacity(len);
+        for _ in 0..len {
+            let feature = self.string()?;
+            let feature = CoreFeature::from_name(&feature)
+                .ok_or(CertError::UnsupportedCoreFeature { feature })?;
+            features.push(feature);
+        }
+        if features.windows(2).any(|pair| pair[0] >= pair[1]) {
+            return Err(CertError::NonCanonicalEncoding {
+                object: "CoreFeatureReport",
+            });
+        }
+        Ok(features)
     }
 
     fn dependency_entries(&mut self) -> Result<Vec<DependencyEntry>> {

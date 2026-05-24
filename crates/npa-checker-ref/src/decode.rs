@@ -5,16 +5,19 @@ use sha2::{Digest, Sha256};
 use crate::{
     ReferenceAxiomDependency, ReferenceCertificateHeader, ReferenceCertificateSection,
     ReferenceCheckError, ReferenceCheckReason, ReferenceCheckedModule, ReferenceCheckerPolicy,
-    ReferenceCoreExpr, ReferenceCoreGlobalRef, ReferenceCoreLevel, ReferenceDecodedCertificate,
-    ReferenceDecodedCertificateCounts, ReferenceExportKind, ReferenceHash, ReferenceHashObject,
-    ReferenceImportEntry, ReferenceImportEnvironment, ReferenceImportStore, ReferenceModuleHashes,
-    ReferenceModuleName, ReferencePublicEnvironment, ReferencePublicExport,
-    ReferenceResolvedImport, ReferenceTrustMode, REFERENCE_CERTIFICATE_FORMAT, REFERENCE_CORE_SPEC,
+    ReferenceCoreExpr, ReferenceCoreFeature, ReferenceCoreGlobalRef, ReferenceCoreLevel,
+    ReferenceDecodedCertificate, ReferenceDecodedCertificateCounts, ReferenceExportKind,
+    ReferenceHash, ReferenceHashObject, ReferenceImportEntry, ReferenceImportEnvironment,
+    ReferenceImportStore, ReferenceModuleHashes, ReferenceModuleName, ReferencePublicEnvironment,
+    ReferencePublicExport, ReferenceResolvedImport, ReferenceTrustMode,
+    REFERENCE_CERTIFICATE_FORMAT, REFERENCE_CORE_SPEC,
 };
 
 type DecodeResult<T> = Result<T, ReferenceCheckError>;
 const HUMAN_UNIVERSE_META_PREFIX: &str = "__npa_internal_human_universe_meta#";
 const PUBLIC_SELF_IMPORT_INDEX: usize = usize::MAX;
+const MODULE_HASH_TRAILER_LEN: usize = 32 * 3;
+const CORE_FEATURE_REPORT_TAG: &str = "core_features";
 
 pub(crate) fn decode_certificate_impl(bytes: &[u8]) -> DecodeResult<ReferenceDecodedCertificate> {
     decode_module_certificate(bytes).map(DecodedModuleCertificate::summary)
@@ -43,6 +46,7 @@ pub(crate) fn build_import_environment_impl(
 ) -> DecodeResult<ReferenceImportEnvironment> {
     let cert = decode_module_certificate(bytes)?;
     cert.verify_hashes(bytes)?;
+    cert.enforce_core_feature_policy(policy)?;
     cert.build_import_environment(import_store, policy)
 }
 
@@ -53,6 +57,7 @@ pub(crate) fn check_certificate_impl(
 ) -> DecodeResult<ReferenceCheckedModule> {
     let cert = decode_module_certificate(bytes)?;
     cert.verify_hashes(bytes)?;
+    cert.enforce_core_feature_policy(policy)?;
     let imports = cert.build_import_environment(import_store, policy)?;
     cert.verify_axiom_report(&imports, policy)?;
     cert.type_check(&imports)
@@ -195,6 +200,7 @@ impl DecodedModuleCertificate {
             imports,
             exports,
             self.public_axiom_dependencies(&self.axiom_report.module_axioms),
+            self.axiom_report.core_features.clone(),
         ))
     }
 
@@ -334,6 +340,14 @@ impl DecodedModuleCertificate {
         Ok(ReferenceImportEnvironment::new(resolved))
     }
 
+    fn enforce_core_feature_policy(&self, policy: &ReferenceCheckerPolicy) -> DecodeResult<()> {
+        enforce_core_feature_policy(
+            &self.axiom_report.core_features,
+            self.axiom_report.core_features_offset,
+            policy,
+        )
+    }
+
     fn type_check(
         &self,
         imports: &ReferenceImportEnvironment,
@@ -411,6 +425,13 @@ impl DecodedModuleCertificate {
             return Err(ReferenceCheckError::axiom_report(
                 ReferenceCertificateSection::AxiomReport,
                 self.axiom_report.module_axioms_offset,
+            ));
+        }
+        let expected_features = self.expected_core_features()?;
+        if expected_features != self.axiom_report.core_features {
+            return Err(ReferenceCheckError::axiom_report(
+                ReferenceCertificateSection::AxiomReport,
+                self.axiom_report.core_features_offset,
             ));
         }
 
@@ -538,6 +559,35 @@ impl DecodedModuleCertificate {
                 })
             })
             .collect()
+    }
+
+    fn expected_core_features(&self) -> DecodeResult<Vec<ReferenceCoreFeature>> {
+        let mut features = BTreeSet::new();
+        for term in &self.term_table {
+            let TermNode::Const {
+                global_ref:
+                    GlobalRef::Builtin {
+                        name,
+                        decl_interface_hash,
+                    },
+                ..
+            } = &term.value
+            else {
+                continue;
+            };
+            let name_value = &self.name_table[*name].value;
+            if builtin_decl_interface_hash(name_value) != Some(*decl_interface_hash) {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::TermTable,
+                    term.offset,
+                    ReferenceCheckReason::UnknownReference,
+                ));
+            }
+            if quotient_builtin_name(name_value) {
+                features.insert(ReferenceCoreFeature::QuotientV1);
+            }
+        }
+        Ok(features.into_iter().collect())
     }
 
     fn expected_axioms_for_decl(
@@ -1941,6 +1991,13 @@ impl DecodedModuleCertificate {
                     ReferenceCheckReason::DuplicateDeclarationName,
                 ));
             }
+            if quotient_builtin_name(&name) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    located.offset,
+                    ReferenceCheckReason::ReservedCorePrimitive,
+                ));
+            }
             local_names.push(name);
         }
 
@@ -2329,6 +2386,11 @@ fn resolve_import<'a>(
     }
 
     let entry = same_export[0];
+    enforce_core_feature_policy(
+        entry.public_environment().core_features(),
+        requested.offset,
+        policy,
+    )?;
     if let Some(certificate_hash) = requested.value.certificate_hash {
         if *entry.certificate_hash() != certificate_hash {
             return Err(ReferenceCheckError::import_resolution(
@@ -2364,6 +2426,24 @@ fn resolve_import<'a>(
     }
 
     Ok(entry)
+}
+
+fn enforce_core_feature_policy(
+    features: &[ReferenceCoreFeature],
+    offset: usize,
+    policy: &ReferenceCheckerPolicy,
+) -> DecodeResult<()> {
+    let supported = policy
+        .supported_core_features
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    for feature in features {
+        if !supported.contains(feature) {
+            return Err(ReferenceCheckError::unsupported_core_feature(offset));
+        }
+    }
+    Ok(())
 }
 
 struct TypeChecker<'a> {
@@ -3697,11 +3777,16 @@ impl<'a> TypeChecker<'a> {
         offset: usize,
     ) -> DecodeResult<TypeSignature> {
         match global_ref {
-            ReferenceCoreGlobalRef::Builtin { .. } => Err(ReferenceCheckError::type_check(
-                ReferenceCertificateSection::Declarations,
-                offset,
-                ReferenceCheckReason::UnknownReference,
-            )),
+            ReferenceCoreGlobalRef::Builtin {
+                name,
+                decl_interface_hash,
+            } => reference_builtin_signature(name, *decl_interface_hash).ok_or_else(|| {
+                ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnknownReference,
+                )
+            }),
             ReferenceCoreGlobalRef::Imported {
                 import_index,
                 name,
@@ -3990,6 +4075,12 @@ impl<'a> TypeChecker<'a> {
                         current = reduced;
                         continue;
                     }
+                    if let Some(reduced) =
+                        self.reduce_quotient_lift(ctx, delta, &app, offset, fuel)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
                     return Ok(app);
                 }
                 ReferenceCoreExpr::Let { value, body, .. } => {
@@ -4152,6 +4243,50 @@ impl<'a> TypeChecker<'a> {
         Ok(Some(apps(reduced, rest)))
     }
 
+    fn reduce_quotient_lift(
+        &self,
+        ctx: &TypeContext,
+        delta: &[ReferenceModuleName],
+        term: &ReferenceCoreExpr,
+        offset: usize,
+        fuel: &mut usize,
+    ) -> DecodeResult<Option<ReferenceCoreExpr>> {
+        let (head, args) = collect_apps(term);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name, .. },
+            ..
+        } = head
+        else {
+            return Ok(None);
+        };
+        if name.dotted() != "Quotient.lift" || args.len() < 6 {
+            return Ok(None);
+        }
+
+        let quotient_arg = args[5].clone();
+        let rest = args[6..].to_vec();
+        let quotient_whnf = self.whnf_with_fuel(ctx, delta, &quotient_arg, offset, fuel)?;
+        let (mk_head, mk_args) = collect_apps(&quotient_whnf);
+        let ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::Builtin { name: mk_name, .. },
+            ..
+        } = mk_head
+        else {
+            return Ok(None);
+        };
+        if mk_name.dotted() != "Quotient.mk" || mk_args.len() != 3 {
+            return Ok(None);
+        }
+        if mk_args[0] != args[0] || mk_args[1] != args[2] {
+            return Ok(None);
+        }
+
+        Ok(Some(apps(
+            ReferenceCoreExpr::App(Box::new(args[3].clone()), Box::new(mk_args[2].clone())),
+            rest,
+        )))
+    }
+
     fn direct_mutual_recursive_index_args(
         &self,
         family_recursors: &BTreeMap<GeneratedKey, ReferenceModuleName>,
@@ -4259,6 +4394,350 @@ struct TypeSignature {
     universe_params: Vec<ReferenceModuleName>,
     ty: ReferenceCoreExpr,
     value: Option<ReferenceCoreExpr>,
+}
+
+fn reference_builtin_signature(
+    name: &ReferenceModuleName,
+    decl_interface_hash: ReferenceHash,
+) -> Option<TypeSignature> {
+    if builtin_decl_interface_hash(name) != Some(decl_interface_hash) {
+        return None;
+    }
+    let dotted = name.dotted();
+    let signature = match dotted.as_str() {
+        "Nat" => TypeSignature {
+            universe_params: Vec::new(),
+            ty: rsort(rtype0()),
+            value: None,
+        },
+        "Nat.zero" => TypeSignature {
+            universe_params: Vec::new(),
+            ty: rnat(),
+            value: None,
+        },
+        "Nat.succ" => TypeSignature {
+            universe_params: Vec::new(),
+            ty: rpi(rnat(), rnat()),
+            value: None,
+        },
+        "Eq" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_eq_type(rparam("u")),
+            value: None,
+        },
+        "Eq.refl" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_eq_refl_type(rparam("u")),
+            value: None,
+        },
+        "Eq.rec" => TypeSignature {
+            universe_params: vec![rname("u"), rname("v")],
+            ty: reference_eq_rec_type(rparam("u"), rparam("v")),
+            value: None,
+        },
+        "Setoid" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_setoid_type(rparam("u")),
+            value: None,
+        },
+        "RelEquiv" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_rel_equiv_type(rparam("u")),
+            value: None,
+        },
+        "Setoid.mk" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_setoid_mk_type(rparam("u")),
+            value: None,
+        },
+        "Setoid.r" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_setoid_relation_type(rparam("u")),
+            value: None,
+        },
+        "Quotient" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_quotient_type(rparam("u")),
+            value: None,
+        },
+        "Quotient.mk" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_quotient_mk_type(rparam("u")),
+            value: None,
+        },
+        "Quotient.sound" => TypeSignature {
+            universe_params: vec![rname("u")],
+            ty: reference_quotient_sound_type(rparam("u")),
+            value: None,
+        },
+        "Quotient.lift" => TypeSignature {
+            universe_params: vec![rname("u"), rname("v")],
+            ty: reference_quotient_lift_type(rparam("u"), rparam("v")),
+            value: None,
+        },
+        _ => return None,
+    };
+    Some(signature)
+}
+
+fn rname(name: &str) -> ReferenceModuleName {
+    ReferenceModuleName::from_dotted(name).expect("builtin reference names are canonical")
+}
+
+fn rparam(name: &str) -> ReferenceCoreLevel {
+    ReferenceCoreLevel::Param(rname(name))
+}
+
+fn rzero() -> ReferenceCoreLevel {
+    ReferenceCoreLevel::Zero
+}
+
+fn rsucc(level: ReferenceCoreLevel) -> ReferenceCoreLevel {
+    ReferenceCoreLevel::Succ(Box::new(level))
+}
+
+fn rtype0() -> ReferenceCoreLevel {
+    rsucc(rzero())
+}
+
+fn rsort(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    ReferenceCoreExpr::Sort(level)
+}
+
+fn rbvar(index: u32) -> ReferenceCoreExpr {
+    ReferenceCoreExpr::BVar(index)
+}
+
+fn rpi(ty: ReferenceCoreExpr, body: ReferenceCoreExpr) -> ReferenceCoreExpr {
+    ReferenceCoreExpr::Pi {
+        ty: Box::new(ty),
+        body: Box::new(body),
+    }
+}
+
+fn rapp(fun: ReferenceCoreExpr, arg: ReferenceCoreExpr) -> ReferenceCoreExpr {
+    ReferenceCoreExpr::App(Box::new(fun), Box::new(arg))
+}
+
+fn rbuiltin(name: &str, levels: Vec<ReferenceCoreLevel>) -> ReferenceCoreExpr {
+    let name = rname(name);
+    let decl_interface_hash =
+        builtin_decl_interface_hash(&name).expect("builtin signatures only use known builtins");
+    ReferenceCoreExpr::Const {
+        global_ref: ReferenceCoreGlobalRef::Builtin {
+            name,
+            decl_interface_hash,
+        },
+        levels,
+    }
+}
+
+fn rnat() -> ReferenceCoreExpr {
+    rbuiltin("Nat", Vec::new())
+}
+
+fn reference_eq(
+    level: ReferenceCoreLevel,
+    ty: ReferenceCoreExpr,
+    lhs: ReferenceCoreExpr,
+    rhs: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    apps(rbuiltin("Eq", vec![level]), vec![ty, lhs, rhs])
+}
+
+fn reference_eq_refl(
+    level: ReferenceCoreLevel,
+    ty: ReferenceCoreExpr,
+    value: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    apps(rbuiltin("Eq.refl", vec![level]), vec![ty, value])
+}
+
+fn reference_eq_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    rpi(rsort(level), rpi(rbvar(0), rpi(rbvar(1), rsort(rzero()))))
+}
+
+fn reference_eq_refl_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    rpi(
+        rsort(level.clone()),
+        rpi(rbvar(0), reference_eq(level, rbvar(1), rbvar(0), rbvar(0))),
+    )
+}
+
+fn reference_eq_rec_type(
+    value_level: ReferenceCoreLevel,
+    motive_level: ReferenceCoreLevel,
+) -> ReferenceCoreExpr {
+    let motive_ty = rpi(
+        rbvar(1),
+        rpi(
+            reference_eq(value_level.clone(), rbvar(2), rbvar(1), rbvar(0)),
+            rsort(motive_level),
+        ),
+    );
+    let refl_proof = reference_eq_refl(value_level.clone(), rbvar(2), rbvar(1));
+    let minor_ty = apps(rbvar(0), vec![rbvar(1), refl_proof]);
+    let major_ty = reference_eq(value_level, rbvar(4), rbvar(3), rbvar(0));
+    let result_ty = apps(rbvar(3), vec![rbvar(1), rbvar(0)]);
+    rpi(
+        rsort(rparam("u")),
+        rpi(
+            rbvar(0),
+            rpi(
+                motive_ty,
+                rpi(minor_ty, rpi(rbvar(3), rpi(major_ty, result_ty))),
+            ),
+        ),
+    )
+}
+
+fn reference_setoid(level: ReferenceCoreLevel, carrier: ReferenceCoreExpr) -> ReferenceCoreExpr {
+    rapp(rbuiltin("Setoid", vec![level]), carrier)
+}
+
+fn reference_rel_equiv(
+    level: ReferenceCoreLevel,
+    carrier: ReferenceCoreExpr,
+    relation: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    apps(rbuiltin("RelEquiv", vec![level]), vec![carrier, relation])
+}
+
+fn reference_setoid_relation(
+    level: ReferenceCoreLevel,
+    carrier: ReferenceCoreExpr,
+    setoid: ReferenceCoreExpr,
+    lhs: ReferenceCoreExpr,
+    rhs: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    apps(
+        rbuiltin("Setoid.r", vec![level]),
+        vec![carrier, setoid, lhs, rhs],
+    )
+}
+
+fn reference_quotient(
+    level: ReferenceCoreLevel,
+    carrier: ReferenceCoreExpr,
+    setoid: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    apps(rbuiltin("Quotient", vec![level]), vec![carrier, setoid])
+}
+
+fn reference_quotient_mk(
+    level: ReferenceCoreLevel,
+    carrier: ReferenceCoreExpr,
+    setoid: ReferenceCoreExpr,
+    value: ReferenceCoreExpr,
+) -> ReferenceCoreExpr {
+    apps(
+        rbuiltin("Quotient.mk", vec![level]),
+        vec![carrier, setoid, value],
+    )
+}
+
+fn reference_setoid_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    rpi(rsort(rsucc(level.clone())), rsort(rsucc(level)))
+}
+
+fn reference_rel_equiv_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    let relation_ty = rpi(rbvar(0), rpi(rbvar(1), rsort(rzero())));
+    rpi(rsort(rsucc(level)), rpi(relation_ty, rsort(rzero())))
+}
+
+fn reference_setoid_mk_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    let relation_ty = rpi(rbvar(0), rpi(rbvar(1), rsort(rzero())));
+    let equivalence_ty = reference_rel_equiv(level.clone(), rbvar(1), rbvar(0));
+    let setoid_ty = reference_setoid(level.clone(), rbvar(2));
+    rpi(
+        rsort(rsucc(level)),
+        rpi(relation_ty, rpi(equivalence_ty, setoid_ty)),
+    )
+}
+
+fn reference_setoid_relation_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    rpi(
+        rsort(rsucc(level.clone())),
+        rpi(
+            reference_setoid(level.clone(), rbvar(0)),
+            rpi(rbvar(1), rpi(rbvar(2), rsort(rzero()))),
+        ),
+    )
+}
+
+fn reference_quotient_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    rpi(
+        rsort(rsucc(level.clone())),
+        rpi(
+            reference_setoid(level.clone(), rbvar(0)),
+            rsort(rsucc(level)),
+        ),
+    )
+}
+
+fn reference_quotient_mk_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    rpi(
+        rsort(rsucc(level.clone())),
+        rpi(
+            reference_setoid(level.clone(), rbvar(0)),
+            rpi(rbvar(1), reference_quotient(level, rbvar(2), rbvar(1))),
+        ),
+    )
+}
+
+fn reference_quotient_sound_type(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
+    let relation_premise =
+        reference_setoid_relation(level.clone(), rbvar(3), rbvar(2), rbvar(1), rbvar(0));
+    let quotient_for_s = reference_quotient(level.clone(), rbvar(4), rbvar(3));
+    let lhs = reference_quotient_mk(level.clone(), rbvar(4), rbvar(3), rbvar(2));
+    let rhs = reference_quotient_mk(level.clone(), rbvar(4), rbvar(3), rbvar(1));
+    let equality = reference_eq(rsucc(level.clone()), quotient_for_s, lhs, rhs);
+    rpi(
+        rsort(rsucc(level.clone())),
+        rpi(
+            reference_setoid(level.clone(), rbvar(0)),
+            rpi(rbvar(1), rpi(rbvar(2), rpi(relation_premise, equality))),
+        ),
+    )
+}
+
+fn reference_quotient_lift_type(
+    carrier_level: ReferenceCoreLevel,
+    result_level: ReferenceCoreLevel,
+) -> ReferenceCoreExpr {
+    let relation_premise = reference_setoid_relation(
+        carrier_level.clone(),
+        rbvar(5),
+        rbvar(3),
+        rbvar(1),
+        rbvar(0),
+    );
+    let lhs = rapp(rbvar(3), rbvar(2));
+    let rhs = rapp(rbvar(3), rbvar(1));
+    let compatibility_result = reference_eq(rsucc(result_level.clone()), rbvar(5), lhs, rhs);
+    let compatibility_ty = rpi(
+        rbvar(3),
+        rpi(rbvar(4), rpi(relation_premise, compatibility_result)),
+    );
+    rpi(
+        rsort(rsucc(carrier_level.clone())),
+        rpi(
+            rsort(rsucc(result_level)),
+            rpi(
+                reference_setoid(carrier_level.clone(), rbvar(1)),
+                rpi(
+                    rpi(rbvar(2), rbvar(2)),
+                    rpi(
+                        compatibility_ty,
+                        rpi(
+                            reference_quotient(carrier_level, rbvar(4), rbvar(2)),
+                            rbvar(4),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
 }
 
 fn reference_level_defeq(lhs: &ReferenceCoreLevel, rhs: &ReferenceCoreLevel) -> bool {
@@ -6165,6 +6644,8 @@ struct AxiomReport {
     per_declaration: Vec<DeclAxiomReport>,
     module_axioms: Vec<AxiomRef>,
     module_axioms_offset: usize,
+    core_features: Vec<ReferenceCoreFeature>,
+    core_features_offset: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -6290,6 +6771,18 @@ impl<'a> Decoder<'a> {
         self.offset == self.bytes.len()
     }
 
+    fn remaining_len(&self) -> usize {
+        self.bytes.len().saturating_sub(self.offset)
+    }
+
+    fn has_core_feature_report(&self) -> bool {
+        let feature_report_len = self.remaining_len().saturating_sub(MODULE_HASH_TRAILER_LEN);
+        let tag = CORE_FEATURE_REPORT_TAG.as_bytes();
+        feature_report_len > tag.len()
+            && self.bytes.get(self.offset) == Some(&(tag.len() as u8))
+            && self.bytes.get(self.offset + 1..self.offset + 1 + tag.len()) == Some(tag)
+    }
+
     fn module_certificate(&mut self) -> DecodeResult<DecodedModuleCertificate> {
         let header = self.header()?;
         let imports = self.imports()?;
@@ -6298,7 +6791,12 @@ impl<'a> Decoder<'a> {
         let term_table = self.term_table()?;
         let declarations = self.declarations()?;
         let export_block = self.export_block()?;
-        let axiom_report = self.axiom_report()?;
+        let mut axiom_report = self.axiom_report()?;
+        if self.has_core_feature_report() {
+            let offset = self.offset;
+            axiom_report.core_features = self.core_features()?;
+            axiom_report.core_features_offset = offset;
+        }
         let export_hash_offset = self.offset;
         let export_hash = self.hash(ReferenceCertificateSection::Hashes)?;
         let axiom_report_hash_offset = self.offset;
@@ -6793,7 +7291,39 @@ impl<'a> Decoder<'a> {
             per_declaration,
             module_axioms,
             module_axioms_offset,
+            core_features: Vec::new(),
+            core_features_offset: module_axioms_offset,
         })
+    }
+
+    fn core_features(&mut self) -> DecodeResult<Vec<ReferenceCoreFeature>> {
+        let offset = self.offset;
+        let tag = self.string(ReferenceCertificateSection::AxiomReport)?;
+        if tag != CORE_FEATURE_REPORT_TAG {
+            return Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::AxiomReport,
+                offset,
+                ReferenceCheckReason::NonCanonicalOrder,
+            ));
+        }
+        let len = self.bounded_len(ReferenceCertificateSection::AxiomReport)?;
+        if len == 0 {
+            return Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::AxiomReport,
+                offset,
+                ReferenceCheckReason::NonCanonicalOrder,
+            ));
+        }
+        let mut features = Vec::with_capacity(len);
+        for _ in 0..len {
+            let feature = self.string(ReferenceCertificateSection::AxiomReport)?;
+            let Some(feature) = ReferenceCoreFeature::from_name(&feature) else {
+                return Err(ReferenceCheckError::unsupported_core_feature(offset));
+            };
+            features.push(feature);
+        }
+        ensure_strict_order(&features, ReferenceCertificateSection::AxiomReport, offset)?;
+        Ok(features)
     }
 
     fn dependency_entries(
@@ -7837,7 +8367,7 @@ fn union_axioms(axioms: impl IntoIterator<Item = AxiomRef>) -> Vec<AxiomRef> {
         .collect()
 }
 
-fn builtin_decl_interface_hash(name: &ReferenceModuleName) -> Option<ReferenceHash> {
+pub(crate) fn builtin_decl_interface_hash(name: &ReferenceModuleName) -> Option<ReferenceHash> {
     let tag = match name.dotted().as_str() {
         "Nat" => "npa.machine-tactic.builtin.nat.v1",
         "Nat.zero" => "npa.machine-tactic.builtin.nat.zero.v1",
@@ -7846,6 +8376,14 @@ fn builtin_decl_interface_hash(name: &ReferenceModuleName) -> Option<ReferenceHa
         "Eq" => "npa.machine-tactic.builtin.eq.v1",
         "Eq.refl" => "npa.machine-tactic.builtin.eq.refl.v1",
         "Eq.rec" => "npa.machine-tactic.builtin.eq.rec.v1",
+        "Setoid" => "npa.quotient-v1.builtin.setoid.v1",
+        "RelEquiv" => "npa.quotient-v1.builtin.rel-equiv.v1",
+        "Setoid.mk" => "npa.quotient-v1.builtin.setoid.mk.v1",
+        "Setoid.r" => "npa.quotient-v1.builtin.setoid.r.v1",
+        "Quotient" => "npa.quotient-v1.builtin.quotient.v1",
+        "Quotient.mk" => "npa.quotient-v1.builtin.quotient.mk.v1",
+        "Quotient.sound" => "npa.quotient-v1.builtin.quotient.sound.v1",
+        "Quotient.lift" => "npa.quotient-v1.builtin.quotient.lift.v1",
         _ => return None,
     };
     Some(hash_with_domain(
@@ -7856,6 +8394,20 @@ fn builtin_decl_interface_hash(name: &ReferenceModuleName) -> Option<ReferenceHa
 
 fn builtin_is_axiom(name: &ReferenceModuleName) -> bool {
     name.dotted() == "Eq.rec"
+}
+
+fn quotient_builtin_name(name: &ReferenceModuleName) -> bool {
+    matches!(
+        name.dotted().as_str(),
+        "Setoid"
+            | "RelEquiv"
+            | "Setoid.mk"
+            | "Setoid.r"
+            | "Quotient"
+            | "Quotient.mk"
+            | "Quotient.sound"
+            | "Quotient.lift"
+    )
 }
 
 fn qualify_name(module: &ReferenceModuleName, raw_name: &str) -> String {
@@ -8037,6 +8589,13 @@ fn encode_axiom_report(report: &AxiomReport) -> Vec<u8> {
         encode_axiom_refs_to(&mut out, &entry.transitive_axioms);
     }
     encode_axiom_refs_to(&mut out, &report.module_axioms);
+    if !report.core_features.is_empty() {
+        encode_string_to(&mut out, CORE_FEATURE_REPORT_TAG);
+        encode_uvar_to(&mut out, report.core_features.len() as u64);
+        for feature in &report.core_features {
+            encode_string_to(&mut out, feature.as_str());
+        }
+    }
     out
 }
 
@@ -8166,6 +8725,11 @@ fn encode_name_to(out: &mut Vec<u8>, name: &ReferenceModuleName) {
         encode_uvar_to(out, component.len() as u64);
         out.extend(component.as_bytes());
     }
+}
+
+fn encode_string_to(out: &mut Vec<u8>, value: &str) {
+    encode_uvar_to(out, value.len() as u64);
+    out.extend(value.as_bytes());
 }
 
 fn hash_with_domain(domain: &[u8], payload: &[u8]) -> ReferenceHash {

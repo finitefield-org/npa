@@ -523,6 +523,7 @@ fn raw_error_kind(error: &ReferenceCheckError) -> &'static str {
             _ => "type_mismatch",
         },
         ReferenceCheckErrorKind::UnsupportedSkeleton => "unsupported_schema_version",
+        ReferenceCheckErrorKind::UnsupportedCoreFeature => "unsupported_core_feature",
     }
 }
 

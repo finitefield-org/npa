@@ -2931,6 +2931,7 @@ fn high_trust_policy_allowing_decoded_axioms(
         mode: TrustMode::HighTrust,
         allowlisted_axioms,
         deny_sorry: false,
+        supported_core_features: BTreeSet::new(),
     }
 }
 
@@ -2941,6 +2942,7 @@ fn high_trust_policy_allowing_std_mvp_axioms() -> AxiomPolicy {
         mode: TrustMode::HighTrust,
         allowlisted_axioms,
         deny_sorry: true,
+        supported_core_features: BTreeSet::new(),
     }
 }
 

@@ -166,6 +166,7 @@ pub struct ReferencePublicEnvironment {
     imports: Vec<ReferencePublicImport>,
     exports: Vec<ReferencePublicExport>,
     module_axioms: Vec<ReferenceAxiomDependency>,
+    core_features: Vec<ReferenceCoreFeature>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -179,6 +180,7 @@ impl ReferencePublicEnvironment {
         imports: Vec<(ReferenceModuleName, ReferenceHash)>,
         exports: Vec<ReferencePublicExport>,
         module_axioms: Vec<ReferenceAxiomDependency>,
+        core_features: Vec<ReferenceCoreFeature>,
     ) -> Self {
         Self {
             imports: imports
@@ -190,6 +192,7 @@ impl ReferencePublicEnvironment {
                 .collect(),
             exports,
             module_axioms,
+            core_features,
         }
     }
 
@@ -201,6 +204,11 @@ impl ReferencePublicEnvironment {
     /// Returns module-level transitive axiom dependencies.
     pub fn module_axioms(&self) -> &[ReferenceAxiomDependency] {
         &self.module_axioms
+    }
+
+    /// Returns core features required by this public environment.
+    pub fn core_features(&self) -> &[ReferenceCoreFeature] {
+        &self.core_features
     }
 }
 
@@ -533,6 +541,8 @@ pub struct ReferenceCheckerPolicy {
     pub deny_sorry: bool,
     /// Reject every custom axiom not explicitly allowed by the policy.
     pub deny_custom_axioms: bool,
+    /// Core feature profiles supported by this checker run.
+    pub supported_core_features: Vec<ReferenceCoreFeature>,
 }
 
 impl Default for ReferenceCheckerPolicy {
@@ -542,6 +552,7 @@ impl Default for ReferenceCheckerPolicy {
             allowed_axioms: Vec::new(),
             deny_sorry: true,
             deny_custom_axioms: false,
+            supported_core_features: Vec::new(),
         }
     }
 }
@@ -553,6 +564,30 @@ pub enum ReferenceTrustMode {
     Normal,
     /// High-trust mode requiring certificate hashes for imports.
     HighTrust,
+}
+
+/// Optional core feature profile committed by a certificate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ReferenceCoreFeature {
+    /// Phase 9 quotient primitive interface and `Quotient.lift` computation rule.
+    QuotientV1,
+}
+
+impl ReferenceCoreFeature {
+    /// Stable certificate feature name.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::QuotientV1 => "quotient_v1",
+        }
+    }
+
+    /// Parse a stable certificate feature name.
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "quotient_v1" => Some(Self::QuotientV1),
+            _ => None,
+        }
+    }
 }
 
 /// Result returned by [`check_certificate`].
@@ -586,7 +621,7 @@ pub struct ReferenceCheckedModule {
     export_hash: ReferenceHash,
     axiom_report_hash: ReferenceHash,
     certificate_hash: ReferenceHash,
-    public_environment: ReferencePublicEnvironment,
+    public_environment: Box<ReferencePublicEnvironment>,
     checked_by_reference_checker: bool,
 }
 
@@ -603,7 +638,7 @@ impl ReferenceCheckedModule {
             export_hash,
             axiom_report_hash,
             certificate_hash,
-            public_environment,
+            public_environment: Box::new(public_environment),
             checked_by_reference_checker: true,
         }
     }
@@ -625,7 +660,7 @@ impl ReferenceCheckedModule {
             self.export_hash,
             self.axiom_report_hash,
             self.certificate_hash,
-            self.public_environment,
+            *self.public_environment,
             self.checked_by_reference_checker,
         )
     }
@@ -701,6 +736,15 @@ impl ReferenceCheckError {
         }
     }
 
+    pub(crate) fn unsupported_core_feature(offset: usize) -> Self {
+        Self {
+            kind: ReferenceCheckErrorKind::UnsupportedCoreFeature,
+            section: ReferenceCertificateSection::AxiomReport,
+            offset,
+            reason: Some(ReferenceCheckReason::UnsupportedCoreFeature),
+        }
+    }
+
     pub(crate) fn import_resolution(
         section: ReferenceCertificateSection,
         offset: usize,
@@ -747,6 +791,8 @@ pub enum ReferenceCheckErrorKind {
     TypeCheck,
     /// The checked certificate used a declaration form reserved for a later milestone.
     UnsupportedSkeleton,
+    /// The checked certificate requires an unsupported core feature profile.
+    UnsupportedCoreFeature,
 }
 
 /// Stable certificate section label for diagnostics.
@@ -816,6 +862,8 @@ pub enum ReferenceCheckReason {
     DuplicateName,
     /// A canonical declaration table contained duplicate names.
     DuplicateDeclarationName,
+    /// A declaration collided with a reserved core primitive name.
+    ReservedCorePrimitive,
     /// An import binding appeared more than once.
     DuplicateImport,
     /// A level table entry was not normalized.
@@ -838,6 +886,8 @@ pub enum ReferenceCheckReason {
     UncheckedImport,
     /// A constant or global reference was unavailable in the checked environment.
     UnknownReference,
+    /// A known core feature is not enabled by the active checker policy.
+    UnsupportedCoreFeature,
     /// A constant was applied to the wrong number of universe levels.
     BadUniverseArity,
     /// A universe-parameter telescope contained the same name more than once.
@@ -994,9 +1044,9 @@ mod tests {
         VerifierSession,
     };
     use npa_kernel::{
-        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, prop, type0, Binder,
-        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, MutualInductiveBlock,
-        UniverseConstraint,
+        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, prop, quotient, setoid,
+        type0, Binder, ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level,
+        MutualInductiveBlock, UniverseConstraint,
     };
     use sha2::{Digest, Sha256};
 
@@ -4222,6 +4272,80 @@ mod tests {
             &ReferenceCheckerPolicy::default(),
         )
         .is_checked());
+    }
+
+    fn quotient_builtin_module() -> CoreModule {
+        let u = Level::param("u");
+        CoreModule {
+            name: Name::from_dotted("Test.ReferenceQuotient"),
+            declarations: vec![Decl::Axiom {
+                name: "uses_quotient".to_owned(),
+                universe_params: vec!["u".to_owned()],
+                ty: Expr::pi(
+                    "A",
+                    Expr::sort(Level::succ(u.clone())),
+                    Expr::pi(
+                        "s",
+                        setoid(u.clone(), Expr::bvar(0)),
+                        quotient(u, Expr::bvar(1), Expr::bvar(0)),
+                    ),
+                ),
+            }],
+        }
+    }
+
+    #[test]
+    fn quotient_feature_is_rejected_without_reference_checker_support() {
+        let cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
+        let bytes = encode_module_cert(&cert).unwrap();
+
+        let checked = check_certificate(
+            &bytes,
+            &ReferenceImportStore::default(),
+            &ReferenceCheckerPolicy::default(),
+        );
+        let ReferenceCheckResult::Rejected(error) = checked else {
+            panic!("quotient_v1 must require explicit checker support");
+        };
+        assert_eq!(error.kind, ReferenceCheckErrorKind::UnsupportedCoreFeature);
+        assert_eq!(
+            error.reason,
+            Some(ReferenceCheckReason::UnsupportedCoreFeature)
+        );
+    }
+
+    #[test]
+    fn quotient_feature_supported_reference_checker_accepts_fast_cert() {
+        let cert = build_module_cert(quotient_builtin_module(), &[]).unwrap();
+        let bytes = encode_module_cert(&cert).unwrap();
+        let policy = ReferenceCheckerPolicy {
+            supported_core_features: vec![ReferenceCoreFeature::QuotientV1],
+            ..ReferenceCheckerPolicy::default()
+        };
+
+        assert!(check_certificate(&bytes, &ReferenceImportStore::default(), &policy).is_checked());
+    }
+
+    #[test]
+    fn quotient_builtin_interface_hashes_match_fast_certificate_profile() {
+        for name in [
+            "Setoid",
+            "RelEquiv",
+            "Setoid.mk",
+            "Setoid.r",
+            "Quotient",
+            "Quotient.mk",
+            "Quotient.sound",
+            "Quotient.lift",
+        ] {
+            let cert_name = Name::from_dotted(name);
+            let reference_name = ReferenceModuleName::from_dotted(name).unwrap();
+            assert_eq!(
+                npa_cert::builtin_decl_interface_hash(&cert_name),
+                decode::builtin_decl_interface_hash(&reference_name),
+                "{name} interface hash drifted"
+            );
+        }
     }
 
     #[test]

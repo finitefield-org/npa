@@ -1,7 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    builtins::{eq_inductive, eq_rec_type, nat_inductive},
+    builtins::{
+        eq_inductive, eq_rec_type, nat_inductive, quotient_lift_type, quotient_mk_type,
+        quotient_sound_type, quotient_type, rel_equiv_type, setoid_mk_type, setoid_relation_type,
+        setoid_type,
+    },
     context::Ctx,
     decl::{
         ConstructorDecl, Decl, InductiveDecl, MutualInductiveBlock, RecursorDecl, RecursorRules,
@@ -58,6 +62,69 @@ impl Env {
             eq_rec_type(Level::param("u"), Level::param("v")),
         )?;
         Ok(env)
+    }
+
+    pub fn add_quotient_builtins(&mut self) -> Result<()> {
+        if self.decl("Eq").is_none() {
+            self.add_inductive(eq_inductive())?;
+        }
+        if self.decl("Setoid").is_none() {
+            self.add_axiom(
+                "Setoid",
+                vec!["u".to_owned()],
+                setoid_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("RelEquiv").is_none() {
+            self.add_axiom(
+                "RelEquiv",
+                vec!["u".to_owned()],
+                rel_equiv_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("Setoid.mk").is_none() {
+            self.add_axiom(
+                "Setoid.mk",
+                vec!["u".to_owned()],
+                setoid_mk_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("Setoid.r").is_none() {
+            self.add_axiom(
+                "Setoid.r",
+                vec!["u".to_owned()],
+                setoid_relation_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("Quotient").is_none() {
+            self.add_axiom(
+                "Quotient",
+                vec!["u".to_owned()],
+                quotient_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("Quotient.mk").is_none() {
+            self.add_axiom(
+                "Quotient.mk",
+                vec!["u".to_owned()],
+                quotient_mk_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("Quotient.sound").is_none() {
+            self.add_axiom(
+                "Quotient.sound",
+                vec!["u".to_owned()],
+                quotient_sound_type(Level::param("u")),
+            )?;
+        }
+        if self.decl("Quotient.lift").is_none() {
+            self.add_axiom(
+                "Quotient.lift",
+                vec!["u".to_owned(), "v".to_owned()],
+                quotient_lift_type(Level::param("u"), Level::param("v")),
+            )?;
+        }
+        Ok(())
     }
 
     pub fn decl(&self, name: &str) -> Option<&Decl> {
@@ -1266,6 +1333,12 @@ impl Env {
                         current = reduced;
                         continue;
                     }
+                    if let Some(reduced) =
+                        self.reduce_quotient_lift(ctx, delta, &app, fuel, kind)?
+                    {
+                        current = reduced;
+                        continue;
+                    }
                     return Ok(app);
                 }
                 Expr::Let { value, body, .. } => {
@@ -1408,6 +1481,42 @@ impl Env {
         }
 
         Ok(Some(Expr::apps(reduced, rest)))
+    }
+
+    fn reduce_quotient_lift(
+        &self,
+        ctx: &Ctx,
+        delta: &[String],
+        term: &Expr,
+        fuel: &mut usize,
+        kind: ResourceLimitKind,
+    ) -> Result<Option<Expr>> {
+        let (head, args) = collect_apps(term);
+        let Expr::Const { name, .. } = head else {
+            return Ok(None);
+        };
+        if name != "Quotient.lift" || args.len() < 6 {
+            return Ok(None);
+        }
+
+        let quotient_arg = args[5].clone();
+        let rest = args[6..].to_vec();
+        let quotient_whnf = self.whnf_with_remaining_fuel(ctx, delta, &quotient_arg, fuel, kind)?;
+        let (mk_head, mk_args) = collect_apps(&quotient_whnf);
+        let Expr::Const { name: mk_name, .. } = mk_head else {
+            return Ok(None);
+        };
+        if mk_name != "Quotient.mk" || mk_args.len() != 3 {
+            return Ok(None);
+        }
+        if mk_args[0] != args[0] || mk_args[1] != args[2] {
+            return Ok(None);
+        }
+
+        Ok(Some(Expr::apps(
+            Expr::app(args[3].clone(), mk_args[2].clone()),
+            rest,
+        )))
     }
 
     fn constructor_belongs_to(&self, constructor: &str, inductive: &str) -> bool {

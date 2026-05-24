@@ -22,6 +22,7 @@ pub(crate) fn verify_module_cert_impl(
     verify_header(&cert.header)?;
     verify_tables(&cert)?;
     verify_hashes(&cert)?;
+    enforce_core_feature_policy(&cert.axiom_report, policy)?;
     verify_declaration_order(&cert)?;
     verify_inductive_generated_artifacts(&cert)?;
 
@@ -717,6 +718,11 @@ fn verify_declaration_order(cert: &ModuleCert) -> Result<()> {
         .map(|index| decl_name_as_name(cert, index))
         .collect::<Result<Vec<_>>>()?;
     ensure_unique_names(&local_names)?;
+    for name in &local_names {
+        if reserved_core_primitive_name(name) {
+            return Err(CertError::ReservedCorePrimitive { name: name.clone() });
+        }
+    }
 
     let dependencies = cert
         .declarations
@@ -1109,6 +1115,10 @@ fn verify_dependencies_and_axioms(cert: &ModuleCert, imports: &[&VerifiedModule]
             .flat_map(|report| report.transitive_axioms.iter().cloned()),
     );
     if expected_module_axioms != cert.axiom_report.module_axioms {
+        return Err(CertError::AxiomReportMismatch { decl: None });
+    }
+    let expected_features = core_features_from_builtins(&referenced_builtins_from_cert(cert)?);
+    if expected_features != cert.axiom_report.core_features {
         return Err(CertError::AxiomReportMismatch { decl: None });
     }
 
@@ -2359,7 +2369,19 @@ fn enforce_axiom_policy(cert: &ModuleCert, policy: &AxiomPolicy) -> Result<()> {
 
 fn enforce_import_axiom_policy(imports: &[&VerifiedModule], policy: &AxiomPolicy) -> Result<()> {
     for import in imports {
+        enforce_core_feature_policy(&import.axiom_report, policy)?;
         enforce_axiom_policy_for_report(&import.name_table, &import.axiom_report, policy)?;
+    }
+    Ok(())
+}
+
+fn enforce_core_feature_policy(axiom_report: &AxiomReport, policy: &AxiomPolicy) -> Result<()> {
+    for feature in &axiom_report.core_features {
+        if !policy.supported_core_features.contains(feature) {
+            return Err(CertError::UnsupportedCoreFeature {
+                feature: feature.as_str().to_owned(),
+            });
+        }
     }
     Ok(())
 }
