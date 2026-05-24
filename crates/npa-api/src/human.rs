@@ -37,7 +37,8 @@ use crate::{
     HumanSessionCreateRequest, HumanSessionVerifyError, HumanSessionVerifyImport,
     HumanSessionVerifyImportAxiom, HumanSessionVerifyOk, HumanSessionVerifyRequest,
     HumanSessionVerifyStatus, HumanSimpLiteTacticError, HumanSimpLiteTacticOk,
-    HumanSimpLiteTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
+    HumanSimpLiteTacticRequest, HumanSmtProveRequest, HumanSmtProveResponse, HumanSmtTacticOk,
+    HumanSmtTacticRequest, HumanSourcePosition, HumanStartProofError, HumanStartProofOk,
     HumanStartProofRequest, HumanStateApiError, HumanStateAtRequest, HumanStateByIdRequest,
     HumanStateCurrentRequest, HumanStateGoalSummary, HumanStateGoalsOk, HumanStateGoalsRequest,
     HumanStateLookupOk, HumanStateRequestError, HumanStateRequestHeader,
@@ -1411,6 +1412,10 @@ fn human_assistant_available_tactics() -> Vec<HumanAssistantAvailableTactic> {
         ("rw", "Rewrite the target using an equality proof"),
         ("simp-lite", "Run deterministic built-in simplification"),
         (
+            "smt",
+            "Close with checked SMT reconstruction or explicit lemmas",
+        ),
+        (
             "induction",
             "Split a Nat local into zero and successor cases",
         ),
@@ -2485,6 +2490,22 @@ fn human_tactic_run_execute(
                 budget,
             })
             .map_err(human_script_simp_lite_error)?;
+            Ok(HumanTacticRunExecutionOk {
+                state: ok.state,
+                deltas: vec![ok.delta],
+            })
+        }
+        npa_frontend::HumanTacticSyntax::Smt { lemmas, span } => {
+            let ok = run_human_smt_tactic(HumanSmtTacticRequest {
+                state,
+                goal_id,
+                lemmas,
+                span: *span,
+                current_source_interface,
+                imported_source_interfaces,
+                budget,
+            })
+            .map_err(human_script_apply_error)?;
             Ok(HumanTacticRunExecutionOk {
                 state: ok.state,
                 deltas: vec![ok.delta],
@@ -6942,6 +6963,79 @@ pub fn run_human_induction_tactic(
     Ok(HumanInductionTacticOk { state, delta })
 }
 
+pub fn run_human_smt_tactic(
+    request: HumanSmtTacticRequest<'_, '_>,
+) -> Result<HumanSmtTacticOk, HumanApplyTacticError> {
+    let goal = request.state.goal(request.goal_id)?;
+    let mut lemmas = Vec::with_capacity(request.lemmas.len());
+    for lemma in request.lemmas {
+        let resolved = human_apply_resolve(
+            request.state,
+            &goal,
+            lemma,
+            request.current_source_interface,
+            request.imported_source_interfaces,
+        )?;
+        if !resolved.args.is_empty() {
+            return Err(human_apply_unsupported_diagnostic(
+                resolved.span,
+                format!(
+                    "smt lemma `{}` must resolve to a closed proof head in the Human SMT MVP",
+                    resolved.head_label
+                ),
+            )
+            .into());
+        }
+        lemmas.push(npa_tactic::SmtLemmaRef {
+            head: resolved.head,
+            universe_args: resolved.universe_args,
+        });
+    }
+
+    let (state, delta) = npa_tactic::run_machine_tactic_with_budget(
+        request.state,
+        npa_tactic::MachineTactic::Smt {
+            goal_id: request.goal_id,
+            lemmas,
+        },
+        request.budget,
+    )
+    .map_err(|diagnostic| human_smt_machine_error(diagnostic, &goal, request.span))?;
+    npa_tactic::validate_machine_proof_state(&state)?;
+    Ok(HumanSmtTacticOk { state, delta })
+}
+
+pub fn run_human_smt_prove(request: HumanSmtProveRequest<'_, '_>) -> HumanSmtProveResponse {
+    if !request.require_certificate {
+        let candidate_hash =
+            crate::advanced_ai::advanced_ai_candidate_hash(request.request_canonical_bytes);
+        let error = crate::AdvancedAiValidationError::UnsupportedFeature;
+        let feature_error = Some(crate::AdvancedAiFeatureError::SmtCertificate(
+            crate::AdvancedSmtCertificateError::SolverResultOnly,
+        ));
+        let validation_result_hash = crate::advanced_ai_validation_result_hash_for_rejection(
+            candidate_hash,
+            error,
+            feature_error,
+        );
+        return HumanSmtProveResponse::Diagnostic(crate::AdvancedAiEndpointResponse::Rejected {
+            candidate_hash,
+            validation_result_hash,
+            error,
+            feature_error,
+        });
+    }
+
+    match crate::advanced_ai_smt_prove_hashes_from_request(
+        request.request_canonical_bytes,
+        request.verified_imports,
+        request.workspace_root,
+    ) {
+        Ok(hashes) => HumanSmtProveResponse::Success(hashes.into()),
+        Err(response) => HumanSmtProveResponse::Diagnostic(response),
+    }
+}
+
 pub fn run_human_tactic_script(
     request: HumanTacticScriptRunRequest<'_, '_>,
 ) -> Result<HumanTacticScriptRunOk, HumanTacticScriptError> {
@@ -7013,6 +7107,20 @@ pub fn run_human_tactic_script(
                     budget: request.budget,
                 })
                 .map_err(human_script_simp_lite_error)?;
+                state = ok.state;
+                deltas.push(ok.delta);
+            }
+            npa_frontend::HumanTacticSyntax::Smt { lemmas, span } => {
+                let ok = run_human_smt_tactic(HumanSmtTacticRequest {
+                    state: &state,
+                    goal_id,
+                    lemmas,
+                    span: *span,
+                    current_source_interface: request.current_source_interface,
+                    imported_source_interfaces: request.imported_source_interfaces,
+                    budget: request.budget,
+                })
+                .map_err(human_script_apply_error)?;
                 state = ok.state;
                 deltas.push(ok.delta);
             }
@@ -7989,6 +8097,30 @@ fn human_apply_machine_error(
                     "cannot apply `{}`\n\ntarget:\n  {:?}\n\nhead type:\n  {:?}\n\n{}",
                     resolved.head_label, goal.target, resolved.head_type, diagnostic.message
                 ),
+            )
+            .into()
+        }
+        _ => diagnostic.into(),
+    }
+}
+
+fn human_smt_machine_error(
+    diagnostic: npa_tactic::MachineTacticDiagnostic,
+    goal: &npa_tactic::MachineGoal,
+    span: npa_frontend::Span,
+) -> HumanApplyTacticError {
+    match &diagnostic.kind {
+        npa_tactic::MachineTacticDiagnosticKind::TypeMismatch
+        | npa_tactic::MachineTacticDiagnosticKind::UnknownTacticHead
+        | npa_tactic::MachineTacticDiagnosticKind::AmbiguousTacticHead
+        | npa_tactic::MachineTacticDiagnosticKind::UnknownLocalName
+        | npa_tactic::MachineTacticDiagnosticKind::AmbiguousLocalName => {
+            human_tactic_machine_diagnostic(
+                &diagnostic,
+                span,
+                Some(goal),
+                Some(npa_frontend::HumanDiagnosticKind::TypeMismatch),
+                format!("smt could not close the goal: {}", diagnostic.message),
             )
             .into()
         }
@@ -13301,6 +13433,31 @@ theorem id_nat : forall (n : Nat), Nat := by
         );
         npa_tactic::extract_closed_machine_proof(&ok.state)
             .expect("extracted script proof should pass kernel check");
+    }
+
+    #[test]
+    fn human_smt_tactic_closes_from_local_hypothesis() {
+        let core = compile_human_source_to_core(HumanCompileCoreRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanSmt"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+theorem target : forall (P : Prop), forall (h : P), P := by
+  intro P
+  intro h
+  smt",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human smt should compile through checked Machine tactic path");
+
+        assert_eq!(core.core_module.declarations.len(), 1);
+        let npa_kernel::Decl::Theorem { proof, .. } = &core.core_module.declarations[0] else {
+            panic!("expected theorem");
+        };
+        assert!(matches!(proof, Expr::Lam { .. }));
     }
 
     #[test]

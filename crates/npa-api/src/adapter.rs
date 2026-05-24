@@ -62,6 +62,7 @@ pub enum MachineApiTacticKind {
     Apply,
     Rw,
     SimpLite,
+    Smt,
     InductionNat,
 }
 
@@ -73,6 +74,7 @@ impl MachineApiTacticKind {
             Self::Apply => "apply",
             Self::Rw => "rw",
             Self::SimpLite => "simp-lite",
+            Self::Smt => "smt",
             Self::InductionNat => "induction-nat",
         }
     }
@@ -84,6 +86,7 @@ impl MachineApiTacticKind {
             "apply" => Some(Self::Apply),
             "rw" => Some(Self::Rw),
             "simp-lite" => Some(Self::SimpLite),
+            "smt" => Some(Self::Smt),
             "induction-nat" => Some(Self::InductionNat),
             _ => None,
         }
@@ -101,6 +104,7 @@ impl MachineApiTacticKind {
             MachineTactic::Apply { .. } => Self::Apply,
             MachineTactic::Rewrite { .. } => Self::Rw,
             MachineTactic::SimpLite { .. } => Self::SimpLite,
+            MachineTactic::Smt { .. } => Self::Smt,
             MachineTactic::InductionNat { .. } => Self::InductionNat,
         }
     }
@@ -458,6 +462,7 @@ fn prepass_candidate_terms(
         MachineTacticCandidate::Exact { term } => prepass_raw_term(term, goal_id, tactic_kind),
         MachineTacticCandidate::Intro { .. }
         | MachineTacticCandidate::SimpLite { .. }
+        | MachineTacticCandidate::Smt { .. }
         | MachineTacticCandidate::InductionNat { .. } => Ok(()),
         MachineTacticCandidate::Apply { args, .. } => {
             for arg in args {

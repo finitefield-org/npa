@@ -3225,6 +3225,44 @@ mod tests {
     }
 
     #[test]
+    fn smt_reconstructed_npa_proof_certificate_checks_source_free() {
+        let module = npa_cert::CoreModule {
+            name: npa_cert::Name::from_dotted("Smt.Ref"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "Smt.Ref.P".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                },
+                Decl::Axiom {
+                    name: "Smt.Ref.proof".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("Smt.Ref.P", vec![]),
+                },
+                Decl::Theorem {
+                    name: "Smt.Ref.goal".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("Smt.Ref.P", vec![]),
+                    proof: Expr::konst("Smt.Ref.proof", vec![]),
+                },
+            ],
+        };
+        let cert = npa_cert::build_module_cert(module, &[]).unwrap();
+        let bytes = npa_cert::encode_module_cert(&cert).unwrap();
+
+        let result = check_certificate(
+            &bytes,
+            &ReferenceImportStore::default(),
+            &ReferenceCheckerPolicy::default(),
+        );
+
+        assert!(
+            result.is_checked(),
+            "reference checker must accept the source-free NPA proof term used after SMT reconstruction"
+        );
+    }
+
+    #[test]
     fn type_check_accepts_let_term() {
         let terms = [
             TestTerm::Sort(0),

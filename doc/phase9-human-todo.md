@@ -711,20 +711,20 @@ P9H-13 は schema / encoding / deterministic rejection surface。solver-native s
 
 実装タスク:
 
-- [ ] small QF fragment の proof-producing reconstruction を NPA proof term へ変換する。
-- [ ] reconstruction rule registry を non-empty profile として固定し、rule descriptor fingerprint を追加する。
-- [ ] `smt` / `smt [lemmas]` tactic を Human Surface から呼べるようにする。
-- [ ] `POST /smt/prove` 相当の Human API wrapper を追加し、problem hash / proof hash / NPA proof hash / kernel_checked を返す。
-- [ ] final NPA proof term を kernel / reference checker で検査してから success にする。
-- [ ] failure / unsupported fragment / checker mismatch を structured diagnostic として返す。
+- [x] small QF fragment の proof-producing reconstruction を NPA proof term へ変換する。
+- [x] reconstruction rule registry を non-empty profile として固定し、rule descriptor fingerprint を追加する。
+- [x] `smt` / `smt [lemmas]` tactic を Human Surface から呼べるようにする。
+- [x] `POST /smt/prove` 相当の Human API wrapper を追加し、problem hash / proof hash / NPA proof hash / kernel_checked を返す。
+- [x] final NPA proof term を kernel / reference checker で検査してから success にする。
+- [x] failure / unsupported fragment / checker mismatch を structured diagnostic として返す。
 
 受け入れ条件:
 
-- [ ] SMT final proof success は reconstructed NPA proof term が kernel / checker で通る場合だけ返る。
-- [ ] solver-native proof rule が未知、premise order が曖昧、final conclusion が target と defeq でない場合は拒否される。
-- [ ] `smt` tactic は solver result を trusted input として扱わない。
-- [ ] `/smt/prove` は `require_certificate: true` の成功時に `kernel_checked: true` と checked proof hash を返す。
-- [ ] SMT reconstruction は AI ranking / candidate enumeration の inner loop に入らない。
+- [x] SMT final proof success は reconstructed NPA proof term が kernel / checker で通る場合だけ返る。
+- [x] solver-native proof rule が未知、premise order が曖昧、final conclusion が target と defeq でない場合は拒否される。
+- [x] `smt` tactic は solver result を trusted input として扱わない。
+- [x] `/smt/prove` は `require_certificate: true` の成功時に `kernel_checked: true` と checked proof hash を返す。
+- [x] SMT reconstruction は AI ranking / candidate enumeration の inner loop に入らない。
 
 検証:
 

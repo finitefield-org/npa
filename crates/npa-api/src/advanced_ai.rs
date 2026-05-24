@@ -56,6 +56,8 @@ const SMT_NAT_TO_INT_SIDE_CONDITION_HASH_TAG: &str =
     "npa.advanced-ai.smt.nat_to_int_side_condition.v1";
 const SMT_COMMAND_ID_HASH_TAG: &str = "npa.advanced-ai.smt.command_id.v1";
 const SMT_SYMBOL_HASH_TAG: &str = "npa.advanced-ai.smt.symbol.v1";
+const SMT_RULE_DESCRIPTOR_FINGERPRINT_TAG: &str =
+    "npa.advanced-ai.smt.rule_descriptor_fingerprint.v1";
 const FORMALIZATION_SOURCE_DOCUMENT_HASH_TAG: &str =
     "npa.advanced-ai.formalization.source_document.v1";
 const FORMALIZATION_CLAIM_SPAN_HASH_TAG: &str = "npa.advanced-ai.formalization.claim_span.v1";
@@ -525,21 +527,53 @@ pub struct AdvancedSmtNatToIntSideCondition {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AdvancedSmtRuleRegistryProfile {
     MvpEmptyRegistryV1,
+    MvpProofNodeTableQfV1,
 }
 
 impl AdvancedSmtRuleRegistryProfile {
     fn tag(self) -> u8 {
         match self {
             Self::MvpEmptyRegistryV1 => 0,
+            Self::MvpProofNodeTableQfV1 => 1,
         }
     }
 
     fn from_tag(tag: u8) -> Option<Self> {
         match tag {
             0 => Some(Self::MvpEmptyRegistryV1),
+            1 => Some(Self::MvpProofNodeTableQfV1),
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AdvancedSmtRuleDescriptorKind {
+    MvpKernelCheckedPayloadNodeV1,
+}
+
+impl AdvancedSmtRuleDescriptorKind {
+    fn tag(self) -> u8 {
+        match self {
+            Self::MvpKernelCheckedPayloadNodeV1 => 0,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdvancedSmtRuleDescriptor {
+    pub rule_registry_profile: AdvancedSmtRuleRegistryProfile,
+    pub certificate_format: AdvancedSmtCertificateFormat,
+    pub logic: AdvancedSmtLogic,
+    pub command_profile: AdvancedSmtCommandProfile,
+    pub kind: AdvancedSmtRuleDescriptorKind,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdvancedSmtProveHashes {
+    pub problem_hash: Hash,
+    pub proof_hash: Hash,
+    pub npa_proof_hash: Hash,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1854,6 +1888,29 @@ pub fn advanced_ai_smt_nat_to_int_side_condition_hash(
     )
 }
 
+pub fn advanced_ai_smt_mvp_payload_node_rule_descriptor(
+    logic: AdvancedSmtLogic,
+) -> AdvancedSmtRuleDescriptor {
+    AdvancedSmtRuleDescriptor {
+        rule_registry_profile: AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1,
+        certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
+        logic,
+        command_profile: AdvancedSmtCommandProfile::MvpNormalizedQf,
+        kind: AdvancedSmtRuleDescriptorKind::MvpKernelCheckedPayloadNodeV1,
+    }
+}
+
+pub fn advanced_ai_smt_rule_descriptor_fingerprint(descriptor: &AdvancedSmtRuleDescriptor) -> Hash {
+    let out = vec![
+        descriptor.rule_registry_profile.tag(),
+        descriptor.certificate_format.tag(),
+        descriptor.logic.tag(),
+        descriptor.command_profile.tag(),
+        descriptor.kind.tag(),
+    ];
+    hash_with_domain(SMT_RULE_DESCRIPTOR_FINGERPRINT_TAG, &out)
+}
+
 pub fn advanced_ai_smt_classify_supported_fragment(
     problem: &AdvancedMachineSmtEncodedProblem,
 ) -> std::result::Result<AdvancedSmtSupportedFragment, AdvancedSmtEncodingError> {
@@ -2651,6 +2708,50 @@ pub fn run_advanced_ai_smt_reconstruct_request(
         }
         Err(response) => response,
     }
+}
+
+pub fn advanced_ai_smt_prove_hashes_from_request(
+    request_canonical_bytes: &[u8],
+    verified_imports: &[VerifiedImportRef],
+    workspace_root: &Path,
+) -> std::result::Result<AdvancedSmtProveHashes, AdvancedAiEndpointResponse> {
+    let final_proof = match run_advanced_ai_smt_reconstruct_request(
+        request_canonical_bytes,
+        verified_imports,
+        workspace_root,
+    ) {
+        AdvancedAiEndpointResponse::Success { payload, .. } => match *payload {
+            AdvancedAiSuccessPayload::SmtCertificate { final_proof } => final_proof,
+            _ => {
+                return Err(AdvancedAiEndpointResponse::Error {
+                    error: AdvancedAiEndpointError::InternalValidatorFailure,
+                });
+            }
+        },
+        response => return Err(response),
+    };
+    let validated = validate_advanced_ai_common_envelope(
+        request_canonical_bytes,
+        verified_imports,
+        workspace_root,
+        AdvancedAiTaskKind::SmtCertificate,
+    )?;
+    let candidate = decode_smt_candidate(&validated.envelope.payload).map_err(|_| {
+        smt_rejected_response(
+            validated.candidate_hash,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
+        )
+    })?;
+    let problem_hash = match &candidate.encoded_problem {
+        AdvancedMachineSmtProblemRef::Inline { problem_hash, .. }
+        | AdvancedMachineSmtProblemRef::Artifact { problem_hash, .. } => *problem_hash,
+    };
+    Ok(AdvancedSmtProveHashes {
+        problem_hash,
+        proof_hash: advanced_ai_smt_declared_payload_hash(&candidate),
+        npa_proof_hash: npa_tactic::core_expr_hash(&final_proof),
+    })
 }
 
 pub fn run_advanced_ai_theorem_graph_query_request(
@@ -4185,23 +4286,20 @@ fn run_advanced_ai_smt_reconstruct_validated(
         return response;
     }
 
-    if candidate
-        .reconstruction_plan
-        .steps
-        .iter()
-        .any(|step| matches!(step.rule, AdvancedSmtReconstructionRule::PayloadNode { .. }))
-    {
-        return smt_rejected_response(
-            candidate_hash,
-            AdvancedAiValidationError::UnsupportedFeature,
-            AdvancedSmtCertificateError::RuleRegistryMismatch,
-        );
-    }
-
-    rejected_response(
+    let final_proof = match advanced_ai_reconstruct_smt_final_proof(
         candidate_hash,
-        AdvancedAiValidationError::UnsupportedFeature,
-        None,
+        &candidate,
+        &proof_payload,
+        &env,
+        verified_imports,
+    ) {
+        Ok(final_proof) => final_proof,
+        Err(response) => return response,
+    };
+
+    success_response(
+        candidate_hash,
+        AdvancedAiSuccessPayload::SmtCertificate { final_proof },
     )
 }
 
@@ -8568,6 +8666,373 @@ fn advanced_ai_validate_smt_reconstruction_plan(
     Ok(())
 }
 
+fn advanced_ai_reconstruct_smt_final_proof(
+    candidate_hash: Hash,
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+    proof_payload: &AdvancedValidatedSmtProofPayload,
+    env: &Env,
+    verified_imports: &[VerifiedImportRef],
+) -> std::result::Result<Expr, AdvancedAiEndpointResponse> {
+    let has_payload_node = candidate
+        .reconstruction_plan
+        .steps
+        .iter()
+        .any(|step| matches!(step.rule, AdvancedSmtReconstructionRule::PayloadNode { .. }));
+    if candidate.rule_registry_profile == AdvancedSmtRuleRegistryProfile::MvpEmptyRegistryV1 {
+        return Err(if has_payload_node {
+            smt_rejected_response(
+                candidate_hash,
+                AdvancedAiValidationError::UnsupportedFeature,
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
+            )
+        } else {
+            rejected_response(
+                candidate_hash,
+                AdvancedAiValidationError::UnsupportedFeature,
+                None,
+            )
+        });
+    }
+    if !has_payload_node {
+        return Err(rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::UnsupportedFeature,
+            None,
+        ));
+    }
+
+    let AdvancedValidatedSmtProofPayload::ProofNodeTable(table) = proof_payload else {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::UnsupportedFeature,
+            AdvancedSmtCertificateError::RuleRegistryMismatch,
+        ));
+    };
+
+    let payload_hash = advanced_ai_smt_declared_payload_hash(candidate);
+    let ctx = advanced_ai_goal_ctx(&candidate.goal);
+    let mut accepted_payload_node_by_step = BTreeMap::new();
+    for step in &candidate.reconstruction_plan.steps {
+        if let AdvancedSmtReconstructionRule::PayloadNode {
+            certificate_format,
+            rule_fingerprint,
+        } = &step.rule
+        {
+            advanced_ai_check_smt_payload_node_step(
+                candidate_hash,
+                candidate,
+                table,
+                payload_hash,
+                env,
+                &ctx,
+                &accepted_payload_node_by_step,
+                step,
+                *certificate_format,
+                *rule_fingerprint,
+            )?;
+            let binding = step
+                .payload_bindings
+                .first()
+                .expect("payload node binding was validated above");
+            accepted_payload_node_by_step.insert(step.step_id, binding.node_id);
+        }
+
+        if env
+            .check(
+                &ctx,
+                &candidate.goal.universe_params,
+                &step.proof,
+                &step.conclusion,
+            )
+            .is_err()
+        {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                AdvancedAiValidationError::FeatureRejected,
+                AdvancedSmtCertificateError::ReconstructionProofMismatch,
+            ));
+        }
+    }
+
+    let final_step =
+        &candidate.reconstruction_plan.steps[candidate.reconstruction_plan.final_step as usize];
+    if env
+        .is_defeq(
+            &ctx,
+            &candidate.goal.universe_params,
+            &final_step.conclusion,
+            &candidate.goal.target,
+        )
+        .map_or(true, |defeq| !defeq)
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::ReconstructionConclusionMismatch,
+        ));
+    }
+    if !advanced_ai_core_expr_bytes_eq(
+        &candidate.reconstruction_plan.final_proof,
+        &final_step.proof,
+    ) {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::ReconstructionProofMismatch,
+        ));
+    }
+    advanced_ai_check_smt_final_proof_certificate(
+        candidate_hash,
+        candidate,
+        env,
+        verified_imports,
+        &candidate.reconstruction_plan.final_proof,
+    )?;
+    Ok(candidate.reconstruction_plan.final_proof.clone())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn advanced_ai_check_smt_payload_node_step(
+    candidate_hash: Hash,
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+    table: &AdvancedSmtProofNodeTable,
+    payload_hash: Hash,
+    env: &Env,
+    ctx: &Ctx,
+    accepted_payload_node_by_step: &BTreeMap<u32, u32>,
+    step: &AdvancedMachineSmtReconstructionStep,
+    certificate_format: AdvancedSmtCertificateFormat,
+    rule_fingerprint: Hash,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
+    if candidate.rule_registry_profile != AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1
+        || certificate_format != AdvancedSmtCertificateFormat::MvpProofNodeTableV1
+        || certificate_format != candidate.certificate_format
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::UnsupportedFeature,
+            AdvancedSmtCertificateError::RuleRegistryMismatch,
+        ));
+    }
+    let expected_rule = advanced_ai_smt_rule_descriptor_fingerprint(
+        &advanced_ai_smt_mvp_payload_node_rule_descriptor(candidate.logic),
+    );
+    if rule_fingerprint != expected_rule {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::UnsupportedFeature,
+            AdvancedSmtCertificateError::RuleRegistryMismatch,
+        ));
+    }
+    if step.payload_bindings.is_empty() {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::PayloadBindingMismatch,
+        ));
+    }
+    if step
+        .payload_bindings
+        .iter()
+        .any(|binding| binding.payload_hash != payload_hash)
+    {
+        return Err(rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::PayloadHashMismatch,
+            None,
+        ));
+    }
+    let [binding] = step.payload_bindings.as_slice() else {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::UnsupportedFeature,
+            AdvancedSmtCertificateError::PayloadBindingMismatch,
+        ));
+    };
+    if binding.rule_fingerprint != rule_fingerprint {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::PayloadBindingMismatch,
+        ));
+    }
+    let Some(node) = table.nodes.get(binding.node_id as usize) else {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::PayloadBindingMismatch,
+        ));
+    };
+    if node.node_id != binding.node_id {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::EnvelopeMalformed,
+            AdvancedSmtCertificateError::NonCanonicalPayload,
+        ));
+    }
+    if node.rule_fingerprint != rule_fingerprint {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::PayloadBindingMismatch,
+        ));
+    }
+    let expected_premises = step
+        .premises
+        .iter()
+        .map(|premise_step| accepted_payload_node_by_step.get(premise_step).copied())
+        .collect::<Option<Vec<_>>>();
+    if expected_premises.as_deref() != Some(node.premises.as_slice()) {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::ReconstructionPremiseMismatch,
+        ));
+    }
+    if env
+        .is_defeq(
+            ctx,
+            &candidate.goal.universe_params,
+            &node.conclusion_encoding.core_expr,
+            &step.conclusion,
+        )
+        .map_or(true, |defeq| !defeq)
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::FeatureRejected,
+            AdvancedSmtCertificateError::ReconstructionConclusionMismatch,
+        ));
+    }
+    Ok(())
+}
+
+fn advanced_ai_check_smt_final_proof_certificate(
+    candidate_hash: Hash,
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+    env: &Env,
+    verified_imports: &[VerifiedImportRef],
+    final_proof: &Expr,
+) -> std::result::Result<(), AdvancedAiEndpointResponse> {
+    let ctx = advanced_ai_goal_ctx(&candidate.goal);
+    if env
+        .check(
+            &ctx,
+            &candidate.goal.universe_params,
+            final_proof,
+            &candidate.goal.target,
+        )
+        .is_err()
+    {
+        return Err(smt_rejected_response(
+            candidate_hash,
+            AdvancedAiValidationError::KernelRejected,
+            AdvancedSmtCertificateError::ReconstructionProofMismatch,
+        ));
+    }
+
+    let (closed_type, closed_proof) =
+        advanced_ai_close_smt_goal_for_certificate(&candidate.goal, final_proof);
+    let module = advanced_ai_smt_scratch_module(candidate_hash);
+    let theorem_name = advanced_ai_smt_scratch_theorem(candidate_hash).as_dotted();
+    let import_modules = verified_imports
+        .iter()
+        .map(|import| import.verified_module().clone())
+        .collect::<Vec<_>>();
+    let cert = match npa_cert::build_module_cert(
+        CoreModule {
+            name: module,
+            declarations: vec![Decl::Theorem {
+                name: theorem_name,
+                universe_params: candidate.goal.universe_params.clone(),
+                ty: closed_type,
+                proof: closed_proof,
+            }],
+        },
+        &import_modules,
+    ) {
+        Ok(cert) => cert,
+        Err(npa_cert::CertError::Kernel(_)) => {
+            return Err(smt_rejected_response(
+                candidate_hash,
+                AdvancedAiValidationError::KernelRejected,
+                AdvancedSmtCertificateError::ReconstructionProofMismatch,
+            ));
+        }
+        Err(_) => {
+            return Err(AdvancedAiEndpointResponse::Error {
+                error: AdvancedAiEndpointError::InternalValidatorFailure,
+            });
+        }
+    };
+    let cert_bytes =
+        npa_cert::encode_module_cert(&cert).map_err(|_| AdvancedAiEndpointResponse::Error {
+            error: AdvancedAiEndpointError::InternalValidatorFailure,
+        })?;
+    let mut verifier_session = VerifierSession::new();
+    for import in import_modules {
+        verifier_session.register_verified_module(import);
+    }
+    npa_cert::verify_module_cert(&cert_bytes, &mut verifier_session, &AxiomPolicy::normal())
+        .map_err(|_| {
+            smt_rejected_response(
+                candidate_hash,
+                AdvancedAiValidationError::IndependentCheckerRejected,
+                AdvancedSmtCertificateError::ReconstructionProofMismatch,
+            )
+        })?;
+    Ok(())
+}
+
+fn advanced_ai_close_smt_goal_for_certificate(goal: &AdvancedAiGoal, proof: &Expr) -> (Expr, Expr) {
+    let mut ty = goal.target.clone();
+    let mut value = proof.clone();
+    for local in goal.local_context.iter().rev() {
+        if let Some(local_value) = &local.value {
+            ty = Expr::let_in(
+                local.name.clone(),
+                local.ty.clone(),
+                local_value.clone(),
+                ty,
+            );
+            value = Expr::let_in(
+                local.name.clone(),
+                local.ty.clone(),
+                local_value.clone(),
+                value,
+            );
+        } else {
+            ty = Expr::pi(local.name.clone(), local.ty.clone(), ty);
+            value = Expr::lam(local.name.clone(), local.ty.clone(), value);
+        }
+    }
+    (ty, value)
+}
+
+fn advanced_ai_smt_scratch_module(candidate_hash: Hash) -> ModuleName {
+    Name(vec![
+        "NPA".to_owned(),
+        "Advanced".to_owned(),
+        "SmtScratch".to_owned(),
+        lowerhex_hash(candidate_hash),
+    ])
+}
+
+fn advanced_ai_smt_scratch_theorem(candidate_hash: Hash) -> Name {
+    let mut components = advanced_ai_smt_scratch_module(candidate_hash).0;
+    components.push("proof".to_owned());
+    Name(components)
+}
+
+fn advanced_ai_smt_declared_payload_hash(
+    candidate: &AdvancedMachineSmtCertificateCandidate,
+) -> Hash {
+    match &candidate.proof_payload {
+        AdvancedMachineSmtProofPayloadRef::Inline { payload_hash, .. }
+        | AdvancedMachineSmtProofPayloadRef::Artifact { payload_hash, .. } => *payload_hash,
+    }
+}
+
 fn advanced_ai_validate_smt_bookkeeping_args(
     candidate_hash: Hash,
     candidate: &AdvancedMachineSmtCertificateCandidate,
@@ -11081,6 +11546,17 @@ fn encode_advanced_ai_tactic_candidate_to(
             encode_len_to(out, rules.len());
             for rule in rules {
                 encode_advanced_ai_simp_rule_ref_to(out, rule)?;
+            }
+        }
+        MachineTacticCandidate::Smt { lemmas } => {
+            out.push(6);
+            encode_len_to(out, lemmas.len());
+            for lemma in lemmas {
+                encode_advanced_ai_tactic_head_to(out, &lemma.head)?;
+                encode_len_to(out, lemma.universe_args.len());
+                for level in &lemma.universe_args {
+                    encode_level_to(out, level);
+                }
             }
         }
         MachineTacticCandidate::InductionNat { local_name } => {
@@ -14635,6 +15111,16 @@ mod tests {
                     ty: Expr::konst("S.False", vec![]),
                 },
                 npa_kernel::Decl::Axiom {
+                    name: "S.Other".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                },
+                npa_kernel::Decl::Axiom {
+                    name: "S.otherProof".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("S.Other", vec![]),
+                },
+                npa_kernel::Decl::Axiom {
                     name: "S.combinator".to_owned(),
                     universe_params: Vec::new(),
                     ty: Expr::konst("S.False", vec![]),
@@ -14679,6 +15165,14 @@ mod tests {
 
     fn smt_false_proof() -> Expr {
         Expr::konst("S.falseProof", vec![])
+    }
+
+    fn smt_other() -> Expr {
+        Expr::konst("S.Other", vec![])
+    }
+
+    fn smt_other_proof() -> Expr {
+        Expr::konst("S.otherProof", vec![])
     }
 
     fn smt_symbol(name: &str) -> AdvancedSmtSymbol {
@@ -14763,12 +15257,18 @@ mod tests {
         }
     }
 
+    fn smt_rule_fingerprint(logic: AdvancedSmtLogic) -> Hash {
+        advanced_ai_smt_rule_descriptor_fingerprint(
+            &advanced_ai_smt_mvp_payload_node_rule_descriptor(logic),
+        )
+    }
+
     fn smt_proof_table() -> AdvancedSmtProofNodeTable {
         AdvancedSmtProofNodeTable {
             certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
             nodes: vec![AdvancedSmtProofNode {
                 node_id: 0,
-                rule_fingerprint: hash(42),
+                rule_fingerprint: smt_rule_fingerprint(AdvancedSmtLogic::MvpQfUf),
                 premises: Vec::new(),
                 conclusion_encoding: AdvancedSmtConclusionEncoding {
                     encoder_version: AdvancedSmtEncoderVersion::MvpNormalizedQfV1,
@@ -14781,14 +15281,32 @@ mod tests {
         }
     }
 
+    fn smt_payload_binding() -> AdvancedMachineSmtPayloadBinding {
+        smt_payload_binding_for(
+            advanced_ai_smt_proof_payload_hash(&smt_proof_table()).unwrap(),
+            0,
+        )
+    }
+
+    fn smt_payload_binding_for(
+        payload_hash: Hash,
+        node_id: u32,
+    ) -> AdvancedMachineSmtPayloadBinding {
+        AdvancedMachineSmtPayloadBinding {
+            payload_hash,
+            node_id,
+            rule_fingerprint: smt_rule_fingerprint(AdvancedSmtLogic::MvpQfUf),
+        }
+    }
+
     fn smt_payload_node_step(step_id: u32) -> AdvancedMachineSmtReconstructionStep {
         AdvancedMachineSmtReconstructionStep {
             step_id,
             rule: AdvancedSmtReconstructionRule::PayloadNode {
                 certificate_format: AdvancedSmtCertificateFormat::MvpProofNodeTableV1,
-                rule_fingerprint: hash(42),
+                rule_fingerprint: smt_rule_fingerprint(AdvancedSmtLogic::MvpQfUf),
             },
-            payload_bindings: Vec::new(),
+            payload_bindings: vec![smt_payload_binding()],
             premises: Vec::new(),
             conclusion: smt_false(),
             proof: smt_false_proof(),
@@ -15985,6 +16503,176 @@ mod tests {
             AdvancedAiValidationError::UnsupportedFeature,
             Some(AdvancedAiFeatureError::SmtCertificate(
                 AdvancedSmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_nonempty_registry_accepts_kernel_checked_reconstruction() {
+        let import = verified_smt_import();
+        let request = smt_request(&import, |candidate| {
+            candidate.rule_registry_profile = AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1;
+        });
+
+        let (_, payload) = assert_success(run_advanced_ai_smt_reconstruct_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        ));
+        assert_eq!(
+            payload,
+            AdvancedAiSuccessPayload::SmtCertificate {
+                final_proof: smt_false_proof()
+            }
+        );
+        let hashes = advanced_ai_smt_prove_hashes_from_request(
+            &request,
+            std::slice::from_ref(&import),
+            &workspace_root(),
+        )
+        .unwrap();
+        assert_eq!(
+            hashes.npa_proof_hash,
+            npa_tactic::core_expr_hash(&smt_false_proof())
+        );
+        let human = crate::run_human_smt_prove(crate::HumanSmtProveRequest {
+            request_canonical_bytes: &request,
+            verified_imports: std::slice::from_ref(&import),
+            workspace_root: &workspace_root(),
+            require_certificate: true,
+        });
+        match human {
+            crate::HumanSmtProveResponse::Success(ok) => {
+                assert!(ok.kernel_checked);
+                assert_eq!(
+                    ok.npa_proof_hash,
+                    npa_tactic::core_expr_hash(&smt_false_proof())
+                );
+            }
+            other => panic!("expected Human smt prove success, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn smt_nonempty_registry_rejects_payload_binding_and_premise_mismatch() {
+        let import = verified_smt_import();
+        let bad_binding_hash_request = smt_request(&import, |candidate| {
+            candidate.rule_registry_profile = AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1;
+            candidate.reconstruction_plan.steps[0].payload_bindings[0].payload_hash = hash(77);
+        });
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &bad_binding_hash_request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::PayloadHashMismatch,
+            None,
+        );
+
+        let premise_mismatch_request = smt_request(&import, |candidate| {
+            let mut table = smt_proof_table();
+            table.nodes.push(AdvancedSmtProofNode {
+                node_id: 1,
+                rule_fingerprint: smt_rule_fingerprint(AdvancedSmtLogic::MvpQfUf),
+                premises: vec![0],
+                conclusion_encoding: AdvancedSmtConclusionEncoding {
+                    encoder_version: AdvancedSmtEncoderVersion::MvpNormalizedQfV1,
+                    logic: AdvancedSmtLogic::MvpQfUf,
+                    command_profile: AdvancedSmtCommandProfile::MvpNormalizedQf,
+                    core_expr: smt_false(),
+                    encoded_expr: AdvancedSmtExpr::BoolLit(false),
+                },
+            });
+            let payload_hash = advanced_ai_smt_proof_payload_hash(&table).unwrap();
+            candidate.proof_payload = smt_payload_ref(table);
+            candidate.rule_registry_profile = AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1;
+            candidate.reconstruction_plan.steps = vec![
+                AdvancedMachineSmtReconstructionStep {
+                    payload_bindings: vec![smt_payload_binding_for(payload_hash, 0)],
+                    ..smt_payload_node_step(0)
+                },
+                AdvancedMachineSmtReconstructionStep {
+                    step_id: 1,
+                    payload_bindings: vec![smt_payload_binding_for(payload_hash, 1)],
+                    premises: Vec::new(),
+                    ..smt_payload_node_step(1)
+                },
+            ];
+            candidate.reconstruction_plan.final_step = 1;
+            candidate.reconstruction_plan.final_proof = smt_false_proof();
+        });
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &premise_mismatch_request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::ReconstructionPremiseMismatch,
+            )),
+        );
+    }
+
+    #[test]
+    fn smt_nonempty_registry_rejects_unknown_rule_and_bad_final_target() {
+        let import = verified_smt_import();
+        let unknown_rule_request = smt_request(&import, |candidate| {
+            candidate.rule_registry_profile = AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1;
+            if let AdvancedSmtReconstructionRule::PayloadNode {
+                rule_fingerprint, ..
+            } = &mut candidate.reconstruction_plan.steps[0].rule
+            {
+                *rule_fingerprint = hash(99);
+            }
+            candidate.reconstruction_plan.steps[0].payload_bindings[0].rule_fingerprint = hash(99);
+        });
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &unknown_rule_request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+
+        let bad_target_request = smt_request(&import, |candidate| {
+            candidate.rule_registry_profile = AdvancedSmtRuleRegistryProfile::MvpProofNodeTableQfV1;
+            candidate.reconstruction_plan.imported_theory_refs =
+                vec![smt_global_ref_for(&import, "S.otherProof")];
+            candidate
+                .reconstruction_plan
+                .steps
+                .push(AdvancedMachineSmtReconstructionStep {
+                    step_id: 1,
+                    rule: AdvancedSmtReconstructionRule::LocalBookkeeping {
+                        kind: AdvancedSmtLocalBookkeepingRule::IntroduceTheoryLemma {
+                            lemma: smt_global_ref_for(&import, "S.otherProof"),
+                            level_args: Vec::new(),
+                            term_args: Vec::new(),
+                        },
+                    },
+                    payload_bindings: Vec::new(),
+                    premises: Vec::new(),
+                    conclusion: smt_other(),
+                    proof: smt_other_proof(),
+                });
+            candidate.reconstruction_plan.final_step = 1;
+            candidate.reconstruction_plan.final_proof = smt_other_proof();
+        });
+        assert_rejected(
+            run_advanced_ai_smt_reconstruct_request(
+                &bad_target_request,
+                std::slice::from_ref(&import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::FeatureRejected,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::ReconstructionConclusionMismatch,
             )),
         );
     }

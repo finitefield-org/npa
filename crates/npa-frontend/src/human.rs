@@ -107,6 +107,10 @@ pub enum HumanTacticSyntax {
     SimpLite {
         span: Span,
     },
+    Smt {
+        lemmas: Vec<HumanExpr>,
+        span: Span,
+    },
     Induction {
         name: HumanName,
         span: Span,
@@ -121,6 +125,7 @@ impl HumanTacticSyntax {
             | Self::Apply { span, .. }
             | Self::Rewrite { span, .. }
             | Self::SimpLite { span }
+            | Self::Smt { span, .. }
             | Self::Induction { span, .. } => *span,
         }
     }
@@ -132,6 +137,7 @@ impl HumanTacticSyntax {
             Self::Apply { .. } => HumanTacticKind::Apply,
             Self::Rewrite { .. } => HumanTacticKind::Rewrite,
             Self::SimpLite { .. } => HumanTacticKind::SimpLite,
+            Self::Smt { .. } => HumanTacticKind::Smt,
             Self::Induction { .. } => HumanTacticKind::Induction,
         }
     }
@@ -144,6 +150,7 @@ pub enum HumanTacticKind {
     Apply,
     Rewrite,
     SimpLite,
+    Smt,
     Induction,
 }
 
@@ -771,9 +778,13 @@ mod tests {
                 span: span(24, 34),
             },
             HumanTacticSyntax::SimpLite { span: span(35, 44) },
+            HumanTacticSyntax::Smt {
+                lemmas: vec![ident("h", 50, 51)],
+                span: span(45, 52),
+            },
             HumanTacticSyntax::Induction {
                 name: name("n", 55, 56),
-                span: span(45, 56),
+                span: span(53, 56),
             },
         ];
 
@@ -786,6 +797,7 @@ mod tests {
                 HumanTacticKind::Apply,
                 HumanTacticKind::Rewrite,
                 HumanTacticKind::SimpLite,
+                HumanTacticKind::Smt,
                 HumanTacticKind::Induction,
             ]
         );

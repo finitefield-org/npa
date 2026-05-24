@@ -78,6 +78,7 @@ enum TokenKind {
     Apply,
     Rw,
     SimpLite,
+    Smt,
     Induction,
     Fun,
     Forall,
@@ -366,6 +367,7 @@ fn lex_ident(
         "apply" => TokenKind::Apply,
         "rw" => TokenKind::Rw,
         "simp-lite" => TokenKind::SimpLite,
+        "smt" => TokenKind::Smt,
         "induction" => TokenKind::Induction,
         "fun" => TokenKind::Fun,
         "forall" => TokenKind::Forall,
@@ -489,6 +491,7 @@ fn reserved_name_component_spelling(kind: &TokenKind) -> Option<&'static str> {
         TokenKind::Apply => "apply",
         TokenKind::Rw => "rw",
         TokenKind::SimpLite => "simp-lite",
+        TokenKind::Smt => "smt",
         TokenKind::Induction => "induction",
         TokenKind::Fun => "fun",
         TokenKind::Forall => "forall",
@@ -882,6 +885,7 @@ impl<'a> Parser<'a> {
             TokenKind::Apply => self.parse_apply_tactic(),
             TokenKind::Rw => self.parse_rw_tactic(),
             TokenKind::SimpLite => self.parse_simp_lite_tactic(),
+            TokenKind::Smt => self.parse_smt_tactic(),
             TokenKind::Induction => self.parse_induction_tactic(),
             TokenKind::Ident(name) if name == "case" => Err(HumanDiagnostic::unsupported_tactic(
                 self.peek_span(),
@@ -969,6 +973,33 @@ impl<'a> Parser<'a> {
     fn parse_simp_lite_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
         let span = self.expect_simp_lite()?;
         Ok(HumanTacticSyntax::SimpLite { span })
+    }
+
+    fn parse_smt_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
+        let start = self.expect_smt()?;
+        if !matches!(self.peek_kind(), TokenKind::LBracket) {
+            return Ok(HumanTacticSyntax::Smt {
+                lemmas: Vec::new(),
+                span: start,
+            });
+        }
+        self.expect_lbracket()?;
+        let mut lemmas = Vec::new();
+        if !matches!(self.peek_kind(), TokenKind::RBracket) {
+            loop {
+                lemmas.push(self.parse_term()?);
+                if matches!(self.peek_kind(), TokenKind::Comma) {
+                    self.advance();
+                    continue;
+                }
+                break;
+            }
+        }
+        let end = self.expect_rbracket()?;
+        Ok(HumanTacticSyntax::Smt {
+            lemmas,
+            span: start.join(end),
+        })
     }
 
     fn parse_induction_tactic(&mut self) -> HumanResult<HumanTacticSyntax> {
@@ -2156,6 +2187,10 @@ impl<'a> Parser<'a> {
         )
     }
 
+    fn expect_smt(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::Smt), "expected smt")
+    }
+
     fn expect_induction(&mut self) -> HumanResult<Span> {
         self.expect_simple(
             |kind| matches!(kind, TokenKind::Induction),
@@ -2408,6 +2443,7 @@ theorem t : Prop := by
   apply f
   rw [h, <- Nat.add_zero]
   simp-lite
+  smt [h, Nat.add_zero]
   induction n",
         );
         let HumanItem::Theorem(decl) = &module.items[0] else {
@@ -2443,8 +2479,12 @@ theorem t : Prop := by
             block.script.tactics[4],
             HumanTacticSyntax::SimpLite { .. }
         ));
+        let HumanTacticSyntax::Smt { lemmas, .. } = &block.script.tactics[5] else {
+            panic!("expected smt tactic");
+        };
+        assert_eq!(lemmas.len(), 2);
         assert!(matches!(
-            block.script.tactics[5],
+            block.script.tactics[6],
             HumanTacticSyntax::Induction { .. }
         ));
     }

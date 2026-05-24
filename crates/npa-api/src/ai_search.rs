@@ -9,7 +9,7 @@ use npa_kernel::Level;
 use npa_tactic::{
     goal_id_canonical_bytes, tactic_budget_hash, CandidateApplyArg, CandidateRewriteRuleRef,
     GoalId, MachineTacticBatchPolicy, MachineTacticCandidate, RawMachineTerm, RewriteDirection,
-    RewriteSite, SimpRuleRef, TacticBudget, TacticHead,
+    RewriteSite, SimpRuleRef, SmtLemmaRef, TacticBudget, TacticHead,
 };
 use sha2::{Digest, Sha256};
 
@@ -3908,6 +3908,12 @@ pub fn ai_search_candidate_payload_json(candidate: &MachineTacticCandidate) -> S
                 ai_search_simp_rule_array_json(rules)
             )
         }
+        MachineTacticCandidate::Smt { lemmas } => {
+            format!(
+                r#"{{"kind":"smt","lemmas":{}}}"#,
+                ai_search_smt_lemma_array_json(lemmas)
+            )
+        }
         MachineTacticCandidate::InductionNat { local_name } => format!(
             r#"{{"kind":"induction-nat","local_name":{}}}"#,
             json_string(local_name)
@@ -4010,6 +4016,7 @@ pub fn ai_search_expected_effect(candidate: &MachineTacticCandidate) -> AiSearch
         MachineTacticCandidate::Exact { .. } => AiSearchExpectedEffect::CloseGoal,
         MachineTacticCandidate::Rewrite { .. } => AiSearchExpectedEffect::Rewrite,
         MachineTacticCandidate::SimpLite { .. } => AiSearchExpectedEffect::Simplify,
+        MachineTacticCandidate::Smt { .. } => AiSearchExpectedEffect::CloseGoal,
         MachineTacticCandidate::InductionNat { .. } => AiSearchExpectedEffect::InductionSplit,
         MachineTacticCandidate::Apply { .. } => AiSearchExpectedEffect::Unknown,
     }
@@ -4038,6 +4045,10 @@ pub fn ai_search_candidate_cost_estimate(
         MachineTacticCandidate::SimpLite { .. } => AiSearchCandidateCostEstimate {
             estimated_timeout_ms: 200,
             risk: AiSearchCandidateCostRisk::Medium,
+        },
+        MachineTacticCandidate::Smt { .. } => AiSearchCandidateCostEstimate {
+            estimated_timeout_ms: 500,
+            risk: AiSearchCandidateCostRisk::High,
         },
         MachineTacticCandidate::InductionNat { .. } => AiSearchCandidateCostEstimate {
             estimated_timeout_ms: 500,
@@ -4563,6 +4574,7 @@ fn ai_search_candidate_raw_terms(candidate: &MachineTacticCandidate) -> Vec<&Raw
         }
         MachineTacticCandidate::Intro { .. }
         | MachineTacticCandidate::SimpLite { .. }
+        | MachineTacticCandidate::Smt { .. }
         | MachineTacticCandidate::InductionNat { .. } => {}
     }
     terms
@@ -4644,6 +4656,22 @@ fn ai_search_simp_rule_json(rule: &SimpRuleRef) -> String {
         json_string(&format_hash_string(&rule.decl_interface_hash)),
         json_string(ai_search_rewrite_direction_wire(rule.direction)),
         json_string(&rule.name.as_dotted()),
+    )
+}
+
+fn ai_search_smt_lemma_array_json(lemmas: &[SmtLemmaRef]) -> String {
+    let members = lemmas
+        .iter()
+        .map(ai_search_smt_lemma_json)
+        .collect::<Vec<_>>();
+    format!("[{}]", members.join(","))
+}
+
+fn ai_search_smt_lemma_json(lemma: &SmtLemmaRef) -> String {
+    format!(
+        r#"{{"head":{},"universe_args":{}}}"#,
+        ai_search_tactic_head_json(&lemma.head),
+        ai_search_level_array_json(&lemma.universe_args),
     )
 }
 

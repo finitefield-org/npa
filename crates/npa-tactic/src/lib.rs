@@ -262,6 +262,9 @@ pub enum MachineTacticCandidate {
     SimpLite {
         rules: Vec<SimpRuleRef>,
     },
+    Smt {
+        lemmas: Vec<SmtLemmaRef>,
+    },
     InductionNat {
         local_name: String,
     },
@@ -308,6 +311,12 @@ pub struct RewriteRuleRef {
     pub head: TacticHead,
     pub universe_args: Vec<Level>,
     pub args: Vec<ApplyArg>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SmtLemmaRef {
+    pub head: TacticHead,
+    pub universe_args: Vec<Level>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -1406,6 +1415,10 @@ pub enum MachineTactic {
         goal_id: GoalId,
         rules: Vec<SimpRuleRef>,
     },
+    Smt {
+        goal_id: GoalId,
+        lemmas: Vec<SmtLemmaRef>,
+    },
     InductionNat {
         goal_id: GoalId,
         local_name: String,
@@ -1476,6 +1489,7 @@ pub fn machine_tactic_goal_id(tactic: &MachineTactic) -> GoalId {
         | MachineTactic::Apply { goal_id, .. }
         | MachineTactic::Rewrite { goal_id, .. }
         | MachineTactic::SimpLite { goal_id, .. }
+        | MachineTactic::Smt { goal_id, .. }
         | MachineTactic::InductionNat { goal_id, .. } => *goal_id,
     }
 }
@@ -1487,6 +1501,7 @@ pub fn machine_tactic_kind(tactic: &MachineTactic) -> Option<&'static str> {
         MachineTactic::Apply { .. } => Some("apply"),
         MachineTactic::Rewrite { .. } => Some("rw"),
         MachineTactic::SimpLite { .. } => Some("simp-lite"),
+        MachineTactic::Smt { .. } => Some("smt"),
         MachineTactic::InductionNat { .. } => Some("induction-nat"),
     }
 }
@@ -1498,6 +1513,7 @@ pub fn machine_tactic_candidate_kind(candidate: &MachineTacticCandidate) -> &'st
         MachineTacticCandidate::Apply { .. } => "apply",
         MachineTacticCandidate::Rewrite { .. } => "rw",
         MachineTacticCandidate::SimpLite { .. } => "simp-lite",
+        MachineTacticCandidate::Smt { .. } => "smt",
         MachineTacticCandidate::InductionNat { .. } => "induction-nat",
     }
 }
@@ -1547,6 +1563,10 @@ pub fn validate_machine_tactic_candidate(
             MachineTacticCandidate::SimpLite { rules } => {
                 validate_simp_rule_refs(&rules)?;
                 Ok(MachineTactic::SimpLite { goal_id, rules })
+            }
+            MachineTacticCandidate::Smt { lemmas } => {
+                validate_smt_lemma_refs(&lemmas)?;
+                Ok(MachineTactic::Smt { goal_id, lemmas })
             }
             MachineTacticCandidate::InductionNat { local_name } => {
                 validate_intro_name_shape(&local_name)?;
@@ -1685,6 +1705,9 @@ pub fn run_machine_tactic_with_budget(
             } => run_rewrite_tactic_with_budget(state, goal_id, rule, direction, site, budget),
             MachineTactic::SimpLite { goal_id, rules } => {
                 run_simp_lite_tactic_with_budget(state, goal_id, rules, budget)
+            }
+            MachineTactic::Smt { goal_id, lemmas } => {
+                run_smt_tactic_with_budget(state, goal_id, lemmas, budget)
             }
             MachineTactic::InductionNat {
                 goal_id,
@@ -3555,6 +3578,123 @@ fn run_simp_lite_tactic_with_budget(
         simp.required_tactic_steps,
         &fuel,
     )
+}
+
+fn run_smt_tactic_with_budget(
+    state: &MachineProofState,
+    goal_id: GoalId,
+    lemmas: Vec<SmtLemmaRef>,
+    budget: TacticBudget,
+) -> Result<(MachineProofState, MachineProofDelta)> {
+    let goal = state.goal(goal_id)?;
+    validate_smt_lemma_refs(&lemmas)
+        .map_err(|diag| attach_goal_meta(diag, goal_id, goal.meta_id))?;
+    for lemma in &lemmas {
+        for level in &lemma.universe_args {
+            ensure_level_wf(&state.root.universe_params, level).map_err(|err| {
+                MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidMachineTactic,
+                    format!("smt lemma universe argument is not well formed: {err:?}"),
+                )
+                .with_goal(goal_id)
+                .with_meta(goal.meta_id)
+            })?;
+        }
+    }
+    let fuel = TacticRunFuel::new(budget);
+    let ctx = local_context_to_ctx_with_budget(
+        state.env.kernel_env(),
+        &goal.context,
+        &state.root.universe_params,
+        &fuel,
+        goal_id,
+        goal.meta_id,
+    )?;
+
+    if lemmas.is_empty() {
+        if let Some(proof) = resolve_smt_local_exact(state, &goal, &ctx, &fuel)? {
+            ensure_tactic_step_fuel(budget, 1, goal_id, goal.meta_id)?;
+            return assign_goal_with_budget_and_steps(
+                state,
+                goal_id,
+                proof,
+                Vec::new(),
+                budget,
+                0,
+                &fuel,
+            );
+        }
+    } else {
+        for lemma in &lemmas {
+            validate_apply_head_static(state, &goal, &lemma.head, &lemma.universe_args)?;
+            let resolved =
+                resolve_apply_head(state, &goal, &ctx, &lemma.head, &lemma.universe_args, &fuel)?;
+            if kernel_is_defeq_with_budget(
+                state.env.kernel_env(),
+                &ctx,
+                &state.root.universe_params,
+                &resolved.ty,
+                &goal.target,
+                &fuel,
+                goal_id,
+                goal.meta_id,
+            )? {
+                ensure_tactic_step_fuel(budget, 1, goal_id, goal.meta_id)?;
+                return assign_goal_with_budget_and_steps(
+                    state,
+                    goal_id,
+                    resolved.proof,
+                    Vec::new(),
+                    budget,
+                    0,
+                    &fuel,
+                );
+            }
+        }
+    }
+
+    Err(MachineTacticDiagnostic::new(
+        MachineTacticDiagnosticKind::TypeMismatch,
+        "smt could not close the goal from local hypotheses or explicit lemmas",
+    )
+    .with_goal(goal_id)
+    .with_meta(goal.meta_id))
+}
+
+fn resolve_smt_local_exact(
+    state: &MachineProofState,
+    goal: &MachineGoal,
+    ctx: &Ctx,
+    fuel: &TacticRunFuel,
+) -> Result<Option<ProofExpr>> {
+    for (index, local) in goal.context.iter().enumerate().rev() {
+        if local.value.is_some() {
+            continue;
+        }
+        let proof = Expr::bvar((goal.context.len() - 1 - index) as u32);
+        let local_ty = kernel_infer_with_budget(
+            state.env.kernel_env(),
+            ctx,
+            &state.root.universe_params,
+            &proof,
+            fuel,
+            goal.id,
+            goal.meta_id,
+        )?;
+        if kernel_is_defeq_with_budget(
+            state.env.kernel_env(),
+            ctx,
+            &state.root.universe_params,
+            &local_ty,
+            &goal.target,
+            fuel,
+            goal.id,
+            goal.meta_id,
+        )? {
+            return Ok(Some(ProofExpr::Core(proof)));
+        }
+    }
+    Ok(None)
 }
 
 fn resolve_simp_lite_allowlist<'a>(
@@ -5947,6 +6087,13 @@ fn validate_simp_rule_refs(rules: &[SimpRuleRef]) -> Result<()> {
                 format!("simp rule name {} is not canonical", rule.name.as_dotted()),
             ));
         }
+    }
+    Ok(())
+}
+
+fn validate_smt_lemma_refs(lemmas: &[SmtLemmaRef]) -> Result<()> {
+    for lemma in lemmas {
+        validate_tactic_head_shape(&lemma.head)?;
     }
     Ok(())
 }
@@ -9759,10 +9906,25 @@ fn encode_machine_tactic_to(out: &mut Vec<u8>, tactic: &MachineTactic) {
                 encode_simp_rule_ref_to(out, rule);
             }
         }
+        MachineTactic::Smt { lemmas, .. } => {
+            out.push(0x06);
+            encode_list_len_to(out, lemmas.len());
+            for lemma in lemmas {
+                encode_smt_lemma_ref_to(out, lemma);
+            }
+        }
         MachineTactic::InductionNat { local_name, .. } => {
             out.push(0x05);
             encode_string_to(out, local_name);
         }
+    }
+}
+
+fn encode_smt_lemma_ref_to(out: &mut Vec<u8>, lemma: &SmtLemmaRef) {
+    encode_tactic_head_to(out, &lemma.head);
+    encode_list_len_to(out, lemma.universe_args.len());
+    for level in &lemma.universe_args {
+        encode_level_to(out, level);
     }
 }
 
@@ -10145,6 +10307,25 @@ mod tests {
         let mut session = npa_cert::VerifierSession::new();
         npa_cert::verify_module_cert(&bytes, &mut session, &npa_cert::AxiomPolicy::normal())
             .unwrap()
+    }
+
+    fn verified_smt_tactic_module() -> npa_cert::VerifiedModule {
+        let module = npa_cert::CoreModule {
+            name: Name::from_dotted("SMT"),
+            declarations: vec![
+                Decl::Axiom {
+                    name: "SMT.P".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: prop(),
+                },
+                Decl::Axiom {
+                    name: "SMT.proof".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::konst("SMT.P", vec![]),
+                },
+            ],
+        };
+        verified_core_module(module)
     }
 
     fn verified_core_module(module: CoreModule) -> npa_cert::VerifiedModule {
@@ -10591,6 +10772,93 @@ mod tests {
 
         assert_eq!(err.kind, MachineTacticDiagnosticKind::InvalidEqFamily);
         assert_eq!(err.primary_name, Some(Name::from_dotted("Eq")));
+    }
+
+    #[test]
+    fn smt_tactic_closes_from_local_hypothesis_without_solver_trust() {
+        let spec = MachineProofSpec {
+            module: Name::from_dotted("Test"),
+            theorem_name: Name::from_dotted("Test.smt_id"),
+            source_index: 0,
+            universe_params: Vec::new(),
+            theorem_type: Expr::pi("P", prop(), Expr::pi("hp", Expr::bvar(0), Expr::bvar(1))),
+        };
+        let state = start_machine_proof(
+            spec,
+            Vec::new(),
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(0),
+                name: "P".to_owned(),
+            },
+        )
+        .unwrap();
+        let (state, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Intro {
+                goal_id: GoalId(1),
+                name: "hp".to_owned(),
+            },
+        )
+        .unwrap();
+
+        let (closed, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Smt {
+                goal_id: GoalId(2),
+                lemmas: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        assert!(closed.open_goals.is_empty());
+        extract_closed_machine_proof(&closed).unwrap();
+    }
+
+    #[test]
+    fn smt_tactic_closes_from_explicit_imported_lemma() {
+        let verified = verified_smt_tactic_module();
+        let import = VerifiedImportRef::from_verified_module(&verified).unwrap();
+        let state = start_machine_proof(
+            MachineProofSpec {
+                module: Name::from_dotted("Test"),
+                theorem_name: Name::from_dotted("Test.smt_imported"),
+                source_index: 0,
+                universe_params: Vec::new(),
+                theorem_type: Expr::konst("SMT.P", vec![]),
+            },
+            vec![import.clone()],
+            Vec::new(),
+            MachineTacticOptions::default(),
+        )
+        .unwrap();
+        let lemma = SmtLemmaRef {
+            head: TacticHead::Imported {
+                name: Name::from_dotted("SMT.proof"),
+                decl_interface_hash: export_interface_hash(&import, "SMT.proof"),
+            },
+            universe_args: Vec::new(),
+        };
+
+        let (closed, _) = run_machine_tactic(
+            &state,
+            MachineTactic::Smt {
+                goal_id: GoalId(0),
+                lemmas: vec![lemma],
+            },
+        )
+        .unwrap();
+
+        assert!(closed.open_goals.is_empty());
+        assert_eq!(
+            extract_closed_machine_proof(&closed).unwrap(),
+            Expr::konst("SMT.proof", vec![])
+        );
     }
 
     #[test]

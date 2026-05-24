@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::Path;
 
 use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
@@ -9,8 +10,10 @@ use npa_frontend::{
 use npa_kernel::{Expr, InductiveDecl};
 use npa_tactic::{
     GoalId, MachineProofDelta, MachineProofState, MachineTacticDiagnostic, MetaVarId, TacticBudget,
+    VerifiedImportRef,
 };
 
+use crate::advanced_ai::{AdvancedAiEndpointResponse, AdvancedSmtProveHashes};
 use crate::current::{MachineAxiomRefWire, MachineCheckedCurrentDeclContext};
 use crate::json::{JsonMember, JsonValue, JsonValueKind};
 use crate::projection::{MachineImportCertificateContext, VerifiedImportKey};
@@ -35,6 +38,7 @@ pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.built
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
 pub const HUMAN_INDUCTIVE_CHECK_ENDPOINT: &str = "/inductive/check";
 pub const HUMAN_TYPECLASS_SEARCH_ENDPOINT: &str = "/typeclass/search";
+pub const HUMAN_SMT_PROVE_ENDPOINT: &str = "/smt/prove";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanApiCompileOptions {
@@ -162,6 +166,39 @@ impl From<HumanDiagnostic> for HumanTypeclassSearchError {
     fn from(diagnostic: HumanDiagnostic) -> Self {
         Self { diagnostic }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanSmtProveRequest<'req, 'imports> {
+    pub request_canonical_bytes: &'req [u8],
+    pub verified_imports: &'imports [VerifiedImportRef],
+    pub workspace_root: &'imports Path,
+    pub require_certificate: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanSmtProveOk {
+    pub problem_hash: Hash,
+    pub proof_hash: Hash,
+    pub npa_proof_hash: Hash,
+    pub kernel_checked: bool,
+}
+
+impl From<AdvancedSmtProveHashes> for HumanSmtProveOk {
+    fn from(value: AdvancedSmtProveHashes) -> Self {
+        Self {
+            problem_hash: value.problem_hash,
+            proof_hash: value.proof_hash,
+            npa_proof_hash: value.npa_proof_hash,
+            kernel_checked: true,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HumanSmtProveResponse {
+    Success(HumanSmtProveOk),
+    Diagnostic(AdvancedAiEndpointResponse),
 }
 
 #[derive(Clone, Debug)]
@@ -1961,6 +1998,23 @@ pub struct HumanSimpLiteTacticRequest<'ctx> {
 
 #[derive(Clone, Debug)]
 pub struct HumanSimpLiteTacticOk {
+    pub state: MachineProofState,
+    pub delta: MachineProofDelta,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanSmtTacticRequest<'lemmas, 'ctx> {
+    pub state: &'ctx MachineProofState,
+    pub goal_id: GoalId,
+    pub lemmas: &'lemmas [HumanExpr],
+    pub span: npa_frontend::Span,
+    pub current_source_interface: &'ctx HumanSourceInterface,
+    pub imported_source_interfaces: &'ctx [HumanImportedSourceInterface],
+    pub budget: TacticBudget,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanSmtTacticOk {
     pub state: MachineProofState,
     pub delta: MachineProofDelta,
 }
