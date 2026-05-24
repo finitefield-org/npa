@@ -77,8 +77,36 @@ Phase 9.7  natural language formalization
   自然言語 / LaTeX から形式命題候補を作る
 ```
 
-おすすめの実装順序は、上の順に近いです。
-特に **advanced inductive と universe polymorphism** は、typeclass・quotient・大規模ライブラリの土台になるため先に固めます。
+上の番号は設計領域の並びです。
+実装順序は後述の #10 を正とし、まず **universe polymorphism と advanced inductive** を固めます。
+この2つは typeclass・quotient・大規模ライブラリの土台になるため、他の高度機能より先に検査規則と
+certificate 形式を安定させます。
+
+## 1.1 AI hot path の性能境界
+
+Phase 9 Human Profile で追加する高信頼検査や重い再構築処理は、AI 候補生成の通常経路を遅くしないように
+実行位置を分けます。
+
+```text
+AI candidate hot path:
+  bounded typeclass search
+  precomputed theorem graph snapshot query
+  Phase 9 AI deterministic candidate validation
+  fast kernel / Phase 5-7 replay に戻す軽量 verify
+
+release / audit / adoption path:
+  full independent checker
+  external checker profile
+  theorem graph extraction from certificates
+  SMT proof certificate checking / NPA proof reconstruction
+  quotient-capable checker support
+  high-trust release audit
+```
+
+したがって theorem graph は候補ごとに certificate 全体から抽出せず、build / release / index update で作った
+deterministic snapshot を検索します。SMT solver、quotient primitive、full independent checker、release audit は
+証明採用・高信頼化・release 判断の境界で実行し、AI ranking や candidate enumeration の inner loop には入れません。
+AI 側の速度要件は Phase 9 AI Profile の bounded validation / deterministic fixture matrix と対応させます。
 
 ---
 
@@ -272,13 +300,15 @@ Phase 9 では、次を判定できるようにします。
 ```text
 OK:
   I
-  A -> I
-  I -> I              constructor argument としての正の出現
+  A -> I              A は I を含まない外部型
+  Nat -> I            constructor argument としての正の出現
   List I
   Option I
   Prod A I
 
 NG:
+  I -> A
+  I -> I
   (I -> A) -> I
   ((I -> A) -> B) -> I
   negative occurrence
