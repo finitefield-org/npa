@@ -37,15 +37,17 @@ pub use elaborator::{
     MachineTermElabContextInModuleRequest,
 };
 pub use human::{
-    HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanCompileOptions,
-    HumanConstructorDecl, HumanDecl, HumanDeclValue, HumanExpr, HumanFrontendState,
-    HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata, HumanImplicitMode,
-    HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel, HumanModule,
-    HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead, HumanNotationKind,
-    HumanOpenScope, HumanOpenScopeFrame, HumanProofBlock, HumanRewriteDirection,
+    HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanClassDecl,
+    HumanClassFieldDecl, HumanCompileOptions, HumanConstructorDecl, HumanDecl, HumanDeclValue,
+    HumanExpr, HumanFrontendState, HumanGeneratedDeclarationKind,
+    HumanGeneratedDeclarationMetadata, HumanImplicitMode, HumanImportedSourceInterface,
+    HumanInductiveDecl, HumanInstanceDecl, HumanInstanceFieldDecl, HumanItem, HumanLevel,
+    HumanModule, HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead,
+    HumanNotationKind, HumanOpenScope, HumanOpenScopeFrame, HumanProofBlock, HumanRewriteDirection,
     HumanRewriteRuleSyntax, HumanSourceBinderMetadata, HumanSourceDeclarationKind,
     HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceInterfaceStore,
     HumanSourceNotationMetadata, HumanTacticKind, HumanTacticScript, HumanTacticSyntax,
+    HumanTypeclassClassMetadata, HumanTypeclassFieldMetadata, HumanTypeclassInstanceMetadata,
     HumanUniverseParam,
 };
 pub use human_diagnostic::{

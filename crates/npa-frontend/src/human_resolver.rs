@@ -5,13 +5,15 @@ use crate::resolver::{
     VerifiedImportLookupError,
 };
 use crate::{
-    HumanAxiomDecl, HumanBinder, HumanBinderKind, HumanCompileOptions, HumanDecl, HumanDeclValue,
-    HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
+    HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanBinderKind, HumanClassDecl,
+    HumanClassFieldDecl, HumanCompileOptions, HumanDecl, HumanDeclValue, HumanDiagnostic,
+    HumanDiagnosticKind, HumanDiagnosticPayload, HumanDiagnosticPhase, HumanExpr,
     HumanFrontendState, HumanGeneratedDeclarationKind, HumanGeneratedDeclarationMetadata,
-    HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanModule, HumanName,
-    HumanNotationAssociativity, HumanNotationHead, HumanNotationKind, HumanOpenScope,
+    HumanImportedSourceInterface, HumanInductiveDecl, HumanInstanceDecl, HumanItem, HumanModule,
+    HumanName, HumanNotationAssociativity, HumanNotationHead, HumanNotationKind, HumanOpenScope,
     HumanOpenScopeFrame, HumanResult, HumanSourceBinderMetadata, HumanSourceDeclarationKind,
-    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceNotationMetadata, Span,
+    HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceNotationMetadata,
+    HumanTypeclassClassMetadata, HumanTypeclassFieldMetadata, HumanTypeclassInstanceMetadata, Span,
     VerifiedImport,
 };
 
@@ -341,6 +343,39 @@ impl<'a> HumanResolver<'a> {
             .try_for_each(|constructor| self.resolve_expr(&constructor.ty, &mut locals));
         self.temporary_globals.pop();
         result
+    }
+
+    fn resolve_class_terms(&mut self, decl: &HumanClassDecl) -> HumanResult<()> {
+        let mut locals = HumanLocalScope::default();
+        self.resolve_binders(&decl.binders, &mut locals)?;
+        for field in &decl.fields {
+            self.resolve_expr(&field.ty, &mut locals)?;
+        }
+        Ok(())
+    }
+
+    fn resolve_instance_terms(&mut self, decl: &HumanInstanceDecl) -> HumanResult<()> {
+        let mut locals = HumanLocalScope::default();
+        self.resolve_binders(&decl.binders, &mut locals)?;
+        self.resolve_expr(&decl.ty, &mut locals)?;
+        for field in &decl.fields {
+            self.resolve_expr(&field.value, &mut locals)?;
+        }
+        Ok(())
+    }
+
+    fn ensure_instance_fields_are_unique(&self, decl: &HumanInstanceDecl) -> HumanResult<()> {
+        let mut names = BTreeSet::new();
+        for field in &decl.fields {
+            if !names.insert(field.name.parts.clone()) {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::DuplicateDeclaration,
+                    field.span,
+                    format!("duplicate instance field {}", field.name.as_dotted()),
+                ));
+            }
+        }
+        Ok(())
     }
 
     fn resolve_binders(
@@ -936,6 +971,53 @@ impl<'a> HumanResolver<'a> {
             .collect()
     }
 
+    fn generated_class_entries(
+        &self,
+        decl: &HumanClassDecl,
+        parent: &HumanName,
+    ) -> Vec<HumanGeneratedDeclarationMetadata> {
+        vec![
+            HumanGeneratedDeclarationMetadata {
+                kind: HumanGeneratedDeclarationKind::Constructor,
+                parent: parent.clone(),
+                name: class_constructor_name(parent),
+                decl_interface_hash: None,
+                span: decl.name.span,
+            },
+            HumanGeneratedDeclarationMetadata {
+                kind: HumanGeneratedDeclarationKind::Recursor,
+                parent: parent.clone(),
+                name: generated_recursor_name(parent),
+                decl_interface_hash: None,
+                span: decl.span,
+            },
+        ]
+    }
+
+    fn class_field_entries(
+        &self,
+        decl: &HumanClassDecl,
+        parent: &HumanName,
+    ) -> Vec<(HumanName, Span)> {
+        decl.fields
+            .iter()
+            .map(|field| (relative_child_name(parent, &field.name), field.span))
+            .collect()
+    }
+
+    fn resolve_instance_class_name(
+        &self,
+        decl: &HumanInstanceDecl,
+    ) -> HumanResult<Option<HumanName>> {
+        let Some(head) = human_expr_head_name(&decl.ty) else {
+            return Ok(None);
+        };
+        let Some(reference) = self.resolve_global_name(head)? else {
+            return Ok(None);
+        };
+        Ok(Some(human_name_from_global_ref(&reference, head.span)))
+    }
+
     fn resolve_notation_target(
         &self,
         decl: &crate::HumanNotationDecl,
@@ -1179,6 +1261,90 @@ impl<'a> HumanResolver<'a> {
                     .push(metadata);
                 self.record_generated_inductive_metadata(decl);
             }
+            HumanItem::Class(decl) => {
+                let name = self.qualify_name(&decl.name);
+                let generated = self.generated_class_entries(decl, &name);
+                let field_entries = self.class_field_entries(decl, &name);
+                self.ensure_current_name_is_available(&name, decl.span)?;
+
+                let mut generated_names = BTreeSet::new();
+                for generated_entry in &generated {
+                    if !generated_names.insert(name_from_human(&generated_entry.name)) {
+                        return Err(HumanDiagnostic::error(
+                            HumanDiagnosticKind::DuplicateDeclaration,
+                            generated_entry.span,
+                            format!("duplicate declaration {}", generated_entry.name.as_dotted()),
+                        ));
+                    }
+                    self.ensure_current_name_is_available(
+                        &generated_entry.name,
+                        generated_entry.span,
+                    )?;
+                }
+                for (field_name, span) in &field_entries {
+                    if !generated_names.insert(name_from_human(field_name)) {
+                        return Err(HumanDiagnostic::error(
+                            HumanDiagnosticKind::DuplicateDeclaration,
+                            *span,
+                            format!("duplicate declaration {}", field_name.as_dotted()),
+                        ));
+                    }
+                    self.ensure_current_name_is_available(field_name, *span)?;
+                }
+
+                let index = self.next_local_index();
+                self.resolve_class_terms(decl)?;
+                let metadata = self.class_metadata(decl);
+                let added_index =
+                    self.add_current_global(name, HumanSourceDeclarationKind::Class, decl.span)?;
+                debug_assert_eq!(added_index, index);
+                for generated_entry in generated {
+                    self.add_current_generated_global(generated_entry, index)?;
+                }
+                self.state
+                    .source_interfaces
+                    .current
+                    .declarations
+                    .push(metadata);
+                for field in &decl.fields {
+                    let metadata = self.class_field_metadata(decl, field);
+                    self.add_current_global(
+                        metadata.name.clone(),
+                        HumanSourceDeclarationKind::ClassField,
+                        field.span,
+                    )?;
+                    self.state
+                        .source_interfaces
+                        .current
+                        .declarations
+                        .push(metadata);
+                }
+                self.record_generated_class_metadata(decl);
+                self.state
+                    .source_interfaces
+                    .current
+                    .typeclass_classes
+                    .push(self.typeclass_class_metadata(decl));
+            }
+            HumanItem::Instance(decl) => {
+                let name = self.qualify_name(&decl.name);
+                self.ensure_current_name_is_available(&name, decl.span)?;
+                self.ensure_instance_fields_are_unique(decl)?;
+                self.resolve_instance_terms(decl)?;
+                let class = self.resolve_instance_class_name(decl)?;
+                let metadata = self.instance_metadata(decl);
+                self.add_current_global(name, HumanSourceDeclarationKind::Instance, decl.span)?;
+                self.state
+                    .source_interfaces
+                    .current
+                    .declarations
+                    .push(metadata);
+                self.state
+                    .source_interfaces
+                    .current
+                    .typeclass_instances
+                    .push(self.typeclass_instance_metadata(decl, class));
+            }
             HumanItem::Notation(decl) => {
                 let target = self.resolve_notation_target(decl)?;
                 let metadata = HumanSourceNotationMetadata {
@@ -1240,6 +1406,54 @@ impl<'a> HumanResolver<'a> {
         }
     }
 
+    fn class_metadata(&self, decl: &HumanClassDecl) -> HumanSourceDeclarationMetadata {
+        HumanSourceDeclarationMetadata {
+            kind: HumanSourceDeclarationKind::Class,
+            name: self.qualify_name(&decl.name),
+            universe_params: decl.universe_params.clone(),
+            binders: binder_metadata(&decl.binders),
+            decl_interface_hash: None,
+            span: decl.span,
+        }
+    }
+
+    fn class_field_metadata(
+        &self,
+        decl: &HumanClassDecl,
+        field: &HumanClassFieldDecl,
+    ) -> HumanSourceDeclarationMetadata {
+        let class_name = self.qualify_name(&decl.name);
+        let mut binders = binder_metadata(&decl.binders);
+        for binder in &mut binders {
+            binder.binder_info = HumanBinderInfo::Implicit;
+        }
+        binders.push(HumanSourceBinderMetadata {
+            name: Some(HumanName::new(vec!["self".to_owned()], field.span)),
+            binder_info: HumanBinderInfo::Explicit,
+            span: field.span,
+        });
+
+        HumanSourceDeclarationMetadata {
+            kind: HumanSourceDeclarationKind::ClassField,
+            name: relative_child_name(&class_name, &field.name),
+            universe_params: decl.universe_params.clone(),
+            binders,
+            decl_interface_hash: None,
+            span: field.span,
+        }
+    }
+
+    fn instance_metadata(&self, decl: &HumanInstanceDecl) -> HumanSourceDeclarationMetadata {
+        HumanSourceDeclarationMetadata {
+            kind: HumanSourceDeclarationKind::Instance,
+            name: self.qualify_name(&decl.name),
+            universe_params: decl.universe_params.clone(),
+            binders: binder_metadata(&decl.binders),
+            decl_interface_hash: None,
+            span: decl.span,
+        }
+    }
+
     fn record_generated_inductive_metadata(&mut self, decl: &HumanInductiveDecl) {
         let parent = self.qualify_name(&decl.name);
         let generated: Vec<_> = decl
@@ -1266,6 +1480,50 @@ impl<'a> HumanResolver<'a> {
             .current
             .generated_declarations
             .extend(generated);
+    }
+
+    fn record_generated_class_metadata(&mut self, decl: &HumanClassDecl) {
+        let parent = self.qualify_name(&decl.name);
+        let generated = self.generated_class_entries(decl, &parent);
+        self.state
+            .source_interfaces
+            .current
+            .generated_declarations
+            .extend(generated);
+    }
+
+    fn typeclass_class_metadata(&self, decl: &HumanClassDecl) -> HumanTypeclassClassMetadata {
+        let class = self.qualify_name(&decl.name);
+        HumanTypeclassClassMetadata {
+            name: class.clone(),
+            constructor: class_constructor_name(&class),
+            fields: decl
+                .fields
+                .iter()
+                .map(|field| HumanTypeclassFieldMetadata {
+                    name: field.name.clone(),
+                    projection: relative_child_name(&class, &field.name),
+                    decl_interface_hash: None,
+                    span: field.span,
+                })
+                .collect(),
+            decl_interface_hash: None,
+            span: decl.span,
+        }
+    }
+
+    fn typeclass_instance_metadata(
+        &self,
+        decl: &HumanInstanceDecl,
+        class: Option<HumanName>,
+    ) -> HumanTypeclassInstanceMetadata {
+        HumanTypeclassInstanceMetadata {
+            name: self.qualify_name(&decl.name),
+            class,
+            priority: 1000,
+            decl_interface_hash: None,
+            span: decl.span,
+        }
     }
 
     fn current_open_frame(&mut self) -> &mut HumanOpenScopeFrame {
@@ -1604,6 +1862,21 @@ fn planned_current_names(module: &HumanModule) -> BTreeSet<npa_cert::Name> {
                 }
                 names.insert(name_from_human(&generated_recursor_name(&parent)));
             }
+            HumanItem::Class(decl) => {
+                let parent = HumanName::new(
+                    name_from_parts(&namespace_stack, &decl.name).0,
+                    decl.name.span,
+                );
+                names.insert(name_from_human(&parent));
+                names.insert(name_from_human(&class_constructor_name(&parent)));
+                names.insert(name_from_human(&generated_recursor_name(&parent)));
+                for field in &decl.fields {
+                    names.insert(name_from_human(&relative_child_name(&parent, &field.name)));
+                }
+            }
+            HumanItem::Instance(decl) => {
+                names.insert(name_from_parts(&namespace_stack, &decl.name));
+            }
             HumanItem::Import { .. } | HumanItem::Open { .. } | HumanItem::Notation(_) => {}
         }
     }
@@ -1739,6 +2012,65 @@ fn reconcile_source_interface_with_verified_import(
         }
     }
 
+    for class in &mut source_interface.typeclass_classes {
+        let name = name_from_human(&class.name);
+        if let Some(export) = import.exports.iter().find(|export| export.name == name) {
+            if class
+                .decl_interface_hash
+                .is_some_and(|hash| hash != export.decl_interface_hash)
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::ImportResolutionError,
+                    class.span,
+                    format!(
+                        "Human typeclass source interface hash for {} does not match verified import",
+                        class.name.as_dotted()
+                    ),
+                ));
+            }
+            class.decl_interface_hash = Some(export.decl_interface_hash);
+        }
+        for field in &mut class.fields {
+            let name = name_from_human(&field.projection);
+            if let Some(export) = import.exports.iter().find(|export| export.name == name) {
+                if field
+                    .decl_interface_hash
+                    .is_some_and(|hash| hash != export.decl_interface_hash)
+                {
+                    return Err(HumanDiagnostic::error(
+                        HumanDiagnosticKind::ImportResolutionError,
+                        field.span,
+                        format!(
+                            "Human typeclass field source interface hash for {} does not match verified import",
+                            field.projection.as_dotted()
+                        ),
+                    ));
+                }
+                field.decl_interface_hash = Some(export.decl_interface_hash);
+            }
+        }
+    }
+
+    for instance in &mut source_interface.typeclass_instances {
+        let name = name_from_human(&instance.name);
+        if let Some(export) = import.exports.iter().find(|export| export.name == name) {
+            if instance
+                .decl_interface_hash
+                .is_some_and(|hash| hash != export.decl_interface_hash)
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::ImportResolutionError,
+                    instance.span,
+                    format!(
+                        "Human typeclass instance source interface hash for {} does not match verified import",
+                        instance.name.as_dotted()
+                    ),
+                ));
+            }
+            instance.decl_interface_hash = Some(export.decl_interface_hash);
+        }
+    }
+
     Ok(source_interface)
 }
 
@@ -1748,10 +2080,25 @@ fn relative_child_name(parent: &HumanName, child: &HumanName) -> HumanName {
     HumanName::new(parts, child.span)
 }
 
+fn class_constructor_name(parent: &HumanName) -> HumanName {
+    let mut parts = parent.parts.clone();
+    parts.push("mk".to_owned());
+    HumanName::new(parts, parent.span)
+}
+
 fn generated_recursor_name(parent: &HumanName) -> HumanName {
     let mut parts = parent.parts.clone();
     parts.push("rec".to_owned());
     HumanName::new(parts, parent.span)
+}
+
+fn human_expr_head_name(expr: &HumanExpr) -> Option<&HumanName> {
+    match expr {
+        HumanExpr::Ident { name, .. } => Some(name),
+        HumanExpr::App { func, .. } => human_expr_head_name(func),
+        HumanExpr::Annot { expr, .. } => human_expr_head_name(expr),
+        _ => None,
+    }
 }
 
 fn name_from_human(name: &HumanName) -> npa_cert::Name {

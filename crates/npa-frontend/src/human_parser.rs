@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    FileId, HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanConstructorDecl, HumanDecl,
-    HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind, HumanDiagnosticPhase, HumanExpr,
-    HumanImplicitMode, HumanImportedSourceInterface, HumanInductiveDecl, HumanItem, HumanLevel,
+    FileId, HumanAxiomDecl, HumanBinder, HumanBinderInfo, HumanClassDecl, HumanClassFieldDecl,
+    HumanConstructorDecl, HumanDecl, HumanDeclValue, HumanDiagnostic, HumanDiagnosticKind,
+    HumanDiagnosticPhase, HumanExpr, HumanImplicitMode, HumanImportedSourceInterface,
+    HumanInductiveDecl, HumanInstanceDecl, HumanInstanceFieldDecl, HumanItem, HumanLevel,
     HumanModule, HumanName, HumanNotationAssociativity, HumanNotationDecl, HumanNotationHead,
     HumanNotationKind, HumanProofBlock, HumanResult, HumanRewriteDirection, HumanRewriteRuleSyntax,
     HumanSourceNotationMetadata, HumanTacticScript, HumanTacticSyntax, HumanUniverseParam, Span,
@@ -20,7 +21,7 @@ pub fn parse_human_module_with_source_interfaces(
 ) -> HumanResult<HumanModule> {
     let tokens = lex_human(file_id, source)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
-    Parser::new(tokens, imported_source_interfaces)
+    Parser::new(tokens, source, imported_source_interfaces)
         .parse_module(file_id, source.len() as u32)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))
 }
@@ -28,7 +29,7 @@ pub fn parse_human_module_with_source_interfaces(
 pub fn parse_human_term(file_id: FileId, source: &str) -> HumanResult<HumanExpr> {
     let tokens = lex_human(file_id, source)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
-    let mut parser = Parser::new(tokens, &[]);
+    let mut parser = Parser::new(tokens, source, &[]);
     let term = parser
         .parse_term()
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Parser))?;
@@ -62,6 +63,8 @@ enum TokenKind {
     Theorem,
     Axiom,
     Inductive,
+    Class,
+    Instance,
     Where,
     Notation,
     Prefix,
@@ -348,6 +351,8 @@ fn lex_ident(
         "theorem" => TokenKind::Theorem,
         "axiom" => TokenKind::Axiom,
         "inductive" => TokenKind::Inductive,
+        "class" => TokenKind::Class,
+        "instance" => TokenKind::Instance,
         "where" => TokenKind::Where,
         "notation" => TokenKind::Notation,
         "prefix" => TokenKind::Prefix,
@@ -469,6 +474,8 @@ fn reserved_name_component_spelling(kind: &TokenKind) -> Option<&'static str> {
         TokenKind::Theorem => "theorem",
         TokenKind::Axiom => "axiom",
         TokenKind::Inductive => "inductive",
+        TokenKind::Class => "class",
+        TokenKind::Instance => "instance",
         TokenKind::Where => "where",
         TokenKind::Notation => "notation",
         TokenKind::Prefix => "prefix",
@@ -638,27 +645,32 @@ fn reserved_notation_token(token: &str) -> bool {
     )
 }
 
-struct Parser {
+struct Parser<'a> {
     tokens: Vec<Token>,
     pos: usize,
+    source: &'a str,
     imported_source_interfaces: Vec<HumanImportedSourceInterface>,
     namespace_stack: Vec<HumanName>,
     notation_scopes: Vec<ParserNotationScope>,
     namespace_notations: BTreeMap<Vec<String>, Vec<ParserNotationEntry>>,
+    field_boundary_depth: usize,
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     fn new(
         tokens: Vec<Token>,
+        source: &'a str,
         imported_source_interfaces: &[HumanImportedSourceInterface],
     ) -> Self {
         Self {
             tokens,
             pos: 0,
+            source,
             imported_source_interfaces: imported_source_interfaces.to_vec(),
             namespace_stack: Vec::new(),
             notation_scopes: vec![ParserNotationScope::default()],
             namespace_notations: BTreeMap::new(),
+            field_boundary_depth: 0,
         }
     }
 
@@ -723,6 +735,14 @@ impl Parser {
                 TokenKind::Inductive => {
                     saw_non_import = true;
                     HumanItem::Inductive(self.parse_inductive_decl()?)
+                }
+                TokenKind::Class => {
+                    saw_non_import = true;
+                    HumanItem::Class(self.parse_class_decl()?)
+                }
+                TokenKind::Instance => {
+                    saw_non_import = true;
+                    HumanItem::Instance(self.parse_instance_decl()?)
                 }
                 TokenKind::Notation
                 | TokenKind::Prefix
@@ -1009,6 +1029,96 @@ impl Parser {
         let ty = self.parse_term()?;
         let span = start.join(ty.span());
         Ok(HumanConstructorDecl { name, ty, span })
+    }
+
+    fn parse_class_decl(&mut self) -> HumanResult<HumanClassDecl> {
+        let start = self.expect_class()?;
+        let name = self.parse_name()?;
+        let universe_params = self.parse_optional_universe_params()?;
+        let binders = self.parse_decl_binders()?;
+        self.expect_where()?;
+        let mut fields = Vec::new();
+
+        while !self.at_eof() && !self.at_top_level_item_start() {
+            fields.push(self.parse_class_field_decl()?);
+        }
+
+        if fields.is_empty() {
+            return Err(HumanDiagnostic::parse(
+                self.peek_span(),
+                "expected at least one class field declaration",
+            ));
+        }
+
+        let span = start.join(fields.last().expect("checked non-empty").span);
+        Ok(HumanClassDecl {
+            name,
+            universe_params,
+            binders,
+            fields,
+            span,
+        })
+    }
+
+    fn parse_class_field_decl(&mut self) -> HumanResult<HumanClassFieldDecl> {
+        if matches!(self.peek_kind(), TokenKind::Bar) {
+            self.advance();
+        }
+        let name = self.parse_declaration_name()?;
+        self.expect_colon()?;
+        let ty = self.parse_field_term()?;
+        let span = name.span.join(ty.span());
+        Ok(HumanClassFieldDecl { name, ty, span })
+    }
+
+    fn parse_instance_decl(&mut self) -> HumanResult<HumanInstanceDecl> {
+        let start = self.expect_instance()?;
+        let name = self.parse_name()?;
+        let universe_params = self.parse_optional_universe_params()?;
+        let binders = self.parse_decl_binders()?;
+        self.expect_colon()?;
+        let ty = self.parse_term()?;
+        self.expect_where()?;
+        let mut fields = Vec::new();
+
+        while !self.at_eof() && !self.at_top_level_item_start() {
+            fields.push(self.parse_instance_field_decl()?);
+        }
+
+        if fields.is_empty() {
+            return Err(HumanDiagnostic::parse(
+                self.peek_span(),
+                "expected at least one instance field assignment",
+            ));
+        }
+
+        let span = start.join(fields.last().expect("checked non-empty").span);
+        Ok(HumanInstanceDecl {
+            name,
+            universe_params,
+            binders,
+            ty,
+            fields,
+            span,
+        })
+    }
+
+    fn parse_instance_field_decl(&mut self) -> HumanResult<HumanInstanceFieldDecl> {
+        if matches!(self.peek_kind(), TokenKind::Bar) {
+            self.advance();
+        }
+        let name = self.parse_declaration_name()?;
+        self.expect_colon_eq()?;
+        let value = self.parse_field_term()?;
+        let span = name.span.join(value.span());
+        Ok(HumanInstanceFieldDecl { name, value, span })
+    }
+
+    fn parse_field_term(&mut self) -> HumanResult<HumanExpr> {
+        self.field_boundary_depth += 1;
+        let result = self.parse_term();
+        self.field_boundary_depth -= 1;
+        result
     }
 
     fn parse_notation_decl(&mut self) -> HumanResult<HumanNotationDecl> {
@@ -1751,6 +1861,8 @@ impl Parser {
                 | TokenKind::Theorem
                 | TokenKind::Axiom
                 | TokenKind::Inductive
+                | TokenKind::Class
+                | TokenKind::Instance
                 | TokenKind::Notation
                 | TokenKind::Prefix
                 | TokenKind::Postfix
@@ -1761,6 +1873,9 @@ impl Parser {
     }
 
     fn is_atom_start(&self) -> bool {
+        if self.at_field_boundary() {
+            return false;
+        }
         matches!(
             self.peek_kind(),
             TokenKind::Ident(_)
@@ -1773,6 +1888,41 @@ impl Parser {
                 | TokenKind::NamedHole(_)
                 | TokenKind::Number(_)
         )
+    }
+
+    fn at_field_boundary(&self) -> bool {
+        if self.field_boundary_depth == 0 || self.pos == 0 {
+            return false;
+        }
+        if !matches!(
+            self.peek_kind(),
+            TokenKind::Ident(_) | TokenKind::Bar | TokenKind::Class | TokenKind::Instance
+        ) {
+            return false;
+        }
+        if matches!(self.peek_kind(), TokenKind::Ident(_))
+            && !matches!(
+                self.peek_next_kind(),
+                Some(TokenKind::Colon) | Some(TokenKind::ColonEq)
+            )
+        {
+            return false;
+        }
+        self.has_newline_before_current()
+    }
+
+    fn has_newline_before_current(&self) -> bool {
+        let Some(previous) = self.tokens.get(self.pos.saturating_sub(1)) else {
+            return false;
+        };
+        let Some(current) = self.tokens.get(self.pos) else {
+            return false;
+        };
+        let start = previous.span.end.0 as usize;
+        let end = current.span.start.0 as usize;
+        self.source
+            .get(start..end)
+            .is_some_and(|whitespace| whitespace.contains('\n') || whitespace.contains('\r'))
     }
 
     fn is_type_level_start(&self) -> bool {
@@ -1912,6 +2062,17 @@ impl Parser {
         self.expect_simple(
             |kind| matches!(kind, TokenKind::Inductive),
             "expected inductive",
+        )
+    }
+
+    fn expect_class(&mut self) -> HumanResult<Span> {
+        self.expect_simple(|kind| matches!(kind, TokenKind::Class), "expected class")
+    }
+
+    fn expect_instance(&mut self) -> HumanResult<Span> {
+        self.expect_simple(
+            |kind| matches!(kind, TokenKind::Instance),
+            "expected instance",
         )
     }
 
@@ -2121,6 +2282,32 @@ end Demo",
         assert_eq!(decl.binders.len(), 2);
         assert_eq!(decl.binders[0].binder_info, HumanBinderInfo::Implicit);
         assert_eq!(decl.binders[1].binder_info, HumanBinderInfo::Explicit);
+    }
+
+    #[test]
+    fn parses_typeclass_class_and_instance_declarations() {
+        let module = parse_module(
+            "\
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add",
+        );
+
+        assert_eq!(module.items.len(), 2);
+        let HumanItem::Class(class) = &module.items[0] else {
+            panic!("expected class");
+        };
+        assert_eq!(class.name.as_dotted(), "Add");
+        assert_eq!(class.fields.len(), 1);
+        assert_eq!(class.fields[0].name.as_dotted(), "add");
+
+        let HumanItem::Instance(instance) = &module.items[1] else {
+            panic!("expected instance");
+        };
+        assert_eq!(instance.name.as_dotted(), "Nat.add_inst");
+        assert_eq!(instance.fields.len(), 1);
+        assert_eq!(instance.fields[0].name.as_dotted(), "add");
     }
 
     #[test]

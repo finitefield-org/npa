@@ -1845,8 +1845,11 @@ fn human_lsp_semantic_token_type(
         npa_frontend::HumanSourceDeclarationKind::Def => HumanLspSemanticTokenType::Function,
         npa_frontend::HumanSourceDeclarationKind::Theorem
         | npa_frontend::HumanSourceDeclarationKind::Axiom => HumanLspSemanticTokenType::Theorem,
-        npa_frontend::HumanSourceDeclarationKind::Inductive => HumanLspSemanticTokenType::Type,
-        npa_frontend::HumanSourceDeclarationKind::Imported => HumanLspSemanticTokenType::Function,
+        npa_frontend::HumanSourceDeclarationKind::Inductive
+        | npa_frontend::HumanSourceDeclarationKind::Class => HumanLspSemanticTokenType::Type,
+        npa_frontend::HumanSourceDeclarationKind::ClassField
+        | npa_frontend::HumanSourceDeclarationKind::Instance
+        | npa_frontend::HumanSourceDeclarationKind::Imported => HumanLspSemanticTokenType::Function,
     }
 }
 
@@ -1855,8 +1858,11 @@ fn human_lsp_symbol_kind(kind: npa_frontend::HumanSourceDeclarationKind) -> Huma
         npa_frontend::HumanSourceDeclarationKind::Def => HumanLspSymbolKind::Function,
         npa_frontend::HumanSourceDeclarationKind::Theorem
         | npa_frontend::HumanSourceDeclarationKind::Axiom => HumanLspSymbolKind::Theorem,
-        npa_frontend::HumanSourceDeclarationKind::Inductive => HumanLspSymbolKind::Type,
-        npa_frontend::HumanSourceDeclarationKind::Imported => HumanLspSymbolKind::Function,
+        npa_frontend::HumanSourceDeclarationKind::Inductive
+        | npa_frontend::HumanSourceDeclarationKind::Class => HumanLspSymbolKind::Type,
+        npa_frontend::HumanSourceDeclarationKind::ClassField
+        | npa_frontend::HumanSourceDeclarationKind::Instance
+        | npa_frontend::HumanSourceDeclarationKind::Imported => HumanLspSymbolKind::Function,
     }
 }
 
@@ -5863,6 +5869,31 @@ fn human_encode_source_interface_metadata(
         human_encode_human_name(out, &generated.name);
         human_encode_option_hash(out, generated.decl_interface_hash.as_ref());
     }
+    human_encode_list_len(out, interface.typeclass_classes.len());
+    for class in &interface.typeclass_classes {
+        human_encode_human_name(out, &class.name);
+        human_encode_human_name(out, &class.constructor);
+        human_encode_list_len(out, class.fields.len());
+        for field in &class.fields {
+            human_encode_human_name(out, &field.name);
+            human_encode_human_name(out, &field.projection);
+            human_encode_option_hash(out, field.decl_interface_hash.as_ref());
+        }
+        human_encode_option_hash(out, class.decl_interface_hash.as_ref());
+    }
+    human_encode_list_len(out, interface.typeclass_instances.len());
+    for instance in &interface.typeclass_instances {
+        human_encode_human_name(out, &instance.name);
+        match &instance.class {
+            Some(class) => {
+                out.push(0x01);
+                human_encode_human_name(out, class);
+            }
+            None => out.push(0x00),
+        }
+        human_encode_uvar(out, instance.priority as u64);
+        human_encode_option_hash(out, instance.decl_interface_hash.as_ref());
+    }
 }
 
 fn human_encode_source_decl_metadata(
@@ -5920,6 +5951,9 @@ fn human_source_declaration_kind_str(
         npa_frontend::HumanSourceDeclarationKind::Theorem => "theorem",
         npa_frontend::HumanSourceDeclarationKind::Axiom => "axiom",
         npa_frontend::HumanSourceDeclarationKind::Inductive => "inductive",
+        npa_frontend::HumanSourceDeclarationKind::Class => "class",
+        npa_frontend::HumanSourceDeclarationKind::ClassField => "class-field",
+        npa_frontend::HumanSourceDeclarationKind::Instance => "instance",
         npa_frontend::HumanSourceDeclarationKind::Imported => "imported",
     }
 }
@@ -6247,6 +6281,35 @@ fn human_source_interface_with_certificate_hashes(
             .or_else(|| export_hashes.get(&human_prefixed_current_name(&module_name, &name)))
         {
             generated.decl_interface_hash = Some(*hash);
+        }
+    }
+
+    for class in &mut source_interface.typeclass_classes {
+        let name = npa_cert::Name(class.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&human_prefixed_current_name(&module_name, &name)))
+        {
+            class.decl_interface_hash = Some(*hash);
+        }
+        for field in &mut class.fields {
+            let name = npa_cert::Name(field.projection.parts.clone());
+            if let Some(hash) = export_hashes
+                .get(&name)
+                .or_else(|| export_hashes.get(&human_prefixed_current_name(&module_name, &name)))
+            {
+                field.decl_interface_hash = Some(*hash);
+            }
+        }
+    }
+
+    for instance in &mut source_interface.typeclass_instances {
+        let name = npa_cert::Name(instance.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&human_prefixed_current_name(&module_name, &name)))
+        {
+            instance.decl_interface_hash = Some(*hash);
         }
     }
 

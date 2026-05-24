@@ -27,6 +27,8 @@ pub enum HumanItem {
     Theorem(HumanDecl),
     Axiom(HumanAxiomDecl),
     Inductive(HumanInductiveDecl),
+    Class(HumanClassDecl),
+    Instance(HumanInstanceDecl),
     Notation(HumanNotationDecl),
 }
 
@@ -40,6 +42,8 @@ impl HumanItem {
             Self::Def(decl) | Self::Theorem(decl) => decl.span,
             Self::Axiom(decl) => decl.span,
             Self::Inductive(decl) => decl.span,
+            Self::Class(decl) => decl.span,
+            Self::Instance(decl) => decl.span,
             Self::Notation(decl) => decl.span,
         }
     }
@@ -179,6 +183,39 @@ pub struct HumanInductiveDecl {
 pub struct HumanConstructorDecl {
     pub name: HumanName,
     pub ty: HumanExpr,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanClassDecl {
+    pub name: HumanName,
+    pub universe_params: Vec<HumanUniverseParam>,
+    pub binders: Vec<HumanBinder>,
+    pub fields: Vec<HumanClassFieldDecl>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanClassFieldDecl {
+    pub name: HumanName,
+    pub ty: HumanExpr,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanInstanceDecl {
+    pub name: HumanName,
+    pub universe_params: Vec<HumanUniverseParam>,
+    pub binders: Vec<HumanBinder>,
+    pub ty: HumanExpr,
+    pub fields: Vec<HumanInstanceFieldDecl>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanInstanceFieldDecl {
+    pub name: HumanName,
+    pub value: HumanExpr,
     pub span: Span,
 }
 
@@ -451,6 +488,8 @@ pub struct HumanSourceInterface {
     pub declarations: Vec<HumanSourceDeclarationMetadata>,
     pub notations: Vec<HumanSourceNotationMetadata>,
     pub generated_declarations: Vec<HumanGeneratedDeclarationMetadata>,
+    pub typeclass_classes: Vec<HumanTypeclassClassMetadata>,
+    pub typeclass_instances: Vec<HumanTypeclassInstanceMetadata>,
 }
 
 impl HumanSourceInterface {
@@ -460,6 +499,8 @@ impl HumanSourceInterface {
             declarations: Vec::new(),
             notations: Vec::new(),
             generated_declarations: Vec::new(),
+            typeclass_classes: Vec::new(),
+            typeclass_instances: Vec::new(),
         }
     }
 }
@@ -488,6 +529,9 @@ pub enum HumanSourceDeclarationKind {
     Theorem,
     Axiom,
     Inductive,
+    Class,
+    ClassField,
+    Instance,
     Imported,
 }
 
@@ -522,6 +566,32 @@ pub struct HumanGeneratedDeclarationMetadata {
 pub enum HumanGeneratedDeclarationKind {
     Constructor,
     Recursor,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassClassMetadata {
+    pub name: HumanName,
+    pub constructor: HumanName,
+    pub fields: Vec<HumanTypeclassFieldMetadata>,
+    pub decl_interface_hash: Option<npa_cert::Hash>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassFieldMetadata {
+    pub name: HumanName,
+    pub projection: HumanName,
+    pub decl_interface_hash: Option<npa_cert::Hash>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassInstanceMetadata {
+    pub name: HumanName,
+    pub class: Option<HumanName>,
+    pub priority: u32,
+    pub decl_interface_hash: Option<npa_cert::Hash>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

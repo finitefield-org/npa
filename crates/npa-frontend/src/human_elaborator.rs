@@ -10,10 +10,10 @@ use crate::{
     HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName, HumanResolvedName,
     HumanResolvedNameUse, HumanResolvedNotationEntry, HumanResolvedNotationUse, HumanResult,
     HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
-    HumanTacticScript, HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder,
-    MachineCallableBinderVisibility, MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl,
-    MachineDecl, MachineLevel, MachineLocalDecl, MachineName, MachineTerm, MachineUniverseParam,
-    ResolvedHumanModule, Span, VerifiedImport,
+    HumanTacticScript, HumanTypeclassClassMetadata, HumanUnsolvedMeta, HumanUnsolvedMetaKind,
+    MachineBinder, MachineCallableBinderVisibility, MachineCheckedCurrentDecl,
+    MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel, MachineLocalDecl, MachineName,
+    MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
 };
 use npa_kernel::{
     eq_inductive, eq_rec_type, nat_inductive, subst, Binder, ConstructorDecl, Ctx, Decl, Env,
@@ -790,6 +790,35 @@ fn source_interface_with_certificate_hashes(
             .or_else(|| export_hashes.get(&prefixed_human_current_name(&module_name, &name)))
         {
             generated.decl_interface_hash = Some(*hash);
+        }
+    }
+
+    for class in &mut source_interface.typeclass_classes {
+        let name = npa_cert::Name(class.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&prefixed_human_current_name(&module_name, &name)))
+        {
+            class.decl_interface_hash = Some(*hash);
+        }
+        for field in &mut class.fields {
+            let name = npa_cert::Name(field.projection.parts.clone());
+            if let Some(hash) = export_hashes
+                .get(&name)
+                .or_else(|| export_hashes.get(&prefixed_human_current_name(&module_name, &name)))
+            {
+                field.decl_interface_hash = Some(*hash);
+            }
+        }
+    }
+
+    for instance in &mut source_interface.typeclass_instances {
+        let name = npa_cert::Name(instance.name.parts.clone());
+        if let Some(hash) = export_hashes
+            .get(&name)
+            .or_else(|| export_hashes.get(&prefixed_human_current_name(&module_name, &name)))
+        {
+            instance.decl_interface_hash = Some(*hash);
         }
     }
 
@@ -2232,6 +2261,43 @@ fn human_proof_start_notation_use_count(
                     .constructors
                     .iter()
                     .map(|constructor| human_expr_notation_use_count(&constructor.ty))
+                    .sum::<usize>();
+            }
+            HumanItem::Class(decl) => {
+                let metadata = declarations.next().ok_or_else(|| {
+                    HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                })?;
+                if human_current_name_matches_target(module_name, &metadata.name, theorem_name) {
+                    return Ok(count);
+                }
+                count += human_binders_notation_use_count(&decl.binders);
+                for field in &decl.fields {
+                    let field_metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(field.span, "Human class field metadata")
+                    })?;
+                    if human_current_name_matches_target(
+                        module_name,
+                        &field_metadata.name,
+                        theorem_name,
+                    ) {
+                        return Ok(count);
+                    }
+                    count += human_expr_notation_use_count(&field.ty);
+                }
+            }
+            HumanItem::Instance(decl) => {
+                let metadata = declarations.next().ok_or_else(|| {
+                    HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                })?;
+                if human_current_name_matches_target(module_name, &metadata.name, theorem_name) {
+                    return Ok(count);
+                }
+                count += human_binders_notation_use_count(&decl.binders);
+                count += human_expr_notation_use_count(&decl.ty);
+                count += decl
+                    .fields
+                    .iter()
+                    .map(|field| human_expr_notation_use_count(&field.value))
                     .sum::<usize>();
             }
         }
@@ -5802,10 +5868,24 @@ fn human_by_proof_targets(
 
     for item in &module.module.items {
         match item {
-            HumanItem::Def(_) | HumanItem::Axiom(_) | HumanItem::Inductive(_) => {
+            HumanItem::Def(_)
+            | HumanItem::Axiom(_)
+            | HumanItem::Inductive(_)
+            | HumanItem::Instance(_) => {
                 declarations.next().ok_or_else(|| {
                     HumanDiagnostic::not_implemented(item.span(), "Human declaration metadata")
                 })?;
+                source_index += 1;
+            }
+            HumanItem::Class(decl) => {
+                declarations.next().ok_or_else(|| {
+                    HumanDiagnostic::not_implemented(item.span(), "Human declaration metadata")
+                })?;
+                for field in &decl.fields {
+                    declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(field.span, "Human class field metadata")
+                    })?;
+                }
                 source_index += 1;
             }
             HumanItem::Theorem(decl) => {
@@ -6400,6 +6480,7 @@ struct HumanToMachineLowering<'a> {
     implicit_inserter: HumanImplicitInserter,
     meta_store: HumanMetaStore,
     current_module_prefix: Option<npa_cert::ModuleName>,
+    typeclass_classes: Vec<HumanTypeclassClassMetadata>,
 }
 
 impl<'a> HumanToMachineLowering<'a> {
@@ -6415,6 +6496,7 @@ impl<'a> HumanToMachineLowering<'a> {
             implicit_inserter: HumanImplicitInserter::new(module, verified_imports)?,
             meta_store: HumanMetaStore::default(),
             current_module_prefix: None,
+            typeclass_classes: human_typeclass_classes(module),
         })
     }
 
@@ -6431,6 +6513,7 @@ impl<'a> HumanToMachineLowering<'a> {
             implicit_inserter,
             meta_store: HumanMetaStore::default(),
             current_module_prefix: None,
+            typeclass_classes: Vec::new(),
         }
     }
 
@@ -6541,6 +6624,49 @@ impl<'a> HumanToMachineLowering<'a> {
                         .implicit_inserter
                         .insert_inductive_decl(lowered, metadata)?;
                     lowered_items.push(HumanLoweredItem::Inductive(lowered));
+                    source_index += 1;
+                }
+                HumanItem::Class(decl) => {
+                    let metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                    })?;
+                    let mut field_metadata = Vec::with_capacity(decl.fields.len());
+                    for field in &decl.fields {
+                        field_metadata.push(declarations.next().ok_or_else(|| {
+                            HumanDiagnostic::not_implemented(
+                                field.span,
+                                "Human class field metadata",
+                            )
+                        })?);
+                    }
+                    let (lowered, fields) =
+                        self.lower_class_artifacts(decl.clone(), metadata, field_metadata.clone())?;
+                    let lowered = self
+                        .implicit_inserter
+                        .insert_inductive_decl(lowered, metadata)?;
+                    lowered_items.push(HumanLoweredItem::Inductive(lowered));
+
+                    for (lowered, field_metadata) in fields.into_iter().zip(field_metadata) {
+                        let lowered = self.implicit_inserter.insert_decl(
+                            lowered,
+                            field_metadata,
+                            HumanLoweredDeclKind::Def,
+                        )?;
+                        lowered_items.push(HumanLoweredItem::Def(lowered));
+                    }
+                    source_index += 1;
+                }
+                HumanItem::Instance(decl) => {
+                    let metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                    })?;
+                    let lowered = self.lower_instance_decl(decl.clone(), metadata)?;
+                    let lowered = self.implicit_inserter.insert_decl(
+                        lowered,
+                        metadata,
+                        HumanLoweredDeclKind::Def,
+                    )?;
+                    lowered_items.push(HumanLoweredItem::Def(lowered));
                     source_index += 1;
                 }
                 HumanItem::Open { .. }
@@ -6687,6 +6813,73 @@ impl<'a> HumanToMachineLowering<'a> {
                         .implicit_inserter
                         .insert_inductive_decl(lowered, metadata)?;
                     prior_items.push(HumanLoweredItem::Inductive(lowered));
+                    source_index += 1;
+                }
+                HumanItem::Class(decl) => {
+                    let metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                    })?;
+                    if human_current_name_matches_target(module_name, &metadata.name, theorem_name)
+                    {
+                        return Err(HumanDiagnostic::unsupported_tactic(
+                            decl.span,
+                            "selected Human proof target is a class declaration, not a by theorem",
+                        ));
+                    }
+                    let mut field_metadata = Vec::with_capacity(decl.fields.len());
+                    for field in &decl.fields {
+                        let metadata = declarations.next().ok_or_else(|| {
+                            HumanDiagnostic::not_implemented(
+                                field.span,
+                                "Human class field metadata",
+                            )
+                        })?;
+                        if human_current_name_matches_target(
+                            module_name,
+                            &metadata.name,
+                            theorem_name,
+                        ) {
+                            return Err(HumanDiagnostic::unsupported_tactic(
+                                field.span,
+                                "selected Human proof target is a class field, not a by theorem",
+                            ));
+                        }
+                        field_metadata.push(metadata);
+                    }
+                    let (lowered, fields) =
+                        self.lower_class_artifacts(decl.clone(), metadata, field_metadata.clone())?;
+                    let lowered = self
+                        .implicit_inserter
+                        .insert_inductive_decl(lowered, metadata)?;
+                    prior_items.push(HumanLoweredItem::Inductive(lowered));
+                    for (lowered, field_metadata) in fields.into_iter().zip(field_metadata) {
+                        let lowered = self.implicit_inserter.insert_decl(
+                            lowered,
+                            field_metadata,
+                            HumanLoweredDeclKind::Def,
+                        )?;
+                        prior_items.push(HumanLoweredItem::Def(lowered));
+                    }
+                    source_index += 1;
+                }
+                HumanItem::Instance(decl) => {
+                    let metadata = declarations.next().ok_or_else(|| {
+                        HumanDiagnostic::not_implemented(decl.span, "Human declaration metadata")
+                    })?;
+                    if human_current_name_matches_target(module_name, &metadata.name, theorem_name)
+                    {
+                        return Err(HumanDiagnostic::unsupported_tactic(
+                            decl.span,
+                            "selected Human proof target is an instance, not a by theorem",
+                        ));
+                    }
+                    let lowered = self.lower_instance_decl(decl.clone(), metadata)?;
+                    let lowered = self.implicit_inserter.insert_decl(
+                        lowered,
+                        metadata,
+                        HumanLoweredDeclKind::Def,
+                    )?;
+                    prior_items.push(HumanLoweredItem::Def(lowered));
                     source_index += 1;
                 }
                 HumanItem::Open { .. }
@@ -6838,6 +7031,198 @@ impl<'a> HumanToMachineLowering<'a> {
         })
     }
 
+    fn lower_class_artifacts(
+        &mut self,
+        decl: crate::HumanClassDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+        field_metadata: Vec<&HumanSourceDeclarationMetadata>,
+    ) -> HumanResult<(HumanLoweredInductiveDecl, Vec<MachineDecl>)> {
+        self.meta_store.begin_declaration();
+        let mut local_context = HumanLoweringLocalContext::default();
+        let name = self.machine_name_from_current_metadata(metadata.name.clone());
+        let binders = self.lower_binders(decl.binders.clone(), &mut local_context)?;
+        let ty = class_result_sort(&decl.universe_params, decl.name.span);
+        let mut field_types = Vec::with_capacity(decl.fields.len());
+        let mut constructor_binders = Vec::with_capacity(decl.fields.len());
+        for field in &decl.fields {
+            let ty = self.lower_expr(field.ty.clone(), &mut local_context, None)?;
+            let binder_name = field.name.as_dotted();
+            constructor_binders.push(MachineBinder {
+                name: binder_name.clone(),
+                ty: ty.clone(),
+                span: field.span,
+            });
+            local_context.push_assumption(binder_name, ty.clone());
+            field_types.push(ty);
+        }
+        let result = class_head_term(&name, &binders, decl.name.span);
+        let constructor_ty = MachineTerm::Pi {
+            binders: constructor_binders,
+            body: Box::new(result),
+            span: decl.span,
+        };
+        let inductive = HumanLoweredInductiveDecl {
+            name: name.clone(),
+            universe_params: decl
+                .universe_params
+                .iter()
+                .cloned()
+                .map(|param| MachineUniverseParam {
+                    name: param.name,
+                    span: param.span,
+                })
+                .collect(),
+            binders: binders.clone(),
+            ty,
+            constructors: vec![HumanLoweredConstructorDecl {
+                name: class_constructor_machine_name(&name, decl.name.span),
+                ty: constructor_ty,
+                span: decl.span,
+            }],
+            span: decl.span,
+        };
+
+        let mut fields = Vec::with_capacity(decl.fields.len());
+        for (field_index, metadata) in field_metadata.into_iter().enumerate() {
+            let field = &decl.fields[field_index];
+            let mut field_binders = binders.clone();
+            let self_ty = class_head_term(&name, &binders, field.span);
+            field_binders.push(MachineBinder {
+                name: "self".to_owned(),
+                ty: self_ty,
+                span: field.span,
+            });
+            let value =
+                class_projection_value(&decl, field_index, &name, &field_binders, &field_types)?;
+            fields.push(MachineDecl {
+                name: self.machine_name_from_current_metadata(metadata.name.clone()),
+                universe_params: decl
+                    .universe_params
+                    .iter()
+                    .cloned()
+                    .map(|param| MachineUniverseParam {
+                        name: param.name,
+                        span: param.span,
+                    })
+                    .collect(),
+                binders: field_binders,
+                ty: field_types[field_index].clone(),
+                value,
+                span: field.span,
+            });
+        }
+        self.meta_store.reject_unsolved_for_decl(decl.span)?;
+
+        Ok((inductive, fields))
+    }
+
+    fn lower_instance_decl(
+        &mut self,
+        decl: crate::HumanInstanceDecl,
+        metadata: &HumanSourceDeclarationMetadata,
+    ) -> HumanResult<MachineDecl> {
+        self.meta_store.begin_declaration();
+        let mut local_context = HumanLoweringLocalContext::default();
+        let binders = self.lower_binders(decl.binders.clone(), &mut local_context)?;
+        let ty = self.lower_expr(decl.ty.clone(), &mut local_context, None)?;
+        let (head, class_args, _) = collect_machine_app_spine(ty.clone());
+        let MachineTerm::Ident {
+            name: class_name,
+            span,
+            ..
+        } = head
+        else {
+            return Err(HumanDiagnostic::error(
+                HumanDiagnosticKind::ExpectedFunctionType,
+                decl.ty.span(),
+                "instance target must be an application of a class",
+            ));
+        };
+        let class_metadata = self.lookup_typeclass_class(&class_name, span)?;
+        let mut constructor_args = class_args;
+        for field in &class_metadata.fields {
+            let Some(assignment) = decl
+                .fields
+                .iter()
+                .find(|assignment| assignment.name.parts == field.name.parts)
+            else {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnknownIdentifier,
+                    decl.span,
+                    format!("missing instance field {}", field.name.as_dotted()),
+                ));
+            };
+            constructor_args.push(self.lower_expr(
+                assignment.value.clone(),
+                &mut local_context,
+                None,
+            )?);
+        }
+        for assignment in &decl.fields {
+            if !class_metadata
+                .fields
+                .iter()
+                .any(|field| field.name.parts == assignment.name.parts)
+            {
+                return Err(HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnknownIdentifier,
+                    assignment.span,
+                    format!("unknown instance field {}", assignment.name.as_dotted()),
+                ));
+            }
+        }
+        let value = rebuild_machine_apps(
+            MachineTerm::Ident {
+                name: class_constructor_machine_name(&class_name, span),
+                universe_args: None,
+                explicit_mode: false,
+                span,
+            },
+            constructor_args,
+            decl.span,
+        );
+        self.meta_store.reject_unsolved_for_decl(decl.span)?;
+
+        Ok(MachineDecl {
+            name: self.machine_name_from_current_metadata(metadata.name.clone()),
+            universe_params: decl
+                .universe_params
+                .into_iter()
+                .map(|param| MachineUniverseParam {
+                    name: param.name,
+                    span: param.span,
+                })
+                .collect(),
+            binders,
+            ty,
+            value,
+            span: decl.span,
+        })
+    }
+
+    fn lookup_typeclass_class(
+        &self,
+        class_name: &MachineName,
+        span: Span,
+    ) -> HumanResult<HumanTypeclassClassMetadata> {
+        self.typeclass_classes
+            .iter()
+            .find(|class| {
+                self.machine_name_from_current_metadata(class.name.clone())
+                    .parts
+                    == class_name.parts
+                    || class.name.parts == class_name.parts
+            })
+            .cloned()
+            .ok_or_else(|| {
+                HumanDiagnostic::error(
+                    HumanDiagnosticKind::UnknownIdentifier,
+                    span,
+                    format!("unknown typeclass {}", class_name.as_dotted()),
+                )
+            })
+    }
+
     fn lower_binders(
         &mut self,
         binders: Vec<HumanBinder>,
@@ -6857,11 +7242,9 @@ impl<'a> HumanToMachineLowering<'a> {
 
             let mut group_lowered = Vec::with_capacity(group.len());
             for binder in group {
-                let HumanBinderKind::Named(name) = binder.kind else {
-                    return Err(HumanDiagnostic::not_implemented(
-                        binder.span,
-                        "anonymous Human binder lowering",
-                    ));
+                let machine_name = match binder.kind {
+                    HumanBinderKind::Named(name) => name.as_dotted(),
+                    HumanBinderKind::Anonymous => "_".to_owned(),
                 };
                 let Some(ty) = binder.ty else {
                     return Err(HumanDiagnostic::not_implemented(
@@ -6869,7 +7252,6 @@ impl<'a> HumanToMachineLowering<'a> {
                         "unannotated Human binder lowering",
                     ));
                 };
-                let machine_name = name.as_dotted();
                 let ty = self.lower_expr(*ty, context, None)?;
                 group_lowered.push(MachineBinder {
                     name: machine_name,
@@ -7196,6 +7578,170 @@ fn machine_child_name_from_machine(parent: &MachineName, child: HumanName) -> Ma
     let mut parts = parent.parts.clone();
     parts.extend(child.parts);
     MachineName { parts, span }
+}
+
+fn class_result_sort(universe_params: &[crate::HumanUniverseParam], span: Span) -> MachineTerm {
+    let level = universe_params
+        .first()
+        .map_or(MachineLevel::Nat { value: 0, span }, |param| {
+            MachineLevel::Param {
+                name: param.name.clone(),
+                span: param.span,
+            }
+        });
+    MachineTerm::Type { level, span }
+}
+
+fn class_head_term(class_name: &MachineName, binders: &[MachineBinder], span: Span) -> MachineTerm {
+    let head = MachineTerm::Ident {
+        name: class_name.clone(),
+        universe_args: None,
+        explicit_mode: false,
+        span,
+    };
+    rebuild_machine_apps(
+        head,
+        binders
+            .iter()
+            .map(|binder| MachineTerm::Local {
+                name: binder.name.clone(),
+                span: binder.span,
+            })
+            .collect(),
+        span,
+    )
+}
+
+fn class_constructor_machine_name(class_name: &MachineName, span: Span) -> MachineName {
+    let mut parts = class_name.parts.clone();
+    parts.push("mk".to_owned());
+    MachineName { parts, span }
+}
+
+fn class_projection_value(
+    decl: &crate::HumanClassDecl,
+    field_index: usize,
+    class_name: &MachineName,
+    projection_binders: &[MachineBinder],
+    field_types: &[MachineTerm],
+) -> HumanResult<MachineTerm> {
+    let span = decl
+        .fields
+        .get(field_index)
+        .map_or(decl.span, |field| field.span);
+    let param_binders = projection_binders
+        .get(..decl.binders.len())
+        .ok_or_else(|| HumanDiagnostic::not_implemented(span, "Human class parameters"))?;
+    let self_binder = projection_binders
+        .last()
+        .ok_or_else(|| HumanDiagnostic::not_implemented(span, "Human class dictionary"))?;
+
+    let class_target = class_head_term(class_name, param_binders, span);
+    let motive = MachineTerm::Lam {
+        binders: vec![MachineBinder {
+            name: "__dict".to_owned(),
+            ty: class_target,
+            span,
+        }],
+        body: Box::new(
+            field_types
+                .get(field_index)
+                .cloned()
+                .ok_or_else(|| HumanDiagnostic::not_implemented(span, "Human class field type"))?,
+        ),
+        span,
+    };
+    let minor = MachineTerm::Lam {
+        binders: decl
+            .fields
+            .iter()
+            .zip(field_types.iter())
+            .map(|(field, ty)| MachineBinder {
+                name: field.name.as_dotted(),
+                ty: ty.clone(),
+                span: field.span,
+            })
+            .collect(),
+        body: Box::new(MachineTerm::Local {
+            name: decl.fields[field_index].name.as_dotted(),
+            span,
+        }),
+        span,
+    };
+    let mut args = param_binders
+        .iter()
+        .map(|binder| MachineTerm::Local {
+            name: binder.name.clone(),
+            span: binder.span,
+        })
+        .collect::<Vec<_>>();
+    args.push(motive);
+    args.push(minor);
+    args.push(MachineTerm::Local {
+        name: self_binder.name.clone(),
+        span: self_binder.span,
+    });
+
+    Ok(rebuild_machine_apps(
+        MachineTerm::Ident {
+            name: class_recursor_machine_name(class_name, span),
+            universe_args: Some(class_recursor_universe_args(decl, span)),
+            explicit_mode: true,
+            span,
+        },
+        args,
+        span,
+    ))
+}
+
+fn class_recursor_machine_name(class_name: &MachineName, span: Span) -> MachineName {
+    let mut parts = class_name.parts.clone();
+    parts.push("rec".to_owned());
+    MachineName { parts, span }
+}
+
+fn class_recursor_universe_args(decl: &crate::HumanClassDecl, span: Span) -> Vec<MachineLevel> {
+    let mut args = decl
+        .universe_params
+        .iter()
+        .map(|param| MachineLevel::Param {
+            name: param.name.clone(),
+            span: param.span,
+        })
+        .collect::<Vec<_>>();
+    let base = decl
+        .universe_params
+        .first()
+        .map_or(MachineLevel::Nat { value: 0, span }, |param| {
+            MachineLevel::Param {
+                name: param.name.clone(),
+                span: param.span,
+            }
+        });
+    args.push(MachineLevel::Succ {
+        level: Box::new(base),
+        span,
+    });
+    args
+}
+
+fn human_typeclass_classes(module: &ResolvedHumanModule) -> Vec<HumanTypeclassClassMetadata> {
+    module
+        .state
+        .source_interfaces
+        .imports
+        .iter()
+        .flat_map(|interface| interface.source_interface.typeclass_classes.iter().cloned())
+        .chain(
+            module
+                .state
+                .source_interfaces
+                .current
+                .typeclass_classes
+                .iter()
+                .cloned(),
+        )
+        .collect()
 }
 
 fn machine_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> MachineName {
@@ -7703,6 +8249,182 @@ def one : Nat := Nat.succ Nat.zero",
                 Expr::konst("Nat.zero", vec![])
             )
         );
+    }
+
+    #[test]
+    fn human_typeclass_class_and_instance_elaborate_to_core_declarations() {
+        let output = compile_human_source_to_core_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+def use_add (x : Nat) : Nat -> Nat := Add.add Nat.add_inst x",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human typeclass declarations should compile to ordinary core declarations");
+
+        assert_eq!(output.source_interface.typeclass_classes.len(), 1);
+        assert_eq!(output.source_interface.typeclass_instances.len(), 1);
+        assert!(output
+            .source_interface
+            .declarations
+            .iter()
+            .any(|decl| decl.kind == HumanSourceDeclarationKind::ClassField
+                && decl.name.as_dotted() == "Add.add"));
+
+        let names: Vec<_> = output
+            .core_module
+            .declarations
+            .iter()
+            .map(|decl| decl.name().to_owned())
+            .collect();
+        assert!(names.contains(&"Add".to_owned()));
+        assert!(names.contains(&"Add.add".to_owned()));
+        assert!(names.contains(&"Nat.add_inst".to_owned()));
+
+        let Decl::Def { value, .. } = output
+            .core_module
+            .declarations
+            .iter()
+            .find(|decl| decl.name() == "Nat.add_inst")
+            .expect("instance definition should be emitted")
+        else {
+            panic!("expected instance definition");
+        };
+        let mut constructor_refs = Vec::new();
+        collect_const_level_args(value, "Add.mk", &mut constructor_refs);
+        assert_eq!(constructor_refs.len(), 1);
+
+        let Decl::Def { value, .. } = output
+            .core_module
+            .declarations
+            .iter()
+            .find(|decl| decl.name() == "use_add")
+            .expect("dictionary use definition should be emitted")
+        else {
+            panic!("expected use_add definition");
+        };
+        let mut dict_refs = Vec::new();
+        collect_const_level_args(value, "Nat.add_inst", &mut dict_refs);
+        assert_eq!(dict_refs.len(), 1);
+    }
+
+    #[test]
+    fn human_typeclass_bad_instance_field_value_is_rejected() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.bad_add_inst : Add Nat where
+  add := Nat.zero",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("ill-typed dictionary field should be rejected by core checking");
+
+        assert!(matches!(
+            err.kind,
+            HumanDiagnosticKind::TypeMismatch | HumanDiagnosticKind::KernelRejected
+        ));
+    }
+
+    #[test]
+    fn human_typeclass_duplicate_instance_field_is_rejected() {
+        let err = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.dup_add_inst : Add Nat where
+  add := Nat.add
+  add := Nat.add",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect_err("duplicate instance field should be rejected");
+
+        assert!(matches!(
+            err.kind,
+            HumanDiagnosticKind::DuplicateDeclaration
+        ));
+    }
+
+    #[test]
+    fn human_typeclass_metadata_is_outside_certificate_hash() {
+        let output = compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("Human typeclass certificate should compile");
+
+        let certificate_hash = output.certificate.hashes.certificate_hash;
+        let mut metadata = output.source_interface.clone();
+        metadata.typeclass_instances[0].priority += 1;
+        metadata.typeclass_classes[0].fields[0].name.parts = vec!["broken".to_owned()];
+
+        assert_ne!(metadata, output.source_interface);
+        assert_eq!(certificate_hash, output.certificate.hashes.certificate_hash);
+    }
+
+    #[test]
+    fn human_typeclass_minimal_add_mul_zero_one_examples_compile() {
+        compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+axiom Nat.mul : Nat -> Nat -> Nat
+def Nat.one : Nat := Nat.zero
+class Add (A : Type) where
+  add : A -> A -> A
+class Mul (A : Type) where
+  mul : A -> A -> A
+class Zero (A : Type) where
+  zero : A
+class One (A : Type) where
+  one : A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+instance Nat.mul_inst : Mul Nat where
+  mul := Nat.mul
+instance Nat.zero_inst : Zero Nat where
+  zero := Nat.zero
+instance Nat.one_inst : One Nat where
+  one := Nat.one",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("minimal Add/Mul/Zero/One class examples should compile");
     }
 
     #[test]

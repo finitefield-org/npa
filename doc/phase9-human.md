@@ -748,6 +748,11 @@ class は、追加 metadata を持つ structure です。
 }
 ```
 
+P9H-09 の MVP 実装では、kernel に新しい typeclass primitive は追加しません。Human `class`
+は ordinary inductive declaration として class head / `mk` constructor / generated recursor を
+certificate に出し、field projection は ordinary declaration として明示します。検索用の
+`HumanTypeclassClassMetadata` は source interface 側にだけ保持し、certificate hash の入力にはしません。
+
 ---
 
 ## 4.4 Instance declaration
@@ -773,6 +778,10 @@ typeclass database に登録されます。
   "priority": 1000
 }
 ```
+
+P9H-09 では search trace はまだ生成しません。`instance` は class constructor に field 値を渡す
+ordinary definition に elaboration され、最終 certificate には explicit dictionary term だけが残ります。
+metadata が壊れても proof acceptance boundary は変わらず、checker は certificate 内の core term を型検査します。
 
 ---
 
