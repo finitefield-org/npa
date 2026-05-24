@@ -19,6 +19,11 @@ use crate::prompt::FailedCandidateErrorKind;
 use crate::renderer::MachineGlobalRefView;
 use crate::snapshot::{MachineSnapshotGetError, MachineSnapshotGetOk};
 use crate::tactic::parse_deterministic_budget_with_error_kind;
+use crate::theorem_graph::{
+    certificate_theorem_graph_node_is_certificate_bound_public_export,
+    CertificateTheoremGraphEdgeKind, CertificateTheoremGraphNode, CertificateTheoremGraphNodeId,
+    CertificateTheoremGraphNodeScope, CertificateTheoremGraphSnapshot,
+};
 use crate::types::{
     format_goal_id_wire, format_hash_string, is_machine_local_name, MachineApiCompactErrorWire,
     MachineApiErrorWire, MachineApiOkResponse, MachineApiResponseEnvelope,
@@ -194,6 +199,29 @@ pub struct AiSearchPremiseRetrieval {
     pub cache_key: AiSearchRetrievalCacheKey,
     pub cache_entries: Vec<AiSearchPremiseCacheEntry>,
     pub results: Vec<MachineTheoremSearchResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AiSearchPremiseGraphRanking {
+    pub graph_snapshot_hash: Option<Hash>,
+    pub fallback: AiSearchPremiseGraphRankingFallback,
+    pub entries: Vec<AiSearchPremiseGraphRankingEntry>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AiSearchPremiseGraphRankingFallback {
+    PrecomputedSnapshot,
+    SnapshotMissing,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AiSearchPremiseGraphRankingEntry {
+    pub premise_ref: AiSearchPremiseRef,
+    pub response_index: u32,
+    pub graph_rank: u32,
+    pub graph_node: Option<CertificateTheoremGraphNodeId>,
+    pub direct_dependency_count: u32,
+    pub graph_score: AiSearchScore,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -3636,6 +3664,30 @@ pub fn ai_search_premise_cache_entries(
         .collect()
 }
 
+pub fn ai_search_premise_graph_ranking_features(
+    retrieval: &AiSearchPremiseRetrieval,
+    graph_snapshot: Option<&CertificateTheoremGraphSnapshot>,
+) -> AiSearchPremiseGraphRanking {
+    let mut entries = retrieval
+        .cache_entries
+        .iter()
+        .map(|entry| ai_search_premise_graph_ranking_entry(entry, graph_snapshot))
+        .collect::<Vec<_>>();
+    entries.sort_by(ai_search_premise_graph_ranking_entry_order);
+    for (index, entry) in entries.iter_mut().enumerate() {
+        entry.graph_rank = usize_to_u32(index);
+    }
+    AiSearchPremiseGraphRanking {
+        graph_snapshot_hash: graph_snapshot.map(|snapshot| snapshot.graph_hash),
+        fallback: if graph_snapshot.is_some() {
+            AiSearchPremiseGraphRankingFallback::PrecomputedSnapshot
+        } else {
+            AiSearchPremiseGraphRankingFallback::SnapshotMissing
+        },
+        entries,
+    }
+}
+
 pub fn ai_search_premise_usages(
     search: &MachineTheoremSearchOkFields,
 ) -> Vec<AiSearchPremiseUsage> {
@@ -4143,6 +4195,108 @@ fn ai_search_premise_ref(result: &MachineTheoremSearchResult) -> AiSearchPremise
         export_hash: result.global_ref.export_hash,
         decl_interface_hash: result.global_ref.decl_interface_hash,
     }
+}
+
+fn ai_search_premise_graph_ranking_entry(
+    entry: &AiSearchPremiseCacheEntry,
+    graph_snapshot: Option<&CertificateTheoremGraphSnapshot>,
+) -> AiSearchPremiseGraphRankingEntry {
+    let graph_node = graph_snapshot
+        .and_then(|snapshot| ai_search_premise_graph_node(snapshot, &entry.premise_ref));
+    let direct_dependency_count = graph_snapshot
+        .zip(graph_node)
+        .map(|(snapshot, node)| ai_search_premise_graph_direct_dependency_count(snapshot, node))
+        .unwrap_or(0);
+    AiSearchPremiseGraphRankingEntry {
+        premise_ref: entry.premise_ref.clone(),
+        response_index: entry.response_index,
+        graph_rank: entry.response_index,
+        graph_node: graph_node.map(|node| node.id.clone()),
+        direct_dependency_count,
+        graph_score: i64::from(direct_dependency_count) * 1_000,
+    }
+}
+
+fn ai_search_premise_graph_node<'a>(
+    snapshot: &'a CertificateTheoremGraphSnapshot,
+    premise_ref: &AiSearchPremiseRef,
+) -> Option<&'a CertificateTheoremGraphNode> {
+    snapshot
+        .nodes
+        .iter()
+        .filter(|node| certificate_theorem_graph_node_is_certificate_bound_public_export(node))
+        .find(|node| ai_search_premise_matches_graph_node(snapshot, premise_ref, node))
+}
+
+fn ai_search_premise_matches_graph_node(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    premise_ref: &AiSearchPremiseRef,
+    node: &CertificateTheoremGraphNode,
+) -> bool {
+    if node.id.module != premise_ref.module
+        || node.id.name != premise_ref.name
+        || node.id.decl_interface_hash != premise_ref.decl_interface_hash
+    {
+        return false;
+    }
+    match &node.id.scope {
+        CertificateTheoremGraphNodeScope::Imported {
+            import_export_hash, ..
+        } => *import_export_hash == premise_ref.export_hash,
+        CertificateTheoremGraphNodeScope::Local
+        | CertificateTheoremGraphNodeScope::LocalGenerated { .. } => {
+            snapshot.source_export_hash == premise_ref.export_hash
+        }
+        CertificateTheoremGraphNodeScope::Builtin => false,
+    }
+}
+
+fn ai_search_premise_graph_direct_dependency_count(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    node: &CertificateTheoremGraphNode,
+) -> u32 {
+    usize_to_u32(
+        snapshot
+            .edges
+            .iter()
+            .filter(|edge| edge.from == node.id)
+            .filter(|edge| ai_search_premise_graph_dependency_edge(edge.kind))
+            .filter(|edge| {
+                snapshot
+                    .node(&edge.to)
+                    .is_some_and(certificate_theorem_graph_node_is_certificate_bound_public_export)
+            })
+            .count(),
+    )
+}
+
+fn ai_search_premise_graph_dependency_edge(kind: CertificateTheoremGraphEdgeKind) -> bool {
+    matches!(
+        kind,
+        CertificateTheoremGraphEdgeKind::ImportsDeclaration
+            | CertificateTheoremGraphEdgeKind::MentionsType
+            | CertificateTheoremGraphEdgeKind::UsesConstant
+            | CertificateTheoremGraphEdgeKind::GeneratedDeclaration
+            | CertificateTheoremGraphEdgeKind::DependsOnDirectAxiom
+            | CertificateTheoremGraphEdgeKind::DependsOnTransitiveAxiom
+    )
+}
+
+fn ai_search_premise_graph_ranking_entry_order(
+    left: &AiSearchPremiseGraphRankingEntry,
+    right: &AiSearchPremiseGraphRankingEntry,
+) -> Ordering {
+    right
+        .graph_score
+        .cmp(&left.graph_score)
+        .then_with(|| left.response_index.cmp(&right.response_index))
+        .then_with(|| left.premise_ref.module.cmp(&right.premise_ref.module))
+        .then_with(|| left.premise_ref.name.cmp(&right.premise_ref.name))
+        .then_with(|| {
+            left.premise_ref
+                .decl_interface_hash
+                .cmp(&right.premise_ref.decl_interface_hash)
+        })
 }
 
 fn push_ai_search_builtin_candidate(
@@ -5167,13 +5321,14 @@ mod tests {
 
     use crate::{
         parse_machine_snapshot_get_request, parse_machine_tactic_batch_request,
-        parse_machine_theorem_search_request, JsonFieldType, LocalId, MachineAllowedModulesFilter,
-        MachineApiErrorResponse, MachineApiOkResponse, MachineApiRequestErrorReason,
-        MachineApiResponseEnvelope, MachineApiResponseStatus, MachineApiSchedulerResponse,
-        MachineCertificateWirePayload, MachineExprView, MachineLocalView, MachineSchedulerArtifact,
-        MachineSchedulerArtifactKind, MachineSchedulerArtifactScope, MachineSuggestedCandidate,
-        MachineSuggestedCandidateStatus, MachineTheoremGlobalRef, MachineTheoremStatement,
-        MachineVerifiedModuleCertificatePayload,
+        parse_machine_theorem_search_request, CertificateTheoremGraphEdge,
+        CertificateTheoremGraphExtractorVersion, CertificateTheoremGraphNodeKind, JsonFieldType,
+        LocalId, MachineAllowedModulesFilter, MachineApiErrorResponse, MachineApiOkResponse,
+        MachineApiRequestErrorReason, MachineApiResponseEnvelope, MachineApiResponseStatus,
+        MachineApiSchedulerResponse, MachineCertificateWirePayload, MachineExprView,
+        MachineLocalView, MachineSchedulerArtifact, MachineSchedulerArtifactKind,
+        MachineSchedulerArtifactScope, MachineSuggestedCandidate, MachineSuggestedCandidateStatus,
+        MachineTheoremGlobalRef, MachineTheoremStatement, MachineVerifiedModuleCertificatePayload,
     };
 
     fn hash(byte: u8) -> Hash {
@@ -5413,6 +5568,45 @@ mod tests {
             cache_entries: Vec::new(),
             results: Vec::new(),
         }
+    }
+
+    fn theorem_graph_search_node(
+        name_value: &str,
+        decl_interface_hash: Hash,
+    ) -> CertificateTheoremGraphNode {
+        CertificateTheoremGraphNode {
+            id: CertificateTheoremGraphNodeId {
+                scope: CertificateTheoremGraphNodeScope::Local,
+                module: name("Std.Nat.Basic"),
+                name: name(name_value),
+                decl_interface_hash,
+            },
+            kind: CertificateTheoremGraphNodeKind::Theorem,
+            type_hash: Some(hash(150)),
+            proof_hash: Some(hash(151)),
+            body_hash: None,
+        }
+    }
+
+    fn theorem_graph_snapshot_for_ai_search() -> CertificateTheoremGraphSnapshot {
+        let add_zero = theorem_graph_search_node("Nat.add_zero", hash(11));
+        let add_assoc = theorem_graph_search_node("Nat.add_assoc", hash(31));
+        let mut snapshot = CertificateTheoremGraphSnapshot {
+            source_module: name("Std.Nat.Basic"),
+            source_export_hash: hash(10),
+            source_certificate_hash: hash(160),
+            extractor_version: CertificateTheoremGraphExtractorVersion::CertificateGraphV1,
+            imports: Vec::new(),
+            nodes: vec![add_zero.clone(), add_assoc.clone()],
+            edges: vec![CertificateTheoremGraphEdge {
+                from: add_assoc.id,
+                to: add_zero.id,
+                kind: CertificateTheoremGraphEdgeKind::MentionsType,
+            }],
+            graph_hash: [0; 32],
+        };
+        snapshot.graph_hash = crate::certificate_theorem_graph_snapshot_hash(&snapshot);
+        snapshot
     }
 
     fn valid_config_json() -> &'static str {
@@ -5938,6 +6132,87 @@ mod tests {
                 query_fingerprint: hash(20),
                 theorem_index_fingerprint: hash(21),
             }
+        );
+    }
+
+    #[test]
+    fn ai_search_graph_ranking_uses_precomputed_snapshot_with_missing_snapshot_fallback() {
+        let add_zero = theorem_result("zero", Vec::new());
+        let mut add_assoc = theorem_result("assoc", Vec::new());
+        add_assoc.global_ref.name = name("Nat.add_assoc");
+        add_assoc.global_ref.export_hash = hash(10);
+        add_assoc.global_ref.decl_interface_hash = hash(31);
+        let retrieval = ai_search_premise_retrieval_from_search_ok(
+            hash(99),
+            MachineTheoremSearchOkFields {
+                query_fingerprint: hash(20),
+                theorem_index_fingerprint: hash(21),
+                search_profile_version: "mvp-zero-score-v1",
+                suggestion_profile_version: "mvp-suggested-candidates-v1",
+                results: vec![add_zero, add_assoc],
+            },
+        );
+
+        let missing = ai_search_premise_graph_ranking_features(&retrieval, None);
+        assert_eq!(
+            missing.fallback,
+            AiSearchPremiseGraphRankingFallback::SnapshotMissing
+        );
+        assert_eq!(missing.graph_snapshot_hash, None);
+        assert_eq!(missing.entries.len(), 2);
+        assert_eq!(missing.entries[0].response_index, 0);
+        assert_eq!(missing.entries[0].graph_rank, 0);
+        assert_eq!(missing.entries[0].graph_node, None);
+        assert_eq!(missing.entries[0].graph_score, 0);
+
+        let snapshot = theorem_graph_snapshot_for_ai_search();
+        let ranked = ai_search_premise_graph_ranking_features(&retrieval, Some(&snapshot));
+
+        assert_eq!(
+            ranked.fallback,
+            AiSearchPremiseGraphRankingFallback::PrecomputedSnapshot
+        );
+        assert_eq!(ranked.graph_snapshot_hash, Some(snapshot.graph_hash));
+        assert_eq!(ranked.entries.len(), 2);
+        assert_eq!(ranked.entries[0].premise_ref.name, name("Nat.add_assoc"));
+        assert_eq!(ranked.entries[0].response_index, 1);
+        assert_eq!(ranked.entries[0].graph_rank, 0);
+        assert_eq!(ranked.entries[0].direct_dependency_count, 1);
+        assert_eq!(ranked.entries[0].graph_score, 1_000);
+        assert!(ranked.entries[0].graph_node.is_some());
+        assert_eq!(ranked.entries[1].premise_ref.name, name("Nat.add_zero"));
+    }
+
+    #[test]
+    fn ai_search_graph_score_sidecar_does_not_change_candidate_hashes_or_order() {
+        let suggested = MachineSuggestedCandidate {
+            status: MachineSuggestedCandidateStatus::Validated,
+            candidate_hash: hash(40),
+            candidate: MachineTacticCandidate::SimpLite { rules: Vec::new() },
+        };
+        let retrieval = ai_search_premise_retrieval_from_search_ok(
+            hash(99),
+            search_ok_fields(theorem_result("display", vec![suggested])),
+        );
+        let goal = goal_view(GoalId(0), 30, 5, 0, 0, None);
+
+        let before = ai_search_mvp_candidate_generation(&goal, &retrieval);
+        let graph_features = ai_search_premise_graph_ranking_features(
+            &retrieval,
+            Some(&theorem_graph_snapshot_for_ai_search()),
+        );
+        let after = ai_search_mvp_candidate_generation(&goal, &retrieval);
+
+        assert_eq!(
+            graph_features.fallback,
+            AiSearchPremiseGraphRankingFallback::PrecomputedSnapshot
+        );
+        assert_eq!(before, after);
+        assert_eq!(
+            before.accepted[0].ai_search_candidate_payload_hash,
+            ai_search_candidate_payload_hash(&MachineTacticCandidate::SimpLite {
+                rules: Vec::new()
+            })
         );
     }
 

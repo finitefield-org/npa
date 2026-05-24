@@ -1393,6 +1393,21 @@ source からではなく certificate から抽出する
 
 ## 7.4 Graph API
 
+P9H-08 実装では、HTTP handler の手前に置く Human API wrapper として
+`crates/npa-api` に次を追加します。
+
+```text
+certificate_theorem_graph_dependencies
+certificate_theorem_graph_related
+certificate_theorem_graph_query
+certificate_theorem_graph_unused_imports
+```
+
+各 wrapper は P9H-07 の `CertificateTheoremGraphSnapshot` だけを入力にし、結果 node は
+certificate-bound public export に限定します。`Builtin` / `Unknown` node や certificate export に
+結びつかない metadata node は返しません。direct / transitive dependency と related query の並び順は
+hash ではなく構造化 node id / deterministic integer score で固定します。
+
 ```json
 POST /graph/dependencies
 {
@@ -1462,6 +1477,14 @@ graph expansion:
 ```text
 score += 0.4 * graph_neighborhood_score
 ```
+
+P9H-08 の `ai_search_premise_graph_ranking_features` は、Phase 7 premise retrieval の結果に対して
+precomputed snapshot から graph score sidecar を付けるだけです。snapshot がない場合は既存の
+Machine API result order を graph score 0 の deterministic fallback として保持します。
+
+この sidecar は candidate payload hash、replay plan、verify request、checker result を変更しません。
+graph extraction は build / release / index update 側で済ませ、AI candidate ごとの enumeration / replay /
+verify hot path では実行しません。
 
 ---
 

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use npa_cert::{
     decode_module_cert, term_hash, AxiomRef, CertReducibility, DeclCert, DeclPayload, ExportEntry,
@@ -46,6 +46,7 @@ pub enum CertificateTheoremGraphError {
     MissingDeclaration { decl_index: usize },
     MissingExport { name: Name },
     MissingImportedExport { module: Name, name: Name },
+    MissingGraphNode { name: Name },
     DeclInterfaceHashMismatch { name: Name },
     TermHash { term_id: TermId },
 }
@@ -186,6 +187,84 @@ pub enum CertificateTheoremGraphEdgeKind {
     DependsOnTransitiveAxiom,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CertificateTheoremGraphDependenciesMode {
+    Direct,
+    Transitive,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphDependenciesRequest {
+    pub declaration: Name,
+    pub mode: CertificateTheoremGraphDependenciesMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphDependenciesResponse {
+    pub declaration: CertificateTheoremGraphNodeId,
+    pub dependencies: Vec<CertificateTheoremGraphNodeId>,
+    pub axioms_used: Vec<CertificateTheoremGraphNodeId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphRelatedRequest {
+    pub declaration: Name,
+    pub limit: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphRelatedResponse {
+    pub declaration: CertificateTheoremGraphNodeId,
+    pub related: Vec<CertificateTheoremGraphRelatedNode>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphQueryRequest {
+    pub roots: Vec<Name>,
+    pub limit: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphQueryResponse {
+    pub nodes: Vec<CertificateTheoremGraphRelatedNode>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphRelatedNode {
+    pub node: CertificateTheoremGraphNodeId,
+    pub score: CertificateTheoremGraphRelatedScore,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphRelatedScore {
+    pub score_microunits: i64,
+    pub shared_dependency_count: u32,
+    pub dependency_distance: Option<u32>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphUnusedImportsRequest {
+    pub kept_declarations: Vec<Name>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphUnusedImportsResponse {
+    pub candidates: Vec<CertificateTheoremGraphImportPruneCandidate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CertificateTheoremGraphImportPruneCandidate {
+    pub module: Name,
+    pub export_hash: Hash,
+    pub certificate_hash: Option<Hash>,
+    pub reason: CertificateTheoremGraphImportPruneReason,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CertificateTheoremGraphImportPruneReason {
+    NotReferencedByKeptDeclarations,
+}
+
 pub fn extract_certificate_theorem_graph(
     certificate_bytes: &[u8],
     imports: &[VerifiedModule],
@@ -320,6 +399,400 @@ pub fn certificate_theorem_graph_snapshot_hash(snapshot: &CertificateTheoremGrap
         CERTIFICATE_THEOREM_GRAPH_HASH_TAG,
         &certificate_theorem_graph_snapshot_canonical_bytes(snapshot),
     )
+}
+
+pub fn certificate_theorem_graph_node_is_certificate_bound_public_export(
+    node: &CertificateTheoremGraphNode,
+) -> bool {
+    !matches!(node.id.scope, CertificateTheoremGraphNodeScope::Builtin)
+        && !matches!(
+            node.kind,
+            CertificateTheoremGraphNodeKind::Builtin | CertificateTheoremGraphNodeKind::Unknown
+        )
+        && node.type_hash.is_some()
+}
+
+pub fn certificate_theorem_graph_dependencies(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    request: &CertificateTheoremGraphDependenciesRequest,
+) -> Result<CertificateTheoremGraphDependenciesResponse, CertificateTheoremGraphError> {
+    let declaration = certificate_theorem_graph_node_id_by_name(snapshot, &request.declaration)?;
+    let dependencies =
+        certificate_theorem_graph_dependencies_for_node(snapshot, &declaration, request.mode);
+    let axioms_used =
+        certificate_theorem_graph_axiom_dependencies_for_node(snapshot, &declaration, request.mode);
+    Ok(CertificateTheoremGraphDependenciesResponse {
+        declaration,
+        dependencies,
+        axioms_used,
+    })
+}
+
+pub fn certificate_theorem_graph_related(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    request: &CertificateTheoremGraphRelatedRequest,
+) -> Result<CertificateTheoremGraphRelatedResponse, CertificateTheoremGraphError> {
+    let declaration = certificate_theorem_graph_node_id_by_name(snapshot, &request.declaration)?;
+    let mut related = certificate_theorem_graph_related_for_node(snapshot, &declaration);
+    related.truncate(request.limit as usize);
+    Ok(CertificateTheoremGraphRelatedResponse {
+        declaration,
+        related,
+    })
+}
+
+pub fn certificate_theorem_graph_query(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    request: &CertificateTheoremGraphQueryRequest,
+) -> Result<CertificateTheoremGraphQueryResponse, CertificateTheoremGraphError> {
+    let mut nodes =
+        BTreeMap::<CertificateTheoremGraphNodeId, CertificateTheoremGraphRelatedScore>::new();
+    if request.roots.is_empty() {
+        for node in certificate_theorem_graph_public_export_nodes(snapshot) {
+            nodes.insert(
+                node.id.clone(),
+                CertificateTheoremGraphRelatedScore {
+                    score_microunits: 0,
+                    shared_dependency_count: 0,
+                    dependency_distance: None,
+                },
+            );
+        }
+    } else {
+        for root_name in &request.roots {
+            let root = certificate_theorem_graph_node_id_by_name(snapshot, root_name)?;
+            let root_dependency_count = certificate_theorem_graph_dependencies_for_node(
+                snapshot,
+                &root,
+                CertificateTheoremGraphDependenciesMode::Transitive,
+            )
+            .len();
+            certificate_theorem_graph_merge_query_node(
+                &mut nodes,
+                root.clone(),
+                CertificateTheoremGraphRelatedScore {
+                    score_microunits: 2_000_000,
+                    shared_dependency_count: usize_to_u32(root_dependency_count),
+                    dependency_distance: Some(0),
+                },
+            );
+            for related in certificate_theorem_graph_related_for_node(snapshot, &root) {
+                certificate_theorem_graph_merge_query_node(&mut nodes, related.node, related.score);
+            }
+        }
+    }
+
+    let mut nodes: Vec<_> = nodes
+        .into_iter()
+        .map(|(node, score)| CertificateTheoremGraphRelatedNode { node, score })
+        .collect();
+    nodes.sort_by(certificate_theorem_graph_related_node_order);
+    nodes.truncate(request.limit as usize);
+    Ok(CertificateTheoremGraphQueryResponse { nodes })
+}
+
+pub fn certificate_theorem_graph_unused_imports(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    request: &CertificateTheoremGraphUnusedImportsRequest,
+) -> Result<CertificateTheoremGraphUnusedImportsResponse, CertificateTheoremGraphError> {
+    let mut used_import_modules = BTreeSet::new();
+    for kept in &request.kept_declarations {
+        let root = certificate_theorem_graph_node_id_by_name(snapshot, kept)?;
+        if matches!(
+            root.scope,
+            CertificateTheoremGraphNodeScope::Imported { .. }
+        ) {
+            used_import_modules.insert(root.module.clone());
+        }
+        for dependency in certificate_theorem_graph_dependencies_for_node(
+            snapshot,
+            &root,
+            CertificateTheoremGraphDependenciesMode::Transitive,
+        ) {
+            if matches!(
+                dependency.scope,
+                CertificateTheoremGraphNodeScope::Imported { .. }
+            ) {
+                used_import_modules.insert(dependency.module);
+            }
+        }
+    }
+    let candidates = snapshot
+        .imports
+        .iter()
+        .filter(|import| !used_import_modules.contains(&import.module))
+        .map(|import| CertificateTheoremGraphImportPruneCandidate {
+            module: import.module.clone(),
+            export_hash: import.export_hash,
+            certificate_hash: import.certificate_hash,
+            reason: CertificateTheoremGraphImportPruneReason::NotReferencedByKeptDeclarations,
+        })
+        .collect();
+    Ok(CertificateTheoremGraphUnusedImportsResponse { candidates })
+}
+
+fn certificate_theorem_graph_public_export_nodes(
+    snapshot: &CertificateTheoremGraphSnapshot,
+) -> Vec<&CertificateTheoremGraphNode> {
+    let mut nodes: Vec<_> = snapshot
+        .nodes
+        .iter()
+        .filter(|node| certificate_theorem_graph_node_is_certificate_bound_public_export(node))
+        .collect();
+    nodes.sort_by(|left, right| left.id.cmp(&right.id));
+    nodes
+}
+
+fn certificate_theorem_graph_node_id_by_name(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    name: &Name,
+) -> Result<CertificateTheoremGraphNodeId, CertificateTheoremGraphError> {
+    certificate_theorem_graph_public_export_nodes(snapshot)
+        .into_iter()
+        .find(|node| node.id.name == *name)
+        .map(|node| node.id.clone())
+        .ok_or_else(|| CertificateTheoremGraphError::MissingGraphNode { name: name.clone() })
+}
+
+fn certificate_theorem_graph_dependencies_for_node(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    id: &CertificateTheoremGraphNodeId,
+    mode: CertificateTheoremGraphDependenciesMode,
+) -> Vec<CertificateTheoremGraphNodeId> {
+    match mode {
+        CertificateTheoremGraphDependenciesMode::Direct => {
+            certificate_theorem_graph_direct_dependencies_for_node(snapshot, id)
+        }
+        CertificateTheoremGraphDependenciesMode::Transitive => {
+            certificate_theorem_graph_transitive_dependencies_for_node(snapshot, id)
+        }
+    }
+}
+
+fn certificate_theorem_graph_direct_dependencies_for_node(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    id: &CertificateTheoremGraphNodeId,
+) -> Vec<CertificateTheoremGraphNodeId> {
+    let mut dependencies = BTreeSet::new();
+    for edge in &snapshot.edges {
+        if &edge.from == id
+            && certificate_theorem_graph_direct_dependency_edge(edge.kind)
+            && certificate_theorem_graph_public_export_node_id(snapshot, &edge.to)
+        {
+            dependencies.insert(edge.to.clone());
+        }
+    }
+    dependencies.into_iter().collect()
+}
+
+fn certificate_theorem_graph_transitive_dependencies_for_node(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    id: &CertificateTheoremGraphNodeId,
+) -> Vec<CertificateTheoremGraphNodeId> {
+    let mut dependencies = BTreeSet::new();
+    let mut visited = BTreeSet::from([id.clone()]);
+    let mut queue = VecDeque::from([id.clone()]);
+    while let Some(current) = queue.pop_front() {
+        for edge in &snapshot.edges {
+            if edge.from != current
+                || !certificate_theorem_graph_transitive_dependency_edge(edge.kind)
+                || !certificate_theorem_graph_public_export_node_id(snapshot, &edge.to)
+            {
+                continue;
+            }
+            if &edge.to == id {
+                continue;
+            }
+            if dependencies.insert(edge.to.clone()) && visited.insert(edge.to.clone()) {
+                queue.push_back(edge.to.clone());
+            }
+        }
+    }
+    dependencies.into_iter().collect()
+}
+
+fn certificate_theorem_graph_axiom_dependencies_for_node(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    id: &CertificateTheoremGraphNodeId,
+    mode: CertificateTheoremGraphDependenciesMode,
+) -> Vec<CertificateTheoremGraphNodeId> {
+    let mut axioms = BTreeSet::new();
+    for edge in &snapshot.edges {
+        let include = match mode {
+            CertificateTheoremGraphDependenciesMode::Direct => {
+                edge.kind == CertificateTheoremGraphEdgeKind::DependsOnDirectAxiom
+            }
+            CertificateTheoremGraphDependenciesMode::Transitive => {
+                edge.kind == CertificateTheoremGraphEdgeKind::DependsOnDirectAxiom
+                    || edge.kind == CertificateTheoremGraphEdgeKind::DependsOnTransitiveAxiom
+            }
+        };
+        if &edge.from == id
+            && include
+            && certificate_theorem_graph_public_export_node_id(snapshot, &edge.to)
+        {
+            axioms.insert(edge.to.clone());
+        }
+    }
+    axioms.into_iter().collect()
+}
+
+fn certificate_theorem_graph_related_for_node(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    declaration: &CertificateTheoremGraphNodeId,
+) -> Vec<CertificateTheoremGraphRelatedNode> {
+    let root_dependencies: BTreeSet<_> =
+        certificate_theorem_graph_transitive_dependencies_for_node(snapshot, declaration)
+            .into_iter()
+            .collect();
+    let mut related = Vec::new();
+    for node in certificate_theorem_graph_public_export_nodes(snapshot) {
+        if node.id == *declaration {
+            continue;
+        }
+        let candidate_dependencies: BTreeSet<_> =
+            certificate_theorem_graph_transitive_dependencies_for_node(snapshot, &node.id)
+                .into_iter()
+                .collect();
+        let shared_dependency_count = root_dependencies
+            .intersection(&candidate_dependencies)
+            .count();
+        let dependency_distance =
+            certificate_theorem_graph_shortest_dependency_distance(snapshot, declaration, &node.id);
+        if shared_dependency_count == 0 && dependency_distance.is_none() {
+            continue;
+        }
+        related.push(CertificateTheoremGraphRelatedNode {
+            node: node.id.clone(),
+            score: certificate_theorem_graph_related_score(
+                shared_dependency_count,
+                dependency_distance,
+            ),
+        });
+    }
+    related.sort_by(certificate_theorem_graph_related_node_order);
+    related
+}
+
+fn certificate_theorem_graph_related_score(
+    shared_dependency_count: usize,
+    dependency_distance: Option<u32>,
+) -> CertificateTheoremGraphRelatedScore {
+    let distance_score = dependency_distance
+        .map(|distance| 1_000_000i64.saturating_sub(i64::from(distance) * 10_000))
+        .unwrap_or(0);
+    let shared_dependency_count = usize_to_u32(shared_dependency_count);
+    CertificateTheoremGraphRelatedScore {
+        score_microunits: i64::from(shared_dependency_count) * 100_000 + distance_score,
+        shared_dependency_count,
+        dependency_distance,
+    }
+}
+
+fn certificate_theorem_graph_shortest_dependency_distance(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    source: &CertificateTheoremGraphNodeId,
+    target: &CertificateTheoremGraphNodeId,
+) -> Option<u32> {
+    if source == target {
+        return Some(0);
+    }
+    let mut visited = BTreeSet::from([source.clone()]);
+    let mut queue = VecDeque::from([(source.clone(), 0u32)]);
+    while let Some((current, distance)) = queue.pop_front() {
+        for edge in &snapshot.edges {
+            if edge.from != current
+                || !certificate_theorem_graph_transitive_dependency_edge(edge.kind)
+                || !certificate_theorem_graph_public_export_node_id(snapshot, &edge.to)
+            {
+                continue;
+            }
+            let next_distance = distance.saturating_add(1);
+            if &edge.to == target {
+                return Some(next_distance);
+            }
+            if visited.insert(edge.to.clone()) {
+                queue.push_back((edge.to.clone(), next_distance));
+            }
+        }
+    }
+    None
+}
+
+fn certificate_theorem_graph_direct_dependency_edge(kind: CertificateTheoremGraphEdgeKind) -> bool {
+    matches!(
+        kind,
+        CertificateTheoremGraphEdgeKind::ImportsDeclaration
+            | CertificateTheoremGraphEdgeKind::MentionsType
+            | CertificateTheoremGraphEdgeKind::UsesConstant
+            | CertificateTheoremGraphEdgeKind::GeneratedDeclaration
+            | CertificateTheoremGraphEdgeKind::DependsOnDirectAxiom
+    )
+}
+
+fn certificate_theorem_graph_transitive_dependency_edge(
+    kind: CertificateTheoremGraphEdgeKind,
+) -> bool {
+    matches!(
+        kind,
+        CertificateTheoremGraphEdgeKind::ImportsDeclaration
+            | CertificateTheoremGraphEdgeKind::MentionsType
+            | CertificateTheoremGraphEdgeKind::UsesConstant
+            | CertificateTheoremGraphEdgeKind::GeneratedDeclaration
+            | CertificateTheoremGraphEdgeKind::DependsOnDirectAxiom
+            | CertificateTheoremGraphEdgeKind::DependsOnTransitiveAxiom
+    )
+}
+
+fn certificate_theorem_graph_public_export_node_id(
+    snapshot: &CertificateTheoremGraphSnapshot,
+    id: &CertificateTheoremGraphNodeId,
+) -> bool {
+    snapshot
+        .node(id)
+        .is_some_and(certificate_theorem_graph_node_is_certificate_bound_public_export)
+}
+
+fn certificate_theorem_graph_related_node_order(
+    left: &CertificateTheoremGraphRelatedNode,
+    right: &CertificateTheoremGraphRelatedNode,
+) -> std::cmp::Ordering {
+    right
+        .score
+        .score_microunits
+        .cmp(&left.score.score_microunits)
+        .then_with(|| {
+            left.score
+                .dependency_distance
+                .unwrap_or(u32::MAX)
+                .cmp(&right.score.dependency_distance.unwrap_or(u32::MAX))
+        })
+        .then_with(|| {
+            right
+                .score
+                .shared_dependency_count
+                .cmp(&left.score.shared_dependency_count)
+        })
+        .then_with(|| left.node.cmp(&right.node))
+}
+
+fn certificate_theorem_graph_merge_query_node(
+    nodes: &mut BTreeMap<CertificateTheoremGraphNodeId, CertificateTheoremGraphRelatedScore>,
+    node: CertificateTheoremGraphNodeId,
+    score: CertificateTheoremGraphRelatedScore,
+) {
+    nodes
+        .entry(node)
+        .and_modify(|existing| {
+            if score.score_microunits > existing.score_microunits {
+                *existing = score;
+            }
+        })
+        .or_insert(score);
+}
+
+fn usize_to_u32(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
 }
 
 fn validate_import_bindings<'a>(
@@ -1084,6 +1557,20 @@ mod tests {
         )
     }
 
+    fn unused_fixture() -> FixtureModule {
+        fixture_module(
+            CoreModule {
+                name: Name::from_dotted("Unused"),
+                declarations: vec![Decl::Axiom {
+                    name: "Unused.R".to_owned(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::zero()),
+                }],
+            },
+            &[],
+        )
+    }
+
     fn alternate_base_fixture() -> FixtureModule {
         fixture_module(
             CoreModule {
@@ -1099,6 +1586,10 @@ mod tests {
     }
 
     fn client_fixture(base: &VerifiedModule) -> FixtureModule {
+        client_fixture_with_imports(std::slice::from_ref(base))
+    }
+
+    fn client_fixture_with_imports(imports: &[VerifiedModule]) -> FixtureModule {
         fixture_module(
             CoreModule {
                 name: Name::from_dotted("Client"),
@@ -1124,7 +1615,7 @@ mod tests {
                     },
                 ],
             },
-            std::slice::from_ref(base),
+            imports,
         )
     }
 
@@ -1284,5 +1775,139 @@ mod tests {
             err,
             CertificateTheoremGraphError::DeclInterfaceHashMismatch { .. }
         ));
+    }
+
+    #[test]
+    fn theorem_graph_dependencies_related_and_query_are_deterministic_public_exports() {
+        let base = base_fixture();
+        let client = client_fixture(&base.verified);
+        let snapshot = extract_certificate_theorem_graph(
+            &client.bytes,
+            std::slice::from_ref(&base.verified),
+            CertificateTheoremGraphOptions::default(),
+        )
+        .unwrap();
+
+        let direct_request = CertificateTheoremGraphDependenciesRequest {
+            declaration: Name::from_dotted("Client.thmP"),
+            mode: CertificateTheoremGraphDependenciesMode::Direct,
+        };
+        let direct = certificate_theorem_graph_dependencies(&snapshot, &direct_request).unwrap();
+        let direct_again =
+            certificate_theorem_graph_dependencies(&snapshot, &direct_request).unwrap();
+        assert_eq!(direct, direct_again);
+
+        let base_p = node_id_by_name(&snapshot, "Base.P");
+        assert!(direct.dependencies.contains(&base_p));
+        assert_eq!(direct.axioms_used, vec![base_p.clone()]);
+        assert!(direct.dependencies.iter().all(|node_id| {
+            snapshot
+                .node(node_id)
+                .is_some_and(certificate_theorem_graph_node_is_certificate_bound_public_export)
+        }));
+
+        let transitive_request = CertificateTheoremGraphDependenciesRequest {
+            declaration: Name::from_dotted("Client.thmP"),
+            mode: CertificateTheoremGraphDependenciesMode::Transitive,
+        };
+        let transitive =
+            certificate_theorem_graph_dependencies(&snapshot, &transitive_request).unwrap();
+        assert!(transitive.dependencies.contains(&base_p));
+        assert_eq!(transitive.axioms_used, vec![base_p]);
+
+        let related_request = CertificateTheoremGraphRelatedRequest {
+            declaration: Name::from_dotted("Client.thmP"),
+            limit: 8,
+        };
+        let related = certificate_theorem_graph_related(&snapshot, &related_request).unwrap();
+        let related_again = certificate_theorem_graph_related(&snapshot, &related_request).unwrap();
+        assert_eq!(related, related_again);
+        assert!(related
+            .related
+            .iter()
+            .any(|entry| entry.node.name.as_dotted() == "Client.idP"));
+        assert!(related.related.iter().all(|entry| {
+            snapshot
+                .node(&entry.node)
+                .is_some_and(certificate_theorem_graph_node_is_certificate_bound_public_export)
+        }));
+
+        let rooted_query = certificate_theorem_graph_query(
+            &snapshot,
+            &CertificateTheoremGraphQueryRequest {
+                roots: vec![Name::from_dotted("Client.thmP")],
+                limit: 16,
+            },
+        )
+        .unwrap();
+        let rooted_query_again = certificate_theorem_graph_query(
+            &snapshot,
+            &CertificateTheoremGraphQueryRequest {
+                roots: vec![Name::from_dotted("Client.thmP")],
+                limit: 16,
+            },
+        )
+        .unwrap();
+        assert_eq!(rooted_query, rooted_query_again);
+        assert!(rooted_query
+            .nodes
+            .iter()
+            .any(|entry| entry.node.name.as_dotted() == "Client.thmP"));
+        assert!(rooted_query.nodes.iter().all(|entry| {
+            snapshot
+                .node(&entry.node)
+                .is_some_and(certificate_theorem_graph_node_is_certificate_bound_public_export)
+        }));
+
+        let all_public = certificate_theorem_graph_query(
+            &snapshot,
+            &CertificateTheoremGraphQueryRequest {
+                roots: Vec::new(),
+                limit: 128,
+            },
+        )
+        .unwrap();
+        assert!(!all_public.nodes.is_empty());
+        assert!(!all_public.nodes.iter().any(|entry| {
+            matches!(entry.node.scope, CertificateTheoremGraphNodeScope::Builtin)
+                || snapshot
+                    .node(&entry.node)
+                    .is_some_and(|node| node.kind == CertificateTheoremGraphNodeKind::Unknown)
+        }));
+    }
+
+    #[test]
+    fn theorem_graph_unused_imports_proposes_prune_candidates_from_kept_declarations() {
+        let base = base_fixture();
+        let unused = unused_fixture();
+        let imports = vec![base.verified.clone(), unused.verified.clone()];
+        let client = client_fixture_with_imports(&imports);
+        let snapshot = extract_certificate_theorem_graph(
+            &client.bytes,
+            &imports,
+            CertificateTheoremGraphOptions::default(),
+        )
+        .unwrap();
+
+        let response = certificate_theorem_graph_unused_imports(
+            &snapshot,
+            &CertificateTheoremGraphUnusedImportsRequest {
+                kept_declarations: vec![Name::from_dotted("Client.thmP")],
+            },
+        )
+        .unwrap();
+
+        assert!(response
+            .candidates
+            .iter()
+            .any(|candidate| candidate.module == Name::from_dotted("Unused")));
+        assert!(!response
+            .candidates
+            .iter()
+            .any(|candidate| candidate.module == Name::from_dotted("Base")));
+        assert!(response.candidates.iter().all(|candidate| {
+            candidate.reason
+                == CertificateTheoremGraphImportPruneReason::NotReferencedByKeptDeclarations
+        }));
     }
 }
