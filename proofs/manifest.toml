@@ -307,3 +307,21 @@ imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.Abstract
 definitions = []
 theorems = ["square_def", "mul_self_eq_square", "sq_add", "sq_sub", "sum_two_squares_comm", "cancel_double_zero_term", "sq_zero", "sq_one", "sq_neg", "two_mul", "sq_eq_sq_of_eq_or_neg_eq", "sq_add_eq_add_sq_add_two_mul", "sq_sub_eq_add_sq_sub_two_mul", "add_sq_eq_zero_iff", "mul_two_zero_term", "normalize_add_with_zero_cross_term"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Vector.AbstractSpace"
+source = "Proofs/Ai/Vector/AbstractSpace/source.npa"
+certificate = "Proofs/Ai/Vector/AbstractSpace/certificate.npcert"
+meta = "Proofs/Ai/Vector/AbstractSpace/meta.json"
+replay = "Proofs/Ai/Vector/AbstractSpace/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:e3db64e32830222c7320aaacdb9827feebc43bdfd264292b2e66406fb6cce9c0"
+certificate_file_sha256 = "sha256:f801b24a4379a0ec95134cd95f0dc8dd6486c4f40a3b9a2fdf2d3ba7f07a7868"
+export_hash = "sha256:2665099f8cfe0789db8e597c477440e6fa0c89262d32b284e5491eaf27e098aa"
+axiom_report_hash = "sha256:2eb8901dcadbaffb969aabfd5e10172a4e17abc50558a0954952232d438fa2ed"
+certificate_hash = "sha256:f95ba6d8f0a4107eadc9bd1053a90fb11b50fd02996290a976e440bf05c22ac6"
+imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Std.Logic.Eq"]
+definitions = ["vsub", "linear_comb2", "linear_comb3", "VectorSpaceLawArgs"]
+theorems = ["vec_sub_def", "vec_add_assoc", "vec_add_comm", "vec_add_zero", "vec_zero_add", "vec_neg_add_cancel", "vec_add_neg_cancel", "sub_sub_sub_cancel", "vec_sub_self", "vec_sub_zero", "vec_add_left_cancel", "smul_add", "add_smul", "one_smul", "mul_smul", "zero_smul", "smul_zero", "neg_smul", "smul_neg", "vec_sub_eq_add_neg", "sub_add_sub_cancel_left", "linear_comb2_ext", "linear_comb3_ext"]
+axioms = []

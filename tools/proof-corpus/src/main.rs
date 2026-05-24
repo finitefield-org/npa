@@ -305,6 +305,24 @@ const ABSTRACT_SQUARE_NORMALIZE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_VECTOR_SPACE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Vector.AbstractSpace",
+    source_path: "Proofs/Ai/Vector/AbstractSpace/source.npa",
+    certificate_path: "Proofs/Ai/Vector/AbstractSpace/certificate.npcert",
+    meta_path: "Proofs/Ai/Vector/AbstractSpace/meta.json",
+    replay_path: "Proofs/Ai/Vector/AbstractSpace/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_VECTOR_SPACE_DEFINITIONS,
+    theorems: ABSTRACT_VECTOR_SPACE_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -363,6 +381,41 @@ macro_rules! abstract_ordered_field_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_vector_space_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_vector_space_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => ",
             $tail
         )
     };
@@ -2477,6 +2530,277 @@ const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_VECTOR_SPACE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "vsub",
+        universe_params: &["v"],
+        ty: concat!(
+            "forall (Vector : Sort v), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (x : Vector), forall (y : Vector), Vector"
+        ),
+        value: "fun Vector => fun vadd => fun vneg => fun x => fun y => vadd x (vneg y)",
+    },
+    DefinitionArtifact {
+        name: "linear_comb2",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (Vector : Sort v), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (a : Scalar), forall (x : Vector), ",
+            "forall (b : Scalar), forall (y : Vector), Vector"
+        ),
+        value:
+            "fun Scalar => fun Vector => fun vadd => fun smul => fun a => fun x => fun b => fun y => vadd (smul a x) (smul b y)",
+    },
+    DefinitionArtifact {
+        name: "linear_comb3",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (Vector : Sort v), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (a : Scalar), forall (x : Vector), ",
+            "forall (b : Scalar), forall (y : Vector), ",
+            "forall (c : Scalar), forall (z : Vector), Vector"
+        ),
+        value:
+            "fun Scalar => fun Vector => fun vadd => fun smul => fun a => fun x => fun b => fun y => fun c => fun z => vadd (vadd (smul a x) (smul b y)) (smul c z)",
+    },
+    DefinitionArtifact {
+        name: "VectorSpaceLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_vector_space_params!("Prop"),
+        value: abstract_vector_space_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (vec_sub_def_law : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x y) (vadd x (vneg y))), ",
+            "forall (vec_add_assoc_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (vadd x y) z) (vadd x (vadd y z))), ",
+            "forall (vec_add_comm_law : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (vadd x y) (vadd y x)), ",
+            "forall (vec_add_zero_law : forall (x : Vector), @Eq.{v} Vector (vadd x vzero) x), ",
+            "forall (vec_zero_add_law : forall (x : Vector), @Eq.{v} Vector (vadd vzero x) x), ",
+            "forall (vec_neg_add_cancel_law : forall (x : Vector), @Eq.{v} Vector (vadd (vneg x) x) vzero), ",
+            "forall (vec_add_neg_cancel_law : forall (x : Vector), @Eq.{v} Vector (vadd x (vneg x)) vzero), ",
+            "forall (sub_sub_sub_cancel_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg y z)) (@vsub.{v} Vector vadd vneg x y)), ",
+            "forall (vec_sub_self_law : forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x x) vzero), ",
+            "forall (vec_sub_zero_law : forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x vzero) x), ",
+            "forall (vec_add_left_cancel_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), forall (h : @Eq.{v} Vector (vadd x y) (vadd x z)), @Eq.{v} Vector y z), ",
+            "forall (smul_add_law : forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (add a b) x) (vadd (smul a x) (smul b x))), ",
+            "forall (add_smul_law : forall (a : Scalar), forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (smul a (vadd x y)) (vadd (smul a x) (smul a y))), ",
+            "forall (one_smul_law : forall (x : Vector), @Eq.{v} Vector (smul one x) x), ",
+            "forall (mul_smul_law : forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (mul a b) x) (smul a (smul b x))), ",
+            "forall (zero_smul_law : forall (x : Vector), @Eq.{v} Vector (smul zero x) vzero), ",
+            "forall (smul_zero_law : forall (a : Scalar), @Eq.{v} Vector (smul a vzero) vzero), ",
+            "forall (neg_smul_law : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (neg a) x) (vneg (smul a x))), ",
+            "forall (smul_neg_law : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul a (vneg x)) (vneg (smul a x))), ",
+            "forall (vec_sub_eq_add_neg_law : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x y) (vadd x (vneg y))), ",
+            "forall (sub_add_sub_cancel_left_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg z y)) (@vsub.{v} Vector vadd vneg x y)), ",
+            "forall (linear_comb2_ext_law : forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), @Eq.{v} Vector (@linear_comb2.{u,v} Scalar Vector vadd smul a x b y) (vadd (smul a x) (smul b y))), ",
+            "forall (linear_comb3_ext_law : forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), forall (c : Scalar), forall (z : Vector), @Eq.{v} Vector (@linear_comb3.{u,v} Scalar Vector vadd smul a x b y c z) (vadd (vadd (smul a x) (smul b y)) (smul c z))), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_VECTOR_SPACE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "vec_sub_def",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x y) (vadd x (vneg y))"
+        ),
+        proof: abstract_vector_space_abs!(
+            "fun x => fun y => @Eq.refl.{v} Vector (@vsub.{v} Vector vadd vneg x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "vec_add_assoc",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (vadd x y) z) (vadd x (vadd y z))), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (vadd x y) z) (vadd x (vadd y z))"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "vec_add_comm",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (vadd x y) (vadd y x)), forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (vadd x y) (vadd y x)"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "vec_add_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (vadd x vzero) x), forall (x : Vector), @Eq.{v} Vector (vadd x vzero) x"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "vec_zero_add",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (vadd vzero x) x), forall (x : Vector), @Eq.{v} Vector (vadd vzero x) x"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "vec_neg_add_cancel",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (vadd (vneg x) x) vzero), forall (x : Vector), @Eq.{v} Vector (vadd (vneg x) x) vzero"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "vec_add_neg_cancel",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (vadd x (vneg x)) vzero), forall (x : Vector), @Eq.{v} Vector (vadd x (vneg x)) vzero"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "sub_sub_sub_cancel",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg y z)) (@vsub.{v} Vector vadd vneg x y)), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg y z)) (@vsub.{v} Vector vadd vneg x y)"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "vec_sub_self",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x x) vzero), forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x x) vzero"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "vec_sub_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x vzero) x), forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x vzero) x"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "vec_add_left_cancel",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), forall (h : @Eq.{v} Vector (vadd x y) (vadd x z)), @Eq.{v} Vector y z), forall (x : Vector), forall (y : Vector), forall (z : Vector), forall (h : @Eq.{v} Vector (vadd x y) (vadd x z)), @Eq.{v} Vector y z"
+        ),
+        proof: abstract_vector_space_abs!(
+            "fun law => fun x => fun y => fun z => fun h => law x y z h"
+        ),
+    },
+    TheoremArtifact {
+        name: "smul_add",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (add a b) x) (vadd (smul a x) (smul b x))), forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (add a b) x) (vadd (smul a x) (smul b x))"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun a => fun b => fun x => law a b x"),
+    },
+    TheoremArtifact {
+        name: "add_smul",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (a : Scalar), forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (smul a (vadd x y)) (vadd (smul a x) (smul a y))), forall (a : Scalar), forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (smul a (vadd x y)) (vadd (smul a x) (smul a y))"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun a => fun x => fun y => law a x y"),
+    },
+    TheoremArtifact {
+        name: "one_smul",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (smul one x) x), forall (x : Vector), @Eq.{v} Vector (smul one x) x"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "mul_smul",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (mul a b) x) (smul a (smul b x))), forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (mul a b) x) (smul a (smul b x))"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun a => fun b => fun x => law a b x"),
+    },
+    TheoremArtifact {
+        name: "zero_smul",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), @Eq.{v} Vector (smul zero x) vzero), forall (x : Vector), @Eq.{v} Vector (smul zero x) vzero"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "smul_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (a : Scalar), @Eq.{v} Vector (smul a vzero) vzero), forall (a : Scalar), @Eq.{v} Vector (smul a vzero) vzero"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "neg_smul",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (neg a) x) (vneg (smul a x))), forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (neg a) x) (vneg (smul a x))"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun a => fun x => law a x"),
+    },
+    TheoremArtifact {
+        name: "smul_neg",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul a (vneg x)) (vneg (smul a x))), forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul a (vneg x)) (vneg (smul a x))"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun a => fun x => law a x"),
+    },
+    TheoremArtifact {
+        name: "vec_sub_eq_add_neg",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x y) (vadd x (vneg y))"
+        ),
+        proof: abstract_vector_space_abs!(
+            "fun x => fun y => @Eq.refl.{v} Vector (@vsub.{v} Vector vadd vneg x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "sub_add_sub_cancel_left",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg z y)) (@vsub.{v} Vector vadd vneg x y)), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg z y)) (@vsub.{v} Vector vadd vneg x y)"
+        ),
+        proof: abstract_vector_space_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "linear_comb2_ext",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), @Eq.{v} Vector (@linear_comb2.{u,v} Scalar Vector vadd smul a x b y) (vadd (smul a x) (smul b y))"
+        ),
+        proof: abstract_vector_space_abs!(
+            "fun a => fun x => fun b => fun y => @Eq.refl.{v} Vector (@linear_comb2.{u,v} Scalar Vector vadd smul a x b y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "linear_comb3_ext",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), forall (c : Scalar), forall (z : Vector), @Eq.{v} Vector (@linear_comb3.{u,v} Scalar Vector vadd smul a x b y c z) (vadd (vadd (smul a x) (smul b y)) (smul c z))"
+        ),
+        proof: abstract_vector_space_abs!(
+            "fun a => fun x => fun b => fun y => fun c => fun z => @Eq.refl.{v} Vector (@linear_comb3.{u,v} Scalar Vector vadd smul a x b y c z)"
+        ),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -2681,6 +3005,23 @@ fn run() -> Result<(), String> {
         &abstract_square_normalize_imports,
         &abstract_square_normalize_source_interfaces,
     )?;
+    let abstract_vector_space_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+    ];
+    let abstract_vector_space_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+    ];
+    let abstract_vector_space = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_VECTOR_SPACE_MODULE,
+        &abstract_vector_space_imports,
+        &abstract_vector_space_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -2702,6 +3043,7 @@ fn run() -> Result<(), String> {
             abstract_ring,
             abstract_ordered_field,
             abstract_square_normalize,
+            abstract_vector_space,
         ])
         .as_bytes(),
     )?;
@@ -2974,6 +3316,12 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
         &[
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractOrderedField",
+        ]
+    } else if config.module == ABSTRACT_VECTOR_SPACE_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
         ]
     } else {
         config.imports

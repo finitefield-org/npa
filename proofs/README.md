@@ -29,6 +29,8 @@ Current bundles:
   `Std.Logic.Eq`.
 - `Proofs/Ai/Vector/Dot/`: dot product, squared norm, and squared distance theorem targets
   importing vector, scalar, square, and order corpus layers.
+- `Proofs/Ai/Vector/AbstractSpace/`: abstract vector-space theorem targets over the P17-P19
+  scalar API layers and explicit vector operation/law assumptions.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -554,7 +556,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P20+: General Euclidean Pythagorean Roadmap
+### P21+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -568,8 +570,8 @@ This avoids making the first abstract target depend on square roots. P15 adds th
 the squared `dist` form over the current concrete scalar and vector corpus. P17 starts replacing the
 singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
 abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
-normalization layer. P20+ continues the pattern through vector, inner-product, affine, and metric
-APIs.
+normalization layer. P20 supplies the abstract vector-space layer. P21+ continues the pattern
+through inner-product, affine, and metric APIs.
 
 Planned contents:
 
@@ -607,8 +609,11 @@ Completed prerequisite:
 - P19 `Proofs.Ai.Algebra.AbstractSquareNormalize` supplies checked abstract square-normalization
   theorem targets over the P17/P18 scalar APIs and explicit law assumptions without adding unchecked
   algebra or order axioms.
+- P20 `Proofs.Ai.Vector.AbstractSpace` supplies checked abstract vector-space theorem targets over
+  explicit vector carrier, operation, scalar, and law assumptions without adding unchecked vector
+  space axioms.
 
-P20+ policy:
+P21+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -619,7 +624,6 @@ P20+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P20 | `Proofs.Ai.Vector.AbstractSpace` | abstract vector carrier, zero, add, neg, sub, scalar multiplication, vector-space law package | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_add_zero`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_add_neg_cancel`, `sub_sub_sub_cancel` | `vec_sub_self`, `vec_sub_zero`, `vec_add_left_cancel`, `smul_add`, `add_smul`, `one_smul`, `mul_smul` |
 | P21 | `Proofs.Ai.Vector.AbstractInnerProduct` | abstract inner product, `normSq`, and `distSq` over P20 | `dot_comm`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `norm_sq_def`, `dist_sq_def`, `norm_sq_sub_of_dot_zero` | `norm_sq_add`, `norm_sq_sub`, `norm_sq_nonneg`, `dot_self_eq_norm_sq`, `parallelogram_law`, `polarization_identity`, `cauchy_schwarz` |
 | P22 | `Proofs.Ai.Geometry.Affine` | abstract point carrier and displacement map `disp A B` | `disp_self`, `disp_reverse`, `disp_comp`, `hypotenuse_vector_eq_sub_legs`, `dist_sq_points_def` | `point_ext_of_zero_disp`, `dist_sq_symm`, `dist_sq_zero_iff_eq` |
 | P23 | `Proofs.Ai.Geometry.AbstractRightTriangle` | abstract `Perp` and `RightTriangle` over the inner-product geometry | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `pythagorean_distance_sq_general` | `perp_symm`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` |
@@ -995,16 +999,22 @@ giving later vector and norm layers stable target names.
 
 #### `Proofs.Ai.Vector.AbstractSpace`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `Vector` | abstract vector carrier over the scalar API |
-| `vzero`, `vadd`, `vneg`, `vsub` | additive vector-space operations |
-| `smul` | scalar multiplication |
+| `Vector` | local abstract vector carrier parameter over the scalar API |
+| `vzero`, `vadd`, `vneg`, `smul` | local vector operation parameters |
+| `vsub` | parametric vector subtraction helper, defined as `vadd x (vneg y)` |
 | `linear_comb2` | helper API for two-term linear combinations, useful for generated proof terms |
 | `linear_comb3` | helper API for three-term linear combinations in affine point proofs |
-| `VectorSpaceLawArgs` | placeholder name for explicit vector-space law hypotheses |
+| `VectorSpaceLawArgs` | Church-encoded law package API over the explicit scalar/vector operations |
+
+The checked theorem targets either close by definitional equality (`vec_sub_def`,
+`vec_sub_eq_add_neg`, `linear_comb2_ext`, `linear_comb3_ext`) or take the corresponding vector-space
+law as an explicit argument and return it at the requested variables. The vector subtraction alias
+uses the `vec_` prefix to avoid colliding with P17's scalar `sub_eq_add_neg` declaration in the
+kernel import environment.
 
 Theorem targets:
 
@@ -1018,7 +1028,7 @@ Theorem targets:
 | `smul_add`, `add_smul`, `one_smul`, `mul_smul` | scalar multiplication laws |
 | `zero_smul`, `smul_zero` | zero scalar/vector multiplication |
 | `neg_smul`, `smul_neg` | scalar multiplication and negation interaction |
-| `sub_eq_add_neg` | vector subtraction rewrite alias for search consistency |
+| `vec_sub_eq_add_neg` | vector subtraction rewrite alias for search consistency |
 | `sub_add_sub_cancel_left` | `(u - w) + (w - v) = u - v` displacement-style cancellation |
 | `linear_comb2_ext` | expansion theorem for `linear_comb2` |
 | `linear_comb3_ext` | expansion theorem for `linear_comb3` |
