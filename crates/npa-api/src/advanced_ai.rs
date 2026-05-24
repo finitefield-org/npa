@@ -8634,6 +8634,19 @@ fn advanced_ai_kernel_env_from_imports(
                 } => env
                     .add_axiom(name.clone(), universe_params.clone(), ty.clone())
                     .map_err(|_| ())?,
+                npa_kernel::Decl::AxiomConstrained {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    ty,
+                } => env
+                    .add_axiom_with_universe_constraints(
+                        name.clone(),
+                        universe_params.clone(),
+                        universe_constraints.clone(),
+                        ty.clone(),
+                    )
+                    .map_err(|_| ())?,
                 npa_kernel::Decl::Def {
                     name,
                     universe_params,
@@ -8649,6 +8662,23 @@ fn advanced_ai_kernel_env_from_imports(
                         reducibility.clone(),
                     )
                     .map_err(|_| ())?,
+                npa_kernel::Decl::DefConstrained {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    ty,
+                    value,
+                    reducibility,
+                } => env
+                    .add_def_with_universe_constraints(
+                        name.clone(),
+                        universe_params.clone(),
+                        universe_constraints.clone(),
+                        ty.clone(),
+                        value.clone(),
+                        reducibility.clone(),
+                    )
+                    .map_err(|_| ())?,
                 npa_kernel::Decl::Theorem {
                     name,
                     universe_params,
@@ -8658,6 +8688,21 @@ fn advanced_ai_kernel_env_from_imports(
                     .add_theorem(
                         name.clone(),
                         universe_params.clone(),
+                        ty.clone(),
+                        proof.clone(),
+                    )
+                    .map_err(|_| ())?,
+                npa_kernel::Decl::TheoremConstrained {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    ty,
+                    proof,
+                } => env
+                    .add_theorem_with_universe_constraints(
+                        name.clone(),
+                        universe_params.clone(),
+                        universe_constraints.clone(),
                         ty.clone(),
                         proof.clone(),
                     )

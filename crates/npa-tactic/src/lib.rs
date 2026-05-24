@@ -952,7 +952,7 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_p
         ));
     }
     match &decl {
-        Decl::Axiom { name, .. } => {
+        Decl::Axiom { name, .. } | Decl::AxiomConstrained { name, .. } => {
             return Err(MachineTacticDiagnostic::new(
                 MachineTacticDiagnosticKind::UncheckedCurrentDecl,
                 format!(
@@ -968,7 +968,11 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_p
                 ),
             ));
         }
-        Decl::Def { .. } | Decl::Theorem { .. } | Decl::Inductive { .. } => {}
+        Decl::Def { .. }
+        | Decl::DefConstrained { .. }
+        | Decl::Theorem { .. }
+        | Decl::TheoremConstrained { .. }
+        | Decl::Inductive { .. } => {}
     }
 
     let canonical_imports = canonicalize_imports(imports.to_vec());
@@ -8095,6 +8099,14 @@ fn add_decl_to_kernel_env(env: &mut Env, decl: Decl) -> npa_kernel::Result<()> {
             universe_params,
             ty,
         } => env.add_axiom(name, universe_params, ty),
+        Decl::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => {
+            env.add_axiom_with_universe_constraints(name, universe_params, universe_constraints, ty)
+        }
         Decl::Def {
             name,
             universe_params,
@@ -8102,12 +8114,40 @@ fn add_decl_to_kernel_env(env: &mut Env, decl: Decl) -> npa_kernel::Result<()> {
             value,
             reducibility,
         } => env.add_def(name, universe_params, ty, value, reducibility),
+        Decl::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => env.add_def_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        ),
         Decl::Theorem {
             name,
             universe_params,
             ty,
             proof,
         } => env.add_theorem(name, universe_params, ty, proof),
+        Decl::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        } => env.add_theorem_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        ),
         Decl::Inductive { data, .. } => env.add_inductive(*data),
         Decl::Constructor { .. } | Decl::Recursor { .. } => {
             Err(npa_kernel::Error::InvalidInductive(
@@ -8557,9 +8597,13 @@ fn infer_current_module_name(decl: &Decl) -> Result<ModuleName> {
 fn decl_payload_name(cert: &npa_cert::ModuleCert, payload: &DeclPayload) -> Result<Name> {
     let name_id = match payload {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     cert.name_table.get(name_id).cloned().ok_or_else(|| {
         MachineTacticDiagnostic::new(
@@ -8906,12 +8950,14 @@ fn local_public_names(declarations: &[Decl]) -> BTreeSet<Name> {
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
     match decl {
-        Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
-        Decl::Def { ty, value, .. } => {
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => {
+            collect_const_names_from_expr(names, ty)
+        }
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, value);
         }
-        Decl::Theorem { ty, proof, .. } => {
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, proof);
         }

@@ -3988,9 +3988,13 @@ fn human_verify_decl_payload_name(
 ) -> Result<Name, String> {
     let name = match payload {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     cert.name_table.get(name).cloned().ok_or_else(|| {
         "verified Human certificate declaration references an out-of-range name table entry"
@@ -4809,9 +4813,9 @@ fn human_export_kind(kind: ExportKind) -> HumanTheoremIndexKind {
 
 fn human_current_decl_kind(decl: &Decl) -> HumanTheoremIndexKind {
     match decl {
-        Decl::Axiom { .. } => HumanTheoremIndexKind::Axiom,
-        Decl::Def { .. } => HumanTheoremIndexKind::Def,
-        Decl::Theorem { .. } => HumanTheoremIndexKind::Theorem,
+        Decl::Axiom { .. } | Decl::AxiomConstrained { .. } => HumanTheoremIndexKind::Axiom,
+        Decl::Def { .. } | Decl::DefConstrained { .. } => HumanTheoremIndexKind::Def,
+        Decl::Theorem { .. } | Decl::TheoremConstrained { .. } => HumanTheoremIndexKind::Theorem,
         Decl::Inductive { .. } => HumanTheoremIndexKind::Inductive,
         Decl::Constructor { .. } => HumanTheoremIndexKind::Constructor,
         Decl::Recursor { .. } => HumanTheoremIndexKind::Recursor,
@@ -5077,12 +5081,14 @@ fn human_is_builtin_axiom_name(name: &Name) -> bool {
 
 fn human_collect_decl_constants(decl: &Decl, out: &mut BTreeSet<Name>) {
     match decl {
-        Decl::Axiom { ty, .. } => human_collect_expr_constants(ty, out),
-        Decl::Def { ty, value, .. } => {
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => {
+            human_collect_expr_constants(ty, out)
+        }
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
             human_collect_expr_constants(ty, out);
             human_collect_expr_constants(value, out);
         }
-        Decl::Theorem { ty, proof, .. } => {
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
             human_collect_expr_constants(ty, out);
             human_collect_expr_constants(proof, out);
         }
@@ -5233,9 +5239,13 @@ fn human_decl_payload_name(
 ) -> Result<Name, HumanTheoremIndexError> {
     let name = match decl {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     human_name_from_verified(module, name)
 }

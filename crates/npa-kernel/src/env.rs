@@ -6,7 +6,10 @@ use crate::{
     decl::{ConstructorDecl, Decl, InductiveDecl, RecursorDecl, RecursorRules, Reducibility},
     error::{Error, ResourceLimitKind, Result},
     expr::{collect_apps, Expr},
-    level::{ensure_level_wf, level_eq, levels_eq, Level},
+    level::{
+        ensure_level_wf, ensure_universe_constraints_wf, level_eq, levels_eq,
+        validate_universe_params, Level, UniverseConstraint,
+    },
     subst::{instantiate, subst_levels_expr},
 };
 
@@ -45,18 +48,36 @@ impl Env {
         universe_params: Vec<String>,
         ty: Expr,
     ) -> Result<()> {
+        self.add_axiom_with_universe_constraints(name, universe_params, Vec::new(), ty)
+    }
+
+    pub fn add_axiom_with_universe_constraints(
+        &mut self,
+        name: impl Into<String>,
+        universe_params: Vec<String>,
+        universe_constraints: Vec<UniverseConstraint>,
+        ty: Expr,
+    ) -> Result<()> {
         let name = name.into();
         self.ensure_fresh(&name)?;
         let delta = validate_universe_params(&universe_params)?;
+        ensure_universe_constraints_wf(&delta, &universe_constraints)?;
         self.expect_sort(&Ctx::new(), &delta, &ty)?;
-        self.decls.insert(
-            name.clone(),
+        let decl = if universe_constraints.is_empty() {
             Decl::Axiom {
                 name,
                 universe_params,
                 ty,
-            },
-        );
+            }
+        } else {
+            Decl::AxiomConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+            }
+        };
+        self.decls.insert(decl.name().to_owned(), decl);
         Ok(())
     }
 
@@ -68,21 +89,50 @@ impl Env {
         value: Expr,
         reducibility: Reducibility,
     ) -> Result<()> {
+        self.add_def_with_universe_constraints(
+            name,
+            universe_params,
+            Vec::new(),
+            ty,
+            value,
+            reducibility,
+        )
+    }
+
+    pub fn add_def_with_universe_constraints(
+        &mut self,
+        name: impl Into<String>,
+        universe_params: Vec<String>,
+        universe_constraints: Vec<UniverseConstraint>,
+        ty: Expr,
+        value: Expr,
+        reducibility: Reducibility,
+    ) -> Result<()> {
         let name = name.into();
         self.ensure_fresh(&name)?;
         let delta = validate_universe_params(&universe_params)?;
+        ensure_universe_constraints_wf(&delta, &universe_constraints)?;
         self.expect_sort(&Ctx::new(), &delta, &ty)?;
         self.check(&Ctx::new(), &delta, &value, &ty)?;
-        self.decls.insert(
-            name.clone(),
+        let decl = if universe_constraints.is_empty() {
             Decl::Def {
                 name,
                 universe_params,
                 ty,
                 value,
                 reducibility,
-            },
-        );
+            }
+        } else {
+            Decl::DefConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                value,
+                reducibility,
+            }
+        };
+        self.decls.insert(decl.name().to_owned(), decl);
         Ok(())
     }
 
@@ -93,25 +143,46 @@ impl Env {
         ty: Expr,
         proof: Expr,
     ) -> Result<()> {
+        self.add_theorem_with_universe_constraints(name, universe_params, Vec::new(), ty, proof)
+    }
+
+    pub fn add_theorem_with_universe_constraints(
+        &mut self,
+        name: impl Into<String>,
+        universe_params: Vec<String>,
+        universe_constraints: Vec<UniverseConstraint>,
+        ty: Expr,
+        proof: Expr,
+    ) -> Result<()> {
         let name = name.into();
         self.ensure_fresh(&name)?;
         let delta = validate_universe_params(&universe_params)?;
+        ensure_universe_constraints_wf(&delta, &universe_constraints)?;
         self.expect_sort(&Ctx::new(), &delta, &ty)?;
         self.check(&Ctx::new(), &delta, &proof, &ty)?;
-        self.decls.insert(
-            name.clone(),
+        let decl = if universe_constraints.is_empty() {
             Decl::Theorem {
                 name,
                 universe_params,
                 ty,
                 proof,
-            },
-        );
+            }
+        } else {
+            Decl::TheoremConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                proof,
+            }
+        };
+        self.decls.insert(decl.name().to_owned(), decl);
         Ok(())
     }
 
     pub fn add_inductive(&mut self, data: InductiveDecl) -> Result<()> {
         let delta = validate_universe_params(&data.universe_params)?;
+        ensure_universe_constraints_wf(&delta, &data.universe_constraints)?;
         ensure_level_wf(&delta, &data.sort)?;
         self.ensure_inductive_names_fresh(&data)?;
 
@@ -751,12 +822,20 @@ impl Env {
                     ref name,
                     ref levels,
                 } => {
-                    if let Some(Decl::Def {
-                        universe_params,
-                        value,
-                        reducibility: Reducibility::Reducible,
-                        ..
-                    }) = self.decls.get(name)
+                    if let Some(
+                        Decl::Def {
+                            universe_params,
+                            value,
+                            reducibility: Reducibility::Reducible,
+                            ..
+                        }
+                        | Decl::DefConstrained {
+                            universe_params,
+                            value,
+                            reducibility: Reducibility::Reducible,
+                            ..
+                        },
+                    ) = self.decls.get(name)
                     {
                         current = subst_levels_expr(value, universe_params, levels);
                     } else {
@@ -966,16 +1045,6 @@ fn spend_fuel(fuel: &mut usize, kind: ResourceLimitKind) -> Result<()> {
     }
     *fuel -= 1;
     Ok(())
-}
-
-fn validate_universe_params(params: &[String]) -> Result<Vec<String>> {
-    let mut seen = BTreeSet::new();
-    for param in params {
-        if !seen.insert(param.clone()) {
-            return Err(Error::UnknownUniverseParam(param.clone()));
-        }
-    }
-    Ok(params.to_vec())
 }
 
 fn generated_recursor_rules(data: &InductiveDecl) -> RecursorRules {

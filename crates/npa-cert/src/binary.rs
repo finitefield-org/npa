@@ -145,6 +145,18 @@ fn encode_decl_payload_to(out: &mut Vec<u8>, decl: &DeclPayload) {
             encode_usize_vec(out, universe_params);
             encode_uvar_to(out, *ty as u64);
         }
+        DeclPayload::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => {
+            out.push(0x10);
+            encode_uvar_to(out, *name as u64);
+            encode_usize_vec(out, universe_params);
+            encode_universe_constraint_specs_to(out, universe_constraints);
+            encode_uvar_to(out, *ty as u64);
+        }
         DeclPayload::Def {
             name,
             universe_params,
@@ -159,6 +171,22 @@ fn encode_decl_payload_to(out: &mut Vec<u8>, decl: &DeclPayload) {
             encode_uvar_to(out, *value as u64);
             encode_reducibility_to(out, *reducibility);
         }
+        DeclPayload::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => {
+            out.push(0x11);
+            encode_uvar_to(out, *name as u64);
+            encode_usize_vec(out, universe_params);
+            encode_universe_constraint_specs_to(out, universe_constraints);
+            encode_uvar_to(out, *ty as u64);
+            encode_uvar_to(out, *value as u64);
+            encode_reducibility_to(out, *reducibility);
+        }
         DeclPayload::Theorem {
             name,
             universe_params,
@@ -169,6 +197,22 @@ fn encode_decl_payload_to(out: &mut Vec<u8>, decl: &DeclPayload) {
             out.push(0x02);
             encode_uvar_to(out, *name as u64);
             encode_usize_vec(out, universe_params);
+            encode_uvar_to(out, *ty as u64);
+            encode_uvar_to(out, *proof as u64);
+            encode_opacity_to(out, *opacity);
+        }
+        DeclPayload::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+            opacity,
+        } => {
+            out.push(0x12);
+            encode_uvar_to(out, *name as u64);
+            encode_usize_vec(out, universe_params);
+            encode_universe_constraint_specs_to(out, universe_constraints);
             encode_uvar_to(out, *ty as u64);
             encode_uvar_to(out, *proof as u64);
             encode_opacity_to(out, *opacity);
@@ -211,6 +255,58 @@ fn encode_decl_payload_to(out: &mut Vec<u8>, decl: &DeclPayload) {
                 None => out.push(0x00),
             }
         }
+        DeclPayload::InductiveConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+        } => {
+            out.push(0x13);
+            encode_uvar_to(out, *name as u64);
+            encode_usize_vec(out, universe_params);
+            encode_universe_constraint_specs_to(out, universe_constraints);
+            encode_uvar_to(out, params.len() as u64);
+            for param in params {
+                encode_uvar_to(out, param.ty as u64);
+            }
+            encode_uvar_to(out, indices.len() as u64);
+            for index in indices {
+                encode_uvar_to(out, index.ty as u64);
+            }
+            encode_uvar_to(out, *sort as u64);
+            encode_uvar_to(out, constructors.len() as u64);
+            for constructor in constructors {
+                encode_uvar_to(out, constructor.name as u64);
+                encode_uvar_to(out, constructor.ty as u64);
+            }
+            match recursor {
+                Some(recursor) => {
+                    out.push(0x01);
+                    encode_uvar_to(out, recursor.name as u64);
+                    encode_usize_vec(out, &recursor.universe_params);
+                    encode_uvar_to(out, recursor.ty as u64);
+                    encode_uvar_to(out, recursor.rules.minor_start as u64);
+                    encode_uvar_to(out, recursor.rules.major_index as u64);
+                }
+                None => out.push(0x00),
+            }
+        }
+    }
+}
+
+fn encode_universe_constraint_specs_to(out: &mut Vec<u8>, constraints: &[UniverseConstraintSpec]) {
+    encode_uvar_to(out, constraints.len() as u64);
+    for constraint in constraints {
+        encode_uvar_to(out, constraint.lhs as u64);
+        out.push(match constraint.relation {
+            npa_kernel::UniverseConstraintRelation::Le => 0x00,
+            npa_kernel::UniverseConstraintRelation::Eq => 0x01,
+        });
+        encode_uvar_to(out, constraint.rhs as u64);
     }
 }
 
@@ -535,6 +631,12 @@ impl<'a> Decoder<'a> {
                 universe_params: self.usize_vec()?,
                 ty: self.usize()?,
             },
+            0x10 => DeclPayload::AxiomConstrained {
+                name: self.usize()?,
+                universe_params: self.usize_vec()?,
+                universe_constraints: self.universe_constraint_specs()?,
+                ty: self.usize()?,
+            },
             0x01 => DeclPayload::Def {
                 name: self.usize()?,
                 universe_params: self.usize_vec()?,
@@ -542,9 +644,25 @@ impl<'a> Decoder<'a> {
                 value: self.usize()?,
                 reducibility: self.reducibility()?,
             },
+            0x11 => DeclPayload::DefConstrained {
+                name: self.usize()?,
+                universe_params: self.usize_vec()?,
+                universe_constraints: self.universe_constraint_specs()?,
+                ty: self.usize()?,
+                value: self.usize()?,
+                reducibility: self.reducibility()?,
+            },
             0x02 => DeclPayload::Theorem {
                 name: self.usize()?,
                 universe_params: self.usize_vec()?,
+                ty: self.usize()?,
+                proof: self.usize()?,
+                opacity: self.opacity()?,
+            },
+            0x12 => DeclPayload::TheoremConstrained {
+                name: self.usize()?,
+                universe_params: self.usize_vec()?,
+                universe_constraints: self.universe_constraint_specs()?,
                 ty: self.usize()?,
                 proof: self.usize()?,
                 opacity: self.opacity()?,
@@ -586,8 +704,66 @@ impl<'a> Decoder<'a> {
                     recursor,
                 }
             }
+            0x13 => {
+                let name = self.usize()?;
+                let universe_params = self.usize_vec()?;
+                let universe_constraints = self.universe_constraint_specs()?;
+                let params = self.binder_types()?;
+                let indices = self.binder_types()?;
+                let sort = self.usize()?;
+                let constructors_len = self.bounded_len()?;
+                let mut constructors = Vec::with_capacity(constructors_len);
+                for _ in 0..constructors_len {
+                    constructors.push(ConstructorSpec {
+                        name: self.usize()?,
+                        ty: self.usize()?,
+                    });
+                }
+                let recursor = match self.byte()? {
+                    0x00 => None,
+                    0x01 => Some(RecursorSpec {
+                        name: self.usize()?,
+                        universe_params: self.usize_vec()?,
+                        ty: self.usize()?,
+                        rules: RecursorRulesSpec {
+                            minor_start: self.usize()?,
+                            major_index: self.usize()?,
+                        },
+                    }),
+                    tag => return Err(CertError::UnsupportedEncoding { tag }),
+                };
+                DeclPayload::InductiveConstrained {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor,
+                }
+            }
             tag => return Err(CertError::UnsupportedEncoding { tag }),
         })
+    }
+
+    fn universe_constraint_specs(&mut self) -> Result<Vec<UniverseConstraintSpec>> {
+        let len = self.bounded_len()?;
+        (0..len)
+            .map(|_| {
+                let lhs = self.usize()?;
+                let relation = match self.byte()? {
+                    0x00 => npa_kernel::UniverseConstraintRelation::Le,
+                    0x01 => npa_kernel::UniverseConstraintRelation::Eq,
+                    tag => return Err(CertError::UnsupportedEncoding { tag }),
+                };
+                Ok(UniverseConstraintSpec {
+                    lhs,
+                    relation,
+                    rhs: self.usize()?,
+                })
+            })
+            .collect()
     }
 
     fn binder_types(&mut self) -> Result<Vec<BinderType>> {

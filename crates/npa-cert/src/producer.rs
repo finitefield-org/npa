@@ -1005,8 +1005,12 @@ fn ensure_no_unresolved_metavariable(decl: &Decl) -> Result<(), CertError> {
 fn decl_contains_unresolved_metavariable(decl: &Decl) -> bool {
     expr_contains_unresolved_metavariable(decl.ty())
         || match decl {
-            Decl::Def { value, .. } => expr_contains_unresolved_metavariable(value),
-            Decl::Theorem { proof, .. } => expr_contains_unresolved_metavariable(proof),
+            Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
+                expr_contains_unresolved_metavariable(value)
+            }
+            Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
+                expr_contains_unresolved_metavariable(proof)
+            }
             Decl::Inductive { data, .. } => {
                 data.params
                     .iter()
@@ -1024,7 +1028,10 @@ fn decl_contains_unresolved_metavariable(decl: &Decl) -> bool {
                         .iter()
                         .any(|recursor| expr_contains_unresolved_metavariable(&recursor.ty))
             }
-            Decl::Axiom { .. } | Decl::Constructor { .. } | Decl::Recursor { .. } => false,
+            Decl::Axiom { .. }
+            | Decl::AxiomConstrained { .. }
+            | Decl::Constructor { .. }
+            | Decl::Recursor { .. } => false,
         }
 }
 
@@ -1062,8 +1069,12 @@ fn level_contains_unresolved_metavariable(level: &Level) -> bool {
 fn collect_const_names_from_decl(names: &mut BTreeSet<ModuleName>, decl: &Decl) {
     collect_const_names_from_expr(names, decl.ty());
     match decl {
-        Decl::Def { value, .. } => collect_const_names_from_expr(names, value),
-        Decl::Theorem { proof, .. } => collect_const_names_from_expr(names, proof),
+        Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
+            collect_const_names_from_expr(names, value)
+        }
+        Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
+            collect_const_names_from_expr(names, proof)
+        }
         Decl::Inductive { data, .. } => {
             for param in &data.params {
                 collect_const_names_from_expr(names, &param.ty);
@@ -1078,7 +1089,10 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<ModuleName>, decl: &Decl) 
                 collect_const_names_from_expr(names, &recursor.ty);
             }
         }
-        Decl::Axiom { .. } | Decl::Constructor { .. } | Decl::Recursor { .. } => {}
+        Decl::Axiom { .. }
+        | Decl::AxiomConstrained { .. }
+        | Decl::Constructor { .. }
+        | Decl::Recursor { .. } => {}
     }
 }
 
@@ -1155,9 +1169,17 @@ fn precheck_decl_with_fuel(
             name,
             universe_params,
             ty,
+        }
+        | Decl::AxiomConstrained {
+            name,
+            universe_params,
+            ty,
+            ..
         } => {
             ensure_fresh(env, name)?;
             let delta = validate_universe_params(universe_params)?;
+            npa_kernel::level::ensure_universe_constraints_wf(&delta, decl.universe_constraints())
+                .map_err(CertError::Kernel)?;
             expect_sort_with_fuel(env, &delta, ty, whnf_fuel, conversion_fuel)
         }
         Decl::Def {
@@ -1166,9 +1188,18 @@ fn precheck_decl_with_fuel(
             ty,
             value,
             ..
+        }
+        | Decl::DefConstrained {
+            name,
+            universe_params,
+            ty,
+            value,
+            ..
         } => {
             ensure_fresh(env, name)?;
             let delta = validate_universe_params(universe_params)?;
+            npa_kernel::level::ensure_universe_constraints_wf(&delta, decl.universe_constraints())
+                .map_err(CertError::Kernel)?;
             expect_sort_with_fuel(env, &delta, ty, whnf_fuel, conversion_fuel)?;
             env.check_with_fuel_metered(
                 &Ctx::new(),
@@ -1185,9 +1216,18 @@ fn precheck_decl_with_fuel(
             universe_params,
             ty,
             proof,
+        }
+        | Decl::TheoremConstrained {
+            name,
+            universe_params,
+            ty,
+            proof,
+            ..
         } => {
             ensure_fresh(env, name)?;
             let delta = validate_universe_params(universe_params)?;
+            npa_kernel::level::ensure_universe_constraints_wf(&delta, decl.universe_constraints())
+                .map_err(CertError::Kernel)?;
             expect_sort_with_fuel(env, &delta, ty, whnf_fuel, conversion_fuel)?;
             env.check_with_fuel_metered(
                 &Ctx::new(),
@@ -1217,15 +1257,7 @@ fn ensure_fresh(env: &Env, name: &str) -> Result<(), CertError> {
 }
 
 fn validate_universe_params(params: &[String]) -> Result<Vec<String>, CertError> {
-    let mut seen = BTreeSet::new();
-    for param in params {
-        if !seen.insert(param.clone()) {
-            return Err(CertError::Kernel(Error::UnknownUniverseParam(
-                param.clone(),
-            )));
-        }
-    }
-    Ok(params.to_vec())
+    npa_kernel::level::validate_universe_params(params).map_err(CertError::Kernel)
 }
 
 fn expect_sort_with_fuel(
@@ -1244,9 +1276,13 @@ fn expect_sort_with_fuel(
 
 fn decl_expr_node_count(decl: &Decl) -> u64 {
     match decl {
-        Decl::Axiom { ty, .. } => expr_node_count(ty),
-        Decl::Def { ty, value, .. } => expr_node_count(ty) + expr_node_count(value),
-        Decl::Theorem { ty, proof, .. } => expr_node_count(ty) + expr_node_count(proof),
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => expr_node_count(ty),
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
+            expr_node_count(ty) + expr_node_count(value)
+        }
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
+            expr_node_count(ty) + expr_node_count(proof)
+        }
         Decl::Inductive { ty, data, .. } => {
             expr_node_count(ty)
                 + data
@@ -1288,10 +1324,21 @@ fn expr_node_count(expr: &Expr) -> u64 {
 }
 
 fn decl_level_node_count(decl: &Decl) -> u64 {
+    let constraint_count: u64 = decl
+        .universe_constraints()
+        .iter()
+        .map(|constraint| level_node_count(&constraint.lhs) + level_node_count(&constraint.rhs))
+        .sum();
     match decl {
-        Decl::Axiom { ty, .. } => expr_level_node_count(ty),
-        Decl::Def { ty, value, .. } => expr_level_node_count(ty) + expr_level_node_count(value),
-        Decl::Theorem { ty, proof, .. } => expr_level_node_count(ty) + expr_level_node_count(proof),
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => {
+            expr_level_node_count(ty) + constraint_count
+        }
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
+            expr_level_node_count(ty) + expr_level_node_count(value) + constraint_count
+        }
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
+            expr_level_node_count(ty) + expr_level_node_count(proof) + constraint_count
+        }
         Decl::Inductive { ty, data, .. } => {
             expr_level_node_count(ty)
                 + level_node_count(&data.sort)
@@ -1315,6 +1362,7 @@ fn decl_level_node_count(decl: &Decl) -> u64 {
                     .iter()
                     .map(|recursor| expr_level_node_count(&recursor.ty))
                     .sum::<u64>()
+                + constraint_count
         }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => expr_level_node_count(ty),
     }
@@ -1351,29 +1399,85 @@ fn decl_max_name_components(decl: &Decl) -> u64 {
             name,
             universe_params,
             ty,
-        } => max_name_components(
-            std::iter::once(name.as_str()).chain(universe_params.iter().map(String::as_str)),
-            std::iter::once(ty),
-        ),
+        }
+        | Decl::AxiomConstrained {
+            name,
+            universe_params,
+            ty,
+            ..
+        } => {
+            let max_constraint_name_components = decl
+                .universe_constraints()
+                .iter()
+                .map(|constraint| {
+                    level_max_name_components(&constraint.lhs)
+                        .max(level_max_name_components(&constraint.rhs))
+                })
+                .max()
+                .unwrap_or(0);
+            max_name_components(
+                std::iter::once(name.as_str()).chain(universe_params.iter().map(String::as_str)),
+                std::iter::once(ty),
+            )
+            .max(max_constraint_name_components)
+        }
         Decl::Def {
             name,
             universe_params,
             ty,
             value,
             ..
-        } => max_name_components(
-            std::iter::once(name.as_str()).chain(universe_params.iter().map(String::as_str)),
-            [ty, value],
-        ),
+        }
+        | Decl::DefConstrained {
+            name,
+            universe_params,
+            ty,
+            value,
+            ..
+        } => {
+            let max_constraint_name_components = decl
+                .universe_constraints()
+                .iter()
+                .map(|constraint| {
+                    level_max_name_components(&constraint.lhs)
+                        .max(level_max_name_components(&constraint.rhs))
+                })
+                .max()
+                .unwrap_or(0);
+            max_name_components(
+                std::iter::once(name.as_str()).chain(universe_params.iter().map(String::as_str)),
+                [ty, value],
+            )
+            .max(max_constraint_name_components)
+        }
         Decl::Theorem {
             name,
             universe_params,
             ty,
             proof,
-        } => max_name_components(
-            std::iter::once(name.as_str()).chain(universe_params.iter().map(String::as_str)),
-            [ty, proof],
-        ),
+        }
+        | Decl::TheoremConstrained {
+            name,
+            universe_params,
+            ty,
+            proof,
+            ..
+        } => {
+            let max_constraint_name_components = decl
+                .universe_constraints()
+                .iter()
+                .map(|constraint| {
+                    level_max_name_components(&constraint.lhs)
+                        .max(level_max_name_components(&constraint.rhs))
+                })
+                .max()
+                .unwrap_or(0);
+            max_name_components(
+                std::iter::once(name.as_str()).chain(universe_params.iter().map(String::as_str)),
+                [ty, proof],
+            )
+            .max(max_constraint_name_components)
+        }
         Decl::Inductive {
             name,
             universe_params,
@@ -1402,7 +1506,18 @@ fn decl_max_name_components(decl: &Decl) -> u64 {
                 .chain(data.indices.iter().map(|binder| &binder.ty))
                 .chain(data.constructors.iter().map(|constructor| &constructor.ty))
                 .chain(data.recursor.iter().map(|recursor| &recursor.ty));
-            max_name_components(names, exprs).max(level_max_name_components(&data.sort))
+            let max_constraint_name_components = data
+                .universe_constraints
+                .iter()
+                .map(|constraint| {
+                    level_max_name_components(&constraint.lhs)
+                        .max(level_max_name_components(&constraint.rhs))
+                })
+                .max()
+                .unwrap_or(0);
+            max_name_components(names, exprs)
+                .max(level_max_name_components(&data.sort))
+                .max(max_constraint_name_components)
         }
         Decl::Constructor {
             name,

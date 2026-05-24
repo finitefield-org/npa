@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::error::{Error, Result};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -7,6 +9,37 @@ pub enum Level {
     Max(Box<Level>, Box<Level>),
     IMax(Box<Level>, Box<Level>),
     Param(String),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UniverseConstraintRelation {
+    Le,
+    Eq,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct UniverseConstraint {
+    pub lhs: Level,
+    pub relation: UniverseConstraintRelation,
+    pub rhs: Level,
+}
+
+impl UniverseConstraint {
+    pub fn le(lhs: Level, rhs: Level) -> Self {
+        Self {
+            lhs,
+            relation: UniverseConstraintRelation::Le,
+            rhs,
+        }
+    }
+
+    pub fn eq(lhs: Level, rhs: Level) -> Self {
+        Self {
+            lhs,
+            relation: UniverseConstraintRelation::Eq,
+            rhs,
+        }
+    }
 }
 
 impl Level {
@@ -31,6 +64,19 @@ impl Level {
     }
 }
 
+pub fn validate_universe_params(params: &[String]) -> Result<Vec<String>> {
+    let mut seen = BTreeSet::new();
+    for param in params {
+        if !seen.insert(param.clone()) {
+            return Err(Error::DuplicateUniverseParam(param.clone()));
+        }
+    }
+    if !params.windows(2).all(|pair| pair[0] < pair[1]) {
+        return Err(Error::NonCanonicalUniverseParams(params.to_vec()));
+    }
+    Ok(params.to_vec())
+}
+
 pub fn ensure_level_wf(delta: &[String], level: &Level) -> Result<()> {
     match level {
         Level::Zero => Ok(()),
@@ -47,6 +93,25 @@ pub fn ensure_level_wf(delta: &[String], level: &Level) -> Result<()> {
             }
         }
     }
+}
+
+pub fn ensure_universe_constraints_wf(
+    delta: &[String],
+    constraints: &[UniverseConstraint],
+) -> Result<()> {
+    let mut canonical = constraints.to_vec();
+    canonical.sort();
+    for constraint in &canonical {
+        ensure_canonical_level(delta, &constraint.lhs)?;
+        ensure_canonical_level(delta, &constraint.rhs)?;
+    }
+    if constraints != canonical.as_slice() {
+        return Err(Error::NonCanonicalUniverseConstraints);
+    }
+    if canonical.windows(2).any(|pair| pair[0] == pair[1]) {
+        return Err(Error::DuplicateUniverseConstraint);
+    }
+    Ok(())
 }
 
 pub fn normalize_level(level: Level) -> Level {
@@ -85,6 +150,18 @@ pub fn normalize_level(level: Level) -> Level {
     }
 }
 
+fn ensure_canonical_level(delta: &[String], level: &Level) -> Result<()> {
+    ensure_level_wf(delta, level)?;
+    let normalized = normalize_level(level.clone());
+    if normalized == *level {
+        Ok(())
+    } else {
+        Err(Error::NonCanonicalUniverseLevel {
+            level: level.clone(),
+        })
+    }
+}
+
 pub fn level_eq(lhs: &Level, rhs: &Level) -> bool {
     normalize_level(lhs.clone()) == normalize_level(rhs.clone())
 }
@@ -116,5 +193,54 @@ mod tests {
         assert!(level_eq(&Level::max(Level::zero(), u.clone()), &u));
         assert!(level_eq(&Level::max(u.clone(), Level::zero()), &u));
         assert!(level_eq(&Level::imax(Level::zero(), u.clone()), &u));
+    }
+
+    #[test]
+    fn universe_constraints_accept_empty_and_max_le() {
+        let delta =
+            validate_universe_params(&["u".to_owned(), "v".to_owned(), "w".to_owned()]).unwrap();
+        let constraint = UniverseConstraint::le(
+            Level::max(Level::param("u"), Level::param("v")),
+            Level::param("w"),
+        );
+
+        ensure_universe_constraints_wf(&delta, &[]).unwrap();
+        ensure_universe_constraints_wf(&delta, &[constraint]).unwrap();
+    }
+
+    #[test]
+    fn universe_params_reject_duplicate_and_noncanonical_order() {
+        assert_eq!(
+            validate_universe_params(&["u".to_owned(), "u".to_owned()]),
+            Err(Error::DuplicateUniverseParam("u".to_owned()))
+        );
+        assert_eq!(
+            validate_universe_params(&["v".to_owned(), "u".to_owned()]),
+            Err(Error::NonCanonicalUniverseParams(vec![
+                "v".to_owned(),
+                "u".to_owned()
+            ]))
+        );
+    }
+
+    #[test]
+    fn universe_constraints_reject_unknown_and_noncanonical_levels() {
+        let delta = validate_universe_params(&["u".to_owned(), "v".to_owned()]).unwrap();
+        let unknown = UniverseConstraint::le(Level::param("u"), Level::param("w"));
+        assert_eq!(
+            ensure_universe_constraints_wf(&delta, &[unknown]),
+            Err(Error::UnknownUniverseParam("w".to_owned()))
+        );
+
+        let noncanonical = UniverseConstraint::le(
+            Level::Max(Box::new(Level::param("v")), Box::new(Level::param("u"))),
+            Level::param("v"),
+        );
+        assert_eq!(
+            ensure_universe_constraints_wf(&delta, std::slice::from_ref(&noncanonical)),
+            Err(Error::NonCanonicalUniverseLevel {
+                level: noncanonical.lhs,
+            })
+        );
     }
 }

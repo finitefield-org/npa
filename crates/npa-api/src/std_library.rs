@@ -4785,9 +4785,13 @@ fn decl_name(
 ) -> Result<Name, MachineStdTheoremIndexError> {
     let name_id = match &decl.decl {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     module
         .verified_module
@@ -10165,9 +10169,13 @@ fn std_library_global_ref_for_const(
 fn std_library_decl_name(module: &MachineStdLoadedModule, decl: &DeclCert) -> Option<Name> {
     let name_id = match &decl.decl {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     module.verified_module.name_table().get(name_id).cloned()
 }

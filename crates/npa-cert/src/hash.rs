@@ -20,6 +20,41 @@ pub(crate) fn core_expr_hash_impl(expr: &Expr) -> Hash {
     hash_with_domain(b"NPA-CORE-EXPR-0.1", &core_expr_canonical_bytes_impl(expr))
 }
 
+pub(crate) fn universe_constraints_canonical_bytes_impl(
+    universe_params: &[String],
+    constraints: &[npa_kernel::UniverseConstraint],
+) -> Result<Vec<u8>> {
+    let delta =
+        npa_kernel::level::validate_universe_params(universe_params).map_err(CertError::Kernel)?;
+    npa_kernel::level::ensure_universe_constraints_wf(&delta, constraints)
+        .map_err(CertError::Kernel)?;
+    let mut out = Vec::new();
+    encode_uvar_to(&mut out, universe_params.len() as u64);
+    for param in universe_params {
+        encode_name_to(&mut out, &Name::from_dotted(param));
+    }
+    encode_uvar_to(&mut out, constraints.len() as u64);
+    for constraint in constraints {
+        encode_core_level_to(&mut out, &constraint.lhs);
+        out.push(match constraint.relation {
+            npa_kernel::UniverseConstraintRelation::Le => 0x00,
+            npa_kernel::UniverseConstraintRelation::Eq => 0x01,
+        });
+        encode_core_level_to(&mut out, &constraint.rhs);
+    }
+    Ok(out)
+}
+
+pub(crate) fn universe_constraints_hash_impl(
+    universe_params: &[String],
+    constraints: &[npa_kernel::UniverseConstraint],
+) -> Result<Hash> {
+    Ok(hash_with_domain(
+        b"NPA-UNIVERSE-CONSTRAINTS-0.1",
+        &universe_constraints_canonical_bytes_impl(universe_params, constraints)?,
+    ))
+}
+
 fn encode_core_expr_to(out: &mut Vec<u8>, expr: &Expr) {
     match expr {
         Expr::Sort(level) => {
@@ -99,6 +134,12 @@ pub(crate) fn build_export_block(
                 name,
                 universe_params,
                 ty,
+            }
+            | DeclPayload::AxiomConstrained {
+                name,
+                universe_params,
+                ty,
+                ..
             } => entries.push(ExportEntry {
                 name: *name,
                 kind: ExportKind::Axiom,
@@ -118,6 +159,14 @@ pub(crate) fn build_export_block(
                 ty,
                 value,
                 reducibility,
+            }
+            | DeclPayload::DefConstrained {
+                name,
+                universe_params,
+                ty,
+                value,
+                reducibility,
+                ..
             } => entries.push(ExportEntry {
                 name: *name,
                 kind: ExportKind::Def,
@@ -137,6 +186,12 @@ pub(crate) fn build_export_block(
                 universe_params,
                 ty,
                 ..
+            }
+            | DeclPayload::TheoremConstrained {
+                name,
+                universe_params,
+                ty,
+                ..
             } => entries.push(ExportEntry {
                 name: *name,
                 kind: ExportKind::Theorem,
@@ -151,6 +206,16 @@ pub(crate) fn build_export_block(
                 axiom_dependencies: decl.axiom_dependencies.clone(),
             }),
             DeclPayload::Inductive {
+                name,
+                universe_params,
+                params,
+                indices,
+                sort,
+                constructors,
+                recursor,
+                ..
+            }
+            | DeclPayload::InductiveConstrained {
                 name,
                 universe_params,
                 params,
@@ -287,6 +352,19 @@ fn decl_interface_payload(
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
             encode_dependency_entries_to(&mut out, interface_dependencies);
         }
+        DeclPayload::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => {
+            out.push(0x10);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes)?;
+            out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+        }
         DeclPayload::Def {
             name,
             universe_params,
@@ -305,6 +383,26 @@ fn decl_interface_payload(
                 out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
             }
         }
+        DeclPayload::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => {
+            out.push(0x11);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes)?;
+            out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            encode_reducibility_to(&mut out, *reducibility);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+            if *reducibility == CertReducibility::Reducible {
+                out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
+            }
+        }
         DeclPayload::Theorem {
             name,
             universe_params,
@@ -315,6 +413,23 @@ fn decl_interface_payload(
             out.push(0x02);
             encode_name_id_to(&mut out, names, *name)?;
             encode_name_ids_to(&mut out, names, universe_params)?;
+            out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
+            encode_opacity_to(&mut out, *opacity);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            opacity,
+            ..
+        } => {
+            out.push(0x12);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes)?;
             out.extend(term_hashes.get(*ty).ok_or(CertError::DecodeError)?);
             encode_opacity_to(&mut out, *opacity);
             encode_dependency_entries_to(&mut out, interface_dependencies);
@@ -351,8 +466,66 @@ fn decl_interface_payload(
             encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
+        DeclPayload::InductiveConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+        } => {
+            out.push(0x13);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes)?;
+            encode_uvar_to(&mut out, params.len() as u64);
+            for param in params {
+                out.extend(term_hashes.get(param.ty).ok_or(CertError::DecodeError)?);
+            }
+            encode_uvar_to(&mut out, indices.len() as u64);
+            for index in indices {
+                out.extend(term_hashes.get(index.ty).ok_or(CertError::DecodeError)?);
+            }
+            out.extend(level_hashes.get(*sort).ok_or(CertError::DecodeError)?);
+            encode_constructor_specs_to(&mut out, constructors, term_hashes, names)?;
+            out.extend(generated_recursor_signature_hash(
+                recursor.as_ref(),
+                term_hashes,
+                names,
+            )?);
+            out.extend(generated_computation_rule_hash(recursor.as_ref()));
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
     }
     Ok(out)
+}
+
+fn encode_universe_constraint_specs_to(
+    out: &mut Vec<u8>,
+    constraints: &[UniverseConstraintSpec],
+    level_hashes: &[Hash],
+) -> Result<()> {
+    encode_uvar_to(out, constraints.len() as u64);
+    for constraint in constraints {
+        out.extend(
+            level_hashes
+                .get(constraint.lhs)
+                .ok_or(CertError::DecodeError)?,
+        );
+        out.push(match constraint.relation {
+            npa_kernel::UniverseConstraintRelation::Le => 0x00,
+            npa_kernel::UniverseConstraintRelation::Eq => 0x01,
+        });
+        out.extend(
+            level_hashes
+                .get(constraint.rhs)
+                .ok_or(CertError::DecodeError)?,
+        );
+    }
+    Ok(())
 }
 
 fn encode_constructor_specs_to(
@@ -444,8 +617,14 @@ fn interface_dependencies_for_decl(
 
 fn interface_term_ids(decl: &DeclPayload) -> Vec<TermId> {
     match decl {
-        DeclPayload::Axiom { ty, .. } => vec![*ty],
+        DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => vec![*ty],
         DeclPayload::Def {
+            ty,
+            value,
+            reducibility,
+            ..
+        }
+        | DeclPayload::DefConstrained {
             ty,
             value,
             reducibility,
@@ -457,8 +636,15 @@ fn interface_term_ids(decl: &DeclPayload) -> Vec<TermId> {
             }
             terms
         }
-        DeclPayload::Theorem { ty, .. } => vec![*ty],
+        DeclPayload::Theorem { ty, .. } | DeclPayload::TheoremConstrained { ty, .. } => vec![*ty],
         DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
             params,
             indices,
             constructors,
@@ -511,17 +697,19 @@ fn decl_certificate_payload(
     let mut out = Vec::new();
     out.extend(interface_hash);
     match decl {
-        DeclPayload::Axiom { .. } => encode_axiom_refs_to(&mut out, axiom_dependencies),
-        DeclPayload::Def { value, .. } => {
+        DeclPayload::Axiom { .. } | DeclPayload::AxiomConstrained { .. } => {
+            encode_axiom_refs_to(&mut out, axiom_dependencies)
+        }
+        DeclPayload::Def { value, .. } | DeclPayload::DefConstrained { value, .. } => {
             out.extend(term_hashes.get(*value).ok_or(CertError::DecodeError)?);
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
-        DeclPayload::Inductive { .. } => {
+        DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
-        DeclPayload::Theorem { proof, .. } => {
+        DeclPayload::Theorem { proof, .. } | DeclPayload::TheoremConstrained { proof, .. } => {
             out.extend(term_hashes.get(*proof).ok_or(CertError::DecodeError)?);
             encode_dependency_entries_to(&mut out, dependencies);
         }

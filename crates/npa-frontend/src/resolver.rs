@@ -121,9 +121,13 @@ pub(crate) fn find_unique_verified_import_by_module<'a>(
 fn decl_payload_name(decl: &npa_cert::DeclPayload) -> npa_cert::NameId {
     match decl {
         npa_cert::DeclPayload::Axiom { name, .. }
+        | npa_cert::DeclPayload::AxiomConstrained { name, .. }
         | npa_cert::DeclPayload::Def { name, .. }
+        | npa_cert::DeclPayload::DefConstrained { name, .. }
         | npa_cert::DeclPayload::Theorem { name, .. }
-        | npa_cert::DeclPayload::Inductive { name, .. } => *name,
+        | npa_cert::DeclPayload::TheoremConstrained { name, .. }
+        | npa_cert::DeclPayload::Inductive { name, .. }
+        | npa_cert::DeclPayload::InductiveConstrained { name, .. } => *name,
     }
 }
 
@@ -772,9 +776,13 @@ fn decl_name(module: &npa_cert::VerifiedModule, decl_index: usize) -> String {
     let decl = &module.declarations()[decl_index];
     let name = match &decl.decl {
         npa_cert::DeclPayload::Axiom { name, .. }
+        | npa_cert::DeclPayload::AxiomConstrained { name, .. }
         | npa_cert::DeclPayload::Def { name, .. }
+        | npa_cert::DeclPayload::DefConstrained { name, .. }
         | npa_cert::DeclPayload::Theorem { name, .. }
-        | npa_cert::DeclPayload::Inductive { name, .. } => *name,
+        | npa_cert::DeclPayload::TheoremConstrained { name, .. }
+        | npa_cert::DeclPayload::Inductive { name, .. }
+        | npa_cert::DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     module.name_table()[name].as_dotted()
 }
@@ -865,12 +873,16 @@ fn verified_dependency_from_entry(
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<String>, decl: &npa_kernel::Decl) {
     match decl {
-        npa_kernel::Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
-        npa_kernel::Decl::Def { ty, value, .. } => {
+        npa_kernel::Decl::Axiom { ty, .. } | npa_kernel::Decl::AxiomConstrained { ty, .. } => {
+            collect_const_names_from_expr(names, ty)
+        }
+        npa_kernel::Decl::Def { ty, value, .. }
+        | npa_kernel::Decl::DefConstrained { ty, value, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, value);
         }
-        npa_kernel::Decl::Theorem { ty, proof, .. } => {
+        npa_kernel::Decl::Theorem { ty, proof, .. }
+        | npa_kernel::Decl::TheoremConstrained { ty, proof, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, proof);
         }

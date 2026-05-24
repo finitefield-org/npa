@@ -2471,12 +2471,14 @@ fn local_public_names(module: &npa_cert::CoreModule) -> Vec<npa_cert::Name> {
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<npa_cert::Name>, decl: &Decl) {
     match decl {
-        Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
-        Decl::Def { ty, value, .. } => {
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => {
+            collect_const_names_from_expr(names, ty)
+        }
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, value);
         }
-        Decl::Theorem { ty, proof, .. } => {
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, proof);
         }
@@ -3962,6 +3964,14 @@ fn add_kernel_decl_to_env(env: &mut Env, decl: Decl) -> npa_kernel::Result<()> {
             universe_params,
             ty,
         } => env.add_axiom(name, universe_params, ty),
+        Decl::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => {
+            env.add_axiom_with_universe_constraints(name, universe_params, universe_constraints, ty)
+        }
         Decl::Def {
             name,
             universe_params,
@@ -3969,12 +3979,40 @@ fn add_kernel_decl_to_env(env: &mut Env, decl: Decl) -> npa_kernel::Result<()> {
             value,
             reducibility,
         } => env.add_def(name, universe_params, ty, value, reducibility),
+        Decl::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => env.add_def_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        ),
         Decl::Theorem {
             name,
             universe_params,
             ty,
             proof,
         } => env.add_theorem(name, universe_params, ty, proof),
+        Decl::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        } => env.add_theorem_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        ),
         Decl::Inductive { data, .. } => env.add_inductive(*data),
         Decl::Constructor { .. } | Decl::Recursor { .. } => {
             Err(npa_kernel::Error::InvalidInductive(

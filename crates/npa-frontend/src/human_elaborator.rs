@@ -854,6 +854,21 @@ fn prefix_current_decl_identity(module_name: &npa_cert::ModuleName, decl: Decl) 
             value,
             reducibility,
         },
+        Decl::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => Decl::DefConstrained {
+            name: prefixed_current_name_string(module_name, name),
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        },
         Decl::Theorem {
             name,
             universe_params,
@@ -865,6 +880,19 @@ fn prefix_current_decl_identity(module_name: &npa_cert::ModuleName, decl: Decl) 
             ty,
             proof,
         },
+        Decl::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        } => Decl::TheoremConstrained {
+            name: prefixed_current_name_string(module_name, name),
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        },
         Decl::Axiom {
             name,
             universe_params,
@@ -872,6 +900,17 @@ fn prefix_current_decl_identity(module_name: &npa_cert::ModuleName, decl: Decl) 
         } => Decl::Axiom {
             name: prefixed_current_name_string(module_name, name),
             universe_params,
+            ty,
+        },
+        Decl::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => Decl::AxiomConstrained {
+            name: prefixed_current_name_string(module_name, name),
+            universe_params,
+            universe_constraints,
             ty,
         },
         Decl::Inductive {
@@ -1092,6 +1131,14 @@ fn add_human_kernel_decl_to_env(
             universe_params,
             ty,
         } => env.add_axiom(name, universe_params, ty),
+        Decl::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => {
+            env.add_axiom_with_universe_constraints(name, universe_params, universe_constraints, ty)
+        }
         Decl::Def {
             name,
             universe_params,
@@ -1099,12 +1146,40 @@ fn add_human_kernel_decl_to_env(
             value,
             reducibility,
         } => env.add_def(name, universe_params, ty, value, reducibility),
+        Decl::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => env.add_def_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        ),
         Decl::Theorem {
             name,
             universe_params,
             ty,
             proof,
         } => env.add_theorem(name, universe_params, ty, proof),
+        Decl::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        } => env.add_theorem_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        ),
         Decl::Inductive { data, .. } => env.add_inductive(*data),
         Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
     }
@@ -3705,6 +3780,17 @@ impl HumanBidirectionalElaborator {
                 universe_params,
                 ty,
             } => self.env.add_axiom(name, universe_params, ty),
+            Decl::AxiomConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+            } => self.env.add_axiom_with_universe_constraints(
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+            ),
             Decl::Def {
                 name,
                 universe_params,
@@ -3714,12 +3800,40 @@ impl HumanBidirectionalElaborator {
             } => self
                 .env
                 .add_def(name, universe_params, ty, value, reducibility),
+            Decl::DefConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                value,
+                reducibility,
+            } => self.env.add_def_with_universe_constraints(
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                value,
+                reducibility,
+            ),
             Decl::Theorem {
                 name,
                 universe_params,
                 ty,
                 proof,
             } => self.env.add_theorem(name, universe_params, ty, proof),
+            Decl::TheoremConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                proof,
+            } => self.env.add_theorem_with_universe_constraints(
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                proof,
+            ),
             Decl::Inductive { data, .. } => self.env.add_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
@@ -4698,6 +4812,17 @@ impl HumanImplicitInserter {
                 universe_params,
                 ty,
             } => self.env.add_axiom(name, universe_params, ty),
+            Decl::AxiomConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+            } => self.env.add_axiom_with_universe_constraints(
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+            ),
             Decl::Def {
                 name,
                 universe_params,
@@ -4707,12 +4832,40 @@ impl HumanImplicitInserter {
             } => self
                 .env
                 .add_def(name, universe_params, ty, value, reducibility),
+            Decl::DefConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                value,
+                reducibility,
+            } => self.env.add_def_with_universe_constraints(
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                value,
+                reducibility,
+            ),
             Decl::Theorem {
                 name,
                 universe_params,
                 ty,
                 proof,
             } => self.env.add_theorem(name, universe_params, ty, proof),
+            Decl::TheoremConstrained {
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                proof,
+            } => self.env.add_theorem_with_universe_constraints(
+                name,
+                universe_params,
+                universe_constraints,
+                ty,
+                proof,
+            ),
             Decl::Inductive { data, .. } => self.env.add_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
@@ -4778,12 +4931,14 @@ fn human_referenced_builtin_names(module: &ResolvedHumanModule) -> BTreeSet<npa_
 
 fn collect_const_names_from_human_decl(names: &mut BTreeSet<npa_cert::Name>, decl: &Decl) {
     match decl {
-        Decl::Axiom { ty, .. } => collect_const_names_from_human_expr(names, ty),
-        Decl::Def { ty, value, .. } => {
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => {
+            collect_const_names_from_human_expr(names, ty)
+        }
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
             collect_const_names_from_human_expr(names, ty);
             collect_const_names_from_human_expr(names, value);
         }
-        Decl::Theorem { ty, proof, .. } => {
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
             collect_const_names_from_human_expr(names, ty);
             collect_const_names_from_human_expr(names, proof);
         }

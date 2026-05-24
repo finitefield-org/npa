@@ -108,6 +108,7 @@ impl DecodedModuleCertificate {
         self.collect_axiom_report_roots(&mut used)?;
         self.collect_reachable_terms(&mut used)?;
         self.collect_reachable_levels(&mut used)?;
+        self.validate_decl_universe_contexts()?;
         self.validate_declaration_order()?;
         self.validate_vector_orders()?;
         self.validate_used_names(&used.names)?;
@@ -283,9 +284,15 @@ impl DecodedModuleCertificate {
         })?;
         let name = match &declaration.value.decl {
             DeclPayload::Axiom { name, .. }
+            | DeclPayload::AxiomConstrained { name, .. }
             | DeclPayload::Def { name, .. }
+            | DeclPayload::DefConstrained { name, .. }
             | DeclPayload::Theorem { name, .. }
-            | DeclPayload::Inductive { name, .. } => self.name_table[*name].value.clone(),
+            | DeclPayload::TheoremConstrained { name, .. }
+            | DeclPayload::Inductive { name, .. }
+            | DeclPayload::InductiveConstrained { name, .. } => {
+                self.name_table[*name].value.clone()
+            }
         };
         Ok((name, declaration.value.hashes.decl_interface_hash))
     }
@@ -502,7 +509,10 @@ impl DecodedModuleCertificate {
             collect_global_refs_from_term(&self.term_table, term, &mut refs)?;
         }
 
-        let allow_self_reference = matches!(decl, DeclPayload::Inductive { .. });
+        let allow_self_reference = matches!(
+            decl,
+            DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. }
+        );
         refs.into_iter()
             .filter(|global_ref| {
                 !matches!(
@@ -606,7 +616,7 @@ impl DecodedModuleCertificate {
             }
         }
 
-        if let DeclPayload::Axiom { name, .. } = decl {
+        if let DeclPayload::Axiom { name, .. } | DeclPayload::AxiomConstrained { name, .. } = decl {
             let self_ref = AxiomRef {
                 global_ref: GlobalRef::Local { decl_index },
                 name: *name,
@@ -779,6 +789,11 @@ impl DecodedModuleCertificate {
         })?;
         Ok(match &declaration.value.decl {
             DeclPayload::Inductive {
+                constructors,
+                recursor,
+                ..
+            }
+            | DeclPayload::InductiveConstrained {
                 constructors,
                 recursor,
                 ..
@@ -1007,6 +1022,12 @@ impl DecodedModuleCertificate {
                     name,
                     universe_params,
                     ty,
+                }
+                | DeclPayload::AxiomConstrained {
+                    name,
+                    universe_params,
+                    ty,
+                    ..
                 } => entries.push(ExportEntry {
                     name: *name,
                     kind: ExportKind::Axiom,
@@ -1026,6 +1047,14 @@ impl DecodedModuleCertificate {
                     ty,
                     value,
                     reducibility,
+                }
+                | DeclPayload::DefConstrained {
+                    name,
+                    universe_params,
+                    ty,
+                    value,
+                    reducibility,
+                    ..
                 } => entries.push(ExportEntry {
                     name: *name,
                     kind: ExportKind::Def,
@@ -1041,6 +1070,12 @@ impl DecodedModuleCertificate {
                     axiom_dependencies: decl.axiom_dependencies.clone(),
                 }),
                 DeclPayload::Theorem {
+                    name,
+                    universe_params,
+                    ty,
+                    ..
+                }
+                | DeclPayload::TheoremConstrained {
                     name,
                     universe_params,
                     ty,
@@ -1066,6 +1101,16 @@ impl DecodedModuleCertificate {
                     sort,
                     constructors,
                     recursor,
+                }
+                | DeclPayload::InductiveConstrained {
+                    name,
+                    universe_params,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor,
+                    ..
                 } => {
                     let ty =
                         inductive_export_type_term_id(&self.term_table, params, indices, *sort)?;
@@ -1139,6 +1184,54 @@ impl DecodedModuleCertificate {
                     pair[1].offset,
                     ReferenceCheckReason::NonCanonicalOrder,
                 ));
+            }
+        }
+        Ok(())
+    }
+
+    fn validate_decl_universe_contexts(&self) -> DecodeResult<()> {
+        let levels = self.core_levels()?;
+        for located in &self.declarations {
+            let params = self.name_ids_to_names(decl_universe_params(&located.value.decl));
+            if !params.windows(2).all(|pair| pair[0] < pair[1]) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    located.offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+            ensure_unique_names(&params, located.offset)?;
+            let constraints = decl_universe_constraints(&located.value.decl);
+            if decl_has_empty_constrained_universe_payload(&located.value.decl) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    located.offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+            let semantic_constraints = constraints
+                .iter()
+                .map(|constraint| {
+                    (
+                        levels[constraint.lhs].clone(),
+                        constraint.relation,
+                        levels[constraint.rhs].clone(),
+                    )
+                })
+                .collect::<Vec<_>>();
+            if !semantic_constraints
+                .windows(2)
+                .all(|pair| pair[0] < pair[1])
+            {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    located.offset,
+                    ReferenceCheckReason::NonCanonicalOrder,
+                ));
+            }
+            for (lhs, _, rhs) in &semantic_constraints {
+                ensure_level_wf(lhs, &params, located.offset)?;
+                ensure_level_wf(rhs, &params, located.offset)?;
             }
         }
         Ok(())
@@ -1377,6 +1470,12 @@ impl DecodedModuleCertificate {
                 name,
                 universe_params,
                 ty,
+            }
+            | DeclPayload::AxiomConstrained {
+                name,
+                universe_params,
+                ty,
+                ..
             } => {
                 self.collect_name_id(
                     *name,
@@ -1390,6 +1489,7 @@ impl DecodedModuleCertificate {
                     ReferenceCertificateSection::Declarations,
                     offset,
                 )?;
+                self.collect_universe_constraints(decl_universe_constraints(decl), used, offset)?;
                 self.collect_term_root(*ty, ReferenceCertificateSection::Declarations, offset)?;
                 used.terms.insert(*ty);
             }
@@ -1399,6 +1499,13 @@ impl DecodedModuleCertificate {
                 ty,
                 value,
                 reducibility: _,
+            }
+            | DeclPayload::DefConstrained {
+                name,
+                universe_params,
+                ty,
+                value,
+                ..
             } => {
                 self.collect_name_id(
                     *name,
@@ -1412,6 +1519,7 @@ impl DecodedModuleCertificate {
                     ReferenceCertificateSection::Declarations,
                     offset,
                 )?;
+                self.collect_universe_constraints(decl_universe_constraints(decl), used, offset)?;
                 self.collect_term_root(*ty, ReferenceCertificateSection::Declarations, offset)?;
                 self.collect_term_root(*value, ReferenceCertificateSection::Declarations, offset)?;
                 used.terms.insert(*ty);
@@ -1423,6 +1531,13 @@ impl DecodedModuleCertificate {
                 ty,
                 proof,
                 opacity: _,
+            }
+            | DeclPayload::TheoremConstrained {
+                name,
+                universe_params,
+                ty,
+                proof,
+                ..
             } => {
                 self.collect_name_id(
                     *name,
@@ -1436,6 +1551,7 @@ impl DecodedModuleCertificate {
                     ReferenceCertificateSection::Declarations,
                     offset,
                 )?;
+                self.collect_universe_constraints(decl_universe_constraints(decl), used, offset)?;
                 self.collect_term_root(*ty, ReferenceCertificateSection::Declarations, offset)?;
                 self.collect_term_root(*proof, ReferenceCertificateSection::Declarations, offset)?;
                 used.terms.insert(*ty);
@@ -1449,6 +1565,16 @@ impl DecodedModuleCertificate {
                 sort,
                 constructors,
                 recursor,
+            }
+            | DeclPayload::InductiveConstrained {
+                name,
+                universe_params,
+                params,
+                indices,
+                sort,
+                constructors,
+                recursor,
+                ..
             } => {
                 self.collect_name_id(
                     *name,
@@ -1462,6 +1588,7 @@ impl DecodedModuleCertificate {
                     ReferenceCertificateSection::Declarations,
                     offset,
                 )?;
+                self.collect_universe_constraints(decl_universe_constraints(decl), used, offset)?;
                 self.require_level(*sort, ReferenceCertificateSection::Declarations, offset)?;
                 used.levels.insert(*sort);
                 for binder in params.iter().chain(indices) {
@@ -1508,6 +1635,29 @@ impl DecodedModuleCertificate {
                     let _ = recursor.rules;
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn collect_universe_constraints(
+        &self,
+        constraints: &[UniverseConstraintSpec],
+        used: &mut UsedTables,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        for constraint in constraints {
+            self.require_level(
+                constraint.lhs,
+                ReferenceCertificateSection::Declarations,
+                offset,
+            )?;
+            self.require_level(
+                constraint.rhs,
+                ReferenceCertificateSection::Declarations,
+                offset,
+            )?;
+            used.levels.insert(constraint.lhs);
+            used.levels.insert(constraint.rhs);
         }
         Ok(())
     }
@@ -2096,11 +2246,12 @@ impl<'a> TypeChecker<'a> {
             let delta = self.declaration_universe_params(&located.value.decl);
             let ctx = TypeContext::default();
             match &located.value.decl {
-                DeclPayload::Axiom { ty, .. } => {
+                DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => {
                     self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
                     self.locals.push(self.signature_for_decl(&located.value)?);
                 }
-                DeclPayload::Def { ty, value, .. } => {
+                DeclPayload::Def { ty, value, .. }
+                | DeclPayload::DefConstrained { ty, value, .. } => {
                     self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
                     self.check(
                         &ctx,
@@ -2111,7 +2262,8 @@ impl<'a> TypeChecker<'a> {
                     )?;
                     self.locals.push(self.signature_for_decl(&located.value)?);
                 }
-                DeclPayload::Theorem { ty, proof, .. } => {
+                DeclPayload::Theorem { ty, proof, .. }
+                | DeclPayload::TheoremConstrained { ty, proof, .. } => {
                     self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
                     self.check(
                         &ctx,
@@ -2122,7 +2274,7 @@ impl<'a> TypeChecker<'a> {
                     )?;
                     self.locals.push(self.signature_for_decl(&located.value)?);
                 }
-                DeclPayload::Inductive { .. } => {
+                DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
                     self.check_inductive_decl(&located.value, located.offset)?;
                 }
             }
@@ -2135,13 +2287,25 @@ impl<'a> TypeChecker<'a> {
             DeclPayload::Axiom {
                 universe_params, ..
             }
+            | DeclPayload::AxiomConstrained {
+                universe_params, ..
+            }
             | DeclPayload::Def {
+                universe_params, ..
+            }
+            | DeclPayload::DefConstrained {
                 universe_params, ..
             }
             | DeclPayload::Theorem {
                 universe_params, ..
             }
+            | DeclPayload::TheoremConstrained {
+                universe_params, ..
+            }
             | DeclPayload::Inductive {
+                universe_params, ..
+            }
+            | DeclPayload::InductiveConstrained {
                 universe_params, ..
             } => universe_params,
         };
@@ -2154,12 +2318,24 @@ impl<'a> TypeChecker<'a> {
                 name: _,
                 universe_params,
                 ty,
+            }
+            | DeclPayload::AxiomConstrained {
+                universe_params,
+                ty,
+                ..
             } => TypeSignature {
                 universe_params: self.cert.name_ids_to_names(universe_params),
                 ty: self.terms[*ty].clone(),
                 value: None,
             },
             DeclPayload::Def {
+                universe_params,
+                ty,
+                value,
+                reducibility,
+                ..
+            }
+            | DeclPayload::DefConstrained {
                 universe_params,
                 ty,
                 value,
@@ -2175,12 +2351,24 @@ impl<'a> TypeChecker<'a> {
                 universe_params,
                 ty,
                 ..
+            }
+            | DeclPayload::TheoremConstrained {
+                universe_params,
+                ty,
+                ..
             } => TypeSignature {
                 universe_params: self.cert.name_ids_to_names(universe_params),
                 ty: self.terms[*ty].clone(),
                 value: None,
             },
             DeclPayload::Inductive {
+                universe_params,
+                params,
+                indices,
+                sort,
+                ..
+            }
+            | DeclPayload::InductiveConstrained {
                 universe_params,
                 params,
                 indices,
@@ -2195,25 +2383,32 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn check_inductive_decl(&mut self, decl: &DeclCert, offset: usize) -> DecodeResult<()> {
-        let DeclPayload::Inductive {
-            name: _,
-            universe_params,
-            params,
-            indices,
-            sort,
-            constructors,
-            recursor: _,
-        } = &decl.decl
-        else {
-            return Err(ReferenceCheckError::unsupported(offset));
+        let (universe_params, params, indices, sort, constructors) = match &decl.decl {
+            DeclPayload::Inductive {
+                universe_params,
+                params,
+                indices,
+                sort,
+                constructors,
+                ..
+            }
+            | DeclPayload::InductiveConstrained {
+                universe_params,
+                params,
+                indices,
+                sort,
+                constructors,
+                ..
+            } => (universe_params, params, indices, *sort, constructors),
+            _ => return Err(ReferenceCheckError::unsupported(offset)),
         };
 
         let decl_index = self.locals.len();
         let universe_params = self.cert.name_ids_to_names(universe_params);
         ensure_unique_names(&universe_params, offset)?;
-        ensure_level_wf(&self.levels[*sort], &universe_params, offset)?;
+        ensure_level_wf(&self.levels[sort], &universe_params, offset)?;
 
-        let family_ty = self.inductive_type(params, indices, *sort);
+        let family_ty = self.inductive_type(params, indices, sort);
         self.expect_sort(
             &TypeContext::default(),
             &universe_params,
@@ -2281,16 +2476,24 @@ impl<'a> TypeChecker<'a> {
         universe_params: Vec<ReferenceModuleName>,
         decl: &DeclPayload,
     ) -> ReferenceInductiveSignature {
-        let DeclPayload::Inductive {
-            params,
-            indices,
-            sort,
-            constructors,
-            recursor,
-            ..
-        } = decl
-        else {
-            unreachable!("inductive_signature is only called for inductive declarations");
+        let (params, indices, sort, constructors, recursor) = match decl {
+            DeclPayload::Inductive {
+                params,
+                indices,
+                sort,
+                constructors,
+                recursor,
+                ..
+            }
+            | DeclPayload::InductiveConstrained {
+                params,
+                indices,
+                sort,
+                constructors,
+                recursor,
+                ..
+            } => (params, indices, *sort, constructors, recursor),
+            _ => unreachable!("inductive_signature is only called for inductive declarations"),
         };
         ReferenceInductiveSignature {
             decl_index,
@@ -2303,7 +2506,7 @@ impl<'a> TypeChecker<'a> {
                 .iter()
                 .map(|binder| self.terms[binder.ty].clone())
                 .collect(),
-            sort: self.levels[*sort].clone(),
+            sort: self.levels[sort].clone(),
             constructors: constructors
                 .iter()
                 .map(|constructor| ReferenceConstructorSignature {
@@ -4183,6 +4386,12 @@ enum DeclPayload {
         universe_params: Vec<usize>,
         ty: usize,
     },
+    AxiomConstrained {
+        name: usize,
+        universe_params: Vec<usize>,
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        ty: usize,
+    },
     Def {
         name: usize,
         universe_params: Vec<usize>,
@@ -4190,9 +4399,25 @@ enum DeclPayload {
         value: usize,
         reducibility: CertReducibility,
     },
+    DefConstrained {
+        name: usize,
+        universe_params: Vec<usize>,
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        ty: usize,
+        value: usize,
+        reducibility: CertReducibility,
+    },
     Theorem {
         name: usize,
         universe_params: Vec<usize>,
+        ty: usize,
+        proof: usize,
+        opacity: Opacity,
+    },
+    TheoremConstrained {
+        name: usize,
+        universe_params: Vec<usize>,
+        universe_constraints: Vec<UniverseConstraintSpec>,
         ty: usize,
         proof: usize,
         opacity: Opacity,
@@ -4206,15 +4431,42 @@ enum DeclPayload {
         constructors: Vec<ConstructorSpec>,
         recursor: Option<RecursorSpec>,
     },
+    InductiveConstrained {
+        name: usize,
+        universe_params: Vec<usize>,
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        params: Vec<BinderType>,
+        indices: Vec<BinderType>,
+        sort: usize,
+        constructors: Vec<ConstructorSpec>,
+        recursor: Option<RecursorSpec>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum UniverseConstraintRelation {
+    Le,
+    Eq,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct UniverseConstraintSpec {
+    lhs: usize,
+    relation: UniverseConstraintRelation,
+    rhs: usize,
 }
 
 impl DeclPayload {
     fn name_id(&self) -> usize {
         match self {
             Self::Axiom { name, .. }
+            | Self::AxiomConstrained { name, .. }
             | Self::Def { name, .. }
+            | Self::DefConstrained { name, .. }
             | Self::Theorem { name, .. }
-            | Self::Inductive { name, .. } => *name,
+            | Self::TheoremConstrained { name, .. }
+            | Self::Inductive { name, .. }
+            | Self::InductiveConstrained { name, .. } => *name,
         }
     }
 }
@@ -4639,6 +4891,12 @@ impl<'a> Decoder<'a> {
                 universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
                 ty: self.usize(ReferenceCertificateSection::Declarations)?,
             },
+            0x10 => DeclPayload::AxiomConstrained {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                universe_constraints: self.universe_constraint_specs()?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+            },
             0x01 => DeclPayload::Def {
                 name: self.usize(ReferenceCertificateSection::Declarations)?,
                 universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
@@ -4646,9 +4904,25 @@ impl<'a> Decoder<'a> {
                 value: self.usize(ReferenceCertificateSection::Declarations)?,
                 reducibility: self.reducibility(ReferenceCertificateSection::Declarations)?,
             },
+            0x11 => DeclPayload::DefConstrained {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                universe_constraints: self.universe_constraint_specs()?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                value: self.usize(ReferenceCertificateSection::Declarations)?,
+                reducibility: self.reducibility(ReferenceCertificateSection::Declarations)?,
+            },
             0x02 => DeclPayload::Theorem {
                 name: self.usize(ReferenceCertificateSection::Declarations)?,
                 universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                proof: self.usize(ReferenceCertificateSection::Declarations)?,
+                opacity: self.opacity(ReferenceCertificateSection::Declarations)?,
+            },
+            0x12 => DeclPayload::TheoremConstrained {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                universe_constraints: self.universe_constraint_specs()?,
                 ty: self.usize(ReferenceCertificateSection::Declarations)?,
                 proof: self.usize(ReferenceCertificateSection::Declarations)?,
                 opacity: self.opacity(ReferenceCertificateSection::Declarations)?,
@@ -4699,6 +4973,54 @@ impl<'a> Decoder<'a> {
                     recursor,
                 }
             }
+            0x13 => {
+                let name = self.usize(ReferenceCertificateSection::Declarations)?;
+                let universe_params = self.usize_vec(ReferenceCertificateSection::Declarations)?;
+                let universe_constraints = self.universe_constraint_specs()?;
+                let params = self.binder_types()?;
+                let indices = self.binder_types()?;
+                let sort = self.usize(ReferenceCertificateSection::Declarations)?;
+                let constructors_len =
+                    self.bounded_len(ReferenceCertificateSection::Declarations)?;
+                let mut constructors = Vec::with_capacity(constructors_len);
+                for _ in 0..constructors_len {
+                    constructors.push(ConstructorSpec {
+                        name: self.usize(ReferenceCertificateSection::Declarations)?,
+                        ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                    });
+                }
+                let recursor_offset = self.offset;
+                let recursor = match self.byte(ReferenceCertificateSection::Declarations)? {
+                    0x00 => None,
+                    0x01 => Some(RecursorSpec {
+                        name: self.usize(ReferenceCertificateSection::Declarations)?,
+                        universe_params: self
+                            .usize_vec(ReferenceCertificateSection::Declarations)?,
+                        ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                        rules: RecursorRulesSpec {
+                            minor_start: self.usize(ReferenceCertificateSection::Declarations)?,
+                            major_index: self.usize(ReferenceCertificateSection::Declarations)?,
+                        },
+                    }),
+                    tag => {
+                        return Err(ReferenceCheckError::malformed(
+                            ReferenceCertificateSection::Declarations,
+                            recursor_offset,
+                            ReferenceCheckReason::UnknownTag { tag },
+                        ));
+                    }
+                };
+                DeclPayload::InductiveConstrained {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor,
+                }
+            }
             tag => {
                 return Err(ReferenceCheckError::malformed(
                     ReferenceCertificateSection::Declarations,
@@ -4707,6 +5029,32 @@ impl<'a> Decoder<'a> {
                 ));
             }
         })
+    }
+
+    fn universe_constraint_specs(&mut self) -> DecodeResult<Vec<UniverseConstraintSpec>> {
+        let len = self.bounded_len(ReferenceCertificateSection::Declarations)?;
+        (0..len)
+            .map(|_| {
+                let lhs = self.usize(ReferenceCertificateSection::Declarations)?;
+                let offset = self.offset;
+                let relation = match self.byte(ReferenceCertificateSection::Declarations)? {
+                    0x00 => UniverseConstraintRelation::Le,
+                    0x01 => UniverseConstraintRelation::Eq,
+                    tag => {
+                        return Err(ReferenceCheckError::malformed(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                            ReferenceCheckReason::UnknownTag { tag },
+                        ));
+                    }
+                };
+                Ok(UniverseConstraintSpec {
+                    lhs,
+                    relation,
+                    rhs: self.usize(ReferenceCertificateSection::Declarations)?,
+                })
+            })
+            .collect()
     }
 
     fn binder_types(&mut self) -> DecodeResult<Vec<BinderType>> {
@@ -5292,6 +5640,19 @@ fn decl_interface_payload(
             out.extend(term_hashes[*ty]);
             encode_dependency_entries_to(&mut out, interface_dependencies);
         }
+        DeclPayload::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => {
+            out.push(0x10);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes);
+            out.extend(term_hashes[*ty]);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+        }
         DeclPayload::Def {
             name,
             universe_params,
@@ -5310,6 +5671,26 @@ fn decl_interface_payload(
                 out.extend(term_hashes[*value]);
             }
         }
+        DeclPayload::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => {
+            out.push(0x11);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes);
+            out.extend(term_hashes[*ty]);
+            encode_reducibility_to(&mut out, *reducibility);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+            if *reducibility == CertReducibility::Reducible {
+                out.extend(term_hashes[*value]);
+            }
+        }
         DeclPayload::Theorem {
             name,
             universe_params,
@@ -5320,6 +5701,23 @@ fn decl_interface_payload(
             out.push(0x02);
             encode_name_id_to(&mut out, names, *name);
             encode_name_ids_to(&mut out, names, universe_params);
+            out.extend(term_hashes[*ty]);
+            encode_opacity_to(&mut out, *opacity);
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            opacity,
+            ..
+        } => {
+            out.push(0x12);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes);
             out.extend(term_hashes[*ty]);
             encode_opacity_to(&mut out, *opacity);
             encode_dependency_entries_to(&mut out, interface_dependencies);
@@ -5356,8 +5754,57 @@ fn decl_interface_payload(
             encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
+        DeclPayload::InductiveConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+        } => {
+            out.push(0x13);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes);
+            encode_uvar_to(&mut out, params.len() as u64);
+            for param in params {
+                out.extend(term_hashes[param.ty]);
+            }
+            encode_uvar_to(&mut out, indices.len() as u64);
+            for index in indices {
+                out.extend(term_hashes[index.ty]);
+            }
+            out.extend(level_hashes[*sort]);
+            encode_constructor_specs_to(&mut out, constructors, term_hashes, names);
+            out.extend(generated_recursor_signature_hash(
+                recursor.as_ref(),
+                term_hashes,
+                names,
+            ));
+            out.extend(generated_computation_rule_hash(recursor.as_ref()));
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
     }
     Ok(out)
+}
+
+fn encode_universe_constraint_specs_to(
+    out: &mut Vec<u8>,
+    constraints: &[UniverseConstraintSpec],
+    level_hashes: &[ReferenceHash],
+) {
+    encode_uvar_to(out, constraints.len() as u64);
+    for constraint in constraints {
+        out.extend(level_hashes[constraint.lhs]);
+        out.push(match constraint.relation {
+            UniverseConstraintRelation::Le => 0x00,
+            UniverseConstraintRelation::Eq => 0x01,
+        });
+        out.extend(level_hashes[constraint.rhs]);
+    }
 }
 
 fn decl_certificate_payload(
@@ -5370,17 +5817,19 @@ fn decl_certificate_payload(
     let mut out = Vec::new();
     out.extend(interface_hash);
     match decl {
-        DeclPayload::Axiom { .. } => encode_axiom_refs_to(&mut out, axiom_dependencies),
-        DeclPayload::Def { value, .. } => {
+        DeclPayload::Axiom { .. } | DeclPayload::AxiomConstrained { .. } => {
+            encode_axiom_refs_to(&mut out, axiom_dependencies)
+        }
+        DeclPayload::Def { value, .. } | DeclPayload::DefConstrained { value, .. } => {
             out.extend(term_hashes[*value]);
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
-        DeclPayload::Inductive { .. } => {
+        DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
-        DeclPayload::Theorem { proof, .. } => {
+        DeclPayload::Theorem { proof, .. } | DeclPayload::TheoremConstrained { proof, .. } => {
             out.extend(term_hashes[*proof]);
             encode_dependency_entries_to(&mut out, dependencies);
         }
@@ -5406,8 +5855,14 @@ fn interface_dependencies_for_decl(
 
 fn interface_term_ids(decl: &DeclPayload) -> Vec<usize> {
     match decl {
-        DeclPayload::Axiom { ty, .. } => vec![*ty],
+        DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => vec![*ty],
         DeclPayload::Def {
+            ty,
+            value,
+            reducibility,
+            ..
+        }
+        | DeclPayload::DefConstrained {
             ty,
             value,
             reducibility,
@@ -5419,8 +5874,15 @@ fn interface_term_ids(decl: &DeclPayload) -> Vec<usize> {
             }
             terms
         }
-        DeclPayload::Theorem { ty, .. } => vec![*ty],
+        DeclPayload::Theorem { ty, .. } | DeclPayload::TheoremConstrained { ty, .. } => vec![*ty],
         DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
             params,
             indices,
             constructors,
@@ -5438,10 +5900,20 @@ fn interface_term_ids(decl: &DeclPayload) -> Vec<usize> {
 
 fn decl_term_ids(decl: &DeclPayload) -> Vec<usize> {
     match decl {
-        DeclPayload::Axiom { ty, .. } => vec![*ty],
-        DeclPayload::Def { ty, value, .. } => vec![*ty, *value],
-        DeclPayload::Theorem { ty, proof, .. } => vec![*ty, *proof],
+        DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => vec![*ty],
+        DeclPayload::Def { ty, value, .. } | DeclPayload::DefConstrained { ty, value, .. } => {
+            vec![*ty, *value]
+        }
+        DeclPayload::Theorem { ty, proof, .. }
+        | DeclPayload::TheoremConstrained { ty, proof, .. } => vec![*ty, *proof],
         DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
             params,
             indices,
             constructors,
@@ -5454,6 +5926,85 @@ fn decl_term_ids(decl: &DeclPayload) -> Vec<usize> {
             .chain(constructors.iter().map(|constructor| constructor.ty))
             .chain(recursor.iter().map(|recursor| recursor.ty))
             .collect(),
+    }
+}
+
+fn decl_universe_params(decl: &DeclPayload) -> &[usize] {
+    match decl {
+        DeclPayload::Axiom {
+            universe_params, ..
+        }
+        | DeclPayload::AxiomConstrained {
+            universe_params, ..
+        }
+        | DeclPayload::Def {
+            universe_params, ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_params, ..
+        }
+        | DeclPayload::Theorem {
+            universe_params, ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_params, ..
+        }
+        | DeclPayload::Inductive {
+            universe_params, ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_params, ..
+        } => universe_params,
+    }
+}
+
+fn decl_universe_constraints(decl: &DeclPayload) -> &[UniverseConstraintSpec] {
+    match decl {
+        DeclPayload::AxiomConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        } => universe_constraints,
+        DeclPayload::Axiom { .. }
+        | DeclPayload::Def { .. }
+        | DeclPayload::Theorem { .. }
+        | DeclPayload::Inductive { .. } => &[],
+    }
+}
+
+fn decl_has_empty_constrained_universe_payload(decl: &DeclPayload) -> bool {
+    match decl {
+        DeclPayload::AxiomConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        } => universe_constraints.is_empty(),
+        DeclPayload::Axiom { .. }
+        | DeclPayload::Def { .. }
+        | DeclPayload::Theorem { .. }
+        | DeclPayload::Inductive { .. } => false,
     }
 }
 

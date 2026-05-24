@@ -12,6 +12,13 @@ pub enum ResourceLimitKind {
 pub enum Error {
     UnknownConstant(String),
     UnknownUniverseParam(String),
+    DuplicateUniverseParam(String),
+    NonCanonicalUniverseParams(Vec<String>),
+    NonCanonicalUniverseLevel {
+        level: crate::level::Level,
+    },
+    NonCanonicalUniverseConstraints,
+    DuplicateUniverseConstraint,
     BadUniverseArity {
         name: String,
         expected: usize,

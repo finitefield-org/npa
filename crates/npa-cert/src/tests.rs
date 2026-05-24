@@ -2,6 +2,7 @@ use super::*;
 use npa_kernel::{
     eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, nat, nat_inductive, nat_succ, nat_zero,
     type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
+    UniverseConstraint,
 };
 
 fn id_type(a: &str, x: &str) -> Expr {
@@ -103,6 +104,157 @@ fn const_module() -> CoreModule {
             reducibility: Reducibility::Reducible,
         }],
     }
+}
+
+fn constrained_axiom_module(constraints: Vec<UniverseConstraint>) -> CoreModule {
+    CoreModule {
+        name: Name::from_dotted("Test.UniverseConstraints"),
+        declarations: vec![if constraints.is_empty() {
+            Decl::Axiom {
+                name: "List.map".to_owned(),
+                universe_params: vec!["u".to_owned(), "v".to_owned(), "w".to_owned()],
+                ty: Expr::sort(Level::param("w")),
+            }
+        } else {
+            Decl::AxiomConstrained {
+                name: "List.map".to_owned(),
+                universe_params: vec!["u".to_owned(), "v".to_owned(), "w".to_owned()],
+                universe_constraints: constraints,
+                ty: Expr::sort(Level::param("w")),
+            }
+        }],
+    }
+}
+
+fn max_u_v_le_w() -> UniverseConstraint {
+    UniverseConstraint::le(
+        Level::max(Level::param("u"), Level::param("v")),
+        Level::param("w"),
+    )
+}
+
+fn height_order_regression_constraints() -> Vec<UniverseConstraint> {
+    vec![
+        UniverseConstraint::le(Level::succ(Level::succ(Level::zero())), Level::param("u")),
+        max_u_v_le_w(),
+    ]
+}
+
+#[test]
+fn universe_constraints_canonical_hash_accepts_empty_and_non_empty_sets() {
+    let params = vec!["u".to_owned(), "v".to_owned(), "w".to_owned()];
+    let empty = universe_constraints_hash(&params, &[]).unwrap();
+    let also_empty = universe_constraints_hash(&params, &[]).unwrap();
+    let constrained = universe_constraints_hash(&params, &[max_u_v_le_w()]).unwrap();
+
+    assert_eq!(empty, also_empty);
+    assert_ne!(empty, constrained);
+    assert_ne!(
+        universe_constraints_canonical_bytes(&params, &[]).unwrap(),
+        universe_constraints_canonical_bytes(&params, &[max_u_v_le_w()]).unwrap()
+    );
+}
+
+#[test]
+fn universe_constraints_reject_bad_params_and_noncanonical_levels() {
+    let duplicate = universe_constraints_hash(&["u".to_owned(), "u".to_owned()], &[]);
+    assert!(matches!(
+        duplicate,
+        Err(CertError::Kernel(npa_kernel::Error::DuplicateUniverseParam(param)))
+            if param == "u"
+    ));
+
+    let noncanonical_params = universe_constraints_hash(&["v".to_owned(), "u".to_owned()], &[]);
+    assert!(matches!(
+        noncanonical_params,
+        Err(CertError::Kernel(
+            npa_kernel::Error::NonCanonicalUniverseParams(_)
+        ))
+    ));
+
+    let unknown_param = universe_constraints_hash(
+        &["u".to_owned()],
+        &[UniverseConstraint::le(Level::param("u"), Level::param("v"))],
+    );
+    assert!(matches!(
+        unknown_param,
+        Err(CertError::Kernel(npa_kernel::Error::UnknownUniverseParam(param)))
+            if param == "v"
+    ));
+
+    let noncanonical_level = UniverseConstraint::le(
+        Level::Max(Box::new(Level::param("v")), Box::new(Level::param("u"))),
+        Level::param("v"),
+    );
+    let noncanonical_level_err =
+        universe_constraints_hash(&["u".to_owned(), "v".to_owned()], &[noncanonical_level]);
+    assert!(matches!(
+        noncanonical_level_err,
+        Err(CertError::Kernel(
+            npa_kernel::Error::NonCanonicalUniverseLevel { .. }
+        ))
+    ));
+}
+
+#[test]
+fn universe_constraints_change_certificate_hash_and_import_hash() {
+    let empty = build_module_cert(constrained_axiom_module(vec![]), &[]).unwrap();
+    let constrained =
+        build_module_cert(constrained_axiom_module(vec![max_u_v_le_w()]), &[]).unwrap();
+
+    assert_ne!(
+        empty.declarations[0].hashes.decl_interface_hash,
+        constrained.declarations[0].hashes.decl_interface_hash
+    );
+    assert_ne!(empty.hashes.export_hash, constrained.hashes.export_hash);
+    assert_ne!(
+        empty.hashes.certificate_hash,
+        constrained.hashes.certificate_hash
+    );
+}
+
+#[test]
+fn universe_constraints_fast_verifier_accepts_canonical_constraint_bytes() {
+    let cert = build_module_cert(
+        constrained_axiom_module(height_order_regression_constraints()),
+        &[],
+    )
+    .unwrap();
+    assert!(matches!(
+        cert.declarations[0].decl,
+        DeclPayload::AxiomConstrained { .. }
+    ));
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+}
+
+#[test]
+fn universe_constraints_fast_verifier_rejects_empty_constrained_payload() {
+    let mut cert = build_module_cert(constrained_axiom_module(vec![]), &[]).unwrap();
+    let DeclPayload::Axiom {
+        name,
+        universe_params,
+        ty,
+    } = cert.declarations[0].decl.clone()
+    else {
+        panic!("expected unconstrained axiom payload");
+    };
+    cert.declarations[0].decl = DeclPayload::AxiomConstrained {
+        name,
+        universe_params,
+        universe_constraints: Vec::new(),
+        ty,
+    };
+    let bytes = encode_module_cert(&cert).unwrap();
+    let err = verify_module_cert(&bytes, &mut VerifierSession::new(), &AxiomPolicy::normal())
+        .unwrap_err();
+    assert!(matches!(
+        err,
+        CertError::NonCanonicalEncoding {
+            object: "UniverseConstraints"
+        }
+    ));
 }
 
 fn nat_module() -> CoreModule {
@@ -957,16 +1109,26 @@ fn remap_swapped_term_ids_in_term(term: &mut TermNode, lhs: TermId, rhs: TermId)
 
 fn remap_swapped_term_ids_in_decl(decl: &mut DeclPayload, lhs: TermId, rhs: TermId) {
     match decl {
-        DeclPayload::Axiom { ty, .. } => remap_swapped_term_id(ty, lhs, rhs),
-        DeclPayload::Def { ty, value, .. } => {
+        DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => {
+            remap_swapped_term_id(ty, lhs, rhs)
+        }
+        DeclPayload::Def { ty, value, .. } | DeclPayload::DefConstrained { ty, value, .. } => {
             remap_swapped_term_id(ty, lhs, rhs);
             remap_swapped_term_id(value, lhs, rhs);
         }
-        DeclPayload::Theorem { ty, proof, .. } => {
+        DeclPayload::Theorem { ty, proof, .. }
+        | DeclPayload::TheoremConstrained { ty, proof, .. } => {
             remap_swapped_term_id(ty, lhs, rhs);
             remap_swapped_term_id(proof, lhs, rhs);
         }
         DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
             params,
             indices,
             constructors,

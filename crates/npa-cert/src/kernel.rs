@@ -2,13 +2,13 @@ use std::collections::BTreeSet;
 
 use npa_kernel::{
     eq_inductive, eq_rec_type, nat_inductive, Binder, ConstructorDecl, Decl, Env, Error, Expr,
-    InductiveDecl, Level, RecursorDecl, RecursorRules, Reducibility,
+    InductiveDecl, Level, RecursorDecl, RecursorRules, Reducibility, UniverseConstraint,
 };
 
 use crate::types::{
     CertError, CertHeader, CertReducibility, DeclPayload, ExportEntry, ExportKind, GlobalRef, Hash,
     LevelId, LevelNode, ModuleCert, ModuleHashes, Name, NameId, Result, TermId, TermNode,
-    VerifiedModule,
+    UniverseConstraintSpec, VerifiedModule,
 };
 use crate::{hash_with_domain, CORE_SPEC, FORMAT};
 
@@ -37,41 +37,81 @@ pub fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result<Vec<De
     let mut decls = Vec::new();
     for decl in &cert.declarations {
         decls.push(match &decl.decl {
-            DeclPayload::Axiom { name, .. } => {
+            DeclPayload::Axiom { name, .. } | DeclPayload::AxiomConstrained { name, .. } => {
                 let entry = export_entry_for_decl(&cert, *name, ExportKind::Axiom)?;
-                Decl::Axiom {
-                    name: name_to_string(&cert, entry.name)?,
-                    universe_params: universe_names(&cert, &entry.universe_params)?,
-                    ty: expr_from_term(&cert, entry.ty)?,
+                let universe_constraints =
+                    universe_constraints_from_decl_payload(&cert, &decl.decl)?;
+                if universe_constraints.is_empty() {
+                    Decl::Axiom {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        ty: expr_from_term(&cert, entry.ty)?,
+                    }
+                } else {
+                    Decl::AxiomConstrained {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        universe_constraints,
+                        ty: expr_from_term(&cert, entry.ty)?,
+                    }
                 }
             }
-            DeclPayload::Def { name, .. } => {
+            DeclPayload::Def { name, .. } | DeclPayload::DefConstrained { name, .. } => {
                 let entry = export_entry_for_decl(&cert, *name, ExportKind::Def)?;
                 let ty = expr_from_term(&cert, entry.ty)?;
+                let universe_constraints =
+                    universe_constraints_from_decl_payload(&cert, &decl.decl)?;
                 match entry.reducibility.ok_or(CertError::DecodeError)? {
-                    CertReducibility::Reducible => Decl::Def {
+                    CertReducibility::Reducible if universe_constraints.is_empty() => Decl::Def {
                         name: name_to_string(&cert, entry.name)?,
                         universe_params: universe_names(&cert, &entry.universe_params)?,
                         ty,
                         value: expr_from_term(&cert, entry.body.ok_or(CertError::DecodeError)?)?,
                         reducibility: Reducibility::Reducible,
                     },
-                    CertReducibility::Opaque => Decl::Axiom {
+                    CertReducibility::Reducible => Decl::DefConstrained {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        universe_constraints,
+                        ty,
+                        value: expr_from_term(&cert, entry.body.ok_or(CertError::DecodeError)?)?,
+                        reducibility: Reducibility::Reducible,
+                    },
+                    CertReducibility::Opaque if universe_constraints.is_empty() => Decl::Axiom {
                         name: name_to_string(&cert, entry.name)?,
                         universe_params: universe_names(&cert, &entry.universe_params)?,
                         ty,
                     },
+                    CertReducibility::Opaque => Decl::AxiomConstrained {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        universe_constraints,
+                        ty,
+                    },
                 }
             }
-            DeclPayload::Theorem { name, .. } => {
+            DeclPayload::Theorem { name, .. } | DeclPayload::TheoremConstrained { name, .. } => {
                 let entry = export_entry_for_decl(&cert, *name, ExportKind::Theorem)?;
-                Decl::Axiom {
-                    name: name_to_string(&cert, entry.name)?,
-                    universe_params: universe_names(&cert, &entry.universe_params)?,
-                    ty: expr_from_term(&cert, entry.ty)?,
+                let universe_constraints =
+                    universe_constraints_from_decl_payload(&cert, &decl.decl)?;
+                if universe_constraints.is_empty() {
+                    Decl::Axiom {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        ty: expr_from_term(&cert, entry.ty)?,
+                    }
+                } else {
+                    Decl::AxiomConstrained {
+                        name: name_to_string(&cert, entry.name)?,
+                        universe_params: universe_names(&cert, &entry.universe_params)?,
+                        universe_constraints,
+                        ty: expr_from_term(&cert, entry.ty)?,
+                    }
                 }
             }
-            DeclPayload::Inductive { .. } => decl_payload_to_kernel_decl(&cert, &decl.decl)?,
+            DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
+                decl_payload_to_kernel_decl(&cert, &decl.decl)?
+            }
         });
     }
     Ok(decls)
@@ -121,6 +161,17 @@ fn decl_payload_to_kernel_decl(cert: &ModuleCert, decl: &DeclPayload) -> Result<
             universe_params: universe_names(cert, universe_params)?,
             ty: expr_from_term(cert, *ty)?,
         },
+        DeclPayload::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => Decl::AxiomConstrained {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            universe_constraints: universe_constraints_from_specs(cert, universe_constraints)?,
+            ty: expr_from_term(cert, *ty)?,
+        },
         DeclPayload::Def {
             name,
             universe_params,
@@ -130,6 +181,21 @@ fn decl_payload_to_kernel_decl(cert: &ModuleCert, decl: &DeclPayload) -> Result<
         } => Decl::Def {
             name: name_to_string(cert, *name)?,
             universe_params: universe_names(cert, universe_params)?,
+            ty: expr_from_term(cert, *ty)?,
+            value: expr_from_term(cert, *value)?,
+            reducibility: (*reducibility).into(),
+        },
+        DeclPayload::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => Decl::DefConstrained {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            universe_constraints: universe_constraints_from_specs(cert, universe_constraints)?,
             ty: expr_from_term(cert, *ty)?,
             value: expr_from_term(cert, *value)?,
             reducibility: (*reducibility).into(),
@@ -146,6 +212,20 @@ fn decl_payload_to_kernel_decl(cert: &ModuleCert, decl: &DeclPayload) -> Result<
             ty: expr_from_term(cert, *ty)?,
             proof: expr_from_term(cert, *proof)?,
         },
+        DeclPayload::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+            ..
+        } => Decl::TheoremConstrained {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            universe_constraints: universe_constraints_from_specs(cert, universe_constraints)?,
+            ty: expr_from_term(cert, *ty)?,
+            proof: expr_from_term(cert, *proof)?,
+        },
         DeclPayload::Inductive {
             name,
             universe_params,
@@ -154,60 +234,117 @@ fn decl_payload_to_kernel_decl(cert: &ModuleCert, decl: &DeclPayload) -> Result<
             sort,
             constructors,
             recursor,
+        }
+        | DeclPayload::InductiveConstrained {
+            name,
+            universe_params,
+            params,
+            indices,
+            sort,
+            constructors,
+            recursor,
+            ..
         } => Decl::Inductive {
             name: name_to_string(cert, *name)?,
             universe_params: universe_names(cert, universe_params)?,
             ty: Expr::sort(level_from_node(cert, *sort)?),
-            data: Box::new(InductiveDecl::new(
-                name_to_string(cert, *name)?,
-                universe_names(cert, universe_params)?,
-                params
-                    .iter()
-                    .enumerate()
-                    .map(|(index, binder)| {
-                        Ok(Binder::new(
-                            format!("p{index}"),
-                            expr_from_term(cert, binder.ty)?,
-                        ))
-                    })
-                    .collect::<Result<Vec<_>>>()?,
-                indices
-                    .iter()
-                    .enumerate()
-                    .map(|(index, binder)| {
-                        Ok(Binder::new(
-                            format!("i{index}"),
-                            expr_from_term(cert, binder.ty)?,
-                        ))
-                    })
-                    .collect::<Result<Vec<_>>>()?,
-                level_from_node(cert, *sort)?,
-                constructors
-                    .iter()
-                    .map(|constructor| {
-                        Ok(ConstructorDecl::new(
-                            name_to_string(cert, constructor.name)?,
-                            expr_from_term(cert, constructor.ty)?,
-                        ))
-                    })
-                    .collect::<Result<Vec<_>>>()?,
-                recursor
-                    .as_ref()
-                    .map(|recursor| {
-                        Ok::<_, CertError>(RecursorDecl::with_rules(
-                            name_to_string(cert, recursor.name)?,
-                            universe_names(cert, &recursor.universe_params)?,
-                            expr_from_term(cert, recursor.ty)?,
-                            RecursorRules::new(
-                                recursor.rules.minor_start,
-                                recursor.rules.major_index,
-                            ),
-                        ))
-                    })
-                    .transpose()?,
-            )),
+            data: Box::new(
+                InductiveDecl::new(
+                    name_to_string(cert, *name)?,
+                    universe_names(cert, universe_params)?,
+                    params
+                        .iter()
+                        .enumerate()
+                        .map(|(index, binder)| {
+                            Ok(Binder::new(
+                                format!("p{index}"),
+                                expr_from_term(cert, binder.ty)?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                    indices
+                        .iter()
+                        .enumerate()
+                        .map(|(index, binder)| {
+                            Ok(Binder::new(
+                                format!("i{index}"),
+                                expr_from_term(cert, binder.ty)?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                    level_from_node(cert, *sort)?,
+                    constructors
+                        .iter()
+                        .map(|constructor| {
+                            Ok(ConstructorDecl::new(
+                                name_to_string(cert, constructor.name)?,
+                                expr_from_term(cert, constructor.ty)?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                    recursor
+                        .as_ref()
+                        .map(|recursor| {
+                            Ok::<_, CertError>(RecursorDecl::with_rules(
+                                name_to_string(cert, recursor.name)?,
+                                universe_names(cert, &recursor.universe_params)?,
+                                expr_from_term(cert, recursor.ty)?,
+                                RecursorRules::new(
+                                    recursor.rules.minor_start,
+                                    recursor.rules.major_index,
+                                ),
+                            ))
+                        })
+                        .transpose()?,
+                )
+                .with_universe_constraints(universe_constraints_from_decl_payload(cert, decl)?),
+            ),
         },
     })
+}
+
+fn universe_constraints_from_decl_payload(
+    cert: &ModuleCert,
+    decl: &DeclPayload,
+) -> Result<Vec<UniverseConstraint>> {
+    match decl {
+        DeclPayload::AxiomConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        } => universe_constraints_from_specs(cert, universe_constraints),
+        DeclPayload::Axiom { .. }
+        | DeclPayload::Def { .. }
+        | DeclPayload::Theorem { .. }
+        | DeclPayload::Inductive { .. } => Ok(Vec::new()),
+    }
+}
+
+fn universe_constraints_from_specs(
+    cert: &ModuleCert,
+    constraints: &[UniverseConstraintSpec],
+) -> Result<Vec<UniverseConstraint>> {
+    constraints
+        .iter()
+        .map(|constraint| {
+            Ok(UniverseConstraint {
+                lhs: level_from_node(cert, constraint.lhs)?,
+                relation: constraint.relation,
+                rhs: level_from_node(cert, constraint.rhs)?,
+            })
+        })
+        .collect()
 }
 
 pub(crate) fn expr_from_term(cert: &ModuleCert, term: TermId) -> Result<Expr> {
@@ -277,9 +414,13 @@ fn decl_name(cert: &ModuleCert, decl_index: usize) -> Result<String> {
         .ok_or(CertError::DecodeError)?;
     let name = match &decl.decl {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     name_to_string(cert, name)
 }
@@ -306,6 +447,17 @@ pub(crate) fn add_decl_to_env(env: &mut Env, decl: Decl) -> Result<()> {
             universe_params,
             ty,
         } => env.add_axiom(name, universe_params, ty)?,
+        Decl::AxiomConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        } => env.add_axiom_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+        )?,
         Decl::Def {
             name,
             universe_params,
@@ -313,12 +465,40 @@ pub(crate) fn add_decl_to_env(env: &mut Env, decl: Decl) -> Result<()> {
             value,
             reducibility,
         } => env.add_def(name, universe_params, ty, value, reducibility)?,
+        Decl::DefConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        } => env.add_def_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            value,
+            reducibility,
+        )?,
         Decl::Theorem {
             name,
             universe_params,
             ty,
             proof,
         } => env.add_theorem(name, universe_params, ty, proof)?,
+        Decl::TheoremConstrained {
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        } => env.add_theorem_with_universe_constraints(
+            name,
+            universe_params,
+            universe_constraints,
+            ty,
+            proof,
+        )?,
         Decl::Inductive { data, .. } => {
             let name = Name::from_dotted(&data.name);
             match env.add_inductive(*data) {

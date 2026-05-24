@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use npa_kernel::{Decl, Env, Expr, Level};
+use npa_kernel::{Decl, Env, Expr, Level, UniverseConstraint, UniverseConstraintRelation};
 
 use crate::*;
 
@@ -11,6 +11,13 @@ pub(crate) enum CanonLevel {
     Max(Box<CanonLevel>, Box<CanonLevel>),
     IMax(Box<CanonLevel>, Box<CanonLevel>),
     Param(NameId),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct CanonUniverseConstraint {
+    lhs: CanonLevel,
+    relation: UniverseConstraintRelation,
+    rhs: CanonLevel,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -48,11 +55,13 @@ pub(crate) enum CanonDeclPayload {
     Axiom {
         name: NameId,
         universe_params: Vec<NameId>,
+        universe_constraints: Vec<CanonUniverseConstraint>,
         ty: CanonTerm,
     },
     Def {
         name: NameId,
         universe_params: Vec<NameId>,
+        universe_constraints: Vec<CanonUniverseConstraint>,
         ty: CanonTerm,
         value: CanonTerm,
         reducibility: CertReducibility,
@@ -60,12 +69,14 @@ pub(crate) enum CanonDeclPayload {
     Theorem {
         name: NameId,
         universe_params: Vec<NameId>,
+        universe_constraints: Vec<CanonUniverseConstraint>,
         ty: CanonTerm,
         proof: CanonTerm,
     },
     Inductive {
         name: NameId,
         universe_params: Vec<NameId>,
+        universe_constraints: Vec<CanonUniverseConstraint>,
         params: Vec<CanonTerm>,
         indices: Vec<CanonTerm>,
         sort: CanonLevel,
@@ -167,7 +178,10 @@ pub(crate) fn build_module_cert_impl(
     let mut canon_decls = Vec::new();
     for (decl_index, decl) in module.declarations.iter().cloned().enumerate() {
         add_decl_to_env(&mut env, decl.clone())?;
-        let allow_self = matches!(decl, Decl::Inductive { .. } | Decl::Axiom { .. });
+        let allow_self = matches!(
+            decl,
+            Decl::Inductive { .. } | Decl::Axiom { .. } | Decl::AxiomConstrained { .. }
+        );
         let resolver = Resolver {
             current_decl_index: decl_index,
             allow_self,
@@ -272,19 +286,32 @@ pub(crate) fn build_module_cert_impl(
 }
 
 fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> Result<CanonDecl> {
+    let input_universe_constraints = decl.universe_constraints().to_vec();
     match decl {
         Decl::Axiom {
             name,
             universe_params,
             ty,
+        }
+        | Decl::AxiomConstrained {
+            name,
+            universe_params,
+            ty,
+            ..
         } => {
             let name_id = resolver.name_id(&Name::from_dotted(&name))?;
             let ty = canonicalize_expr(&ty, resolver)?;
             let deps = dependencies_from_terms([&ty]);
+            let universe_constraints = canonicalize_universe_constraints(
+                &universe_params,
+                &input_universe_constraints,
+                resolver,
+            )?;
             Ok(CanonDecl {
                 decl: CanonDeclPayload::Axiom {
                     name: name_id,
                     universe_params: universe_param_ids(&universe_params, resolver)?,
+                    universe_constraints,
                     ty,
                 },
                 dependencies: deps,
@@ -296,14 +323,28 @@ fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> 
             ty,
             value,
             reducibility,
+        }
+        | Decl::DefConstrained {
+            name,
+            universe_params,
+            ty,
+            value,
+            reducibility,
+            ..
         } => {
             let ty = canonicalize_expr(&ty, resolver)?;
             let value = canonicalize_expr(&value, resolver)?;
             let deps = dependencies_from_terms([&ty, &value]);
+            let universe_constraints = canonicalize_universe_constraints(
+                &universe_params,
+                &input_universe_constraints,
+                resolver,
+            )?;
             Ok(CanonDecl {
                 decl: CanonDeclPayload::Def {
                     name: resolver.name_id(&Name::from_dotted(&name))?,
                     universe_params: universe_param_ids(&universe_params, resolver)?,
+                    universe_constraints,
                     ty,
                     value,
                     reducibility: CertReducibility::from(&reducibility),
@@ -316,14 +357,27 @@ fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> 
             universe_params,
             ty,
             proof,
+        }
+        | Decl::TheoremConstrained {
+            name,
+            universe_params,
+            ty,
+            proof,
+            ..
         } => {
             let ty = canonicalize_expr(&ty, resolver)?;
             let proof = canonicalize_expr(&proof, resolver)?;
             let deps = dependencies_from_terms([&ty, &proof]);
+            let universe_constraints = canonicalize_universe_constraints(
+                &universe_params,
+                &input_universe_constraints,
+                resolver,
+            )?;
             Ok(CanonDecl {
                 decl: CanonDeclPayload::Theorem {
                     name: resolver.name_id(&Name::from_dotted(&name))?,
                     universe_params: universe_param_ids(&universe_params, resolver)?,
+                    universe_constraints,
                     ty,
                     proof,
                 },
@@ -341,6 +395,11 @@ fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> 
                     name: Name::from_dotted(&name),
                 });
             }
+            let universe_constraints = canonicalize_universe_constraints(
+                &universe_params,
+                &input_universe_constraints,
+                resolver,
+            )?;
             let mut terms = Vec::new();
             let ty = canonicalize_expr(&ty, resolver)?;
             let params = data
@@ -400,6 +459,7 @@ fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> 
                 decl: CanonDeclPayload::Inductive {
                     name: resolver.name_id(&Name::from_dotted(&name))?,
                     universe_params: universe_param_ids(&universe_params, resolver)?,
+                    universe_constraints,
                     params,
                     indices,
                     sort,
@@ -460,7 +520,10 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         .collect();
     let resolver = Resolver {
         current_decl_index,
-        allow_self: matches!(decl, Decl::Inductive { .. } | Decl::Axiom { .. }),
+        allow_self: matches!(
+            decl,
+            Decl::Inductive { .. } | Decl::Axiom { .. } | Decl::AxiomConstrained { .. }
+        ),
         local_name_to_index: &local_name_to_index,
         local_generated_name_to_index: &lookup_env.checked_generated_name_to_index,
         imported_decls: &imported_decls,
@@ -573,7 +636,7 @@ fn finalize_canon_decl(
         Vec::new()
     };
 
-    if let DeclPayload::Axiom { name, .. } = &payload {
+    if let DeclPayload::Axiom { name, .. } | DeclPayload::AxiomConstrained { name, .. } = &payload {
         let preliminary = compute_decl_hashes(
             &payload,
             &dependencies,
@@ -793,6 +856,27 @@ fn canonicalize_level(level: &Level, resolver: &Resolver<'_>) -> Result<CanonLev
     })
 }
 
+fn canonicalize_universe_constraints(
+    universe_params: &[String],
+    constraints: &[UniverseConstraint],
+    resolver: &Resolver<'_>,
+) -> Result<Vec<CanonUniverseConstraint>> {
+    let delta =
+        npa_kernel::level::validate_universe_params(universe_params).map_err(CertError::Kernel)?;
+    npa_kernel::level::ensure_universe_constraints_wf(&delta, constraints)
+        .map_err(CertError::Kernel)?;
+    constraints
+        .iter()
+        .map(|constraint| {
+            Ok(CanonUniverseConstraint {
+                lhs: canonicalize_level(&constraint.lhs, resolver)?,
+                relation: constraint.relation,
+                rhs: canonicalize_level(&constraint.rhs, resolver)?,
+            })
+        })
+        .collect()
+}
+
 fn dependencies_from_terms<'a>(
     terms: impl IntoIterator<Item = &'a CanonTerm>,
 ) -> Vec<DependencyEntry> {
@@ -1010,16 +1094,36 @@ pub(crate) fn collect_canon_decl_nodes(
     terms: &mut BTreeSet<CanonTerm>,
 ) {
     match &decl.decl {
-        CanonDeclPayload::Axiom { ty, .. } => collect_term_nodes(ty, levels, terms),
-        CanonDeclPayload::Def { ty, value, .. } => {
+        CanonDeclPayload::Axiom {
+            universe_constraints,
+            ty,
+            ..
+        } => {
+            collect_constraint_level_nodes(universe_constraints, levels);
+            collect_term_nodes(ty, levels, terms);
+        }
+        CanonDeclPayload::Def {
+            universe_constraints,
+            ty,
+            value,
+            ..
+        } => {
+            collect_constraint_level_nodes(universe_constraints, levels);
             collect_term_nodes(ty, levels, terms);
             collect_term_nodes(value, levels, terms);
         }
-        CanonDeclPayload::Theorem { ty, proof, .. } => {
+        CanonDeclPayload::Theorem {
+            universe_constraints,
+            ty,
+            proof,
+            ..
+        } => {
+            collect_constraint_level_nodes(universe_constraints, levels);
             collect_term_nodes(ty, levels, terms);
             collect_term_nodes(proof, levels, terms);
         }
         CanonDeclPayload::Inductive {
+            universe_constraints,
             params,
             indices,
             sort,
@@ -1027,6 +1131,7 @@ pub(crate) fn collect_canon_decl_nodes(
             recursor,
             ..
         } => {
+            collect_constraint_level_nodes(universe_constraints, levels);
             collect_level_nodes(sort, levels);
             collect_term_nodes(
                 &inductive_type_canon_term(params, indices, sort),
@@ -1043,6 +1148,16 @@ pub(crate) fn collect_canon_decl_nodes(
                 collect_term_nodes(ty, levels, terms);
             }
         }
+    }
+}
+
+fn collect_constraint_level_nodes(
+    constraints: &[CanonUniverseConstraint],
+    levels: &mut BTreeSet<CanonLevel>,
+) {
+    for constraint in constraints {
+        collect_level_nodes(&constraint.lhs, levels);
+        collect_level_nodes(&constraint.rhs, levels);
     }
 }
 
@@ -1203,74 +1318,156 @@ pub(crate) fn materialize_decl_payload(
         CanonDeclPayload::Axiom {
             name,
             universe_params,
+            universe_constraints,
             ty,
-        } => DeclPayload::Axiom {
-            name: *name,
-            universe_params: universe_params.clone(),
-            ty: term_ids[ty],
-        },
+        } => {
+            let universe_constraints =
+                materialize_universe_constraints(universe_constraints, level_ids);
+            if universe_constraints.is_empty() {
+                DeclPayload::Axiom {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    ty: term_ids[ty],
+                }
+            } else {
+                DeclPayload::AxiomConstrained {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    universe_constraints,
+                    ty: term_ids[ty],
+                }
+            }
+        }
         CanonDeclPayload::Def {
             name,
             universe_params,
+            universe_constraints,
             ty,
             value,
             reducibility,
-        } => DeclPayload::Def {
-            name: *name,
-            universe_params: universe_params.clone(),
-            ty: term_ids[ty],
-            value: term_ids[value],
-            reducibility: *reducibility,
-        },
+        } => {
+            let universe_constraints =
+                materialize_universe_constraints(universe_constraints, level_ids);
+            if universe_constraints.is_empty() {
+                DeclPayload::Def {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    ty: term_ids[ty],
+                    value: term_ids[value],
+                    reducibility: *reducibility,
+                }
+            } else {
+                DeclPayload::DefConstrained {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    universe_constraints,
+                    ty: term_ids[ty],
+                    value: term_ids[value],
+                    reducibility: *reducibility,
+                }
+            }
+        }
         CanonDeclPayload::Theorem {
             name,
             universe_params,
+            universe_constraints,
             ty,
             proof,
-        } => DeclPayload::Theorem {
-            name: *name,
-            universe_params: universe_params.clone(),
-            ty: term_ids[ty],
-            proof: term_ids[proof],
-            opacity: Opacity::Opaque,
-        },
+        } => {
+            let universe_constraints =
+                materialize_universe_constraints(universe_constraints, level_ids);
+            if universe_constraints.is_empty() {
+                DeclPayload::Theorem {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    ty: term_ids[ty],
+                    proof: term_ids[proof],
+                    opacity: Opacity::Opaque,
+                }
+            } else {
+                DeclPayload::TheoremConstrained {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    universe_constraints,
+                    ty: term_ids[ty],
+                    proof: term_ids[proof],
+                    opacity: Opacity::Opaque,
+                }
+            }
+        }
         CanonDeclPayload::Inductive {
             name,
             universe_params,
+            universe_constraints,
             params,
             indices,
             sort,
             constructors,
             recursor,
-        } => DeclPayload::Inductive {
-            name: *name,
-            universe_params: universe_params.clone(),
-            params: params
+        } => {
+            let universe_constraints =
+                materialize_universe_constraints(universe_constraints, level_ids);
+            let params: Vec<_> = params
                 .iter()
                 .map(|ty| BinderType { ty: term_ids[ty] })
-                .collect(),
-            indices: indices
+                .collect();
+            let indices: Vec<_> = indices
                 .iter()
                 .map(|ty| BinderType { ty: term_ids[ty] })
-                .collect(),
-            sort: level_ids[sort],
-            constructors: constructors
+                .collect();
+            let constructors: Vec<_> = constructors
                 .iter()
                 .map(|(name, ty)| ConstructorSpec {
                     name: *name,
                     ty: term_ids[ty],
                 })
-                .collect(),
-            recursor: recursor
+                .collect();
+            let recursor = recursor
                 .as_ref()
                 .map(|(name, params, ty, rules)| RecursorSpec {
                     name: *name,
                     universe_params: params.clone(),
                     ty: term_ids[ty],
                     rules: *rules,
-                }),
-        },
+                });
+            if universe_constraints.is_empty() {
+                DeclPayload::Inductive {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    params,
+                    indices,
+                    sort: level_ids[sort],
+                    constructors,
+                    recursor,
+                }
+            } else {
+                DeclPayload::InductiveConstrained {
+                    name: *name,
+                    universe_params: universe_params.clone(),
+                    universe_constraints,
+                    params,
+                    indices,
+                    sort: level_ids[sort],
+                    constructors,
+                    recursor,
+                }
+            }
+        }
     }
+}
+
+fn materialize_universe_constraints(
+    constraints: &[CanonUniverseConstraint],
+    level_ids: &BTreeMap<CanonLevel, LevelId>,
+) -> Vec<UniverseConstraintSpec> {
+    constraints
+        .iter()
+        .map(|constraint| UniverseConstraintSpec {
+            lhs: level_ids[&constraint.lhs],
+            relation: constraint.relation,
+            rhs: level_ids[&constraint.rhs],
+        })
+        .collect()
 }
 
 fn collect_name(names: &mut BTreeSet<Name>, name: &Name) {
@@ -1282,10 +1479,18 @@ fn collect_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
     for param in decl.universe_params() {
         collect_name(names, &Name::from_dotted(param));
     }
+    for constraint in decl.universe_constraints() {
+        collect_names_from_level(names, &constraint.lhs);
+        collect_names_from_level(names, &constraint.rhs);
+    }
     collect_names_from_expr(names, decl.ty());
     match decl {
-        Decl::Def { value, .. } => collect_names_from_expr(names, value),
-        Decl::Theorem { proof, .. } => collect_names_from_expr(names, proof),
+        Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
+            collect_names_from_expr(names, value)
+        }
+        Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
+            collect_names_from_expr(names, proof)
+        }
         Decl::Inductive { data, .. } => {
             for param in &data.params {
                 collect_names_from_expr(names, &param.ty);
@@ -1313,8 +1518,12 @@ fn collect_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
 fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
     collect_const_names_from_expr(names, decl.ty());
     match decl {
-        Decl::Def { value, .. } => collect_const_names_from_expr(names, value),
-        Decl::Theorem { proof, .. } => collect_const_names_from_expr(names, proof),
+        Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
+            collect_const_names_from_expr(names, value)
+        }
+        Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
+            collect_const_names_from_expr(names, proof)
+        }
         Decl::Inductive { data, .. } => {
             for param in &data.params {
                 collect_const_names_from_expr(names, &param.ty);
@@ -1329,7 +1538,10 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
                 collect_const_names_from_expr(names, &recursor.ty);
             }
         }
-        Decl::Axiom { .. } | Decl::Constructor { .. } | Decl::Recursor { .. } => {}
+        Decl::Axiom { .. }
+        | Decl::AxiomConstrained { .. }
+        | Decl::Constructor { .. }
+        | Decl::Recursor { .. } => {}
     }
 }
 

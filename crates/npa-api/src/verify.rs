@@ -518,12 +518,14 @@ fn local_public_names(declarations: &[Decl]) -> BTreeSet<Name> {
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
     match decl {
-        Decl::Axiom { ty, .. } => collect_const_names_from_expr(names, ty),
-        Decl::Def { ty, value, .. } => {
+        Decl::Axiom { ty, .. } | Decl::AxiomConstrained { ty, .. } => {
+            collect_const_names_from_expr(names, ty)
+        }
+        Decl::Def { ty, value, .. } | Decl::DefConstrained { ty, value, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, value);
         }
-        Decl::Theorem { ty, proof, .. } => {
+        Decl::Theorem { ty, proof, .. } | Decl::TheoremConstrained { ty, proof, .. } => {
             collect_const_names_from_expr(names, ty);
             collect_const_names_from_expr(names, proof);
         }
@@ -810,9 +812,13 @@ fn decl_payload_name(
 ) -> Result<Name, Box<MachineVerifyError>> {
     let name = match payload {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     cert_name(cert, name)
 }

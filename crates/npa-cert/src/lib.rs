@@ -101,5 +101,25 @@ pub fn core_expr_hash(expr: &npa_kernel::Expr) -> Hash {
     hash::core_expr_hash_impl(expr)
 }
 
+/// Return canonical bytes for a declaration universe context.
+///
+/// The input must use sorted, unique universe parameters and normalized constraint levels. The
+/// bytes are independent of certificate table indexes and reject unresolved/meta-like universe
+/// encodings because the kernel level grammar has no meta constructor.
+pub fn universe_constraints_canonical_bytes(
+    universe_params: &[String],
+    constraints: &[npa_kernel::UniverseConstraint],
+) -> Result<Vec<u8>> {
+    hash::universe_constraints_canonical_bytes_impl(universe_params, constraints)
+}
+
+/// Return the deterministic structural hash for a declaration universe context.
+pub fn universe_constraints_hash(
+    universe_params: &[String],
+    constraints: &[npa_kernel::UniverseConstraint],
+) -> Result<Hash> {
+    hash::universe_constraints_hash_impl(universe_params, constraints)
+}
+
 #[cfg(test)]
 mod tests;

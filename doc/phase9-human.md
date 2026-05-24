@@ -520,6 +520,12 @@ MVPでは Option A の方が簡単です。
 
 導入するなら、typing rule に conversion とは別に cumulativity/subtyping を入れます。
 
+実装上の既定は **Option A: equality-only universe policy** とします。
+MVP certificate / kernel / reference checker は declaration-local universe constraints を
+canonical data として保持・hash しますが、`Sort u` から `Sort v` への持ち上げを
+definitional equality に混ぜません。cumulativity / subtyping rule は明示 feature flag と
+別 milestone の rule 追加なしには有効化しません。
+
 ```text
 Γ ⊢ t : Sort u
 u ≤ v

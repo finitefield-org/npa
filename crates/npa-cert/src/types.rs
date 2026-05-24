@@ -3,7 +3,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
 };
 
-use npa_kernel::{Decl, Reducibility};
+use npa_kernel::{Decl, Reducibility, UniverseConstraintRelation};
 
 /// SHA-256 digest used for canonical certificate objects.
 pub type Hash = [u8; 32];
@@ -465,6 +465,17 @@ pub enum DeclPayload {
         /// Type term id.
         ty: TermId,
     },
+    /// Assumed axiom declaration with a non-empty universe constraint set.
+    AxiomConstrained {
+        /// Name table index of the declaration.
+        name: NameId,
+        /// Universe parameter name ids.
+        universe_params: Vec<NameId>,
+        /// Canonical universe constraints over the declaration parameters.
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        /// Type term id.
+        ty: TermId,
+    },
     /// Definition declaration.
     Def {
         /// Name table index of the declaration.
@@ -478,12 +489,42 @@ pub enum DeclPayload {
         /// Reducibility exported for downstream checking.
         reducibility: CertReducibility,
     },
+    /// Definition declaration with a non-empty universe constraint set.
+    DefConstrained {
+        /// Name table index of the declaration.
+        name: NameId,
+        /// Universe parameter name ids.
+        universe_params: Vec<NameId>,
+        /// Canonical universe constraints over the declaration parameters.
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        /// Type term id.
+        ty: TermId,
+        /// Value term id.
+        value: TermId,
+        /// Reducibility exported for downstream checking.
+        reducibility: CertReducibility,
+    },
     /// Opaque theorem declaration.
     Theorem {
         /// Name table index of the declaration.
         name: NameId,
         /// Universe parameter name ids.
         universe_params: Vec<NameId>,
+        /// Proposition type term id.
+        ty: TermId,
+        /// Proof term id checked by the kernel but not exported as body.
+        proof: TermId,
+        /// Theorem opacity marker.
+        opacity: Opacity,
+    },
+    /// Opaque theorem declaration with a non-empty universe constraint set.
+    TheoremConstrained {
+        /// Name table index of the declaration.
+        name: NameId,
+        /// Universe parameter name ids.
+        universe_params: Vec<NameId>,
+        /// Canonical universe constraints over the declaration parameters.
+        universe_constraints: Vec<UniverseConstraintSpec>,
         /// Proposition type term id.
         ty: TermId,
         /// Proof term id checked by the kernel but not exported as body.
@@ -508,6 +549,36 @@ pub enum DeclPayload {
         /// Generated recursor specification when present.
         recursor: Option<RecursorSpec>,
     },
+    /// Inductive declaration with generated artifacts and a non-empty universe constraint set.
+    InductiveConstrained {
+        /// Name table index of the inductive declaration.
+        name: NameId,
+        /// Universe parameter name ids.
+        universe_params: Vec<NameId>,
+        /// Canonical universe constraints over the declaration parameters.
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        /// Parameter telescope.
+        params: Vec<BinderType>,
+        /// Index telescope.
+        indices: Vec<BinderType>,
+        /// Result sort level.
+        sort: LevelId,
+        /// Generated constructor specifications.
+        constructors: Vec<ConstructorSpec>,
+        /// Generated recursor specification when present.
+        recursor: Option<RecursorSpec>,
+    },
+}
+
+/// Canonical universe constraint in certificate-level ids.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UniverseConstraintSpec {
+    /// Left-hand side level table id.
+    pub lhs: LevelId,
+    /// Constraint relation.
+    pub relation: UniverseConstraintRelation,
+    /// Right-hand side level table id.
+    pub rhs: LevelId,
 }
 
 /// Binder type in an inductive telescope.

@@ -992,7 +992,7 @@ mod tests {
     };
     use npa_kernel::{
         eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
-        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level,
+        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, UniverseConstraint,
     };
     use sha2::{Digest, Sha256};
 
@@ -3747,5 +3747,38 @@ mod tests {
             *kind == ReferenceCheckErrorKind::MalformedCertificate
                 && *reason == Some(ReferenceCheckReason::TrailingBytes)
         }));
+    }
+
+    #[test]
+    fn universe_constraints_reference_checker_accepts_fast_canonical_bytes() {
+        let constraints = vec![
+            UniverseConstraint::le(Level::succ(Level::succ(Level::zero())), Level::param("u")),
+            UniverseConstraint::le(
+                Level::max(Level::param("u"), Level::param("v")),
+                Level::param("w"),
+            ),
+        ];
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Test.ReferenceUniverse"),
+                declarations: vec![Decl::AxiomConstrained {
+                    name: "Test.ReferenceUniverse.map".to_owned(),
+                    universe_params: vec!["u".to_owned(), "v".to_owned(), "w".to_owned()],
+                    universe_constraints: constraints,
+                    ty: Expr::sort(Level::param("w")),
+                }],
+            },
+            &[],
+        )
+        .unwrap();
+        let bytes = encode_module_cert(&cert).unwrap();
+
+        decode_certificate(&bytes).unwrap();
+        assert!(check_certificate(
+            &bytes,
+            &ReferenceImportStore::default(),
+            &ReferenceCheckerPolicy::default(),
+        )
+        .is_checked());
     }
 }

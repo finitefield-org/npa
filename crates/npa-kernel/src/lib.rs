@@ -18,7 +18,7 @@ pub use decl::{
 pub use env::Env;
 pub use error::{Error, ResourceLimitKind, Result};
 pub use expr::Expr;
-pub use level::Level;
+pub use level::{Level, UniverseConstraint, UniverseConstraintRelation};
 
 #[cfg(test)]
 mod tests {

@@ -157,6 +157,7 @@ fn verify_tables(cert: &ModuleCert) -> Result<()> {
             object: "TermTable",
         });
     }
+    verify_decl_universe_contexts(cert)?;
     verify_reachable_tables_and_bvars(cert)?;
     verify_name_table_reachable(cert)?;
     Ok(())
@@ -200,6 +201,59 @@ fn verify_name_table_reachable(cert: &ModuleCert) -> Result<()> {
     Ok(())
 }
 
+fn verify_decl_universe_contexts(cert: &ModuleCert) -> Result<()> {
+    for decl in &cert.declarations {
+        let params = decl_universe_params(&decl.decl);
+        let constraints = decl_universe_constraints(&decl.decl);
+        if decl_has_empty_constrained_universe_payload(&decl.decl) {
+            return Err(CertError::NonCanonicalEncoding {
+                object: "UniverseConstraints",
+            });
+        }
+        let param_names = universe_names(cert, params)?;
+        let delta =
+            npa_kernel::level::validate_universe_params(&param_names).map_err(CertError::Kernel)?;
+        let kernel_constraints = constraints
+            .iter()
+            .map(|constraint| {
+                Ok(npa_kernel::UniverseConstraint {
+                    lhs: level_from_node(cert, constraint.lhs)?,
+                    relation: constraint.relation,
+                    rhs: level_from_node(cert, constraint.rhs)?,
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+        npa_kernel::level::ensure_universe_constraints_wf(&delta, &kernel_constraints)
+            .map_err(CertError::Kernel)?;
+    }
+    Ok(())
+}
+
+fn decl_has_empty_constrained_universe_payload(decl: &DeclPayload) -> bool {
+    match decl {
+        DeclPayload::AxiomConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        } => universe_constraints.is_empty(),
+        DeclPayload::Axiom { .. }
+        | DeclPayload::Def { .. }
+        | DeclPayload::Theorem { .. }
+        | DeclPayload::Inductive { .. } => false,
+    }
+}
+
 fn collect_level_node_names(
     cert: &ModuleCert,
     level: &LevelNode,
@@ -233,7 +287,17 @@ fn collect_decl_payload_names(
             universe_params,
             ..
         }
+        | DeclPayload::AxiomConstrained {
+            name,
+            universe_params,
+            ..
+        }
         | DeclPayload::Def {
+            name,
+            universe_params,
+            ..
+        }
+        | DeclPayload::DefConstrained {
             name,
             universe_params,
             ..
@@ -242,11 +306,24 @@ fn collect_decl_payload_names(
             name,
             universe_params,
             ..
+        }
+        | DeclPayload::TheoremConstrained {
+            name,
+            universe_params,
+            ..
         } => {
             collect_name_id(cert, *name, names)?;
             collect_name_ids(cert, universe_params, names)?;
+            collect_universe_constraint_names(cert, decl_universe_constraints(decl), names)?;
         }
         DeclPayload::Inductive {
+            name,
+            universe_params,
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
             name,
             universe_params,
             constructors,
@@ -255,6 +332,7 @@ fn collect_decl_payload_names(
         } => {
             collect_name_id(cert, *name, names)?;
             collect_name_ids(cert, universe_params, names)?;
+            collect_universe_constraint_names(cert, decl_universe_constraints(decl), names)?;
             for constructor in constructors {
                 collect_name_id(cert, constructor.name, names)?;
             }
@@ -313,6 +391,35 @@ fn collect_name_ids(cert: &ModuleCert, ids: &[NameId], names: &mut BTreeSet<Name
     Ok(())
 }
 
+fn collect_universe_constraint_names(
+    cert: &ModuleCert,
+    constraints: &[UniverseConstraintSpec],
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    for constraint in constraints {
+        collect_level_names_from_level_id(cert, constraint.lhs, names)?;
+        collect_level_names_from_level_id(cert, constraint.rhs, names)?;
+    }
+    Ok(())
+}
+
+fn collect_level_names_from_level_id(
+    cert: &ModuleCert,
+    level: LevelId,
+    names: &mut BTreeSet<Name>,
+) -> Result<()> {
+    match cert.level_table.get(level).ok_or(CertError::DecodeError)? {
+        LevelNode::Zero => {}
+        LevelNode::Succ(inner) => collect_level_names_from_level_id(cert, *inner, names)?,
+        LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
+            collect_level_names_from_level_id(cert, *lhs, names)?;
+            collect_level_names_from_level_id(cert, *rhs, names)?;
+        }
+        LevelNode::Param(name) => collect_name_id(cert, *name, names)?,
+    }
+    Ok(())
+}
+
 fn collect_name_id(cert: &ModuleCert, id: NameId, names: &mut BTreeSet<Name>) -> Result<()> {
     names.insert(
         cert.name_table
@@ -329,18 +436,27 @@ fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
 
     for decl in &cert.declarations {
         match &decl.decl {
-            DeclPayload::Axiom { ty, .. } => {
+            DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => {
                 verify_term_scope(cert, *ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
             }
-            DeclPayload::Def { ty, value, .. } => {
+            DeclPayload::Def { ty, value, .. } | DeclPayload::DefConstrained { ty, value, .. } => {
                 verify_term_scope(cert, *ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
                 verify_term_scope(cert, *value, 0, &mut seen_term_depths, &mut reachable_terms)?;
             }
-            DeclPayload::Theorem { ty, proof, .. } => {
+            DeclPayload::Theorem { ty, proof, .. }
+            | DeclPayload::TheoremConstrained { ty, proof, .. } => {
                 verify_term_scope(cert, *ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
                 verify_term_scope(cert, *proof, 0, &mut seen_term_depths, &mut reachable_terms)?;
             }
             DeclPayload::Inductive {
+                params,
+                indices,
+                sort,
+                constructors,
+                recursor,
+                ..
+            }
+            | DeclPayload::InductiveConstrained {
                 params,
                 indices,
                 sort,
@@ -381,6 +497,12 @@ fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
     let mut reachable_levels = BTreeSet::new();
     for term in &reachable_terms {
         collect_levels_from_term_node(cert, *term, &mut reachable_levels)?;
+    }
+    for decl in &cert.declarations {
+        for constraint in decl_universe_constraints(&decl.decl) {
+            collect_level_reachable(cert, constraint.lhs, &mut reachable_levels)?;
+            collect_level_reachable(cert, constraint.rhs, &mut reachable_levels)?;
+        }
     }
     if reachable_levels.len() != cert.level_table.len() {
         return Err(CertError::NonCanonicalEncoding {
@@ -905,19 +1027,38 @@ fn verify_dependencies_and_axioms(cert: &ModuleCert, imports: &[&VerifiedModule]
 
 fn verify_inductive_generated_artifacts(cert: &ModuleCert) -> Result<()> {
     for decl in &cert.declarations {
-        let DeclPayload::Inductive {
-            name,
-            universe_params,
-            params,
-            indices,
-            sort,
-            constructors,
-            recursor: Some(recursor),
-            ..
-        } = &decl.decl
-        else {
-            continue;
-        };
+        let (name, universe_params, params, indices, sort, constructors, recursor) =
+            match &decl.decl {
+                DeclPayload::Inductive {
+                    name,
+                    universe_params,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor: Some(recursor),
+                    ..
+                }
+                | DeclPayload::InductiveConstrained {
+                    name,
+                    universe_params,
+                    params,
+                    indices,
+                    sort,
+                    constructors,
+                    recursor: Some(recursor),
+                    ..
+                } => (
+                    *name,
+                    universe_params.as_slice(),
+                    params.as_slice(),
+                    indices.as_slice(),
+                    *sort,
+                    constructors.as_slice(),
+                    recursor,
+                ),
+                _ => continue,
+            };
 
         let expected_rules = RecursorRulesSpec {
             minor_start: params.len() + 1,
@@ -927,7 +1068,7 @@ fn verify_inductive_generated_artifacts(cert: &ModuleCert) -> Result<()> {
             return Err(CertError::InductiveGeneratedArtifactMismatch {
                 name: cert
                     .name_table
-                    .get(*name)
+                    .get(name)
                     .ok_or(CertError::DecodeError)?
                     .clone(),
             });
@@ -936,11 +1077,11 @@ fn verify_inductive_generated_artifacts(cert: &ModuleCert) -> Result<()> {
         let expected_type = expected_recursor_type_expr(
             cert,
             InductiveRecursorView {
-                name: *name,
+                name,
                 universe_params,
                 params,
                 indices,
-                sort: *sort,
+                sort,
                 constructors,
                 recursor,
             },
@@ -949,7 +1090,7 @@ fn verify_inductive_generated_artifacts(cert: &ModuleCert) -> Result<()> {
             return Err(CertError::InductiveGeneratedArtifactMismatch {
                 name: cert
                     .name_table
-                    .get(*name)
+                    .get(name)
                     .ok_or(CertError::DecodeError)?
                     .clone(),
             });
@@ -1289,7 +1430,10 @@ pub(crate) fn expected_dependencies_for_decl(
     }
 
     let current_decl_index = decl_index;
-    let allow_self_reference = matches!(decl, DeclPayload::Inductive { .. });
+    let allow_self_reference = matches!(
+        decl,
+        DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. }
+    );
     refs.into_iter()
         .filter(|global_ref| {
             !matches!(
@@ -1376,7 +1520,7 @@ pub(crate) fn expected_axioms_for_decl(
             }
         }
     }
-    if let DeclPayload::Axiom { name, .. } = decl {
+    if let DeclPayload::Axiom { name, .. } | DeclPayload::AxiomConstrained { name, .. } = decl {
         let self_ref = AxiomRef {
             global_ref: GlobalRef::Local { decl_index },
             name: *name,
@@ -1484,10 +1628,20 @@ fn local_axiom_ref_for_decl(decl_index: usize, dep_axioms: &[AxiomRef]) -> Optio
 
 fn decl_term_ids(decl: &DeclPayload) -> Vec<TermId> {
     match decl {
-        DeclPayload::Axiom { ty, .. } => vec![*ty],
-        DeclPayload::Def { ty, value, .. } => vec![*ty, *value],
-        DeclPayload::Theorem { ty, proof, .. } => vec![*ty, *proof],
+        DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => vec![*ty],
+        DeclPayload::Def { ty, value, .. } | DeclPayload::DefConstrained { ty, value, .. } => {
+            vec![*ty, *value]
+        }
+        DeclPayload::Theorem { ty, proof, .. }
+        | DeclPayload::TheoremConstrained { ty, proof, .. } => vec![*ty, *proof],
         DeclPayload::Inductive {
+            params,
+            indices,
+            constructors,
+            recursor,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
             params,
             indices,
             constructors,
@@ -1500,6 +1654,60 @@ fn decl_term_ids(decl: &DeclPayload) -> Vec<TermId> {
             .chain(constructors.iter().map(|constructor| constructor.ty))
             .chain(recursor.iter().map(|recursor| recursor.ty))
             .collect(),
+    }
+}
+
+fn decl_universe_params(decl: &DeclPayload) -> &[NameId] {
+    match decl {
+        DeclPayload::Axiom {
+            universe_params, ..
+        }
+        | DeclPayload::AxiomConstrained {
+            universe_params, ..
+        }
+        | DeclPayload::Def {
+            universe_params, ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_params, ..
+        }
+        | DeclPayload::Theorem {
+            universe_params, ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_params, ..
+        }
+        | DeclPayload::Inductive {
+            universe_params, ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_params, ..
+        } => universe_params,
+    }
+}
+
+fn decl_universe_constraints(decl: &DeclPayload) -> &[UniverseConstraintSpec] {
+    match decl {
+        DeclPayload::AxiomConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::DefConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::TheoremConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        } => universe_constraints,
+        DeclPayload::Axiom { .. }
+        | DeclPayload::Def { .. }
+        | DeclPayload::Theorem { .. }
+        | DeclPayload::Inductive { .. } => &[],
     }
 }
 
@@ -1639,6 +1847,11 @@ fn local_generated_entry_exists(
             constructors,
             recursor,
             ..
+        }
+        | DeclPayload::InductiveConstrained {
+            constructors,
+            recursor,
+            ..
         } => {
             constructors
                 .iter()
@@ -1702,9 +1915,13 @@ fn decl_name_as_name(cert: &ModuleCert, decl_index: usize) -> Result<Name> {
         .ok_or(CertError::DecodeError)?;
     let name = match &decl.decl {
         DeclPayload::Axiom { name, .. }
+        | DeclPayload::AxiomConstrained { name, .. }
         | DeclPayload::Def { name, .. }
+        | DeclPayload::DefConstrained { name, .. }
         | DeclPayload::Theorem { name, .. }
-        | DeclPayload::Inductive { name, .. } => *name,
+        | DeclPayload::TheoremConstrained { name, .. }
+        | DeclPayload::Inductive { name, .. }
+        | DeclPayload::InductiveConstrained { name, .. } => *name,
     };
     cert.name_table
         .get(name)
