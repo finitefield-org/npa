@@ -1,0 +1,86 @@
+import Std.Logic.Eq
+
+def Iff :
+  forall (P : Prop), forall (Q : Prop), Prop :=
+  fun P => fun Q => forall (R : Prop), forall (mk : forall (forward : forall (p : P), Q), forall (backward : forall (q : Q), P), R), R
+
+def And :
+  forall (P : Prop), forall (Q : Prop), Prop :=
+  fun P => fun Q => forall (R : Prop), forall (mk : forall (p : P), forall (q : Q), R), R
+
+def Or :
+  forall (P : Prop), forall (Q : Prop), Prop :=
+  fun P => fun Q => forall (R : Prop), forall (left : forall (p : P), R), forall (right : forall (q : Q), R), R
+
+def False :
+  Prop :=
+  forall (P : Prop), P
+
+def Not :
+  forall (P : Prop), Prop :=
+  fun P => forall (p : P), False
+
+theorem iff_refl :
+  forall (P : Prop), Iff P P :=
+  fun P => fun (R : Prop) => fun (mk : forall (forward : forall (p : P), P), forall (backward : forall (p : P), P), R) => mk (fun (p : P) => p) (fun (p : P) => p)
+
+theorem iff_symm :
+  forall (P : Prop), forall (Q : Prop), forall (h : Iff P Q), Iff Q P :=
+  fun P => fun Q => fun h => fun (R : Prop) => fun (mk : forall (forward : forall (q : Q), P), forall (backward : forall (p : P), Q), R) => h R (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => mk backward forward)
+
+theorem iff_trans :
+  forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (hpq : Iff P Q), forall (hqr : Iff Q R), Iff P R :=
+  fun P => fun Q => fun R => fun hpq => fun hqr => fun (S : Prop) => fun (mk : forall (forward : forall (p : P), R), forall (backward : forall (r : R), P), S) => hpq S (fun (pq : forall (p : P), Q) => fun (qp : forall (q : Q), P) => hqr S (fun (qr : forall (q : Q), R) => fun (rq : forall (r : R), Q) => mk (fun (p : P) => qr (pq p)) (fun (r : R) => qp (rq r))))
+
+theorem iff_mp :
+  forall (P : Prop), forall (Q : Prop), forall (h : Iff P Q), forall (p : P), Q :=
+  fun P => fun Q => fun h => fun p => h Q (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => forward p)
+
+theorem iff_mpr :
+  forall (P : Prop), forall (Q : Prop), forall (h : Iff P Q), forall (q : Q), P :=
+  fun P => fun Q => fun h => fun q => h P (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => backward q)
+
+theorem and_intro :
+  forall (P : Prop), forall (Q : Prop), forall (p : P), forall (q : Q), And P Q :=
+  fun P => fun Q => fun p => fun q => fun (R : Prop) => fun (mk : forall (p : P), forall (q : Q), R) => mk p q
+
+theorem and_left :
+  forall (P : Prop), forall (Q : Prop), forall (h : And P Q), P :=
+  fun P => fun Q => fun h => h P (fun (p : P) => fun (q : Q) => p)
+
+theorem and_right :
+  forall (P : Prop), forall (Q : Prop), forall (h : And P Q), Q :=
+  fun P => fun Q => fun h => h Q (fun (p : P) => fun (q : Q) => q)
+
+theorem iff_of_eq :
+  forall (P : Prop), forall (Q : Prop), forall (h : @Eq.{1} Prop P Q), Iff P Q :=
+  fun P => fun Q => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff P R) (iff_refl P) Q h
+
+theorem false_elim :
+  forall (P : Prop), forall (h : False), P :=
+  fun P => fun h => h P
+
+theorem not_intro :
+  forall (P : Prop), forall (h : forall (p : P), False), Not P :=
+  fun P => fun h => h
+
+theorem not_elim :
+  forall (P : Prop), forall (hn : Not P), forall (p : P), False :=
+  fun P => fun hn => fun p => hn p
+
+theorem or_inl :
+  forall (P : Prop), forall (Q : Prop), forall (p : P), Or P Q :=
+  fun P => fun Q => fun p => fun (R : Prop) => fun (left : forall (p : P), R) => fun (right : forall (q : Q), R) => left p
+
+theorem or_inr :
+  forall (P : Prop), forall (Q : Prop), forall (q : Q), Or P Q :=
+  fun P => fun Q => fun q => fun (R : Prop) => fun (left : forall (p : P), R) => fun (right : forall (q : Q), R) => right q
+
+theorem or_elim :
+  forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (h : Or P Q), forall (left : forall (p : P), R), forall (right : forall (q : Q), R), R :=
+  fun P => fun Q => fun R => fun h => fun left => fun right => h R left right
+
+theorem iff_congr_arg :
+  forall (P : Prop), forall (Q : Prop), forall (F : forall (X : Prop), Prop), forall (h : @Eq.{1} Prop P Q), Iff (F P) (F Q) :=
+  fun P => fun Q => fun F => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff (F P) (F R)) (iff_refl (F P)) Q h
+

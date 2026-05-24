@@ -235,3 +235,21 @@ imports = ["Std.Logic.Eq", "Proofs.Ai.Algebra.Ring", "Proofs.Ai.Algebra.Square",
 definitions = ["dist"]
 theorems = ["dist_def", "dist_sq_eq_square_dist", "dist_nonneg", "distance_symm", "distance_zero_iff_eq", "pythagorean_distance", "cauchy_schwarz", "triangle_inequality"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Logic.Iff"
+source = "Proofs/Ai/Logic/Iff/source.npa"
+certificate = "Proofs/Ai/Logic/Iff/certificate.npcert"
+meta = "Proofs/Ai/Logic/Iff/meta.json"
+replay = "Proofs/Ai/Logic/Iff/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:4cfbee5247057d885bf4b6af1da7576a52672853f1c6250e9dd1a70fd168f0a6"
+certificate_file_sha256 = "sha256:cc9af8dedec12fadef41aac2c5637fc986b04ecc566cb15c89aa9205e41e2251"
+export_hash = "sha256:d2daace47d7e3dd6b1c9833d6c5d1bfaebdca3284e04ec70c3e9cf74f4bfd147"
+axiom_report_hash = "sha256:e857a3aea953927d44e330377c011e7fe1f0892d779d46d8eb9d4cc62236ade7"
+certificate_hash = "sha256:64c824049b33fe998e99bfdfa984cd1fa74acbea37ee53f1a0330661ddd14f4d"
+imports = ["Std.Logic.Eq"]
+definitions = ["Iff", "And", "Or", "False", "Not"]
+theorems = ["iff_refl", "iff_symm", "iff_trans", "iff_mp", "iff_mpr", "and_intro", "and_left", "and_right", "iff_of_eq", "false_elim", "not_intro", "not_elim", "or_inl", "or_inr", "or_elim", "iff_congr_arg"]
+axioms = ["Eq.rec"]

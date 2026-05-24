@@ -33,6 +33,8 @@ Current bundles:
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
   and vector dot layers.
+- `Proofs/Ai/Logic/Iff/`: first-class logical equivalence, conjunction, disjunction, falsehood, and
+  negation theorem targets importing `Std.Logic.Eq`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -504,7 +506,49 @@ Theorem targets:
 | `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
 
-### P16+: General Euclidean Pythagorean Roadmap
+### P16: Logic Iff Corpus
+
+Module: `Proofs.Ai.Logic.Iff`
+
+Add first-class logical connectives for later abstract theorem APIs. `Iff`, `And`, `Or`, `False`,
+and `Not` are defined as Prop-valued APIs so later modules can stop embedding ad hoc
+Church-encoded equivalence shapes in theorem statements. `iff_of_eq` and `iff_congr_arg` use the
+same audited `Eq.rec` dependency as P8; the expected axiom report is fixed to `["Eq.rec"]`.
+
+Implemented:
+
+Definitions / API declarations, not proof targets:
+
+| Declaration | Purpose |
+| --- | --- |
+| `Iff` | first-class logical equivalence, replacing ad hoc theorem-local equivalence encodings |
+| `And` | conjunction API for bundling law hypotheses |
+| `Or` | disjunction API for square-root and order case splits |
+| `False` | empty proposition API for contradiction and negation eliminators |
+| `Not` | negation abbreviation, defined as `P -> False` |
+
+Theorem targets:
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `iff_refl` | `Iff P P` |
+| `iff_symm` | `Iff P Q -> Iff Q P` |
+| `iff_trans` | `Iff P Q -> Iff Q R -> Iff P R` |
+| `iff_mp` | `Iff P Q -> P -> Q` |
+| `iff_mpr` | `Iff P Q -> Q -> P` |
+| `and_intro` | `P -> Q -> And P Q` |
+| `and_left` | `And P Q -> P` |
+| `and_right` | `And P Q -> Q` |
+| `iff_of_eq` | `P = Q -> Iff P Q` |
+| `false_elim` | `False -> P` |
+| `not_intro` | `(P -> False) -> Not P` |
+| `not_elim` | `Not P -> P -> False` |
+| `or_inl` | `P -> Or P Q` |
+| `or_inr` | `Q -> Or P Q` |
+| `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
+| `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
+
+### P17+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -515,7 +559,7 @@ RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 ```
 
 This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
-the squared `dist` form over the current concrete scalar and vector corpus; P16+ replaces the
+the squared `dist` form over the current concrete scalar and vector corpus; P17+ replaces the
 singleton carriers with explicit law hypotheses and abstract APIs.
 
 Planned contents:
@@ -544,8 +588,10 @@ Completed prerequisite:
   and the checked squared-distance Pythagorean theorem target.
 - P15 `Proofs.Ai.Geometry.Metric` supplies `dist`, the `distSq = sq dist` bridge, and the checked
   squared metric Pythagorean theorem target.
+- P16 `Proofs.Ai.Logic.Iff` supplies first-class `Iff`, `And`, `Or`, `False`, and `Not` APIs for
+  later abstract algebra and geometry theorem statements.
 
-P16+ policy:
+P17+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -556,7 +602,6 @@ P16+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P16 | `Proofs.Ai.Logic.Iff` | `Iff`, optionally `And` for bundled law hypotheses | `iff_refl`, `iff_symm`, `iff_trans`, `iff_mp`, `iff_mpr` | `and_intro`, `and_left`, `and_right`, `iff_of_eq` |
 | P17 | `Proofs.Ai.Algebra.AbstractRing` | abstract scalar carrier and operations, or an explicit ring-law package | `sub_eq_add_neg`, `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `add_neg_cancel`, `mul_assoc`, `mul_comm`, `mul_one`, `one_mul`, `left_distrib`, `right_distrib` | `sub_self`, `mul_zero`, `zero_mul`, `add_left_cancel`, `ring_normalize_add_mul3` |
 | P18 | `Proofs.Ai.Algebra.AbstractOrderedField` | order and square-root APIs over the abstract scalar carrier | `le_refl`, `le_trans`, `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_nonneg`, `sqrt_square_of_nonneg`, `eq_of_square_eq_square_nonneg` | `add_le_add`, `mul_le_mul_nonneg`, `zero_le_two`, `sqrt_mul_self` |
 | P19 | `Proofs.Ai.Algebra.AbstractSquareNormalize` | no new carrier; normalization helpers over P17/P18 operations | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term` | `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq` |
@@ -808,12 +853,12 @@ Theorem targets:
 
 #### `Proofs.Ai.Logic.Iff`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `Iff` | first-class logical equivalence, replacing Church-encoded iff theorem shapes |
-| `And` | optional conjunction API for bundling law hypotheses when a law-package style is useful |
+| `Iff` | first-class logical equivalence, replacing ad hoc theorem-local equivalence encodings |
+| `And` | conjunction API for bundling law hypotheses when a law-package style is useful |
 | `Or` | disjunction API for square-root and order case splits |
 | `False` | empty proposition API for contradiction and negation eliminators |
 | `Not` | negation abbreviation, normally `P -> False` |
@@ -835,7 +880,7 @@ Theorem targets:
 | `not_intro` | `(P -> False) -> Not P` |
 | `not_elim` | `Not P -> P -> False` |
 | `or_inl`, `or_inr`, `or_elim` | disjunction introduction and elimination helpers |
-| `iff_congr_arg` | `Iff P Q -> Iff (F P) (F Q)` for Prop-valued contexts when available |
+| `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
 #### `Proofs.Ai.Algebra.AbstractRing`
 

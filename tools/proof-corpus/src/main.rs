@@ -249,6 +249,19 @@ const METRIC_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const IFF_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Logic.Iff",
+    source_path: "Proofs/Ai/Logic/Iff/source.npa",
+    certificate_path: "Proofs/Ai/Logic/Iff/certificate.npcert",
+    meta_path: "Proofs/Ai/Logic/Iff/meta.json",
+    replay_path: "Proofs/Ai/Logic/Iff/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: IFF_DEFINITIONS,
+    theorems: IFF_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -1550,6 +1563,162 @@ const METRIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const IFF_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "Iff",
+        universe_params: &[],
+        ty: "forall (P : Prop), forall (Q : Prop), Prop",
+        value:
+            "fun P => fun Q => forall (R : Prop), forall (mk : forall (forward : forall (p : P), Q), forall (backward : forall (q : Q), P), R), R",
+    },
+    DefinitionArtifact {
+        name: "And",
+        universe_params: &[],
+        ty: "forall (P : Prop), forall (Q : Prop), Prop",
+        value:
+            "fun P => fun Q => forall (R : Prop), forall (mk : forall (p : P), forall (q : Q), R), R",
+    },
+    DefinitionArtifact {
+        name: "Or",
+        universe_params: &[],
+        ty: "forall (P : Prop), forall (Q : Prop), Prop",
+        value:
+            "fun P => fun Q => forall (R : Prop), forall (left : forall (p : P), R), forall (right : forall (q : Q), R), R",
+    },
+    DefinitionArtifact {
+        name: "False",
+        universe_params: &[],
+        ty: "Prop",
+        value: "forall (P : Prop), P",
+    },
+    DefinitionArtifact {
+        name: "Not",
+        universe_params: &[],
+        ty: "forall (P : Prop), Prop",
+        value: "fun P => forall (p : P), False",
+    },
+];
+
+const IFF_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "iff_refl",
+        universe_params: &[],
+        statement: "forall (P : Prop), Iff P P",
+        proof:
+            "fun P => fun (R : Prop) => fun (mk : forall (forward : forall (p : P), P), forall (backward : forall (p : P), P), R) => mk (fun (p : P) => p) (fun (p : P) => p)",
+    },
+    TheoremArtifact {
+        name: "iff_symm",
+        universe_params: &[],
+        statement: "forall (P : Prop), forall (Q : Prop), forall (h : Iff P Q), Iff Q P",
+        proof:
+            "fun P => fun Q => fun h => fun (R : Prop) => fun (mk : forall (forward : forall (q : Q), P), forall (backward : forall (p : P), Q), R) => h R (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => mk backward forward)",
+    },
+    TheoremArtifact {
+        name: "iff_trans",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (hpq : Iff P Q), forall (hqr : Iff Q R), Iff P R",
+        proof:
+            "fun P => fun Q => fun R => fun hpq => fun hqr => fun (S : Prop) => fun (mk : forall (forward : forall (p : P), R), forall (backward : forall (r : R), P), S) => hpq S (fun (pq : forall (p : P), Q) => fun (qp : forall (q : Q), P) => hqr S (fun (qr : forall (q : Q), R) => fun (rq : forall (r : R), Q) => mk (fun (p : P) => qr (pq p)) (fun (r : R) => qp (rq r))))",
+    },
+    TheoremArtifact {
+        name: "iff_mp",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (h : Iff P Q), forall (p : P), Q",
+        proof:
+            "fun P => fun Q => fun h => fun p => h Q (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => forward p)",
+    },
+    TheoremArtifact {
+        name: "iff_mpr",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (h : Iff P Q), forall (q : Q), P",
+        proof:
+            "fun P => fun Q => fun h => fun q => h P (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => backward q)",
+    },
+    TheoremArtifact {
+        name: "and_intro",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (p : P), forall (q : Q), And P Q",
+        proof:
+            "fun P => fun Q => fun p => fun q => fun (R : Prop) => fun (mk : forall (p : P), forall (q : Q), R) => mk p q",
+    },
+    TheoremArtifact {
+        name: "and_left",
+        universe_params: &[],
+        statement: "forall (P : Prop), forall (Q : Prop), forall (h : And P Q), P",
+        proof: "fun P => fun Q => fun h => h P (fun (p : P) => fun (q : Q) => p)",
+    },
+    TheoremArtifact {
+        name: "and_right",
+        universe_params: &[],
+        statement: "forall (P : Prop), forall (Q : Prop), forall (h : And P Q), Q",
+        proof: "fun P => fun Q => fun h => h Q (fun (p : P) => fun (q : Q) => q)",
+    },
+    TheoremArtifact {
+        name: "iff_of_eq",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (h : @Eq.{1} Prop P Q), Iff P Q",
+        proof:
+            "fun P => fun Q => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff P R) (iff_refl P) Q h",
+    },
+    TheoremArtifact {
+        name: "false_elim",
+        universe_params: &[],
+        statement: "forall (P : Prop), forall (h : False), P",
+        proof: "fun P => fun h => h P",
+    },
+    TheoremArtifact {
+        name: "not_intro",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (h : forall (p : P), False), Not P",
+        proof: "fun P => fun h => h",
+    },
+    TheoremArtifact {
+        name: "not_elim",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (hn : Not P), forall (p : P), False",
+        proof: "fun P => fun hn => fun p => hn p",
+    },
+    TheoremArtifact {
+        name: "or_inl",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (p : P), Or P Q",
+        proof:
+            "fun P => fun Q => fun p => fun (R : Prop) => fun (left : forall (p : P), R) => fun (right : forall (q : Q), R) => left p",
+    },
+    TheoremArtifact {
+        name: "or_inr",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (q : Q), Or P Q",
+        proof:
+            "fun P => fun Q => fun q => fun (R : Prop) => fun (left : forall (p : P), R) => fun (right : forall (q : Q), R) => right q",
+    },
+    TheoremArtifact {
+        name: "or_elim",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (h : Or P Q), forall (left : forall (p : P), R), forall (right : forall (q : Q), R), R",
+        proof: "fun P => fun Q => fun R => fun h => fun left => fun right => h R left right",
+    },
+    TheoremArtifact {
+        name: "iff_congr_arg",
+        universe_params: &[],
+        statement:
+            "forall (P : Prop), forall (Q : Prop), forall (F : forall (X : Prop), Prop), forall (h : @Eq.{1} Prop P Q), Iff (F P) (F Q)",
+        proof:
+            "fun P => fun Q => fun F => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff (F P) (F R)) (iff_refl (F P)) Q h",
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -1574,9 +1743,10 @@ fn run() -> Result<(), String> {
     fs::create_dir_all(&proof_root)
         .map_err(|err| format!("failed to create {}: {err}", proof_root.display()))?;
 
-    let (eq_import, eq_source_interface) = verified_human_import("Std.Logic.Eq", EQ_IMPORT_SOURCE)?;
+    let (eq_import, eq_source_interface) =
+        verified_core_import_with_source_interface(std_logic_eq_module(), EQ_IMPORT_SOURCE)?;
     let (nat_import, nat_source_interface) =
-        verified_human_import("Std.Nat.Basic", NAT_IMPORT_SOURCE)?;
+        verified_core_import_with_source_interface(std_nat_basic_module(), NAT_IMPORT_SOURCE)?;
     let eq_imports = vec![eq_import.clone(), nat_import.clone()];
     let eq_source_interfaces = vec![eq_source_interface.clone(), nat_source_interface.clone()];
     let eq_reasoning_imports = vec![eq_import.clone()];
@@ -1713,6 +1883,14 @@ fn run() -> Result<(), String> {
         &metric_imports,
         &metric_source_interfaces,
     )?;
+    let iff_imports = vec![eq_import.clone()];
+    let iff_source_interfaces = vec![eq_source_interface.clone()];
+    let iff = build_and_write_module(
+        &proof_root,
+        &IFF_MODULE,
+        &iff_imports,
+        &iff_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -1730,6 +1908,7 @@ fn run() -> Result<(), String> {
             vector_dot,
             right_triangle,
             metric,
+            iff,
         ])
         .as_bytes(),
     )?;
@@ -1830,8 +2009,8 @@ fn human_imported_source_interface(
     }
 }
 
-fn verified_human_import(
-    module: &str,
+fn verified_core_import_with_source_interface(
+    module: npa_cert::CoreModule,
     source: &str,
 ) -> Result<
     (
@@ -1840,26 +2019,73 @@ fn verified_human_import(
     ),
     String,
 > {
+    let module_name = module.name.as_dotted();
     let output = npa_frontend::compile_human_source_to_certificate_output_with_source_interfaces(
         npa_frontend::FileId(0),
-        npa_cert::Name::from_dotted(module),
+        module.name.clone(),
         source,
         &[],
         &[],
         &npa_frontend::HumanCompileOptions::default(),
     )
-    .map_err(|err| format!("failed to compile import {module}: {err:?}"))?;
-    let bytes = npa_cert::encode_module_cert(&output.certificate)
-        .map_err(|err| format!("failed to encode import {module}: {err:?}"))?;
+    .map_err(|err| format!("failed to compile import {module_name}: {err:?}"))?;
+    let mut source_interface = output.source_interface;
+    clear_source_interface_hashes(&mut source_interface);
+    let cert = npa_cert::build_module_cert(module, &[])
+        .map_err(|err| format!("failed to build import {module_name}: {err:?}"))?;
+    let bytes = npa_cert::encode_module_cert(&cert)
+        .map_err(|err| format!("failed to encode import {module_name}: {err:?}"))?;
     let verified = npa_cert::verify_module_cert(
         &bytes,
         &mut npa_cert::VerifierSession::new(),
         &npa_cert::AxiomPolicy::normal(),
     )
-    .map_err(|err| format!("import {module} did not verify: {err:?}"))?;
-    let source_interface = human_imported_source_interface(&verified, &output.source_interface);
+    .map_err(|err| format!("import {module_name} did not verify: {err:?}"))?;
+    let source_interface = human_imported_source_interface(&verified, &source_interface);
 
     Ok((verified, source_interface))
+}
+
+fn clear_source_interface_hashes(source_interface: &mut npa_frontend::HumanSourceInterface) {
+    for declaration in &mut source_interface.declarations {
+        declaration.decl_interface_hash = None;
+    }
+    for declaration in &mut source_interface.generated_declarations {
+        declaration.decl_interface_hash = None;
+    }
+    for class in &mut source_interface.typeclass_classes {
+        class.decl_interface_hash = None;
+        for field in &mut class.fields {
+            field.decl_interface_hash = None;
+        }
+    }
+    for instance in &mut source_interface.typeclass_instances {
+        instance.decl_interface_hash = None;
+    }
+}
+
+fn std_logic_eq_module() -> npa_cert::CoreModule {
+    npa_cert::CoreModule {
+        name: npa_cert::Name::from_dotted("Std.Logic.Eq"),
+        declarations: vec![npa_kernel::Decl::Inductive {
+            name: "Eq".to_owned(),
+            universe_params: vec!["u".to_owned()],
+            ty: npa_kernel::eq_type(npa_kernel::Level::param("u")),
+            data: Box::new(npa_kernel::eq_inductive()),
+        }],
+    }
+}
+
+fn std_nat_basic_module() -> npa_cert::CoreModule {
+    npa_cert::CoreModule {
+        name: npa_cert::Name::from_dotted("Std.Nat.Basic"),
+        declarations: vec![npa_kernel::Decl::Inductive {
+            name: "Nat".to_owned(),
+            universe_params: Vec::new(),
+            ty: npa_kernel::Expr::sort(npa_kernel::type0()),
+            data: Box::new(npa_kernel::nat_inductive()),
+        }],
+    }
 }
 
 fn repo_root() -> Result<PathBuf, String> {

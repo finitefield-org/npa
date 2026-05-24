@@ -1,0 +1,117 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Logic.Iff",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Iff",
+      "source_kind": "explicit_def_value",
+      "term": "fun P => fun Q => forall (R : Prop), forall (mk : forall (forward : forall (p : P), Q), forall (backward : forall (q : Q), P), R), R"
+    },
+    {
+      "declaration": "And",
+      "source_kind": "explicit_def_value",
+      "term": "fun P => fun Q => forall (R : Prop), forall (mk : forall (p : P), forall (q : Q), R), R"
+    },
+    {
+      "declaration": "Or",
+      "source_kind": "explicit_def_value",
+      "term": "fun P => fun Q => forall (R : Prop), forall (left : forall (p : P), R), forall (right : forall (q : Q), R), R"
+    },
+    {
+      "declaration": "False",
+      "source_kind": "explicit_def_value",
+      "term": "forall (P : Prop), P"
+    },
+    {
+      "declaration": "Not",
+      "source_kind": "explicit_def_value",
+      "term": "fun P => forall (p : P), False"
+    },
+    {
+      "declaration": "iff_refl",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun (R : Prop) => fun (mk : forall (forward : forall (p : P), P), forall (backward : forall (p : P), P), R) => mk (fun (p : P) => p) (fun (p : P) => p)"
+    },
+    {
+      "declaration": "iff_symm",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => fun (R : Prop) => fun (mk : forall (forward : forall (q : Q), P), forall (backward : forall (p : P), Q), R) => h R (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => mk backward forward)"
+    },
+    {
+      "declaration": "iff_trans",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun R => fun hpq => fun hqr => fun (S : Prop) => fun (mk : forall (forward : forall (p : P), R), forall (backward : forall (r : R), P), S) => hpq S (fun (pq : forall (p : P), Q) => fun (qp : forall (q : Q), P) => hqr S (fun (qr : forall (q : Q), R) => fun (rq : forall (r : R), Q) => mk (fun (p : P) => qr (pq p)) (fun (r : R) => qp (rq r))))"
+    },
+    {
+      "declaration": "iff_mp",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => fun p => h Q (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => forward p)"
+    },
+    {
+      "declaration": "iff_mpr",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => fun q => h P (fun (forward : forall (p : P), Q) => fun (backward : forall (q : Q), P) => backward q)"
+    },
+    {
+      "declaration": "and_intro",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun p => fun q => fun (R : Prop) => fun (mk : forall (p : P), forall (q : Q), R) => mk p q"
+    },
+    {
+      "declaration": "and_left",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => h P (fun (p : P) => fun (q : Q) => p)"
+    },
+    {
+      "declaration": "and_right",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => h Q (fun (p : P) => fun (q : Q) => q)"
+    },
+    {
+      "declaration": "iff_of_eq",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff P R) (iff_refl P) Q h"
+    },
+    {
+      "declaration": "false_elim",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun h => h P"
+    },
+    {
+      "declaration": "not_intro",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun h => h"
+    },
+    {
+      "declaration": "not_elim",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun hn => fun p => hn p"
+    },
+    {
+      "declaration": "or_inl",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun p => fun (R : Prop) => fun (left : forall (p : P), R) => fun (right : forall (q : Q), R) => left p"
+    },
+    {
+      "declaration": "or_inr",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun q => fun (R : Prop) => fun (left : forall (p : P), R) => fun (right : forall (q : Q), R) => right q"
+    },
+    {
+      "declaration": "or_elim",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun R => fun h => fun left => fun right => h R left right"
+    },
+    {
+      "declaration": "iff_congr_arg",
+      "source_kind": "explicit_term",
+      "term": "fun P => fun Q => fun F => fun h => @Eq.rec.{1,0} Prop P (fun (R : Prop) => fun (hR : @Eq.{1} Prop P R) => Iff (F P) (F R)) (iff_refl (F P)) Q h"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Logic/Iff/certificate.npcert"
+  }
+}

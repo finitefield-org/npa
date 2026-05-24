@@ -245,6 +245,27 @@ const METRIC_THEOREMS: &[&str] = &[
     "triangle_inequality",
 ];
 
+const IFF_DEFINITIONS: &[&str] = &["Iff", "And", "Or", "False", "Not"];
+
+const IFF_THEOREMS: &[&str] = &[
+    "iff_refl",
+    "iff_symm",
+    "iff_trans",
+    "iff_mp",
+    "iff_mpr",
+    "and_intro",
+    "and_left",
+    "and_right",
+    "iff_of_eq",
+    "false_elim",
+    "not_intro",
+    "not_elim",
+    "or_inl",
+    "or_inr",
+    "or_elim",
+    "iff_congr_arg",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -426,6 +447,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: METRIC_DEFINITIONS,
         theorems: METRIC_THEOREMS,
         axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Logic.Iff",
+        source: "Proofs/Ai/Logic/Iff/source.npa",
+        certificate: "Proofs/Ai/Logic/Iff/certificate.npcert",
+        meta: "Proofs/Ai/Logic/Iff/meta.json",
+        replay: "Proofs/Ai/Logic/Iff/replay.json",
+        imports: &["Std.Logic.Eq"],
+        inductives: &[],
+        definitions: IFF_DEFINITIONS,
+        theorems: IFF_THEOREMS,
+        axioms: &["Eq.rec"],
     },
 ];
 
