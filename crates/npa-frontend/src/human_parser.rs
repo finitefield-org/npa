@@ -613,13 +613,20 @@ fn validate_mvp_notation_token(token: &str, span: Span) -> HumanResult<()> {
             "multi-token notation is not part of the frontend MVP",
         ));
     }
-    if reserved_notation_token(token) || !token.chars().all(is_operator_char) {
+    let is_nullary_numeric = matches!(token, "0" | "1");
+    if reserved_notation_token(token)
+        || (!is_nullary_numeric && !token.chars().all(is_operator_char))
+    {
         return Err(HumanDiagnostic::parse(
             span,
             format!("notation token {token} is not a frontend MVP operator"),
         ));
     }
     Ok(())
+}
+
+fn is_nullary_numeric_notation_token(token: &str) -> bool {
+    matches!(token, "0" | "1")
 }
 
 fn reserved_notation_token(token: &str) -> bool {
@@ -1157,9 +1164,11 @@ impl<'a> Parser<'a> {
     }
 
     fn register_notation_decl(&mut self, decl: &HumanNotationDecl) -> HumanResult<()> {
-        let Some(fixity) = notation_fixity(decl.kind) else {
+        if decl.kind == HumanNotationKind::Notation
+            && !is_nullary_numeric_notation_token(&decl.token)
+        {
             return Ok(());
-        };
+        }
         validate_mvp_notation_token(&decl.token, decl.span)?;
         let entry = ParserNotationEntry {
             token: decl.token.clone(),
@@ -1169,7 +1178,9 @@ impl<'a> Parser<'a> {
             namespace: self.current_namespace_parts(),
             span: decl.span,
         };
-        self.ensure_notation_compatible(&entry, fixity)?;
+        if let Some(fixity) = notation_fixity(decl.kind) {
+            self.ensure_notation_compatible(&entry, fixity)?;
+        }
         self.current_notation_scope().entries.push(entry.clone());
         self.namespace_notations
             .entry(entry.namespace.clone())
@@ -1185,9 +1196,11 @@ impl<'a> Parser<'a> {
         };
 
         for metadata in &source_interface.notations {
-            let Some(fixity) = notation_fixity(metadata.kind) else {
+            if metadata.kind == HumanNotationKind::Notation
+                && !is_nullary_numeric_notation_token(&metadata.token)
+            {
                 continue;
-            };
+            }
             validate_mvp_notation_token(&metadata.token, metadata.span)?;
             let entry = parser_notation_entry_from_metadata(metadata);
             self.namespace_notations
@@ -1195,7 +1208,9 @@ impl<'a> Parser<'a> {
                 .or_default()
                 .push(entry.clone());
             if entry.namespace.is_empty() {
-                self.ensure_notation_compatible(&entry, fixity)?;
+                if let Some(fixity) = notation_fixity(entry.kind) {
+                    self.ensure_notation_compatible(&entry, fixity)?;
+                }
                 self.current_notation_scope().entries.push(entry);
             }
         }
@@ -1327,6 +1342,29 @@ impl<'a> Parser<'a> {
             .iter()
             .flat_map(|name| name.parts.iter().cloned())
             .collect()
+    }
+
+    fn active_nullary_notation_entry(&self, token: &str) -> Option<ParserNotationEntry> {
+        let mut entries: Vec<_> = self
+            .notation_scopes
+            .iter()
+            .flat_map(|scope| scope.entries.iter())
+            .filter(|entry| entry.token == token && entry.kind == HumanNotationKind::Notation)
+            .cloned()
+            .collect();
+        entries.sort_by(|lhs, rhs| {
+            notation_entry_sort_key(lhs)
+                .cmp(&notation_entry_sort_key(rhs))
+                .then_with(|| lhs.span.start.cmp(&rhs.span.start))
+        });
+        entries.dedup_by(|lhs, rhs| {
+            lhs.token == rhs.token
+                && lhs.kind == rhs.kind
+                && lhs.precedence == rhs.precedence
+                && lhs.associativity == rhs.associativity
+                && lhs.namespace == rhs.namespace
+        });
+        entries.into_iter().next()
     }
 
     fn parse_decl_binders(&mut self) -> HumanResult<Vec<HumanBinder>> {
@@ -1631,6 +1669,21 @@ impl<'a> Parser<'a> {
                 let span = self.advance().span;
                 Ok(HumanExpr::Hole {
                     name: Some(HumanName::new(vec![name], span)),
+                    span,
+                })
+            }
+            TokenKind::Number(value) if matches!(value, 0 | 1) => {
+                let token = value.to_string();
+                let Some(entry) = self.active_nullary_notation_entry(&token) else {
+                    return Err(HumanDiagnostic::parse(
+                        self.peek_span(),
+                        "numeric term literals are not Human Surface syntax",
+                    ));
+                };
+                let span = self.advance().span;
+                Ok(HumanExpr::NotationApp {
+                    head: notation_head(&entry, span),
+                    args: Vec::new(),
                     span,
                 })
             }

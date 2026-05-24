@@ -203,8 +203,8 @@ pub use human::{
     run_human_exact_tactic, run_human_induction_tactic, run_human_intro_tactic,
     run_human_rewrite_tactic, run_human_simp_lite_tactic, run_human_tactic,
     run_human_tactic_script, search_human_theorems_by_name, search_human_theorems_by_type,
-    search_human_theorems_for_goal, search_human_theorems_for_rewrite, start_human_proof,
-    start_human_session_proof, suggest_human_tactics, update_human_document,
+    search_human_theorems_for_goal, search_human_theorems_for_rewrite, search_human_typeclass,
+    start_human_proof, start_human_session_proof, suggest_human_tactics, update_human_document,
     validate_human_assistant_candidates, validate_human_state_request_document,
     verify_human_session,
 };
@@ -638,7 +638,8 @@ pub use types::{
     HumanTheoremIndexSource, HumanTheoremMatchBinding, HumanTheoremNameSearchRequest,
     HumanTheoremRewriteSearchRequest, HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError,
     HumanTheoremSearchMode, HumanTheoremSearchOk, HumanTheoremSearchOptions,
-    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, KernelCheckProfileId,
+    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, HumanTypeclassSearchError,
+    HumanTypeclassSearchOk, HumanTypeclassSearchRequest, KernelCheckProfileId,
     MachineApiCompactErrorWire, MachineApiEndpoint, MachineApiErrorResponse, MachineApiErrorWire,
     MachineApiOkResponse, MachineApiOptions, MachineApiResponseEnvelope, MachineApiResponseStatus,
     MachineApiSchedulerResponse, MachineApiVersion, MachineEndpointEnvelopeSpec,
@@ -649,9 +650,9 @@ pub use types::{
     MachineValidatedEndpointEnvelope, MachineWireGrammarError, MachineWireGrammarErrorKind,
     SessionId, SnapshotId, StructuredExpr, StructuredGoal, StructuredGoalStatus,
     StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
-    HUMAN_INDUCTIVE_CHECK_ENDPOINT, KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC,
-    KERNEL_CHECK_PROFILE_BUILTIN_NONE, MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID,
-    MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
+    HUMAN_INDUCTIVE_CHECK_ENDPOINT, HUMAN_TYPECLASS_SEARCH_ENDPOINT,
+    KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC, KERNEL_CHECK_PROFILE_BUILTIN_NONE,
+    MACHINE_API_VERSION, MACHINE_DISPLAY_PROFILE_ID, MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA,
 };
 pub use validation::{
     delayed_json_payload, parse_request_body, parse_request_body_with_limits,

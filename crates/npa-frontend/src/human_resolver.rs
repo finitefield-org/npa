@@ -1052,7 +1052,9 @@ impl<'a> HumanResolver<'a> {
         target: HumanGlobalRef,
         metadata: &HumanSourceNotationMetadata,
     ) -> HumanResult<()> {
-        if notation_fixity(decl.kind).is_none() {
+        if decl.kind == HumanNotationKind::Notation
+            && !is_nullary_numeric_notation_token(&decl.token)
+        {
             return Ok(());
         }
         let entry = HumanResolvedNotationEntry {
@@ -1109,7 +1111,9 @@ impl<'a> HumanResolver<'a> {
 
     fn add_imported_notations(&mut self, interface: &HumanSourceInterface) -> HumanResult<()> {
         for metadata in &interface.notations {
-            if notation_fixity(metadata.kind).is_none() {
+            if metadata.kind == HumanNotationKind::Notation
+                && !is_nullary_numeric_notation_token(&metadata.token)
+            {
                 continue;
             }
             let target = self.resolve_global_name(&metadata.target)?.ok_or_else(|| {
@@ -1775,6 +1779,10 @@ fn notation_fixity(kind: HumanNotationKind) -> Option<HumanNotationFixity> {
             Some(HumanNotationFixity::Infix)
         }
     }
+}
+
+fn is_nullary_numeric_notation_token(token: &str) -> bool {
+    matches!(token, "0" | "1")
 }
 
 fn notation_associativity(kind: HumanNotationKind) -> HumanNotationAssociativity {
@@ -2666,6 +2674,7 @@ def use (n : Type) : Type := n + Type",
     fn too_many_notation_candidates_is_rejected() {
         let options = crate::HumanCompileOptions {
             max_notation_candidates: 1,
+            ..crate::HumanCompileOptions::default()
         };
         let err = resolve_source_with_options(
             "\

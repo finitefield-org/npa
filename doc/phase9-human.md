@@ -779,9 +779,10 @@ typeclass database に登録されます。
 }
 ```
 
-P9H-09 では search trace はまだ生成しません。`instance` は class constructor に field 値を渡す
-ordinary definition に elaboration され、最終 certificate には explicit dictionary term だけが残ります。
-metadata が壊れても proof acceptance boundary は変わらず、checker は certificate 内の core term を型検査します。
+P9H-09 では search trace は生成しません。P9H-10 では Human 側だけに bounded search trace を
+追加しますが、`instance` は class constructor に field 値を渡す ordinary definition に elaboration
+され、最終 certificate には explicit dictionary term だけが残ります。metadata や search trace が
+壊れても proof acceptance boundary は変わらず、checker は certificate 内の core term を型検査します。
 
 ---
 
@@ -808,6 +809,10 @@ Nat.add_inst
 4. lower priority fallback instances
 ```
 
+P9H-10 の実装では、current module の instance を最優先し、imported source interface の
+instance は opened namespace に属するものを次順位、それ以外を fallback として扱います。
+同じ順位と priority の中で複数の異なる proof term が成立する場合は score で選ばず ambiguity にします。
+
 必ず制限を入れます。
 
 ```text
@@ -827,6 +832,9 @@ Nat.add_inst
   "timeout_ms": 50
 }
 ```
+
+policy は `HumanTypeclassSearchPolicy` として Human compile/API options に保持します。この policy は
+Human search のみを制限し、Machine Surface schema や AI candidate hot path には同期的な追加処理を入れません。
 
 ---
 
@@ -850,6 +858,10 @@ candidates:
 ```
 
 ただし priority が明確なら高 priority を選びます。
+
+ambiguity / no solution / budget exceeded は structured diagnostic/status として返します。
+search trace は診断 metadata であり、certificate hash、candidate payload hash、proof acceptance boundary
+のいずれにも含めません。
 
 ---
 
@@ -886,6 +898,10 @@ y : Nat
 ```text
 Add.add Nat Nat.add_inst x y
 ```
+
+`*` は `Mul.mul`、`0` は `Zero.zero`、`1` は `One.one` への Human notation として扱い、
+elaboration 後はそれぞれ明示的な dictionary term を引数に持つ ordinary core application になります。
+kernel と checker は typeclass search を知らず、最終的な dictionary term だけを検査します。
 
 ---
 
@@ -1731,6 +1747,12 @@ POST /typeclass/search
   ]
 }
 ```
+
+`/typeclass/search` は Human API wrapper であり、成功時の `core_term` は kernel-checkable な
+dictionary term です。`search_trace` は Human UI / IDE 向けの bounded diagnostic metadata であり、
+certificate に入らず、AI 側の `AdvancedMachineTypeclassResolutionPlan` や Machine API payload hash も
+変更しません。AI 向け fixture は従来どおり `cargo test -p npa-api advanced_ai` で検証し、Human search の
+timeout / budget は AI hot path latency を増やさないための境界として扱います。
 
 ---
 

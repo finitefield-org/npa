@@ -48,6 +48,7 @@ pub use human::{
     HumanSourceDeclarationMetadata, HumanSourceInterface, HumanSourceInterfaceStore,
     HumanSourceNotationMetadata, HumanTacticKind, HumanTacticScript, HumanTacticSyntax,
     HumanTypeclassClassMetadata, HumanTypeclassFieldMetadata, HumanTypeclassInstanceMetadata,
+    HumanTypeclassSearchOutput, HumanTypeclassSearchPolicy, HumanTypeclassSearchStatus,
     HumanUniverseParam,
 };
 pub use human_diagnostic::{
@@ -65,11 +66,12 @@ pub use human_elaborator::{
     compile_human_source_to_core_with_source_interfaces, elaborate_human_module,
     elaborate_human_tactic_term_check, elaborate_human_tactic_term_infer,
     prepare_human_proof_start_core_with_source_interfaces,
-    prepare_human_proof_start_core_with_source_interfaces_and_by_proofs, HumanByProofCore,
-    HumanByProofTarget, HumanByProofTargetsOutput, HumanCertificateCompileOutput,
-    HumanCoreCompileOutput, HumanProofStartCore, HumanProofStartCoreOutput,
-    HumanProofStartCoreWithProofsRequest, HumanTacticTermCheckOutput, HumanTacticTermElabContext,
-    HumanTacticTermElabContextRequest, HumanTacticTermInferOutput,
+    prepare_human_proof_start_core_with_source_interfaces_and_by_proofs,
+    search_human_typeclass_from_source, HumanByProofCore, HumanByProofTarget,
+    HumanByProofTargetsOutput, HumanCertificateCompileOutput, HumanCoreCompileOutput,
+    HumanProofStartCore, HumanProofStartCoreOutput, HumanProofStartCoreWithProofsRequest,
+    HumanTacticTermCheckOutput, HumanTacticTermElabContext, HumanTacticTermElabContextRequest,
+    HumanTacticTermInferOutput,
 };
 pub use human_parser::{
     parse_human_module, parse_human_module_with_source_interfaces, parse_human_term,

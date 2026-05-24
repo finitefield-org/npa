@@ -54,9 +54,9 @@ use crate::{
     HumanTheoremIndexSource, HumanTheoremMatchBinding, HumanTheoremNameSearchRequest,
     HumanTheoremRewriteSearchRequest, HumanTheoremSearchAxiomPolicy, HumanTheoremSearchError,
     HumanTheoremSearchMode, HumanTheoremSearchOk, HumanTheoremSearchOptions,
-    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, LocalId, StructuredExpr,
-    StructuredGoal, StructuredGoalStatus, StructuredHypothesis, StructuredProofState,
-    HUMAN_DISPLAY_PROFILE_ID,
+    HumanTheoremSearchResult, HumanTheoremTypeSearchRequest, HumanTypeclassSearchError,
+    HumanTypeclassSearchOk, HumanTypeclassSearchRequest, LocalId, StructuredExpr, StructuredGoal,
+    StructuredGoalStatus, StructuredHypothesis, StructuredProofState, HUMAN_DISPLAY_PROFILE_ID,
 };
 use npa_cert::{
     AxiomRef, DeclPayload, DependencyEntry, ExportEntry, ExportKind, GlobalRef, Hash, LevelId,
@@ -153,6 +153,37 @@ pub fn compile_human_source_to_certificate(
     Ok(HumanCompileCertificateOk {
         certificate: output.certificate,
         source_interface: output.source_interface,
+    })
+}
+
+/// Run bounded Human typeclass search for an explicit class goal.
+///
+/// This is the library equivalent of `POST /typeclass/search`. The returned
+/// trace is Human diagnostic metadata only; proof acceptance remains the
+/// canonical core term checked by the kernel and certificate verifier.
+pub fn search_human_typeclass(
+    request: HumanTypeclassSearchRequest<'_, '_>,
+) -> Result<HumanTypeclassSearchOk, HumanTypeclassSearchError> {
+    let options = npa_frontend::HumanCompileOptions::from(&request.options);
+    let verified_imports: Vec<_> = request
+        .verified_modules
+        .iter()
+        .map(npa_frontend::VerifiedImport::from)
+        .collect();
+    let output = npa_frontend::search_human_typeclass_from_source(
+        request.current_source.file_id,
+        request.current_module,
+        request.current_source.source,
+        request.goal_source,
+        &verified_imports,
+        request.imported_source_interfaces,
+        &options,
+    )?;
+    Ok(HumanTypeclassSearchOk {
+        status: output.status,
+        instance: output.instance,
+        core_term: output.core_term,
+        search_trace: output.search_trace,
     })
 }
 
@@ -1728,6 +1759,9 @@ fn human_lsp_diagnostic_kind_code(kind: &npa_frontend::HumanDiagnosticKind) -> &
         npa_frontend::HumanDiagnosticKind::TooManyNotationCandidates => {
             "too_many_notation_candidates"
         }
+        npa_frontend::HumanDiagnosticKind::TypeclassNoSolution => "typeclass_no_solution",
+        npa_frontend::HumanDiagnosticKind::TypeclassAmbiguous => "typeclass_ambiguous",
+        npa_frontend::HumanDiagnosticKind::TypeclassBudgetExceeded => "typeclass_budget_exceeded",
         npa_frontend::HumanDiagnosticKind::UnsupportedTactic => "unsupported_tactic",
         npa_frontend::HumanDiagnosticKind::UnsolvedImplicit => "unsolved_implicit",
         npa_frontend::HumanDiagnosticKind::UnsolvedMeta => "unsolved_meta",
@@ -12035,6 +12069,103 @@ theorem target (n : Nat) (h : Eq.{1} n n) : Eq.{1} n n := by simp-lite";
 
         assert_eq!(ok.core_module.declarations.len(), 1);
         assert_eq!(ok.source_interface.declarations.len(), 1);
+    }
+
+    #[test]
+    fn human_typeclass_search_api_returns_core_dictionary_term_and_trace() {
+        let source = "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add";
+        let ok = search_human_typeclass(HumanTypeclassSearchRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanTypeclass"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source,
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            goal_source: "Add Nat",
+            options: human_api_default_compile_options(),
+        })
+        .expect("Human typeclass search API should return an OK response");
+
+        assert_eq!(ok.status, npa_frontend::HumanTypeclassSearchStatus::Success);
+        assert_eq!(
+            ok.instance,
+            Some(npa_cert::Name::from_dotted("Nat.add_inst"))
+        );
+        assert_eq!(
+            ok.core_term,
+            Some(npa_kernel::Expr::konst("Nat.add_inst", vec![]))
+        );
+        assert!(!ok.search_trace.is_empty());
+        assert_eq!(crate::HUMAN_TYPECLASS_SEARCH_ENDPOINT, "/typeclass/search");
+
+        compile_human_source_to_certificate(HumanCompileCertificateRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanTypeclassCheck"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(1),
+                source: "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+def Check : Add Nat := Nat.add_inst",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            options: human_api_default_compile_options(),
+        })
+        .expect("returned dictionary term should be kernel-checkable for the goal");
+    }
+
+    #[test]
+    fn human_typeclass_search_api_reports_ambiguity_without_score_selection() {
+        let ok = search_human_typeclass(HumanTypeclassSearchRequest {
+            current_module: npa_cert::Name::from_dotted("Api.HumanTypeclassAmbiguous"),
+            current_source: HumanCurrentModuleSource {
+                file_id: npa_frontend::FileId(0),
+                source: "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+axiom Nat.add_alt : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+instance Nat.add_alt_inst : Add Nat where
+  add := Nat.add_alt",
+            },
+            verified_modules: &[],
+            imported_source_interfaces: &[],
+            goal_source: "Add Nat",
+            options: human_api_default_compile_options(),
+        })
+        .expect("ambiguous Human typeclass search should still return structured output");
+
+        assert_eq!(
+            ok.status,
+            npa_frontend::HumanTypeclassSearchStatus::Ambiguous
+        );
+        assert!(ok.instance.is_none());
+        assert!(ok.core_term.is_none());
+        assert!(ok
+            .search_trace
+            .iter()
+            .any(|entry| entry.contains("Nat.add_inst")));
+        assert!(ok
+            .search_trace
+            .iter()
+            .any(|entry| entry.contains("Nat.add_alt_inst")));
     }
 
     #[test]

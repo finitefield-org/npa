@@ -4,7 +4,7 @@ use npa_cert::{CoreModule, Hash, ModuleCert, ModuleName, Name, VerifiedModule};
 use npa_frontend::{
     ByteOffset, FileId, HumanCompileOptions, HumanDiagnostic, HumanExpr,
     HumanImportedSourceInterface, HumanName, HumanRewriteRuleSyntax, HumanSourceInterface,
-    HumanTacticScript, MachineSurfaceCallableInterfaceTable, Span,
+    HumanTacticScript, HumanTypeclassSearchPolicy, MachineSurfaceCallableInterfaceTable, Span,
 };
 use npa_kernel::{Expr, InductiveDecl};
 use npa_tactic::{
@@ -34,10 +34,12 @@ pub const MACHINE_TACTIC_CANDIDATE_OUTPUT_SCHEMA: &str = "npa.machine_tactic_can
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NAT_EQ_REC: &str = "npa.kernel.v0.1.builtin-nat-eq-rec";
 pub const KERNEL_CHECK_PROFILE_BUILTIN_NONE: &str = "npa.kernel.v0.1.builtin-none";
 pub const HUMAN_INDUCTIVE_CHECK_ENDPOINT: &str = "/inductive/check";
+pub const HUMAN_TYPECLASS_SEARCH_ENDPOINT: &str = "/typeclass/search";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanApiCompileOptions {
     pub max_notation_candidates: usize,
+    pub typeclass_search_policy: HumanTypeclassSearchPolicy,
     pub kernel_profile: npa_tactic::MachineKernelProfile,
     pub tactic_options: npa_tactic::MachineTacticOptions,
 }
@@ -47,6 +49,7 @@ impl Default for HumanApiCompileOptions {
         let frontend = HumanCompileOptions::default();
         Self {
             max_notation_candidates: frontend.max_notation_candidates,
+            typeclass_search_policy: frontend.typeclass_search_policy,
             kernel_profile: npa_tactic::MachineKernelProfile::BuiltinNatEqRec,
             tactic_options: npa_tactic::MachineTacticOptions::default(),
         }
@@ -57,6 +60,7 @@ impl From<&HumanApiCompileOptions> for HumanCompileOptions {
     fn from(value: &HumanApiCompileOptions) -> Self {
         Self {
             max_notation_candidates: value.max_notation_candidates,
+            typeclass_search_policy: value.typeclass_search_policy,
         }
     }
 }
@@ -129,6 +133,35 @@ pub struct HumanCompileCertificateRequest<'src, 'imports> {
     pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
     /// Frontend and tactic options for this request; no Machine session state is implied.
     pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug)]
+pub struct HumanTypeclassSearchRequest<'src, 'imports> {
+    pub current_module: ModuleName,
+    pub current_source: HumanCurrentModuleSource<'src>,
+    pub verified_modules: &'imports [VerifiedModule],
+    pub imported_source_interfaces: &'imports [HumanImportedSourceInterface],
+    pub goal_source: &'src str,
+    pub options: HumanApiCompileOptions,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassSearchOk {
+    pub status: npa_frontend::HumanTypeclassSearchStatus,
+    pub instance: Option<Name>,
+    pub core_term: Option<Expr>,
+    pub search_trace: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassSearchError {
+    pub diagnostic: HumanDiagnostic,
+}
+
+impl From<HumanDiagnostic> for HumanTypeclassSearchError {
+    fn from(diagnostic: HumanDiagnostic) -> Self {
+        Self { diagnostic }
+    }
 }
 
 #[derive(Clone, Debug)]

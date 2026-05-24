@@ -594,15 +594,50 @@ pub struct HumanTypeclassInstanceMetadata {
     pub span: Span,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassSearchPolicy {
+    pub max_depth: u32,
+    pub max_candidates: u32,
+    pub timeout_ms: u64,
+}
+
+impl Default for HumanTypeclassSearchPolicy {
+    fn default() -> Self {
+        Self {
+            max_depth: 16,
+            max_candidates: 128,
+            timeout_ms: 50,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HumanTypeclassSearchStatus {
+    Success,
+    Ambiguous,
+    NoSolution,
+    BudgetExceeded,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HumanTypeclassSearchOutput {
+    pub status: HumanTypeclassSearchStatus,
+    pub instance: Option<npa_cert::Name>,
+    pub core_term: Option<npa_kernel::Expr>,
+    pub search_trace: Vec<String>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCompileOptions {
     pub max_notation_candidates: usize,
+    pub typeclass_search_policy: HumanTypeclassSearchPolicy,
 }
 
 impl Default for HumanCompileOptions {
     fn default() -> Self {
         Self {
             max_notation_candidates: 32,
+            typeclass_search_policy: HumanTypeclassSearchPolicy::default(),
         }
     }
 }

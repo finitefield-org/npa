@@ -558,20 +558,20 @@ P9H-09 は declaration と dictionary elaboration。探索アルゴリズムは 
 
 実装タスク:
 
-- [ ] local / opened namespace / imported global / fallback priority の bounded instance search を実装する。
-- [ ] max_depth / max_candidates / timeout / cycle detection / repeated goal cache を policy 化する。
-- [ ] ambiguity、no solution、budget exceeded を structured diagnostic にする。
-- [ ] `POST /typeclass/search` 相当の Human API wrapper を追加し、instance / core_term / bounded search trace を返す。
-- [ ] `+` / `*` / `0` / `1` notation を typeclass 経由で dictionary term に elaboration する。
-- [ ] Phase 9 AI TypeclassResolution fixture と Human search behavior の境界を docs / tests に接続する。
+- [x] local / opened namespace / imported global / fallback priority の bounded instance search を実装する。
+- [x] max_depth / max_candidates / timeout / cycle detection / repeated goal cache を policy 化する。
+- [x] ambiguity、no solution、budget exceeded を structured diagnostic にする。
+- [x] `POST /typeclass/search` 相当の Human API wrapper を追加し、instance / core_term / bounded search trace を返す。
+- [x] `+` / `*` / `0` / `1` notation を typeclass 経由で dictionary term に elaboration する。
+- [x] Phase 9 AI TypeclassResolution fixture と Human search behavior の境界を docs / tests に接続する。
 
 受け入れ条件:
 
-- [ ] `Add Nat` の direct instance と recursive instance が budget 内で解決できる。
-- [ ] 複数の異なる proof term がある場合は score で選ばず ambiguity error になる。
-- [ ] search trace は diagnostic metadata であり certificate hash に入らない。
-- [ ] `/typeclass/search` response の `core_term` は kernel-checkable dictionary term で、search trace は proof acceptance boundary ではない。
-- [ ] timeout / budget により AI hot path の latency が bounded である。
+- [x] `Add Nat` の direct instance と recursive instance が budget 内で解決できる。
+- [x] 複数の異なる proof term がある場合は score で選ばず ambiguity error になる。
+- [x] search trace は diagnostic metadata であり certificate hash に入らない。
+- [x] `/typeclass/search` response の `core_term` は kernel-checkable dictionary term で、search trace は proof acceptance boundary ではない。
+- [x] timeout / budget により AI hot path の latency が bounded である。
 
 検証:
 

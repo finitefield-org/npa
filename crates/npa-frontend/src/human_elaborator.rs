@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::time::{Duration, Instant};
 
 use crate::{
     builtin_machine_callable_profile, elaborator::certificate_imports_for_module,
@@ -10,10 +11,12 @@ use crate::{
     HumanImportedSourceInterface, HumanItem, HumanLevel, HumanName, HumanResolvedName,
     HumanResolvedNameUse, HumanResolvedNotationEntry, HumanResolvedNotationUse, HumanResult,
     HumanSourceDeclarationKind, HumanSourceDeclarationMetadata, HumanSourceInterface,
-    HumanTacticScript, HumanTypeclassClassMetadata, HumanUnsolvedMeta, HumanUnsolvedMetaKind,
-    MachineBinder, MachineCallableBinderVisibility, MachineCheckedCurrentDecl,
-    MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel, MachineLocalDecl, MachineName,
-    MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span, VerifiedImport,
+    HumanTacticScript, HumanTypeclassClassMetadata, HumanTypeclassInstanceMetadata,
+    HumanTypeclassSearchOutput, HumanTypeclassSearchPolicy, HumanTypeclassSearchStatus,
+    HumanUnsolvedMeta, HumanUnsolvedMetaKind, MachineBinder, MachineCallableBinderVisibility,
+    MachineCheckedCurrentDecl, MachineCheckedCurrentGeneratedDecl, MachineDecl, MachineLevel,
+    MachineLocalDecl, MachineName, MachineTerm, MachineUniverseParam, ResolvedHumanModule, Span,
+    VerifiedImport,
 };
 use npa_kernel::{
     eq_inductive, eq_rec_type, nat_inductive, subst, Binder, ConstructorDecl, Ctx, Decl, Env,
@@ -21,6 +24,7 @@ use npa_kernel::{
 };
 
 const MAX_HUMAN_IMPLICIT_INSERTION_STEPS: usize = 64;
+const MAX_HUMAN_TYPECLASS_DIAGNOSTIC_CANDIDATES: usize = 32;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HumanCoreCompileOutput {
@@ -142,6 +146,7 @@ pub fn elaborate_human_module(
             &module,
             verified_imports,
             &plan,
+            options,
         ) {
             Ok(core) if success.is_none() => success = Some(core),
             Ok(_) => {
@@ -198,6 +203,7 @@ fn elaborate_human_proof_start_core(
             module,
             verified_imports,
             &plan,
+            options,
         ) {
             Ok(core) if success.is_none() => success = Some(core),
             Ok(_) => {
@@ -256,6 +262,7 @@ fn elaborate_human_proof_start_core_with_by_proofs(
             verified_imports,
             &plan,
             by_proofs,
+            options,
         ) {
             Ok(core) if success.is_none() => success = Some(core),
             Ok(_) => {
@@ -292,9 +299,11 @@ fn prepare_human_proof_start_core_with_notation_plan(
     module: &ResolvedHumanModule,
     verified_imports: &[VerifiedImport],
     notation_plan: &[usize],
+    options: &HumanCompileOptions,
 ) -> HumanResult<HumanProofStartCore> {
-    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)?
-        .with_current_module_prefix(module_name.clone());
+    let mut lowering =
+        HumanToMachineLowering::new(module, verified_imports, notation_plan, options)?
+            .with_current_module_prefix(module_name.clone());
     let lowered = lowering.lower_proof_start(&module_name, theorem_name, module)?;
     let elaborator = HumanBidirectionalElaborator::new(module, verified_imports)?;
     let proof = elaborator.elaborate_proof_start_core(module_name.clone(), lowered)?;
@@ -311,9 +320,11 @@ fn prepare_human_proof_start_core_with_notation_plan_and_by_proofs(
     verified_imports: &[VerifiedImport],
     notation_plan: &[usize],
     by_proofs: &BTreeMap<u64, Expr>,
+    options: &HumanCompileOptions,
 ) -> HumanResult<HumanProofStartCore> {
-    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)?
-        .with_current_module_prefix(module_name.clone());
+    let mut lowering =
+        HumanToMachineLowering::new(module, verified_imports, notation_plan, options)?
+            .with_current_module_prefix(module_name.clone());
     let lowered = lowering.lower_proof_start_with_core_proofs(
         &module_name,
         theorem_name,
@@ -479,6 +490,69 @@ pub fn compile_human_source_to_core_output_with_source_interfaces(
         core_module,
         source_interface,
     })
+}
+
+pub fn search_human_typeclass_from_source(
+    file_id: crate::FileId,
+    module_name: npa_cert::ModuleName,
+    source: &str,
+    goal_source: &str,
+    verified_imports: &[VerifiedImport],
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    options: &HumanCompileOptions,
+) -> HumanResult<HumanTypeclassSearchOutput> {
+    const GOAL_DECL_NAME: &str = "NpaTypeclassSearchGoal";
+
+    let span = source_span(file_id, source);
+    let mut search_source = String::with_capacity(source.len() + goal_source.len() + 64);
+    search_source.push_str(source);
+    if !search_source.ends_with('\n') {
+        search_source.push('\n');
+    }
+    search_source.push_str("axiom ");
+    search_source.push_str(GOAL_DECL_NAME);
+    search_source.push_str(" : ");
+    search_source.push_str(goal_source);
+    search_source.push('\n');
+
+    let parsed = parse_human_module_with_source_interfaces(
+        file_id,
+        &search_source,
+        imported_source_interfaces,
+    )?;
+    let resolved = resolve_human_module_with_source_interfaces(
+        module_name.clone(),
+        parsed,
+        verified_imports,
+        imported_source_interfaces,
+        options,
+    )?;
+    let search_module = resolved.clone();
+    let core_module = elaborate_human_module(module_name, resolved, verified_imports, options)
+        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    let goal = core_module
+        .declarations
+        .iter()
+        .find(|decl| decl.name() == GOAL_DECL_NAME)
+        .map(|decl| decl.ty().clone())
+        .ok_or_else(|| {
+            HumanDiagnostic::error(
+                HumanDiagnosticKind::TypeclassNoSolution,
+                span,
+                "typeclass search goal was not lowered to a core declaration",
+            )
+            .with_phase(HumanDiagnosticPhase::Elaborator)
+        })?;
+
+    let mut env_builder = HumanImplicitInserter::new(&search_module, verified_imports, options)?;
+    for decl in core_module.declarations {
+        env_builder.add_kernel_decl(decl, span)?;
+    }
+    let result = env_builder.search_typeclass_core(&goal, &HumanLocalContext::default(), &[], span);
+    Ok(human_typeclass_search_output(
+        result,
+        &env_builder.typeclass_instances,
+    ))
 }
 
 pub fn collect_human_by_proof_targets_with_source_interfaces(
@@ -2040,10 +2114,13 @@ fn elaborate_human_module_with_notation_plan(
     module: &ResolvedHumanModule,
     verified_imports: &[VerifiedImport],
     notation_plan: &[usize],
+    options: &HumanCompileOptions,
 ) -> HumanResult<npa_cert::CoreModule> {
     let span = module.module.span;
-    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)
-        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
+    let mut lowering =
+        HumanToMachineLowering::new(module, verified_imports, notation_plan, options).map_err(
+            |diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator),
+        )?;
     let machine_module = lowering
         .lower_module(module)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
@@ -2080,6 +2157,7 @@ fn elaborate_human_module_with_by_proofs(
             verified_imports,
             &plan,
             by_proofs,
+            options,
         ) {
             Ok(core) if success.is_none() => success = Some(core),
             Ok(_) => {
@@ -2116,11 +2194,13 @@ fn elaborate_human_module_with_notation_plan_and_by_proofs(
     verified_imports: &[VerifiedImport],
     notation_plan: &[usize],
     by_proofs: &BTreeMap<u64, Expr>,
+    options: &HumanCompileOptions,
 ) -> HumanResult<npa_cert::CoreModule> {
     let span = module.module.span;
-    let mut lowering = HumanToMachineLowering::new(module, verified_imports, notation_plan)
-        .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
-        .with_current_module_prefix(module_name.clone());
+    let mut lowering =
+        HumanToMachineLowering::new(module, verified_imports, notation_plan, options)
+            .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?
+            .with_current_module_prefix(module_name.clone());
     let machine_module = lowering
         .lower_module_with_core_proofs(module, by_proofs)
         .map_err(|diagnostic| diagnostic.with_default_phase(HumanDiagnosticPhase::Elaborator))?;
@@ -4547,15 +4627,93 @@ struct HumanImplicitInserter {
     env: Env,
     signatures: BTreeMap<String, HumanCallableSignature>,
     imported_source_interfaces: Vec<HumanImportedSourceInterface>,
+    typeclass_classes: Vec<HumanTypeclassClassMetadata>,
+    typeclass_instances: Vec<HumanTypeclassInstanceCandidate>,
+    typeclass_policy: HumanTypeclassSearchPolicy,
     insertion_steps: usize,
 }
 
+#[derive(Clone, Debug)]
+struct HumanTypeclassInstanceCandidate {
+    metadata: HumanTypeclassInstanceMetadata,
+    source_rank: u8,
+}
+
+#[derive(Clone, Debug)]
+struct HumanTypeclassFieldProjection {
+    class_name: MachineName,
+    projection_name: MachineName,
+}
+
+#[derive(Clone, Debug)]
+struct HumanResolvedTypeclassCandidate {
+    source_rank: u8,
+    priority: u32,
+    const_name: String,
+    universe_params: Vec<String>,
+    telescope: Vec<Expr>,
+    result: Expr,
+    class_head: Option<String>,
+    target_key: Vec<u8>,
+}
+
+#[derive(Clone, Debug)]
+struct HumanTypeclassCandidateApplication {
+    levels: Vec<Level>,
+    args: Vec<Option<Expr>>,
+    recursive_obligations: Vec<(usize, Expr)>,
+    fingerprint: Vec<u8>,
+}
+
+#[derive(Clone, Debug)]
+struct HumanTypeclassSearchState {
+    policy: HumanTypeclassSearchPolicy,
+    start: Instant,
+    node_count: u32,
+    trace: Vec<String>,
+    cache: BTreeMap<Vec<u8>, Vec<Expr>>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HumanTypeclassSearchStop {
+    BudgetExceeded,
+    CandidateInterfaceInvalid,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum HumanTypeclassSearchResult {
+    Success {
+        proof: Expr,
+        trace: Vec<String>,
+    },
+    NoSolution {
+        trace: Vec<String>,
+    },
+    Ambiguous {
+        candidates: Vec<String>,
+        trace: Vec<String>,
+    },
+    BudgetExceeded {
+        trace: Vec<String>,
+    },
+    CandidateInterfaceInvalid {
+        trace: Vec<String>,
+    },
+}
+
 impl HumanImplicitInserter {
-    fn new(module: &ResolvedHumanModule, verified_imports: &[VerifiedImport]) -> HumanResult<Self> {
+    fn new(
+        module: &ResolvedHumanModule,
+        verified_imports: &[VerifiedImport],
+        options: &HumanCompileOptions,
+    ) -> HumanResult<Self> {
         let mut inserter = Self {
             env: Env::new(),
             signatures: BTreeMap::new(),
             imported_source_interfaces: module.state.source_interfaces.imports.clone(),
+            typeclass_classes: human_typeclass_classes(module),
+            typeclass_instances: human_typeclass_instances(module),
+            typeclass_policy: options.typeclass_search_policy,
             insertion_steps: 0,
         };
 
@@ -4573,6 +4731,9 @@ impl HumanImplicitInserter {
             env: context.env.clone(),
             signatures: context.signatures.clone(),
             imported_source_interfaces: Vec::new(),
+            typeclass_classes: Vec::new(),
+            typeclass_instances: Vec::new(),
+            typeclass_policy: HumanTypeclassSearchPolicy::default(),
             insertion_steps: 0,
         }
     }
@@ -4652,7 +4813,8 @@ impl HumanImplicitInserter {
 
         decl.binders = transformed_binders;
         decl.ty = self.insert_term(decl.ty, &mut locals, &delta)?;
-        decl.value = self.insert_term(decl.value, &mut locals, &delta)?;
+        decl.value =
+            self.insert_term_with_expected(decl.value, &mut locals, &delta, Some(&decl.ty))?;
 
         let ty_expr = self.elaborate_machine_term(&decl.ty, &locals, &delta)?;
         let value_expr = self.elaborate_machine_term(&decl.value, &locals, &delta)?;
@@ -4944,6 +5106,291 @@ impl HumanImplicitInserter {
         }
     }
 
+    fn typeclass_field_projection(
+        &self,
+        projection: &MachineName,
+    ) -> Option<HumanTypeclassFieldProjection> {
+        for class in &self.typeclass_classes {
+            for field in &class.fields {
+                let projection_name = machine_name(field.projection.clone());
+                if projection_name.parts == projection.parts {
+                    return Some(HumanTypeclassFieldProjection {
+                        class_name: machine_name(class.name.clone()),
+                        projection_name,
+                    });
+                }
+            }
+        }
+        None
+    }
+
+    fn typeclass_goal_for_target_type(
+        &mut self,
+        class_name: &MachineName,
+        target_ty: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<Expr> {
+        let target = core_expr_to_machine_term(target_ty, locals, span).ok_or_else(|| {
+            HumanDiagnostic::error(
+                HumanDiagnosticKind::TypeclassNoSolution,
+                span,
+                "typeclass search could not render the target type as a Human term",
+            )
+        })?;
+        let goal = MachineTerm::App {
+            func: Box::new(MachineTerm::Ident {
+                name: class_name.clone(),
+                universe_args: None,
+                explicit_mode: false,
+                span,
+            }),
+            arg: Box::new(target),
+            span,
+        };
+        let mut scratch = locals.clone();
+        let goal = self.insert_term(goal, &mut scratch, delta)?;
+        self.elaborate_machine_term(&goal, locals, delta)
+    }
+
+    fn first_typeclass_field_arg_is_dictionary(
+        &self,
+        field: &HumanTypeclassFieldProjection,
+        arg: Option<&MachineTerm>,
+        locals: &HumanLocalContext,
+        delta: &[String],
+    ) -> bool {
+        let Some(arg) = arg else {
+            return false;
+        };
+        let mut probe = self.clone();
+        let mut scratch = locals.clone();
+        let Ok(inserted) = probe.insert_term(arg.clone(), &mut scratch, delta) else {
+            return false;
+        };
+        let Ok(expr) = probe.elaborate_machine_term(&inserted, locals, delta) else {
+            return false;
+        };
+        let Ok(ty) = probe.infer_core_expr_type(&expr, locals, delta, inserted.span()) else {
+            return false;
+        };
+        let mut class_declarations = BTreeSet::new();
+        class_declarations.insert(field.class_name.as_dotted());
+        human_typeclass_head_name(
+            &probe.env,
+            &locals.to_kernel_ctx(),
+            delta,
+            &ty,
+            &class_declarations,
+        )
+        .is_some()
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn solve_typeclass_field_spine(
+        &mut self,
+        field: &HumanTypeclassFieldProjection,
+        universe_args: Option<Vec<MachineLevel>>,
+        args: Vec<MachineTerm>,
+        expected: Option<&MachineTerm>,
+        span: Span,
+        locals: &HumanLocalContext,
+        delta: &[String],
+    ) -> HumanResult<MachineTerm> {
+        let (args, target_ty) =
+            self.insert_typeclass_field_args(args, expected, span, locals, delta)?;
+        let goal = self.typeclass_goal_for_target_type(
+            &field.class_name,
+            &target_ty,
+            locals,
+            delta,
+            span,
+        )?;
+        let result = self.search_typeclass_core(&goal, locals, delta, span);
+        match result {
+            HumanTypeclassSearchResult::Success { proof, .. } => {
+                let dict = core_expr_to_machine_term(&proof, locals, span).ok_or_else(|| {
+                    HumanDiagnostic::error(
+                        HumanDiagnosticKind::TypeclassNoSolution,
+                        span,
+                        "typeclass search result could not be lowered to a Machine term",
+                    )
+                })?;
+                let mut expanded = Vec::with_capacity(args.len() + 1);
+                expanded.push(dict);
+                expanded.extend(args);
+                let Some(signature) = self
+                    .signatures
+                    .get(&field.projection_name.as_dotted())
+                    .cloned()
+                else {
+                    return Err(typeclass_no_solution_diagnostic(
+                        span,
+                        "typeclass field projection is not callable",
+                        Vec::new(),
+                        Vec::new(),
+                    ));
+                };
+                let solved = self.solve_human_spine(
+                    &field.projection_name,
+                    &signature,
+                    universe_args,
+                    expanded,
+                    locals,
+                    delta,
+                )?;
+                Ok(rebuild_machine_apps(
+                    MachineTerm::Ident {
+                        name: field.projection_name.clone(),
+                        universe_args: solved.universe_args,
+                        explicit_mode: true,
+                        span,
+                    },
+                    solved.args,
+                    span,
+                ))
+            }
+            HumanTypeclassSearchResult::NoSolution { trace } => {
+                Err(typeclass_no_solution_diagnostic(
+                    span,
+                    "no typeclass instance found",
+                    trace,
+                    Vec::new(),
+                ))
+            }
+            HumanTypeclassSearchResult::Ambiguous { candidates, trace } => {
+                Err(typeclass_ambiguous_diagnostic(
+                    span,
+                    "ambiguous typeclass instance",
+                    trace,
+                    candidates,
+                ))
+            }
+            HumanTypeclassSearchResult::BudgetExceeded { trace } => Err(
+                typeclass_budget_diagnostic(span, "typeclass search budget exceeded", trace),
+            ),
+            HumanTypeclassSearchResult::CandidateInterfaceInvalid { trace } => {
+                Err(typeclass_no_solution_diagnostic(
+                    span,
+                    "typeclass candidate interface was invalid",
+                    trace,
+                    Vec::new(),
+                ))
+            }
+        }
+    }
+
+    fn insert_typeclass_field_args(
+        &mut self,
+        args: Vec<MachineTerm>,
+        expected: Option<&MachineTerm>,
+        span: Span,
+        locals: &HumanLocalContext,
+        delta: &[String],
+    ) -> HumanResult<(Vec<MachineTerm>, Expr)> {
+        let mut inserted_args = vec![None; args.len()];
+        let mut target_ty = None;
+        let mut first_arg_error = None;
+
+        for (index, arg) in args.iter().cloned().enumerate() {
+            let mut scratch = locals.clone();
+            match self
+                .insert_term(arg, &mut scratch, delta)
+                .and_then(|inserted| {
+                    let arg_expr = self.elaborate_machine_term(&inserted, locals, delta)?;
+                    let arg_ty =
+                        self.infer_core_expr_type(&arg_expr, locals, delta, inserted.span())?;
+                    Ok((inserted, arg_ty))
+                }) {
+                Ok((inserted, arg_ty)) => {
+                    target_ty.get_or_insert(arg_ty);
+                    inserted_args[index] = Some(inserted);
+                }
+                Err(err) => {
+                    first_arg_error.get_or_insert(err);
+                }
+            }
+        }
+
+        let target_ty = match target_ty {
+            Some(target_ty) => target_ty,
+            None => {
+                let Some(expected) = expected else {
+                    return Err(first_arg_error.unwrap_or_else(|| {
+                        typeclass_no_solution_diagnostic(
+                            span,
+                            "typeclass search requires either an argument type or an expected type",
+                            Vec::new(),
+                            Vec::new(),
+                        )
+                    }));
+                };
+                self.elaborate_machine_term(expected, locals, delta)?
+            }
+        };
+        let target_machine_term = core_expr_to_machine_term(&target_ty, locals, span);
+
+        for (index, arg) in args.into_iter().enumerate() {
+            if inserted_args[index].is_some() {
+                continue;
+            }
+            let Some(expected_arg_ty) = target_machine_term.as_ref() else {
+                return Err(first_arg_error.unwrap_or_else(|| {
+                    typeclass_no_solution_diagnostic(
+                        span,
+                        "typeclass search could not render the inferred argument type",
+                        Vec::new(),
+                        Vec::new(),
+                    )
+                }));
+            };
+            let mut scratch = locals.clone();
+            let inserted = match self.insert_term_with_expected(
+                arg,
+                &mut scratch,
+                delta,
+                Some(expected_arg_ty),
+            ) {
+                Ok(inserted) => inserted,
+                Err(err) => return Err(first_arg_error.unwrap_or(err)),
+            };
+            inserted_args[index] = Some(inserted);
+        }
+
+        let inserted_args = inserted_args
+            .into_iter()
+            .collect::<Option<Vec<_>>>()
+            .ok_or_else(|| {
+                typeclass_no_solution_diagnostic(
+                    span,
+                    "typeclass search could not insert projection arguments",
+                    Vec::new(),
+                    Vec::new(),
+                )
+            })?;
+        Ok((inserted_args, target_ty))
+    }
+
+    fn search_typeclass_core(
+        &self,
+        goal: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanTypeclassSearchResult {
+        human_search_typeclass_core(
+            &self.env,
+            locals,
+            delta,
+            goal,
+            &self.typeclass_classes,
+            &self.typeclass_instances,
+            self.typeclass_policy,
+            span,
+        )
+    }
+
     fn insert_term(
         &mut self,
         term: MachineTerm,
@@ -4954,6 +5401,32 @@ impl HumanImplicitInserter {
             MachineTerm::App { .. } => {
                 let (head, args, span) = collect_machine_app_spine(term);
                 let head = self.insert_app_head(head, locals, delta)?;
+                if let MachineTerm::Ident {
+                    name,
+                    universe_args,
+                    explicit_mode: false,
+                    ..
+                } = &head
+                {
+                    if let Some(field) = self.typeclass_field_projection(name) {
+                        if !self.first_typeclass_field_arg_is_dictionary(
+                            &field,
+                            args.first(),
+                            locals,
+                            delta,
+                        ) {
+                            return self.solve_typeclass_field_spine(
+                                &field,
+                                universe_args.clone(),
+                                args,
+                                None,
+                                span,
+                                locals,
+                                delta,
+                            );
+                        }
+                    }
+                }
                 let args = args
                     .into_iter()
                     .map(|arg| self.insert_term(arg, locals, delta))
@@ -5036,6 +5509,89 @@ impl HumanImplicitInserter {
                 ))
             }
             term => Ok(term),
+        }
+    }
+
+    fn insert_term_with_expected(
+        &mut self,
+        term: MachineTerm,
+        locals: &mut HumanLocalContext,
+        delta: &[String],
+        expected: Option<&MachineTerm>,
+    ) -> HumanResult<MachineTerm> {
+        match term {
+            term @ MachineTerm::App { .. } if expected.is_some() => {
+                let (head, args, span) = collect_machine_app_spine(term);
+                if let MachineTerm::Ident {
+                    name,
+                    universe_args,
+                    explicit_mode: false,
+                    ..
+                } = &head
+                {
+                    if let Some(field) = self.typeclass_field_projection(name) {
+                        if !self.first_typeclass_field_arg_is_dictionary(
+                            &field,
+                            args.first(),
+                            locals,
+                            delta,
+                        ) {
+                            return self.solve_typeclass_field_spine(
+                                &field,
+                                universe_args.clone(),
+                                args,
+                                expected,
+                                span,
+                                locals,
+                                delta,
+                            );
+                        }
+                    }
+                }
+                self.insert_term(rebuild_machine_apps(head, args, span), locals, delta)
+            }
+            MachineTerm::Ident {
+                name,
+                universe_args,
+                explicit_mode: false,
+                span,
+            } if expected.is_some() => {
+                if let Some(field) = self.typeclass_field_projection(&name) {
+                    return self.solve_typeclass_field_spine(
+                        &field,
+                        universe_args,
+                        Vec::new(),
+                        expected,
+                        span,
+                        locals,
+                        delta,
+                    );
+                }
+                self.insert_term(
+                    MachineTerm::Ident {
+                        name,
+                        universe_args,
+                        explicit_mode: false,
+                        span,
+                    },
+                    locals,
+                    delta,
+                )
+            }
+            MachineTerm::Annot { expr, ty, span } => {
+                let ty = self.insert_term(*ty, locals, delta)?;
+                Ok(MachineTerm::Annot {
+                    expr: Box::new(self.insert_term_with_expected(
+                        *expr,
+                        locals,
+                        delta,
+                        Some(&ty),
+                    )?),
+                    ty: Box::new(ty),
+                    span,
+                })
+            }
+            term => self.insert_term(term, locals, delta),
         }
     }
 
@@ -5131,8 +5687,31 @@ impl HumanImplicitInserter {
             ));
         }
 
-        let solved =
-            self.solve_human_spine(&name, &signature, universe_args, args, locals, delta)?;
+        let field = self.typeclass_field_projection(&name);
+        let solved = match self.solve_human_spine(
+            &name,
+            &signature,
+            universe_args.clone(),
+            args.clone(),
+            locals,
+            delta,
+        ) {
+            Ok(solved) => solved,
+            Err(err) => {
+                if let Some(field) = field {
+                    return self.solve_typeclass_field_spine(
+                        &field,
+                        universe_args,
+                        args,
+                        None,
+                        span,
+                        locals,
+                        delta,
+                    );
+                }
+                return Err(err);
+            }
+        };
         let head = MachineTerm::Ident {
             name,
             universe_args: solved.universe_args,
@@ -6488,12 +7067,13 @@ impl<'a> HumanToMachineLowering<'a> {
         module: &'a ResolvedHumanModule,
         verified_imports: &[VerifiedImport],
         notation_plan: &'a [usize],
+        options: &HumanCompileOptions,
     ) -> HumanResult<Self> {
         Ok(Self {
             name_uses: module.resolved_names.iter(),
             notation_uses: module.resolved_notations.iter(),
             notation_choices: notation_plan.iter(),
-            implicit_inserter: HumanImplicitInserter::new(module, verified_imports)?,
+            implicit_inserter: HumanImplicitInserter::new(module, verified_imports, options)?,
             meta_store: HumanMetaStore::default(),
             current_module_prefix: None,
             typeclass_classes: human_typeclass_classes(module),
@@ -7744,6 +8324,1176 @@ fn human_typeclass_classes(module: &ResolvedHumanModule) -> Vec<HumanTypeclassCl
         .collect()
 }
 
+fn human_typeclass_instances(module: &ResolvedHumanModule) -> Vec<HumanTypeclassInstanceCandidate> {
+    let opened_namespaces = module
+        .state
+        .open_scopes
+        .iter()
+        .flat_map(|frame| frame.opens.iter().map(|open| open.namespace.parts.clone()))
+        .collect::<Vec<_>>();
+    let mut instances = Vec::new();
+    for instance in &module.state.source_interfaces.current.typeclass_instances {
+        instances.push(HumanTypeclassInstanceCandidate {
+            metadata: instance.clone(),
+            source_rank: 0,
+        });
+    }
+    for interface in &module.state.source_interfaces.imports {
+        for instance in &interface.source_interface.typeclass_instances {
+            let source_rank = if opened_namespaces
+                .iter()
+                .any(|namespace| name_has_strict_prefix(&instance.name.parts, namespace))
+            {
+                1
+            } else {
+                2
+            };
+            instances.push(HumanTypeclassInstanceCandidate {
+                metadata: instance.clone(),
+                source_rank,
+            });
+        }
+    }
+    instances
+}
+
+fn human_typeclass_search_output(
+    result: HumanTypeclassSearchResult,
+    instances: &[HumanTypeclassInstanceCandidate],
+) -> HumanTypeclassSearchOutput {
+    match result {
+        HumanTypeclassSearchResult::Success { proof, trace } => HumanTypeclassSearchOutput {
+            status: HumanTypeclassSearchStatus::Success,
+            instance: human_typeclass_proof_head_instance(&proof, instances),
+            core_term: Some(proof),
+            search_trace: trace,
+        },
+        HumanTypeclassSearchResult::Ambiguous { candidates, trace } => HumanTypeclassSearchOutput {
+            status: HumanTypeclassSearchStatus::Ambiguous,
+            instance: None,
+            core_term: None,
+            search_trace: typeclass_trace_with_candidates(trace, "ambiguous", candidates),
+        },
+        HumanTypeclassSearchResult::NoSolution { trace } => HumanTypeclassSearchOutput {
+            status: HumanTypeclassSearchStatus::NoSolution,
+            instance: None,
+            core_term: None,
+            search_trace: trace,
+        },
+        HumanTypeclassSearchResult::BudgetExceeded { trace } => HumanTypeclassSearchOutput {
+            status: HumanTypeclassSearchStatus::BudgetExceeded,
+            instance: None,
+            core_term: None,
+            search_trace: trace,
+        },
+        HumanTypeclassSearchResult::CandidateInterfaceInvalid { trace } => {
+            HumanTypeclassSearchOutput {
+                status: HumanTypeclassSearchStatus::NoSolution,
+                instance: None,
+                core_term: None,
+                search_trace: typeclass_trace_with_candidates(
+                    trace,
+                    "candidate-interface-invalid",
+                    Vec::new(),
+                ),
+            }
+        }
+    }
+}
+
+fn human_typeclass_proof_head_instance(
+    proof: &Expr,
+    instances: &[HumanTypeclassInstanceCandidate],
+) -> Option<npa_cert::Name> {
+    let (head, _) = npa_kernel::expr::collect_apps(proof);
+    let Expr::Const { name, .. } = head else {
+        return None;
+    };
+    instances
+        .iter()
+        .find(|instance| instance.metadata.name.as_dotted() == name)
+        .map(|instance| npa_cert::Name(instance.metadata.name.parts.clone()))
+}
+
+fn typeclass_trace_with_candidates(
+    mut trace: Vec<String>,
+    label: &str,
+    mut candidates: Vec<String>,
+) -> Vec<String> {
+    candidates.sort();
+    candidates.dedup();
+    trace.extend(
+        candidates
+            .into_iter()
+            .map(|candidate| format!("{label} candidate {candidate}")),
+    );
+    trace
+}
+
+fn name_has_strict_prefix(name: &[String], prefix: &[String]) -> bool {
+    name.len() > prefix.len() && name.starts_with(prefix)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn human_search_typeclass_core(
+    env: &Env,
+    locals: &HumanLocalContext,
+    delta: &[String],
+    goal: &Expr,
+    class_metadata: &[HumanTypeclassClassMetadata],
+    instance_metadata: &[HumanTypeclassInstanceCandidate],
+    policy: HumanTypeclassSearchPolicy,
+    span: Span,
+) -> HumanTypeclassSearchResult {
+    let class_declarations = class_metadata
+        .iter()
+        .map(|class| class.name.as_dotted())
+        .collect::<BTreeSet<_>>();
+    let candidates =
+        match human_resolve_typeclass_candidates(env, &class_declarations, instance_metadata) {
+            Ok(candidates) => candidates,
+            Err(()) => {
+                return HumanTypeclassSearchResult::CandidateInterfaceInvalid {
+                    trace: vec!["candidate interface invalid".to_owned()],
+                }
+            }
+        };
+    let mut state = HumanTypeclassSearchState {
+        policy,
+        start: Instant::now(),
+        node_count: 0,
+        trace: Vec::new(),
+        cache: BTreeMap::new(),
+    };
+    if policy.max_depth == 0 || policy.max_candidates == 0 || policy.timeout_ms == 0 {
+        return HumanTypeclassSearchResult::BudgetExceeded {
+            trace: vec!["typeclass search budget is zero".to_owned()],
+        };
+    }
+    let Some(goal_head) = human_typeclass_head_name(
+        env,
+        &locals.to_kernel_ctx(),
+        delta,
+        goal,
+        &class_declarations,
+    ) else {
+        return HumanTypeclassSearchResult::NoSolution {
+            trace: vec!["goal head is not a registered class".to_owned()],
+        };
+    };
+    let local_solutions = match human_typeclass_local_solutions(
+        env,
+        locals,
+        delta,
+        goal,
+        &class_declarations,
+        span,
+    ) {
+        Ok(solutions) => solutions,
+        Err(HumanTypeclassSearchStop::BudgetExceeded) => {
+            return HumanTypeclassSearchResult::BudgetExceeded { trace: state.trace }
+        }
+        Err(HumanTypeclassSearchStop::CandidateInterfaceInvalid) => {
+            return HumanTypeclassSearchResult::CandidateInterfaceInvalid { trace: state.trace }
+        }
+    };
+    let local_solutions = dedupe_typeclass_proofs(local_solutions);
+    if local_solutions.len() > 1 {
+        return HumanTypeclassSearchResult::Ambiguous {
+            candidates: vec!["local instances".to_owned()],
+            trace: vec!["multiple local instances match the goal".to_owned()],
+        };
+    }
+    if let Some(proof) = local_solutions.into_iter().next() {
+        return HumanTypeclassSearchResult::Success {
+            proof,
+            trace: vec!["found local instance".to_owned()],
+        };
+    }
+
+    let mut groups = candidates
+        .iter()
+        .filter(|candidate| candidate.class_head.as_deref() == Some(goal_head.as_str()))
+        .map(|candidate| (candidate.source_rank, candidate.priority))
+        .collect::<Vec<_>>();
+    groups.sort_by(|lhs, rhs| lhs.0.cmp(&rhs.0).then_with(|| rhs.1.cmp(&lhs.1)));
+    groups.dedup();
+
+    for group in groups {
+        state.trace.push(format!(
+            "search group rank={} priority={}",
+            group.0, group.1
+        ));
+        match human_collect_typeclass_solutions(
+            env,
+            locals,
+            delta,
+            goal,
+            &class_declarations,
+            &candidates,
+            Some(group),
+            0,
+            &mut state,
+            &[],
+        ) {
+            Ok(proofs) => {
+                let proofs = dedupe_typeclass_proofs(proofs);
+                if proofs.len() > 1 {
+                    let candidates = candidates
+                        .iter()
+                        .filter(|candidate| {
+                            candidate.class_head.as_deref() == Some(goal_head.as_str())
+                                && (candidate.source_rank, candidate.priority) == group
+                        })
+                        .map(|candidate| candidate.const_name.clone())
+                        .collect();
+                    return HumanTypeclassSearchResult::Ambiguous {
+                        candidates,
+                        trace: state.trace,
+                    };
+                }
+                if let Some(proof) = proofs.into_iter().next() {
+                    return HumanTypeclassSearchResult::Success {
+                        proof,
+                        trace: state.trace,
+                    };
+                }
+            }
+            Err(HumanTypeclassSearchStop::BudgetExceeded) => {
+                return HumanTypeclassSearchResult::BudgetExceeded { trace: state.trace };
+            }
+            Err(HumanTypeclassSearchStop::CandidateInterfaceInvalid) => {
+                return HumanTypeclassSearchResult::CandidateInterfaceInvalid {
+                    trace: state.trace,
+                };
+            }
+        }
+    }
+
+    HumanTypeclassSearchResult::NoSolution { trace: state.trace }
+}
+
+fn human_resolve_typeclass_candidates(
+    env: &Env,
+    class_declarations: &BTreeSet<String>,
+    instances: &[HumanTypeclassInstanceCandidate],
+) -> Result<Vec<HumanResolvedTypeclassCandidate>, ()> {
+    let mut resolved = Vec::new();
+    for instance in instances {
+        let name = instance.metadata.name.as_dotted();
+        let Some(decl) = env.decl(&name) else {
+            continue;
+        };
+        let Some((telescope, result)) =
+            human_decompose_typeclass_candidate_type(env, decl.universe_params(), decl.ty())
+        else {
+            return Err(());
+        };
+        if !human_candidate_expr_has_only_telescope_bvars(&result, telescope.len(), 0) {
+            return Err(());
+        }
+        let class_head = human_typeclass_head_name(
+            env,
+            &human_telescope_ctx(&telescope),
+            decl.universe_params(),
+            &result,
+            class_declarations,
+        );
+        resolved.push(HumanResolvedTypeclassCandidate {
+            source_rank: instance.source_rank,
+            priority: instance.metadata.priority,
+            const_name: name,
+            universe_params: decl.universe_params().to_vec(),
+            telescope,
+            result,
+            class_head,
+            target_key: human_typeclass_name_key(&instance.metadata.name),
+        });
+    }
+    Ok(resolved)
+}
+
+fn human_decompose_typeclass_candidate_type(
+    env: &Env,
+    universe_params: &[String],
+    ty: &Expr,
+) -> Option<(Vec<Expr>, Expr)> {
+    let mut ctx = Ctx::new();
+    let mut telescope = Vec::new();
+    let mut current = ty.clone();
+    loop {
+        let whnf = env.whnf(&ctx, universe_params, &current).ok()?;
+        match whnf {
+            Expr::Pi { binder, ty, body } => {
+                let domain = (*ty).clone();
+                ctx.push_assumption(binder, domain.clone());
+                telescope.push(domain);
+                current = *body;
+            }
+            result => return Some((telescope, result)),
+        }
+    }
+}
+
+fn human_telescope_ctx(telescope: &[Expr]) -> Ctx {
+    let mut ctx = Ctx::new();
+    for ty in telescope {
+        ctx.push_assumption("_", ty.clone());
+    }
+    ctx
+}
+
+fn human_typeclass_head_name(
+    env: &Env,
+    ctx: &Ctx,
+    delta: &[String],
+    target: &Expr,
+    class_declarations: &BTreeSet<String>,
+) -> Option<String> {
+    let whnf = env.whnf(ctx, delta, target).ok()?;
+    let (head, _) = npa_kernel::expr::collect_apps(&whnf);
+    let Expr::Const { name, .. } = head else {
+        return None;
+    };
+    class_declarations.contains(&name).then_some(name)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn human_collect_typeclass_solutions(
+    env: &Env,
+    locals: &HumanLocalContext,
+    delta: &[String],
+    obligation: &Expr,
+    class_declarations: &BTreeSet<String>,
+    candidates: &[HumanResolvedTypeclassCandidate],
+    top_group: Option<(u8, u32)>,
+    current_depth: u32,
+    state: &mut HumanTypeclassSearchState,
+    visited: &[(Vec<u8>, Vec<u8>)],
+) -> Result<Vec<Expr>, HumanTypeclassSearchStop> {
+    human_typeclass_check_budget(state)?;
+    let obligation_key = human_typeclass_expr_key(obligation);
+    if top_group.is_none() {
+        if let Some(cached) = state.cache.get(&obligation_key) {
+            state.trace.push("repeated goal cache hit".to_owned());
+            return Ok(cached.clone());
+        }
+    }
+    let Some(obligation_head) = human_typeclass_head_name(
+        env,
+        &locals.to_kernel_ctx(),
+        delta,
+        obligation,
+        class_declarations,
+    ) else {
+        return Ok(Vec::new());
+    };
+
+    let mut solutions = BTreeMap::<Vec<u8>, Expr>::new();
+    for proof in human_typeclass_local_solutions(
+        env,
+        locals,
+        delta,
+        obligation,
+        class_declarations,
+        Span::empty(crate::FileId(0)),
+    )? {
+        solutions
+            .entry(human_typeclass_expr_key(&proof))
+            .or_insert(proof);
+    }
+
+    for candidate in candidates {
+        if top_group.is_some_and(|group| (candidate.source_rank, candidate.priority) != group) {
+            continue;
+        }
+        human_typeclass_check_budget(state)?;
+        state.node_count += 1;
+        if candidate.class_head.as_deref() != Some(obligation_head.as_str()) {
+            continue;
+        }
+        let Some(application) = human_try_typeclass_candidate(
+            env,
+            locals,
+            delta,
+            obligation,
+            class_declarations,
+            candidate,
+        )?
+        else {
+            continue;
+        };
+        if current_depth >= state.policy.max_depth {
+            return Err(HumanTypeclassSearchStop::BudgetExceeded);
+        }
+        let cycle_entry = (
+            application.fingerprint.clone(),
+            candidate.target_key.clone(),
+        );
+        if visited.iter().any(|entry| entry == &cycle_entry) {
+            state
+                .trace
+                .push(format!("cycle skipped at {}", candidate.const_name));
+            continue;
+        }
+        state
+            .trace
+            .push(format!("candidate {}", candidate.const_name));
+        let mut child_visited = visited.to_owned();
+        child_visited.push(cycle_entry);
+        let recursive_sets = human_collect_recursive_typeclass_solutions(
+            env,
+            locals,
+            delta,
+            class_declarations,
+            candidates,
+            current_depth + 1,
+            state,
+            &child_visited,
+            &application.recursive_obligations,
+        )?;
+        if recursive_sets.len() != application.recursive_obligations.len() {
+            continue;
+        }
+        let mut candidate_solutions = Vec::new();
+        human_build_typeclass_proofs(
+            candidate,
+            &application,
+            &recursive_sets,
+            0,
+            &mut application.args.clone(),
+            &mut candidate_solutions,
+        );
+        for proof in candidate_solutions {
+            if env
+                .check(&locals.to_kernel_ctx(), delta, &proof, obligation)
+                .is_err()
+            {
+                continue;
+            }
+            solutions
+                .entry(human_typeclass_expr_key(&proof))
+                .or_insert(proof);
+        }
+    }
+    let result = solutions.into_values().collect::<Vec<_>>();
+    if top_group.is_none() {
+        state.cache.insert(obligation_key, result.clone());
+    }
+    Ok(result)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn human_collect_recursive_typeclass_solutions(
+    env: &Env,
+    locals: &HumanLocalContext,
+    delta: &[String],
+    class_declarations: &BTreeSet<String>,
+    candidates: &[HumanResolvedTypeclassCandidate],
+    current_depth: u32,
+    state: &mut HumanTypeclassSearchState,
+    visited: &[(Vec<u8>, Vec<u8>)],
+    obligations: &[(usize, Expr)],
+) -> Result<Vec<(usize, Vec<Expr>)>, HumanTypeclassSearchStop> {
+    let mut recursive_sets = Vec::new();
+    for (arg_index, obligation) in obligations {
+        let proofs = human_collect_typeclass_solutions(
+            env,
+            locals,
+            delta,
+            obligation,
+            class_declarations,
+            candidates,
+            None,
+            current_depth,
+            state,
+            visited,
+        )?;
+        if proofs.is_empty() {
+            return Ok(Vec::new());
+        }
+        recursive_sets.push((*arg_index, proofs));
+    }
+    Ok(recursive_sets)
+}
+
+fn human_typeclass_local_solutions(
+    env: &Env,
+    locals: &HumanLocalContext,
+    delta: &[String],
+    obligation: &Expr,
+    class_declarations: &BTreeSet<String>,
+    span: Span,
+) -> Result<Vec<Expr>, HumanTypeclassSearchStop> {
+    if human_typeclass_head_name(
+        env,
+        &locals.to_kernel_ctx(),
+        delta,
+        obligation,
+        class_declarations,
+    )
+    .is_none()
+    {
+        return Ok(Vec::new());
+    }
+    let mut proofs = Vec::new();
+    for (index, local) in locals.locals.iter().rev().enumerate() {
+        let index = index as u32;
+        let ty = npa_kernel::subst::shift(&local.ty, index as i32 + 1, 0)
+            .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?;
+        if env
+            .is_defeq(&locals.to_kernel_ctx(), delta, &ty, obligation)
+            .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?
+        {
+            let proof = Expr::bvar(index);
+            if env
+                .check(&locals.to_kernel_ctx(), delta, &proof, obligation)
+                .is_ok()
+            {
+                proofs.push(proof);
+            }
+        }
+    }
+    let _ = span;
+    Ok(proofs)
+}
+
+fn human_try_typeclass_candidate(
+    env: &Env,
+    locals: &HumanLocalContext,
+    delta: &[String],
+    obligation: &Expr,
+    class_declarations: &BTreeSet<String>,
+    candidate: &HumanResolvedTypeclassCandidate,
+) -> Result<Option<HumanTypeclassCandidateApplication>, HumanTypeclassSearchStop> {
+    let obligation = env
+        .whnf(&locals.to_kernel_ctx(), delta, obligation)
+        .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?;
+    let mut universe_assignments = vec![None; candidate.universe_params.len()];
+    let mut term_assignments = vec![None; candidate.telescope.len()];
+    if !human_match_typeclass_expr(
+        &candidate.result,
+        &obligation,
+        candidate.telescope.len(),
+        0,
+        &candidate.universe_params,
+        &mut universe_assignments,
+        &mut term_assignments,
+    )? {
+        return Ok(None);
+    }
+    let Some(levels) = universe_assignments.into_iter().collect::<Option<Vec<_>>>() else {
+        return Ok(None);
+    };
+    let mut args = vec![None; candidate.telescope.len()];
+    let mut recursive_obligations = Vec::new();
+    for index in 0..candidate.telescope.len() {
+        let Some(binder_ty) = human_instantiate_candidate_expr(
+            &candidate.telescope[index],
+            index,
+            &candidate.universe_params,
+            &levels,
+            &term_assignments,
+        )?
+        else {
+            return Ok(None);
+        };
+        if let Some(term) = &term_assignments[index] {
+            if env
+                .check(&locals.to_kernel_ctx(), delta, term, &binder_ty)
+                .is_err()
+            {
+                return Ok(None);
+            }
+            args[index] = Some(term.clone());
+        } else if human_typeclass_head_name(
+            env,
+            &locals.to_kernel_ctx(),
+            delta,
+            &binder_ty,
+            class_declarations,
+        )
+        .is_some()
+        {
+            recursive_obligations.push((index, binder_ty));
+        } else {
+            return Ok(None);
+        }
+    }
+    Ok(Some(HumanTypeclassCandidateApplication {
+        levels,
+        args,
+        recursive_obligations,
+        fingerprint: human_typeclass_expr_key(&obligation),
+    }))
+}
+
+fn human_build_typeclass_proofs(
+    candidate: &HumanResolvedTypeclassCandidate,
+    application: &HumanTypeclassCandidateApplication,
+    recursive_sets: &[(usize, Vec<Expr>)],
+    index: usize,
+    args: &mut [Option<Expr>],
+    proofs: &mut Vec<Expr>,
+) {
+    if index == recursive_sets.len() {
+        let Some(final_args) = args.iter().cloned().collect::<Option<Vec<_>>>() else {
+            return;
+        };
+        proofs.push(Expr::apps(
+            Expr::konst(candidate.const_name.clone(), application.levels.clone()),
+            final_args,
+        ));
+        return;
+    }
+    let (arg_index, choices) = &recursive_sets[index];
+    for proof in choices {
+        args[*arg_index] = Some(proof.clone());
+        human_build_typeclass_proofs(
+            candidate,
+            application,
+            recursive_sets,
+            index + 1,
+            args,
+            proofs,
+        );
+    }
+    args[*arg_index] = None;
+}
+
+fn human_match_typeclass_expr(
+    pattern: &Expr,
+    target: &Expr,
+    telescope_len: usize,
+    local_depth: u32,
+    universe_params: &[String],
+    universe_assignments: &mut [Option<Level>],
+    term_assignments: &mut [Option<Expr>],
+) -> Result<bool, HumanTypeclassSearchStop> {
+    match pattern {
+        Expr::Sort(level) => match target {
+            Expr::Sort(target_level) => human_match_typeclass_level(
+                level,
+                target_level,
+                universe_params,
+                universe_assignments,
+            ),
+            _ => Ok(false),
+        },
+        Expr::BVar(index) => {
+            let Some(pattern_index) =
+                human_candidate_bvar_to_pattern_index(*index, telescope_len, local_depth)
+            else {
+                return Err(HumanTypeclassSearchStop::CandidateInterfaceInvalid);
+            };
+            let target = if local_depth == 0 {
+                target.clone()
+            } else {
+                npa_kernel::subst::shift(target, -(local_depth as i32), 0)
+                    .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?
+            };
+            let assigned = &mut term_assignments[pattern_index];
+            if let Some(existing) = assigned {
+                Ok(human_typeclass_expr_key(existing) == human_typeclass_expr_key(&target))
+            } else {
+                *assigned = Some(target);
+                Ok(true)
+            }
+        }
+        Expr::Const { name, levels } => match target {
+            Expr::Const {
+                name: target_name,
+                levels: target_levels,
+            } if name == target_name && levels.len() == target_levels.len() => {
+                for (level, target_level) in levels.iter().zip(target_levels) {
+                    if !human_match_typeclass_level(
+                        level,
+                        target_level,
+                        universe_params,
+                        universe_assignments,
+                    )? {
+                        return Ok(false);
+                    }
+                }
+                Ok(true)
+            }
+            _ => Ok(false),
+        },
+        Expr::App(fun, arg) => match target {
+            Expr::App(target_fun, target_arg) => Ok(human_match_typeclass_expr(
+                fun,
+                target_fun,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )? && human_match_typeclass_expr(
+                arg,
+                target_arg,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )?),
+            _ => Ok(false),
+        },
+        Expr::Lam { ty, body, .. } => match target {
+            Expr::Lam {
+                ty: target_ty,
+                body: target_body,
+                ..
+            } => Ok(human_match_typeclass_expr(
+                ty,
+                target_ty,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )? && human_match_typeclass_expr(
+                body,
+                target_body,
+                telescope_len,
+                local_depth + 1,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )?),
+            _ => Ok(false),
+        },
+        Expr::Pi { ty, body, .. } => match target {
+            Expr::Pi {
+                ty: target_ty,
+                body: target_body,
+                ..
+            } => Ok(human_match_typeclass_expr(
+                ty,
+                target_ty,
+                telescope_len,
+                local_depth,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )? && human_match_typeclass_expr(
+                body,
+                target_body,
+                telescope_len,
+                local_depth + 1,
+                universe_params,
+                universe_assignments,
+                term_assignments,
+            )?),
+            _ => Ok(false),
+        },
+        Expr::Let { .. } => Ok(false),
+    }
+}
+
+fn human_match_typeclass_level(
+    pattern: &Level,
+    target: &Level,
+    universe_params: &[String],
+    universe_assignments: &mut [Option<Level>],
+) -> Result<bool, HumanTypeclassSearchStop> {
+    if let Level::Param(name) = pattern {
+        if let Some(index) = universe_params.iter().position(|param| param == name) {
+            if let Some(existing) = &universe_assignments[index] {
+                return Ok(human_typeclass_level_key(existing) == human_typeclass_level_key(target));
+            }
+            universe_assignments[index] = Some(target.clone());
+            return Ok(true);
+        }
+    }
+    match (pattern, target) {
+        (Level::Zero, Level::Zero) => Ok(true),
+        (Level::Succ(pattern), Level::Succ(target)) => {
+            human_match_typeclass_level(pattern, target, universe_params, universe_assignments)
+        }
+        (Level::Max(pattern_left, pattern_right), Level::Max(target_left, target_right))
+        | (Level::IMax(pattern_left, pattern_right), Level::IMax(target_left, target_right)) => {
+            Ok(human_match_typeclass_level(
+                pattern_left,
+                target_left,
+                universe_params,
+                universe_assignments,
+            )? && human_match_typeclass_level(
+                pattern_right,
+                target_right,
+                universe_params,
+                universe_assignments,
+            )?)
+        }
+        (Level::Param(lhs), Level::Param(rhs)) => Ok(lhs == rhs),
+        _ => Ok(false),
+    }
+}
+
+fn human_instantiate_candidate_expr(
+    expr: &Expr,
+    candidate_context_len: usize,
+    universe_params: &[String],
+    levels: &[Level],
+    term_assignments: &[Option<Expr>],
+) -> Result<Option<Expr>, HumanTypeclassSearchStop> {
+    let expr = npa_kernel::subst::subst_levels_expr(expr, universe_params, levels);
+    human_replace_candidate_bvars(&expr, candidate_context_len, 0, term_assignments)
+}
+
+fn human_replace_candidate_bvars(
+    expr: &Expr,
+    candidate_context_len: usize,
+    local_depth: u32,
+    term_assignments: &[Option<Expr>],
+) -> Result<Option<Expr>, HumanTypeclassSearchStop> {
+    Ok(Some(match expr {
+        Expr::Sort(level) => Expr::sort(level.clone()),
+        Expr::BVar(index) if *index < local_depth => Expr::bvar(*index),
+        Expr::BVar(index) => {
+            let Some(pattern_index) =
+                human_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
+            else {
+                return Err(HumanTypeclassSearchStop::CandidateInterfaceInvalid);
+            };
+            let Some(term) = &term_assignments[pattern_index] else {
+                return Ok(None);
+            };
+            npa_kernel::subst::shift(term, local_depth as i32, 0)
+                .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?
+        }
+        Expr::Const { name, levels } => Expr::konst(name.clone(), levels.clone()),
+        Expr::App(fun, arg) => Expr::app(
+            match human_replace_candidate_bvars(
+                fun,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(fun) => fun,
+                None => return Ok(None),
+            },
+            match human_replace_candidate_bvars(
+                arg,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(arg) => arg,
+                None => return Ok(None),
+            },
+        ),
+        Expr::Lam { binder, ty, body } => Expr::lam(
+            binder.clone(),
+            match human_replace_candidate_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(ty) => ty,
+                None => return Ok(None),
+            },
+            match human_replace_candidate_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+                term_assignments,
+            )? {
+                Some(body) => body,
+                None => return Ok(None),
+            },
+        ),
+        Expr::Pi { binder, ty, body } => Expr::pi(
+            binder.clone(),
+            match human_replace_candidate_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(ty) => ty,
+                None => return Ok(None),
+            },
+            match human_replace_candidate_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+                term_assignments,
+            )? {
+                Some(body) => body,
+                None => return Ok(None),
+            },
+        ),
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => Expr::let_in(
+            binder.clone(),
+            match human_replace_candidate_bvars(
+                ty,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(ty) => ty,
+                None => return Ok(None),
+            },
+            match human_replace_candidate_bvars(
+                value,
+                candidate_context_len,
+                local_depth,
+                term_assignments,
+            )? {
+                Some(value) => value,
+                None => return Ok(None),
+            },
+            match human_replace_candidate_bvars(
+                body,
+                candidate_context_len,
+                local_depth + 1,
+                term_assignments,
+            )? {
+                Some(body) => body,
+                None => return Ok(None),
+            },
+        ),
+    }))
+}
+
+fn human_candidate_expr_has_only_telescope_bvars(
+    expr: &Expr,
+    candidate_context_len: usize,
+    local_depth: u32,
+) -> bool {
+    match expr {
+        Expr::Sort(_) | Expr::Const { .. } => true,
+        Expr::BVar(index) if *index < local_depth => true,
+        Expr::BVar(index) => {
+            human_candidate_bvar_to_pattern_index(*index, candidate_context_len, local_depth)
+                .is_some()
+        }
+        Expr::App(fun, arg) => {
+            human_candidate_expr_has_only_telescope_bvars(fun, candidate_context_len, local_depth)
+                && human_candidate_expr_has_only_telescope_bvars(
+                    arg,
+                    candidate_context_len,
+                    local_depth,
+                )
+        }
+        Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+            human_candidate_expr_has_only_telescope_bvars(ty, candidate_context_len, local_depth)
+                && human_candidate_expr_has_only_telescope_bvars(
+                    body,
+                    candidate_context_len,
+                    local_depth + 1,
+                )
+        }
+        Expr::Let {
+            ty, value, body, ..
+        } => {
+            human_candidate_expr_has_only_telescope_bvars(ty, candidate_context_len, local_depth)
+                && human_candidate_expr_has_only_telescope_bvars(
+                    value,
+                    candidate_context_len,
+                    local_depth,
+                )
+                && human_candidate_expr_has_only_telescope_bvars(
+                    body,
+                    candidate_context_len,
+                    local_depth + 1,
+                )
+        }
+    }
+}
+
+fn human_candidate_bvar_to_pattern_index(
+    index: u32,
+    candidate_context_len: usize,
+    local_depth: u32,
+) -> Option<usize> {
+    if index < local_depth {
+        return None;
+    }
+    let candidate_index_from_recent = usize::try_from(index - local_depth).ok()?;
+    if candidate_index_from_recent >= candidate_context_len {
+        return None;
+    }
+    Some(candidate_context_len - 1 - candidate_index_from_recent)
+}
+
+fn human_typeclass_check_budget(
+    state: &HumanTypeclassSearchState,
+) -> Result<(), HumanTypeclassSearchStop> {
+    if state.node_count >= state.policy.max_candidates {
+        return Err(HumanTypeclassSearchStop::BudgetExceeded);
+    }
+    if state.start.elapsed() >= Duration::from_millis(state.policy.timeout_ms) {
+        return Err(HumanTypeclassSearchStop::BudgetExceeded);
+    }
+    Ok(())
+}
+
+fn dedupe_typeclass_proofs(proofs: Vec<Expr>) -> Vec<Expr> {
+    let mut deduped = BTreeMap::new();
+    for proof in proofs {
+        deduped
+            .entry(human_typeclass_expr_key(&proof))
+            .or_insert(proof);
+    }
+    deduped.into_values().collect()
+}
+
+fn human_typeclass_name_key(name: &HumanName) -> Vec<u8> {
+    let mut out = Vec::new();
+    for part in &name.parts {
+        human_encode_key_string(&mut out, part);
+    }
+    out
+}
+
+fn human_typeclass_expr_key(expr: &Expr) -> Vec<u8> {
+    let mut out = Vec::new();
+    human_encode_expr_key(&mut out, expr);
+    out
+}
+
+fn human_typeclass_level_key(level: &Level) -> Vec<u8> {
+    let mut out = Vec::new();
+    human_encode_level_key(&mut out, level);
+    out
+}
+
+fn human_encode_expr_key(out: &mut Vec<u8>, expr: &Expr) {
+    match expr {
+        Expr::Sort(level) => {
+            out.push(0x00);
+            human_encode_level_key(out, level);
+        }
+        Expr::BVar(index) => {
+            out.push(0x01);
+            out.extend(index.to_le_bytes());
+        }
+        Expr::Const { name, levels } => {
+            out.push(0x02);
+            human_encode_key_string(out, name);
+            human_encode_key_len(out, levels.len());
+            for level in levels {
+                human_encode_level_key(out, level);
+            }
+        }
+        Expr::App(fun, arg) => {
+            out.push(0x03);
+            human_encode_expr_key(out, fun);
+            human_encode_expr_key(out, arg);
+        }
+        Expr::Lam { binder, ty, body } => {
+            out.push(0x04);
+            human_encode_key_string(out, binder);
+            human_encode_expr_key(out, ty);
+            human_encode_expr_key(out, body);
+        }
+        Expr::Pi { binder, ty, body } => {
+            out.push(0x05);
+            human_encode_key_string(out, binder);
+            human_encode_expr_key(out, ty);
+            human_encode_expr_key(out, body);
+        }
+        Expr::Let {
+            binder,
+            ty,
+            value,
+            body,
+        } => {
+            out.push(0x06);
+            human_encode_key_string(out, binder);
+            human_encode_expr_key(out, ty);
+            human_encode_expr_key(out, value);
+            human_encode_expr_key(out, body);
+        }
+    }
+}
+
+fn human_encode_level_key(out: &mut Vec<u8>, level: &Level) {
+    match level {
+        Level::Zero => out.push(0x00),
+        Level::Succ(inner) => {
+            out.push(0x01);
+            human_encode_level_key(out, inner);
+        }
+        Level::Max(lhs, rhs) => {
+            out.push(0x02);
+            human_encode_level_key(out, lhs);
+            human_encode_level_key(out, rhs);
+        }
+        Level::IMax(lhs, rhs) => {
+            out.push(0x03);
+            human_encode_level_key(out, lhs);
+            human_encode_level_key(out, rhs);
+        }
+        Level::Param(name) => {
+            out.push(0x04);
+            human_encode_key_string(out, name);
+        }
+    }
+}
+
+fn human_encode_key_string(out: &mut Vec<u8>, value: &str) {
+    human_encode_key_len(out, value.len());
+    out.extend(value.as_bytes());
+}
+
+fn human_encode_key_len(out: &mut Vec<u8>, value: usize) {
+    out.extend((value as u64).to_le_bytes());
+}
+
+fn typeclass_no_solution_diagnostic(
+    span: Span,
+    detail: impl Into<String>,
+    trace: Vec<String>,
+    candidates: Vec<String>,
+) -> HumanDiagnostic {
+    let mut payload = typeclass_candidate_payload(candidates);
+    payload.candidates.extend(trace);
+    HumanDiagnostic::error(HumanDiagnosticKind::TypeclassNoSolution, span, detail)
+        .with_payload(payload)
+        .with_phase(HumanDiagnosticPhase::Elaborator)
+}
+
+fn typeclass_ambiguous_diagnostic(
+    span: Span,
+    detail: impl Into<String>,
+    trace: Vec<String>,
+    mut candidates: Vec<String>,
+) -> HumanDiagnostic {
+    candidates.extend(trace);
+    HumanDiagnostic::error(HumanDiagnosticKind::TypeclassAmbiguous, span, detail)
+        .with_payload(typeclass_candidate_payload(candidates))
+        .with_phase(HumanDiagnosticPhase::Elaborator)
+}
+
+fn typeclass_budget_diagnostic(
+    span: Span,
+    detail: impl Into<String>,
+    trace: Vec<String>,
+) -> HumanDiagnostic {
+    HumanDiagnostic::error(HumanDiagnosticKind::TypeclassBudgetExceeded, span, detail)
+        .with_payload(typeclass_candidate_payload(trace))
+        .with_phase(HumanDiagnosticPhase::Elaborator)
+}
+
+fn typeclass_candidate_payload(mut candidates: Vec<String>) -> HumanDiagnosticPayload {
+    candidates.sort();
+    candidates.dedup();
+    candidates.truncate(MAX_HUMAN_TYPECLASS_DIAGNOSTIC_CANDIDATES);
+    HumanDiagnosticPayload {
+        candidates,
+        ..HumanDiagnosticPayload::default()
+    }
+}
+
 fn machine_name_from_global_ref(reference: &HumanGlobalRef, span: Span) -> MachineName {
     match reference {
         HumanGlobalRef::Imported { name, .. }
@@ -7768,6 +9518,26 @@ mod tests {
 
     fn hash(seed: u8) -> npa_cert::Hash {
         [seed; 32]
+    }
+
+    fn expr_contains_const(expr: &Expr, expected: &str) -> bool {
+        match expr {
+            Expr::Const { name, .. } => name == expected,
+            Expr::App(func, arg) => {
+                expr_contains_const(func, expected) || expr_contains_const(arg, expected)
+            }
+            Expr::Lam { ty, body, .. } | Expr::Pi { ty, body, .. } => {
+                expr_contains_const(ty, expected) || expr_contains_const(body, expected)
+            }
+            Expr::Let {
+                ty, value, body, ..
+            } => {
+                expr_contains_const(ty, expected)
+                    || expr_contains_const(value, expected)
+                    || expr_contains_const(body, expected)
+            }
+            Expr::Sort(_) | Expr::BVar(_) => false,
+        }
     }
 
     fn verified_axiom_module(module: &str, axiom: &str) -> npa_cert::VerifiedModule {
@@ -8428,6 +10198,249 @@ instance Nat.one_inst : One Nat where
     }
 
     #[test]
+    fn human_typeclass_search_finds_direct_add_nat_instance() {
+        let output = search_human_typeclass_from_source(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add",
+            "Add Nat",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("direct Add Nat search should run");
+
+        assert_eq!(output.status, HumanTypeclassSearchStatus::Success);
+        assert_eq!(
+            output.instance,
+            Some(npa_cert::Name::from_dotted("Nat.add_inst"))
+        );
+        assert_eq!(output.core_term, Some(Expr::konst("Nat.add_inst", vec![])));
+        assert!(!output.search_trace.is_empty());
+    }
+
+    #[test]
+    fn human_typeclass_search_finds_recursive_add_nat_instance_within_budget() {
+        let output = search_human_typeclass_from_source(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Box : Type -> Type
+axiom Nat.add : Nat -> Nat -> Nat
+axiom Box.add : forall (A : Type), (A -> A -> A) -> Box A -> Box A -> Box A
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+instance Box.add_inst (A : Type) (inst : Add A) : Add (Box A) where
+  add := Box.add A (Add.add inst)",
+            "Add (Box Nat)",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("recursive Add search should run");
+
+        assert_eq!(output.status, HumanTypeclassSearchStatus::Success);
+        assert_eq!(
+            output.instance,
+            Some(npa_cert::Name::from_dotted("Box.add_inst"))
+        );
+        assert_eq!(
+            output.core_term,
+            Some(Expr::apps(
+                Expr::konst("Box.add_inst", vec![]),
+                vec![
+                    Expr::konst("Nat", vec![]),
+                    Expr::konst("Nat.add_inst", vec![])
+                ]
+            ))
+        );
+    }
+
+    #[test]
+    fn human_typeclass_search_reports_ambiguity_and_budget_as_structured_statuses() {
+        let ambiguous = search_human_typeclass_from_source(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+axiom Nat.add_alt : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+instance Nat.add_alt_inst : Add Nat where
+  add := Nat.add_alt",
+            "Add Nat",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("ambiguous Add search should run");
+        assert_eq!(ambiguous.status, HumanTypeclassSearchStatus::Ambiguous);
+        assert!(ambiguous.core_term.is_none());
+        assert!(ambiguous
+            .search_trace
+            .iter()
+            .any(|entry| entry.contains("Nat.add_inst")));
+
+        let options = HumanCompileOptions {
+            typeclass_search_policy: HumanTypeclassSearchPolicy {
+                max_depth: 0,
+                ..HumanTypeclassSearchPolicy::default()
+            },
+            ..HumanCompileOptions::default()
+        };
+        let budget = search_human_typeclass_from_source(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add",
+            "Add Nat",
+            &[],
+            &[],
+            &options,
+        )
+        .expect("budgeted Add search should run");
+        assert_eq!(budget.status, HumanTypeclassSearchStatus::BudgetExceeded);
+        assert!(budget.core_term.is_none());
+    }
+
+    #[test]
+    fn human_typeclass_search_trace_stays_outside_certificate_hash() {
+        let source = "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+class Add (A : Type) where
+  add : A -> A -> A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add";
+        let before = compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("source certificate should compile");
+        let search = search_human_typeclass_from_source(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            "Add Nat",
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("typeclass search should run");
+        let after = compile_human_source_to_certificate_output_with_source_interfaces(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            source,
+            &[],
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("source certificate should still compile");
+
+        assert_eq!(
+            before.certificate.hashes.certificate_hash,
+            after.certificate.hashes.certificate_hash
+        );
+        assert!(!search.search_trace.is_empty());
+    }
+
+    #[test]
+    fn human_typeclass_notation_lowers_to_dictionary_terms() {
+        let output = compile_human_source_to_core(
+            FileId(0),
+            npa_cert::Name::from_dotted("Test"),
+            "\
+inductive Nat : Type where
+| zero : Nat
+axiom Nat.add : Nat -> Nat -> Nat
+axiom Nat.mul : Nat -> Nat -> Nat
+def Nat.one : Nat := Nat.zero
+class Add (A : Type) where
+  add : A -> A -> A
+class Mul (A : Type) where
+  mul : A -> A -> A
+class Zero (A : Type) where
+  zero : A
+class One (A : Type) where
+  one : A
+instance Nat.add_inst : Add Nat where
+  add := Nat.add
+instance Nat.mul_inst : Mul Nat where
+  mul := Nat.mul
+instance Nat.zero_inst : Zero Nat where
+  zero := Nat.zero
+instance Nat.one_inst : One Nat where
+  one := Nat.one
+infixl:65 \" + \" => Add.add
+infixl:70 \" * \" => Mul.mul
+notation \"0\" => Zero.zero
+notation \"1\" => One.one
+def use_add (x y : Nat) : Nat := x + y
+def use_mul (x y : Nat) : Nat := x * y
+def use_zero : Nat := 0
+def use_one : Nat := 1
+def use_add_zero (x : Nat) : Nat := x + 0
+def use_zero_add (x : Nat) : Nat := 0 + x
+def use_expected_add : Nat := 0 + 1",
+            &[],
+            &HumanCompileOptions::default(),
+        )
+        .expect("typeclass-backed notation should compile");
+
+        for (decl_name, dict_name) in [
+            ("use_add", "Nat.add_inst"),
+            ("use_mul", "Nat.mul_inst"),
+            ("use_zero", "Nat.zero_inst"),
+            ("use_one", "Nat.one_inst"),
+            ("use_add_zero", "Nat.add_inst"),
+            ("use_add_zero", "Nat.zero_inst"),
+            ("use_zero_add", "Nat.add_inst"),
+            ("use_zero_add", "Nat.zero_inst"),
+            ("use_expected_add", "Nat.add_inst"),
+            ("use_expected_add", "Nat.one_inst"),
+        ] {
+            let Decl::Def { value, .. } = output
+                .declarations
+                .iter()
+                .find(|decl| decl.name() == decl_name)
+                .expect("notation test declaration should exist")
+            else {
+                panic!("expected def {decl_name}");
+            };
+            assert!(
+                expr_contains_const(value, dict_name),
+                "{decl_name} should contain dictionary {dict_name}; got {value:?}"
+            );
+        }
+    }
+
+    #[test]
     fn human_simple_inductive_certificate_exports_generated_artifacts() {
         let cert = compile_human_source_to_certificate(
             FileId(0),
@@ -8656,6 +10669,7 @@ def use (n : Sort 2) : Sort 2 := n + Type",
     fn human_notation_candidate_count_limit_rejects_before_elaboration() {
         let options = HumanCompileOptions {
             max_notation_candidates: 1,
+            ..HumanCompileOptions::default()
         };
         let err = compile_human_source_to_core(
             FileId(0),
