@@ -1,3 +1,12 @@
+//! Phase 9 advanced AI validation and replay substrate.
+//!
+//! This module is a deterministic, untrusted orchestration layer for advanced
+//! candidates. It validates request shapes, canonical bytes, hashes, and
+//! replayable handoffs, but it is not a trusted checker. AI sidecars, theorem
+//! graph scores, SMT solver output, and natural-language formalization
+//! confidence may guide candidate construction only; they cannot create a
+//! checker verdict or widen the certificate acceptance boundary.
+
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
@@ -1120,6 +1129,12 @@ pub enum AdvancedFormalizationError {
     ProofBridgeFailed,
 }
 
+/// Deterministic validation output for untrusted Phase 9 advanced AI endpoints.
+///
+/// A success payload is endpoint-specific replay evidence or a checked proof
+/// candidate fragment. It is not a checker verdict; certificate acceptance is
+/// still decided by the Rust kernel and independent checker over canonical
+/// certificates.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AdvancedAiSuccessPayload {
     AdvancedInductive {
@@ -1357,6 +1372,12 @@ pub enum AdvancedFormalizationSuccessKind {
     ProofBridgeChecked,
 }
 
+/// Phase 9 advanced AI endpoint response.
+///
+/// The response records candidate and validation-result hashes for deterministic
+/// replay. `Success` means the untrusted endpoint accepted its bounded
+/// validation task; it does not mean the final certificate has been accepted by
+/// the trusted checker boundary.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AdvancedAiEndpointResponse {
     Success {
@@ -16943,6 +16964,128 @@ mod tests {
         );
 
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted() {
+        let graph_import = verified_theorem_graph_import();
+        let graph_node = theorem_graph_node(&graph_import, "GraphLib.P");
+        let graph_snapshot = theorem_graph_snapshot(hash(41), vec![graph_node.clone()]);
+        let graph_request =
+            theorem_graph_inline_query_request(&graph_import, None, None, graph_snapshot, None, 16);
+        let (_, graph_payload) = assert_success(run_advanced_ai_theorem_graph_query_request(
+            &graph_request,
+            std::slice::from_ref(&graph_import),
+            &workspace_root(),
+        ));
+        let AdvancedAiSuccessPayload::TheoremGraphQuery { result } = graph_payload else {
+            panic!("expected theorem graph payload");
+        };
+        assert_eq!(result.entries.len(), 1);
+        assert_eq!(result.entries[0].node, graph_node);
+        assert_eq!(result.entries[0].score.score_microunits, 0);
+
+        let smt_import = verified_smt_import();
+        assert_advanced_ai_m9_rejected_fixture(
+            "advanced_ai_m9_smt_reconstruct_rejected_p9h00_solver_output_not_checker_verdict",
+            ADVANCED_AI_SMT_RECONSTRUCT_ENDPOINT,
+            run_advanced_ai_smt_reconstruct_request(
+                &smt_request(&smt_import, |_| {}),
+                std::slice::from_ref(&smt_import),
+                &workspace_root(),
+            ),
+            AdvancedAiValidationError::UnsupportedFeature,
+            Some(AdvancedAiFeatureError::SmtCertificate(
+                AdvancedSmtCertificateError::RuleRegistryMismatch,
+            )),
+        );
+
+        let statement = formalization_statement("Type");
+        let first = formalization_request(
+            formalization_payload_with(
+                "AI sidecar text, confidence 10%",
+                "Type",
+                None,
+                Some(exact_proof_candidate(&statement, "Prop")),
+            ),
+            formalization_options_bytes(),
+        );
+        let second = formalization_request(
+            formalization_payload_with(
+                "different sidecar text, confidence 99%",
+                "Type",
+                None,
+                Some(exact_proof_candidate(&statement, "Prop")),
+            ),
+            formalization_options_bytes(),
+        );
+        let (first_candidate_hash, first_payload) = assert_success(
+            run_advanced_ai_formalize_check_request(&first, &[], &workspace_root()),
+        );
+        let (second_candidate_hash, second_payload) = assert_success(
+            run_advanced_ai_formalize_check_request(&second, &[], &workspace_root()),
+        );
+        assert_ne!(first_candidate_hash, second_candidate_hash);
+
+        let AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+            kind: first_kind,
+            accepted_statement_hash: first_accepted,
+            formalization_proof_root_hash: first_root,
+        } = first_payload
+        else {
+            panic!("expected formalization payload");
+        };
+        let AdvancedAiSuccessPayload::NaturalLanguageFormalization {
+            kind: second_kind,
+            accepted_statement_hash: second_accepted,
+            formalization_proof_root_hash: second_root,
+        } = second_payload
+        else {
+            panic!("expected formalization payload");
+        };
+        assert_eq!(
+            first_kind,
+            AdvancedFormalizationSuccessKind::ProofBridgeChecked
+        );
+        assert_eq!(
+            second_kind,
+            AdvancedFormalizationSuccessKind::ProofBridgeChecked
+        );
+        assert_eq!(first_accepted, second_accepted);
+        assert_eq!(first_root, second_root);
+
+        let proof_root = first_root.unwrap();
+        let theorem_cert = npa_cert::build_module_cert(
+            CoreModule {
+                name: formalization_scratch_module(proof_root),
+                declarations: vec![Decl::Theorem {
+                    name: formalization_scratch_theorem(proof_root).as_dotted(),
+                    universe_params: Vec::new(),
+                    ty: Expr::sort(Level::succ(Level::zero())),
+                    proof: Expr::sort(Level::zero()),
+                }],
+            },
+            &[],
+        )
+        .unwrap();
+        let theorem_bytes = npa_cert::encode_module_cert(&theorem_cert).unwrap();
+        let mut verifier_session = VerifierSession::new();
+        let verified = npa_cert::verify_module_cert(
+            &theorem_bytes,
+            &mut verifier_session,
+            &AxiomPolicy::normal(),
+        )
+        .unwrap();
+        assert_eq!(
+            theorem_cert.hashes.certificate_hash,
+            verified.certificate_hash()
+        );
+        assert!(verified.axiom_report().module_axioms.is_empty());
+        assert!(verified
+            .axiom_report()
+            .per_declaration
+            .iter()
+            .all(|entry| { entry.direct_axioms.is_empty() && entry.transitive_axioms.is_empty() }));
     }
 
     #[test]

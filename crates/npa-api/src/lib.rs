@@ -6,6 +6,11 @@
 //! producer fast-path candidates remain in `npa-cert` until a separate upper-crate
 //! bridge is designed.
 //!
+//! The Phase 9 advanced AI substrate re-exported by this crate is also
+//! untrusted orchestration. Its sidecars, theorem graph scores, SMT outputs,
+//! and formalization confidence records never replace the Rust kernel,
+//! canonical certificate verifier, or independent checker verdict.
+//!
 //! ```compile_fail
 //! use npa_api::ai_search_candidate_payload_hash;
 //! use npa_cert::CoreDeclCandidate;

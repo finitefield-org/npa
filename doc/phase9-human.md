@@ -21,6 +21,9 @@ Phase 9 は、ここまで作った小さく安全な証明支援系を、実用
   replay substrate と M9 fixture matrix である
 - その substrate は高度機能候補を検査境界へ戻す非信頼 automation であり、
   Human Profile の kernel / checker-facing trusted rules を置き換えない
+- P9H-00 の境界 regression は
+  `p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` と
+  `p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定する
 - advanced inductive / quotient / typeclass / SMT / theorem graph / natural language formalization の
   full human workflow は、この文書の後続 implementation target として扱う
 - Phase 9 完了後の回帰確認は ./scripts/phase9-regression.sh と
@@ -107,6 +110,8 @@ release / audit / adoption path:
 deterministic snapshot を検索します。SMT solver、quotient primitive、full independent checker、release audit は
 証明採用・高信頼化・release 判断の境界で実行し、AI ranking や candidate enumeration の inner loop には入れません。
 AI 側の速度要件は Phase 9 AI Profile の bounded validation / deterministic fixture matrix と対応させます。
+この対応は P9H-00 regression として、Phase 5-7 replay / verify request の candidate hash と
+state fingerprint に Phase 9 Human metadata を混ぜないことまで test 名で追跡します。
 
 ---
 

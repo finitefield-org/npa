@@ -6001,6 +6001,30 @@ mod tests {
         }
     }
 
+    fn assert_p9h00_phase9_human_heavy_fields_absent(label: &str, source: &str) {
+        for forbidden in [
+            "human_boundary",
+            "advanced_ai",
+            "theorem_graph",
+            "graph_snapshot",
+            "smt_solver",
+            "smt_reconstruction",
+            "smt_proof",
+            "formalization",
+            "confidence",
+            "sidecar",
+            "quotient_checker",
+            "independent_checker",
+            "external_checker",
+            "release_audit",
+        ] {
+            assert!(
+                !source.contains(forbidden),
+                "{label} must not synchronously carry advanced human-boundary heavy field {forbidden}"
+            );
+        }
+    }
+
     #[test]
     fn p8h00_ai_fast_path_request_shapes_exclude_phase8_audit_metadata() {
         let request = ai_search_test_batch_request(vec![ai_search_test_envelope(0, None)]);
@@ -6103,6 +6127,120 @@ mod tests {
         let tampered_verify =
             verify_source.replace(r#""mode""#, r#""audit_summary":"checked","mode""#);
         assert!(parse_machine_verify_request(&tampered_verify).is_err());
+    }
+
+    #[test]
+    fn p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks() {
+        let candidate = MachineTacticCandidate::SimpLite { rules: Vec::new() };
+        let mut metadata = ai_search_candidate_metadata(
+            AiSearchCandidateSource::MachineApiSuggested,
+            None,
+            0,
+            Vec::new(),
+            Vec::new(),
+            &candidate,
+        );
+        metadata.score = 99_999;
+        metadata.display_text = Some(
+            "human_boundary independent_checker external_checker release_audit smt_solver \
+             theorem_graph formalization confidence sidecar"
+                .to_owned(),
+        );
+        let request = ai_search_test_batch_request(vec![ai_search_candidate_envelope(
+            candidate.clone(),
+            Some(hash(77)),
+            metadata,
+        )]);
+        let batch_source = ai_search_tactic_batch_request_json(&request);
+        let parsed_batch = parse_machine_tactic_batch_request(&batch_source).unwrap();
+        assert_eq!(parsed_batch.state_fingerprint, request.state_fingerprint);
+        assert_p9h00_phase9_human_heavy_fields_absent("tactic_batch", &batch_source);
+
+        let payload_hash = ai_search_candidate_payload_hash(&candidate);
+        assert_eq!(
+            payload_hash,
+            ai_search_candidate_payload_hash(&MachineTacticCandidate::SimpLite {
+                rules: Vec::new()
+            })
+        );
+        let candidate_payload = ai_search_candidate_payload_json(&candidate);
+        assert_p9h00_phase9_human_heavy_fields_absent("candidate_payload", &candidate_payload);
+
+        let batch_response = ok_batch_response(
+            &request,
+            vec![MachineTacticBatchItemResponse::Success {
+                candidate_id: "c0".to_owned(),
+                candidate_hash: hash(77),
+                next_snapshot_id: SnapshotId::from_state_fingerprint(hash(41)),
+                next_state_fingerprint: hash(42),
+                proof_delta_hash: hash(43),
+            }],
+        );
+        let evaluation =
+            ai_search_evaluate_tactic_batch_response(&request, batch_response).unwrap();
+        assert_eq!(
+            evaluation.replay_steps[0].previous_state_fingerprint,
+            request.state_fingerprint
+        );
+        assert_eq!(evaluation.replay_steps[0].candidate_hash, hash(77));
+        assert_eq!(evaluation.replay_steps[0].next_state_fingerprint, hash(42));
+
+        let replay_plan = AiSearchReplayPlan {
+            protocol_version: MachineApiVersion::V1,
+            session_root_hash: hash(90),
+            initial_state_fingerprint: request.state_fingerprint,
+            steps: evaluation.replay_steps,
+            final_state_fingerprint: hash(42),
+        };
+        let replay_source = ai_search_replay_request_json(request.session_id.clone(), &replay_plan);
+        parse_machine_replay_request(&replay_source).unwrap();
+        assert_p9h00_phase9_human_heavy_fields_absent("replay", &replay_source);
+
+        let verify_source = ai_search_verify_request_json(
+            request.session_id.clone(),
+            request.snapshot_id,
+            request.state_fingerprint,
+        );
+        let parsed_verify = parse_machine_verify_request(&verify_source).unwrap();
+        assert_eq!(parsed_verify.state_fingerprint, request.state_fingerprint);
+        assert_p9h00_phase9_human_heavy_fields_absent("verify", &verify_source);
+
+        let snapshot_source = ai_search_snapshot_get_request_json(&snapshot_request());
+        let parsed_snapshot = parse_machine_snapshot_get_request(&snapshot_source).unwrap();
+        assert_eq!(
+            parsed_snapshot.state_fingerprint,
+            snapshot_request().state_fingerprint
+        );
+        assert_p9h00_phase9_human_heavy_fields_absent("snapshot_get", &snapshot_source);
+
+        let premise_source = ai_search_mvp_premise_query_json(&AiSearchPremiseQueryRequest {
+            session_id: request.session_id.clone(),
+            snapshot_id: request.snapshot_id,
+            state_fingerprint: request.state_fingerprint,
+            goal_id: request.goal_id,
+        });
+        parse_machine_theorem_search_request(&premise_source).unwrap();
+        assert_p9h00_phase9_human_heavy_fields_absent("premise_query", &premise_source);
+
+        let tampered_batch = batch_source.replace(
+            r#""candidates""#,
+            r#""human_boundary":"release_audit","candidates""#,
+        );
+        assert!(parse_machine_tactic_batch_request(&tampered_batch).is_err());
+
+        let tampered_replay =
+            replay_source.replace(r#""plan""#, r#""theorem_graph":"snapshot","plan""#);
+        assert!(parse_machine_replay_request(&tampered_replay).is_err());
+
+        let tampered_verify =
+            verify_source.replace(r#""mode""#, r#""smt_reconstruction":"done","mode""#);
+        assert!(parse_machine_verify_request(&tampered_verify).is_err());
+
+        let tampered_snapshot = snapshot_source.replace(
+            r#""include_pretty""#,
+            r#""formalization_confidence":99,"include_pretty""#,
+        );
+        assert!(parse_machine_snapshot_get_request(&tampered_snapshot).is_err());
     }
 
     #[test]

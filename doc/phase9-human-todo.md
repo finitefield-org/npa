@@ -181,17 +181,17 @@ cargo test --workspace
 
 実装タスク:
 
-- [ ] `doc/phase9-human.md`、`doc/phase9-ai.md`、README の Phase 9 実装境界を test 名または public docs に接続する。
-- [ ] Phase 9 Human の heavy checks が AI candidate hot path に同期挿入されない regression を追加する。
-- [ ] `crates/npa-api` の Phase 9 AI substrate が trusted checker ではないことを public API docs に明記する。
-- [ ] Phase 9 Human metadata が Phase 5-7 replay / verify identity hash と Phase 8 checker result を変えない fixture を追加する。
-- [ ] Phase 9 Regression gate が Phase 9 Human 後も固定ゲートであることを README / docs / workflow 名で確認する。
+- [x] `doc/phase9-human.md`、`doc/phase9-ai.md`、README の Phase 9 実装境界を test 名または public docs に接続する。
+- [x] Phase 9 Human の heavy checks が AI candidate hot path に同期挿入されない regression を追加する。
+- [x] `crates/npa-api` の Phase 9 AI substrate が trusted checker ではないことを public API docs に明記する。
+- [x] Phase 9 Human metadata が Phase 5-7 replay / verify identity hash と Phase 8 checker result を変えない fixture を追加する。
+- [x] Phase 9 Regression gate が Phase 9 Human 後も固定ゲートであることを README / docs / workflow 名で確認する。
 
 受け入れ条件:
 
-- [ ] AI sidecar、theorem graph score、SMT solver output、formalization confidence が checker verdict を作れないことが test で固定されている。
-- [ ] full independent checker / external checker / release audit / SMT reconstruction は AI candidate enumeration の inner loop に入らない。
-- [ ] `/machine/*` request / response schema、candidate hash、state fingerprint が Phase 9 Human 境界追加で変わらない。
+- [x] AI sidecar、theorem graph score、SMT solver output、formalization confidence が checker verdict を作れないことが test で固定されている。
+- [x] full independent checker / external checker / release audit / SMT reconstruction は AI candidate enumeration の inner loop に入らない。
+- [x] `/machine/*` request / response schema、candidate hash、state fingerprint が Phase 9 Human 境界追加で変わらない。
 
 検証:
 

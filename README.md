@@ -135,6 +135,10 @@ regression として固定されています。生成される `.npcert` と `St
 このリポジトリでは source layout fixtures、Rust builders、tests を正本として temp package 上で再生成します。
 同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
 Phase 9 advanced automation endpoint substrate も実装されています。
+Phase 9 Human / AI 境界は `p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` と
+`p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定し、
+高度機能の sidecar / score / solver output / confidence と重い audit は AI 候補 hot path や
+checker verdict の根拠に入れません。
 Phase 8 では `crates/npa-checker-ref` の `npa-checker-ref` binary が `.npcert` を
 source なしで検査し、`crates/npa-api` が checker request / result の正規化、
 release audit bundle、challenge replay、AI sidecar validation の非信頼 orchestration を固定します。
