@@ -127,7 +127,8 @@ fn decl_payload_name(decl: &npa_cert::DeclPayload) -> npa_cert::NameId {
         | npa_cert::DeclPayload::Theorem { name, .. }
         | npa_cert::DeclPayload::TheoremConstrained { name, .. }
         | npa_cert::DeclPayload::Inductive { name, .. }
-        | npa_cert::DeclPayload::InductiveConstrained { name, .. } => *name,
+        | npa_cert::DeclPayload::InductiveConstrained { name, .. }
+        | npa_cert::DeclPayload::MutualInductiveBlock { name, .. } => *name,
     }
 }
 
@@ -782,7 +783,8 @@ fn decl_name(module: &npa_cert::VerifiedModule, decl_index: usize) -> String {
         | npa_cert::DeclPayload::Theorem { name, .. }
         | npa_cert::DeclPayload::TheoremConstrained { name, .. }
         | npa_cert::DeclPayload::Inductive { name, .. }
-        | npa_cert::DeclPayload::InductiveConstrained { name, .. } => *name,
+        | npa_cert::DeclPayload::InductiveConstrained { name, .. }
+        | npa_cert::DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     module.name_table()[name].as_dotted()
 }
@@ -898,6 +900,22 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<String>, decl: &npa_kernel
             }
             if let Some(recursor) = &data.recursor {
                 collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        npa_kernel::Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_expr(names, &recursor.ty);
+                }
             }
         }
         npa_kernel::Decl::Constructor { ty, .. } | npa_kernel::Decl::Recursor { ty, .. } => {

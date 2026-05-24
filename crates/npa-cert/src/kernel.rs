@@ -2,7 +2,8 @@ use std::collections::BTreeSet;
 
 use npa_kernel::{
     eq_inductive, eq_rec_type, nat_inductive, Binder, ConstructorDecl, Decl, Env, Error, Expr,
-    InductiveDecl, Level, RecursorDecl, RecursorRules, Reducibility, UniverseConstraint,
+    InductiveDecl, Level, MutualInductiveBlock, RecursorDecl, RecursorRules, Reducibility,
+    UniverseConstraint,
 };
 
 use crate::types::{
@@ -110,11 +111,34 @@ pub fn verified_module_to_kernel_decls(module: &VerifiedModule) -> Result<Vec<De
                 }
             }
             DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
+                normalize_builtin_import_decl(decl_payload_to_kernel_decl(&cert, &decl.decl)?)
+            }
+            DeclPayload::MutualInductiveBlock { .. } => {
                 decl_payload_to_kernel_decl(&cert, &decl.decl)?
             }
         });
     }
     Ok(decls)
+}
+
+fn normalize_builtin_import_decl(decl: Decl) -> Decl {
+    match decl {
+        Decl::Inductive {
+            name,
+            universe_params,
+            ty,
+            mut data,
+        } if name == BUILTIN_EQ => {
+            data.recursor = None;
+            Decl::Inductive {
+                name,
+                universe_params,
+                ty,
+                data,
+            }
+        }
+        decl => decl,
+    }
 }
 
 fn module_cert_from_verified_module(module: &VerifiedModule) -> ModuleCert {
@@ -300,6 +324,82 @@ fn decl_payload_to_kernel_decl(cert: &ModuleCert, decl: &DeclPayload) -> Result<
                 .with_universe_constraints(universe_constraints_from_decl_payload(cert, decl)?),
             ),
         },
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => Decl::MutualInductiveBlock {
+            name: name_to_string(cert, *name)?,
+            universe_params: universe_names(cert, universe_params)?,
+            data: Box::new(
+                MutualInductiveBlock::new(
+                    name_to_string(cert, *name)?,
+                    universe_names(cert, universe_params)?,
+                    inductives
+                        .iter()
+                        .map(|inductive| {
+                            Ok(InductiveDecl::new(
+                                name_to_string(cert, inductive.name)?,
+                                universe_names(cert, universe_params)?,
+                                inductive
+                                    .params
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(index, binder)| {
+                                        Ok(Binder::new(
+                                            format!("p{index}"),
+                                            expr_from_term(cert, binder.ty)?,
+                                        ))
+                                    })
+                                    .collect::<Result<Vec<_>>>()?,
+                                inductive
+                                    .indices
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(index, binder)| {
+                                        Ok(Binder::new(
+                                            format!("i{index}"),
+                                            expr_from_term(cert, binder.ty)?,
+                                        ))
+                                    })
+                                    .collect::<Result<Vec<_>>>()?,
+                                level_from_node(cert, inductive.sort)?,
+                                inductive
+                                    .constructors
+                                    .iter()
+                                    .map(|constructor| {
+                                        Ok(ConstructorDecl::new(
+                                            name_to_string(cert, constructor.name)?,
+                                            expr_from_term(cert, constructor.ty)?,
+                                        ))
+                                    })
+                                    .collect::<Result<Vec<_>>>()?,
+                                inductive
+                                    .recursor
+                                    .as_ref()
+                                    .map(|recursor| {
+                                        Ok::<_, CertError>(RecursorDecl::with_rules(
+                                            name_to_string(cert, recursor.name)?,
+                                            universe_names(cert, &recursor.universe_params)?,
+                                            expr_from_term(cert, recursor.ty)?,
+                                            RecursorRules::new(
+                                                recursor.rules.minor_start,
+                                                recursor.rules.major_index,
+                                            ),
+                                        ))
+                                    })
+                                    .transpose()?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                )
+                .with_universe_constraints(universe_constraints_from_specs(
+                    cert,
+                    universe_constraints,
+                )?),
+            ),
+        },
     })
 }
 
@@ -321,6 +421,10 @@ fn universe_constraints_from_decl_payload(
             ..
         }
         | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::MutualInductiveBlock {
             universe_constraints,
             ..
         } => universe_constraints_from_specs(cert, universe_constraints),
@@ -420,7 +524,8 @@ fn decl_name(cert: &ModuleCert, decl_index: usize) -> Result<String> {
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     name_to_string(cert, name)
 }
@@ -502,6 +607,16 @@ pub(crate) fn add_decl_to_env(env: &mut Env, decl: Decl) -> Result<()> {
         Decl::Inductive { data, .. } => {
             let name = Name::from_dotted(&data.name);
             match env.add_inductive(*data) {
+                Ok(()) => {}
+                Err(Error::InvalidInductive(message)) if message.contains("recursor") => {
+                    return Err(CertError::InductiveGeneratedArtifactMismatch { name });
+                }
+                Err(err) => return Err(CertError::Kernel(err)),
+            }
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            let name = Name::from_dotted(&data.name);
+            match env.add_mutual_inductive(*data) {
                 Ok(()) => {}
                 Err(Error::InvalidInductive(message)) if message.contains("recursor") => {
                     return Err(CertError::InductiveGeneratedArtifactMismatch { name });

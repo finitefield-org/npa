@@ -972,7 +972,8 @@ pub fn check_current_decl_for_machine_tactic_from_verified_imports_with_kernel_p
         | Decl::DefConstrained { .. }
         | Decl::Theorem { .. }
         | Decl::TheoremConstrained { .. }
-        | Decl::Inductive { .. } => {}
+        | Decl::Inductive { .. }
+        | Decl::MutualInductiveBlock { .. } => {}
     }
 
     let canonical_imports = canonicalize_imports(imports.to_vec());
@@ -1270,6 +1271,39 @@ fn add_import_decls_to_kernel_env(
         pending = next;
     }
 
+    add_eq_rec_for_generated_import_exports(imports, kernel_env, env_decl_hashes)?;
+    Ok(())
+}
+
+fn add_eq_rec_for_generated_import_exports(
+    imports: &[VerifiedImportRef],
+    kernel_env: &mut Env,
+    env_decl_hashes: &mut BTreeMap<String, Hash>,
+) -> Result<()> {
+    let Some(export) = imports
+        .iter()
+        .flat_map(|import| &import.exports)
+        .find(|export| export.kind == ExportKind::Recursor && export.name.as_dotted() == "Eq.rec")
+    else {
+        return Ok(());
+    };
+    if kernel_env.decl("Eq.rec").is_none() {
+        kernel_env
+            .add_axiom(
+                "Eq.rec",
+                vec!["u".to_owned(), "v".to_owned()],
+                npa_kernel::eq_rec_type(Level::param("u"), Level::param("v")),
+            )
+            .map_err(|err| {
+                MachineTacticDiagnostic::new(
+                    MachineTacticDiagnosticKind::InvalidVerifiedImport,
+                    format!("kernel env rejected builtin Eq.rec import bridge: {err:?}"),
+                )
+            })?;
+    }
+    env_decl_hashes
+        .entry("Eq.rec".to_owned())
+        .or_insert(export.decl_interface_hash);
     Ok(())
 }
 
@@ -7814,6 +7848,12 @@ fn import_generated_export_type(
     export: &VerifiedExportSignature,
 ) -> Result<Expr> {
     let export_name = export.name.as_dotted();
+    if export.kind == ExportKind::Recursor && export_name == "Eq.rec" {
+        return Ok(npa_kernel::eq_rec_type(
+            Level::param("u"),
+            Level::param("v"),
+        ));
+    }
     for decl in &import.certified_env_decls {
         let Decl::Inductive { data, .. } = decl else {
             continue;
@@ -8149,6 +8189,7 @@ fn add_decl_to_kernel_env(env: &mut Env, decl: Decl) -> npa_kernel::Result<()> {
             proof,
         ),
         Decl::Inductive { data, .. } => env.add_inductive(*data),
+        Decl::MutualInductiveBlock { data, .. } => env.add_mutual_inductive(*data),
         Decl::Constructor { .. } | Decl::Recursor { .. } => {
             Err(npa_kernel::Error::InvalidInductive(
                 "generated declarations cannot be added directly".to_owned(),
@@ -8163,17 +8204,20 @@ fn verified_builtin_decl_matches_kernel_env(env: &Env, decl: &Decl) -> bool {
             let Ok(candidate) = kernel_env_from_single_decl(decl.clone()) else {
                 return false;
             };
-            let Some(names) = generated_decl_closure_names(decl) else {
+            let Some(mut names) = generated_decl_closure_names(decl) else {
                 return false;
             };
-            names.iter().all(|name| {
-                let Some(existing) = env.decl(name) else {
+            if name == "Eq" {
+                names.retain(|name| name != "Eq.rec");
+            }
+            names.iter().all(|candidate_name| {
+                let Some(existing) = env.decl(candidate_name) else {
                     return false;
                 };
-                let Some(candidate) = candidate.decl(name) else {
+                let Some(candidate) = candidate.decl(candidate_name) else {
                     return false;
                 };
-                kernel_decl_interfaces_match(existing, candidate)
+                builtin_kernel_decl_interfaces_match(name, existing, candidate)
             })
         }
         Decl::Axiom {
@@ -8298,6 +8342,37 @@ fn kernel_decl_interfaces_match(lhs: &Decl, rhs: &Decl) -> bool {
         }
         _ => false,
     }
+}
+
+fn builtin_kernel_decl_interfaces_match(builtin: &str, lhs: &Decl, rhs: &Decl) -> bool {
+    if builtin == "Eq" {
+        if let (
+            Decl::Inductive {
+                name: lhs_name,
+                universe_params: lhs_params,
+                ty: lhs_ty,
+                data: lhs_data,
+            },
+            Decl::Inductive {
+                name: rhs_name,
+                universe_params: rhs_params,
+                ty: rhs_ty,
+                data: rhs_data,
+            },
+        ) = (lhs, rhs)
+        {
+            return lhs_name == rhs_name
+                && lhs_params == rhs_params
+                && core_expr_hash(lhs_ty) == core_expr_hash(rhs_ty)
+                && lhs_data.name == rhs_data.name
+                && lhs_data.universe_params == rhs_data.universe_params
+                && lhs_data.sort == rhs_data.sort
+                && binder_type_hashes(&lhs_data.params) == binder_type_hashes(&rhs_data.params)
+                && binder_type_hashes(&lhs_data.indices) == binder_type_hashes(&rhs_data.indices)
+                && constructor_interfaces_match(&lhs_data.constructors, &rhs_data.constructors);
+        }
+    }
+    kernel_decl_interfaces_match(lhs, rhs)
 }
 
 fn inductive_interfaces_match(
@@ -8603,7 +8678,8 @@ fn decl_payload_name(cert: &npa_cert::ModuleCert, payload: &DeclPayload) -> Resu
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     cert.name_table.get(name_id).cloned().ok_or_else(|| {
         MachineTacticDiagnostic::new(
@@ -8936,13 +9012,27 @@ fn local_public_names(declarations: &[Decl]) -> BTreeSet<Name> {
     let mut names = BTreeSet::new();
     for decl in declarations {
         names.insert(Name::from_dotted(decl.name()));
-        if let Decl::Inductive { data, .. } = decl {
-            for constructor in &data.constructors {
-                names.insert(Name::from_dotted(&constructor.name));
+        match decl {
+            Decl::Inductive { data, .. } => {
+                for constructor in &data.constructors {
+                    names.insert(Name::from_dotted(&constructor.name));
+                }
+                if let Some(recursor) = &data.recursor {
+                    names.insert(Name::from_dotted(&recursor.name));
+                }
             }
-            if let Some(recursor) = &data.recursor {
-                names.insert(Name::from_dotted(&recursor.name));
+            Decl::MutualInductiveBlock { data, .. } => {
+                for inductive in &data.inductives {
+                    names.insert(Name::from_dotted(&inductive.name));
+                    for constructor in &inductive.constructors {
+                        names.insert(Name::from_dotted(&constructor.name));
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        names.insert(Name::from_dotted(&recursor.name));
+                    }
+                }
             }
+            _ => {}
         }
     }
     names
@@ -8974,6 +9064,22 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
             }
             if let Some(recursor) = &data.recursor {
                 collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_expr(names, &recursor.ty);
+                }
             }
         }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {

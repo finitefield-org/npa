@@ -924,6 +924,24 @@ fn prefix_current_decl_identity(module_name: &npa_cert::ModuleName, decl: Decl) 
             ty,
             data: Box::new(prefix_current_inductive_identities(module_name, *data)),
         },
+        Decl::MutualInductiveBlock {
+            name,
+            universe_params,
+            data,
+        } => {
+            let mut data = *data;
+            data.name = prefixed_current_name_string(module_name, data.name);
+            data.inductives = data
+                .inductives
+                .into_iter()
+                .map(|inductive| prefix_current_inductive_identities(module_name, inductive))
+                .collect();
+            Decl::MutualInductiveBlock {
+                name: prefixed_current_name_string(module_name, name),
+                universe_params,
+                data: Box::new(data),
+            }
+        }
         Decl::Constructor {
             name,
             universe_params,
@@ -1078,7 +1096,21 @@ fn add_human_kernel_imports_to_env(
         pending = next;
     }
 
+    add_human_builtin_eq_rec_import_bridge(
+        env,
+        imports.iter().copied(),
+        span,
+        "Human tactic import environment",
+    )?;
+
     Ok(())
+}
+
+fn add_human_inductive_to_env(env: &mut Env, mut data: InductiveDecl) -> npa_kernel::Result<()> {
+    if data.name == "Eq" {
+        data.recursor = None;
+    }
+    env.add_inductive(data)
 }
 
 fn human_decl_waits_for_pending_import(
@@ -1180,7 +1212,8 @@ fn add_human_kernel_decl_to_env(
             ty,
             proof,
         ),
-        Decl::Inductive { data, .. } => env.add_inductive(*data),
+        Decl::Inductive { data, .. } => add_human_inductive_to_env(env, *data),
+        Decl::MutualInductiveBlock { data, .. } => env.add_mutual_inductive(*data),
         Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
     }
     .map_err(|err| {
@@ -1202,11 +1235,7 @@ fn human_tactic_global_scope(
                 .iter()
                 .map(move |export| HumanGlobalScopeEntry {
                     name: HumanName::new(export.name.0.clone(), span),
-                    reference: HumanGlobalRef::Imported {
-                        module: import.module.clone(),
-                        name: export.name.clone(),
-                        decl_interface_hash: export.decl_interface_hash,
-                    },
+                    reference: human_import_global_ref(import, export),
                     span,
                 })
         })
@@ -1251,27 +1280,9 @@ fn human_tactic_callable_signatures(
     let mut signatures = BTreeMap::new();
     for import in request.direct_imports {
         for export in &import.exports {
-            let implicit_profile = human_imported_source_interface_profile(
-                request.imported_source_interfaces,
-                import,
-                export,
-            )
-            .unwrap_or_else(|| {
-                if npa_cert::builtin_decl_interface_hash(&export.name)
-                    == Some(export.decl_interface_hash)
-                {
-                    builtin_machine_callable_profile(&export.name).unwrap_or_default()
-                } else {
-                    Vec::new()
-                }
-            });
-            signatures.insert(
-                export.name.as_dotted(),
-                HumanCallableSignature {
-                    universe_params: export.universe_params.clone(),
-                    implicit_profile,
-                },
-            );
+            let signature =
+                human_import_signature(request.imported_source_interfaces, import, export);
+            signatures.insert(export.name.as_dotted(), signature);
         }
     }
 
@@ -1323,6 +1334,75 @@ fn human_imported_source_interface_profile(
     export: &crate::VerifiedExport,
 ) -> Option<Vec<MachineCallableBinderVisibility>> {
     human_source_interface_profile_for_export(imported_source_interfaces, import, export)
+}
+
+fn human_import_signature(
+    imported_source_interfaces: &[HumanImportedSourceInterface],
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> HumanCallableSignature {
+    if human_import_export_uses_builtin_eq_rec(import, export) {
+        return human_builtin_eq_rec_signature();
+    }
+
+    let implicit_profile =
+        human_imported_source_interface_profile(imported_source_interfaces, import, export)
+            .unwrap_or_else(|| {
+                if npa_cert::builtin_decl_interface_hash(&export.name)
+                    == Some(export.decl_interface_hash)
+                {
+                    builtin_machine_callable_profile(&export.name).unwrap_or_default()
+                } else {
+                    Vec::new()
+                }
+            });
+    HumanCallableSignature {
+        universe_params: export.universe_params.clone(),
+        implicit_profile,
+    }
+}
+
+fn human_builtin_eq_rec_signature() -> HumanCallableSignature {
+    HumanCallableSignature {
+        universe_params: vec!["u".to_owned(), "v".to_owned()],
+        implicit_profile: builtin_machine_callable_profile(&npa_cert::Name::from_dotted("Eq.rec"))
+            .unwrap_or_default(),
+    }
+}
+
+fn human_import_global_ref(
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> HumanGlobalRef {
+    if human_import_export_uses_builtin_eq_rec(import, export) {
+        return human_builtin_eq_rec_ref();
+    }
+
+    HumanGlobalRef::Imported {
+        module: import.module.clone(),
+        name: export.name.clone(),
+        decl_interface_hash: export.decl_interface_hash,
+    }
+}
+
+fn human_builtin_eq_rec_ref() -> HumanGlobalRef {
+    let name = npa_cert::Name::from_dotted("Eq.rec");
+    HumanGlobalRef::Builtin {
+        decl_interface_hash: npa_cert::builtin_decl_interface_hash(&name)
+            .expect("Eq.rec builtin interface hash is defined"),
+        name,
+    }
+}
+
+fn human_import_export_uses_builtin_eq_rec(
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> bool {
+    export.name.as_dotted() == "Eq.rec"
+        && import
+            .kernel_decls
+            .iter()
+            .any(|decl| matches!(decl, Decl::Inductive { name, .. } if name == "Eq"))
 }
 
 fn human_source_interface_profile_for_export(
@@ -3856,6 +3936,12 @@ impl HumanBidirectionalElaborator {
         for decl in kernel_decls_for_human_import(import) {
             self.add_kernel_decl(decl, span)?;
         }
+        add_human_builtin_eq_rec_import_bridge(
+            &mut self.env,
+            std::iter::once(import),
+            span,
+            "Human import environment",
+        )?;
         Ok(())
     }
 
@@ -4295,7 +4381,8 @@ impl HumanBidirectionalElaborator {
                 ty,
                 proof,
             ),
-            Decl::Inductive { data, .. } => self.env.add_inductive(*data),
+            Decl::Inductive { data, .. } => add_human_inductive_to_env(&mut self.env, *data),
+            Decl::MutualInductiveBlock { data, .. } => self.env.add_mutual_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
         .map_err(|err| {
@@ -4428,24 +4515,16 @@ impl HumanImplicitInserter {
         for decl in kernel_decls_for_human_import(import) {
             self.add_kernel_decl(decl, span)?;
         }
+        add_human_builtin_eq_rec_import_bridge(
+            &mut self.env,
+            std::iter::once(import),
+            span,
+            "Human implicit import",
+        )?;
         for export in &import.exports {
-            let implicit_profile = self
-                .imported_source_interface_profile(import, export)
-                .unwrap_or_else(|| {
-                    if npa_cert::builtin_decl_interface_hash(&export.name)
-                        == Some(export.decl_interface_hash)
-                    {
-                        builtin_machine_callable_profile(&export.name).unwrap_or_default()
-                    } else {
-                        Vec::new()
-                    }
-                });
             self.signatures.insert(
                 export.name.as_dotted(),
-                HumanCallableSignature {
-                    universe_params: export.universe_params.clone(),
-                    implicit_profile,
-                },
+                human_import_signature(&self.imported_source_interfaces, import, export),
             );
         }
         Ok(())
@@ -4473,14 +4552,6 @@ impl HumanImplicitInserter {
             );
         }
         Ok(())
-    }
-
-    fn imported_source_interface_profile(
-        &self,
-        import: &VerifiedImport,
-        export: &crate::VerifiedExport,
-    ) -> Option<Vec<MachineCallableBinderVisibility>> {
-        human_source_interface_profile_for_export(&self.imported_source_interfaces, import, export)
     }
 
     fn insert_decl(
@@ -5368,7 +5439,8 @@ impl HumanImplicitInserter {
                 ty,
                 proof,
             ),
-            Decl::Inductive { data, .. } => self.env.add_inductive(*data),
+            Decl::Inductive { data, .. } => add_human_inductive_to_env(&mut self.env, *data),
+            Decl::MutualInductiveBlock { data, .. } => self.env.add_mutual_inductive(*data),
             Decl::Constructor { .. } | Decl::Recursor { .. } => Ok(()),
         }
         .map_err(|err| {
@@ -5411,6 +5483,33 @@ fn add_referenced_builtin_decls_to_human_env(
     collect_const_names_from_human_decl(&mut names, decl);
     remove_human_decl_owned_const_names(&mut names, decl);
     add_human_builtin_decls_for_names(env, &names, span, context)
+}
+
+fn add_human_builtin_eq_rec_import_bridge<'a>(
+    env: &mut Env,
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+    span: Span,
+    context: &str,
+) -> HumanResult<()> {
+    let needs_eq_rec = imports.into_iter().any(|import| {
+        import
+            .exports
+            .iter()
+            .any(|export| human_import_export_uses_builtin_eq_rec(import, export))
+    });
+    if !needs_eq_rec || env.decl("Eq.rec").is_some() {
+        return Ok(());
+    }
+
+    add_human_builtin_decls_for_names(
+        env,
+        &BTreeSet::from([
+            npa_cert::Name::from_dotted("Eq"),
+            npa_cert::Name::from_dotted("Eq.rec"),
+        ]),
+        span,
+        context,
+    )
 }
 
 fn human_referenced_builtin_names(module: &ResolvedHumanModule) -> BTreeSet<npa_cert::Name> {
@@ -5458,6 +5557,22 @@ fn collect_const_names_from_human_decl(names: &mut BTreeSet<npa_cert::Name>, dec
                 collect_const_names_from_human_expr(names, &recursor.ty);
             }
         }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_human_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_human_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_human_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_human_expr(names, &recursor.ty);
+                }
+            }
+        }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
             collect_const_names_from_human_expr(names, ty);
         }
@@ -5472,6 +5587,16 @@ fn remove_human_decl_owned_const_names(names: &mut BTreeSet<npa_cert::Name>, dec
         }
         if let Some(recursor) = &data.recursor {
             names.remove(&npa_cert::Name::from_dotted(&recursor.name));
+        }
+    } else if let Decl::MutualInductiveBlock { data, .. } = decl {
+        for inductive in &data.inductives {
+            names.remove(&npa_cert::Name::from_dotted(&inductive.name));
+            for constructor in &inductive.constructors {
+                names.remove(&npa_cert::Name::from_dotted(&constructor.name));
+            }
+            if let Some(recursor) = &inductive.recursor {
+                names.remove(&npa_cert::Name::from_dotted(&recursor.name));
+            }
         }
     }
 }
@@ -7318,7 +7443,9 @@ mod tests {
         }) {
             return true;
         }
-        if expr_has_internal_human_meta(decl.ty()) {
+        if !matches!(decl, Decl::MutualInductiveBlock { .. })
+            && expr_has_internal_human_meta(decl.ty())
+        {
             return true;
         }
         match decl {
@@ -7343,6 +7470,22 @@ mod tests {
                         .as_ref()
                         .is_some_and(|recursor| expr_has_internal_human_meta(&recursor.ty))
             }
+            Decl::MutualInductiveBlock { data, .. } => data.inductives.iter().any(|inductive| {
+                inductive
+                    .params
+                    .iter()
+                    .chain(inductive.indices.iter())
+                    .any(|binder| expr_has_internal_human_meta(&binder.ty))
+                    || level_has_internal_human_meta(&inductive.sort)
+                    || inductive
+                        .constructors
+                        .iter()
+                        .any(|ctor| expr_has_internal_human_meta(&ctor.ty))
+                    || inductive
+                        .recursor
+                        .as_ref()
+                        .is_some_and(|recursor| expr_has_internal_human_meta(&recursor.ty))
+            }),
             Decl::Axiom { .. }
             | Decl::AxiomConstrained { .. }
             | Decl::Constructor { .. }

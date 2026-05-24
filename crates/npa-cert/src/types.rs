@@ -568,6 +568,17 @@ pub enum DeclPayload {
         /// Generated recursor specification when present.
         recursor: Option<RecursorSpec>,
     },
+    /// Mutual inductive block with generated artifacts.
+    MutualInductiveBlock {
+        /// Name table index of the mutual block declaration.
+        name: NameId,
+        /// Shared universe parameter name ids.
+        universe_params: Vec<NameId>,
+        /// Canonical universe constraints over the block parameters.
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        /// Inductives declared by this block in canonical block order.
+        inductives: Vec<MutualInductiveSpec>,
+    },
 }
 
 /// Canonical universe constraint in certificate-level ids.
@@ -617,6 +628,23 @@ pub struct RecursorRulesSpec {
     pub minor_start: usize,
     /// Index of the major premise argument.
     pub major_index: usize,
+}
+
+/// One inductive family inside a mutual inductive block.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MutualInductiveSpec {
+    /// Inductive family name table index.
+    pub name: NameId,
+    /// Parameter telescope.
+    pub params: Vec<BinderType>,
+    /// Index telescope.
+    pub indices: Vec<BinderType>,
+    /// Result sort level.
+    pub sort: LevelId,
+    /// Generated constructor specifications.
+    pub constructors: Vec<ConstructorSpec>,
+    /// Generated recursor specification when present.
+    pub recursor: Option<RecursorSpec>,
 }
 
 /// Reducibility exported by a definition certificate.

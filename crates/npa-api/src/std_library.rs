@@ -4791,7 +4791,8 @@ fn decl_name(
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     module
         .verified_module
@@ -10175,7 +10176,8 @@ fn std_library_decl_name(module: &MachineStdLoadedModule, decl: &DeclCert) -> Op
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     module.verified_module.name_table().get(name_id).cloned()
 }

@@ -291,7 +291,8 @@ impl DecodedModuleCertificate {
             | DeclPayload::Theorem { name, .. }
             | DeclPayload::TheoremConstrained { name, .. }
             | DeclPayload::Inductive { name, .. }
-            | DeclPayload::InductiveConstrained { name, .. } => {
+            | DeclPayload::InductiveConstrained { name, .. }
+            | DeclPayload::MutualInductiveBlock { name, .. } => {
                 self.name_table[*name].value.clone()
             }
         };
@@ -512,7 +513,9 @@ impl DecodedModuleCertificate {
 
         let allow_self_reference = matches!(
             decl,
-            DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. }
+            DeclPayload::Inductive { .. }
+                | DeclPayload::InductiveConstrained { .. }
+                | DeclPayload::MutualInductiveBlock { .. }
         );
         refs.into_iter()
             .filter(|global_ref| {
@@ -805,6 +808,19 @@ impl DecodedModuleCertificate {
                     || recursor
                         .as_ref()
                         .is_some_and(|recursor| recursor.name == name)
+            }
+            DeclPayload::MutualInductiveBlock { inductives, .. } => {
+                inductives.iter().any(|inductive| {
+                    inductive.name == name
+                        || inductive
+                            .constructors
+                            .iter()
+                            .any(|constructor| constructor.name == name)
+                        || inductive
+                            .recursor
+                            .as_ref()
+                            .is_some_and(|recursor| recursor.name == name)
+                })
             }
             _ => false,
         })
@@ -1157,6 +1173,63 @@ impl DecodedModuleCertificate {
                             decl_interface_hash: decl.hashes.decl_interface_hash,
                             axiom_dependencies: decl.axiom_dependencies.clone(),
                         });
+                    }
+                }
+                DeclPayload::MutualInductiveBlock {
+                    universe_params,
+                    inductives,
+                    ..
+                } => {
+                    for inductive in inductives {
+                        let ty = inductive_export_type_term_id(
+                            &self.term_table,
+                            &inductive.params,
+                            &inductive.indices,
+                            inductive.sort,
+                        )?;
+                        entries.push(ExportEntry {
+                            name: inductive.name,
+                            kind: ExportKind::Inductive,
+                            universe_params: universe_params.clone(),
+                            ty,
+                            body: None,
+                            type_hash: term_hashes[ty],
+                            body_hash: None,
+                            reducibility: None,
+                            opacity: None,
+                            decl_interface_hash: decl.hashes.decl_interface_hash,
+                            axiom_dependencies: decl.axiom_dependencies.clone(),
+                        });
+                        for constructor in &inductive.constructors {
+                            entries.push(ExportEntry {
+                                name: constructor.name,
+                                kind: ExportKind::Constructor,
+                                universe_params: universe_params.clone(),
+                                ty: constructor.ty,
+                                body: None,
+                                type_hash: term_hashes[constructor.ty],
+                                body_hash: None,
+                                reducibility: None,
+                                opacity: None,
+                                decl_interface_hash: decl.hashes.decl_interface_hash,
+                                axiom_dependencies: decl.axiom_dependencies.clone(),
+                            });
+                        }
+                        if let Some(recursor) = &inductive.recursor {
+                            entries.push(ExportEntry {
+                                name: recursor.name,
+                                kind: ExportKind::Recursor,
+                                universe_params: recursor.universe_params.clone(),
+                                ty: recursor.ty,
+                                body: None,
+                                type_hash: term_hashes[recursor.ty],
+                                body_hash: None,
+                                reducibility: None,
+                                opacity: None,
+                                decl_interface_hash: decl.hashes.decl_interface_hash,
+                                axiom_dependencies: decl.axiom_dependencies.clone(),
+                            });
+                        }
                     }
                 }
             }
@@ -1641,6 +1714,83 @@ impl DecodedModuleCertificate {
                     )?;
                     used.terms.insert(recursor.ty);
                     let _ = recursor.rules;
+                }
+            }
+            DeclPayload::MutualInductiveBlock {
+                name,
+                universe_params,
+                inductives,
+                ..
+            } => {
+                self.collect_name_id(
+                    *name,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_name_ids(
+                    universe_params,
+                    used,
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                )?;
+                self.collect_universe_constraints(decl_universe_constraints(decl), used, offset)?;
+                for inductive in inductives {
+                    self.collect_name_id(
+                        inductive.name,
+                        used,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    self.require_level(
+                        inductive.sort,
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                    )?;
+                    used.levels.insert(inductive.sort);
+                    for binder in inductive.params.iter().chain(&inductive.indices) {
+                        self.collect_term_root(
+                            binder.ty,
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )?;
+                        used.terms.insert(binder.ty);
+                    }
+                    for constructor in &inductive.constructors {
+                        self.collect_name_id(
+                            constructor.name,
+                            used,
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )?;
+                        self.collect_term_root(
+                            constructor.ty,
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )?;
+                        used.terms.insert(constructor.ty);
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        self.collect_name_id(
+                            recursor.name,
+                            used,
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )?;
+                        self.collect_name_ids(
+                            &recursor.universe_params,
+                            used,
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )?;
+                        self.collect_term_root(
+                            recursor.ty,
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                        )?;
+                        used.terms.insert(recursor.ty);
+                        let _ = recursor.rules;
+                    }
                 }
             }
         }
@@ -2224,6 +2374,7 @@ struct TypeChecker<'a> {
     locals: Vec<TypeSignature>,
     generated: BTreeMap<GeneratedKey, TypeSignature>,
     inductives: BTreeMap<usize, ReferenceInductiveSignature>,
+    mutual_inductives: BTreeMap<GeneratedKey, ReferenceInductiveSignature>,
     recursors: BTreeMap<GeneratedKey, ReferenceRecursorRuntime>,
 }
 
@@ -2245,6 +2396,7 @@ impl<'a> TypeChecker<'a> {
             locals: Vec::new(),
             generated: BTreeMap::new(),
             inductives: BTreeMap::new(),
+            mutual_inductives: BTreeMap::new(),
             recursors: BTreeMap::new(),
         })
     }
@@ -2285,6 +2437,9 @@ impl<'a> TypeChecker<'a> {
                 DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
                     self.check_inductive_decl(&located.value, located.offset)?;
                 }
+                DeclPayload::MutualInductiveBlock { .. } => {
+                    self.check_mutual_inductive_decl(&located.value, located.offset)?;
+                }
             }
         }
         Ok(())
@@ -2314,6 +2469,9 @@ impl<'a> TypeChecker<'a> {
                 universe_params, ..
             }
             | DeclPayload::InductiveConstrained {
+                universe_params, ..
+            }
+            | DeclPayload::MutualInductiveBlock {
                 universe_params, ..
             } => universe_params,
         };
@@ -2387,6 +2545,9 @@ impl<'a> TypeChecker<'a> {
                 ty: self.inductive_type(params, indices, *sort),
                 value: None,
             },
+            DeclPayload::MutualInductiveBlock { .. } => unreachable!(
+                "mutual inductive blocks are exported through generated family entries"
+            ),
         })
     }
 
@@ -2470,12 +2631,228 @@ impl<'a> TypeChecker<'a> {
                 key,
                 ReferenceRecursorRuntime {
                     inductive_decl_index: decl_index,
+                    target_key: None,
+                    target_constructor_offset: 0,
+                    family_recursors: BTreeMap::new(),
                     rules: recursor.rules,
                 },
             );
         }
 
         Ok(())
+    }
+
+    fn check_mutual_inductive_decl(&mut self, decl: &DeclCert, offset: usize) -> DecodeResult<()> {
+        let DeclPayload::MutualInductiveBlock {
+            universe_params,
+            inductives,
+            ..
+        } = &decl.decl
+        else {
+            return Err(ReferenceCheckError::unsupported(offset));
+        };
+        if inductives.is_empty() {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadConstructorResult,
+            ));
+        }
+
+        let decl_index = self.locals.len();
+        let universe_params = self.cert.name_ids_to_names(universe_params);
+        ensure_unique_names(&universe_params, offset)?;
+        let shared_params = inductives[0].params.clone();
+        let mut generated_names = BTreeSet::new();
+        generated_names.insert(decl.decl.name_id());
+        for inductive in inductives {
+            if inductive.params != shared_params {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadConstructorResult,
+                ));
+            }
+            if !generated_names.insert(inductive.name) {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::DuplicateDeclarationName,
+                ));
+            }
+            for constructor in &inductive.constructors {
+                if !generated_names.insert(constructor.name) {
+                    return Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::DuplicateDeclarationName,
+                    ));
+                }
+            }
+            if let Some(recursor) = &inductive.recursor {
+                if !generated_names.insert(recursor.name) {
+                    return Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::DuplicateDeclarationName,
+                    ));
+                }
+            }
+        }
+
+        self.locals.push(TypeSignature {
+            universe_params: universe_params.clone(),
+            ty: ReferenceCoreExpr::Sort(ReferenceCoreLevel::Zero),
+            value: None,
+        });
+
+        let mut signatures = Vec::with_capacity(inductives.len());
+        for inductive in inductives {
+            ensure_level_wf(&self.levels[inductive.sort], &universe_params, offset)?;
+            let family_ty =
+                self.inductive_type(&inductive.params, &inductive.indices, inductive.sort);
+            self.expect_sort(
+                &TypeContext::default(),
+                &universe_params,
+                &family_ty,
+                offset,
+            )?;
+            let data =
+                self.mutual_inductive_signature(decl_index, universe_params.clone(), inductive);
+            let key = GeneratedKey::new(decl_index, data.generated_family_name());
+            self.generated.insert(
+                key.clone(),
+                TypeSignature {
+                    universe_params: universe_params.clone(),
+                    ty: family_ty,
+                    value: None,
+                },
+            );
+            self.mutual_inductives.insert(key, data.clone());
+            signatures.push(data);
+        }
+
+        for data in &signatures {
+            for (constructor_index, constructor) in data.constructors.iter().enumerate() {
+                self.check_mutual_constructor_decl(
+                    &signatures,
+                    data,
+                    constructor_index,
+                    constructor,
+                    offset,
+                )?;
+            }
+        }
+
+        for data in &signatures {
+            for constructor in &data.constructors {
+                self.generated.insert(
+                    GeneratedKey::new(decl_index, constructor.name.clone()),
+                    TypeSignature {
+                        universe_params: data.universe_params.clone(),
+                        ty: constructor.ty.clone(),
+                        value: None,
+                    },
+                );
+            }
+        }
+
+        let mut family_recursors = BTreeMap::new();
+        for data in &signatures {
+            if let Some(recursor) = &data.recursor {
+                family_recursors.insert(
+                    GeneratedKey::new(decl_index, data.generated_family_name()),
+                    recursor.name.clone(),
+                );
+            }
+        }
+        for (target_index, data) in signatures.iter().enumerate() {
+            if let Some(recursor) = &data.recursor {
+                let target_constructor_offset = signatures[..target_index]
+                    .iter()
+                    .map(|signature| signature.constructors.len())
+                    .sum();
+                ensure_unique_names(&recursor.universe_params, offset)?;
+                self.expect_sort(
+                    &TypeContext::default(),
+                    &recursor.universe_params,
+                    &recursor.ty,
+                    offset,
+                )?;
+                self.check_mutual_recursor_decl(&signatures, target_index, recursor, offset)?;
+                let key = GeneratedKey::new(decl_index, recursor.name.clone());
+                self.generated.insert(
+                    key.clone(),
+                    TypeSignature {
+                        universe_params: recursor.universe_params.clone(),
+                        ty: recursor.ty.clone(),
+                        value: None,
+                    },
+                );
+                self.recursors.insert(
+                    key,
+                    ReferenceRecursorRuntime {
+                        inductive_decl_index: decl_index,
+                        target_key: Some(GeneratedKey::new(
+                            decl_index,
+                            data.generated_family_name(),
+                        )),
+                        target_constructor_offset,
+                        family_recursors: family_recursors.clone(),
+                        rules: recursor.rules,
+                    },
+                );
+            } else {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::BadRecursorRule,
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    fn mutual_inductive_signature(
+        &self,
+        decl_index: usize,
+        universe_params: Vec<ReferenceModuleName>,
+        inductive: &MutualInductiveSpec,
+    ) -> ReferenceInductiveSignature {
+        let name = self.cert.name_table[inductive.name].value.clone();
+        ReferenceInductiveSignature {
+            decl_index,
+            global_ref: ReferenceCoreGlobalRef::LocalGenerated { decl_index, name },
+            universe_params,
+            params: inductive
+                .params
+                .iter()
+                .map(|binder| self.terms[binder.ty].clone())
+                .collect(),
+            indices: inductive
+                .indices
+                .iter()
+                .map(|binder| self.terms[binder.ty].clone())
+                .collect(),
+            sort: self.levels[inductive.sort].clone(),
+            constructors: inductive
+                .constructors
+                .iter()
+                .map(|constructor| ReferenceConstructorSignature {
+                    name: self.cert.name_table[constructor.name].value.clone(),
+                    ty: self.terms[constructor.ty].clone(),
+                })
+                .collect(),
+            recursor: inductive
+                .recursor
+                .as_ref()
+                .map(|recursor| ReferenceRecursorSignature {
+                    name: self.cert.name_table[recursor.name].value.clone(),
+                    universe_params: self.cert.name_ids_to_names(&recursor.universe_params),
+                    ty: self.terms[recursor.ty].clone(),
+                    rules: recursor.rules,
+                }),
+        }
     }
 
     fn inductive_signature(
@@ -2505,6 +2882,7 @@ impl<'a> TypeChecker<'a> {
         };
         ReferenceInductiveSignature {
             decl_index,
+            global_ref: ReferenceCoreGlobalRef::Local { decl_index },
             universe_params,
             params: params
                 .iter()
@@ -2579,6 +2957,41 @@ impl<'a> TypeChecker<'a> {
         self.check_constructor_result(data, constructor_sig, domains.len(), result, offset)
     }
 
+    fn check_mutual_constructor_decl(
+        &self,
+        block: &[ReferenceInductiveSignature],
+        data: &ReferenceInductiveSignature,
+        _constructor_index: usize,
+        constructor: &ReferenceConstructorSignature,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let ty = &constructor.ty;
+        self.expect_sort(&TypeContext::default(), &data.universe_params, ty, offset)?;
+        let (domains, result) = peel_pi_domains(ty);
+        for (domain_index, domain) in domains.iter().enumerate() {
+            if domain_index >= data.params.len()
+                && direct_mutual_recursive_index_args(block, domain, domain_index, offset)?
+                    .is_some()
+            {
+                continue;
+            }
+            if contains_any_inductive_const(domain, block) {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::NonPositiveOccurrence,
+                ));
+            }
+        }
+        let result = self.whnf(
+            &TypeContext::default(),
+            &data.universe_params,
+            &result,
+            offset,
+        )?;
+        self.check_constructor_result(data, constructor, domains.len(), result, offset)
+    }
+
     fn check_constructor_domain_positive(
         &self,
         data: &ReferenceInductiveSignature,
@@ -2592,7 +3005,7 @@ impl<'a> TypeChecker<'a> {
         {
             return Ok(());
         }
-        if contains_inductive_const(domain, data.decl_index) {
+        if contains_inductive_const(domain, data) {
             return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
                 offset,
@@ -2613,10 +3026,9 @@ impl<'a> TypeChecker<'a> {
     ) -> DecodeResult<()> {
         let (head, args) = collect_apps(&result);
         let levels = match head {
-            ReferenceCoreExpr::Const {
-                global_ref: ReferenceCoreGlobalRef::Local { decl_index },
-                levels,
-            } if *decl_index == data.decl_index => levels,
+            ReferenceCoreExpr::Const { global_ref, levels } if global_ref == &data.global_ref => {
+                levels
+            }
             _ => {
                 return Err(ReferenceCheckError::type_check(
                     ReferenceCertificateSection::Declarations,
@@ -2747,6 +3159,119 @@ impl<'a> TypeChecker<'a> {
         Ok(())
     }
 
+    fn check_mutual_recursor_decl(
+        &self,
+        block: &[ReferenceInductiveSignature],
+        target_index: usize,
+        recursor: &ReferenceRecursorSignature,
+        offset: usize,
+    ) -> DecodeResult<()> {
+        let target = block.get(target_index).ok_or_else(|| {
+            ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            )
+        })?;
+        let total_constructors = mutual_constructor_count(block);
+        let expected_minor_start = target.params.len() + block.len();
+        if recursor.rules.minor_start != expected_minor_start
+            || recursor.rules.major_index
+                != expected_minor_start + total_constructors + target.indices.len()
+        {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            ));
+        }
+        let (domains, result) = peel_pi_domains(&recursor.ty);
+        if domains.len() <= recursor.rules.major_index
+            || domains.len() != recursor.rules.major_index + 1
+        {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorRule,
+            ));
+        }
+
+        self.check_recursor_params(target, recursor, &domains, offset)?;
+        for (family_index, family) in block.iter().enumerate() {
+            let motive_domain =
+                domains
+                    .get(target.params.len() + family_index)
+                    .ok_or_else(|| {
+                        ReferenceCheckError::type_check(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                            ReferenceCheckReason::BadRecursorMotive,
+                        )
+                    })?;
+            self.check_motive_domain(family, recursor, motive_domain, offset)?;
+        }
+
+        let index_start = recursor.rules.minor_start + total_constructors;
+        self.check_recursor_indices_at(target, recursor, &domains, index_start, offset)?;
+        self.check_recursor_target(
+            target,
+            &domains[recursor.rules.major_index],
+            ReferenceCheckReason::BadRecursorMajor,
+            recursor.rules.major_index,
+            index_start,
+            offset,
+        )?;
+        self.check_mutual_recursor_result(MutualRecursorResultCheck {
+            target,
+            target_index,
+            recursor,
+            domains: &domains,
+            result: &result,
+            index_start,
+            offset,
+        })?;
+
+        let mut constructor_index = 0usize;
+        for (family_index, family) in block.iter().enumerate() {
+            for constructor in &family.constructors {
+                let minor_index = recursor.rules.minor_start + constructor_index;
+                let minor_domain = &domains[minor_index];
+                let expected_minor = expected_mutual_minor_type(
+                    block,
+                    family_index,
+                    constructor,
+                    constructor_index,
+                    offset,
+                )?;
+                let prefix_ctx = recursor_prefix_ctx(&domains[..minor_index]);
+                if !self.is_defeq(
+                    &prefix_ctx,
+                    &recursor.universe_params,
+                    minor_domain,
+                    &expected_minor,
+                    offset,
+                )? {
+                    return Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::BadRecursorMinor,
+                    ));
+                }
+                constructor_index += 1;
+            }
+        }
+
+        let expected_ty = expected_mutual_recursor_type(block, target_index, recursor, offset)?;
+        if recursor.ty != expected_ty {
+            return Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                offset,
+                ReferenceCheckReason::BadRecursorType,
+            ));
+        }
+        Ok(())
+    }
+
     fn check_recursor_params(
         &self,
         data: &ReferenceInductiveSignature,
@@ -2856,6 +3381,17 @@ impl<'a> TypeChecker<'a> {
         offset: usize,
     ) -> DecodeResult<()> {
         let index_start = recursor.rules.minor_start + data.constructors.len();
+        self.check_recursor_indices_at(data, recursor, domains, index_start, offset)
+    }
+
+    fn check_recursor_indices_at(
+        &self,
+        data: &ReferenceInductiveSignature,
+        recursor: &ReferenceRecursorSignature,
+        domains: &[ReferenceCoreExpr],
+        index_start: usize,
+        offset: usize,
+    ) -> DecodeResult<()> {
         let mut source_to_target = (0..data.params.len()).collect::<Vec<_>>();
         for (index, expected) in data.indices.iter().enumerate() {
             let domain_index = index_start + index;
@@ -2906,10 +3442,8 @@ impl<'a> TypeChecker<'a> {
         let (head, args) = collect_apps(target);
         let levels = match head {
             ReferenceCoreExpr::Const {
-                global_ref: ReferenceCoreGlobalRef::Local { decl_index },
-                levels,
-                ..
-            } if *decl_index == data.decl_index => levels,
+                global_ref, levels, ..
+            } if global_ref == &data.global_ref => levels,
             _ => {
                 return Err(ReferenceCheckError::type_check(
                     ReferenceCertificateSection::Declarations,
@@ -2983,6 +3517,42 @@ impl<'a> TypeChecker<'a> {
             Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
                 offset,
+                ReferenceCheckReason::BadRecursorResult,
+            ))
+        }
+    }
+
+    fn check_mutual_recursor_result(
+        &self,
+        check: MutualRecursorResultCheck<'_>,
+    ) -> DecodeResult<()> {
+        let index_args = (0..check.target.indices.len())
+            .map(|index| bvar_for_abs(check.domains.len(), check.index_start + index, check.offset))
+            .collect::<DecodeResult<Vec<_>>>()?;
+        let expected = motive_app(
+            check.domains.len(),
+            check.target.params.len() + check.target_index,
+            index_args,
+            bvar_for_abs(
+                check.domains.len(),
+                check.recursor.rules.major_index,
+                check.offset,
+            )?,
+            check.offset,
+        )?;
+        let result_ctx = recursor_prefix_ctx(check.domains);
+        if self.is_defeq(
+            &result_ctx,
+            &check.recursor.universe_params,
+            check.result,
+            &expected,
+            check.offset,
+        )? {
+            Ok(())
+        } else {
+            Err(ReferenceCheckError::type_check(
+                ReferenceCertificateSection::Declarations,
+                check.offset,
                 ReferenceCheckReason::BadRecursorResult,
             ))
         }
@@ -3164,6 +3734,15 @@ impl<'a> TypeChecker<'a> {
                 })
             }
             ReferenceCoreGlobalRef::Local { decl_index } => {
+                if self.cert.declarations.get(*decl_index).is_some_and(|decl| {
+                    matches!(decl.value.decl, DeclPayload::MutualInductiveBlock { .. })
+                }) {
+                    return Err(ReferenceCheckError::type_check(
+                        ReferenceCertificateSection::Declarations,
+                        offset,
+                        ReferenceCheckReason::UnknownReference,
+                    ));
+                }
                 self.locals.get(*decl_index).cloned().ok_or_else(|| {
                     ReferenceCheckError::type_check(
                         ReferenceCertificateSection::Declarations,
@@ -3451,9 +4030,11 @@ impl<'a> TypeChecker<'a> {
         if *ctor_decl_index != recursor.inductive_decl_index {
             return Ok(None);
         }
-        let Some(data) = self.inductives.get(&recursor.inductive_decl_index) else {
-            return Ok(None);
+        let data = match &recursor.target_key {
+            Some(key) => self.mutual_inductives.get(key),
+            None => self.inductives.get(&recursor.inductive_decl_index),
         };
+        let Some(data) = data else { return Ok(None) };
         let Some(ctor_index) = data
             .constructors
             .iter()
@@ -3461,7 +4042,10 @@ impl<'a> TypeChecker<'a> {
         else {
             return Ok(None);
         };
-        let Some(minor) = args.get(recursor.rules.minor_start + ctor_index).cloned() else {
+        let Some(minor) = args
+            .get(recursor.rules.minor_start + recursor.target_constructor_offset + ctor_index)
+            .cloned()
+        else {
             return Ok(None);
         };
 
@@ -3483,7 +4067,14 @@ impl<'a> TypeChecker<'a> {
             field_args.iter().zip(field_domains).enumerate()
         {
             reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(field_arg.clone()));
-            if is_direct_recursive_domain(data, field_domain, param_count + field_index, offset)? {
+            if recursor.target_key.is_none()
+                && is_direct_recursive_domain(
+                    data,
+                    field_domain,
+                    param_count + field_index,
+                    offset,
+                )?
+            {
                 let source_ctx_len = param_count + field_index;
                 let source_args = &ctor_args[..source_ctx_len];
                 let mut recursive_args = args[..index_start].to_vec();
@@ -3508,10 +4099,58 @@ impl<'a> TypeChecker<'a> {
                     recursive_args,
                 );
                 reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(recursive_call));
+            } else if let Some((field_key, field_recursor_name, index_args)) = self
+                .direct_mutual_recursive_index_args(
+                    &recursor.family_recursors,
+                    field_domain,
+                    param_count + field_index,
+                    offset,
+                )?
+            {
+                let source_ctx_len = param_count + field_index;
+                let source_args = &ctor_args[..source_ctx_len];
+                let mut recursive_args = args[..index_start].to_vec();
+                for index_arg in index_args {
+                    recursive_args.push(instantiate_constructor_args(
+                        &index_arg,
+                        source_args,
+                        offset,
+                    )?);
+                }
+                recursive_args.push(field_arg.clone());
+                let recursive_call = apps(
+                    ReferenceCoreExpr::Const {
+                        global_ref: ReferenceCoreGlobalRef::LocalGenerated {
+                            decl_index: field_key.decl_index,
+                            name: field_recursor_name,
+                        },
+                        levels: levels.clone(),
+                    },
+                    recursive_args,
+                );
+                reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(recursive_call));
             }
         }
 
         Ok(Some(apps(reduced, rest)))
+    }
+
+    fn direct_mutual_recursive_index_args(
+        &self,
+        family_recursors: &BTreeMap<GeneratedKey, ReferenceModuleName>,
+        domain: &ReferenceCoreExpr,
+        ctx_len: usize,
+        offset: usize,
+    ) -> DecodeResult<Option<(GeneratedKey, ReferenceModuleName, Vec<ReferenceCoreExpr>)>> {
+        for (key, recursor_name) in family_recursors {
+            let Some(data) = self.mutual_inductives.get(key) else {
+                continue;
+            };
+            if let Ok(indices) = direct_recursive_index_args(data, domain, ctx_len, offset) {
+                return Ok(Some((key.clone(), recursor_name.clone(), indices)));
+            }
+        }
+        Ok(None)
     }
 
     fn is_defeq(
@@ -3679,12 +4318,27 @@ impl GeneratedKey {
 #[derive(Clone, Debug)]
 struct ReferenceInductiveSignature {
     decl_index: usize,
+    global_ref: ReferenceCoreGlobalRef,
     universe_params: Vec<ReferenceModuleName>,
     params: Vec<ReferenceCoreExpr>,
     indices: Vec<ReferenceCoreExpr>,
     sort: ReferenceCoreLevel,
     constructors: Vec<ReferenceConstructorSignature>,
     recursor: Option<ReferenceRecursorSignature>,
+}
+
+impl ReferenceInductiveSignature {
+    fn generated_family_name(&self) -> ReferenceModuleName {
+        match &self.global_ref {
+            ReferenceCoreGlobalRef::LocalGenerated { name, .. } => name.clone(),
+            ReferenceCoreGlobalRef::Local { .. } => {
+                unreachable!("single inductive families are not block-generated")
+            }
+            ReferenceCoreGlobalRef::Builtin { .. } | ReferenceCoreGlobalRef::Imported { .. } => {
+                unreachable!("inductive signatures are local declarations")
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -3701,9 +4355,22 @@ struct ReferenceRecursorSignature {
     rules: RecursorRulesSpec,
 }
 
+struct MutualRecursorResultCheck<'a> {
+    target: &'a ReferenceInductiveSignature,
+    target_index: usize,
+    recursor: &'a ReferenceRecursorSignature,
+    domains: &'a [ReferenceCoreExpr],
+    result: &'a ReferenceCoreExpr,
+    index_start: usize,
+    offset: usize,
+}
+
 #[derive(Clone, Debug)]
 struct ReferenceRecursorRuntime {
     inductive_decl_index: usize,
+    target_key: Option<GeneratedKey>,
+    target_constructor_offset: usize,
+    family_recursors: BTreeMap<GeneratedKey, ReferenceModuleName>,
     rules: RecursorRulesSpec,
 }
 
@@ -3976,6 +4643,69 @@ fn expected_recursor_type(
     Ok(mk_pi_from_domains(domains, body))
 }
 
+fn expected_mutual_recursor_type(
+    block: &[ReferenceInductiveSignature],
+    target_index: usize,
+    recursor: &ReferenceRecursorSignature,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let target = block.get(target_index).ok_or_else(|| {
+        ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorRule,
+        )
+    })?;
+    let param_count = target.params.len();
+    let mut domains = target.params.clone();
+    for family in block {
+        domains.push(motive_domain_expr(
+            family,
+            expected_motive_level(family, recursor),
+            offset,
+        )?);
+    }
+    let mut constructor_index = 0usize;
+    for (family_index, family) in block.iter().enumerate() {
+        for constructor in &family.constructors {
+            domains.push(expected_mutual_minor_type(
+                block,
+                family_index,
+                constructor,
+                constructor_index,
+                offset,
+            )?);
+            constructor_index += 1;
+        }
+    }
+    let index_start = domains.len();
+    append_index_domains(target, &mut domains, offset)?;
+    let major_domain = inductive_target_expr(
+        target,
+        domains.len(),
+        param_count,
+        index_start,
+        target.indices.len(),
+        offset,
+    )?;
+    domains.push(major_domain);
+    let index_args = (0..target.indices.len())
+        .map(|index| bvar_for_abs(domains.len(), index_start + index, offset))
+        .collect::<DecodeResult<Vec<_>>>()?;
+    let body = motive_app(
+        domains.len(),
+        param_count + target_index,
+        index_args,
+        bvar_for_abs(domains.len(), recursor.rules.major_index, offset)?,
+        offset,
+    )?;
+    Ok(mk_pi_from_domains(domains, body))
+}
+
+fn mutual_constructor_count(block: &[ReferenceInductiveSignature]) -> usize {
+    block.iter().map(|data| data.constructors.len()).sum()
+}
+
 fn expected_motive_level(
     data: &ReferenceInductiveSignature,
     recursor: &ReferenceRecursorSignature,
@@ -4017,9 +4747,7 @@ fn inductive_target_expr(
         .collect::<DecodeResult<Vec<_>>>()?;
     Ok(apps(
         ReferenceCoreExpr::Const {
-            global_ref: ReferenceCoreGlobalRef::Local {
-                decl_index: data.decl_index,
-            },
+            global_ref: data.global_ref.clone(),
             levels,
         },
         args,
@@ -4206,6 +4934,124 @@ fn expected_minor_type(
     Ok(mk_pi_from_domains(expected_domains, result))
 }
 
+fn expected_mutual_minor_type(
+    block: &[ReferenceInductiveSignature],
+    family_index: usize,
+    constructor: &ReferenceConstructorSignature,
+    constructor_index: usize,
+    offset: usize,
+) -> DecodeResult<ReferenceCoreExpr> {
+    let owner = block.get(family_index).ok_or_else(|| {
+        ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorMinor,
+        )
+    })?;
+    let (constructor_domains, constructor_result) = peel_pi_domains(&constructor.ty);
+    let param_count = owner.params.len();
+    if constructor_domains.len() < param_count {
+        return Err(ReferenceCheckError::type_check(
+            ReferenceCertificateSection::Declarations,
+            offset,
+            ReferenceCheckReason::BadRecursorMinor,
+        ));
+    }
+    let constructor_result_indices =
+        constructor_result_index_args(owner, &constructor_result, offset)?;
+
+    let prefix_len = param_count + block.len() + constructor_index;
+    let motive_abs_start = param_count;
+    let mut source_to_target: Vec<usize> = (0..param_count).collect();
+    let mut target_ctx_len = prefix_len;
+    let mut expected_domains = Vec::new();
+    let mut field_abs = Vec::new();
+
+    for (field_index, field_domain) in constructor_domains[param_count..].iter().enumerate() {
+        let source_ctx_len = param_count + field_index;
+        expected_domains.push(remap_bvars(
+            field_domain,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+            offset,
+        )?);
+
+        source_to_target.push(target_ctx_len);
+        field_abs.push(target_ctx_len);
+        target_ctx_len += 1;
+
+        if let Some((field_family_index, index_args)) =
+            direct_mutual_recursive_index_args(block, field_domain, source_ctx_len, offset)?
+        {
+            let index_args = index_args
+                .into_iter()
+                .map(|arg| {
+                    remap_bvars(
+                        &arg,
+                        source_ctx_len,
+                        target_ctx_len,
+                        &source_to_target,
+                        offset,
+                    )
+                })
+                .collect::<DecodeResult<Vec<_>>>()?;
+            expected_domains.push(motive_app(
+                target_ctx_len,
+                motive_abs_start + field_family_index,
+                index_args,
+                ReferenceCoreExpr::BVar(0),
+                offset,
+            )?);
+            target_ctx_len += 1;
+        }
+    }
+
+    let mut constructor_args = Vec::with_capacity(param_count + field_abs.len());
+    for param_abs in 0..param_count {
+        constructor_args.push(bvar_for_abs(target_ctx_len, param_abs, offset)?);
+    }
+    for field_abs in field_abs {
+        constructor_args.push(bvar_for_abs(target_ctx_len, field_abs, offset)?);
+    }
+
+    let levels = owner
+        .universe_params
+        .iter()
+        .map(|param| ReferenceCoreLevel::Param(param.clone()))
+        .collect();
+    let constructor_value = apps(
+        ReferenceCoreExpr::Const {
+            global_ref: ReferenceCoreGlobalRef::LocalGenerated {
+                decl_index: owner.decl_index,
+                name: constructor.name.clone(),
+            },
+            levels,
+        },
+        constructor_args,
+    );
+    let result_index_args = constructor_result_indices
+        .iter()
+        .map(|arg| {
+            remap_bvars(
+                arg,
+                constructor_domains.len(),
+                target_ctx_len,
+                &source_to_target,
+                offset,
+            )
+        })
+        .collect::<DecodeResult<Vec<_>>>()?;
+    let result = motive_app(
+        target_ctx_len,
+        motive_abs_start + family_index,
+        result_index_args,
+        constructor_value,
+        offset,
+    )?;
+    Ok(mk_pi_from_domains(expected_domains, result))
+}
+
 fn remap_bvars(
     expr: &ReferenceCoreExpr,
     source_ctx_len: usize,
@@ -4341,10 +5187,7 @@ fn direct_recursive_index_args(
 ) -> DecodeResult<Vec<ReferenceCoreExpr>> {
     let (head, args) = collect_apps(domain);
     let levels = match head {
-        ReferenceCoreExpr::Const {
-            global_ref: ReferenceCoreGlobalRef::Local { decl_index },
-            levels,
-        } if *decl_index == data.decl_index => levels,
+        ReferenceCoreExpr::Const { global_ref, levels } if global_ref == &data.global_ref => levels,
         _ => {
             return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
@@ -4378,10 +5221,7 @@ fn direct_recursive_index_args(
         }
     }
 
-    if args
-        .iter()
-        .all(|arg| !contains_inductive_const(arg, data.decl_index))
-    {
+    if args.iter().all(|arg| !contains_inductive_const(arg, data)) {
         Ok(args[data.params.len()..].to_vec())
     } else {
         Err(ReferenceCheckError::type_check(
@@ -4392,6 +5232,20 @@ fn direct_recursive_index_args(
     }
 }
 
+fn direct_mutual_recursive_index_args(
+    block: &[ReferenceInductiveSignature],
+    domain: &ReferenceCoreExpr,
+    ctx_len: usize,
+    offset: usize,
+) -> DecodeResult<Option<(usize, Vec<ReferenceCoreExpr>)>> {
+    for (family_index, data) in block.iter().enumerate() {
+        if let Ok(indices) = direct_recursive_index_args(data, domain, ctx_len, offset) {
+            return Ok(Some((family_index, indices)));
+        }
+    }
+    Ok(None)
+}
+
 fn constructor_result_index_args(
     data: &ReferenceInductiveSignature,
     result: &ReferenceCoreExpr,
@@ -4399,10 +5253,7 @@ fn constructor_result_index_args(
 ) -> DecodeResult<Vec<ReferenceCoreExpr>> {
     let (head, args) = collect_apps(result);
     let levels = match head {
-        ReferenceCoreExpr::Const {
-            global_ref: ReferenceCoreGlobalRef::Local { decl_index },
-            levels,
-        } if *decl_index == data.decl_index => levels,
+        ReferenceCoreExpr::Const { global_ref, levels } if global_ref == &data.global_ref => levels,
         _ => {
             return Err(ReferenceCheckError::type_check(
                 ReferenceCertificateSection::Declarations,
@@ -4526,24 +5377,31 @@ fn instantiate_constructor_args_at(
     }
 }
 
-fn contains_inductive_const(expr: &ReferenceCoreExpr, decl_index: usize) -> bool {
+fn contains_inductive_const(expr: &ReferenceCoreExpr, data: &ReferenceInductiveSignature) -> bool {
     match expr {
         ReferenceCoreExpr::Sort(_) | ReferenceCoreExpr::BVar(_) => false,
-        ReferenceCoreExpr::Const { global_ref, .. } => {
-            matches!(global_ref, ReferenceCoreGlobalRef::Local { decl_index: index } if *index == decl_index)
-        }
+        ReferenceCoreExpr::Const { global_ref, .. } => global_ref == &data.global_ref,
         ReferenceCoreExpr::App(fun, arg) => {
-            contains_inductive_const(fun, decl_index) || contains_inductive_const(arg, decl_index)
+            contains_inductive_const(fun, data) || contains_inductive_const(arg, data)
         }
         ReferenceCoreExpr::Lam { ty, body } | ReferenceCoreExpr::Pi { ty, body } => {
-            contains_inductive_const(ty, decl_index) || contains_inductive_const(body, decl_index)
+            contains_inductive_const(ty, data) || contains_inductive_const(body, data)
         }
         ReferenceCoreExpr::Let { ty, value, body } => {
-            contains_inductive_const(ty, decl_index)
-                || contains_inductive_const(value, decl_index)
-                || contains_inductive_const(body, decl_index)
+            contains_inductive_const(ty, data)
+                || contains_inductive_const(value, data)
+                || contains_inductive_const(body, data)
         }
     }
+}
+
+fn contains_any_inductive_const(
+    expr: &ReferenceCoreExpr,
+    inductives: &[ReferenceInductiveSignature],
+) -> bool {
+    inductives
+        .iter()
+        .any(|inductive| contains_inductive_const(expr, inductive))
 }
 
 fn subst_levels_expr(
@@ -4860,6 +5718,12 @@ enum DeclPayload {
         constructors: Vec<ConstructorSpec>,
         recursor: Option<RecursorSpec>,
     },
+    MutualInductiveBlock {
+        name: usize,
+        universe_params: Vec<usize>,
+        universe_constraints: Vec<UniverseConstraintSpec>,
+        inductives: Vec<MutualInductiveSpec>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -4885,12 +5749,13 @@ impl DeclPayload {
             | Self::Theorem { name, .. }
             | Self::TheoremConstrained { name, .. }
             | Self::Inductive { name, .. }
-            | Self::InductiveConstrained { name, .. } => *name,
+            | Self::InductiveConstrained { name, .. }
+            | Self::MutualInductiveBlock { name, .. } => *name,
         }
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct BinderType {
     ty: usize,
 }
@@ -4899,6 +5764,16 @@ struct BinderType {
 struct ConstructorSpec {
     name: usize,
     ty: usize,
+}
+
+#[derive(Clone, Debug)]
+struct MutualInductiveSpec {
+    name: usize,
+    params: Vec<BinderType>,
+    indices: Vec<BinderType>,
+    sort: usize,
+    constructors: Vec<ConstructorSpec>,
+    recursor: Option<RecursorSpec>,
 }
 
 #[derive(Clone, Debug)]
@@ -5440,6 +6315,29 @@ impl<'a> Decoder<'a> {
                     recursor,
                 }
             }
+            0x04 => {
+                let name = self.usize(ReferenceCertificateSection::Declarations)?;
+                let universe_params = self.usize_vec(ReferenceCertificateSection::Declarations)?;
+                let universe_constraints = self.universe_constraint_specs()?;
+                let len = self.bounded_len(ReferenceCertificateSection::Declarations)?;
+                let mut inductives = Vec::with_capacity(len);
+                for _ in 0..len {
+                    inductives.push(MutualInductiveSpec {
+                        name: self.usize(ReferenceCertificateSection::Declarations)?,
+                        params: self.binder_types()?,
+                        indices: self.binder_types()?,
+                        sort: self.usize(ReferenceCertificateSection::Declarations)?,
+                        constructors: self.constructor_specs()?,
+                        recursor: self.recursor_spec()?,
+                    });
+                }
+                DeclPayload::MutualInductiveBlock {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    inductives,
+                }
+            }
             tag => {
                 return Err(ReferenceCheckError::malformed(
                     ReferenceCertificateSection::Declarations,
@@ -5485,6 +6383,39 @@ impl<'a> Decoder<'a> {
             });
         }
         Ok(binders)
+    }
+
+    fn constructor_specs(&mut self) -> DecodeResult<Vec<ConstructorSpec>> {
+        let len = self.bounded_len(ReferenceCertificateSection::Declarations)?;
+        let mut constructors = Vec::with_capacity(len);
+        for _ in 0..len {
+            constructors.push(ConstructorSpec {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+            });
+        }
+        Ok(constructors)
+    }
+
+    fn recursor_spec(&mut self) -> DecodeResult<Option<RecursorSpec>> {
+        let recursor_offset = self.offset;
+        match self.byte(ReferenceCertificateSection::Declarations)? {
+            0x00 => Ok(None),
+            0x01 => Ok(Some(RecursorSpec {
+                name: self.usize(ReferenceCertificateSection::Declarations)?,
+                universe_params: self.usize_vec(ReferenceCertificateSection::Declarations)?,
+                ty: self.usize(ReferenceCertificateSection::Declarations)?,
+                rules: RecursorRulesSpec {
+                    minor_start: self.usize(ReferenceCertificateSection::Declarations)?,
+                    major_index: self.usize(ReferenceCertificateSection::Declarations)?,
+                },
+            })),
+            tag => Err(ReferenceCheckError::malformed(
+                ReferenceCertificateSection::Declarations,
+                recursor_offset,
+                ReferenceCheckReason::UnknownTag { tag },
+            )),
+        }
     }
 
     fn export_block(&mut self) -> DecodeResult<Vec<Located<ExportEntry>>> {
@@ -6206,8 +7137,57 @@ fn decl_interface_payload(
             encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => {
+            out.push(0x04);
+            encode_name_id_to(&mut out, names, *name);
+            encode_name_ids_to(&mut out, names, universe_params);
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes);
+            encode_mutual_inductive_specs_to(
+                &mut out,
+                inductives,
+                level_hashes,
+                term_hashes,
+                names,
+            );
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
     }
     Ok(out)
+}
+
+fn encode_mutual_inductive_specs_to(
+    out: &mut Vec<u8>,
+    inductives: &[MutualInductiveSpec],
+    level_hashes: &[ReferenceHash],
+    term_hashes: &[ReferenceHash],
+    names: &[Located<ReferenceModuleName>],
+) {
+    encode_uvar_to(out, inductives.len() as u64);
+    for inductive in inductives {
+        encode_name_id_to(out, names, inductive.name);
+        encode_uvar_to(out, inductive.params.len() as u64);
+        for param in &inductive.params {
+            out.extend(term_hashes[param.ty]);
+        }
+        encode_uvar_to(out, inductive.indices.len() as u64);
+        for index in &inductive.indices {
+            out.extend(term_hashes[index.ty]);
+        }
+        out.extend(level_hashes[inductive.sort]);
+        encode_constructor_specs_to(out, &inductive.constructors, term_hashes, names);
+        out.extend(generated_recursor_signature_hash(
+            inductive.recursor.as_ref(),
+            term_hashes,
+            names,
+        ));
+        out.extend(generated_computation_rule_hash(inductive.recursor.as_ref()));
+    }
 }
 
 fn encode_universe_constraint_specs_to(
@@ -6245,6 +7225,10 @@ fn decl_certificate_payload(
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
         DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
+            encode_dependency_entries_to(&mut out, dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::MutualInductiveBlock { .. } => {
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
@@ -6314,6 +7298,23 @@ fn interface_term_ids(decl: &DeclPayload) -> Vec<usize> {
             .chain(constructors.iter().map(|constructor| constructor.ty))
             .chain(recursor.iter().map(|recursor| recursor.ty))
             .collect(),
+        DeclPayload::MutualInductiveBlock { inductives, .. } => inductives
+            .iter()
+            .flat_map(|inductive| {
+                inductive
+                    .params
+                    .iter()
+                    .map(|param| param.ty)
+                    .chain(inductive.indices.iter().map(|index| index.ty))
+                    .chain(
+                        inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| constructor.ty),
+                    )
+                    .chain(inductive.recursor.iter().map(|recursor| recursor.ty))
+            })
+            .collect(),
     }
 }
 
@@ -6345,6 +7346,23 @@ fn decl_term_ids(decl: &DeclPayload) -> Vec<usize> {
             .chain(constructors.iter().map(|constructor| constructor.ty))
             .chain(recursor.iter().map(|recursor| recursor.ty))
             .collect(),
+        DeclPayload::MutualInductiveBlock { inductives, .. } => inductives
+            .iter()
+            .flat_map(|inductive| {
+                inductive
+                    .params
+                    .iter()
+                    .map(|param| param.ty)
+                    .chain(inductive.indices.iter().map(|index| index.ty))
+                    .chain(
+                        inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| constructor.ty),
+                    )
+                    .chain(inductive.recursor.iter().map(|recursor| recursor.ty))
+            })
+            .collect(),
     }
 }
 
@@ -6373,6 +7391,9 @@ fn decl_universe_params(decl: &DeclPayload) -> &[usize] {
         }
         | DeclPayload::InductiveConstrained {
             universe_params, ..
+        }
+        | DeclPayload::MutualInductiveBlock {
+            universe_params, ..
         } => universe_params,
     }
 }
@@ -6392,6 +7413,10 @@ fn decl_universe_constraints(decl: &DeclPayload) -> &[UniverseConstraintSpec] {
             ..
         }
         | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::MutualInductiveBlock {
             universe_constraints,
             ..
         } => universe_constraints,
@@ -6423,7 +7448,8 @@ fn decl_has_empty_constrained_universe_payload(decl: &DeclPayload) -> bool {
         DeclPayload::Axiom { .. }
         | DeclPayload::Def { .. }
         | DeclPayload::Theorem { .. }
-        | DeclPayload::Inductive { .. } => false,
+        | DeclPayload::Inductive { .. }
+        | DeclPayload::MutualInductiveBlock { .. } => false,
     }
 }
 

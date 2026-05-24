@@ -69,6 +69,11 @@ pub enum Decl {
         inductive: String,
         rules: RecursorRules,
     },
+    MutualInductiveBlock {
+        name: String,
+        universe_params: Vec<String>,
+        data: Box<MutualInductiveBlock>,
+    },
 }
 
 impl Decl {
@@ -82,7 +87,8 @@ impl Decl {
             | Self::TheoremConstrained { name, .. } => name,
             Self::Inductive { name, .. }
             | Self::Constructor { name, .. }
-            | Self::Recursor { name, .. } => name,
+            | Self::Recursor { name, .. }
+            | Self::MutualInductiveBlock { name, .. } => name,
         }
     }
 
@@ -109,6 +115,9 @@ impl Decl {
             | Self::Inductive {
                 universe_params, ..
             }
+            | Self::MutualInductiveBlock {
+                universe_params, ..
+            }
             | Self::Constructor {
                 universe_params, ..
             }
@@ -133,6 +142,7 @@ impl Decl {
                 ..
             } => universe_constraints,
             Self::Inductive { data, .. } => &data.universe_constraints,
+            Self::MutualInductiveBlock { data, .. } => &data.universe_constraints,
             Self::Axiom { .. }
             | Self::Def { .. }
             | Self::Theorem { .. }
@@ -152,6 +162,9 @@ impl Decl {
             Self::Inductive { ty, .. }
             | Self::Constructor { ty, .. }
             | Self::Recursor { ty, .. } => ty,
+            Self::MutualInductiveBlock { name, .. } => {
+                panic!("mutual inductive block `{name}` has no singular type")
+            }
         }
     }
 }
@@ -231,6 +244,34 @@ impl RecursorDecl {
             ty,
             rules: Some(rules),
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MutualInductiveBlock {
+    pub name: String,
+    pub universe_params: Vec<String>,
+    pub universe_constraints: Vec<UniverseConstraint>,
+    pub inductives: Vec<InductiveDecl>,
+}
+
+impl MutualInductiveBlock {
+    pub fn new(
+        name: impl Into<String>,
+        universe_params: Vec<String>,
+        inductives: Vec<InductiveDecl>,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            universe_params,
+            universe_constraints: Vec::new(),
+            inductives,
+        }
+    }
+
+    pub fn with_universe_constraints(mut self, constraints: Vec<UniverseConstraint>) -> Self {
+        self.universe_constraints = constraints;
+        self
     }
 }
 

@@ -8710,6 +8710,9 @@ fn advanced_ai_kernel_env_from_imports(
                 npa_kernel::Decl::Inductive { data, .. } => {
                     env.add_inductive((**data).clone()).map_err(|_| ())?
                 }
+                npa_kernel::Decl::MutualInductiveBlock { data, .. } => {
+                    env.add_mutual_inductive((**data).clone()).map_err(|_| ())?
+                }
                 npa_kernel::Decl::Constructor { .. } | npa_kernel::Decl::Recursor { .. } => {}
             }
         }

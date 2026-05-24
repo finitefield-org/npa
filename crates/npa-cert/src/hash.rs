@@ -270,6 +270,63 @@ pub(crate) fn build_export_block(
                     });
                 }
             }
+            DeclPayload::MutualInductiveBlock {
+                universe_params,
+                inductives,
+                ..
+            } => {
+                for inductive in inductives {
+                    let ty = inductive_export_type_term_id(
+                        term_table,
+                        &inductive.params,
+                        &inductive.indices,
+                        inductive.sort,
+                    )?;
+                    entries.push(ExportEntry {
+                        name: inductive.name,
+                        kind: ExportKind::Inductive,
+                        universe_params: universe_params.clone(),
+                        ty,
+                        body: None,
+                        type_hash: term_hashes[ty],
+                        body_hash: None,
+                        reducibility: None,
+                        opacity: None,
+                        decl_interface_hash: decl.hashes.decl_interface_hash,
+                        axiom_dependencies: decl.axiom_dependencies.clone(),
+                    });
+                    for constructor in &inductive.constructors {
+                        entries.push(ExportEntry {
+                            name: constructor.name,
+                            kind: ExportKind::Constructor,
+                            universe_params: universe_params.clone(),
+                            ty: constructor.ty,
+                            body: None,
+                            type_hash: term_hashes[constructor.ty],
+                            body_hash: None,
+                            reducibility: None,
+                            opacity: None,
+                            decl_interface_hash: decl.hashes.decl_interface_hash,
+                            axiom_dependencies: decl.axiom_dependencies.clone(),
+                        });
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        entries.push(ExportEntry {
+                            name: recursor.name,
+                            kind: ExportKind::Recursor,
+                            universe_params: recursor.universe_params.clone(),
+                            ty: recursor.ty,
+                            body: None,
+                            type_hash: term_hashes[recursor.ty],
+                            body_hash: None,
+                            reducibility: None,
+                            opacity: None,
+                            decl_interface_hash: decl.hashes.decl_interface_hash,
+                            axiom_dependencies: decl.axiom_dependencies.clone(),
+                        });
+                    }
+                }
+            }
         }
     }
     entries.sort_by_key(|entry| entry.name);
@@ -499,8 +556,62 @@ fn decl_interface_payload(
             encode_dependency_entries_to(&mut out, interface_dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => {
+            out.push(0x04);
+            encode_name_id_to(&mut out, names, *name)?;
+            encode_name_ids_to(&mut out, names, universe_params)?;
+            encode_universe_constraint_specs_to(&mut out, universe_constraints, level_hashes)?;
+            encode_mutual_inductive_specs_to(
+                &mut out,
+                inductives,
+                level_hashes,
+                term_hashes,
+                names,
+            )?;
+            encode_dependency_entries_to(&mut out, interface_dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
     }
     Ok(out)
+}
+
+fn encode_mutual_inductive_specs_to(
+    out: &mut Vec<u8>,
+    inductives: &[MutualInductiveSpec],
+    level_hashes: &[Hash],
+    term_hashes: &[Hash],
+    names: &[Name],
+) -> Result<()> {
+    encode_uvar_to(out, inductives.len() as u64);
+    for inductive in inductives {
+        encode_name_id_to(out, names, inductive.name)?;
+        encode_uvar_to(out, inductive.params.len() as u64);
+        for param in &inductive.params {
+            out.extend(term_hashes.get(param.ty).ok_or(CertError::DecodeError)?);
+        }
+        encode_uvar_to(out, inductive.indices.len() as u64);
+        for index in &inductive.indices {
+            out.extend(term_hashes.get(index.ty).ok_or(CertError::DecodeError)?);
+        }
+        out.extend(
+            level_hashes
+                .get(inductive.sort)
+                .ok_or(CertError::DecodeError)?,
+        );
+        encode_constructor_specs_to(out, &inductive.constructors, term_hashes, names)?;
+        out.extend(generated_recursor_signature_hash(
+            inductive.recursor.as_ref(),
+            term_hashes,
+            names,
+        )?);
+        out.extend(generated_computation_rule_hash(inductive.recursor.as_ref()));
+    }
+    Ok(())
 }
 
 fn encode_universe_constraint_specs_to(
@@ -657,6 +768,23 @@ fn interface_term_ids(decl: &DeclPayload) -> Vec<TermId> {
             .chain(constructors.iter().map(|constructor| constructor.ty))
             .chain(recursor.iter().map(|recursor| recursor.ty))
             .collect(),
+        DeclPayload::MutualInductiveBlock { inductives, .. } => inductives
+            .iter()
+            .flat_map(|inductive| {
+                inductive
+                    .params
+                    .iter()
+                    .map(|param| param.ty)
+                    .chain(inductive.indices.iter().map(|index| index.ty))
+                    .chain(
+                        inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| constructor.ty),
+                    )
+                    .chain(inductive.recursor.iter().map(|recursor| recursor.ty))
+            })
+            .collect(),
     }
 }
 
@@ -706,6 +834,10 @@ fn decl_certificate_payload(
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }
         DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
+            encode_dependency_entries_to(&mut out, dependencies);
+            encode_axiom_refs_to(&mut out, axiom_dependencies);
+        }
+        DeclPayload::MutualInductiveBlock { .. } => {
             encode_dependency_entries_to(&mut out, dependencies);
             encode_axiom_refs_to(&mut out, axiom_dependencies);
         }

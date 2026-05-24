@@ -259,6 +259,22 @@ struct MutualInductiveBlock {
 - recursor 群を同時に生成できる
 ```
 
+P9H-05 実装では、`MutualInductiveBlock` を kernel / certificate / source-free reference checker の
+共通境界に追加します。trusted base を広げる理由は、相互再帰 family の constructor minor premise と
+iota rule が block 全体の constructor 順序に依存し、単独 inductive の後処理だけでは検査境界を
+閉じられないためです。代替案として、mutual を表層 elaborator だけで単独 inductive 群へ desugar する方法は
+検討できますが、recursor / induction principle / iota rule の同時生成を certificate checker から
+見えなくするため採用しません。
+
+checker boundary は次の形に固定します。certificate は block-local family / constructor / recursor を
+canonical generated declarations として持ちますが、recursor は declaration から deterministic に再生成して照合します。
+fast kernel と reference checker は同じ block-wide minor premise order で iota reduction を実行し、
+`Even` / `Odd` の source-free certificate と iota fixture で一致を確認します。
+
+AI candidate hot path には mutual inductive の candidate precheck や source-free reference checker を同期挿入しません。
+AI 側は従来どおり bounded candidate validation と deterministic replay を走らせ、mutual block の重い検査は
+proof acceptance / post-acceptance checker 境界でのみ実行します。
+
 ---
 
 ## 2.5 Nested inductive
@@ -430,6 +446,12 @@ major : I params indices
 recursor signature hash と iota rules hash は certificate 側の deterministic hash helper から取得します。
 Human API の `/inductive/check` 相当 wrapper はこの metadata を診断として返すだけで、
 proof acceptance boundary は canonical `.npcert` verification と independent checker のままです。
+
+P9H-05 実装では、mutual block についても同じ規則を拡張します。block 内の family / constructor /
+recursor export は canonical name order で安定化し、generated recursor artifact hash は canonical encode /
+decode 後も変わりません。import / theorem index / current-declaration projection は mutual block の root name と
+generated declarations を読み取れますが、AI trace、ranking、candidate sidecar は certificate hash や checker verdict に
+影響しません。
 
 ---
 

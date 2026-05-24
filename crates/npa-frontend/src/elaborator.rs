@@ -2455,15 +2455,32 @@ fn local_public_names(module: &npa_cert::CoreModule) -> Vec<npa_cert::Name> {
     let mut names = Vec::new();
     for decl in &module.declarations {
         names.push(npa_cert::Name::from_dotted(decl.name()));
-        if let Decl::Inductive { data, .. } = decl {
-            names.extend(
-                data.constructors
-                    .iter()
-                    .map(|constructor| npa_cert::Name::from_dotted(&constructor.name)),
-            );
-            if let Some(recursor) = &data.recursor {
-                names.push(npa_cert::Name::from_dotted(&recursor.name));
+        match decl {
+            Decl::Inductive { data, .. } => {
+                names.extend(
+                    data.constructors
+                        .iter()
+                        .map(|constructor| npa_cert::Name::from_dotted(&constructor.name)),
+                );
+                if let Some(recursor) = &data.recursor {
+                    names.push(npa_cert::Name::from_dotted(&recursor.name));
+                }
             }
+            Decl::MutualInductiveBlock { data, .. } => {
+                for inductive in &data.inductives {
+                    names.push(npa_cert::Name::from_dotted(&inductive.name));
+                    names.extend(
+                        inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| npa_cert::Name::from_dotted(&constructor.name)),
+                    );
+                    if let Some(recursor) = &inductive.recursor {
+                        names.push(npa_cert::Name::from_dotted(&recursor.name));
+                    }
+                }
+            }
+            _ => {}
         }
     }
     names
@@ -2494,6 +2511,22 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<npa_cert::Name>, decl: &De
             }
             if let Some(recursor) = &data.recursor {
                 collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_expr(names, &recursor.ty);
+                }
             }
         }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
@@ -2608,7 +2641,7 @@ fn kernel_env_from_imports<'a>(
     let available_decl_interfaces = collect_import_decl_interface_infos(available_imports);
     let available_decl_import_interfaces =
         collect_import_decl_import_interface_infos(available_imports);
-    let mut pending: Vec<_> = collect_import_decl_infos(active_imports)
+    let mut pending: Vec<_> = collect_import_decl_infos(active_imports.iter().copied())
         .into_values()
         .flatten()
         .map(|info| PendingKernelDecl {
@@ -2773,6 +2806,14 @@ fn kernel_env_from_imports<'a>(
         }
 
         pending = remaining;
+    }
+
+    if allow_builtin_kernel_decls {
+        add_builtin_eq_rec_for_generated_import_exports(
+            &mut env,
+            active_imports.iter().copied(),
+            span,
+        )?;
     }
 
     Ok(KernelEnvBuild {
@@ -3543,6 +3584,37 @@ fn add_builtin_decl_for_unknown_constant(
     Ok(true)
 }
 
+fn add_builtin_eq_rec_for_generated_import_exports<'a>(
+    env: &mut Env,
+    imports: impl IntoIterator<Item = &'a VerifiedImport>,
+    span: crate::Span,
+) -> Result<()> {
+    let needs_eq_rec = imports.into_iter().any(|import| {
+        import
+            .exports
+            .iter()
+            .any(|export| import_export_uses_builtin_eq_rec(import, export))
+    });
+    if !needs_eq_rec || env.decl("Eq.rec").is_some() {
+        return Ok(());
+    }
+
+    env.add_axiom(
+        "Eq.rec",
+        vec!["u".to_owned(), "v".to_owned()],
+        eq_rec_type(Level::param("u"), Level::param("v")),
+    )
+    .map_err(|err| builtin_kernel_diagnostic(span, err))
+}
+
+fn import_export_uses_builtin_eq_rec(import: &VerifiedImport, export: &VerifiedExport) -> bool {
+    export.name.as_dotted() == "Eq.rec"
+        && import
+            .kernel_decls
+            .iter()
+            .any(|decl| matches!(decl, Decl::Inductive { name, .. } if name == "Eq"))
+}
+
 fn add_builtin_decls_for_names(
     env: &mut Env,
     names: &BTreeSet<npa_cert::Name>,
@@ -3707,7 +3779,9 @@ fn validate_direct_kernel_env_matches_import_exports(
                 ));
             };
 
-            if !kernel_decl_matches_export(decl, export) {
+            if !import_export_uses_builtin_eq_rec(import, export)
+                && !kernel_decl_matches_export(decl, export)
+            {
                 return Err(import_resolution_diagnostic(
                     span,
                     format!(
@@ -3748,7 +3822,9 @@ fn validate_loaded_available_kernel_env_matches_import_exports(
                 ));
             };
 
-            if !kernel_decl_matches_export(decl, export) {
+            if !import_export_uses_builtin_eq_rec(import, export)
+                && !kernel_decl_matches_export(decl, export)
+            {
                 return Err(import_resolution_diagnostic(
                     span,
                     format!(
@@ -4014,6 +4090,7 @@ fn add_kernel_decl_to_env(env: &mut Env, decl: Decl) -> npa_kernel::Result<()> {
             proof,
         ),
         Decl::Inductive { data, .. } => env.add_inductive(*data),
+        Decl::MutualInductiveBlock { data, .. } => env.add_mutual_inductive(*data),
         Decl::Constructor { .. } | Decl::Recursor { .. } => {
             Err(npa_kernel::Error::InvalidInductive(
                 "generated declarations cannot be added directly".to_owned(),

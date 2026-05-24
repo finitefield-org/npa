@@ -504,13 +504,27 @@ fn local_public_names(declarations: &[Decl]) -> BTreeSet<Name> {
     let mut names = BTreeSet::new();
     for decl in declarations {
         names.insert(Name::from_dotted(decl.name()));
-        if let Decl::Inductive { data, .. } = decl {
-            for constructor in &data.constructors {
-                names.insert(Name::from_dotted(&constructor.name));
+        match decl {
+            Decl::Inductive { data, .. } => {
+                for constructor in &data.constructors {
+                    names.insert(Name::from_dotted(&constructor.name));
+                }
+                if let Some(recursor) = &data.recursor {
+                    names.insert(Name::from_dotted(&recursor.name));
+                }
             }
-            if let Some(recursor) = &data.recursor {
-                names.insert(Name::from_dotted(&recursor.name));
+            Decl::MutualInductiveBlock { data, .. } => {
+                for inductive in &data.inductives {
+                    names.insert(Name::from_dotted(&inductive.name));
+                    for constructor in &inductive.constructors {
+                        names.insert(Name::from_dotted(&constructor.name));
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        names.insert(Name::from_dotted(&recursor.name));
+                    }
+                }
             }
+            _ => {}
         }
     }
     names
@@ -542,6 +556,22 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
             }
             if let Some(recursor) = &data.recursor {
                 collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_expr(names, &recursor.ty);
+                }
             }
         }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
@@ -818,7 +848,8 @@ fn decl_payload_name(
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     cert_name(cert, name)
 }

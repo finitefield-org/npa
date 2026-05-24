@@ -17,8 +17,9 @@ mod verify;
 
 pub use inductive::{
     classify_inductive_artifact_profile_v1, generate_inductive_artifacts_v1,
-    inductive_generated_artifact_hashes_v1, InductiveArtifactProfileCheckV1,
-    InductiveGeneratedArtifactHashesV1, UnsupportedMvpRecursorProfileV1,
+    generate_mutual_inductive_artifacts_v1, inductive_generated_artifact_hashes_v1,
+    InductiveArtifactProfileCheckV1, InductiveGeneratedArtifactHashesV1,
+    UnsupportedMvpRecursorProfileV1,
 };
 pub use kernel::{builtin_decl_interface_hash, verified_module_to_kernel_decls};
 pub use producer::*;

@@ -930,13 +930,27 @@ fn producer_lookup_env_for_sources(
 fn checked_generated_name_to_index(decls: &[Decl]) -> BTreeMap<ModuleName, usize> {
     let mut generated = BTreeMap::new();
     for (decl_index, decl) in decls.iter().enumerate() {
-        if let Decl::Inductive { data, .. } = decl {
-            for constructor in &data.constructors {
-                generated.insert(crate::Name::from_dotted(&constructor.name), decl_index);
+        match decl {
+            Decl::Inductive { data, .. } => {
+                for constructor in &data.constructors {
+                    generated.insert(crate::Name::from_dotted(&constructor.name), decl_index);
+                }
+                if let Some(recursor) = &data.recursor {
+                    generated.insert(crate::Name::from_dotted(&recursor.name), decl_index);
+                }
             }
-            if let Some(recursor) = &data.recursor {
-                generated.insert(crate::Name::from_dotted(&recursor.name), decl_index);
+            Decl::MutualInductiveBlock { data, .. } => {
+                for inductive in &data.inductives {
+                    generated.insert(crate::Name::from_dotted(&inductive.name), decl_index);
+                    for constructor in &inductive.constructors {
+                        generated.insert(crate::Name::from_dotted(&constructor.name), decl_index);
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        generated.insert(crate::Name::from_dotted(&recursor.name), decl_index);
+                    }
+                }
             }
+            _ => {}
         }
     }
     generated
@@ -946,13 +960,27 @@ fn checked_public_names(decls: &[Decl]) -> Vec<ModuleName> {
     let mut names = Vec::new();
     for decl in decls {
         names.push(crate::Name::from_dotted(decl.name()));
-        if let Decl::Inductive { data, .. } = decl {
-            for constructor in &data.constructors {
-                names.push(crate::Name::from_dotted(&constructor.name));
+        match decl {
+            Decl::Inductive { data, .. } => {
+                for constructor in &data.constructors {
+                    names.push(crate::Name::from_dotted(&constructor.name));
+                }
+                if let Some(recursor) = &data.recursor {
+                    names.push(crate::Name::from_dotted(&recursor.name));
+                }
             }
-            if let Some(recursor) = &data.recursor {
-                names.push(crate::Name::from_dotted(&recursor.name));
+            Decl::MutualInductiveBlock { data, .. } => {
+                for inductive in &data.inductives {
+                    names.push(crate::Name::from_dotted(&inductive.name));
+                    for constructor in &inductive.constructors {
+                        names.push(crate::Name::from_dotted(&constructor.name));
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        names.push(crate::Name::from_dotted(&recursor.name));
+                    }
+                }
             }
+            _ => {}
         }
     }
     names
@@ -1003,36 +1031,58 @@ fn ensure_no_unresolved_metavariable(decl: &Decl) -> Result<(), CertError> {
 }
 
 fn decl_contains_unresolved_metavariable(decl: &Decl) -> bool {
-    expr_contains_unresolved_metavariable(decl.ty())
-        || match decl {
-            Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
-                expr_contains_unresolved_metavariable(value)
-            }
-            Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
-                expr_contains_unresolved_metavariable(proof)
-            }
-            Decl::Inductive { data, .. } => {
-                data.params
+    match decl {
+        Decl::MutualInductiveBlock { data, .. } => data.inductives.iter().any(|inductive| {
+            inductive
+                .params
+                .iter()
+                .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
+                || inductive
+                    .indices
                     .iter()
                     .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
-                    || data
-                        .indices
-                        .iter()
-                        .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
-                    || data
-                        .constructors
-                        .iter()
-                        .any(|constructor| expr_contains_unresolved_metavariable(&constructor.ty))
-                    || data
-                        .recursor
-                        .iter()
-                        .any(|recursor| expr_contains_unresolved_metavariable(&recursor.ty))
-            }
-            Decl::Axiom { .. }
-            | Decl::AxiomConstrained { .. }
-            | Decl::Constructor { .. }
-            | Decl::Recursor { .. } => false,
+                || inductive
+                    .constructors
+                    .iter()
+                    .any(|constructor| expr_contains_unresolved_metavariable(&constructor.ty))
+                || inductive
+                    .recursor
+                    .iter()
+                    .any(|recursor| expr_contains_unresolved_metavariable(&recursor.ty))
+        }),
+        _ => {
+            expr_contains_unresolved_metavariable(decl.ty())
+                || match decl {
+                    Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
+                        expr_contains_unresolved_metavariable(value)
+                    }
+                    Decl::Theorem { proof, .. } | Decl::TheoremConstrained { proof, .. } => {
+                        expr_contains_unresolved_metavariable(proof)
+                    }
+                    Decl::Inductive { data, .. } => {
+                        data.params
+                            .iter()
+                            .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
+                            || data
+                                .indices
+                                .iter()
+                                .any(|binder| expr_contains_unresolved_metavariable(&binder.ty))
+                            || data.constructors.iter().any(|constructor| {
+                                expr_contains_unresolved_metavariable(&constructor.ty)
+                            })
+                            || data
+                                .recursor
+                                .iter()
+                                .any(|recursor| expr_contains_unresolved_metavariable(&recursor.ty))
+                    }
+                    Decl::Axiom { .. }
+                    | Decl::AxiomConstrained { .. }
+                    | Decl::Constructor { .. }
+                    | Decl::Recursor { .. }
+                    | Decl::MutualInductiveBlock { .. } => false,
+                }
         }
+    }
 }
 
 fn expr_contains_unresolved_metavariable(expr: &Expr) -> bool {
@@ -1067,7 +1117,9 @@ fn level_contains_unresolved_metavariable(level: &Level) -> bool {
 }
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<ModuleName>, decl: &Decl) {
-    collect_const_names_from_expr(names, decl.ty());
+    if !matches!(decl, Decl::MutualInductiveBlock { .. }) {
+        collect_const_names_from_expr(names, decl.ty());
+    }
     match decl {
         Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
             collect_const_names_from_expr(names, value)
@@ -1087,6 +1139,22 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<ModuleName>, decl: &Decl) 
             }
             if let Some(recursor) = &data.recursor {
                 collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_expr(names, &recursor.ty);
+                }
             }
         }
         Decl::Axiom { .. }
@@ -1242,6 +1310,11 @@ fn precheck_decl_with_fuel(
         Decl::Inductive { name, .. } => Err(CertError::Kernel(Error::InvalidInductive(format!(
             "{name} inductive candidate precheck is not part of the certificate AI MVP"
         )))),
+        Decl::MutualInductiveBlock { name, .. } => {
+            Err(CertError::Kernel(Error::InvalidInductive(format!(
+                "{name} mutual inductive candidate precheck is not part of the certificate AI MVP"
+            ))))
+        }
         Decl::Constructor { .. } | Decl::Recursor { .. } => Err(CertError::UnknownDependency {
             name: crate::Name::from_dotted(decl.name()),
         }),
@@ -1306,6 +1379,32 @@ fn decl_expr_node_count(decl: &Decl) -> u64 {
                     .map(|recursor| expr_node_count(&recursor.ty))
                     .sum::<u64>()
         }
+        Decl::MutualInductiveBlock { data, .. } => data
+            .inductives
+            .iter()
+            .map(|inductive| {
+                inductive
+                    .params
+                    .iter()
+                    .map(|binder| expr_node_count(&binder.ty))
+                    .sum::<u64>()
+                    + inductive
+                        .indices
+                        .iter()
+                        .map(|binder| expr_node_count(&binder.ty))
+                        .sum::<u64>()
+                    + inductive
+                        .constructors
+                        .iter()
+                        .map(|constructor| expr_node_count(&constructor.ty))
+                        .sum::<u64>()
+                    + inductive
+                        .recursor
+                        .iter()
+                        .map(|recursor| expr_node_count(&recursor.ty))
+                        .sum::<u64>()
+            })
+            .sum(),
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => expr_node_count(ty),
     }
 }
@@ -1362,6 +1461,35 @@ fn decl_level_node_count(decl: &Decl) -> u64 {
                     .iter()
                     .map(|recursor| expr_level_node_count(&recursor.ty))
                     .sum::<u64>()
+                + constraint_count
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            data.inductives
+                .iter()
+                .map(|inductive| {
+                    level_node_count(&inductive.sort)
+                        + inductive
+                            .params
+                            .iter()
+                            .map(|binder| expr_level_node_count(&binder.ty))
+                            .sum::<u64>()
+                        + inductive
+                            .indices
+                            .iter()
+                            .map(|binder| expr_level_node_count(&binder.ty))
+                            .sum::<u64>()
+                        + inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| expr_level_node_count(&constructor.ty))
+                            .sum::<u64>()
+                        + inductive
+                            .recursor
+                            .iter()
+                            .map(|recursor| expr_level_node_count(&recursor.ty))
+                            .sum::<u64>()
+                })
+                .sum::<u64>()
                 + constraint_count
         }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => expr_level_node_count(ty),
@@ -1517,6 +1645,61 @@ fn decl_max_name_components(decl: &Decl) -> u64 {
                 .unwrap_or(0);
             max_name_components(names, exprs)
                 .max(level_max_name_components(&data.sort))
+                .max(max_constraint_name_components)
+        }
+        Decl::MutualInductiveBlock {
+            name,
+            universe_params,
+            data,
+        } => {
+            let mut names = vec![name.as_str(), data.name.as_str()];
+            names.extend(universe_params.iter().map(String::as_str));
+            names.extend(data.universe_params.iter().map(String::as_str));
+            let mut exprs = Vec::new();
+            let mut max_sort_name_components = 0;
+            for inductive in &data.inductives {
+                names.push(inductive.name.as_str());
+                names.extend(inductive.universe_params.iter().map(String::as_str));
+                names.extend(inductive.params.iter().map(|binder| binder.name.as_str()));
+                names.extend(inductive.indices.iter().map(|binder| binder.name.as_str()));
+                names.extend(
+                    inductive
+                        .constructors
+                        .iter()
+                        .map(|constructor| constructor.name.as_str()),
+                );
+                names.extend(
+                    inductive
+                        .recursor
+                        .iter()
+                        .map(|recursor| recursor.name.as_str()),
+                );
+                if let Some(recursor) = &inductive.recursor {
+                    names.extend(recursor.universe_params.iter().map(String::as_str));
+                }
+                exprs.extend(inductive.params.iter().map(|binder| &binder.ty));
+                exprs.extend(inductive.indices.iter().map(|binder| &binder.ty));
+                exprs.extend(
+                    inductive
+                        .constructors
+                        .iter()
+                        .map(|constructor| &constructor.ty),
+                );
+                exprs.extend(inductive.recursor.iter().map(|recursor| &recursor.ty));
+                max_sort_name_components =
+                    max_sort_name_components.max(level_max_name_components(&inductive.sort));
+            }
+            let max_constraint_name_components = data
+                .universe_constraints
+                .iter()
+                .map(|constraint| {
+                    level_max_name_components(&constraint.lhs)
+                        .max(level_max_name_components(&constraint.rhs))
+                })
+                .max()
+                .unwrap_or(0);
+            max_name_components(names, exprs)
+                .max(max_sort_name_components)
                 .max(max_constraint_name_components)
         }
         Decl::Constructor {

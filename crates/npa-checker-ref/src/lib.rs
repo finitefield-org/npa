@@ -989,12 +989,14 @@ mod tests {
     use super::*;
 
     use npa_cert::{
-        build_module_cert, encode_module_cert, generate_inductive_artifacts_v1, verify_module_cert,
-        AxiomPolicy, CoreModule, Name, VerifierSession,
+        build_module_cert, encode_module_cert, generate_inductive_artifacts_v1,
+        generate_mutual_inductive_artifacts_v1, verify_module_cert, AxiomPolicy, CoreModule, Name,
+        VerifierSession,
     };
     use npa_kernel::{
-        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, type0, Binder,
-        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, UniverseConstraint,
+        eq, eq_inductive, eq_refl, nat, nat_inductive, nat_succ, nat_zero, prop, type0, Binder,
+        ConstructorDecl, Ctx, Decl, Env, Expr, InductiveDecl, Level, MutualInductiveBlock,
+        UniverseConstraint,
     };
     use sha2::{Digest, Sha256};
 
@@ -1279,6 +1281,191 @@ mod tests {
             ],
             None,
         )
+    }
+
+    fn even_type(n: Expr) -> Expr {
+        Expr::app(Expr::konst("Even", vec![]), n)
+    }
+
+    fn odd_type(n: Expr) -> Expr {
+        Expr::app(Expr::konst("Odd", vec![]), n)
+    }
+
+    fn even_zero() -> Expr {
+        Expr::konst("Even.zero", vec![])
+    }
+
+    fn even_succ(n: Expr, h: Expr) -> Expr {
+        Expr::apps(Expr::konst("Even.succ", vec![]), vec![n, h])
+    }
+
+    fn odd_succ(n: Expr, h: Expr) -> Expr {
+        Expr::apps(Expr::konst("Odd.succ", vec![]), vec![n, h])
+    }
+
+    fn mutual_identity_motive_args() -> (Expr, Expr, Expr, Expr, Expr) {
+        let m_even = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam("_", even_type(Expr::bvar(0)), even_type(Expr::bvar(1))),
+        );
+        let m_odd = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam("_", odd_type(Expr::bvar(0)), odd_type(Expr::bvar(1))),
+        );
+        let z = even_zero();
+        let even_step = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam(
+                "h",
+                odd_type(Expr::bvar(0)),
+                Expr::lam(
+                    "_ih",
+                    odd_type(Expr::bvar(1)),
+                    even_succ(Expr::bvar(2), Expr::bvar(1)),
+                ),
+            ),
+        );
+        let odd_step = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam(
+                "h",
+                even_type(Expr::bvar(0)),
+                Expr::lam(
+                    "_ih",
+                    even_type(Expr::bvar(1)),
+                    odd_succ(Expr::bvar(2), Expr::bvar(1)),
+                ),
+            ),
+        );
+        (m_even, m_odd, z, even_step, odd_step)
+    }
+
+    fn even_odd_mutual_base() -> MutualInductiveBlock {
+        MutualInductiveBlock::new(
+            "EvenOdd",
+            vec![],
+            vec![
+                InductiveDecl::new(
+                    "Even",
+                    vec![],
+                    vec![],
+                    vec![Binder::new("n", nat())],
+                    prop(),
+                    vec![
+                        ConstructorDecl::new("Even.zero", even_type(nat_zero())),
+                        ConstructorDecl::new(
+                            "Even.succ",
+                            Expr::pi(
+                                "n",
+                                nat(),
+                                Expr::pi(
+                                    "h",
+                                    odd_type(Expr::bvar(0)),
+                                    even_type(nat_succ(Expr::bvar(1))),
+                                ),
+                            ),
+                        ),
+                    ],
+                    None,
+                ),
+                InductiveDecl::new(
+                    "Odd",
+                    vec![],
+                    vec![],
+                    vec![Binder::new("n", nat())],
+                    prop(),
+                    vec![ConstructorDecl::new(
+                        "Odd.succ",
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "h",
+                                even_type(Expr::bvar(0)),
+                                odd_type(nat_succ(Expr::bvar(1))),
+                            ),
+                        ),
+                    )],
+                    None,
+                ),
+            ],
+        )
+    }
+
+    fn certificate_for_mutual_even_odd() -> Vec<u8> {
+        let nat_data = nat_inductive();
+        let block = generate_mutual_inductive_artifacts_v1(&even_odd_mutual_base()).unwrap();
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Test.EvenOdd"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: nat_data.name.clone(),
+                        universe_params: nat_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&nat_data),
+                        data: Box::new(nat_data),
+                    },
+                    Decl::MutualInductiveBlock {
+                        name: block.name.clone(),
+                        universe_params: block.universe_params.clone(),
+                        data: Box::new(block),
+                    },
+                ],
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
+    }
+
+    fn certificate_for_mutual_odd_iota_theorem() -> Vec<u8> {
+        let nat_data = nat_inductive();
+        let block = generate_mutual_inductive_artifacts_v1(&even_odd_mutual_base()).unwrap();
+        let (m_even, m_odd, z, even_step, odd_step) = mutual_identity_motive_args();
+        let odd_one = odd_succ(nat_zero(), even_zero());
+        let proof = Expr::apps(
+            Expr::konst("Odd.rec", vec![]),
+            vec![
+                m_even,
+                m_odd,
+                z,
+                even_step,
+                odd_step,
+                nat_succ(nat_zero()),
+                odd_one,
+            ],
+        );
+        let cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("Test.EvenOddIota"),
+                declarations: vec![
+                    Decl::Inductive {
+                        name: nat_data.name.clone(),
+                        universe_params: nat_data.universe_params.clone(),
+                        ty: kernel_inductive_type(&nat_data),
+                        data: Box::new(nat_data),
+                    },
+                    Decl::MutualInductiveBlock {
+                        name: block.name.clone(),
+                        universe_params: block.universe_params.clone(),
+                        data: Box::new(block),
+                    },
+                    Decl::Theorem {
+                        name: "odd_iota".to_owned(),
+                        universe_params: vec![],
+                        ty: odd_type(nat_succ(nat_zero())),
+                        proof,
+                    },
+                ],
+            },
+            &[],
+        )
+        .unwrap();
+        encode_module_cert(&cert).unwrap()
     }
 
     fn nat_rec_term(major: Expr) -> Expr {
@@ -3256,12 +3443,24 @@ mod tests {
                 generate_inductive_artifacts_v1(&list_inductive()).unwrap(),
             ),
             certificate_for_indexed_inductives(),
+            certificate_for_mutual_even_odd(),
         ];
 
         for bytes in cases {
             let result = check_certificate(&bytes, &imports, &policy);
             assert!(result.is_checked(), "{result:?}");
         }
+    }
+
+    #[test]
+    fn inductive_mutual_iota_matches_fast_kernel_certificate() {
+        let imports = ReferenceImportStore::default();
+        let policy = ReferenceCheckerPolicy::default();
+        let bytes = certificate_for_mutual_odd_iota_theorem();
+
+        let result = check_certificate(&bytes, &imports, &policy);
+
+        assert!(result.is_checked(), "{result:?}");
     }
 
     #[test]

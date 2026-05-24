@@ -13,7 +13,8 @@ pub use builtins::{
 };
 pub use context::Ctx;
 pub use decl::{
-    Binder, ConstructorDecl, Decl, InductiveDecl, RecursorDecl, RecursorRules, Reducibility,
+    Binder, ConstructorDecl, Decl, InductiveDecl, MutualInductiveBlock, RecursorDecl,
+    RecursorRules, Reducibility,
 };
 pub use env::Env;
 pub use error::{Error, ResourceLimitKind, Result};
@@ -216,6 +217,259 @@ mod tests {
                 ),
             ],
             None,
+        )
+    }
+
+    fn even_type(n: Expr) -> Expr {
+        Expr::app(Expr::konst("Even", vec![]), n)
+    }
+
+    fn odd_type(n: Expr) -> Expr {
+        Expr::app(Expr::konst("Odd", vec![]), n)
+    }
+
+    fn even_zero() -> Expr {
+        Expr::konst("Even.zero", vec![])
+    }
+
+    fn even_succ(n: Expr, h: Expr) -> Expr {
+        Expr::apps(Expr::konst("Even.succ", vec![]), vec![n, h])
+    }
+
+    fn odd_succ(n: Expr, h: Expr) -> Expr {
+        Expr::apps(Expr::konst("Odd.succ", vec![]), vec![n, h])
+    }
+
+    fn even_motive_type() -> Expr {
+        Expr::pi(
+            "n",
+            nat(),
+            Expr::pi("_", even_type(Expr::bvar(0)), Expr::sort(prop())),
+        )
+    }
+
+    fn odd_motive_type() -> Expr {
+        Expr::pi(
+            "n",
+            nat(),
+            Expr::pi("_", odd_type(Expr::bvar(0)), Expr::sort(prop())),
+        )
+    }
+
+    fn even_succ_minor_type() -> Expr {
+        Expr::pi(
+            "n",
+            nat(),
+            Expr::pi(
+                "h",
+                odd_type(Expr::bvar(0)),
+                Expr::pi(
+                    "ih",
+                    Expr::apps(Expr::bvar(3), vec![Expr::bvar(1), Expr::bvar(0)]),
+                    Expr::apps(
+                        Expr::bvar(5),
+                        vec![
+                            nat_succ(Expr::bvar(2)),
+                            even_succ(Expr::bvar(2), Expr::bvar(1)),
+                        ],
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn odd_succ_minor_type() -> Expr {
+        Expr::pi(
+            "n",
+            nat(),
+            Expr::pi(
+                "h",
+                even_type(Expr::bvar(0)),
+                Expr::pi(
+                    "ih",
+                    Expr::apps(Expr::bvar(5), vec![Expr::bvar(1), Expr::bvar(0)]),
+                    Expr::apps(
+                        Expr::bvar(5),
+                        vec![
+                            nat_succ(Expr::bvar(2)),
+                            odd_succ(Expr::bvar(2), Expr::bvar(1)),
+                        ],
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn even_recursor_type() -> Expr {
+        let z_ty = Expr::apps(Expr::bvar(1), vec![nat_zero(), even_zero()]);
+        Expr::pi(
+            "m_even",
+            even_motive_type(),
+            Expr::pi(
+                "m_odd",
+                odd_motive_type(),
+                Expr::pi(
+                    "zero",
+                    z_ty,
+                    Expr::pi(
+                        "even_succ",
+                        even_succ_minor_type(),
+                        Expr::pi(
+                            "odd_succ",
+                            odd_succ_minor_type(),
+                            Expr::pi(
+                                "n",
+                                nat(),
+                                Expr::pi(
+                                    "major",
+                                    even_type(Expr::bvar(0)),
+                                    Expr::apps(Expr::bvar(6), vec![Expr::bvar(1), Expr::bvar(0)]),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn odd_recursor_type() -> Expr {
+        let z_ty = Expr::apps(Expr::bvar(1), vec![nat_zero(), even_zero()]);
+        Expr::pi(
+            "m_even",
+            even_motive_type(),
+            Expr::pi(
+                "m_odd",
+                odd_motive_type(),
+                Expr::pi(
+                    "zero",
+                    z_ty,
+                    Expr::pi(
+                        "even_succ",
+                        even_succ_minor_type(),
+                        Expr::pi(
+                            "odd_succ",
+                            odd_succ_minor_type(),
+                            Expr::pi(
+                                "n",
+                                nat(),
+                                Expr::pi(
+                                    "major",
+                                    odd_type(Expr::bvar(0)),
+                                    Expr::apps(Expr::bvar(5), vec![Expr::bvar(1), Expr::bvar(0)]),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fn even_odd_mutual_block() -> MutualInductiveBlock {
+        MutualInductiveBlock::new(
+            "EvenOdd",
+            vec![],
+            vec![
+                InductiveDecl::new(
+                    "Even",
+                    vec![],
+                    vec![],
+                    vec![Binder::new("n", nat())],
+                    prop(),
+                    vec![
+                        ConstructorDecl::new("Even.zero", even_type(nat_zero())),
+                        ConstructorDecl::new(
+                            "Even.succ",
+                            Expr::pi(
+                                "n",
+                                nat(),
+                                Expr::pi(
+                                    "h",
+                                    odd_type(Expr::bvar(0)),
+                                    even_type(nat_succ(Expr::bvar(1))),
+                                ),
+                            ),
+                        ),
+                    ],
+                    Some(RecursorDecl::with_rules(
+                        "Even.rec",
+                        vec![],
+                        even_recursor_type(),
+                        RecursorRules::new(2, 6),
+                    )),
+                ),
+                InductiveDecl::new(
+                    "Odd",
+                    vec![],
+                    vec![],
+                    vec![Binder::new("n", nat())],
+                    prop(),
+                    vec![ConstructorDecl::new(
+                        "Odd.succ",
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "h",
+                                even_type(Expr::bvar(0)),
+                                odd_type(nat_succ(Expr::bvar(1))),
+                            ),
+                        ),
+                    )],
+                    Some(RecursorDecl::with_rules(
+                        "Odd.rec",
+                        vec![],
+                        odd_recursor_type(),
+                        RecursorRules::new(2, 6),
+                    )),
+                ),
+            ],
+        )
+    }
+
+    fn non_positive_even_odd_mutual_block() -> MutualInductiveBlock {
+        MutualInductiveBlock::new(
+            "BadEvenOdd",
+            vec![],
+            vec![
+                InductiveDecl::new(
+                    "Even",
+                    vec![],
+                    vec![],
+                    vec![Binder::new("n", nat())],
+                    prop(),
+                    vec![ConstructorDecl::new(
+                        "Even.bad",
+                        Expr::pi(
+                            "f",
+                            Expr::pi("_", odd_type(nat_zero()), nat()),
+                            even_type(nat_zero()),
+                        ),
+                    )],
+                    None,
+                ),
+                InductiveDecl::new(
+                    "Odd",
+                    vec![],
+                    vec![],
+                    vec![Binder::new("n", nat())],
+                    prop(),
+                    vec![ConstructorDecl::new(
+                        "Odd.succ",
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "h",
+                                even_type(Expr::bvar(0)),
+                                odd_type(nat_succ(Expr::bvar(1))),
+                            ),
+                        ),
+                    )],
+                    None,
+                ),
+            ],
         )
     }
 
@@ -804,6 +1058,110 @@ mod tests {
             env.decl("Fin.succ"),
             Some(Decl::Constructor { .. })
         ));
+    }
+
+    #[test]
+    fn mutual_inductive_even_odd_registers_generated_decls() {
+        let mut env = Env::with_builtins().unwrap();
+        env.add_mutual_inductive(even_odd_mutual_block()).unwrap();
+
+        assert!(matches!(env.decl("Even"), Some(Decl::Inductive { .. })));
+        assert!(matches!(
+            env.decl("Even.zero"),
+            Some(Decl::Constructor { .. })
+        ));
+        assert!(matches!(env.decl("Even.rec"), Some(Decl::Recursor { .. })));
+        assert!(matches!(env.decl("Odd"), Some(Decl::Inductive { .. })));
+        assert!(matches!(
+            env.decl("Odd.succ"),
+            Some(Decl::Constructor { .. })
+        ));
+        assert!(matches!(env.decl("Odd.rec"), Some(Decl::Recursor { .. })));
+    }
+
+    #[test]
+    fn mutual_inductive_rejects_duplicate_generated_name() {
+        let mut env = Env::with_builtins().unwrap();
+        let mut block = even_odd_mutual_block();
+        block.inductives[1].recursor.as_mut().unwrap().name = "Even.rec".to_owned();
+
+        let err = env.add_mutual_inductive(block).unwrap_err();
+
+        assert!(matches!(err, Error::DuplicateDecl(ref name) if name == "Even.rec"));
+        assert!(env.decl("Even").is_none());
+    }
+
+    #[test]
+    fn mutual_inductive_rejects_non_positive_occurrence() {
+        let mut env = Env::with_builtins().unwrap();
+
+        let err = env
+            .add_mutual_inductive(non_positive_even_odd_mutual_block())
+            .unwrap_err();
+
+        assert!(matches!(err, Error::NonPositiveOccurrence { .. }));
+        assert!(env.decl("Even").is_none());
+    }
+
+    #[test]
+    fn mutual_iota_reduces_even_odd_like_reference_checker() {
+        let mut env = Env::with_builtins().unwrap();
+        env.add_mutual_inductive(even_odd_mutual_block()).unwrap();
+
+        let m_even = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam("_", even_type(Expr::bvar(0)), even_type(Expr::bvar(1))),
+        );
+        let m_odd = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam("_", odd_type(Expr::bvar(0)), odd_type(Expr::bvar(1))),
+        );
+        let z = even_zero();
+        let even_step = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam(
+                "h",
+                odd_type(Expr::bvar(0)),
+                Expr::lam(
+                    "_ih",
+                    odd_type(Expr::bvar(1)),
+                    even_succ(Expr::bvar(2), Expr::bvar(1)),
+                ),
+            ),
+        );
+        let odd_step = Expr::lam(
+            "n",
+            nat(),
+            Expr::lam(
+                "h",
+                even_type(Expr::bvar(0)),
+                Expr::lam(
+                    "_ih",
+                    even_type(Expr::bvar(1)),
+                    odd_succ(Expr::bvar(2), Expr::bvar(1)),
+                ),
+            ),
+        );
+        let odd_one = odd_succ(nat_zero(), even_zero());
+        let term = Expr::apps(
+            Expr::konst("Odd.rec", vec![]),
+            vec![
+                m_even.clone(),
+                m_odd.clone(),
+                z.clone(),
+                even_step,
+                odd_step,
+                nat_succ(nat_zero()),
+                odd_one.clone(),
+            ],
+        );
+
+        env.check(&Ctx::new(), &[], &term, &odd_type(nat_succ(nat_zero())))
+            .unwrap();
+        assert!(env.is_defeq(&Ctx::new(), &[], &term, &odd_one).unwrap());
     }
 
     #[test]

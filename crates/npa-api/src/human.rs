@@ -4107,7 +4107,8 @@ fn human_verify_decl_payload_name(
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     cert.name_table.get(name).cloned().ok_or_else(|| {
         "verified Human certificate declaration references an out-of-range name table entry"
@@ -4929,7 +4930,9 @@ fn human_current_decl_kind(decl: &Decl) -> HumanTheoremIndexKind {
         Decl::Axiom { .. } | Decl::AxiomConstrained { .. } => HumanTheoremIndexKind::Axiom,
         Decl::Def { .. } | Decl::DefConstrained { .. } => HumanTheoremIndexKind::Def,
         Decl::Theorem { .. } | Decl::TheoremConstrained { .. } => HumanTheoremIndexKind::Theorem,
-        Decl::Inductive { .. } => HumanTheoremIndexKind::Inductive,
+        Decl::Inductive { .. } | Decl::MutualInductiveBlock { .. } => {
+            HumanTheoremIndexKind::Inductive
+        }
         Decl::Constructor { .. } => HumanTheoremIndexKind::Constructor,
         Decl::Recursor { .. } => HumanTheoremIndexKind::Recursor,
     }
@@ -5220,6 +5223,22 @@ fn human_collect_decl_constants(decl: &Decl, out: &mut BTreeSet<Name>) {
                 human_collect_expr_constants(&recursor.ty, out);
             }
         }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    human_collect_expr_constants(&param.ty, out);
+                }
+                for index in &inductive.indices {
+                    human_collect_expr_constants(&index.ty, out);
+                }
+                for constructor in &inductive.constructors {
+                    human_collect_expr_constants(&constructor.ty, out);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    human_collect_expr_constants(&recursor.ty, out);
+                }
+            }
+        }
         Decl::Constructor { ty, .. } | Decl::Recursor { ty, .. } => {
             human_collect_expr_constants(ty, out);
         }
@@ -5358,7 +5377,8 @@ fn human_decl_payload_name(
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     human_name_from_verified(module, name)
 }

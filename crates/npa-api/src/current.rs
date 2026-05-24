@@ -2,12 +2,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::{
     AxiomRef, BinderType, CertReducibility, ConstructorSpec, DeclPayload, GlobalRef, Hash, LevelId,
-    LevelNode, Name, NameId, Opacity, RecursorRulesSpec, RecursorSpec, TermId, TermNode,
-    UniverseConstraintSpec,
+    LevelNode, MutualInductiveSpec, Name, NameId, Opacity, RecursorRulesSpec, RecursorSpec, TermId,
+    TermNode, UniverseConstraintSpec,
 };
 use npa_kernel::{
     level::normalize_level, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level,
-    RecursorDecl, UniverseConstraint,
+    MutualInductiveBlock, RecursorDecl, UniverseConstraint,
 };
 #[cfg(test)]
 use npa_tactic::check_current_decl_for_machine_tactic_from_verified_imports;
@@ -687,6 +687,115 @@ impl CoreDeclPackage {
                     data: Box::new(data),
                 }
             }
+            DeclPayload::MutualInductiveBlock {
+                name,
+                universe_params,
+                universe_constraints,
+                inductives,
+            } => {
+                let block_name = self.name_string(*name)?;
+                let universe_params = self.universe_names(universe_params)?;
+                let inductives = inductives
+                    .iter()
+                    .map(|inductive| {
+                        let inductive_name = self.name_string(inductive.name)?;
+                        let params = inductive
+                            .params
+                            .iter()
+                            .enumerate()
+                            .map(|(index, binder)| {
+                                Ok(Binder::new(
+                                    format!("p{index}"),
+                                    self.expr_from_term(
+                                        root_module,
+                                        source_index,
+                                        prior_decls,
+                                        generated,
+                                        binder.ty,
+                                    )?,
+                                ))
+                            })
+                            .collect::<Result<Vec<_>, CheckedCurrentDeclProjectionError>>()?;
+                        let indices = inductive
+                            .indices
+                            .iter()
+                            .enumerate()
+                            .map(|(index, binder)| {
+                                Ok(Binder::new(
+                                    format!("i{index}"),
+                                    self.expr_from_term(
+                                        root_module,
+                                        source_index,
+                                        prior_decls,
+                                        generated,
+                                        binder.ty,
+                                    )?,
+                                ))
+                            })
+                            .collect::<Result<Vec<_>, CheckedCurrentDeclProjectionError>>()?;
+                        let sort_level = self.level_from_node(inductive.sort)?;
+                        let constructors = inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| {
+                                Ok(ConstructorDecl::new(
+                                    self.name_string(constructor.name)?,
+                                    self.expr_from_term(
+                                        root_module,
+                                        source_index,
+                                        prior_decls,
+                                        generated,
+                                        constructor.ty,
+                                    )?,
+                                ))
+                            })
+                            .collect::<Result<Vec<_>, CheckedCurrentDeclProjectionError>>()?;
+                        let recursor = inductive
+                            .recursor
+                            .as_ref()
+                            .map(|recursor| {
+                                Ok::<_, CheckedCurrentDeclProjectionError>(
+                                    RecursorDecl::with_rules(
+                                        self.name_string(recursor.name)?,
+                                        self.universe_names(&recursor.universe_params)?,
+                                        self.expr_from_term(
+                                            root_module,
+                                            source_index,
+                                            prior_decls,
+                                            generated,
+                                            recursor.ty,
+                                        )?,
+                                        npa_kernel::RecursorRules::new(
+                                            recursor.rules.minor_start,
+                                            recursor.rules.major_index,
+                                        ),
+                                    ),
+                                )
+                            })
+                            .transpose()?;
+                        Ok(InductiveDecl::new(
+                            inductive_name,
+                            universe_params.clone(),
+                            params,
+                            indices,
+                            sort_level,
+                            constructors,
+                            recursor,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>, CheckedCurrentDeclProjectionError>>()?;
+                let mut data = MutualInductiveBlock::new(
+                    block_name.clone(),
+                    universe_params.clone(),
+                    inductives,
+                );
+                data.universe_constraints = self.universe_constraints(universe_constraints)?;
+                Decl::MutualInductiveBlock {
+                    name: block_name,
+                    universe_params,
+                    data: Box::new(data),
+                }
+            }
         })
     }
 
@@ -843,7 +952,8 @@ impl CoreDeclPackage {
             | DeclPayload::Theorem { name, .. }
             | DeclPayload::TheoremConstrained { name, .. }
             | DeclPayload::Inductive { name, .. }
-            | DeclPayload::InductiveConstrained { name, .. } => *name,
+            | DeclPayload::InductiveConstrained { name, .. }
+            | DeclPayload::MutualInductiveBlock { name, .. } => *name,
         };
         self.name(name).cloned()
     }
@@ -1208,6 +1318,58 @@ impl<'a> PackageDecoder<'a> {
                     sort,
                     constructors,
                     recursor,
+                }
+            }
+            0x04 => {
+                let name = self.usize()?;
+                let universe_params = self.usize_vec()?;
+                let universe_constraints = self.universe_constraint_specs()?;
+                let inductive_len = self.bounded_len()?;
+                let mut inductives = Vec::with_capacity(inductive_len);
+                for _ in 0..inductive_len {
+                    let inductive_name = self.usize()?;
+                    let params = self.binder_types()?;
+                    let indices = self.binder_types()?;
+                    let sort = self.usize()?;
+                    let constructors_len = self.bounded_len()?;
+                    let mut constructors = Vec::with_capacity(constructors_len);
+                    for _ in 0..constructors_len {
+                        constructors.push(ConstructorSpec {
+                            name: self.usize()?,
+                            ty: self.usize()?,
+                        });
+                    }
+                    let recursor = match self.byte()? {
+                        0x00 => None,
+                        0x01 => Some(RecursorSpec {
+                            name: self.usize()?,
+                            universe_params: self.usize_vec()?,
+                            ty: self.usize()?,
+                            rules: RecursorRulesSpec {
+                                minor_start: self.usize()?,
+                                major_index: self.usize()?,
+                            },
+                        }),
+                        _ => {
+                            return Err(CheckedCurrentDeclProjectionError::DecodeFailed {
+                                reason: "unknown recursor option tag",
+                            });
+                        }
+                    };
+                    inductives.push(MutualInductiveSpec {
+                        name: inductive_name,
+                        params,
+                        indices,
+                        sort,
+                        constructors,
+                        recursor,
+                    });
+                }
+                DeclPayload::MutualInductiveBlock {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    inductives,
                 }
             }
             _ => {
@@ -1952,6 +2114,39 @@ fn collect_decl_refs(
                 collect_term_refs(recursor.ty, levels, terms, names, level_refs, term_refs)?;
             }
         }
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => {
+            names.insert(*name);
+            names.extend(universe_params);
+            collect_universe_constraint_refs(universe_constraints, levels, names, level_refs)?;
+            for inductive in inductives {
+                names.insert(inductive.name);
+                collect_level_refs(inductive.sort, levels, names, level_refs)?;
+                let inductive_ty = inductive_export_type_term_id(
+                    &inductive.params,
+                    &inductive.indices,
+                    inductive.sort,
+                    terms,
+                )?;
+                collect_term_refs(inductive_ty, levels, terms, names, level_refs, term_refs)?;
+                for binder in inductive.params.iter().chain(&inductive.indices) {
+                    collect_term_refs(binder.ty, levels, terms, names, level_refs, term_refs)?;
+                }
+                for constructor in &inductive.constructors {
+                    names.insert(constructor.name);
+                    collect_term_refs(constructor.ty, levels, terms, names, level_refs, term_refs)?;
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    names.insert(recursor.name);
+                    names.extend(&recursor.universe_params);
+                    collect_term_refs(recursor.ty, levels, terms, names, level_refs, term_refs)?;
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -1971,6 +2166,10 @@ fn root_decl_universe_constraints(decl: &DeclPayload) -> &[UniverseConstraintSpe
             ..
         }
         | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::MutualInductiveBlock {
             universe_constraints,
             ..
         } => universe_constraints,
@@ -2496,6 +2695,46 @@ fn encode_decl_payload_to(out: &mut Vec<u8>, decl: &DeclPayload) {
                 None => out.push(0x00),
             }
         }
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => {
+            out.push(0x04);
+            encode_uvar(out, *name as u64);
+            encode_usize_vec(out, universe_params);
+            encode_universe_constraint_specs(out, universe_constraints);
+            encode_uvar(out, inductives.len() as u64);
+            for inductive in inductives {
+                encode_uvar(out, inductive.name as u64);
+                encode_uvar(out, inductive.params.len() as u64);
+                for param in &inductive.params {
+                    encode_uvar(out, param.ty as u64);
+                }
+                encode_uvar(out, inductive.indices.len() as u64);
+                for index in &inductive.indices {
+                    encode_uvar(out, index.ty as u64);
+                }
+                encode_uvar(out, inductive.sort as u64);
+                encode_uvar(out, inductive.constructors.len() as u64);
+                for constructor in &inductive.constructors {
+                    encode_uvar(out, constructor.name as u64);
+                    encode_uvar(out, constructor.ty as u64);
+                }
+                match &inductive.recursor {
+                    Some(recursor) => {
+                        out.push(0x01);
+                        encode_uvar(out, recursor.name as u64);
+                        encode_usize_vec(out, &recursor.universe_params);
+                        encode_uvar(out, recursor.ty as u64);
+                        encode_uvar(out, recursor.rules.minor_start as u64);
+                        encode_uvar(out, recursor.rules.major_index as u64);
+                    }
+                    None => out.push(0x00),
+                }
+            }
+        }
     }
 }
 
@@ -2823,6 +3062,19 @@ fn root_decl_global_refs(
             }
             if let Some(recursor) = recursor {
                 collect_global_refs_from_term(package, recursor.ty, &mut refs)?;
+            }
+        }
+        DeclPayload::MutualInductiveBlock { inductives, .. } => {
+            for inductive in inductives {
+                for binder in inductive.params.iter().chain(&inductive.indices) {
+                    collect_global_refs_from_term(package, binder.ty, &mut refs)?;
+                }
+                for constructor in &inductive.constructors {
+                    collect_global_refs_from_term(package, constructor.ty, &mut refs)?;
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_global_refs_from_term(package, recursor.ty, &mut refs)?;
+                }
             }
         }
     }
@@ -3590,6 +3842,57 @@ fn remap_decl_payload_for_test(
                 ty: remap_index_for_test(term_map, recursor.ty),
                 rules: recursor.rules,
             }),
+        },
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => DeclPayload::MutualInductiveBlock {
+            name: remap_index_for_test(name_map, *name),
+            universe_params: remap_name_ids_for_test(universe_params, name_map),
+            universe_constraints: remap_universe_constraints_for_test(
+                universe_constraints,
+                level_map,
+            ),
+            inductives: inductives
+                .iter()
+                .map(|inductive| MutualInductiveSpec {
+                    name: remap_index_for_test(name_map, inductive.name),
+                    params: inductive
+                        .params
+                        .iter()
+                        .map(|binder| BinderType {
+                            ty: remap_index_for_test(term_map, binder.ty),
+                        })
+                        .collect(),
+                    indices: inductive
+                        .indices
+                        .iter()
+                        .map(|binder| BinderType {
+                            ty: remap_index_for_test(term_map, binder.ty),
+                        })
+                        .collect(),
+                    sort: remap_index_for_test(level_map, inductive.sort),
+                    constructors: inductive
+                        .constructors
+                        .iter()
+                        .map(|constructor| ConstructorSpec {
+                            name: remap_index_for_test(name_map, constructor.name),
+                            ty: remap_index_for_test(term_map, constructor.ty),
+                        })
+                        .collect(),
+                    recursor: inductive.recursor.as_ref().map(|recursor| RecursorSpec {
+                        name: remap_index_for_test(name_map, recursor.name),
+                        universe_params: remap_name_ids_for_test(
+                            &recursor.universe_params,
+                            name_map,
+                        ),
+                        ty: remap_index_for_test(term_map, recursor.ty),
+                        rules: recursor.rules,
+                    }),
+                })
+                .collect(),
         },
     }
 }

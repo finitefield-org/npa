@@ -83,6 +83,22 @@ pub(crate) enum CanonDeclPayload {
         constructors: Vec<(NameId, CanonTerm)>,
         recursor: Option<(NameId, Vec<NameId>, CanonTerm, RecursorRulesSpec)>,
     },
+    MutualInductiveBlock {
+        name: NameId,
+        universe_params: Vec<NameId>,
+        universe_constraints: Vec<CanonUniverseConstraint>,
+        inductives: Vec<CanonMutualInductive>,
+    },
+}
+
+#[derive(Clone)]
+pub(crate) struct CanonMutualInductive {
+    name: NameId,
+    params: Vec<CanonTerm>,
+    indices: Vec<CanonTerm>,
+    sort: CanonLevel,
+    constructors: Vec<(NameId, CanonTerm)>,
+    recursor: Option<(NameId, Vec<NameId>, CanonTerm, RecursorRulesSpec)>,
 }
 
 pub(crate) fn build_module_cert_impl(
@@ -124,6 +140,22 @@ pub(crate) fn build_module_cert_impl(
                 let name = Name::from_dotted(&recursor.name);
                 local_generated_name_to_index.insert(name.clone(), decl_index);
                 local_public_names.push(name);
+            }
+        } else if let Decl::MutualInductiveBlock { data, .. } = decl {
+            for inductive in &data.inductives {
+                let name = Name::from_dotted(&inductive.name);
+                local_generated_name_to_index.insert(name.clone(), decl_index);
+                local_public_names.push(name);
+                for constructor in &inductive.constructors {
+                    let name = Name::from_dotted(&constructor.name);
+                    local_generated_name_to_index.insert(name.clone(), decl_index);
+                    local_public_names.push(name);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    let name = Name::from_dotted(&recursor.name);
+                    local_generated_name_to_index.insert(name.clone(), decl_index);
+                    local_public_names.push(name);
+                }
             }
         }
     }
@@ -180,7 +212,10 @@ pub(crate) fn build_module_cert_impl(
         add_decl_to_env(&mut env, decl.clone())?;
         let allow_self = matches!(
             decl,
-            Decl::Inductive { .. } | Decl::Axiom { .. } | Decl::AxiomConstrained { .. }
+            Decl::Inductive { .. }
+                | Decl::MutualInductiveBlock { .. }
+                | Decl::Axiom { .. }
+                | Decl::AxiomConstrained { .. }
         );
         let resolver = Resolver {
             current_decl_index: decl_index,
@@ -469,6 +504,101 @@ fn canonicalize_decl(decl: Decl, decl_index: usize, resolver: &Resolver<'_>) -> 
                 dependencies: deps,
             })
         }
+        Decl::MutualInductiveBlock {
+            name,
+            universe_params,
+            data,
+        } => {
+            if name != data.name || universe_params != data.universe_params {
+                return Err(CertError::InductiveWrapperMismatch {
+                    name: Name::from_dotted(&name),
+                });
+            }
+            let universe_constraints = canonicalize_universe_constraints(
+                &universe_params,
+                &input_universe_constraints,
+                resolver,
+            )?;
+            let mut terms = Vec::new();
+            let inductives = data
+                .inductives
+                .iter()
+                .map(|inductive| {
+                    let params = inductive
+                        .params
+                        .iter()
+                        .map(|binder| canonicalize_expr(&binder.ty, resolver))
+                        .collect::<Result<Vec<_>>>()?;
+                    terms.extend(params.iter().cloned());
+                    let indices = inductive
+                        .indices
+                        .iter()
+                        .map(|binder| canonicalize_expr(&binder.ty, resolver))
+                        .collect::<Result<Vec<_>>>()?;
+                    terms.extend(indices.iter().cloned());
+                    let constructors = inductive
+                        .constructors
+                        .iter()
+                        .map(|constructor| {
+                            let ty = canonicalize_expr(&constructor.ty, resolver)?;
+                            terms.push(ty.clone());
+                            Ok((resolver.name_id(&Name::from_dotted(&constructor.name))?, ty))
+                        })
+                        .collect::<Result<Vec<_>>>()?;
+                    let recursor = inductive
+                        .recursor
+                        .as_ref()
+                        .map(|recursor| {
+                            let ty = canonicalize_expr(&recursor.ty, resolver)?;
+                            terms.push(ty.clone());
+                            Ok::<_, CertError>((
+                                resolver.name_id(&Name::from_dotted(&recursor.name))?,
+                                universe_param_ids(&recursor.universe_params, resolver)?,
+                                ty,
+                                recursor
+                                    .rules
+                                    .as_ref()
+                                    .map(|rules| RecursorRulesSpec {
+                                        minor_start: rules.minor_start,
+                                        major_index: rules.major_index,
+                                    })
+                                    .unwrap_or_else(|| RecursorRulesSpec {
+                                        minor_start: inductive.params.len() + data.inductives.len(),
+                                        major_index: inductive.params.len()
+                                            + data.inductives.len()
+                                            + data
+                                                .inductives
+                                                .iter()
+                                                .map(|data| data.constructors.len())
+                                                .sum::<usize>()
+                                            + inductive.indices.len(),
+                                    }),
+                            ))
+                        })
+                        .transpose()?;
+                    let sort = canonicalize_level(&inductive.sort, resolver)?;
+                    Ok(CanonMutualInductive {
+                        name: resolver.name_id(&Name::from_dotted(&inductive.name))?,
+                        params,
+                        indices,
+                        sort,
+                        constructors,
+                        recursor,
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let mut deps = dependencies_from_terms(terms.iter());
+            remove_self_dependency(&mut deps, decl_index);
+            Ok(CanonDecl {
+                decl: CanonDeclPayload::MutualInductiveBlock {
+                    name: resolver.name_id(&Name::from_dotted(&name))?,
+                    universe_params: universe_param_ids(&universe_params, resolver)?,
+                    universe_constraints,
+                    inductives,
+                },
+                dependencies: deps,
+            })
+        }
         Decl::Constructor { name, .. } | Decl::Recursor { name, .. } => {
             Err(CertError::UnknownDependency {
                 name: Name::from_dotted(name),
@@ -702,6 +832,22 @@ pub(crate) fn canonical_declaration_order(declarations: Vec<Decl>) -> Result<Vec
                 let name = Name::from_dotted(&recursor.name);
                 generated_name_to_index.insert(name.clone(), decl_index);
                 public_names.push(name);
+            }
+        } else if let Decl::MutualInductiveBlock { data, .. } = decl {
+            for inductive in &data.inductives {
+                let name = Name::from_dotted(&inductive.name);
+                generated_name_to_index.insert(name.clone(), decl_index);
+                public_names.push(name);
+                for constructor in &inductive.constructors {
+                    let name = Name::from_dotted(&constructor.name);
+                    generated_name_to_index.insert(name.clone(), decl_index);
+                    public_names.push(name);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    let name = Name::from_dotted(&recursor.name);
+                    generated_name_to_index.insert(name.clone(), decl_index);
+                    public_names.push(name);
+                }
             }
         }
     }
@@ -1148,6 +1294,34 @@ pub(crate) fn collect_canon_decl_nodes(
                 collect_term_nodes(ty, levels, terms);
             }
         }
+        CanonDeclPayload::MutualInductiveBlock {
+            universe_constraints,
+            inductives,
+            ..
+        } => {
+            collect_constraint_level_nodes(universe_constraints, levels);
+            for inductive in inductives {
+                collect_level_nodes(&inductive.sort, levels);
+                collect_term_nodes(
+                    &inductive_type_canon_term(
+                        &inductive.params,
+                        &inductive.indices,
+                        &inductive.sort,
+                    ),
+                    levels,
+                    terms,
+                );
+                for term in inductive.params.iter().chain(&inductive.indices) {
+                    collect_term_nodes(term, levels, terms);
+                }
+                for (_, term) in &inductive.constructors {
+                    collect_term_nodes(term, levels, terms);
+                }
+                if let Some((_, _, ty, _)) = &inductive.recursor {
+                    collect_term_nodes(ty, levels, terms);
+                }
+            }
+        }
     }
 }
 
@@ -1453,6 +1627,55 @@ pub(crate) fn materialize_decl_payload(
                 }
             }
         }
+        CanonDeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => {
+            let universe_constraints =
+                materialize_universe_constraints(universe_constraints, level_ids);
+            let inductives = inductives
+                .iter()
+                .map(|inductive| MutualInductiveSpec {
+                    name: inductive.name,
+                    params: inductive
+                        .params
+                        .iter()
+                        .map(|ty| BinderType { ty: term_ids[ty] })
+                        .collect(),
+                    indices: inductive
+                        .indices
+                        .iter()
+                        .map(|ty| BinderType { ty: term_ids[ty] })
+                        .collect(),
+                    sort: level_ids[&inductive.sort],
+                    constructors: inductive
+                        .constructors
+                        .iter()
+                        .map(|(name, ty)| ConstructorSpec {
+                            name: *name,
+                            ty: term_ids[ty],
+                        })
+                        .collect(),
+                    recursor: inductive
+                        .recursor
+                        .as_ref()
+                        .map(|(name, params, ty, rules)| RecursorSpec {
+                            name: *name,
+                            universe_params: params.clone(),
+                            ty: term_ids[ty],
+                            rules: *rules,
+                        }),
+                })
+                .collect();
+            DeclPayload::MutualInductiveBlock {
+                name: *name,
+                universe_params: universe_params.clone(),
+                universe_constraints,
+                inductives,
+            }
+        }
     }
 }
 
@@ -1483,7 +1706,9 @@ fn collect_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
         collect_names_from_level(names, &constraint.lhs);
         collect_names_from_level(names, &constraint.rhs);
     }
-    collect_names_from_expr(names, decl.ty());
+    if !matches!(decl, Decl::MutualInductiveBlock { .. }) {
+        collect_names_from_expr(names, decl.ty());
+    }
     match decl {
         Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
             collect_names_from_expr(names, value)
@@ -1511,12 +1736,37 @@ fn collect_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
                 collect_names_from_expr(names, &recursor.ty);
             }
         }
+        Decl::MutualInductiveBlock { data, .. } => {
+            collect_name(names, &Name::from_dotted(&data.name));
+            for inductive in &data.inductives {
+                collect_name(names, &Name::from_dotted(&inductive.name));
+                for param in &inductive.params {
+                    collect_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_name(names, &Name::from_dotted(&constructor.name));
+                    collect_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_name(names, &Name::from_dotted(&recursor.name));
+                    for param in &recursor.universe_params {
+                        collect_name(names, &Name::from_dotted(param));
+                    }
+                    collect_names_from_expr(names, &recursor.ty);
+                }
+            }
+        }
         _ => {}
     }
 }
 
 fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
-    collect_const_names_from_expr(names, decl.ty());
+    if !matches!(decl, Decl::MutualInductiveBlock { .. }) {
+        collect_const_names_from_expr(names, decl.ty());
+    }
     match decl {
         Decl::Def { value, .. } | Decl::DefConstrained { value, .. } => {
             collect_const_names_from_expr(names, value)
@@ -1536,6 +1786,22 @@ fn collect_const_names_from_decl(names: &mut BTreeSet<Name>, decl: &Decl) {
             }
             if let Some(recursor) = &data.recursor {
                 collect_const_names_from_expr(names, &recursor.ty);
+            }
+        }
+        Decl::MutualInductiveBlock { data, .. } => {
+            for inductive in &data.inductives {
+                for param in &inductive.params {
+                    collect_const_names_from_expr(names, &param.ty);
+                }
+                for index in &inductive.indices {
+                    collect_const_names_from_expr(names, &index.ty);
+                }
+                for constructor in &inductive.constructors {
+                    collect_const_names_from_expr(names, &constructor.ty);
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_const_names_from_expr(names, &recursor.ty);
+                }
             }
         }
         Decl::Axiom { .. }
@@ -1639,6 +1905,9 @@ fn imported_decl_map(
                 .name_table
                 .get(entry.name)
                 .ok_or(CertError::DecodeError)?;
+            if import_export_uses_builtin_eq_rec(import, entry)? {
+                continue;
+            }
             if !referenced_names.contains(name) || !name_index.contains_key(name) {
                 continue;
             }
@@ -1808,6 +2077,9 @@ fn referenced_imported_export_names(
     let mut imported_exports = BTreeSet::new();
     for import in imports {
         for entry in &import.export_block {
+            if import_export_uses_builtin_eq_rec(import, entry)? {
+                continue;
+            }
             imported_exports.insert(
                 import
                     .name_table
@@ -1881,6 +2153,25 @@ fn referenced_builtin_names(
     });
 
     Ok(referenced_names)
+}
+
+fn import_export_uses_builtin_eq_rec(import: &VerifiedModule, entry: &ExportEntry) -> Result<bool> {
+    let Some(entry_name) = import.name_table.get(entry.name) else {
+        return Err(CertError::DecodeError);
+    };
+    if entry_name.as_dotted() != "Eq.rec" {
+        return Ok(false);
+    }
+
+    for candidate in &import.export_block {
+        let Some(candidate_name) = import.name_table.get(candidate.name) else {
+            return Err(CertError::DecodeError);
+        };
+        if candidate.kind == ExportKind::Inductive && candidate_name.as_dotted() == "Eq" {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn collect_imported_axiom_names_for_referenced_exports(

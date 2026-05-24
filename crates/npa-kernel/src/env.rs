@@ -3,7 +3,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::{
     builtins::{eq_inductive, eq_rec_type, nat_inductive},
     context::Ctx,
-    decl::{ConstructorDecl, Decl, InductiveDecl, RecursorDecl, RecursorRules, Reducibility},
+    decl::{
+        ConstructorDecl, Decl, InductiveDecl, MutualInductiveBlock, RecursorDecl, RecursorRules,
+        Reducibility,
+    },
     error::{Error, ResourceLimitKind, Result},
     expr::{collect_apps, Expr},
     level::{
@@ -16,6 +19,24 @@ use crate::{
 #[derive(Clone, Debug, Default)]
 pub struct Env {
     decls: BTreeMap<String, Decl>,
+    mutual_groups: BTreeMap<String, MutualGroupInfo>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct MutualGroupInfo {
+    inductives: Vec<String>,
+    recursors: BTreeMap<String, String>,
+}
+
+struct MutualRecursorResultCheck<'a> {
+    data: &'a InductiveDecl,
+    recursor: &'a RecursorDecl,
+    rules: &'a RecursorRules,
+    domains: &'a [Expr],
+    result: &'a Expr,
+    delta: &'a [String],
+    family_index: usize,
+    index_start: usize,
 }
 
 impl Env {
@@ -237,6 +258,115 @@ impl Env {
         Ok(())
     }
 
+    pub fn add_mutual_inductive(&mut self, block: MutualInductiveBlock) -> Result<()> {
+        if block.inductives.is_empty() {
+            return Err(Error::InvalidInductive(format!(
+                "{} mutual block must contain at least one inductive",
+                block.name
+            )));
+        }
+        let delta = validate_universe_params(&block.universe_params)?;
+        ensure_universe_constraints_wf(&delta, &block.universe_constraints)?;
+        self.ensure_mutual_inductive_names_fresh(&block)?;
+
+        let param_count = block.inductives[0].params.len();
+        for data in &block.inductives {
+            if data.universe_params != block.universe_params
+                || !data.universe_constraints.is_empty()
+                || data.params.len() != param_count
+                || data.params != block.inductives[0].params
+            {
+                return Err(Error::InvalidInductive(format!(
+                    "{} mutual block requires shared universe and parameter telescopes",
+                    block.name
+                )));
+            }
+            ensure_level_wf(&delta, &data.sort)?;
+        }
+
+        let mut candidate = self.clone();
+        for data in &block.inductives {
+            let ty = inductive_type(data);
+            candidate.expect_sort(&Ctx::new(), &delta, &ty)?;
+            candidate.decls.insert(
+                data.name.clone(),
+                Decl::Inductive {
+                    name: data.name.clone(),
+                    universe_params: data.universe_params.clone(),
+                    ty,
+                    data: Box::new(data.clone()),
+                },
+            );
+        }
+
+        for data in &block.inductives {
+            for constructor in &data.constructors {
+                candidate.check_mutual_constructor_decl(&block, data, constructor, &delta)?;
+                candidate.decls.insert(
+                    constructor.name.clone(),
+                    Decl::Constructor {
+                        name: constructor.name.clone(),
+                        universe_params: data.universe_params.clone(),
+                        ty: constructor.ty.clone(),
+                        inductive: data.name.clone(),
+                    },
+                );
+            }
+        }
+
+        for data in &block.inductives {
+            if let Some(recursor) = &data.recursor {
+                let recursor_delta = validate_universe_params(&recursor.universe_params)?;
+                candidate.expect_sort(&Ctx::new(), &recursor_delta, &recursor.ty)?;
+                let rules = recursor
+                    .rules
+                    .clone()
+                    .unwrap_or_else(|| generated_mutual_recursor_rules(&block, data));
+                candidate.check_mutual_recursor_decl(
+                    &block,
+                    data,
+                    recursor,
+                    &rules,
+                    &recursor_delta,
+                )?;
+                candidate.decls.insert(
+                    recursor.name.clone(),
+                    Decl::Recursor {
+                        name: recursor.name.clone(),
+                        universe_params: recursor.universe_params.clone(),
+                        ty: recursor.ty.clone(),
+                        inductive: data.name.clone(),
+                        rules,
+                    },
+                );
+            }
+        }
+
+        let recursors = block
+            .inductives
+            .iter()
+            .filter_map(|data| {
+                data.recursor
+                    .as_ref()
+                    .map(|recursor| (data.name.clone(), recursor.name.clone()))
+            })
+            .collect();
+        let group = MutualGroupInfo {
+            inductives: block
+                .inductives
+                .iter()
+                .map(|data| data.name.clone())
+                .collect(),
+            recursors,
+        };
+        for name in &group.inductives {
+            candidate.mutual_groups.insert(name.clone(), group.clone());
+        }
+
+        *self = candidate;
+        Ok(())
+    }
+
     pub fn infer(&self, ctx: &Ctx, delta: &[String], term: &Expr) -> Result<Expr> {
         match term {
             Expr::Sort(level) => {
@@ -415,6 +545,30 @@ impl Env {
         Ok(())
     }
 
+    fn ensure_mutual_inductive_names_fresh(&self, block: &MutualInductiveBlock) -> Result<()> {
+        let mut names = BTreeSet::new();
+        for name in std::iter::once(&block.name)
+            .chain(block.inductives.iter().map(|data| &data.name))
+            .chain(block.inductives.iter().flat_map(|data| {
+                data.constructors
+                    .iter()
+                    .map(|constructor| &constructor.name)
+            }))
+            .chain(
+                block
+                    .inductives
+                    .iter()
+                    .filter_map(|data| data.recursor.as_ref().map(|recursor| &recursor.name)),
+            )
+        {
+            if !names.insert(name) {
+                return Err(Error::DuplicateDecl(name.clone()));
+            }
+            self.ensure_fresh(name)?;
+        }
+        Ok(())
+    }
+
     fn expect_sort(&self, ctx: &Ctx, delta: &[String], term: &Expr) -> Result<Level> {
         match self.whnf(ctx, delta, &self.infer(ctx, delta, term)?)? {
             Expr::Sort(level) => Ok(level),
@@ -584,6 +738,29 @@ impl Env {
         self.check_constructor_result(data, constructor, domains.len(), result)
     }
 
+    fn check_mutual_constructor_decl(
+        &self,
+        block: &MutualInductiveBlock,
+        data: &InductiveDecl,
+        constructor: &ConstructorDecl,
+        delta: &[String],
+    ) -> Result<()> {
+        self.expect_sort(&Ctx::new(), delta, &constructor.ty)?;
+        let (domains, result) = peel_pi_domains(&constructor.ty);
+        for (domain_index, domain) in domains.iter().enumerate() {
+            check_mutual_constructor_domain_positive(
+                block,
+                data,
+                &constructor.name,
+                domain_index,
+                domain,
+            )?;
+        }
+
+        let result = self.whnf(&Ctx::new(), delta, &result)?;
+        self.check_constructor_result(data, constructor, domains.len(), result)
+    }
+
     fn check_recursor_decl(
         &self,
         data: &InductiveDecl,
@@ -648,6 +825,96 @@ impl Env {
                     "{} minor premise for {} does not match constructor",
                     recursor.name, constructor.name
                 )));
+            }
+        }
+
+        Ok(())
+    }
+
+    fn check_mutual_recursor_decl(
+        &self,
+        block: &MutualInductiveBlock,
+        data: &InductiveDecl,
+        recursor: &RecursorDecl,
+        rules: &RecursorRules,
+        delta: &[String],
+    ) -> Result<()> {
+        let param_count = data.params.len();
+        let motive_count = block.inductives.len();
+        let minor_start = param_count + motive_count;
+        let constructor_count = mutual_constructor_count(block);
+        if rules.minor_start != minor_start {
+            return Err(Error::InvalidInductive(format!(
+                "{} mutual recursor minor_start must follow params and motives",
+                recursor.name
+            )));
+        }
+        if rules.major_index != minor_start + constructor_count + data.indices.len() {
+            return Err(Error::InvalidInductive(format!(
+                "{} mutual recursor major_index must follow all minor premises and target indices",
+                recursor.name
+            )));
+        }
+
+        let (domains, result) = peel_pi_domains(&recursor.ty);
+        if domains.len() != rules.major_index + 1 {
+            return Err(Error::InvalidInductive(format!(
+                "{} mutual recursor major premise must be the final binder",
+                recursor.name
+            )));
+        }
+
+        self.check_recursor_params(data, recursor, &domains, delta)?;
+        for (family_index, family) in block.inductives.iter().enumerate() {
+            let motive_domain = domains.get(param_count + family_index).ok_or_else(|| {
+                Error::InvalidInductive(format!(
+                    "{} mutual recursor is missing motive for {}",
+                    recursor.name, family.name
+                ))
+            })?;
+            self.check_motive_domain(family, recursor, motive_domain)?;
+        }
+
+        let target_family_index = mutual_family_index(block, &data.name)?;
+        let index_start = rules.minor_start + constructor_count;
+        self.check_recursor_indices_at(data, recursor, index_start, &domains, delta)?;
+        self.check_recursor_target(
+            data,
+            recursor,
+            &domains[rules.major_index],
+            "major premise",
+            rules.major_index,
+            index_start,
+        )?;
+        self.check_mutual_recursor_result(MutualRecursorResultCheck {
+            data,
+            recursor,
+            rules,
+            domains: &domains,
+            result: &result,
+            delta,
+            family_index: target_family_index,
+            index_start,
+        })?;
+
+        let mut constructor_index = 0usize;
+        for (family_index, family) in block.inductives.iter().enumerate() {
+            for constructor in &family.constructors {
+                let minor_index = rules.minor_start + constructor_index;
+                let expected_minor = expected_mutual_minor_type(
+                    block,
+                    family_index,
+                    constructor,
+                    constructor_index,
+                )?;
+                let prefix_ctx = recursor_prefix_ctx(&domains[..minor_index]);
+                if !self.is_defeq(&prefix_ctx, delta, &domains[minor_index], &expected_minor)? {
+                    return Err(Error::InvalidInductive(format!(
+                        "{} minor premise for {} does not match mutual constructor",
+                        recursor.name, constructor.name
+                    )));
+                }
+                constructor_index += 1;
             }
         }
 
@@ -799,6 +1066,17 @@ impl Env {
         delta: &[String],
     ) -> Result<()> {
         let index_start = rules.minor_start + data.constructors.len();
+        self.check_recursor_indices_at(data, recursor, index_start, domains, delta)
+    }
+
+    fn check_recursor_indices_at(
+        &self,
+        data: &InductiveDecl,
+        recursor: &RecursorDecl,
+        index_start: usize,
+        domains: &[Expr],
+        delta: &[String],
+    ) -> Result<()> {
         let mut source_to_target = (0..data.params.len()).collect::<Vec<_>>();
         for (index, expected) in data.indices.iter().enumerate() {
             let domain_index = index_start + index;
@@ -905,6 +1183,27 @@ impl Env {
             Err(Error::InvalidInductive(format!(
                 "{} result must apply motive to the major premise",
                 recursor.name
+            )))
+        }
+    }
+
+    fn check_mutual_recursor_result(&self, check: MutualRecursorResultCheck<'_>) -> Result<()> {
+        let index_args = (0..check.data.indices.len())
+            .map(|index| bvar_for_abs(check.domains.len(), check.index_start + index))
+            .collect::<Result<Vec<_>>>()?;
+        let expected = motive_app(
+            check.domains.len(),
+            check.data.params.len() + check.family_index,
+            index_args,
+            bvar_for_abs(check.domains.len(), check.rules.major_index)?,
+        )?;
+        let result_ctx = recursor_prefix_ctx(check.domains);
+        if self.is_defeq(&result_ctx, check.delta, check.result, &expected)? {
+            Ok(())
+        } else {
+            Err(Error::InvalidInductive(format!(
+                "{} result must apply the matching mutual motive to the major premise",
+                check.recursor.name
             )))
         }
     }
@@ -1016,6 +1315,7 @@ impl Env {
         }
 
         let data = self.inductive_data(inductive)?;
+        let mutual_group = self.mutual_groups.get(inductive).cloned();
         let Some(ctor_index) = data
             .constructors
             .iter()
@@ -1023,7 +1323,14 @@ impl Env {
         else {
             return Ok(None);
         };
-        let Some(minor) = args.get(rules.minor_start + ctor_index).cloned() else {
+        let block_ctor_offset = match &mutual_group {
+            Some(group) => mutual_constructor_offset(self, group, inductive)?,
+            None => 0,
+        };
+        let Some(minor) = args
+            .get(rules.minor_start + block_ctor_offset + ctor_index)
+            .cloned()
+        else {
             return Ok(None);
         };
 
@@ -1045,7 +1352,42 @@ impl Env {
             field_args.iter().zip(field_domains).enumerate()
         {
             reduced = Expr::app(reduced, field_arg.clone());
-            if is_direct_recursive_domain(data, field_domain, param_count + field_index) {
+            if let Some(group) = &mutual_group {
+                if let Ok((field_inductive, index_args)) = direct_mutual_recursive_index_args(
+                    self,
+                    group,
+                    field_domain,
+                    param_count + field_index,
+                ) {
+                    let source_ctx_len = param_count + field_index;
+                    let source_args = &ctor_args[..source_ctx_len];
+                    let Some(recursive_recursor_name) = group.recursors.get(&field_inductive)
+                    else {
+                        return Err(Error::InvalidInductive(format!(
+                            "{field_inductive} has no mutual recursor"
+                        )));
+                    };
+                    let recursive_data = self.inductive_data(&field_inductive)?;
+                    let mut recursive_args = args[..index_start].to_vec();
+                    for index_arg in index_args {
+                        recursive_args.push(instantiate_constructor_args(&index_arg, source_args)?);
+                    }
+                    if recursive_args.len() != index_start + recursive_data.indices.len() {
+                        return Err(Error::InvalidInductive(format!(
+                            "{} recursive call index arity mismatch",
+                            recursive_recursor_name
+                        )));
+                    }
+                    recursive_args.push(field_arg.clone());
+                    reduced = Expr::app(
+                        reduced,
+                        Expr::apps(
+                            Expr::konst(recursive_recursor_name.clone(), levels.clone()),
+                            recursive_args,
+                        ),
+                    );
+                }
+            } else if is_direct_recursive_domain(data, field_domain, param_count + field_index) {
                 let source_ctx_len = param_count + field_index;
                 let source_args = &ctor_args[..source_ctx_len];
                 let mut recursive_args = args[..index_start].to_vec();
@@ -1172,6 +1514,50 @@ fn generated_recursor_rules(data: &InductiveDecl) -> RecursorRules {
     )
 }
 
+fn generated_mutual_recursor_rules(
+    block: &MutualInductiveBlock,
+    data: &InductiveDecl,
+) -> RecursorRules {
+    let minor_start = data.params.len() + block.inductives.len();
+    RecursorRules::new(
+        minor_start,
+        minor_start + mutual_constructor_count(block) + data.indices.len(),
+    )
+}
+
+fn mutual_constructor_count(block: &MutualInductiveBlock) -> usize {
+    block
+        .inductives
+        .iter()
+        .map(|data| data.constructors.len())
+        .sum()
+}
+
+fn mutual_constructor_offset(
+    env: &Env,
+    group: &MutualGroupInfo,
+    target_inductive: &str,
+) -> Result<usize> {
+    let mut offset = 0usize;
+    for inductive in &group.inductives {
+        if inductive == target_inductive {
+            return Ok(offset);
+        }
+        offset += env.inductive_data(inductive)?.constructors.len();
+    }
+    Err(Error::InvalidInductive(format!(
+        "{target_inductive} is not in mutual group"
+    )))
+}
+
+fn mutual_family_index(block: &MutualInductiveBlock, name: &str) -> Result<usize> {
+    block
+        .inductives
+        .iter()
+        .position(|data| data.name == name)
+        .ok_or_else(|| Error::InvalidInductive(format!("{name} is not in mutual block")))
+}
+
 fn recursor_prefix_ctx(domains: &[Expr]) -> Ctx {
     let mut ctx = Ctx::new();
     for (index, domain) in domains.iter().enumerate() {
@@ -1255,6 +1641,97 @@ fn expected_minor_type(
     let result = motive_app(
         target_ctx_len,
         motive_abs,
+        result_index_args,
+        constructor_value,
+    )?;
+
+    Ok(mk_pi_from_domains(expected_domains, result))
+}
+
+fn expected_mutual_minor_type(
+    block: &MutualInductiveBlock,
+    family_index: usize,
+    constructor: &ConstructorDecl,
+    constructor_index: usize,
+) -> Result<Expr> {
+    let owner = block.inductives.get(family_index).ok_or_else(|| {
+        Error::InvalidInductive(format!(
+            "{} constructor family index {family_index} is out of range",
+            block.name
+        ))
+    })?;
+    let (domains, constructor_result) = peel_pi_domains(&constructor.ty);
+    let param_count = owner.params.len();
+    if domains.len() < param_count {
+        return Err(Error::InvalidInductive(format!(
+            "{} constructor is missing parameter binders",
+            constructor.name
+        )));
+    }
+    let constructor_result_indices =
+        constructor_result_index_args(owner, constructor, &constructor_result)?;
+
+    let prefix_len = param_count + block.inductives.len() + constructor_index;
+    let motive_abs_start = param_count;
+    let mut source_to_target: Vec<usize> = (0..param_count).collect();
+    let mut target_ctx_len = prefix_len;
+    let mut expected_domains = Vec::new();
+    let mut field_abs = Vec::new();
+
+    for (field_index, field_domain) in domains[param_count..].iter().enumerate() {
+        let source_ctx_len = param_count + field_index;
+        expected_domains.push(remap_bvars(
+            field_domain,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+        )?);
+
+        source_to_target.push(target_ctx_len);
+        field_abs.push(target_ctx_len);
+        target_ctx_len += 1;
+
+        if let Ok((field_family_index, index_args)) =
+            direct_mutual_recursive_index_args_in_block(block, field_domain, source_ctx_len)
+        {
+            let index_args = index_args
+                .into_iter()
+                .map(|arg| remap_bvars(&arg, source_ctx_len, target_ctx_len, &source_to_target))
+                .collect::<Result<Vec<_>>>()?;
+            expected_domains.push(motive_app(
+                target_ctx_len,
+                motive_abs_start + field_family_index,
+                index_args,
+                Expr::bvar(0),
+            )?);
+            target_ctx_len += 1;
+        }
+    }
+
+    let mut constructor_args = Vec::with_capacity(param_count + field_abs.len());
+    for param_abs in 0..param_count {
+        constructor_args.push(bvar_for_abs(target_ctx_len, param_abs)?);
+    }
+    for field_abs in field_abs {
+        constructor_args.push(bvar_for_abs(target_ctx_len, field_abs)?);
+    }
+
+    let levels = owner
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    let constructor_value = Expr::apps(
+        Expr::konst(constructor.name.clone(), levels),
+        constructor_args,
+    );
+    let result_index_args = constructor_result_indices
+        .iter()
+        .map(|arg| remap_bvars(arg, domains.len(), target_ctx_len, &source_to_target))
+        .collect::<Result<Vec<_>>>()?;
+    let result = motive_app(
+        target_ctx_len,
+        motive_abs_start + family_index,
         result_index_args,
         constructor_value,
     )?;
@@ -1396,6 +1873,31 @@ fn check_constructor_domain_positive(
     Ok(())
 }
 
+fn check_mutual_constructor_domain_positive(
+    block: &MutualInductiveBlock,
+    data: &InductiveDecl,
+    constructor: &str,
+    domain_index: usize,
+    domain: &Expr,
+) -> Result<()> {
+    if domain_index >= data.params.len()
+        && direct_mutual_recursive_index_args_in_block(block, domain, domain_index).is_ok()
+    {
+        return Ok(());
+    }
+    if contains_any_const(
+        domain,
+        block.inductives.iter().map(|data| data.name.as_str()),
+    ) {
+        return Err(Error::NonPositiveOccurrence {
+            inductive: data.name.clone(),
+            constructor: constructor.to_owned(),
+            ty: domain.clone(),
+        });
+    }
+    Ok(())
+}
+
 fn is_direct_recursive_domain(data: &InductiveDecl, domain: &Expr, ctx_len: usize) -> bool {
     direct_recursive_index_args(data, domain, ctx_len).is_ok()
 }
@@ -1432,6 +1934,39 @@ fn direct_recursive_index_args(
     } else {
         Err(Error::InvalidInductive(data.name.clone()))
     }
+}
+
+fn direct_mutual_recursive_index_args(
+    env: &Env,
+    group: &MutualGroupInfo,
+    domain: &Expr,
+    ctx_len: usize,
+) -> Result<(String, Vec<Expr>)> {
+    for name in &group.inductives {
+        let data = env.inductive_data(name)?;
+        if let Ok(indices) = direct_recursive_index_args(data, domain, ctx_len) {
+            return Ok((name.clone(), indices));
+        }
+    }
+    Err(Error::InvalidInductive(
+        "not a direct mutual recursive domain".to_owned(),
+    ))
+}
+
+fn direct_mutual_recursive_index_args_in_block(
+    block: &MutualInductiveBlock,
+    domain: &Expr,
+    ctx_len: usize,
+) -> Result<(usize, Vec<Expr>)> {
+    for (index, data) in block.inductives.iter().enumerate() {
+        if let Ok(indices) = direct_recursive_index_args(data, domain, ctx_len) {
+            return Ok((index, indices));
+        }
+    }
+    Err(Error::InvalidInductive(format!(
+        "{} domain is not a direct mutual recursive occurrence",
+        block.name
+    )))
 }
 
 fn constructor_result_index_args(
@@ -1531,4 +2066,8 @@ fn contains_const(expr: &Expr, needle: &str) -> bool {
                 || contains_const(body, needle)
         }
     }
+}
+
+fn contains_any_const<'a>(expr: &Expr, needles: impl Iterator<Item = &'a str> + Clone) -> bool {
+    needles.clone().any(|needle| contains_const(expr, needle))
 }

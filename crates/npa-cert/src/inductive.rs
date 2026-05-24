@@ -1,6 +1,9 @@
 use npa_kernel::expr::collect_apps;
 use npa_kernel::level::{level_eq, levels_eq};
-use npa_kernel::{ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, RecursorRules};
+use npa_kernel::{
+    ConstructorDecl, Decl, Expr, InductiveDecl, Level, MutualInductiveBlock, RecursorDecl,
+    RecursorRules,
+};
 
 use crate::{CertError, CoreModule, DeclPayload, Hash, Name, Result};
 
@@ -91,6 +94,64 @@ pub fn generate_inductive_artifacts_v1(base: &InductiveDecl) -> Result<Inductive
         rules,
     ));
     Ok(final_decl)
+}
+
+/// Generate deterministic recursors for a supported mutual inductive block.
+pub fn generate_mutual_inductive_artifacts_v1(
+    base: &MutualInductiveBlock,
+) -> Result<MutualInductiveBlock> {
+    if base.inductives.is_empty() || base.inductives.iter().any(|data| data.recursor.is_some()) {
+        return Err(CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(&base.name),
+        });
+    }
+    let param_count = base.inductives[0].params.len();
+    for data in &base.inductives {
+        if data.universe_params != base.universe_params
+            || !data.universe_constraints.is_empty()
+            || data.params != base.inductives[0].params
+        {
+            return Err(CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(&base.name),
+            });
+        }
+    }
+    for data in &base.inductives {
+        for constructor in &data.constructors {
+            let (domains, _) = peel_pi_domains(&constructor.ty);
+            for (domain_index, domain) in domains.iter().enumerate() {
+                if domain_index >= param_count
+                    && direct_mutual_recursive_index_args(base, domain, domain_index).is_ok()
+                {
+                    continue;
+                }
+                if contains_any_const(
+                    domain,
+                    base.inductives.iter().map(|data| data.name.as_str()),
+                ) {
+                    return Err(CertError::InductiveGeneratedArtifactMismatch {
+                        name: Name::from_dotted(&base.name),
+                    });
+                }
+            }
+        }
+    }
+
+    let mut final_block = base.clone();
+    let recursor_universe_params = recursor_universe_params(&base.inductives[0]);
+    for index in 0..final_block.inductives.len() {
+        let rules = generated_mutual_recursor_rules(&final_block, &final_block.inductives[index]);
+        let recursor_ty =
+            generated_mutual_recursor_type(&final_block, index, &recursor_universe_params, &rules)?;
+        let name = final_block.inductives[index].name.clone();
+        final_block.inductives[index].recursor = Some(RecursorDecl::with_rules(
+            format!("{name}.rec"),
+            recursor_universe_params.clone(),
+            recursor_ty,
+            rules,
+        ));
+    }
+    Ok(final_block)
 }
 
 /// Return the certificate artifact hashes for a generated inductive declaration.
@@ -220,6 +281,86 @@ fn generated_recursor_type(
         bvar_for_abs(domains.len(), rules.major_index)?,
     )?;
     Ok(mk_pi_from_domains(domains, body))
+}
+
+fn generated_mutual_recursor_type(
+    block: &MutualInductiveBlock,
+    target_index: usize,
+    recursor_universe_params: &[String],
+    rules: &RecursorRules,
+) -> Result<Expr> {
+    let target = block.inductives.get(target_index).ok_or_else(|| {
+        CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(&block.name),
+        }
+    })?;
+    let param_count = target.params.len();
+    let mut domains = target
+        .params
+        .iter()
+        .map(|param| param.ty.clone())
+        .collect::<Vec<_>>();
+
+    for family in &block.inductives {
+        domains.push(motive_domain_expr(
+            family,
+            expected_motive_level(family, recursor_universe_params),
+        )?);
+    }
+
+    let mut constructor_index = 0usize;
+    for (family_index, family) in block.inductives.iter().enumerate() {
+        for constructor in &family.constructors {
+            domains.push(expected_mutual_minor_type_expr(
+                block,
+                family_index,
+                constructor,
+                constructor_index,
+            )?);
+            constructor_index += 1;
+        }
+    }
+
+    let index_start = domains.len();
+    append_index_domains(target, &mut domains)?;
+    let major_domain = inductive_target_expr(
+        &target.name,
+        &target.universe_params,
+        domains.len(),
+        param_count,
+        index_start,
+        target.indices.len(),
+    )?;
+    domains.push(major_domain);
+    let index_args = (0..target.indices.len())
+        .map(|index| bvar_for_abs(domains.len(), index_start + index))
+        .collect::<Result<Vec<_>>>()?;
+    let body = motive_app(
+        domains.len(),
+        param_count + target_index,
+        index_args,
+        bvar_for_abs(domains.len(), rules.major_index)?,
+    )?;
+    Ok(mk_pi_from_domains(domains, body))
+}
+
+fn generated_mutual_recursor_rules(
+    block: &MutualInductiveBlock,
+    data: &InductiveDecl,
+) -> RecursorRules {
+    let minor_start = data.params.len() + block.inductives.len();
+    RecursorRules::new(
+        minor_start,
+        minor_start + mutual_constructor_count(block) + data.indices.len(),
+    )
+}
+
+fn mutual_constructor_count(block: &MutualInductiveBlock) -> usize {
+    block
+        .inductives
+        .iter()
+        .map(|data| data.constructors.len())
+        .sum()
 }
 
 fn expected_motive_level(base: &InductiveDecl, recursor_universe_params: &[String]) -> Level {
@@ -408,6 +549,102 @@ fn expected_minor_type_expr(
     Ok(mk_pi_from_domains(expected_domains, result))
 }
 
+fn expected_mutual_minor_type_expr(
+    block: &MutualInductiveBlock,
+    family_index: usize,
+    constructor: &ConstructorDecl,
+    constructor_index: usize,
+) -> Result<Expr> {
+    let owner = block.inductives.get(family_index).ok_or_else(|| {
+        CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(&block.name),
+        }
+    })?;
+    let (constructor_domains, constructor_result) = peel_pi_domains(&constructor.ty);
+    let param_count = owner.params.len();
+    if constructor_domains.len() < param_count {
+        return Err(CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(&block.name),
+        });
+    }
+    let constructor_result_indices =
+        constructor_result_index_args(owner, constructor, &constructor_result)?;
+
+    let prefix_len = param_count + block.inductives.len() + constructor_index;
+    let motive_abs_start = param_count;
+    let mut source_to_target: Vec<usize> = (0..param_count).collect();
+    let mut target_ctx_len = prefix_len;
+    let mut expected_domains = Vec::new();
+    let mut field_abs = Vec::new();
+
+    for (field_index, field_domain) in constructor_domains[param_count..].iter().enumerate() {
+        let source_ctx_len = param_count + field_index;
+        expected_domains.push(remap_bvars(
+            field_domain,
+            source_ctx_len,
+            target_ctx_len,
+            &source_to_target,
+        )?);
+
+        source_to_target.push(target_ctx_len);
+        field_abs.push(target_ctx_len);
+        target_ctx_len += 1;
+
+        if let Ok((field_family_index, index_args)) =
+            direct_mutual_recursive_index_args(block, field_domain, source_ctx_len)
+        {
+            let index_args = index_args
+                .into_iter()
+                .map(|arg| remap_bvars(&arg, source_ctx_len, target_ctx_len, &source_to_target))
+                .collect::<Result<Vec<_>>>()?;
+            expected_domains.push(motive_app(
+                target_ctx_len,
+                motive_abs_start + field_family_index,
+                index_args,
+                Expr::bvar(0),
+            )?);
+            target_ctx_len += 1;
+        }
+    }
+
+    let mut constructor_args = Vec::with_capacity(param_count + field_abs.len());
+    for param_abs in 0..param_count {
+        constructor_args.push(bvar_for_abs(target_ctx_len, param_abs)?);
+    }
+    for field_abs in field_abs {
+        constructor_args.push(bvar_for_abs(target_ctx_len, field_abs)?);
+    }
+
+    let levels = owner
+        .universe_params
+        .iter()
+        .map(|param| Level::param(param.clone()))
+        .collect();
+    let constructor_value = Expr::apps(
+        Expr::konst(constructor.name.clone(), levels),
+        constructor_args,
+    );
+    let result_index_args = constructor_result_indices
+        .iter()
+        .map(|arg| {
+            remap_bvars(
+                arg,
+                constructor_domains.len(),
+                target_ctx_len,
+                &source_to_target,
+            )
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let result = motive_app(
+        target_ctx_len,
+        motive_abs_start + family_index,
+        result_index_args,
+        constructor_value,
+    )?;
+
+    Ok(mk_pi_from_domains(expected_domains, result))
+}
+
 fn peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
     let mut domains = Vec::new();
     let mut current = ty.clone();
@@ -574,6 +811,28 @@ fn direct_recursive_index_args(
     }
 }
 
+fn direct_mutual_recursive_index_args(
+    block: &MutualInductiveBlock,
+    domain: &Expr,
+    ctx_len: usize,
+) -> Result<(usize, Vec<Expr>)> {
+    for (index, data) in block.inductives.iter().enumerate() {
+        if let Ok(indices) = direct_recursive_index_args(
+            &data.name,
+            &data.universe_params,
+            data.params.len(),
+            data.indices.len(),
+            domain,
+            ctx_len,
+        ) {
+            return Ok((index, indices));
+        }
+    }
+    Err(CertError::InductiveGeneratedArtifactMismatch {
+        name: Name::from_dotted(&block.name),
+    })
+}
+
 fn constructor_result_index_args(
     base: &InductiveDecl,
     constructor: &ConstructorDecl,
@@ -618,4 +877,8 @@ fn contains_const(expr: &Expr, needle: &str) -> bool {
                 || contains_const(body, needle)
         }
     }
+}
+
+fn contains_any_const<'a>(expr: &Expr, needles: impl Iterator<Item = &'a str> + Clone) -> bool {
+    needles.clone().any(|needle| contains_const(expr, needle))
 }

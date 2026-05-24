@@ -906,11 +906,7 @@ impl<'a> HumanResolver<'a> {
         for export in &import.exports {
             self.global_scope.imported.push(HumanGlobalScopeEntry {
                 name: HumanName::new(export.name.0.clone(), Span::empty(crate::FileId(0))),
-                reference: HumanGlobalRef::Imported {
-                    module: import.module.clone(),
-                    name: export.name.clone(),
-                    decl_interface_hash: export.decl_interface_hash,
-                },
+                reference: human_import_global_ref(import, export),
                 span: Span::empty(crate::FileId(0)),
             });
         }
@@ -1783,6 +1779,41 @@ fn builtin_candidate(name: &npa_cert::Name) -> Option<HumanNameCandidate> {
             decl_interface_hash,
         },
     })
+}
+
+fn human_import_global_ref(
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> HumanGlobalRef {
+    if human_import_export_uses_builtin_eq_rec(import, export) {
+        return human_builtin_eq_rec_ref();
+    }
+
+    HumanGlobalRef::Imported {
+        module: import.module.clone(),
+        name: export.name.clone(),
+        decl_interface_hash: export.decl_interface_hash,
+    }
+}
+
+fn human_builtin_eq_rec_ref() -> HumanGlobalRef {
+    let name = npa_cert::Name::from_dotted("Eq.rec");
+    HumanGlobalRef::Builtin {
+        decl_interface_hash: npa_cert::builtin_decl_interface_hash(&name)
+            .expect("Eq.rec builtin interface hash is defined"),
+        name,
+    }
+}
+
+fn human_import_export_uses_builtin_eq_rec(
+    import: &VerifiedImport,
+    export: &crate::VerifiedExport,
+) -> bool {
+    export.name.as_dotted() == "Eq.rec"
+        && import
+            .kernel_decls
+            .iter()
+            .any(|decl| matches!(decl, npa_kernel::Decl::Inductive { name, .. } if name == "Eq"))
 }
 
 #[cfg(test)]

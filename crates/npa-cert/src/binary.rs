@@ -295,6 +295,55 @@ fn encode_decl_payload_to(out: &mut Vec<u8>, decl: &DeclPayload) {
                 None => out.push(0x00),
             }
         }
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            universe_constraints,
+            inductives,
+        } => {
+            out.push(0x04);
+            encode_uvar_to(out, *name as u64);
+            encode_usize_vec(out, universe_params);
+            encode_universe_constraint_specs_to(out, universe_constraints);
+            encode_uvar_to(out, inductives.len() as u64);
+            for inductive in inductives {
+                encode_uvar_to(out, inductive.name as u64);
+                encode_binder_types_to(out, &inductive.params);
+                encode_binder_types_to(out, &inductive.indices);
+                encode_uvar_to(out, inductive.sort as u64);
+                encode_constructor_specs_to(out, &inductive.constructors);
+                encode_recursor_spec_to(out, inductive.recursor.as_ref());
+            }
+        }
+    }
+}
+
+fn encode_binder_types_to(out: &mut Vec<u8>, binders: &[BinderType]) {
+    encode_uvar_to(out, binders.len() as u64);
+    for binder in binders {
+        encode_uvar_to(out, binder.ty as u64);
+    }
+}
+
+fn encode_constructor_specs_to(out: &mut Vec<u8>, constructors: &[ConstructorSpec]) {
+    encode_uvar_to(out, constructors.len() as u64);
+    for constructor in constructors {
+        encode_uvar_to(out, constructor.name as u64);
+        encode_uvar_to(out, constructor.ty as u64);
+    }
+}
+
+fn encode_recursor_spec_to(out: &mut Vec<u8>, recursor: Option<&RecursorSpec>) {
+    match recursor {
+        Some(recursor) => {
+            out.push(0x01);
+            encode_uvar_to(out, recursor.name as u64);
+            encode_usize_vec(out, &recursor.universe_params);
+            encode_uvar_to(out, recursor.ty as u64);
+            encode_uvar_to(out, recursor.rules.minor_start as u64);
+            encode_uvar_to(out, recursor.rules.major_index as u64);
+        }
+        None => out.push(0x00),
     }
 }
 
@@ -743,6 +792,29 @@ impl<'a> Decoder<'a> {
                     recursor,
                 }
             }
+            0x04 => {
+                let name = self.usize()?;
+                let universe_params = self.usize_vec()?;
+                let universe_constraints = self.universe_constraint_specs()?;
+                let len = self.bounded_len()?;
+                let mut inductives = Vec::with_capacity(len);
+                for _ in 0..len {
+                    inductives.push(MutualInductiveSpec {
+                        name: self.usize()?,
+                        params: self.binder_types()?,
+                        indices: self.binder_types()?,
+                        sort: self.usize()?,
+                        constructors: self.constructor_specs()?,
+                        recursor: self.recursor_spec()?,
+                    });
+                }
+                DeclPayload::MutualInductiveBlock {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    inductives,
+                }
+            }
             tag => return Err(CertError::UnsupportedEncoding { tag }),
         })
     }
@@ -771,6 +843,34 @@ impl<'a> Decoder<'a> {
         (0..len)
             .map(|_| Ok(BinderType { ty: self.usize()? }))
             .collect()
+    }
+
+    fn constructor_specs(&mut self) -> Result<Vec<ConstructorSpec>> {
+        let len = self.bounded_len()?;
+        (0..len)
+            .map(|_| {
+                Ok(ConstructorSpec {
+                    name: self.usize()?,
+                    ty: self.usize()?,
+                })
+            })
+            .collect()
+    }
+
+    fn recursor_spec(&mut self) -> Result<Option<RecursorSpec>> {
+        match self.byte()? {
+            0x00 => Ok(None),
+            0x01 => Ok(Some(RecursorSpec {
+                name: self.usize()?,
+                universe_params: self.usize_vec()?,
+                ty: self.usize()?,
+                rules: RecursorRulesSpec {
+                    minor_start: self.usize()?,
+                    major_index: self.usize()?,
+                },
+            })),
+            tag => Err(CertError::UnsupportedEncoding { tag }),
+        }
     }
 
     fn export_block(&mut self) -> Result<ExportBlock> {

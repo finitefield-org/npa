@@ -1,8 +1,8 @@
 use super::*;
 use npa_kernel::{
     eq, eq_inductive, eq_rec_type, eq_refl, eq_refl_type, nat, nat_inductive, nat_succ, nat_zero,
-    type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, RecursorDecl, Reducibility,
-    UniverseConstraint,
+    prop, type0, Binder, ConstructorDecl, Decl, Expr, InductiveDecl, Level, MutualInductiveBlock,
+    RecursorDecl, Reducibility, UniverseConstraint,
 };
 
 fn id_type(a: &str, x: &str) -> Expr {
@@ -988,6 +988,127 @@ fn fin_inductive_base() -> InductiveDecl {
     )
 }
 
+fn even_type(n: Expr) -> Expr {
+    Expr::app(Expr::konst("Even", vec![]), n)
+}
+
+fn odd_type(n: Expr) -> Expr {
+    Expr::app(Expr::konst("Odd", vec![]), n)
+}
+
+fn even_odd_mutual_base() -> MutualInductiveBlock {
+    MutualInductiveBlock::new(
+        "EvenOdd",
+        vec![],
+        vec![
+            InductiveDecl::new(
+                "Even",
+                vec![],
+                vec![],
+                vec![Binder::new("n", nat())],
+                prop(),
+                vec![
+                    ConstructorDecl::new("Even.zero", even_type(nat_zero())),
+                    ConstructorDecl::new(
+                        "Even.succ",
+                        Expr::pi(
+                            "n",
+                            nat(),
+                            Expr::pi(
+                                "h",
+                                odd_type(Expr::bvar(0)),
+                                even_type(nat_succ(Expr::bvar(1))),
+                            ),
+                        ),
+                    ),
+                ],
+                None,
+            ),
+            InductiveDecl::new(
+                "Odd",
+                vec![],
+                vec![],
+                vec![Binder::new("n", nat())],
+                prop(),
+                vec![ConstructorDecl::new(
+                    "Odd.succ",
+                    Expr::pi(
+                        "n",
+                        nat(),
+                        Expr::pi(
+                            "h",
+                            even_type(Expr::bvar(0)),
+                            odd_type(nat_succ(Expr::bvar(1))),
+                        ),
+                    ),
+                )],
+                None,
+            ),
+        ],
+    )
+}
+
+fn non_positive_even_odd_mutual_base() -> MutualInductiveBlock {
+    MutualInductiveBlock::new(
+        "BadEvenOdd",
+        vec![],
+        vec![
+            InductiveDecl::new(
+                "Even",
+                vec![],
+                vec![],
+                vec![Binder::new("n", nat())],
+                prop(),
+                vec![ConstructorDecl::new(
+                    "Even.bad",
+                    Expr::pi(
+                        "f",
+                        Expr::pi("_", odd_type(nat_zero()), nat()),
+                        even_type(nat_zero()),
+                    ),
+                )],
+                None,
+            ),
+            InductiveDecl::new(
+                "Odd",
+                vec![],
+                vec![],
+                vec![Binder::new("n", nat())],
+                prop(),
+                vec![ConstructorDecl::new(
+                    "Odd.succ",
+                    Expr::pi(
+                        "n",
+                        nat(),
+                        Expr::pi(
+                            "h",
+                            even_type(Expr::bvar(0)),
+                            odd_type(nat_succ(Expr::bvar(1))),
+                        ),
+                    ),
+                )],
+                None,
+            ),
+        ],
+    )
+}
+
+fn even_odd_mutual_block() -> MutualInductiveBlock {
+    generate_mutual_inductive_artifacts_v1(&even_odd_mutual_base()).unwrap()
+}
+
+fn even_odd_mutual_module() -> CoreModule {
+    let block = even_odd_mutual_block();
+    CoreModule {
+        name: Name::from_dotted("Test.EvenOdd"),
+        declarations: vec![Decl::MutualInductiveBlock {
+            name: block.name.clone(),
+            universe_params: block.universe_params.clone(),
+            data: Box::new(block),
+        }],
+    }
+}
+
 fn indexed_inductive_module() -> CoreModule {
     CoreModule {
         name: Name::from_dotted("Test.Indexed"),
@@ -1250,6 +1371,10 @@ fn recursor_artifact_hashes_for(cert: &ModuleCert, name: &str) -> (Hash, Hash) {
                 recursor: Some(recursor),
                 ..
             } if cert.name_table[*decl_name] == Name::from_dotted(name) => Some(recursor),
+            DeclPayload::MutualInductiveBlock { inductives, .. } => inductives
+                .iter()
+                .find(|inductive| cert.name_table[inductive.name] == Name::from_dotted(name))
+                .and_then(|inductive| inductive.recursor.as_ref()),
             _ => None,
         })
         .unwrap();
@@ -1332,6 +1457,19 @@ fn remap_swapped_term_ids_in_decl(decl: &mut DeclPayload, lhs: TermId, rhs: Term
             }
             if let Some(recursor) = recursor {
                 remap_swapped_term_id(&mut recursor.ty, lhs, rhs);
+            }
+        }
+        DeclPayload::MutualInductiveBlock { inductives, .. } => {
+            for inductive in inductives {
+                for binder in inductive.params.iter_mut().chain(&mut inductive.indices) {
+                    remap_swapped_term_id(&mut binder.ty, lhs, rhs);
+                }
+                for constructor in &mut inductive.constructors {
+                    remap_swapped_term_id(&mut constructor.ty, lhs, rhs);
+                }
+                if let Some(recursor) = &mut inductive.recursor {
+                    remap_swapped_term_id(&mut recursor.ty, lhs, rhs);
+                }
             }
         }
     }
@@ -2553,6 +2691,177 @@ fn indexed_inductive_certificate_round_trips_and_verifies() {
             "{name} must be exported from indexed inductive fixture"
         );
     }
+}
+
+#[test]
+fn mutual_inductive_even_odd_certificate_round_trips_and_verifies() {
+    let cert = build_module_cert(even_odd_mutual_module(), &[]).unwrap();
+    let bytes = encode_module_cert(&cert).unwrap();
+    let mut session = VerifierSession::new();
+    let verified = verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+
+    assert_eq!(verified.module, Name::from_dotted("Test.EvenOdd"));
+    assert!(matches!(
+        verified.declarations.first().map(|decl| &decl.decl),
+        Some(DeclPayload::MutualInductiveBlock { name, inductives, .. })
+            if verified.name_table[*name] == Name::from_dotted("EvenOdd")
+                && inductives.len() == 2
+    ));
+    for name in [
+        "Even",
+        "Even.zero",
+        "Even.succ",
+        "Even.rec",
+        "Odd",
+        "Odd.succ",
+        "Odd.rec",
+    ] {
+        assert!(
+            cert.export_block
+                .iter()
+                .any(|entry| cert.name_table[entry.name] == Name::from_dotted(name)),
+            "{name} must be exported from mutual inductive fixture"
+        );
+    }
+}
+
+#[test]
+fn mutual_inductive_rejects_duplicate_generated_name() {
+    let mut block = even_odd_mutual_block();
+    block.inductives[1].recursor.as_mut().unwrap().name = "Even.rec".to_owned();
+    let err = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test.BadEvenOdd"),
+            declarations: vec![Decl::MutualInductiveBlock {
+                name: block.name.clone(),
+                universe_params: block.universe_params.clone(),
+                data: Box::new(block),
+            }],
+        },
+        &[],
+    )
+    .unwrap_err();
+
+    assert!(
+        matches!(
+            err,
+            CertError::DuplicateName { .. }
+                | CertError::Kernel(npa_kernel::Error::DuplicateDecl(_))
+                | CertError::InductiveGeneratedArtifactMismatch { .. }
+        ),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn mutual_inductive_rejects_non_positive_occurrence() {
+    let err =
+        generate_mutual_inductive_artifacts_v1(&non_positive_even_odd_mutual_base()).unwrap_err();
+
+    assert!(
+        matches!(
+            err,
+            CertError::InductiveGeneratedArtifactMismatch { ref name }
+                if name == &Name::from_dotted("BadEvenOdd")
+        ),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn mutual_inductive_rejects_block_local_scope_mismatch_even_if_rehashed() {
+    let mut cert = build_module_cert(even_odd_mutual_module(), &[]).unwrap();
+    let even_name = cert
+        .name_table
+        .iter()
+        .position(|name| name == &Name::from_dotted("Even"))
+        .unwrap();
+    let odd_name = cert
+        .name_table
+        .iter()
+        .position(|name| name == &Name::from_dotted("Odd"))
+        .unwrap();
+    let mut changed = false;
+    for term in &mut cert.term_table {
+        if let TermNode::Const {
+            global_ref:
+                GlobalRef::LocalGenerated {
+                    decl_index: 0,
+                    name,
+                },
+            levels,
+        } = term
+        {
+            if *name == even_name && levels.is_empty() {
+                *name = odd_name;
+                changed = true;
+                break;
+            }
+        }
+    }
+    assert!(changed, "Even local generated reference must exist");
+    rehash_cert_after_decl_change(&mut cert);
+
+    let mut session = VerifierSession::new();
+    let err = verify_module_cert(
+        &encode_module_cert(&cert).unwrap(),
+        &mut session,
+        &AxiomPolicy::normal(),
+    )
+    .unwrap_err();
+    assert!(
+        matches!(
+            err,
+            CertError::InductiveGeneratedArtifactMismatch { .. }
+                | CertError::Kernel(_)
+                | CertError::NonCanonicalEncoding {
+                    object: "TermTable"
+                }
+        ),
+        "{err:?}"
+    );
+}
+
+#[test]
+fn mutual_inductive_generated_recursor_artifact_hashes_are_stable_and_scoped() {
+    let cert = build_module_cert(even_odd_mutual_module(), &[]).unwrap();
+    let decoded = decode_module_cert(&encode_module_cert(&cert).unwrap()).unwrap();
+    assert_eq!(
+        recursor_artifact_hashes_for(&cert, "Even"),
+        recursor_artifact_hashes_for(&decoded, "Even")
+    );
+    assert_eq!(
+        recursor_artifact_hashes_for(&cert, "Odd"),
+        recursor_artifact_hashes_for(&decoded, "Odd")
+    );
+
+    let export_names = cert
+        .export_block
+        .iter()
+        .map(|entry| cert.name_table[entry.name].clone())
+        .collect::<Vec<_>>();
+    let mut sorted_export_names = export_names.clone();
+    sorted_export_names.sort();
+    assert_eq!(export_names, sorted_export_names);
+
+    let block_index = cert
+        .declarations
+        .iter()
+        .position(|decl| matches!(decl.decl, DeclPayload::MutualInductiveBlock { .. }))
+        .unwrap();
+    let (signature_hash, rule_hash) = recursor_artifact_hashes_for(&cert, "Even");
+
+    let mut rules_changed = cert.clone();
+    match &mut rules_changed.declarations[block_index].decl {
+        DeclPayload::MutualInductiveBlock { inductives, .. } => {
+            inductives[0].recursor.as_mut().unwrap().rules.major_index += 1;
+        }
+        _ => panic!("expected mutual inductive block"),
+    }
+    let (rules_changed_signature_hash, rules_changed_rule_hash) =
+        recursor_artifact_hashes_for(&rules_changed, "Even");
+    assert_eq!(signature_hash, rules_changed_signature_hash);
+    assert_ne!(rule_hash, rules_changed_rule_hash);
 }
 
 #[test]

@@ -371,18 +371,18 @@ AI supplied recursor は採用しない。recursor は declaration から determ
 
 実装タスク:
 
-- [ ] `MutualInductiveBlock` を kernel / certificate / checker の境界に追加する。
-- [ ] block 全体の name uniqueness、well-typedness、strict positivity、constructor reference scope を検査する。
-- [ ] `Even` / `Odd` の mutual inductive fixture を追加する。
-- [ ] simultaneous recursor / induction principles と iota rules の deterministic generation を実装する。
-- [ ] import / export / theorem index が mutual block の generated declarations を安定順序で扱うようにする。
+- [x] `MutualInductiveBlock` を kernel / certificate / checker の境界に追加する。
+- [x] block 全体の name uniqueness、well-typedness、strict positivity、constructor reference scope を検査する。
+- [x] `Even` / `Odd` の mutual inductive fixture を追加する。
+- [x] simultaneous recursor / induction principles と iota rules の deterministic generation を実装する。
+- [x] import / export / theorem index が mutual block の generated declarations を安定順序で扱うようにする。
 
 受け入れ条件:
 
-- [ ] mutually recursive `Even` / `Odd` が source-free certificate として検査できる。
-- [ ] block-local reference scope mismatch、duplicate generated name、non-positive mutual occurrence が拒否される。
-- [ ] generated recursor artifact hash は declaration order と canonical name order に対して安定する。
-- [ ] reference checker と fast kernel の iota reduction が一致する。
+- [x] mutually recursive `Even` / `Odd` が source-free certificate として検査できる。
+- [x] block-local reference scope mismatch、duplicate generated name、non-positive mutual occurrence が拒否される。
+- [x] generated recursor artifact hash は declaration order と canonical name order に対して安定する。
+- [x] reference checker と fast kernel の iota reduction が一致する。
 
 検証:
 

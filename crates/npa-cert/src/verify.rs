@@ -1,6 +1,9 @@
 use std::collections::BTreeSet;
 
-use npa_kernel::{expr::collect_apps, level::level_eq, level::levels_eq, Env, Expr, Level};
+use npa_kernel::{
+    expr::collect_apps, level::level_eq, level::levels_eq, Binder, ConstructorDecl, Env, Expr,
+    InductiveDecl, Level, MutualInductiveBlock,
+};
 
 use crate::*;
 
@@ -250,7 +253,8 @@ fn decl_has_empty_constrained_universe_payload(decl: &DeclPayload) -> bool {
         DeclPayload::Axiom { .. }
         | DeclPayload::Def { .. }
         | DeclPayload::Theorem { .. }
-        | DeclPayload::Inductive { .. } => false,
+        | DeclPayload::Inductive { .. }
+        | DeclPayload::MutualInductiveBlock { .. } => false,
     }
 }
 
@@ -339,6 +343,26 @@ fn collect_decl_payload_names(
             if let Some(recursor) = recursor {
                 collect_name_id(cert, recursor.name, names)?;
                 collect_name_ids(cert, &recursor.universe_params, names)?;
+            }
+        }
+        DeclPayload::MutualInductiveBlock {
+            name,
+            universe_params,
+            inductives,
+            ..
+        } => {
+            collect_name_id(cert, *name, names)?;
+            collect_name_ids(cert, universe_params, names)?;
+            collect_universe_constraint_names(cert, decl_universe_constraints(decl), names)?;
+            for inductive in inductives {
+                collect_name_id(cert, inductive.name, names)?;
+                for constructor in &inductive.constructors {
+                    collect_name_id(cert, constructor.name, names)?;
+                }
+                if let Some(recursor) = &inductive.recursor {
+                    collect_name_id(cert, recursor.name, names)?;
+                    collect_name_ids(cert, &recursor.universe_params, names)?;
+                }
             }
         }
     }
@@ -483,6 +507,35 @@ fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
                         &mut seen_term_depths,
                         &mut reachable_terms,
                     )?;
+                }
+            }
+            DeclPayload::MutualInductiveBlock { inductives, .. } => {
+                for inductive in inductives {
+                    let ty = inductive_export_type_term_id(
+                        &cert.term_table,
+                        &inductive.params,
+                        &inductive.indices,
+                        inductive.sort,
+                    )?;
+                    verify_term_scope(cert, ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
+                    for constructor in &inductive.constructors {
+                        verify_term_scope(
+                            cert,
+                            constructor.ty,
+                            0,
+                            &mut seen_term_depths,
+                            &mut reachable_terms,
+                        )?;
+                    }
+                    if let Some(recursor) = &inductive.recursor {
+                        verify_term_scope(
+                            cert,
+                            recursor.ty,
+                            0,
+                            &mut seen_term_depths,
+                            &mut reachable_terms,
+                        )?;
+                    }
                 }
             }
         }
@@ -840,13 +893,50 @@ pub(crate) fn add_imports_to_env(env: &mut Env, imports: &[&VerifiedModule]) -> 
     for import in &ordered {
         referenced_builtins.extend(verified_module_referenced_builtin_names(import)?);
     }
+    let imports_export_eq_rec = verified_modules_export_builtin_eq_rec(&ordered)?;
     add_referenced_builtins_to_env(env, &referenced_builtins)?;
     for import in ordered {
         for decl in verified_module_to_kernel_decls(import)? {
             add_decl_to_env(env, decl)?;
         }
     }
+    if imports_export_eq_rec && env.decl("Eq.rec").is_none() {
+        let referenced = BTreeSet::from([Name::from_dotted("Eq"), Name::from_dotted("Eq.rec")]);
+        add_referenced_builtins_to_env(env, &referenced)?;
+    }
     Ok(())
+}
+
+fn verified_modules_export_builtin_eq_rec(imports: &[&VerifiedModule]) -> Result<bool> {
+    for import in imports {
+        for entry in &import.export_block {
+            if verified_module_export_uses_builtin_eq_rec(import, entry)? {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
+}
+
+fn verified_module_export_uses_builtin_eq_rec(
+    import: &VerifiedModule,
+    entry: &ExportEntry,
+) -> Result<bool> {
+    let Some(entry_name) = import.name_table.get(entry.name) else {
+        return Err(CertError::DecodeError);
+    };
+    if entry_name.as_dotted() != "Eq.rec" {
+        return Ok(false);
+    }
+    for candidate in &import.export_block {
+        let Some(candidate_name) = import.name_table.get(candidate.name) else {
+            return Err(CertError::DecodeError);
+        };
+        if candidate.kind == ExportKind::Inductive && candidate_name.as_dotted() == "Eq" {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 fn import_kernel_order<'a>(imports: &[&'a VerifiedModule]) -> Result<Vec<&'a VerifiedModule>> {
@@ -1057,6 +1147,21 @@ fn verify_inductive_generated_artifacts(cert: &ModuleCert) -> Result<()> {
                     constructors.as_slice(),
                     recursor,
                 ),
+                DeclPayload::MutualInductiveBlock {
+                    name,
+                    universe_params,
+                    universe_constraints,
+                    inductives,
+                } => {
+                    verify_mutual_inductive_generated_artifacts(
+                        cert,
+                        *name,
+                        universe_params,
+                        universe_constraints,
+                        inductives,
+                    )?;
+                    continue;
+                }
                 _ => continue,
             };
 
@@ -1095,6 +1200,110 @@ fn verify_inductive_generated_artifacts(cert: &ModuleCert) -> Result<()> {
                     .clone(),
             });
         }
+    }
+    Ok(())
+}
+
+fn verify_mutual_inductive_generated_artifacts(
+    cert: &ModuleCert,
+    name: NameId,
+    universe_params: &[NameId],
+    universe_constraints: &[UniverseConstraintSpec],
+    inductives: &[MutualInductiveSpec],
+) -> Result<()> {
+    let block_name = name_to_string(cert, name)?;
+    let block_universe_params = universe_names(cert, universe_params)?;
+    let mut expected_block = MutualInductiveBlock::new(
+        block_name.clone(),
+        block_universe_params.clone(),
+        inductives
+            .iter()
+            .map(|inductive| {
+                Ok(InductiveDecl::new(
+                    name_to_string(cert, inductive.name)?,
+                    block_universe_params.clone(),
+                    inductive
+                        .params
+                        .iter()
+                        .enumerate()
+                        .map(|(index, binder)| {
+                            Ok(Binder::new(
+                                format!("p{index}"),
+                                expr_from_term(cert, binder.ty)?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                    inductive
+                        .indices
+                        .iter()
+                        .enumerate()
+                        .map(|(index, binder)| {
+                            Ok(Binder::new(
+                                format!("i{index}"),
+                                expr_from_term(cert, binder.ty)?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                    level_from_node(cert, inductive.sort)?,
+                    inductive
+                        .constructors
+                        .iter()
+                        .map(|constructor| {
+                            Ok(ConstructorDecl::new(
+                                name_to_string(cert, constructor.name)?,
+                                expr_from_term(cert, constructor.ty)?,
+                            ))
+                        })
+                        .collect::<Result<Vec<_>>>()?,
+                    None,
+                ))
+            })
+            .collect::<Result<Vec<_>>>()?,
+    );
+    expected_block.universe_constraints = universe_constraints
+        .iter()
+        .map(|constraint| {
+            Ok(npa_kernel::UniverseConstraint {
+                lhs: level_from_node(cert, constraint.lhs)?,
+                relation: constraint.relation,
+                rhs: level_from_node(cert, constraint.rhs)?,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let expected_block = generate_mutual_inductive_artifacts_v1(&expected_block)?;
+
+    for (actual, expected) in inductives.iter().zip(expected_block.inductives.iter()) {
+        let actual_recursor = actual.recursor.as_ref().ok_or_else(|| {
+            CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(&block_name),
+            }
+        })?;
+        let expected_recursor = expected.recursor.as_ref().ok_or_else(|| {
+            CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(&block_name),
+            }
+        })?;
+        let expected_rules = expected_recursor.rules.as_ref().ok_or_else(|| {
+            CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(&block_name),
+            }
+        })?;
+        if name_to_string(cert, actual_recursor.name)? != expected_recursor.name
+            || universe_names(cert, &actual_recursor.universe_params)?
+                != expected_recursor.universe_params
+            || actual_recursor.rules.minor_start != expected_rules.minor_start
+            || actual_recursor.rules.major_index != expected_rules.major_index
+            || expr_from_term(cert, actual_recursor.ty)? != expected_recursor.ty
+        {
+            return Err(CertError::InductiveGeneratedArtifactMismatch {
+                name: Name::from_dotted(&block_name),
+            });
+        }
+    }
+    if inductives.len() != expected_block.inductives.len() {
+        return Err(CertError::InductiveGeneratedArtifactMismatch {
+            name: Name::from_dotted(&block_name),
+        });
     }
     Ok(())
 }
@@ -1607,7 +1816,9 @@ pub(crate) fn expected_dependencies_for_decl(
     let current_decl_index = decl_index;
     let allow_self_reference = matches!(
         decl,
-        DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. }
+        DeclPayload::Inductive { .. }
+            | DeclPayload::InductiveConstrained { .. }
+            | DeclPayload::MutualInductiveBlock { .. }
     );
     refs.into_iter()
         .filter(|global_ref| {
@@ -1829,6 +2040,23 @@ fn decl_term_ids(decl: &DeclPayload) -> Vec<TermId> {
             .chain(constructors.iter().map(|constructor| constructor.ty))
             .chain(recursor.iter().map(|recursor| recursor.ty))
             .collect(),
+        DeclPayload::MutualInductiveBlock { inductives, .. } => inductives
+            .iter()
+            .flat_map(|inductive| {
+                inductive
+                    .params
+                    .iter()
+                    .map(|param| param.ty)
+                    .chain(inductive.indices.iter().map(|index| index.ty))
+                    .chain(
+                        inductive
+                            .constructors
+                            .iter()
+                            .map(|constructor| constructor.ty),
+                    )
+                    .chain(inductive.recursor.iter().map(|recursor| recursor.ty))
+            })
+            .collect(),
     }
 }
 
@@ -1857,6 +2085,9 @@ fn decl_universe_params(decl: &DeclPayload) -> &[NameId] {
         }
         | DeclPayload::InductiveConstrained {
             universe_params, ..
+        }
+        | DeclPayload::MutualInductiveBlock {
+            universe_params, ..
         } => universe_params,
     }
 }
@@ -1876,6 +2107,10 @@ fn decl_universe_constraints(decl: &DeclPayload) -> &[UniverseConstraintSpec] {
             ..
         }
         | DeclPayload::InductiveConstrained {
+            universe_constraints,
+            ..
+        }
+        | DeclPayload::MutualInductiveBlock {
             universe_constraints,
             ..
         } => universe_constraints,
@@ -2035,6 +2270,19 @@ fn local_generated_entry_exists(
                     .as_ref()
                     .is_some_and(|recursor| recursor.name == name)
         }
+        DeclPayload::MutualInductiveBlock { inductives, .. } => {
+            inductives.iter().any(|inductive| {
+                inductive.name == name
+                    || inductive
+                        .constructors
+                        .iter()
+                        .any(|constructor| constructor.name == name)
+                    || inductive
+                        .recursor
+                        .as_ref()
+                        .is_some_and(|recursor| recursor.name == name)
+            })
+        }
         _ => false,
     })
 }
@@ -2096,7 +2344,8 @@ fn decl_name_as_name(cert: &ModuleCert, decl_index: usize) -> Result<Name> {
         | DeclPayload::Theorem { name, .. }
         | DeclPayload::TheoremConstrained { name, .. }
         | DeclPayload::Inductive { name, .. }
-        | DeclPayload::InductiveConstrained { name, .. } => *name,
+        | DeclPayload::InductiveConstrained { name, .. }
+        | DeclPayload::MutualInductiveBlock { name, .. } => *name,
     };
     cert.name_table
         .get(name)
