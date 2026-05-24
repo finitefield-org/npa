@@ -13,6 +13,7 @@ use crate::{
 };
 
 type DecodeResult<T> = Result<T, ReferenceCheckError>;
+const HUMAN_UNIVERSE_META_PREFIX: &str = "__npa_internal_human_universe_meta#";
 const PUBLIC_SELF_IMPORT_INDEX: usize = usize::MAX;
 
 pub(crate) fn decode_certificate_impl(bytes: &[u8]) -> DecodeResult<ReferenceDecodedCertificate> {
@@ -1193,6 +1194,13 @@ impl DecodedModuleCertificate {
         let levels = self.core_levels()?;
         for located in &self.declarations {
             let params = self.name_ids_to_names(decl_universe_params(&located.value.decl));
+            if params.iter().any(is_unresolved_universe_meta_name) {
+                return Err(ReferenceCheckError::malformed(
+                    ReferenceCertificateSection::Declarations,
+                    located.offset,
+                    ReferenceCheckReason::UnresolvedMetavariable,
+                ));
+            }
             if !params.windows(2).all(|pair| pair[0] < pair[1]) {
                 return Err(ReferenceCheckError::malformed(
                     ReferenceCertificateSection::Declarations,
@@ -3667,6 +3675,13 @@ fn ensure_level_wf(
             ensure_level_wf(rhs, delta, offset)
         }
         ReferenceCoreLevel::Param(name) => {
+            if is_unresolved_universe_meta_name(name) {
+                return Err(ReferenceCheckError::type_check(
+                    ReferenceCertificateSection::Declarations,
+                    offset,
+                    ReferenceCheckReason::UnresolvedMetavariable,
+                ));
+            }
             if delta.contains(name) {
                 Ok(())
             } else {
@@ -3708,6 +3723,12 @@ fn ensure_levels_wf_in_expr(
             ensure_levels_wf_in_expr(body, delta, offset)
         }
     }
+}
+
+fn is_unresolved_universe_meta_name(name: &ReferenceModuleName) -> bool {
+    name.components().iter().any(|component| {
+        component.starts_with(HUMAN_UNIVERSE_META_PREFIX) || component.contains('?')
+    })
 }
 
 fn ensure_unique_names(params: &[ReferenceModuleName], offset: usize) -> DecodeResult<()> {

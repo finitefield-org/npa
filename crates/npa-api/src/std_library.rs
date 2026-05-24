@@ -12781,6 +12781,15 @@ theorem eq_trans_by_exact (A : Type) (x y z : A) (hxy : Eq.{1} A x y) (hyz : Eq.
   intro hyz
   exact @Eq.trans.{1} A x y z hxy hyz
 
+theorem eq_trans_infers_universe (A : Type) (x y z : A) (hxy : Eq.{1} A x y) (hyz : Eq.{1} A y z) : Eq.{1} A x z := by
+  intro A
+  intro x
+  intro y
+  intro z
+  intro hxy
+  intro hyz
+  exact Eq.trans A x y z hxy hyz
+
 theorem nat_add_zero_by_rw (n : Nat) : Eq.{1} Nat (Nat.add n Nat.zero) n := by
   intro n
   rw [Nat.add_zero]
@@ -12805,7 +12814,12 @@ theorem list_append_nil_by_rw (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A)
 theorem list_append_nil_by_simp (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{1} A xs (List.nil.{1} A)) xs := by
   intro A
   intro xs
-  simp-lite";
+  simp-lite
+
+theorem list_map_id_infers_universe (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.map.{1,1} A A (fun (a : A) => a) xs) xs := by
+  intro A
+  intro xs
+  exact List.map_id A xs";
         assert_phase6_human_real_stdlib_certificate_verifies(
             &fixture,
             "Api.HumanRealStdlibTactics",
@@ -14712,6 +14726,105 @@ theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{
     }
 
     #[test]
+    fn std_polymorphic_universe_exports_are_release_and_index_hash_bound() {
+        let package = TestPackage::new("std_polymorphic_universe_hash_binding");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, _, _, _) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+
+        let export_universe_params = |module: &MachineStdLoadedModule, name: &str| {
+            let export = export_entry(module, name);
+            export
+                .universe_params
+                .iter()
+                .map(|param| module.verified_module.name_table()[*param].as_dotted())
+                .collect::<Vec<_>>()
+        };
+        let assert_export_params = |module_name: &str, name: &str, expected: &[&str]| {
+            let module = loaded.module(&Name::from_dotted(module_name)).unwrap();
+            assert_eq!(
+                export_universe_params(module, name),
+                expected
+                    .iter()
+                    .map(|param| (*param).to_owned())
+                    .collect::<Vec<_>>(),
+                "{module_name}.{name}"
+            );
+        };
+
+        assert_export_params("Std.Logic", "Eq", &["u"]);
+        assert_export_params("Std.Logic", "Eq.refl", &["u"]);
+        assert_export_params("Std.Logic", "Eq.rec", &["u", "v"]);
+        assert_export_params("Std.Logic", "Eq.trans", &["u"]);
+        assert_export_params("Std.Logic", "And", &[]);
+        assert_export_params("Std.Logic", "Exists", &["u"]);
+        assert_export_params("Std.List", "List", &["u"]);
+        assert_export_params("Std.List", "List.rec", &["u", "v"]);
+        assert_export_params("Std.List", "List.map", &["u", "v"]);
+        assert_export_params("Std.List", "List.map_comp", &["u", "v", "w"]);
+        assert_export_params("Std.Algebra.Basic", "Associative", &["u"]);
+        assert_export_params("Std.Algebra.Basic", "IsMonoid", &["u"]);
+        assert_export_params("Std.Algebra.Basic", "IsMonoid.assoc", &["u"]);
+        assert_export_params("Std.Algebra.Basic", "identity_unique", &["u"]);
+
+        for module in loaded.modules() {
+            let artifact = module_artifact(&release, &module.module.as_dotted());
+            assert_eq!(artifact.expected_export_hash, module.expected_export_hash);
+            assert_eq!(
+                artifact.expected_certificate_hash,
+                module.expected_certificate_hash
+            );
+        }
+        let all_bundle = import_bundles
+            .bundles
+            .iter()
+            .find(|bundle| bundle.bundle_id == STD_ALL_BUNDLE_ID)
+            .unwrap();
+        for certificate in &all_bundle.import_closure {
+            let module = loaded.module(&certificate.module).unwrap();
+            assert_eq!(
+                certificate.expected_export_hash,
+                module.expected_export_hash
+            );
+            assert_eq!(
+                certificate.expected_certificate_hash,
+                module.expected_certificate_hash
+            );
+        }
+
+        for (module_name, theorem_name) in [
+            ("Std.Logic", "Eq.rec"),
+            ("Std.Logic", "Eq.trans"),
+            ("Std.List", "List.map_comp"),
+            ("Std.Algebra.Basic", "IsMonoid.assoc"),
+            ("Std.Algebra.Basic", "identity_unique"),
+        ] {
+            let module = loaded.module(&Name::from_dotted(module_name)).unwrap();
+            let export = export_entry(module, theorem_name);
+            let index_entry = theorem_index_entry(&theorem_index, theorem_name);
+            assert_eq!(index_entry.global_ref.module, module.module);
+            assert_eq!(index_entry.global_ref.name, Name::from_dotted(theorem_name));
+            assert_eq!(
+                index_entry.global_ref.export_hash,
+                module.expected_export_hash
+            );
+            assert_eq!(
+                index_entry.global_ref.certificate_hash,
+                module.expected_certificate_hash
+            );
+            assert_eq!(
+                index_entry.global_ref.decl_interface_hash,
+                export.decl_interface_hash
+            );
+            assert_eq!(
+                index_entry.universe_params,
+                export_universe_params(module, theorem_name)
+            );
+        }
+    }
+
+    #[test]
     fn std_library_reference_checker_rejects_custom_axiom_certificate() {
         let certs = mvp_certificate_bytes_with_logic_axiom("Std.Logic.synthetic_axiom");
         let policy = reference_std_checker_policy();
@@ -14772,6 +14885,57 @@ theorem target (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.append.{
 
         let before = std_nat_add_zero_retrieval_candidate_hashes(&validated);
         reference_check_loaded_std_release(&validated.loaded);
+        let after = std_nat_add_zero_retrieval_candidate_hashes(&validated);
+
+        assert_eq!(after, before);
+        assert!(
+            !after.is_empty(),
+            "retrieval must keep producing candidate hashes"
+        );
+    }
+
+    #[test]
+    fn ai_search_candidate_hashes_do_not_change_after_human_universe_inference() {
+        let package = TestPackage::new("human_universe_inference_std_ai_search_hashes");
+        write_valid_mvp_package(package.path());
+        let loaded = load_machine_std_mvp_certificates(package.path()).unwrap();
+        let (release, import_bundles, theorem_index, rewrite_profiles, simp_profiles, axiom_report) =
+            final_sidecar_artifacts_for_loaded(&loaded);
+        write_machine_std_release_sidecars(
+            package.path(),
+            &release,
+            &import_bundles,
+            &theorem_index,
+            &rewrite_profiles,
+            &simp_profiles,
+            &axiom_report,
+        );
+        let validated = load_machine_std_mvp_release(package.path()).unwrap();
+        let before = std_nat_add_zero_retrieval_candidate_hashes(&validated);
+
+        let human_fixture = phase6_human_real_stdlib_fixture("human_universe_inference_handoff");
+        assert_phase6_human_real_stdlib_certificate_verifies(
+            &human_fixture,
+            "Api.HumanUniverseReuse",
+            "\
+import Std.Logic
+import Std.Nat
+import Std.List
+
+theorem eq_trans_inferred (A : Type) (x y z : A) (hxy : Eq.{1} A x y) (hyz : Eq.{1} A y z) : Eq.{1} A x z := by
+  intro A
+  intro x
+  intro y
+  intro z
+  intro hxy
+  intro hyz
+  exact Eq.trans A x y z hxy hyz
+
+theorem list_map_id_inferred (A : Type) (xs : List.{1} A) : Eq.{1} (List.{1} A) (List.map.{1,1} A A (fun (a : A) => a) xs) xs := by
+  intro A
+  intro xs
+  exact List.map_id A xs",
+        );
         let after = std_nat_add_zero_retrieval_candidate_hashes(&validated);
 
         assert_eq!(after, before);

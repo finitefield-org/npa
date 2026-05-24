@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 
 use crate::error::{Error, Result};
 
+const HUMAN_UNIVERSE_META_PREFIX: &str = "__npa_internal_human_universe_meta#";
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Level {
     Zero,
@@ -67,6 +69,9 @@ impl Level {
 pub fn validate_universe_params(params: &[String]) -> Result<Vec<String>> {
     let mut seen = BTreeSet::new();
     for param in params {
+        if is_unresolved_universe_meta_param(param) {
+            return Err(Error::UnresolvedUniverseMeta(param.clone()));
+        }
         if !seen.insert(param.clone()) {
             return Err(Error::DuplicateUniverseParam(param.clone()));
         }
@@ -86,6 +91,9 @@ pub fn ensure_level_wf(delta: &[String], level: &Level) -> Result<()> {
             ensure_level_wf(delta, rhs)
         }
         Level::Param(name) => {
+            if is_unresolved_universe_meta_param(name) {
+                return Err(Error::UnresolvedUniverseMeta(name.clone()));
+            }
             if delta.iter().any(|param| param == name) {
                 Ok(())
             } else {
@@ -93,6 +101,10 @@ pub fn ensure_level_wf(delta: &[String], level: &Level) -> Result<()> {
             }
         }
     }
+}
+
+fn is_unresolved_universe_meta_param(param: &str) -> bool {
+    param.starts_with(HUMAN_UNIVERSE_META_PREFIX) || param.contains('?')
 }
 
 pub fn ensure_universe_constraints_wf(
@@ -220,6 +232,24 @@ mod tests {
                 "v".to_owned(),
                 "u".to_owned()
             ]))
+        );
+    }
+
+    #[test]
+    fn universe_params_reject_unresolved_meta_names() {
+        assert_eq!(
+            validate_universe_params(&["?u".to_owned()]),
+            Err(Error::UnresolvedUniverseMeta("?u".to_owned()))
+        );
+        assert_eq!(
+            ensure_level_wf(&["u".to_owned()], &Level::param("z?meta")),
+            Err(Error::UnresolvedUniverseMeta("z?meta".to_owned()))
+        );
+        assert_eq!(
+            validate_universe_params(&[format!("{HUMAN_UNIVERSE_META_PREFIX}0")]),
+            Err(Error::UnresolvedUniverseMeta(format!(
+                "{HUMAN_UNIVERSE_META_PREFIX}0"
+            )))
         );
     }
 

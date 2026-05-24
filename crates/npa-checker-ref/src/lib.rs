@@ -842,6 +842,8 @@ pub enum ReferenceCheckReason {
     BadUniverseArity,
     /// A universe-parameter telescope contained the same name more than once.
     DuplicateUniverseParam,
+    /// A certificate still contains an elaboration-only universe metavariable.
+    UnresolvedMetavariable,
     /// A de Bruijn index was not in local scope.
     InvalidBVar,
     /// A term was expected to have a sort type.
@@ -1079,6 +1081,27 @@ mod tests {
 
     fn std_logic_eq_certificate() -> Vec<u8> {
         certificate_for_inductive("Std.Logic", eq_inductive())
+    }
+
+    fn universe_meta_param_certificate() -> Vec<u8> {
+        let mut cert = build_module_cert(
+            CoreModule {
+                name: Name::from_dotted("M"),
+                declarations: vec![Decl::Axiom {
+                    name: "a".to_owned(),
+                    universe_params: vec!["w".to_owned()],
+                    ty: Expr::sort(Level::param("w")),
+                }],
+            },
+            &[],
+        )
+        .unwrap();
+        for name in &mut cert.name_table {
+            if name.as_dotted() == "w" {
+                *name = Name::from_dotted("z?meta");
+            }
+        }
+        encode_module_cert(&cert).unwrap()
     }
 
     fn std_nat_zero_eq_zero_certificate(logic_bytes: &[u8]) -> Vec<u8> {
@@ -3780,5 +3803,25 @@ mod tests {
             &ReferenceCheckerPolicy::default(),
         )
         .is_checked());
+    }
+
+    #[test]
+    fn universe_meta_param_fixture_rejects_before_hash_trust() {
+        let bytes = universe_meta_param_certificate();
+
+        let decoded = decode_certificate(&bytes)
+            .expect_err("reference checker must reject unresolved universe meta names");
+        assert_eq!(decoded.kind, ReferenceCheckErrorKind::MalformedCertificate);
+        assert_eq!(
+            decoded.reason,
+            Some(ReferenceCheckReason::UnresolvedMetavariable)
+        );
+
+        let checked = check_certificate(
+            &bytes,
+            &ReferenceImportStore::default(),
+            &ReferenceCheckerPolicy::default(),
+        );
+        assert_eq!(checked.error(), Some(&decoded));
     }
 }

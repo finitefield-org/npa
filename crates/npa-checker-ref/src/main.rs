@@ -518,7 +518,8 @@ fn raw_error_kind(error: &ReferenceCheckError) -> &'static str {
             | Some(ReferenceCheckReason::BadRecursorResult)
             | Some(ReferenceCheckReason::BadRecursorType) => "inductive_invalid",
             Some(ReferenceCheckReason::BadUniverseArity)
-            | Some(ReferenceCheckReason::DuplicateUniverseParam) => "universe_inconsistency",
+            | Some(ReferenceCheckReason::DuplicateUniverseParam)
+            | Some(ReferenceCheckReason::UnresolvedMetavariable) => "universe_inconsistency",
             _ => "type_mismatch",
         },
         ReferenceCheckErrorKind::UnsupportedSkeleton => "unsupported_schema_version",

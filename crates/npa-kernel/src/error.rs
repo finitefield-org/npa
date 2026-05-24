@@ -12,6 +12,7 @@ pub enum ResourceLimitKind {
 pub enum Error {
     UnknownConstant(String),
     UnknownUniverseParam(String),
+    UnresolvedUniverseMeta(String),
     DuplicateUniverseParam(String),
     NonCanonicalUniverseParams(Vec<String>),
     NonCanonicalUniverseLevel {

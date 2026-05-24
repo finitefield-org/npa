@@ -140,6 +140,27 @@ fn height_order_regression_constraints() -> Vec<UniverseConstraint> {
     ]
 }
 
+fn universe_meta_param_certificate_bytes() -> Vec<u8> {
+    let mut cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("M"),
+            declarations: vec![Decl::Axiom {
+                name: "a".to_owned(),
+                universe_params: vec!["w".to_owned()],
+                ty: Expr::sort(Level::param("w")),
+            }],
+        },
+        &[],
+    )
+    .unwrap();
+    for name in &mut cert.name_table {
+        if name.as_dotted() == "w" {
+            *name = Name::from_dotted("z?meta");
+        }
+    }
+    encode_module_cert(&cert).unwrap()
+}
+
 #[test]
 fn universe_constraints_canonical_hash_accepts_empty_and_non_empty_sets() {
     let params = vec!["u".to_owned(), "v".to_owned(), "w".to_owned()];
@@ -153,6 +174,35 @@ fn universe_constraints_canonical_hash_accepts_empty_and_non_empty_sets() {
         universe_constraints_canonical_bytes(&params, &[]).unwrap(),
         universe_constraints_canonical_bytes(&params, &[max_u_v_le_w()]).unwrap()
     );
+}
+
+#[test]
+fn universe_constraints_reject_unresolved_meta_params() {
+    let meta = universe_constraints_hash(&["z?meta".to_owned()], &[]);
+    assert!(matches!(
+        meta,
+        Err(CertError::Kernel(
+            npa_kernel::Error::UnresolvedUniverseMeta(param)
+        )) if param == "z?meta"
+    ));
+
+    let cert = build_module_cert(
+        CoreModule {
+            name: Name::from_dotted("Test.UniverseMeta"),
+            declarations: vec![Decl::Axiom {
+                name: "a".to_owned(),
+                universe_params: vec!["z?meta".to_owned()],
+                ty: Expr::sort(Level::param("z?meta")),
+            }],
+        },
+        &[],
+    );
+    assert!(matches!(
+        cert,
+        Err(CertError::Kernel(
+            npa_kernel::Error::UnresolvedUniverseMeta(param)
+        )) if param == "z?meta"
+    ));
 }
 
 #[test]
@@ -227,6 +277,19 @@ fn universe_constraints_fast_verifier_accepts_canonical_constraint_bytes() {
     let bytes = encode_module_cert(&cert).unwrap();
     let mut session = VerifierSession::new();
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap();
+}
+
+#[test]
+fn universe_meta_param_fixture_rejected_by_fast_verifier() {
+    let bytes = universe_meta_param_certificate_bytes();
+    let err = verify_module_cert(&bytes, &mut VerifierSession::new(), &AxiomPolicy::normal())
+        .unwrap_err();
+
+    assert!(matches!(
+        err,
+        CertError::Kernel(npa_kernel::Error::UnresolvedUniverseMeta(param))
+            if param == "z?meta"
+    ));
 }
 
 #[test]

@@ -293,18 +293,18 @@ universe meta は elaboration-only。kernel / certificate / checker の canonica
 
 実装タスク:
 
-- [ ] `Std.Logic` / `Std.List` / `Std.Algebra.Basic` の polymorphic declarations を universe constraints 付きで再生成する。
-- [ ] reference checker と fast kernel の universe check / conversion check が一致する fixture を追加する。
-- [ ] universe-polymorphic theorem reuse の Human examples と Machine API handoff を追加する。
-- [ ] constraint canonical hash が import / release manifest / theorem index に反映されることを確認する。
-- [ ] equality-only MVP policy と future cumulativity policy の docs を更新する。
+- [x] `Std.Logic` / `Std.List` / `Std.Algebra.Basic` の polymorphic declarations を universe constraints 付きで再生成する。
+- [x] reference checker と fast kernel の universe check / conversion check が一致する fixture を追加する。
+- [x] universe-polymorphic theorem reuse の Human examples と Machine API handoff を追加する。
+- [x] constraint canonical hash が import / release manifest / theorem index に反映されることを確認する。
+- [x] equality-only MVP policy と future cumulativity policy の docs を更新する。
 
 受け入れ条件:
 
-- [ ] polymorphic `List` / `Eq` / `Prod` / `Sigma` 相当の declarations が source-free reference checker で検査できる。
-- [ ] universe constraint の正例と負例が kernel / cert / checker の test にある。
-- [ ] unresolved meta を含む certificate fixture は fast verifier と reference checker の両方で拒否される。
-- [ ] Phase 7 retrieval / Phase 9 AI fixtures の candidate hash は Human universe inference 追加で変わらない。
+- [x] polymorphic `List` / `Eq` / `Prod` / `Sigma` 相当の declarations が source-free reference checker で検査できる。
+- [x] universe constraint の正例と負例が kernel / cert / checker の test にある。
+- [x] unresolved meta を含む certificate fixture は fast verifier と reference checker の両方で拒否される。
+- [x] Phase 7 retrieval / Phase 9 AI fixtures の candidate hash は Human universe inference 追加で変わらない。
 
 検証:
 
