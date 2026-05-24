@@ -29,6 +29,7 @@ struct VerifiedCorpusImports<'a> {
     vector_basic: &'a VerifiedModule,
     vector_dot: &'a VerifiedModule,
     right_triangle: &'a VerifiedModule,
+    abstract_ring: &'a VerifiedModule,
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -296,6 +297,36 @@ const ABSTRACT_RING_THEOREMS: &[&str] = &[
     "sub_add_sub_cancel",
 ];
 
+const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[&str] = &[
+    "le",
+    "lt",
+    "sqrt",
+    "Nonneg",
+    "Positive",
+    "OrderedFieldLawArgs",
+];
+
+const ABSTRACT_ORDERED_FIELD_THEOREMS: &[&str] = &[
+    "le_refl",
+    "le_trans",
+    "add_nonneg",
+    "mul_nonneg",
+    "square_nonneg",
+    "sqrt_nonneg",
+    "sqrt_square_of_nonneg",
+    "sqrt_mul_self",
+    "eq_of_square_eq_square_nonneg",
+    "add_le_add",
+    "mul_le_mul_nonneg",
+    "zero_le_two",
+    "le_antisymm",
+    "lt_of_le_of_ne",
+    "le_of_eq",
+    "sqrt_sq",
+    "sq_eq_zero_iff",
+    "sum_nonneg_eq_zero",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -502,6 +533,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         theorems: ABSTRACT_RING_THEOREMS,
         axioms: &[],
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractOrderedField",
+        source: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractOrderedField/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractOrderedField/replay.json",
+        imports: &["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_ORDERED_FIELD_DEFINITIONS,
+        theorems: ABSTRACT_ORDERED_FIELD_THEOREMS,
+        axioms: &[],
+    },
 ];
 
 #[test]
@@ -536,6 +579,7 @@ fn ai_certificates_match_manifest_and_verify() {
         &vector_basic_import,
         &vector_dot_import,
     );
+    let abstract_ring_import = verified_abstract_ring_import_module(&root, &eq_import);
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
         nat: &nat_import,
@@ -545,6 +589,7 @@ fn ai_certificates_match_manifest_and_verify() {
         vector_basic: &vector_basic_import,
         vector_dot: &vector_dot_import,
         right_triangle: &right_triangle_import,
+        abstract_ring: &abstract_ring_import,
     };
 
     for expected in EXPECTED_MODULES {
@@ -680,6 +725,9 @@ fn register_expected_imports(
             "Proofs.Ai.Geometry.RightTriangle" => {
                 session.register_verified_module(verified_imports.right_triangle.clone())
             }
+            "Proofs.Ai.Algebra.AbstractRing" => {
+                session.register_verified_module(verified_imports.abstract_ring.clone())
+            }
             other => panic!("unexpected AI proof corpus import {other}"),
         }
     }
@@ -791,6 +839,14 @@ fn verified_right_triangle_import_module(
     session.register_verified_module(vector_dot_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("RightTriangle corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_ring_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Algebra/AbstractRing/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractRing corpus certificate should verify for downstream imports")
 }
 
 fn verified_core_module(module: CoreModule) -> VerifiedModule {

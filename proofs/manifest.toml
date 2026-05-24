@@ -271,3 +271,21 @@ imports = ["Std.Logic.Eq"]
 definitions = ["two", "sq", "RingLawArgs"]
 theorems = ["sub_eq_add_neg", "add_assoc", "add_comm", "add_zero", "zero_add", "neg_add_cancel", "add_neg_cancel", "sub_self", "mul_assoc", "mul_comm", "mul_one", "one_mul", "left_distrib", "right_distrib", "mul_zero", "zero_mul", "add_left_cancel", "ring_normalize_add_mul3", "add_right_cancel", "neg_neg", "sub_zero", "zero_sub", "sub_add_cancel", "add_sub_cancel", "sub_add_sub_cancel"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractOrderedField"
+source = "Proofs/Ai/Algebra/AbstractOrderedField/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractOrderedField/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractOrderedField/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:1797eee5aec6a42f2c235e6c211f12cc0eb31748572dc1cce538d9326933308b"
+certificate_file_sha256 = "sha256:a56157f76845da9e046a62d02d7e2528e3df8a54372b9542ea810d57639c1db2"
+export_hash = "sha256:7f86ff40ef03b7af21364818e34168aa537a1bbb54a8e2a8918a0be24a56e632"
+axiom_report_hash = "sha256:2327ea3a561c44153c2e861a517209d746d1a96039a05df5999271ab84f21e58"
+certificate_hash = "sha256:31a3af7d089a4441c0afe46868b0fe9b7498901ef3f3476870dc5b815e47f48c"
+imports = ["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"]
+definitions = ["le", "lt", "sqrt", "Nonneg", "Positive", "OrderedFieldLawArgs"]
+theorems = ["le_refl", "le_trans", "add_nonneg", "mul_nonneg", "square_nonneg", "sqrt_nonneg", "sqrt_square_of_nonneg", "sqrt_mul_self", "eq_of_square_eq_square_nonneg", "add_le_add", "mul_le_mul_nonneg", "zero_le_two", "le_antisymm", "lt_of_le_of_ne", "le_of_eq", "sqrt_sq", "sq_eq_zero_iff", "sum_nonneg_eq_zero"]
+axioms = []

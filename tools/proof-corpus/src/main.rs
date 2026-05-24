@@ -275,6 +275,19 @@ const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_ORDERED_FIELD_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractOrderedField",
+    source_path: "Proofs/Ai/Algebra/AbstractOrderedField/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractOrderedField/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractOrderedField/replay.json",
+    imports: &["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"],
+    inductives: &[],
+    definitions: ABSTRACT_ORDERED_FIELD_DEFINITIONS,
+    theorems: ABSTRACT_ORDERED_FIELD_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -300,6 +313,39 @@ macro_rules! abstract_ring_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ordered_field_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ordered_field_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => ",
             $tail
         )
     };
@@ -2023,6 +2069,256 @@ const ABSTRACT_RING_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "le",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (a : Scalar), forall (b : Scalar), Prop"
+        ),
+        value: "fun Scalar => fun le_rel => fun a => fun b => le_rel a b",
+    },
+    DefinitionArtifact {
+        name: "lt",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (a : Scalar), forall (b : Scalar), Prop"
+        ),
+        value: "fun Scalar => fun lt_rel => fun a => fun b => lt_rel a b",
+    },
+    DefinitionArtifact {
+        name: "sqrt",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (sqrt_fn : forall (a : Scalar), Scalar), ",
+            "forall (a : Scalar), Scalar"
+        ),
+        value: "fun Scalar => fun sqrt_fn => fun a => sqrt_fn a",
+    },
+    DefinitionArtifact {
+        name: "Nonneg",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (a : Scalar), Prop"
+        ),
+        value: "fun Scalar => fun zero => fun le_rel => fun a => le_rel zero a",
+    },
+    DefinitionArtifact {
+        name: "Positive",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (lt_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (a : Scalar), Prop"
+        ),
+        value: "fun Scalar => fun zero => fun lt_rel => fun a => lt_rel zero a",
+    },
+    DefinitionArtifact {
+        name: "OrderedFieldLawArgs",
+        universe_params: &["u"],
+        ty: abstract_ordered_field_params!("Prop"),
+        value: abstract_ordered_field_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (le_refl_law : forall (a : Scalar), le_rel a a), ",
+            "forall (le_trans_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hab : le_rel a b), forall (hbc : le_rel b c), le_rel a c), ",
+            "forall (add_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (add a b)), ",
+            "forall (mul_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (mul a b)), ",
+            "forall (square_nonneg_law : forall (a : Scalar), le_rel zero (@sq.{u} Scalar mul a)), ",
+            "forall (sqrt_nonneg_law : forall (a : Scalar), le_rel zero (sqrt_fn a)), ",
+            "forall (sqrt_square_of_nonneg_law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (@sq.{u} Scalar mul a)) a), ",
+            "forall (sqrt_mul_self_law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (mul a a)) a), ",
+            "forall (eq_of_square_eq_square_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), @Eq.{u} Scalar a b), ",
+            "forall (add_le_add_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (hab : le_rel a b), forall (hcd : le_rel c d), le_rel (add a c) (add b d)), ",
+            "forall (mul_le_mul_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (ha : le_rel zero a), forall (hab : le_rel a b), forall (hc : le_rel zero c), forall (hcd : le_rel c d), le_rel (mul a c) (mul b d)), ",
+            "forall (zero_le_two_law : le_rel zero (@two.{u} Scalar one add)), ",
+            "forall (le_antisymm_law : forall (a : Scalar), forall (b : Scalar), forall (hab : le_rel a b), forall (hba : le_rel b a), @Eq.{u} Scalar a b), ",
+            "forall (lt_of_le_of_ne_law : forall (a : Scalar), forall (ha : le_rel zero a), forall (hne : forall (haz : @Eq.{u} Scalar a zero), forall (P : Prop), P), lt_rel zero a), ",
+            "forall (le_of_eq_law : forall (a : Scalar), forall (b : Scalar), forall (hab : @Eq.{u} Scalar a b), forall (P : Prop), forall (mk : forall (hab_le : le_rel a b), forall (hba_le : le_rel b a), P), P), ",
+            "forall (sqrt_sq_law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a), ",
+            "forall (sq_eq_zero_iff_law : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R), ",
+            "forall (sum_nonneg_eq_zero_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "le_refl",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), le_rel a a), forall (a : Scalar), le_rel a a"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "le_trans",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hab : le_rel a b), forall (hbc : le_rel b c), le_rel a c), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hab : le_rel a b), forall (hbc : le_rel b c), le_rel a c"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun c => fun hab => fun hbc => law a b c hab hbc"
+        ),
+    },
+    TheoremArtifact {
+        name: "add_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (add a b)), forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (add a b)"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun ha => fun hb => law a b ha hb"
+        ),
+    },
+    TheoremArtifact {
+        name: "mul_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (mul a b)), forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (mul a b)"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun ha => fun hb => law a b ha hb"
+        ),
+    },
+    TheoremArtifact {
+        name: "square_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), le_rel zero (@sq.{u} Scalar mul a)), forall (a : Scalar), le_rel zero (@sq.{u} Scalar mul a)"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "sqrt_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), le_rel zero (sqrt_fn a)), forall (a : Scalar), le_rel zero (sqrt_fn a)"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "sqrt_square_of_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (@sq.{u} Scalar mul a)) a), forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (@sq.{u} Scalar mul a)) a"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun ha => law a ha"),
+    },
+    TheoremArtifact {
+        name: "sqrt_mul_self",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (mul a a)) a), forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (mul a a)) a"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun ha => law a ha"),
+    },
+    TheoremArtifact {
+        name: "eq_of_square_eq_square_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), @Eq.{u} Scalar a b), forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), @Eq.{u} Scalar a b"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun ha => fun hb => fun hsq => law a b ha hb hsq"
+        ),
+    },
+    TheoremArtifact {
+        name: "add_le_add",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (hab : le_rel a b), forall (hcd : le_rel c d), le_rel (add a c) (add b d)), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (hab : le_rel a b), forall (hcd : le_rel c d), le_rel (add a c) (add b d)"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun c => fun d => fun hab => fun hcd => law a b c d hab hcd"
+        ),
+    },
+    TheoremArtifact {
+        name: "mul_le_mul_nonneg",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (ha : le_rel zero a), forall (hab : le_rel a b), forall (hc : le_rel zero c), forall (hcd : le_rel c d), le_rel (mul a c) (mul b d)), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (ha : le_rel zero a), forall (hab : le_rel a b), forall (hc : le_rel zero c), forall (hcd : le_rel c d), le_rel (mul a c) (mul b d)"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun c => fun d => fun ha => fun hab => fun hc => fun hcd => law a b c d ha hab hc hcd"
+        ),
+    },
+    TheoremArtifact {
+        name: "zero_le_two",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : le_rel zero (@two.{u} Scalar one add)), le_rel zero (@two.{u} Scalar one add)"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => law"),
+    },
+    TheoremArtifact {
+        name: "le_antisymm",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (hab : le_rel a b), forall (hba : le_rel b a), @Eq.{u} Scalar a b), forall (a : Scalar), forall (b : Scalar), forall (hab : le_rel a b), forall (hba : le_rel b a), @Eq.{u} Scalar a b"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun hab => fun hba => law a b hab hba"
+        ),
+    },
+    TheoremArtifact {
+        name: "lt_of_le_of_ne",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (ha : le_rel zero a), forall (hne : forall (haz : @Eq.{u} Scalar a zero), forall (P : Prop), P), lt_rel zero a), forall (a : Scalar), forall (ha : le_rel zero a), forall (hne : forall (haz : @Eq.{u} Scalar a zero), forall (P : Prop), P), lt_rel zero a"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun ha => fun hne => law a ha hne"
+        ),
+    },
+    TheoremArtifact {
+        name: "le_of_eq",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (hab : @Eq.{u} Scalar a b), forall (P : Prop), forall (mk : forall (hab_le : le_rel a b), forall (hba_le : le_rel b a), P), P), forall (a : Scalar), forall (b : Scalar), forall (hab : @Eq.{u} Scalar a b), forall (P : Prop), forall (mk : forall (hab_le : le_rel a b), forall (hba_le : le_rel b a), P), P"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun hab => fun P => fun mk => law a b hab P mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "sqrt_sq",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a), forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a"
+        ),
+        proof: abstract_ordered_field_abs!("fun law => fun a => fun ha => law a ha"),
+    },
+    TheoremArtifact {
+        name: "sq_eq_zero_iff",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R), forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun R => fun mk => law a R mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "sum_nonneg_eq_zero",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R), forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R"
+        ),
+        proof: abstract_ordered_field_abs!(
+            "fun law => fun a => fun b => fun ha => fun hb => fun hsum => fun R => fun mk => law a b ha hb hsum R mk"
+        ),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -2203,6 +2499,15 @@ fn run() -> Result<(), String> {
         &abstract_ring_imports,
         &abstract_ring_source_interfaces,
     )?;
+    let abstract_ordered_field_imports =
+        vec![eq_import.clone(), abstract_ring.verified_module.clone()];
+    let abstract_ordered_field_source_interfaces = vec![abstract_ring.source_interface.clone()];
+    let abstract_ordered_field = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_ORDERED_FIELD_MODULE,
+        &abstract_ordered_field_imports,
+        &abstract_ordered_field_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -2222,6 +2527,7 @@ fn run() -> Result<(), String> {
             metric,
             iff,
             abstract_ring,
+            abstract_ordered_field,
         ])
         .as_bytes(),
     )?;
@@ -2425,12 +2731,13 @@ fn write(path: PathBuf, bytes: &[u8]) -> Result<(), String> {
 
 fn module_source(config: &ModuleArtifact) -> String {
     let mut source = String::new();
-    for import in config.imports {
+    let imports = source_imports(config);
+    for import in imports {
         source.push_str("import ");
         source.push_str(import);
         source.push('\n');
     }
-    if !config.imports.is_empty() {
+    if !imports.is_empty() {
         source.push('\n');
     }
     for inductive in config.inductives {
@@ -2482,6 +2789,16 @@ fn module_source(config: &ModuleArtifact) -> String {
         source.push_str("\n\n");
     }
     source
+}
+
+fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
+    if config.module == ABSTRACT_ORDERED_FIELD_MODULE.module {
+        // Eq is verified as a transitive AbstractRing dependency; importing it directly here
+        // duplicates the kernel Eq declaration during certificate handoff.
+        &["Proofs.Ai.Algebra.AbstractRing"]
+    } else {
+        config.imports
+    }
 }
 
 fn tagged_sha256(bytes: &[u8]) -> String {

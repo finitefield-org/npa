@@ -37,6 +37,8 @@ Current bundles:
   negation theorem targets importing `Std.Logic.Eq`.
 - `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
   operation, and law assumptions importing `Std.Logic.Eq`.
+- `Proofs/Ai/Algebra/AbstractOrderedField/`: abstract scalar order and square-root theorem targets
+  over explicit carrier, operation, relation, function, and law assumptions.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -550,7 +552,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P18+: General Euclidean Pythagorean Roadmap
+### P19+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -562,8 +564,9 @@ RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 
 This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
 the squared `dist` form over the current concrete scalar and vector corpus. P17 starts replacing the
-singleton scalar layer with explicit carrier, operation, and law assumptions; P18+ continues that
-pattern through order, vector, inner-product, affine, and metric APIs.
+singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
+abstract scalar layer with order and square-root APIs; P19+ continues the pattern through square
+normalization, vector, inner-product, affine, and metric APIs.
 
 Planned contents:
 
@@ -595,8 +598,11 @@ Completed prerequisite:
   later abstract algebra and geometry theorem statements.
 - P17 `Proofs.Ai.Algebra.AbstractRing` supplies checked abstract ring theorem targets over explicit
   carrier, operation, and law assumptions without adding unchecked algebra axioms.
+- P18 `Proofs.Ai.Algebra.AbstractOrderedField` supplies checked abstract order and square-root
+  theorem targets over explicit carrier, operation, relation, function, and law assumptions without
+  adding unchecked order or square-root axioms.
 
-P18+ policy:
+P19+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -607,7 +613,6 @@ P18+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P18 | `Proofs.Ai.Algebra.AbstractOrderedField` | order and square-root APIs over the abstract scalar carrier | `le_refl`, `le_trans`, `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_nonneg`, `sqrt_square_of_nonneg`, `eq_of_square_eq_square_nonneg` | `add_le_add`, `mul_le_mul_nonneg`, `zero_le_two`, `sqrt_mul_self` |
 | P19 | `Proofs.Ai.Algebra.AbstractSquareNormalize` | no new carrier; normalization helpers over P17/P18 operations | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term` | `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq` |
 | P20 | `Proofs.Ai.Vector.AbstractSpace` | abstract vector carrier, zero, add, neg, sub, scalar multiplication, vector-space law package | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_add_zero`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_add_neg_cancel`, `sub_sub_sub_cancel` | `vec_sub_self`, `vec_sub_zero`, `vec_add_left_cancel`, `smul_add`, `add_smul`, `one_smul`, `mul_smul` |
 | P21 | `Proofs.Ai.Vector.AbstractInnerProduct` | abstract inner product, `normSq`, and `distSq` over P20 | `dot_comm`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `norm_sq_def`, `dist_sq_def`, `norm_sq_sub_of_dot_zero` | `norm_sq_add`, `norm_sq_sub`, `norm_sq_nonneg`, `dot_self_eq_norm_sq`, `parallelogram_law`, `polarization_identity`, `cauchy_schwarz` |
@@ -922,15 +927,21 @@ Theorem targets:
 
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `le`, `lt` | abstract order relations over the scalar carrier |
-| `sqrt` | square-root API for distance statements |
-| `Nonneg` | optional abbreviation for `le zero a`, useful for square-root APIs |
-| `Positive` | optional abbreviation for `lt zero a`, useful for strict metric statements |
-| `OrderedFieldLawArgs` | placeholder name for explicit order/field/sqrt law hypotheses |
+| `le`, `lt` | parametric adapters for explicit abstract order relation parameters |
+| `sqrt` | parametric adapter for an explicit square-root function parameter |
+| `Nonneg` | abbreviation for `le zero a`, useful for square-root APIs |
+| `Positive` | abbreviation for `lt zero a`, useful for strict metric statements |
+| `OrderedFieldLawArgs` | Church-encoded law package API over the explicit carrier, operations, order, and square root |
+
+The checked theorem targets take the corresponding order, square-root, or compatibility law as an
+explicit argument and return it at the requested variables. This keeps P18 independent of concrete
+`RingElem`, avoids module-level unchecked ordered-field axioms, and uses P17's parametric `two` and
+`sq` APIs. Bundled proposition shapes are Church-encoded locally so P18 does not need an additional
+logic-module import.
 
 Theorem targets:
 
@@ -945,11 +956,11 @@ Theorem targets:
 | `eq_of_square_eq_square_nonneg` | equality from equal squares under nonnegativity |
 | `add_le_add`, `mul_le_mul_nonneg`, `zero_le_two` | order helpers for metric proofs |
 | `le_antisymm` | `a <= b -> b <= a -> a = b` |
-| `lt_of_le_of_ne` | strict positivity from nonnegative and nonzero hypotheses |
-| `le_of_eq` | equality implies both order directions |
-| `sqrt_sq` | square-root/square bridge in the direction preferred by metric rewriting |
-| `sq_eq_zero_iff` | `sq a = 0 <-> a = 0` under the abstract ordered-field assumptions |
-| `sum_nonneg_eq_zero` | `0 <= a -> 0 <= b -> a + b = 0 -> a = 0` and `b = 0` as a bundled helper |
+| `lt_of_le_of_ne` | `0 <= a -> (a = 0 -> False) -> 0 < a`, with `False` Church-encoded |
+| `le_of_eq` | equality implies both order directions as a Church-encoded conjunction |
+| `sqrt_sq` | `0 <= a -> sq (sqrt a) = a` |
+| `sq_eq_zero_iff` | Church-encoded `sq a = 0 <-> a = 0` under the abstract ordered-field assumptions |
+| `sum_nonneg_eq_zero` | `0 <= a -> 0 <= b -> a + b = 0 ->` Church-encoded `(a = 0) /\ (b = 0)` |
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
