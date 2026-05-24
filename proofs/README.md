@@ -31,6 +31,8 @@ Current bundles:
   importing vector, scalar, square, and order corpus layers.
 - `Proofs/Ai/Vector/AbstractSpace/`: abstract vector-space theorem targets over the P17-P19
   scalar API layers and explicit vector operation/law assumptions.
+- `Proofs/Ai/Vector/AbstractInnerProduct/`: abstract inner-product, squared norm, and vector
+  squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -556,7 +558,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P21+: General Euclidean Pythagorean Roadmap
+### P22+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -570,8 +572,8 @@ This avoids making the first abstract target depend on square roots. P15 adds th
 the squared `dist` form over the current concrete scalar and vector corpus. P17 starts replacing the
 singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
 abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
-normalization layer. P20 supplies the abstract vector-space layer. P21+ continues the pattern
-through inner-product, affine, and metric APIs.
+normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
+inner-product and squared-norm layer. P22+ continues the pattern through affine and metric APIs.
 
 Planned contents:
 
@@ -612,8 +614,11 @@ Completed prerequisite:
 - P20 `Proofs.Ai.Vector.AbstractSpace` supplies checked abstract vector-space theorem targets over
   explicit vector carrier, operation, scalar, and law assumptions without adding unchecked vector
   space axioms.
+- P21 `Proofs.Ai.Vector.AbstractInnerProduct` supplies checked abstract inner-product, squared norm,
+  vector squared-distance, perpendicularity, and norm-expansion theorem targets over explicit law
+  assumptions without adding unchecked inner-product or positivity axioms.
 
-P21+ policy:
+P22+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -624,7 +629,6 @@ P21+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P21 | `Proofs.Ai.Vector.AbstractInnerProduct` | abstract inner product, `normSq`, and `distSq` over P20 | `dot_comm`, `dot_add_left`, `dot_add_right`, `dot_neg_left`, `dot_neg_right`, `dot_sub_left`, `dot_sub_right`, `norm_sq_def`, `dist_sq_def`, `norm_sq_sub_of_dot_zero` | `norm_sq_add`, `norm_sq_sub`, `norm_sq_nonneg`, `dot_self_eq_norm_sq`, `parallelogram_law`, `polarization_identity`, `cauchy_schwarz` |
 | P22 | `Proofs.Ai.Geometry.Affine` | abstract point carrier and displacement map `disp A B` | `disp_self`, `disp_reverse`, `disp_comp`, `hypotenuse_vector_eq_sub_legs`, `dist_sq_points_def` | `point_ext_of_zero_disp`, `dist_sq_symm`, `dist_sq_zero_iff_eq` |
 | P23 | `Proofs.Ai.Geometry.AbstractRightTriangle` | abstract `Perp` and `RightTriangle` over the inner-product geometry | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `pythagorean_distance_sq_general` | `perp_symm`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` |
 | P24 | `Proofs.Ai.Geometry.AbstractMetric` | abstract `dist` over `sqrt (distSq A B)` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance_general` | `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality` |
@@ -1035,15 +1039,24 @@ Theorem targets:
 
 #### `Proofs.Ai.Vector.AbstractInnerProduct`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `dot` | abstract inner product |
-| `normSq` | squared norm, normally `dot v v` |
-| `distSq` | squared distance, normally `normSq (disp A B)` in the later affine layer |
-| `PerpVec` | optional vector-level perpendicular predicate, normally `dot u v = 0` |
-| `InnerProductLawArgs` | placeholder name for explicit symmetry, bilinearity, and positivity hypotheses |
+| `dot` | parametric wrapper for a local abstract inner-product operation |
+| `normSq` | squared norm, defined as `dot v v` |
+| `distSq` | vector-level squared distance, defined as `normSq (vsub B A)` until P22 adds affine displacement |
+| `PerpVec` | vector-level perpendicular predicate, defined as `dot u v = 0` |
+| `InnerProductLawArgs` | Church-encoded law package API for symmetry, bilinearity, norm expansion, and positivity hypotheses |
+
+The checked theorem targets either close by definitional equality (`norm_sq_def`,
+`dist_sq_def`, `dot_self_eq_norm_sq`) or take the corresponding inner-product, norm-expansion, or
+positivity law as an explicit argument and return it at the requested variables.
+`perp_vec_iff_dot_eq_zero` and `norm_sq_zero_iff` use the same Church-encoded iff shape as P16's
+`Iff` API without importing `Proofs.Ai.Logic.Iff`, because the current source handoff cannot combine
+that module with the abstract algebra imports without duplicating the imported `Eq` declaration.
+`cauchy_schwarz` uses the squared form `sq (dot u v) <= normSq u * normSq v`, avoiding a square-root
+dependency at this layer.
 
 Theorem targets:
 
@@ -1059,9 +1072,9 @@ Theorem targets:
 | `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero` | Pythagorean norm steps under perpendicularity |
 | `norm_sq_nonneg`, `cauchy_schwarz` | positivity and Cauchy-Schwarz targets |
 | `parallelogram_law`, `polarization_identity` | peer inner-product theorem targets |
-| `perp_vec_iff_dot_eq_zero` | first-class `Iff (PerpVec u v) (dot u v = 0)` |
+| `perp_vec_iff_dot_eq_zero` | iff-shaped equivalence between `PerpVec u v` and `dot u v = 0` |
 | `perp_vec_symm` | vector-level perpendicularity symmetry |
-| `norm_sq_zero_iff` | `normSq v = 0 <-> v = 0` under positive-definiteness |
+| `norm_sq_zero_iff` | iff-shaped `normSq v = 0 <-> v = 0` under positive-definiteness |
 | `dist_sq_nonneg` | `0 <= distSq A B` after affine distance is connected |
 | `norm_sq_add_of_perp` | `PerpVec u v -> normSq (u + v) = normSq u + normSq v` |
 | `norm_sq_sub_of_perp` | `PerpVec u v -> normSq (u - v) = normSq u + normSq v` |

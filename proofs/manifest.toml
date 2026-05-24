@@ -325,3 +325,21 @@ imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.Abstract
 definitions = ["vsub", "linear_comb2", "linear_comb3", "VectorSpaceLawArgs"]
 theorems = ["vec_sub_def", "vec_add_assoc", "vec_add_comm", "vec_add_zero", "vec_zero_add", "vec_neg_add_cancel", "vec_add_neg_cancel", "sub_sub_sub_cancel", "vec_sub_self", "vec_sub_zero", "vec_add_left_cancel", "smul_add", "add_smul", "one_smul", "mul_smul", "zero_smul", "smul_zero", "neg_smul", "smul_neg", "vec_sub_eq_add_neg", "sub_add_sub_cancel_left", "linear_comb2_ext", "linear_comb3_ext"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Vector.AbstractInnerProduct"
+source = "Proofs/Ai/Vector/AbstractInnerProduct/source.npa"
+certificate = "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert"
+meta = "Proofs/Ai/Vector/AbstractInnerProduct/meta.json"
+replay = "Proofs/Ai/Vector/AbstractInnerProduct/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:0b259864daeb49bc439061bdd732916c6fdb3fa23baecea5093e207c4beb6054"
+certificate_file_sha256 = "sha256:ebbe444c1486721edf7890e067b0f54afb1116eef8da49d62a73493b7e12ac7b"
+export_hash = "sha256:0ba116f7a3d5d0ea5f63dfc80cad61c842999ccc040ddbd2a54a166e77d20dfd"
+axiom_report_hash = "sha256:bb6be2c3c51edbcc3797a8479c6c7d86bf563187417902dbc3ea84ac70c58132"
+certificate_hash = "sha256:090c776b9bcec797d567ec69cf2347c3c824fef0f9a7b4766c67190297f0a95c"
+imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"]
+definitions = ["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"]
+theorems = ["dot_comm", "dot_add_left", "dot_add_right", "dot_neg_left", "dot_neg_right", "dot_sub_left", "dot_sub_right", "norm_sq_def", "dist_sq_def", "dot_self_eq_norm_sq", "norm_sq_add", "norm_sq_sub", "norm_sq_add_of_dot_zero", "norm_sq_sub_of_dot_zero", "norm_sq_nonneg", "parallelogram_law", "polarization_identity", "cauchy_schwarz", "perp_vec_iff_dot_eq_zero", "perp_vec_symm", "norm_sq_zero_iff", "dist_sq_nonneg", "norm_sq_add_of_perp", "norm_sq_sub_of_perp"]
+axioms = []

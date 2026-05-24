@@ -323,6 +323,25 @@ const ABSTRACT_VECTOR_SPACE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_INNER_PRODUCT_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Vector.AbstractInnerProduct",
+    source_path: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
+    certificate_path: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
+    meta_path: "Proofs/Ai/Vector/AbstractInnerProduct/meta.json",
+    replay_path: "Proofs/Ai/Vector/AbstractInnerProduct/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_INNER_PRODUCT_DEFINITIONS,
+    theorems: ABSTRACT_INNER_PRODUCT_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -416,6 +435,43 @@ macro_rules! abstract_vector_space_abs {
     ($tail:literal) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_inner_product_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_inner_product_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => ",
             $tail
         )
     };
@@ -2801,6 +2857,295 @@ const ABSTRACT_VECTOR_SPACE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "dot",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (Vector : Sort v), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (x : Vector), forall (y : Vector), Scalar"
+        ),
+        value: "fun Scalar => fun Vector => fun inner => fun x => fun y => inner x y",
+    },
+    DefinitionArtifact {
+        name: "normSq",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (Vector : Sort v), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (x : Vector), Scalar"
+        ),
+        value: "fun Scalar => fun Vector => fun inner => fun x => @dot.{u,v} Scalar Vector inner x x",
+    },
+    DefinitionArtifact {
+        name: "distSq",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (Vector : Sort v), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (x : Vector), forall (y : Vector), Scalar"
+        ),
+        value:
+            "fun Scalar => fun Vector => fun vadd => fun vneg => fun inner => fun x => fun y => @normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg y x)",
+    },
+    DefinitionArtifact {
+        name: "PerpVec",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (x : Vector), forall (y : Vector), Prop"
+        ),
+        value:
+            "fun Scalar => fun zero => fun Vector => fun inner => fun x => fun y => @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero",
+    },
+    DefinitionArtifact {
+        name: "InnerProductLawArgs",
+        universe_params: &["u", "v"],
+        ty: abstract_inner_product_params!("Prop"),
+        value: abstract_inner_product_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (dot_comm_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner y x)), ",
+            "forall (dot_add_left_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vadd x y) z) (add (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))), ",
+            "forall (dot_add_right_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vadd y z)) (add (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))), ",
+            "forall (dot_neg_left_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))), ",
+            "forall (dot_neg_right_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vneg y)) (neg (@dot.{u,v} Scalar Vector inner x y))), ",
+            "forall (dot_sub_left_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y) z) (sub (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))), ",
+            "forall (dot_sub_right_law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (@vsub.{v} Vector vadd vneg y z)) (sub (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))), ",
+            "forall (norm_sq_def_law : forall (x : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) (@dot.{u,v} Scalar Vector inner x x)), ",
+            "forall (dist_sq_def_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@distSq.{u,v} Scalar Vector vadd vneg inner x y) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg y x))), ",
+            "forall (dot_self_eq_norm_sq_law : forall (x : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x x) (@normSq.{u,v} Scalar Vector inner x)), ",
+            "forall (norm_sq_add_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))), ",
+            "forall (norm_sq_sub_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (sub (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))), ",
+            "forall (norm_sq_add_of_dot_zero_law : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), ",
+            "forall (norm_sq_sub_of_dot_zero_law : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), ",
+            "forall (norm_sq_nonneg_law : forall (x : Vector), le_rel zero (@normSq.{u,v} Scalar Vector inner x)), ",
+            "forall (parallelogram_law_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (add (@normSq.{u,v} Scalar Vector inner (vadd x y)) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) (add (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner x)) (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner y)))), ",
+            "forall (polarization_identity_law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) (sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)))), ",
+            "forall (cauchy_schwarz_law : forall (x : Vector), forall (y : Vector), le_rel (@sq.{u} Scalar mul (@dot.{u,v} Scalar Vector inner x y)) (mul (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), ",
+            "forall (perp_vec_iff_dot_eq_zero_law : forall (x : Vector), forall (y : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @PerpVec.{u,v} Scalar zero Vector inner x y), R), R), ",
+            "forall (perp_vec_symm_law : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @PerpVec.{u,v} Scalar zero Vector inner y x), ",
+            "forall (norm_sq_zero_iff_law : forall (x : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), @Eq.{v} Vector x vzero), forall (backward : forall (h : @Eq.{v} Vector x vzero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), R), R), ",
+            "forall (dist_sq_nonneg_law : forall (x : Vector), forall (y : Vector), le_rel zero (@distSq.{u,v} Scalar Vector vadd vneg inner x y)), ",
+            "forall (norm_sq_add_of_perp_law : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), ",
+            "forall (norm_sq_sub_of_perp_law : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_INNER_PRODUCT_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "dot_comm",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner y x)), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner y x)"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "dot_add_left",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vadd x y) z) (add (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vadd x y) z) (add (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "dot_add_right",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vadd y z)) (add (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vadd y z)) (add (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "dot_neg_left",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "dot_neg_right",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vneg y)) (neg (@dot.{u,v} Scalar Vector inner x y))), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vneg y)) (neg (@dot.{u,v} Scalar Vector inner x y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "dot_sub_left",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y) z) (sub (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y) z) (sub (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "dot_sub_right",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (@vsub.{v} Vector vadd vneg y z)) (sub (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))), forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (@vsub.{v} Vector vadd vneg y z)) (sub (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun z => law x y z"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_def",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (x : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) (@dot.{u,v} Scalar Vector inner x x)"
+        ),
+        proof: abstract_inner_product_abs!(
+            "fun x => @Eq.refl.{u} Scalar (@normSq.{u,v} Scalar Vector inner x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "dist_sq_def",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@distSq.{u,v} Scalar Vector vadd vneg inner x y) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg y x))"
+        ),
+        proof: abstract_inner_product_abs!(
+            "fun x => fun y => @Eq.refl.{u} Scalar (@distSq.{u,v} Scalar Vector vadd vneg inner x y)"
+        ),
+    },
+    TheoremArtifact {
+        name: "dot_self_eq_norm_sq",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (x : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x x) (@normSq.{u,v} Scalar Vector inner x)"
+        ),
+        proof: abstract_inner_product_abs!(
+            "fun x => @Eq.refl.{u} Scalar (@dot.{u,v} Scalar Vector inner x x)"
+        ),
+    },
+    TheoremArtifact {
+        name: "norm_sq_add",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_sub",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (sub (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (sub (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_add_of_dot_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun h => law x y h"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_sub_of_dot_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun h => law x y h"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_nonneg",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), le_rel zero (@normSq.{u,v} Scalar Vector inner x)), forall (x : Vector), le_rel zero (@normSq.{u,v} Scalar Vector inner x)"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => law x"),
+    },
+    TheoremArtifact {
+        name: "parallelogram_law",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (add (@normSq.{u,v} Scalar Vector inner (vadd x y)) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) (add (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner x)) (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner y)))), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (add (@normSq.{u,v} Scalar Vector inner (vadd x y)) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) (add (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner x)) (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner y)))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "polarization_identity",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) (sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)))), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) (sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "cauchy_schwarz",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), le_rel (@sq.{u} Scalar mul (@dot.{u,v} Scalar Vector inner x y)) (mul (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), le_rel (@sq.{u} Scalar mul (@dot.{u,v} Scalar Vector inner x y)) (mul (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "perp_vec_iff_dot_eq_zero",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (x : Vector), forall (y : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @PerpVec.{u,v} Scalar zero Vector inner x y), R), R"
+        ),
+        proof: abstract_inner_product_abs!(
+            "fun x => fun y => fun (R : Prop) => fun (mk : forall (forward : forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @PerpVec.{u,v} Scalar zero Vector inner x y), R) => mk (fun (h : @PerpVec.{u,v} Scalar zero Vector inner x y) => h) (fun (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero) => h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "perp_vec_symm",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @PerpVec.{u,v} Scalar zero Vector inner y x), forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @PerpVec.{u,v} Scalar zero Vector inner y x"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun h => law x y h"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_zero_iff",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), @Eq.{v} Vector x vzero), forall (backward : forall (h : @Eq.{v} Vector x vzero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), R), R), forall (x : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), @Eq.{v} Vector x vzero), forall (backward : forall (h : @Eq.{v} Vector x vzero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), R), R"
+        ),
+        proof: abstract_inner_product_abs!(
+            "fun law => fun x => fun (R : Prop) => fun (mk : forall (forward : forall (h : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), @Eq.{v} Vector x vzero), forall (backward : forall (h : @Eq.{v} Vector x vzero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), R) => law x R mk"
+        ),
+    },
+    TheoremArtifact {
+        name: "dist_sq_nonneg",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), le_rel zero (@distSq.{u,v} Scalar Vector vadd vneg inner x y)), forall (x : Vector), forall (y : Vector), le_rel zero (@distSq.{u,v} Scalar Vector vadd vneg inner x y)"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => law x y"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_add_of_perp",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun h => law x y h"),
+    },
+    TheoremArtifact {
+        name: "norm_sq_sub_of_perp",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))), forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))"
+        ),
+        proof: abstract_inner_product_abs!("fun law => fun x => fun y => fun h => law x y h"),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -3022,6 +3367,25 @@ fn run() -> Result<(), String> {
         &abstract_vector_space_imports,
         &abstract_vector_space_source_interfaces,
     )?;
+    let abstract_inner_product_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+    ];
+    let abstract_inner_product_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+    ];
+    let abstract_inner_product = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_INNER_PRODUCT_MODULE,
+        &abstract_inner_product_imports,
+        &abstract_inner_product_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -3044,6 +3408,7 @@ fn run() -> Result<(), String> {
             abstract_ordered_field,
             abstract_square_normalize,
             abstract_vector_space,
+            abstract_inner_product,
         ])
         .as_bytes(),
     )?;
@@ -3322,6 +3687,13 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractOrderedField",
             "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        ]
+    } else if config.module == ABSTRACT_INNER_PRODUCT_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Vector.AbstractSpace",
         ]
     } else {
         config.imports

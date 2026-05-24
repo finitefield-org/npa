@@ -32,6 +32,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_ring: &'a VerifiedModule,
     abstract_ordered_field: &'a VerifiedModule,
     abstract_square_normalize: &'a VerifiedModule,
+    abstract_vector_space: &'a VerifiedModule,
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -377,6 +378,36 @@ const ABSTRACT_VECTOR_SPACE_THEOREMS: &[&str] = &[
     "linear_comb3_ext",
 ];
 
+const ABSTRACT_INNER_PRODUCT_DEFINITIONS: &[&str] =
+    &["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"];
+
+const ABSTRACT_INNER_PRODUCT_THEOREMS: &[&str] = &[
+    "dot_comm",
+    "dot_add_left",
+    "dot_add_right",
+    "dot_neg_left",
+    "dot_neg_right",
+    "dot_sub_left",
+    "dot_sub_right",
+    "norm_sq_def",
+    "dist_sq_def",
+    "dot_self_eq_norm_sq",
+    "norm_sq_add",
+    "norm_sq_sub",
+    "norm_sq_add_of_dot_zero",
+    "norm_sq_sub_of_dot_zero",
+    "norm_sq_nonneg",
+    "parallelogram_law",
+    "polarization_identity",
+    "cauchy_schwarz",
+    "perp_vec_iff_dot_eq_zero",
+    "perp_vec_symm",
+    "norm_sq_zero_iff",
+    "dist_sq_nonneg",
+    "norm_sq_add_of_perp",
+    "norm_sq_sub_of_perp",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -628,6 +659,24 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         theorems: ABSTRACT_VECTOR_SPACE_THEOREMS,
         axioms: &[],
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Vector.AbstractInnerProduct",
+        source: "Proofs/Ai/Vector/AbstractInnerProduct/source.npa",
+        certificate: "Proofs/Ai/Vector/AbstractInnerProduct/certificate.npcert",
+        meta: "Proofs/Ai/Vector/AbstractInnerProduct/meta.json",
+        replay: "Proofs/Ai/Vector/AbstractInnerProduct/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_INNER_PRODUCT_DEFINITIONS,
+        theorems: ABSTRACT_INNER_PRODUCT_THEOREMS,
+        axioms: &[],
+    },
 ];
 
 #[test]
@@ -671,6 +720,13 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_ring_import,
         &abstract_ordered_field_import,
     );
+    let abstract_vector_space_import = verified_abstract_vector_space_import_module(
+        &root,
+        &eq_import,
+        &abstract_ring_import,
+        &abstract_ordered_field_import,
+        &abstract_square_normalize_import,
+    );
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
         nat: &nat_import,
@@ -683,6 +739,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_ring: &abstract_ring_import,
         abstract_ordered_field: &abstract_ordered_field_import,
         abstract_square_normalize: &abstract_square_normalize_import,
+        abstract_vector_space: &abstract_vector_space_import,
     };
 
     for expected in EXPECTED_MODULES {
@@ -826,6 +883,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Algebra.AbstractSquareNormalize" => {
                 session.register_verified_module(verified_imports.abstract_square_normalize.clone())
+            }
+            "Proofs.Ai.Vector.AbstractSpace" => {
+                session.register_verified_module(verified_imports.abstract_vector_space.clone())
             }
             other => panic!("unexpected AI proof corpus import {other}"),
         }
@@ -974,6 +1034,23 @@ fn verified_abstract_square_normalize_import_module(
     session.register_verified_module(eq_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractSquareNormalize corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_vector_space_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_ring_import: &VerifiedModule,
+    abstract_ordered_field_import: &VerifiedModule,
+    abstract_square_normalize_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Vector/AbstractSpace/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(abstract_ordered_field_import.clone());
+    session.register_verified_module(abstract_ring_import.clone());
+    session.register_verified_module(abstract_square_normalize_import.clone());
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("AbstractSpace corpus certificate should verify for downstream imports")
 }
 
 fn verified_core_module(module: CoreModule) -> VerifiedModule {
