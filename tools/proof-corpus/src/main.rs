@@ -262,6 +262,49 @@ const IFF_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &["Eq.rec"],
 };
 
+const ABSTRACT_RING_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Algebra.AbstractRing",
+    source_path: "Proofs/Ai/Algebra/AbstractRing/source.npa",
+    certificate_path: "Proofs/Ai/Algebra/AbstractRing/certificate.npcert",
+    meta_path: "Proofs/Ai/Algebra/AbstractRing/meta.json",
+    replay_path: "Proofs/Ai/Algebra/AbstractRing/replay.json",
+    imports: &["Std.Logic.Eq"],
+    inductives: &[],
+    definitions: ABSTRACT_RING_DEFINITIONS,
+    theorems: ABSTRACT_RING_THEOREMS,
+    expected_axioms: &[],
+};
+
+macro_rules! abstract_ring_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_ring_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => ",
+            $tail
+        )
+    };
+}
+
 const BASIC_THEOREMS: &[TheoremArtifact] = &[
     TheoremArtifact {
         name: "id",
@@ -1719,6 +1762,267 @@ const IFF_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_RING_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "two",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "Scalar"
+        ),
+        value: "fun Scalar => fun one => fun add => add one one",
+    },
+    DefinitionArtifact {
+        name: "sq",
+        universe_params: &["u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (a : Scalar), ",
+            "Scalar"
+        ),
+        value: "fun Scalar => fun mul => fun a => mul a a",
+    },
+    DefinitionArtifact {
+        name: "RingLawArgs",
+        universe_params: &["u"],
+        ty: abstract_ring_params!("Prop"),
+        value: abstract_ring_abs!(concat!(
+            "forall (P : Prop), forall (mk : ",
+            "forall (sub_eq_add_neg_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))), ",
+            "forall (add_assoc_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))), ",
+            "forall (add_comm_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)), ",
+            "forall (add_zero_law : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a), ",
+            "forall (zero_add_law : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a), ",
+            "forall (neg_add_cancel_law : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero), ",
+            "forall (add_neg_cancel_law : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero), ",
+            "forall (sub_self_law : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero), ",
+            "forall (mul_assoc_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))), ",
+            "forall (mul_comm_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)), ",
+            "forall (mul_one_law : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a), ",
+            "forall (one_mul_law : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a), ",
+            "forall (left_distrib_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))), ",
+            "forall (right_distrib_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))), ",
+            "forall (mul_zero_law : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero), ",
+            "forall (zero_mul_law : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero), ",
+            "forall (add_left_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c), ",
+            "forall (ring_normalize_add_mul3_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))), ",
+            "forall (add_right_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c), ",
+            "forall (neg_neg_law : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a), ",
+            "forall (sub_zero_law : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a), ",
+            "forall (zero_sub_law : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)), ",
+            "forall (sub_add_cancel_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a), ",
+            "forall (add_sub_cancel_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a), ",
+            "forall (sub_add_sub_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)), P), P"
+        )),
+    },
+];
+
+const ABSTRACT_RING_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "sub_eq_add_neg",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "add_assoc",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => law a b c"),
+    },
+    TheoremArtifact {
+        name: "add_comm",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "add_zero",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a), forall (a : Scalar), @Eq.{u} Scalar (add a zero) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "zero_add",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a), forall (a : Scalar), @Eq.{u} Scalar (add zero a) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "neg_add_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero), forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "add_neg_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero), forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "sub_self",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero), forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "mul_assoc",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => law a b c"),
+    },
+    TheoremArtifact {
+        name: "mul_comm",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "mul_one",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a), forall (a : Scalar), @Eq.{u} Scalar (mul a one) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "one_mul",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a), forall (a : Scalar), @Eq.{u} Scalar (mul one a) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "left_distrib",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => law a b c"),
+    },
+    TheoremArtifact {
+        name: "right_distrib",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => law a b c"),
+    },
+    TheoremArtifact {
+        name: "mul_zero",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero), forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "zero_mul",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero), forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "add_left_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => fun h => law a b c h"),
+    },
+    TheoremArtifact {
+        name: "ring_normalize_add_mul3",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => law a b c"),
+    },
+    TheoremArtifact {
+        name: "add_right_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => fun h => law a b c h"),
+    },
+    TheoremArtifact {
+        name: "neg_neg",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a), forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "sub_zero",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a), forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "zero_sub",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)), forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => law a"),
+    },
+    TheoremArtifact {
+        name: "sub_add_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "add_sub_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => law a b"),
+    },
+    TheoremArtifact {
+        name: "sub_add_sub_cancel",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)"
+        ),
+        proof: abstract_ring_abs!("fun law => fun a => fun b => fun c => law a b c"),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -1891,6 +2195,14 @@ fn run() -> Result<(), String> {
         &iff_imports,
         &iff_source_interfaces,
     )?;
+    let abstract_ring_imports = vec![eq_import.clone()];
+    let abstract_ring_source_interfaces = vec![eq_source_interface.clone()];
+    let abstract_ring = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_RING_MODULE,
+        &abstract_ring_imports,
+        &abstract_ring_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -1909,6 +2221,7 @@ fn run() -> Result<(), String> {
             right_triangle,
             metric,
             iff,
+            abstract_ring,
         ])
         .as_bytes(),
     )?;

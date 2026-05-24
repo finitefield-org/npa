@@ -35,6 +35,8 @@ Current bundles:
   and vector dot layers.
 - `Proofs/Ai/Logic/Iff/`: first-class logical equivalence, conjunction, disjunction, falsehood, and
   negation theorem targets importing `Std.Logic.Eq`.
+- `Proofs/Ai/Algebra/AbstractRing/`: abstract scalar ring theorem targets over explicit carrier,
+  operation, and law assumptions importing `Std.Logic.Eq`.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -548,7 +550,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P17+: General Euclidean Pythagorean Roadmap
+### P18+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -559,8 +561,9 @@ RightTriangle A B C -> distSq B C = distSq A B + distSq A C
 ```
 
 This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
-the squared `dist` form over the current concrete scalar and vector corpus; P17+ replaces the
-singleton carriers with explicit law hypotheses and abstract APIs.
+the squared `dist` form over the current concrete scalar and vector corpus. P17 starts replacing the
+singleton scalar layer with explicit carrier, operation, and law assumptions; P18+ continues that
+pattern through order, vector, inner-product, affine, and metric APIs.
 
 Planned contents:
 
@@ -590,8 +593,10 @@ Completed prerequisite:
   squared metric Pythagorean theorem target.
 - P16 `Proofs.Ai.Logic.Iff` supplies first-class `Iff`, `And`, `Or`, `False`, and `Not` APIs for
   later abstract algebra and geometry theorem statements.
+- P17 `Proofs.Ai.Algebra.AbstractRing` supplies checked abstract ring theorem targets over explicit
+  carrier, operation, and law assumptions without adding unchecked algebra axioms.
 
-P17+ policy:
+P18+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -602,7 +607,6 @@ P17+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P17 | `Proofs.Ai.Algebra.AbstractRing` | abstract scalar carrier and operations, or an explicit ring-law package | `sub_eq_add_neg`, `add_assoc`, `add_comm`, `add_zero`, `zero_add`, `neg_add_cancel`, `add_neg_cancel`, `mul_assoc`, `mul_comm`, `mul_one`, `one_mul`, `left_distrib`, `right_distrib` | `sub_self`, `mul_zero`, `zero_mul`, `add_left_cancel`, `ring_normalize_add_mul3` |
 | P18 | `Proofs.Ai.Algebra.AbstractOrderedField` | order and square-root APIs over the abstract scalar carrier | `le_refl`, `le_trans`, `add_nonneg`, `mul_nonneg`, `square_nonneg`, `sqrt_nonneg`, `sqrt_square_of_nonneg`, `eq_of_square_eq_square_nonneg` | `add_le_add`, `mul_le_mul_nonneg`, `zero_le_two`, `sqrt_mul_self` |
 | P19 | `Proofs.Ai.Algebra.AbstractSquareNormalize` | no new carrier; normalization helpers over P17/P18 operations | `square_def`, `mul_self_eq_square`, `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term` | `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq` |
 | P20 | `Proofs.Ai.Vector.AbstractSpace` | abstract vector carrier, zero, add, neg, sub, scalar multiplication, vector-space law package | `vec_sub_def`, `vec_add_assoc`, `vec_add_comm`, `vec_add_zero`, `vec_zero_add`, `vec_neg_add_cancel`, `vec_add_neg_cancel`, `sub_sub_sub_cancel` | `vec_sub_self`, `vec_sub_zero`, `vec_add_left_cancel`, `smul_add`, `add_smul`, `one_smul`, `mul_smul` |
@@ -884,15 +888,20 @@ Theorem targets:
 
 #### `Proofs.Ai.Algebra.AbstractRing`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `Scalar` | abstract scalar carrier for the general theorem layer |
-| `zero`, `one`, `add`, `neg`, `sub`, `mul` | abstract ring operations, or operation parameters if names must stay local |
-| `two` | scalar `2`, either imported from square normalization or defined as `one + one` |
-| `sq` | square operation, either imported from square normalization or exposed for early algebra lemmas |
-| `RingLawArgs` | placeholder name for explicit law hypotheses until NPA has structures/classes |
+| `Scalar` | local carrier parameter used by every abstract ring definition and theorem target |
+| `zero`, `one`, `add`, `neg`, `sub`, `mul` | local operation parameters, keeping the module independent of concrete `RingElem` |
+| `two` | parametric scalar `2`, defined from an explicit `one` and `add` |
+| `sq` | parametric square helper, defined from an explicit `mul` |
+| `RingLawArgs` | Church-encoded law package API over the explicit carrier and operations |
+
+The checked theorem targets take the corresponding law as an explicit argument and return it at the
+requested variables. This keeps the corpus certificate-first and avoids adding module-level
+unchecked ring axioms. `mul_left_cancel_nonzero` remains deferred until a nonzero predicate is
+introduced by a later ordered-field layer.
 
 Theorem targets:
 
@@ -904,13 +913,12 @@ Theorem targets:
 | `mul_assoc`, `mul_comm`, `mul_one`, `one_mul` | commutative multiplication laws |
 | `left_distrib`, `right_distrib` | distributivity over addition |
 | `mul_zero`, `zero_mul`, `add_left_cancel` | cancellation and zero-product helper targets |
-| `ring_normalize_add_mul3` | normalization target used by later dot/norm expansion certificates |
+| `ring_normalize_add_mul3` | `((a*b)+(b*c))+(a*c) = ((a*b)+(a*c))+(b*c)` normalization target |
 | `add_right_cancel` | `b + a = c + a -> b = c` |
 | `neg_neg` | `-(-a) = a` |
 | `sub_zero`, `zero_sub` | subtraction by zero and from zero |
 | `sub_add_cancel`, `add_sub_cancel` | basic subtraction/addition cancellation lemmas |
 | `sub_add_sub_cancel` | `(a - c) - (b - c) = a - b`, scalar analogue of vector displacement cancellation |
-| `mul_left_cancel_nonzero` | optional cancellation target once nonzero hypotheses are available |
 
 #### `Proofs.Ai.Algebra.AbstractOrderedField`
 

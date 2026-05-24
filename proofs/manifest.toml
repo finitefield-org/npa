@@ -253,3 +253,21 @@ imports = ["Std.Logic.Eq"]
 definitions = ["Iff", "And", "Or", "False", "Not"]
 theorems = ["iff_refl", "iff_symm", "iff_trans", "iff_mp", "iff_mpr", "and_intro", "and_left", "and_right", "iff_of_eq", "false_elim", "not_intro", "not_elim", "or_inl", "or_inr", "or_elim", "iff_congr_arg"]
 axioms = ["Eq.rec"]
+
+[[proof_modules]]
+module = "Proofs.Ai.Algebra.AbstractRing"
+source = "Proofs/Ai/Algebra/AbstractRing/source.npa"
+certificate = "Proofs/Ai/Algebra/AbstractRing/certificate.npcert"
+meta = "Proofs/Ai/Algebra/AbstractRing/meta.json"
+replay = "Proofs/Ai/Algebra/AbstractRing/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:37af595454630f02c434e510923320218158ab32d9d5da8fe84ecf576acc4a5c"
+certificate_file_sha256 = "sha256:e86d9cafaacdb1545c2d9131c332cfe9a185b609aa5d7aae20132a46cbfe9948"
+export_hash = "sha256:d9ee6937c14ad1e94c85d5b4eb664022da239a794802a948601c207a0152f2ff"
+axiom_report_hash = "sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12"
+certificate_hash = "sha256:1545d9e5ef5d90e4bc2c2bcb9a9726600c587ac01a1eaedf5748ac562d5cf3ca"
+imports = ["Std.Logic.Eq"]
+definitions = ["two", "sq", "RingLawArgs"]
+theorems = ["sub_eq_add_neg", "add_assoc", "add_comm", "add_zero", "zero_add", "neg_add_cancel", "add_neg_cancel", "sub_self", "mul_assoc", "mul_comm", "mul_one", "one_mul", "left_distrib", "right_distrib", "mul_zero", "zero_mul", "add_left_cancel", "ring_normalize_add_mul3", "add_right_cancel", "neg_neg", "sub_zero", "zero_sub", "sub_add_cancel", "add_sub_cancel", "sub_add_sub_cancel"]
+axioms = []

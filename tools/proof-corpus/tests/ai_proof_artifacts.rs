@@ -266,6 +266,36 @@ const IFF_THEOREMS: &[&str] = &[
     "iff_congr_arg",
 ];
 
+const ABSTRACT_RING_DEFINITIONS: &[&str] = &["two", "sq", "RingLawArgs"];
+
+const ABSTRACT_RING_THEOREMS: &[&str] = &[
+    "sub_eq_add_neg",
+    "add_assoc",
+    "add_comm",
+    "add_zero",
+    "zero_add",
+    "neg_add_cancel",
+    "add_neg_cancel",
+    "sub_self",
+    "mul_assoc",
+    "mul_comm",
+    "mul_one",
+    "one_mul",
+    "left_distrib",
+    "right_distrib",
+    "mul_zero",
+    "zero_mul",
+    "add_left_cancel",
+    "ring_normalize_add_mul3",
+    "add_right_cancel",
+    "neg_neg",
+    "sub_zero",
+    "zero_sub",
+    "sub_add_cancel",
+    "add_sub_cancel",
+    "sub_add_sub_cancel",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -459,6 +489,18 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: IFF_DEFINITIONS,
         theorems: IFF_THEOREMS,
         axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractRing",
+        source: "Proofs/Ai/Algebra/AbstractRing/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractRing/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractRing/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractRing/replay.json",
+        imports: &["Std.Logic.Eq"],
+        inductives: &[],
+        definitions: ABSTRACT_RING_DEFINITIONS,
+        theorems: ABSTRACT_RING_THEOREMS,
+        axioms: &[],
     },
 ];
 

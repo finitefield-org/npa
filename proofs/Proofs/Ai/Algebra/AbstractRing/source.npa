@@ -1,0 +1,114 @@
+import Std.Logic.Eq
+
+def two.{u} :
+  forall (Scalar : Sort u), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), Scalar :=
+  fun Scalar => fun one => fun add => add one one
+
+def sq.{u} :
+  forall (Scalar : Sort u), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (a : Scalar), Scalar :=
+  fun Scalar => fun mul => fun a => mul a a
+
+def RingLawArgs.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), Prop :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => forall (P : Prop), forall (mk : forall (sub_eq_add_neg_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))), forall (add_assoc_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))), forall (add_comm_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)), forall (add_zero_law : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a), forall (zero_add_law : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a), forall (neg_add_cancel_law : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero), forall (add_neg_cancel_law : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero), forall (sub_self_law : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero), forall (mul_assoc_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))), forall (mul_comm_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)), forall (mul_one_law : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a), forall (one_mul_law : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a), forall (left_distrib_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))), forall (right_distrib_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))), forall (mul_zero_law : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero), forall (zero_mul_law : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero), forall (add_left_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c), forall (ring_normalize_add_mul3_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))), forall (add_right_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c), forall (neg_neg_law : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a), forall (sub_zero_law : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a), forall (zero_sub_law : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)), forall (sub_add_cancel_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a), forall (add_sub_cancel_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a), forall (sub_add_sub_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)), P), P
+
+theorem sub_eq_add_neg.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b)) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b
+
+theorem add_assoc.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c)) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
+
+theorem add_comm.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b
+
+theorem add_zero.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a), forall (a : Scalar), @Eq.{u} Scalar (add a zero) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem zero_add.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a), forall (a : Scalar), @Eq.{u} Scalar (add zero a) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem neg_add_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero), forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem add_neg_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero), forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem sub_self.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero), forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem mul_assoc.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c)) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
+
+theorem mul_comm.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b
+
+theorem mul_one.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a), forall (a : Scalar), @Eq.{u} Scalar (mul a one) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem one_mul.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a), forall (a : Scalar), @Eq.{u} Scalar (mul one a) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem left_distrib.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c)) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
+
+theorem right_distrib.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c)) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
+
+theorem mul_zero.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero), forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem zero_mul.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero), forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem add_left_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => fun h => law a b c h
+
+theorem ring_normalize_add_mul3.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c)) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
+
+theorem add_right_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => fun h => law a b c h
+
+theorem neg_neg.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a), forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem sub_zero.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a), forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem zero_sub.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)), forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a
+
+theorem sub_add_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b
+
+theorem add_sub_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a), forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b
+
+theorem sub_add_sub_cancel.{u} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b) :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
+

@@ -1,0 +1,152 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.AbstractRing",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "two",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun one => fun add => add one one"
+    },
+    {
+      "declaration": "sq",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun mul => fun a => mul a a"
+    },
+    {
+      "declaration": "RingLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => forall (P : Prop), forall (mk : forall (sub_eq_add_neg_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))), forall (add_assoc_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))), forall (add_comm_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)), forall (add_zero_law : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a), forall (zero_add_law : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a), forall (neg_add_cancel_law : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero), forall (add_neg_cancel_law : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero), forall (sub_self_law : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero), forall (mul_assoc_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))), forall (mul_comm_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)), forall (mul_one_law : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a), forall (one_mul_law : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a), forall (left_distrib_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))), forall (right_distrib_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))), forall (mul_zero_law : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero), forall (zero_mul_law : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero), forall (add_left_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c), forall (ring_normalize_add_mul3_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))), forall (add_right_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c), forall (neg_neg_law : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a), forall (sub_zero_law : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a), forall (zero_sub_law : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)), forall (sub_add_cancel_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a), forall (add_sub_cancel_law : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a), forall (sub_add_sub_cancel_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)), P), P"
+    },
+    {
+      "declaration": "sub_eq_add_neg",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b"
+    },
+    {
+      "declaration": "add_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c"
+    },
+    {
+      "declaration": "add_comm",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b"
+    },
+    {
+      "declaration": "add_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "zero_add",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "neg_add_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "add_neg_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "sub_self",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "mul_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c"
+    },
+    {
+      "declaration": "mul_comm",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b"
+    },
+    {
+      "declaration": "mul_one",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "one_mul",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "left_distrib",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c"
+    },
+    {
+      "declaration": "right_distrib",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c"
+    },
+    {
+      "declaration": "mul_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "zero_mul",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "add_left_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => fun h => law a b c h"
+    },
+    {
+      "declaration": "ring_normalize_add_mul3",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c"
+    },
+    {
+      "declaration": "add_right_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => fun h => law a b c h"
+    },
+    {
+      "declaration": "neg_neg",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "sub_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "zero_sub",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => law a"
+    },
+    {
+      "declaration": "sub_add_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b"
+    },
+    {
+      "declaration": "add_sub_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => law a b"
+    },
+    {
+      "declaration": "sub_add_sub_cancel",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/AbstractRing/certificate.npcert"
+  }
+}
