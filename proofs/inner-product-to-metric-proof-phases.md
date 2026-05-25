@@ -441,7 +441,7 @@ Manifest / metadata review:
 
 ### IPM7 Cauchy-Schwarz Prerequisite Audit
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM6
 - Inputs: `Proofs.Ai.Algebra.AbstractOrderedField`,
   `Proofs.Ai.Algebra.AbstractSquareNormalize`, `Proofs.Ai.Vector.AbstractInnerProduct`,
@@ -461,6 +461,41 @@ Manifest / metadata review:
   - `rg -n "cauchy_schwarz|inv|div|square.*le|sqrt|quadratic|norm_sq_zero" proofs tools/proof-corpus`
   - `git diff --check`
 
+#### IPM7 Result
+
+The Cauchy-Schwarz route is frozen at the squared theorem shape:
+
+```text
+sq (dot x y) <= normSq x * normSq y
+```
+
+The checked route must not use the direct `cauchy_schwarz_law` field or the
+legacy wrapper theorem that simply projects it.
+
+| Prerequisite question | Audit result | Consequence |
+| --- | --- | --- |
+| Inverse or division support | Not required. The route must avoid normalizing by a nonzero scalar and must avoid any case split that divides by a selected coefficient. | IPM8 must not add inverse/division operations or laws for this route. |
+| Square comparison support | Not required for the squared final theorem. Existing equality and sqrt-oriented square facts are useful later for metric/unsquared inequalities, but they are not inputs to this Cauchy-Schwarz route. | Square-comparison support stays deferred to IPM11. |
+| Quadratic minimization support | Required. A generic scalar/order lemma is needed to extract a product bound from nonnegativity of a completed-square or quadratic expression. | IPM8 should add a scalar-only theorem such as `square_completion_bound_from_ordered_args`. |
+
+Generic scalar/order support frozen for IPM8:
+
+| Target | Generic shape |
+| --- | --- |
+| `square_completion_bound_from_ordered_args` | For scalars `a`, `b`, and `c`, use only ring/order/square laws to derive a bound of the form `le_rel (sq b) (mul a c)` from generic nonnegativity assumptions for an associated completed-square or quadratic expression. |
+| No inverse/division helper | No inverse or division operation is part of the frozen scalar support. |
+| No square-comparison helper | An order comparison derived from square inequalities is not part of the frozen scalar support for this route. |
+
+The final checked proof route is:
+
+1. Use IPM9 for degenerate zero-norm cases through `norm_sq_zero_iff_law` and
+   scalar zero simplification; do not use `cauchy_schwarz_law`.
+2. In the nondegenerate branch, use checked inner-product expansion facts from
+   IPM6 to produce the scalar nonnegativity instance required by IPM8.
+3. Apply the IPM8 scalar/order lemma to obtain the squared bound.
+4. Export only the squared theorem as the non-legacy Cauchy-Schwarz result:
+   `sq (dot x y) <= normSq x * normSq y`.
+
 ### IPM8 Ordered-Field Quadratic Support
 
 - Status: Pending
@@ -469,10 +504,11 @@ Manifest / metadata review:
   `Proofs.Ai.Algebra.AbstractSquareNormalize`, `Proofs.Ai.Algebra.AbstractRing`
 - Deliverables:
   - Checked scalar/order lemmas needed by the IPM7 route.
-  - Suggested theorem targets, to be finalized by IPM7:
-    - `le_of_square_le_square_nonneg_from_ordered_args`
+  - Suggested theorem targets, finalized by IPM7:
     - `square_completion_bound_from_ordered_args`
-    - optional minimal inverse/division helpers if the audit proves they are necessary.
+    - no inverse/division helper is required by the frozen route.
+    - square-comparison helpers remain deferred to IPM11 because the final Cauchy-Schwarz theorem is
+      the squared inequality.
 - Acceptance criteria:
   - The lemmas are scalar/order facts only; they do not mention vectors, inner products, normSq, or
     metric distance.
