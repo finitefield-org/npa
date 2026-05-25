@@ -539,7 +539,7 @@ square-comparison helper was added. Square-comparison support remains deferred t
 
 ### IPM9 Cauchy-Schwarz Degenerate Cases
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM8
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Algebra.AbstractOrderedField`
@@ -559,6 +559,23 @@ square-comparison helper was added. Square-comparison support remains deferred t
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "cauchy_schwarz_arg|cauchy_schwarz_law|norm_sq_zero|zero_left|zero_right" proofs/Proofs/Ai/Vector tools/proof-corpus/src/main.rs`
+
+#### IPM9 Result
+
+`Proofs.Ai.Vector.AbstractInnerProductDerive` now exports zero-vector dot helpers and zero-norm
+Cauchy-Schwarz degenerate cases:
+
+- `dot_zero_left_from_law_packages`
+- `dot_zero_right_from_law_packages`
+- `dot_eq_zero_of_norm_sq_zero_left_from_inner_args`
+- `dot_eq_zero_of_norm_sq_zero_right_from_inner_args`
+- `cauchy_schwarz_zero_left_from_law_packages`
+- `cauchy_schwarz_zero_right_from_law_packages`
+
+The zero-norm dot helpers use `norm_sq_zero_iff_law` through `InnerProductLawArgs`, and the
+degenerate Cauchy-Schwarz helpers turn scalar equality into order through `OrderedFieldLawArgs`.
+They do not call the direct `cauchy_schwarz_law` field and remain vector-level results, with no
+metric-distance dependency.
 
 ### IPM10 Checked Cauchy-Schwarz Inequality
 

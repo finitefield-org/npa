@@ -55,6 +55,16 @@ struct VerifiedAbstractGeometryImports<'a> {
     abstract_right_triangle: Option<&'a VerifiedModule>,
 }
 
+struct VerifiedAbstractInnerProductDeriveImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    abstract_ring: &'a VerifiedModule,
+    abstract_ordered_field: &'a VerifiedModule,
+    abstract_scalar_derive: &'a VerifiedModule,
+    abstract_vector_space: &'a VerifiedModule,
+    abstract_inner_product: &'a VerifiedModule,
+}
+
 const BASIC_THEOREMS: &[&str] = &[
     "id",
     "const_left",
@@ -455,6 +465,12 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
     "norm_sq_add_of_dot_zero_from_args",
     "norm_sq_add_of_perp_from_args",
     "norm_sq_add_neg_left_from_inner_args",
+    "dot_zero_left_from_law_packages",
+    "dot_zero_right_from_law_packages",
+    "dot_eq_zero_of_norm_sq_zero_left_from_inner_args",
+    "dot_eq_zero_of_norm_sq_zero_right_from_inner_args",
+    "cauchy_schwarz_zero_left_from_law_packages",
+    "cauchy_schwarz_zero_right_from_law_packages",
 ];
 
 const AFFINE_DEFINITIONS: &[&str] = &[
@@ -841,6 +857,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json",
         replay: "Proofs/Ai/Vector/AbstractInnerProductDerive/replay.json",
         imports: &[
+            "Proofs.Ai.Algebra.AbstractOrderedField",
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractScalarDerive",
             "Proofs.Ai.EqReasoning",
@@ -1049,14 +1066,18 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_square_normalize_import,
         &abstract_vector_space_import,
     );
+    let abstract_inner_product_derive_imports = VerifiedAbstractInnerProductDeriveImports {
+        eq: &eq_import,
+        eq_reasoning: &eq_reasoning_import,
+        abstract_ring: &abstract_ring_import,
+        abstract_ordered_field: &abstract_ordered_field_import,
+        abstract_scalar_derive: &abstract_scalar_derive_import,
+        abstract_vector_space: &abstract_vector_space_import,
+        abstract_inner_product: &abstract_inner_product_import,
+    };
     let abstract_inner_product_derive_import = verified_abstract_inner_product_derive_import_module(
         &root,
-        &eq_import,
-        &eq_reasoning_import,
-        &abstract_ring_import,
-        &abstract_scalar_derive_import,
-        &abstract_vector_space_import,
-        &abstract_inner_product_import,
+        &abstract_inner_product_derive_imports,
     );
     let affine_import = verified_affine_import_module(
         &root,
@@ -1502,21 +1523,17 @@ fn verified_abstract_inner_product_import_module(
 
 fn verified_abstract_inner_product_derive_import_module(
     root: &Path,
-    eq_import: &VerifiedModule,
-    eq_reasoning_import: &VerifiedModule,
-    abstract_ring_import: &VerifiedModule,
-    abstract_scalar_derive_import: &VerifiedModule,
-    abstract_vector_space_import: &VerifiedModule,
-    abstract_inner_product_import: &VerifiedModule,
+    imports: &VerifiedAbstractInnerProductDeriveImports<'_>,
 ) -> VerifiedModule {
     let bytes = read(root.join("Proofs/Ai/Vector/AbstractInnerProductDerive/certificate.npcert"));
     let mut session = VerifierSession::new();
-    session.register_verified_module(abstract_ring_import.clone());
-    session.register_verified_module(abstract_scalar_derive_import.clone());
-    session.register_verified_module(eq_reasoning_import.clone());
-    session.register_verified_module(abstract_inner_product_import.clone());
-    session.register_verified_module(abstract_vector_space_import.clone());
-    session.register_verified_module(eq_import.clone());
+    session.register_verified_module(imports.abstract_ring.clone());
+    session.register_verified_module(imports.abstract_ordered_field.clone());
+    session.register_verified_module(imports.abstract_scalar_derive.clone());
+    session.register_verified_module(imports.eq_reasoning.clone());
+    session.register_verified_module(imports.abstract_inner_product.clone());
+    session.register_verified_module(imports.abstract_vector_space.clone());
+    session.register_verified_module(imports.eq.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
         "AbstractInnerProductDerive corpus certificate should verify for downstream imports",
     )

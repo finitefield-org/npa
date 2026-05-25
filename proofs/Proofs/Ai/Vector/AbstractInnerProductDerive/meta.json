@@ -5,12 +5,12 @@
   "certificate": "Proofs/Ai/Vector/AbstractInnerProductDerive/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:c6cc53fc01abd7172b7f59b8681cdfb4f8605dd679550458346dfeb34fea6718",
-  "certificate_file_sha256": "sha256:cce2e87f4054186f744ed4c1b69a56cd6c1cecc3ada1154f894e604a42a3d76c",
-  "export_hash": "sha256:3708af4a94e8e07e447379c711d158564b227d4d05e7b5db6757e940994a9016",
-  "axiom_report_hash": "sha256:4922eb34cfe1163cb8cfa492d20ae82cae0a56a7430e86669072d91f4b6da418",
-  "certificate_hash": "sha256:0c5b58041b000f95d818cb4c746cd8b9e75f90cacdf245aaa50b358af1807a55",
-  "imports": ["Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
+  "source_sha256": "sha256:9ca568b76d0d9e486a9d73f4443535b0c9753ff7051140a1c5905b56a01134bf",
+  "certificate_file_sha256": "sha256:8b34da16bf9c254fe7a13acbfec52d46c1f7be5013adcd01ac1733436dacac21",
+  "export_hash": "sha256:891a7f596ca041f403962c8b91f08f8df1b83384fdd15240fda8486af6e75145",
+  "axiom_report_hash": "sha256:4002fb75112cadcfcc4780d92c98239d63c247cc27f5b89e34fda9dfec2e04cc",
+  "certificate_hash": "sha256:9e39d64476dfe10eb7ae51b8563c463f95e886954247888217e093a62658b52d",
+  "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
   "axioms": ["Eq.rec"],
   "declarations": [
     { "name": "norm_sq_add_from_inner_args", "kind": "theorem" },
@@ -21,7 +21,13 @@
     { "name": "norm_sq_neg_from_inner_args", "kind": "theorem" },
     { "name": "norm_sq_add_of_dot_zero_from_args", "kind": "theorem" },
     { "name": "norm_sq_add_of_perp_from_args", "kind": "theorem" },
-    { "name": "norm_sq_add_neg_left_from_inner_args", "kind": "theorem" }
+    { "name": "norm_sq_add_neg_left_from_inner_args", "kind": "theorem" },
+    { "name": "dot_zero_left_from_law_packages", "kind": "theorem" },
+    { "name": "dot_zero_right_from_law_packages", "kind": "theorem" },
+    { "name": "dot_eq_zero_of_norm_sq_zero_left_from_inner_args", "kind": "theorem" },
+    { "name": "dot_eq_zero_of_norm_sq_zero_right_from_inner_args", "kind": "theorem" },
+    { "name": "cauchy_schwarz_zero_left_from_law_packages", "kind": "theorem" },
+    { "name": "cauchy_schwarz_zero_right_from_law_packages", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
