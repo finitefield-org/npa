@@ -46,7 +46,7 @@ Important constraints:
 
 ### LC1 Direct-Law Audit And Target Shape
 
-- Status: Pending
+- Status: Completed
 - Depends on: P34
 - Inputs: `proofs/README.md`, `proofs/pythagorean-proof-phases.md`,
   `proofs/Proofs/Ai/Geometry/AbstractRightTriangle/source.npa`,
@@ -63,6 +63,22 @@ Important constraints:
 - Verification:
   - `rg -n "law_of_cosines|law : forall .*distSqPoints|cosines.*law" proofs tools/proof-corpus`
   - `git diff --check`
+
+#### LC1 Audit Result
+
+The current corpus has one direct abstract law-of-cosines wrapper and several related non-blocking
+hits:
+
+| Area | Current item | Direct law-of-cosines dependency? | LC follow-up |
+| --- | --- | --- | --- |
+| Concrete singleton geometry | `Proofs.Ai.Geometry.RightTriangle.law_of_cosines` | No. It is a checked concrete singleton theorem closing by `Eq.refl` over the old `Vec` / `RingElem` layer and takes no `law` argument. | Keep as an older checked corpus theorem; do not use it as the abstract LC proof. |
+| Abstract right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle.law_of_cosines_general` | Yes. It takes `law : forall A B C, ...` whose conclusion is exactly the abstract law-of-cosines equality. | Replace the final proof path with `law_of_cosines_sq_from_law_packages`; LC5 must not delegate to this wrapper. |
+| Final Pythagorean API | `Proofs.Ai.Geometry.Pythagorean.law_of_cosines_right_angle_specialization` | No. It currently delegates to the checked P31 `pythagorean_theorem_sq` and states the right-angle Pythagorean specialization, not the general law of cosines. | LC6 may reconnect it to the checked law-of-cosines route, but LC1 does not treat it as a direct law-of-cosines dependency. |
+| Manifest, replay, generator, and generator tests | `law_of_cosines`, `law_of_cosines_general`, `law_of_cosines_right_angle_specialization` declaration entries | No. These entries mirror the declarations above and are not additional proof paths. | Keep expected names until the relevant implementation milestone changes them. |
+| Non-cosine distance wrappers | Generic `law : forall ... distSqPoints ...` hits such as affine symmetry and zero-distance equivalence wrappers | No. These are direct wrappers for their own affine facts, not the law-of-cosines equality. | Leave to their own future audits; they are outside LC1 unless a later LC proof path depends on the target equality directly. |
+
+The LC1 replacement target below is therefore frozen as the first abstract law-of-cosines theorem
+that must avoid any direct law-of-cosines argument.
 
 #### LC1 Target Shape
 
