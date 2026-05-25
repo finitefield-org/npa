@@ -34,6 +34,7 @@ struct VerifiedCorpusImports<'a> {
     abstract_square_normalize: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
+    affine: &'a VerifiedModule,
 }
 
 const BASIC_THEOREMS: &[&str] = &[
@@ -430,6 +431,24 @@ const AFFINE_THEOREMS: &[&str] = &[
     "dist_sq_zero_iff_eq",
 ];
 
+const ABSTRACT_RIGHT_TRIANGLE_DEFINITIONS: &[&str] = &[
+    "Perp",
+    "RightTriangle",
+    "AngleRight",
+    "Area2",
+    "FootOnHypotenuse",
+];
+
+const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[&str] = &[
+    "perp_iff_dot_eq_zero",
+    "perp_symm",
+    "right_triangle_legs_perp",
+    "pythagorean_distance_sq_general",
+    "law_of_cosines_general",
+    "right_triangle_area_general",
+    "median_to_hypotenuse_general",
+];
+
 const EXPECTED_MODULES: &[ExpectedModule] = &[
     ExpectedModule {
         module: "Proofs.Ai.Basic",
@@ -718,6 +737,26 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         theorems: AFFINE_THEOREMS,
         axioms: &[],
     },
+    ExpectedModule {
+        module: "Proofs.Ai.Geometry.AbstractRightTriangle",
+        source: "Proofs/Ai/Geometry/AbstractRightTriangle/source.npa",
+        certificate: "Proofs/Ai/Geometry/AbstractRightTriangle/certificate.npcert",
+        meta: "Proofs/Ai/Geometry/AbstractRightTriangle/meta.json",
+        replay: "Proofs/Ai/Geometry/AbstractRightTriangle/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: ABSTRACT_RIGHT_TRIANGLE_DEFINITIONS,
+        theorems: ABSTRACT_RIGHT_TRIANGLE_THEOREMS,
+        axioms: &[],
+    },
 ];
 
 #[test]
@@ -776,6 +815,15 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_square_normalize_import,
         &abstract_vector_space_import,
     );
+    let affine_import = verified_affine_import_module(
+        &root,
+        &eq_import,
+        &abstract_ring_import,
+        &abstract_ordered_field_import,
+        &abstract_square_normalize_import,
+        &abstract_vector_space_import,
+        &abstract_inner_product_import,
+    );
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
         nat: &nat_import,
@@ -790,6 +838,7 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_square_normalize: &abstract_square_normalize_import,
         abstract_vector_space: &abstract_vector_space_import,
         abstract_inner_product: &abstract_inner_product_import,
+        affine: &affine_import,
     };
 
     for expected in EXPECTED_MODULES {
@@ -939,6 +988,9 @@ fn register_expected_imports(
             }
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
+            }
+            "Proofs.Ai.Geometry.Affine" => {
+                session.register_verified_module(verified_imports.affine.clone())
             }
             other => panic!("unexpected AI proof corpus import {other}"),
         }
@@ -1123,6 +1175,27 @@ fn verified_abstract_inner_product_import_module(
     session.register_verified_module(eq_import.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractInnerProduct corpus certificate should verify for downstream imports")
+}
+
+fn verified_affine_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_ring_import: &VerifiedModule,
+    abstract_ordered_field_import: &VerifiedModule,
+    abstract_square_normalize_import: &VerifiedModule,
+    abstract_vector_space_import: &VerifiedModule,
+    abstract_inner_product_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Geometry/Affine/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(abstract_ordered_field_import.clone());
+    session.register_verified_module(abstract_ring_import.clone());
+    session.register_verified_module(abstract_square_normalize_import.clone());
+    session.register_verified_module(abstract_inner_product_import.clone());
+    session.register_verified_module(abstract_vector_space_import.clone());
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("Affine corpus certificate should verify for downstream imports")
 }
 
 fn verified_core_module(module: CoreModule) -> VerifiedModule {

@@ -35,6 +35,8 @@ Current bundles:
   squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
+- `Proofs/Ai/Geometry/AbstractRightTriangle/`: abstract perpendicularity, right-triangle, and
+  squared-distance Pythagorean theorem targets over explicit geometry law assumptions.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -560,7 +562,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P23+: General Euclidean Pythagorean Roadmap
+### P24+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -575,8 +577,9 @@ the squared `dist` form over the current concrete scalar and vector corpus. P17 
 singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
 abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
 normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
-inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23+
-continues the pattern through right-triangle and metric APIs.
+inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23 supplies
+the abstract right-triangle theorem-target layer. P24+ continues the pattern through metric and
+final theorem APIs.
 
 Planned contents:
 
@@ -623,8 +626,11 @@ Completed prerequisite:
 - P22 `Proofs.Ai.Geometry.Affine` supplies checked abstract point, displacement, point
   squared-distance, and point extensionality theorem targets over explicit affine law assumptions
   without adding unchecked affine or Euclidean axioms.
+- P23 `Proofs.Ai.Geometry.AbstractRightTriangle` supplies checked abstract perpendicularity,
+  right-triangle, squared-distance Pythagorean, law-of-cosines, area, and median theorem targets
+  over explicit geometry law assumptions without adding unchecked Euclidean axioms.
 
-P23+ policy:
+P24+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -635,7 +641,6 @@ P23+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P23 | `Proofs.Ai.Geometry.AbstractRightTriangle` | abstract `Perp` and `RightTriangle` over the inner-product geometry | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `pythagorean_distance_sq_general` | `perp_symm`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` |
 | P24 | `Proofs.Ai.Geometry.AbstractMetric` | abstract `dist` over `sqrt (distSqPoints A B)` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance_general` | `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality` |
 | P25 | `Proofs.Ai.Geometry.Pythagorean` | no new API; final theorem module collecting P16-P24 | `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq` | `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization` |
 
@@ -1119,31 +1124,32 @@ Theorem targets:
 
 #### `Proofs.Ai.Geometry.AbstractRightTriangle`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `Perp` | abstract perpendicularity predicate, normally `dot u v = 0` |
-| `RightTriangle` | abstract right-triangle predicate over points, with the right angle at `A` |
-| `AngleRight` | optional angle-level predicate if the geometry API later separates angle from triangle |
-| `Area2` | optional doubled-area API for right-triangle area theorem targets |
-| `FootOnHypotenuse` | optional altitude-foot predicate for classical right-triangle targets |
+| `Perp` | vector-level perpendicularity predicate, defined through P21 `PerpVec` |
+| `RightTriangle` | point-level right-triangle predicate, with the right angle at `A` |
+| `AngleRight` | angle-level predicate wrapper for later APIs that separate angle from triangle |
+| `Area2` | doubled-area API wrapper for right-triangle area theorem targets |
+| `FootOnHypotenuse` | altitude-foot predicate wrapper for later classical right-triangle targets |
+
+The checked theorem targets either close by definition (`perp_iff_dot_eq_zero`,
+`right_triangle_legs_perp`) or take the corresponding perpendicularity, Pythagorean,
+law-of-cosines, area, or median law as an explicit argument and return it at the requested points.
+`perp_iff_dot_eq_zero` uses the same iff-shaped Church encoding as P21's perpendicularity theorem
+target without importing `Proofs.Ai.Logic.Iff`.
 
 Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
-| `perp_iff_dot_eq_zero` | first-class `Iff (Perp u v) (dot u v = 0)` |
+| `perp_iff_dot_eq_zero` | iff-shaped equivalence between `Perp u v` and `dot u v = 0` |
 | `perp_symm` | `Perp u v -> Perp v u` |
 | `right_triangle_legs_perp` | extract perpendicular leg displacement vectors |
 | `pythagorean_distance_sq_general` | `RightTriangle A B C -> distSqPoints B C = distSqPoints A B + distSqPoints A C` |
 | `law_of_cosines_general` | squared-distance law of cosines over the abstract inner product |
 | `right_triangle_area_general`, `median_to_hypotenuse_general` | same-level classical right-triangle targets |
-| `right_triangle_of_perp_legs` | build `RightTriangle A B C` from perpendicular leg displacements |
-| `right_triangle_not_collinear` | non-collinearity target under nonzero-leg hypotheses |
-| `pythagorean_converse_sq_general` | converse target once angle/nondegeneracy APIs are available |
-| `altitude_on_hypotenuse_general` | altitude theorem over the abstract affine/metric APIs |
-| `thales_theorem_general` | circle/diameter characterization once circle API exists |
 
 #### `Proofs.Ai.Geometry.AbstractMetric`
 

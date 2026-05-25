@@ -362,6 +362,27 @@ const AFFINE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_RIGHT_TRIANGLE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.AbstractRightTriangle",
+    source_path: "Proofs/Ai/Geometry/AbstractRightTriangle/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/AbstractRightTriangle/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/AbstractRightTriangle/meta.json",
+    replay_path: "Proofs/Ai/Geometry/AbstractRightTriangle/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.Geometry.Affine",
+        "Proofs.Ai.Vector.AbstractInnerProduct",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: ABSTRACT_RIGHT_TRIANGLE_DEFINITIONS,
+    theorems: ABSTRACT_RIGHT_TRIANGLE_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -522,6 +543,45 @@ macro_rules! affine_params {
 }
 
 macro_rules! affine_abs {
+    (concat!($($tail:literal),+ $(,)?)) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => ",
+            $($tail),+
+        )
+    };
+    ($tail:literal) => {
+        concat!(
+            "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_right_triangle_params {
+    ($tail:literal) => {
+        concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (one : Scalar), ",
+            "forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (neg : forall (a : Scalar), Scalar), ",
+            "forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), ",
+            "forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), ",
+            "forall (Vector : Sort v), ",
+            "forall (vzero : Vector), ",
+            "forall (vadd : forall (x : Vector), forall (y : Vector), Vector), ",
+            "forall (vneg : forall (x : Vector), Vector), ",
+            "forall (smul : forall (a : Scalar), forall (x : Vector), Vector), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (PointCarrier : Sort p), ",
+            "forall (disp_op : forall (A : PointCarrier), forall (B : PointCarrier), Vector), ",
+            $tail
+        )
+    };
+}
+
+macro_rules! abstract_right_triangle_abs {
     (concat!($($tail:literal),+ $(,)?)) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun PointCarrier => fun disp_op => ",
@@ -3359,6 +3419,138 @@ const AFFINE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_RIGHT_TRIANGLE_DEFINITIONS: &[DefinitionArtifact] = &[
+    DefinitionArtifact {
+        name: "Perp",
+        universe_params: &["u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (x : Vector), forall (y : Vector), Prop"
+        ),
+        value:
+            "fun Scalar => fun zero => fun Vector => fun inner => fun x => fun y => @PerpVec.{u,v} Scalar zero Vector inner x y",
+    },
+    DefinitionArtifact {
+        name: "RightTriangle",
+        universe_params: &["p", "u", "v"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (zero : Scalar), ",
+            "forall (Vector : Sort v), ",
+            "forall (inner : forall (x : Vector), forall (y : Vector), Scalar), ",
+            "forall (PointCarrier : Sort p), ",
+            "forall (disp_op : forall (A : PointCarrier), forall (B : PointCarrier), Vector), ",
+            "forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Prop"
+        ),
+        value:
+            "fun Scalar => fun zero => fun Vector => fun inner => fun PointCarrier => fun disp_op => fun A => fun B => fun C => @Perp.{u,v} Scalar zero Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)",
+    },
+    DefinitionArtifact {
+        name: "AngleRight",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (PointCarrier : Sort p), ",
+            "forall (angle_right_rel : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Prop), ",
+            "forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Prop"
+        ),
+        value:
+            "fun PointCarrier => fun angle_right_rel => fun A => fun B => fun C => angle_right_rel A B C",
+    },
+    DefinitionArtifact {
+        name: "Area2",
+        universe_params: &["p", "u"],
+        ty: concat!(
+            "forall (Scalar : Sort u), ",
+            "forall (PointCarrier : Sort p), ",
+            "forall (area2_op : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Scalar), ",
+            "forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Scalar"
+        ),
+        value:
+            "fun Scalar => fun PointCarrier => fun area2_op => fun A => fun B => fun C => area2_op A B C",
+    },
+    DefinitionArtifact {
+        name: "FootOnHypotenuse",
+        universe_params: &["p"],
+        ty: concat!(
+            "forall (PointCarrier : Sort p), ",
+            "forall (foot_rel : forall (H : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Prop), ",
+            "forall (H : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Prop"
+        ),
+        value:
+            "fun PointCarrier => fun foot_rel => fun H => fun B => fun C => foot_rel H B C",
+    },
+];
+
+const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "perp_iff_dot_eq_zero",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (x : Vector), forall (y : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @Perp.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Perp.{u,v} Scalar zero Vector inner x y), R), R"
+        ),
+        proof: abstract_right_triangle_abs!(
+            "fun x => fun y => fun (R : Prop) => fun (mk : forall (forward : forall (h : @Perp.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Perp.{u,v} Scalar zero Vector inner x y), R) => mk (fun (h : @Perp.{u,v} Scalar zero Vector inner x y) => h) (fun (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero) => h)"
+        ),
+    },
+    TheoremArtifact {
+        name: "perp_symm",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (law : forall (x : Vector), forall (y : Vector), forall (h : @Perp.{u,v} Scalar zero Vector inner x y), @Perp.{u,v} Scalar zero Vector inner y x), forall (x : Vector), forall (y : Vector), forall (h : @Perp.{u,v} Scalar zero Vector inner x y), @Perp.{u,v} Scalar zero Vector inner y x"
+        ),
+        proof: abstract_right_triangle_abs!("fun law => fun x => fun y => fun h => law x y h"),
+    },
+    TheoremArtifact {
+        name: "right_triangle_legs_perp",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Perp.{u,v} Scalar zero Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)"
+        ),
+        proof: abstract_right_triangle_abs!("fun A => fun B => fun C => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "pythagorean_distance_sq_general",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+        ),
+        proof: abstract_right_triangle_abs!(
+            "fun law => fun A => fun B => fun C => fun h => law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "law_of_cosines_general",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (sub (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C)) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C))))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (sub (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C)) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C))))"
+        ),
+        proof: abstract_right_triangle_abs!("fun law => fun A => fun B => fun C => law A B C"),
+    },
+    TheoremArtifact {
+        name: "right_triangle_area_general",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (area2_op : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), Scalar), forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@Area2.{p,u} Scalar PointCarrier area2_op A B C)) (mul (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@Area2.{p,u} Scalar PointCarrier area2_op A B C)) (mul (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+        ),
+        proof: abstract_right_triangle_abs!(
+            "fun area2_op => fun law => fun A => fun B => fun C => fun h => law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "median_to_hypotenuse_general",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (midpoint_op : forall (A : PointCarrier), forall (B : PointCarrier), PointCarrier), forall (law : forall (M : PointCarrier), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (hm : @Eq.{p} PointCarrier M (@midpoint.{p} PointCarrier midpoint_op B C)), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A M) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B M)), forall (M : PointCarrier), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (hm : @Eq.{p} PointCarrier M (@midpoint.{p} PointCarrier midpoint_op B C)), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A M) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B M)"
+        ),
+        proof: abstract_right_triangle_abs!(
+            "fun midpoint_op => fun law => fun M => fun A => fun B => fun C => fun h => fun hm => law M A B C h hm"
+        ),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -3620,6 +3812,29 @@ fn run() -> Result<(), String> {
         &affine_imports,
         &affine_source_interfaces,
     )?;
+    let abstract_right_triangle_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_inner_product.verified_module.clone(),
+        affine.verified_module.clone(),
+    ];
+    let abstract_right_triangle_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_inner_product.source_interface.clone(),
+        affine.source_interface.clone(),
+    ];
+    let abstract_right_triangle = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_RIGHT_TRIANGLE_MODULE,
+        &abstract_right_triangle_imports,
+        &abstract_right_triangle_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -3644,6 +3859,7 @@ fn run() -> Result<(), String> {
             abstract_vector_space,
             abstract_inner_product,
             affine,
+            abstract_right_triangle,
         ])
         .as_bytes(),
     )?;
@@ -3937,6 +4153,15 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Algebra.AbstractSquareNormalize",
             "Proofs.Ai.Vector.AbstractSpace",
             "Proofs.Ai.Vector.AbstractInnerProduct",
+        ]
+    } else if config.module == ABSTRACT_RIGHT_TRIANGLE_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Geometry.Affine",
         ]
     } else {
         config.imports

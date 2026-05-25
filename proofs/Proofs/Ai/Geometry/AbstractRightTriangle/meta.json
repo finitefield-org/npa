@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.AbstractRightTriangle",
+  "source": "Proofs/Ai/Geometry/AbstractRightTriangle/source.npa",
+  "certificate": "Proofs/Ai/Geometry/AbstractRightTriangle/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:417e5f0a013c5e2b4e014396377820cf173b0c873d3fd17f46296389c6f915b2",
+  "certificate_file_sha256": "sha256:d654e9575a678ba1cf6a5761d376517e371b1da9237f926f6d7cfe098f9fa202",
+  "export_hash": "sha256:4e849f7938936db16ea84b5c0b48b7c81a8171b2947ddc2451c677b3b114eace",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:84ca908342fec2655e25bd57a8623593525a51e718af1502dcb4488a415041d6",
+  "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Geometry.Affine", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "Perp", "kind": "def" },
+    { "name": "RightTriangle", "kind": "def" },
+    { "name": "AngleRight", "kind": "def" },
+    { "name": "Area2", "kind": "def" },
+    { "name": "FootOnHypotenuse", "kind": "def" },
+    { "name": "perp_iff_dot_eq_zero", "kind": "theorem" },
+    { "name": "perp_symm", "kind": "theorem" },
+    { "name": "right_triangle_legs_perp", "kind": "theorem" },
+    { "name": "pythagorean_distance_sq_general", "kind": "theorem" },
+    { "name": "law_of_cosines_general", "kind": "theorem" },
+    { "name": "right_triangle_area_general", "kind": "theorem" },
+    { "name": "median_to_hypotenuse_general", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
