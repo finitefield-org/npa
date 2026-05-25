@@ -5,8 +5,10 @@ Source: `proofs/README.md`
 This task breakdown started from the P25 state, where
 `Proofs.Ai.Geometry.Pythagorean` provided checked final theorem names but still accepted an explicit
 Pythagorean equality argument. Through P33, the public squared-distance and squared metric-distance
-theorems are backed by checked derivations from scalar, vector, inner-product, affine, right-triangle,
-and metric bridge law packages while preserving the certificate-first trust boundary.
+theorems are backed by checked derivations from scalar, vector, inner-product, affine,
+right-triangle, and metric bridge law packages. P34 records that optional converse and unsquared
+strengthenings remain outside the completed theorem claims until their own prerequisites can be
+checked while preserving the certificate-first trust boundary.
 
 ## Scope
 
@@ -17,9 +19,9 @@ RightTriangle A B C ->
   distSqPoints B C = distSqPoints A B + distSqPoints A C
 ```
 
-The squared metric-distance theorem is a follow-on target once the squared-distance theorem no
-longer depends on a direct Pythagorean law. The unsquared statement using `dist B C` itself is out
-of scope until square-root cancellation and positivity APIs are strong enough.
+The squared metric-distance theorem is the completed follow-on target after the squared-distance
+theorem stopped depending on a direct Pythagorean law. The unsquared statement using `dist B C`
+itself is out of scope until square-root cancellation and positivity APIs are strong enough.
 
 Important constraints:
 
@@ -71,7 +73,7 @@ predecessors, but the replacement target below is the P17-P25 abstract route.
 | Affine normalization | `Proofs.Ai.Geometry.Affine`: legacy theorem target `hypotenuse_vector_eq_sub_legs` still accepts an explicit theorem-shaped argument; `Proofs.Ai.Geometry.AffineDerive`: `hypotenuse_vector_eq_neg_left_add_right_from_args`, `hypotenuse_vector_eq_sub_legs_from_args`, `dist_sq_hypotenuse_norm_neg_left_add_right_from_args`, `dist_sq_hypotenuse_norm_sub_legs_from_args` | The final proof must connect `distSqPoints B C` to the norm of the hypotenuse vector and orient that vector against the two legs. `distSqPoints` is definitional, and `AffineLawArgs` no longer carries direct hypotenuse-vector or point-distance-definition fields. | P29 derives the needed affine orientation and distance-square bridge from primitive `AffineLawArgs` fields, `VectorSpaceLawArgs`, and equality transport in `AffineDerive`. |
 | Right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle`: `pythagorean_distance_sq_general`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general`; `Proofs.Ai.Geometry.AbstractRightTriangleDerive`: `right_triangle_neg_left_perp_vec_from_rt` | `pythagorean_distance_sq_general` is the direct squared Pythagorean law. `law_of_cosines_general` is the intended intermediate identity but is also currently direct. Area and median targets are same-level right-triangle facts and must not be mistaken for prerequisites of the first squared theorem. | P30 builds the right-triangle to perpendicular bridge in `AbstractRightTriangleDerive`; P31 replaces the Pythagorean direct law with the derived squared theorem. Area and median remain later peer work. |
 | Metric-distance layer | `Proofs.Ai.Geometry.AbstractMetric`: `MetricSpaceLawArgs` fields `dist_def_law`, `dist_nonneg_law`, `distance_symm_law`, `distance_zero_iff_eq_law`, `triangle_inequality_law`; theorem targets `point_dist_sq_nonneg_from_inner_args`, `square_dist_eq_dist_sq_from_law_packages`, `dist_sq_eq_square_dist_from_law_packages`, and `dist_sq_eq_square_dist` derive the metric square bridge from `OrderedFieldLawArgs` and `InnerProductLawArgs`. Legacy metric wrappers such as `pythagorean_distance_general` remain available but are not on the final P32 path. | The squared metric-distance theorem now avoids the direct metric Pythagorean field and the direct `distSqPoints = sq dist` law field. | P32 is complete; P33 can refresh the public API wording around the completed metric-distance theorem. |
-| Final public API | `Proofs.Ai.Geometry.Pythagorean`: `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq`, `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization`, `pythagorean_theorem_api_alias` | `pythagorean_theorem_sq` and `pythagorean_theorem_dist_sq` are backed by P31/P32 checked derivations. `pythagorean_theorem_dependencies` is only a law-package identity and is not a direct theorem law. | P33 refreshes the public theorem names and documentation around the now-completed squared and squared-metric targets. Converse strengthening remains P34. |
+| Final public API | `Proofs.Ai.Geometry.Pythagorean`: `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq`, `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization`, `pythagorean_theorem_api_alias` | `pythagorean_theorem_sq` and `pythagorean_theorem_dist_sq` are backed by P31/P32 checked derivations. `pythagorean_theorem_dependencies` is only a law-package identity and is not a direct theorem law. | P33 refreshes the public theorem names and documentation around the completed squared and squared-metric targets. P34 documents why converse and unsquared strengthening remain future checked theorem work. |
 
 The first non-direct-law target is the squared-distance theorem below. It still takes explicit law
 packages, because NPA does not yet have the structure/class layer, but it does not take an argument
@@ -423,7 +425,7 @@ for P34.
 
 ### P34 Optional Strengthening: Converse And Unsquared Distance
 
-- Status: Pending
+- Status: Completed (review-only; theorem targets deferred until prerequisite APIs exist)
 - Depends on: P33
 - Inputs: `Proofs.Ai.Logic.Iff`, `Proofs.Ai.Algebra.AbstractOrderedField`,
   `Proofs.Ai.Geometry.AbstractMetric`
@@ -439,6 +441,19 @@ for P34.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - Targeted review of imported axiom reports and public theorem statements.
+- Result:
+  - No new converse or unsquared-distance theorem is exported in P34. The existing
+    `pythagorean_converse_sq` remains an explicit target because the current geometry layer has no
+    checked route from squared-distance equality back to nondegeneracy, angle data, and
+    `RightTriangle`.
+  - No unsquared `dist B C = ...` theorem is exported in P34. The current ordered-field and metric
+    APIs provide nonnegativity and `sq (dist A B) = distSqPoints A B`, but they do not yet provide a
+    checked square-root cancellation path for the full Pythagorean right-hand side.
+  - `Proofs.Ai.Logic.Iff` is reviewed as an available first-class equivalence API, but
+    `Proofs.Ai.Geometry.Pythagorean` still does not import it directly. This avoids the documented
+    duplicate `Eq` source handoff issue while keeping the P33 public theorem statements stable.
+  - The final Pythagorean module still reports only the documented equality-recursion exception
+    `["Eq.rec"]`; P34 adds no geometry, metric, order, or square-root axiom.
 
 ## Completion Definition
 
@@ -452,5 +467,6 @@ pythagorean_theorem_sq
   and is documented as completed in `proofs/README.md`.
 ```
 
-The squared metric-distance theorem is complete as of P33. The converse and unsquared-distance
-statements remain separate strengthening work.
+The squared metric-distance theorem is complete as of P33. P34 completes the optional-strengthening
+review without adding new public theorem claims: the converse and unsquared-distance statements
+remain future work until their prerequisite APIs can justify them by checked certificates.

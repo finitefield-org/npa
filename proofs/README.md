@@ -597,7 +597,9 @@ inner-product and squared-norm layer. P22 supplies the affine point/displacement
 the abstract right-triangle theorem layer. P24 supplies the abstract metric-distance theorem layer.
 P25 supplies the final theorem API names that downstream users can depend on, P31 connects the
 squared-distance theorem name to the checked law-package derivation, and P32 connects the squared
-metric-distance theorem name to the checked metric bridge.
+metric-distance theorem name to the checked metric bridge. P34 reviews the optional converse and
+unsquared-distance strengthenings and keeps them out of completed theorem claims until their
+nondegeneracy, angle, and square-root cancellation prerequisites are available.
 
 Planned contents:
 
@@ -669,6 +671,13 @@ Completed prerequisite:
 - P31 `Proofs.Ai.Geometry.Pythagorean` supplies the checked squared-distance Pythagorean theorem
   from `RingLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, `AffineLawArgs`, and
   `RightTriangle A B C`, without accepting a direct Pythagorean theorem-shaped equality law.
+- P32 `Proofs.Ai.Geometry.Pythagorean` supplies the checked squared metric-distance theorem by
+  composing P31 with the P32 metric bridge, without accepting a direct metric Pythagorean law.
+- P33 refreshes the final public Pythagorean API names and documentation around the completed
+  squared and squared-metric theorem claims.
+- P34 records the optional-strengthening boundary: no converse or unsquared-distance theorem is
+  exported until checked nondegeneracy, angle, first-class `Iff` import, and square-root
+  cancellation prerequisites are available.
 
 Post-P25 policy:
 
@@ -679,11 +688,11 @@ Post-P25 policy:
 - Prefer squared-distance statements first; add square-root distance forms only after the required
   nonnegative square-root and square-cancellation lemmas are available.
 
-The current P17-P31 abstract Pythagorean roadmap now has a checked squared-distance theorem from
-law packages. Later work can replace explicit law arguments with checked structure/class packages,
-add direct first-class `Iff` imports once duplicate `Eq` handoff is resolved, and strengthen the
-metric-distance, converse, and unsquared-distance statements as the required nondegeneracy and
-square-root cancellation APIs become available.
+The current P17-P34 abstract Pythagorean roadmap now has checked squared-distance and squared
+metric-distance theorem names from law packages. Later work can replace explicit law arguments with
+checked structure/class packages, add direct first-class `Iff` imports once duplicate `Eq` handoff
+is resolved, and strengthen the converse and unsquared-distance statements as the required
+nondegeneracy, angle, and square-root cancellation APIs become available.
 
 The intended dependency order is:
 
@@ -1333,7 +1342,9 @@ norm-addition derivation, and small affine symmetry/reversal bridges in this mod
 `pythagorean_theorem_api_alias` delegate to the checked P31 derivation. `pythagorean_theorem_dist_sq`
 now composes P31's squared-distance theorem with P32's metric bridge, so it no longer accepts a
 direct metric Pythagorean law. The converse remains an explicit target until the nondegeneracy and
-angle APIs are strong enough.
+angle APIs are strong enough. P34 also leaves the unsquared distance form unexported: the current
+ordered-field and metric layers can justify squared metric-distance equality, but they do not yet
+provide a checked square-root cancellation path for the full Pythagorean right-hand side.
 The module axiom report is `["Eq.rec"]`; this is the documented equality-recursion exception
 inherited from imported equality reasoning and transport lemmas, not a geometry or metric axiom.
 `Proofs.Ai.Logic.Iff` is not directly imported here because the current source handoff cannot
@@ -1348,7 +1359,7 @@ declaration.
 | `pythagorean_distance_sq_from_law_packages` | checked squared-distance Pythagorean theorem from law packages and `RightTriangle A B C` |
 | `pythagorean_theorem_sq` | public squared-distance theorem delegating to the checked P31 derivation |
 | `pythagorean_theorem_dist_sq` | squared metric-distance theorem derived from P31 plus the P32 metric bridge |
-| `pythagorean_converse_sq` | converse target when the required nondegeneracy and angle API are available |
+| `pythagorean_converse_sq` | explicit converse target, not a completed theorem derivation, until the required nondegeneracy and angle API are available |
 | `law_of_cosines_right_angle_specialization` | right-angle specialization alias backed by the checked squared-distance theorem |
 | `pythagorean_theorem_api_alias` | stable alias backed by the checked squared-distance theorem |
 | `pythagorean_theorem_dependencies` | documentation theorem or metadata target listing required law packages |
