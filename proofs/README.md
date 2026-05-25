@@ -33,9 +33,9 @@ Current bundles:
   scalar API layers and explicit vector operation/law assumptions.
 - `Proofs/Ai/Vector/AbstractInnerProduct/`: abstract inner-product, squared norm, and vector
   squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
-- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion, parallelogram, and
-  polarization derivations from `InnerProductLawArgs`, scalar rewrites, `EqReasoning`, and
-  `PerpVec`.
+- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion, parallelogram,
+  polarization, Cauchy-Schwarz, and squared Minkowski derivations from explicit scalar, vector, and
+  inner-product law packages.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/AffineDerive/`: checked affine displacement orientation and point-distance
@@ -44,8 +44,8 @@ Current bundles:
   squared-distance Pythagorean theorem targets over explicit geometry law assumptions.
 - `Proofs/Ai/Geometry/AbstractRightTriangleDerive/`: checked right-triangle-to-perpendicular
   bridge derivations for the abstract Pythagorean route.
-- `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
-  metric-distance theorem targets over explicit metric law assumptions.
+- `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, checked
+  distance/squared-distance bridges, squared Minkowski, and checked metric triangle inequality.
 - `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean and law-of-cosines theorem names,
   including checked squared-distance and squared metric-distance derivations from scalar, vector,
   inner-product, affine, right-triangle, and metric bridge law packages.
@@ -72,6 +72,32 @@ Planning documents:
 - `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
   polarization, Cauchy-Schwarz, and metric triangle inequality.
+
+## Completed Inner-Product To Metric Route
+
+The IPM route now has certificate-verified final theorem exports for the standard progression from
+inner-product identities to the metric triangle inequality. These final checked theorem names are
+separate from older theorem-shaped target wrappers.
+
+| Goal | Final checked theorem | Main checked dependencies |
+| --- | --- | --- |
+| Parallelogram law | `Proofs.Ai.Vector.AbstractInnerProductDerive.parallelogram_law_from_inner_args` | `RingLawArgs`, `InnerProductLawArgs`, checked norm expansions, scalar normalization |
+| Polarization identity | `Proofs.Ai.Vector.AbstractInnerProductDerive.polarization_identity_from_inner_args` | `RingLawArgs`, `InnerProductLawArgs`, checked norm expansion, scalar normalization |
+| Cauchy-Schwarz inequality | `Proofs.Ai.Vector.AbstractInnerProductDerive.cauchy_schwarz_from_law_packages` | `RingLawArgs`, `OrderedFieldLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs.quadratic_norm_nonneg_law`, square-completion support |
+| Metric triangle inequality | `Proofs.Ai.Geometry.AbstractMetric.triangle_inequality_from_law_packages` | `RingLawArgs`, `OrderedFieldLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, `AffineLawArgs`, checked Cauchy-Schwarz, squared Minkowski, and square comparison |
+
+Legacy target / compatibility wrappers remain exported for older callers, but they are not the
+completed checked proof paths:
+
+| Area | Legacy wrapper / field | Status |
+| --- | --- | --- |
+| Abstract inner-product API | `parallelogram_law`, `polarization_identity`, `cauchy_schwarz` | Compatibility theorem targets; prefer the `_from_inner_args` / `_from_law_packages` exports above. |
+| Abstract inner-product law package | `parallelogram_law_law`, `polarization_identity_law` | Direct peer theorem fields remain in the package surface, but the final IPM theorem exports do not project them. |
+| Abstract metric API | `triangle_inequality` | Compatibility theorem target; prefer `triangle_inequality_from_law_packages`. |
+| Abstract metric law package | `triangle_inequality_law` | Direct theorem field remains in `MetricSpaceLawArgs`, but the final IPM triangle proof does not take `MetricSpaceLawArgs`. |
+
+This route proves the checked metric triangle inequality only. It does not claim angle,
+trigonometric, completeness, normed-vector-space equivalence, or stronger analytic statements.
 
 ## Expansion Plan
 

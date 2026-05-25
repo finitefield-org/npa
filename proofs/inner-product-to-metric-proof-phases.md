@@ -752,7 +752,7 @@ the checked route is `triangle_inequality_from_law_packages`.
 
 ### IPM14 Public Documentation And API Refresh
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM13
 - Inputs: `proofs/README.md`, `proofs/manifest.toml`,
   `proofs/Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json`,
@@ -772,6 +772,29 @@ the checked route is `triangle_inequality_from_law_packages`.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "parallelogram_law_from_inner_args|polarization_identity_from_inner_args|cauchy_schwarz_from_law_packages|triangle_inequality_from_law_packages|direct" proofs/README.md proofs/inner-product-to-metric-proof-phases.md proofs/Proofs/Ai`
+
+#### IPM14 Result
+
+The public documentation now separates the final checked IPM theorem exports from older target /
+compatibility wrappers.
+
+| Goal | Final checked export | Manifest / metadata review |
+| --- | --- | --- |
+| Parallelogram law | `Proofs.Ai.Vector.AbstractInnerProductDerive.parallelogram_law_from_inner_args` | Listed in `proofs/manifest.toml` and `Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json`; final route derives from checked norm expansions and scalar normalization rather than projecting `parallelogram_law_law`. |
+| Polarization identity | `Proofs.Ai.Vector.AbstractInnerProductDerive.polarization_identity_from_inner_args` | Listed in the same manifest and metadata entries; final route derives from checked norm expansion and scalar normalization rather than projecting `polarization_identity_law`. |
+| Cauchy-Schwarz inequality | `Proofs.Ai.Vector.AbstractInnerProductDerive.cauchy_schwarz_from_law_packages` | Listed in the same manifest and metadata entries; final route uses ordered-field square completion and `quadratic_norm_nonneg_law`, not a direct Cauchy-Schwarz law. |
+| Metric triangle inequality | `Proofs.Ai.Geometry.AbstractMetric.triangle_inequality_from_law_packages` | Listed in `proofs/manifest.toml` and `Proofs/Ai/Geometry/AbstractMetric/meta.json`; final route uses IPM12 squared bound and IPM11 square comparison, not `MetricSpaceLawArgs.triangle_inequality_law`. |
+
+Remaining direct theorem-shaped wrappers are explicitly documented as compatibility wrappers:
+`Proofs.Ai.Vector.AbstractInnerProduct.parallelogram_law`,
+`Proofs.Ai.Vector.AbstractInnerProduct.polarization_identity`,
+`Proofs.Ai.Vector.AbstractInnerProduct.cauchy_schwarz`, and
+`Proofs.Ai.Geometry.AbstractMetric.triangle_inequality`. They remain exported for older callers,
+but they are not the completed checked proof paths.
+
+The README now states the boundary of the result: the sequence proves the checked metric triangle
+inequality only and does not claim angle, trigonometric, completeness, normed-vector-space
+equivalence, or stronger analytic statements.
 
 ## Completion Definition
 
