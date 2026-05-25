@@ -284,7 +284,7 @@ proof path is still the certificate-checked affine/vector/scalar route. It does 
 
 ### LC6 Right-Angle Specialization Cross-Check
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC5, P30, P31
 - Inputs: `Proofs.Ai.Geometry.Pythagorean`,
   `Proofs.Ai.Geometry.AbstractRightTriangleDerive`, `Proofs.Ai.Algebra.AbstractScalarDerive`
@@ -303,6 +303,30 @@ proof path is still the certificate-checked affine/vector/scalar route. It does 
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "law_of_cosines_right_angle_specialization|right_triangle_legs_dot_zero|law_of_cosines.*law" proofs/Proofs/Ai/Geometry/Pythagorean tools/proof-corpus/src/main.rs`
+
+#### LC6 Result
+
+`Proofs.Ai.Geometry.Pythagorean` now contains the checked specialization
+`law_of_cosines_right_angle_specialization_from_law_packages`.
+
+The proof route is:
+
+```text
+distSqPoints B C
+  = sub (add (distSqPoints A B) (distSqPoints A C))
+      (mul two (dot (disp A B) (disp A C)))     -- LC5
+  = add (distSqPoints A B) (distSqPoints A C)  -- right-triangle dot=0
+```
+
+The second step uses `right_triangle_legs_dot_zero_from_rt`, derives `neg dot = zero`, and applies
+the checked scalar zero-cross-term normalization
+`normalize_add_with_zero_cross_term_from_ring_args` through the LC2 scalar RHS bridge
+`law_of_cosines_scalar_rhs_from_ring_args`.
+
+The existing public `law_of_cosines_right_angle_specialization` now delegates to this checked
+specialization. The primary P31 theorem `pythagorean_theorem_sq` is unchanged and still delegates to
+`pythagorean_distance_sq_from_law_packages`; LC6 is a cross-check path, not a replacement proof of
+P31.
 
 ### LC7 Squared Metric-Distance Law Of Cosines
 

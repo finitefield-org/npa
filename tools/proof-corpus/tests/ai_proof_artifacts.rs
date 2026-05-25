@@ -530,6 +530,7 @@ const PYTHAGOREAN_THEOREMS: &[&str] = &[
     "pythagorean_theorem_sq",
     "pythagorean_theorem_dist_sq",
     "pythagorean_converse_sq",
+    "law_of_cosines_right_angle_specialization_from_law_packages",
     "law_of_cosines_right_angle_specialization",
     "pythagorean_theorem_api_alias",
     "pythagorean_theorem_dependencies",
