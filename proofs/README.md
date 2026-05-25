@@ -576,6 +576,8 @@ inner-product route first:
 RightTriangle A B C -> distSqPoints B C = distSqPoints A B + distSqPoints A C
 ```
 
+Post-P25 implementation phases are tracked in `proofs/pythagorean-proof-phases.md`.
+
 This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
 the squared `dist` form over the current concrete scalar and vector corpus. P17 starts replacing the
 singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
