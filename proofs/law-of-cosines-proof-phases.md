@@ -162,7 +162,7 @@ the documented equality-transport exception `Eq.rec`.
 
 ### LC3 Inner-Product Additive Cosine Expansion
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC2
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Algebra.AbstractScalarDerive`
@@ -181,6 +181,22 @@ the documented equality-transport exception `Eq.rec`.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "norm_sq_add_neg_left.*law|norm_sq_neg.*law|law_of_cosines.*law" proofs/Proofs/Ai/Vector tools/proof-corpus/src/main.rs`
+
+#### LC3 Result
+
+`Proofs.Ai.Vector.AbstractInnerProductDerive` now contains checked vector-level cosine-expansion
+lemmas:
+
+| Theorem | Role |
+| --- | --- |
+| `dot_neg_left_from_inner_args` | Exposes the inner-product law-package field needed by later vector derivations. It was moved here from the right-triangle derivation layer so the vector module is the canonical owner. |
+| `norm_sq_neg_from_inner_args` | Derives `normSq (vneg x) = normSq x` from `InnerProductLawArgs` and `RingLawArgs` using dot negation and double-negation cancellation. |
+| `norm_sq_add_neg_left_from_inner_args` | Expands `normSq (vadd (vneg x) y)` through `norm_sq_add_from_inner_args`, rewrites the dot term with `dot_neg_left_from_inner_args`, and closes the scalar RHS with LC2 `law_of_cosines_scalar_rhs_from_ring_args`. |
+
+The theorem remains vector-level: it has no point, metric, right-triangle, direct law-of-cosines, or
+direct norm-add-neg law dependency. `Proofs.Ai.Geometry.AbstractRightTriangleDerive` now imports the
+vector helper instead of redeclaring it, avoiding duplicate public declarations when both modules are
+imported downstream.
 
 ### LC4 Affine Distance Bridge For Cosines
 

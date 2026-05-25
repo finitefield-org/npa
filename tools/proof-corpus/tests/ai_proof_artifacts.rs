@@ -439,8 +439,11 @@ const ABSTRACT_INNER_PRODUCT_THEOREMS: &[&str] = &[
 
 const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
     "norm_sq_add_from_inner_args",
+    "dot_neg_left_from_inner_args",
+    "norm_sq_neg_from_inner_args",
     "norm_sq_add_of_dot_zero_from_args",
     "norm_sq_add_of_perp_from_args",
+    "norm_sq_add_neg_left_from_inner_args",
 ];
 
 const AFFINE_DEFINITIONS: &[&str] = &[
@@ -495,7 +498,6 @@ const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[&str] = &[
 
 const ABSTRACT_RIGHT_TRIANGLE_DERIVE_THEOREMS: &[&str] = &[
     "neg_zero_from_ring_args",
-    "dot_neg_left_from_inner_args",
     "right_triangle_legs_perp_vec_from_rt",
     "right_triangle_legs_dot_zero_from_rt",
     "right_triangle_neg_left_dot_zero_from_rt",
@@ -907,6 +909,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
             "Proofs.Ai.Geometry.Affine",
             "Proofs.Ai.Geometry.AffineDerive",
             "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Vector.AbstractInnerProductDerive",
             "Proofs.Ai.Vector.AbstractSpace",
             "Std.Logic.Eq",
         ],
@@ -1063,6 +1066,7 @@ fn ai_certificates_match_manifest_and_verify() {
         verified_abstract_right_triangle_derive_import_module(
             &root,
             &abstract_geometry_imports,
+            &abstract_inner_product_derive_import,
             &affine_derive_import,
             &abstract_right_triangle_import,
         );
@@ -1553,6 +1557,7 @@ fn verified_abstract_right_triangle_import_module(
 fn verified_abstract_right_triangle_derive_import_module(
     root: &Path,
     imports: &VerifiedAbstractGeometryImports<'_>,
+    abstract_inner_product_derive_import: &VerifiedModule,
     affine_derive_import: &VerifiedModule,
     abstract_right_triangle_import: &VerifiedModule,
 ) -> VerifiedModule {
@@ -1566,6 +1571,7 @@ fn verified_abstract_right_triangle_derive_import_module(
     session.register_verified_module(imports.affine.clone());
     session.register_verified_module(affine_derive_import.clone());
     session.register_verified_module(imports.abstract_inner_product.clone());
+    session.register_verified_module(abstract_inner_product_derive_import.clone());
     session.register_verified_module(imports.abstract_vector_space.clone());
     session.register_verified_module(imports.eq.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
