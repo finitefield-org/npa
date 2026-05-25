@@ -263,7 +263,7 @@ API and then used as checked imported theorem support, not as direct target theo
 
 ### IPM2 Scalar Normalization For Parallelogram
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM1
 - Inputs: `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractScalarDerive`,
   `Proofs.Ai.EqReasoning`
@@ -281,6 +281,24 @@ API and then used as checked imported theorem support, not as direct target theo
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "parallelogram_scalar|cross.*cancel|parallelogram_arg" proofs tools/proof-corpus`
+
+#### IPM2 Result
+
+`Proofs.Ai.Algebra.AbstractScalarDerive` now includes the checked scalar-only path needed by IPM3:
+
+| Theorem | Purpose |
+| --- | --- |
+| `two_mul_from_ring_args` | Derives `2 * a = a + a` from `RingLawArgs`. |
+| `add_sub_cross_cancel_from_ring_args` | Cancels one opposite cross term: `x + (a - x) = a`. |
+| `add_pairwise_commute_from_ring_args` | Reassociates `(a + b) + (c + d)` into `(a + c) + (b + d)`. |
+| `add_cross_and_sub_cross_cancel_from_ring_args` | Turns the two norm-expansion scalar summands into `(a + a) + (b + b)`. |
+| `parallelogram_scalar_rhs_from_ring_args` | Rewrites `(a + x + b) + (a - x + b)` into `2 * a + 2 * b`. |
+
+The generated certificates verify these lemmas using `RingLawArgs` plus checked equality
+composition from `Proofs.Ai.EqReasoning`. The scalar module does not import vector,
+inner-product, parallelogram, or polarization theorem laws. The `parallelogram_arg` matches in the
+verification search remain the pre-existing vector-level law-package binders and are not referenced
+by the new scalar proof path.
 
 ### IPM3 Checked Parallelogram Law
 

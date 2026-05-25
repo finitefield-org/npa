@@ -314,6 +314,7 @@ const ABSTRACT_SCALAR_DERIVE_MODULE: ModuleArtifact = ModuleArtifact {
     imports: &[
         "Proofs.Ai.Algebra.AbstractRing",
         "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.EqReasoning",
         "Std.Logic.Eq",
     ],
     inductives: &[],
@@ -3104,6 +3105,189 @@ const ABSTRACT_SCALAR_DERIVE_THEOREMS: &[TheoremArtifact] = &[
             "(@add_neg_cross_term_to_sub_sum_from_ring_args.{u} Scalar zero one add neg sub mul ring_args a b (mul (@two.{u} Scalar one add) x))"
         )),
     },
+    TheoremArtifact {
+        name: "two_mul_from_ring_args",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (a : Scalar), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) a) (add a a)"
+        ),
+        proof: abstract_ring_abs!(concat!(
+            "fun ring_args => fun a => ",
+            "ring_args (@Eq.{u} Scalar (mul (@two.{u} Scalar one add) a) (add a a)) ",
+            "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
+            "fun (add_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))) => ",
+            "fun (add_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)) => ",
+            "fun (add_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a) => ",
+            "fun (zero_add_arg : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a) => ",
+            "fun (neg_add_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero) => ",
+            "fun (add_neg_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero) => ",
+            "fun (sub_self_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero) => ",
+            "fun (mul_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (mul_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)) => ",
+            "fun (mul_one_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a) => ",
+            "fun (one_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a) => ",
+            "fun (left_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))) => ",
+            "fun (right_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))) => ",
+            "fun (mul_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero) => ",
+            "fun (zero_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero) => ",
+            "fun (add_left_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c) => ",
+            "fun (ring_normalize_add_mul3_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))) => ",
+            "fun (add_right_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c) => ",
+            "fun (neg_neg_arg : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a) => ",
+            "fun (sub_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a) => ",
+            "fun (zero_sub_arg : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)) => ",
+            "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
+            "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
+            "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => ",
+            "@eq_trans.{u} Scalar (mul (@two.{u} Scalar one add) a) (add (mul one a) (mul one a)) (add a a) ",
+            "(right_distrib_arg one one a) ",
+            "(@eq_congr2.{u,u,u} Scalar Scalar Scalar add (mul one a) a (mul one a) a (one_mul_arg a) (one_mul_arg a)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "add_sub_cross_cancel_from_ring_args",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (a : Scalar), forall (x : Scalar), @Eq.{u} Scalar (add x (sub a x)) a"
+        ),
+        proof: abstract_ring_abs!(concat!(
+            "fun ring_args => fun a => fun x => ",
+            "ring_args (@Eq.{u} Scalar (add x (sub a x)) a) ",
+            "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
+            "fun (add_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))) => ",
+            "fun (add_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)) => ",
+            "fun (add_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a) => ",
+            "fun (zero_add_arg : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a) => ",
+            "fun (neg_add_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero) => ",
+            "fun (add_neg_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero) => ",
+            "fun (sub_self_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero) => ",
+            "fun (mul_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (mul_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)) => ",
+            "fun (mul_one_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a) => ",
+            "fun (one_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a) => ",
+            "fun (left_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))) => ",
+            "fun (right_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))) => ",
+            "fun (mul_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero) => ",
+            "fun (zero_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero) => ",
+            "fun (add_left_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c) => ",
+            "fun (ring_normalize_add_mul3_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))) => ",
+            "fun (add_right_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c) => ",
+            "fun (neg_neg_arg : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a) => ",
+            "fun (sub_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a) => ",
+            "fun (zero_sub_arg : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)) => ",
+            "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
+            "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
+            "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => ",
+            "@eq_trans.{u} Scalar (add x (sub a x)) (add (sub a x) x) a ",
+            "(add_comm_arg x (sub a x)) ",
+            "(sub_add_cancel_arg a x))"
+        )),
+    },
+    TheoremArtifact {
+        name: "add_pairwise_commute_from_ring_args",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), @Eq.{u} Scalar (add (add a b) (add c d)) (add (add a c) (add b d))"
+        ),
+        proof: abstract_ring_abs!(concat!(
+            "fun ring_args => fun a => fun b => fun c => fun d => ",
+            "ring_args (@Eq.{u} Scalar (add (add a b) (add c d)) (add (add a c) (add b d))) ",
+            "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
+            "fun (add_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))) => ",
+            "fun (add_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)) => ",
+            "fun (add_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a) => ",
+            "fun (zero_add_arg : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a) => ",
+            "fun (neg_add_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero) => ",
+            "fun (add_neg_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero) => ",
+            "fun (sub_self_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero) => ",
+            "fun (mul_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (mul_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)) => ",
+            "fun (mul_one_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a) => ",
+            "fun (one_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a) => ",
+            "fun (left_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))) => ",
+            "fun (right_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))) => ",
+            "fun (mul_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero) => ",
+            "fun (zero_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero) => ",
+            "fun (add_left_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c) => ",
+            "fun (ring_normalize_add_mul3_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))) => ",
+            "fun (add_right_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c) => ",
+            "fun (neg_neg_arg : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a) => ",
+            "fun (sub_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a) => ",
+            "fun (zero_sub_arg : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)) => ",
+            "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
+            "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
+            "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => ",
+            "@eq_calc3.{u} Scalar (add (add a b) (add c d)) (add a (add b (add c d))) (add a (add c (add b d))) (add (add a c) (add b d)) ",
+            "(add_assoc_arg a b (add c d)) ",
+            "(@eq_congr_arg.{u,u} Scalar Scalar (fun (z : Scalar) => add a z) (add b (add c d)) (add c (add b d)) ",
+            "(@eq_calc3.{u} Scalar (add b (add c d)) (add (add b c) d) (add (add c b) d) (add c (add b d)) ",
+            "(@eq_symm.{u} Scalar (add (add b c) d) (add b (add c d)) (add_assoc_arg b c d)) ",
+            "(@eq_congr_arg.{u,u} Scalar Scalar (fun (z : Scalar) => add z d) (add b c) (add c b) (add_comm_arg b c)) ",
+            "(add_assoc_arg c b d))) ",
+            "(@eq_symm.{u} Scalar (add (add a c) (add b d)) (add a (add c (add b d))) (add_assoc_arg a c (add b d))))"
+        )),
+    },
+    TheoremArtifact {
+        name: "add_cross_and_sub_cross_cancel_from_ring_args",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), @Eq.{u} Scalar (add (add (add a x) b) (add (sub a x) b)) (add (add a a) (add b b))"
+        ),
+        proof: abstract_ring_abs!(concat!(
+            "fun ring_args => fun a => fun b => fun x => ",
+            "@eq_trans.{u} Scalar (add (add (add a x) b) (add (sub a x) b)) (add (add (add a x) (sub a x)) (add b b)) (add (add a a) (add b b)) ",
+            "(@add_pairwise_commute_from_ring_args.{u} Scalar zero one add neg sub mul ring_args (add a x) b (sub a x) b) ",
+            "(@eq_congr2.{u,u,u} Scalar Scalar Scalar add (add (add a x) (sub a x)) (add a a) (add b b) (add b b) ",
+            "(@eq_trans.{u} Scalar (add (add a x) (sub a x)) (add a (add x (sub a x))) (add a a) ",
+            "(ring_args (@Eq.{u} Scalar (add (add a x) (sub a x)) (add a (add x (sub a x)))) ",
+            "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
+            "fun (add_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))) => ",
+            "fun (add_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)) => ",
+            "fun (add_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a) => ",
+            "fun (zero_add_arg : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a) => ",
+            "fun (neg_add_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero) => ",
+            "fun (add_neg_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero) => ",
+            "fun (sub_self_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero) => ",
+            "fun (mul_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (mul_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)) => ",
+            "fun (mul_one_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a) => ",
+            "fun (one_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a) => ",
+            "fun (left_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))) => ",
+            "fun (right_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))) => ",
+            "fun (mul_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero) => ",
+            "fun (zero_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero) => ",
+            "fun (add_left_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c) => ",
+            "fun (ring_normalize_add_mul3_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))) => ",
+            "fun (add_right_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c) => ",
+            "fun (neg_neg_arg : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a) => ",
+            "fun (sub_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a) => ",
+            "fun (zero_sub_arg : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)) => ",
+            "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
+            "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
+            "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => add_assoc_arg a x (sub a x))) ",
+            "(@eq_congr_arg.{u,u} Scalar Scalar (fun (z : Scalar) => add a z) (add x (sub a x)) a ",
+            "(@add_sub_cross_cancel_from_ring_args.{u} Scalar zero one add neg sub mul ring_args a x))) ",
+            "(@Eq.refl.{u} Scalar (add b b)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "parallelogram_scalar_rhs_from_ring_args",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (a : Scalar), forall (b : Scalar), forall (x : Scalar), @Eq.{u} Scalar (add (add (add a x) b) (add (sub a x) b)) (add (mul (@two.{u} Scalar one add) a) (mul (@two.{u} Scalar one add) b))"
+        ),
+        proof: abstract_ring_abs!(concat!(
+            "fun ring_args => fun a => fun b => fun x => ",
+            "@eq_calc3.{u} Scalar (add (add (add a x) b) (add (sub a x) b)) (add (add a a) (add b b)) (add (mul (@two.{u} Scalar one add) a) (add b b)) (add (mul (@two.{u} Scalar one add) a) (mul (@two.{u} Scalar one add) b)) ",
+            "(@add_cross_and_sub_cross_cancel_from_ring_args.{u} Scalar zero one add neg sub mul ring_args a b x) ",
+            "(@eq_congr2.{u,u,u} Scalar Scalar Scalar add (add a a) (mul (@two.{u} Scalar one add) a) (add b b) (add b b) ",
+            "(@eq_symm.{u} Scalar (mul (@two.{u} Scalar one add) a) (add a a) (@two_mul_from_ring_args.{u} Scalar zero one add neg sub mul ring_args a)) ",
+            "(@Eq.refl.{u} Scalar (add b b))) ",
+            "(@eq_congr2.{u,u,u} Scalar Scalar Scalar add (mul (@two.{u} Scalar one add) a) (mul (@two.{u} Scalar one add) a) (add b b) (mul (@two.{u} Scalar one add) b) ",
+            "(@Eq.refl.{u} Scalar (mul (@two.{u} Scalar one add) a)) ",
+            "(@eq_symm.{u} Scalar (mul (@two.{u} Scalar one add) b) (add b b) (@two_mul_from_ring_args.{u} Scalar zero one add neg sub mul ring_args b)))"
+        )),
+    },
 ];
 
 const ABSTRACT_VECTOR_SPACE_DEFINITIONS: &[DefinitionArtifact] = &[
@@ -5084,10 +5268,12 @@ fn run() -> Result<(), String> {
     )?;
     let abstract_scalar_derive_imports = vec![
         eq_import.clone(),
+        eq_reasoning.verified_module.clone(),
         abstract_ring.verified_module.clone(),
         abstract_square_normalize.verified_module.clone(),
     ];
     let abstract_scalar_derive_source_interfaces = vec![
+        eq_reasoning.source_interface.clone(),
         abstract_ring.source_interface.clone(),
         abstract_square_normalize.source_interface.clone(),
     ];
@@ -5625,6 +5811,7 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
         &[
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.EqReasoning",
         ]
     } else if config.module == ABSTRACT_VECTOR_SPACE_MODULE.module {
         &[

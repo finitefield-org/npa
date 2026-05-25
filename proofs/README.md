@@ -1086,15 +1086,24 @@ No new carrier or operation definition lives here. This implemented module deriv
 normalization helpers from the P17 `RingLawArgs` package and `Std.Logic.Eq` equality transport,
 while importing the P19 square-normalization layer for the Pythagorean scalar stack.
 
-The checked theorem targets use equality transport, so the module records the expected `Eq.rec`
-dependency. They do not accept
-`normalize_add_with_zero_cross_term_law` as a direct theorem-shaped argument.
+The checked theorem targets use equality transport through `Proofs.Ai.EqReasoning`, so the module
+records the expected `Eq.rec` dependency. They do not accept
+`normalize_add_with_zero_cross_term_law`, parallelogram, or polarization laws as direct
+theorem-shaped arguments.
 
 | Theorem | Shape / purpose |
 | --- | --- |
 | `mul_two_zero_term_from_ring_args` | `x = 0 -> 2 * x = 0`, derived from `RingLawArgs` |
 | `cancel_double_zero_term_from_ring_args` | `x = 0 -> a + 2 * x = a` |
 | `normalize_add_with_zero_cross_term_from_ring_args` | `x = 0 -> (a + 2 * x) + b = a + b` |
+| `mul_two_neg_from_ring_args` | `2 * (-x) = -(2 * x)`, used by the law-of-cosines scalar route |
+| `add_neg_cross_term_to_sub_sum_from_ring_args` | `(a + -t) + b = (a + b) - t` |
+| `law_of_cosines_scalar_rhs_from_ring_args` | `(a + 2 * -x) + b = (a + b) - 2 * x` |
+| `two_mul_from_ring_args` | `2 * a = a + a`, derived from distributivity and `1 * a = a` |
+| `add_sub_cross_cancel_from_ring_args` | `x + (a - x) = a` |
+| `add_pairwise_commute_from_ring_args` | `(a + b) + (c + d) = (a + c) + (b + d)` |
+| `add_cross_and_sub_cross_cancel_from_ring_args` | cancels opposite cross terms in the parallelogram scalar sum |
+| `parallelogram_scalar_rhs_from_ring_args` | `(a + x + b) + (a - x + b) = 2 * a + 2 * b` |
 
 #### `Proofs.Ai.Vector.AbstractSpace`
 

@@ -376,6 +376,11 @@ const ABSTRACT_SCALAR_DERIVE_THEOREMS: &[&str] = &[
     "mul_two_neg_from_ring_args",
     "add_neg_cross_term_to_sub_sum_from_ring_args",
     "law_of_cosines_scalar_rhs_from_ring_args",
+    "two_mul_from_ring_args",
+    "add_sub_cross_cancel_from_ring_args",
+    "add_pairwise_commute_from_ring_args",
+    "add_cross_and_sub_cross_cancel_from_ring_args",
+    "parallelogram_scalar_rhs_from_ring_args",
 ];
 
 const ABSTRACT_VECTOR_SPACE_DEFINITIONS: &[&str] =
@@ -780,6 +785,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &[
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.EqReasoning",
             "Std.Logic.Eq",
         ],
         inductives: &[],
@@ -1017,6 +1023,7 @@ fn ai_certificates_match_manifest_and_verify() {
     let abstract_scalar_derive_import = verified_abstract_scalar_derive_import_module(
         &root,
         &eq_import,
+        &eq_reasoning_import,
         &abstract_ring_import,
         &abstract_square_normalize_import,
     );
@@ -1435,11 +1442,13 @@ fn verified_abstract_square_normalize_import_module(
 fn verified_abstract_scalar_derive_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
     abstract_ring_import: &VerifiedModule,
     abstract_square_normalize_import: &VerifiedModule,
 ) -> VerifiedModule {
     let bytes = read(root.join("Proofs/Ai/Algebra/AbstractScalarDerive/certificate.npcert"));
     let mut session = VerifierSession::new();
+    session.register_verified_module(eq_reasoning_import.clone());
     session.register_verified_module(abstract_ring_import.clone());
     session.register_verified_module(abstract_square_normalize_import.clone());
     session.register_verified_module(eq_import.clone());

@@ -5,12 +5,12 @@
   "certificate": "Proofs/Ai/Algebra/AbstractScalarDerive/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:a8fc55aebede37567c012b34c1994979627e8792a8e3e0adda4fab0bb5c5cea9",
-  "certificate_file_sha256": "sha256:434846a6967ca2015fd28ec13e8d59f1d7d5fb01b80f019df9d46951a1922934",
-  "export_hash": "sha256:eec14052967bc49217c0808bffe5f2feddc5e2c09ae51f1da0571c4c80e4080e",
-  "axiom_report_hash": "sha256:d27bc67911ff25240cd57ea7602ed45bda5803154f25987bbd2a2f4fd5dddee2",
-  "certificate_hash": "sha256:6fc77b365d892beab287645f6f1e3c768be23c537c50618686b655247e0a28dd",
-  "imports": ["Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Std.Logic.Eq"],
+  "source_sha256": "sha256:bc6b815a687e6e241df3f4d46f52b8751765524e6f83b355cb217968cd6d4837",
+  "certificate_file_sha256": "sha256:c02ded328a53b2adc49796460aa0a39e37d5b826a487ba0bc4ae3401055ce72a",
+  "export_hash": "sha256:c3fb09b2bbc7bcb4179b2a152c5287a4222648ce72b477dc9cec73c1930db029",
+  "axiom_report_hash": "sha256:7413909980ef8dd60bd8d4b1de01bf82e3b342b957422514bd9f8bdc252eb55c",
+  "certificate_hash": "sha256:15b92db97939db53812bf96d5af01c4394b4f9e3a2216ad41783e049973764a4",
+  "imports": ["Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.EqReasoning", "Std.Logic.Eq"],
   "axioms": ["Eq.rec"],
   "declarations": [
     { "name": "mul_two_zero_term_from_ring_args", "kind": "theorem" },
@@ -18,7 +18,12 @@
     { "name": "normalize_add_with_zero_cross_term_from_ring_args", "kind": "theorem" },
     { "name": "mul_two_neg_from_ring_args", "kind": "theorem" },
     { "name": "add_neg_cross_term_to_sub_sum_from_ring_args", "kind": "theorem" },
-    { "name": "law_of_cosines_scalar_rhs_from_ring_args", "kind": "theorem" }
+    { "name": "law_of_cosines_scalar_rhs_from_ring_args", "kind": "theorem" },
+    { "name": "two_mul_from_ring_args", "kind": "theorem" },
+    { "name": "add_sub_cross_cancel_from_ring_args", "kind": "theorem" },
+    { "name": "add_pairwise_commute_from_ring_args", "kind": "theorem" },
+    { "name": "add_cross_and_sub_cross_cancel_from_ring_args", "kind": "theorem" },
+    { "name": "parallelogram_scalar_rhs_from_ring_args", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
