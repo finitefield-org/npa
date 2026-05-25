@@ -440,6 +440,29 @@ const ABSTRACT_RIGHT_TRIANGLE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.AbstractRightTriangleDerive",
+    source_path: "Proofs/Ai/Geometry/AbstractRightTriangleDerive/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/AbstractRightTriangleDerive/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/AbstractRightTriangleDerive/meta.json",
+    replay_path: "Proofs/Ai/Geometry/AbstractRightTriangleDerive/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.Geometry.AbstractRightTriangle",
+        "Proofs.Ai.Geometry.Affine",
+        "Proofs.Ai.Geometry.AffineDerive",
+        "Proofs.Ai.Vector.AbstractInnerProduct",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: ABSTRACT_RIGHT_TRIANGLE_DERIVE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_METRIC_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Geometry.AbstractMetric",
     source_path: "Proofs/Ai/Geometry/AbstractMetric/source.npa",
@@ -4002,6 +4025,144 @@ const ABSTRACT_RIGHT_TRIANGLE_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const ABSTRACT_RIGHT_TRIANGLE_DERIVE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "neg_zero_from_ring_args",
+        universe_params: &["u"],
+        statement: abstract_ring_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), @Eq.{u} Scalar (neg zero) zero"
+        ),
+        proof: abstract_ring_abs!(concat!(
+            "fun ring_args => ",
+            "ring_args (@Eq.{u} Scalar (neg zero) zero) ",
+            "(fun (sub_eq_add_neg_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub a b) (add a (neg b))) => ",
+            "fun (add_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add a b) c) (add a (add b c))) => ",
+            "fun (add_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add a b) (add b a)) => ",
+            "fun (add_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (add a zero) a) => ",
+            "fun (zero_add_arg : forall (a : Scalar), @Eq.{u} Scalar (add zero a) a) => ",
+            "fun (neg_add_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add (neg a) a) zero) => ",
+            "fun (add_neg_cancel_arg : forall (a : Scalar), @Eq.{u} Scalar (add a (neg a)) zero) => ",
+            "fun (sub_self_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a a) zero) => ",
+            "fun (mul_assoc_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (mul a b) c) (mul a (mul b c))) => ",
+            "fun (mul_comm_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (mul a b) (mul b a)) => ",
+            "fun (mul_one_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a one) a) => ",
+            "fun (one_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul one a) a) => ",
+            "fun (left_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul a (add b c)) (add (mul a b) (mul a c))) => ",
+            "fun (right_distrib_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (mul (add a b) c) (add (mul a c) (mul b c))) => ",
+            "fun (mul_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (mul a zero) zero) => ",
+            "fun (zero_mul_arg : forall (a : Scalar), @Eq.{u} Scalar (mul zero a) zero) => ",
+            "fun (add_left_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add a b) (add a c)), @Eq.{u} Scalar b c) => ",
+            "fun (ring_normalize_add_mul3_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (add (add (mul a b) (mul b c)) (mul a c)) (add (add (mul a b) (mul a c)) (mul b c))) => ",
+            "fun (add_right_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (h : @Eq.{u} Scalar (add b a) (add c a)), @Eq.{u} Scalar b c) => ",
+            "fun (neg_neg_arg : forall (a : Scalar), @Eq.{u} Scalar (neg (neg a)) a) => ",
+            "fun (sub_zero_arg : forall (a : Scalar), @Eq.{u} Scalar (sub a zero) a) => ",
+            "fun (zero_sub_arg : forall (a : Scalar), @Eq.{u} Scalar (sub zero a) (neg a)) => ",
+            "fun (sub_add_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (add (sub a b) b) a) => ",
+            "fun (add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), @Eq.{u} Scalar (sub (add a b) b) a) => ",
+            "fun (sub_add_sub_cancel_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)) => ",
+            "@Eq.rec.{u,0} Scalar (add (neg zero) zero) ",
+            "(fun (y : Scalar) => fun (hy : @Eq.{u} Scalar (add (neg zero) zero) y) => @Eq.{u} Scalar y zero) ",
+            "(neg_add_cancel_arg zero) ",
+            "(neg zero) ",
+            "(add_zero_arg (neg zero)))"
+        )),
+    },
+    TheoremArtifact {
+        name: "dot_neg_left_from_inner_args",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))"
+        ),
+        proof: abstract_inner_product_abs!(concat!(
+            "fun inner_args => fun x => fun y => ",
+            "inner_args (@Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))) ",
+            "(fun (dot_comm_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner y x)) => ",
+            "fun (dot_add_left_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vadd x y) z) (add (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))) => ",
+            "fun (dot_add_right_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vadd y z)) (add (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))) => ",
+            "fun (dot_neg_left_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))) => ",
+            "fun (dot_neg_right_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vneg y)) (neg (@dot.{u,v} Scalar Vector inner x y))) => ",
+            "fun (dot_sub_left_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y) z) (sub (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))) => ",
+            "fun (dot_sub_right_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (@vsub.{v} Vector vadd vneg y z)) (sub (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))) => ",
+            "fun (norm_sq_def_arg : forall (x : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) (@dot.{u,v} Scalar Vector inner x x)) => ",
+            "fun (dist_sq_def_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@distSq.{u,v} Scalar Vector vadd vneg inner x y) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg y x))) => ",
+            "fun (dot_self_eq_norm_sq_arg : forall (x : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x x) (@normSq.{u,v} Scalar Vector inner x)) => ",
+            "fun (norm_sq_add_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (norm_sq_sub_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (sub (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (inner_field13_arg : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (inner_field14_arg : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (norm_sq_nonneg_arg : forall (x : Vector), le_rel zero (@normSq.{u,v} Scalar Vector inner x)) => ",
+            "fun (parallelogram_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (add (@normSq.{u,v} Scalar Vector inner (vadd x y)) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) (add (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner x)) (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner y)))) => ",
+            "fun (polarization_identity_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) (sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)))) => ",
+            "fun (cauchy_schwarz_arg : forall (x : Vector), forall (y : Vector), le_rel (@sq.{u} Scalar mul (@dot.{u,v} Scalar Vector inner x y)) (mul (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (perp_vec_iff_dot_eq_zero_arg : forall (x : Vector), forall (y : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @PerpVec.{u,v} Scalar zero Vector inner x y), R), R) => ",
+            "fun (perp_vec_symm_arg : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @PerpVec.{u,v} Scalar zero Vector inner y x) => ",
+            "fun (norm_sq_zero_iff_arg : forall (x : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), @Eq.{v} Vector x vzero), forall (backward : forall (h : @Eq.{v} Vector x vzero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), R), R) => ",
+            "fun (dist_sq_nonneg_arg : forall (x : Vector), forall (y : Vector), le_rel zero (@distSq.{u,v} Scalar Vector vadd vneg inner x y)) => ",
+            "fun (inner_field23_arg : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (inner_field24_arg : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => dot_neg_left_arg x y)"
+        )),
+    },
+    TheoremArtifact {
+        name: "right_triangle_legs_perp_vec_from_rt",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @PerpVec.{u,v} Scalar zero Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)"
+        ),
+        proof: abstract_right_triangle_abs!("fun A => fun B => fun C => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "right_triangle_legs_dot_zero_from_rt",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)) zero"
+        ),
+        proof: abstract_right_triangle_abs!("fun A => fun B => fun C => fun h => h"),
+    },
+    TheoremArtifact {
+        name: "right_triangle_neg_left_dot_zero_from_rt",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) zero"
+        ),
+        proof: abstract_right_triangle_abs!(concat!(
+            "fun ring_args => fun inner_args => fun A => fun B => fun C => fun h => ",
+            "@Eq.rec.{u,0} Scalar (neg zero) ",
+            "(fun (z : Scalar) => fun (hz : @Eq.{u} Scalar (neg zero) z) => @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) z) ",
+            "(@Eq.rec.{u,0} Scalar (neg (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C))) ",
+            "(fun (z : Scalar) => fun (hz : @Eq.{u} Scalar (neg (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C))) z) => @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) z) ",
+            "(@dot_neg_left_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(neg zero) ",
+            "(@Eq.rec.{u,0} Scalar (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(fun (q : Scalar) => fun (hq : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)) q) => @Eq.{u} Scalar (neg (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C))) (neg q)) ",
+            "(@Eq.refl.{u} Scalar (neg (@dot.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op A C)))) ",
+            "zero ",
+            "(@right_triangle_legs_dot_zero_from_rt.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op A B C h))) ",
+            "zero ",
+            "(@neg_zero_from_ring_args.{u} Scalar zero one add neg sub mul ring_args)"
+        )),
+    },
+    TheoremArtifact {
+        name: "right_triangle_neg_left_perp_vec_from_rt",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @PerpVec.{u,v} Scalar zero Vector inner (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)"
+        ),
+        proof: abstract_right_triangle_abs!(
+            "fun ring_args => fun inner_args => fun A => fun B => fun C => fun h => @right_triangle_neg_left_dot_zero_from_rt.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op ring_args inner_args A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "right_triangle_affine_additive_perp_bridge_from_rt",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_right_triangle_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (R : Prop), forall (mk : forall (hypotenuse_orientation : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) (vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C))), forall (perp_premise : @PerpVec.{u,v} Scalar zero Vector inner (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)), R), R"
+        ),
+        proof: abstract_right_triangle_abs!(
+            "fun ring_args => fun inner_args => fun affine_args => fun A => fun B => fun C => fun h => fun R => fun mk => mk (@hypotenuse_vector_eq_neg_left_add_right_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args A B C) (@right_triangle_neg_left_perp_vec_from_rt.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op ring_args inner_args A B C h)"
+        ),
+    },
+];
+
 const ABSTRACT_METRIC_DEFINITIONS: &[DefinitionArtifact] = &[
     DefinitionArtifact {
         name: "dist",
@@ -4514,6 +4675,33 @@ fn run() -> Result<(), String> {
         &abstract_right_triangle_imports,
         &abstract_right_triangle_source_interfaces,
     )?;
+    let abstract_right_triangle_derive_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_inner_product.verified_module.clone(),
+        affine.verified_module.clone(),
+        affine_derive.verified_module.clone(),
+        abstract_right_triangle.verified_module.clone(),
+    ];
+    let abstract_right_triangle_derive_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_inner_product.source_interface.clone(),
+        affine.source_interface.clone(),
+        affine_derive.source_interface.clone(),
+        abstract_right_triangle.source_interface.clone(),
+    ];
+    let abstract_right_triangle_derive = build_and_write_module(
+        &proof_root,
+        &ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE,
+        &abstract_right_triangle_derive_imports,
+        &abstract_right_triangle_derive_source_interfaces,
+    )?;
     let abstract_metric_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -4594,6 +4782,7 @@ fn run() -> Result<(), String> {
             affine,
             affine_derive,
             abstract_right_triangle,
+            abstract_right_triangle_derive,
             abstract_metric,
             pythagorean,
         ])
@@ -4856,6 +5045,9 @@ fn module_source(config: &ModuleArtifact) -> String {
         source.push_str(theorem.proof);
         source.push_str("\n\n");
     }
+    if config.module == ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE.module {
+        source.truncate(source.trim_end_matches('\n').len() + 1);
+    }
     source
 }
 
@@ -4912,6 +5104,17 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Vector.AbstractSpace",
             "Proofs.Ai.Vector.AbstractInnerProduct",
             "Proofs.Ai.Geometry.Affine",
+        ]
+    } else if config.module == ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Geometry.AffineDerive",
+            "Proofs.Ai.Geometry.AbstractRightTriangle",
         ]
     } else if config.module == ABSTRACT_METRIC_MODULE.module {
         &[

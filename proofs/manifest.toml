@@ -435,6 +435,24 @@ theorems = ["perp_iff_dot_eq_zero", "perp_symm", "right_triangle_legs_perp", "py
 axioms = []
 
 [[proof_modules]]
+module = "Proofs.Ai.Geometry.AbstractRightTriangleDerive"
+source = "Proofs/Ai/Geometry/AbstractRightTriangleDerive/source.npa"
+certificate = "Proofs/Ai/Geometry/AbstractRightTriangleDerive/certificate.npcert"
+meta = "Proofs/Ai/Geometry/AbstractRightTriangleDerive/meta.json"
+replay = "Proofs/Ai/Geometry/AbstractRightTriangleDerive/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:3c0db37263d87659069eaf3f97c0600d48c13141729ddc318fa34cabe3092614"
+certificate_file_sha256 = "sha256:a70a177112972c6c2136e0da91b978a35fb48293cdb03cd78bae9710a07cba93"
+export_hash = "sha256:b1f911b8fcea7b42ad77c814cc6083962e10b724492f086030899e261b1c86f1"
+axiom_report_hash = "sha256:2cb86bb05f941695d23c3161cac3b75c0d744dcc780611b2bbedf5caa4164615"
+certificate_hash = "sha256:c2fde0a2bfb33ed3d5791aa2dd049576ad030292d252ecf78aeed7980a961e2d"
+imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Geometry.AbstractRightTriangle", "Proofs.Ai.Geometry.Affine", "Proofs.Ai.Geometry.AffineDerive", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"]
+definitions = []
+theorems = ["neg_zero_from_ring_args", "dot_neg_left_from_inner_args", "right_triangle_legs_perp_vec_from_rt", "right_triangle_legs_dot_zero_from_rt", "right_triangle_neg_left_dot_zero_from_rt", "right_triangle_neg_left_perp_vec_from_rt", "right_triangle_affine_additive_perp_bridge_from_rt"]
+axioms = ["Eq.rec"]
+
+[[proof_modules]]
 module = "Proofs.Ai.Geometry.AbstractMetric"
 source = "Proofs/Ai/Geometry/AbstractMetric/source.npa"
 certificate = "Proofs/Ai/Geometry/AbstractMetric/certificate.npcert"

@@ -41,6 +41,8 @@ Current bundles:
   bridge derivations from primitive affine and vector law packages.
 - `Proofs/Ai/Geometry/AbstractRightTriangle/`: abstract perpendicularity, right-triangle, and
   squared-distance Pythagorean theorem targets over explicit geometry law assumptions.
+- `Proofs/Ai/Geometry/AbstractRightTriangleDerive/`: checked right-triangle-to-perpendicular
+  bridge derivations for the abstract Pythagorean route.
 - `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
   metric-distance theorem targets over explicit metric law assumptions.
 - `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean theorem names collecting the
@@ -658,6 +660,9 @@ Completed prerequisite:
   point-distance/norm bridge derivations from primitive `AffineLawArgs`, `VectorSpaceLawArgs`, and
   equality transport, without accepting direct hypotenuse-vector or point-distance-definition law
   arguments.
+- P30 `Proofs.Ai.Geometry.AbstractRightTriangleDerive` supplies checked bridges from
+  `RightTriangle A B C` to the exact `PerpVec` / dot-zero premises needed after P29's additive
+  hypotenuse orientation, without accepting a direct Pythagorean theorem-shaped argument.
 
 Post-P25 policy:
 
@@ -686,7 +691,8 @@ EqReasoning
   -> Algebra.AbstractScalarDerive
   -> Vector.AbstractSpace -> Vector.AbstractInnerProduct -> Vector.AbstractInnerProductDerive
   -> Geometry.Affine -> Geometry.AffineDerive
-  -> Geometry.AbstractRightTriangle -> Geometry.AbstractMetric
+  -> Geometry.AbstractRightTriangle -> Geometry.AbstractRightTriangleDerive
+  -> Geometry.AbstractMetric
   -> Geometry.Pythagorean
 ```
 
@@ -1239,6 +1245,26 @@ Theorem targets:
 | `pythagorean_distance_sq_general` | `RightTriangle A B C -> distSqPoints B C = distSqPoints A B + distSqPoints A C` |
 | `law_of_cosines_general` | squared-distance law of cosines over the abstract inner product |
 | `right_triangle_area_general`, `median_to_hypotenuse_general` | same-level classical right-triangle targets |
+
+#### `Proofs.Ai.Geometry.AbstractRightTriangleDerive`
+
+No new geometric definition lives here. This implemented module derives the bridge needed by the
+abstract Pythagorean route while keeping `RightTriangle A B C` as the public geometric hypothesis.
+The key final premise matches P29's additive hypotenuse orientation:
+`PerpVec (vneg (disp A B)) (disp A C)`.
+
+The checked theorem targets record the expected `Eq.rec` dependency for equality transport. They do
+not accept a theorem argument whose conclusion is already the Pythagorean equality.
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `neg_zero_from_ring_args` | derives `-0 = 0` from `RingLawArgs` |
+| `dot_neg_left_from_inner_args` | projects `dot (-x) y = -(dot x y)` from `InnerProductLawArgs` |
+| `right_triangle_legs_perp_vec_from_rt` | `RightTriangle A B C -> PerpVec (disp A B) (disp A C)` by unfolding |
+| `right_triangle_legs_dot_zero_from_rt` | `RightTriangle A B C -> dot (disp A B) (disp A C) = 0` by unfolding |
+| `right_triangle_neg_left_dot_zero_from_rt` | derives `dot (-(disp A B)) (disp A C) = 0` |
+| `right_triangle_neg_left_perp_vec_from_rt` | final P28 premise `PerpVec (-(disp A B)) (disp A C)` |
+| `right_triangle_affine_additive_perp_bridge_from_rt` | packages P29's additive hypotenuse orientation with the matching P28 perpendicular premise |
 
 #### `Proofs.Ai.Geometry.AbstractMetric`
 

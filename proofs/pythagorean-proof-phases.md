@@ -39,6 +39,7 @@ Important constraints:
 - Depends on: P25
 - Inputs: `proofs/README.md`, `proofs/Proofs/Ai/Geometry/Pythagorean/source.npa`,
   `proofs/Proofs/Ai/Geometry/AbstractRightTriangle/source.npa`,
+  `proofs/Proofs/Ai/Geometry/AbstractRightTriangleDerive/source.npa`,
   `proofs/Proofs/Ai/Geometry/AbstractMetric/source.npa`, `tools/proof-corpus/src/main.rs`
 - Deliverables:
   - A short documentation update listing every remaining theorem that accepts a direct
@@ -68,7 +69,7 @@ predecessors, but the replacement target below is the P17-P25 abstract route.
 | Scalar normalization | `Proofs.Ai.Algebra.AbstractSquareNormalize`: `sq_add`, `sq_sub`, `sum_two_squares_comm`, `cancel_double_zero_term`, `sq_zero`, `sq_one`, `sq_neg`, `two_mul`, `sq_eq_sq_of_eq_or_neg_eq`, `sq_add_eq_add_sq_add_two_mul`, `sq_sub_eq_add_sq_sub_two_mul`, `add_sq_eq_zero_iff`, `mul_two_zero_term`, `normalize_add_with_zero_cross_term` | These currently accept a direct scalar rewrite law. The Pythagorean proof needs the cross-term path from `dot = 0` to removing `mul two dot`. | P27 derives the required scalar rewrite lemmas from `RingLawArgs`, square definitions, and equality reasoning. |
 | Inner-product norm normalization | `Proofs.Ai.Vector.AbstractInnerProduct`: `norm_sq_add`, `norm_sq_sub`, `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero`, `parallelogram_law`, `polarization_identity`, `norm_sq_zero_iff`, `norm_sq_nonneg`, `dist_sq_nonneg`, `norm_sq_add_of_perp`, `norm_sq_sub_of_perp`; `Proofs.Ai.Vector.AbstractInnerProductDerive`: `norm_sq_add_from_inner_args`, `norm_sq_add_of_dot_zero_from_args`, `norm_sq_add_of_perp_from_args` | The base module still exposes direct norm, dot-zero, or norm-identity law wrappers. The squared theorem needs the perpendicular special case without taking it as a law. | P28 derives the norm expansion and perpendicular special case from `InnerProductLawArgs` and P27 scalar rewrites in `AbstractInnerProductDerive`. |
 | Affine normalization | `Proofs.Ai.Geometry.Affine`: legacy theorem target `hypotenuse_vector_eq_sub_legs` still accepts an explicit theorem-shaped argument; `Proofs.Ai.Geometry.AffineDerive`: `hypotenuse_vector_eq_neg_left_add_right_from_args`, `hypotenuse_vector_eq_sub_legs_from_args`, `dist_sq_hypotenuse_norm_neg_left_add_right_from_args`, `dist_sq_hypotenuse_norm_sub_legs_from_args` | The final proof must connect `distSqPoints B C` to the norm of the hypotenuse vector and orient that vector against the two legs. `distSqPoints` is definitional, and `AffineLawArgs` no longer carries direct hypotenuse-vector or point-distance-definition fields. | P29 derives the needed affine orientation and distance-square bridge from primitive `AffineLawArgs` fields, `VectorSpaceLawArgs`, and equality transport in `AffineDerive`. |
-| Right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle`: `pythagorean_distance_sq_general`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` | `pythagorean_distance_sq_general` is the direct squared Pythagorean law. `law_of_cosines_general` is the intended intermediate identity but is also currently direct. Area and median targets are same-level right-triangle facts and must not be mistaken for prerequisites of the first squared theorem. | P30 builds the right-triangle to perpendicular bridge; P31 replaces the Pythagorean direct law with the derived squared theorem. Area and median remain later peer work. |
+| Right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle`: `pythagorean_distance_sq_general`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general`; `Proofs.Ai.Geometry.AbstractRightTriangleDerive`: `right_triangle_neg_left_perp_vec_from_rt` | `pythagorean_distance_sq_general` is the direct squared Pythagorean law. `law_of_cosines_general` is the intended intermediate identity but is also currently direct. Area and median targets are same-level right-triangle facts and must not be mistaken for prerequisites of the first squared theorem. | P30 builds the right-triangle to perpendicular bridge in `AbstractRightTriangleDerive`; P31 replaces the Pythagorean direct law with the derived squared theorem. Area and median remain later peer work. |
 | Metric-distance layer | `Proofs.Ai.Geometry.AbstractMetric`: `MetricSpaceLawArgs` fields `dist_def_law`, `dist_sq_eq_square_dist_law`, `dist_nonneg_law`, `distance_symm_law`, `distance_zero_iff_eq_law`, `pythagorean_distance_law`, `triangle_inequality_law`; theorem targets `dist_sq_eq_square_dist`, `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `pythagorean_distance_general`, and `triangle_inequality` delegate to the matching fields. `dist_def` itself is definitional. | The squared metric-distance theorem currently depends on a direct metric Pythagorean field and a direct `distSqPoints = sq dist` bridge. This should not block completing the squared-distance theorem. | P32 handles the metric bridge after P31 completes the squared-distance proof. |
 | Final public API | `Proofs.Ai.Geometry.Pythagorean`: `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq`, `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization`, `pythagorean_theorem_api_alias` | P25 exposes stable names but still forwards direct theorem-shaped law arguments. `pythagorean_theorem_dependencies` is only a law-package identity and is not a direct theorem law. | P33 refreshes the public theorem names after P31, and after P32 for the metric-distance target. Converse strengthening remains P34. |
 
@@ -124,7 +125,8 @@ Required imported packages for this target are:
 | `Proofs.Ai.Vector.AbstractInnerProductDerive` | checked P28 norm expansion and perpendicular norm theorem from `InnerProductLawArgs`, `PerpVec`, and P27 scalar rewrites |
 | `Proofs.Ai.Geometry.Affine` | `AffineLawArgs`, `disp`, `distSqPoints` |
 | `Proofs.Ai.Geometry.AffineDerive` | checked P29 hypotenuse orientation and point-distance/norm bridge from primitive affine/vector law packages |
-| `Proofs.Ai.Geometry.AbstractRightTriangle` | `RightTriangle`, `Perp`, right-triangle-to-perpendicular bridge from P30 |
+| `Proofs.Ai.Geometry.AbstractRightTriangle` | `RightTriangle`, `Perp` |
+| `Proofs.Ai.Geometry.AbstractRightTriangleDerive` | checked P30 bridge from `RightTriangle A B C` to the P28 `PerpVec (vneg (disp A B)) (disp A C)` premise, plus a small bridge that packages it with P29's additive hypotenuse orientation |
 
 ### P27 Scalar Algebra Derivation Layer
 
@@ -256,7 +258,7 @@ the legacy standalone theorem target remains available as a direct wrapper for c
 
 ### P30 Right-Triangle Perpendicular Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: P28, P29
 - Inputs: `Proofs.Ai.Geometry.AbstractRightTriangle`,
   `Proofs.Ai.Vector.AbstractInnerProduct`, `Proofs.Ai.Geometry.AffineDerive`
@@ -272,11 +274,36 @@ the legacy standalone theorem target remains available as a direct wrapper for c
   - `cargo test -p npa-proof-corpus`
   - Targeted review of `RightTriangle`, `Perp`, and `PerpVec` unfolding in generated source.
 
+#### P30 Result
+
+Implemented `Proofs.Ai.Geometry.AbstractRightTriangleDerive` as a checked bridge layer over
+`Proofs.Ai.Geometry.AbstractRightTriangle`, `Proofs.Ai.Vector.AbstractInnerProduct`, P29's affine
+orientation module, and `Std.Logic.Eq` equality transport. It provides:
+
+- `neg_zero_from_ring_args`
+- `dot_neg_left_from_inner_args`
+- `right_triangle_legs_perp_vec_from_rt`
+- `right_triangle_legs_dot_zero_from_rt`
+- `right_triangle_neg_left_dot_zero_from_rt`
+- `right_triangle_neg_left_perp_vec_from_rt`
+- `right_triangle_affine_additive_perp_bridge_from_rt`
+
+The final bridge theorem has the P29-compatible orientation
+`RightTriangle A B C -> PerpVec (vneg (disp A B)) (disp A C)` after the shared scalar, vector,
+point, and law-package parameters. The direct `RightTriangle -> PerpVec (disp A B) (disp A C)` and
+dot-zero bridges close by unfolding `RightTriangle`, `Perp`, and `PerpVec`; the negated-left
+orientation additionally uses the primitive `dot_neg_left` field from `InnerProductLawArgs` and the
+checked `-0 = 0` scalar helper. The final packaged bridge also invokes P29's
+`hypotenuse_vector_eq_neg_left_add_right_from_args` so P31 can consume the hypotenuse orientation
+and perpendicular premise together. No P30 theorem accepts a theorem argument whose conclusion is
+the Pythagorean equality.
+
 ### P31 Squared Pythagorean Proof From Law Packages
 
 - Status: Pending
 - Depends on: P27, P28, P29, P30
-- Inputs: `Proofs.Ai.Geometry.AbstractRightTriangle`, `Proofs.Ai.Geometry.Pythagorean`
+- Inputs: `Proofs.Ai.Geometry.AbstractRightTriangle`,
+  `Proofs.Ai.Geometry.AbstractRightTriangleDerive`, `Proofs.Ai.Geometry.Pythagorean`
 - Deliverables:
   - A checked theorem proving the squared-distance Pythagorean theorem from law packages:
 
