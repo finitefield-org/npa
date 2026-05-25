@@ -1036,6 +1036,13 @@ explicit argument and return it at the requested variables. This keeps P18 indep
 `sq` APIs. Bundled proposition shapes are Church-encoded locally so P18 does not need an additional
 logic-module import.
 
+IPM8 extends `OrderedFieldLawArgs` with `square_completion_bound_law`, a generic scalar/order field
+for the quadratic/completed-square step: from nonnegativity of `a * sq t + (2 * b) * t + c` for all
+scalar `t`, it yields `sq b <= a * c`. This is deliberately not a vector, inner-product, norm, or
+metric theorem. The trusted boundary is unchanged: the source wrapper and replay remain non-trusted
+sidecars, and the certificate only verifies that the exported theorem projects this generic scalar
+law from the explicit law package supplied by an instantiation.
+
 Theorem targets:
 
 | Theorem | Shape / purpose |
@@ -1054,6 +1061,7 @@ Theorem targets:
 | `sqrt_sq` | `0 <= a -> sq (sqrt a) = a` |
 | `sq_eq_zero_iff` | Church-encoded `sq a = 0 <-> a = 0` under the abstract ordered-field assumptions |
 | `sum_nonneg_eq_zero` | `0 <= a -> 0 <= b -> a + b = 0 ->` Church-encoded `(a = 0) /\ (b = 0)` |
+| `square_completion_bound_from_ordered_args` | projects the generic scalar quadratic/completed-square bound from `OrderedFieldLawArgs` |
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

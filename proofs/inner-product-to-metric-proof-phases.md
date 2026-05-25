@@ -498,7 +498,7 @@ The final checked proof route is:
 
 ### IPM8 Ordered-Field Quadratic Support
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM7
 - Inputs: `Proofs.Ai.Algebra.AbstractOrderedField`,
   `Proofs.Ai.Algebra.AbstractSquareNormalize`, `Proofs.Ai.Algebra.AbstractRing`
@@ -519,6 +519,23 @@ The final checked proof route is:
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "cauchy_schwarz|dot|normSq|triangle_inequality" proofs/Proofs/Ai/Algebra tools/proof-corpus/src/main.rs`
+
+#### IPM8 Result
+
+`Proofs.Ai.Algebra.AbstractOrderedField` now exports
+`square_completion_bound_from_ordered_args`, a scalar/order theorem that projects the generic
+`square_completion_bound_law` field from `OrderedFieldLawArgs`.
+
+The added field is generic over scalars:
+
+```text
+forall a b c,
+  (forall t, 0 <= a * sq t + (2 * b) * t + c) ->
+  sq b <= a * c
+```
+
+No inverse, division, vector, inner-product, norm, metric, direct Cauchy-Schwarz, or
+square-comparison helper was added. Square-comparison support remains deferred to IPM11.
 
 ### IPM9 Cauchy-Schwarz Degenerate Cases
 

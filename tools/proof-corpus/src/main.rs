@@ -2564,7 +2564,8 @@ const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (le_of_eq_law : forall (a : Scalar), forall (b : Scalar), forall (hab : @Eq.{u} Scalar a b), forall (P : Prop), forall (mk : forall (hab_le : le_rel a b), forall (hba_le : le_rel b a), P), P), ",
             "forall (sqrt_sq_law : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a), ",
             "forall (sq_eq_zero_iff_law : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R), ",
-            "forall (sum_nonneg_eq_zero_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R), P), P"
+            "forall (sum_nonneg_eq_zero_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R), ",
+            "forall (square_completion_bound_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)), P), P"
         )),
     },
 ];
@@ -2735,6 +2736,37 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
         proof: abstract_ordered_field_abs!(
             "fun law => fun a => fun b => fun ha => fun hb => fun hsum => fun R => fun mk => law a b ha hb hsum R mk"
         ),
+    },
+    TheoremArtifact {
+        name: "square_completion_bound_from_ordered_args",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)"
+        ),
+        proof: abstract_ordered_field_abs!(concat!(
+            "fun ordered_args => fun a => fun b => fun c => fun hquadratic => ",
+            "ordered_args (le_rel (@sq.{u} Scalar mul b) (mul a c)) ",
+            "(fun (le_refl_arg : forall (a : Scalar), le_rel a a) => ",
+            "fun (le_trans_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hab : le_rel a b), forall (hbc : le_rel b c), le_rel a c) => ",
+            "fun (add_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (add a b)) => ",
+            "fun (mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (mul a b)) => ",
+            "fun (square_nonneg_arg : forall (a : Scalar), le_rel zero (@sq.{u} Scalar mul a)) => ",
+            "fun (sqrt_nonneg_arg : forall (a : Scalar), le_rel zero (sqrt_fn a)) => ",
+            "fun (sqrt_square_of_nonneg_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (@sq.{u} Scalar mul a)) a) => ",
+            "fun (sqrt_mul_self_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (mul a a)) a) => ",
+            "fun (eq_of_square_eq_square_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), @Eq.{u} Scalar a b) => ",
+            "fun (add_le_add_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (hab : le_rel a b), forall (hcd : le_rel c d), le_rel (add a c) (add b d)) => ",
+            "fun (mul_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (ha : le_rel zero a), forall (hab : le_rel a b), forall (hc : le_rel zero c), forall (hcd : le_rel c d), le_rel (mul a c) (mul b d)) => ",
+            "fun (zero_le_two_arg : le_rel zero (@two.{u} Scalar one add)) => ",
+            "fun (le_antisymm_arg : forall (a : Scalar), forall (b : Scalar), forall (hab : le_rel a b), forall (hba : le_rel b a), @Eq.{u} Scalar a b) => ",
+            "fun (lt_of_le_of_ne_arg : forall (a : Scalar), forall (ha : le_rel zero a), forall (hne : forall (haz : @Eq.{u} Scalar a zero), forall (P : Prop), P), lt_rel zero a) => ",
+            "fun (le_of_eq_arg : forall (a : Scalar), forall (b : Scalar), forall (hab : @Eq.{u} Scalar a b), forall (P : Prop), forall (mk : forall (hab_le : le_rel a b), forall (hba_le : le_rel b a), P), P) => ",
+            "fun (sqrt_sq_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a) => ",
+            "fun (sq_eq_zero_iff_arg : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R) => ",
+            "fun (sum_nonneg_eq_zero_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R) => ",
+            "fun (square_completion_bound_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)) => ",
+            "square_completion_bound_arg a b c hquadratic)"
+        )),
     },
 ];
 
@@ -4882,6 +4914,7 @@ const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
             "fun (sqrt_sq_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a) => ",
             "fun (sq_eq_zero_iff_arg : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R) => ",
             "fun (sum_nonneg_eq_zero_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R) => ",
+            "fun (square_completion_bound_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)) => ",
             "sqrt_sq_arg (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@point_dist_sq_nonneg_from_inner_args.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op inner_args A B))"
         )),
     },
