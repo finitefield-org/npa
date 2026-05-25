@@ -200,7 +200,7 @@ imported downstream.
 
 ### LC4 Affine Distance Bridge For Cosines
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC3
 - Inputs: `Proofs.Ai.Geometry.Pythagorean`, `Proofs.Ai.Geometry.Affine`,
   `Proofs.Ai.Geometry.AffineDerive`, `Proofs.Ai.Vector.AbstractInnerProductDerive`
@@ -218,6 +218,29 @@ imported downstream.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "law_of_cosines.*law|hypotenuse_vector_eq_sub_legs_law|dist_sq_points_def_law" proofs/Proofs/Ai/Geometry tools/proof-corpus/src/main.rs`
+
+#### LC4 Result
+
+`Proofs.Ai.Geometry.Pythagorean` now contains the checked point-level bridge
+`dist_sq_law_of_cosines_rhs_from_law_packages`.
+
+The proof route is:
+
+```text
+distSqPoints B C
+  = normSq (disp B C)
+  = normSq (vadd (vneg (disp A B)) (disp A C))
+  = sub (add (normSq (disp A B)) (normSq (disp A C)))
+      (mul two (dot (disp A B) (disp A C)))
+  = sub (add (distSqPoints A B) (distSqPoints A C))
+      (mul two (dot (disp A B) (disp A C)))
+```
+
+The first vector rewrite uses the P29 additive orientation
+`hypotenuse_vector_eq_neg_left_add_right_from_args`; the cosine expansion uses LC3
+`norm_sq_add_neg_left_from_inner_args`; the final point-distance replacement uses checked affine
+distance-definition bridges. The theorem is arbitrary-point geometry: it does not depend on
+`RightTriangle`, and it does not accept a direct law-of-cosines argument.
 
 ### LC5 Final Squared Law-Of-Cosines Theorem
 
