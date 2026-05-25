@@ -33,8 +33,9 @@ Current bundles:
   scalar API layers and explicit vector operation/law assumptions.
 - `Proofs/Ai/Vector/AbstractInnerProduct/`: abstract inner-product, squared norm, and vector
   squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
-- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion and parallelogram
-  derivations from `InnerProductLawArgs`, scalar rewrites, `EqReasoning`, and `PerpVec`.
+- `Proofs/Ai/Vector/AbstractInnerProductDerive/`: checked norm-expansion, parallelogram, and
+  polarization derivations from `InnerProductLawArgs`, scalar rewrites, `EqReasoning`, and
+  `PerpVec`.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/AffineDerive/`: checked affine displacement orientation and point-distance
@@ -538,8 +539,8 @@ Theorem targets:
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | Church-encoded `dist A B = 0 <-> A = B` |
 | `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
-| `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
-| `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+| `cauchy_schwarz` | older concrete metric target; not the abstract IPM checked Cauchy-Schwarz route |
+| `triangle_inequality` | older concrete metric target; not the abstract IPM checked triangle-inequality route |
 
 ### P16: Logic Iff Corpus
 
@@ -949,8 +950,8 @@ Theorem targets:
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | Church-encoded `dist A B = 0 <-> A = B` |
 | `pythagorean_distance` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
-| `cauchy_schwarz` | `sq (dot u v) <= normSq u * normSq v` |
-| `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+| `cauchy_schwarz` | older concrete metric target; not the abstract IPM checked Cauchy-Schwarz route |
+| `triangle_inequality` | older concrete metric target; not the abstract IPM checked triangle-inequality route |
 
 #### `Proofs.Ai.Logic.Iff`
 
@@ -1164,7 +1165,13 @@ that module with the abstract algebra imports without duplicating the imported `
 `cauchy_schwarz` uses the squared form `sq (dot u v) <= normSq u * normSq v`, avoiding a square-root
 dependency at this layer.
 
-Theorem targets:
+The theorem rows below are the law-package API surface. Rows that take the corresponding law and
+return it at requested variables are legacy target/compatibility wrappers, not the completed checked
+derivation paths. The completed checked parallelogram and polarization exports live in
+`Proofs.Ai.Vector.AbstractInnerProductDerive` as `parallelogram_law_from_inner_args` and
+`polarization_identity_from_inner_args`. Cauchy-Schwarz remains a future target at this stage.
+
+Theorem targets / compatibility wrappers:
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -1176,8 +1183,9 @@ Theorem targets:
 | `dist_sq_def` | squared distance definition after affine displacement is available |
 | `norm_sq_add`, `norm_sq_sub` | squared norm expansion |
 | `norm_sq_add_of_dot_zero`, `norm_sq_sub_of_dot_zero` | Pythagorean norm steps under perpendicularity |
-| `norm_sq_nonneg`, `cauchy_schwarz` | positivity and Cauchy-Schwarz targets |
-| `parallelogram_law`, `polarization_identity` | peer inner-product theorem targets |
+| `norm_sq_nonneg` | positivity target |
+| `cauchy_schwarz` | legacy squared Cauchy-Schwarz target wrapper; the checked route is not completed yet |
+| `parallelogram_law`, `polarization_identity` | legacy peer theorem target wrappers; completed checked exports are `parallelogram_law_from_inner_args` and `polarization_identity_from_inner_args` |
 | `perp_vec_iff_dot_eq_zero` | iff-shaped equivalence between `PerpVec u v` and `dot u v = 0` |
 | `perp_vec_symm` | vector-level perpendicularity symmetry |
 | `norm_sq_zero_iff` | iff-shaped `normSq v = 0 <-> v = 0` under positive-definiteness |
@@ -1197,6 +1205,10 @@ The checked theorem targets record the expected `Eq.rec` dependency. They do not
 `polarization_identity_law` as direct theorem-shaped arguments; the perpendicular theorem accepts
 `RingLawArgs`, `InnerProductLawArgs`, and `PerpVec`, while the parallelogram and polarization
 theorems combine checked norm expansions with scalar normalizations.
+The manifest and metadata for this module list both completed checked exports,
+`parallelogram_law_from_inner_args` and `polarization_identity_from_inner_args`, with the expected
+`Eq.rec` axiom report. They do not list `cauchy_schwarz_from_law_packages` or any metric triangle
+inequality theorem yet.
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -1345,7 +1357,7 @@ Theorem targets:
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | iff-shaped equivalence between `dist A B = 0` and `A = B` |
 | `pythagorean_distance_general` | legacy explicit metric Pythagorean wrapper, not used by the final P32 path |
-| `triangle_inequality` | `dist A C <= dist A B + dist B C` |
+| `triangle_inequality` | legacy explicit metric-law wrapper; the checked law-package route is not completed yet |
 
 #### `Proofs.Ai.Geometry.Pythagorean`
 

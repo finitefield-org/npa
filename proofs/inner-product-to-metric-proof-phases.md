@@ -403,7 +403,7 @@ does not project or accept `polarization_identity_arg` / `polarization_identity_
 
 ### IPM6 Inner-Product Documentation And API Refresh
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM5
 - Inputs: `proofs/README.md`, `proofs/manifest.toml`,
   `proofs/Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json`
@@ -420,6 +420,24 @@ does not project or accept `polarization_identity_arg` / `polarization_identity_
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "parallelogram_law_from_inner_args|polarization_identity_from_inner_args|cauchy_schwarz|triangle_inequality" proofs/README.md proofs/manifest.toml proofs/Proofs/Ai/Vector/AbstractInnerProductDerive`
+
+#### IPM6 Result
+
+The README now distinguishes the completed checked inner-product exports from the older
+law-shaped API wrappers:
+
+| Category | Status |
+| --- | --- |
+| Completed checked exports | `parallelogram_law_from_inner_args`, `polarization_identity_from_inner_args` |
+| Legacy target / compatibility wrappers | `Proofs.Ai.Vector.AbstractInnerProduct.parallelogram_law`, `polarization_identity`, `cauchy_schwarz`; `Proofs.Ai.Geometry.AbstractMetric.triangle_inequality` |
+| Not completed yet | checked Cauchy-Schwarz and checked metric triangle inequality routes |
+
+Manifest / metadata review:
+
+| Artifact | Review note |
+| --- | --- |
+| `proofs/manifest.toml` | `Proofs.Ai.Vector.AbstractInnerProductDerive` exports both checked names and keeps the expected `Eq.rec` axiom report. |
+| `proofs/Proofs/Ai/Vector/AbstractInnerProductDerive/meta.json` | The declaration list includes `parallelogram_law_from_inner_args` and `polarization_identity_from_inner_args`, but no checked Cauchy-Schwarz or triangle-inequality theorem. |
 
 ### IPM7 Cauchy-Schwarz Prerequisite Audit
 
