@@ -33,6 +33,8 @@ Current bundles:
   scalar API layers and explicit vector operation/law assumptions.
 - `Proofs/Ai/Vector/AbstractInnerProduct/`: abstract inner-product, squared norm, and vector
   squared-distance theorem targets over explicit scalar, vector, and inner-product law assumptions.
+- `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
+  targets over explicit affine compatibility law assumptions.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -558,14 +560,14 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P22+: General Euclidean Pythagorean Roadmap
+### P23+: General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
 inner-product route first:
 
 ```text
-RightTriangle A B C -> distSq B C = distSq A B + distSq A C
+RightTriangle A B C -> distSqPoints B C = distSqPoints A B + distSqPoints A C
 ```
 
 This avoids making the first abstract target depend on square roots. P15 adds the checked bridge to
@@ -573,7 +575,8 @@ the squared `dist` form over the current concrete scalar and vector corpus. P17 
 singleton scalar layer with explicit carrier, operation, and law assumptions. P18 extends that
 abstract scalar layer with order and square-root APIs. P19 supplies the abstract square
 normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
-inner-product and squared-norm layer. P22+ continues the pattern through affine and metric APIs.
+inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23+
+continues the pattern through right-triangle and metric APIs.
 
 Planned contents:
 
@@ -617,8 +620,11 @@ Completed prerequisite:
 - P21 `Proofs.Ai.Vector.AbstractInnerProduct` supplies checked abstract inner-product, squared norm,
   vector squared-distance, perpendicularity, and norm-expansion theorem targets over explicit law
   assumptions without adding unchecked inner-product or positivity axioms.
+- P22 `Proofs.Ai.Geometry.Affine` supplies checked abstract point, displacement, point
+  squared-distance, and point extensionality theorem targets over explicit affine law assumptions
+  without adding unchecked affine or Euclidean axioms.
 
-P22+ policy:
+P23+ policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -629,9 +635,8 @@ P22+ policy:
 
 | Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
 | --- | --- | --- | --- | --- |
-| P22 | `Proofs.Ai.Geometry.Affine` | abstract point carrier and displacement map `disp A B` | `disp_self`, `disp_reverse`, `disp_comp`, `hypotenuse_vector_eq_sub_legs`, `dist_sq_points_def` | `point_ext_of_zero_disp`, `dist_sq_symm`, `dist_sq_zero_iff_eq` |
 | P23 | `Proofs.Ai.Geometry.AbstractRightTriangle` | abstract `Perp` and `RightTriangle` over the inner-product geometry | `perp_iff_dot_eq_zero`, `right_triangle_legs_perp`, `pythagorean_distance_sq_general` | `perp_symm`, `law_of_cosines_general`, `right_triangle_area_general`, `median_to_hypotenuse_general` |
-| P24 | `Proofs.Ai.Geometry.AbstractMetric` | abstract `dist` over `sqrt (distSq A B)` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance_general` | `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality` |
+| P24 | `Proofs.Ai.Geometry.AbstractMetric` | abstract `dist` over `sqrt (distSqPoints A B)` | `dist_def`, `dist_sq_eq_square_dist`, `pythagorean_distance_general` | `dist_nonneg`, `distance_symm`, `distance_zero_iff_eq`, `triangle_inequality` |
 | P25 | `Proofs.Ai.Geometry.Pythagorean` | no new API; final theorem module collecting P16-P24 | `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq` | `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization` |
 
 The intended dependency order is:
@@ -1045,7 +1050,7 @@ Implemented definitions / API declarations, not proof targets:
 | --- | --- |
 | `dot` | parametric wrapper for a local abstract inner-product operation |
 | `normSq` | squared norm, defined as `dot v v` |
-| `distSq` | vector-level squared distance, defined as `normSq (vsub B A)` until P22 adds affine displacement |
+| `distSq` | vector-level squared distance, defined as `normSq (vsub B A)`; P22 adds point-level `distSqPoints` |
 | `PerpVec` | vector-level perpendicular predicate, defined as `dot u v = 0` |
 | `InnerProductLawArgs` | Church-encoded law package API for symmetry, bilinearity, norm expansion, and positivity hypotheses |
 
@@ -1081,16 +1086,23 @@ Theorem targets:
 
 #### `Proofs.Ai.Geometry.Affine`
 
-Planned definitions / API declarations, not proof targets:
+Implemented definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `Point` | abstract point carrier |
-| `disp` | displacement vector from one point to another |
-| `translate` | optional point translation by a vector, useful for affine law statements |
-| `midpoint` | optional midpoint API for same-level right-triangle geometry |
-| `collinear` | optional collinearity predicate for geometric sanity lemmas |
-| `AffineLawArgs` | placeholder name for explicit point/vector compatibility hypotheses |
+| `Point` | parametric wrapper for an abstract point carrier |
+| `disp` | parametric wrapper for a displacement vector from one point to another |
+| `distSqPoints` | point-level squared distance, defined as `normSq (disp A B)` |
+| `translate` | point translation API wrapper for later affine law statements |
+| `midpoint` | midpoint API wrapper for later right-triangle geometry |
+| `collinear` | collinearity predicate wrapper for later geometric sanity lemmas |
+| `AffineLawArgs` | Church-encoded law package API for point/vector compatibility hypotheses |
+
+`distSqPoints` is intentionally separate from P21's vector-level `distSq`, so the affine layer can
+state point-distance lemmas without colliding with the imported vector-distance declaration. The
+checked theorem targets either close by definitional equality (`dist_sq_points_def`) or take the
+corresponding affine compatibility law as an explicit argument and return it at the requested
+points.
 
 Theorem targets:
 
@@ -1100,14 +1112,10 @@ Theorem targets:
 | `disp_reverse` | `disp B A = -disp A B` |
 | `disp_comp` | `disp A C = disp A B + disp B C` |
 | `hypotenuse_vector_eq_sub_legs` | express the hypotenuse displacement through two leg displacements |
-| `dist_sq_points_def` | `distSq A B = normSq (disp A B)` |
+| `dist_sq_points_def` | `distSqPoints A B = normSq (disp A B)` |
 | `point_ext_of_zero_disp` | zero displacement implies point equality |
-| `dist_sq_symm`, `dist_sq_zero_iff_eq` | squared-distance symmetry and nondegeneracy |
-| `disp_translate` | `disp A (translate A v) = v` |
-| `translate_disp` | `translate A (disp A B) = B` |
-| `disp_add` | compatibility of `disp` with vector addition along point chains |
-| `midpoint_def` | midpoint characterization via equal displacement halves when scalar division is available |
-| `collinear_iff_dep` | collinearity bridge to scalar multiple/dependence predicate when available |
+| `dist_sq_symm` | point squared-distance symmetry |
+| `dist_sq_zero_iff_eq` | iff-shaped point squared-distance nondegeneracy |
 
 #### `Proofs.Ai.Geometry.AbstractRightTriangle`
 
@@ -1128,7 +1136,7 @@ Theorem targets:
 | `perp_iff_dot_eq_zero` | first-class `Iff (Perp u v) (dot u v = 0)` |
 | `perp_symm` | `Perp u v -> Perp v u` |
 | `right_triangle_legs_perp` | extract perpendicular leg displacement vectors |
-| `pythagorean_distance_sq_general` | `RightTriangle A B C -> distSq B C = distSq A B + distSq A C` |
+| `pythagorean_distance_sq_general` | `RightTriangle A B C -> distSqPoints B C = distSqPoints A B + distSqPoints A C` |
 | `law_of_cosines_general` | squared-distance law of cosines over the abstract inner product |
 | `right_triangle_area_general`, `median_to_hypotenuse_general` | same-level classical right-triangle targets |
 | `right_triangle_of_perp_legs` | build `RightTriangle A B C` from perpendicular leg displacements |
@@ -1143,7 +1151,7 @@ Planned definitions / API declarations, not proof targets:
 
 | Declaration | Purpose |
 | --- | --- |
-| `dist` | abstract distance API, normally `sqrt (distSq A B)` |
+| `dist` | abstract distance API, normally `sqrt (distSqPoints A B)` |
 | `MetricSpaceLawArgs` | optional law package for symmetry, nonnegativity, and triangle inequality exports |
 | `Ball` | optional open/closed ball API for later metric-space library growth |
 
@@ -1151,8 +1159,8 @@ Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
-| `dist_def` | `dist A B = sqrt (distSq A B)` |
-| `dist_sq_eq_square_dist` | `distSq A B = sq (dist A B)` |
+| `dist_def` | `dist A B = sqrt (distSqPoints A B)` |
+| `dist_sq_eq_square_dist` | `distSqPoints A B = sq (dist A B)` |
 | `dist_nonneg` | `0 <= dist A B` |
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | first-class `Iff (dist A B = 0) (A = B)` |
@@ -1160,7 +1168,7 @@ Theorem targets:
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
 | `dist_eq_zero_of_eq` | `A = B -> dist A B = 0` |
 | `eq_of_dist_eq_zero` | `dist A B = 0 -> A = B` |
-| `dist_sq_nonneg` | `0 <= distSq A B`, exported for square-root proofs |
+| `dist_sq_nonneg` | `0 <= distSqPoints A B`, exported for square-root proofs |
 | `dist_eq_sqrt_dist_sq` | alias-style rewrite target for generated proofs |
 | `pythagorean_distance_unsquared` | optional square-root form once the required cancellation lemmas are available |
 

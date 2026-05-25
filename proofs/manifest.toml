@@ -343,3 +343,21 @@ imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.Abstract
 definitions = ["dot", "normSq", "distSq", "PerpVec", "InnerProductLawArgs"]
 theorems = ["dot_comm", "dot_add_left", "dot_add_right", "dot_neg_left", "dot_neg_right", "dot_sub_left", "dot_sub_right", "norm_sq_def", "dist_sq_def", "dot_self_eq_norm_sq", "norm_sq_add", "norm_sq_sub", "norm_sq_add_of_dot_zero", "norm_sq_sub_of_dot_zero", "norm_sq_nonneg", "parallelogram_law", "polarization_identity", "cauchy_schwarz", "perp_vec_iff_dot_eq_zero", "perp_vec_symm", "norm_sq_zero_iff", "dist_sq_nonneg", "norm_sq_add_of_perp", "norm_sq_sub_of_perp"]
 axioms = []
+
+[[proof_modules]]
+module = "Proofs.Ai.Geometry.Affine"
+source = "Proofs/Ai/Geometry/Affine/source.npa"
+certificate = "Proofs/Ai/Geometry/Affine/certificate.npcert"
+meta = "Proofs/Ai/Geometry/Affine/meta.json"
+replay = "Proofs/Ai/Geometry/Affine/replay.json"
+producer_profile = "human-surface-explicit-term"
+trusted_status = "verified_by_certificate"
+source_sha256 = "sha256:591faa78d1a7de64e1b379c84006c58d01a4c20355afcf6398e0aa456c17d8a5"
+certificate_file_sha256 = "sha256:94bff1abb75ce6acf4fdde6d5037bb86192232a7e48983fd86ce4cb8ac9806aa"
+export_hash = "sha256:610f112116ef91866b4f932933aed1fcf78f214affedf926cea2ec4e2a0a5902"
+axiom_report_hash = "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e"
+certificate_hash = "sha256:515aeed37650c5fdc4bb1356520f621ab283bff31bad8fabae33a37591843335"
+imports = ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"]
+definitions = ["Point", "disp", "distSqPoints", "translate", "midpoint", "collinear", "AffineLawArgs"]
+theorems = ["disp_self", "disp_reverse", "disp_comp", "hypotenuse_vector_eq_sub_legs", "dist_sq_points_def", "point_ext_of_zero_disp", "dist_sq_symm", "dist_sq_zero_iff_eq"]
+axioms = []

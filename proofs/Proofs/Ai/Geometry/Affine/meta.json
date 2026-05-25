@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Affine",
+  "source": "Proofs/Ai/Geometry/Affine/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Affine/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:591faa78d1a7de64e1b379c84006c58d01a4c20355afcf6398e0aa456c17d8a5",
+  "certificate_file_sha256": "sha256:94bff1abb75ce6acf4fdde6d5037bb86192232a7e48983fd86ce4cb8ac9806aa",
+  "export_hash": "sha256:610f112116ef91866b4f932933aed1fcf78f214affedf926cea2ec4e2a0a5902",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:515aeed37650c5fdc4bb1356520f621ab283bff31bad8fabae33a37591843335",
+  "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "Point", "kind": "def" },
+    { "name": "disp", "kind": "def" },
+    { "name": "distSqPoints", "kind": "def" },
+    { "name": "translate", "kind": "def" },
+    { "name": "midpoint", "kind": "def" },
+    { "name": "collinear", "kind": "def" },
+    { "name": "AffineLawArgs", "kind": "def" },
+    { "name": "disp_self", "kind": "theorem" },
+    { "name": "disp_reverse", "kind": "theorem" },
+    { "name": "disp_comp", "kind": "theorem" },
+    { "name": "hypotenuse_vector_eq_sub_legs", "kind": "theorem" },
+    { "name": "dist_sq_points_def", "kind": "theorem" },
+    { "name": "point_ext_of_zero_disp", "kind": "theorem" },
+    { "name": "dist_sq_symm", "kind": "theorem" },
+    { "name": "dist_sq_zero_iff_eq", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
