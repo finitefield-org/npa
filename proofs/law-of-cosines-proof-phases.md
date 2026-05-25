@@ -330,7 +330,7 @@ P31.
 
 ### LC7 Squared Metric-Distance Law Of Cosines
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC5, P32
 - Inputs: `Proofs.Ai.Geometry.AbstractMetric`, `Proofs.Ai.Geometry.Pythagorean`
 - Deliverables:
@@ -345,6 +345,27 @@ P31.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - Targeted source review for direct metric law-of-cosines or square-root cancellation assumptions.
+
+#### LC7 Result
+
+`Proofs.Ai.Geometry.Pythagorean` now contains the checked squared metric-distance theorem
+`law_of_cosines_dist_sq_from_law_packages`.
+
+The proof route is:
+
+```text
+sq (dist B C)
+  = distSqPoints B C                                        -- P32 metric square bridge
+  = sub (add (distSqPoints A B) (distSqPoints A C))
+      (mul two (dot (disp A B) (disp A C)))                 -- LC5
+  = sub (add (sq (dist A B)) (sq (dist A C)))
+      (mul two (dot (disp A B) (disp A C)))                 -- P32 reverse bridge
+```
+
+The theorem remains squared throughout. It does not introduce an unsquared `dist B C = ...`
+statement or any square-root cancellation claim for the law-of-cosines right-hand side. Its metric
+inputs are the existing `OrderedFieldLawArgs` and `InnerProductLawArgs` bridge assumptions used by
+P32, plus the LC5 scalar/vector/affine law packages.
 
 ### LC8 Public Documentation And API Refresh
 

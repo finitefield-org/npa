@@ -526,6 +526,7 @@ const PYTHAGOREAN_THEOREMS: &[&str] = &[
     "pythagorean_left_leg_norm_neg_from_law_packages",
     "dist_sq_law_of_cosines_rhs_from_law_packages",
     "law_of_cosines_sq_from_law_packages",
+    "law_of_cosines_dist_sq_from_law_packages",
     "pythagorean_distance_sq_from_law_packages",
     "pythagorean_theorem_sq",
     "pythagorean_theorem_dist_sq",
