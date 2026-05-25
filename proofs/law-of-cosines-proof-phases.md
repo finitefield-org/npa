@@ -244,7 +244,7 @@ distance-definition bridges. The theorem is arbitrary-point geometry: it does no
 
 ### LC5 Final Squared Law-Of-Cosines Theorem
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC4
 - Inputs: `Proofs.Ai.Geometry.Pythagorean`, `Proofs.Ai.Geometry.AffineDerive`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Algebra.AbstractScalarDerive`
@@ -262,6 +262,25 @@ distance-definition bridges. The theorem is arbitrary-point geometry: it does no
   - `cargo test -p npa-proof-corpus`
   - `rg -n "law_of_cosines_sq_from_law_packages|law_of_cosines_general|law : forall .*distSqPoints" proofs/Proofs/Ai/Geometry/Pythagorean tools/proof-corpus/src/main.rs`
   - Targeted review of `proofs/manifest.toml` for imports, theorem names, and axiom report.
+
+#### LC5 Result
+
+`Proofs.Ai.Geometry.Pythagorean` now exposes the public theorem
+`law_of_cosines_sq_from_law_packages` with the LC1 target signature.
+
+The public theorem takes only the law packages and points:
+
+```text
+RingLawArgs
+VectorSpaceLawArgs
+InnerProductLawArgs
+AffineLawArgs
+A B C
+```
+
+It delegates to the checked LC4 bridge `dist_sq_law_of_cosines_rhs_from_law_packages`, so the final
+proof path is still the certificate-checked affine/vector/scalar route. It does not call
+`law_of_cosines_general`, and it does not accept a theorem-shaped law-of-cosines argument.
 
 ### LC6 Right-Angle Specialization Cross-Check
 
