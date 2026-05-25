@@ -45,8 +45,9 @@ Current bundles:
   bridge derivations for the abstract Pythagorean route.
 - `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
   metric-distance theorem targets over explicit metric law assumptions.
-- `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean theorem names collecting the
-  squared-distance and squared metric-distance theorem targets.
+- `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean theorem names, including the
+  checked squared-distance derivation from scalar, vector, inner-product, affine, and
+  right-triangle law packages.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -594,7 +595,8 @@ abstract scalar layer with order and square-root APIs. P19 supplies the abstract
 normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
 inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23 supplies
 the abstract right-triangle theorem-target layer. P24 supplies the abstract metric-distance
-theorem-target layer. P25 supplies the final theorem API names that downstream users can depend on.
+theorem-target layer. P25 supplies the final theorem API names that downstream users can depend on,
+and P31 connects the squared-distance theorem name to the checked law-package derivation.
 
 Planned contents:
 
@@ -663,6 +665,9 @@ Completed prerequisite:
 - P30 `Proofs.Ai.Geometry.AbstractRightTriangleDerive` supplies checked bridges from
   `RightTriangle A B C` to the exact `PerpVec` / dot-zero premises needed after P29's additive
   hypotenuse orientation, without accepting a direct Pythagorean theorem-shaped argument.
+- P31 `Proofs.Ai.Geometry.Pythagorean` supplies the checked squared-distance Pythagorean theorem
+  from `RingLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, `AffineLawArgs`, and
+  `RightTriangle A B C`, without accepting a direct Pythagorean theorem-shaped equality law.
 
 Post-P25 policy:
 
@@ -673,11 +678,11 @@ Post-P25 policy:
 - Prefer squared-distance statements first; add square-root distance forms only after the required
   nonnegative square-root and square-cancellation lemmas are available.
 
-The current P17-P25 abstract Pythagorean roadmap is complete at the theorem-target layer. Later
-work can replace explicit law arguments with checked structure/class packages, add direct
-first-class `Iff` imports once duplicate `Eq` handoff is resolved, and strengthen converse /
-unsquared-distance statements as the required nondegeneracy and square-root cancellation APIs
-become available.
+The current P17-P31 abstract Pythagorean roadmap now has a checked squared-distance theorem from
+law packages. Later work can replace explicit law arguments with checked structure/class packages,
+add direct first-class `Iff` imports once duplicate `Eq` handoff is resolved, and strengthen the
+metric-distance, converse, and unsquared-distance statements as the required nondegeneracy and
+square-root cancellation APIs become available.
 
 The intended dependency order is:
 
@@ -1303,27 +1308,38 @@ Implemented imports:
 | Import | Purpose |
 | --- | --- |
 | `Std.Logic.Eq` | equality target statements and explicit certificate dependency |
-| `Proofs.Ai.Algebra.AbstractOrderedField` | scalar order and square-root facts |
-| `Proofs.Ai.Vector.AbstractInnerProduct` | norm and dot-product expansions |
-| `Proofs.Ai.Geometry.Affine` | point displacement API |
-| `Proofs.Ai.Geometry.AbstractRightTriangle` | right-triangle hypotheses and squared-distance theorem |
+| `Proofs.Ai.EqReasoning` | equality transitivity, symmetry, congruence, and transport helpers |
+| `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractOrderedField`, `Proofs.Ai.Algebra.AbstractSquareNormalize`, `Proofs.Ai.Algebra.AbstractScalarDerive` | scalar law packages and checked zero-cross-term normalization |
+| `Proofs.Ai.Vector.AbstractSpace`, `Proofs.Ai.Vector.AbstractInnerProduct`, `Proofs.Ai.Vector.AbstractInnerProductDerive` | vector-space, inner-product, and checked perpendicular norm-addition derivations |
+| `Proofs.Ai.Geometry.Affine`, `Proofs.Ai.Geometry.AffineDerive` | point displacement API, hypotenuse orientation, and point-distance/norm bridges |
+| `Proofs.Ai.Geometry.AbstractRightTriangle`, `Proofs.Ai.Geometry.AbstractRightTriangleDerive` | right-triangle hypotheses and checked perpendicular bridge |
 | `Proofs.Ai.Geometry.AbstractMetric` | distance API and metric theorem bridge |
 
-The final squared-distance theorem delegates to P23's checked
-`pythagorean_distance_sq_general`; the squared metric-distance theorem delegates to P24's checked
-`pythagorean_distance_general`. The converse and law-of-cosines specialization remain explicit
-law-argument theorem targets until the nondegeneracy and angle APIs are strong enough to prove them
-from smaller checked components. `Proofs.Ai.Logic.Iff` is not directly imported here because the
-current source handoff cannot combine that module with the abstract geometry imports without
-duplicating the imported `Eq` declaration.
+The P31 squared-distance theorem is `pythagorean_distance_sq_from_law_packages`. It composes P29's
+hypotenuse distance/norm bridge, P30's `RightTriangle` to perpendicular bridge, P28's perpendicular
+norm-addition derivation, and small affine symmetry/reversal bridges in this module. It takes
+`RingLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, `AffineLawArgs`, and
+`RightTriangle A B C`; it does not accept a direct Pythagorean equality law.
+
+`pythagorean_theorem_sq`, `law_of_cosines_right_angle_specialization`, and
+`pythagorean_theorem_api_alias` delegate to the checked P31 derivation. The squared metric-distance
+theorem still delegates to P24's metric theorem target until P32 derives the metric bridge. The
+converse remains an explicit target until the nondegeneracy and angle APIs are strong enough.
+`Proofs.Ai.Logic.Iff` is not directly imported here because the current source handoff cannot
+combine that module with the abstract geometry imports without duplicating the imported `Eq`
+declaration.
 
 | Theorem | Shape / purpose |
 | --- | --- |
-| `pythagorean_theorem_sq` | abstract squared-distance theorem over a right triangle |
-| `pythagorean_theorem_dist_sq` | abstract squared metric-distance theorem |
+| `pythagorean_dist_sq_symm_from_affine_args` | extracts point squared-distance symmetry from `AffineLawArgs` |
+| `pythagorean_dist_sq_reverse_norm_neg_from_law_packages` | rewrites `distSqPoints B A` to `normSq (vneg (disp A B))` |
+| `pythagorean_left_leg_norm_neg_from_law_packages` | identifies `normSq (vneg (disp A B))` with `distSqPoints A B` |
+| `pythagorean_distance_sq_from_law_packages` | checked squared-distance Pythagorean theorem from law packages and `RightTriangle A B C` |
+| `pythagorean_theorem_sq` | public squared-distance theorem delegating to the checked P31 derivation |
+| `pythagorean_theorem_dist_sq` | abstract squared metric-distance theorem target for P32 |
 | `pythagorean_converse_sq` | converse target when the required nondegeneracy and angle API are available |
-| `law_of_cosines_right_angle_specialization` | law of cosines specialized to a right angle |
-| `pythagorean_theorem_api_alias` | stable alias for downstream users if theorem naming changes |
+| `law_of_cosines_right_angle_specialization` | right-angle specialization alias backed by the checked squared-distance theorem |
+| `pythagorean_theorem_api_alias` | stable alias backed by the checked squared-distance theorem |
 | `pythagorean_theorem_dependencies` | documentation theorem or metadata target listing required law packages |
 
 Regenerate the corpus:

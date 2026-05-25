@@ -300,7 +300,7 @@ the Pythagorean equality.
 
 ### P31 Squared Pythagorean Proof From Law Packages
 
-- Status: Pending
+- Status: Completed
 - Depends on: P27, P28, P29, P30
 - Inputs: `Proofs.Ai.Geometry.AbstractRightTriangle`,
   `Proofs.Ai.Geometry.AbstractRightTriangleDerive`, `Proofs.Ai.Geometry.Pythagorean`
@@ -321,14 +321,41 @@ RightTriangle A B C ->
 - Acceptance criteria:
   - The theorem statement has no direct argument of the shape
     `forall A B C, RightTriangle A B C -> pythagorean equality`.
-  - The generated module verifies with `axioms = []`, aside from imported modules' existing allowed
-    equality-recursion report where applicable.
+  - The generated module verifies without non-equality unchecked axioms; `Eq.rec` may appear through
+    the existing equality-transport reports where applicable.
   - Existing public theorem names remain available.
 - Verification:
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `jq '.axioms, .declarations' proofs/Proofs/Ai/Geometry/Pythagorean/meta.json`
-  - `rg -n "pythagorean_distance_law|pythagorean.*law : forall .*RightTriangle" proofs/Proofs/Ai/Geometry/Pythagorean tools/proof-corpus/src/main.rs`
+  - `rg -n "forall \(law : forall .*forall \(h : @RightTriangle.*@Eq\.\{u\} Scalar \(@distSqPoints|pythagorean_distance_sq_general" proofs/Proofs/Ai/Geometry/Pythagorean/source.npa`
+
+#### P31 Result
+
+Implemented the checked squared-distance theorem in `Proofs.Ai.Geometry.Pythagorean` as
+`pythagorean_distance_sq_from_law_packages`. The theorem takes the explicit law packages
+`RingLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, and `AffineLawArgs`, plus
+`RightTriangle A B C`, and proves:
+
+```text
+distSqPoints B C = add (distSqPoints A B) (distSqPoints A C)
+```
+
+The proof composes the prior derivation layers:
+
+- P29 rewrites the hypotenuse point distance to the norm of
+  `vadd (vneg (disp A B)) (disp A C)`.
+- P30 supplies the matching perpendicular premise from `RightTriangle A B C`.
+- P28 derives the perpendicular norm-addition equality from `InnerProductLawArgs` and P27 scalar
+  zero-cross-term cancellation.
+- Small P31 bridge lemmas use affine distance symmetry, displacement reversal, and `EqReasoning` to
+  identify `normSq (vneg (disp A B))` with `distSqPoints A B`.
+
+`pythagorean_theorem_sq`, `law_of_cosines_right_angle_specialization`, and
+`pythagorean_theorem_api_alias` now delegate to this checked derivation instead of accepting a
+direct theorem-shaped Pythagorean equality law. The module axiom report is `["Eq.rec"]`, inherited
+through the imported equality-reasoning/transport lemmas used to compose the checked derivations.
+The squared metric-distance theorem and converse remain later-layer targets for P32/P34.
 
 ### P32 Metric Squared-Distance Bridge Without Direct Metric Law
 

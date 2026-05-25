@@ -22,6 +22,7 @@ struct ExpectedModule {
 
 struct VerifiedCorpusImports<'a> {
     eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
     nat: &'a VerifiedModule,
     ring: &'a VerifiedModule,
     square: &'a VerifiedModule,
@@ -35,9 +36,11 @@ struct VerifiedCorpusImports<'a> {
     abstract_scalar_derive: &'a VerifiedModule,
     abstract_vector_space: &'a VerifiedModule,
     abstract_inner_product: &'a VerifiedModule,
+    abstract_inner_product_derive: &'a VerifiedModule,
     affine: &'a VerifiedModule,
     affine_derive: &'a VerifiedModule,
     abstract_right_triangle: &'a VerifiedModule,
+    abstract_right_triangle_derive: &'a VerifiedModule,
     abstract_metric: &'a VerifiedModule,
 }
 
@@ -510,6 +513,10 @@ const ABSTRACT_METRIC_THEOREMS: &[&str] = &[
 ];
 
 const PYTHAGOREAN_THEOREMS: &[&str] = &[
+    "pythagorean_dist_sq_symm_from_affine_args",
+    "pythagorean_dist_sq_reverse_norm_neg_from_law_packages",
+    "pythagorean_left_leg_norm_neg_from_law_packages",
+    "pythagorean_distance_sq_from_law_packages",
     "pythagorean_theorem_sq",
     "pythagorean_theorem_dist_sq",
     "pythagorean_converse_sq",
@@ -932,18 +939,23 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         imports: &[
             "Proofs.Ai.Algebra.AbstractOrderedField",
             "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractScalarDerive",
             "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.EqReasoning",
             "Proofs.Ai.Geometry.AbstractMetric",
             "Proofs.Ai.Geometry.AbstractRightTriangle",
+            "Proofs.Ai.Geometry.AbstractRightTriangleDerive",
             "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Geometry.AffineDerive",
             "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Vector.AbstractInnerProductDerive",
             "Proofs.Ai.Vector.AbstractSpace",
             "Std.Logic.Eq",
         ],
         inductives: &[],
         definitions: &[],
         theorems: PYTHAGOREAN_THEOREMS,
-        axioms: &[],
+        axioms: &["Eq.rec"],
     },
 ];
 
@@ -957,6 +969,7 @@ fn ai_certificates_match_manifest_and_verify() {
     );
     let eq_import = verified_eq_import_module();
     let nat_import = verified_nat_import_module();
+    let eq_reasoning_import = verified_eq_reasoning_import_module(&root, &eq_import);
     let ring_import = verified_ring_import_module(&root, &eq_import);
     let square_import = verified_square_import_module(&root, &eq_import, &ring_import);
     let ordered_field_import =
@@ -1009,6 +1022,14 @@ fn ai_certificates_match_manifest_and_verify() {
         &abstract_square_normalize_import,
         &abstract_vector_space_import,
     );
+    let abstract_inner_product_derive_import = verified_abstract_inner_product_derive_import_module(
+        &root,
+        &eq_import,
+        &abstract_ring_import,
+        &abstract_scalar_derive_import,
+        &abstract_vector_space_import,
+        &abstract_inner_product_import,
+    );
     let affine_import = verified_affine_import_module(
         &root,
         &eq_import,
@@ -1032,6 +1053,13 @@ fn ai_certificates_match_manifest_and_verify() {
         verified_affine_derive_import_module(&root, &abstract_geometry_imports);
     let abstract_right_triangle_import =
         verified_abstract_right_triangle_import_module(&root, &abstract_geometry_imports);
+    let abstract_right_triangle_derive_import =
+        verified_abstract_right_triangle_derive_import_module(
+            &root,
+            &abstract_geometry_imports,
+            &affine_derive_import,
+            &abstract_right_triangle_import,
+        );
     let abstract_metric_import = verified_abstract_metric_import_module(
         &root,
         &VerifiedAbstractGeometryImports {
@@ -1041,6 +1069,7 @@ fn ai_certificates_match_manifest_and_verify() {
     );
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
+        eq_reasoning: &eq_reasoning_import,
         nat: &nat_import,
         ring: &ring_import,
         square: &square_import,
@@ -1054,9 +1083,11 @@ fn ai_certificates_match_manifest_and_verify() {
         abstract_scalar_derive: &abstract_scalar_derive_import,
         abstract_vector_space: &abstract_vector_space_import,
         abstract_inner_product: &abstract_inner_product_import,
+        abstract_inner_product_derive: &abstract_inner_product_derive_import,
         affine: &affine_import,
         affine_derive: &affine_derive_import,
         abstract_right_triangle: &abstract_right_triangle_import,
+        abstract_right_triangle_derive: &abstract_right_triangle_derive_import,
         abstract_metric: &abstract_metric_import,
     };
 
@@ -1174,6 +1205,9 @@ fn register_expected_imports(
     for import in imports {
         match *import {
             "Std.Logic.Eq" => session.register_verified_module(verified_imports.eq.clone()),
+            "Proofs.Ai.EqReasoning" => {
+                session.register_verified_module(verified_imports.eq_reasoning.clone())
+            }
             "Std.Nat.Basic" => session.register_verified_module(verified_imports.nat.clone()),
             "Proofs.Ai.Algebra.Ring" => {
                 session.register_verified_module(verified_imports.ring.clone())
@@ -1211,6 +1245,8 @@ fn register_expected_imports(
             "Proofs.Ai.Vector.AbstractInnerProduct" => {
                 session.register_verified_module(verified_imports.abstract_inner_product.clone())
             }
+            "Proofs.Ai.Vector.AbstractInnerProductDerive" => session
+                .register_verified_module(verified_imports.abstract_inner_product_derive.clone()),
             "Proofs.Ai.Geometry.Affine" => {
                 session.register_verified_module(verified_imports.affine.clone())
             }
@@ -1220,6 +1256,8 @@ fn register_expected_imports(
             "Proofs.Ai.Geometry.AbstractRightTriangle" => {
                 session.register_verified_module(verified_imports.abstract_right_triangle.clone())
             }
+            "Proofs.Ai.Geometry.AbstractRightTriangleDerive" => session
+                .register_verified_module(verified_imports.abstract_right_triangle_derive.clone()),
             "Proofs.Ai.Geometry.AbstractMetric" => {
                 session.register_verified_module(verified_imports.abstract_metric.clone())
             }
@@ -1250,6 +1288,14 @@ fn verified_nat_import_module() -> VerifiedModule {
             data: Box::new(npa_kernel::nat_inductive()),
         }],
     })
+}
+
+fn verified_eq_reasoning_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/EqReasoning/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
+        .expect("EqReasoning corpus certificate should verify for downstream imports")
 }
 
 fn verified_ring_import_module(root: &Path, eq_import: &VerifiedModule) -> VerifiedModule {
@@ -1423,6 +1469,26 @@ fn verified_abstract_inner_product_import_module(
         .expect("AbstractInnerProduct corpus certificate should verify for downstream imports")
 }
 
+fn verified_abstract_inner_product_derive_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    abstract_ring_import: &VerifiedModule,
+    abstract_scalar_derive_import: &VerifiedModule,
+    abstract_vector_space_import: &VerifiedModule,
+    abstract_inner_product_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes = read(root.join("Proofs/Ai/Vector/AbstractInnerProductDerive/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(abstract_ring_import.clone());
+    session.register_verified_module(abstract_scalar_derive_import.clone());
+    session.register_verified_module(abstract_inner_product_import.clone());
+    session.register_verified_module(abstract_vector_space_import.clone());
+    session.register_verified_module(eq_import.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
+        "AbstractInnerProductDerive corpus certificate should verify for downstream imports",
+    )
+}
+
 fn verified_affine_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
@@ -1476,6 +1542,29 @@ fn verified_abstract_right_triangle_import_module(
     session.register_verified_module(imports.eq.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
         .expect("AbstractRightTriangle corpus certificate should verify for downstream imports")
+}
+
+fn verified_abstract_right_triangle_derive_import_module(
+    root: &Path,
+    imports: &VerifiedAbstractGeometryImports<'_>,
+    affine_derive_import: &VerifiedModule,
+    abstract_right_triangle_import: &VerifiedModule,
+) -> VerifiedModule {
+    let bytes =
+        read(root.join("Proofs/Ai/Geometry/AbstractRightTriangleDerive/certificate.npcert"));
+    let mut session = VerifierSession::new();
+    session.register_verified_module(imports.abstract_ordered_field.clone());
+    session.register_verified_module(imports.abstract_ring.clone());
+    session.register_verified_module(imports.abstract_square_normalize.clone());
+    session.register_verified_module(abstract_right_triangle_import.clone());
+    session.register_verified_module(imports.affine.clone());
+    session.register_verified_module(affine_derive_import.clone());
+    session.register_verified_module(imports.abstract_inner_product.clone());
+    session.register_verified_module(imports.abstract_vector_space.clone());
+    session.register_verified_module(imports.eq.clone());
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).expect(
+        "AbstractRightTriangleDerive corpus certificate should verify for downstream imports",
+    )
 }
 
 fn verified_abstract_metric_import_module(
