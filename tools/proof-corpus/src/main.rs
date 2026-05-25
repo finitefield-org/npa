@@ -479,7 +479,9 @@ const ABSTRACT_METRIC_MODULE: ModuleArtifact = ModuleArtifact {
         "Proofs.Ai.Algebra.AbstractSquareNormalize",
         "Proofs.Ai.Geometry.AbstractRightTriangle",
         "Proofs.Ai.Geometry.Affine",
+        "Proofs.Ai.Geometry.AffineDerive",
         "Proofs.Ai.Vector.AbstractInnerProduct",
+        "Proofs.Ai.Vector.AbstractInnerProductDerive",
         "Proofs.Ai.Vector.AbstractSpace",
         "Std.Logic.Eq",
     ],
@@ -638,10 +640,10 @@ macro_rules! abstract_inner_product_params {
 }
 
 macro_rules! abstract_inner_product_abs {
-    (concat!($($tail:literal),+ $(,)?)) => {
+    (concat!($($tail:tt)+)) => {
         concat!(
             "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => ",
-            $($tail),+
+            $($tail)+
         )
     };
     ($tail:literal) => {
@@ -754,6 +756,8 @@ macro_rules! ordered_args_elim {
             "fun (sum_nonneg_eq_zero_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R) => ",
             "fun (square_completion_bound_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)) => ",
             "fun (le_of_sq_le_sq_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b) => ",
+            "fun (le_mul_sqrt_of_sq_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))) => ",
+            "fun (add_two_mul_le_sq_add_sqrt_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))) => ",
             $($tail)+,
             ")"
         )
@@ -2746,7 +2750,9 @@ const ABSTRACT_ORDERED_FIELD_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (sq_eq_zero_iff_law : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R), ",
             "forall (sum_nonneg_eq_zero_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R), ",
             "forall (square_completion_bound_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)), ",
-            "forall (le_of_sq_le_sq_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b), P), P"
+            "forall (le_of_sq_le_sq_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b), ",
+            "forall (le_mul_sqrt_of_sq_le_mul_nonneg_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))), ",
+            "forall (add_two_mul_le_sq_add_sqrt_law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))), P), P"
         )),
     },
 ];
@@ -2947,6 +2953,8 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
             "fun (sum_nonneg_eq_zero_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R) => ",
             "fun (square_completion_bound_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)) => ",
             "fun (le_of_sq_le_sq_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b) => ",
+            "fun (le_mul_sqrt_of_sq_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))) => ",
+            "fun (add_two_mul_le_sq_add_sqrt_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))) => ",
             "square_completion_bound_arg a b c hquadratic)"
         )),
     },
@@ -2990,6 +2998,34 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[TheoremArtifact] = &[
             "a (add b c) ha ",
             "(@add_dist_nonneg_from_ordered_args.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn ordered_args b c hb hc) ",
             "hsq"
+        )),
+    },
+    TheoremArtifact {
+        name: "le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))"
+        ),
+        proof: abstract_ordered_field_abs!(concat!(
+            "fun ordered_args => fun a => fun b => fun c => fun ha => fun hb => fun hsq => ",
+            ordered_args_elim!(
+                "(le_rel c (mul (sqrt_fn a) (sqrt_fn b)))",
+                "le_mul_sqrt_of_sq_le_mul_nonneg_arg a b c ha hb hsq"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "add_two_mul_le_sq_add_sqrt_from_ordered_args",
+        universe_params: &["u"],
+        statement: abstract_ordered_field_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))"
+        ),
+        proof: abstract_ordered_field_abs!(concat!(
+            "fun ordered_args => fun a => fun b => fun c => fun n => fun ha => fun hb => fun hn => fun hc => ",
+            ordered_args_elim!(
+                "(le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b))))",
+                "add_two_mul_le_sq_add_sqrt_arg a b c n ha hb hn hc"
+            )
         )),
     },
 ];
@@ -4712,6 +4748,56 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[TheoremArtifact] = &[
             )
         )),
     },
+    TheoremArtifact {
+        name: "norm_sq_nonneg_from_inner_args",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (x : Vector), le_rel zero (@normSq.{u,v} Scalar Vector inner x)"
+        ),
+        proof: abstract_inner_product_abs!(concat!(
+            "fun inner_args => fun x => ",
+            inner_args_elim!(
+                "(le_rel zero (@normSq.{u,v} Scalar Vector inner x))",
+                "norm_sq_nonneg_arg x"
+            )
+        )),
+    },
+    TheoremArtifact {
+        name: "dot_le_mul_sqrt_norm_sq_from_cauchy",
+        universe_params: &["u", "v"],
+        statement: abstract_ordered_inner_product_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (x : Vector), forall (y : Vector), le_rel (@dot.{u,v} Scalar Vector inner x y) (mul (sqrt_fn (@normSq.{u,v} Scalar Vector inner x)) (sqrt_fn (@normSq.{u,v} Scalar Vector inner y)))"
+        ),
+        proof: abstract_ordered_inner_product_abs!(concat!(
+            "fun ring_args => fun ordered_args => fun vector_args => fun inner_args => fun x => fun y => ",
+            "@le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn ordered_args ",
+            "(@normSq.{u,v} Scalar Vector inner x) ",
+            "(@normSq.{u,v} Scalar Vector inner y) ",
+            "(@dot.{u,v} Scalar Vector inner x y) ",
+            "(@norm_sq_nonneg_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args x) ",
+            "(@norm_sq_nonneg_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args y) ",
+            "(@cauchy_schwarz_from_law_packages.{u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner ring_args ordered_args vector_args inner_args x y)"
+        )),
+    },
+    TheoremArtifact {
+        name: "norm_sq_add_le_square_sum_norms_from_cauchy",
+        universe_params: &["u", "v"],
+        statement: abstract_ordered_inner_product_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (x : Vector), forall (y : Vector), le_rel (@normSq.{u,v} Scalar Vector inner (vadd x y)) (@sq.{u} Scalar mul (add (sqrt_fn (@normSq.{u,v} Scalar Vector inner x)) (sqrt_fn (@normSq.{u,v} Scalar Vector inner y))))"
+        ),
+        proof: abstract_ordered_inner_product_abs!(concat!(
+            "fun ring_args => fun ordered_args => fun vector_args => fun inner_args => fun x => fun y => ",
+            "@add_two_mul_le_sq_add_sqrt_from_ordered_args.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn ordered_args ",
+            "(@normSq.{u,v} Scalar Vector inner x) ",
+            "(@normSq.{u,v} Scalar Vector inner y) ",
+            "(@dot.{u,v} Scalar Vector inner x y) ",
+            "(@normSq.{u,v} Scalar Vector inner (vadd x y)) ",
+            "(@norm_sq_nonneg_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args x) ",
+            "(@norm_sq_nonneg_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args y) ",
+            "(@norm_sq_add_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args x y) ",
+            "(@dot_le_mul_sqrt_norm_sq_from_cauchy.{u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner ring_args ordered_args vector_args inner_args x y)"
+        )),
+    },
 ];
 
 const AFFINE_DEFINITIONS: &[DefinitionArtifact] = &[
@@ -5362,6 +5448,8 @@ const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
             "fun (sum_nonneg_eq_zero_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R) => ",
             "fun (square_completion_bound_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hquadratic : forall (t : Scalar), le_rel zero (add (add (mul a (@sq.{u} Scalar mul t)) (mul (mul (@two.{u} Scalar one add) b) t)) c)), le_rel (@sq.{u} Scalar mul b) (mul a c)) => ",
             "fun (le_of_sq_le_sq_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), le_rel a b) => ",
+            "fun (le_mul_sqrt_of_sq_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : le_rel (@sq.{u} Scalar mul c) (mul a b)), le_rel c (mul (sqrt_fn a) (sqrt_fn b))) => ",
+            "fun (add_two_mul_le_sq_add_sqrt_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (n : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hn : @Eq.{u} Scalar n (add (add a (mul (@two.{u} Scalar one add) c)) b)), forall (hc : le_rel c (mul (sqrt_fn a) (sqrt_fn b))), le_rel n (@sq.{u} Scalar mul (add (sqrt_fn a) (sqrt_fn b)))) => ",
             "sqrt_sq_arg (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@point_dist_sq_nonneg_from_inner_args.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op inner_args A B))"
         )),
     },
@@ -5390,6 +5478,31 @@ const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
         proof: abstract_metric_abs!(
             "fun ordered_args => fun inner_args => fun A => fun B => @dist_sq_eq_square_dist_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op ordered_args inner_args A B"
         ),
+    },
+    TheoremArtifact {
+        name: "dist_sq_points_le_square_sum_dist_from_law_packages",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), le_rel (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C) (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))"
+        ),
+        proof: abstract_metric_abs!(concat!(
+            "fun ring_args => fun ordered_args => fun vector_args => fun inner_args => fun affine_args => fun A => fun B => fun C => ",
+            "@Eq.rec.{u,0} Scalar ",
+            "(@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C) ",
+            "(fun (q : Scalar) => fun (hq : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C) q) => forall (hbound : le_rel q (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))), le_rel (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C) (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))) ",
+            "(fun (hbound : le_rel (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C) (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))) => hbound) ",
+            "(@normSq.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(@dist_sq_points_def_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args A C) ",
+            "(@Eq.rec.{v,0} Vector ",
+            "(@disp.{p,v} PointCarrier Vector disp_op A C) ",
+            "(fun (z : Vector) => fun (hz : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A C) z) => forall (hbound : le_rel (@normSq.{u,v} Scalar Vector inner z) (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))), le_rel (@normSq.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A C)) (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))) ",
+            "(fun (hbound : le_rel (@normSq.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A C)) (@sq.{u} Scalar mul (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)))) => hbound) ",
+            "(vadd (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op B C)) ",
+            "(@disp_comp_from_affine_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args A B C) ",
+            "(@norm_sq_add_le_square_sum_norms_from_cauchy.{u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner ring_args ordered_args vector_args inner_args ",
+            "(@disp.{p,v} PointCarrier Vector disp_op A B) ",
+            "(@disp.{p,v} PointCarrier Vector disp_op B C)))"
+        )),
     },
     TheoremArtifact {
         name: "dist_nonneg",
@@ -6103,7 +6216,9 @@ fn run() -> Result<(), String> {
         abstract_square_normalize.verified_module.clone(),
         abstract_vector_space.verified_module.clone(),
         abstract_inner_product.verified_module.clone(),
+        abstract_inner_product_derive.verified_module.clone(),
         affine.verified_module.clone(),
+        affine_derive.verified_module.clone(),
         abstract_right_triangle.verified_module.clone(),
     ];
     let abstract_metric_source_interfaces = vec![
@@ -6112,7 +6227,9 @@ fn run() -> Result<(), String> {
         abstract_square_normalize.source_interface.clone(),
         abstract_vector_space.source_interface.clone(),
         abstract_inner_product.source_interface.clone(),
+        abstract_inner_product_derive.source_interface.clone(),
         affine.source_interface.clone(),
+        affine_derive.source_interface.clone(),
         abstract_right_triangle.source_interface.clone(),
     ];
     let abstract_metric = build_and_write_module(
@@ -6512,7 +6629,9 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Vector.AbstractInnerProduct",
             "Proofs.Ai.Geometry.Affine",
         ]
-    } else if config.module == ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE.module {
+    } else if config.module == ABSTRACT_RIGHT_TRIANGLE_DERIVE_MODULE.module
+        || config.module == ABSTRACT_METRIC_MODULE.module
+    {
         &[
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractOrderedField",
@@ -6522,16 +6641,6 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Vector.AbstractInnerProductDerive",
             "Proofs.Ai.Geometry.Affine",
             "Proofs.Ai.Geometry.AffineDerive",
-            "Proofs.Ai.Geometry.AbstractRightTriangle",
-        ]
-    } else if config.module == ABSTRACT_METRIC_MODULE.module {
-        &[
-            "Proofs.Ai.Algebra.AbstractRing",
-            "Proofs.Ai.Algebra.AbstractOrderedField",
-            "Proofs.Ai.Algebra.AbstractSquareNormalize",
-            "Proofs.Ai.Vector.AbstractSpace",
-            "Proofs.Ai.Vector.AbstractInnerProduct",
-            "Proofs.Ai.Geometry.Affine",
             "Proofs.Ai.Geometry.AbstractRightTriangle",
         ]
     } else if config.module == PYTHAGOREAN_MODULE.module {

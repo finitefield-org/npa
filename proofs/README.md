@@ -1049,6 +1049,12 @@ exported support theorems remain algebraic projections and combinations over the
 field package, so they do not depend on vectors, affine points, dot products, Cauchy-Schwarz, or
 triangle inequality.
 
+IPM12 adds scalar/order bridges for the squared Minkowski route. `le_mul_sqrt_of_sq_le_mul_nonneg`
+turns the squared Cauchy-Schwarz conclusion into a one-sided cross-term bound, and
+`add_two_mul_le_sq_add_sqrt` packages the ordered scalar step from
+`n = a + 2 * c + b` and `c <= sqrt a * sqrt b` to `n <= sq (sqrt a + sqrt b)`. These are still
+generic ordered-field support laws, not vector or metric theorem-shaped assumptions.
+
 Theorem targets:
 
 | Theorem | Shape / purpose |
@@ -1071,6 +1077,8 @@ Theorem targets:
 | `le_of_sq_le_sq_nonneg_from_ordered_args` | `0 <= a -> 0 <= b -> sq a <= sq b -> a <= b` |
 | `add_dist_nonneg_from_ordered_args` | generic nonnegative-sum helper for later metric-distance arguments |
 | `sqrt_sum_square_bound_from_ordered_args` | `0 <= a -> 0 <= b -> 0 <= c -> sq a <= sq (b + c) -> a <= b + c` |
+| `le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args` | `0 <= a -> 0 <= b -> sq c <= a * b -> c <= sqrt a * sqrt b` |
+| `add_two_mul_le_sq_add_sqrt_from_ordered_args` | scalar ordered-field step for `a + 2 * c + b <= sq (sqrt a + sqrt b)` |
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 
@@ -1230,8 +1238,10 @@ The checked theorem targets record the expected `Eq.rec` dependency. They do not
 `polarization_identity_law` as direct theorem-shaped arguments. The IPM9 degenerate
 Cauchy-Schwarz helpers use positive-definiteness through `norm_sq_zero_iff_law`. The IPM10 full
 Cauchy-Schwarz proof uses `quadratic_norm_nonneg_law`, not a direct Cauchy-Schwarz field. The
-manifest and metadata for this module list the checked exports with the expected `Eq.rec` axiom
-report; they do not list any metric triangle inequality theorem yet.
+IPM12 vector bounds use the checked Cauchy-Schwarz export and scalar square-root/order bridges to
+derive the cross-term and squared Minkowski core. The manifest and metadata for this module list
+the checked exports with the expected `Eq.rec` axiom report; they do not list any metric triangle
+inequality theorem yet.
 
 | Theorem | Shape / purpose |
 | --- | --- |
@@ -1248,6 +1258,9 @@ report; they do not list any metric triangle inequality theorem yet.
 | `cauchy_schwarz_zero_left_from_law_packages` | proves the Cauchy-Schwarz inequality when the left norm square is zero, without using the direct Cauchy-Schwarz law |
 | `cauchy_schwarz_zero_right_from_law_packages` | proves the Cauchy-Schwarz inequality when the right norm square is zero, without using the direct Cauchy-Schwarz law |
 | `cauchy_schwarz_from_law_packages` | proves `sq (dot x y) <= normSq x * normSq y` from ordered-field square completion and quadratic inner-product nonnegativity |
+| `norm_sq_nonneg_from_inner_args` | projects `0 <= normSq x` from `InnerProductLawArgs` for later order proofs |
+| `dot_le_mul_sqrt_norm_sq_from_cauchy` | derives `dot x y <= sqrt(normSq x) * sqrt(normSq y)` from checked Cauchy-Schwarz and scalar square-root order support |
+| `norm_sq_add_le_square_sum_norms_from_cauchy` | derives `normSq (x + y) <= sq (sqrt(normSq x) + sqrt(normSq y))` without using triangle inequality |
 
 #### `Proofs.Ai.Geometry.Affine`
 
@@ -1369,8 +1382,10 @@ Implemented definitions / API declarations, not proof targets:
 metric Pythagorean field. `dist_def` closes by definitional equality. The P32 metric bridge derives
 `sq (dist A B) = distSqPoints A B` from the primitive ordered-field `sqrt_sq` field and
 `distSqPoints A B >= 0`, with the nonnegativity proof projected from `InnerProductLawArgs`; the
-reverse bridge uses the audited `Eq.rec` equality transport. The remaining metric facts such as
-symmetry and triangle inequality are still explicit metric-law wrappers.
+reverse bridge uses the audited `Eq.rec` equality transport. IPM12 adds a checked squared affine
+distance bound by transporting the vector squared Minkowski core through affine displacement
+composition. The public unsquared triangle inequality remains an IPM13 target; the existing
+`triangle_inequality` theorem is still an explicit compatibility wrapper.
 `distance_zero_iff_eq` uses the same iff-shaped Church encoding as earlier geometry targets rather
 than importing `Proofs.Ai.Logic.Iff` directly into this metric layer.
 
@@ -1383,6 +1398,7 @@ Theorem targets:
 | `square_dist_eq_dist_sq_from_law_packages` | derives `sq (dist A B) = distSqPoints A B` from `sqrt_sq` and nonnegativity |
 | `dist_sq_eq_square_dist_from_law_packages` | reverses the bridge to `distSqPoints A B = sq (dist A B)` |
 | `dist_sq_eq_square_dist` | public bridge alias backed by P32 law-package derivation |
+| `dist_sq_points_le_square_sum_dist_from_law_packages` | derives the squared affine bound `distSqPoints A C <= sq (dist A B + dist B C)` from Cauchy-Schwarz, scalar square-root/order support, and `disp_comp` |
 | `dist_nonneg` | `0 <= dist A B` |
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | iff-shaped equivalence between `dist A B = 0` and `A = B` |

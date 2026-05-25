@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Vector/AbstractInnerProductDerive/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:72dddfdb51ac4c547dba8f2d792b314a4410d80d27c696f8be78624918b0bd1e",
-  "certificate_file_sha256": "sha256:ed41d8cacf434249a064e36409dcb0c1b92ebc1a9391bbbfecced055d660ea3f",
-  "export_hash": "sha256:538f647e8f0b2718629f020e42642a5513c85f36e0a9adc99b34c56a66f5c92a",
-  "axiom_report_hash": "sha256:5008b7b3daa452abeeaf903bc7639538ee70978e92c41b5f926193cb1d49dee5",
-  "certificate_hash": "sha256:f6d5c54408852ccb30efb4638510cb516de7648fe79c14a4917250794ee7c713",
+  "source_sha256": "sha256:e9e1905b6353a804a8301fe5cc11dedff06da131af9492e40b916ea0203489a9",
+  "certificate_file_sha256": "sha256:7f6ea7a6227b62d5466eaae70257090772e945f78a2139222c4cdd37e6c4b6f5",
+  "export_hash": "sha256:49692d86254f8d7db9c292dd6cec7fe67938e15c85a570dd29a0f2a3550e8f0f",
+  "axiom_report_hash": "sha256:a932e43d59afb7af1fd32a8680d65c057b745979ae169927e86d27984c9e3144",
+  "certificate_hash": "sha256:3575665a329343fffdbee0485927d58eabf84b6d65e880b6cb4fdf1f1760868b",
   "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -28,7 +28,10 @@
     { "name": "dot_eq_zero_of_norm_sq_zero_right_from_inner_args", "kind": "theorem" },
     { "name": "cauchy_schwarz_zero_left_from_law_packages", "kind": "theorem" },
     { "name": "cauchy_schwarz_zero_right_from_law_packages", "kind": "theorem" },
-    { "name": "cauchy_schwarz_from_law_packages", "kind": "theorem" }
+    { "name": "cauchy_schwarz_from_law_packages", "kind": "theorem" },
+    { "name": "norm_sq_nonneg_from_inner_args", "kind": "theorem" },
+    { "name": "dot_le_mul_sqrt_norm_sq_from_cauchy", "kind": "theorem" },
+    { "name": "norm_sq_add_le_square_sum_norms_from_cauchy", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

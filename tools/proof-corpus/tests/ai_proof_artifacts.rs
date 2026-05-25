@@ -362,6 +362,8 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[&str] = &[
     "le_of_sq_le_sq_nonneg_from_ordered_args",
     "add_dist_nonneg_from_ordered_args",
     "sqrt_sum_square_bound_from_ordered_args",
+    "le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args",
+    "add_two_mul_le_sq_add_sqrt_from_ordered_args",
 ];
 
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[&str] = &[
@@ -476,6 +478,9 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
     "cauchy_schwarz_zero_left_from_law_packages",
     "cauchy_schwarz_zero_right_from_law_packages",
     "cauchy_schwarz_from_law_packages",
+    "norm_sq_nonneg_from_inner_args",
+    "dot_le_mul_sqrt_norm_sq_from_cauchy",
+    "norm_sq_add_le_square_sum_norms_from_cauchy",
 ];
 
 const AFFINE_DEFINITIONS: &[&str] = &[
@@ -545,6 +550,7 @@ const ABSTRACT_METRIC_THEOREMS: &[&str] = &[
     "square_dist_eq_dist_sq_from_law_packages",
     "dist_sq_eq_square_dist_from_law_packages",
     "dist_sq_eq_square_dist",
+    "dist_sq_points_le_square_sum_dist_from_law_packages",
     "dist_nonneg",
     "distance_symm",
     "distance_zero_iff_eq",
@@ -969,7 +975,9 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
             "Proofs.Ai.Algebra.AbstractSquareNormalize",
             "Proofs.Ai.Geometry.AbstractRightTriangle",
             "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Geometry.AffineDerive",
             "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Vector.AbstractInnerProductDerive",
             "Proofs.Ai.Vector.AbstractSpace",
             "Std.Logic.Eq",
         ],
@@ -1121,6 +1129,8 @@ fn ai_certificates_match_manifest_and_verify() {
             abstract_right_triangle: Some(&abstract_right_triangle_import),
             ..abstract_geometry_imports
         },
+        &abstract_inner_product_derive_import,
+        &affine_derive_import,
     );
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
@@ -1627,6 +1637,8 @@ fn verified_abstract_right_triangle_derive_import_module(
 fn verified_abstract_metric_import_module(
     root: &Path,
     imports: &VerifiedAbstractGeometryImports<'_>,
+    abstract_inner_product_derive_import: &VerifiedModule,
+    affine_derive_import: &VerifiedModule,
 ) -> VerifiedModule {
     let abstract_right_triangle = imports
         .abstract_right_triangle
@@ -1638,7 +1650,9 @@ fn verified_abstract_metric_import_module(
     session.register_verified_module(imports.abstract_square_normalize.clone());
     session.register_verified_module(abstract_right_triangle.clone());
     session.register_verified_module(imports.affine.clone());
+    session.register_verified_module(affine_derive_import.clone());
     session.register_verified_module(imports.abstract_inner_product.clone());
+    session.register_verified_module(abstract_inner_product_derive_import.clone());
     session.register_verified_module(imports.abstract_vector_space.clone());
     session.register_verified_module(imports.eq.clone());
     verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())

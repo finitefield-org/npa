@@ -70,6 +70,33 @@ IPM1 audit and target freeze
   -> IPM14 public documentation and API refresh
 ```
 
+## Remaining Plan To Triangle Inequality
+
+The completed IPM11 support is enough for the final nonnegative square-comparison step, but the
+remaining route should be split before implementation so IPM12 does not become a single opaque
+large proof. The following phases refine IPM12 and IPM13 without changing the public milestone
+numbers:
+
+| Phase | Main goal | Primary output |
+| --- | --- | --- |
+| TI1 Scalar cross-term order support | Add any missing generic scalar/order bridge needed to turn Cauchy-Schwarz into a usable one-sided cross-term bound. | Suggested support such as `le_of_sq_le_sq_right_nonneg_from_ordered_args` and square-product/square-root normalization helpers, if they are not already derivable from existing ordered-field APIs. |
+| TI2 Vector cross-term bound | Use IPM10 Cauchy-Schwarz plus TI1 to bound the inner-product cross term by the product of square-rooted norms. | Suggested theorem target `dot_le_mul_sqrt_norm_sq_from_cauchy`. |
+| TI3 Vector squared Minkowski core | Combine `norm_sq_add_from_inner_args`, the TI2 cross-term bound, and scalar square expansion of a sum. | `norm_sq_add_le_square_sum_norms_from_cauchy`. |
+| TI4 Affine squared distance bound | Move TI3 from vectors to points using `disp_comp`, `distSqPoints`, and the checked `distSqPoints = sq dist` bridge. | `dist_sq_points_le_square_sum_dist_from_law_packages`. |
+| TI5 Unsquared metric triangle inequality | Apply IPM11 square comparison to TI4 using nonnegativity of `dist A C` and `dist A B + dist B C`. | `triangle_inequality_from_law_packages`. |
+
+Phase boundaries:
+
+- TI1 must stay scalar/order-only; it must not mention vectors, points, dot products, or metric
+  distance.
+- TI2 and TI3 may mention vectors, dot products, `normSq`, and Cauchy-Schwarz, but must not mention
+  affine points or triangle inequality.
+- TI4 may mention affine points and metric squared distance, but must remain squared and must not
+  export `dist A C <= dist A B + dist B C`.
+- TI5 is the only phase that exports the public triangle-inequality theorem.
+- None of these phases may project or accept `triangle_inequality_law`; the legacy
+  `Proofs.Ai.Geometry.AbstractMetric.triangle_inequality` wrapper remains compatibility-only.
+
 ## Milestones
 
 ### IPM1 Direct-Law Audit And Target Shape
@@ -648,13 +675,17 @@ depend on vectors, affine points, dot products, Cauchy-Schwarz, or triangle ineq
 
 ### IPM12 Squared Minkowski Bound
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM11
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Geometry.AffineDerive`,
   `Proofs.Ai.Geometry.AbstractMetric`
+- Phase coverage: TI1 through TI4. If the proof is too large for one implementation turn, split it
+  in that order and keep each split certificate-checked before moving to the next.
 - Deliverables:
   - Checked squared bound for the affine displacement path behind triangle inequality.
   - Suggested theorem targets:
+    - `le_of_sq_le_sq_right_nonneg_from_ordered_args`, if TI1 confirms it is needed.
+    - `dot_le_mul_sqrt_norm_sq_from_cauchy`
     - `norm_sq_add_le_square_sum_norms_from_cauchy`
     - `dist_sq_points_le_square_sum_dist_from_law_packages`
 - Acceptance criteria:
@@ -667,12 +698,31 @@ depend on vectors, affine points, dot products, Cauchy-Schwarz, or triangle ineq
   - `cargo test -p npa-proof-corpus`
   - `rg -n "dist_sq_points_le_square_sum_dist|triangle_inequality_law|cauchy_schwarz_from_law_packages" proofs/Proofs/Ai/Geometry tools/proof-corpus/src/main.rs`
 
+#### IPM12 Result
+
+IPM12 completes TI1 through TI4. The scalar support added for TI1 is
+`le_mul_sqrt_of_sq_le_mul_nonneg_from_ordered_args` and
+`add_two_mul_le_sq_add_sqrt_from_ordered_args`; this proved more direct for the Cauchy-Schwarz
+to squared-Minkowski route than adding a separate
+`le_of_sq_le_sq_right_nonneg_from_ordered_args` target. The vector layer now exports
+`dot_le_mul_sqrt_norm_sq_from_cauchy` and
+`norm_sq_add_le_square_sum_norms_from_cauchy`, both derived from the checked IPM10
+`cauchy_schwarz_from_law_packages` path plus IPM11/12 ordered-field support. The metric layer now
+exports `dist_sq_points_le_square_sum_dist_from_law_packages`, using affine displacement
+composition to derive `distSqPoints A C <= sq (dist A B + dist B C)`.
+
+This milestone intentionally remains squared. It does not export
+`dist A C <= dist A B + dist B C`, and the completed IPM12 proof path does not project or accept
+`triangle_inequality_law`.
+
 ### IPM13 Checked Triangle Inequality
 
 - Status: Pending
 - Depends on: IPM12
 - Inputs: `Proofs.Ai.Geometry.AbstractMetric`, `Proofs.Ai.Geometry.AffineDerive`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`
+- Phase coverage: TI5 only. This milestone should be small if IPM12 has already exported the
+  squared affine distance bound.
 - Deliverables:
   - Checked public theorem `triangle_inequality_from_law_packages`.
   - Optional public alias refresh for `triangle_inequality`, if the existing compatibility surface
