@@ -53,6 +53,9 @@ Current bundles:
   over explicit carrier, operation, relation, function, and law assumptions.
 - `Proofs/Ai/Algebra/AbstractSquareNormalize/`: abstract square-normalization theorem targets over
   the P17/P18 scalar APIs and explicit law assumptions.
+- `Proofs/Ai/Algebra/AbstractScalarDerive/`: scalar rewrite derivations from `RingLawArgs` and
+  equality transport, including the zero cross-term cancellation needed by the abstract
+  Pythagorean route.
 - `manifest.toml`: stable index for the corpus and expected hashes.
 
 ## Expansion Plan
@@ -641,6 +644,9 @@ Completed prerequisite:
 - P25 `Proofs.Ai.Geometry.Pythagorean` supplies checked final abstract Pythagorean theorem names,
   alias targets, converse target shape, and dependency-package theorem target over the P17-P24
   abstract geometry stack without adding unchecked Euclidean axioms.
+- P27 `Proofs.Ai.Algebra.AbstractScalarDerive` supplies checked scalar zero-cross-term derivations
+  from `RingLawArgs` and equality transport, without accepting direct theorem-shaped scalar
+  normalization law arguments.
 
 Post-P25 policy:
 
@@ -1023,6 +1029,22 @@ giving later vector and norm layers stable target names.
 | `add_sq_eq_zero_iff` | sum of nonnegative squares is zero only when both terms are zero |
 | `mul_two_zero_term` | `x = 0 -> 2 * x = 0`, used by later norm expansion |
 | `normalize_add_with_zero_cross_term` | scalar-only normal form used by `norm_sq_add_of_dot_zero` |
+
+#### `Proofs.Ai.Algebra.AbstractScalarDerive`
+
+No new carrier or operation definition lives here. This implemented module derives scalar
+normalization helpers from the P17 `RingLawArgs` package and `Std.Logic.Eq` equality transport,
+while importing the P19 square-normalization layer for the Pythagorean scalar stack.
+
+The checked theorem targets use equality transport, so the module records the expected `Eq.rec`
+dependency. They do not accept
+`normalize_add_with_zero_cross_term_law` as a direct theorem-shaped argument.
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `mul_two_zero_term_from_ring_args` | `x = 0 -> 2 * x = 0`, derived from `RingLawArgs` |
+| `cancel_double_zero_term_from_ring_args` | `x = 0 -> a + 2 * x = a` |
+| `normalize_add_with_zero_cross_term_from_ring_args` | `x = 0 -> (a + 2 * x) + b = a + b` |
 
 #### `Proofs.Ai.Vector.AbstractSpace`
 

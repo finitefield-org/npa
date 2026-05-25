@@ -117,7 +117,8 @@ Required imported packages for this target are:
 | --- | --- |
 | `Std.Logic.Eq` / `Proofs.Ai.EqReasoning` | equality, transitivity, congruence, substitution, and transport for rewriting |
 | `Proofs.Ai.Algebra.AbstractRing` | `RingLawArgs`, `two`, `sq`, additive/multiplicative ring rewrites |
-| `Proofs.Ai.Algebra.AbstractSquareNormalize` | checked scalar normalization lemmas from P27 |
+| `Proofs.Ai.Algebra.AbstractSquareNormalize` | existing square-normalization theorem targets from P19 |
+| `Proofs.Ai.Algebra.AbstractScalarDerive` | checked scalar zero-cross-term derivations from P27 |
 | `Proofs.Ai.Vector.AbstractSpace` | `VectorSpaceLawArgs`, `vsub`, vector additive rewrites |
 | `Proofs.Ai.Vector.AbstractInnerProduct` | `InnerProductLawArgs`, `dot`, `normSq`, `PerpVec`, derived norm expansion from P28 |
 | `Proofs.Ai.Geometry.Affine` | `AffineLawArgs`, `disp`, `distSqPoints`, hypotenuse orientation from P29 |
@@ -125,10 +126,10 @@ Required imported packages for this target are:
 
 ### P27 Scalar Algebra Derivation Layer
 
-- Status: Pending
+- Status: Completed
 - Depends on: P26
 - Inputs: `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractSquareNormalize`,
-  `Proofs.Ai.EqReasoning`
+  `Std.Logic.Eq`
 - Deliverables:
   - A new proof-corpus module, or an extension of the abstract algebra modules, that proves the
     scalar rewrite lemmas needed by the Pythagorean proof from `RingLawArgs` and existing square
@@ -149,11 +150,26 @@ dot = 0 ->
   - `cargo test -p npa-proof-corpus`
   - `rg -n "normalize_add_with_zero_cross_term_law|cancel_double_zero_term.*law" proofs/Proofs/Ai tools/proof-corpus/src/main.rs`
 
+#### P27 Result
+
+Implemented `Proofs.Ai.Algebra.AbstractScalarDerive` as a checked derivation layer over
+`RingLawArgs`, `Proofs.Ai.Algebra.AbstractSquareNormalize`, and `Std.Logic.Eq` equality transport.
+It provides:
+
+- `mul_two_zero_term_from_ring_args`
+- `cancel_double_zero_term_from_ring_args`
+- `normalize_add_with_zero_cross_term_from_ring_args`
+
+The cross-term theorem has the required shape
+`x = 0 -> add (add a (mul two x)) b = add a b` and does not accept a direct
+`normalize_add_with_zero_cross_term_law` argument.
+
 ### P28 Inner-Product Norm Expansion From Laws
 
 - Status: Pending
 - Depends on: P27
-- Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`, `Proofs.Ai.Algebra.AbstractSquareNormalize`
+- Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`, `Proofs.Ai.Algebra.AbstractSquareNormalize`,
+  `Proofs.Ai.Algebra.AbstractScalarDerive`
 - Deliverables:
   - Checked theorem targets deriving `normSq (x + y)` and the perpendicular special case from
     `InnerProductLawArgs`, scalar algebra rewrites, and `PerpVec`.

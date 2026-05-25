@@ -364,6 +364,12 @@ const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[&str] = &[
     "normalize_add_with_zero_cross_term",
 ];
 
+const ABSTRACT_SCALAR_DERIVE_THEOREMS: &[&str] = &[
+    "mul_two_zero_term_from_ring_args",
+    "cancel_double_zero_term_from_ring_args",
+    "normalize_add_with_zero_cross_term_from_ring_args",
+];
+
 const ABSTRACT_VECTOR_SPACE_DEFINITIONS: &[&str] =
     &["vsub", "linear_comb2", "linear_comb3", "VectorSpaceLawArgs"];
 
@@ -716,6 +722,22 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: &[],
         theorems: ABSTRACT_SQUARE_NORMALIZE_THEOREMS,
         axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Algebra.AbstractScalarDerive",
+        source: "Proofs/Ai/Algebra/AbstractScalarDerive/source.npa",
+        certificate: "Proofs/Ai/Algebra/AbstractScalarDerive/certificate.npcert",
+        meta: "Proofs/Ai/Algebra/AbstractScalarDerive/meta.json",
+        replay: "Proofs/Ai/Algebra/AbstractScalarDerive/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: ABSTRACT_SCALAR_DERIVE_THEOREMS,
+        axioms: &["Eq.rec"],
     },
     ExpectedModule {
         module: "Proofs.Ai.Vector.AbstractSpace",
