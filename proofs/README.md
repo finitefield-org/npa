@@ -1278,24 +1278,31 @@ Implemented definitions / API declarations, not proof targets:
 | Declaration | Purpose |
 | --- | --- |
 | `dist` | abstract distance API, defined as `sqrt (distSqPoints A B)` |
-| `MetricSpaceLawArgs` | Church-encoded law package for distance definition, symmetry, nonnegativity, Pythagorean bridge, and triangle inequality exports |
+| `MetricSpaceLawArgs` | Church-encoded law package for distance definition, nonnegativity, symmetry, zero-distance equivalence, and triangle inequality exports |
 | `Ball` | closed-ball API, defined through `dist center x <= radius` |
 
-`dist_def` closes by definitional equality. The remaining checked theorem targets take the
-corresponding metric law as an explicit argument and return it at the requested points.
-`distance_zero_iff_eq` uses the same iff-shaped Church encoding as earlier axiom-free geometry
-targets rather than importing `Proofs.Ai.Logic.Iff` directly into this metric layer.
+`MetricSpaceLawArgs` no longer carries a direct `distSqPoints = sq dist` bridge or a direct
+metric Pythagorean field. `dist_def` closes by definitional equality. The P32 metric bridge derives
+`sq (dist A B) = distSqPoints A B` from the primitive ordered-field `sqrt_sq` field and
+`distSqPoints A B >= 0`, with the nonnegativity proof projected from `InnerProductLawArgs`; the
+reverse bridge uses the audited `Eq.rec` equality transport. The remaining metric facts such as
+symmetry and triangle inequality are still explicit metric-law wrappers.
+`distance_zero_iff_eq` uses the same iff-shaped Church encoding as earlier geometry targets rather
+than importing `Proofs.Ai.Logic.Iff` directly into this metric layer.
 
 Theorem targets:
 
 | Theorem | Shape / purpose |
 | --- | --- |
 | `dist_def` | `dist A B = sqrt (distSqPoints A B)` |
-| `dist_sq_eq_square_dist` | `distSqPoints A B = sq (dist A B)` |
+| `point_dist_sq_nonneg_from_inner_args` | derives `0 <= distSqPoints A B` from `InnerProductLawArgs` |
+| `square_dist_eq_dist_sq_from_law_packages` | derives `sq (dist A B) = distSqPoints A B` from `sqrt_sq` and nonnegativity |
+| `dist_sq_eq_square_dist_from_law_packages` | reverses the bridge to `distSqPoints A B = sq (dist A B)` |
+| `dist_sq_eq_square_dist` | public bridge alias backed by P32 law-package derivation |
 | `dist_nonneg` | `0 <= dist A B` |
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | iff-shaped equivalence between `dist A B = 0` and `A = B` |
-| `pythagorean_distance_general` | `RightTriangle A B C -> sq (dist B C) = sq (dist A B) + sq (dist A C)` |
+| `pythagorean_distance_general` | legacy explicit metric Pythagorean wrapper, not used by the final P32 path |
 | `triangle_inequality` | `dist A C <= dist A B + dist B C` |
 
 #### `Proofs.Ai.Geometry.Pythagorean`
@@ -1322,9 +1329,10 @@ norm-addition derivation, and small affine symmetry/reversal bridges in this mod
 `RightTriangle A B C`; it does not accept a direct Pythagorean equality law.
 
 `pythagorean_theorem_sq`, `law_of_cosines_right_angle_specialization`, and
-`pythagorean_theorem_api_alias` delegate to the checked P31 derivation. The squared metric-distance
-theorem still delegates to P24's metric theorem target until P32 derives the metric bridge. The
-converse remains an explicit target until the nondegeneracy and angle APIs are strong enough.
+`pythagorean_theorem_api_alias` delegate to the checked P31 derivation. `pythagorean_theorem_dist_sq`
+now composes P31's squared-distance theorem with P32's metric bridge, so it no longer accepts a
+direct metric Pythagorean law. The converse remains an explicit target until the nondegeneracy and
+angle APIs are strong enough.
 `Proofs.Ai.Logic.Iff` is not directly imported here because the current source handoff cannot
 combine that module with the abstract geometry imports without duplicating the imported `Eq`
 declaration.
@@ -1336,7 +1344,7 @@ declaration.
 | `pythagorean_left_leg_norm_neg_from_law_packages` | identifies `normSq (vneg (disp A B))` with `distSqPoints A B` |
 | `pythagorean_distance_sq_from_law_packages` | checked squared-distance Pythagorean theorem from law packages and `RightTriangle A B C` |
 | `pythagorean_theorem_sq` | public squared-distance theorem delegating to the checked P31 derivation |
-| `pythagorean_theorem_dist_sq` | abstract squared metric-distance theorem target for P32 |
+| `pythagorean_theorem_dist_sq` | squared metric-distance theorem derived from P31 plus the P32 metric bridge |
 | `pythagorean_converse_sq` | converse target when the required nondegeneracy and angle API are available |
 | `law_of_cosines_right_angle_specialization` | right-angle specialization alias backed by the checked squared-distance theorem |
 | `pythagorean_theorem_api_alias` | stable alias backed by the checked squared-distance theorem |

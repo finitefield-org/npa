@@ -482,7 +482,7 @@ const ABSTRACT_METRIC_MODULE: ModuleArtifact = ModuleArtifact {
     inductives: &[],
     definitions: ABSTRACT_METRIC_DEFINITIONS,
     theorems: ABSTRACT_METRIC_THEOREMS,
-    expected_axioms: &[],
+    expected_axioms: &["Eq.rec"],
 };
 
 const PYTHAGOREAN_MODULE: ModuleArtifact = ModuleArtifact {
@@ -4191,11 +4191,9 @@ const ABSTRACT_METRIC_DEFINITIONS: &[DefinitionArtifact] = &[
         value: abstract_metric_abs!(concat!(
             "forall (P : Prop), forall (mk : ",
             "forall (dist_def_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@sqrt.{u} Scalar sqrt_fn (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B))), ",
-            "forall (dist_sq_eq_square_dist_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))), ",
             "forall (dist_nonneg_law : forall (A : PointCarrier), forall (B : PointCarrier), le_rel zero (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)), ",
             "forall (distance_symm_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B A)), ",
             "forall (distance_zero_iff_eq_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) zero), R), R), ",
-            "forall (pythagorean_distance_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), ",
             "forall (triangle_inequality_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), le_rel (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C) (add (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B) (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C))), P), P"
         )),
     },
@@ -4223,12 +4221,95 @@ const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
         ),
     },
     TheoremArtifact {
+        name: "point_dist_sq_nonneg_from_inner_args",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (A : PointCarrier), forall (B : PointCarrier), le_rel zero (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)"
+        ),
+        proof: abstract_metric_abs!(concat!(
+            "fun inner_args => fun A => fun B => ",
+            "inner_args (le_rel zero (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)) ",
+            "(fun (dot_comm_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner y x)) => ",
+            "fun (dot_add_left_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vadd x y) z) (add (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))) => ",
+            "fun (dot_add_right_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vadd y z)) (add (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))) => ",
+            "fun (dot_neg_left_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (vneg x) y) (neg (@dot.{u,v} Scalar Vector inner x y))) => ",
+            "fun (dot_neg_right_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (vneg y)) (neg (@dot.{u,v} Scalar Vector inner x y))) => ",
+            "fun (dot_sub_left_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y) z) (sub (@dot.{u,v} Scalar Vector inner x z) (@dot.{u,v} Scalar Vector inner y z))) => ",
+            "fun (dot_sub_right_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x (@vsub.{v} Vector vadd vneg y z)) (sub (@dot.{u,v} Scalar Vector inner x y) (@dot.{u,v} Scalar Vector inner x z))) => ",
+            "fun (norm_sq_def_arg : forall (x : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) (@dot.{u,v} Scalar Vector inner x x)) => ",
+            "fun (dist_sq_def_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@distSq.{u,v} Scalar Vector vadd vneg inner x y) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg y x))) => ",
+            "fun (dot_self_eq_norm_sq_arg : forall (x : Vector), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x x) (@normSq.{u,v} Scalar Vector inner x)) => ",
+            "fun (norm_sq_add_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (norm_sq_sub_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (sub (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (inner_field13_arg : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (inner_field14_arg : forall (x : Vector), forall (y : Vector), forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (norm_sq_nonneg_arg : forall (x : Vector), le_rel zero (@normSq.{u,v} Scalar Vector inner x)) => ",
+            "fun (parallelogram_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (add (@normSq.{u,v} Scalar Vector inner (vadd x y)) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) (add (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner x)) (mul (@two.{u} Scalar one add) (@normSq.{u,v} Scalar Vector inner y)))) => ",
+            "fun (polarization_identity_arg : forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) (sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)))) => ",
+            "fun (cauchy_schwarz_arg : forall (x : Vector), forall (y : Vector), le_rel (@sq.{u} Scalar mul (@dot.{u,v} Scalar Vector inner x y)) (mul (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (perp_vec_iff_dot_eq_zero_arg : forall (x : Vector), forall (y : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), forall (backward : forall (h : @Eq.{u} Scalar (@dot.{u,v} Scalar Vector inner x y) zero), @PerpVec.{u,v} Scalar zero Vector inner x y), R), R) => ",
+            "fun (perp_vec_symm_arg : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @PerpVec.{u,v} Scalar zero Vector inner y x) => ",
+            "fun (norm_sq_zero_iff_arg : forall (x : Vector), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), @Eq.{v} Vector x vzero), forall (backward : forall (h : @Eq.{v} Vector x vzero), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) zero), R), R) => ",
+            "fun (dist_sq_nonneg_arg : forall (x : Vector), forall (y : Vector), le_rel zero (@distSq.{u,v} Scalar Vector vadd vneg inner x y)) => ",
+            "fun (inner_field23_arg : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => ",
+            "fun (inner_field24_arg : forall (x : Vector), forall (y : Vector), forall (h : @PerpVec.{u,v} Scalar zero Vector inner x y), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) => norm_sq_nonneg_arg (@disp.{p,v} PointCarrier Vector disp_op A B))"
+        )),
+    },
+    TheoremArtifact {
+        name: "square_dist_eq_dist_sq_from_law_packages",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)"
+        ),
+        proof: abstract_metric_abs!(concat!(
+            "fun ordered_args => fun inner_args => fun A => fun B => ",
+            "ordered_args (@Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)) ",
+            "(fun (le_refl_arg : forall (a : Scalar), le_rel a a) => ",
+            "fun (le_trans_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (hab : le_rel a b), forall (hbc : le_rel b c), le_rel a c) => ",
+            "fun (add_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (add a b)) => ",
+            "fun (mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), le_rel zero (mul a b)) => ",
+            "fun (square_nonneg_arg : forall (a : Scalar), le_rel zero (@sq.{u} Scalar mul a)) => ",
+            "fun (sqrt_nonneg_arg : forall (a : Scalar), le_rel zero (sqrt_fn a)) => ",
+            "fun (sqrt_square_of_nonneg_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (@sq.{u} Scalar mul a)) a) => ",
+            "fun (sqrt_mul_self_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (sqrt_fn (mul a a)) a) => ",
+            "fun (eq_of_square_eq_square_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsq : @Eq.{u} Scalar (@sq.{u} Scalar mul a) (@sq.{u} Scalar mul b)), @Eq.{u} Scalar a b) => ",
+            "fun (add_le_add_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (hab : le_rel a b), forall (hcd : le_rel c d), le_rel (add a c) (add b d)) => ",
+            "fun (mul_le_mul_nonneg_arg : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), forall (d : Scalar), forall (ha : le_rel zero a), forall (hab : le_rel a b), forall (hc : le_rel zero c), forall (hcd : le_rel c d), le_rel (mul a c) (mul b d)) => ",
+            "fun (zero_le_two_arg : le_rel zero (@two.{u} Scalar one add)) => ",
+            "fun (le_antisymm_arg : forall (a : Scalar), forall (b : Scalar), forall (hab : le_rel a b), forall (hba : le_rel b a), @Eq.{u} Scalar a b) => ",
+            "fun (lt_of_le_of_ne_arg : forall (a : Scalar), forall (ha : le_rel zero a), forall (hne : forall (haz : @Eq.{u} Scalar a zero), forall (P : Prop), P), lt_rel zero a) => ",
+            "fun (le_of_eq_arg : forall (a : Scalar), forall (b : Scalar), forall (hab : @Eq.{u} Scalar a b), forall (P : Prop), forall (mk : forall (hab_le : le_rel a b), forall (hba_le : le_rel b a), P), P) => ",
+            "fun (sqrt_sq_arg : forall (a : Scalar), forall (ha : le_rel zero a), @Eq.{u} Scalar (@sq.{u} Scalar mul (sqrt_fn a)) a) => ",
+            "fun (sq_eq_zero_iff_arg : forall (a : Scalar), forall (R : Prop), forall (mk : forall (forward : forall (hsqz : @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), @Eq.{u} Scalar a zero), forall (backward : forall (haz : @Eq.{u} Scalar a zero), @Eq.{u} Scalar (@sq.{u} Scalar mul a) zero), R), R) => ",
+            "fun (sum_nonneg_eq_zero_arg : forall (a : Scalar), forall (b : Scalar), forall (ha : le_rel zero a), forall (hb : le_rel zero b), forall (hsum : @Eq.{u} Scalar (add a b) zero), forall (R : Prop), forall (mk : forall (haz : @Eq.{u} Scalar a zero), forall (hbz : @Eq.{u} Scalar b zero), R), R) => ",
+            "sqrt_sq_arg (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@point_dist_sq_nonneg_from_inner_args.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op inner_args A B))"
+        )),
+    },
+    TheoremArtifact {
+        name: "dist_sq_eq_square_dist_from_law_packages",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))"
+        ),
+        proof: abstract_metric_abs!(concat!(
+            "fun ordered_args => fun inner_args => fun A => fun B => ",
+            "@Eq.rec.{u,0} Scalar ",
+            "(@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) ",
+            "(fun (q : Scalar) => fun (hq : @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) q) => @Eq.{u} Scalar q (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))) ",
+            "(@Eq.refl.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))) ",
+            "(@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) ",
+            "(@square_dist_eq_dist_sq_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op ordered_args inner_args A B)"
+        )),
+    },
+    TheoremArtifact {
         name: "dist_sq_eq_square_dist",
         universe_params: &["p", "u", "v"],
         statement: abstract_metric_params!(
-            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))"
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B))"
         ),
-        proof: abstract_metric_abs!("fun law => fun A => fun B => law A B"),
+        proof: abstract_metric_abs!(
+            "fun ordered_args => fun inner_args => fun A => fun B => @dist_sq_eq_square_dist_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op ordered_args inner_args A B"
+        ),
     },
     TheoremArtifact {
         name: "dist_nonneg",
@@ -4382,11 +4463,25 @@ const PYTHAGOREAN_THEOREMS: &[TheoremArtifact] = &[
         name: "pythagorean_theorem_dist_sq",
         universe_params: &["p", "u", "v"],
         statement: abstract_metric_params!(
-            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))"
+            "forall (ordered_args : @OrderedFieldLawArgs.{u} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn), forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))"
         ),
-        proof: abstract_metric_abs!(
-            "fun law => fun A => fun B => fun C => fun h => @pythagorean_distance_general.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op law A B C h"
-        ),
+        proof: abstract_metric_abs!(concat!(
+            "fun ordered_args => fun ring_args => fun vector_args => fun inner_args => fun affine_args => fun A => fun B => fun C => fun h => ",
+            "@eq_calc3.{u} Scalar ",
+            "(@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) ",
+            "(@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) ",
+            "(add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C)) ",
+            "(add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C))) ",
+            "(@square_dist_eq_dist_sq_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op ordered_args inner_args B C) ",
+            "(@pythagorean_distance_sq_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op ring_args vector_args inner_args affine_args A B C h) ",
+            "(@eq_congr2.{u,u,u} Scalar Scalar Scalar add ",
+            "(@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) ",
+            "(@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) ",
+            "(@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C) ",
+            "(@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)) ",
+            "(@dist_sq_eq_square_dist_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op ordered_args inner_args A B) ",
+            "(@dist_sq_eq_square_dist_from_law_packages.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op ordered_args inner_args A C))"
+        )),
     },
     TheoremArtifact {
         name: "pythagorean_converse_sq",

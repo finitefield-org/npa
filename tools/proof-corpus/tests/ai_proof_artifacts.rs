@@ -504,6 +504,9 @@ const ABSTRACT_METRIC_DEFINITIONS: &[&str] = &["dist", "MetricSpaceLawArgs", "Ba
 
 const ABSTRACT_METRIC_THEOREMS: &[&str] = &[
     "dist_def",
+    "point_dist_sq_nonneg_from_inner_args",
+    "square_dist_eq_dist_sq_from_law_packages",
+    "dist_sq_eq_square_dist_from_law_packages",
     "dist_sq_eq_square_dist",
     "dist_nonneg",
     "distance_symm",
@@ -928,7 +931,7 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         inductives: &[],
         definitions: ABSTRACT_METRIC_DEFINITIONS,
         theorems: ABSTRACT_METRIC_THEOREMS,
-        axioms: &[],
+        axioms: &["Eq.rec"],
     },
     ExpectedModule {
         module: "Proofs.Ai.Geometry.Pythagorean",
