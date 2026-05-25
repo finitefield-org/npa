@@ -1193,16 +1193,17 @@ from `InnerProductLawArgs`, `Proofs.Ai.Algebra.AbstractScalarDerive`, `Proofs.Ai
 `Std.Logic.Eq` equality transport.
 
 The checked theorem targets record the expected `Eq.rec` dependency. They do not accept
-`norm_sq_add_of_dot_zero_law`, `norm_sq_add_of_perp_law`, or `parallelogram_law_law` as direct
-theorem-shaped arguments; the perpendicular theorem accepts `RingLawArgs`, `InnerProductLawArgs`,
-and `PerpVec`, while the parallelogram theorem combines checked add/sub norm expansions with the
-IPM2 scalar normalization.
+`norm_sq_add_of_dot_zero_law`, `norm_sq_add_of_perp_law`, `parallelogram_law_law`, or
+`polarization_identity_law` as direct theorem-shaped arguments; the perpendicular theorem accepts
+`RingLawArgs`, `InnerProductLawArgs`, and `PerpVec`, while the parallelogram and polarization
+theorems combine checked norm expansions with scalar normalizations.
 
 | Theorem | Shape / purpose |
 | --- | --- |
 | `norm_sq_add_from_inner_args` | projects the primitive `normSq (x + y)` expansion from `InnerProductLawArgs` |
 | `norm_sq_sub_from_inner_args` | projects the primitive `normSq (x - y)` expansion from `InnerProductLawArgs` |
 | `parallelogram_law_from_inner_args` | derives `normSq (x + y) + normSq (x - y) = 2 * normSq x + 2 * normSq y` from checked norm expansions and scalar normalization |
+| `polarization_identity_from_inner_args` | derives `2 * dot x y = normSq (x + y) - (normSq x + normSq y)` from checked norm expansion and IPM4 scalar normalization |
 | `norm_sq_add_of_dot_zero_from_args` | `dot x y = 0 -> normSq (x + y) = normSq x + normSq y` using the P27 scalar rewrite |
 | `norm_sq_add_of_perp_from_args` | `PerpVec x y -> normSq (x + y) = normSq x + normSq y` |
 

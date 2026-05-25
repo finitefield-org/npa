@@ -448,6 +448,7 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[&str] = &[
     "norm_sq_add_from_inner_args",
     "norm_sq_sub_from_inner_args",
     "parallelogram_law_from_inner_args",
+    "polarization_identity_from_inner_args",
     "dot_neg_left_from_inner_args",
     "norm_sq_neg_from_inner_args",
     "norm_sq_add_of_dot_zero_from_args",

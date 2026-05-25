@@ -4038,6 +4038,31 @@ const ABSTRACT_INNER_PRODUCT_DERIVE_THEOREMS: &[TheoremArtifact] = &[
         )),
     },
     TheoremArtifact {
+        name: "polarization_identity_from_inner_args",
+        universe_params: &["u", "v"],
+        statement: abstract_inner_product_params!(
+            "forall (ring_args : @RingLawArgs.{u} Scalar zero one add neg sub mul), forall (inner_args : @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner), forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) (sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)))"
+        ),
+        proof: abstract_inner_product_abs!(concat!(
+            "fun ring_args => fun inner_args => fun x => fun y => ",
+            "@eq_trans.{u} Scalar ",
+            "(mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y)) ",
+            "(sub (add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) ",
+            "(sub (@normSq.{u,v} Scalar Vector inner (vadd x y)) (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))) ",
+            "(@polarization_scalar_rhs_from_ring_args.{u} Scalar zero one add neg sub mul ring_args (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y) (@dot.{u,v} Scalar Vector inner x y)) ",
+            "(@eq_congr2.{u,u,u} Scalar Scalar Scalar sub ",
+            "(add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y)) ",
+            "(@normSq.{u,v} Scalar Vector inner (vadd x y)) ",
+            "(add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)) ",
+            "(add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y)) ",
+            "(@eq_symm.{u} Scalar ",
+            "(@normSq.{u,v} Scalar Vector inner (vadd x y)) ",
+            "(add (add (@normSq.{u,v} Scalar Vector inner x) (mul (@two.{u} Scalar one add) (@dot.{u,v} Scalar Vector inner x y))) (@normSq.{u,v} Scalar Vector inner y)) ",
+            "(@norm_sq_add_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args x y)) ",
+            "(@Eq.refl.{u} Scalar (add (@normSq.{u,v} Scalar Vector inner x) (@normSq.{u,v} Scalar Vector inner y))))"
+        )),
+    },
+    TheoremArtifact {
         name: "dot_neg_left_from_inner_args",
         universe_params: &["u", "v"],
         statement: abstract_inner_product_params!(

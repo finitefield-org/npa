@@ -372,7 +372,7 @@ inner-product modules and does not accept `polarization_arg` or `polarization_id
 
 ### IPM5 Checked Polarization Identity
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM4
 - Inputs: `Proofs.Ai.Vector.AbstractInnerProduct`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`, `Proofs.Ai.Algebra.AbstractScalarDerive`
@@ -387,6 +387,19 @@ inner-product modules and does not accept `polarization_arg` or `polarization_id
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "polarization_identity_from_inner_args|polarization_identity_arg|polarization_identity_law" proofs/Proofs/Ai/Vector tools/proof-corpus/src/main.rs`
+
+#### IPM5 Result
+
+`Proofs.Ai.Vector.AbstractInnerProductDerive` now exports the checked vector-level polarization
+identity:
+
+| Theorem | Purpose |
+| --- | --- |
+| `polarization_identity_from_inner_args` | Derives `2 * dot x y = normSq (x + y) - (normSq x + normSq y)` from the checked `norm_sq_add_from_inner_args` expansion and IPM4 scalar normalization. |
+
+The proof composes `polarization_scalar_rhs_from_ring_args` with `norm_sq_add_from_inner_args`
+using equality congruence on scalar subtraction. It does not destruct `InnerProductLawArgs` and
+does not project or accept `polarization_identity_arg` / `polarization_identity_law`.
 
 ### IPM6 Inner-Product Documentation And API Refresh
 
