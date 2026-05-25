@@ -551,6 +551,8 @@ const ABSTRACT_METRIC_THEOREMS: &[&str] = &[
     "dist_sq_eq_square_dist_from_law_packages",
     "dist_sq_eq_square_dist",
     "dist_sq_points_le_square_sum_dist_from_law_packages",
+    "dist_nonneg_from_ordered_args",
+    "triangle_inequality_from_law_packages",
     "dist_nonneg",
     "distance_symm",
     "distance_zero_iff_eq",

@@ -1384,8 +1384,9 @@ metric Pythagorean field. `dist_def` closes by definitional equality. The P32 me
 `distSqPoints A B >= 0`, with the nonnegativity proof projected from `InnerProductLawArgs`; the
 reverse bridge uses the audited `Eq.rec` equality transport. IPM12 adds a checked squared affine
 distance bound by transporting the vector squared Minkowski core through affine displacement
-composition. The public unsquared triangle inequality remains an IPM13 target; the existing
-`triangle_inequality` theorem is still an explicit compatibility wrapper.
+composition. IPM13 applies the IPM11 square-comparison helper to that squared bound, using checked
+distance nonnegativity from the ordered square-root API, to export the public law-package triangle
+inequality. The existing `triangle_inequality` theorem is still an explicit compatibility wrapper.
 `distance_zero_iff_eq` uses the same iff-shaped Church encoding as earlier geometry targets rather
 than importing `Proofs.Ai.Logic.Iff` directly into this metric layer.
 
@@ -1399,11 +1400,13 @@ Theorem targets:
 | `dist_sq_eq_square_dist_from_law_packages` | reverses the bridge to `distSqPoints A B = sq (dist A B)` |
 | `dist_sq_eq_square_dist` | public bridge alias backed by P32 law-package derivation |
 | `dist_sq_points_le_square_sum_dist_from_law_packages` | derives the squared affine bound `distSqPoints A C <= sq (dist A B + dist B C)` from Cauchy-Schwarz, scalar square-root/order support, and `disp_comp` |
+| `dist_nonneg_from_ordered_args` | derives `0 <= dist A B` from the ordered-field `sqrt_nonneg` law and the definition of `dist` |
+| `triangle_inequality_from_law_packages` | derives `dist A C <= dist A B + dist B C` from IPM12 squared bound and IPM11 square comparison, without using `triangle_inequality_law` |
 | `dist_nonneg` | `0 <= dist A B` |
 | `distance_symm` | `dist A B = dist B A` |
 | `distance_zero_iff_eq` | iff-shaped equivalence between `dist A B = 0` and `A = B` |
 | `pythagorean_distance_general` | legacy explicit metric Pythagorean wrapper, not used by the final P32 path |
-| `triangle_inequality` | legacy explicit metric-law wrapper; the checked law-package route is not completed yet |
+| `triangle_inequality` | legacy explicit metric-law wrapper; prefer `triangle_inequality_from_law_packages` for the checked route |
 
 #### `Proofs.Ai.Geometry.Pythagorean`
 

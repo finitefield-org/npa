@@ -717,7 +717,7 @@ This milestone intentionally remains squared. It does not export
 
 ### IPM13 Checked Triangle Inequality
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM12
 - Inputs: `Proofs.Ai.Geometry.AbstractMetric`, `Proofs.Ai.Geometry.AffineDerive`,
   `Proofs.Ai.Vector.AbstractInnerProductDerive`
@@ -735,6 +735,20 @@ This milestone intentionally remains squared. It does not export
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "triangle_inequality_from_law_packages|triangle_inequality_law|dist_sq_points_le_square_sum_dist" proofs/Proofs/Ai/Geometry tools/proof-corpus/src/main.rs`
+
+#### IPM13 Result
+
+IPM13 completes TI5. `Proofs.Ai.Geometry.AbstractMetric` now exports
+`dist_nonneg_from_ordered_args`, which derives distance nonnegativity directly from the ordered
+square-root API, and `triangle_inequality_from_law_packages`, which applies
+`sqrt_sum_square_bound_from_ordered_args` to the IPM12 squared affine distance bound. The proof
+rewrites `sq (dist A C)` to `distSqPoints A C` with the checked metric square bridge, then uses
+nonnegativity of `dist A C`, `dist A B`, and `dist B C` to conclude
+`dist A C <= dist A B + dist B C`.
+
+The completed proof path does not take `MetricSpaceLawArgs` and does not project or accept
+`triangle_inequality_law`. The older `triangle_inequality` theorem remains a compatibility wrapper;
+the checked route is `triangle_inequality_from_law_packages`.
 
 ### IPM14 Public Documentation And API Refresh
 
