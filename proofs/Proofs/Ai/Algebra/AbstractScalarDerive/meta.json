@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Algebra/AbstractScalarDerive/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:bc6b815a687e6e241df3f4d46f52b8751765524e6f83b355cb217968cd6d4837",
-  "certificate_file_sha256": "sha256:c02ded328a53b2adc49796460aa0a39e37d5b826a487ba0bc4ae3401055ce72a",
-  "export_hash": "sha256:c3fb09b2bbc7bcb4179b2a152c5287a4222648ce72b477dc9cec73c1930db029",
-  "axiom_report_hash": "sha256:7413909980ef8dd60bd8d4b1de01bf82e3b342b957422514bd9f8bdc252eb55c",
-  "certificate_hash": "sha256:15b92db97939db53812bf96d5af01c4394b4f9e3a2216ad41783e049973764a4",
+  "source_sha256": "sha256:1fabe8d3bb84c796b238c17205e132ff36131c9cfc7501aa6e9c61c81429db70",
+  "certificate_file_sha256": "sha256:8499e1ae5bd8ca73b6acb57eab7d2abc94292044cc939607d125bde59833a47e",
+  "export_hash": "sha256:5cfce44c0b39d64991e1ce13f38da007e2a4146ce51eceee64568a9da72954e7",
+  "axiom_report_hash": "sha256:e07182db3dc623da3ef815d3fda91d057b11f0dff8f81befe6c60472cbf02dcf",
+  "certificate_hash": "sha256:7124d60264112a72c6f92fd880d68fdcfe278f8595b13e378205b284656c55db",
   "imports": ["Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.EqReasoning", "Std.Logic.Eq"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -23,7 +23,9 @@
     { "name": "add_sub_cross_cancel_from_ring_args", "kind": "theorem" },
     { "name": "add_pairwise_commute_from_ring_args", "kind": "theorem" },
     { "name": "add_cross_and_sub_cross_cancel_from_ring_args", "kind": "theorem" },
-    { "name": "parallelogram_scalar_rhs_from_ring_args", "kind": "theorem" }
+    { "name": "parallelogram_scalar_rhs_from_ring_args", "kind": "theorem" },
+    { "name": "add_middle_to_front_from_ring_args", "kind": "theorem" },
+    { "name": "polarization_scalar_rhs_from_ring_args", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

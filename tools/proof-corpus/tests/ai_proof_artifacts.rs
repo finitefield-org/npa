@@ -381,6 +381,8 @@ const ABSTRACT_SCALAR_DERIVE_THEOREMS: &[&str] = &[
     "add_pairwise_commute_from_ring_args",
     "add_cross_and_sub_cross_cancel_from_ring_args",
     "parallelogram_scalar_rhs_from_ring_args",
+    "add_middle_to_front_from_ring_args",
+    "polarization_scalar_rhs_from_ring_args",
 ];
 
 const ABSTRACT_VECTOR_SPACE_DEFINITIONS: &[&str] =

@@ -1104,6 +1104,8 @@ theorem-shaped arguments.
 | `add_pairwise_commute_from_ring_args` | `(a + b) + (c + d) = (a + c) + (b + d)` |
 | `add_cross_and_sub_cross_cancel_from_ring_args` | cancels opposite cross terms in the parallelogram scalar sum |
 | `parallelogram_scalar_rhs_from_ring_args` | `(a + x + b) + (a - x + b) = 2 * a + 2 * b` |
+| `add_middle_to_front_from_ring_args` | `(a + x) + b = x + (a + b)`, the scalar rearrangement used by polarization |
+| `polarization_scalar_rhs_from_ring_args` | `2 * d = (nx + 2 * d + ny) - (nx + ny)` for the checked polarization route |
 
 #### `Proofs.Ai.Vector.AbstractSpace`
 

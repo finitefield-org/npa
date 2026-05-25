@@ -339,7 +339,7 @@ metric, or square-root dependency.
 
 ### IPM4 Scalar Normalization For Polarization
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM3
 - Inputs: `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractScalarDerive`,
   `Proofs.Ai.EqReasoning`
@@ -356,6 +356,19 @@ metric, or square-root dependency.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "polarization_scalar|polarization_arg|polarization_identity_law" proofs tools/proof-corpus`
+
+#### IPM4 Result
+
+`Proofs.Ai.Algebra.AbstractScalarDerive` now includes the scalar-only normalization needed by the
+checked polarization route:
+
+| Theorem | Purpose |
+| --- | --- |
+| `add_middle_to_front_from_ring_args` | Reorders `(nx + t) + ny` into `t + (nx + ny)` using only `RingLawArgs`. |
+| `polarization_scalar_rhs_from_ring_args` | Derives `2 * d = (nx + 2 * d + ny) - (nx + ny)` by rewriting the norm-addition expansion and applying subtraction cancellation. |
+
+The proof uses `RingLawArgs` and `Proofs.Ai.EqReasoning` only. It does not import vector or
+inner-product modules and does not accept `polarization_arg` or `polarization_identity_law`.
 
 ### IPM5 Checked Polarization Identity
 
