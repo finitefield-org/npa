@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Algebra/AbstractOrderedField/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:118e2b7ea0ecb6fbff179d5abb84c68348880fc878f5e79c64110a418c57fb66",
-  "certificate_file_sha256": "sha256:92e7f0a8fb7c442b2a416392a5ebccd3d4856f353e70ca6932d8ea98d2030e5c",
-  "export_hash": "sha256:f90fd7c930ff001ef664744b441771de8c68f1b6c8f1536e49069a3b95e848c9",
-  "axiom_report_hash": "sha256:6d14a3d02748965eba554beb8d48d3bfcbd201a68c65df3c0fd2edf58cc167fc",
-  "certificate_hash": "sha256:dbf10790a4e7eb5d18b192fafb5e797cbad9f7d96c76f8c0b8f074d149d426e8",
+  "source_sha256": "sha256:647de75cf28d7024659d34aa1ab1d0d23ed6375c59d7ac40acf1e8259a558fca",
+  "certificate_file_sha256": "sha256:7312cf16486f8ecbec3caed69e58bc9e407321d95c84e96536cc4217c13df55c",
+  "export_hash": "sha256:8f6c3c2ac58c5ae924a19663e7db28fb345a60a6110f7e5da5d1cab87c256af7",
+  "axiom_report_hash": "sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12",
+  "certificate_hash": "sha256:918bb24c85df31804e48b72801781c1cfae902d9305c78b072da21b8736db553",
   "imports": ["Proofs.Ai.Algebra.AbstractRing", "Std.Logic.Eq"],
   "axioms": [],
   "declarations": [
@@ -37,7 +37,10 @@
     { "name": "sqrt_sq", "kind": "theorem" },
     { "name": "sq_eq_zero_iff", "kind": "theorem" },
     { "name": "sum_nonneg_eq_zero", "kind": "theorem" },
-    { "name": "square_completion_bound_from_ordered_args", "kind": "theorem" }
+    { "name": "square_completion_bound_from_ordered_args", "kind": "theorem" },
+    { "name": "le_of_sq_le_sq_nonneg_from_ordered_args", "kind": "theorem" },
+    { "name": "add_dist_nonneg_from_ordered_args", "kind": "theorem" },
+    { "name": "sqrt_sum_square_bound_from_ordered_args", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

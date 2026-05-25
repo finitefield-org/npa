@@ -359,6 +359,9 @@ const ABSTRACT_ORDERED_FIELD_THEOREMS: &[&str] = &[
     "sq_eq_zero_iff",
     "sum_nonneg_eq_zero",
     "square_completion_bound_from_ordered_args",
+    "le_of_sq_le_sq_nonneg_from_ordered_args",
+    "add_dist_nonneg_from_ordered_args",
+    "sqrt_sum_square_bound_from_ordered_args",
 ];
 
 const ABSTRACT_SQUARE_NORMALIZE_THEOREMS: &[&str] = &[

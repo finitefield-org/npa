@@ -1043,6 +1043,12 @@ metric theorem. The trusted boundary is unchanged: the source wrapper and replay
 sidecars, and the certificate only verifies that the exported theorem projects this generic scalar
 law from the explicit law package supplied by an instantiation.
 
+IPM11 extends the same law package with `le_of_sq_le_sq_nonneg_law`, a generic scalar/order
+square-comparison field: from `0 <= a`, `0 <= b`, and `sq a <= sq b`, it yields `a <= b`. The
+exported support theorems remain algebraic projections and combinations over the explicit ordered
+field package, so they do not depend on vectors, affine points, dot products, Cauchy-Schwarz, or
+triangle inequality.
+
 Theorem targets:
 
 | Theorem | Shape / purpose |
@@ -1062,6 +1068,9 @@ Theorem targets:
 | `sq_eq_zero_iff` | Church-encoded `sq a = 0 <-> a = 0` under the abstract ordered-field assumptions |
 | `sum_nonneg_eq_zero` | `0 <= a -> 0 <= b -> a + b = 0 ->` Church-encoded `(a = 0) /\ (b = 0)` |
 | `square_completion_bound_from_ordered_args` | projects the generic scalar quadratic/completed-square bound from `OrderedFieldLawArgs` |
+| `le_of_sq_le_sq_nonneg_from_ordered_args` | `0 <= a -> 0 <= b -> sq a <= sq b -> a <= b` |
+| `add_dist_nonneg_from_ordered_args` | generic nonnegative-sum helper for later metric-distance arguments |
+| `sqrt_sum_square_bound_from_ordered_args` | `0 <= a -> 0 <= b -> 0 <= c -> sq a <= sq (b + c) -> a <= b + c` |
 
 #### `Proofs.Ai.Algebra.AbstractSquareNormalize`
 

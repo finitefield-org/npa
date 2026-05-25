@@ -607,7 +607,7 @@ Result:
 
 ### IPM11 Metric Square-Comparison Support
 
-- Status: Pending
+- Status: Completed
 - Depends on: IPM10
 - Inputs: `Proofs.Ai.Algebra.AbstractOrderedField`,
   `Proofs.Ai.Algebra.AbstractSquareNormalize`, `Proofs.Ai.Geometry.AbstractMetric`
@@ -627,6 +627,24 @@ Result:
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "triangle_inequality|dist A C|dot|normSq" proofs/Proofs/Ai/Algebra tools/proof-corpus/src/main.rs`
+
+#### IPM11 Result
+
+`Proofs.Ai.Algebra.AbstractOrderedField` now exports the scalar/order square-comparison helpers
+needed before the unsquared metric triangle inequality step:
+
+- `le_of_sq_le_sq_nonneg_from_ordered_args`
+- `add_dist_nonneg_from_ordered_args`
+- `sqrt_sum_square_bound_from_ordered_args`
+
+`OrderedFieldLawArgs` now contains the generic scalar field
+`le_of_sq_le_sq_nonneg_law`, which proves `a <= b` from `0 <= a`, `0 <= b`, and
+`sq a <= sq b`. The exported helper `sqrt_sum_square_bound_from_ordered_args` combines that field
+with nonnegative closure under addition to derive `a <= b + c` from nonnegative `a`, `b`, `c` and
+`sq a <= sq (b + c)`.
+
+The checked artifacts for this milestone live in the ordered-field algebra module. They do not
+depend on vectors, affine points, dot products, Cauchy-Schwarz, or triangle inequality.
 
 ### IPM12 Squared Minkowski Bound
 
