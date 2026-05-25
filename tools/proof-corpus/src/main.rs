@@ -398,6 +398,27 @@ const AFFINE_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const AFFINE_DERIVE_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.AffineDerive",
+    source_path: "Proofs/Ai/Geometry/AffineDerive/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/AffineDerive/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/AffineDerive/meta.json",
+    replay_path: "Proofs/Ai/Geometry/AffineDerive/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.Geometry.Affine",
+        "Proofs.Ai.Vector.AbstractInnerProduct",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: AFFINE_DERIVE_THEOREMS,
+    expected_axioms: &["Eq.rec"],
+};
+
 const ABSTRACT_RIGHT_TRIANGLE_MODULE: ModuleArtifact = ModuleArtifact {
     module: "Proofs.Ai.Geometry.AbstractRightTriangle",
     source_path: "Proofs/Ai/Geometry/AbstractRightTriangle/source.npa",
@@ -3626,8 +3647,6 @@ const AFFINE_DEFINITIONS: &[DefinitionArtifact] = &[
             "forall (disp_self_law : forall (A : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A A) vzero), ",
             "forall (disp_reverse_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) (vneg (@disp.{p,v} PointCarrier Vector disp_op A B))), ",
             "forall (disp_comp_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A C) (vadd (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op B C))), ",
-            "forall (hypotenuse_vector_eq_sub_legs_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) (@vsub.{v} Vector vadd vneg (@disp.{p,v} PointCarrier Vector disp_op A C) (@disp.{p,v} PointCarrier Vector disp_op A B))), ",
-            "forall (dist_sq_points_def_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@normSq.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B))), ",
             "forall (point_ext_of_zero_disp_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (h : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A B) vzero), @Eq.{p} PointCarrier A B), ",
             "forall (dist_sq_symm_law : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B A)), ",
             "forall (dist_sq_zero_iff_eq_law : forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), R), R), P), P"
@@ -3703,6 +3722,151 @@ const AFFINE_THEOREMS: &[TheoremArtifact] = &[
         proof: affine_abs!(
             "fun law => fun A => fun B => fun (R : Prop) => fun (mk : forall (forward : forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), R) => law A B R mk"
         ),
+    },
+];
+
+const AFFINE_DERIVE_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "vec_add_comm_from_vector_args",
+        universe_params: &["u", "v"],
+        statement: abstract_vector_space_params!(
+            "forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (vadd x y) (vadd y x)"
+        ),
+        proof: abstract_vector_space_abs!(concat!(
+            "fun vector_args => fun x => fun y => ",
+            "vector_args (@Eq.{v} Vector (vadd x y) (vadd y x)) ",
+            "(fun (vec_sub_def_arg : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x y) (vadd x (vneg y))) => ",
+            "fun (vec_add_assoc_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (vadd x y) z) (vadd x (vadd y z))) => ",
+            "fun (vec_add_comm_arg : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (vadd x y) (vadd y x)) => ",
+            "fun (vec_add_zero_arg : forall (x : Vector), @Eq.{v} Vector (vadd x vzero) x) => ",
+            "fun (vec_zero_add_arg : forall (x : Vector), @Eq.{v} Vector (vadd vzero x) x) => ",
+            "fun (vec_neg_add_cancel_arg : forall (x : Vector), @Eq.{v} Vector (vadd (vneg x) x) vzero) => ",
+            "fun (vec_add_neg_cancel_arg : forall (x : Vector), @Eq.{v} Vector (vadd x (vneg x)) vzero) => ",
+            "fun (sub_sub_sub_cancel_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg y z)) (@vsub.{v} Vector vadd vneg x y)) => ",
+            "fun (vec_sub_self_arg : forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x x) vzero) => ",
+            "fun (vec_sub_zero_arg : forall (x : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x vzero) x) => ",
+            "fun (vec_add_left_cancel_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), forall (h : @Eq.{v} Vector (vadd x y) (vadd x z)), @Eq.{v} Vector y z) => ",
+            "fun (smul_add_arg : forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (add a b) x) (vadd (smul a x) (smul b x))) => ",
+            "fun (add_smul_arg : forall (a : Scalar), forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (smul a (vadd x y)) (vadd (smul a x) (smul a y))) => ",
+            "fun (one_smul_arg : forall (x : Vector), @Eq.{v} Vector (smul one x) x) => ",
+            "fun (mul_smul_arg : forall (a : Scalar), forall (b : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (mul a b) x) (smul a (smul b x))) => ",
+            "fun (zero_smul_arg : forall (x : Vector), @Eq.{v} Vector (smul zero x) vzero) => ",
+            "fun (smul_zero_arg : forall (a : Scalar), @Eq.{v} Vector (smul a vzero) vzero) => ",
+            "fun (neg_smul_arg : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul (neg a) x) (vneg (smul a x))) => ",
+            "fun (smul_neg_arg : forall (a : Scalar), forall (x : Vector), @Eq.{v} Vector (smul a (vneg x)) (vneg (smul a x))) => ",
+            "fun (vec_sub_eq_add_neg_arg : forall (x : Vector), forall (y : Vector), @Eq.{v} Vector (@vsub.{v} Vector vadd vneg x y) (vadd x (vneg y))) => ",
+            "fun (sub_add_sub_cancel_left_arg : forall (x : Vector), forall (y : Vector), forall (z : Vector), @Eq.{v} Vector (vadd (@vsub.{v} Vector vadd vneg x z) (@vsub.{v} Vector vadd vneg z y)) (@vsub.{v} Vector vadd vneg x y)) => ",
+            "fun (linear_comb2_ext_arg : forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), @Eq.{v} Vector (@linear_comb2.{u,v} Scalar Vector vadd smul a x b y) (vadd (smul a x) (smul b y))) => ",
+            "fun (linear_comb3_ext_arg : forall (a : Scalar), forall (x : Vector), forall (b : Scalar), forall (y : Vector), forall (c : Scalar), forall (z : Vector), @Eq.{v} Vector (@linear_comb3.{u,v} Scalar Vector vadd smul a x b y c z) (vadd (vadd (smul a x) (smul b y)) (smul c z))) => vec_add_comm_arg x y)"
+        )),
+    },
+    TheoremArtifact {
+        name: "disp_reverse_from_affine_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) (vneg (@disp.{p,v} PointCarrier Vector disp_op A B))"
+        ),
+        proof: affine_abs!(concat!(
+            "fun affine_args => fun A => fun B => ",
+            "affine_args (@Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) (vneg (@disp.{p,v} PointCarrier Vector disp_op A B))) ",
+            "(fun (disp_self_arg : forall (A : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A A) vzero) => ",
+            "fun (disp_reverse_arg : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) (vneg (@disp.{p,v} PointCarrier Vector disp_op A B))) => ",
+            "fun (disp_comp_arg : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A C) (vadd (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op B C))) => ",
+            "fun (point_ext_arg : forall (A : PointCarrier), forall (B : PointCarrier), forall (h : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A B) vzero), @Eq.{p} PointCarrier A B) => ",
+            "fun (dist_sq_symm_arg : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B A)) => ",
+            "fun (dist_sq_zero_iff_eq_arg : forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), R), R) => disp_reverse_arg A B)"
+        )),
+    },
+    TheoremArtifact {
+        name: "disp_comp_from_affine_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A C) (vadd (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op B C))"
+        ),
+        proof: affine_abs!(concat!(
+            "fun affine_args => fun A => fun B => fun C => ",
+            "affine_args (@Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A C) (vadd (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op B C))) ",
+            "(fun (disp_self_arg : forall (A : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A A) vzero) => ",
+            "fun (disp_reverse_arg : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) (vneg (@disp.{p,v} PointCarrier Vector disp_op A B))) => ",
+            "fun (disp_comp_arg : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A C) (vadd (@disp.{p,v} PointCarrier Vector disp_op A B) (@disp.{p,v} PointCarrier Vector disp_op B C))) => ",
+            "fun (point_ext_arg : forall (A : PointCarrier), forall (B : PointCarrier), forall (h : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op A B) vzero), @Eq.{p} PointCarrier A B) => ",
+            "fun (dist_sq_symm_arg : forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B A)) => ",
+            "fun (dist_sq_zero_iff_eq_arg : forall (A : PointCarrier), forall (B : PointCarrier), forall (R : Prop), forall (mk : forall (forward : forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), @Eq.{p} PointCarrier A B), forall (backward : forall (h : @Eq.{p} PointCarrier A B), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) zero), R), R) => disp_comp_arg A B C)"
+        )),
+    },
+    TheoremArtifact {
+        name: "dist_sq_points_def_from_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@normSq.{u,v} Scalar Vector inner (@disp.{p,v} PointCarrier Vector disp_op A B))"
+        ),
+        proof: affine_abs!(
+            "fun affine_args => fun A => fun B => @Eq.refl.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B)"
+        ),
+    },
+    TheoremArtifact {
+        name: "hypotenuse_vector_eq_neg_left_add_right_from_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) (vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C))"
+        ),
+        proof: affine_abs!(concat!(
+            "fun affine_args => fun A => fun B => fun C => ",
+            "@Eq.rec.{v,0} Vector (vadd (@disp.{p,v} PointCarrier Vector disp_op B A) (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(fun (z : Vector) => fun (hz : @Eq.{v} Vector (vadd (@disp.{p,v} PointCarrier Vector disp_op B A) (@disp.{p,v} PointCarrier Vector disp_op A C)) z) => @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) z) ",
+            "(@disp_comp_from_affine_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args B A C) ",
+            "(vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(@Eq.rec.{v,0} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) ",
+            "(fun (q : Vector) => fun (hq : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B A) q) => @Eq.{v} Vector (vadd (@disp.{p,v} PointCarrier Vector disp_op B A) (@disp.{p,v} PointCarrier Vector disp_op A C)) (vadd q (@disp.{p,v} PointCarrier Vector disp_op A C))) ",
+            "(@Eq.refl.{v} Vector (vadd (@disp.{p,v} PointCarrier Vector disp_op B A) (@disp.{p,v} PointCarrier Vector disp_op A C))) ",
+            "(vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) ",
+            "(@disp_reverse_from_affine_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args A B))"
+        )),
+    },
+    TheoremArtifact {
+        name: "hypotenuse_vector_eq_sub_legs_from_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) (@vsub.{v} Vector vadd vneg (@disp.{p,v} PointCarrier Vector disp_op A C) (@disp.{p,v} PointCarrier Vector disp_op A B))"
+        ),
+        proof: affine_abs!(concat!(
+            "fun vector_args => fun affine_args => fun A => fun B => fun C => ",
+            "@Eq.rec.{v,0} Vector (vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(fun (z : Vector) => fun (hz : @Eq.{v} Vector (vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) z) => @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) z) ",
+            "(@hypotenuse_vector_eq_neg_left_add_right_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args A B C) ",
+            "(@vsub.{v} Vector vadd vneg (@disp.{p,v} PointCarrier Vector disp_op A C) (@disp.{p,v} PointCarrier Vector disp_op A B)) ",
+            "(@vec_add_comm_from_vector_args.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul vector_args (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C))"
+        )),
+    },
+    TheoremArtifact {
+        name: "dist_sq_hypotenuse_norm_neg_left_add_right_from_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (@normSq.{u,v} Scalar Vector inner (vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)))"
+        ),
+        proof: affine_abs!(concat!(
+            "fun affine_args => fun A => fun B => fun C => ",
+            "@Eq.rec.{v,0} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) ",
+            "(fun (z : Vector) => fun (hz : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) z) => @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (@normSq.{u,v} Scalar Vector inner z)) ",
+            "(@dist_sq_points_def_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args B C) ",
+            "(vadd (vneg (@disp.{p,v} PointCarrier Vector disp_op A B)) (@disp.{p,v} PointCarrier Vector disp_op A C)) ",
+            "(@hypotenuse_vector_eq_neg_left_add_right_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args A B C)"
+        )),
+    },
+    TheoremArtifact {
+        name: "dist_sq_hypotenuse_norm_sub_legs_from_args",
+        universe_params: &["p", "u", "v"],
+        statement: affine_params!(
+            "forall (vector_args : @VectorSpaceLawArgs.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul), forall (affine_args : @AffineLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg (@disp.{p,v} PointCarrier Vector disp_op A C) (@disp.{p,v} PointCarrier Vector disp_op A B)))"
+        ),
+        proof: affine_abs!(concat!(
+            "fun vector_args => fun affine_args => fun A => fun B => fun C => ",
+            "@Eq.rec.{v,0} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) ",
+            "(fun (z : Vector) => fun (hz : @Eq.{v} Vector (@disp.{p,v} PointCarrier Vector disp_op B C) z) => @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (@normSq.{u,v} Scalar Vector inner z)) ",
+            "(@dist_sq_points_def_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op affine_args B C) ",
+            "(@vsub.{v} Vector vadd vneg (@disp.{p,v} PointCarrier Vector disp_op A C) (@disp.{p,v} PointCarrier Vector disp_op A B)) ",
+            "(@hypotenuse_vector_eq_sub_legs_from_args.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op vector_args affine_args A B C)"
+        )),
     },
 ];
 
@@ -4304,6 +4468,29 @@ fn run() -> Result<(), String> {
         &affine_imports,
         &affine_source_interfaces,
     )?;
+    let affine_derive_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_inner_product.verified_module.clone(),
+        affine.verified_module.clone(),
+    ];
+    let affine_derive_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_inner_product.source_interface.clone(),
+        affine.source_interface.clone(),
+    ];
+    let affine_derive = build_and_write_module(
+        &proof_root,
+        &AFFINE_DERIVE_MODULE,
+        &affine_derive_imports,
+        &affine_derive_source_interfaces,
+    )?;
     let abstract_right_triangle_imports = vec![
         eq_import.clone(),
         abstract_ring.verified_module.clone(),
@@ -4405,6 +4592,7 @@ fn run() -> Result<(), String> {
             abstract_inner_product,
             abstract_inner_product_derive,
             affine,
+            affine_derive,
             abstract_right_triangle,
             abstract_metric,
             pythagorean,
@@ -4714,7 +4902,9 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Vector.AbstractSpace",
             "Proofs.Ai.Vector.AbstractInnerProduct",
         ]
-    } else if config.module == ABSTRACT_RIGHT_TRIANGLE_MODULE.module {
+    } else if config.module == AFFINE_DERIVE_MODULE.module
+        || config.module == ABSTRACT_RIGHT_TRIANGLE_MODULE.module
+    {
         &[
             "Proofs.Ai.Algebra.AbstractRing",
             "Proofs.Ai.Algebra.AbstractOrderedField",

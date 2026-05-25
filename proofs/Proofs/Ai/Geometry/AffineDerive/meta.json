@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.AffineDerive",
+  "source": "Proofs/Ai/Geometry/AffineDerive/source.npa",
+  "certificate": "Proofs/Ai/Geometry/AffineDerive/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9e9564ad8e4c1ef8c7af94430b6ade599db272de414ba8c8b0b5f6f1dc693047",
+  "certificate_file_sha256": "sha256:81d9484c7b303235d7ab82c3066772f71f43012f89366bddc86c26f415df9602",
+  "export_hash": "sha256:952ab394c2bd8f278bb4ce88212dc89972c67a9af64e466bbeb6f0b7b7777285",
+  "axiom_report_hash": "sha256:31ec1ff27164f1a9d7251898656c6888bcda59666472aac23aac45eca8a6f44c",
+  "certificate_hash": "sha256:2183f2ead253b1588adf9de89d27db04985ef2e7c3973f84cfc7acdb8b7ddabd",
+  "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Geometry.Affine", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "vec_add_comm_from_vector_args", "kind": "theorem" },
+    { "name": "disp_reverse_from_affine_args", "kind": "theorem" },
+    { "name": "disp_comp_from_affine_args", "kind": "theorem" },
+    { "name": "dist_sq_points_def_from_args", "kind": "theorem" },
+    { "name": "hypotenuse_vector_eq_neg_left_add_right_from_args", "kind": "theorem" },
+    { "name": "hypotenuse_vector_eq_sub_legs_from_args", "kind": "theorem" },
+    { "name": "dist_sq_hypotenuse_norm_neg_left_add_right_from_args", "kind": "theorem" },
+    { "name": "dist_sq_hypotenuse_norm_sub_legs_from_args", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

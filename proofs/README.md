@@ -37,6 +37,8 @@ Current bundles:
   `InnerProductLawArgs`, P27 scalar rewrites, and `PerpVec`.
 - `Proofs/Ai/Geometry/Affine/`: abstract point, displacement, and point squared-distance theorem
   targets over explicit affine compatibility law assumptions.
+- `Proofs/Ai/Geometry/AffineDerive/`: checked affine displacement orientation and point-distance
+  bridge derivations from primitive affine and vector law packages.
 - `Proofs/Ai/Geometry/AbstractRightTriangle/`: abstract perpendicularity, right-triangle, and
   squared-distance Pythagorean theorem targets over explicit geometry law assumptions.
 - `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
@@ -652,6 +654,10 @@ Completed prerequisite:
 - P28 `Proofs.Ai.Vector.AbstractInnerProductDerive` supplies checked norm expansion and
   perpendicular special-case derivations from `InnerProductLawArgs`, P27 scalar rewrites, and
   equality transport, without accepting direct dot-zero or perpendicular norm law arguments.
+- P29 `Proofs.Ai.Geometry.AffineDerive` supplies checked affine hypotenuse orientation and
+  point-distance/norm bridge derivations from primitive `AffineLawArgs`, `VectorSpaceLawArgs`, and
+  equality transport, without accepting direct hypotenuse-vector or point-distance-definition law
+  arguments.
 
 Post-P25 policy:
 
@@ -679,7 +685,8 @@ EqReasoning
   -> Algebra.AbstractRing -> Algebra.AbstractOrderedField -> Algebra.AbstractSquareNormalize
   -> Algebra.AbstractScalarDerive
   -> Vector.AbstractSpace -> Vector.AbstractInnerProduct -> Vector.AbstractInnerProductDerive
-  -> Geometry.Affine -> Geometry.AbstractRightTriangle -> Geometry.AbstractMetric
+  -> Geometry.Affine -> Geometry.AffineDerive
+  -> Geometry.AbstractRightTriangle -> Geometry.AbstractMetric
   -> Geometry.Pythagorean
 ```
 
@@ -1165,7 +1172,9 @@ Implemented definitions / API declarations, not proof targets:
 state point-distance lemmas without colliding with the imported vector-distance declaration. The
 checked theorem targets either close by definitional equality (`dist_sq_points_def`) or take the
 corresponding affine compatibility law as an explicit argument and return it at the requested
-points.
+points. `AffineLawArgs` itself keeps only the primitive affine compatibility fields needed by later
+derivation layers; the theorem-shaped hypotenuse-vector and point-distance-definition fields were
+removed from the law package in P29.
 
 Theorem targets:
 
@@ -1179,6 +1188,28 @@ Theorem targets:
 | `point_ext_of_zero_disp` | zero displacement implies point equality |
 | `dist_sq_symm` | point squared-distance symmetry |
 | `dist_sq_zero_iff_eq` | iff-shaped point squared-distance nondegeneracy |
+
+#### `Proofs.Ai.Geometry.AffineDerive`
+
+No new point, vector, or scalar operation definition lives here. This implemented module derives
+the affine orientation path needed by the abstract Pythagorean route from primitive
+`AffineLawArgs`, `VectorSpaceLawArgs`, and `Std.Logic.Eq` equality transport.
+
+The checked theorem targets record the expected `Eq.rec` dependency. They do not accept
+`hypotenuse_vector_eq_sub_legs_law` or `dist_sq_points_def_law` as direct theorem-shaped
+arguments; the hypotenuse orientation is built from `disp_comp`, `disp_reverse`, vector addition
+commutativity, and the definitional `vsub` / `distSqPoints` expansions.
+
+| Theorem | Shape / purpose |
+| --- | --- |
+| `vec_add_comm_from_vector_args` | projects vector addition commutativity from `VectorSpaceLawArgs` |
+| `disp_reverse_from_affine_args` | projects the primitive reverse displacement law from `AffineLawArgs` |
+| `disp_comp_from_affine_args` | projects the primitive displacement composition law from `AffineLawArgs` |
+| `dist_sq_points_def_from_args` | `distSqPoints X Y = normSq (disp X Y)` by definition |
+| `hypotenuse_vector_eq_neg_left_add_right_from_args` | `disp B C = vadd (vneg (disp A B)) (disp A C)` |
+| `hypotenuse_vector_eq_sub_legs_from_args` | `disp B C = vsub (disp A C) (disp A B)` |
+| `dist_sq_hypotenuse_norm_neg_left_add_right_from_args` | rewrites `distSqPoints B C` to the norm of the additive hypotenuse orientation |
+| `dist_sq_hypotenuse_norm_sub_legs_from_args` | rewrites `distSqPoints B C` to the norm of the subtraction hypotenuse orientation |
 
 #### `Proofs.Ai.Geometry.AbstractRightTriangle`
 

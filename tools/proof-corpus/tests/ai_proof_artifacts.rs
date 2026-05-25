@@ -457,6 +457,17 @@ const AFFINE_THEOREMS: &[&str] = &[
     "dist_sq_zero_iff_eq",
 ];
 
+const AFFINE_DERIVE_THEOREMS: &[&str] = &[
+    "vec_add_comm_from_vector_args",
+    "disp_reverse_from_affine_args",
+    "disp_comp_from_affine_args",
+    "dist_sq_points_def_from_args",
+    "hypotenuse_vector_eq_neg_left_add_right_from_args",
+    "hypotenuse_vector_eq_sub_legs_from_args",
+    "dist_sq_hypotenuse_norm_neg_left_add_right_from_args",
+    "dist_sq_hypotenuse_norm_sub_legs_from_args",
+];
+
 const ABSTRACT_RIGHT_TRIANGLE_DEFINITIONS: &[&str] = &[
     "Perp",
     "RightTriangle",
@@ -817,6 +828,26 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         definitions: AFFINE_DEFINITIONS,
         theorems: AFFINE_THEOREMS,
         axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Geometry.AffineDerive",
+        source: "Proofs/Ai/Geometry/AffineDerive/source.npa",
+        certificate: "Proofs/Ai/Geometry/AffineDerive/certificate.npcert",
+        meta: "Proofs/Ai/Geometry/AffineDerive/meta.json",
+        replay: "Proofs/Ai/Geometry/AffineDerive/replay.json",
+        imports: &[
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: &[],
+        theorems: AFFINE_DERIVE_THEOREMS,
+        axioms: &["Eq.rec"],
     },
     ExpectedModule {
         module: "Proofs.Ai.Geometry.AbstractRightTriangle",
