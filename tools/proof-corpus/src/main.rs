@@ -405,6 +405,29 @@ const ABSTRACT_METRIC_MODULE: ModuleArtifact = ModuleArtifact {
     expected_axioms: &[],
 };
 
+const PYTHAGOREAN_MODULE: ModuleArtifact = ModuleArtifact {
+    module: "Proofs.Ai.Geometry.Pythagorean",
+    source_path: "Proofs/Ai/Geometry/Pythagorean/source.npa",
+    certificate_path: "Proofs/Ai/Geometry/Pythagorean/certificate.npcert",
+    meta_path: "Proofs/Ai/Geometry/Pythagorean/meta.json",
+    replay_path: "Proofs/Ai/Geometry/Pythagorean/replay.json",
+    imports: &[
+        "Proofs.Ai.Algebra.AbstractOrderedField",
+        "Proofs.Ai.Algebra.AbstractRing",
+        "Proofs.Ai.Algebra.AbstractSquareNormalize",
+        "Proofs.Ai.Geometry.AbstractMetric",
+        "Proofs.Ai.Geometry.AbstractRightTriangle",
+        "Proofs.Ai.Geometry.Affine",
+        "Proofs.Ai.Vector.AbstractInnerProduct",
+        "Proofs.Ai.Vector.AbstractSpace",
+        "Std.Logic.Eq",
+    ],
+    inductives: &[],
+    definitions: &[],
+    theorems: PYTHAGOREAN_THEOREMS,
+    expected_axioms: &[],
+};
+
 macro_rules! abstract_ring_params {
     ($tail:literal) => {
         concat!(
@@ -3722,6 +3745,65 @@ const ABSTRACT_METRIC_THEOREMS: &[TheoremArtifact] = &[
     },
 ];
 
+const PYTHAGOREAN_THEOREMS: &[TheoremArtifact] = &[
+    TheoremArtifact {
+        name: "pythagorean_theorem_sq",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+        ),
+        proof: abstract_metric_abs!(
+            "fun law => fun A => fun B => fun C => fun h => @pythagorean_distance_sq_general.{p,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner PointCarrier disp_op law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_theorem_dist_sq",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op B C)) (add (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A B)) (@sq.{u} Scalar mul (@dist.{p,u,v} Scalar sqrt_fn Vector inner PointCarrier disp_op A C)))"
+        ),
+        proof: abstract_metric_abs!(
+            "fun law => fun A => fun B => fun C => fun h => @pythagorean_distance_general.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_converse_sq",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C"
+        ),
+        proof: abstract_metric_abs!("fun law => fun A => fun B => fun C => fun h => law A B C h"),
+    },
+    TheoremArtifact {
+        name: "law_of_cosines_right_angle_specialization",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+        ),
+        proof: abstract_metric_abs!(
+            "fun law => fun A => fun B => fun C => fun h => @pythagorean_theorem_sq.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_theorem_api_alias",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (law : forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))), forall (A : PointCarrier), forall (B : PointCarrier), forall (C : PointCarrier), forall (h : @RightTriangle.{p,u,v} Scalar zero Vector inner PointCarrier disp_op A B C), @Eq.{u} Scalar (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op B C) (add (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A B) (@distSqPoints.{p,u,v} Scalar Vector inner PointCarrier disp_op A C))"
+        ),
+        proof: abstract_metric_abs!(
+            "fun law => fun A => fun B => fun C => fun h => @pythagorean_theorem_sq.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op law A B C h"
+        ),
+    },
+    TheoremArtifact {
+        name: "pythagorean_theorem_dependencies",
+        universe_params: &["p", "u", "v"],
+        statement: abstract_metric_params!(
+            "forall (laws : @MetricSpaceLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op), @MetricSpaceLawArgs.{p,u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner PointCarrier disp_op"
+        ),
+        proof: abstract_metric_abs!("fun laws => laws"),
+    },
+];
+
 const EQ_IMPORT_SOURCE: &str = "\
 inductive Eq.{u} {A : Sort u} (a : A) : forall (b : A), Prop where
 | refl : Eq.{u} a a
@@ -4031,6 +4113,33 @@ fn run() -> Result<(), String> {
         &abstract_metric_imports,
         &abstract_metric_source_interfaces,
     )?;
+    let pythagorean_imports = vec![
+        eq_import.clone(),
+        abstract_ring.verified_module.clone(),
+        abstract_ordered_field.verified_module.clone(),
+        abstract_square_normalize.verified_module.clone(),
+        abstract_vector_space.verified_module.clone(),
+        abstract_inner_product.verified_module.clone(),
+        affine.verified_module.clone(),
+        abstract_right_triangle.verified_module.clone(),
+        abstract_metric.verified_module.clone(),
+    ];
+    let pythagorean_source_interfaces = vec![
+        abstract_ring.source_interface.clone(),
+        abstract_ordered_field.source_interface.clone(),
+        abstract_square_normalize.source_interface.clone(),
+        abstract_vector_space.source_interface.clone(),
+        abstract_inner_product.source_interface.clone(),
+        affine.source_interface.clone(),
+        abstract_right_triangle.source_interface.clone(),
+        abstract_metric.source_interface.clone(),
+    ];
+    let pythagorean = build_and_write_module(
+        &proof_root,
+        &PYTHAGOREAN_MODULE,
+        &pythagorean_imports,
+        &pythagorean_source_interfaces,
+    )?;
 
     write(
         proof_root.join(MANIFEST_PATH),
@@ -4057,6 +4166,7 @@ fn run() -> Result<(), String> {
             affine,
             abstract_right_triangle,
             abstract_metric,
+            pythagorean,
         ])
         .as_bytes(),
     )?;
@@ -4369,6 +4479,17 @@ fn source_imports(config: &ModuleArtifact) -> &'static [&'static str] {
             "Proofs.Ai.Vector.AbstractInnerProduct",
             "Proofs.Ai.Geometry.Affine",
             "Proofs.Ai.Geometry.AbstractRightTriangle",
+        ]
+    } else if config.module == PYTHAGOREAN_MODULE.module {
+        &[
+            "Proofs.Ai.Algebra.AbstractRing",
+            "Proofs.Ai.Algebra.AbstractOrderedField",
+            "Proofs.Ai.Algebra.AbstractSquareNormalize",
+            "Proofs.Ai.Vector.AbstractSpace",
+            "Proofs.Ai.Vector.AbstractInnerProduct",
+            "Proofs.Ai.Geometry.Affine",
+            "Proofs.Ai.Geometry.AbstractRightTriangle",
+            "Proofs.Ai.Geometry.AbstractMetric",
         ]
     } else {
         config.imports

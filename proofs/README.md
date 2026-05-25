@@ -39,6 +39,8 @@ Current bundles:
   squared-distance Pythagorean theorem targets over explicit geometry law assumptions.
 - `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
   metric-distance theorem targets over explicit metric law assumptions.
+- `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean theorem names collecting the
+  squared-distance and squared metric-distance theorem targets.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -564,7 +566,7 @@ Theorem targets:
 | `or_elim` | `Or P Q -> (P -> R) -> (Q -> R) -> R` |
 | `iff_congr_arg` | `P = Q -> Iff (F P) (F Q)` for Prop-valued contexts |
 
-### P25+: General Euclidean Pythagorean Roadmap
+### General Euclidean Pythagorean Roadmap
 
 Long-term target: prove the Pythagorean theorem as a checked certificate over an abstract Euclidean
 space, not only over the current concrete singleton corpus layer. Prefer the coordinate /
@@ -581,7 +583,7 @@ abstract scalar layer with order and square-root APIs. P19 supplies the abstract
 normalization layer. P20 supplies the abstract vector-space layer. P21 supplies the abstract
 inner-product and squared-norm layer. P22 supplies the affine point/displacement layer. P23 supplies
 the abstract right-triangle theorem-target layer. P24 supplies the abstract metric-distance
-theorem-target layer. P25 continues the pattern with the final theorem API.
+theorem-target layer. P25 supplies the final theorem API names that downstream users can depend on.
 
 Planned contents:
 
@@ -634,8 +636,11 @@ Completed prerequisite:
 - P24 `Proofs.Ai.Geometry.AbstractMetric` supplies checked abstract distance, metric law-package,
   ball API, distance/squared-distance bridge, metric Pythagorean, and triangle-inequality theorem
   targets over explicit metric law assumptions without adding unchecked metric axioms.
+- P25 `Proofs.Ai.Geometry.Pythagorean` supplies checked final abstract Pythagorean theorem names,
+  alias targets, converse target shape, and dependency-package theorem target over the P17-P24
+  abstract geometry stack without adding unchecked Euclidean axioms.
 
-P25 policy:
+Post-P25 policy:
 
 - Keep all algebraic, order, vector-space, and inner-product laws as explicit theorem assumptions or
   checked law-package arguments until NPA has a dedicated structure/class layer.
@@ -644,9 +649,11 @@ P25 policy:
 - Prefer squared-distance statements first; add square-root distance forms only after the required
   nonnegative square-root and square-cancellation lemmas are available.
 
-| Layer | Module | Definition / API declarations | Theorem targets required for general Pythagorean theorem | Same-level theorem targets |
-| --- | --- | --- | --- | --- |
-| P25 | `Proofs.Ai.Geometry.Pythagorean` | no new API; final theorem module collecting P16-P24 | `pythagorean_theorem_sq`, `pythagorean_theorem_dist_sq` | `pythagorean_converse_sq`, `law_of_cosines_right_angle_specialization` |
+The current P17-P25 abstract Pythagorean roadmap is complete at the theorem-target layer. Later
+work can replace explicit law arguments with checked structure/class packages, add direct
+first-class `Iff` imports once duplicate `Eq` handoff is resolved, and strengthen converse /
+unsquared-distance statements as the required nondegeneracy and square-root cancellation APIs
+become available.
 
 The intended dependency order is:
 
@@ -1184,19 +1191,27 @@ Theorem targets:
 
 #### `Proofs.Ai.Geometry.Pythagorean`
 
-No new API declarations live here. This final module should collect the abstract prerequisites and
-export theorem names that users can depend on.
+No new API declarations live here. This final module collects the abstract prerequisites and
+exports theorem names that users can depend on.
 
-Recommended imports:
+Implemented imports:
 
 | Import | Purpose |
 | --- | --- |
-| `Proofs.Ai.Logic.Iff` | first-class iff statements for public theorem APIs |
+| `Std.Logic.Eq` | equality target statements and explicit certificate dependency |
 | `Proofs.Ai.Algebra.AbstractOrderedField` | scalar order and square-root facts |
 | `Proofs.Ai.Vector.AbstractInnerProduct` | norm and dot-product expansions |
 | `Proofs.Ai.Geometry.Affine` | point displacement API |
 | `Proofs.Ai.Geometry.AbstractRightTriangle` | right-triangle hypotheses and squared-distance theorem |
 | `Proofs.Ai.Geometry.AbstractMetric` | distance API and metric theorem bridge |
+
+The final squared-distance theorem delegates to P23's checked
+`pythagorean_distance_sq_general`; the squared metric-distance theorem delegates to P24's checked
+`pythagorean_distance_general`. The converse and law-of-cosines specialization remain explicit
+law-argument theorem targets until the nondegeneracy and angle APIs are strong enough to prove them
+from smaller checked components. `Proofs.Ai.Logic.Iff` is not directly imported here because the
+current source handoff cannot combine that module with the abstract geometry imports without
+duplicating the imported `Eq` declaration.
 
 | Theorem | Shape / purpose |
 | --- | --- |
