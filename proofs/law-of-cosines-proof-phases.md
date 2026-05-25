@@ -73,7 +73,7 @@ hits:
 | --- | --- | --- | --- |
 | Concrete singleton geometry | `Proofs.Ai.Geometry.RightTriangle.law_of_cosines` | No. It is a checked concrete singleton theorem closing by `Eq.refl` over the old `Vec` / `RingElem` layer and takes no `law` argument. | Keep as an older checked corpus theorem; do not use it as the abstract LC proof. |
 | Abstract right-triangle geometry | `Proofs.Ai.Geometry.AbstractRightTriangle.law_of_cosines_general` | Yes. It takes `law : forall A B C, ...` whose conclusion is exactly the abstract law-of-cosines equality. | Replace the final proof path with `law_of_cosines_sq_from_law_packages`; LC5 must not delegate to this wrapper. |
-| Final Pythagorean API | `Proofs.Ai.Geometry.Pythagorean.law_of_cosines_right_angle_specialization` | No. It currently delegates to the checked P31 `pythagorean_theorem_sq` and states the right-angle Pythagorean specialization, not the general law of cosines. | LC6 may reconnect it to the checked law-of-cosines route, but LC1 does not treat it as a direct law-of-cosines dependency. |
+| Final Pythagorean API | `Proofs.Ai.Geometry.Pythagorean.law_of_cosines_right_angle_specialization` | No. It now delegates to the checked LC6 `law_of_cosines_right_angle_specialization_from_law_packages`, which specializes LC5 through the right-triangle dot-zero premise. | Keep it as a public compatibility alias, not as a direct law-of-cosines dependency. |
 | Manifest, replay, generator, and generator tests | `law_of_cosines`, `law_of_cosines_general`, `law_of_cosines_right_angle_specialization` declaration entries | No. These entries mirror the declarations above and are not additional proof paths. | Keep expected names until the relevant implementation milestone changes them. |
 | Non-cosine distance wrappers | Generic `law : forall ... distSqPoints ...` hits such as affine symmetry and zero-distance equivalence wrappers | No. These are direct wrappers for their own affine facts, not the law-of-cosines equality. | Leave to their own future audits; they are outside LC1 unless a later LC proof path depends on the target equality directly. |
 
@@ -369,7 +369,7 @@ P32, plus the LC5 scalar/vector/affine law packages.
 
 ### LC8 Public Documentation And API Refresh
 
-- Status: Pending
+- Status: Completed
 - Depends on: LC5
 - Inputs: `proofs/README.md`, `proofs/manifest.toml`,
   `proofs/Proofs/Ai/Geometry/Pythagorean/meta.json`, this document
@@ -390,6 +390,31 @@ P32, plus the LC5 scalar/vector/affine law packages.
   - `cargo run -p npa-proof-corpus`
   - `cargo test -p npa-proof-corpus`
   - `rg -n "direct law-of-cosines|law_of_cosines.*law|unsquared|angle-cosine" proofs/README.md proofs/law-of-cosines-proof-phases.md proofs/Proofs/Ai/Geometry/Pythagorean tools/proof-corpus/src/main.rs`
+
+#### LC8 Result
+
+`proofs/README.md` now identifies the completed law-of-cosines theorem names in
+`Proofs.Ai.Geometry.Pythagorean`:
+
+- `law_of_cosines_sq_from_law_packages`: completed squared point-distance law of cosines, backed by
+  LC4 and the scalar/vector/inner-product/affine law packages.
+- `law_of_cosines_dist_sq_from_law_packages`: completed squared metric-distance law of cosines,
+  backed by LC5 and the P32 metric square bridge.
+- `law_of_cosines_right_angle_specialization_from_law_packages`: checked right-angle specialization,
+  backed by LC5, `right_triangle_legs_dot_zero_from_rt`, and scalar zero-cross-term normalization.
+- `law_of_cosines_right_angle_specialization`: compatibility alias backed by the checked
+  specialization above.
+
+The README also keeps unsquared distance and angle-cosine/trigonometric cosine variants out of the
+completed theorem claims until checked square-root cancellation, angle measure, and cosine APIs are
+available.
+
+Manifest and metadata review: `proofs/manifest.toml` and
+`proofs/Proofs/Ai/Geometry/Pythagorean/meta.json` list the completed LC5-LC7 theorem names, and the
+Pythagorean module axiom report remains `["Eq.rec"]`. The direct wrappers
+`Proofs.Ai.Geometry.RightTriangle.law_of_cosines` and
+`Proofs.Ai.Geometry.AbstractRightTriangle.law_of_cosines_general` remain documented as older theorem
+targets or compatibility wrappers, not the final checked law-of-cosines proof path.
 
 ## Completion Definition
 

@@ -45,9 +45,9 @@ Current bundles:
   bridge derivations for the abstract Pythagorean route.
 - `Proofs/Ai/Geometry/AbstractMetric/`: abstract distance, metric law-package, ball API, and
   metric-distance theorem targets over explicit metric law assumptions.
-- `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean theorem names, including the
-  checked squared-distance derivation from scalar, vector, inner-product, affine, and
-  right-triangle law packages.
+- `Proofs/Ai/Geometry/Pythagorean/`: final abstract Pythagorean and law-of-cosines theorem names,
+  including checked squared-distance and squared metric-distance derivations from scalar, vector,
+  inner-product, affine, right-triangle, and metric bridge law packages.
 - `Proofs/Ai/Geometry/RightTriangle/`: right-triangle and squared-distance Pythagoras theorem
   targets importing vector dot and scalar corpus layers.
 - `Proofs/Ai/Geometry/Metric/`: distance API and metric theorem targets importing the right-triangle
@@ -678,6 +678,13 @@ Completed prerequisite:
 - P34 records the optional-strengthening boundary: no converse or unsquared-distance theorem is
   exported until checked nondegeneracy, angle, first-class `Iff` import, and square-root
   cancellation prerequisites are available.
+- LC5 `Proofs.Ai.Geometry.Pythagorean` supplies the checked squared point-distance law of cosines
+  as `law_of_cosines_sq_from_law_packages`, using the LC4 affine bridge and law packages instead of
+  the legacy `law_of_cosines_general` direct wrapper.
+- LC6 supplies `law_of_cosines_right_angle_specialization_from_law_packages` and reconnects the
+  public `law_of_cosines_right_angle_specialization` alias to that checked law-of-cosines route.
+- LC7 supplies the checked squared metric-distance law of cosines
+  `law_of_cosines_dist_sq_from_law_packages` by composing LC5 with the P32 metric square bridge.
 
 Post-P25 policy:
 
@@ -689,9 +696,11 @@ Post-P25 policy:
   nonnegative square-root and square-cancellation lemmas are available.
 
 The current P17-P34 abstract Pythagorean roadmap now has checked squared-distance and squared
-metric-distance theorem names from law packages. Later work can replace explicit law arguments with
-checked structure/class packages, add direct first-class `Iff` imports once duplicate `Eq` handoff
-is resolved, and strengthen the converse and unsquared-distance statements as the required
+metric-distance theorem names from law packages. The LC5-LC7 law-of-cosines follow-up also has
+checked squared point-distance, right-angle specialization, and squared metric-distance theorem
+names. Later work can replace explicit law arguments with checked structure/class packages, add
+direct first-class `Iff` imports once duplicate `Eq` handoff is resolved, and strengthen the
+converse, unsquared-distance, angle, and trigonometric cosine statements as the required
 nondegeneracy, angle, and square-root cancellation APIs become available.
 
 The intended dependency order is:
@@ -1338,29 +1347,55 @@ norm-addition derivation, and small affine symmetry/reversal bridges in this mod
 `RingLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, `AffineLawArgs`, and
 `RightTriangle A B C`; it does not accept a direct Pythagorean equality law.
 
-`pythagorean_theorem_sq`, `law_of_cosines_right_angle_specialization`, and
-`pythagorean_theorem_api_alias` delegate to the checked P31 derivation. `pythagorean_theorem_dist_sq`
-now composes P31's squared-distance theorem with P32's metric bridge, so it no longer accepts a
-direct metric Pythagorean law. The converse remains an explicit target until the nondegeneracy and
-angle APIs are strong enough. P34 also leaves the unsquared distance form unexported: the current
-ordered-field and metric layers can justify squared metric-distance equality, but they do not yet
-provide a checked square-root cancellation path for the full Pythagorean right-hand side.
+`law_of_cosines_sq_from_law_packages` is the completed squared point-distance law of cosines. It
+uses the LC4 affine bridge `dist_sq_law_of_cosines_rhs_from_law_packages`, with `RingLawArgs`,
+`VectorSpaceLawArgs`, `InnerProductLawArgs`, and `AffineLawArgs`; it does not accept
+`law_of_cosines_general` or any theorem-shaped direct law-of-cosines equality argument.
+`law_of_cosines_dist_sq_from_law_packages` is the completed squared metric-distance variant. It
+composes the squared point-distance theorem with P32's `square_dist_eq_dist_sq_from_law_packages`
+and `dist_sq_eq_square_dist_from_law_packages`; it remains a squared statement and does not claim
+an unsquared distance theorem or square-root cancellation for the law-of-cosines right-hand side.
+
+`pythagorean_theorem_sq` and `pythagorean_theorem_api_alias` delegate to the checked P31 derivation.
+`pythagorean_theorem_dist_sq` now composes P31's squared-distance theorem with P32's metric bridge,
+so it no longer accepts a direct metric Pythagorean law. The public
+`law_of_cosines_right_angle_specialization` compatibility alias now delegates to
+`law_of_cosines_right_angle_specialization_from_law_packages`, which specializes the checked LC5
+law-of-cosines theorem through `right_triangle_legs_dot_zero_from_rt` and scalar zero-cross-term
+normalization. The converse remains an explicit target until the nondegeneracy and angle APIs are
+strong enough. P34 and LC8 leave the unsquared distance and angle-cosine forms unexported: the
+current ordered-field and metric layers can justify squared metric-distance equality, but they do
+not yet provide a checked square-root cancellation path for the full Pythagorean or
+law-of-cosines right-hand side.
 The module axiom report is `["Eq.rec"]`; this is the documented equality-recursion exception
 inherited from imported equality reasoning and transport lemmas, not a geometry or metric axiom.
 `Proofs.Ai.Logic.Iff` is not directly imported here because the current source handoff cannot
 combine that module with the abstract geometry imports without duplicating the imported `Eq`
 declaration.
 
+LC8 manifest/metadata review: `proofs/manifest.toml` and
+`Proofs/Ai/Geometry/Pythagorean/meta.json` list `law_of_cosines_sq_from_law_packages`,
+`law_of_cosines_dist_sq_from_law_packages`, and
+`law_of_cosines_right_angle_specialization_from_law_packages` as certificate-verified theorem
+exports. The Pythagorean module's axiom report remains `["Eq.rec"]`. The legacy direct wrappers
+`Proofs.Ai.Geometry.RightTriangle.law_of_cosines` and
+`Proofs.Ai.Geometry.AbstractRightTriangle.law_of_cosines_general` remain older theorem targets or
+compatibility wrappers, not the completed checked law-of-cosines proof path.
+
 | Theorem | Shape / purpose |
 | --- | --- |
 | `pythagorean_dist_sq_symm_from_affine_args` | extracts point squared-distance symmetry from `AffineLawArgs` |
 | `pythagorean_dist_sq_reverse_norm_neg_from_law_packages` | rewrites `distSqPoints B A` to `normSq (vneg (disp A B))` |
 | `pythagorean_left_leg_norm_neg_from_law_packages` | identifies `normSq (vneg (disp A B))` with `distSqPoints A B` |
+| `dist_sq_law_of_cosines_rhs_from_law_packages` | checked LC4 affine bridge from point squared distance to the scalar law-of-cosines RHS using `RingLawArgs`, `InnerProductLawArgs`, and `AffineLawArgs` |
+| `law_of_cosines_sq_from_law_packages` | completed squared point-distance law of cosines using `RingLawArgs`, `VectorSpaceLawArgs`, `InnerProductLawArgs`, and `AffineLawArgs`, without a direct law-of-cosines wrapper |
+| `law_of_cosines_dist_sq_from_law_packages` | completed squared metric-distance law of cosines using LC5 plus P32's `OrderedFieldLawArgs` / `InnerProductLawArgs` metric square bridge |
 | `pythagorean_distance_sq_from_law_packages` | checked squared-distance Pythagorean theorem from law packages and `RightTriangle A B C` |
 | `pythagorean_theorem_sq` | public squared-distance theorem delegating to the checked P31 derivation |
 | `pythagorean_theorem_dist_sq` | squared metric-distance theorem derived from P31 plus the P32 metric bridge |
 | `pythagorean_converse_sq` | explicit converse target, not a completed theorem derivation, until the required nondegeneracy and angle API are available |
-| `law_of_cosines_right_angle_specialization` | right-angle specialization alias backed by the checked squared-distance theorem |
+| `law_of_cosines_right_angle_specialization_from_law_packages` | checked right-angle specialization of LC5 using `RightTriangle` dot-zero and scalar zero-cross-term normalization |
+| `law_of_cosines_right_angle_specialization` | public compatibility alias backed by `law_of_cosines_right_angle_specialization_from_law_packages` |
 | `pythagorean_theorem_api_alias` | stable alias backed by the checked squared-distance theorem |
 | `pythagorean_theorem_dependencies` | documentation theorem or metadata target listing required law packages |
 
